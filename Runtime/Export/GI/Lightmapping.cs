@@ -347,6 +347,11 @@ namespace UnityEngine
             public static float ExtractInnerCone(Light l)
             {
                 return 2.0f * Mathf.Atan(Mathf.Tan(l.spotAngle * 0.5f * Mathf.Deg2Rad) * (64.0f - 18.0f) / 64.0f);
+
+                //TODO(GI) The line below would provide support for innerConeAngle with baked enlighten,
+                //however this feature should come as a whole with baked lighting on all backend so it is commented for now.
+                //see card : https://favro.com/organization/c564ede4ed3337f7b17986b6/0ae5422e2f78207a0998ab80?card=Uni-68012
+                //return l.innerSpotAngle * Mathf.Deg2Rad;
             }
 
             public static void Extract(Light l, ref DirectionalLight dir)

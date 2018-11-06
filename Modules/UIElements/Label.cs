@@ -4,7 +4,7 @@
 
 using System;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public class Label : TextElement
     {
@@ -12,9 +12,13 @@ namespace UnityEngine.Experimental.UIElements
 
         public new class UxmlTraits : TextElement.UxmlTraits {}
 
+        public new static readonly string ussClassName = "unity-label";
+
         public Label() : this(String.Empty) {}
         public Label(string text)
         {
+            AddToClassList(ussClassName);
+
             this.text = text;
         }
     }

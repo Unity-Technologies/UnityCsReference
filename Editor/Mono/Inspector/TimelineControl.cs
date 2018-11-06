@@ -730,7 +730,7 @@ namespace UnityEditor
                 if (m_DragState == DragStates.Destination && !oneFrameDst)
                 {
                     Rect transLabelRect = new Rect(transStart - 50, dstRect.y, 45, dstRect.height);
-                    string transLabel = String.Format("{0:0%}", (transStart - dstStart) / (dstStop - dstStart));
+                    string transLabel = UnityString.Format("{0:0%}", (transStart - dstStart) / (dstStop - dstStart));
                     GUI.Box(transLabelRect, EditorGUIUtility.TempContent(transLabel), styles.timeBlockRight);
                 }
 
@@ -740,14 +740,14 @@ namespace UnityEditor
                     if (!oneFrameSrc)
                     {
                         Rect srcLabelRect = new Rect(transStart - 50, srcRect.y, 45, srcRect.height);
-                        string srcLabel = String.Format("{0:0%}", (transStart - srcStart) / (srcStop - srcStart));
+                        string srcLabel = UnityString.Format("{0:0%}", (transStart - srcStart) / (srcStop - srcStart));
                         GUI.Box(srcLabelRect, EditorGUIUtility.TempContent(srcLabel), styles.timeBlockRight);
                     }
 
                     if (!oneFrameDst)
                     {
                         Rect dstLabelRect = new Rect(transStart - 50, dstRect.y, 45, dstRect.height);
-                        string dstLabel = String.Format("{0:0%}", (transStart - dstStart) / (dstStop - dstStart));
+                        string dstLabel = UnityString.Format("{0:0%}", (transStart - dstStart) / (dstStop - dstStart));
                         GUI.Box(dstLabelRect, EditorGUIUtility.TempContent(dstLabel), styles.timeBlockRight);
                     }
                 }
@@ -758,14 +758,14 @@ namespace UnityEditor
                     if (!oneFrameSrc)
                     {
                         Rect srcLabelRect = new Rect(transStop + 5, srcRect.y, 45, srcRect.height);
-                        string srcLabel = String.Format("{0:0%}", (transStop - srcStart) / (srcStop - srcStart));
+                        string srcLabel = UnityString.Format("{0:0%}", (transStop - srcStart) / (srcStop - srcStart));
                         GUI.Box(srcLabelRect, EditorGUIUtility.TempContent(srcLabel), styles.timeBlockLeft);
                     }
 
                     if (!oneFrameDst)
                     {
                         Rect dstLabelRect = new Rect(transStop + 5, dstRect.y, 45, dstRect.height);
-                        string dstLabel = String.Format("{0:0%}", (transStop - dstStart) / (dstStop - dstStart));
+                        string dstLabel = UnityString.Format("{0:0%}", (transStop - dstStart) / (dstStop - dstStart));
                         GUI.Box(dstLabelRect, EditorGUIUtility.TempContent(dstLabel), styles.timeBlockLeft);
                     }
                 }

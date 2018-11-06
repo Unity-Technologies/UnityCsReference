@@ -2,52 +2,56 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
-    public abstract class ToolbarMenuBase : TextElement, IToolbarMenuElement
-    {
-        Clickable clickable;
-
-        public DropdownMenu menu { get; }
-
-        protected ToolbarMenuBase(string classList) :
-            this()
-        {
-            Toolbar.SetToolbarStyleSheet(this);
-            AddToClassList(classList);
-        }
-
-        ToolbarMenuBase()
-        {
-            clickable = new Clickable(this.ShowMenu);
-            this.AddManipulator(clickable);
-            menu = new DropdownMenu();
-        }
-    }
-
-    public class ToolbarMenu : ToolbarMenuBase
+    public class ToolbarMenu : TextElement, IToolbarMenuElement
     {
         public new class UxmlFactory : UxmlFactory<ToolbarMenu, UxmlTraits> {}
         public new class UxmlTraits : TextElement.UxmlTraits {}
 
-        const string k_ClassName = "toolbarMenu";
-        public ToolbarMenu() :
-            base(k_ClassName)
+        public enum Variant
         {
+            Default,
+            Popup
         }
-    }
 
-    public class ToolbarPopup : ToolbarMenuBase
-    {
-        public new class UxmlFactory : UxmlFactory<ToolbarPopup, UxmlTraits> {}
-        public new class UxmlTraits : TextElement.UxmlTraits {}
+        Clickable clickable;
 
-        const string k_ClassName = "toolbarPopup";
-        public ToolbarPopup() :
-            base(k_ClassName)
+        public DropdownMenu menu { get; }
+
+        public new static readonly string ussClassName = "unity-toolbar-menu";
+        public static readonly string popupVariantUssClassName = ussClassName + "--popup";
+
+        public ToolbarMenu()
         {
+            Toolbar.SetToolbarStyleSheet(this);
+
+            clickable = new Clickable(this.ShowMenu);
+            this.AddManipulator(clickable);
+            menu = new DropdownMenu();
+
+            AddToClassList(ussClassName);
+        }
+
+        Variant m_Variant;
+        public Variant variant
+        {
+            get { return m_Variant; }
+            set
+            {
+                m_Variant = value;
+
+                if (m_Variant == Variant.Popup)
+                {
+                    AddToClassList(popupVariantUssClassName);
+                }
+                else
+                {
+                    RemoveFromClassList(popupVariantUssClassName);
+                }
+            }
         }
     }
 }

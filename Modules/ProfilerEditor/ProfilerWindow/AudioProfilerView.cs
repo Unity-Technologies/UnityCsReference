@@ -128,7 +128,7 @@ namespace UnityEditorInternal
         {
             if (vol == 0.0f)
                 return "-\u221E dB";
-            return string.Format("{0:0.00} dB", 20.0f * Mathf.Log10(vol));
+            return UnityString.Format("{0:0.00} dB", 20.0f * Mathf.Log10(vol));
         }
 
         public static string GetColumnString(AudioProfilerGroupInfoWrapper info, ColumnIndices index)
@@ -154,12 +154,12 @@ namespace UnityEditorInternal
                 case ColumnIndices.IsOpenMemoryPoint: return isGroup ? "" : (info.info.flags & AUDIOPROFILER_FLAGS_OPENMEMORYPOINT) != 0 ? "YES" : "NO";
                 case ColumnIndices.IsOpenUser: return isGroup ? "" : (info.info.flags & AUDIOPROFILER_FLAGS_OPENUSER) != 0 ? "YES" : "NO";
                 case ColumnIndices.IsNonBlocking: return isGroup ? "" : (info.info.flags & AUDIOPROFILER_FLAGS_NONBLOCKING) != 0 ? "YES" : "NO";
-                case ColumnIndices.DistanceToListener: return isGroup ? "" : !is3D ? "N/A" : (info.info.distanceToListener >= 1000.0f) ? string.Format("{0:0.00} km", info.info.distanceToListener * 0.001f) : string.Format("{0:0.00} m", info.info.distanceToListener);
-                case ColumnIndices.MinDist: return isGroup ? "" : !is3D ? "N/A" : (info.info.minDist >= 1000.0f) ? string.Format("{0:0.00} km", info.info.minDist * 0.001f) : string.Format("{0:0.00} m", info.info.minDist);
-                case ColumnIndices.MaxDist: return isGroup ? "" : !is3D ? "N/A" : (info.info.maxDist >= 1000.0f) ? string.Format("{0:0.00} km", info.info.maxDist * 0.001f) : string.Format("{0:0.00} m", info.info.maxDist);
-                case ColumnIndices.Time: return isGroup ? "" : string.Format("{0:0.00} s", info.info.time);
-                case ColumnIndices.Duration: return isGroup ? "" : string.Format("{0:0.00} s", info.info.duration);
-                case ColumnIndices.Frequency: return isGroup ? string.Format("{0:0.00} x", info.info.frequency) : (info.info.frequency >= 1000.0f) ? string.Format("{0:0.00} kHz", info.info.frequency * 0.001f) : string.Format("{0:0.00} Hz", info.info.frequency);
+                case ColumnIndices.DistanceToListener: return isGroup ? "" : !is3D ? "N/A" : (info.info.distanceToListener >= 1000.0f) ? UnityString.Format("{0:0.00} km", info.info.distanceToListener * 0.001f) : UnityString.Format("{0:0.00} m", info.info.distanceToListener);
+                case ColumnIndices.MinDist: return isGroup ? "" : !is3D ? "N/A" : (info.info.minDist >= 1000.0f) ? UnityString.Format("{0:0.00} km", info.info.minDist * 0.001f) : UnityString.Format("{0:0.00} m", info.info.minDist);
+                case ColumnIndices.MaxDist: return isGroup ? "" : !is3D ? "N/A" : (info.info.maxDist >= 1000.0f) ? UnityString.Format("{0:0.00} km", info.info.maxDist * 0.001f) : UnityString.Format("{0:0.00} m", info.info.maxDist);
+                case ColumnIndices.Time: return isGroup ? "" : UnityString.Format("{0:0.00} s", info.info.time);
+                case ColumnIndices.Duration: return isGroup ? "" : UnityString.Format("{0:0.00} s", info.info.duration);
+                case ColumnIndices.Frequency: return isGroup ? UnityString.Format("{0:0.00} x", info.info.frequency) : (info.info.frequency >= 1000.0f) ? UnityString.Format("{0:0.00} kHz", info.info.frequency * 0.001f) : UnityString.Format("{0:0.00} Hz", info.info.frequency);
             }
             return "Unknown";
         }
@@ -682,7 +682,7 @@ namespace UnityEditorInternal
                     DrawRectClipped(
                         new Rect(cx - (cw / 2), cy - (ch / 2), cw, ch),
                         new Color(1.0f, 0.3f, 0.2f, (!highlightAudibleDSPChains || source.audible) ? 1.0f : 0.4f),
-                        string.Format("{0:0.00}%", 100.0f * info.weight),
+                        UnityString.Format("{0:0.00}%", 100.0f * info.weight),
                         clippingRect,
                         zoomFactor);
                 }
@@ -711,7 +711,7 @@ namespace UnityEditorInternal
                 name = name.Replace("FMOD Resampler Unit", "Resampler");
                 name = name.Replace("FMOD Channel DSPHead Unit", "Channel DSP");
                 name = name.Replace("FMOD Channel DSPHead Unit", "Channel DSP");
-                name += string.Format(" ({0:0.00}%)", cpuLoad);
+                name += UnityString.Format(" ({0:0.00}%)", cpuLoad);
                 DrawRectClipped(new Rect(node.x - w * 0.5f, node.y - h * 0.5f, w, h), color, name, clippingRect, zoomFactor);
                 if (node.audible)
                 {

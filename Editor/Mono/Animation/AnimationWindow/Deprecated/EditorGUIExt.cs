@@ -263,7 +263,7 @@ namespace UnityEditor
             {
                 case EventType.MouseDown:
                     // if the click is outside this control, just bail out...
-                    if (!position.Contains(evt.mousePosition) || minVisual - maxVisual == 0)
+                    if (evt.button != 0 || !position.Contains(evt.mousePosition) || minVisual - maxVisual == 0)
                         return;
                     if (state == null)
                         state = s_MinMaxSliderState = new MinMaxSliderState();

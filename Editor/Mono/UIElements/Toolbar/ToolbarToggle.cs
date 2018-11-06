@@ -3,20 +3,22 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     public class ToolbarToggle : Toggle
     {
         public new class UxmlFactory : UxmlFactory<ToolbarToggle, UxmlTraits> {}
         public new class UxmlTraits : Toggle.UxmlTraits {}
 
-        const string k_ClassName = "toolbarButton";
+        public new static readonly string ussClassName = "unity-toolbar-toggle";
+
         public ToolbarToggle()
         {
             Toolbar.SetToolbarStyleSheet(this);
-            AddToClassList(k_ClassName);
+            RemoveFromClassList(Toggle.ussClassName);
+            AddToClassList(ussClassName);
         }
     }
 }

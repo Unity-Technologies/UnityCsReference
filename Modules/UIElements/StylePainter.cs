@@ -2,16 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Runtime.InteropServices;
-using UnityEngine.Bindings;
-
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     // Empty interface use internally to call the protected DoRepaint with a StylePainter
     // that is casted to an IStylePainterInternal when required.
     // New public functions will be added to the public interface once the API as been determined.
-    public interface IStylePainter
+    internal interface IStylePainter
     {
     }
 
@@ -86,10 +82,10 @@ namespace UnityEngine.Experimental.UIElements
                 bottomLeftRadius);
         }
 
-        public static void SetFromStyle(ref BorderParameters border, IStyle style)
+        public static void SetFromStyle(ref BorderParameters border, IComputedStyle style)
         {
-            border.SetWidth(style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth);
-            border.SetRadius(style.borderTopLeftRadius, style.borderTopRightRadius, style.borderBottomRightRadius, style.borderBottomLeftRadius);
+            border.SetWidth(style.borderTopWidth.value, style.borderRightWidth.value, style.borderBottomWidth.value, style.borderLeftWidth.value);
+            border.SetRadius(style.borderTopLeftRadius.value.value, style.borderTopRightRadius.value.value, style.borderBottomRightRadius.value.value, style.borderBottomLeftRadius.value.value);
         }
     }
 
@@ -109,18 +105,18 @@ namespace UnityEngine.Experimental.UIElements
 
         public static TextureStylePainterParameters GetDefault(VisualElement ve)
         {
-            IStyle style = ve.style;
+            IComputedStyle style = ve.computedStyle;
             var painterParams = new TextureStylePainterParameters
             {
                 rect = GUIUtility.AlignRectToDevice(ve.rect),
                 uv = new Rect(0, 0, 1, 1),
                 color = (Color)Color.white,
-                texture = style.backgroundImage,
-                scaleMode = style.backgroundScaleMode,
-                sliceLeft = style.sliceLeft,
-                sliceTop = style.sliceTop,
-                sliceRight = style.sliceRight,
-                sliceBottom = style.sliceBottom
+                texture = style.backgroundImage.value.texture,
+                scaleMode = style.unityBackgroundScaleMode.value,
+                sliceLeft = style.unitySliceLeft.value,
+                sliceTop = style.unitySliceTop.value,
+                sliceRight = style.unitySliceRight.value,
+                sliceBottom = style.unitySliceBottom.value
             };
 
             BorderParameters.SetFromStyle(ref painterParams.border, style);
@@ -136,11 +132,11 @@ namespace UnityEngine.Experimental.UIElements
 
         public static RectStylePainterParameters GetDefault(VisualElement ve)
         {
-            IStyle style = ve.style;
+            IComputedStyle style = ve.computedStyle;
             var painterParams = new RectStylePainterParameters
             {
                 rect = GUIUtility.AlignRectToDevice(ve.rect),
-                color = style.backgroundColor,
+                color = style.backgroundColor.value,
             };
             BorderParameters.SetFromStyle(ref painterParams.border, style);
             return painterParams;
@@ -163,20 +159,20 @@ namespace UnityEngine.Experimental.UIElements
 
         public static TextStylePainterParameters GetDefault(VisualElement ve, string text)
         {
-            IStyle style = ve.style;
+            IComputedStyle style = ve.computedStyle;
             var painterParams = new TextStylePainterParameters
             {
                 rect = ve.contentRect,
                 text = text,
-                font = style.font,
-                fontSize = style.fontSize,
-                fontStyle = style.fontStyleAndWeight,
+                font = style.unityFont.value,
+                fontSize = (int)style.fontSize.value.value,
+                fontStyle = style.unityFontStyleAndWeight.value,
                 fontColor = style.color.GetSpecifiedValueOrDefault(Color.black),
-                anchor = style.unityTextAlign,
-                wordWrap = style.wordWrap,
-                wordWrapWidth = style.wordWrap ? ve.contentRect.width : 0.0f,
+                anchor = style.unityTextAlign.value,
+                wordWrap = style.whiteSpace.value == WhiteSpace.Normal,
+                wordWrapWidth = style.whiteSpace.value == WhiteSpace.Normal ? ve.contentRect.width : 0.0f,
                 richText = false,
-                clipping = style.textClipping
+                clipping = (TextClipping)style.overflow.value
             };
             return painterParams;
         }
@@ -235,15 +231,15 @@ namespace UnityEngine.Experimental.UIElements
 
         public static CursorPositionStylePainterParameters GetDefault(VisualElement ve, string text)
         {
-            IStyle style = ve.style;
+            IComputedStyle style = ve.computedStyle;
             var painterParams = new CursorPositionStylePainterParameters() {
                 rect = ve.contentRect,
                 text = text,
-                font = style.font,
-                fontSize = style.fontSize,
-                fontStyle = style.fontStyleAndWeight,
-                anchor = style.unityTextAlign,
-                wordWrapWidth = style.wordWrap ? ve.contentRect.width : 0.0f,
+                font = style.unityFont.value,
+                fontSize = (int)style.fontSize.value.value,
+                fontStyle = style.unityFontStyleAndWeight.value,
+                anchor = style.unityTextAlign.value,
+                wordWrapWidth = style.whiteSpace.value == WhiteSpace.Normal ? ve.contentRect.width : 0.0f,
                 richText = false,
                 cursorIndex = 0
             };

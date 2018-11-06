@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public class PopupWindow : TextElement
     {
@@ -24,10 +24,16 @@ namespace UnityEngine.Experimental.UIElements
 
         private VisualElement m_ContentContainer;
 
+        public new static readonly string ussClassName = "unity-popup-window";
+        public static readonly string contentUssClassName = ussClassName + "__content-container";
+
         public PopupWindow()
         {
-            m_ContentContainer = new VisualElement() { name = "ContentContainer" };
-            shadow.Add(m_ContentContainer);
+            AddToClassList(ussClassName);
+
+            m_ContentContainer = new VisualElement() { name = "unity-content-container"};
+            m_ContentContainer.AddToClassList(contentUssClassName);
+            hierarchy.Add(m_ContentContainer);
         }
 
         public override VisualElement contentContainer // Contains full content, potentially partially visible

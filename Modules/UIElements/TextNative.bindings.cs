@@ -8,7 +8,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     [StructLayout(LayoutKind.Sequential)]
     internal struct TextNativeSettings

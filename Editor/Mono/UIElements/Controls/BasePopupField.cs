@@ -5,46 +5,50 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     /// <summary>
     /// This is the base class for all the popup field elements.
     /// TValue and TChoice can be different, see MaskField,
     ///   or the same, see PopupField
     /// </summary>
-    /// <typeparam name="TValue"> Used for the BaseField</typeparam>
-    /// <typeparam name="TChoice"> Used for the choices list</typeparam>
-    public abstract class BasePopupField<TValue, TChoice> : BaseField<TValue>
+    /// <typeparam name="TValueType"> Used for the BaseField</typeparam>
+    /// <typeparam name="TValueChoice"> Used for the choices list</typeparam>
+    public abstract class BasePopupField<TValueType, TValueChoice> : BaseField<TValueType>
     {
-        internal List<TChoice> m_Choices;
-        protected TextElement m_TextElement;
+        internal List<TValueChoice> m_Choices;
+        TextElement m_TextElement;
+        protected TextElement textElement
+        {
+            get { return m_TextElement; }
+        }
 
-        internal Func<TChoice, string> m_FormatSelectedValueCallback;
-        internal Func<TChoice, string> m_FormatListItemCallback;
+        internal Func<TValueChoice, string> m_FormatSelectedValueCallback;
+        internal Func<TValueChoice, string> m_FormatListItemCallback;
 
         // This is the value to display to the user
         internal abstract string GetValueToDisplay();
 
-        internal abstract string GetListItemToDisplay(TValue item);
+        internal abstract string GetListItemToDisplay(TValueType item);
 
         // This method is used when the menu is built to fill up all the choices.
         internal abstract void AddMenuItems(GenericMenu menu);
 
-        internal virtual List<TChoice> choices
+        internal virtual List<TValueChoice> choices
         {
             get { return m_Choices; }
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("choices", "choices can't be null");
+                    throw new ArgumentNullException(nameof(value));
 
                 m_Choices = value;
             }
         }
 
-        public override void SetValueWithoutNotify(TValue newValue)
+        public override void SetValueWithoutNotify(TValueType newValue)
         {
             base.SetValueWithoutNotify(newValue);
             m_TextElement.text = GetValueToDisplay();
@@ -55,22 +59,38 @@ namespace UnityEditor.Experimental.UIElements
             get { return m_TextElement.text; }
         }
 
-        protected BasePopupField()
-        {
-            m_TextElement = new TextElement();
-            m_TextElement.pickingMode = PickingMode.Ignore;
-            Add(m_TextElement);
-            AddToClassList("popupField");
+        public new static readonly string ussClassName = "unity-base-popup-field";
+        public static readonly string textUssClassName = ussClassName + "__text";
 
-            choices = new List<TChoice>();
+        internal BasePopupField()
+            : this(null) {}
+
+        internal BasePopupField(string label)
+            : base(label, null)
+        {
+            AddToClassList(ussClassName);
+
+            m_TextElement = new TextElement
+            {
+                pickingMode = PickingMode.Ignore
+            };
+            m_TextElement.AddToClassList(textUssClassName);
+            visualInput.Add(m_TextElement);
+
+            choices = new List<TValueChoice>();
         }
 
         protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
             base.ExecuteDefaultActionAtTarget(evt);
 
+            if (evt == null)
+            {
+                return;
+            }
+
             if (((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse) ||
-                ((evt.GetEventTypeId() == KeyDownEvent.TypeId()) && ((evt as KeyDownEvent)?.character == '\n') || ((evt as KeyDownEvent)?.character == ' ')))
+                ((evt.eventTypeId == KeyDownEvent.TypeId()) && ((evt as KeyDownEvent)?.character == '\n') || ((evt as KeyDownEvent)?.character == ' ')))
             {
                 ShowMenu();
                 evt.StopPropagation();
@@ -81,7 +101,7 @@ namespace UnityEditor.Experimental.UIElements
         {
             var menu = new GenericMenu();
             AddMenuItems(menu);
-            menu.DropDown(worldBound);
+            menu.DropDown(visualInput.worldBound);
         }
     }
 }

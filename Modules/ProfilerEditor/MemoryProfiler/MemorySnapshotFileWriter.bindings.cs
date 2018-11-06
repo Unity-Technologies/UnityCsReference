@@ -5,6 +5,7 @@
 using System;
 using UnityEngine.Bindings;
 using System.Runtime.InteropServices;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEditorInternal.Profiling.Memory.Experimental
 {
@@ -59,7 +60,7 @@ namespace UnityEditorInternal.Profiling.Memory.Experimental
             try
             {
                 IntPtr rawDataPtr = handle.AddrOfPinnedObject();
-                int dataSize = Marshal.SizeOf(data);
+                int dataSize = UnsafeUtility.SizeOf<T>();
                 Internal_WriteEntryData(rawDataPtr, dataSize, (int)entryType);
             }
             finally
@@ -74,7 +75,7 @@ namespace UnityEditorInternal.Profiling.Memory.Experimental
             try
             {
                 IntPtr rawDataPtr = handle.AddrOfPinnedObject();
-                int dataSize = Marshal.SizeOf(typeof(T));
+                int dataSize = UnsafeUtility.SizeOf<T>();
                 int numElements = data.Length;
                 Internal_WriteEntryDataArray(rawDataPtr, dataSize, numElements, (int)entryType);
             }

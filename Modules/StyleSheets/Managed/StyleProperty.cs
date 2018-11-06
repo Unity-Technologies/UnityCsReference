@@ -5,7 +5,7 @@
 using System;
 using UnityEngine.Bindings;
 
-namespace UnityEngine.StyleSheets
+namespace UnityEngine.UIElements
 {
     [Serializable]
     [VisibleToOtherModules("UnityEngine.UIElementsModule")]

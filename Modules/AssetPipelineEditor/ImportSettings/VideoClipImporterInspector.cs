@@ -13,6 +13,7 @@ using System;
 using UnityEditor.Experimental.AssetImporters;
 using Math = System.Math;
 using Path = System.IO.Path;
+using System.Globalization;
 
 namespace UnityEditor
 {
@@ -79,7 +80,7 @@ namespace UnityEditor
                 duration = duration.Substring(0, duration.Length - 4);
             ShowProperty(ref labelRect, ref valueRect, "Duration", duration);
             ShowProperty(ref labelRect, ref valueRect, "Frames", frameCount.ToString());
-            ShowProperty(ref labelRect, ref valueRect, "FPS", frameRate.ToString("F2"));
+            ShowProperty(ref labelRect, ref valueRect, "FPS", frameRate.ToString("F2", CultureInfo.InvariantCulture.NumberFormat));
 
             var originalWidth = importer.GetResizeWidth(VideoResizeMode.OriginalSize);
             var originalHeight = importer.GetResizeHeight(VideoResizeMode.OriginalSize);

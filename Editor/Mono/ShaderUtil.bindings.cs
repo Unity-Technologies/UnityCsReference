@@ -222,8 +222,18 @@ namespace UnityEditor
         extern internal static void RecreateSkinnedMeshResources();
         extern internal static void ReloadAllShaders();
 
-        extern public static Shader CreateShaderAsset(string source);
-        extern public static void   UpdateShaderAsset([NotNull] Shader shader, [NotNull] string source);
+        extern public static Shader CreateShaderAsset(string source, bool compileInitialShaderVariants);
+        public static Shader CreateShaderAsset(string source)
+        {
+            return CreateShaderAsset(source, true);
+        }
+
+        extern public static void   UpdateShaderAsset([NotNull] Shader shader, [NotNull] string source, bool compileInitialShaderVariants);
+        public static void          UpdateShaderAsset(Shader shader, string source)
+        {
+            UpdateShaderAsset(shader, source, true);
+        }
+
         [FreeFunction("GetScriptMapper().AddShader")] extern public static void RegisterShader(Shader shader);
 
 

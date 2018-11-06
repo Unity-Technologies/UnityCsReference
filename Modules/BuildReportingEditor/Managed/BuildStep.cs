@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine;
 using UnityEngine.Bindings;
 
 namespace UnityEditor.Build.Reporting
@@ -22,7 +23,7 @@ namespace UnityEditor.Build.Reporting
 
         public override string ToString()
         {
-            return string.Format("{0} ({1}ms)", name, duration.TotalMilliseconds);
+            return UnityString.Format("{0} ({1}ms)", name, duration.TotalMilliseconds);
         }
     }
 }

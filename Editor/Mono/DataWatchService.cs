@@ -5,11 +5,12 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
+    //To be removed once Experimental namespace is deleted.
     class DataWatchHandle : IDataWatchHandle
     {
         public readonly int id;
@@ -74,7 +75,7 @@ namespace UnityEditor
         {
             public List<Spy> spyList;
             public ChangeTrackerHandle tracker;
-            public IScheduledItem scheduledItem;
+            public ScheduledItem scheduledItem;
             public Object watchedObject;
             private DataWatchService service;
 

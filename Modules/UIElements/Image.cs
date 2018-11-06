@@ -4,9 +4,9 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine.Experimental.UIElements.StyleSheets;
+using UnityEngine.UIElements.StyleSheets;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public class Image : VisualElement
     {
@@ -20,19 +20,24 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        private StyleValue<int> m_ScaleMode;
-        private StyleValue<Texture> m_Image;
+        private int m_ScaleMode;
+        private Texture m_Image;
         private Rect m_UV;
 
-        public StyleValue<Texture> image
+        private bool m_ImageIsInline;
+        private bool m_ScaleModeIsInline;
+
+        public Texture image
         {
             get { return m_Image; }
             set
             {
-                if (StyleValueUtils.ApplyAndCompareObject(ref m_Image, value))
+                m_ImageIsInline = true;
+                if (m_Image != value)
                 {
+                    m_Image = value;
                     IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
-                    if (m_Image.value == null)
+                    if (m_Image == null)
                     {
                         m_UV = new Rect(0, 0, 1 , 1);
                     }
@@ -55,33 +60,40 @@ namespace UnityEngine.Experimental.UIElements
             set { m_UV = value; }
         }
 
-        public StyleValue<ScaleMode> scaleMode
+        public ScaleMode scaleMode
         {
-            get { return new StyleValue<ScaleMode>((ScaleMode)m_ScaleMode.value, m_ScaleMode.specificity); }
+            get { return (ScaleMode)m_ScaleMode; }
             set
             {
-                if (StyleValueUtils.ApplyAndCompare(ref m_ScaleMode,
-                    new StyleValue<int>((int)value.value, value.specificity)))
+                m_ScaleModeIsInline = true;
+                if ((ScaleMode)m_ScaleMode != value)
                 {
+                    m_ScaleMode = (int)value;
                     IncrementVersion(VersionChangeType.Layout);
                 }
             }
         }
 
+        public static readonly string ussClassName = "unity-image";
+
         public Image()
         {
+            AddToClassList(ussClassName);
+
             this.scaleMode = ScaleMode.ScaleAndCrop;
             m_UV = new Rect(0, 0, 1, 1);
 
             requireMeasureFunction = true;
+
+            RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
         }
 
-        protected internal override Vector2 DoMeasure(float width, MeasureMode widthMode, float height, MeasureMode heightMode)
+        protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight, MeasureMode heightMode)
         {
             float measuredWidth = float.NaN;
             float measuredHeight = float.NaN;
 
-            Texture current = image.GetSpecifiedValueOrDefault(null);
+            Texture current = image;
             if (current == null)
                 return new Vector2(measuredWidth, measuredHeight);
 
@@ -93,20 +105,20 @@ namespace UnityEngine.Experimental.UIElements
 
             if (widthMode == MeasureMode.AtMost)
             {
-                measuredWidth = Mathf.Min(measuredWidth, width);
+                measuredWidth = Mathf.Min(measuredWidth, desiredWidth);
             }
 
             if (heightMode == MeasureMode.AtMost)
             {
-                measuredHeight = Mathf.Min(measuredHeight, height);
+                measuredHeight = Mathf.Min(measuredHeight, desiredHeight);
             }
 
             return new Vector2(measuredWidth, measuredHeight);
         }
 
-        protected override void DoRepaint(IStylePainter painter)
+        internal override void DoRepaint(IStylePainter painter)
         {
-            Texture current = image.GetSpecifiedValueOrDefault(null);
+            Texture current = image;
             if (current == null)
             {
                 return;
@@ -124,22 +136,26 @@ namespace UnityEngine.Experimental.UIElements
             stylePainter.DrawTexture(painterParams);
         }
 
-        protected override void OnStyleResolved(ICustomStyle elementStyle)
+        static CustomStyleProperty<Texture2D> s_ImageProperty = new CustomStyleProperty<Texture2D>("--unity-image");
+        static CustomStyleProperty<int> s_ScaleModeProperty = new CustomStyleProperty<int>("--unity-image-size");
+        private void OnCustomStyleResolved(CustomStyleResolvedEvent e)
         {
-            base.OnStyleResolved(elementStyle);
-
             // We should consider not exposing image as a style at all, since it's intimately tied to uv/sourceRect
-            StyleValue<Texture2D> targetAsDefinition = new StyleValue<Texture2D>(m_Image.value as Texture2D, m_Image.specificity);
-            elementStyle.ApplyCustomProperty("image", ref targetAsDefinition);
-            m_Image = new StyleValue<Texture>(targetAsDefinition.value, targetAsDefinition.specificity);
+            Texture2D textureValue = null;
+            int scaleModeValue = 0;
 
-            elementStyle.ApplyCustomProperty("image-size", ref m_ScaleMode);
+            ICustomStyle customStyle = e.customStyle;
+            if (!m_ImageIsInline && customStyle.TryGetValue(s_ImageProperty, out textureValue))
+                image = textureValue;
+
+            if (!m_ScaleModeIsInline && customStyle.TryGetValue(s_ScaleModeProperty, out scaleModeValue))
+                scaleMode = (ScaleMode)scaleModeValue;
         }
 
         private void CalculateUV(Rect srcRect)
         {
             m_UV = new Rect(0, 0, 1, 1);
-            Texture texture = image.GetSpecifiedValueOrDefault(null);
+            Texture texture = image;
             if (texture != null)
             {
                 // Convert texture coordinates to UV
@@ -156,7 +172,7 @@ namespace UnityEngine.Experimental.UIElements
         private Rect GetSourceRect()
         {
             Rect rect = Rect.zero;
-            Texture texture = image.GetSpecifiedValueOrDefault(null);
+            Texture texture = image;
             if (texture != null)
             {
                 // Convert UV to texture coordinates

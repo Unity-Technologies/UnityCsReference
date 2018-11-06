@@ -4,17 +4,14 @@
 
 using System;
 using System.Linq;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine;
+using UnityEngine.UIElements;
+using UnityEditor.Experimental;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     public class PropertyField : VisualElement, IBindable
     {
-        private static readonly string s_PropertyFieldClassName = "unity-property-field";
-        private static readonly string s_WrapperClassName = "unity-property-field-wrapper";
-        private static readonly string s_LabelClassName = "unity-property-field-label";
-        private static readonly string s_InputClassName = "unity-property-field-input";
-
         public new class UxmlFactory : UxmlFactory<PropertyField, UxmlTraits> {}
 
         public new class UxmlTraits : VisualElement.UxmlTraits
@@ -52,13 +49,15 @@ namespace UnityEditor.Experimental.UIElements
         private SerializedProperty m_SerializedProperty;
         private PropertyField m_ParentPropertyField;
 
+        public static readonly string ussClassName = "unity-property-field";
+
         public PropertyField() : this(null, string.Empty) {}
 
         public PropertyField(SerializedProperty property) : this(property, string.Empty) {}
 
         public PropertyField(SerializedProperty property, string label)
         {
-            AddToClassList(s_WrapperClassName);
+            AddToClassList(ussClassName);
             this.label = label;
 
             if (property == null)
@@ -108,13 +107,13 @@ namespace UnityEditor.Experimental.UIElements
                         EditorGUI.EndChangeCheck();
                     });
                 }
-                shadow.Add(customPropertyGUI);
+                hierarchy.Add(customPropertyGUI);
             }
             else
             {
                 var field = CreateFieldFromProperty(bindProperty);
                 if (field != null)
-                    shadow.Add(field);
+                    hierarchy.Add(field);
             }
         }
 
@@ -166,7 +165,7 @@ namespace UnityEditor.Experimental.UIElements
             var foldout = new Foldout() { text = property.localizedDisplayName };
             foldout.value = property.isExpanded;
             foldout.bindingPath = property.propertyPath;
-            foldout.name = "Foldout:" + property.propertyPath;
+            foldout.name = "unity-foldout-" + property.propertyPath;
 
             var endProperty = property.GetEndProperty();
             property.NextVisible(true); // Expand the first child.
@@ -177,7 +176,7 @@ namespace UnityEditor.Experimental.UIElements
 
                 var field = new PropertyField(property);
                 field.m_ParentPropertyField = this;
-                field.name = "PropertyField:" + property.propertyPath;
+                field.name = "unity-property-field-" + property.propertyPath;
                 if (field == null)
                     continue;
 
@@ -188,23 +187,13 @@ namespace UnityEditor.Experimental.UIElements
             return foldout;
         }
 
-        private VisualElement CreateLabeledField<T>(T input, SerializedProperty property) where T : VisualElement, IBindable
+        private VisualElement ConfigureField<TField, TValue>(TField field, SerializedProperty property)
+            where TField : BaseField<TValue>
         {
-            var field = new VisualElement();
-            field.AddToClassList(s_PropertyFieldClassName);
-
-            var label = new Label();
-            label.AddToClassList(s_LabelClassName);
-            label.text = string.IsNullOrEmpty(this.label)
-                ? property.localizedDisplayName
-                : this.label;
-            field.Add(label);
-
-            input.AddToClassList(s_InputClassName);
-            input.bindingPath = property.propertyPath;
-            input.name = "Input:" + property.propertyPath;
-            field.Add(input);
-
+            var fieldLabel = string.IsNullOrEmpty(label) ? property.localizedDisplayName : label;
+            field.bindingPath = property.propertyPath;
+            field.name = "unity-input-" + property.propertyPath;
+            field.label = fieldLabel;
             return field;
         }
 
@@ -218,15 +207,20 @@ namespace UnityEditor.Experimental.UIElements
             switch (propertyType)
             {
                 case SerializedPropertyType.Integer:
-                    return CreateLabeledField(new IntegerField(), property);
+                    return ConfigureField<IntegerField, int>(new IntegerField(), property);
+
                 case SerializedPropertyType.Boolean:
-                    return CreateLabeledField(new Toggle(), property);
+                    return ConfigureField<Toggle, bool>(new Toggle(), property);
+
                 case SerializedPropertyType.Float:
-                    return CreateLabeledField(new FloatField(), property);
+                    return ConfigureField<FloatField, float>(new FloatField(), property);
+
                 case SerializedPropertyType.String:
-                    return CreateLabeledField(new TextField(), property);
+                    return ConfigureField<TextField, string>(new TextField(), property);
+
                 case SerializedPropertyType.Color:
-                    return CreateLabeledField(new ColorField(), property);
+                    return ConfigureField<ColorField, Color>(new ColorField(), property);
+
                 case SerializedPropertyType.ObjectReference:
                 {
                     var field = new ObjectField();
@@ -242,58 +236,73 @@ namespace UnityEditor.Experimental.UIElements
                         requiredType = typeof(UnityEngine.Object);
 
                     field.objectType = requiredType;
-                    return CreateLabeledField(field, property);
+                    return ConfigureField<ObjectField, UnityEngine.Object>(field, property);
                 }
                 case SerializedPropertyType.LayerMask:
-                    return CreateLabeledField(new LayerMaskField(), property);
+                    return ConfigureField<LayerMaskField, int>(new LayerMaskField(), property);
+
                 case SerializedPropertyType.Enum:
                 {
                     var field = new PopupField<string>(property.enumDisplayNames.ToList(), property.enumValueIndex);
                     field.index = property.enumValueIndex;
-                    return CreateLabeledField(field, property);
+                    return ConfigureField<PopupField<string>, string>(field, property);
                 }
                 case SerializedPropertyType.Vector2:
-                    return CreateLabeledField(new Vector2Field(), property);
+                    return ConfigureField<Vector2Field, Vector2>(new Vector2Field(), property);
+
                 case SerializedPropertyType.Vector3:
-                    return CreateLabeledField(new Vector3Field(), property);
+                    return ConfigureField<Vector3Field, Vector3>(new Vector3Field(), property);
+
                 case SerializedPropertyType.Vector4:
-                    return CreateLabeledField(new Vector4Field(), property);
+                    return ConfigureField<Vector4Field, Vector4>(new Vector4Field(), property);
+
                 case SerializedPropertyType.Rect:
-                    return CreateLabeledField(new RectField(), property);
+                    return ConfigureField<RectField, Rect>(new RectField(), property);
+
                 case SerializedPropertyType.ArraySize:
                 {
                     var field = new IntegerField();
                     field.SetValueWithoutNotify(property.intValue); // This avoids the OnValueChanged/Rebind feedback loop.
                     field.isDelayed = true; // To match IMGUI. Also, focus is lost anyway due to the rebind.
-                    field.OnValueChanged((e) => { UpdateArrayFoldout(e, this, m_ParentPropertyField); });
-                    return CreateLabeledField(field, property);
+                    field.RegisterValueChangedCallback((e) => { UpdateArrayFoldout(e, this, m_ParentPropertyField); });
+                    return ConfigureField<IntegerField, int>(field, property);
                 }
+
                 case SerializedPropertyType.Character:
                 {
                     var field = new TextField();
                     field.maxLength = 1;
-                    return CreateLabeledField(field, property);
+                    return ConfigureField<TextField, string>(field, property);
                 }
+
                 case SerializedPropertyType.AnimationCurve:
-                    return CreateLabeledField(new CurveField(), property);
+                    return ConfigureField<CurveField, AnimationCurve>(new CurveField(), property);
+
                 case SerializedPropertyType.Bounds:
-                    return CreateLabeledField(new BoundsField(), property);
+                    return ConfigureField<BoundsField, Bounds>(new BoundsField(), property);
+
                 case SerializedPropertyType.Gradient:
-                    return CreateLabeledField(new GradientField(), property);
+                    return ConfigureField<GradientField, Gradient>(new GradientField(), property);
+
                 case SerializedPropertyType.Quaternion:
                     return null;
                 case SerializedPropertyType.ExposedReference:
                     return null;
                 case SerializedPropertyType.FixedBufferSize:
                     return null;
+
                 case SerializedPropertyType.Vector2Int:
-                    return CreateLabeledField(new Vector2IntField(), property);
+                    return ConfigureField<Vector2IntField, Vector2Int>(new Vector2IntField(), property);
+
                 case SerializedPropertyType.Vector3Int:
-                    return CreateLabeledField(new Vector3IntField(), property);
+                    return ConfigureField<Vector3IntField, Vector3Int>(new Vector3IntField(), property);
+
                 case SerializedPropertyType.RectInt:
-                    return CreateLabeledField(new RectIntField(), property);
+                    return ConfigureField<RectIntField, RectInt>(new RectIntField(), property);
+
                 case SerializedPropertyType.BoundsInt:
-                    return CreateLabeledField(new BoundsIntField(), property);
+                    return ConfigureField<BoundsIntField, BoundsInt>(new BoundsIntField(), property);
+
                 case SerializedPropertyType.Generic:
                 default:
                     return null;

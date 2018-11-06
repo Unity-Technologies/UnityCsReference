@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public class InputEvent : EventBase<InputEvent>
     {
@@ -12,7 +12,12 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.Bubbles | EventFlags.TricklesDown;
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown;
             previousData = default(string);
             newData = default(string);
         }
@@ -27,7 +32,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public InputEvent()
         {
-            Init();
+            LocalInit();
         }
     }
 }

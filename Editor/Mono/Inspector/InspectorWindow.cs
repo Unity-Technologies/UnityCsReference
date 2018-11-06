@@ -13,7 +13,7 @@ using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEditorInternal.VersionControl;
-using UnityEngine.Experimental.UIElements.StyleSheets;
+using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.Scripting;
 
 // includes specific to UIElements/IMGui

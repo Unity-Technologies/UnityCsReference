@@ -6,26 +6,21 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 using UnityEngine.Profiling;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     public class MaskField : BasePopupField<int, string>
     {
         public new class UxmlFactory : UxmlFactory<MaskField, UxmlTraits> {}
 
-        public new class UxmlTraits : BasePopupField<int, string>.UxmlTraits
+        public new class UxmlTraits : BasePopupField<int, UxmlIntAttributeDescription>.UxmlTraits
         {
             UxmlStringAttributeDescription m_MaskChoices = new UxmlStringAttributeDescription { name = "choices" };
             UxmlIntAttributeDescription m_MaskValue = new UxmlIntAttributeDescription { name = "value" };
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            internal static List<string> ParseChoiceList(string choicesFromBag)
             {
-                base.Init(ve, bag, cc);
-
-                var f = (MaskField)ve;
-                string choicesFromBag = m_MaskChoices.GetValueFromBag(bag, cc);
                 // Here the choices is comma separated in the string...
                 string[] choices = choicesFromBag.Split(',');
 
@@ -36,16 +31,34 @@ namespace UnityEditor.Experimental.UIElements
                     {
                         listOfChoices.Add(choice.Trim());
                     }
+                    return listOfChoices;
+                }
+                return null;
+            }
+
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                var f = (MaskField)ve;
+
+                string choicesFromBag = m_MaskChoices.GetValueFromBag(bag, cc);
+
+
+                var listOfChoices = ParseChoiceList(choicesFromBag);
+
+                if (listOfChoices != null && listOfChoices.Count > 0)
+                {
                     f.choices = listOfChoices;
                 }
                 // The mask is simply an int
                 f.SetValueWithoutNotify(m_MaskValue.GetValueFromBag(bag, cc));
+
+                base.Init(ve, bag, cc);
             }
         }
 
-        static int s_NothingIndex = 0;
-        static int s_EverythingIndex = 1;
-        static int s_TotalIndex = 2;
+        static readonly int s_NothingIndex = 0;
+        static readonly int s_EverythingIndex = 1;
+        static readonly int s_TotalIndex = 2;
 
         // This is the list of string representing all the user choices
         List<string> m_UserChoices;
@@ -70,7 +83,7 @@ namespace UnityEditor.Experimental.UIElements
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("choices", "choices can't be null");
+                    throw new ArgumentNullException(nameof(value));
                 }
 
                 // Keep the original list in a separate user list ...
@@ -100,7 +113,7 @@ namespace UnityEditor.Experimental.UIElements
                 ComputeFullChoiceMask();
 
                 // Make sure to update the text displayed
-                SetValueWithoutNotify(m_Value);
+                SetValueWithoutNotify(rawValue);
             }
         }
         internal virtual List<int> choicesMasks
@@ -126,7 +139,7 @@ namespace UnityEditor.Experimental.UIElements
                     m_UserChoicesMasks.AddRange(value);
                     ComputeFullChoiceMask();
                     // Make sure to update the text displayed
-                    SetValueWithoutNotify(m_Value);
+                    SetValueWithoutNotify(rawValue);
                 }
             }
         }
@@ -137,7 +150,7 @@ namespace UnityEditor.Experimental.UIElements
             set
             {
                 m_FormatSelectedValueCallback = value;
-                m_TextElement.text = GetValueToDisplay();
+                textElement.text = GetValueToDisplay();
             }
         }
 
@@ -163,7 +176,7 @@ namespace UnityEditor.Experimental.UIElements
 
         internal override string GetValueToDisplay()
         {
-            string displayedValue = GetDisplayedValue(m_Value);
+            string displayedValue = GetDisplayedValue(rawValue);
             if (ShouldFormatSelectedValue())
                 displayedValue = m_FormatSelectedValueCallback(displayedValue);
             return displayedValue;
@@ -183,7 +196,7 @@ namespace UnityEditor.Experimental.UIElements
 
         internal bool ShouldFormatSelectedValue()
         {
-            return m_Value != 0 && m_Value != -1 && m_FormatSelectedValueCallback != null && IsPowerOf2(m_Value);
+            return rawValue != 0 && rawValue != -1 && m_FormatSelectedValueCallback != null && IsPowerOf2(rawValue);
         }
 
         internal string GetDisplayedValue(int itemIndex)
@@ -243,6 +256,11 @@ namespace UnityEditor.Experimental.UIElements
 
         internal override void AddMenuItems(GenericMenu menu)
         {
+            if (menu == null)
+            {
+                throw new ArgumentNullException(nameof(menu));
+            }
+
             foreach (var item in m_Choices)
             {
                 var maskOfItem = GetMaskValueOfItem(item);
@@ -313,21 +331,33 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
-        private MaskField(List<string> choices, Func<string, string> formatSelectedValueCallback = null, Func<string, string> formatListItemCallback = null)
+        public new static readonly string ussClassName = "unity-mask-field";
+
+        public MaskField(List<string> choices, int defaultMask, Func<string, string> formatSelectedValueCallback = null, Func<string, string> formatListItemCallback = null)
+            : this(null, choices, defaultMask, formatSelectedValueCallback, formatListItemCallback)
+        {
+        }
+
+        public MaskField(string label, List<string> choices, int defaultMask, Func<string, string> formatSelectedValueCallback = null, Func<string, string> formatListItemCallback = null)
+            : this(label)
         {
             this.choices = choices;
             m_FormatListItemCallback = formatListItemCallback;
             m_FormatSelectedValueCallback = formatSelectedValueCallback;
-        }
 
-        public MaskField(List<string> choices, int defaultMask, Func<string, string> formatSelectedValueCallback = null, Func<string, string> formatListItemCallback = null) :
-            this(choices, formatSelectedValueCallback, formatListItemCallback)
-        {
             SetValueWithoutNotify(defaultMask);
+
+            this.formatListItemCallback = formatListItemCallback;
+            this.formatSelectedValueCallback = formatSelectedValueCallback;
         }
 
         public MaskField()
+            : this(null) {}
+
+        public MaskField(string label)
+            : base(label)
         {
+            AddToClassList(ussClassName);
         }
 
         // Returns the mask to be used for the item...

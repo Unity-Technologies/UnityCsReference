@@ -2,14 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Assertions;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     public class BlackboardField : GraphElement
     {
@@ -47,7 +44,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public BlackboardField(Texture icon, string text, string typeText)
         {
             var tpl = EditorGUIUtility.Load("UXML/GraphView/BlackboardField.uxml") as VisualTreeAsset;
-            VisualElement mainContainer = tpl.CloneTree(null);
+            VisualElement mainContainer = tpl.CloneTree();
             AddStyleSheetPath(Blackboard.StyleSheetPath);
             mainContainer.AddToClassList("mainContainer");
             mainContainer.pickingMode = PickingMode.Ignore;
@@ -65,8 +62,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             Assert.IsTrue(m_TextField != null);
 
             m_TextField.visible = false;
-            m_TextField.RegisterCallback<FocusOutEvent>(e => { OnEditTextFinished(); });
-            m_TextField.RegisterCallback<KeyDownEvent>(OnTextFieldKeyPressed);
+            m_TextField.Q("unity-text-input").RegisterCallback<FocusOutEvent>(e => { OnEditTextFinished(); });
+            m_TextField.Q("unity-text-input").RegisterCallback<KeyDownEvent>(OnTextFieldKeyPressed);
 
             Add(mainContainer);
 
@@ -91,11 +88,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 case KeyCode.Escape:
                     m_EditTitleCancelled = true;
-                    m_TextField.Blur();
+                    m_TextField.Q("unity-text-input").Blur();
                     break;
                 case KeyCode.Return:
                 case KeyCode.KeypadEnter:
-                    m_TextField.Blur();
+                    m_TextField.Q("unity-text-input").Blur();
                     break;
                 default:
                     break;
@@ -144,7 +141,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         void BuildContextualMenu(ContextualMenuPopulateEvent evt)
         {
-            evt.menu.AppendAction("Rename", (a) => OpenTextEditor(), DropdownMenu.MenuAction.AlwaysEnabled);
+            evt.menu.AppendAction("Rename", (a) => OpenTextEditor(), DropdownMenuAction.AlwaysEnabled);
         }
     }
 }

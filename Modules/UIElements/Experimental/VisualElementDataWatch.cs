@@ -4,6 +4,8 @@
 
 using System;
 
+using IDataWatchHandle = UnityEngine.UIElements.IDataWatchHandle;
+
 namespace UnityEngine.Experimental.UIElements
 {
     public interface IUIElementDataWatchRequest : IDisposable {}

@@ -2,12 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     public class EdgeManipulator : MouseManipulator
     {

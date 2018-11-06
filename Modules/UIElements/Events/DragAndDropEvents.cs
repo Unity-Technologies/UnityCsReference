@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public interface IDragAndDropEvent
     {
@@ -17,12 +17,17 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.TricklesDown | EventFlags.Bubbles;
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
+            propagation = EventPropagation.TricklesDown | EventPropagation.Bubbles;
         }
 
         public DragExitedEvent()
         {
-            Init();
+            LocalInit();
         }
     }
 
@@ -31,12 +36,17 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.TricklesDown;
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
+            propagation = EventPropagation.TricklesDown;
         }
 
         public DragEnterEvent()
         {
-            Init();
+            LocalInit();
         }
     }
 
@@ -45,12 +55,17 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.TricklesDown;
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
+            propagation = EventPropagation.TricklesDown;
         }
 
         public DragLeaveEvent()
         {
-            Init();
+            LocalInit();
         }
     }
 

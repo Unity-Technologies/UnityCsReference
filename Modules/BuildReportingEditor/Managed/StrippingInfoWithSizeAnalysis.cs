@@ -10,6 +10,7 @@ using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEditor.Build.Reporting;
+using System.Globalization;
 
 namespace UnityEditor.Build.Reporting
 {
@@ -47,7 +48,7 @@ namespace UnityEditor.Build.Reporting
             {
                 if (f.Value < 10000)
                     break;
-                System.Console.WriteLine(f.Value.ToString("D6") + " " + (f.Value * 100.0 / totalLines).ToString("F2") + "% " + f.Key);
+                System.Console.WriteLine(f.Value.ToString("D6") + " " + (f.Value * 100.0 / totalLines).ToString("F2", CultureInfo.InvariantCulture.NumberFormat) + "% " + f.Key);
             }
         }
 

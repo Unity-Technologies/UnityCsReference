@@ -4,9 +4,9 @@
 
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     internal struct InsertInfo
     {

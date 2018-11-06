@@ -11,6 +11,7 @@ using UnityEditor.Modules;
 using UnityEditor.Compilation;
 using UnityEditor.Scripting.Compilers;
 using UnityEditorInternal;
+using UnityEngine;
 using CompilerMessage = UnityEditor.Scripting.Compilers.CompilerMessage;
 using CompilerMessageType = UnityEditor.Scripting.Compilers.CompilerMessageType;
 using Directory = System.IO.Directory;
@@ -48,14 +49,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             public string assemblyFilename;
             public CompilerMessage[] messages;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct PackageAssembly
-        {
-            public string DirectoryPath;
-            public string Name;
-            public bool IncludeTestAssemblies;
         }
 
         public struct CustomScriptAssemblyAndReference
@@ -178,7 +171,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         static readonly string EditorTempPath = "Temp";
 
         public Action<CompilationSetupErrorFlags> setupErrorFlagsChanged;
-        private PackageAssembly[] m_PackageAssemblies;
+        private AssetPathMetaData[] m_AssetPathsMetaData;
 
         public event Action<object> compilationStarted;
         public event Action<object> compilationFinished;
@@ -197,6 +190,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
         internal void SetProjectDirectory(string projectDirectory)
         {
             this.projectDirectory = projectDirectory;
+        }
+
+        internal void SetAssetPathsMetaData(AssetPathMetaData[] assetPathMetaDatas)
+        {
+            this.m_AssetPathsMetaData = assetPathMetaDatas;
+        }
+
+        internal AssetPathMetaData[] GetAssetPathsMetaData()
+        {
+            return m_AssetPathsMetaData;
         }
 
         public void SetAllScripts(string[] allScripts)
@@ -526,7 +529,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         public static Exception[] UpdateCustomScriptAssemblies(CustomScriptAssembly[] customScriptAssemblies,
-            PackageAssembly[] packageAssemblies)
+            AssetPathMetaData[] assetPathsMetaData)
         {
             var exceptions = new List<Exception>();
 
@@ -534,16 +537,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 try
                 {
-                    if (packageAssemblies != null && !assembly.PackageAssembly.HasValue)
+                    if (assetPathsMetaData != null && assembly.AssetPathMetaData == null)
                     {
                         var pathPrefix = assembly.PathPrefix.ToLowerInvariant();
 
-                        foreach (var packageAssembly in packageAssemblies)
+                        foreach (var assetPathMetaData in assetPathsMetaData)
                         {
-                            var lower = AssetPath.ReplaceSeparators(packageAssembly.DirectoryPath + AssetPath.Separator).ToLowerInvariant();
+                            var lower = AssetPath.ReplaceSeparators(assetPathMetaData.DirectoryPath + AssetPath.Separator).ToLowerInvariant();
                             if (pathPrefix.StartsWith(lower, StringComparison.Ordinal))
                             {
-                                assembly.PackageAssembly = packageAssembly;
+                                assembly.AssetPathMetaData = assetPathMetaData;
                                 break;
                             }
                         }
@@ -560,7 +563,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         Exception[] UpdateCustomTargetAssemblies()
         {
-            var exceptions = UpdateCustomScriptAssemblies(customScriptAssemblies, m_PackageAssemblies);
+            var exceptions = UpdateCustomScriptAssemblies(customScriptAssemblies, m_AssetPathsMetaData);
 
             if (exceptions.Length > 0)
             {
@@ -684,21 +687,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public bool IsPathInPackageDirectory(string path)
         {
-            if (m_PackageAssemblies == null)
+            if (m_AssetPathsMetaData == null)
                 return false;
-            return m_PackageAssemblies.Any(p => path.StartsWith(p.DirectoryPath, StringComparison.OrdinalIgnoreCase));
-        }
-
-        public void SetAllPackageAssemblies(PackageAssembly[] packageAssemblies)
-        {
-            m_PackageAssemblies = packageAssemblies;
-        }
-
-        private static CustomScriptAssembly CreatePackageCustomScriptAssembly(PackageAssembly packageAssembly)
-        {
-            var customScriptAssembly = CustomScriptAssembly.Create(packageAssembly.Name, AssetPath.ReplaceSeparators(packageAssembly.DirectoryPath));
-            customScriptAssembly.PackageAssembly = packageAssembly;
-            return customScriptAssembly;
+            return m_AssetPathsMetaData.Any(p => path.StartsWith(p.DirectoryPath, StringComparison.OrdinalIgnoreCase));
         }
 
         // Delete all .dll's that aren't used anymore

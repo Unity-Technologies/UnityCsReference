@@ -25,15 +25,24 @@ namespace UnityEditor
 
         public Texture2D m_Mask;
         public AnimationCurve m_Falloff;
+
         [Range(1.0f, kMaxRadiusScale)]
         public float m_RadiusScale = kMaxRadiusScale;
+
+        [Range(0.0f, 1.0f)]
+        public float m_BlackWhiteRemapMin = 0.0f;
+
+        [Range(0.0f, 1.0f)]
+        public float m_BlackWhiteRemapMax = 1.0f;
+
+        public bool m_InvertRemapRange = false;
 
         Texture2D m_Texture = null;
         Texture2D m_Thumbnail = null;
 
         bool m_UpdateTexture = true;
         bool m_UpdateThumbnail = true;
-        internal bool readOnly { get; private set; } = false;
+        internal bool readOnly { get; set; } = false;
 
         static Texture2D s_WhiteTexture = null;
         static Material s_CreateBrushMaterial = null;
@@ -44,6 +53,9 @@ namespace UnityEditor
             b.m_Mask = t;
             b.m_Falloff = f;
             b.m_RadiusScale = radiusScale;
+            b.m_BlackWhiteRemapMin = 0.0f;
+            b.m_BlackWhiteRemapMax = 1.0f;
+            b.m_InvertRemapRange = false;
             b.readOnly = isReadOnly;
             return b;
         }
@@ -55,7 +67,7 @@ namespace UnityEditor
                 if (m_Mask == null)
                     m_Mask = DefaultMask();
 
-                m_Texture = GenerateBrushTexture(m_Mask, m_Falloff, m_RadiusScale, m_Mask.width, m_Mask.height);
+                m_Texture = GenerateBrushTexture(m_Mask, m_Falloff, m_RadiusScale, m_BlackWhiteRemapMin, m_BlackWhiteRemapMax, m_InvertRemapRange, m_Mask.width, m_Mask.height);
                 m_UpdateTexture = false;
             }
         }
@@ -67,7 +79,7 @@ namespace UnityEditor
                 if (m_Mask == null)
                     m_Mask = DefaultMask();
 
-                m_Thumbnail = GenerateBrushTexture(m_Mask, m_Falloff, m_RadiusScale, 64, 64, true);
+                m_Thumbnail = GenerateBrushTexture(m_Mask, m_Falloff, m_RadiusScale, m_BlackWhiteRemapMin, m_BlackWhiteRemapMax, m_InvertRemapRange, 64, 64, true);
                 m_UpdateThumbnail = false;
             }
         }
@@ -96,7 +108,7 @@ namespace UnityEditor
             return s_WhiteTexture;
         }
 
-        internal static Texture2D GenerateBrushTexture(Texture2D mask, AnimationCurve falloff, float radiusScale, int width, int height, bool isThumbnail = false)
+        internal static Texture2D GenerateBrushTexture(Texture2D mask, AnimationCurve falloff, float radiusScale, float blackWhiteRemapMin, float blackWhiteRemapMax, bool invertRemapRange, int width, int height, bool isThumbnail = false)
         {
             if (s_CreateBrushMaterial == null)
                 s_CreateBrushMaterial = new Material(EditorGUIUtility.LoadRequired("Brushes/CreateBrush.shader") as Shader);
@@ -120,7 +132,10 @@ namespace UnityEditor
             TextureFormat outputTexFormat = isThumbnail ? TextureFormat.ARGB32 : Terrain.heightmapTextureFormat;
 
             // build brush texture
-            Vector4 brushParams = new Vector4(radiusScale * 0.5f, mask.format != TextureFormat.Alpha8 ? 1.0f : 0.0f, 0.0f, 0.0f);
+            float blackRemap = invertRemapRange ? blackWhiteRemapMax : blackWhiteRemapMin;
+            float whiteRemap = invertRemapRange ? blackWhiteRemapMin : blackWhiteRemapMax;
+
+            Vector4 brushParams = new Vector4(radiusScale * 0.5f, mask.format != TextureFormat.Alpha8 ? 1.0f : 0.0f, blackRemap, whiteRemap);
             RenderTexture tempRT = RenderTexture.GetTemporary(width, height, 0, outputRenderFormat);
             s_CreateBrushMaterial.SetTexture("_BrushFalloff", falloffTex);
             s_CreateBrushMaterial.SetVector("_BrushParams", brushParams);

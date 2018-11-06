@@ -4,7 +4,7 @@
 
 using System;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public class Button : TextElement
     {
@@ -12,14 +12,18 @@ namespace UnityEngine.Experimental.UIElements
 
         public new class UxmlTraits : TextElement.UxmlTraits {}
 
-        public Clickable clickable;
+        public Clickable clickable { get; set; }
 
         public Button() : this(null)
         {
         }
 
+        public new static readonly string ussClassName = "unity-button";
+
         public Button(System.Action clickEvent)
         {
+            AddToClassList(ussClassName);
+
             // Click-once behaviour
             clickable = new Clickable(clickEvent);
             this.AddManipulator(clickable);

@@ -4,9 +4,9 @@
 
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     public class Pill : VisualElement
     {
@@ -161,7 +161,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             AddStyleSheetPath("StyleSheets/GraphView/Pill.uss");
 
             var tpl = EditorGUIUtility.Load("UXML/GraphView/Pill.uxml") as VisualTreeAsset;
-            VisualElement mainContainer = tpl.CloneTree(null);
+            VisualElement mainContainer = tpl.CloneTree();
 
             m_TitleLabel = mainContainer.Q<Label>("title-label");
             m_Icon = mainContainer.Q<Image>("icon");

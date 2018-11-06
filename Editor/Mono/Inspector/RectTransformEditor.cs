@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEditorInternal;
 using System.Linq;
 using UnityEditor.AnimatedValues;
+using System.Globalization;
 
 namespace UnityEditor
 {
@@ -1068,7 +1069,7 @@ namespace UnityEditor
                 }
             }
 
-            string str = gui.sizeDelta[axis].ToString();
+            string str = gui.sizeDelta[axis].ToString(CultureInfo.InvariantCulture.NumberFormat);
             GUIContent label = new GUIContent(str);
             Vector3 dir = (axis == 0 ? userSpace.up : userSpace.right) * size * 2;
             DrawLabelBetweenPoints(s_Corners[0] + dir, s_Corners[axis == 0 ? 3 : 1] + dir, label);
@@ -1120,7 +1121,7 @@ namespace UnityEditor
             posB = parentSpace.TransformPoint(posB);
 
             RectHandles.DrawDottedLineWithShadow(kShadowColor, kShadowOffset, posA, posB, kDottedLineSize);
-            GUIContent label = new GUIContent(value.ToString());
+            GUIContent label = new GUIContent(value.ToString(CultureInfo.InvariantCulture.NumberFormat));
             DrawLabelBetweenPoints(posA, posB, label);
         }
 

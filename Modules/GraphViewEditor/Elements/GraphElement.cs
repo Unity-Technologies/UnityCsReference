@@ -4,23 +4,24 @@
 
 using System;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
-using UnityEngine.Experimental.UIElements.StyleSheets;
+using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     public abstract class GraphElement : VisualElement, ISelectable
     {
         public Color elementTypeColor { get; set; }
 
-        StyleValue<int> m_Layer;
+        int m_Layer;
+        bool m_LayerIsInline;
         public int layer
         {
-            get { return m_Layer.value; }
+            get { return m_Layer; }
             set
             {
-                if (m_Layer.value == value)
+                m_LayerIsInline = true;
+                if (m_Layer == value)
                     return;
                 m_Layer = value;
             }
@@ -34,25 +35,32 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public void ResetLayer()
         {
-            int prevLayer = m_Layer.value;
-            m_Layer = StyleValue<int>.nil;
-            effectiveStyle.ApplyCustomProperty(k_LayerProperty, ref m_Layer);
+            int prevLayer = m_Layer;
+            m_Layer = 0;
+            m_LayerIsInline = false;
+            customStyle.TryGetValue(s_LayerProperty, out m_Layer);
             UpdateLayer(prevLayer);
         }
 
-        const string k_LayerProperty = "layer";
+        static CustomStyleProperty<int> s_LayerProperty = new CustomStyleProperty<int>("--layer");
 
-        protected override void OnStyleResolved(ICustomStyle style)
+        private void OnCustomStyleResolved(CustomStyleResolvedEvent e)
         {
-            base.OnStyleResolved(style);
-            int prevLayer = m_Layer.value;
-            style.ApplyCustomProperty(k_LayerProperty, ref m_Layer);
+            OnCustomStyleResolved(e.customStyle);
+        }
+
+        protected virtual void OnCustomStyleResolved(ICustomStyle style)
+        {
+            int prevLayer = m_Layer;
+            if (!m_LayerIsInline)
+                style.TryGetValue(s_LayerProperty, out m_Layer);
+
             UpdateLayer(prevLayer);
         }
 
         private void UpdateLayer(int prevLayer)
         {
-            if (prevLayer != m_Layer.value)
+            if (prevLayer != m_Layer)
             {
                 GraphView view = GetFirstAncestorOfType<GraphView>();
                 if (view != null)
@@ -119,7 +127,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             AddToClassList("graphElement");
             elementTypeColor = new Color(0.9f, 0.9f, 0.9f, 0.5f);
 
-            persistenceKey = Guid.NewGuid().ToString();
+            viewDataKey = Guid.NewGuid().ToString();
+
+            RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
         }
 
         static GraphElement()
@@ -185,7 +195,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public virtual void OnSelected()
         {
-            if (IsAscendable() && style.positionType != PositionType.Relative)
+            if (IsAscendable() && resolvedStyle.position != Position.Relative)
                 BringToFront();
         }
 

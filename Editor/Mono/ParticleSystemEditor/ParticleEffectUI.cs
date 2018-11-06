@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
@@ -579,7 +580,7 @@ namespace UnityEditor
                 EditorGUILayout.LabelField(s_Texts.subEmitterParticleCount, GUIContent.Temp(subEmitterParticles.ToString()));
 
             if (fastestParticle >= slowestParticle)
-                EditorGUILayout.LabelField(s_Texts.particleSpeeds, GUIContent.Temp(slowestParticle.ToString(s_Texts.speedFloatFieldFormatString) + " - " + fastestParticle.ToString(s_Texts.speedFloatFieldFormatString)));
+                EditorGUILayout.LabelField(s_Texts.particleSpeeds, GUIContent.Temp(slowestParticle.ToString(s_Texts.speedFloatFieldFormatString, CultureInfo.InvariantCulture.NumberFormat) + " - " + fastestParticle.ToString(s_Texts.speedFloatFieldFormatString, CultureInfo.InvariantCulture.NumberFormat)));
             else
                 EditorGUILayout.LabelField(s_Texts.particleSpeeds, GUIContent.Temp("0.0 - 0.0"));
 

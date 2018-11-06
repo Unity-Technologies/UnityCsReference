@@ -30,6 +30,14 @@ namespace UnityEditor
         private GUIContent m_DefaultTitleContent;
         private GUIContent m_RecordTitleContent;
 
+        internal AnimEditor animEditor
+        {
+            get
+            {
+                return m_AnimEditor;
+            }
+        }
+
         internal AnimationWindowState state
         {
             get
@@ -147,6 +155,18 @@ namespace UnityEditor
         {
             if (m_AnimEditor != null)
                 m_AnimEditor.OnLostFocus();
+        }
+
+        [Callbacks.OnOpenAsset]
+        static bool OnOpenAsset(int instanceID, int line)
+        {
+            var clip = EditorUtility.InstanceIDToObject(instanceID) as AnimationClip;
+            if (clip)
+            {
+                EditorWindow.GetWindow<AnimationWindow>();
+                return true;
+            }
+            return false;
         }
 
         public bool EditGameObject(GameObject gameObject)

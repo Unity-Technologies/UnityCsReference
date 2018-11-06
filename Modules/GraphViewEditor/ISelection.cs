@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     public interface ISelection
     {

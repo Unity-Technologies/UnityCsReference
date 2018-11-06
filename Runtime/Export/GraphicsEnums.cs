@@ -54,6 +54,8 @@ namespace UnityEngine
         Raw = 1,
         Append = 2,
         Counter = 4,
+        Constant = 8,
+        Structured = 16,
         [System.Obsolete("Enum member DrawIndirect has been deprecated. Use IndirectArguments instead (UnityUpgradable) -> IndirectArguments", false)]
         DrawIndirect = 256,
         IndirectArguments = 256,
@@ -259,6 +261,7 @@ namespace UnityEngine
 
     public enum NPOTSupport
     {
+        [Obsolete("NPOTSupport.None does not happen on any platforms")]
         None = 0,
         Restricted = 1,
         Full = 2
@@ -337,22 +340,6 @@ namespace UnityEngine
         ETC_RGB4Crunched = 64,
         ETC2_RGBA8Crunched = 65,
 
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Enum member TextureFormat.PVRTC_2BPP_RGB has been deprecated. Use PVRTC_RGB2 instead (UnityUpgradable) -> PVRTC_RGB2", true)]
-        PVRTC_2BPP_RGB = -127,
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Enum member TextureFormat.PVRTC_2BPP_RGBA has been deprecated. Use PVRTC_RGBA2 instead (UnityUpgradable) -> PVRTC_RGBA2", true)]
-        PVRTC_2BPP_RGBA = -127,
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Enum member TextureFormat.PVRTC_4BPP_RGB has been deprecated. Use PVRTC_RGB4 instead (UnityUpgradable) -> PVRTC_RGB4", true)]
-        PVRTC_4BPP_RGB = -127,
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Enum member TextureFormat.PVRTC_4BPP_RGBA has been deprecated. Use PVRTC_RGBA4 instead (UnityUpgradable) -> PVRTC_RGBA4", true)]
-        PVRTC_4BPP_RGBA = -127,
-
         // please note that obsolete attrs are currently disabled because we have tests that checks for "no warnings"
         // yet at the same time there are packages that reference old ASTC enums.
         // hence the only way is to go to trunk -> fix packages -> obsolete
@@ -393,6 +380,22 @@ namespace UnityEngine
         // [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         // [System.Obsolete("Enum member TextureFormat.ASTC_RGBA_12x12 has been deprecated. Use ASTC_12x12 instead (UnityUpgradable) -> ASTC_12x12")]
         ASTC_RGBA_12x12 = 59,
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Obsolete("Enum member TextureFormat.PVRTC_2BPP_RGB has been deprecated. Use PVRTC_RGB2 instead (UnityUpgradable) -> PVRTC_RGB2", true)]
+        PVRTC_2BPP_RGB = -127,
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Obsolete("Enum member TextureFormat.PVRTC_2BPP_RGBA has been deprecated. Use PVRTC_RGBA2 instead (UnityUpgradable) -> PVRTC_RGBA2", true)]
+        PVRTC_2BPP_RGBA = -127,
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Obsolete("Enum member TextureFormat.PVRTC_4BPP_RGB has been deprecated. Use PVRTC_RGB4 instead (UnityUpgradable) -> PVRTC_RGB4", true)]
+        PVRTC_4BPP_RGB = -127,
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Obsolete("Enum member TextureFormat.PVRTC_4BPP_RGBA has been deprecated. Use PVRTC_RGBA4 instead (UnityUpgradable) -> PVRTC_RGBA4", true)]
+        PVRTC_4BPP_RGBA = -127,
     }
 
     public enum CubemapFace

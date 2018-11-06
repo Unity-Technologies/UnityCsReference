@@ -3,9 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     public class MiniMap : GraphElement
     {
@@ -26,7 +26,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         Rect m_ContentRect;         // Rect that represents the rect needed to encompass all Graph Elements
         Rect m_ContentRectLocal;    // Rect that represents the rect needed to encompass all Graph Elements in local coords
 
-        int titleBarOffset { get { return (int)style.paddingTop; } }
+        int titleBarOffset { get { return (int)resolvedStyle.paddingTop; } }
 
         private bool m_Anchored;
         public bool anchored
@@ -88,14 +88,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        void ToggleAnchorState(DropdownMenu.MenuAction a)
+        void ToggleAnchorState(DropdownMenuAction a)
         {
             anchored = !anchored;
         }
 
         public virtual void BuildContextualMenu(ContextualMenuPopulateEvent evt)
         {
-            evt.menu.AppendAction(anchored ? "Make floating" : "Anchor", ToggleAnchorState, DropdownMenu.MenuAction.AlwaysEnabled);
+            evt.menu.AppendAction(anchored ? "Make floating" : "Anchor", ToggleAnchorState, DropdownMenuAction.AlwaysEnabled);
         }
 
         public void OnResized()
@@ -112,23 +112,23 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             style.height = maxHeight;
 
             // Relocate if partially visible on bottom or right side (left/top not checked, only bottom/right affected by a size change)
-            if (style.positionLeft + style.width > parent.layout.x + parent.layout.width)
+            if (resolvedStyle.left + resolvedStyle.width > parent.layout.x + parent.layout.width)
             {
                 var newPosition = layout;
-                newPosition.x -= style.positionLeft + style.width - (parent.layout.x + parent.layout.width);
+                newPosition.x -= resolvedStyle.left + resolvedStyle.width - (parent.layout.x + parent.layout.width);
                 layout = newPosition;
             }
 
-            if (style.positionTop + style.height > parent.layout.y + parent.layout.height)
+            if (resolvedStyle.top + resolvedStyle.height > parent.layout.y + parent.layout.height)
             {
                 var newPosition = layout;
-                newPosition.y -= style.positionTop + style.height - (parent.layout.y + parent.layout.height);
+                newPosition.y -= resolvedStyle.top + resolvedStyle.height - (parent.layout.y + parent.layout.height);
                 layout = newPosition;
             }
 
             var newMiniMapPos = layout;
-            newMiniMapPos.width = style.width;
-            newMiniMapPos.height = style.height;
+            newMiniMapPos.width = resolvedStyle.width;
+            newMiniMapPos.height = resolvedStyle.height;
             newMiniMapPos.x = Mathf.Max(parent.layout.x, newMiniMapPos.x);
             newMiniMapPos.y = Mathf.Max(parent.layout.y, newMiniMapPos.y);
             layout = newMiniMapPos;
@@ -169,7 +169,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             // Update label with new value
             var containerZoomFactor = container.worldTransform.m00;
-            m_Label.text = "MiniMap  " + string.Format("{0:F2}", containerZoomFactor) + "x";
+            m_Label.text = "MiniMap  " + UnityString.Format("{0:F2}", containerZoomFactor) + "x";
 
             // Adjust rects for MiniMap
 
@@ -263,7 +263,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         }
 
         private static Vector3[] s_CachedRect = new Vector3[4];
-        protected override void DoRepaint(IStylePainter painter)
+        internal override void DoRepaint(IStylePainter painter)
         {
             var stylePainter = (IStylePainterInternal)painter;
             stylePainter.DrawImmediate(DrawContent);

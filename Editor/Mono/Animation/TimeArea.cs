@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace UnityEditor
 {
@@ -491,7 +492,7 @@ namespace UnityEditor
                 else
                     hDecimals = MathUtils.GetNumberOfDecimalsForMinimumDifference(shownArea.width / drawRect.width);
 
-                return time.ToString("N" + hDecimals);
+                return time.ToString("N" + hDecimals, CultureInfo.InvariantCulture.NumberFormat);
             }
 
             int frame = Mathf.RoundToInt(time * frameRate);
@@ -522,7 +523,7 @@ namespace UnityEditor
         public string FormatValue(float value)
         {
             int vDecimals = MathUtils.GetNumberOfDecimalsForMinimumDifference(shownArea.height / drawRect.height);
-            return value.ToString("N" + vDecimals);
+            return value.ToString("N" + vDecimals, CultureInfo.InvariantCulture.NumberFormat);
         }
 
         public float SnapTimeToWholeFPS(float time, float frameRate)

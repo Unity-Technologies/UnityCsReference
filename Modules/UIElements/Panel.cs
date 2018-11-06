@@ -4,40 +4,16 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine.Experimental.UIElements.StyleSheets;
+using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.Profiling;
 using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public enum ContextType
     {
         Player = 0,
         Editor = 1
-    }
-
-    // Legacy flags used to keep track of dirtied VisualElement.
-    // It's replaced with VersionChangeType below and kept for backward compatibility with Dirty functions.
-    // TODO : Remove the enum once Dirty functions are removed.
-    [Flags]
-    public enum ChangeType
-    {
-        // persistent data ready
-        PersistentData = 1 << 6,
-        // persistent data ready for children
-        PersistentDataPath = 1 << 5,
-        // changes to layout
-        Layout = 1 << 4,
-        // changes to styles, colors and other render properties
-        Styles = 1 << 3,
-        // transforms are invalid
-        Transform = 1 << 2,
-        // styles may have changed for children of this node
-        StylesPath = 1 << 1,
-        // pixels in the target have been changed, just repaint, only makes sense on the Panel
-        Repaint = 1 << 0,
-        All = Repaint | Transform | Layout | StylesPath |
-            Styles | PersistentData | PersistentDataPath
     }
 
     [Flags]
@@ -46,7 +22,7 @@ namespace UnityEngine.Experimental.UIElements
         //Some data was bound
         Bindings = 1 << 8,
         // persistent data ready
-        PersistentData = 1 << 7,
+        ViewData = 1 << 7,
         // changes to hierarchy
         Hierarchy = 1 << 6,
         // changes to layout
@@ -103,7 +79,6 @@ namespace UnityEngine.Experimental.UIElements
         ContextType contextType { get; }
         FocusController focusController { get; }
         VisualElement Pick(Vector2 point);
-        VisualElement LoadTemplate(string path, Dictionary<string, VisualElement> slots = null);
 
         VisualElement PickAll(Vector2 point, List<VisualElement> picked);
     }
@@ -112,7 +87,7 @@ namespace UnityEngine.Experimental.UIElements
     {
         public abstract EventInterests IMGUIEventInterests { get; set; }
         public abstract ScriptableObject ownerObject { get; protected set; }
-        public abstract SavePersistentViewData savePersistentViewData { get; set; }
+        public abstract SavePersistentViewData saveViewData { get; set; }
         public abstract GetViewDataDictionary getViewDataDictionary { get; set; }
         public abstract int IMGUIContainersCount { get; set; }
         public abstract FocusController focusController { get; set; }
@@ -142,6 +117,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public abstract void UpdateBindings();
         public abstract void ApplyStyles();
+
         public abstract void DirtyStyleSheets();
 
         internal float currentPixelsPerPoint { get; set; } = 1.0f;
@@ -172,12 +148,9 @@ namespace UnityEngine.Experimental.UIElements
         }
 
         internal abstract IScheduler scheduler { get; }
-        internal abstract IDataWatchService dataWatch { get; }
-
         public abstract ContextType contextType { get; protected set; }
         public abstract VisualElement Pick(Vector2 point);
         public abstract VisualElement PickAll(Vector2 point, List<VisualElement> picked);
-        public abstract VisualElement LoadTemplate(string path, Dictionary<string, VisualElement> slots = null);
 
         internal bool disposed { get; private set; }
         internal bool allowPixelCaching { get; set; }
@@ -199,32 +172,32 @@ namespace UnityEngine.Experimental.UIElements
 
             if (triggerEvent == null)
             {
-                using (new EventDispatcher.Gate(dispatcher))
+                using (new EventDispatcherGate(dispatcher))
                 {
                     MouseEventsHelper.SendEnterLeave<MouseLeaveEvent, MouseEnterEvent>(previousTopElementUnderMouse, topElementUnderMouse, null, MousePositionTracker.mousePosition);
                     MouseEventsHelper.SendMouseOverMouseOut(previousTopElementUnderMouse, topElementUnderMouse, null, MousePositionTracker.mousePosition);
                 }
             }
             else if (
-                triggerEvent.GetEventTypeId() == MouseMoveEvent.TypeId() ||
-                triggerEvent.GetEventTypeId() == MouseDownEvent.TypeId() ||
-                triggerEvent.GetEventTypeId() == MouseUpEvent.TypeId() ||
-                triggerEvent.GetEventTypeId() == MouseEnterWindowEvent.TypeId() ||
-                triggerEvent.GetEventTypeId() == MouseLeaveWindowEvent.TypeId() ||
-                triggerEvent.GetEventTypeId() == WheelEvent.TypeId())
+                triggerEvent.eventTypeId == MouseMoveEvent.TypeId() ||
+                triggerEvent.eventTypeId == MouseDownEvent.TypeId() ||
+                triggerEvent.eventTypeId == MouseUpEvent.TypeId() ||
+                triggerEvent.eventTypeId == MouseEnterWindowEvent.TypeId() ||
+                triggerEvent.eventTypeId == MouseLeaveWindowEvent.TypeId() ||
+                triggerEvent.eventTypeId == WheelEvent.TypeId())
             {
                 IMouseEvent mouseEvent = triggerEvent as IMouseEvent;
-                using (new EventDispatcher.Gate(dispatcher))
+                using (new EventDispatcherGate(dispatcher))
                 {
                     MouseEventsHelper.SendEnterLeave<MouseLeaveEvent, MouseEnterEvent>(previousTopElementUnderMouse, topElementUnderMouse, mouseEvent, mouseEvent?.mousePosition ?? Vector2.zero);
                     MouseEventsHelper.SendMouseOverMouseOut(previousTopElementUnderMouse, topElementUnderMouse, mouseEvent, mouseEvent?.mousePosition ?? Vector2.zero);
                 }
             }
-            else if (triggerEvent.GetEventTypeId() == DragUpdatedEvent.TypeId() ||
-                     triggerEvent.GetEventTypeId() == DragExitedEvent.TypeId())
+            else if (triggerEvent.eventTypeId == DragUpdatedEvent.TypeId() ||
+                     triggerEvent.eventTypeId == DragExitedEvent.TypeId())
             {
                 IMouseEvent mouseEvent = triggerEvent as IMouseEvent;
-                using (new EventDispatcher.Gate(dispatcher))
+                using (new EventDispatcherGate(dispatcher))
                 {
                     MouseEventsHelper.SendEnterLeave<DragLeaveEvent, DragEnterEvent>(previousTopElementUnderMouse, topElementUnderMouse, mouseEvent, mouseEvent?.mousePosition ?? Vector2.zero);
                 }
@@ -249,6 +222,8 @@ namespace UnityEngine.Experimental.UIElements
 
     // Strategy to load assets must be provided in the context of Editor or Runtime
     internal delegate Object LoadResourceFunction(string pathName, System.Type type);
+
+    internal delegate Object InstanceIDToObject(int instanceID);
 
     // Strategy to fetch real time since startup in the context of Editor or Runtime
     internal delegate long TimeMsFunction();
@@ -278,9 +253,6 @@ namespace UnityEngine.Experimental.UIElements
 
         public override EventDispatcher dispatcher { get; protected set; }
 
-        private IDataWatchService m_DataWatch;
-        internal override IDataWatchService dataWatch { get { return m_DataWatch; } }
-
         TimerEventScheduler m_Scheduler;
 
         public TimerEventScheduler timerEventScheduler
@@ -297,7 +269,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public override ContextType contextType { get; protected set; }
 
-        public override SavePersistentViewData savePersistentViewData { get; set; }
+        public override SavePersistentViewData saveViewData { get; set; }
 
         public override GetViewDataDictionary getViewDataDictionary { get; set; }
 
@@ -306,7 +278,7 @@ namespace UnityEngine.Experimental.UIElements
         public override EventInterests IMGUIEventInterests { get; set; }
 
         internal static LoadResourceFunction loadResourceFunc = null;
-
+        internal static InstanceIDToObject instanceIdToObjectFunc = null;
         internal string name
         {
             get { return m_PanelName; }
@@ -380,20 +352,23 @@ namespace UnityEngine.Experimental.UIElements
             get { return m_RepaintVersion; }
         }
 
-        public Panel(ScriptableObject ownerObject, ContextType contextType, IDataWatchService dataWatch = null, EventDispatcher dispatcher = null)
+        public Panel(ScriptableObject ownerObject, ContextType contextType, EventDispatcher dispatcher = null)
         {
             m_VisualTreeUpdater = new VisualTreeUpdater(this);
 
             this.ownerObject = ownerObject;
             this.contextType = contextType;
-            m_DataWatch = dataWatch;
             this.dispatcher = dispatcher ?? EventDispatcher.instance;
             repaintData = new RepaintData();
             cursorManager = new CursorManager();
             contextualMenuManager = null;
-            m_RootContainer = new VisualElement();
-            m_RootContainer.name = VisualElementUtils.GetUniqueName("PanelContainer");
-            m_RootContainer.persistenceKey = "PanelContainer"; // Required!
+            m_RootContainer = new VisualElement
+            {
+                name = VisualElementUtils.GetUniqueName("unity-panel-container"),
+                viewDataKey = "PanelContainer"
+            };
+
+            // Required!
             visualTree.SetPanel(this);
             focusController = new FocusController(new VisualElementFocusRing(visualTree));
             m_ProfileUpdateName = "PanelUpdate";
@@ -438,7 +413,7 @@ namespace UnityEngine.Experimental.UIElements
             if (root.visible == false)
                 return null;
 
-            if (root.pickingMode == PickingMode.Ignore && root.shadow.childCount == 0)
+            if (root.pickingMode == PickingMode.Ignore && root.hierarchy.childCount == 0)
             {
                 return null;
             }
@@ -454,9 +429,9 @@ namespace UnityEngine.Experimental.UIElements
 
             VisualElement returnedChild = null;
             // Depth first in reverse order, do children
-            for (int i = root.shadow.childCount - 1; i >= 0; i--)
+            for (int i = root.hierarchy.childCount - 1; i >= 0; i--)
             {
-                var child = root.shadow[i];
+                var child = root.hierarchy[i];
                 var result = PerformPick(child, point, picked);
                 if (returnedChild == null && result != null)
                     returnedChild = result;
@@ -484,17 +459,6 @@ namespace UnityEngine.Experimental.UIElements
                     break;
             }
             return null;
-        }
-
-        public override VisualElement LoadTemplate(string path, Dictionary<string, VisualElement> slots = null)
-        {
-            VisualTreeAsset vta = loadResourceFunc(path, typeof(VisualTreeAsset)) as VisualTreeAsset;
-            if (vta == null)
-            {
-                return null;
-            }
-
-            return vta.CloneTree(slots);
         }
 
         public override VisualElement PickAll(Vector2 point, List<VisualElement> picked)
@@ -537,6 +501,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             m_VisualTreeUpdater.DirtyStyleSheets();
         }
+
 
         public override void Repaint(Event e)
         {

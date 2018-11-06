@@ -4,7 +4,7 @@
 
 using System;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     // determines in which event phase an event handler wants to handle events
     // the handler always gets called if it is the target VisualElement
@@ -15,9 +15,6 @@ namespace UnityEngine.Experimental.UIElements
 
         // Propagation from root of tree to immediate parent of target.
         TrickleDown,
-
-        [Obsolete("Use TrickleDown instead of Capture.")]
-        Capture = TrickleDown,
 
         // Event is at target.
         AtTarget,
@@ -131,9 +128,9 @@ namespace UnityEngine.Experimental.UIElements
             {
                 if (root != null)
                 {
-                    for (int i = 0; i < root.shadow.childCount; i++)
+                    for (int i = 0; i < root.hierarchy.childCount; i++)
                     {
-                        PropagateToIMGUIContainer(root.shadow[i], evt);
+                        PropagateToIMGUIContainer(root.hierarchy[i], evt);
                         if (evt.isPropagationStopped)
                             break;
                     }

@@ -2,13 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     public class BlackboardRow : GraphElement
     {
@@ -48,7 +44,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             var tpl = EditorGUIUtility.Load("UXML/GraphView/BlackboardRow.uxml") as VisualTreeAsset;
             AddStyleSheetPath(Blackboard.StyleSheetPath);
 
-            VisualElement mainContainer = tpl.CloneTree(null);
+            VisualElement mainContainer = tpl.CloneTree();
 
             mainContainer.AddToClassList("mainContainer");
 

@@ -96,7 +96,7 @@ namespace UnityEditor.SceneManagement
 
         public override string ToString()
         {
-            return string.Format("[Stage: {0}]", displayName);
+            return UnityString.Format("[Stage: {0}]", displayName);
         }
     }
 }

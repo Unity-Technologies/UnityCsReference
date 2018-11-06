@@ -2,21 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Collections.Generic;
-using UnityEngine;
 using UnityEngine.Bindings;
-using Object = UnityEngine.Object;
 using MinMaxCurve = UnityEngine.ParticleSystem.MinMaxCurve;
 
 namespace UnityEngine
 {
-    public partial class ParticleSystem
-    {
-        [NativeType(CodegenOptions.Custom, "MonoMinMaxCurve", Header = "Runtime/Scripting/ScriptingCommonStructDefinitions.h")]
-        public partial struct MinMaxCurve {}
-    }
-
     [NativeHeader("ParticleSystemScriptingClasses.h")]
     [NativeHeader("Runtime/ParticleSystem/ParticleSystem.h")]
     [NativeHeader("Runtime/ParticleSystem/ParticleSystemForceField.h")]

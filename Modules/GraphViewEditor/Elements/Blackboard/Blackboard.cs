@@ -3,12 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     public class Blackboard : GraphElement
     {
@@ -60,14 +58,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 {
                     if (m_ScrollView == null)
                     {
-                        m_ScrollView = new ScrollView();
+                        m_ScrollView = new ScrollView(ScrollViewMode.VerticalAndHorizontal);
                     }
 
                     // Remove the sections container from the content item and add it to the scrollview
                     m_ContentContainer.RemoveFromHierarchy();
                     m_Root.Add(m_ScrollView);
                     m_ScrollView.Add(m_ContentContainer);
-                    style.positionType = PositionType.Manual; // As both the width and height can be changed by the user using a resizer
+                    isLayoutManual = true; // As both the width and height can be changed by the user using a resizer
 
                     // If the current the current geometry is invalid then set a default size
 
@@ -83,7 +81,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     if (m_ScrollView != null)
                     {
                         // Remove the sections container from the scrollview and add it to the content item
-                        style.positionType = PositionType.Absolute; // As the height is automatically computed from the content but the width can be changed by the user using a resizer
+                        style.position = Position.Absolute; // As the height is automatically computed from the content but the width can be changed by the user using a resizer
                         m_ScrollView.RemoveFromHierarchy();
                         m_ContentContainer.RemoveFromHierarchy();
                         m_Root.Add(m_ContentContainer);
@@ -98,7 +96,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             var tpl = EditorGUIUtility.Load("UXML/GraphView/Blackboard.uxml") as VisualTreeAsset;
             AddStyleSheetPath(StyleSheetPath);
 
-            m_MainContainer = tpl.CloneTree(null);
+            m_MainContainer = tpl.CloneTree();
             m_MainContainer.AddToClassList("mainContainer");
 
             m_Root = m_MainContainer.Q("content");
@@ -118,10 +116,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_SubTitleLabel = m_MainContainer.Q<Label>(name: "subTitleLabel");
             m_ContentContainer = m_MainContainer.Q<VisualElement>(name: "contentContainer");
 
-            shadow.Add(m_MainContainer);
+            hierarchy.Add(m_MainContainer);
 
             capabilities |= Capabilities.Movable | Capabilities.Resizable;
-            clippingOptions = ClippingOptions.ClipAndCacheContents;
+            cacheAsBitmap = true;
+            style.overflow = Overflow.Hidden;
 
             ClearClassList();
             AddToClassList("blackboard");
@@ -130,7 +129,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             scrollable = false;
 
-            shadow.Add(new Resizer());
+            hierarchy.Add(new Resizer());
 
             RegisterCallback<DragUpdatedEvent>(e =>
             {

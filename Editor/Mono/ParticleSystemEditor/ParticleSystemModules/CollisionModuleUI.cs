@@ -14,7 +14,6 @@ namespace UnityEditor
         const int k_MaxNumPlanes = 6;
         enum CollisionTypes { Plane = 0, World = 1 };
         enum CollisionModes { Mode3D = 0, Mode2D = 1 };
-        enum ForceModes { None = 0, Constant = 1, SizeBased = 2 };
         enum PlaneVizType { Grid, Solid };
 
         SerializedProperty m_Type;
@@ -45,6 +44,12 @@ namespace UnityEditor
         static bool s_VisualizeBounds = false;
         static Transform s_SelectedTransform; // static so to ensure only one selected Transform across multiple particle systems
         internal static PrefColor s_CollisionBoundsColor = new PrefColor("Particle System/Collision Bounds", 0.0f, 1.0f, 0.0f, 1.0f);
+
+        static EditMode.SceneViewEditMode[] s_SceneViewEditModes = new[]
+        {
+            EditMode.SceneViewEditMode.ParticleSystemCollisionModulePlanesMove,
+            EditMode.SceneViewEditMode.ParticleSystemCollisionModulePlanesRotate
+        };
 
         class Texts
         {
@@ -102,12 +107,6 @@ namespace UnityEditor
                 EditorGUIUtility.TrIconContent("MoveTool", "Move plane editing mode."),
                 EditorGUIUtility.TrIconContent("RotateTool", "Rotate plane editing mode.")
             };
-
-            public EditMode.SceneViewEditMode[] sceneViewEditModes = new[]
-            {
-                EditMode.SceneViewEditMode.ParticleSystemCollisionModulePlanesMove,
-                EditMode.SceneViewEditMode.ParticleSystemCollisionModulePlanesRotate
-            };
         }
         private static Texts s_Texts;
 
@@ -128,9 +127,7 @@ namespace UnityEditor
             set
             {
                 if (!value && editingPlanes)
-                {
                     EditMode.QuitEditMode();
-                }
                 SceneView.RepaintAll();
             }
         }
@@ -216,24 +213,6 @@ namespace UnityEditor
             }
         }
 
-        private Bounds GetBounds()
-        {
-            var combinedBounds = new Bounds();
-            bool initialized = false;
-
-            foreach (ParticleSystem ps in m_ParticleSystemUI.m_ParticleSystems)
-            {
-                ParticleSystemRenderer particleSystemRenderer = ps.GetComponent<ParticleSystemRenderer>();
-                if (!initialized)
-                    combinedBounds = particleSystemRenderer.bounds;
-                combinedBounds.Encapsulate(particleSystemRenderer.bounds);
-
-                initialized = true;
-            }
-
-            return combinedBounds;
-        }
-
         override public void OnInspectorGUI(InitialModuleUI initial)
         {
             EditorGUI.BeginChangeCheck();
@@ -260,7 +239,7 @@ namespace UnityEditor
                     EditorPrefs.SetFloat("ScalePlaneColision", m_ScaleGrid);
                 }
 
-                GUIButtonGroup(s_Texts.sceneViewEditModes, s_Texts.toolContents, GetBounds, m_ParticleSystemUI.m_ParticleEffectUI.m_Owner.customEditor);
+                GUIButtonGroup(s_SceneViewEditModes, s_Texts.toolContents, m_ParticleSystemUI.GetBounds, m_ParticleSystemUI.m_ParticleEffectUI.m_Owner.customEditor);
             }
             else
             {

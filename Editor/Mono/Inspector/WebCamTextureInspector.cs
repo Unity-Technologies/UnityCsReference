@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using UnityEditor;
+using System.Globalization;
 
 namespace UnityEditor
 {
@@ -16,9 +17,9 @@ namespace UnityEditor
         public override void OnInspectorGUI()
         {
             WebCamTexture t = target as WebCamTexture;
-            EditorGUILayout.LabelField("Requested FPS", t.requestedFPS.ToString());
-            EditorGUILayout.LabelField("Requested Width", t.requestedWidth.ToString());
-            EditorGUILayout.LabelField("Requested Height", t.requestedHeight.ToString());
+            EditorGUILayout.LabelField("Requested FPS", t.requestedFPS.ToString(CultureInfo.InvariantCulture.NumberFormat));
+            EditorGUILayout.LabelField("Requested Width", t.requestedWidth.ToString(CultureInfo.InvariantCulture.NumberFormat));
+            EditorGUILayout.LabelField("Requested Height", t.requestedHeight.ToString(CultureInfo.InvariantCulture.NumberFormat));
             EditorGUILayout.LabelField("Device Name", t.deviceName);
         }
 

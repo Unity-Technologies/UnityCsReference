@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     // All values are milliseconds
     // notes on precision:
@@ -14,10 +14,10 @@ namespace UnityEngine.Experimental.UIElements
     // it is the registrar's responsibility to read the TimerState to determine the actual event timing
     // and make sure things like animation are smooth and time based.
     // a delayMs of 0 and intervalMs of 0 will be interpreted as "as often as possible" this should be used sparingly and the work done should be very small
-    public struct TimerState
+    public struct TimerState : IEquatable<TimerState>
     {
-        public long start;
-        public long now;
+        public long start { get; set; }
+        public long now { get; set; }
 
         public long deltaTime
         {
@@ -26,30 +26,55 @@ namespace UnityEngine.Experimental.UIElements
                 return now - start;
             }
         }
+
+        public override bool Equals(object obj)
+        {
+            return obj is TimerState && Equals((TimerState)obj);
+        }
+
+        public bool Equals(TimerState other)
+        {
+            return start == other.start &&
+                now == other.now &&
+                deltaTime == other.deltaTime;
+        }
+
+        public override int GetHashCode()
+        {
+            var hashCode = 540054806;
+            hashCode = hashCode * -1521134295 + start.GetHashCode();
+            hashCode = hashCode * -1521134295 + now.GetHashCode();
+            hashCode = hashCode * -1521134295 + deltaTime.GetHashCode();
+            return hashCode;
+        }
+
+        public static bool operator==(TimerState state1, TimerState state2)
+        {
+            return state1.Equals(state2);
+        }
+
+        public static bool operator!=(TimerState state1, TimerState state2)
+        {
+            return !(state1 == state2);
+        }
     }
-
-
-    public interface IScheduledItem
-    {
-    }
-
 
     // the scheduler public interface
-    public interface IScheduler
+    internal interface IScheduler
     {
-        IScheduledItem ScheduleOnce(Action<TimerState> timerUpdateEvent, long delayMs);
-        IScheduledItem ScheduleUntil(Action<TimerState> timerUpdateEvent, long delayMs, long intervalMs, Func<bool> stopCondition = null);
-        IScheduledItem ScheduleForDuration(Action<TimerState> timerUpdateEvent, long delayMs, long intervalMs, long durationMs);
+        ScheduledItem ScheduleOnce(Action<TimerState> timerUpdateEvent, long delayMs);
+        ScheduledItem ScheduleUntil(Action<TimerState> timerUpdateEvent, long delayMs, long intervalMs, Func<bool> stopCondition = null);
+        ScheduledItem ScheduleForDuration(Action<TimerState> timerUpdateEvent, long delayMs, long intervalMs, long durationMs);
 
         // removes the event.
         // an event that is never stopped will not be stopped until the panel is cleaned-up.
-        void Unschedule(IScheduledItem item);
+        void Unschedule(ScheduledItem item);
 
-        void Schedule(IScheduledItem item);
+        void Schedule(ScheduledItem item);
     }
 
 
-    internal abstract class ScheduledItem : IScheduledItem
+    internal abstract class ScheduledItem //: IScheduledItem
     {
         // delegate that returns a boolean
         public Func<bool> timerUpdateStopCondition;
@@ -127,10 +152,7 @@ namespace UnityEngine.Experimental.UIElements
 
             public override void PerformTimerUpdate(TimerState state)
             {
-                if (m_TimerUpdateEvent != null)
-                {
-                    m_TimerUpdateEvent(state);
-                }
+                m_TimerUpdateEvent?.Invoke(state);
             }
 
             public override string ToString()
@@ -139,7 +161,7 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        public void Schedule(IScheduledItem item)
+        public void Schedule(ScheduledItem item)
         {
             if (item == null)
                 return;
@@ -179,7 +201,7 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        public IScheduledItem ScheduleOnce(Action<TimerState> timerUpdateEvent, long delayMs)
+        public ScheduledItem ScheduleOnce(Action<TimerState> timerUpdateEvent, long delayMs)
         {
             var scheduleItem = new TimerEventSchedulerItem(timerUpdateEvent)
             {
@@ -191,7 +213,7 @@ namespace UnityEngine.Experimental.UIElements
             return scheduleItem;
         }
 
-        public IScheduledItem ScheduleUntil(Action<TimerState> timerUpdateEvent, long delayMs, long intervalMs,
+        public ScheduledItem  ScheduleUntil(Action<TimerState> timerUpdateEvent, long delayMs, long intervalMs,
             Func<bool> stopCondition)
         {
             var scheduleItem = new TimerEventSchedulerItem(timerUpdateEvent)
@@ -205,7 +227,7 @@ namespace UnityEngine.Experimental.UIElements
             return scheduleItem;
         }
 
-        public IScheduledItem ScheduleForDuration(Action<TimerState> timerUpdateEvent, long delayMs, long intervalMs,
+        public ScheduledItem ScheduleForDuration(Action<TimerState> timerUpdateEvent, long delayMs, long intervalMs,
             long durationMs)
         {
             var scheduleItem = new TimerEventSchedulerItem(timerUpdateEvent)
@@ -233,7 +255,7 @@ namespace UnityEngine.Experimental.UIElements
             return false;
         }
 
-        public void Unschedule(IScheduledItem item)
+        public void Unschedule(ScheduledItem item)
         {
             ScheduledItem sItem = item as ScheduledItem;
             if (sItem != null)

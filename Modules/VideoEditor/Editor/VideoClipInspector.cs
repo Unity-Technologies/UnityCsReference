@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Globalization;
 using UnityEngine;
 using UnityEngine.Video;
 
@@ -193,7 +194,7 @@ namespace UnityEditor
 
             string s = duration;
             s += ", " + frameCount.ToString() + " frames";
-            s += ", " + frameRate.ToString("F2") + " FPS";
+            s += ", " + frameRate.ToString("F2", CultureInfo.InvariantCulture.NumberFormat) + " FPS";
             s += ", " + clip.width.ToString() + "x" + clip.height.ToString();
             return s;
         }

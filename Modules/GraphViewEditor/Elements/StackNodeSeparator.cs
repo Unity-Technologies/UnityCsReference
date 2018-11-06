@@ -4,10 +4,9 @@
 
 using System;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     internal abstract class StackNodeInserter : VisualElement, IInsertLocation
     {
@@ -91,10 +90,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         void UpdateHeight()
         {
-            style.positionType = PositionType.Absolute;
+            style.position = Position.Absolute;
             style.height = 2 * extent + height;
-            m_HighlightItem.style.positionTop = extent;
-            m_HighlightItem.style.positionBottom = extent;
+            m_HighlightItem.style.top = extent;
+            m_HighlightItem.style.bottom = extent;
         }
 
         public StackNodeSeparator()
@@ -122,11 +121,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
     internal class StackNodeContentContainer : StackNodeInserter
     {
-        public StackNodeContentContainer()
-        {
-            clippingOptions = ClippingOptions.NoClipping;
-        }
-
         public override void GetInsertInfo(Vector2 worldPosition, out InsertInfo insertInfo)
         {
             insertInfo = new InsertInfo { target = stack, index = 0, localPosition = Vector2.zero };

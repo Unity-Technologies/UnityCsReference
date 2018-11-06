@@ -5,9 +5,9 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     public class BoundsIntField : BaseField<BoundsInt>
     {
@@ -33,41 +33,40 @@ namespace UnityEditor.Experimental.UIElements
                     new Vector3Int(m_SizeXValue.GetValueFromBag(bag, cc), m_SizeYValue.GetValueFromBag(bag, cc), m_SizeZValue.GetValueFromBag(bag, cc))));
             }
         }
-
         private Vector3IntField m_PositionField;
         private Vector3IntField m_SizeField;
 
-        public BoundsIntField()
-        {
-            m_PositionField = new Vector3IntField();
+        public new static readonly string ussClassName = "unity-bounds-int-field";
+        public static readonly string positionUssClassName = ussClassName + "__position-field";
+        public static readonly string sizeUssClassName = ussClassName + "__size-field";
 
-            m_PositionField.OnValueChanged(e =>
+        public BoundsIntField()
+            : this(null) {}
+
+        public BoundsIntField(string label)
+            : base(label, null)
+        {
+            AddToClassList(ussClassName);
+
+            m_PositionField = new Vector3IntField("Position");
+            m_PositionField.AddToClassList(positionUssClassName);
+            m_PositionField.RegisterValueChangedCallback(e =>
             {
                 var current = value;
                 current.position = e.newValue;
                 value = current;
             });
+            visualInput.hierarchy.Add(m_PositionField);
 
-            var centerGroup = new VisualElement();
-            centerGroup.AddToClassList("group");
-            centerGroup.Add(new Label("Position"));
-            centerGroup.Add(m_PositionField);
-            this.shadow.Add(centerGroup);
-
-            m_SizeField = new Vector3IntField();
-
-            m_SizeField.OnValueChanged(e =>
+            m_SizeField = new Vector3IntField("Size");
+            m_SizeField.AddToClassList(sizeUssClassName);
+            m_SizeField.RegisterValueChangedCallback(e =>
             {
                 var current = value;
                 current.size = e.newValue;
                 value = current;
             });
-
-            var extentsGroup = new VisualElement();
-            extentsGroup.AddToClassList("group");
-            extentsGroup.contentContainer.Add(new Label("Size"));
-            extentsGroup.contentContainer.Add(m_SizeField);
-            this.shadow.Add(extentsGroup);
+            visualInput.hierarchy.Add(m_SizeField);
         }
 
         protected internal override void ExecuteDefaultAction(EventBase evt)
@@ -75,7 +74,7 @@ namespace UnityEditor.Experimental.UIElements
             base.ExecuteDefaultAction(evt);
 
             // Focus first field if any
-            if (evt.GetEventTypeId() == FocusEvent.TypeId())
+            if (evt?.eventTypeId == FocusEvent.TypeId())
             {
                 m_PositionField.Focus();
             }
@@ -84,8 +83,8 @@ namespace UnityEditor.Experimental.UIElements
         public override void SetValueWithoutNotify(BoundsInt newValue)
         {
             base.SetValueWithoutNotify(newValue);
-            m_PositionField.SetValueWithoutNotify(m_Value.position);
-            m_SizeField.SetValueWithoutNotify(m_Value.size);
+            m_PositionField.SetValueWithoutNotify(rawValue.position);
+            m_SizeField.SetValueWithoutNotify(rawValue.size);
         }
     }
 }

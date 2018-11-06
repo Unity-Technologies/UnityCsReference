@@ -6,10 +6,10 @@ using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     [StructLayout(LayoutKind.Sequential)]
-    internal partial class ImmediateStylePainter : IStylePainterInternal
+    internal class ImmediateStylePainterImpl : ImmediateStylePainter, IStylePainterInternal
     {
         public VisualElement currentElement { get; set; }
 
@@ -117,7 +117,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public void DrawBackground()
         {
-            IStyle style = currentElement.style;
+            IComputedStyle style = currentElement.computedStyle;
 
             if (style.backgroundColor != Color.clear)
             {
@@ -125,7 +125,7 @@ namespace UnityEngine.Experimental.UIElements
                 painterParams.border.SetWidth(0.0f);
                 DrawRect(painterParams);
             }
-            if (style.backgroundImage.value != null)
+            if (style.backgroundImage.value.texture != null)
             {
                 var painterParams = TextureStylePainterParameters.GetDefault(currentElement);
                 painterParams.border.SetWidth(0.0f);
@@ -135,11 +135,11 @@ namespace UnityEngine.Experimental.UIElements
 
         public void DrawBorder()
         {
-            IStyle style = currentElement.style;
-            if (style.borderColor != Color.clear && (style.borderLeftWidth > 0.0f || style.borderTopWidth > 0.0f || style.borderRightWidth > 0.0f || style.borderBottomWidth > 0.0f))
+            IComputedStyle style = currentElement.computedStyle;
+            if (style.borderColor != Color.clear && (style.borderLeftWidth.value > 0.0f || style.borderTopWidth.value > 0.0f || style.borderRightWidth.value > 0.0f || style.borderBottomWidth.value > 0.0f))
             {
                 var painterParams = RectStylePainterParameters.GetDefault(currentElement);
-                painterParams.color = style.borderColor;
+                painterParams.color = style.borderColor.value;
                 DrawRect(painterParams);
             }
         }

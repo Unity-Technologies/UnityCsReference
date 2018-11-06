@@ -11,12 +11,13 @@ using System.Text;
 using UnityEditor.IMGUI.Controls;
 using UnityEditorInternal;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleSheets;
-using UnityEngine.StyleSheets;
+using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 using Unity.Experimental.EditorMode;
+using Cursor = UnityEngine.UIElements.Cursor;
+using System.Globalization;
 
-namespace UnityEditor.Experimental.UIElements.Debugger
+namespace UnityEditor.UIElements.Debugger
 {
     [CannotBeUnsupported]
     class UIElementsDebugger : EditorWindow, IPanelDebugger
@@ -52,7 +53,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
         private Texture2D m_TempTexture;
         private TreeViewState m_VisualTreeTreeViewState;
         private VisualTreeTreeView m_VisualTreeTreeView;
-        private static readonly PropertyInfo[] k_FieldInfos = typeof(IStyle).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        private static readonly PropertyInfo[] k_FieldInfos = typeof(IComputedStyle).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         private static readonly PropertyInfo[] k_SortedFieldInfos = k_FieldInfos.OrderBy(f => f.Name).ToArray();
         string m_SearchFieldText = string.Empty;
 
@@ -78,6 +79,11 @@ namespace UnityEditor.Experimental.UIElements.Debugger
 
         public bool InterceptEvents(Event ev)
         {
+            if (ev == null)
+            {
+                return false;
+            }
+
             if (!m_CurPanel.HasValue)
                 return false;
 
@@ -360,7 +366,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             s_MatchedRulesExtractor.FindMatchingRules(m_SelectedElement);
         }
 
-        private static int GetSpecificity<T>(StyleValue<T> style)
+        private static int GetSpecificity<T>(IStyleValue<T> style)
         {
             return style.specificity;
         }
@@ -376,11 +382,12 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                 textElement.text = EditorGUILayout.TextField("Text", textElement.text);
             }
 
-            // Suppress "use of obsolete enum" warning
-            #pragma warning disable 0618
-            bool cacheContents = EditorGUILayout.Toggle("Cache Contents", m_SelectedElement.clippingOptions == VisualElement.ClippingOptions.ClipAndCacheContents);
-            m_SelectedElement.clippingOptions = cacheContents ? VisualElement.ClippingOptions.ClipAndCacheContents : VisualElement.ClippingOptions.NoClipping;
-            #pragma warning restore 0618
+            bool cacheContents = EditorGUILayout.Toggle("Cache Contents", m_SelectedElement.cacheAsBitmap);
+            m_SelectedElement.cacheAsBitmap = cacheContents;
+            if (m_SelectedElement.cacheAsBitmap && m_SelectedElement.computedStyle.overflow.value == Overflow.Visible)
+            {
+                EditorGUILayout.HelpBox("Bitmap caching will be ignored for this element because it's not clipped", MessageType.Warning);
+            }
 
             m_SelectedElement.pickingMode = (PickingMode)EditorGUILayout.EnumPopup("Picking Mode", m_SelectedElement.pickingMode);
 
@@ -397,12 +404,12 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             m_Sort = GUILayout.Toggle(m_Sort, Styles.sortContent, EditorStyles.toolbarButton);
             GUILayout.EndHorizontal();
 
-            VisualElementStylesData styles = m_SelectedElement.effectiveStyle;
+            var customProperties = m_SelectedElement.effectiveStyle.m_CustomProperties;
             bool anyChanged = false;
 
-            if (styles.m_CustomProperties != null && styles.m_CustomProperties.Any())
+            if (customProperties != null && customProperties.Any())
             {
-                foreach (KeyValuePair<string, CustomProperty> customProperty in styles.m_CustomProperties)
+                foreach (KeyValuePair<string, CustomPropertyHandle> customProperty in customProperties)
                 {
                     foreach (StyleValueHandle handle in customProperty.Value.handles)
                     {
@@ -417,87 +424,88 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                     field.Name.IndexOf(m_DetailFilter, StringComparison.InvariantCultureIgnoreCase) == -1)
                     continue;
 
-                if (!field.PropertyType.IsGenericType || field.PropertyType.GetGenericTypeDefinition() != typeof(StyleValue<>))
-                    continue;
-
-                object val = field.GetValue(m_SelectedElement, null);
-                if (val is StyleValue<Flex>)
-                {
-                    // The properties of Flex (flexBasis, flexGrow, flexShrink) are already displayed individually.
-                    continue;
-                }
+                object val = field.GetValue(m_SelectedElement.computedStyle, null);
                 EditorGUILayout.BeginHorizontal();
                 EditorGUI.BeginChangeCheck();
                 int specificity;
 
-                if (val is StyleValue<float>)
+                if (val is StyleFloat)
                 {
-                    StyleValue<float> style = (StyleValue<float>)val;
+                    StyleFloat style = (StyleFloat)val;
                     specificity = GetSpecificity(style);
                     if (m_ShowDefaults || specificity > 0)
                     {
                         style.specificity = Int32.MaxValue;
-                        style.value = EditorGUILayout.FloatField(field.Name, ((StyleValue<float>)val).value);
+                        style.value = EditorGUILayout.FloatField(field.Name, ((StyleFloat)val).value);
                         val = style;
                     }
                 }
-                else if (val is StyleValue<int>)
+                else if (val is StyleInt)
                 {
-                    StyleValue<int> style = (StyleValue<int>)val;
+                    StyleInt style = (StyleInt)val;
                     specificity = GetSpecificity(style);
                     if (m_ShowDefaults || specificity > 0)
                     {
                         style.specificity = Int32.MaxValue;
-                        style.value = EditorGUILayout.IntField(field.Name, ((StyleValue<int>)val).value);
+                        style.value = EditorGUILayout.IntField(field.Name, ((StyleInt)val).value);
                         val = style;
                     }
                 }
-                else if (val is StyleValue<bool>)
+                else if (val is StyleLength)
                 {
-                    StyleValue<bool> style = (StyleValue<bool>)val;
+                    StyleLength style = (StyleLength)val;
                     specificity = GetSpecificity(style);
                     if (m_ShowDefaults || specificity > 0)
                     {
                         style.specificity = Int32.MaxValue;
-                        style.value = EditorGUILayout.Toggle(field.Name, ((StyleValue<bool>)val).value);
+                        style.value = EditorGUILayout.FloatField(field.Name, ((StyleLength)val).value.value);
                         val = style;
                     }
                 }
-                else if (val is StyleValue<Color>)
+                else if (val is StyleColor)
                 {
-                    StyleValue<Color> style = (StyleValue<Color>)val;
+                    StyleColor style = (StyleColor)val;
                     specificity = GetSpecificity(style);
                     if (m_ShowDefaults || specificity > 0)
                     {
                         style.specificity = Int32.MaxValue;
-                        style.value = EditorGUILayout.ColorField(field.Name, ((StyleValue<Color>)val).value);
+                        style.value = EditorGUILayout.ColorField(field.Name, ((StyleColor)val).value);
                         val = style;
                     }
                 }
-                else if (val is StyleValue<Font>)
+                else if (val is StyleFont)
                 {
                     specificity = HandleReferenceProperty<Font>(field, ref val);
                 }
-                else if (val is StyleValue<Texture2D>)
+                else if (val is StyleBackground)
                 {
-                    specificity = HandleReferenceProperty<Texture2D>(field, ref val);
-                }
-                else if (val is StyleValue<CursorStyle>)
-                {
-                    StyleValue<CursorStyle> style = (StyleValue<CursorStyle>)val;
+                    StyleBackground style = (StyleBackground)val;
                     specificity = GetSpecificity(style);
+                    if (m_ShowDefaults || specificity > 0)
+                    {
+                        style.specificity = Int32.MaxValue;
+                        Texture2D t = EditorGUILayout.ObjectField(field.Name, style.value.texture, typeof(Texture2D), false) as Texture2D;
+                        style.value = new Background(t);
+                        val = style;
+                    }
+                }
+                else if (val is StyleCursor)
+                {
+                    StyleCursor style = (StyleCursor)val;
+                    specificity = style.specificity;
                     if (m_ShowDefaults || specificity > 0)
                     {
                         if (style.value.texture != null)
                         {
                             style.specificity = Int32.MaxValue;
-                            style.value.texture  = EditorGUILayout.ObjectField(field.Name + "'s texture2D", style.value.texture, typeof(Texture2D), false) as Texture2D;
+                            var texture = EditorGUILayout.ObjectField(field.Name + "'s texture2D", style.value.texture, typeof(Texture2D), false) as Texture2D;
                             EditorGUILayout.EndHorizontal();
 
                             EditorGUILayout.BeginHorizontal();
                             EditorGUIUtility.wideMode = true;
-                            style.value.hotspot = EditorGUILayout.Vector2Field(field.Name + "'s hotspot", style.value.hotspot);
+                            var hotspot = EditorGUILayout.Vector2Field(field.Name + "'s hotspot", style.value.hotspot);
 
+                            style.value = new Cursor() { texture = texture, hotspot = hotspot };
                             val = style;
                         }
                         else
@@ -509,7 +517,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                             if (!Equals(mouseId, toCompare))
                             {
                                 style.specificity = Int32.MaxValue;
-                                style.value.defaultCursorId = toCompare;
+                                style.value = new Cursor() {defaultCursorId = toCompare};
                                 val = style;
                             }
                         }
@@ -518,16 +526,16 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                 else
                 {
                     Type type = val.GetType();
-                    if (type.GetGenericArguments()[0].IsEnum)
+                    if (type.IsGenericType && type.GetGenericArguments()[0].IsEnum)
                     {
-                        specificity = (int)type.GetField("specificity", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(val);
+                        specificity = (int)type.GetProperty("specificity", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(val, null);
                         if (m_ShowDefaults || specificity > 0)
                         {
-                            FieldInfo fieldInfo = type.GetField("value");
-                            Enum enumValue = fieldInfo.GetValue(val) as Enum;
+                            var propInfo = type.GetProperty("value");
+                            Enum enumValue = propInfo.GetValue(val, null) as Enum;
                             Enum newEnumValue = EditorGUILayout.EnumPopup(field.Name, enumValue);
                             if (!Equals(enumValue, newEnumValue))
-                                fieldInfo.SetValue(val, newEnumValue);
+                                propInfo.SetValue(val, newEnumValue, null);
                         }
                     }
                     else
@@ -540,11 +548,13 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                 if (EditorGUI.EndChangeCheck())
                 {
                     anyChanged = true;
-                    field.SetValue(m_SelectedElement, val, null);
+                    string propertyName = field.Name;
+                    var inlineStyle = typeof(IStyle).GetProperty(propertyName);
+                    inlineStyle.SetValue(m_SelectedElement.style, val, null);
                 }
 
                 if (specificity > 0)
-                    GUILayout.Label(specificity == int.MaxValue ? "inline" : specificity.ToString());
+                    GUILayout.Label(specificity == StyleValueExtensions.InlineSpecificity ? "inline" : specificity.ToString());
 
                 EditorGUILayout.EndHorizontal();
             }
@@ -585,12 +595,12 @@ namespace UnityEditor.Experimental.UIElements.Debugger
 
         private int HandleReferenceProperty<T>(PropertyInfo field, ref object val) where T : UnityEngine.Object
         {
-            StyleValue<T> style = (StyleValue<T>)val;
+            IStyleValue<T> style = (IStyleValue<T>)val;
             int specificity = GetSpecificity(style);
             if (m_ShowDefaults || specificity > 0)
             {
                 style.specificity = Int32.MaxValue;
-                style.value = EditorGUILayout.ObjectField(field.Name, ((StyleValue<T>)val).value, typeof(T), false) as T;
+                style.value = EditorGUILayout.ObjectField(field.Name, ((IStyleValue<T>)val).value, typeof(T), false) as T;
                 val = style;
             }
             return specificity;
@@ -685,28 +695,28 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             cursor.width -= 2 * Styles.SizeRectBetweenSize;
             cursor.height -= 2 * Styles.SizeRectBetweenSize;
             DrawRect(cursor, Styles.SizeRectLineSize, Styles.kSizeMarginPrimaryColor, Styles.kSizeMarginSecondaryColor);
-            DrawSizeLabels(cursor, Styles.marginContent, element.style.marginTop, element.style.marginRight, element.style.marginBottom, element.style.marginLeft);
+            DrawSizeLabels(cursor, Styles.marginContent, element.resolvedStyle.marginTop, element.resolvedStyle.marginRight, element.resolvedStyle.marginBottom, element.resolvedStyle.marginLeft);
 
             cursor.x += Styles.SizeRectBetweenSize;
             cursor.y += Styles.SizeRectBetweenSize;
             cursor.width -= 2 * Styles.SizeRectBetweenSize;
             cursor.height -= 2 * Styles.SizeRectBetweenSize;
             DrawRect(cursor, Styles.SizeRectLineSize, Styles.kSizeBorderPrimaryColor, Styles.kSizeBorderSecondaryColor);
-            DrawSizeLabels(cursor, Styles.borderContent, element.style.borderTopWidth, element.style.borderRightWidth, element.style.borderBottomWidth, element.style.borderLeftWidth);
+            DrawSizeLabels(cursor, Styles.borderContent, element.resolvedStyle.borderTopWidth, element.resolvedStyle.borderRightWidth, element.resolvedStyle.borderBottomWidth, element.resolvedStyle.borderLeftWidth);
 
             cursor.x += Styles.SizeRectBetweenSize;
             cursor.y += Styles.SizeRectBetweenSize;
             cursor.width -= 2 * Styles.SizeRectBetweenSize;
             cursor.height -= 2 * Styles.SizeRectBetweenSize;
             DrawRect(cursor, Styles.SizeRectLineSize, Styles.kSizePaddingPrimaryColor, Styles.kSizePaddingSecondaryColor);
-            DrawSizeLabels(cursor, Styles.paddingContent, element.style.paddingTop, element.style.paddingRight, element.style.paddingBottom, element.style.paddingLeft);
+            DrawSizeLabels(cursor, Styles.paddingContent, element.resolvedStyle.paddingTop, element.resolvedStyle.paddingRight, element.resolvedStyle.paddingBottom, element.resolvedStyle.paddingLeft);
 
             cursor.x += Styles.SizeRectBetweenSize;
             cursor.y += Styles.SizeRectBetweenSize;
             cursor.width -= 2 * Styles.SizeRectBetweenSize;
             cursor.height -= 2 * Styles.SizeRectBetweenSize;
             DrawRect(cursor, Styles.SizeRectLineSize, Styles.kSizePrimaryColor, Styles.kSizeSecondaryColor);
-            EditorGUI.LabelField(cursor, string.Format("{0:F2} x {1:F2}", element.contentRect.width, element.contentRect.height), Styles.KSizeLabel);
+            EditorGUI.LabelField(cursor, UnityString.Format("{0:F2} x {1:F2}", element.contentRect.width, element.contentRect.height), Styles.KSizeLabel);
         }
 
         private static void DrawSizeLabels(Rect cursor, GUIContent label, float top, float right, float bottom, float left)
@@ -715,14 +725,14 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                 cursor.x + (cursor.width - Styles.LabelSizeSize) * 0.5f,
                 cursor.y + 2, Styles.LabelSizeSize,
                 EditorGUIUtility.singleLineHeight);
-            EditorGUI.LabelField(labelCursor, top.ToString("F2"), Styles.KSizeLabel);
+            EditorGUI.LabelField(labelCursor, top.ToString("F2", CultureInfo.InvariantCulture.NumberFormat), Styles.KSizeLabel);
             labelCursor.y = cursor.y + cursor.height + 2 - Styles.SizeRectBetweenSize;
-            EditorGUI.LabelField(labelCursor, bottom.ToString("F2"), Styles.KSizeLabel);
+            EditorGUI.LabelField(labelCursor, bottom.ToString("F2", CultureInfo.InvariantCulture.NumberFormat), Styles.KSizeLabel);
             labelCursor.x = cursor.x;
             labelCursor.y = cursor.y + (cursor.height - EditorGUIUtility.singleLineHeight) * 0.5f;
-            EditorGUI.LabelField(labelCursor, left.ToString("F2"), Styles.KSizeLabel);
+            EditorGUI.LabelField(labelCursor, left.ToString("F2", CultureInfo.InvariantCulture.NumberFormat), Styles.KSizeLabel);
             labelCursor.x = cursor.x + cursor.width - Styles.SizeRectBetweenSize - 4;
-            EditorGUI.LabelField(labelCursor, right.ToString("F2"), Styles.KSizeLabel);
+            EditorGUI.LabelField(labelCursor, right.ToString("F2", CultureInfo.InvariantCulture.NumberFormat), Styles.KSizeLabel);
 
             labelCursor.x = cursor.x + 2;
             labelCursor.y = cursor.y + 2;
@@ -892,23 +902,22 @@ namespace UnityEditor.Experimental.UIElements.Debugger
 
         private void FindStyleSheets(VisualElement cursor, StyleMatchingContext matchingContext)
         {
-            if (cursor.shadow.parent != null)
-                FindStyleSheets(cursor.shadow.parent, matchingContext);
+            if (cursor.hierarchy.parent != null)
+                FindStyleSheets(cursor.hierarchy.parent, matchingContext);
 
-            if (cursor.styleSheets != null)
+            if (cursor.styleSheetList == null)
+                return;
+
+            foreach (StyleSheet sheet in cursor.styleSheetList)
             {
-                foreach (StyleSheet sheet in cursor.styleSheets)
-                {
-                    selectedElementStylesheets.Add(AssetDatabase.GetAssetPath(sheet) ?? "<unknown>");
-                    matchingContext.styleSheetStack.Add(sheet);
-                }
+                selectedElementStylesheets.Add(AssetDatabase.GetAssetPath(sheet) ?? "<unknown>");
+                matchingContext.styleSheetStack.Add(sheet);
             }
         }
 
         public void FindMatchingRules(VisualElement target)
         {
-            var matchingContext = new StyleMatchingContext((element, info) => {});
-            matchingContext.currentElement = target;
+            var matchingContext = new StyleMatchingContext((element, info) => {}) { currentElement = target };
             FindStyleSheets(target, matchingContext);
 
             List<SelectorMatchRecord> matches = new List<SelectorMatchRecord>();

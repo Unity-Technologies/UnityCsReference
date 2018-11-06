@@ -9,16 +9,19 @@ namespace UnityEditor
 {
     public sealed partial class Handles
     {
-        internal static float DoSimpleEdgeHandle(Quaternion rotation, Vector3 position, float radius)
+        internal static float DoSimpleEdgeHandle(Quaternion rotation, Vector3 position, float radius, bool editable = true)
         {
             Vector3 right = rotation * Vector3.right;
 
-            // Radius handles at ends
-            EditorGUI.BeginChangeCheck();
-            radius = SizeSlider(position, right, radius);
-            radius = SizeSlider(position, -right, radius);
-            if (EditorGUI.EndChangeCheck())
-                radius = Mathf.Max(0.0f, radius);
+            if (editable)
+            {
+                // Radius handles at ends
+                EditorGUI.BeginChangeCheck();
+                radius = SizeSlider(position, right, radius);
+                radius = SizeSlider(position, -right, radius);
+                if (EditorGUI.EndChangeCheck())
+                    radius = Mathf.Max(0.0f, radius);
+            }
 
             // Draw gizmo
             if (radius > 0)
@@ -27,35 +30,38 @@ namespace UnityEditor
             return radius;
         }
 
-        internal static float DoSimpleRadiusHandle(Quaternion rotation, Vector3 position, float radius, bool hemisphere, float arc = 360.0f)
+        internal static float DoSimpleRadiusHandle(Quaternion rotation, Vector3 position, float radius, bool hemisphere, float arc = 360.0f, bool editable = true)
         {
             Vector3 forward = rotation * Vector3.forward;
             Vector3 up = rotation * Vector3.up;
             Vector3 right = rotation * Vector3.right;
 
-            // Radius handle in zenith
-            bool temp = GUI.changed;
-            GUI.changed = false;
-            radius = SizeSlider(position, forward, radius);
-            if (!hemisphere)
-                radius = SizeSlider(position, -forward, radius);
-            if (GUI.changed)
-                radius = Mathf.Max(0.0f, radius);
-            GUI.changed |= temp;
+            if (editable)
+            {
+                // Radius handle in zenith
+                bool temp = GUI.changed;
+                GUI.changed = false;
+                radius = SizeSlider(position, forward, radius);
+                if (!hemisphere)
+                    radius = SizeSlider(position, -forward, radius);
+                if (GUI.changed)
+                    radius = Mathf.Max(0.0f, radius);
+                GUI.changed |= temp;
 
-            // Radius handles at disc
-            temp = GUI.changed;
-            GUI.changed = false;
-            radius = SizeSlider(position, right, radius);
-            if (arc >= 90.0f)
-                radius = SizeSlider(position, up, radius);
-            if (arc >= 180.0f)
-                radius = SizeSlider(position, -right, radius);
-            if (arc >= 270.0f)
-                radius = SizeSlider(position, -up, radius);
-            if (GUI.changed)
-                radius = Mathf.Max(0.0f, radius);
-            GUI.changed |= temp;
+                // Radius handles at disc
+                temp = GUI.changed;
+                GUI.changed = false;
+                radius = SizeSlider(position, right, radius);
+                if (arc >= 90.0f)
+                    radius = SizeSlider(position, up, radius);
+                if (arc >= 180.0f)
+                    radius = SizeSlider(position, -right, radius);
+                if (arc >= 270.0f)
+                    radius = SizeSlider(position, -up, radius);
+                if (GUI.changed)
+                    radius = Mathf.Max(0.0f, radius);
+                GUI.changed |= temp;
+            }
 
             // Draw gizmo
             if (radius > 0)

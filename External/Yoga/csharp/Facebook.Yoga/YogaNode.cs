@@ -457,6 +457,22 @@ namespace UnityEngine.Yoga
             }
         }
 
+        public float LayoutRight
+        {
+            get
+            {
+                return Native.YGNodeLayoutGetRight(_ygNode);
+            }
+        }
+
+        public float LayoutBottom
+        {
+            get
+            {
+                return Native.YGNodeLayoutGetBottom(_ygNode);
+            }
+        }
+
         public float LayoutWidth
         {
             get

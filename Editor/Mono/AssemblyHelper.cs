@@ -261,6 +261,7 @@ namespace UnityEditor
             foreach (var asm in precompiledAssemblies)
                 searchPaths.Add(Path.GetDirectoryName(asm.Path));
 
+            searchPaths.Add("Library/ScriptAssemblies");
             return searchPaths.ToArray();
         }
 

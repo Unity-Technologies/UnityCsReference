@@ -246,9 +246,8 @@ namespace UnityEditor.U2D
             var controlID = EditorGUIUtility.GetControlID(s_Styles.packableElementHash, FocusType.Passive);
             var previousObject = property.objectReferenceValue;
 
-            EditorGUI.BeginChangeCheck();
             var changedObject = EditorGUI.DoObjectField(rect, rect, controlID, previousObject, typeof(Object), null, ValidateObjectForPackableFieldAssignment, false);
-            if (EditorGUI.EndChangeCheck())
+            if (changedObject != previousObject)
             {
                 // Always call Remove() on the previous object if we swapping the object field item.
                 // This ensure the Sprites was pack in this atlas will be refreshed of it unbound.

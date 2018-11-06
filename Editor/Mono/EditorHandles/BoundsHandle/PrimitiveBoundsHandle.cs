@@ -126,7 +126,10 @@ namespace UnityEditor.IMGUI.Controls
                 && m_Bounds.Contains(Handles.inverseMatrix.MultiplyPoint(Camera.current.transform.position));
             EditorGUI.BeginChangeCheck();
             using (new Handles.DrawingScope(Handles.color * handleColor))
-                MidpointHandles(ref minPos, ref maxPos, isCameraInsideBox);
+            {
+                if (Handles.color.a > 0)
+                    MidpointHandles(ref minPos, ref maxPos, isCameraInsideBox);
+            }
             bool changed = EditorGUI.EndChangeCheck();
 
             // detect if any handles got hotControl

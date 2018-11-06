@@ -4,7 +4,7 @@
 
 using System;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     class MouseCaptureDispatchingStrategy : IEventDispatchingStrategy
     {
@@ -37,7 +37,7 @@ namespace UnityEngine.Experimental.UIElements
 
             // Release mouse capture if capture element is not in a panel.
             VisualElement captureVE = MouseCaptureController.mouseCapture as VisualElement;
-            if (evt.GetEventTypeId() != MouseCaptureOutEvent.TypeId() && captureVE != null && captureVE.panel == null)
+            if (evt.eventTypeId != MouseCaptureOutEvent.TypeId() && captureVE != null && captureVE.panel == null)
             {
                 Debug.Log(String.Format("MouseCaptureController.mouseCapture ({0}) is not in a panel. Releasing the mouseCapture.", MouseCaptureController.mouseCapture));
                 MouseCaptureController.ReleaseMouse();
@@ -63,9 +63,9 @@ namespace UnityEngine.Experimental.UIElements
                 captureBehavior = EventBehavior.IsCapturable;
             }
 
-            if (evt.GetEventTypeId() == MouseEnterWindowEvent.TypeId() ||
-                evt.GetEventTypeId() == MouseLeaveWindowEvent.TypeId() ||
-                evt.GetEventTypeId() == WheelEvent.TypeId())
+            if (evt.eventTypeId == MouseEnterWindowEvent.TypeId() ||
+                evt.eventTypeId == MouseLeaveWindowEvent.TypeId() ||
+                evt.eventTypeId == WheelEvent.TypeId())
             {
                 captureBehavior = EventBehavior.None;
             }

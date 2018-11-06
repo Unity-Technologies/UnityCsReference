@@ -5,10 +5,10 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 using UnityEditorInternal;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     public class LayerField : PopupField<int>
     {
@@ -27,9 +27,10 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
+
         internal override string GetValueToDisplay()
         {
-            return InternalEditorUtility.GetLayerName(m_Value);
+            return InternalEditorUtility.GetLayerName(rawValue);
         }
 
         public override int value
@@ -49,7 +50,11 @@ namespace UnityEditor.Experimental.UIElements
             get { return null; }
             set
             {
-                Debug.LogWarning(L10n.Tr("LayerField doesn't support the formatting of the selected value."));
+                if (value != null)
+                {
+                    Debug.LogWarning(L10n.Tr("LayerField doesn't support the formatting of the selected value."));
+                }
+
                 m_FormatSelectedValueCallback = null;
             }
         }
@@ -59,7 +64,11 @@ namespace UnityEditor.Experimental.UIElements
             get { return null; }
             set
             {
-                Debug.LogWarning(L10n.Tr("LayerField doesn't support the formatting of the list items."));
+                if (value != null)
+                {
+                    Debug.LogWarning(L10n.Tr("LayerField doesn't support the formatting of the list items."));
+                }
+
                 m_FormatListItemCallback = null;
             }
         }
@@ -85,17 +94,36 @@ namespace UnityEditor.Experimental.UIElements
             return listOfIndex;
         }
 
-        public LayerField() : base(InitializeLayers())
+        public new static readonly string ussClassName = "unity-layer-field";
+
+        public LayerField(string label)
+            : base(label, InitializeLayers(), 0)
         {
+            AddToClassList(ussClassName);
         }
 
-        public LayerField(int defaultValue) : this()
+        public LayerField()
+            : this(null) {}
+
+        public LayerField(int defaultValue)
+            : this(null, defaultValue)
+        {
+            SetValueWithoutNotify(defaultValue);
+        }
+
+        public LayerField(string label, int defaultValue)
+            : this(label)
         {
             SetValueWithoutNotify(defaultValue);
         }
 
         internal override void AddMenuItems(GenericMenu menu)
         {
+            if (menu == null)
+            {
+                throw new ArgumentNullException(nameof(menu));
+            }
+
             choices = InitializeLayers();
             string[] layerList = InternalEditorUtility.GetLayersWithId();
             for (var i = 0; i < layerList.Length; i++)

@@ -3,16 +3,53 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine.Experimental.UIElements.StyleEnums;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
+    // Assuming a ScrollView parent with a flex-direction column.
+    // The modes follow these rules :
+    //
+    // Vertical
+    // ---------------------
+    // Require elements with an height, width will stretch.
+    // If the ScrollView parent is set to flex-direction row the elements height will not stretch.
+    // How measure works :
+    // Width is restricted, height is not. content-container is set to overflow: scroll
+    //
+    // Horizontal
+    // ---------------------
+    // Require elements with a width. If ScrollView is set to flex-grow elements height stretch else they require a height.
+    // If the ScrollView parent is set to flex-direction row the elements height will stretch.
+    // How measure works :
+    // Height is restricted, width is not. content-container is set to overflow: scroll
+    //
+    // VerticalAndHorizontal
+    // ---------------------
+    // Require elements with an height, width will stretch.
+    // The difference with the Vertical type is that content will not wrap (white-space has no effect).
+    // How measure works :
+    // Nothing is restricted, the content-container will stop shrinking so that all the content fit and scrollers will appear.
+    // To achieve this content-viewport is set to overflow: scroll and flex-direction: row.
+    // content-container is set to flex-direction: column, flex-grow: 1 and align-self:flex-start.
+    //
+    // This type is more tricky, it requires the content-viewport and content-container to have a different flex-direction.
+    // "flex-grow:1" is to make elements stretch horizontally.
+    // "align-self:flex-start" prevent the content-container from shrinking below the content size vertically.
+    // "overflow:scroll" on the content-viewport is to not restrict measured elements horizontally.
+    public enum ScrollViewMode
+    {
+        Vertical,
+        Horizontal,
+        VerticalAndHorizontal
+    }
+
     public class ScrollView : VisualElement
     {
         public new class UxmlFactory : UxmlFactory<ScrollView, UxmlTraits> {}
 
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
+            UxmlEnumAttributeDescription<ScrollViewMode> m_ScrollViewMode = new UxmlEnumAttributeDescription<ScrollViewMode> { name = "mode", defaultValue = ScrollViewMode.Vertical};
             UxmlBoolAttributeDescription m_ShowHorizontal = new UxmlBoolAttributeDescription { name = "show-horizontal-scroller" };
             UxmlBoolAttributeDescription m_ShowVertical = new UxmlBoolAttributeDescription { name = "show-vertical-scroller" };
 
@@ -24,6 +61,7 @@ namespace UnityEngine.Experimental.UIElements
                 base.Init(ve, bag, cc);
 
                 ScrollView scrollView = (ScrollView)ve;
+                scrollView.SetScrollViewMode(m_ScrollViewMode.GetValueFromBag(bag, cc));
                 scrollView.showHorizontal = m_ShowHorizontal.GetValueFromBag(bag, cc);
                 scrollView.showVertical = m_ShowVertical.GetValueFromBag(bag, cc);
                 scrollView.horizontalPageSize = m_HorizontalPageSize.GetValueFromBag(bag, cc);
@@ -95,6 +133,11 @@ namespace UnityEngine.Experimental.UIElements
 
         public void ScrollTo(VisualElement child)
         {
+            if (child == null)
+            {
+                throw new ArgumentNullException(nameof(child));
+            }
+
             // Child not in content view, no need to continue.
             if (!contentContainer.Contains(child))
                 throw new ArgumentException("Cannot scroll to null child");
@@ -134,38 +177,33 @@ namespace UnityEngine.Experimental.UIElements
             get { return m_ContentContainer; }
         }
 
-        public ScrollView() : this(FlexDirection.Column) {}
+        public static readonly string ussClassName = "unity-scroll-view";
+        public static readonly string viewportUssClassName = ussClassName + "__content-viewport";
+        public static readonly string contentUssClassName = ussClassName + "__content-container";
+        public static readonly string hScrollerUssClassName = ussClassName + "__horizontal-scroller";
+        public static readonly string vScrollerUssClassName = ussClassName + "__vertical-scroller";
+        public static readonly string horizontalVariantUssClassName = ussClassName + "--horizontal";
+        public static readonly string verticalVariantUssClassName = ussClassName + "--vertical";
+        public static readonly string verticalHorizontalVariantUssClassName = ussClassName + "--vertical-horizontal";
+        public static readonly string scrollVariantUssClassName = ussClassName + "--scroll";
 
-        public ScrollView(FlexDirection contentDirection)
+        public ScrollView() : this(ScrollViewMode.Vertical) {}
+
+        public ScrollView(ScrollViewMode scrollViewMode)
         {
-            RegisterCallback<GeometryChangedEvent>(OnFirstLayout);
+            AddToClassList(ussClassName);
 
-            contentViewport = new VisualElement();
-            contentViewport.AddToClassList("unity-scrollview-content-viewport");
+            contentViewport = new VisualElement() { name = "unity-content-viewport" };
+            contentViewport.AddToClassList(viewportUssClassName);
             contentViewport.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
-            shadow.Add(contentViewport);
+            hierarchy.Add(contentViewport);
 
-            // Basic content container; its constraints should be defined in the USS file
-            m_ContentContainer = new VisualElement();
+            m_ContentContainer = new VisualElement() { name = "unity-content-container" };
             m_ContentContainer.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
-            switch (contentDirection)
-            {
-                case FlexDirection.Column:
-                    m_ContentContainer.AddToClassList("unity-scrollview-vertical");
-                    break;
-                case FlexDirection.ColumnReverse:
-                    m_ContentContainer.AddToClassList("unity-scrollview-vertical-reverse");
-                    break;
-                case FlexDirection.Row:
-                    m_ContentContainer.AddToClassList("unity-scrollview-horizontal");
-                    break;
-                case FlexDirection.RowReverse:
-                    m_ContentContainer.AddToClassList("unity-scrollview-horizontal-reverse");
-                    break;
-            }
-
-            m_ContentContainer.AddToClassList("unity-scrollview-content-container");
+            m_ContentContainer.AddToClassList(contentUssClassName);
             contentViewport.Add(m_ContentContainer);
+
+            SetScrollViewMode(scrollViewMode);
 
             const int defaultMinScrollValue = 0;
             const int defaultMaxScrollValue = 100;
@@ -176,9 +214,9 @@ namespace UnityEngine.Experimental.UIElements
                     scrollOffset = new Vector2(value, scrollOffset.y);
                     UpdateContentViewTransform();
                 }, SliderDirection.Horizontal)
-            { persistenceKey = "HorizontalScroller", visible = false };
-            horizontalScroller.AddToClassList("unity-scrollview-horizontal-scroller");
-            shadow.Add(horizontalScroller);
+            { viewDataKey = "HorizontalScroller", visible = false };
+            horizontalScroller.AddToClassList(hScrollerUssClassName);
+            hierarchy.Add(horizontalScroller);
 
             verticalScroller = new Scroller(defaultMinScrollValue, defaultMaxScrollValue,
                 (value) =>
@@ -186,23 +224,36 @@ namespace UnityEngine.Experimental.UIElements
                     scrollOffset = new Vector2(scrollOffset.x, value);
                     UpdateContentViewTransform();
                 }, SliderDirection.Vertical)
-            { persistenceKey = "VerticalScroller", visible = false };
-            verticalScroller.AddToClassList("unity-scrollview-vertical-scroller");
-            shadow.Add(verticalScroller);
+            { viewDataKey = "VerticalScroller", visible = false };
+            verticalScroller.AddToClassList(vScrollerUssClassName);
+            hierarchy.Add(verticalScroller);
 
             RegisterCallback<WheelEvent>(OnScrollWheel);
             scrollOffset = Vector2.zero;
         }
 
-        private void OnFirstLayout(GeometryChangedEvent evt)
+        internal void SetScrollViewMode(ScrollViewMode scrollViewMode)
         {
-            // If the ScrollView is collapsed (no height/width set) automatically adds flex-grow for the user
-            // This way it behave almost like if the ScrollView content was relative and will always take space
-            if (layout.height <= 0f || layout.width <= 0f)
+            RemoveFromClassList(verticalVariantUssClassName);
+            RemoveFromClassList(horizontalVariantUssClassName);
+            RemoveFromClassList(verticalHorizontalVariantUssClassName);
+            RemoveFromClassList(scrollVariantUssClassName);
+
+            switch (scrollViewMode)
             {
-                AddToClassList("unity-flex-grow");
+                case ScrollViewMode.Vertical:
+                    AddToClassList(verticalVariantUssClassName);
+                    AddToClassList(scrollVariantUssClassName);
+                    break;
+                case ScrollViewMode.Horizontal:
+                    AddToClassList(horizontalVariantUssClassName);
+                    AddToClassList(scrollVariantUssClassName);
+                    break;
+                case ScrollViewMode.VerticalAndHorizontal:
+                    AddToClassList(scrollVariantUssClassName);
+                    AddToClassList(verticalHorizontalVariantUssClassName);
+                    break;
             }
-            UnregisterCallback<GeometryChangedEvent>(OnFirstLayout);
         }
 
         private void OnGeometryChanged(GeometryChangedEvent evt)
@@ -224,13 +275,9 @@ namespace UnityEngine.Experimental.UIElements
 
             // Expand content if scrollbars are hidden
             contentViewport.style.marginRight = needsVertical ? verticalScroller.layout.width : 0;
-            horizontalScroller.style.positionRight = needsVertical ? verticalScroller.layout.width : 0;
+            horizontalScroller.style.right = needsVertical ? verticalScroller.layout.width : 0;
             contentViewport.style.marginBottom = needsHorizontal ? horizontalScroller.layout.height : 0;
-            verticalScroller.style.positionBottom = needsHorizontal ? horizontalScroller.layout.height : 0;
-
-            // Set min width/height on the content container to make its items stretch by default
-            contentContainer.style.minWidth = contentViewport.layout.width;
-            contentContainer.style.minHeight = contentViewport.layout.height;
+            verticalScroller.style.bottom = needsHorizontal ? horizontalScroller.layout.height : 0;
 
             if (needsHorizontal && scrollableWidth > 0f)
             {

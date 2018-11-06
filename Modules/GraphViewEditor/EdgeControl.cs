@@ -4,13 +4,13 @@
 
 using System;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 using System.Collections.Generic;
 using UnityEngine.Profiling;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
-    public class EdgeControl : VisualElement
+    public class EdgeControl : ImmediateModeElement
     {
         private struct EdgeCornerSweepValues
         {
@@ -316,13 +316,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        protected override void DoRepaint(IStylePainter painter)
+        protected override void ImmediateRepaint()
         {
             UnityEngine.Profiling.Profiler.BeginSample("DrawEdge");
             UpdateEdgeCaps();
             // Edges do NOT call base.DoRepaint. It would create a visual artifact.
-            DrawEdge(painter);
-
+            Draw();
             UnityEngine.Profiling.Profiler.EndSample();
         }
 
@@ -809,12 +808,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     s_LineMat = new Material(EditorGUIUtility.LoadRequired("GraphView/AAEdge.shader") as Shader);
                 return s_LineMat;
             }
-        }
-
-        protected virtual void DrawEdge(IStylePainter painter)
-        {
-            var stylePainter = (IStylePainterInternal)painter;
-            stylePainter.DrawImmediate(Draw);
         }
 
         void Draw()

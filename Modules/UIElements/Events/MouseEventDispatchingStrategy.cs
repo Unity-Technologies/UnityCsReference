@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     class MouseEventDispatchingStrategy : IEventDispatchingStrategy
     {
@@ -26,7 +26,7 @@ namespace UnityEngine.Experimental.UIElements
 
             BaseVisualElementPanel basePanel = panel as BaseVisualElementPanel;
 
-            if (basePanel != null && (evt.GetEventTypeId() == MouseLeaveWindowEvent.TypeId() || evt.GetEventTypeId() == DragExitedEvent.TypeId()))
+            if (basePanel != null && (evt.eventTypeId == MouseLeaveWindowEvent.TypeId() || evt.eventTypeId == DragExitedEvent.TypeId()))
             {
                 basePanel.SetElementUnderMouse(null, evt);
             }
@@ -66,8 +66,8 @@ namespace UnityEngine.Experimental.UIElements
             if (!evt.isPropagationStopped && panel != null)
             {
                 if (evt.propagateToIMGUI ||
-                    evt.GetEventTypeId() == MouseEnterWindowEvent.TypeId() ||
-                    evt.GetEventTypeId() == MouseLeaveWindowEvent.TypeId()
+                    evt.eventTypeId == MouseEnterWindowEvent.TypeId() ||
+                    evt.eventTypeId == MouseLeaveWindowEvent.TypeId()
                 )
                 {
                     EventDispatchUtilities.PropagateToIMGUIContainer(panel.visualTree, evt);

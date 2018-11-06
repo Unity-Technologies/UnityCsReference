@@ -368,7 +368,7 @@ namespace UnityEditorInternal
                 previousModification = new PropertyModification();
                 previousModification.target = target;
                 previousModification.propertyPath = binding.propertyName;
-                previousModification.value = ((float)currentValue).ToString();
+                previousModification.value = ((float)currentValue).ToString(CultureInfo.InvariantCulture.NumberFormat);
             }
 
             object previousValue = currentValue;
@@ -791,7 +791,7 @@ namespace UnityEditorInternal
             var prop = new PropertyModification();
             prop.target = animator;
             prop.propertyPath = binding.propertyName;
-            prop.value = value.ToString();
+            prop.value = value.ToString(CultureInfo.InvariantCulture.NumberFormat);
 
             state.AddPropertyModification(binding, prop, modification.keepPrefabOverride);
 

@@ -79,7 +79,6 @@ namespace UnityEditor
             public GUIContent explicitNullChecks = EditorGUIUtility.TrTextContent("Explicit Null Checks");
             public GUIContent explicitDivideByZeroChecks = EditorGUIUtility.TrTextContent("Divide By Zero Checks");
             public GUIContent explicitArrayBoundsChecks = EditorGUIUtility.TrTextContent("Array Bounds Checks");
-            public GUIContent buildScriptsOnly = EditorGUIUtility.TrTextContent("Scripts Only Build");
             public GUIContent learnAboutUnityCloudBuild = EditorGUIUtility.TrTextContent("Learn about Unity Cloud Build");
             public GUIContent compressionMethod = EditorGUIUtility.TrTextContent("Compression Method", "Compression applied to Player data (scenes and resources).\nDefault - none or default platform compression.\nLZ4 - fast compression suitable for Development Builds.\nLZ4HC - higher compression rate variance of LZ4, causes longer build times. Works best for Release Builds.");
 
@@ -744,7 +743,7 @@ namespace UnityEditor
                 }
 
                 if (enableBuildScriptsOnly)
-                    EditorUserBuildSettings.buildScriptsOnly = EditorGUILayout.Toggle(styles.buildScriptsOnly, EditorUserBuildSettings.buildScriptsOnly);
+                    buildWindowExtension.DoScriptsOnlyGUI();
 
                 GUI.enabled = true;
 
@@ -861,8 +860,12 @@ namespace UnityEditor
 
             GUIContent buildButton = null;
             GUIContent buildAndRunButton = null;
+            bool askForBuildLocation = true;
             if (buildWindowExtension != null)
+            {
                 buildWindowExtension.GetBuildButtonTitles(out buildButton, out buildAndRunButton);
+                askForBuildLocation = buildWindowExtension.AskForBuildLocation();
+            }
 
             buildButton = buildButton ?? styles.build;
             buildAndRunButton = buildAndRunButton ?? styles.buildAndRun;
@@ -880,7 +883,7 @@ namespace UnityEditor
                 GUI.enabled = enableBuildButton;
                 if (GUILayout.Button(buildButton, GUILayout.Width(Styles.kButtonWidth)))
                 {
-                    CallBuildMethods(true, BuildOptions.ShowBuiltPlayer);
+                    CallBuildMethods(askForBuildLocation, BuildOptions.ShowBuiltPlayer);
                     GUIUtility.ExitGUI();
                 }
             }
@@ -898,7 +901,7 @@ namespace UnityEditor
             GUI.enabled = enableBuildAndRunButton && selectedTargetIsActive;
             if (GUILayout.Button(buildAndRunButton, GUILayout.Width(Styles.kButtonWidth)))
             {
-                BuildPlayerAndRun(true);
+                BuildPlayerAndRun(askForBuildLocation);
                 GUIUtility.ExitGUI();
             }
 

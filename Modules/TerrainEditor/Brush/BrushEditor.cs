@@ -15,6 +15,9 @@ namespace UnityEditor
         SerializedProperty m_Mask;
         SerializedProperty m_Falloff;
         SerializedProperty m_RadiusScale;
+        SerializedProperty m_BlackWhiteRemapMin;
+        SerializedProperty m_BlackWhiteRemapMax;
+        SerializedProperty m_InvertRemapRange;
 
         bool m_HasChanged = true;
         Texture2D m_PreviewTexture = null;
@@ -22,6 +25,8 @@ namespace UnityEditor
         static class Styles
         {
             public static GUIContent maskTexture = EditorGUIUtility.TrTextContent("Mask texture");
+            public static GUIContent remap = EditorGUIUtility.TrTextContent("Remap");
+            public static GUIContent remapInvert = EditorGUIUtility.TrTextContent("Invert Range");
         }
 
 
@@ -30,6 +35,9 @@ namespace UnityEditor
             m_Mask = serializedObject.FindProperty("m_Mask");
             m_Falloff = serializedObject.FindProperty("m_Falloff");
             m_RadiusScale = serializedObject.FindProperty("m_RadiusScale");
+            m_BlackWhiteRemapMin = serializedObject.FindProperty("m_BlackWhiteRemapMin");
+            m_BlackWhiteRemapMax = serializedObject.FindProperty("m_BlackWhiteRemapMax");
+            m_InvertRemapRange = serializedObject.FindProperty("m_InvertRemapRange");
         }
 
         bool IsAnyReadOnly()
@@ -60,9 +68,20 @@ namespace UnityEditor
                 m_HasChanged = true;
             }
 
+            float blackWhiteRemapMin = m_BlackWhiteRemapMin.floatValue;
+            float blackWhiteRemapMax = m_BlackWhiteRemapMax.floatValue;
+
             m_Mask.objectReferenceValue = mask;
+            EditorGUILayout.MinMaxSlider(Styles.remap, ref blackWhiteRemapMin, ref blackWhiteRemapMax, 0.0f, 1.0f);
+            EditorGUILayout.PropertyField(m_InvertRemapRange);
             EditorGUILayout.CurveField(m_Falloff, Color.white, new Rect(0, 0, 1, 1));
             EditorGUILayout.PropertyField(m_RadiusScale);
+            if (m_BlackWhiteRemapMin.floatValue != blackWhiteRemapMin || m_BlackWhiteRemapMax.floatValue != blackWhiteRemapMax)
+            {
+                m_BlackWhiteRemapMin.floatValue = blackWhiteRemapMin;
+                m_BlackWhiteRemapMax.floatValue = blackWhiteRemapMax;
+                m_HasChanged = true;
+            }
             m_HasChanged |= EditorGUI.EndChangeCheck();
             serializedObject.ApplyModifiedProperties();
 
@@ -94,7 +113,7 @@ namespace UnityEditor
 
             if (m_HasChanged || m_PreviewTexture == null)
             {
-                m_PreviewTexture = Brush.GenerateBrushTexture(mask, m_Falloff.animationCurveValue, m_RadiusScale.floatValue, texWidth, texHeight, true);
+                m_PreviewTexture = Brush.GenerateBrushTexture(mask, m_Falloff.animationCurveValue, m_RadiusScale.floatValue, m_BlackWhiteRemapMin.floatValue, m_BlackWhiteRemapMax.floatValue, m_InvertRemapRange.boolValue,  texWidth, texHeight, true);
                 m_HasChanged = false;
             }
 
@@ -115,12 +134,12 @@ namespace UnityEditor
             Brush brush = AssetDatabase.LoadMainAssetAtPath(assetPath) as Brush;
 
             if (brush == null)
-                return Brush.DefaultMask();
+                return null;
 
             if (brush.m_Mask == null)
                 brush.m_Mask = Brush.DefaultMask();
             PreviewHelpers.AdjustWidthAndHeightForStaticPreview(brush.m_Mask.width, brush.m_Mask.height, ref width, ref height);
-            return Brush.GenerateBrushTexture(brush.m_Mask, brush.m_Falloff, brush.m_RadiusScale, width, height, true);
+            return Brush.GenerateBrushTexture(brush.m_Mask, brush.m_Falloff, brush.m_RadiusScale, brush.m_BlackWhiteRemapMin, brush.m_BlackWhiteRemapMax, brush.m_InvertRemapRange, width, height, true);
         }
     }
 }

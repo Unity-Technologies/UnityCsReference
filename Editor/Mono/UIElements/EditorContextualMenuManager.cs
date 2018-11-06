@@ -3,17 +3,22 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     class EditorContextualMenuManager : ContextualMenuManager
     {
         public override void DisplayMenuIfEventMatches(EventBase evt, IEventHandler eventHandler)
         {
+            if (evt == null)
+            {
+                return;
+            }
+
             if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
             {
-                if (evt.GetEventTypeId() == MouseDownEvent.TypeId())
+                if (evt.eventTypeId == MouseDownEvent.TypeId())
                 {
                     MouseDownEvent e = evt as MouseDownEvent;
 
@@ -28,7 +33,7 @@ namespace UnityEditor.Experimental.UIElements
             }
             else
             {
-                if (evt.GetEventTypeId() == MouseUpEvent.TypeId())
+                if (evt.eventTypeId == MouseUpEvent.TypeId())
                 {
                     MouseUpEvent e = evt as MouseUpEvent;
                     if (e.button == (int)MouseButton.RightMouse)
@@ -40,7 +45,7 @@ namespace UnityEditor.Experimental.UIElements
                 }
             }
 
-            if (evt.GetEventTypeId() == KeyUpEvent.TypeId())
+            if (evt.eventTypeId == KeyUpEvent.TypeId())
             {
                 KeyUpEvent e = evt as KeyUpEvent;
                 if (e.keyCode == KeyCode.Menu)

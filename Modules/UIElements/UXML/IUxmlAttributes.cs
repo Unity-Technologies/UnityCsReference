@@ -4,10 +4,10 @@
 
 using System;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
-    public interface IUxmlAttributes
+    // nasty trick.
+    public interface IUxmlAttributes : UnityEngine.Experimental.UIElements.IUxmlAttributes
     {
-        bool TryGetAttributeValue(string attributeName, out string value);
     }
 }

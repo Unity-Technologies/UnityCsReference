@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public abstract class UxmlTypeRestriction : IEquatable<UxmlTypeRestriction>
     {
@@ -18,7 +18,7 @@ namespace UnityEngine.Experimental.UIElements
 
     public class UxmlValueMatches : UxmlTypeRestriction
     {
-        public string regex;
+        public string regex { get; set; }
 
         public override bool Equals(UxmlTypeRestriction other)
         {
@@ -35,10 +35,10 @@ namespace UnityEngine.Experimental.UIElements
 
     public class UxmlValueBounds : UxmlTypeRestriction
     {
-        public string min;
-        public string max;
-        public bool excludeMin;
-        public bool excludeMax;
+        public string min { get; set; }
+        public string max { get; set; }
+        public bool excludeMin { get; set; }
+        public bool excludeMax { get; set; }
 
         public override bool Equals(UxmlTypeRestriction other)
         {
@@ -55,7 +55,13 @@ namespace UnityEngine.Experimental.UIElements
 
     public class UxmlEnumeration : UxmlTypeRestriction
     {
-        public List<string> values = new List<string>();
+        List<string> m_Values = new List<string>();
+
+        public IEnumerable<string> values
+        {
+            get { return m_Values; }
+            set { m_Values = value.ToList(); }
+        }
 
         public override bool Equals(UxmlTypeRestriction other)
         {
@@ -66,7 +72,7 @@ namespace UnityEngine.Experimental.UIElements
                 return false;
             }
 
-            return values.All(otherE.values.Contains) && values.Count == otherE.values.Count;
+            return values.All(otherE.values.Contains) && values.Count() == otherE.values.Count();
         }
     }
 }

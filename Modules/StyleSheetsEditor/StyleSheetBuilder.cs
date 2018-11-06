@@ -5,7 +5,7 @@
 //#define ENABLE_STYLE_SHEET_BUILDER_LOGS
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.StyleSheets;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.StyleSheets
 {

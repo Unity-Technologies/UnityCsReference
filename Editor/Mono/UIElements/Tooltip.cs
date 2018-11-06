@@ -3,11 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
+using UnityEngine.UIElements;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     static class Tooltip
     {
@@ -16,7 +15,7 @@ namespace UnityEditor.Experimental.UIElements
         {
             //mouseX,mouseY are screen relative.
             GUIView view = GUIView.mouseOverView;
-            if (view != null && view.visualTree != null && view.visualTree.panel != null)
+            if (view != null && view.uieMode != GUIView.UIElementsMode.Experimental && view.visualTree != null && view.visualTree.panel != null)
             {
                 var panel = view.visualTree.panel;
 
@@ -41,6 +40,9 @@ namespace UnityEditor.Experimental.UIElements
                     }
                 }
             }
+
+            //temporary for backwards compatibility
+            UnityEditor.Experimental.UIElements.Tooltip.SetTooltip(mouseX, mouseY);
         }
     }
 }

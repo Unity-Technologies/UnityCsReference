@@ -120,6 +120,8 @@ namespace UnityEngine
         public void SetBuffer(int nameID, ComputeBuffer value)  { SetBufferImpl(nameID, value); }
         public void SetTexture(string name, Texture value)      { SetTextureImpl(Shader.PropertyToID(name), value); }
         public void SetTexture(int nameID, Texture value)       { SetTextureImpl(nameID, value); }
+        public void SetConstantBuffer(string name, ComputeBuffer value, int offset, int size) { SetConstantBufferImpl(Shader.PropertyToID(name), value, offset, size); }
+        public void SetConstantBuffer(int nameID, ComputeBuffer value, int offset, int size) { SetConstantBufferImpl(nameID, value, offset, size); }
 
         public void SetFloatArray(string name, List<float> values)  { SetFloatArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
         public void SetFloatArray(int nameID,  List<float> values)  { SetFloatArray(nameID, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
@@ -332,6 +334,7 @@ namespace UnityEngine
         public static void SetGlobalTexture(int nameID, Texture value)          { SetGlobalTextureImpl(nameID, value); }
         public static void SetGlobalBuffer(string name, ComputeBuffer value)    { SetGlobalBufferImpl(Shader.PropertyToID(name), value); }
         public static void SetGlobalBuffer(int nameID, ComputeBuffer value)     { SetGlobalBufferImpl(nameID, value); }
+        public static void SetGlobalConstantBuffer(int nameID, ComputeBuffer value, int offset, int size) { SetGlobalConstantBufferImpl(nameID, value, offset, size); }
 
         public static void SetGlobalFloatArray(string name, List<float> values) { SetGlobalFloatArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
         public static void SetGlobalFloatArray(int nameID, List<float> values)  { SetGlobalFloatArray(nameID, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
@@ -498,6 +501,8 @@ namespace UnityEngine
         public void SetTexture(int nameID, Texture value)       { SetTextureImpl(nameID, value); }
         public void SetBuffer(string name, ComputeBuffer value) { SetBufferImpl(Shader.PropertyToID(name), value); }
         public void SetBuffer(int nameID, ComputeBuffer value)  { SetBufferImpl(nameID, value); }
+        public void SetConstantBuffer(string name, ComputeBuffer value, int offset, int size) { SetConstantBufferImpl(Shader.PropertyToID(name), value, offset, size); }
+        public void SetConstantBuffer(int nameID, ComputeBuffer value, int offset, int size) { SetConstantBufferImpl(nameID, value, offset, size); }
 
         public void SetFloatArray(string name, List<float> values)  { SetFloatArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
         public void SetFloatArray(int nameID,    List<float> values) { SetFloatArray(nameID, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }

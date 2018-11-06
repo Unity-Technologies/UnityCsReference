@@ -4,8 +4,7 @@
 
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
+using UnityEngine.UIElements;
 
 namespace Unity.Experimental.EditorMode
 {
@@ -15,7 +14,7 @@ namespace Unity.Experimental.EditorMode
         public override void OnEnable()
         {
             InvokeOnGUIEnabled = false;
-            Window.rootVisualContainer.visible = false;
+            Window.rootVisualElement.visible = false;
 
             var unsupported = new VisualElement();
             Root.Add(unsupported);
@@ -32,7 +31,7 @@ namespace Unity.Experimental.EditorMode
 
         public override void OnDisable()
         {
-            Window.rootVisualContainer.visible = true;
+            Window.rootVisualElement.visible = true;
             InvokeOnGUIEnabled = true;
         }
 

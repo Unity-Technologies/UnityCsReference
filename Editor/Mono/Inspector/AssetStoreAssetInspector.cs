@@ -304,7 +304,7 @@ namespace UnityEditor
             if (idx < 0)
                 return "<error>";
 
-            return string.Format("{0:#.##} {1}", val, scale[idx]);
+            return UnityString.Format("{0:#.##} {1}", val, scale[idx]);
         }
 
         public override bool HasPreviewGUI()

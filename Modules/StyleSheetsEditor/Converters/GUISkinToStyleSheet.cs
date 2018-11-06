@@ -6,7 +6,7 @@ using UnityEditor.Experimental;
 using UnityEditor.StyleSheets;
 using UnityEditorInternal;
 using UnityEngine;
-using UnityEngine.StyleSheets;
+using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.StyleSheets

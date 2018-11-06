@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using System.Linq;
 using Object = UnityEngine.Object;
+using System.Globalization;
 
 namespace UnityEditor
 {
@@ -286,7 +287,7 @@ namespace UnityEditor
 
                         rect.x += rect.width;
                         rect.width = kWeightWidth;
-                        GUI.Label(rect, "Weight " + blendInfos[i].weight.ToString("f2"), EditorStyles.miniLabel);
+                        GUI.Label(rect, "Weight " + blendInfos[i].weight.ToString("f2", CultureInfo.InvariantCulture.NumberFormat), EditorStyles.miniLabel);
                     }
                 }
             }

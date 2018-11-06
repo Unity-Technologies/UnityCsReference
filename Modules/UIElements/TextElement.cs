@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     internal interface ITextElement
     {
@@ -31,11 +31,12 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        internal const string k_TextElementClass = "textElement";
+        public static readonly string ussClassName = "unity-text-element";
+
         public TextElement()
         {
             requireMeasureFunction = true;
-            AddToClassList(k_TextElementClass);
+            AddToClassList(ussClassName);
         }
 
         [SerializeField]
@@ -51,12 +52,12 @@ namespace UnityEngine.Experimental.UIElements
                 m_Text = value;
                 IncrementVersion(VersionChangeType.Layout);
 
-                if (!string.IsNullOrEmpty(persistenceKey))
-                    SavePersistentData();
+                if (!string.IsNullOrEmpty(viewDataKey))
+                    SaveViewData();
             }
         }
 
-        protected override void DoRepaint(IStylePainter painter)
+        internal override void DoRepaint(IStylePainter painter)
         {
             var stylePainter = (IStylePainterInternal)painter;
             stylePainter.DrawText(text);
@@ -78,7 +79,7 @@ namespace UnityEngine.Experimental.UIElements
             //       measure. The resulting measure should then be divided by this scaling to obtain the local measure.
             float scaling = 1;
 
-            Font usedFont = ve.style.font;
+            Font usedFont = ve.computedStyle.unityFont.value;
             if (textToMeasure == null || usedFont == null)
                 return new Vector2(measuredWidth, measuredHeight);
 
@@ -126,10 +127,10 @@ namespace UnityEngine.Experimental.UIElements
             return new Vector2(measuredWidth, measuredHeight);
         }
 
-        protected internal override Vector2 DoMeasure(float width, MeasureMode widthMode, float height,
+        protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight,
             MeasureMode heightMode)
         {
-            return MeasureTextSize(text, width, widthMode, height, heightMode);
+            return MeasureTextSize(text, desiredWidth, widthMode, desiredHeight, heightMode);
         }
     }
 }

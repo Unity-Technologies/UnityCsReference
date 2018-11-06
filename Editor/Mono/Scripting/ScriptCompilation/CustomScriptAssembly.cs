@@ -121,7 +121,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public CustomScriptAssemblyPlatform[] IncludePlatforms { get; set;  }
         public CustomScriptAssemblyPlatform[] ExcludePlatforms { get; set;  }
 
-        public EditorCompilation.PackageAssembly? PackageAssembly { get; set; }
+        public AssetPathMetaData AssetPathMetaData { get; set; }
         public ScriptCompilerOptions CompilerOptions { get; set; }
 
         public bool OverrideReferences { get; set; }
@@ -216,8 +216,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return false;
             }
 
-            var isPackage = PackageAssembly.HasValue;
-            if (isTestAssembly && isPackage && !PackageAssembly.Value.IncludeTestAssemblies)
+            if (isTestAssembly && AssetPathMetaData != null && !AssetPathMetaData.IsTestable)
             {
                 return false;
             }

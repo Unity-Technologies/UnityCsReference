@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public class Clickable : MouseManipulator
     {
@@ -12,7 +12,7 @@ namespace UnityEngine.Experimental.UIElements
         private readonly long m_Delay; // in milliseconds
         private readonly long m_Interval; // in milliseconds
 
-        protected bool m_Active;
+        protected bool active { get; set; }
 
         public Vector2 lastMousePosition { get; private set; }
 
@@ -24,7 +24,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             m_Delay = delay;
             m_Interval = interval;
-            m_Active = false;
+            active = false;
         }
 
         public Clickable(System.Action<EventBase> handler)
@@ -40,7 +40,7 @@ namespace UnityEngine.Experimental.UIElements
 
             activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
 
-            m_Active = false;
+            active = false;
         }
 
         private void OnTimer(TimerState timerState)
@@ -80,9 +80,9 @@ namespace UnityEngine.Experimental.UIElements
 
         protected void OnMouseDown(MouseDownEvent evt)
         {
-            if (CanStartManipulation(evt))
+            if (evt != null && CanStartManipulation(evt))
             {
-                m_Active = true;
+                active = true;
                 target.CaptureMouse();
                 lastMousePosition = evt.localMousePosition;
 
@@ -93,8 +93,8 @@ namespace UnityEngine.Experimental.UIElements
                     {
                         if (clicked != null)
                             clicked();
-                        else if (clickedWithEventInfo != null)
-                            clickedWithEventInfo(evt);
+                        else
+                            clickedWithEventInfo?.Invoke(evt);
                     }
 
                     if (m_Repeater == null)
@@ -115,7 +115,7 @@ namespace UnityEngine.Experimental.UIElements
 
         protected void OnMouseMove(MouseMoveEvent evt)
         {
-            if (m_Active)
+            if (evt != null && active)
             {
                 lastMousePosition = evt.localMousePosition;
 
@@ -134,9 +134,9 @@ namespace UnityEngine.Experimental.UIElements
 
         protected void OnMouseUp(MouseUpEvent evt)
         {
-            if (m_Active && CanStopManipulation(evt))
+            if (evt != null && active && CanStopManipulation(evt))
             {
-                m_Active = false;
+                active = false;
                 target.ReleaseMouse();
 
                 if (IsRepeatable())
@@ -154,8 +154,8 @@ namespace UnityEngine.Experimental.UIElements
                     {
                         if (clicked != null)
                             clicked();
-                        else if (clickedWithEventInfo != null)
-                            clickedWithEventInfo(evt);
+                        else
+                            clickedWithEventInfo?.Invoke(evt);
                     }
                 }
                 target.pseudoStates &= ~PseudoStates.Active;

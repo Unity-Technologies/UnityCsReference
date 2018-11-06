@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using UnityEditor.AnimatedValues;
@@ -64,7 +65,7 @@ namespace UnityEditor
 
             public override string ToString()
             {
-                return string.Format("{0}||{1}||{2}", drawMode, name, section);
+                return UnityString.Format("{0}||{1}||{2}", drawMode, name, section);
             }
         }
 
@@ -1593,7 +1594,7 @@ namespace UnityEditor
 
         String CreateSwatchDescriptionForName(float minLum, float maxLum)
         {
-            return "Luminance (" + minLum.ToString("F2") + " - " + maxLum.ToString("F2") + ")";
+            return "Luminance (" + minLum.ToString("F2", CultureInfo.InvariantCulture.NumberFormat) + " - " + maxLum.ToString("F2", CultureInfo.InvariantCulture.NumberFormat) + ")";
         }
 
         void CreateAlbedoSwatchData()

@@ -2,9 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public class VisualElementFocusChangeDirection : FocusChangeDirection
     {
@@ -45,7 +46,7 @@ namespace UnityEngine.Experimental.UIElements
             m_FocusRing = new List<FocusRingRecord>();
         }
 
-        VisualElement root;
+        readonly VisualElement root;
 
         public DefaultFocusOrder defaultFocusOrder { get; set; }
 
@@ -133,16 +134,16 @@ namespace UnityEngine.Experimental.UIElements
 
         int FocusRingSort(FocusRingRecord a, FocusRingRecord b)
         {
-            if (a.m_Focusable.focusIndex == 0 && b.m_Focusable.focusIndex == 0)
+            if (a.m_Focusable.tabIndex == 0 && b.m_Focusable.tabIndex == 0)
             {
                 return FocusRingAutoIndexSort(a, b);
             }
-            else if (a.m_Focusable.focusIndex == 0)
+            else if (a.m_Focusable.tabIndex == 0)
             {
                 // Only b has a focus index. It has priority.
                 return 1;
             }
-            else if (b.m_Focusable.focusIndex == 0)
+            else if (b.m_Focusable.tabIndex == 0)
             {
                 // Only a has a focus index. It has priority.
                 return -1;
@@ -150,7 +151,7 @@ namespace UnityEngine.Experimental.UIElements
             else
             {
                 // a and b should be ordered using their focus index.
-                int result = Comparer<int>.Default.Compare(a.m_Focusable.focusIndex, b.m_Focusable.focusIndex);
+                int result = Comparer<int>.Default.Compare(a.m_Focusable.tabIndex, b.m_Focusable.tabIndex);
                 // but if the focus index result is being equal, we need to fallback with their automatic index
                 if (result == 0)
                 {
@@ -173,11 +174,11 @@ namespace UnityEngine.Experimental.UIElements
 
         void BuildRingRecursive(VisualElement vc, ref int focusIndex)
         {
-            for (int i = 0; i < vc.shadow.childCount; i++)
+            for (int i = 0; i < vc.hierarchy.childCount; i++)
             {
-                var child = vc.shadow[i];
+                var child = vc.hierarchy[i];
 
-                if (child.canGrabFocus)
+                if (child.canGrabFocus && child.tabIndex >= 0)
                 {
                     m_FocusRing.Add(new FocusRingRecord
                     {
@@ -207,17 +208,22 @@ namespace UnityEngine.Experimental.UIElements
 
         public FocusChangeDirection GetFocusChangeDirection(Focusable currentFocusable, EventBase e)
         {
+            if (e == null)
+            {
+                throw new ArgumentNullException(nameof(e));
+            }
+
             // FUTURE:
             // We could implement an extendable adapter system to convert event to a focus change direction.
             // This would enable new event sources to change the focus.
 
-            if (currentFocusable as IMGUIContainer != null && e.imguiEvent != null)
+            if (currentFocusable is IMGUIContainer && e.imguiEvent != null)
             {
                 // Let IMGUIContainer manage the focus change.
                 return FocusChangeDirection.none;
             }
 
-            if (e.GetEventTypeId() == KeyDownEvent.TypeId())
+            if (e.eventTypeId == KeyDownEvent.TypeId())
             {
                 KeyDownEvent kde = e as KeyDownEvent;
                 EventModifiers modifiers = kde.modifiers;

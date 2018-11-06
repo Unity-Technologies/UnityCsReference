@@ -5,10 +5,10 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleSheets;
+using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     public class FreehandSelector : MouseManipulator
     {
@@ -149,10 +149,15 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 m_FreehandElement.deleteModifier = e.altKey;
         }
 
-        private class FreehandElement : VisualElement
+        private class FreehandElement : ImmediateModeElement
         {
             private List<Vector2> m_Points = new List<Vector2>();
             public List<Vector2> points { get { return m_Points; } }
+
+            public FreehandElement()
+            {
+                RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
+            }
 
             private bool m_DeleteModifier;
             public bool deleteModifier
@@ -167,29 +172,37 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 }
             }
 
-            private const string k_SegmentSizeProperty = "segment-size";
-            private const string k_SegmentColorProperty = "segment-color";
-            private const string k_DeleteSegmentColorProperty = "delete-segment-color";
+            private static CustomStyleProperty<float> s_SegmentSizeProperty = new CustomStyleProperty<float>("--segment-size");
+            private static CustomStyleProperty<Color> s_SegmentColorProperty = new CustomStyleProperty<Color>("--segment-color");
+            private static CustomStyleProperty<Color> s_DeleteSegmentColorProperty = new CustomStyleProperty<Color>("--delete-segment-color");
 
-            StyleValue<float> m_SegmentSize;
-            public float segmentSize { get { return m_SegmentSize.GetSpecifiedValueOrDefault(5f); } }
+            float m_SegmentSize = 5f;
+            public float segmentSize { get { return m_SegmentSize; } }
 
-            StyleValue<Color> m_SegmentColor;
-            public Color segmentColor { get { return m_SegmentColor.GetSpecifiedValueOrDefault(new Color(1f, 0.6f, 0f)); } }
+            Color m_SegmentColor = new Color(1f, 0.6f, 0f);
+            public Color segmentColor { get { return m_SegmentColor; } }
 
-            StyleValue<Color> m_DeleteSegmentColor;
-            public Color deleteSegmentColor { get { return m_DeleteSegmentColor.GetSpecifiedValueOrDefault(new Color(1f, 0f, 0f)); } }
+            Color m_DeleteSegmentColor = new Color(1f, 0f, 0f);
+            public Color deleteSegmentColor { get { return m_DeleteSegmentColor; } }
 
-            protected override void OnStyleResolved(ICustomStyle styles)
+            private void OnCustomStyleResolved(CustomStyleResolvedEvent e)
             {
-                base.OnStyleResolved(styles);
+                ICustomStyle styles = e.customStyle;
+                float segmentSizeValue = 0f;
+                Color segmentColorValue = Color.clear;
+                Color deleteColorValue = Color.clear;
 
-                styles.ApplyCustomProperty(k_SegmentSizeProperty, ref m_SegmentSize);
-                styles.ApplyCustomProperty(k_SegmentColorProperty, ref m_SegmentColor);
-                styles.ApplyCustomProperty(k_DeleteSegmentColorProperty, ref m_DeleteSegmentColor);
+                if (styles.TryGetValue(s_SegmentSizeProperty, out segmentSizeValue))
+                    m_SegmentSize = segmentSizeValue;
+
+                if (styles.TryGetValue(s_SegmentColorProperty, out segmentColorValue))
+                    m_SegmentColor = segmentColorValue;
+
+                if (styles.TryGetValue(s_DeleteSegmentColorProperty, out deleteColorValue))
+                    m_DeleteSegmentColor = deleteColorValue;
             }
 
-            protected override void DoRepaint(IStylePainter painter)
+            protected override void ImmediateRepaint()
             {
                 var pointCount = points.Count;
                 if (pointCount < 1)

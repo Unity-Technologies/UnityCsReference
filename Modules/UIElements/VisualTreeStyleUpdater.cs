@@ -4,11 +4,10 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine.Experimental.UIElements.StyleSheets;
+using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.Profiling;
-using UnityEngine.StyleSheets;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     internal static class StyleCache
     {
@@ -57,15 +56,15 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (element != null)
             {
-                if (element.styleSheets != null)
-                    element.LoadStyleSheetsFromPaths();
+                element.ReloadStyleSheets();
 
-                foreach (var child in element.shadow.Children())
+                foreach (var child in element.hierarchy.Children())
                 {
                     PropagateDirtyStyleSheets(child);
                 }
             }
         }
+
 
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
@@ -156,10 +155,10 @@ namespace UnityEngine.Experimental.UIElements
 
         private void PropagateToChildren(VisualElement ve)
         {
-            int count = ve.shadow.childCount;
+            int count = ve.hierarchy.childCount;
             for (int i = 0; i < count; i++)
             {
-                var child = ve.shadow[i];
+                var child = ve.hierarchy[i];
                 bool result = m_UpdateList.Add(child);
                 if (result)
                     PropagateToChildren(child);
@@ -168,7 +167,7 @@ namespace UnityEngine.Experimental.UIElements
 
         private void PropagateToParents(VisualElement ve)
         {
-            var parent = ve.shadow.parent;
+            var parent = ve.hierarchy.parent;
             while (parent != null)
             {
                 if (!m_ParentList.Add(parent))
@@ -176,7 +175,7 @@ namespace UnityEngine.Experimental.UIElements
                     break;
                 }
 
-                parent = parent.shadow.parent;
+                parent = parent.hierarchy.parent;
             }
         }
 
@@ -204,11 +203,11 @@ namespace UnityEngine.Experimental.UIElements
 
             int originalStyleSheetCount = m_StyleMatchingContext.styleSheetStack.Count;
 
-            if (element.styleSheets != null)
+            if (element.styleSheetList != null)
             {
-                for (var index = 0; index < element.styleSheets.Count; index++)
+                for (var index = 0; index < element.styleSheetList.Count; index++)
                 {
-                    var styleSheetData = element.styleSheets[index];
+                    var styleSheetData = element.styleSheetList[index];
                     m_StyleMatchingContext.styleSheetStack.Add(styleSheetData);
                 }
             }
@@ -271,7 +270,6 @@ namespace UnityEngine.Experimental.UIElements
                 }
 
                 resolvedStyles.ApplyLayoutValues();
-
 
                 StyleCache.SetValue(matchingRulesHash, resolvedStyles);
 

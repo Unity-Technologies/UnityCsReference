@@ -9,6 +9,8 @@ using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 using uei = UnityEngine.Internal;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine
 {
@@ -167,6 +169,19 @@ namespace UnityEngineInternal
         [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
         [NativeMethod(Name = "SetFramebufferDepthMemorylessMode")]
         extern internal static void SetFramebufferDepthMemorylessMode(MemorylessMode mode);
+    }
+}
+
+namespace UnityEngine
+{
+    [NativeType("Runtime/GfxDevice/GfxDeviceTypes.h")]
+    public enum ComputeBufferMode
+    {
+        Immutable = 0,
+        Dynamic,
+        Circular,
+        StreamOut,
+        SubUpdates,
     }
 }
 

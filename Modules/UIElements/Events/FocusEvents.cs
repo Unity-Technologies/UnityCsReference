@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public interface IFocusEvent
     {
@@ -13,19 +13,24 @@ namespace UnityEngine.Experimental.UIElements
 
     public abstract class FocusEventBase<T> : EventBase<T>, IFocusEvent where T : FocusEventBase<T>, new()
     {
-        public Focusable relatedTarget { get; protected set; }
+        public Focusable relatedTarget { get; private set; }
 
-        public FocusChangeDirection direction { get; protected set; }
+        public FocusChangeDirection direction { get; private set; }
 
-        protected FocusController m_FocusController;
+        protected FocusController focusController { get; private set; }
 
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.TricklesDown;
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
+            propagation = EventPropagation.TricklesDown;
             relatedTarget = null;
             direction = FocusChangeDirection.unspecified;
-            m_FocusController = null;
+            focusController = null;
         }
 
         public static T GetPooled(IEventHandler target, Focusable relatedTarget, FocusChangeDirection direction, FocusController focusController)
@@ -34,13 +39,13 @@ namespace UnityEngine.Experimental.UIElements
             e.target = target;
             e.relatedTarget = relatedTarget;
             e.direction = direction;
-            e.m_FocusController = focusController;
+            e.focusController = focusController;
             return e;
         }
 
         protected FocusEventBase()
         {
-            Init();
+            LocalInit();
         }
     }
 
@@ -49,12 +54,17 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.Bubbles | EventFlags.TricklesDown;
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown;
         }
 
         public FocusOutEvent()
         {
-            Init();
+            LocalInit();
         }
     }
 
@@ -62,7 +72,7 @@ namespace UnityEngine.Experimental.UIElements
     {
         protected internal override void PreDispatch()
         {
-            m_FocusController.DoFocusChange(relatedTarget);
+            focusController.DoFocusChange(relatedTarget);
         }
     }
 
@@ -71,12 +81,17 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.Bubbles | EventFlags.TricklesDown;
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown;
         }
 
         public FocusInEvent()
         {
-            Init();
+            LocalInit();
         }
     }
 
@@ -84,7 +99,7 @@ namespace UnityEngine.Experimental.UIElements
     {
         protected internal override void PreDispatch()
         {
-            m_FocusController.DoFocusChange(target as Focusable);
+            focusController.DoFocusChange(target as Focusable);
         }
     }
 }

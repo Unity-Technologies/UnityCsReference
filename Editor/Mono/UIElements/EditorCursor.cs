@@ -3,13 +3,14 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
+using Cursor = UnityEngine.UIElements.Cursor;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     internal class EditorCursorManager : ICursorManager
     {
-        public void SetCursor(CursorStyle cursor)
+        public void SetCursor(Cursor cursor)
         {
             if (GUIView.current == null)
             {

@@ -5,9 +5,8 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Profiling;
-using UnityEngine.StyleSheets;
 
-namespace UnityEngine.Experimental.UIElements.StyleSheets
+namespace UnityEngine.UIElements.StyleSheets
 {
     // Result of a single match between a selector and visual element.
     internal struct MatchResultInfo

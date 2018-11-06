@@ -7,6 +7,7 @@ using System.Linq;
 using UnityEditor.AnimatedValues;
 using UnityEngine.Rendering;
 using UnityEngineInternal;
+using System.Globalization;
 
 namespace UnityEditor
 {
@@ -411,10 +412,10 @@ namespace UnityEditor
             GUILayout.BeginVertical();
 
             GUILayout.Label(Styles.AtlasIndex.text + ": " + m_LightmapIndex.intValue.ToString());
-            GUILayout.Label(Styles.AtlasTilingX.text + ": " + m_LightmapTilingOffsetX.floatValue.ToString());
-            GUILayout.Label(Styles.AtlasTilingY.text + ": " + m_LightmapTilingOffsetY.floatValue.ToString());
-            GUILayout.Label(Styles.AtlasOffsetX.text + ": " + m_LightmapTilingOffsetZ.floatValue.ToString());
-            GUILayout.Label(Styles.AtlasOffsetY.text + ": " + m_LightmapTilingOffsetW.floatValue.ToString());
+            GUILayout.Label(Styles.AtlasTilingX.text + ": " + m_LightmapTilingOffsetX.floatValue.ToString(CultureInfo.InvariantCulture.NumberFormat));
+            GUILayout.Label(Styles.AtlasTilingY.text + ": " + m_LightmapTilingOffsetY.floatValue.ToString(CultureInfo.InvariantCulture.NumberFormat));
+            GUILayout.Label(Styles.AtlasOffsetX.text + ": " + m_LightmapTilingOffsetZ.floatValue.ToString(CultureInfo.InvariantCulture.NumberFormat));
+            GUILayout.Label(Styles.AtlasOffsetY.text + ": " + m_LightmapTilingOffsetW.floatValue.ToString(CultureInfo.InvariantCulture.NumberFormat));
 
             GUILayout.EndVertical();
             GUILayout.FlexibleSpace();

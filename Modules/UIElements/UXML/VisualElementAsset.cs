@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     [Serializable]
     internal class VisualElementAsset : IUxmlAttributes, ISerializationCallbackReceiver
@@ -79,61 +79,10 @@ namespace UnityEngine.Experimental.UIElements
         public VisualElementAsset(string fullTypeName)
         {
             m_FullTypeName = fullTypeName;
+
             m_Name = String.Empty;
             m_Text = String.Empty;
             m_PickingMode = PickingMode.Position;
-        }
-
-        public VisualElement Create(CreationContext ctx)
-        {
-            List<IUxmlFactory> factoryList;
-            if (!VisualElementFactoryRegistry.TryGetValue(fullTypeName, out factoryList))
-            {
-                Debug.LogErrorFormat("Element '{0}' has no registered factory method.", fullTypeName);
-                return new Label(string.Format("Unknown type: '{0}'", fullTypeName));
-            }
-
-            IUxmlFactory factory = null;
-            foreach (IUxmlFactory f in factoryList)
-            {
-                if (f.AcceptsAttributeBag(this, ctx))
-                {
-                    factory = f;
-                    break;
-                }
-            }
-
-            if (factory == null)
-            {
-                Debug.LogErrorFormat("Element '{0}' has a no factory that accept the set of XML attributes specified.", fullTypeName);
-                return new Label(string.Format("Type with no factory: '{0}'", fullTypeName));
-            }
-
-            if (factory is UxmlRootElementFactory)
-            {
-                return null;
-            }
-
-            VisualElement res = factory.Create(this, ctx);
-            if (res == null)
-            {
-                Debug.LogErrorFormat("The factory of Visual Element Type '{0}' has returned a null object", fullTypeName);
-                return new Label(string.Format("The factory of Visual Element Type '{0}' has returned a null object", fullTypeName));
-            }
-
-            if (classes != null)
-            {
-                for (int i = 0; i < classes.Length; i++)
-                    res.AddToClassList(classes[i]);
-            }
-
-            if (stylesheets != null)
-            {
-                for (int i = 0; i < stylesheets.Count; i++)
-                    res.AddStyleSheetPath(stylesheets[i]);
-            }
-
-            return res;
         }
 
         public void OnBeforeSerialize() {}

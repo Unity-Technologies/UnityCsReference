@@ -6,6 +6,7 @@ using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
+using System.Globalization;
 
 namespace UnityEngine
 {
@@ -51,7 +52,7 @@ namespace UnityEngine
         // Returns a nicely formatted string of this color.
         public string ToString(string format)
         {
-            return UnityString.Format("RGBA({0}, {1}, {2}, {3})", r.ToString(format), g.ToString(format), b.ToString(format), a.ToString(format));
+            return UnityString.Format("RGBA({0}, {1}, {2}, {3})", r.ToString(format, CultureInfo.InvariantCulture.NumberFormat), g.ToString(format, CultureInfo.InvariantCulture.NumberFormat), b.ToString(format, CultureInfo.InvariantCulture.NumberFormat), a.ToString(format, CultureInfo.InvariantCulture.NumberFormat));
         }
 
         // used to allow Colors to be used as keys in hash tables

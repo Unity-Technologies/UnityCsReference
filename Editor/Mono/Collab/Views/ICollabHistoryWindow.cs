@@ -4,8 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEditor.Collaboration;
-using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Collaboration
 {

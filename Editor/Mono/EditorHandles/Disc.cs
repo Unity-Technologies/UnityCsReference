@@ -27,7 +27,9 @@ namespace UnityEditorInternal
 
         public static Quaternion Do(int id, Quaternion rotation, Vector3 position, Vector3 axis, float size, bool cutoffPlane, float snap, bool enableRayDrag, bool showHotArc, Color fillColor)
         {
-            if (Mathf.Abs(Vector3.Dot(Camera.current.transform.forward, axis)) > .999f)
+            var cam = Handles.inverseMatrix.MultiplyVector(Camera.current != null ? Camera.current.transform.forward : Vector3.forward);
+
+            if (Mathf.Abs(Vector3.Dot(cam, axis)) > .999f)
                 cutoffPlane = false;
 
             Event evt = Event.current;
@@ -38,7 +40,7 @@ namespace UnityEditorInternal
                     float d;
                     if (cutoffPlane)
                     {
-                        Vector3 from = Vector3.Cross(axis, Camera.current.transform.forward).normalized;
+                        Vector3 from = Vector3.Cross(axis, cam).normalized;
                         d = HandleUtility.DistanceToArc(position, axis, from, 180, size) * k_GrabZoneScale;
                     }
                     else
@@ -57,7 +59,7 @@ namespace UnityEditorInternal
                         Tools.LockHandlePosition();
                         if (cutoffPlane)
                         {
-                            Vector3 from = Vector3.Cross(axis, Camera.current.transform.forward).normalized;
+                            Vector3 from = Vector3.Cross(axis, cam).normalized;
                             s_StartPosition = HandleUtility.ClosestPointToArc(position, axis, from, 180, size);
                         }
                         else
@@ -167,7 +169,7 @@ namespace UnityEditorInternal
                         Handles.DrawWireDisc(position, axis, size);
                     else if (GUIUtility.hotControl != id && cutoffPlane)
                     {
-                        Vector3 from = Vector3.Cross(axis, Camera.current.transform.forward).normalized;
+                        Vector3 from = Vector3.Cross(axis, cam).normalized;
                         Handles.DrawWireArc(position, axis, from, 180, size);
                     }
 

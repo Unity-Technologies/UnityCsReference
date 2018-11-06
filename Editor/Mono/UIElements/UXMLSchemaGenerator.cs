@@ -12,12 +12,12 @@ using System.Xml;
 using System.Xml.Schema;
 using UnityEditor.ProjectWindowCallback;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
-    public class UxmlNamespacePrefixAttribute : Attribute
+    public sealed class UxmlNamespacePrefixAttribute : Attribute
     {
         public string ns { get; }
         public string prefix { get; }
@@ -308,7 +308,7 @@ namespace UnityEditor.Experimental.UIElements
 
         static bool ProcessFactory(IUxmlFactory factory, Dictionary<string, SchemaInfo> schemas, FactoryProcessingHelper processingData)
         {
-            if (factory.substituteForTypeName != null && factory.substituteForTypeName != String.Empty)
+            if (!string.IsNullOrEmpty(factory.substituteForTypeName))
             {
                 if (!processingData.IsKnownElementType(factory.substituteForTypeName, factory.substituteForTypeNamespace))
                 {

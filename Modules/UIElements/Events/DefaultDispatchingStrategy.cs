@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     class DefaultDispatchingStrategy : IEventDispatchingStrategy
     {
@@ -28,8 +28,8 @@ namespace UnityEngine.Experimental.UIElements
                 if (!evt.isPropagationStopped && panel != null)
                 {
                     if (evt.propagateToIMGUI ||
-                        evt.GetEventTypeId() == MouseEnterWindowEvent.TypeId() ||
-                        evt.GetEventTypeId() == MouseLeaveWindowEvent.TypeId()
+                        evt.eventTypeId == MouseEnterWindowEvent.TypeId() ||
+                        evt.eventTypeId == MouseLeaveWindowEvent.TypeId()
                     )
                     {
                         EventDispatchUtilities.PropagateToIMGUIContainer(panel.visualTree, evt);

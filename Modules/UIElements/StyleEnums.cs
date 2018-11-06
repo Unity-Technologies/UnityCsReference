@@ -4,31 +4,25 @@
 
 using UnityEngine.Yoga;
 
-namespace UnityEngine.Experimental.UIElements.StyleEnums
+namespace UnityEngine.UIElements
 {
-    // enum Position represents the accepted values for
-    // the `position` property in USS files.
-    // Both `position` and `-unity-position` are stored in VisualElementStylesData.positionType
-    enum Position
+    public enum Position
     {
         Relative = YogaPositionType.Relative,
         Absolute = YogaPositionType.Absolute,
-    }
-
-    // enum PositionType represents the accepted values for
-    // the `-unity-position` property in USS files.
-    // Both `position` and `-unity-position` are stored in VisualElementStylesData.positionType
-    public enum PositionType
-    {
-        Relative = YogaPositionType.Relative,
-        Absolute = YogaPositionType.Absolute,
-        Manual
     }
 
     public enum Overflow
     {
         Visible = YogaOverflow.Visible,
         Hidden = YogaOverflow.Hidden
+    }
+
+    internal enum OverflowInternal
+    {
+        Visible = YogaOverflow.Visible,
+        Hidden = YogaOverflow.Hidden,
+        Scroll = YogaOverflow.Scroll,
     }
 
     public enum FlexDirection
@@ -75,5 +69,11 @@ namespace UnityEngine.Experimental.UIElements.StyleEnums
     {
         Visible = 0,
         Hidden = 1
+    }
+
+    public enum WhiteSpace
+    {
+        Normal = 0,
+        NoWrap = 1
     }
 }

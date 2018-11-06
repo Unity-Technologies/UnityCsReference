@@ -11,7 +11,7 @@ namespace UnityEngine
 {
     public partial class ParticleSystem
     {
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential), NativeType(CodegenOptions.Custom, "MonoBurst", Header = "Runtime/Scripting/ScriptingCommonStructDefinitions.h")]
         public partial struct Burst
         {
             public Burst(float _time, short _count) { m_Time = _time; m_Count = _count; m_RepeatCount = 0; m_RepeatInterval = 0.0f; m_InvProbability = 0.0f; }
@@ -77,7 +77,7 @@ namespace UnityEngine
             private float m_InvProbability; // internally, we must use something that defaults to 0, due to C# struct rules, so reverse the storage from 0-1 to 1-0
         }
 
-        [Serializable]
+        [Serializable, NativeType(CodegenOptions.Custom, "MonoMinMaxCurve", Header = "Runtime/Scripting/ScriptingCommonStructDefinitions.h")]
         public partial struct MinMaxCurve
         {
             public MinMaxCurve(float constant) { m_Mode = ParticleSystemCurveMode.Constant; m_CurveMultiplier = 0.0f; m_CurveMin = null; m_CurveMax = null; m_ConstantMin = 0.0f; m_ConstantMax = constant; }
@@ -125,7 +125,7 @@ namespace UnityEngine
             [SerializeField] private float m_ConstantMax;
         }
 
-        [Serializable]
+        [Serializable, NativeType(CodegenOptions.Custom, "MonoMinMaxGradient", Header = "Runtime/Scripting/ScriptingCommonStructDefinitions.h")]
         public partial struct MinMaxGradient
         {
             public MinMaxGradient(Color color) { m_Mode = ParticleSystemGradientMode.Color; m_GradientMin = null; m_GradientMax = null; m_ColorMin = Color.black; m_ColorMax = color; }

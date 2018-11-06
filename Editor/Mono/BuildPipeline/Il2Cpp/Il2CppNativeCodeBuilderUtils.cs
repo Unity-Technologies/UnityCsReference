@@ -28,7 +28,7 @@ namespace UnityEditorInternal
 
             arguments.Add(FormatArgument("outputpath", builder.ConvertOutputFileToFullPath(outputRelativePath)));
 
-            if (!string.IsNullOrEmpty(builder.CacheDirectory))
+            if (!string.IsNullOrEmpty(builder.CacheDirectory) && !builder.OverriddenCacheDirectory)
                 arguments.Add(FormatArgument("cachedirectory", CacheDirectoryPathFor(builder.CacheDirectory)));
 
             if (!string.IsNullOrEmpty(builder.CompilerFlags))

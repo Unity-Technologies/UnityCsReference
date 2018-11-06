@@ -5,10 +5,9 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     public class RectangleSelector : MouseManipulator
     {
@@ -27,11 +26,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Control });
             }
             m_Rectangle = new RectangleSelect();
-            m_Rectangle.style.positionType = PositionType.Absolute;
-            m_Rectangle.style.positionTop = 0;
-            m_Rectangle.style.positionLeft = 0;
-            m_Rectangle.style.positionBottom = 0;
-            m_Rectangle.style.positionRight = 0;
+            m_Rectangle.style.position = Position.Absolute;
+            m_Rectangle.style.top = 0f;
+            m_Rectangle.style.left = 0f;
+            m_Rectangle.style.bottom = 0f;
+            m_Rectangle.style.right = 0f;
             m_Active = false;
         }
 
@@ -166,18 +165,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             e.StopPropagation();
         }
 
-        private class RectangleSelect : VisualElement
+        private class RectangleSelect : ImmediateModeElement
         {
             public Vector2 start { get; set; }
             public Vector2 end { get; set; }
 
-            protected override void DoRepaint(IStylePainter painter)
-            {
-                var stylePainter = (IStylePainterInternal)painter;
-                stylePainter.DrawImmediate(Draw);
-            }
-
-            void Draw()
+            protected override void ImmediateRepaint()
             {
                 VisualElement t = parent;
                 Vector2 screenStart = start;
@@ -213,9 +206,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 DrawDottedLine(points[2], points[3], segmentSize, lineColor);
                 DrawDottedLine(points[3], points[0], segmentSize, lineColor);
 
-                var str = "(" + String.Format("{0:0}", start.x) + ", " + String.Format("{0:0}", start.y) + ")";
+                var str = "(" + UnityString.Format("{0:0}", start.x) + ", " + UnityString.Format("{0:0}", start.y) + ")";
                 GUI.skin.label.Draw(new Rect(screenStart.x, screenStart.y - 18.0f, 200.0f, 20.0f), new GUIContent(str), 0);
-                str = "(" + String.Format("{0:0}", end.x) + ", " + String.Format("{0:0}", end.y) + ")";
+                str = "(" + UnityString.Format("{0:0}", end.x) + ", " + UnityString.Format("{0:0}", end.y) + ")";
                 GUI.skin.label.Draw(new Rect(screenEnd.x - 80.0f, screenEnd.y + 5.0f, 200.0f, 20.0f), new GUIContent(str), 0);
             }
 

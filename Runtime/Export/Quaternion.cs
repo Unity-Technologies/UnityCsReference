@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using scm = System.ComponentModel;
 using uei = UnityEngine.Internal;
@@ -243,7 +244,7 @@ namespace UnityEngine
 
         public string ToString(string format)
         {
-            return UnityString.Format("({0}, {1}, {2}, {3})", x.ToString(format), y.ToString(format), z.ToString(format), w.ToString(format));
+            return UnityString.Format("({0}, {1}, {2}, {3})", x.ToString(format, CultureInfo.InvariantCulture.NumberFormat), y.ToString(format, CultureInfo.InvariantCulture.NumberFormat), z.ToString(format, CultureInfo.InvariantCulture.NumberFormat), w.ToString(format, CultureInfo.InvariantCulture.NumberFormat));
         }
 
         [System.Obsolete("Use Quaternion.Euler instead. This function was deprecated because it uses radians instead of degrees.")]

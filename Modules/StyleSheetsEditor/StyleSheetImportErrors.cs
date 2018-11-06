@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace UnityEditor.StyleSheets
 {
@@ -50,7 +51,7 @@ namespace UnityEditor.StyleSheets
 
             public override string ToString()
             {
-                return string.Format("[StyleSheetImportError: error={0}, code={1}, context={2}]", error, code, context);
+                return UnityString.Format("[StyleSheetImportError: error={0}, code={1}, context={2}]", error, code, context);
             }
         }
 

@@ -4,7 +4,7 @@
 
 using System;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     internal class VisualTreeLayoutUpdater : BaseVisualTreeUpdater
     {
@@ -39,7 +39,7 @@ namespace UnityEngine.Experimental.UIElements
                     panel.ApplyStyles();
 
                 visualTree.yogaNode.CalculateLayout();
-                using (new EventDispatcher.Gate(visualTree.panel.dispatcher))
+                using (new EventDispatcherGate(visualTree.panel.dispatcher))
                 {
                     UpdateSubTree(visualTree);
                 }
@@ -73,9 +73,9 @@ namespace UnityEngine.Experimental.UIElements
             bool hasNewLayout = root.yogaNode.HasNewLayout;
             if (hasNewLayout)
             {
-                for (int i = 0; i < root.shadow.childCount; ++i)
+                for (int i = 0; i < root.hierarchy.childCount; ++i)
                 {
-                    UpdateSubTree(root.shadow[i]);
+                    UpdateSubTree(root.hierarchy[i]);
                 }
             }
 

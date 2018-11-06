@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Globalization;
 using UnityEngine;
 
 namespace UnityEditor
@@ -145,7 +146,7 @@ namespace UnityEditor
 
         public override string ToString()
         {
-            return string.Format("VerticalGrid: rows {0}, columns {1}, fixedWidth {2}, itemSize {3}", rows, columns, fixedWidth, itemSize);
+            return UnityString.Format("VerticalGrid: rows {0}, columns {1}, fixedWidth {2}, itemSize {3}", rows, columns, fixedWidth, itemSize);
         }
     }
 

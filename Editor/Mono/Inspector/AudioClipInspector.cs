@@ -350,7 +350,7 @@ namespace UnityEditor
             if ((uint)AudioUtil.GetDuration(clip) == 0xffffffff)
                 s += "Unlimited";
             else
-                s += string.Format("{0:00}:{1:00}.{2:000}", ts.Minutes, ts.Seconds, ts.Milliseconds);
+                s += UnityString.Format("{0:00}:{1:00}.{2:000}", ts.Minutes, ts.Seconds, ts.Milliseconds);
 
             return s;
         }

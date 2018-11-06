@@ -7,11 +7,10 @@ using System.IO;
 using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
-using Button = UnityEngine.Experimental.UIElements.Button;
+using UnityEngine.UIElements;
+using Button = UnityEngine.UIElements.Button;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     class UIElementsEditorWindowCreator : EditorWindow
     {
@@ -75,21 +74,26 @@ namespace UnityEditor.Experimental.UIElements
 
         void SetupLayout()
         {
-            m_Root = this.GetRootVisualContainer();
+            m_Root = rootVisualElement;
             m_Root.AddStyleSheetPath(k_UIElementsEditorWindowCreatorStyleSheetPath);
 
             var visualTree = EditorGUIUtility.Load(k_UIElementsEditorWindowCreatorUxmlPath) as VisualTreeAsset;
-            VisualElement uxmlLayout = visualTree.CloneTree(null);
+            VisualElement uxmlLayout = visualTree.CloneTree();
             m_Root.Add(uxmlLayout);
 
             m_ErrorMessageBox = m_Root.Q<VisualElement>("errorMessageBox");
 
-            var cSharpTextField = m_Root.Q<TextField>("cSharpTextField");
-            cSharpTextField.RegisterCallback<KeyDownEvent>((e) => OnReturnKey(e));
-            cSharpTextField.RegisterCallback<ChangeEvent<string>>(e => OnCSharpValueChanged(e));
-            cSharpTextField.RegisterCallback<FocusEvent>((e) => HideErrorMessage());
+            var queryFieldInput = new UQueryBuilder<VisualElement>();
+            queryFieldInput.Name("unity-text-input");
 
-            m_Root.Q<Toggle>("cSharpToggle").OnValueChanged((evt) =>
+            var cSharpTextField = m_Root.Q<TextField>("cSharpTextField");
+            cSharpTextField.RegisterCallback<ChangeEvent<string>>(OnCSharpValueChanged);
+
+            var cSharpTextInput = cSharpTextField.Q<VisualElement>("unity-text-input");
+            cSharpTextInput.RegisterCallback<KeyDownEvent>(OnReturnKey);
+            cSharpTextInput.RegisterCallback<FocusEvent>(e => HideErrorMessage());
+
+            m_Root.Q<Toggle>("cSharpToggle").RegisterValueChangedCallback((evt) =>
             {
                 m_IsCSharpEnable = evt.newValue;
                 if (!m_IsCSharpEnable)
@@ -98,20 +102,23 @@ namespace UnityEditor.Experimental.UIElements
                     m_CSharpName = "";
                 }
 
-                cSharpTextField.SetEnabled(m_IsCSharpEnable);
+                cSharpTextInput.SetEnabled(m_IsCSharpEnable);
             });
 
             m_Root.schedule.Execute(() => cSharpTextField.Focus());
 
             var uxmlTextField = m_Root.Q<TextField>("uxmlTextField");
-            uxmlTextField.RegisterCallback<KeyDownEvent>((e) => OnReturnKey(e));
             uxmlTextField.RegisterCallback<ChangeEvent<string>>(e =>
             {
                 m_ErrorMessageBox.style.visibility = Visibility.Hidden;
                 m_UxmlName = e.newValue;
             });
-            uxmlTextField.RegisterCallback<FocusEvent>((e) => HideErrorMessage());
-            m_Root.Q<Toggle>("uxmlToggle").OnValueChanged((evt) =>
+
+            var uxmlTextInput = uxmlTextField.Q<VisualElement>("unity-text-input");
+            uxmlTextInput.RegisterCallback<KeyDownEvent>(OnReturnKey);
+            uxmlTextInput.RegisterCallback<FocusEvent>(e => HideErrorMessage());
+
+            m_Root.Q<Toggle>("uxmlToggle").RegisterValueChangedCallback((evt) =>
             {
                 m_IsUxmlEnable = evt.newValue;
                 if (!m_IsUxmlEnable)
@@ -120,19 +127,21 @@ namespace UnityEditor.Experimental.UIElements
                     m_UxmlName = "";
                 }
 
-                uxmlTextField.SetEnabled(m_IsUxmlEnable);
+                uxmlTextInput.SetEnabled(m_IsUxmlEnable);
             });
 
             var ussTextField = m_Root.Q<TextField>("ussTextField");
-            ussTextField.RegisterCallback<KeyDownEvent>((e) => OnReturnKey(e));
             ussTextField.RegisterCallback<ChangeEvent<string>>(e =>
             {
                 m_ErrorMessageBox.style.visibility = Visibility.Hidden;
                 m_UssName = e.newValue;
             });
-            ussTextField.RegisterCallback<FocusEvent>((e) => HideErrorMessage());
 
-            m_Root.Q<Toggle>("ussToggle").OnValueChanged((evt) =>
+            var ussTextInput = ussTextField.Q<VisualElement>("unity-text-input");
+            ussTextInput.RegisterCallback<KeyDownEvent>(OnReturnKey);
+            ussTextInput.RegisterCallback<FocusEvent>(e => HideErrorMessage());
+
+            m_Root.Q<Toggle>("ussToggle").RegisterValueChangedCallback((evt) =>
             {
                 m_IsUssEnable = evt.newValue;
                 if (!m_IsUssEnable)
@@ -141,36 +150,34 @@ namespace UnityEditor.Experimental.UIElements
                     m_UssName = "";
                 }
 
-                ussTextField.SetEnabled(m_IsUssEnable);
+                ussTextInput.SetEnabled(m_IsUssEnable);
             });
 
-            m_Root.Q<Button>("confirmButton").clickable.clicked += () => CreateNewTemplatesFiles();
+            m_Root.Q<Button>("confirmButton").clickable.clicked += CreateNewTemplatesFiles;
             m_ErrorMessageBox.Q<Image>("warningIcon").image = EditorGUIUtility.GetHelpIcon(MessageType.Warning);
             HideErrorMessage();
         }
 
         void ShowErrorMessage()
         {
-            if (m_ErrorMessageBox.style.visibility == Visibility.Hidden)
+            if (m_ErrorMessageBox.resolvedStyle.visibility == Visibility.Hidden)
             {
                 m_ErrorMessageBox.style.visibility = Visibility.Visible;
-                m_ErrorMessageBox.style.positionType = PositionType.Relative;
+                m_ErrorMessageBox.style.position = Position.Relative;
                 m_ErrorMessageBox.Q<Label>("errorLabel").text = m_ErrorMessage;
                 maxSize = new Vector2(Styles.K_WindowWidth, Styles.K_WindowHeight + m_ErrorMessageBox.contentRect.height);
                 minSize = new Vector2(Styles.K_WindowWidth, Styles.K_WindowHeight + m_ErrorMessageBox.contentRect.height);
-                position =  new Rect(position.position, maxSize);
             }
         }
 
         void HideErrorMessage()
         {
-            if (m_ErrorMessageBox.style.visibility == Visibility.Visible)
+            if (m_ErrorMessageBox.resolvedStyle.visibility == Visibility.Visible)
             {
                 m_ErrorMessageBox.style.visibility = Visibility.Hidden;
-                m_ErrorMessageBox.style.positionType = PositionType.Absolute;
+                m_ErrorMessageBox.style.position = Position.Absolute;
                 maxSize = new Vector2(Styles.K_WindowWidth, Styles.K_WindowHeight);
                 minSize = new Vector2(Styles.K_WindowWidth, Styles.K_WindowHeight);
-                position =  new Rect(position.position, maxSize);
             }
         }
 
@@ -345,7 +352,7 @@ namespace UnityEditor.Experimental.UIElements
 
     internal static class Styles
     {
-        internal const float K_WindowHeight = 180;
+        internal const float K_WindowHeight = 166;
         internal const float K_WindowWidth = 400;
     }
 }

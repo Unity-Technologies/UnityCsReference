@@ -3,9 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using UnityEngine.StyleSheets;
 
-namespace UnityEngine.Experimental.UIElements.StyleSheets
+namespace UnityEngine.UIElements.StyleSheets
 {
     // extension methods because StyleSelector must not depend on UIElements types
     internal static class StyleComplexSelectorExtensions

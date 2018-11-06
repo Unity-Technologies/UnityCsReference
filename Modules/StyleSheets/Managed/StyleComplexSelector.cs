@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using UnityEngine.Bindings;
 using System.Linq;
 
-namespace UnityEngine.StyleSheets
+namespace UnityEngine.UIElements
 {
     [Serializable]
     [VisibleToOtherModules("UnityEngine.UIElementsModule")]

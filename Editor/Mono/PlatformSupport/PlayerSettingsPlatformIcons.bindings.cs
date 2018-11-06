@@ -175,7 +175,7 @@ namespace UnityEditor
             m_Textures = textures.ToList();
         }
 
-        public override string ToString() { return string.Format("({0}x{1}) {2}", width, height, description); }
+        public override string ToString() { return UnityString.Format("({0}x{1}) {2}", width, height, description); }
     }
 
     public class PlatformIconKind

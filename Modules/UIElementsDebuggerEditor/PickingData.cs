@@ -6,10 +6,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 using Unity.Experimental.EditorMode;
 
-namespace UnityEditor.Experimental.UIElements.Debugger
+namespace UnityEditor.UIElements.Debugger
 {
     class PickingData
     {
@@ -31,7 +31,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                 sp.x -= dataScreenRect.xMin;
                 sp.y -= dataScreenRect.yMin;
 
-                if (GUI.Button(sp, string.Format("{0}({1})", panel.Panel.visualTree.name, panel.View.GetInstanceID()), EditorStyles.miniButton))
+                if (GUI.Button(sp, UnityString.Format("{0}({1})", panel.Panel.visualTree.name, panel.View.GetInstanceID()), EditorStyles.miniButton))
                 {
                     selectedPanel = panel;
                     return true;

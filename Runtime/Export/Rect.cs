@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -211,7 +212,7 @@ namespace UnityEngine
 
         public string ToString(string format)
         {
-            return UnityString.Format("(x:{0}, y:{1}, width:{2}, height:{3})", x.ToString(format), y.ToString(format), width.ToString(format), height.ToString(format));
+            return UnityString.Format("(x:{0}, y:{1}, width:{2}, height:{3})", x.ToString(format, CultureInfo.InvariantCulture.NumberFormat), y.ToString(format, CultureInfo.InvariantCulture.NumberFormat), width.ToString(format, CultureInfo.InvariantCulture.NumberFormat), height.ToString(format, CultureInfo.InvariantCulture.NumberFormat));
         }
 
         [System.Obsolete("use xMin")]

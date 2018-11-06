@@ -4,17 +4,11 @@
 
 using System;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public static class MouseCaptureController
     {
         internal static IEventHandler mouseCapture { get; private set; }
-
-        [Obsolete("Use IsMouseCaptured instead of IsMouseCaptureTaken.")]
-        public static bool IsMouseCaptureTaken()
-        {
-            return IsMouseCaptured();
-        }
 
         public static bool IsMouseCaptured()
         {
@@ -24,12 +18,6 @@ namespace UnityEngine.Experimental.UIElements
         public static bool HasMouseCapture(this IEventHandler handler)
         {
             return mouseCapture == handler;
-        }
-
-        [Obsolete("Use CaptureMouse instead of TakeMouseCapture.")]
-        public static void TakeMouseCapture(this IEventHandler handler)
-        {
-            CaptureMouse(handler);
         }
 
         public static void CaptureMouse(this IEventHandler handler)
@@ -68,25 +56,12 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        [Obsolete("Use ReleaseMouse instead of ReleaseMouseCapture.")]
-        public static void ReleaseMouseCapture(this IEventHandler handler)
-        {
-            ReleaseMouse(handler);
-        }
-
         public static void ReleaseMouse(this IEventHandler handler)
         {
             if (handler == mouseCapture)
             {
                 ReleaseMouse();
             }
-        }
-
-        [Obsolete("Use ReleaseMouse instead of ReleaseMouseCapture.")]
-
-        public static void ReleaseMouseCapture()
-        {
-            ReleaseMouse();
         }
 
         public static void ReleaseMouse()

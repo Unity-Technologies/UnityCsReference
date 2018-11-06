@@ -2,15 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine.Experimental.UIElements.StyleEnums;
-
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public class Foldout : BindableElement, INotifyValueChanged<bool>
     {
-        private static readonly string s_FoldoutClassName = "unity-foldout";
-        private static readonly string s_ToggleClassName = "unity-foldout-toggle";
-        private static readonly string s_ContentContainerClassName = "unity-foldout-content";
         public new class UxmlFactory : UxmlFactory<Foldout, UxmlTraits> {}
 
         Toggle m_Toggle;
@@ -57,13 +52,6 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        // This method is obsolete in the declaring interface and will be removed soon.
-        [UnityEngine.Internal.ExcludeFromDocs]
-        public void SetValueAndNotify(bool newValue)
-        {
-            value = newValue;
-        }
-
         public void SetValueWithoutNotify(bool newValue)
         {
             m_Value = newValue;
@@ -72,43 +60,41 @@ namespace UnityEngine.Experimental.UIElements
             if (m_Value)
             {
                 contentContainer.visible = true;
-                contentContainer.style.positionType = PositionType.Relative;
+                contentContainer.style.position = Position.Relative;
             }
             else
             {
                 contentContainer.visible = false;
-                contentContainer.style.positionType = PositionType.Absolute;
+                contentContainer.style.position = Position.Absolute;
             }
         }
 
-        public void OnValueChanged(EventCallback<ChangeEvent<bool>> callback)
-        {
-            RegisterCallback(callback);
-        }
-
-        public void RemoveOnValueChanged(EventCallback<ChangeEvent<bool>> callback)
-        {
-            UnregisterCallback(callback);
-        }
+        public static readonly string ussClassName = "unity-foldout";
+        public static readonly string toggleUssClassName = ussClassName + "__toggle";
+        public static readonly string contentUssClassName = ussClassName + "__content";
 
         public Foldout()
         {
-            m_Toggle = new Toggle();
-            m_Toggle.value = true;
-            m_Toggle.OnValueChanged((evt) =>
+            AddToClassList(ussClassName);
+
+            m_Toggle = new Toggle
+            {
+                value = true
+            };
+            m_Toggle.RegisterValueChangedCallback((evt) =>
             {
                 value = m_Toggle.value;
                 evt.StopPropagation();
             });
-            m_Toggle.AddToClassList(s_ToggleClassName);
-            shadow.Add(m_Toggle);
+            m_Toggle.AddToClassList(toggleUssClassName);
+            hierarchy.Add(m_Toggle);
 
-            m_Container = new VisualElement();
-            m_Container.clippingOptions = ClippingOptions.ClipContents;
-            m_Container.AddToClassList(s_ContentContainerClassName);
-            shadow.Add(m_Container);
-
-            AddToClassList(s_FoldoutClassName);
+            m_Container = new VisualElement()
+            {
+                name = "unity-content",
+            };
+            m_Container.AddToClassList(contentUssClassName);
+            hierarchy.Add(m_Container);
         }
     }
 }

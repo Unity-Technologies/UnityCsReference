@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.Profiling;
@@ -299,12 +300,12 @@ namespace UnityEditorInternal.Profiling
                     case Column.TimeMs:
                     {
                         var value = m_Type == Type.Callees ? callInfo.totalCallTimeMs : callInfo.totalSelfTimeMs;
-                        DefaultGUI.Label(cellRect, value.ToString("f2"), args.selected, args.focused);
+                        DefaultGUI.Label(cellRect, value.ToString("f2", CultureInfo.InvariantCulture.NumberFormat), args.selected, args.focused);
                     }
                     break;
                     case Column.TimePercent:
                     {
-                        DefaultGUI.Label(cellRect, (callInfo.timePercent * 100f).ToString("f2"), args.selected, args.focused);
+                        DefaultGUI.Label(cellRect, (callInfo.timePercent * 100f).ToString("f2", CultureInfo.InvariantCulture.NumberFormat), args.selected, args.focused);
                     }
                     break;
                 }
@@ -574,7 +575,7 @@ namespace UnityEditorInternal.Profiling
             m_CallersTreeView.SetCallsData(callersAndCalleeData.callersData);
             m_CalleesTreeView.SetCallsData(callersAndCalleeData.calleesData);
 
-            m_TotalSelectedPropertyTimeLabel.text = m_FrameDataView.GetItemName(selectedId) + string.Format(" - Total time: {0:f2} ms", callersAndCalleeData.totalSelectedPropertyTime);
+            m_TotalSelectedPropertyTimeLabel.text = m_FrameDataView.GetItemName(selectedId) + UnityString.Format(" - Total time: {0:f2} ms", callersAndCalleeData.totalSelectedPropertyTime);
         }
 
         public void Clear()

@@ -81,6 +81,7 @@ namespace UnityEngine
         [NativeProperty("LightType")] extern public LightType type { get; set; }
 
         extern public float spotAngle        { get; set; }
+        extern public float innerSpotAngle   { get; set; }
         extern public Color color            { get; set; }
         extern public float colorTemperature { get; set; }
         extern public float intensity        { get; set; }

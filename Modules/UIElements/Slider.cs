@@ -5,82 +5,46 @@
 using System;
 using System.Collections.Generic;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public class Slider : BaseSlider<float>
     {
         public new class UxmlFactory : UxmlFactory<Slider, UxmlTraits> {}
 
-        public new class UxmlTraits : BaseSlider<float>.UxmlTraits
+        public new class UxmlTraits : BaseFieldTraits<float, UxmlFloatAttributeDescription>
         {
-            UxmlFloatAttributeDescription m_LowValue = new UxmlFloatAttributeDescription { name = "low-value", obsoleteNames = new[] { "lowValue" } };
-            UxmlFloatAttributeDescription m_HighValue = new UxmlFloatAttributeDescription { name = "high-value", obsoleteNames = new[] { "highValue" }, defaultValue = kDefaultHighValue };
-            UxmlFloatAttributeDescription m_PageSize = new UxmlFloatAttributeDescription { name = "page-size", obsoleteNames = new[] { "pageSize" }, defaultValue = kDefaultPageSize };
+            UxmlFloatAttributeDescription m_LowValue = new UxmlFloatAttributeDescription { name = "low-value" };
+            UxmlFloatAttributeDescription m_HighValue = new UxmlFloatAttributeDescription { name = "high-value", defaultValue = kDefaultHighValue };
+            UxmlFloatAttributeDescription m_PageSize = new UxmlFloatAttributeDescription { name = "page-size", defaultValue = kDefaultPageSize };
             UxmlEnumAttributeDescription<SliderDirection> m_Direction = new UxmlEnumAttributeDescription<SliderDirection> { name = "direction", defaultValue = SliderDirection.Vertical };
-            UxmlFloatAttributeDescription m_Value = new UxmlFloatAttributeDescription { name = "value" };
-
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
+                var f = (Slider)ve;
+
+                f.lowValue = m_LowValue.GetValueFromBag(bag, cc);
+                f.highValue = m_HighValue.GetValueFromBag(bag, cc);
+                f.direction = m_Direction.GetValueFromBag(bag, cc);
+                f.pageSize = m_PageSize.GetValueFromBag(bag, cc);
+
                 base.Init(ve, bag, cc);
-
-                Slider slider = ((Slider)ve);
-                slider.lowValue = m_LowValue.GetValueFromBag(bag, cc);
-                slider.highValue = m_HighValue.GetValueFromBag(bag, cc);
-                slider.direction = m_Direction.GetValueFromBag(bag, cc);
-                slider.pageSize = m_PageSize.GetValueFromBag(bag, cc);
-                slider.SetValueWithoutNotify(m_Value.GetValueFromBag(bag, cc));
-            }
-        }
-
-        Action<float> m_ValueChanged;
-        public Action<float> valueChanged
-        {
-            get { return m_ValueChanged; }
-            set
-            {
-                if ((value != null) && (m_ValueChanged == null))
-                {
-                    // Forward the clickEvent by the InternalOnValueChanged notification
-                    OnValueChanged(InternalOnValueChanged);
-                }
-                else if ((value == null) && (m_ValueChanged != null))
-                {
-                    // Don't need to keep being notified...
-                    UnregisterCallback<ChangeEvent<float>>(InternalOnValueChanged);
-                }
-
-                this.m_ValueChanged = value;
             }
         }
 
         internal const float kDefaultHighValue = 10.0f;
 
+        public new static readonly string ussClassName = "unity-slider";
+
         public Slider()
-            : this(0, kDefaultHighValue)
-        {
-        }
+            : this(null, 0, kDefaultHighValue) {}
 
-        public Slider(float start, float end, System.Action<float> valueChanged,
-                      SliderDirection direction = SliderDirection.Horizontal, float pageSize = kDefaultPageSize) :
-            this(start, end, direction, pageSize)
-        {
-            // We set this event last, so that the construction does not call it.
-            this.valueChanged = valueChanged;
-        }
+        public Slider(float start, float end, SliderDirection direction = SliderDirection.Horizontal, float pageSize = kDefaultPageSize)
+            : this(null, start, end, direction, pageSize) {}
 
-        void InternalOnValueChanged(ChangeEvent<float> evt)
+        public Slider(string label, float start = 0, float end = kDefaultHighValue, SliderDirection direction = SliderDirection.Horizontal, float pageSize = kDefaultPageSize)
+            : base(label, start, end, direction, pageSize)
         {
-            m_ValueChanged?.Invoke(value);
-        }
-
-        public Slider(float start, float end, SliderDirection direction = SliderDirection.Horizontal, float pageSize = kDefaultPageSize) :
-            base(start, end, direction, pageSize)
-        {
+            AddToClassList(ussClassName);
         }
 
         internal override float SliderLerpUnclamped(float a, float b, float interpolant)

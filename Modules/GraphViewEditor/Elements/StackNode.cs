@@ -3,10 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleSheets;
+using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     public partial class StackNode : Node
     {
@@ -20,21 +20,18 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         internal GraphView graphView { get; set; }
 
-        private const string k_SeparatorHeight = "separator-height";
-        private const string k_SeparatorExtent = "separator-extent";
+        private static CustomStyleProperty<float> s_SeparatorHeight = new CustomStyleProperty<float>("--separator-height");
+        private static CustomStyleProperty<float> s_SeparatorExtent = new CustomStyleProperty<float>("--separator-extent");
 
-        private StyleValue<float> m_SeparatorHeight;
-        private float separatorHeight => m_SeparatorHeight.GetSpecifiedValueOrDefault(4f);
+        private float m_SeparatorHeight = 4f;
+        private float separatorHeight => m_SeparatorHeight;
 
-        private StyleValue<float> m_SeparatorExtent;
-        private float separatorExtent => m_SeparatorExtent.GetSpecifiedValueOrDefault(15f);
+        private float m_SeparatorExtent = 15f;
+        private float separatorExtent => m_SeparatorExtent;
 
         public StackNode() : base("UXML/GraphView/StackNode.uxml")
         {
-            this.Q("stackNodeContainers").clippingOptions = ClippingOptions.NoClipping;
-
             VisualElement stackNodeContentContainerPlaceholder = this.Q("stackNodeContentContainerPlaceholder");
-            stackNodeContentContainerPlaceholder.clippingOptions = ClippingOptions.NoClipping;
 
             headerContainer = this.Q("stackNodeHeaderContainer");
             m_SeparatorContainer = this.Q("stackSeparatorContainer");
@@ -55,15 +52,15 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             base.ExecuteDefaultAction(evt);
 
-            if (evt.GetEventTypeId() == GeometryChangedEvent.TypeId())
+            if (evt.eventTypeId == GeometryChangedEvent.TypeId())
             {
                 UpdateSeparators();
             }
-            else if (evt.GetEventTypeId() == DetachFromPanelEvent.TypeId())
+            else if (evt.eventTypeId == DetachFromPanelEvent.TypeId())
             {
                 graphView = null;
             }
-            else if (evt.GetEventTypeId() == AttachToPanelEvent.TypeId())
+            else if (evt.eventTypeId == AttachToPanelEvent.TypeId())
             {
                 graphView = GetFirstAncestorOfType<GraphView>();
             }
@@ -108,13 +105,22 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             Remove(element);
         }
 
-        protected override void OnStyleResolved(ICustomStyle styles)
+        protected override void OnCustomStyleResolved(ICustomStyle styles)
         {
-            base.OnStyleResolved(styles);
+            base.OnCustomStyleResolved(styles);
 
-            styles.ApplyCustomProperty(k_AnimationDuration, ref m_AnimationDuration);
-            styles.ApplyCustomProperty(k_SeparatorHeight, ref m_SeparatorHeight);
-            styles.ApplyCustomProperty(k_SeparatorExtent, ref m_SeparatorExtent);
+            int animDurationValue = 0;
+            float heightValue = 0f;
+            float extentValue = 0f;
+
+            if (styles.TryGetValue(s_AnimationDuration, out animDurationValue))
+                m_AnimationDuration = animDurationValue;
+
+            if (styles.TryGetValue(s_SeparatorHeight, out heightValue))
+                m_SeparatorHeight = heightValue;
+
+            if (styles.TryGetValue(s_SeparatorExtent, out extentValue))
+                m_SeparatorExtent = extentValue;
 
             schedule.Execute(a => UpdateSeparators());
         }
@@ -175,7 +181,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                     separatorCenterY = m_SeparatorContainer.layout.height - separatorHeight / 2;
                 }
-                separator.style.positionTop = separatorCenterY - separator.style.height / 2;
+                separator.style.top = separatorCenterY - separator.resolvedStyle.height / 2;
             }
         }
 

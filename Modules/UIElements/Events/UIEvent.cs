@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     // This is an event to hold unimplemented UnityEngine.Event EventType.
     // The goal of this is to be able to pass these events to IMGUI.
@@ -18,12 +18,17 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.Bubbles | EventFlags.TricklesDown | EventFlags.Cancellable;
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable;
         }
 
         public IMGUIEvent()
         {
-            Init();
+            LocalInit();
         }
     }
 }

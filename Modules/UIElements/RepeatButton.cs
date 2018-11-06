@@ -4,7 +4,7 @@
 
 using System;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public class RepeatButton : TextElement
     {
@@ -26,9 +26,14 @@ namespace UnityEngine.Experimental.UIElements
 
         Clickable m_Clickable;
 
-        public RepeatButton() {}
+        public new static readonly string ussClassName = "unity-repeat-button";
 
-        public RepeatButton(System.Action clickEvent, long delay, long interval)
+        public RepeatButton()
+        {
+            AddToClassList(ussClassName);
+        }
+
+        public RepeatButton(System.Action clickEvent, long delay, long interval) : this()
         {
             SetAction(clickEvent, delay, interval);
         }

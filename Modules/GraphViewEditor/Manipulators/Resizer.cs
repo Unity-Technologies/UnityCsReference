@@ -4,10 +4,9 @@
 
 using System;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     public class Resizer : VisualElement
     {
@@ -34,17 +33,17 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public Resizer(Vector2 minimumSize, Action onResizedCallback = null)
         {
             m_MinimumSize = minimumSize;
-            style.positionType = PositionType.Absolute;
-            style.positionTop = float.NaN;
-            style.positionLeft = float.NaN;
-            style.positionBottom = 0;
-            style.positionRight = 0;
+            style.position = Position.Absolute;
+            style.top = float.NaN;
+            style.left = float.NaN;
+            style.bottom = 0f;
+            style.right = 0f;
             // make clickable area bigger than render area
-            style.paddingLeft = 10;
-            style.paddingTop = 14;
-            style.width = 20;
-            style.height = 20;
-            style.backgroundScaleMode = ScaleMode.ScaleAndCrop;
+            style.paddingLeft = 10f;
+            style.paddingTop = 14f;
+            style.width = 20f;
+            style.height = 20f;
+            style.unityBackgroundScaleMode = ScaleMode.ScaleAndCrop;
 
             m_Active = false;
             m_OnResizedCallback = onResizedCallback;
@@ -57,7 +56,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             AddToClassList("resizer");
 
             var icon = new VisualElement() {
-                style = { backgroundScaleMode = ScaleMode.ScaleAndCrop }
+                style = { unityBackgroundScaleMode = ScaleMode.ScaleAndCrop }
             };
             icon.AddToClassList("resizer-icon");
             Add(icon);
@@ -86,18 +85,18 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 m_Start = this.ChangeCoordinatesTo(parent, e.localMousePosition);
                 m_StartPos = parent.layout;
                 // Warn user if target uses a relative CSS position type
-                if (parent.style.positionType != PositionType.Manual)
+                if (!parent.isLayoutManual)
                 {
-                    if (parent.style.positionType == PositionType.Absolute)
+                    if (parent.resolvedStyle.position == Position.Absolute)
                     {
-                        if (!(parent.style.flexDirection == FlexDirection.Column || parent.style.flexDirection == FlexDirection.Row))
+                        if (!(parent.resolvedStyle.flexDirection == FlexDirection.Column || parent.resolvedStyle.flexDirection == FlexDirection.Row))
                         {
                             Debug.LogWarning("Attempting to resize an object with an absolute position but no layout direction (row or column)");
                         }
                     }
                     else
                     {
-                        Debug.LogWarning("Attempting to resize an object with a non manual position");
+                        Debug.LogWarning("Attempting to resize an object with a non absolute position");
                     }
                 }
 
@@ -140,7 +139,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 return;
 
             // Then can be resize in all direction
-            if (parent.style.positionType == PositionType.Manual)
+            if (parent.isLayoutManual)
             {
                 if (ClassListContains("resizeAllDir") == false)
                 {
@@ -149,9 +148,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     RemoveFromClassList("resizeVerticalDir");
                 }
             }
-            else if (parent.style.positionType == PositionType.Absolute)
+            else if (parent.resolvedStyle.position == Position.Absolute)
             {
-                if (parent.style.flexDirection == FlexDirection.Column)
+                if (parent.resolvedStyle.flexDirection == FlexDirection.Column)
                 {
                     if (ClassListContains("resizeHorizontalDir") == false)
                     {
@@ -160,7 +159,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                         RemoveFromClassList("resizeVerticalDir");
                     }
                 }
-                else if (parent.style.flexDirection == FlexDirection.Row)
+                else if (parent.resolvedStyle.flexDirection == FlexDirection.Row)
                 {
                     if (ClassListContains("resizeVerticalDir") == false)
                     {
@@ -175,10 +174,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 Vector2 diff = this.ChangeCoordinatesTo(parent, e.localMousePosition) - m_Start;
                 var newSize = new Vector2(m_StartPos.width + diff.x, m_StartPos.height + diff.y);
-                float minWidth = Math.Max(ce.style.minWidth.value, m_MinimumSize.x);
-                float minHeight = Math.Max(ce.style.minHeight.value, m_MinimumSize.y);
-                float maxWidth = ce.style.maxWidth.GetSpecifiedValueOrDefault(float.MaxValue);
-                float maxHeight = ce.style.maxHeight.GetSpecifiedValueOrDefault(float.MaxValue);
+                float minWidth = ce.resolvedStyle.minWidth == StyleKeyword.Auto ? 0 : ce.resolvedStyle.minWidth.value;
+                minWidth = Math.Max(minWidth, m_MinimumSize.x);
+                float minHeight = ce.resolvedStyle.minHeight == StyleKeyword.Auto ? 0 : ce.resolvedStyle.minHeight.value;
+                minHeight = Math.Max(minHeight, m_MinimumSize.y);
+                float maxWidth = ce.resolvedStyle.maxWidth == StyleKeyword.None ? float.MaxValue : ce.resolvedStyle.maxWidth.value;
+                float maxHeight = ce.resolvedStyle.maxHeight == StyleKeyword.None ? float.MaxValue : ce.resolvedStyle.maxHeight.value;
 
                 newSize.x = (newSize.x < minWidth) ? minWidth : ((newSize.x > maxWidth) ? maxWidth : newSize.x);
                 newSize.y = (newSize.y < minHeight) ? minHeight : ((newSize.y > maxHeight) ? maxHeight : newSize.y);
@@ -187,19 +188,19 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                 if (ce.GetPosition().size != newSize)
                 {
-                    if (parent.style.positionType == PositionType.Manual)
+                    if (parent.isLayoutManual)
                     {
                         ce.SetPosition(new Rect(ce.layout.x, ce.layout.y, newSize.x, newSize.y));
                         resized = true;
                     }
-                    else if (parent.style.positionType == PositionType.Absolute)
+                    else if (parent.resolvedStyle.position == Position.Absolute)
                     {
-                        if (parent.style.flexDirection == FlexDirection.Column)
+                        if (parent.resolvedStyle.flexDirection == FlexDirection.Column)
                         {
                             ce.style.width = newSize.x;
                             resized = true;
                         }
-                        else if (parent.style.flexDirection == FlexDirection.Row)
+                        else if (parent.resolvedStyle.flexDirection == FlexDirection.Row)
                         {
                             ce.style.height = newSize.y;
                             resized = true;

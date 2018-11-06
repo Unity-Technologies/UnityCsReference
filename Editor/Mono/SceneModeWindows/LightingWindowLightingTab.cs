@@ -15,6 +15,7 @@ using UnityEngine.SceneManagement;
 using UnityEngineInternal;
 using Object = UnityEngine.Object;
 using UnityEngine.Rendering;
+using System.Globalization;
 
 namespace UnityEditor
 {
@@ -392,9 +393,9 @@ namespace UnityEditor
                     sizesString.Append(s.Value);
                     sizesString.Append("x");
                 }
-                sizesString.Append(s.Key.x);
+                sizesString.Append(s.Key.x.ToString(CultureInfo.InvariantCulture.NumberFormat));
                 sizesString.Append("x");
-                sizesString.Append(s.Key.y);
+                sizesString.Append(s.Key.y.ToString(CultureInfo.InvariantCulture.NumberFormat));
                 sizesString.Append("px");
             }
             sizesString.Append(" ");
@@ -472,7 +473,7 @@ namespace UnityEditor
                 float bakeTime = Lightmapping.GetLightmapBakeTimeTotal();
                 float mraysPerSec = Lightmapping.GetLightmapBakePerformanceTotal();
                 if (mraysPerSec >= 0.0)
-                    GUILayout.Label("Bake Performance: " + mraysPerSec.ToString("0.00") + " mrays/sec", Styles.LabelStyle);
+                    GUILayout.Label("Bake Performance: " + mraysPerSec.ToString("0.00", CultureInfo.InvariantCulture.NumberFormat) + " mrays/sec", Styles.LabelStyle);
                 if (!Lightmapping.isRunning)
                 {
                     float bakeTimeRaw = Lightmapping.GetLightmapBakeTimeRaw();

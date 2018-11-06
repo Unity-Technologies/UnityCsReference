@@ -4,9 +4,9 @@
 
 using System;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     public class BoundsField : BaseField<Bounds>
     {
@@ -33,40 +33,41 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
+        public new static readonly string ussClassName = "unity-bounds-field";
+        public static readonly string centerFieldUssClassName = ussClassName + "__center-field";
+        public static readonly string extentsFieldUssClassName = ussClassName + "__extents-field";
+
         private Vector3Field m_CenterField;
         private Vector3Field m_ExtentsField;
 
         public BoundsField()
-        {
-            m_CenterField = new Vector3Field();
+            : this(null) {}
 
-            m_CenterField.OnValueChanged(e =>
+        public BoundsField(string label)
+            : base(label, null)
+        {
+            AddToClassList(ussClassName);
+
+            m_CenterField = new Vector3Field("Center");
+            m_CenterField.AddToClassList(centerFieldUssClassName);
+
+            m_CenterField.RegisterValueChangedCallback(e =>
             {
                 Bounds current = value;
                 current.center = e.newValue;
                 value = current;
             });
+            visualInput.hierarchy.Add(m_CenterField);
 
-            var centerGroup = new VisualElement();
-            centerGroup.AddToClassList("group");
-            centerGroup.Add(new Label("Center"));
-            centerGroup.Add(m_CenterField);
-            this.shadow.Add(centerGroup);
-
-            m_ExtentsField = new Vector3Field();
-
-            m_ExtentsField.OnValueChanged(e =>
+            m_ExtentsField = new Vector3Field("Extents");
+            m_ExtentsField.AddToClassList(extentsFieldUssClassName);
+            m_ExtentsField.RegisterValueChangedCallback(e =>
             {
                 Bounds current = value;
                 current.extents = e.newValue;
                 value = current;
             });
-
-            var extentsGroup = new VisualElement();
-            extentsGroup.AddToClassList("group");
-            extentsGroup.contentContainer.Add(new Label("Extents"));
-            extentsGroup.contentContainer.Add(m_ExtentsField);
-            this.shadow.Add(extentsGroup);
+            visualInput.hierarchy.Add(m_ExtentsField);
         }
 
         protected internal override void ExecuteDefaultAction(EventBase evt)
@@ -74,7 +75,7 @@ namespace UnityEditor.Experimental.UIElements
             base.ExecuteDefaultAction(evt);
 
             // Focus first field if any
-            if (evt.GetEventTypeId() == FocusEvent.TypeId())
+            if (evt?.eventTypeId == FocusEvent.TypeId())
             {
                 m_CenterField.Focus();
             }
@@ -83,8 +84,8 @@ namespace UnityEditor.Experimental.UIElements
         public override void SetValueWithoutNotify(Bounds newValue)
         {
             base.SetValueWithoutNotify(newValue);
-            m_CenterField.SetValueWithoutNotify(m_Value.center);
-            m_ExtentsField.SetValueWithoutNotify(m_Value.extents);
+            m_CenterField.SetValueWithoutNotify(rawValue.center);
+            m_ExtentsField.SetValueWithoutNotify(rawValue.extents);
         }
     }
 }

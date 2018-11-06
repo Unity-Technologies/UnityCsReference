@@ -130,7 +130,7 @@ namespace UnityEditor
         internal static Quaternion DoRotationHandle(RotationHandleIds ids, Quaternion rotation, Vector3 position, RotationHandleParam param)
         {
             var evt = Event.current;
-            var camTr = Camera.current.transform;
+            var camForward = Handles.inverseMatrix.MultiplyVector(Camera.current != null ? Camera.current.transform.forward : Vector3.forward);
 
             var size = HandleUtility.GetHandleSize(position);
             var temp = color;
@@ -167,13 +167,13 @@ namespace UnityEditor
             if (radiusOfAxesHandles > 0 && evt.type == EventType.Repaint)
             {
                 Handles.color = new Color(0, 0, 0, 0.2f);
-                Handles.DrawWireDisc(position, camTr.forward, radiusOfAxesHandles);
+                Handles.DrawWireDisc(position, camForward, radiusOfAxesHandles);
             }
 
             if (isHot && evt.type == EventType.Repaint)
             {
                 color = ToActiveColorSpace(s_DisabledHandleColor);
-                Handles.DrawWireDisc(position, camTr.forward, size * param.axisSize[0]);
+                Handles.DrawWireDisc(position, camForward, size * param.axisSize[0]);
             }
 
             if (!isStatic
@@ -181,7 +181,7 @@ namespace UnityEditor
                 && (isHot && ids.cameraAxis == GUIUtility.hotControl || !isHot))
             {
                 color = ToActiveColorSpace(centerColor);
-                rotation = UnityEditorInternal.Disc.Do(ids.cameraAxis, rotation, position, Camera.current.transform.forward, size * param.cameraAxisSize, false, 0, param.enableRayDrag, true, k_RotationPieColor);
+                rotation = UnityEditorInternal.Disc.Do(ids.cameraAxis, rotation, position, camForward, size * param.cameraAxisSize, false, 0, param.enableRayDrag, true, k_RotationPieColor);
             }
 
             color = temp;

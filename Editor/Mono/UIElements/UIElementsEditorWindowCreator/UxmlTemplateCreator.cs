@@ -4,54 +4,55 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEditor.Experimental.UIElements;
 
-static partial class UIElementsTemplate
+namespace UnityEditor.UIElements
 {
-    public static string CreateUXMLTemplate(string folder)
+    static partial class UIElementsTemplate
     {
-        UxmlSchemaGenerator.UpdateSchemaFiles();
-
-        string[] pathComponents = folder.Split(new[] {'/'}, StringSplitOptions.RemoveEmptyEntries);
-        Boo.Lang.List<string> backDots = new Boo.Lang.List<string>();
-        foreach (var s in pathComponents)
+        public static string CreateUXMLTemplate(string folder)
         {
-            if (s == ".")
-            {
-                continue;
-            }
-            if (s == ".." && backDots.Count > 0)
-            {
-                backDots.RemoveAt(backDots.Count - 1);
-            }
-            else
-            {
-                backDots.Add("..");
-            }
-        }
-        backDots.Add(UxmlSchemaGenerator.k_SchemaFolder);
-        string schemaDirectory = string.Join("/", backDots.ToArray());
+            UxmlSchemaGenerator.UpdateSchemaFiles();
 
-        string xmlnsList = String.Empty;
-        string schemaLocationList = String.Empty;
-        Dictionary<string, string> namespacePrefix = UxmlSchemaGenerator.GetNamespacePrefixDictionary();
-
-        foreach (var prefix in namespacePrefix)
-        {
-            if (prefix.Key == String.Empty)
-                continue;
-
-            if (prefix.Value != String.Empty)
+            string[] pathComponents = folder.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            Boo.Lang.List<string> backDots = new Boo.Lang.List<string>();
+            foreach (var s in pathComponents)
             {
-                xmlnsList += "    xmlns:" + prefix.Value + "=\"" + prefix.Key + "\"\n";
+                if (s == ".")
+                {
+                    continue;
+                }
+                if (s == ".." && backDots.Count > 0)
+                {
+                    backDots.RemoveAt(backDots.Count - 1);
+                }
+                else
+                {
+                    backDots.Add("..");
+                }
             }
-            schemaLocationList += "                        " + prefix.Key + " " + schemaDirectory + "/" +
-                UxmlSchemaGenerator.GetFileNameForNamespace(prefix.Key) + "\n";
-        }
+            backDots.Add(UxmlSchemaGenerator.k_SchemaFolder);
+            string schemaDirectory = string.Join("/", backDots.ToArray());
 
-        // The noNamespaceSchemaLocation attribute should be sufficient to reference all namespaces
-        // but Rider does not support it very well, so we add schemaLocation to make it happy.
-        string uxmlTemplate = String.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
+            string xmlnsList = String.Empty;
+            string schemaLocationList = String.Empty;
+            Dictionary<string, string> namespacePrefix = UxmlSchemaGenerator.GetNamespacePrefixDictionary();
+
+            foreach (var prefix in namespacePrefix)
+            {
+                if (prefix.Key == String.Empty)
+                    continue;
+
+                if (prefix.Value != String.Empty)
+                {
+                    xmlnsList += "    xmlns:" + prefix.Value + "=\"" + prefix.Key + "\"\n";
+                }
+                schemaLocationList += "                        " + prefix.Key + " " + schemaDirectory + "/" +
+                    UxmlSchemaGenerator.GetFileNameForNamespace(prefix.Key) + "\n";
+            }
+
+            // The noNamespaceSchemaLocation attribute should be sufficient to reference all namespaces
+            // but Rider does not support it very well, so we add schemaLocation to make it happy.
+            string uxmlTemplate = String.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 <engine:{0}
 xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
 {1}
@@ -60,8 +61,9 @@ xsi:schemaLocation=""
 {3}""
 >
     <engine:Label text=""Hello World! From UXML"" />
-</engine:{0}>", UXMLImporterImpl.k_RootNode, xmlnsList, schemaDirectory, schemaLocationList);
+</engine:{0}>", UnityEditor.Experimental.UIElements.UXMLImporterImpl.k_RootNode, xmlnsList, schemaDirectory, schemaLocationList);
 
-        return uxmlTemplate;
+            return uxmlTemplate;
+        }
     }
 }

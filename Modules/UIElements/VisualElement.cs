@@ -7,14 +7,10 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine.Yoga;
-using UnityEngine.Experimental.UIElements.StyleEnums;
-using UnityEngine.Experimental.UIElements.StyleSheets;
-using UnityEngine.Profiling;
+using UnityEngine.UIElements.StyleSheets;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
-    internal delegate void OnStylesResolved(ICustomStyle styles);
-
     // pseudo states are used for common states of a widget
     // they are addressable from CSS via the pseudo state syntax ":selected" for example
     // while css class list can solve the same problem, pseudo states are a fast commonly agreed upon path for common cases.
@@ -35,7 +31,7 @@ namespace UnityEngine.Experimental.UIElements
         Ignore
     }
 
-    internal class VisualElementListPool
+    internal static class VisualElementListPool
     {
         static ObjectPool<List<VisualElement>> pool = new ObjectPool<List<VisualElement>>(20);
 
@@ -65,6 +61,7 @@ namespace UnityEngine.Experimental.UIElements
             pool.Release(elements);
         }
     }
+
     public partial class VisualElement : Focusable, ITransform
     {
         public class UxmlFactory : UxmlFactory<VisualElement, UxmlTraits> {}
@@ -72,9 +69,14 @@ namespace UnityEngine.Experimental.UIElements
         public class UxmlTraits : UIElements.UxmlTraits
         {
             UxmlStringAttributeDescription m_Name = new UxmlStringAttributeDescription { name = "name" };
+            UxmlStringAttributeDescription m_ViewDataKey = new UxmlStringAttributeDescription { name = "view-data-key" };
             UxmlEnumAttributeDescription<PickingMode> m_PickingMode = new UxmlEnumAttributeDescription<PickingMode> { name = "picking-mode", obsoleteNames = new[] { "pickingMode" }};
             UxmlStringAttributeDescription m_Tooltip = new UxmlStringAttributeDescription { name = "tooltip" };
-            protected UxmlIntAttributeDescription m_FocusIndex = new UxmlIntAttributeDescription { name = "focus-index", obsoleteNames = new[] { "focusIndex" }, defaultValue = VisualElement.defaultFocusIndex };
+
+            // focusIndex is obsolete. It has been replaced by tabIndex and focusable.
+            protected UxmlIntAttributeDescription focusIndex { get; set; } = new UxmlIntAttributeDescription { name = null, obsoleteNames = new[] { "focus-index", "focusIndex" }, defaultValue = -1 };
+            UxmlIntAttributeDescription m_TabIndex = new UxmlIntAttributeDescription { name = "tabindex", defaultValue = 0 };
+            protected UxmlBoolAttributeDescription focusable { get; set; } = new UxmlBoolAttributeDescription { name = "focusable", defaultValue = false };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -84,14 +86,30 @@ namespace UnityEngine.Experimental.UIElements
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
+
+                if (ve == null)
+                {
+                    throw new ArgumentNullException(nameof(ve));
+                }
+
                 ve.name = m_Name.GetValueFromBag(bag, cc);
+                ve.viewDataKey = m_ViewDataKey.GetValueFromBag(bag, cc);
                 ve.pickingMode = m_PickingMode.GetValueFromBag(bag, cc);
-                ve.focusIndex = m_FocusIndex.GetValueFromBag(bag, cc);
+
+                int index = 0;
+                if (focusIndex.TryGetValueFromBag(bag, cc, ref index))
+                {
+                    ve.tabIndex = index >= 0 ? index : 0;
+                    ve.focusable = index >= 0;
+                }
+
+                // tabIndex and focusable overrides obsolete focusIndex.
+                ve.tabIndex = m_TabIndex.GetValueFromBag(bag, cc);
+                ve.focusable = focusable.GetValueFromBag(bag, cc);
+
                 ve.tooltip = m_Tooltip.GetValueFromBag(bag, cc);
             }
         }
-
-        public static readonly int defaultFocusIndex = -1;
 
         private static uint s_NextId;
 
@@ -102,31 +120,31 @@ namespace UnityEngine.Experimental.UIElements
         string m_TypeName;
         string m_FullTypeName;
 
-        // Used for view data persistence, like expanded states.
-        private string m_PersistenceKey;
-        public string persistenceKey
+        // Used for view data persistence (ie. scroll position or tree view expanded states)
+        private string m_ViewDataKey;
+        public string viewDataKey
         {
-            get { return m_PersistenceKey; }
+            get { return m_ViewDataKey; }
             set
             {
-                if (m_PersistenceKey != value)
+                if (m_ViewDataKey != value)
                 {
-                    m_PersistenceKey = value;
+                    m_ViewDataKey = value;
 
                     if (!string.IsNullOrEmpty(value))
-                        IncrementVersion(VersionChangeType.PersistentData);
+                        IncrementVersion(VersionChangeType.ViewData);
                 }
             }
         }
 
-        // It seems worse to have unwanted/unpredictable persistence
-        // than to expect it and not have it. This internal check, set
-        // by Panel.ValidatePersistentDataOnSubTree() controls whether
-        // persistency is enabled or not. Persistence will be disabled
-        // on any VisualElement that does not have a persistenceKey, but
-        // it will also be disabled if any of its parents does not have
-        // a persistenceKey.
-        internal bool enablePersistence { get; private set; }
+        // Persistence of view data is almost always enabled as long as an element has
+        // a valid viewDataKey. The only exception is when an element is in its parent's
+        // shadow tree, that is, not a physical child of its logical parent's contentContainer.
+        // In this exception case, persistence is disabled on the element even if the element
+        // does have a viewDataKey, if its logical parent does not have a viewDataKey.
+        // This check internally controls whether or not view data persistence is enabled as
+        // the VisualTreeViewDataUpdater traverses the visual tree.
+        internal bool enableViewDataPersistence { get; private set; }
 
         public object userData { get; set; }
 
@@ -134,7 +152,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public override FocusController focusController
         {
-            get { return panel == null ? null : panel.focusController; }
+            get { return panel?.focusController; }
         }
 
         private RenderData m_RenderData;
@@ -202,6 +220,18 @@ namespace UnityEngine.Experimental.UIElements
             get { return Matrix4x4.TRS(m_Position, m_Rotation, m_Scale); }
         }
 
+        bool m_IsLayoutManual;
+        internal bool isLayoutManual
+        {
+            get { return m_IsLayoutManual; }
+            set
+            {
+                m_IsLayoutManual = value;
+                if (m_IsLayoutManual)
+                    style.position = Position.Absolute;
+            }
+        }
+
         Rect m_Layout;
 
         // This will replace the Rect position
@@ -211,7 +241,7 @@ namespace UnityEngine.Experimental.UIElements
             get
             {
                 var result = m_Layout;
-                if (yogaNode != null && style.positionType.value != PositionType.Manual)
+                if (yogaNode != null && !isLayoutManual)
                 {
                     result.x = yogaNode.LayoutX;
                     result.y = yogaNode.LayoutY;
@@ -220,7 +250,7 @@ namespace UnityEngine.Experimental.UIElements
                 }
                 return result;
             }
-            set
+            internal set
             {
                 if (yogaNode == null)
                 {
@@ -228,23 +258,23 @@ namespace UnityEngine.Experimental.UIElements
                 }
 
                 // Same position value while type is already manual should not trigger any layout change, return early
-                if (style.positionType.value == PositionType.Manual && m_Layout == value)
+                if (isLayoutManual && m_Layout == value)
                     return;
 
                 // set results so we can read straight back in get without waiting for a pass
                 m_Layout = value;
+                isLayoutManual = true;
 
                 // mark as inline so that they do not get overridden if needed.
-                IStyle styleAccess = this;
-                styleAccess.positionType = PositionType.Manual;
+                IStyle styleAccess = style;
                 styleAccess.marginLeft = 0.0f;
                 styleAccess.marginRight = 0.0f;
                 styleAccess.marginBottom = 0.0f;
                 styleAccess.marginTop = 0.0f;
-                styleAccess.positionLeft = value.x;
-                styleAccess.positionTop = value.y;
-                styleAccess.positionRight = float.NaN;
-                styleAccess.positionBottom = float.NaN;
+                styleAccess.left = value.x;
+                styleAccess.top = value.y;
+                styleAccess.right = float.NaN;
+                styleAccess.bottom = float.NaN;
                 styleAccess.width = value.width;
                 styleAccess.height = value.height;
 
@@ -256,10 +286,10 @@ namespace UnityEngine.Experimental.UIElements
         {
             get
             {
-                var spacing = new Spacing(m_Style.paddingLeft,
-                    m_Style.paddingTop,
-                    m_Style.paddingRight,
-                    m_Style.paddingBottom);
+                var spacing = new Spacing(resolvedStyle.paddingLeft,
+                    resolvedStyle.paddingTop,
+                    resolvedStyle.paddingRight,
+                    resolvedStyle.paddingBottom);
 
                 return paddingRect - spacing;
             }
@@ -269,10 +299,10 @@ namespace UnityEngine.Experimental.UIElements
         {
             get
             {
-                var spacing = new Spacing(style.borderLeftWidth,
-                    style.borderTopWidth,
-                    style.borderRightWidth,
-                    style.borderBottomWidth);
+                var spacing = new Spacing(resolvedStyle.borderLeftWidth,
+                    resolvedStyle.borderTopWidth,
+                    resolvedStyle.borderRightWidth,
+                    resolvedStyle.borderBottomWidth);
 
                 return rect - spacing;
             }
@@ -349,9 +379,9 @@ namespace UnityEngine.Experimental.UIElements
         private void UpdateWorldTransform()
         {
             var offset = Matrix4x4.Translate(new Vector3(layout.x, layout.y, 0));
-            if (shadow.parent != null)
+            if (hierarchy.parent != null)
             {
-                m_WorldTransform = shadow.parent.worldTransform * offset * transform.matrix;
+                m_WorldTransform = hierarchy.parent.worldTransform * offset * transform.matrix;
             }
             else
             {
@@ -377,9 +407,9 @@ namespace UnityEngine.Experimental.UIElements
 
         private void UpdateWorldClip()
         {
-            if (shadow.parent != null)
+            if (hierarchy.parent != null)
             {
-                m_WorldClip = shadow.parent.worldClip;
+                m_WorldClip = hierarchy.parent.worldClip;
 
                 if (ShouldClip())
                 {
@@ -493,12 +523,6 @@ namespace UnityEngine.Experimental.UIElements
         // user-defined style object, if not set, is the same reference as m_SharedStyles
         internal VisualElementStylesData m_Style = VisualElementStylesData.none;
 
-        protected virtual void OnStyleResolved(ICustomStyle style)
-        {
-            // push all non inlined layout things up
-            FinalizeLayout();
-        }
-
         internal VisualElementStylesData sharedStyle
         {
             get
@@ -517,33 +541,15 @@ namespace UnityEngine.Experimental.UIElements
 
         internal bool hasInlineStyle
         {
-            get
-            {
-                return m_Style != m_SharedStyle;
-            }
+            get { return m_Style != m_SharedStyle; }
         }
 
-        VisualElementStylesData inlineStyle
-        {
-            get
-            {
-                if (!hasInlineStyle)
-                {
-                    var inline = new VisualElementStylesData(false);
-                    inline.Apply(m_SharedStyle, StylePropertyApplyMode.Copy);
-                    m_Style = inline;
-                }
-                return m_Style;
-            }
-        }
+        internal IComputedStyle computedStyle { get { return m_Style; } }
 
         // Opacity is not fully supported so it's hidden from public API for now
         internal float opacity
         {
-            get
-            {
-                return style.opacity.value;
-            }
+            get { return resolvedStyle.opacity; }
             set
             {
                 style.opacity = value;
@@ -556,15 +562,14 @@ namespace UnityEngine.Experimental.UIElements
         {
             controlid = ++s_NextId;
 
-            shadow = new Hierarchy(this);
+            hierarchy = new Hierarchy(this);
 
             m_ClassList = s_EmptyClassList;
             m_FullTypeName = string.Empty;
             m_TypeName = string.Empty;
             SetEnabled(true);
 
-            // Make element non focusable by default.
-            focusIndex = defaultFocusIndex;
+            focusable = false;
 
             name = string.Empty;
             yogaNode = new YogaNode();
@@ -574,23 +579,23 @@ namespace UnityEngine.Experimental.UIElements
         {
             base.ExecuteDefaultAction(evt);
 
-            if (evt.GetEventTypeId() == MouseOverEvent.TypeId() || evt.GetEventTypeId() == MouseOutEvent.TypeId())
+            if (evt.eventTypeId == MouseOverEvent.TypeId() || evt.eventTypeId == MouseOutEvent.TypeId())
             {
-                UpdateCursorStyle(evt.GetEventTypeId());
+                UpdateCursorStyle(evt.eventTypeId);
             }
-            else if (evt.GetEventTypeId() == MouseEnterEvent.TypeId())
+            else if (evt.eventTypeId == MouseEnterEvent.TypeId())
             {
                 pseudoStates |= PseudoStates.Hover;
             }
-            else if (evt.GetEventTypeId() == MouseLeaveEvent.TypeId())
+            else if (evt.eventTypeId == MouseLeaveEvent.TypeId())
             {
                 pseudoStates &= ~PseudoStates.Hover;
             }
-            else if (evt.GetEventTypeId() == BlurEvent.TypeId())
+            else if (evt.eventTypeId == BlurEvent.TypeId())
             {
                 pseudoStates = pseudoStates & ~PseudoStates.Focus;
             }
-            else if (evt.GetEventTypeId() == FocusEvent.TypeId())
+            else if (evt.eventTypeId == FocusEvent.TypeId())
             {
                 pseudoStates = pseudoStates | PseudoStates.Focus;
             }
@@ -598,9 +603,9 @@ namespace UnityEngine.Experimental.UIElements
 
         public sealed override void Focus()
         {
-            if (!canGrabFocus && shadow.parent != null)
+            if (!canGrabFocus && hierarchy.parent != null)
             {
-                shadow.parent.Focus();
+                hierarchy.parent.Focus();
             }
             else
             {
@@ -620,16 +625,16 @@ namespace UnityEngine.Experimental.UIElements
                 elements.Add(this);
                 GatherAllChildren(elements);
 
-                EventDispatcher.Gate? pDispatcherGate = null;
+                EventDispatcherGate? pDispatcherGate = null;
                 if (p?.dispatcher != null)
                 {
-                    pDispatcherGate = new EventDispatcher.Gate(p.dispatcher);
+                    pDispatcherGate = new EventDispatcherGate(p.dispatcher);
                 }
 
-                EventDispatcher.Gate? panelDispatcherGate = null;
+                EventDispatcherGate? panelDispatcherGate = null;
                 if (panel?.dispatcher != null && panel.dispatcher != p?.dispatcher)
                 {
-                    panelDispatcherGate = new EventDispatcher.Gate(panel.dispatcher);
+                    panelDispatcherGate = new EventDispatcherGate(panel.dispatcher);
                 }
 
                 using (pDispatcherGate)
@@ -679,8 +684,8 @@ namespace UnityEngine.Experimental.UIElements
             IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Transform);
 
             // persistent data key may have changed or needs initialization
-            if (!string.IsNullOrEmpty(persistenceKey))
-                IncrementVersion(VersionChangeType.PersistentData);
+            if (!string.IsNullOrEmpty(viewDataKey))
+                IncrementVersion(VersionChangeType.ViewData);
         }
 
         public sealed override void SendEvent(EventBase e)
@@ -693,75 +698,6 @@ namespace UnityEngine.Experimental.UIElements
             elementPanel?.OnVersionChanged(this, changeType);
         }
 
-        private void IncrementVersion(ChangeType changeType)
-        {
-            IncrementVersion(GetVersionChange(changeType));
-        }
-
-        private VersionChangeType GetVersionChange(ChangeType type)
-        {
-            VersionChangeType versionChangeType = 0;
-
-            if ((type & (ChangeType.PersistentData | ChangeType.PersistentDataPath)) > 0)
-            {
-                versionChangeType |= VersionChangeType.PersistentData;
-            }
-
-            if ((type & ChangeType.Layout) == ChangeType.Layout)
-            {
-                versionChangeType |= VersionChangeType.Layout;
-            }
-
-            if ((type & (ChangeType.Styles | ChangeType.StylesPath)) > 0)
-            {
-                versionChangeType |= VersionChangeType.StyleSheet;
-            }
-
-            if ((type & ChangeType.Transform) == ChangeType.Transform)
-            {
-                versionChangeType |= VersionChangeType.Transform;
-            }
-
-            if ((type & ChangeType.Repaint) == ChangeType.Repaint)
-            {
-                versionChangeType |= VersionChangeType.Repaint;
-            }
-
-            return versionChangeType;
-        }
-
-        [Obsolete("Dirty is deprecated. Use MarkDirtyRepaint to trigger a new repaint of the VisualElement.")]
-        public void Dirty(ChangeType type)
-        {
-            IncrementVersion(type);
-        }
-
-        [Obsolete("IsDirty is deprecated. Avoid using it, will always return false.")]
-        public bool IsDirty(ChangeType type)
-        {
-            return false;
-        }
-
-        [Obsolete("AnyDirty is deprecated. Avoid using it, will always return false.")]
-        public bool AnyDirty(ChangeType type)
-        {
-            return false;
-        }
-
-        [Obsolete("ClearDirty is deprecated. Avoid using it, it's now a no-op.")]
-        public void ClearDirty(ChangeType type)
-        {
-        }
-
-        [Obsolete("enabled is deprecated. Use SetEnabled as setter, and enabledSelf/enabledInHierarchy as getters.")]
-        public virtual bool enabled
-        {
-            get { return enabledInHierarchy; }
-            set { SetEnabled(value); }
-        }
-
-        private bool m_Enabled;
-
         //TODO: Make private once VisualContainer is merged with VisualElement
         protected internal bool SetEnabledFromHierarchy(bool state)
         {
@@ -769,7 +705,7 @@ namespace UnityEngine.Experimental.UIElements
             if (state == ((pseudoStates & PseudoStates.Disabled) != PseudoStates.Disabled))
                 return false;
 
-            if (state && m_Enabled && (parent == null || parent.enabledInHierarchy))
+            if (state && enabledSelf && (parent == null || parent.enabledInHierarchy))
                 pseudoStates &= ~PseudoStates.Disabled;
             else
                 pseudoStates |= PseudoStates.Disabled;
@@ -784,16 +720,13 @@ namespace UnityEngine.Experimental.UIElements
         }
 
         //Returns the local enabled state
-        public bool enabledSelf
-        {
-            get { return m_Enabled; }
-        }
+        public bool enabledSelf { get; private set;}
 
         public void SetEnabled(bool value)
         {
-            if (m_Enabled != value)
+            if (enabledSelf != value)
             {
-                m_Enabled = value;
+                enabledSelf = value;
 
                 PropagateEnabledToChildren(value);
             }
@@ -803,9 +736,9 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (SetEnabledFromHierarchy(value))
             {
-                for (int i = 0; i < shadow.childCount; ++i)
+                for (int i = 0; i < hierarchy.childCount; ++i)
                 {
-                    shadow[i].PropagateEnabledToChildren(value);
+                    hierarchy[i].PropagateEnabledToChildren(value);
                 }
             }
         }
@@ -814,7 +747,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             get
             {
-                return style.visibility.GetSpecifiedValueOrDefault(Visibility.Visible) == Visibility.Visible;
+                return resolvedStyle.visibility == Visibility.Visible;
             }
             set
             {
@@ -842,43 +775,43 @@ namespace UnityEngine.Experimental.UIElements
             stylePainter.DrawBorder();
         }
 
-        protected virtual void DoRepaint(IStylePainter painter)
+        internal virtual void DoRepaint(IStylePainter painter)
         {
             // Implemented by subclasses
         }
 
-        private void GetFullHierarchicalPersistenceKey(StringBuilder key)
+        internal void GetFullHierarchicalViewDataKey(StringBuilder key)
         {
             const string keySeparator = "__";
 
             if (parent != null)
-                parent.GetFullHierarchicalPersistenceKey(key);
+                parent.GetFullHierarchicalViewDataKey(key);
 
-            if (!string.IsNullOrEmpty(persistenceKey))
+            if (!string.IsNullOrEmpty(viewDataKey))
             {
                 key.Append(keySeparator);
-                key.Append(persistenceKey);
+                key.Append(viewDataKey);
             }
         }
 
-        public string GetFullHierarchicalPersistenceKey()
+        internal string GetFullHierarchicalViewDataKey()
         {
             StringBuilder key = new StringBuilder();
 
-            GetFullHierarchicalPersistenceKey(key);
+            GetFullHierarchicalViewDataKey(key);
 
             return key.ToString();
         }
 
-        public T GetOrCreatePersistentData<T>(object existing, string key) where T : class, new()
+        internal T GetOrCreateViewData<T>(object existing, string key) where T : class, new()
         {
             Debug.Assert(elementPanel != null, "VisualElement.elementPanel is null! Cannot load persistent data.");
 
-            var persistentData = elementPanel == null || elementPanel.getViewDataDictionary == null ? null : elementPanel.getViewDataDictionary();
+            var viewData = elementPanel == null || elementPanel.getViewDataDictionary == null ? null : elementPanel.getViewDataDictionary();
 
             // If persistency is disable (no data, no key, no key one of the parents), just return the
             // existing data or create a local one if none exists.
-            if (persistentData == null || string.IsNullOrEmpty(persistenceKey) || enablePersistence == false)
+            if (viewData == null || string.IsNullOrEmpty(viewDataKey) || enableViewDataPersistence == false)
             {
                 if (existing != null)
                     return existing as T;
@@ -888,21 +821,21 @@ namespace UnityEngine.Experimental.UIElements
 
             string keyWithType = key + "__" + typeof(T).ToString();
 
-            if (!persistentData.ContainsKey(keyWithType))
-                persistentData.Set(keyWithType, new T());
+            if (!viewData.ContainsKey(keyWithType))
+                viewData.Set(keyWithType, new T());
 
-            return persistentData.Get<T>(keyWithType);
+            return viewData.Get<T>(keyWithType);
         }
 
-        public T GetOrCreatePersistentData<T>(ScriptableObject existing, string key) where T : ScriptableObject
+        internal T GetOrCreateViewData<T>(ScriptableObject existing, string key) where T : ScriptableObject
         {
-            Debug.Assert(elementPanel != null, "VisualElement.elementPanel is null! Cannot load persistent data.");
+            Debug.Assert(elementPanel != null, "VisualElement.elementPanel is null! Cannot load view data.");
 
-            var persistentData = elementPanel == null || elementPanel.getViewDataDictionary == null ? null : elementPanel.getViewDataDictionary();
+            var viewData = elementPanel == null || elementPanel.getViewDataDictionary == null ? null : elementPanel.getViewDataDictionary();
 
             // If persistency is disable (no data, no key, no key one of the parents), just return the
             // existing data or create a local one if none exists.
-            if (persistentData == null || string.IsNullOrEmpty(persistenceKey) || enablePersistence == false)
+            if (viewData == null || string.IsNullOrEmpty(viewDataKey) || enableViewDataPersistence == false)
             {
                 if (existing != null)
                     return existing as T;
@@ -912,64 +845,71 @@ namespace UnityEngine.Experimental.UIElements
 
             string keyWithType = key + "__" + typeof(T).ToString();
 
-            if (!persistentData.ContainsKey(keyWithType))
-                persistentData.Set(keyWithType, ScriptableObject.CreateInstance<T>());
+            if (!viewData.ContainsKey(keyWithType))
+                viewData.Set(keyWithType, ScriptableObject.CreateInstance<T>());
 
-            return persistentData.GetScriptable<T>(keyWithType);
+            return viewData.GetScriptable<T>(keyWithType);
         }
 
-        public void OverwriteFromPersistedData(object obj, string key)
+        internal void OverwriteFromViewData(object obj, string key)
         {
-            Debug.Assert(elementPanel != null, "VisualElement.elementPanel is null! Cannot load persistent data.");
+            if (obj == null)
+            {
+                throw new ArgumentNullException(nameof(obj));
+            }
 
-            var persistentData = elementPanel == null || elementPanel.getViewDataDictionary == null ? null : elementPanel.getViewDataDictionary();
+            Debug.Assert(elementPanel != null, "VisualElement.elementPanel is null! Cannot load view data.");
+
+            var viewDataPersistentData = elementPanel == null || elementPanel.getViewDataDictionary == null ? null : elementPanel.getViewDataDictionary();
 
             // If persistency is disable (no data, no key, no key one of the parents), just return the
             // existing data or create a local one if none exists.
-            if (persistentData == null || string.IsNullOrEmpty(persistenceKey) || enablePersistence == false)
+            if (viewDataPersistentData == null || string.IsNullOrEmpty(viewDataKey) || enableViewDataPersistence == false)
             {
                 return;
             }
 
             string keyWithType = key + "__" + obj.GetType();
 
-            if (!persistentData.ContainsKey(keyWithType))
+            if (!viewDataPersistentData.ContainsKey(keyWithType))
             {
-                persistentData.Set(keyWithType, obj);
+                viewDataPersistentData.Set(keyWithType, obj);
                 return;
             }
 
-            persistentData.Overwrite(obj, keyWithType);
+            viewDataPersistentData.Overwrite(obj, keyWithType);
         }
 
-        public void SavePersistentData()
+        internal void SaveViewData()
         {
-            if (elementPanel != null && elementPanel.savePersistentViewData != null && !string.IsNullOrEmpty(persistenceKey))
-                elementPanel.savePersistentViewData();
+            if (elementPanel != null && elementPanel.saveViewData != null && !string.IsNullOrEmpty(viewDataKey))
+                elementPanel.saveViewData();
         }
 
-        internal bool IsPersitenceSupportedOnChildren()
+        internal bool IsViewDataPersitenceSupportedOnChildren(bool existingState)
         {
-            // We relax here the requirement that ALL parents of a VisualElement
-            // need to have a persistenceKey for persistence to work. Plain
-            // VisualElements are likely to be used just for layouting and
-            // grouping and requiring a key on each element is a bit tedious.
-            if (this.GetType() == typeof(VisualElement))
-                return true;
+            bool newState = existingState;
 
-            if (string.IsNullOrEmpty(persistenceKey))
-                return false;
+            // If this element has no key AND this element has a custom contentContainer,
+            // turn off view data persistence. This essentially turns off persistence
+            // on shadow elements if the parent has no key.
+            if (string.IsNullOrEmpty(viewDataKey) && this != contentContainer)
+                newState = false;
 
-            return true;
+            // However, once we enter the light tree again, we need to turn persistence back on.
+            if (parent != null && this == parent.contentContainer)
+                newState = true;
+
+            return newState;
         }
 
-        internal void OnPersistentDataReady(bool enablePersistence)
+        internal void OnViewDataReady(bool enablePersistence)
         {
-            this.enablePersistence = enablePersistence;
-            OnPersistentDataReady();
+            this.enableViewDataPersistence = enablePersistence;
+            OnViewDataReady();
         }
 
-        public virtual void OnPersistentDataReady() {}
+        internal virtual void OnViewDataReady() {}
 
         // position should be in local space
         // override to customize intersection between point and shape
@@ -1008,7 +948,7 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        protected internal virtual Vector2 DoMeasure(float width, MeasureMode widthMode, float height, MeasureMode heightMode)
+        protected internal virtual Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight, MeasureMode heightMode)
         {
             return new Vector2(float.NaN, float.NaN);
         }
@@ -1020,7 +960,7 @@ namespace UnityEngine.Experimental.UIElements
             return MeasureOutput.Make(Mathf.RoundToInt(size.x), Mathf.RoundToInt(size.y));
         }
 
-        public void SetSize(Vector2 size)
+        internal void SetSize(Vector2 size)
         {
             var pos = layout;
             pos.width = size.x;
@@ -1040,16 +980,14 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        internal event OnStylesResolved onStylesResolved;
-
         // for internal use only, used by asset instantiation to push local styles
         // likely can be replaced by merging VisualContainer and VisualElement
         // and then storing the inline sheet in the list held by VisualContainer
-        internal void SetInlineStyles(VisualElementStylesData inlineStyle)
+        internal void SetInlineStyles(VisualElementStylesData inlineStyleData)
         {
-            Debug.Assert(!inlineStyle.isShared);
-            inlineStyle.Apply(m_Style, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
-            m_Style = inlineStyle;
+            Debug.Assert(!inlineStyleData.isShared);
+            inlineStyleData.Apply(m_Style, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+            m_Style = inlineStyleData;
         }
 
         internal void SetSharedStyles(VisualElementStylesData sharedStyle)
@@ -1060,6 +998,8 @@ namespace UnityEngine.Experimental.UIElements
             {
                 return;
             }
+
+            int previousCustomStyleCount = m_Style.customPropertiesCount;
 
             if (hasInlineStyle)
             {
@@ -1072,38 +1012,41 @@ namespace UnityEngine.Experimental.UIElements
 
             m_SharedStyle = sharedStyle;
 
-            if (onStylesResolved != null)
+            if (previousCustomStyleCount > 0 || m_Style.customPropertiesCount > 0)
             {
-                onStylesResolved(m_Style);
+                using (var evt = CustomStyleResolvedEvent.GetPooled())
+                {
+                    evt.target = this;
+                    SendEvent(evt);
+                }
             }
-            OnStyleResolved(m_Style);
+
+            FinalizeLayout();
 
             // This is a pre-emptive since we do not know if style changes actually cause a repaint or a layout
             // But thouse should be the only possible type of changes needed
             IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint);
         }
 
-        public void ResetPositionProperties()
+        internal void ResetPositionProperties()
         {
             if (!hasInlineStyle)
             {
                 return;
             }
-            VisualElementStylesData styleAccess = inlineStyle;
-            styleAccess.positionType = StyleValue<int>.nil;
-            styleAccess.marginLeft = StyleValue<float>.nil;
-            styleAccess.marginRight = StyleValue<float>.nil;
-            styleAccess.marginBottom = StyleValue<float>.nil;
-            styleAccess.marginTop = StyleValue<float>.nil;
-            styleAccess.positionLeft = StyleValue<float>.nil;
-            styleAccess.positionTop = StyleValue<float>.nil;
-            styleAccess.positionRight = StyleValue<float>.nil;
-            styleAccess.positionBottom = StyleValue<float>.nil;
-            styleAccess.width = StyleValue<float>.nil;
-            styleAccess.height = StyleValue<float>.nil;
 
-            // Make sure to retrieve shared styles from the shared style sheet and update CSSNode again
-            m_Style.Apply(sharedStyle, StylePropertyApplyMode.CopyIfNotInline);
+            style.position = StyleKeyword.Null;
+            style.marginLeft = StyleKeyword.Null;
+            style.marginRight = StyleKeyword.Null;
+            style.marginBottom = StyleKeyword.Null;
+            style.marginTop = StyleKeyword.Null;
+            style.left = StyleKeyword.Null;
+            style.top = StyleKeyword.Null;
+            style.right = StyleKeyword.Null;
+            style.bottom = StyleKeyword.Null;
+            style.width = StyleKeyword.Null;
+            style.height = StyleKeyword.Null;
+
             FinalizeLayout();
 
             IncrementVersion(VersionChangeType.Layout);
@@ -1203,7 +1146,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 if (eventType == MouseOverEvent.TypeId())
                 {
-                    elementPanel.cursorManager.SetCursor(style.cursor.value);
+                    elementPanel.cursorManager.SetCursor(computedStyle.cursor.value);
                 }
                 else
                 {
@@ -1218,18 +1161,33 @@ namespace UnityEngine.Experimental.UIElements
         // transforms a point assumed in Panel space to the referential inside of the element bound (local)
         public static Vector2 WorldToLocal(this VisualElement ele, Vector2 p)
         {
+            if (ele == null)
+            {
+                throw new ArgumentNullException(nameof(ele));
+            }
+
             return ele.worldTransform.inverse.MultiplyPoint3x4((Vector3)p);
         }
 
         // transforms a point to Panel space referential
         public static Vector2 LocalToWorld(this VisualElement ele, Vector2 p)
         {
+            if (ele == null)
+            {
+                throw new ArgumentNullException(nameof(ele));
+            }
+
             return (Vector2)ele.worldTransform.MultiplyPoint3x4((Vector3)p);
         }
 
         // transforms a rect assumed in Panel space to the referential inside of the element bound (local)
         public static Rect WorldToLocal(this VisualElement ele, Rect r)
         {
+            if (ele == null)
+            {
+                throw new ArgumentNullException(nameof(ele));
+            }
+
             var inv = ele.worldTransform.inverse;
             Vector2 position = inv.MultiplyPoint3x4((Vector2)r.position);
             r.position = position;
@@ -1240,6 +1198,11 @@ namespace UnityEngine.Experimental.UIElements
         // transforms a rect to Panel space referential
         public static Rect LocalToWorld(this VisualElement ele, Rect r)
         {
+            if (ele == null)
+            {
+                throw new ArgumentNullException(nameof(ele));
+            }
+
             var toWorldMatrix = ele.worldTransform;
             r.position = toWorldMatrix.MultiplyPoint3x4(r.position);
             r.size = toWorldMatrix.MultiplyVector(r.size);
@@ -1260,20 +1223,30 @@ namespace UnityEngine.Experimental.UIElements
 
         public static void StretchToParentSize(this VisualElement elem)
         {
+            if (elem == null)
+            {
+                throw new ArgumentNullException(nameof(elem));
+            }
+
             IStyle styleAccess = elem.style;
-            styleAccess.positionType = PositionType.Absolute;
-            styleAccess.positionLeft = 0.0f;
-            styleAccess.positionTop = 0.0f;
-            styleAccess.positionRight = 0.0f;
-            styleAccess.positionBottom = 0.0f;
+            styleAccess.position = Position.Absolute;
+            styleAccess.left = 0.0f;
+            styleAccess.top = 0.0f;
+            styleAccess.right = 0.0f;
+            styleAccess.bottom = 0.0f;
         }
 
         public static void StretchToParentWidth(this VisualElement elem)
         {
+            if (elem == null)
+            {
+                throw new ArgumentNullException(nameof(elem));
+            }
+
             IStyle styleAccess = elem.style;
-            styleAccess.positionType = PositionType.Absolute;
-            styleAccess.positionLeft = 0.0f;
-            styleAccess.positionRight = 0.0f;
+            styleAccess.position = Position.Absolute;
+            styleAccess.left = 0.0f;
+            styleAccess.right = 0.0f;
         }
 
         public static void AddManipulator(this VisualElement ele, IManipulator manipulator)

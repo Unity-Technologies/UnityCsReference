@@ -26,6 +26,7 @@ namespace UnityEditor
 
             // Don't use optimizedGUI for audio filters
             var behaviour = target as MonoBehaviour;
+            var generatorAsset = ScriptGeneratorAsset.FromMonoBehaviour(behaviour);
             if (behaviour != null && AudioUtil.HasAudioCallback(behaviour) && AudioUtil.GetCustomFilterChannelCount(behaviour) > 0)
                 return false;
 
@@ -61,8 +62,14 @@ namespace UnityEditor
 
             height = 0;
             SerializedProperty property = m_SerializedObject.GetIterator();
+            var isInspectorModeNormal = m_InspectorMode == InspectorMode.Normal;
+            var isAssetBased = behaviour != null && generatorAsset != null;
             while (property.NextVisible(height <= 0))
             {
+                if (isAssetBased && "m_Script" == property.propertyPath && isInspectorModeNormal)
+                    continue;
+                if (!isAssetBased && "m_GeneratorAsset" == property.propertyPath && isInspectorModeNormal)
+                    continue;
                 var handler = ScriptAttributeUtility.GetHandler(property);
                 if (!handler.CanCacheInspectorGUI(property))
                     return ResetOptimizedBlock(OptimizedBlockState.NoOptimizedBlock);
@@ -93,16 +100,27 @@ namespace UnityEditor
 
             var property = m_SerializedObject.GetIterator();
             var isInspectorModeNormal = m_InspectorMode == InspectorMode.Normal;
+            var behaviour = target as MonoBehaviour;
+            var generatorAsset = ScriptGeneratorAsset.FromMonoBehaviour(behaviour);
+            var isAssetBased = behaviour != null && generatorAsset != null;
             while (property.NextVisible(childrenAreExpanded))
             {
+                if (isAssetBased && "m_Script" == property.propertyPath && isInspectorModeNormal)
+                    continue;
+                if (!isAssetBased && "m_GeneratorAsset" == property.propertyPath && isInspectorModeNormal)
+                    continue;
                 var handler = ScriptAttributeUtility.GetHandler(property);
                 contentRect.height = handler.GetHeight(property, null, false);
 
                 if (contentRect.Overlaps(visibleRect))
                 {
                     EditorGUI.indentLevel = property.depth;
-                    using (new EditorGUI.DisabledScope(isInspectorModeNormal && "m_Script" == property.propertyPath))
-                        childrenAreExpanded = handler.OnGUI(contentRect, property, null, false, visibleRect);
+                    if (isAssetBased)
+                        using (new EditorGUI.DisabledScope(isInspectorModeNormal && "m_GeneratorAsset" == property.propertyPath))
+                            childrenAreExpanded = handler.OnGUI(contentRect, property, null, false, visibleRect);
+                    else
+                        using (new EditorGUI.DisabledScope(isInspectorModeNormal && "m_Script" == property.propertyPath))
+                            childrenAreExpanded = handler.OnGUI(contentRect, property, null, false, visibleRect);
                 }
                 else
                     childrenAreExpanded = property.isExpanded;
@@ -118,6 +136,20 @@ namespace UnityEditor
         public bool MissingMonoBehaviourGUI()
         {
             serializedObject.Update();
+            var behaviour = target as MonoBehaviour;
+            var assetGenerator = ScriptGeneratorAsset.FromMonoBehaviour(behaviour);
+            if (behaviour != null && assetGenerator != null)
+            {
+                var newValue = EditorGUILayout.ObjectField(assetGenerator, assetGenerator.GetType(), true);
+                if (newValue != assetGenerator)
+                {
+                    ScriptGeneratorAsset.SetGeneratorAsset(behaviour, newValue as ScriptGeneratorAsset);
+                }
+
+                if (serializedObject.ApplyModifiedProperties())
+                    EditorUtility.ForceRebuildInspectors();
+            }
+
             SerializedProperty scriptProperty = serializedObject.FindProperty("m_Script");
             if (scriptProperty == null)
                 return false;
@@ -125,10 +157,12 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(scriptProperty);
 
             MonoScript targetScript = scriptProperty.objectReferenceValue as MonoScript;
-            bool showScriptWarning = targetScript == null || !targetScript.GetScriptTypeWasJustCreatedFromComponentMenu();
+            bool showScriptWarning =
+                targetScript == null || !targetScript.GetScriptTypeWasJustCreatedFromComponentMenu();
             if (showScriptWarning)
             {
-                var text = L10n.Tr("The associated script can not be loaded.\nPlease fix any compile errors\nand assign a valid script.");
+                var text = L10n.Tr(
+                    "The associated script can not be loaded.\nPlease fix any compile errors\nand assign a valid script.");
                 EditorGUILayout.HelpBox(text, MessageType.Warning, true);
             }
 
@@ -154,7 +188,18 @@ namespace UnityEditor
         internal bool IsMissingMonoBehaviourTarget()
         {
             if (target) // This test for native reference state first.
+            {
+                var behaviour = target as MonoBehaviour;
+                if (behaviour != null)
+                {
+                    var generatorAsset = ScriptGeneratorAsset.FromMonoBehaviour(behaviour);
+                    if (generatorAsset != null)
+                    {
+                        return false;
+                    }
+                }
                 return target.GetType() == typeof(MonoBehaviour) || target.GetType() == typeof(ScriptableObject);
+            }
             return target is MonoBehaviour || target is ScriptableObject;
         }
 

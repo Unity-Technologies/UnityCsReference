@@ -13,8 +13,8 @@ using UnityEngine.U2D.Interface;
 using UnityTexture2D = UnityEngine.Texture2D;
 using System.Linq;
 using System.Reflection;
-using UnityEditor.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements;
+using UnityEditor.UIElements;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -278,7 +278,7 @@ namespace UnityEditor
             };
             m_MainViewElement.Add(m_MainViewIMGUIElement);
             m_MainViewElement.Add(m_ModuleViewElement);
-            var root = this.GetRootVisualContainer();
+            var root = rootVisualElement;
             root.AddStyleSheetPath("StyleSheets/SpriteEditor/SpriteEditor.uss");
             root.Add(m_ToolbarIMGUIElement);
             root.Add(m_MainViewElement);

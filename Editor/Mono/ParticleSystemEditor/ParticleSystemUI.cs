@@ -60,6 +60,24 @@ namespace UnityEditor
             return m_Modules.Last();
         }
 
+        internal Bounds GetBounds()
+        {
+            var combinedBounds = new Bounds();
+            bool initialized = false;
+
+            foreach (ParticleSystem ps in m_ParticleSystems)
+            {
+                ParticleSystemRenderer particleSystemRenderer = ps.GetComponent<ParticleSystemRenderer>();
+                if (!initialized)
+                    combinedBounds = particleSystemRenderer.bounds;
+                combinedBounds.Encapsulate(particleSystemRenderer.bounds);
+
+                initialized = true;
+            }
+
+            return combinedBounds;
+        }
+
         private void InitRendererUI()
         {
             List<ParticleSystemRenderer> renderers = new List<ParticleSystemRenderer>();

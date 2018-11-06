@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
 namespace Unity.Experimental.EditorMode
 {

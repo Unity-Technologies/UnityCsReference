@@ -3,19 +3,14 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
-using System.Collections;
 using System.Collections.Generic;
 
 using UnityEngine;
-using UnityEngine.StyleSheets;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
-using UnityEngine.Experimental.UIElements.StyleSheets;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
-    internal class VisualSplitter : VisualElement
+    internal class VisualSplitter : ImmediateModeElement
     {
         const int kDefaultSplitSize = 10;
         public int splitSize = kDefaultSplitSize;
@@ -57,7 +52,7 @@ namespace UnityEditor.Experimental.UIElements
                 if (CanStartManipulation(e))
                 {
                     VisualSplitter visualSplitter = target as VisualSplitter;
-                    FlexDirection flexDirection = visualSplitter.style.flexDirection;
+                    FlexDirection flexDirection = visualSplitter.resolvedStyle.flexDirection;
 
                     if (m_AffectedElements != null)
                     {
@@ -106,26 +101,28 @@ namespace UnityEditor.Experimental.UIElements
                     VisualElement visualElement = m_AffectedElements[m_ActiveVisualElementIndex];
                     VisualElement nextVisualElement = m_AffectedElements[m_NextVisualElementIndex];
 
-                    FlexDirection flexDirection = visualSplitter.style.flexDirection;
+                    FlexDirection flexDirection = visualSplitter.resolvedStyle.flexDirection;
                     bool isVertical = flexDirection == FlexDirection.Column || flexDirection == FlexDirection.ColumnReverse;
 
                     float relativeMousePosition;
                     if (isVertical)
                     {
-                        relativeMousePosition = (e.localMousePosition.y - visualElement.layout.yMin - visualElement.style.minHeight) /
-                            (visualElement.layout.height + nextVisualElement.layout.height -
-                                visualElement.style.minHeight - nextVisualElement.style.minHeight);
+                        float minHeight = visualElement.resolvedStyle.minHeight == StyleKeyword.Auto ? 0 : visualElement.resolvedStyle.minHeight.value;
+                        float nextMinHeight = nextVisualElement.resolvedStyle.minHeight == StyleKeyword.Auto ? 0 : nextVisualElement.resolvedStyle.minHeight.value;
+                        relativeMousePosition = (e.localMousePosition.y - visualElement.layout.yMin - minHeight) /
+                            (visualElement.layout.height + nextVisualElement.layout.height - minHeight - nextMinHeight);
                     }
                     else
                     {
-                        relativeMousePosition = (e.localMousePosition.x - visualElement.layout.xMin - visualElement.style.minWidth) /
-                            (visualElement.layout.width + nextVisualElement.layout.width -
-                                visualElement.style.minWidth - nextVisualElement.style.minWidth);
+                        float minWidth = visualElement.resolvedStyle.minWidth == StyleKeyword.Auto ? 0 : visualElement.resolvedStyle.minWidth.value;
+                        float nextMinWidth = nextVisualElement.resolvedStyle.minWidth == StyleKeyword.Auto ? 0 : nextVisualElement.resolvedStyle.minWidth.value;
+                        relativeMousePosition = (e.localMousePosition.x - visualElement.layout.xMin - minWidth) /
+                            (visualElement.layout.width + nextVisualElement.layout.width - minWidth - nextMinWidth);
                     }
 
                     relativeMousePosition = Math.Max(0.0f, Math.Min(1.0f, relativeMousePosition));
 
-                    float totalFlex = visualElement.style.flexGrow + nextVisualElement.style.flexGrow;
+                    float totalFlex = visualElement.resolvedStyle.flexGrow + nextVisualElement.resolvedStyle.flexGrow;
                     visualElement.style.flexGrow = relativeMousePosition * totalFlex;
                     nextVisualElement.style.flexGrow = (1.0f - relativeMousePosition) * totalFlex;
 
@@ -147,30 +144,38 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
+        public static readonly string ussClassName = "unity-visual-splitter";
+
         public VisualSplitter()
         {
+            AddToClassList(ussClassName);
             this.AddManipulator(new SplitManipulator());
         }
 
         public List<VisualElement> GetAffectedVisualElements()
         {
             List<VisualElement> elements = VisualElementListPool.Get();
-            for (int i = 0; i < shadow.childCount; ++i)
+            for (int i = 0; i < hierarchy.childCount; ++i)
             {
-                VisualElement element = shadow[i];
-                if (element.style.positionType == PositionType.Relative)
+                VisualElement element = hierarchy[i];
+                if (element.resolvedStyle.position == Position.Relative)
                     elements.Add(element);
             }
 
             return elements;
         }
 
-        protected override void DoRepaint(IStylePainter painter)
+        protected override void ImmediateRepaint()
         {
-            for (int i = 0; i < shadow.childCount - 1; ++i)
+            UpdateCursorRects();
+        }
+
+        void UpdateCursorRects()
+        {
+            for (int i = 0; i < hierarchy.childCount - 1; ++i)
             {
-                VisualElement visualElement = shadow[i];
-                bool isVertical = style.flexDirection == FlexDirection.Column || style.flexDirection == FlexDirection.ColumnReverse;
+                VisualElement visualElement = hierarchy[i];
+                bool isVertical = resolvedStyle.flexDirection == FlexDirection.Column || resolvedStyle.flexDirection == FlexDirection.ColumnReverse;
 
                 EditorGUIUtility.AddCursorRect(GetSplitterRect(visualElement), isVertical ? MouseCursor.ResizeVertical : MouseCursor.SplitResizeLeftRight);
             }
@@ -179,22 +184,22 @@ namespace UnityEditor.Experimental.UIElements
         public Rect GetSplitterRect(VisualElement visualElement)
         {
             Rect rect = visualElement.layout;
-            if (style.flexDirection == FlexDirection.Row)
+            if (resolvedStyle.flexDirection == FlexDirection.Row)
             {
                 rect.xMin = visualElement.layout.xMax - splitSize * 0.5f;
                 rect.xMax = visualElement.layout.xMax + splitSize * 0.5f;
             }
-            else if (style.flexDirection == FlexDirection.RowReverse)
+            else if (resolvedStyle.flexDirection == FlexDirection.RowReverse)
             {
                 rect.xMin = visualElement.layout.xMin - splitSize * 0.5f;
                 rect.xMax = visualElement.layout.xMin + splitSize * 0.5f;
             }
-            else if (style.flexDirection == FlexDirection.Column)
+            else if (resolvedStyle.flexDirection == FlexDirection.Column)
             {
                 rect.yMin = visualElement.layout.yMax - splitSize * 0.5f;
                 rect.yMax = visualElement.layout.yMax + splitSize * 0.5f;
             }
-            else if (style.flexDirection == FlexDirection.ColumnReverse)
+            else if (resolvedStyle.flexDirection == FlexDirection.ColumnReverse)
             {
                 rect.yMin = visualElement.layout.yMin - splitSize * 0.5f;
                 rect.yMax = visualElement.layout.yMin + splitSize * 0.5f;

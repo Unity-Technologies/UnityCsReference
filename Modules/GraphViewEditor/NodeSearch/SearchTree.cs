@@ -5,7 +5,7 @@
 using System;
 using UnityEngine;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     [Serializable]
     public class SearchTreeEntry : IComparable<SearchTreeEntry>

@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using System;
+using System.Globalization;
 using System.Collections.Generic;
 
 namespace UnityEditor
@@ -628,10 +629,10 @@ namespace UnityEditor
         {
             string str = GetNameOfBone(matches[0].item.bone) + " preferred order: ";
             for (int i = 0; i < matches.Count; i++)
-                str += matches[i].bone.name + " (" + matches[i].score.ToString("0.0") + " / " + matches[i].totalSiblingScore.ToString("0.0") + "), ";
+                str += matches[i].bone.name + " (" + matches[i].score.ToString("0.0", CultureInfo.InvariantCulture.NumberFormat) + " / " + matches[i].totalSiblingScore.ToString("0.0", CultureInfo.InvariantCulture.NumberFormat) + "), ";
             foreach (BoneMatch m in matches)
             {
-                str += "\n   Match " + m.bone.name + " (" + m.score.ToString("0.0") + " / " + m.totalSiblingScore.ToString("0.0") + "):";
+                str += "\n   Match " + m.bone.name + " (" + m.score.ToString("0.0", CultureInfo.InvariantCulture.NumberFormat) + " / " + m.totalSiblingScore.ToString("0.0", CultureInfo.InvariantCulture.NumberFormat) + "):";
                 foreach (string s in m.debugTracker)
                     str += "\n    - " + s;
             }

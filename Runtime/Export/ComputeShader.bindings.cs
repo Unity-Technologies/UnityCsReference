@@ -56,22 +56,26 @@ namespace UnityEngine
         }
 
         [FreeFunction("ComputeShader_Bindings::InitBuffer")]
-        extern private static IntPtr InitBuffer(int count, int stride, ComputeBufferType type);
+        extern private static IntPtr InitBuffer(int count, int stride, ComputeBufferType type, ComputeBufferMode usage);
 
         [FreeFunction("ComputeShader_Bindings::DestroyBuffer")]
         extern private static void DestroyBuffer(ComputeBuffer buf);
 
         ///*listonly*
-        public ComputeBuffer(int count, int stride) : this(count, stride, ComputeBufferType.Default, 3)
+        public ComputeBuffer(int count, int stride) : this(count, stride, ComputeBufferType.Default, ComputeBufferMode.Immutable, 3)
         {
         }
 
         // Create a Compute Buffer.
-        public ComputeBuffer(int count, int stride, ComputeBufferType type) : this(count, stride, type, 3)
+        public ComputeBuffer(int count, int stride, ComputeBufferType type) : this(count, stride, type, ComputeBufferMode.Immutable, 3)
         {
         }
 
-        internal ComputeBuffer(int count, int stride, ComputeBufferType type, int stackDepth)
+        public ComputeBuffer(int count, int stride, ComputeBufferType type, ComputeBufferMode usage) : this(count, stride, type, usage, 3)
+        {
+        }
+
+        internal ComputeBuffer(int count, int stride, ComputeBufferType type, ComputeBufferMode usage, int stackDepth)
         {
             if (count <= 0)
             {
@@ -83,7 +87,7 @@ namespace UnityEngine
                 throw new ArgumentException("Attempting to create a compute buffer with a negative or null stride", "stride");
             }
 
-            m_Ptr = InitBuffer(count, stride, type);
+            m_Ptr = InitBuffer(count, stride, type, usage);
 
             SaveCallstack(stackDepth);
         }
@@ -204,6 +208,26 @@ namespace UnityEngine
         [FreeFunction(Name = "ComputeShader_Bindings::InternalSetData", HasExplicitThis = true, ThrowsException = true)]
         extern private void InternalSetData(System.Array data, int managedBufferStartIndex, int computeBufferStartIndex, int count, int elemSize);
 
+        public unsafe NativeArray<T> BeginBufferWrite<T>(int dest_offset, int size) where T : struct
+        {
+            void* ptr = BeginBufferWrite(dest_offset, size);
+            NativeArray<T> array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(ptr, size / UnsafeUtility.SizeOf<T>(), Allocator.None);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, AtomicSafetyHandle.Create());
+            return array;
+        }
+
+        [NativeMethod]
+        extern public unsafe void* BeginBufferWrite(int dst_offset, int size);
+        public unsafe void EndBufferWrite<T>(NativeArray<T> array) where T : struct
+        {
+            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(array));
+            EndBufferWrite(array.Length * UnsafeUtility.SizeOf<T>());
+        }
+
+        [NativeMethod]
+        extern public void EndBufferWrite(int size);
+
+
         // Read buffer data.
         [System.Security.SecurityCritical] // due to Marshal.SizeOf
         public void GetData(System.Array data)
@@ -244,6 +268,12 @@ namespace UnityEngine
         [System.Security.SecurityCritical] // to prevent accidentally making this public in the future
         [FreeFunction(Name = "ComputeShader_Bindings::InternalGetData", HasExplicitThis = true, ThrowsException = true)]
         extern private void InternalGetData(System.Array data, int managedBufferStartIndex, int computeBufferStartIndex, int count, int elemSize);
+
+        // Buffer name for graphics debuggers
+        public string name { set { SetName(value); } }
+
+        [FreeFunction(Name = "ComputeShader_Bindings::SetName", HasExplicitThis = true)]
+        extern private void SetName(string name);
 
         // Set counter value of append/consume buffer.
         extern public void SetCounterValue(uint counterValue);

@@ -12,7 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 using Object = UnityEngine.Object;
-
+using System.Globalization;
 
 namespace UnityEditor
 {
@@ -530,13 +530,13 @@ namespace UnityEditor
             {
                 if (!EditorGUI.s_RecycledEditor.IsEditingControl(id))
                 {
-                    str = EditorGUI.s_RecycledCurrentEditingString = value.ToString("g7");
+                    str = EditorGUI.s_RecycledCurrentEditingString = value.ToString("g7", CultureInfo.InvariantCulture.NumberFormat);
                 }
                 else
                 {
                     str = EditorGUI.s_RecycledCurrentEditingString;
                     if (evt.type == EventType.ValidateCommand && evt.commandName == EventCommandNames.UndoRedoPerformed)
-                        str = value.ToString("g7");
+                        str = value.ToString("g7", CultureInfo.InvariantCulture.NumberFormat);
                 }
 
                 str = EditorGUI.DoTextField(EditorGUI.s_RecycledEditor, id, position, str, style , allowedCharacters, out changed, false, false, false);
@@ -570,7 +570,7 @@ namespace UnityEditor
             }
             else
             {
-                str = value.ToString("g7");
+                str = value.ToString("g7", CultureInfo.InvariantCulture.NumberFormat);
                 str = EditorGUI.DoTextField(EditorGUI.s_RecycledEditor, id, position, str, style, allowedCharacters, out changed, false, false, false);
             }
             return value;
@@ -1389,11 +1389,11 @@ namespace UnityEditor
                 {
                     float nr = threshold.floatValue;
                     EditorGUI.BeginChangeCheck();
-                    string floatStr = EditorGUI.DelayedTextFieldInternal(rects[col], nr.ToString(), "inftynaeINFTYNAE0123456789.,-", EditorStyles.textField);
+                    string floatStr = EditorGUI.DelayedTextFieldInternal(rects[col], nr.ToString(CultureInfo.InvariantCulture.NumberFormat), "inftynaeINFTYNAE0123456789.,-", EditorStyles.textField);
                     col++;
                     if (EditorGUI.EndChangeCheck())
                     {
-                        if (float.TryParse(floatStr, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture.NumberFormat, out nr))
+                        if (float.TryParse(floatStr, NumberStyles.Float, CultureInfo.InvariantCulture.NumberFormat, out nr))
                         {
                             threshold.floatValue = nr;
                             serializedObject.ApplyModifiedProperties();
@@ -1434,7 +1434,7 @@ namespace UnityEditor
                     if (EditorGUI.EndChangeCheck())
                     {
                         float coord;
-                        if (float.TryParse(valStr, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture.NumberFormat, out coord))
+                        if (float.TryParse(valStr, NumberStyles.Float, CultureInfo.InvariantCulture.NumberFormat, out coord))
                         {
                             pos[i] = Mathf.Clamp(coord, -10000, 10000);
                             position.vector2Value = pos;

@@ -7,18 +7,21 @@ using UnityEngine;
 using UnityEngine.Profiling.Memory.Experimental;
 using UnityEditorInternal.Profiling.Memory.Experimental;
 using UnityEditorInternal.Profiling.Memory.Experimental.FileFormat;
+using ExperimentalMemoryProfiler = UnityEngine.Profiling.Memory.Experimental.MemoryProfiler;
 
 namespace UnityEditor.Profiling.Memory.Experimental
 {
     // !!!!! NOTE: Keep in sync with Runtime\Profiler\MemorySnapshots.cpp
     public class PackedMemorySnapshot : IDisposable
     {
-        static readonly UInt64 kMinSupportedVersion = 7;
+        static readonly UInt32 kMinSupportedVersion = 7;
+        static readonly UInt32 kCurrentVersion = 8;
+
         public static PackedMemorySnapshot Load(string path)
         {
             MemorySnapshotFileReader reader = new MemorySnapshotFileReader(path);
 
-            UInt64 ver = reader.GetDataSingle(EntryType.Metadata_Version, ConversionFunctions.ToUInt32);
+            UInt32 ver = reader.GetDataSingle(EntryType.Metadata_Version, ConversionFunctions.ToUInt32);
 
             if (ver < kMinSupportedVersion)
             {
@@ -26,6 +29,145 @@ namespace UnityEditor.Profiling.Memory.Experimental
             }
 
             return new PackedMemorySnapshot(reader);
+        }
+
+        public static bool Convert(UnityEditor.MemoryProfiler.PackedMemorySnapshot snapshot, string writePath)
+        {
+            MemorySnapshotFileWriter writer = null;
+
+            try
+            {
+                writer = new MemorySnapshotFileWriter(writePath);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("Failed to create snapshot file: " + e.Message);
+                return false;
+            }
+
+            //snapshot version will always be the current one for convertion operations
+            writer.WriteEntry(EntryType.Metadata_Version, kCurrentVersion);
+
+            //timestamp with conversion date
+            writer.WriteEntry(EntryType.Metadata_RecordDate, (ulong)DateTime.Now.Ticks);
+
+            //prepare metadata
+            string platform = "Unknown";
+            string content = "Converted Snapshot";
+            int stringDataLength = (platform.Length + content.Length) * sizeof(char);
+            byte[] metaDataBytes = new byte[stringDataLength + (sizeof(int) * 3)]; // add space for serializing the lengths of the strings
+
+            int offset = 0;
+            offset = ExperimentalMemoryProfiler.WriteIntToByteArray(metaDataBytes, offset, content.Length);
+            offset = ExperimentalMemoryProfiler.WriteStringToByteArray(metaDataBytes, offset, content);
+
+            offset = ExperimentalMemoryProfiler.WriteIntToByteArray(metaDataBytes, offset, platform.Length);
+            offset = ExperimentalMemoryProfiler.WriteStringToByteArray(metaDataBytes, offset, platform);
+
+            offset = ExperimentalMemoryProfiler.WriteIntToByteArray(metaDataBytes, offset, 0);
+
+            // Write metadata
+            writer.WriteEntryArray(EntryType.Metadata_UserMetadata, metaDataBytes);
+
+            writer.WriteEntry(EntryType.Metadata_CaptureFlags, (UInt32)CaptureFlags.ManagedObjects); //capture just managed
+
+            // Write managed heap sections
+            for (int i = 0; i < snapshot.managedHeapSections.Length; ++i)
+            {
+                var heapSection = snapshot.managedHeapSections[i];
+                writer.WriteEntry(EntryType.ManagedHeapSections_StartAddress, heapSection.startAddress);
+                writer.WriteEntryArray(EntryType.ManagedHeapSections_Bytes, heapSection.m_Bytes);
+            }
+
+            // Write managed types
+            int fieldDescriptionCount = 0;
+            for (int i = 0; i < snapshot.typeDescriptions.Length; ++i)
+            {
+                var type = snapshot.typeDescriptions[i];
+                writer.WriteEntry(EntryType.TypeDescriptions_Flags, (UInt32)type.m_Flags);
+                writer.WriteEntry(EntryType.TypeDescriptions_BaseOrElementTypeIndex, type.baseOrElementTypeIndex);
+                writer.WriteEntry(EntryType.TypeDescriptions_TypeIndex, type.typeIndex);
+
+                if (!type.isArray)
+                {
+                    var typeFields = type.fields;
+                    int[] fieldIndices = new int[typeFields.Length];
+
+                    for (int j = 0; j < typeFields.Length; ++j)
+                    {
+                        var field = typeFields[j];
+                        fieldIndices[j] = fieldDescriptionCount;
+                        ++fieldDescriptionCount;
+
+                        writer.WriteEntry(EntryType.FieldDescriptions_Offset, field.offset);
+                        writer.WriteEntry(EntryType.FieldDescriptions_TypeIndex, field.typeIndex);
+                        writer.WriteEntry(EntryType.FieldDescriptions_Name, field.name);
+                        writer.WriteEntry(EntryType.FieldDescriptions_IsStatic, field.isStatic);
+                    }
+
+                    writer.WriteEntryArray(EntryType.TypeDescriptions_FieldIndices, fieldIndices);
+                    writer.WriteEntryArray(EntryType.TypeDescriptions_StaticFieldBytes, type.staticFieldBytes);
+                }
+                else
+                {
+                    writer.WriteEntryArray(EntryType.TypeDescriptions_FieldIndices, new int[0]);
+                    writer.WriteEntryArray(EntryType.TypeDescriptions_StaticFieldBytes, new byte[0]);
+                }
+
+                writer.WriteEntry(EntryType.TypeDescriptions_Name, type.name);
+                writer.WriteEntry(EntryType.TypeDescriptions_Assembly, type.assembly);
+                writer.WriteEntry(EntryType.TypeDescriptions_TypeInfoAddress, type.typeInfoAddress);
+                writer.WriteEntry(EntryType.TypeDescriptions_Size, type.size);
+            }
+
+            //write managed gc handles
+            for (int i = 0; i < snapshot.gcHandles.Length; ++i)
+            {
+                var handle = snapshot.gcHandles[i];
+                writer.WriteEntry(EntryType.GCHandles_Target, handle.target);
+            }
+
+            //write managed connections
+            for (int i = 0; i < snapshot.connections.Length; ++i)
+            {
+                var connection = snapshot.connections[i];
+                writer.WriteEntry(EntryType.Connections_From, connection.from);
+                writer.WriteEntry(EntryType.Connections_To, connection.to);
+            }
+
+            //write native types
+            for (int i = 0; i < snapshot.nativeTypes.Length; ++i)
+            {
+                var nativeType = snapshot.nativeTypes[i];
+                writer.WriteEntry(EntryType.NativeTypes_NativeBaseTypeArrayIndex, nativeType.nativeBaseTypeArrayIndex);
+                writer.WriteEntry(EntryType.NativeTypes_Name, nativeType.name);
+            }
+
+            //write stub root reference for all native objects to point to, as the old format did not capture these
+            writer.WriteEntry(EntryType.NativeRootReferences_AreaName, "Invalid Root");
+            writer.WriteEntry(EntryType.NativeRootReferences_AccumulatedSize, (ulong)0);
+            writer.WriteEntry(EntryType.NativeRootReferences_Id, (long)0);
+            writer.WriteEntry(EntryType.NativeRootReferences_ObjectName, "Invalid Root Object");
+
+            //write native objects
+            for (int i = 0; i < snapshot.nativeObjects.Length; ++i)
+            {
+                var nativeObject = snapshot.nativeObjects[i];
+                writer.WriteEntry(EntryType.NativeObjects_Name, nativeObject.name);
+                writer.WriteEntry(EntryType.NativeObjects_InstanceId, nativeObject.instanceId);
+                writer.WriteEntry(EntryType.NativeObjects_Size, (ulong)nativeObject.size);
+                writer.WriteEntry(EntryType.NativeObjects_NativeTypeArrayIndex, nativeObject.nativeTypeArrayIndex);
+                writer.WriteEntry(EntryType.NativeObjects_HideFlags, (UInt32)nativeObject.hideFlags);
+                writer.WriteEntry(EntryType.NativeObjects_Flags, (UInt32)nativeObject.m_Flags);
+                writer.WriteEntry(EntryType.NativeObjects_NativeObjectAddress, (ulong)nativeObject.nativeObjectAddress);
+                writer.WriteEntry(EntryType.NativeObjects_RootReferenceId, (long)0);
+            }
+
+            //write virtual machine information
+            writer.WriteEntry(EntryType.Metadata_VirtualMachineInformation, snapshot.virtualMachineInformation);
+            writer.Close();
+
+            return true;
         }
 
         public static void Save(PackedMemorySnapshot snapshot, string writePath)
@@ -211,8 +353,8 @@ namespace UnityEditor.Profiling.Memory.Experimental
         {
             get
             {
-                double seconds = (double)m_Reader.GetDataSingle(EntryType.Metadata_RecordDate, ConversionFunctions.ToUInt64);
-                return new DateTime(1970, 1, 1).AddSeconds(seconds);
+                long ticks = m_Reader.GetDataSingle(EntryType.Metadata_RecordDate, ConversionFunctions.ToInt64);
+                return new DateTime(ticks);
             }
         }
 

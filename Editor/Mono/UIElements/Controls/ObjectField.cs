@@ -5,10 +5,10 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     public class ObjectField : BaseField<Object>
     {
@@ -16,7 +16,7 @@ namespace UnityEditor.Experimental.UIElements
 
         public new class UxmlTraits : BaseField<Object>.UxmlTraits
         {
-            UxmlBoolAttributeDescription m_AllowSceneObjects = new UxmlBoolAttributeDescription { name = "allow-scene-objects", obsoleteNames = new[] { "allowSceneObjects" }, defaultValue = true };
+            UxmlBoolAttributeDescription m_AllowSceneObjects = new UxmlBoolAttributeDescription { name = "allow-scene-objects", defaultValue = true };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
@@ -61,10 +61,19 @@ namespace UnityEditor.Experimental.UIElements
             private readonly Image m_ObjectIcon;
             private readonly Label m_ObjectLabel;
 
+            public static readonly string ussClassName = "unity-object-field-display";
+            public static readonly string iconUssClassName = ussClassName + "__icon";
+            public static readonly string labelUssClassName = ussClassName + "__label";
+            public static readonly string acceptDropVariantUssClassName = ussClassName + "--accept-drop";
+
+
             public ObjectFieldDisplay(ObjectField objectField)
             {
+                AddToClassList(ussClassName);
                 m_ObjectIcon = new Image {scaleMode = ScaleMode.ScaleAndCrop, pickingMode = PickingMode.Ignore};
+                m_ObjectIcon.AddToClassList(iconUssClassName);
                 m_ObjectLabel = new Label {pickingMode = PickingMode.Ignore};
+                m_ObjectLabel.AddToClassList(labelUssClassName);
                 m_ObjectField = objectField;
 
                 Update();
@@ -84,22 +93,27 @@ namespace UnityEditor.Experimental.UIElements
             {
                 base.ExecuteDefaultActionAtTarget(evt);
 
+                if (evt == null)
+                {
+                    return;
+                }
+
                 if ((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse)
                     OnMouseDown(evt as MouseDownEvent);
                 else if ((evt as KeyDownEvent)?.character == '\n')
                     OnKeyboardEnter();
-                else if (evt.GetEventTypeId() == DragUpdatedEvent.TypeId())
+                else if (evt.eventTypeId == DragUpdatedEvent.TypeId())
                     OnDragUpdated(evt);
-                else if (evt.GetEventTypeId() == DragPerformEvent.TypeId())
+                else if (evt.eventTypeId == DragPerformEvent.TypeId())
                     OnDragPerform(evt);
-                else if (evt.GetEventTypeId() == DragLeaveEvent.TypeId())
+                else if (evt.eventTypeId == DragLeaveEvent.TypeId())
                     OnDragLeave();
             }
 
             private void OnDragLeave()
             {
                 // Make sure we've cleared the accept drop look, whether we we in a drop operation or not.
-                RemoveFromClassList("acceptDrop");
+                RemoveFromClassList(acceptDropVariantUssClassName);
             }
 
             private void OnMouseDown(MouseDownEvent evt)
@@ -160,7 +174,7 @@ namespace UnityEditor.Experimental.UIElements
                 if (validatedObject != null)
                 {
                     DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
-                    AddToClassList("acceptDrop");
+                    AddToClassList(acceptDropVariantUssClassName);
 
                     evt.StopPropagation();
                 }
@@ -175,7 +189,7 @@ namespace UnityEditor.Experimental.UIElements
                     m_ObjectField.value = validatedObject;
 
                     DragAndDrop.AcceptDrag();
-                    RemoveFromClassList("acceptDrop");
+                    RemoveFromClassList(acceptDropVariantUssClassName);
 
                     evt.StopPropagation();
                 }
@@ -200,46 +214,66 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
-        public override int focusIndex
+        public override bool focusable
         {
-            get { return base.focusIndex; }
+            get { return base.focusable; }
             set
             {
-                base.focusIndex = value;
+                base.focusable = value;
                 if (m_ObjectFieldDisplay != null)
                 {
-                    m_ObjectFieldDisplay.focusIndex = value;
+                    m_ObjectFieldDisplay.focusable = value;
+                }
+            }
+        }
+
+        public override int tabIndex
+        {
+            get { return base.tabIndex; }
+            set
+            {
+                base.tabIndex = value;
+                if (m_ObjectFieldDisplay != null)
+                {
+                    m_ObjectFieldDisplay.tabIndex = value;
                 }
             }
         }
 
         private readonly ObjectFieldDisplay m_ObjectFieldDisplay;
 
+        public new static readonly string ussClassName = "unity-object-field";
+        public static readonly string objectUssClassName = ussClassName + "__object";
+        public static readonly string selectorUssClassName = ussClassName + "__selector";
+
         public ObjectField()
+            : this(null) {}
+
+        public ObjectField(string label)
+            : base(label, null)
         {
+            AddToClassList(ussClassName);
+
             allowSceneObjects = true;
 
-            m_ObjectFieldDisplay = new ObjectFieldDisplay(this) {focusIndex = 0};
+            m_ObjectFieldDisplay = new ObjectFieldDisplay(this) {focusable = true};
+            m_ObjectFieldDisplay.AddToClassList(objectUssClassName);
             var objectSelector = new ObjectFieldSelector(this);
-
-            Add(m_ObjectFieldDisplay);
-            Add(objectSelector);
-        }
-
-        [Obsolete("This method is replaced by simply using this.value. The default behaviour has been changed to notify when changed. If the behaviour is not to be notified, SetValueWithoutNotify() must be used.", false)]
-        public override void SetValueAndNotify(Object newValue)
-        {
-            if (newValue != value)
-            {
-                value = newValue;
-            }
+            objectSelector.AddToClassList(selectorUssClassName);
+            visualInput.Add(m_ObjectFieldDisplay);
+            visualInput.Add(objectSelector);
         }
 
         protected internal override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
 
-            if (evt.GetEventTypeId() == FocusEvent.TypeId())
+            if (evt == null)
+            {
+                return;
+            }
+
+            if (evt.eventTypeId == FocusEvent.TypeId())
                 m_ObjectFieldDisplay.Focus();
         }
 

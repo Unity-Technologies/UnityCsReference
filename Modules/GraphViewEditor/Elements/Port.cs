@@ -5,15 +5,18 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleSheets;
+using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     public class Port : GraphElement
     {
-        private const string k_PortColorProperty = "port-color";
-        private const string k_DisabledPortColorProperty = "disabled-port-color";
+        private static CustomStyleProperty<Color> s_PortColorProperty = new CustomStyleProperty<Color>("--port-color");
+        private static CustomStyleProperty<Color> s_DisabledPortColorProperty = new CustomStyleProperty<Color>("--disabled-port-color");
+
+        private static readonly Color s_DefaultColor = new Color(240 / 255f, 240 / 255f, 240 / 255f);
+        private static readonly Color s_DefaultDisabledColor = new Color(70 / 255f, 70 / 255f, 70 / 255f);
 
         protected EdgeConnector m_EdgeConnector;
 
@@ -28,7 +31,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 if (m_ConnectorBoxCap == null)
                     return Color.black;
-                return m_ConnectorBoxCap.style.backgroundColor;
+                return m_ConnectorBoxCap.resolvedStyle.backgroundColor;
             }
 
             set
@@ -207,26 +210,22 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        StyleValue<Color> m_PortColor;
+        Color m_PortColor = s_DefaultColor;
+        bool m_PortColorIsInline;
         public Color portColor
         {
-            get
-            {
-                return m_PortColor.GetSpecifiedValueOrDefault(new Color(240 / 255f, 240 / 255f, 240 / 255f));
-            }
+            get { return m_PortColor; }
             set
             {
+                m_PortColorIsInline = true;
                 m_PortColor = value;
             }
         }
 
-        StyleValue<Color> m_DisabledPortColor;
+        Color m_DisabledPortColor = s_DefaultDisabledColor;
         public Color disabledPortColor
         {
-            get
-            {
-                return m_PortColor.GetSpecifiedValueOrDefault(new Color(70 / 255f, 70 / 255f, 70 / 255f));
-            }
+            get { return m_DisabledPortColor; }
         }
 
         internal Action<Port> OnConnect;
@@ -415,7 +414,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
             else
             {
-                m_ConnectorBoxCap.style.backgroundColor = StyleValue<Color>.nil;
+                m_ConnectorBoxCap.style.backgroundColor = StyleKeyword.Null;
             }
         }
 
@@ -424,7 +423,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (m_ConnectorBox == null)
                 return;
 
-            m_ConnectorBox.style.borderColor = highlight ? m_PortColor.value : m_DisabledPortColor.value;
+            m_ConnectorBox.style.borderColor = highlight ? m_PortColor : m_DisabledPortColor;
             m_ConnectorBox.SetEnabled(highlight);
         }
 
@@ -440,16 +439,16 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             // Only update the box cap background if the port is enabled or highlighted.
             if (highlight)
             {
-                if (evt.GetEventTypeId() == MouseEnterEvent.TypeId())
+                if (evt.eventTypeId == MouseEnterEvent.TypeId())
                 {
                     m_ConnectorBoxCap.style.backgroundColor = portColor;
                 }
-                else if (evt.GetEventTypeId() == MouseLeaveEvent.TypeId())
+                else if (evt.eventTypeId == MouseLeaveEvent.TypeId())
                 {
                     UpdateCapColor();
                 }
             }
-            else if (evt.GetEventTypeId() == MouseUpEvent.TypeId())
+            else if (evt.eventTypeId == MouseUpEvent.TypeId())
             {
                 // When an edge connect ends, we need to clear out the hover states
                 var mouseUp = (MouseUpEvent)evt;
@@ -460,12 +459,18 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        protected override void OnStyleResolved(ICustomStyle styles)
+        protected override void OnCustomStyleResolved(ICustomStyle styles)
         {
-            base.OnStyleResolved(styles);
+            base.OnCustomStyleResolved(styles);
 
-            styles.ApplyCustomProperty(k_PortColorProperty, ref m_PortColor);
-            styles.ApplyCustomProperty(k_DisabledPortColorProperty, ref m_DisabledPortColor);
+            Color portColorValue = Color.clear;
+            Color disableColorValue = Color.clear;
+
+            if (!m_PortColorIsInline && styles.TryGetValue(s_PortColorProperty, out portColorValue))
+                m_PortColor = portColorValue;
+
+            if (styles.TryGetValue(s_DisabledPortColorProperty, out disableColorValue))
+                m_DisabledPortColor = disableColorValue;
 
             UpdateConnectorColorAndEnabledState();
         }

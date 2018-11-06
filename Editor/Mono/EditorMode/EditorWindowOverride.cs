@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 using UnityEditor;
 
 namespace Unity.Experimental.EditorMode
@@ -29,7 +29,7 @@ namespace Unity.Experimental.EditorMode
 
         public VisualElement DefaultRoot
         {
-            get { return m_Window.rootVisualContainer; }
+            get { return m_Window.rootVisualElement; }
         }
 
         public virtual void OnEnable()

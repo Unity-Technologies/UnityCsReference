@@ -26,7 +26,7 @@ namespace UnityEditor
         {
             Texture3D tex = target as Texture3D;
 
-            string info = string.Format("{0}x{1}x{2} {3} {4}",
+            string info = UnityString.Format("{0}x{1}x{2} {3} {4}",
                 tex.width, tex.height, tex.depth,
                 TextureUtil.GetTextureFormatString(tex.format),
                 EditorUtility.FormatBytes(TextureUtil.GetRuntimeMemorySizeLong(tex)));

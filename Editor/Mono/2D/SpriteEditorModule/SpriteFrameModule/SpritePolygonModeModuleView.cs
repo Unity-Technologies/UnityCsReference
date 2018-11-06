@@ -5,10 +5,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditorInternal;
-using UnityEditor.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
-using UIElementButton = UnityEngine.Experimental.UIElements.Button;
+using UnityEditor.UIElements;
+using UnityEngine.UIElements;
+using UIElementButton = UnityEngine.UIElements.Button;
 
 namespace UnityEditor
 {
@@ -27,7 +26,7 @@ namespace UnityEditor
         private void AddMainUI(VisualElement element)
         {
             var visualTree = EditorGUIUtility.Load("UXML/SpriteEditor/PolygonChangeShapeWindow.uxml") as VisualTreeAsset;
-            m_PolygonShapeView = visualTree.CloneTree(null).Q<VisualElement>("polygonShapeWindow");
+            m_PolygonShapeView = visualTree.CloneTree().Q<VisualElement>("polygonShapeWindow");
             m_PolygonShapeView.RegisterCallback<MouseDownEvent>((e) => { e.StopPropagation(); });
             m_PolygonShapeView.RegisterCallback<MouseUpEvent>((e) => { e.StopPropagation(); });
             SetupPolygonChangeShapeWindowElements(m_PolygonShapeView);
@@ -97,7 +96,7 @@ namespace UnityEditor
         {
             var sidesField = moduleView.Q<PropertyControl<long>>("labelIntegerField");
             sidesField.SetValueWithoutNotify(polygonSides);
-            sidesField.OnValueChanged((evt) =>
+            sidesField.RegisterValueChangedCallback((evt) =>
             {
                 polygonSides = (int)evt.newValue;
                 ShowHideWarningMessage();
@@ -118,10 +117,10 @@ namespace UnityEditor
         void ShowHideWarningMessage()
         {
             m_WarningMessage.visible = !isSidesValid;
-            m_WarningMessage.style.positionType = m_WarningMessage.visible ? PositionType.Relative : PositionType.Absolute;
+            m_WarningMessage.style.position = m_WarningMessage.visible ? Position.Relative : Position.Absolute;
 
             m_ChangeButton.visible = isSidesValid;
-            m_ChangeButton.style.positionType = m_ChangeButton.visible ? PositionType.Relative : PositionType.Absolute;
+            m_ChangeButton.style.position = m_ChangeButton.visible ? Position.Relative : Position.Absolute;
         }
 
         private bool isSidesValid

@@ -9,8 +9,8 @@ using System.Linq;
 using UnityEngine;
 using ParserStyleSheet = ExCSS.StyleSheet;
 using ParserStyleRule = ExCSS.StyleRule;
-using UnityStyleSheet = UnityEngine.StyleSheets.StyleSheet;
-using UnityEngine.StyleSheets;
+using UnityStyleSheet = UnityEngine.UIElements.StyleSheet;
+using UnityEngine.UIElements;
 using ExCSS;
 using UnityEditor.Experimental.AssetImporters;
 

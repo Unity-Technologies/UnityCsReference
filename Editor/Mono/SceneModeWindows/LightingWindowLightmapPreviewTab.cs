@@ -11,7 +11,7 @@ using UnityEditorInternal;
 using UnityEngine;
 using UnityEngineInternal;
 using Object = UnityEngine.Object;
-
+using System.Globalization;
 
 namespace UnityEditor
 {
@@ -243,7 +243,7 @@ namespace UnityEditor
             if (idx < 0)
                 return "<error>";
 
-            return string.Format("{0:0.##} {1}", val, scale[idx]);
+            return UnityString.Format("{0:0.##} {1}", val, scale[idx]);
         }
 
         private float SumSizes(float[] sizes)
@@ -382,7 +382,7 @@ namespace UnityEditor
             }
             float mraysPerSec = Lightmapping.GetLightmapBakePerformance(index);
             if (mraysPerSec >= 0.0)
-                GUILayout.Label(mraysPerSec.ToString("0.00") + " mrays/sec", EditorStyles.miniLabel);
+                GUILayout.Label(mraysPerSec.ToString("0.00", CultureInfo.InvariantCulture.NumberFormat) + " mrays/sec", EditorStyles.miniLabel);
             else
                 GUILayout.Label("N/A mrays/sec", EditorStyles.miniLabel);
 

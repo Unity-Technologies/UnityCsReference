@@ -70,7 +70,7 @@ namespace UnityEditor
         /// Method called by the UI when the "Build" or "Build and Run" buttons are pressed.
         /// </summary>
         /// <param name="defaultBuildOptions"></param>
-        static void CallBuildMethods(bool askForBuildLocation, BuildOptions defaultBuildOptions)
+        internal static void CallBuildMethods(bool askForBuildLocation, BuildOptions defaultBuildOptions)
         {
             if (EditorCompilationInterface.IsCompiling())
             {

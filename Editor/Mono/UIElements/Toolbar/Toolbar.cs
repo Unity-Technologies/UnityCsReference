@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     public class Toolbar : VisualElement
     {
@@ -16,8 +16,11 @@ namespace UnityEditor.Experimental.UIElements
             ve.AddStyleSheetPath("StyleSheets/Toolbar" + (EditorGUIUtility.isProSkin ? "Dark" : "Light") + ".uss");
         }
 
+        public static readonly string ussClassName = "unity-toolbar";
+
         public Toolbar()
         {
+            AddToClassList(ussClassName);
             SetToolbarStyleSheet(this);
         }
     }

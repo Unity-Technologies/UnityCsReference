@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     class PropagationPaths : IDisposable
     {
@@ -37,16 +37,16 @@ namespace UnityEngine.Experimental.UIElements
 
             PropagationPaths paths = s_Pool.Get();
 
-            while (elem.shadow.parent != null)
+            while (elem.hierarchy.parent != null)
             {
-                if (elem.shadow.parent.enabledInHierarchy)
+                if (elem.hierarchy.parent.enabledInHierarchy)
                 {
-                    if ((pathTypesRequested & PropagationPaths.Type.TrickleDown) == PropagationPaths.Type.TrickleDown && elem.shadow.parent.HasTrickleDownHandlers())
-                        paths.trickleDownPath.Add(elem.shadow.parent);
-                    if ((pathTypesRequested & PropagationPaths.Type.BubbleUp) == PropagationPaths.Type.BubbleUp && elem.shadow.parent.HasBubbleUpHandlers())
-                        paths.bubblePath.Add(elem.shadow.parent);
+                    if ((pathTypesRequested & PropagationPaths.Type.TrickleDown) == PropagationPaths.Type.TrickleDown && elem.hierarchy.parent.HasTrickleDownHandlers())
+                        paths.trickleDownPath.Add(elem.hierarchy.parent);
+                    if ((pathTypesRequested & PropagationPaths.Type.BubbleUp) == PropagationPaths.Type.BubbleUp && elem.hierarchy.parent.HasBubbleUpHandlers())
+                        paths.bubblePath.Add(elem.hierarchy.parent);
                 }
-                elem = elem.shadow.parent;
+                elem = elem.hierarchy.parent;
             }
             return paths;
         }

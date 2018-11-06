@@ -7,10 +7,9 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using UnityEditor.Experimental;
-using UnityEditor.Experimental.UIElements;
+using UnityEditor.UIElements;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
+using UnityEngine.UIElements;
 using UnityEditor.StyleSheets;
 
 namespace UnityEditor
@@ -116,7 +115,7 @@ namespace UnityEditor
             if (m_Splitter != null && m_Splitter.childCount >= 1)
             {
                 var splitLeft = m_Splitter.Children().First();
-                float flexGrow = splitLeft.style.flex.value.grow;
+                float flexGrow = splitLeft.resolvedStyle.flexGrow;
                 EditorPrefs.SetFloat(GetPrefKeyName(nameof(m_Splitter)), flexGrow);
             }
 
@@ -226,7 +225,7 @@ namespace UnityEditor
         {
             minSize = new Vector2(Styles.window.GetFloat("min-width"), Styles.window.GetFloat("min-height"));
 
-            var root = this.GetRootVisualContainer();
+            var root = rootVisualElement;
             root.AddStyleSheetPath("StyleSheets/SettingsWindowCommon.uss");
             root.AddStyleSheetPath($"StyleSheets/SettingsWindow{(EditorGUIUtility.isProSkin ? "Dark" : "Light")}.uss");
 
@@ -242,7 +241,8 @@ namespace UnityEditor
             {
                 style =
                 {
-                    flex = new Flex(m_SplitterFlex)
+                    flexGrow = m_SplitterFlex,
+                    flexBasis = 0f
                 }
             };
             settingsTree.AddToClassList("settings-tree-imgui-container");
@@ -252,7 +252,8 @@ namespace UnityEditor
             {
                 style =
                 {
-                    flex = new Flex(1.0f - m_SplitterFlex)
+                    flexGrow = 1.0f - m_SplitterFlex,
+                    flexBasis = 0f
                 }
             };
             m_SettingsPanel.AddToClassList("settings-panel");
@@ -298,7 +299,7 @@ namespace UnityEditor
         private void DrawTitleBar()
         {
             GUILayout.BeginHorizontal(GUILayout.MaxWidth(s_DefaultLayoutMaxWidth));
-            GUILayout.Space(Styles.settingsPanel.GetFloat(StyleKeyword.marginLeft));
+            GUILayout.Space(Styles.settingsPanel.GetFloat(StyleCatalogKeyword.marginLeft));
             var headerContent = new GUIContent(m_TreeView.currentProvider.label, Styles.header.GetBool("-unity-show-icon") ? m_TreeView.currentProvider.icon : null);
             GUILayout.Label(headerContent, ImguiStyles.header, GUILayout.MaxHeight(Styles.header.GetFloat("max-height")));
             GUILayout.FlexibleSpace();
@@ -380,9 +381,9 @@ namespace UnityEditor
                 m_LabelWidth = EditorGUIUtility.labelWidth;
                 EditorGUIUtility.labelWidth = s_DefaultLabelWidth;
                 GUILayout.BeginHorizontal(GUILayout.MaxWidth(layoutMaxWidth));
-                GUILayout.Space(Styles.settingsPanel.GetFloat(StyleKeyword.marginLeft));
+                GUILayout.Space(Styles.settingsPanel.GetFloat(StyleCatalogKeyword.marginLeft));
                 GUILayout.BeginVertical();
-                GUILayout.Space(Styles.settingsPanel.GetFloat(StyleKeyword.marginTop));
+                GUILayout.Space(Styles.settingsPanel.GetFloat(StyleCatalogKeyword.marginTop));
             }
 
             public GUIScope() : this(s_DefaultLayoutMaxWidth)

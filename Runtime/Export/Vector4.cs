@@ -8,6 +8,7 @@ using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using scm = System.ComponentModel;
 using uei = UnityEngine.Internal;
+using System.Globalization;
 
 namespace UnityEngine
 {
@@ -286,7 +287,7 @@ namespace UnityEngine
 
         public string ToString(string format)
         {
-            return UnityString.Format("({0}, {1}, {2}, {3})", x.ToString(format), y.ToString(format), z.ToString(format), w.ToString(format));
+            return UnityString.Format("({0}, {1}, {2}, {3})", x.ToString(format, CultureInfo.InvariantCulture.NumberFormat), y.ToString(format, CultureInfo.InvariantCulture.NumberFormat), z.ToString(format, CultureInfo.InvariantCulture.NumberFormat), w.ToString(format, CultureInfo.InvariantCulture.NumberFormat));
         }
 
         // *undoc* --- there's a property now

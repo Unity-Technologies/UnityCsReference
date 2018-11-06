@@ -89,7 +89,7 @@ namespace UnityEditor
         private static readonly GUIContent s_Image = new GUIContent();
         private static readonly GUIContent s_TextImage = new GUIContent();
 
-        internal static readonly SVC<Color> kViewBackgroundColor = new SVC<Color>("view", StyleKeyword.backgroundColor, GetDefaultBackgroundColor);
+        internal static readonly SVC<Color> kViewBackgroundColor = new SVC<Color>("view", StyleCatalogKeyword.backgroundColor, GetDefaultBackgroundColor);
 
         /// The current UI scaling factor for high-DPI displays. For instance, 2.0 on a retina display
 

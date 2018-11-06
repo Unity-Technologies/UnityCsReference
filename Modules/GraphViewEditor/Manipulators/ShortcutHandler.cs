@@ -4,10 +4,16 @@
 
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
+    public enum EventPropagation
+    {
+        Stop,
+        Continue
+    }
+
     public delegate EventPropagation ShortcutDelegate();
 
     public class ShortcutHandler : Manipulator
@@ -36,7 +42,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             if (m_Dictionary.ContainsKey(evt.imguiEvent))
             {
-                EventPropagation result = m_Dictionary[evt.imguiEvent]();
+                var result = m_Dictionary[evt.imguiEvent]();
                 if (result == EventPropagation.Stop)
                 {
                     evt.StopPropagation();

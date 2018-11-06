@@ -113,7 +113,7 @@ namespace UnityEditor
                 // cascade box percentage text
                 GUI.color = Color.white;
                 Rect textRect = partitionRect;
-                var cascadeText = string.Format("{0}\n{1:F1}%", i, currentPartition * 100.0f);
+                var cascadeText = UnityString.Format("{0}\n{1:F1}%", i, currentPartition * 100.0f);
 
                 GUI.Label(textRect, GUIContent.Temp(cascadeText, cascadeText), s_TextCenteredStyle);
 

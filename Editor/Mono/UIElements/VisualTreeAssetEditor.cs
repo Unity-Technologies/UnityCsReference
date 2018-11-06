@@ -5,10 +5,12 @@
 using System;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
-namespace UnityEditor.Experimental.UIElements
+using VisualTreeAsset = UnityEngine.Experimental.UIElements.VisualTreeAsset;
+
+namespace UnityEditor.UIElements
 {
     [CustomEditor(typeof(VisualTreeAsset))]
     internal class VisualTreeAssetEditor : ScriptableObjectAssetEditor
@@ -52,19 +54,15 @@ namespace UnityEditor.Experimental.UIElements
             if (vta != m_LastTree || !m_LastTree)
             {
                 m_LastTree = vta;
-                m_Tree = vta.CloneTree(null);
+                m_Tree = (vta as UnityEngine.UIElements.VisualTreeAsset).CloneTree();
                 m_Tree.StretchToParentSize();
                 dirty = true;
             }
 
             if (m_Panel == null)
             {
-                m_Panel = UIElementsUtility.FindOrCreatePanel(m_LastTree, ContextType.Editor, new DataWatchService());
-                if (m_Panel.visualTree.styleSheets == null)
-                {
-                    UIElementsEditorUtility.AddDefaultEditorStyleSheets(m_Panel.visualTree);
-                    m_Panel.visualTree.LoadStyleSheetsFromPaths();
-                }
+                m_Panel = UIElementsUtility.FindOrCreatePanel(m_LastTree, ContextType.Editor);
+                UIElementsEditorUtility.AddDefaultEditorStyleSheets(m_Panel.visualTree);
                 m_Panel.allowPixelCaching = false;
                 dirty = true;
             }

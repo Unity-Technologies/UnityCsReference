@@ -284,17 +284,28 @@ namespace UnityEditor
             }
         }
 
-        static void CheckInstanceIsNotPersistent(Object prefabInstanceObject)
+        static void ThrowExceptionIfNotValidNonPersistentPrefabInstanceObject(Object prefabInstanceObject)
+        {
+            if (!(prefabInstanceObject is GameObject || prefabInstanceObject is Component))
+                throw new ArgumentException("Calling apply or revert methods on an object which is not a GameObject or Component is not supported.", nameof(prefabInstanceObject));
+            if (prefabInstanceObject == null)
+                throw new NullReferenceException("Cannot apply or revert object. Object is null.");
+            if (!PrefabUtility.IsPartOfPrefabInstance(prefabInstanceObject))
+                throw new ArgumentException("Calling apply or revert methods on an object which is not part of a Prefab instance is not supported.", nameof(prefabInstanceObject));
+            ThrowExceptionIfInstanceIsPersistent(prefabInstanceObject);
+        }
+
+        static void ThrowExceptionIfInstanceIsPersistent(Object prefabInstanceObject)
         {
             if (EditorUtility.IsPersistent(prefabInstanceObject))
-                throw new ArgumentException("Calling apply or revert methods on an instance which is part of a Prefab asset is not supported.", nameof(prefabInstanceObject));
+                throw new ArgumentException("Calling apply or revert methods on an instance which is part of a Prefab Asset is not supported.", nameof(prefabInstanceObject));
         }
 
         public static void RevertPrefabInstance(GameObject instanceRoot, InteractionMode action)
         {
-            bool isDisconnected = PrefabUtility.IsDisconnectedFromPrefabAsset(instanceRoot);
+            ThrowExceptionIfNotValidNonPersistentPrefabInstanceObject(instanceRoot);
 
-            CheckInstanceIsNotPersistent(instanceRoot);
+            bool isDisconnected = PrefabUtility.IsDisconnectedFromPrefabAsset(instanceRoot);
 
             GameObject prefabInstanceRoot = GetOutermostPrefabInstanceRoot(instanceRoot);
 
@@ -327,7 +338,7 @@ namespace UnityEditor
         {
             DateTime startTime = DateTime.UtcNow;
 
-            CheckInstanceIsNotPersistent(instanceRoot);
+            ThrowExceptionIfNotValidNonPersistentPrefabInstanceObject(instanceRoot);
 
             GameObject prefabInstanceRoot = GetOutermostPrefabInstanceRoot(instanceRoot);
 
@@ -388,7 +399,7 @@ namespace UnityEditor
             DateTime startTime = DateTime.UtcNow;
 
             Object prefabInstanceObject = instanceProperty.serializedObject.targetObject;
-            CheckInstanceIsNotPersistent(prefabInstanceObject);
+            ThrowExceptionIfNotValidNonPersistentPrefabInstanceObject(prefabInstanceObject);
 
             ApplyPropertyOverrides(prefabInstanceObject, instanceProperty, assetPath, action);
 
@@ -402,7 +413,7 @@ namespace UnityEditor
             );
         }
 
-        // This method is called both from ApplyPropertyOverride (one time) and ApplyObjectOverride (many times).
+        // This method is called both from ApplyPropertyOverride and ApplyObjectOverride.
         // In the former case, optionalSingleInstanceProperty is passed along as is the only property that should be processed.
         // In the latter, all properties in the prefabInstanceObject are iterated.
         // An alternative approach was considered where the method takes an array of SerializedProperties,
@@ -418,8 +429,6 @@ namespace UnityEditor
         // again require storing information about that for each property in some kind of list, which we want to avoid.
         static void ApplyPropertyOverrides(Object prefabInstanceObject, SerializedProperty optionalSingleInstanceProperty, string assetPath, InteractionMode action)
         {
-            bool singleProperty = optionalSingleInstanceProperty != null;
-
             Object prefabSourceObject = GetCorrespondingObjectFromSourceAtPath(prefabInstanceObject, assetPath);
             if (prefabSourceObject == null)
                 return;
@@ -430,18 +439,44 @@ namespace UnityEditor
             List<SerializedObject> serializedObjects = new List<SerializedObject>();
 
             bool isObjectOnRootInAsset = IsObjectOnRootInAsset(prefabInstanceObject, assetPath);
-            if (singleProperty)
+
+            SerializedProperty property;
+            if (optionalSingleInstanceProperty != null)
             {
-                if (optionalSingleInstanceProperty.prefabOverride)
-                    ApplySingleProperty(optionalSingleInstanceProperty, prefabSourceSerializedObject, assetPath, isObjectOnRootInAsset, true, serializedObjects, action);
+                property = optionalSingleInstanceProperty.Copy();
             }
             else
             {
                 SerializedObject so = new SerializedObject(prefabInstanceObject);
-                SerializedProperty property = so.GetIterator();
-                while (property.Next(property.hasChildren))
+                property = so.GetIterator();
+            }
+
+            if (!property.hasVisibleChildren)
+            {
+                if (property.prefabOverride)
+                    ApplySingleProperty(property, prefabSourceSerializedObject, assetPath, isObjectOnRootInAsset, true, serializedObjects, action);
+            }
+            else
+            {
+                while (property.Next(property.hasVisibleChildren))
                 {
-                    if (property.prefabOverride)
+                    // If we apply a property that has child properties that are object references, and if they
+                    // reference non-asset objects, those references will get lost, since ApplySingleProperty
+                    // only patches up references in the provided property; not its children.
+                    // This could be fixed by letting ApplySingleProperty patch up all its child properties as well,
+                    // but then calling ApplySingleProperty n times would result in time complexity n*log(n).
+                    // Instead we only call ApplySingleProperty for visible leaf properties - the ones that actually
+                    // contain the data.
+                    // Technically, leaf properties contain the data, but we're using visible leafs here, which
+                    // corresponds to leaf nodes as shown in the Inspector. Note, this is not related to foldout
+                    // expanded state; it's related to the fact that some nodes can have flags that hide them.
+                    // Furthermore, special property types - like object references, which is what we're particularly
+                    // interested in - are hardcoded to have their child nodes hidden. We need to call
+                    // ApplySingleProperty on the object reference property and not its hidden children, so we use
+                    // hasHiddenChildren, not hasChildren, to determine which properties to call the method on.
+                    // Applying all visible leaf properties applies all data only once and ensures that when an
+                    // object reference is applied, it's via its own property and not a parent property.
+                    if (property.prefabOverride && !property.hasVisibleChildren)
                         ApplySingleProperty(property, prefabSourceSerializedObject, assetPath, isObjectOnRootInAsset, false, serializedObjects, action);
                 }
             }
@@ -486,9 +521,9 @@ namespace UnityEditor
             }
 
             prefabSourceSerializedObject.CopyFromSerializedProperty(instanceProperty);
-            SerializedProperty sourceProperty = prefabSourceSerializedObject.FindProperty(instanceProperty.propertyPath);
 
             // Abort if property has reference to object in scene.
+            SerializedProperty sourceProperty = prefabSourceSerializedObject.FindProperty(instanceProperty.propertyPath);
             if (sourceProperty.propertyType == SerializedPropertyType.ObjectReference)
             {
                 MapObjectReferencePropertyToSourceIfApplicable(sourceProperty, assetPath);
@@ -548,6 +583,9 @@ namespace UnityEditor
 
         public static void RevertPropertyOverride(SerializedProperty instanceProperty, InteractionMode action)
         {
+            Object prefabInstanceObject = instanceProperty.serializedObject.targetObject;
+            ThrowExceptionIfNotValidNonPersistentPrefabInstanceObject(prefabInstanceObject);
+
             instanceProperty.prefabOverride = false;
             // Because prefabOverride changed ApplyModifiedProperties will do a prefab merge causing the revert.
             if (action == InteractionMode.UserAction)
@@ -560,7 +598,7 @@ namespace UnityEditor
         {
             DateTime startTime = DateTime.UtcNow;
 
-            CheckInstanceIsNotPersistent(instanceComponentOrGameObject);
+            ThrowExceptionIfNotValidNonPersistentPrefabInstanceObject(instanceComponentOrGameObject);
 
             ApplyPropertyOverrides(instanceComponentOrGameObject, null, assetPath, action);
 
@@ -574,12 +612,9 @@ namespace UnityEditor
             );
         }
 
-        // TODO Review. This method is redundant since there was already a method for it,
-        // but it fits in with a consistent naming scheme where methods come in pairs of
-        // Apply[x] and Revert[X]. Maybe obsolete the old one?
         public static void RevertObjectOverride(Object instanceComponentOrGameObject, InteractionMode action)
         {
-            CheckInstanceIsNotPersistent(instanceComponentOrGameObject);
+            ThrowExceptionIfNotValidNonPersistentPrefabInstanceObject(instanceComponentOrGameObject);
 
             if (action == InteractionMode.UserAction)
                 Undo.RegisterCompleteObjectUndo(instanceComponentOrGameObject, "Revert component property overrides");
@@ -590,7 +625,13 @@ namespace UnityEditor
         {
             DateTime startTime = DateTime.UtcNow;
 
-            CheckInstanceIsNotPersistent(component);
+            if (component == null)
+                throw new ArgumentNullException(nameof(component), "Cannot apply added component. Component is null.");
+
+            if (!PrefabUtility.IsAddedComponentOverride(component))
+                throw new ArgumentException("Cannot apply added component. Component is not an added component override on a Prefab instance.", nameof(component));
+
+            ThrowExceptionIfInstanceIsPersistent(component);
 
             try
             {
@@ -638,10 +679,13 @@ namespace UnityEditor
 
         public static void RevertAddedComponent(Component component, InteractionMode action)
         {
-            CheckInstanceIsNotPersistent(component);
-
             if (component == null)
-                throw new ArgumentNullException(nameof(component), "Can't revert added component. Component is null.");
+                throw new ArgumentNullException(nameof(component), "Cannot revert added component. Component is null.");
+
+            if (!PrefabUtility.IsAddedComponentOverride(component))
+                throw new ArgumentException("Cannot revert added component. Component is not an added component override on a Prefab instance.", nameof(component));
+
+            ThrowExceptionIfInstanceIsPersistent(component);
 
             if (action == InteractionMode.UserAction)
                 Undo.DestroyObjectImmediate(component);
@@ -683,7 +727,7 @@ namespace UnityEditor
         {
             DateTime startTime = DateTime.UtcNow;
 
-            CheckInstanceIsNotPersistent(instanceGameObject);
+            ThrowExceptionIfNotValidNonPersistentPrefabInstanceObject(instanceGameObject);
 
             if (assetComponent == null)
                 throw new ArgumentNullException(nameof(assetComponent), "Prefab source may not be null.");
@@ -740,7 +784,7 @@ namespace UnityEditor
 
         public static void RevertRemovedComponent(GameObject instanceGameObject, Component assetComponent, InteractionMode action)
         {
-            CheckInstanceIsNotPersistent(instanceGameObject);
+            ThrowExceptionIfNotValidNonPersistentPrefabInstanceObject(instanceGameObject);
 
             var actionName = "Revert Prefab removed component";
             var prefabInstanceObject = PrefabUtility.GetPrefabInstanceHandle(instanceGameObject);
@@ -767,7 +811,13 @@ namespace UnityEditor
         {
             DateTime startTime = DateTime.UtcNow;
 
-            CheckInstanceIsNotPersistent(gameObject);
+            if (gameObject == null)
+                throw new ArgumentNullException(nameof(gameObject), "Cannot apply added GameObject. GameObject is null.");
+
+            if (!IsAddedGameObjectOverride(gameObject))
+                throw new ArgumentException("Cannot apply added GameObject. GameObject is not an added GameObject override on a Prefab instance.", nameof(gameObject));
+
+            ThrowExceptionIfInstanceIsPersistent(gameObject);
 
             Transform instanceParent = gameObject.transform.parent;
             if (instanceParent == null)
@@ -782,7 +832,7 @@ namespace UnityEditor
 
             var sourceRoot = prefabSourceGameObjectParent.transform.root.gameObject;
 
-            var actionName = "Apply Added Game Object";
+            var actionName = "Apply Added GameObject";
             if (action == InteractionMode.UserAction)
             {
                 Undo.RegisterFullObjectHierarchyUndo(sourceRoot, actionName);
@@ -819,9 +869,12 @@ namespace UnityEditor
         public static void RevertAddedGameObject(GameObject gameObject, InteractionMode action)
         {
             if (gameObject == null)
-                throw new ArgumentNullException(nameof(gameObject), "Can't revert added GameObject. GameObject is null.");
+                throw new ArgumentNullException(nameof(gameObject), "Cannot revert added GameObject. GameObject is null.");
 
-            CheckInstanceIsNotPersistent(gameObject);
+            if (!IsAddedGameObjectOverride(gameObject))
+                throw new ArgumentException("Cannot apply added GameObject. GameObject is not an added GameObject override on a Prefab instance.", nameof(gameObject));
+
+            ThrowExceptionIfInstanceIsPersistent(gameObject);
 
             if (action == InteractionMode.UserAction)
                 Undo.DestroyObjectImmediate(gameObject);

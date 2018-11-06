@@ -784,7 +784,7 @@ namespace UnityEditor
                 var glWidth = TextureUtil.GetGPUWidth(t);
                 var glHeight = TextureUtil.GetGPUHeight(t);
                 if (t.width != glWidth || t.height != glHeight)
-                    info += string.Format("\nPadded to {0}x{1}", glWidth, glHeight);
+                    info += UnityString.Format("\nPadded to {0}x{1}", glWidth, glHeight);
             }
             else if (TextureUtil.GetUsageMode(t) == TextureUsageMode.BakedLightmapRGBM ||
                      TextureUtil.GetUsageMode(t) == TextureUsageMode.RealtimeLightmapRGBM ||

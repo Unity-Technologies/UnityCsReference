@@ -4,12 +4,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEngine;
-using UnityEngine.StyleSheets;
-
+using UnityEngine.UIElements;
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
 
 namespace UnityEditor.StyleSheets
@@ -156,24 +156,24 @@ namespace UnityEditor.StyleSheets
         public static string ToUssString(UnityEngine.Color color, bool useColorCode = false)
         {
             string str;
-            string alpha = color.a.ToString("0.##");
+            string alpha = color.a.ToString("0.##", CultureInfo.InvariantCulture.NumberFormat);
             if (alpha != "1")
             {
-                str = string.Format("rgba({0}, {1}, {2}, {3:F2})", ColorComponent(color.r),
+                str = UnityString.Format("rgba({0}, {1}, {2}, {3:F2})", ColorComponent(color.r),
                     ColorComponent(color.g),
                     ColorComponent(color.b),
                     alpha);
             }
             else if (!useColorCode)
             {
-                str = string.Format("rgb({0}, {1}, {2})",
+                str = UnityString.Format("rgb({0}, {1}, {2})",
                     ColorComponent(color.r),
                     ColorComponent(color.g),
                     ColorComponent(color.b));
             }
             else
             {
-                str = string.Format("#{0}", ColorUtility.ToHtmlStringRGB(color));
+                str = UnityString.Format("#{0}", ColorUtility.ToHtmlStringRGB(color));
             }
             return str;
         }
@@ -187,7 +187,7 @@ namespace UnityEditor.StyleSheets
                     str = sheet.ReadKeyword(handle).ToString().ToLower();
                     break;
                 case StyleValueType.Float:
-                    str = sheet.ReadFloat(handle).ToString();
+                    str = sheet.ReadFloat(handle).ToString(CultureInfo.InvariantCulture.NumberFormat);
                     break;
                 case StyleValueType.Color:
                     UnityEngine.Color color = sheet.ReadColor(handle);

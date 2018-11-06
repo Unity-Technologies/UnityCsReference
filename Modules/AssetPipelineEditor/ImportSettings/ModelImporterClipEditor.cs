@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using UnityEditor.Experimental.AssetImporters;
 using UnityEngine.Profiling;
 using Object = UnityEngine.Object;
+using System.Globalization;
 
 namespace UnityEditor
 {
@@ -639,9 +640,9 @@ namespace UnityEditor
             GUI.Label(rect, info.name, EditorStyles.label);
             rect.x = rect.xMax;
             rect.width = kFrameColumnWidth;
-            GUI.Label(rect, info.firstFrame.ToString("0.0"), styles.numberStyle);
+            GUI.Label(rect, info.firstFrame.ToString("0.0", CultureInfo.InvariantCulture.NumberFormat), styles.numberStyle);
             rect.x = rect.xMax;
-            GUI.Label(rect, info.lastFrame.ToString("0.0"), styles.numberStyle);
+            GUI.Label(rect, info.lastFrame.ToString("0.0", CultureInfo.InvariantCulture.NumberFormat), styles.numberStyle);
         }
 
         private void DrawClipHeader(Rect rect)

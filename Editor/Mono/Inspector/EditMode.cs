@@ -75,6 +75,10 @@ namespace UnityEditorInternal
             ParticleSystemCollisionModulePlanesRotate,
             LineRendererEdit,
             LineRendererCreate,
+            ParticleSystemShapeModuleGizmo,
+            ParticleSystemShapeModulePosition,
+            ParticleSystemShapeModuleRotation,
+            ParticleSystemShapeModuleScale
         }
 
         private static Tool toolBeforeEnteringEditMode

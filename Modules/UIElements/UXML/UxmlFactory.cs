@@ -8,7 +8,7 @@ using System.Linq;
 using System.Reflection;
 
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public abstract class UxmlTraits
     {
@@ -81,14 +81,12 @@ namespace UnityEngine.Experimental.UIElements
         bool AcceptsAttributeBag(IUxmlAttributes bag, CreationContext cc);
 
         VisualElement Create(IUxmlAttributes bag, CreationContext cc);
-
-        [Obsolete("Use uxmlName and uxmlNamespace instead.")]
-        Type CreatesType { get; }
     }
 
     public class UxmlFactory<TCreatedType, TTraits> : IUxmlFactory where TCreatedType : VisualElement where TTraits : UxmlTraits, new()
     {
-        protected TTraits m_Traits;
+        // Make private once we get rid of PropertyControl
+        internal TTraits m_Traits;
 
         protected UxmlFactory()
         {
@@ -102,7 +100,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public virtual string uxmlNamespace
         {
-            get { return typeof(TCreatedType).Namespace != null ? typeof(TCreatedType).Namespace : String.Empty; }
+            get { return typeof(TCreatedType).Namespace ?? String.Empty; }
         }
 
         public virtual string uxmlQualifiedName
@@ -160,7 +158,7 @@ namespace UnityEngine.Experimental.UIElements
                         return String.Empty;
                     }
 
-                    return typeof(VisualElement).Namespace != null ? typeof(VisualElement).Namespace : String.Empty;
+                    return typeof(VisualElement).Namespace ?? String.Empty;
                 }
             }
         }
@@ -178,12 +176,6 @@ namespace UnityEngine.Experimental.UIElements
                     return typeof(VisualElement).FullName;
                 }
             }
-        }
-
-        [Obsolete("Call or override AcceptsAttributeBag(IUxmlAttributes bag, CreationContext cc) instaed")]
-        public virtual bool AcceptsAttributeBag(IUxmlAttributes bag)
-        {
-            return AcceptsAttributeBag(bag, new CreationContext());
         }
 
         public virtual bool AcceptsAttributeBag(IUxmlAttributes bag, CreationContext cc)
@@ -263,9 +255,6 @@ namespace UnityEngine.Experimental.UIElements
         {
             return null;
         }
-
-        [Obsolete("Use uxmlName and uxmlNamespace instead.")]
-        public Type CreatesType { get { return typeof(TCreatedType); } }
     }
 
     public class UxmlFactory<TCreatedType> : UxmlFactory<TCreatedType, VisualElement.UxmlTraits> where TCreatedType : VisualElement {}

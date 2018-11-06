@@ -2,18 +2,17 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
-using UnityEngine.Experimental.UIElements.StyleSheets;
+using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     public class IconBadge : VisualElement
     {
+        static CustomStyleProperty<int> s_DistanceProperty = new CustomStyleProperty<int>("--distance");
+
         private VisualElement m_TipElement;
         private VisualElement m_IconElement;
         private Label m_TextElement;
@@ -38,19 +37,19 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         private const int kDefaultDistanceValue = 6;
 
-        private StyleValue<int> m_Distance;
-        public StyleValue<int> distance
+        private int m_Distance;
+        private bool m_DistanceIsInline;
+        public int distance
         {
             get { return m_Distance; }
             set
             {
-                int oldValue = m_Distance;
-                if (m_Distance.Apply(value, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity))
+                m_DistanceIsInline = true;
+                if (value != m_Distance)
                 {
-                    if (oldValue != m_Distance && m_Attacher != null)
-                    {
+                    m_Distance = value;
+                    if (m_Attacher != null)
                         m_Attacher.distance = m_Distance;
-                    }
                 }
             }
         }
@@ -63,9 +62,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public IconBadge()
         {
             m_IsAttached = false;
+            m_Distance = kDefaultDistanceValue;
             var tpl = EditorGUIUtility.Load("GraphView/Badge/IconBadge.uxml") as VisualTreeAsset;
 
             LoadTemplate(tpl);
+
+            RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
         }
 
         public IconBadge(VisualTreeAsset template)
@@ -99,9 +101,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (m_TipElement != null)
             {
                 ////we make sure the tip is in the back
-                VisualElement tipParent = m_TipElement.shadow.parent;
+                VisualElement tipParent = m_TipElement.hierarchy.parent;
                 m_TipElement.RemoveFromHierarchy();
-                tipParent.shadow.Insert(0, m_TipElement);
+                tipParent.hierarchy.Insert(0, m_TipElement);
             }
 
             name = "IconBadge";
@@ -112,7 +114,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (m_TextElement != null)
             {
                 m_TextElement.RemoveFromHierarchy();
-                m_TextElement.style.wordWrap = true;
+                m_TextElement.style.whiteSpace = WhiteSpace.Normal;
                 m_TextElement.RegisterCallback<GeometryChangedEvent>((evt) => ComputeTextSize());
             }
         }
@@ -159,7 +161,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             ReleaseAttacher();
             if (m_IsAttached)
             {
-                m_originalParent = shadow.parent;
+                m_originalParent = hierarchy.parent;
                 RemoveFromHierarchy();
 
                 target.UnregisterCallback<DetachFromPanelEvent>(OnTargetDetachedFromPanel);
@@ -176,7 +178,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 //we re-add ourselves to the hierarchy
                 if (m_originalParent != null)
                 {
-                    m_originalParent.shadow.Add(this);
+                    m_originalParent.hierarchy.Add(this);
                 }
                 if (m_Attacher != null)
                 {
@@ -198,37 +200,38 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         private void CreateAttacher()
         {
             m_Attacher = new Attacher(this, target, alignment);
-            m_Attacher.distance = distance.GetSpecifiedValueOrDefault(kDefaultDistanceValue);
+            m_Attacher.distance = distance;
         }
 
         private void ComputeTextSize()
         {
             if (m_TextElement != null)
             {
-                Vector2 newSize = m_TextElement.DoMeasure(m_TextElement.style.maxWidth, MeasureMode.AtMost,
+                float maxWidth = m_TextElement.resolvedStyle.maxWidth == StyleKeyword.None ? float.NaN : m_TextElement.resolvedStyle.maxWidth.value;
+                Vector2 newSize = m_TextElement.DoMeasure(maxWidth, MeasureMode.AtMost,
                     0, MeasureMode.Undefined);
 
                 m_TextElement.style.width = newSize.x +
-                    m_TextElement.style.marginLeft +
-                    m_TextElement.style.marginRight +
-                    m_TextElement.style.borderLeftWidth +
-                    m_TextElement.style.borderRightWidth +
-                    m_TextElement.style.paddingLeft +
-                    m_TextElement.style.paddingRight;
+                    m_TextElement.resolvedStyle.marginLeft +
+                    m_TextElement.resolvedStyle.marginRight +
+                    m_TextElement.resolvedStyle.borderLeftWidth +
+                    m_TextElement.resolvedStyle.borderRightWidth +
+                    m_TextElement.resolvedStyle.paddingLeft +
+                    m_TextElement.resolvedStyle.paddingRight;
                 m_TextElement.style.height = newSize.y +
-                    m_TextElement.style.marginTop +
-                    m_TextElement.style.marginBottom +
-                    m_TextElement.style.borderTopWidth +
-                    m_TextElement.style.borderBottomWidth +
-                    m_TextElement.style.paddingTop +
-                    m_TextElement.style.paddingBottom;
+                    m_TextElement.resolvedStyle.marginTop +
+                    m_TextElement.resolvedStyle.marginBottom +
+                    m_TextElement.resolvedStyle.borderTopWidth +
+                    m_TextElement.resolvedStyle.borderBottomWidth +
+                    m_TextElement.resolvedStyle.paddingTop +
+                    m_TextElement.resolvedStyle.paddingBottom;
                 PerformTipLayout();
             }
         }
 
         private void ShowText()
         {
-            if (m_TextElement != null && m_TextElement.shadow.parent == null)
+            if (m_TextElement != null && m_TextElement.hierarchy.parent == null)
             {
                 Add(m_TextElement);
                 m_TextElement.ResetPositionProperties();
@@ -238,7 +241,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         private void HideText()
         {
-            if (m_TextElement != null && m_TextElement.shadow.parent != null)
+            if (m_TextElement != null && m_TextElement.hierarchy.parent != null)
             {
                 m_TextElement.RemoveFromHierarchy();
             }
@@ -246,12 +249,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         protected internal override void ExecuteDefaultAction(EventBase evt)
         {
-            if (evt.GetEventTypeId() == GeometryChangedEvent.TypeId())
+            if (evt.eventTypeId == GeometryChangedEvent.TypeId())
             {
                 if (m_Attacher != null)
                     PerformTipLayout();
             }
-            else if (evt.GetEventTypeId() == DetachFromPanelEvent.TypeId())
+            else if (evt.eventTypeId == DetachFromPanelEvent.TypeId())
             {
                 if (m_Attacher != null)
                 {
@@ -259,13 +262,13 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     m_Attacher = null;
                 }
             }
-            else if (evt.GetEventTypeId() == MouseEnterEvent.TypeId())
+            else if (evt.eventTypeId == MouseEnterEvent.TypeId())
             {
                 //we make sure we sit on top of whatever siblings we have
                 BringToFront();
                 ShowText();
             }
-            else if (evt.GetEventTypeId() == MouseLeaveEvent.TypeId())
+            else if (evt.eventTypeId == MouseLeaveEvent.TypeId())
             {
                 HideText();
             }
@@ -276,18 +279,18 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         private void PerformTipLayout()
         {
-            float contentWidth = style.width;
+            float contentWidth = resolvedStyle.width;
 
             float arrowWidth = 0;
             float arrowLength = 0;
 
             if (m_TipElement != null)
             {
-                arrowWidth = m_TipElement.style.width;
-                arrowLength = m_TipElement.style.height;
+                arrowWidth = m_TipElement.resolvedStyle.width;
+                arrowLength = m_TipElement.resolvedStyle.height;
             }
 
-            float iconSize = (m_IconElement != null) ? m_IconElement.style.width.GetSpecifiedValueOrDefault(contentWidth - arrowLength) : 0;
+            float iconSize = (m_IconElement != null) ? m_IconElement.computedStyle.width.GetSpecifiedValueOrDefault(contentWidth - arrowLength) : 0f;
 
             float arrowOffset = Mathf.Floor((iconSize - arrowWidth) * 0.5f);
 
@@ -362,16 +365,17 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             if (m_TextElement != null)
             {
-                m_TextElement.style.positionType = PositionType.Absolute;
-                m_TextElement.style.positionLeft = iconRect.xMax;
-                m_TextElement.style.positionTop = iconRect.y;
+                m_TextElement.style.position = Position.Absolute;
+                m_TextElement.style.left = iconRect.xMax;
+                m_TextElement.style.top = iconRect.y;
             }
         }
 
-        protected override void OnStyleResolved(ICustomStyle elementStyle)
+        private void OnCustomStyleResolved(CustomStyleResolvedEvent e)
         {
-            base.OnStyleResolved(elementStyle);
-            elementStyle.ApplyCustomProperty("distance", ref m_Distance);
+            int dist = 0;
+            if (!m_DistanceIsInline && e.customStyle.TryGetValue(s_DistanceProperty, out dist))
+                m_Distance = dist;
         }
     }
 }

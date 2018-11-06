@@ -205,8 +205,8 @@ namespace UnityEditor
     [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
     public enum AndroidBuildSystem
     {
-        [Obsolete("Internal build system is deprecated. Please use Gradle instead", false)]
-        [Description("Internal (deprecated)")]
+        [System.ComponentModel.EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("Internal build system has been deprecated. Use Gradle instead (UnityUpgradable) -> UnityEditor.AndroidBuildSystem.Gradle", true)]
         Internal = 0,
         Gradle = 1,
         [System.ComponentModel.EditorBrowsable(EditorBrowsableState.Never)]
@@ -417,6 +417,7 @@ namespace UnityEditor
 
         public static extern AndroidMinification androidReleaseMinification { get; set; }
 
+        [Obsolete("androidUseLegacySdkTools has been deprecated. It does not have any effect.")]
         public static extern bool androidUseLegacySdkTools { get; set; }
 
         // *undocumented*
@@ -544,8 +545,12 @@ namespace UnityEditor
         // Enables a development build with no assets bundled.
         internal static extern bool datalessPlayer { get; set; }
 
-        // Use prebuilt UnityNative asm.js module
-        public static extern bool webGLUsePreBuiltUnityEngine { get; set; }
+        [Obsolete("Building with pre-built Engine option is no longer supported.", true)]
+        public static bool webGLUsePreBuiltUnityEngine
+        {
+            get { return false; }
+            set {}
+        }
 
         // Start the player with a connection to the profiler.
         public static extern bool connectProfiler { get; set; }

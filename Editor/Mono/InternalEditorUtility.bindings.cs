@@ -9,7 +9,7 @@ using UnityEditor;
 using System.Reflection;
 using UnityEngine.Bindings;
 using UnityEditor.Scripting.ScriptCompilation;
-
+using System.Globalization;
 
 namespace UnityEditorInternal
 {
@@ -845,7 +845,7 @@ namespace UnityEditorInternal
                 index++;
             }
             float result = count / magnitudes[index];
-            return result.ToString("0.0") + names[index];
+            return result.ToString("0.0", CultureInfo.InvariantCulture.NumberFormat) + names[index];
         }
 
         [StaticAccessor("GetSceneManager()", StaticAccessorType.Dot)]

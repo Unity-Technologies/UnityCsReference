@@ -3,15 +3,16 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-
-static partial class UIElementsTemplate
+namespace UnityEditor.UIElements
 {
-    public static string CreateCSharpTemplate(string cSharpName, string uxmlName, string ussName, string folder)
+    static partial class UIElementsTemplate
     {
-        string csTemplate = string.Format(@"using UnityEditor;
+        public static string CreateCSharpTemplate(string cSharpName, string uxmlName, string ussName, string folder)
+        {
+            string csTemplate = string.Format(@"using UnityEditor;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEditor.Experimental.UIElements;
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
 
 
 public class {0} : EditorWindow
@@ -26,36 +27,38 @@ public class {0} : EditorWindow
     public void OnEnable()
     {{
         // Each editor window contains a root VisualElement object
-        VisualElement root = this.GetRootVisualContainer();
+        VisualElement root = rootVisualElement;
 
         // VisualElements objects can contain other VisualElement following a tree hierarchy.
         VisualElement label = new Label(""Hello World! From C#"");
         root.Add(label);", cSharpName);
 
-        if (uxmlName != String.Empty)
-        {
-            csTemplate = csTemplate + string.Format(@"
+            if (uxmlName != String.Empty)
+            {
+                csTemplate = csTemplate + string.Format(@"
 
         // Import UXML
-        var visualTree = AssetDatabase.LoadAssetAtPath(""{0}/{1}.uxml"", typeof(VisualTreeAsset)) as VisualTreeAsset;
-        VisualElement labelFromUXML = visualTree.CloneTree(null);
+        var visualTree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(""{0}/{1}.uxml"");
+        VisualElement labelFromUXML = visualTree.CloneTree();
         root.Add(labelFromUXML);", folder, uxmlName);
-        }
+            }
 
-        if (ussName != String.Empty)
-        {
-            csTemplate += string.Format(@"
+            if (ussName != String.Empty)
+            {
+                csTemplate += string.Format(@"
 
         // A stylesheet can be added to a VisualElement.
         // The style will be applied to the VisualElement and all of its children.
+        var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(""{0}/{1}.uss"");
         VisualElement labelWithStyle = new Label(""Hello World! With Style"");
-        labelWithStyle.AddStyleSheetPath(""{0}/{1}.uss"");
+        labelWithStyle.styleSheets.Add(styleSheet);
         root.Add(labelWithStyle);", folder, ussName);
-        }
+            }
 
-        csTemplate += @"
+            csTemplate += @"
     }
 }";
-        return csTemplate;
+            return csTemplate;
+        }
     }
 }

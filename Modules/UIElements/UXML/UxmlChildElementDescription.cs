@@ -4,12 +4,17 @@
 
 using System;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public class UxmlChildElementDescription
     {
         public UxmlChildElementDescription(Type t)
         {
+            if (t == null)
+            {
+                throw new ArgumentNullException(nameof(t));
+            }
+
             elementName = t.Name;
             elementNamespace = t.Namespace;
         }

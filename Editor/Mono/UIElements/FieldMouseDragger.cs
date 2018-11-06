@@ -3,9 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     public class FieldMouseDragger<T>
     {
@@ -21,8 +21,8 @@ namespace UnityEditor.Experimental.UIElements
         VisualElement m_DragElement;
         Rect m_DragHotZone;
 
-        public bool dragging;
-        public T startValue;
+        public bool dragging { get; set; }
+        public T startValue { get; set; }
 
         public void SetDragZone(VisualElement dragElement)
         {
@@ -64,6 +64,7 @@ namespace UnityEditor.Experimental.UIElements
                 dragging = true;
                 startValue = m_DrivenField.value;
 
+                m_DrivenField.StartDragging();
                 EditorGUIUtility.SetWantsMouseJumping(1);
             }
         }
@@ -84,6 +85,7 @@ namespace UnityEditor.Experimental.UIElements
                 dragging = false;
                 MouseCaptureController.ReleaseMouse();
                 EditorGUIUtility.SetWantsMouseJumping(0);
+                m_DrivenField.StopDragging();
             }
         }
 
@@ -93,6 +95,7 @@ namespace UnityEditor.Experimental.UIElements
             {
                 dragging = false;
                 m_DrivenField.value = startValue;
+                m_DrivenField.StopDragging();
                 MouseCaptureController.ReleaseMouse();
                 EditorGUIUtility.SetWantsMouseJumping(0);
             }

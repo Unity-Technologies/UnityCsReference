@@ -3,9 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine.Experimental.UIElements.StyleSheets;
+using UnityEngine.UIElements.StyleSheets;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     internal interface ITextInputField : IEventHandler, ITextElement
     {
@@ -20,9 +20,12 @@ namespace UnityEngine.Experimental.UIElements
         void UpdateText(string value);
     }
 
-    public abstract class TextInputFieldBase<T> : BaseField<T>, ITextInputField
+    public abstract class TextInputBaseField<TValueType> : BaseField<TValueType>
     {
-        public new class UxmlTraits : BaseField<T>.UxmlTraits
+        static CustomStyleProperty<Color> s_SelectionColorProperty = new CustomStyleProperty<Color>("--unity-selection-color");
+        static CustomStyleProperty<Color> s_CursorColorProperty = new CustomStyleProperty<Color>("--unity-cursor-color");
+
+        public new class UxmlTraits : BaseField<TValueType>.UxmlTraits
         {
             UxmlIntAttributeDescription m_MaxLength = new UxmlIntAttributeDescription { name = "max-length", obsoleteNames = new[] { "maxLength" }, defaultValue = kMaxLengthNone };
             UxmlBoolAttributeDescription m_Password = new UxmlBoolAttributeDescription { name = "password" };
@@ -33,7 +36,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 base.Init(ve, bag, cc);
 
-                TextInputFieldBase<T> field = ((TextInputFieldBase<T>)ve);
+                var field = ((TextInputBaseField<TValueType>)ve);
                 field.maxLength = m_MaxLength.GetValueFromBag(bag, cc);
                 field.isPasswordField = m_Password.GetValueFromBag(bag, cc);
                 string maskCharacter = m_MaskCharacter.GetValueFromBag(bag, cc);
@@ -41,17 +44,19 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     field.maskChar = maskCharacter[0];
                 }
-                ((ITextElement)ve).text = m_Text.GetValueFromBag(bag, cc);
+                ((ITextElement)field).text = m_Text.GetValueFromBag(bag, cc);
             }
         }
 
-        const string SelectionColorProperty = "selection-color";
-        const string CursorColorProperty = "cursor-color";
+        TextInputBase m_TextInputBase;
+        protected TextInputBase textInputBase => m_TextInputBase;
 
-        StyleValue<Color> m_SelectionColor;
-        StyleValue<Color> m_CursorColor;
+        internal const int kMaxLengthNone = -1;
+
+        public new static readonly string ussClassName = "unity-base-text-field";
 
         private string m_Text;
+
         public string text
         {
             get { return m_Text; }
@@ -61,432 +66,542 @@ namespace UnityEngine.Experimental.UIElements
                     return;
 
                 m_Text = value;
-                editorEngine.text = value;
+                m_TextInputBase.editorEngine.text = value;
                 IncrementVersion(VersionChangeType.Layout);
+            }
+        }
+
+        public override bool focusable
+        {
+            get { return base.focusable; }
+            set
+            {
+                base.focusable = value;
+                if (textInputBase != null)
+                {
+                    textInputBase.focusable = value;
+                }
+            }
+        }
+
+        public override int tabIndex
+        {
+            get { return base.tabIndex; }
+            set
+            {
+                base.tabIndex = value;
+                if (textInputBase != null)
+                {
+                    textInputBase.tabIndex = value;
+                }
             }
         }
 
         public void SelectAll()
         {
-            if (editorEngine != null)
-            {
-                editorEngine.SelectAll();
-            }
-        }
-
-        private void UpdateText(string value)
-        {
-            if (text != value)
-            {
-                // Setting the VisualElement text here cause a repaint since it dirty the layout flag.
-                using (InputEvent evt = InputEvent.GetPooled(text, value))
-                {
-                    evt.target = this;
-                    text = value;
-                    SendEvent(evt);
-                }
-            }
+            m_TextInputBase.SelectAll();
         }
 
         // Password field (indirectly lossy behaviour when activated via multiline)
         public virtual bool isPasswordField { get; set; }
 
-        public Color selectionColor
-        {
-            get { return m_SelectionColor.GetSpecifiedValueOrDefault(Color.clear); }
-        }
+        Color m_SelectionColor = Color.clear;
+        Color m_CursorColor = Color.grey;
 
-        public Color cursorColor
-        {
-            get { return m_CursorColor.GetSpecifiedValueOrDefault(Color.clear); }
-        }
-
-        public int cursorIndex { get { return editorEngine.cursorIndex; } }
-        public int selectIndex { get { return editorEngine.selectIndex; } }
-
+        public Color selectionColor => m_SelectionColor;
+        public Color cursorColor => m_CursorColor;
+        public int cursorIndex => m_TextInputBase.cursorIndex;
+        public int selectIndex => m_TextInputBase.selectIndex;
         public int maxLength { get; set; }
 
-        internal const int kMaxLengthNone = -1;
-
-        public bool doubleClickSelectsWord { get; set; }
-        public bool tripleClickSelectsLine { get; set; }
+        public bool doubleClickSelectsWord
+        {
+            get { return m_TextInputBase.doubleClickSelectsWord; }
+            set { m_TextInputBase.doubleClickSelectsWord = value; }
+        }
+        public bool tripleClickSelectsLine
+        {
+            get { return m_TextInputBase.tripleClickSelectsLine; }
+            set { m_TextInputBase.tripleClickSelectsLine = value; }
+        }
 
         public bool isDelayed { get; set; }
 
-        bool touchScreenTextField
-        {
-            get { return TouchScreenKeyboard.isSupported; }
-        }
-
-        internal bool hasFocus
-        {
-            get { return elementPanel != null && elementPanel.focusController.focusedElement == this; }
-        }
-
-        /* internal for VisualTree tests */
-        internal TextEditorEventHandler editorEventHandler { get; private set; }
-
-        /* internal for VisualTree tests */
-        internal TextEditorEngine editorEngine { get; private set; }
-
         public char maskChar { get; set; }
 
-        public TextInputFieldBase(int maxLength, char maskChar)
+        /* internal for VisualTree tests */
+        internal TextEditorEventHandler editorEventHandler => m_TextInputBase.editorEventHandler;
+
+        /* internal for VisualTree tests */
+        internal TextEditorEngine editorEngine  => m_TextInputBase.editorEngine;
+
+        internal bool hasFocus => m_TextInputBase.hasFocus;
+        internal void SyncTextEngine()
         {
-            requireMeasureFunction = true;
-
-            m_Text = "";
-            this.maxLength = maxLength;
-            this.maskChar = maskChar;
-
-            editorEngine = new TextEditorEngine(OnDetectFocusChange, OnCursorIndexChange);
-
-            if (touchScreenTextField)
-            {
-                editorEventHandler = new TouchScreenTextEditorEventHandler(editorEngine, this);
-            }
-            else
-            {
-                // TODO: Default values should come from GUI.skin.settings
-                doubleClickSelectsWord = true;
-                tripleClickSelectsLine = true;
-
-                editorEventHandler = new KeyboardTextEditorEventHandler(editorEngine, this);
-            }
-
-            // Make the editor style unique across all textfields
-            editorEngine.style = new GUIStyle(editorEngine.style);
-        }
-
-        DropdownMenu.MenuAction.StatusFlags CutCopyActionStatus(DropdownMenu.MenuAction a)
-        {
-            return (editorEngine.hasSelection && !isPasswordField) ? DropdownMenu.MenuAction.StatusFlags.Normal : DropdownMenu.MenuAction.StatusFlags.Disabled;
-        }
-
-        DropdownMenu.MenuAction.StatusFlags PasteActionStatus(DropdownMenu.MenuAction a)
-        {
-            return (editorEngine.CanPaste() ? DropdownMenu.MenuAction.StatusFlags.Normal : DropdownMenu.MenuAction.StatusFlags.Disabled);
-        }
-
-        void Cut(DropdownMenu.MenuAction a)
-        {
-            editorEngine.Cut();
-
-            editorEngine.text = CullString(editorEngine.text);
-            UpdateText(editorEngine.text);
-        }
-
-        void Copy(DropdownMenu.MenuAction a)
-        {
-            editorEngine.Copy();
-        }
-
-        void Paste(DropdownMenu.MenuAction a)
-        {
-            editorEngine.Paste();
-
-            editorEngine.text = CullString(editorEngine.text);
-            UpdateText(editorEngine.text);
-        }
-
-        protected override void OnStyleResolved(ICustomStyle style)
-        {
-            base.OnStyleResolved(style);
-
-            effectiveStyle.ApplyCustomProperty(SelectionColorProperty, ref m_SelectionColor); // TODO: Switch over to default style properties
-            effectiveStyle.ApplyCustomProperty(CursorColorProperty, ref m_CursorColor);
-            effectiveStyle.WriteToGUIStyle(editorEngine.style);
-        }
-
-        internal virtual void SyncTextEngine()
-        {
-            editorEngine.text = CullString(text);
-
-            editorEngine.SaveBackup();
-
-            editorEngine.position = layout;
-
-            editorEngine.DetectFocusChange();
-        }
-
-        internal string CullString(string s)
-        {
-            if (maxLength >= 0 && s != null && s.Length > maxLength)
-                return s.Substring(0, maxLength);
-            return s;
-        }
-
-        protected override void DoRepaint(IStylePainter painter)
-        {
-            var stylePainter = (IStylePainterInternal)painter;
-            // When this is used, we can get rid of the content.text trick and use mask char directly in the text to print
-            if (touchScreenTextField)
-            {
-                var touchScreenEditor = editorEventHandler as TouchScreenTextEditorEventHandler;
-                if (touchScreenEditor != null && editorEngine.keyboardOnScreen != null)
-                {
-                    UpdateText(CullString(editorEngine.keyboardOnScreen.text));
-
-                    if (editorEngine.keyboardOnScreen.status != TouchScreenKeyboard.Status.Visible)
-                    {
-                        editorEngine.keyboardOnScreen = null;
-                        GUI.changed = true;
-                    }
-                }
-
-                // if we use system keyboard we will have normal text returned (hiding symbols is done inside os)
-                // so before drawing make sure we hide them ourselves
-                string drawText = text;
-                if (touchScreenEditor != null && !string.IsNullOrEmpty(touchScreenEditor.secureText))
-                    drawText = "".PadRight(touchScreenEditor.secureText.Length, maskChar);
-
-                text = drawText;
-            }
-            else
-            {
-                if (!hasFocus)
-                {
-                    stylePainter.DrawText(text);
-                }
-                else
-                    DrawWithTextSelectionAndCursor(stylePainter, text);
-            }
+            m_TextInputBase.SyncTextEngine();
         }
 
         internal void DrawWithTextSelectionAndCursor(IStylePainterInternal painter, string newText)
         {
-            var keyboardTextEditor = editorEventHandler as KeyboardTextEditorEventHandler;
-            if (keyboardTextEditor == null)
-                return;
+            m_TextInputBase.DrawWithTextSelectionAndCursor(painter, newText);
+        }
 
-            keyboardTextEditor.PreDrawCursor(newText);
+        protected TextInputBaseField(int maxLength, char maskChar, TextInputBase textInputBase)
+            : this(null, maxLength, maskChar, textInputBase) {}
 
-            int cursorIndex = editorEngine.cursorIndex;
-            int selectIndex = editorEngine.selectIndex;
-            Rect localPosition = editorEngine.localPosition;
-            Vector2 scrollOffset = editorEngine.scrollOffset;
+        protected TextInputBaseField(string label, int maxLength, char maskChar, TextInputBase textInputBase)
+            : base(label, textInputBase)
+        {
+            AddToClassList(ussClassName);
 
-            IStyle style = this.style;
+            m_TextInputBase = textInputBase;
+            this.maxLength = maxLength;
+            this.maskChar = maskChar;
+            m_TextInputBase.parentField = this;
+            m_Text = "";
+        }
 
-            float textScaling = TextNative.ComputeTextScaling(worldTransform);
+        protected abstract class TextInputBase : VisualElement, ITextInputField
+        {
+            TextInputBaseField<TValueType> m_ParentField;
 
-            var textParams = TextStylePainterParameters.GetDefault(this, text);
-            textParams.text = " ";
-            textParams.wordWrapWidth = 0.0f;
-            textParams.wordWrap = false;
-
-            var textNativeSettings = textParams.GetTextNativeSettings(textScaling);
-            float lineHeight = TextNative.ComputeTextHeight(textNativeSettings);
-            float wordWrapWidth = editorEngine.multiline
-                ? contentRect.width
-                : 0.0f;
-
-            Input.compositionCursorPos = editorEngine.graphicalCursorPos - scrollOffset +
-                new Vector2(localPosition.x, localPosition.y + lineHeight);
-
-            Color drawCursorColor = m_CursorColor.GetSpecifiedValueOrDefault(Color.grey);
-
-            int selectionEndIndex = string.IsNullOrEmpty(Input.compositionString)
-                ? selectIndex
-                : cursorIndex + Input.compositionString.Length;
-
-            CursorPositionStylePainterParameters cursorParams;
-
-            // Draw highlighted section, if any
-            if (cursorIndex != selectionEndIndex)
+            internal TextInputBaseField<TValueType> parentField
             {
-                var painterParams = RectStylePainterParameters.GetDefault(this);
-                painterParams.color = selectionColor;
-                painterParams.border.SetWidth(0.0f);
-                painterParams.border.SetRadius(0.0f);
+                get { return m_ParentField; }
+                set { m_ParentField = value; }
+            }
 
-                int min = cursorIndex < selectionEndIndex ? cursorIndex : selectionEndIndex;
-                int max = cursorIndex > selectionEndIndex ? cursorIndex : selectionEndIndex;
+            public void SelectAll()
+            {
+                editorEngine?.SelectAll();
+            }
 
-                cursorParams = CursorPositionStylePainterParameters.GetDefault(this, text);
-                cursorParams.text = editorEngine.text;
-                cursorParams.wordWrapWidth = wordWrapWidth;
-                cursorParams.cursorIndex = min;
+            internal void SelectNone()
+            {
+                editorEngine?.SelectNone();
+            }
 
-                textNativeSettings = cursorParams.GetTextNativeSettings(textScaling);
-                Vector2 minPos = TextNative.GetCursorPosition(textNativeSettings, cursorParams.rect, min);
-                Vector2 maxPos = TextNative.GetCursorPosition(textNativeSettings, cursorParams.rect, max);
-
-                minPos -= scrollOffset;
-                maxPos -= scrollOffset;
-
-                if (Mathf.Approximately(minPos.y, maxPos.y))
+            private void UpdateText(string value)
+            {
+                if (m_ParentField.text != value)
                 {
-                    painterParams.rect = new Rect(minPos.x, minPos.y, maxPos.x - minPos.x, lineHeight);
-                    painter.DrawRect(painterParams);
+                    // Setting the VisualElement text here cause a repaint since it dirty the layout flag.
+                    using (InputEvent evt = InputEvent.GetPooled(m_ParentField.text, value))
+                    {
+                        evt.target = this;
+                        m_ParentField.text = value;
+                        SendEvent(evt);
+                    }
+                }
+            }
+
+            public int cursorIndex
+            {
+                get { return editorEngine.cursorIndex; }
+            }
+
+            public int selectIndex
+            {
+                get { return editorEngine.selectIndex; }
+            }
+
+            public bool doubleClickSelectsWord { get; set; }
+            public bool tripleClickSelectsLine { get; set; }
+
+            internal bool isDragging { get; set; }
+
+            bool touchScreenTextField
+            {
+                get { return TouchScreenKeyboard.isSupported; }
+            }
+
+            internal bool hasFocus
+            {
+                get { return elementPanel != null && elementPanel.focusController.focusedElement == this; }
+            }
+
+            /* internal for VisualTree tests */
+            internal TextEditorEventHandler editorEventHandler { get; private set; }
+
+            /* internal for VisualTree tests */
+            internal TextEditorEngine editorEngine { get; private set; }
+
+
+            public static readonly string ussClassName = "unity-text-input";
+            internal TextInputBase()
+            {
+                AddToClassList(ussClassName);
+
+                requireMeasureFunction = true;
+
+                editorEngine = new TextEditorEngine(OnDetectFocusChange, OnCursorIndexChange);
+
+                if (touchScreenTextField)
+                {
+                    editorEventHandler = new TouchScreenTextEditorEventHandler(editorEngine, this);
                 }
                 else
                 {
-                    // Draw first line
-                    painterParams.rect = new Rect(minPos.x, minPos.y, contentRect.xMax - minPos.x, lineHeight);
-                    painter.DrawRect(painterParams);
+                    // TODO: Default values should come from GUI.skin.settings
+                    doubleClickSelectsWord = true;
+                    tripleClickSelectsLine = true;
 
-                    var inbetweenHeight = (maxPos.y - minPos.y) - lineHeight;
-                    if (inbetweenHeight > 0f)
+                    editorEventHandler = new KeyboardTextEditorEventHandler(editorEngine, this);
+                }
+
+                // Make the editor style unique across all textfields
+                editorEngine.style = new GUIStyle(editorEngine.style);
+
+                RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
+            }
+
+            DropdownMenuAction.Status CutCopyActionStatus(DropdownMenuAction a)
+            {
+                return (editorEngine.hasSelection && !m_ParentField.isPasswordField) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
+            }
+
+            DropdownMenuAction.Status PasteActionStatus(DropdownMenuAction a)
+            {
+                return (editorEngine.CanPaste() ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+            }
+
+            void Cut(DropdownMenuAction a)
+            {
+                editorEngine.Cut();
+
+                editorEngine.text = CullString(editorEngine.text);
+                UpdateText(editorEngine.text);
+            }
+
+            void Copy(DropdownMenuAction a)
+            {
+                editorEngine.Copy();
+            }
+
+            void Paste(DropdownMenuAction a)
+            {
+                editorEngine.Paste();
+
+                editorEngine.text = CullString(editorEngine.text);
+                UpdateText(editorEngine.text);
+            }
+
+            private void OnCustomStyleResolved(CustomStyleResolvedEvent e)
+            {
+                Color selectionColorValue = Color.clear;
+                Color cursorColorValue = Color.clear;
+
+                ICustomStyle customStyle = e.customStyle;
+                if (customStyle.TryGetValue(s_SelectionColorProperty, out selectionColorValue))
+                    m_ParentField.m_SelectionColor = selectionColorValue;
+
+                if (customStyle.TryGetValue(s_CursorColorProperty, out cursorColorValue))
+                    m_ParentField.m_CursorColor = cursorColorValue;
+
+                effectiveStyle.WriteToGUIStyle(editorEngine.style);
+            }
+
+            internal virtual void SyncTextEngine()
+            {
+                if (parentField != null)
+                {
+                    editorEngine.text = CullString(m_ParentField.text);
+                }
+                else
+                {
+                    editorEngine.text = "";
+                }
+
+                editorEngine.SaveBackup();
+
+                editorEngine.position = layout;
+
+                editorEngine.DetectFocusChange();
+            }
+
+            internal string CullString(string s)
+            {
+                if (m_ParentField.maxLength >= 0 && s != null && s.Length > m_ParentField.maxLength)
+                    return s.Substring(0, m_ParentField.maxLength);
+                return s;
+            }
+
+            internal override void DoRepaint(IStylePainter painter)
+            {
+                var stylePainter = (IStylePainterInternal)painter;
+
+                // When this is used, we can get rid of the content.text trick and use mask char directly in the text to print
+                if (touchScreenTextField)
+                {
+                    var touchScreenEditor = editorEventHandler as TouchScreenTextEditorEventHandler;
+                    if (touchScreenEditor != null && editorEngine.keyboardOnScreen != null)
                     {
-                        // Draw all lines in-between
-                        painterParams.rect = new Rect(contentRect.x, minPos.y + lineHeight, wordWrapWidth, inbetweenHeight);
-                        painter.DrawRect(painterParams);
+                        UpdateText(CullString(editorEngine.keyboardOnScreen.text));
+
+                        if (editorEngine.keyboardOnScreen.status != TouchScreenKeyboard.Status.Visible)
+                        {
+                            editorEngine.keyboardOnScreen = null;
+                            GUI.changed = true;
+                        }
                     }
 
-                    // Draw last line if not empty
-                    if (maxPos.x != contentRect.x)
+                    // if we use system keyboard we will have normal text returned (hiding symbols is done inside os)
+                    // so before drawing make sure we hide them ourselves
+                    string drawText = m_ParentField.text;
+                    if (touchScreenEditor != null && !string.IsNullOrEmpty(touchScreenEditor.secureText))
+                        drawText = "".PadRight(touchScreenEditor.secureText.Length, m_ParentField.maskChar);
+
+                    m_ParentField.text = drawText;
+                }
+                else
+                {
+                    if (!hasFocus)
                     {
-                        painterParams.rect = new Rect(contentRect.x, maxPos.y, maxPos.x, lineHeight);
-                        painter.DrawRect(painterParams);
+                        stylePainter.DrawText(m_ParentField.text);
+                    }
+                    else
+                    {
+                        DrawWithTextSelectionAndCursor(stylePainter, m_ParentField.text);
                     }
                 }
             }
 
-            // Draw the text with the scroll offset
-            if (!string.IsNullOrEmpty(editorEngine.text) && contentRect.width > 0.0f && contentRect.height > 0.0f)
+            internal void DrawWithTextSelectionAndCursor(IStylePainterInternal painter, string newText)
             {
-                textParams = TextStylePainterParameters.GetDefault(this, text);
-                textParams.rect = new Rect(contentRect.x - scrollOffset.x, contentRect.y - scrollOffset.y, contentRect.width, contentRect.height);
-                textParams.text = editorEngine.text;
-                painter.DrawText(textParams);
-            }
+                var keyboardTextEditor = editorEventHandler as KeyboardTextEditorEventHandler;
+                if (keyboardTextEditor == null)
+                    return;
 
-            // Draw the cursor
-            if (cursorIndex == selectionEndIndex && (Font)style.font != null)
-            {
-                cursorParams = CursorPositionStylePainterParameters.GetDefault(this, text);
-                cursorParams.text = editorEngine.text;
-                cursorParams.wordWrapWidth = wordWrapWidth;
-                cursorParams.cursorIndex = cursorIndex;
+                keyboardTextEditor.PreDrawCursor(newText);
 
-                textNativeSettings = cursorParams.GetTextNativeSettings(textScaling);
-                Vector2 cursorPosition = TextNative.GetCursorPosition(textNativeSettings, cursorParams.rect, cursorParams.cursorIndex);
-                cursorPosition -= scrollOffset;
-                var painterParams = new RectStylePainterParameters
+                int cursorIndex = editorEngine.cursorIndex;
+                int selectIndex = editorEngine.selectIndex;
+                Rect localPosition = editorEngine.localPosition;
+                Vector2 scrollOffset = editorEngine.scrollOffset;
+
+
+                float textScaling = TextNative.ComputeTextScaling(worldTransform);
+
+                var textParams = TextStylePainterParameters.GetDefault(this, m_ParentField.text);
+                textParams.text = " ";
+                textParams.wordWrapWidth = 0.0f;
+                textParams.wordWrap = false;
+
+                var textNativeSettings = textParams.GetTextNativeSettings(textScaling);
+                float lineHeight = TextNative.ComputeTextHeight(textNativeSettings);
+                float wordWrapWidth = editorEngine.multiline
+                    ? contentRect.width
+                    : 0.0f;
+                Input.compositionCursorPos = editorEngine.graphicalCursorPos - scrollOffset +
+                    new Vector2(localPosition.x, localPosition.y + lineHeight);
+
+                Color drawCursorColor = m_ParentField.cursorColor;
+
+                int selectionEndIndex = string.IsNullOrEmpty(Input.compositionString)
+                    ? selectIndex
+                    : cursorIndex + Input.compositionString.Length;
+
+                CursorPositionStylePainterParameters cursorParams;
+
+                // Draw highlighted section, if any
+                if ((cursorIndex != selectionEndIndex) && !isDragging)
                 {
-                    rect = new Rect(cursorPosition.x, cursorPosition.y, 1f, lineHeight),
-                    color = drawCursorColor
-                };
-                painter.DrawRect(painterParams);
-            }
+                    var painterParams = RectStylePainterParameters.GetDefault(this);
+                    painterParams.color = m_ParentField.selectionColor;
+                    painterParams.border.SetWidth(0.0f);
+                    painterParams.border.SetRadius(0.0f);
 
-            // Draw alternate cursor, if any
-            if (editorEngine.altCursorPosition != -1)
-            {
-                cursorParams = CursorPositionStylePainterParameters.GetDefault(this, text);
-                cursorParams.text = editorEngine.text.Substring(0, editorEngine.altCursorPosition);
-                cursorParams.wordWrapWidth = wordWrapWidth;
-                cursorParams.cursorIndex = editorEngine.altCursorPosition;
+                    int min = cursorIndex < selectionEndIndex ? cursorIndex : selectionEndIndex;
+                    int max = cursorIndex > selectionEndIndex ? cursorIndex : selectionEndIndex;
 
-                textNativeSettings = cursorParams.GetTextNativeSettings(textScaling);
-                Vector2 altCursorPosition = TextNative.GetCursorPosition(textNativeSettings, cursorParams.rect, cursorParams.cursorIndex);
-                altCursorPosition -= scrollOffset;
+                    cursorParams = CursorPositionStylePainterParameters.GetDefault(this, m_ParentField.text);
+                    cursorParams.text = editorEngine.text;
+                    cursorParams.wordWrapWidth = wordWrapWidth;
+                    cursorParams.cursorIndex = min;
 
-                var painterParams = new RectStylePainterParameters
+                    textNativeSettings = cursorParams.GetTextNativeSettings(textScaling);
+                    Vector2 minPos = TextNative.GetCursorPosition(textNativeSettings, cursorParams.rect, min);
+                    Vector2 maxPos = TextNative.GetCursorPosition(textNativeSettings, cursorParams.rect, max);
+
+                    minPos -= scrollOffset;
+                    maxPos -= scrollOffset;
+
+                    if (Mathf.Approximately(minPos.y, maxPos.y))
+                    {
+                        painterParams.rect = new Rect(minPos.x, minPos.y, maxPos.x - minPos.x, lineHeight);
+                        painter.DrawRect(painterParams);
+                    }
+                    else
+                    {
+                        // Draw first line
+                        painterParams.rect = new Rect(minPos.x, minPos.y, contentRect.xMax - minPos.x, lineHeight);
+                        painter.DrawRect(painterParams);
+
+                        var inbetweenHeight = (maxPos.y - minPos.y) - lineHeight;
+                        if (inbetweenHeight > 0f)
+                        {
+                            // Draw all lines in-between
+                            painterParams.rect = new Rect(contentRect.x, minPos.y + lineHeight, wordWrapWidth, inbetweenHeight);
+                            painter.DrawRect(painterParams);
+                        }
+
+                        // Draw last line if not empty
+                        if (maxPos.x != contentRect.x)
+                        {
+                            painterParams.rect = new Rect(contentRect.x, maxPos.y, maxPos.x, lineHeight);
+                            painter.DrawRect(painterParams);
+                        }
+                    }
+                }
+
+                // Draw the text with the scroll offset
+                if (!string.IsNullOrEmpty(editorEngine.text) && contentRect.width > 0.0f && contentRect.height > 0.0f)
                 {
-                    rect = new Rect(altCursorPosition.x, altCursorPosition.y, 1f, lineHeight),
-                    color = drawCursorColor
-                };
-                painter.DrawRect(painterParams);
-            }
+                    textParams = TextStylePainterParameters.GetDefault(this, m_ParentField.text);
+                    textParams.rect = new Rect(contentRect.x - scrollOffset.x, contentRect.y - scrollOffset.y, contentRect.width + scrollOffset.x, contentRect.height + scrollOffset.y);
+                    textParams.text = editorEngine.text;
+                    painter.DrawText(textParams);
+                }
 
-            keyboardTextEditor.PostDrawCursor();
-        }
-
-        internal virtual bool AcceptCharacter(char c)
-        {
-            return true;
-        }
-
-        protected virtual void BuildContextualMenu(ContextualMenuPopulateEvent evt)
-        {
-            if (evt.target is TextInputFieldBase<T>)
-            {
-                evt.menu.AppendAction("Cut", Cut, CutCopyActionStatus);
-                evt.menu.AppendAction("Copy", Copy, CutCopyActionStatus);
-                evt.menu.AppendAction("Paste", Paste, PasteActionStatus);
-            }
-        }
-
-        private void OnDetectFocusChange()
-        {
-            if (editorEngine.m_HasFocus && !hasFocus)
-                editorEngine.OnFocus();
-            if (!editorEngine.m_HasFocus && hasFocus)
-                editorEngine.OnLostFocus();
-        }
-
-        private void OnCursorIndexChange()
-        {
-            IncrementVersion(VersionChangeType.Repaint);
-        }
-
-        protected internal override Vector2 DoMeasure(float width, MeasureMode widthMode, float height, MeasureMode heightMode)
-        {
-            return TextElement.MeasureVisualElementTextSize(this, m_Text, width, widthMode, height, heightMode);
-        }
-
-        protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
-        {
-            base.ExecuteDefaultActionAtTarget(evt);
-
-            if (elementPanel != null && elementPanel.contextualMenuManager != null)
-            {
-                elementPanel.contextualMenuManager.DisplayMenuIfEventMatches(evt, this);
-            }
-
-            if (evt.GetEventTypeId() == ContextualMenuPopulateEvent.TypeId())
-            {
-                ContextualMenuPopulateEvent e = evt as ContextualMenuPopulateEvent;
-                int count = e.menu.MenuItems().Count;
-                BuildContextualMenu(e);
-
-                if (count > 0 && e.menu.MenuItems().Count > count)
+                // Draw the cursor
+                if (!isDragging)
                 {
-                    e.menu.InsertSeparator(null, count);
+                    if (cursorIndex == selectionEndIndex && computedStyle.unityFont.value != null)
+                    {
+                        cursorParams = CursorPositionStylePainterParameters.GetDefault(this, m_ParentField.text);
+                        cursorParams.text = editorEngine.text;
+                        cursorParams.wordWrapWidth = wordWrapWidth;
+                        cursorParams.cursorIndex = cursorIndex;
+
+                        textNativeSettings = cursorParams.GetTextNativeSettings(textScaling);
+                        Vector2 cursorPosition = TextNative.GetCursorPosition(textNativeSettings, cursorParams.rect, cursorParams.cursorIndex);
+                        cursorPosition -= scrollOffset;
+                        var painterParams = new RectStylePainterParameters
+                        {
+                            rect = new Rect(cursorPosition.x, cursorPosition.y, 1f, lineHeight),
+                            color = drawCursorColor
+                        };
+                        painter.DrawRect(painterParams);
+                    }
+
+                    // Draw alternate cursor, if any
+                    if (editorEngine.altCursorPosition != -1)
+                    {
+                        cursorParams = CursorPositionStylePainterParameters.GetDefault(this, m_ParentField.text);
+                        cursorParams.text = editorEngine.text.Substring(0, editorEngine.altCursorPosition);
+                        cursorParams.wordWrapWidth = wordWrapWidth;
+                        cursorParams.cursorIndex = editorEngine.altCursorPosition;
+
+                        textNativeSettings = cursorParams.GetTextNativeSettings(textScaling);
+                        Vector2 altCursorPosition = TextNative.GetCursorPosition(textNativeSettings, cursorParams.rect, cursorParams.cursorIndex);
+                        altCursorPosition -= scrollOffset;
+
+                        var painterParams = new RectStylePainterParameters
+                        {
+                            rect = new Rect(altCursorPosition.x, altCursorPosition.y, 1f, lineHeight),
+                            color = drawCursorColor
+                        };
+                        painter.DrawRect(painterParams);
+                    }
+                }
+
+                keyboardTextEditor.PostDrawCursor();
+            }
+
+            internal virtual bool AcceptCharacter(char c)
+            {
+                return true;
+            }
+
+            protected virtual void BuildContextualMenu(ContextualMenuPopulateEvent evt)
+            {
+                if (evt.target is TextInputBase)
+                {
+                    evt.menu.AppendAction("Cut", Cut, CutCopyActionStatus);
+                    evt.menu.AppendAction("Copy", Copy, CutCopyActionStatus);
+                    evt.menu.AppendAction("Paste", Paste, PasteActionStatus);
                 }
             }
 
-            editorEventHandler.ExecuteDefaultActionAtTarget(evt);
-        }
+            private void OnDetectFocusChange()
+            {
+                if (editorEngine.m_HasFocus && !hasFocus)
+                {
+                    editorEngine.OnFocus();
+                }
 
-        protected internal override void ExecuteDefaultAction(EventBase evt)
-        {
-            base.ExecuteDefaultAction(evt);
+                if (!editorEngine.m_HasFocus && hasFocus)
+                    editorEngine.OnLostFocus();
+            }
 
-            editorEventHandler.ExecuteDefaultAction(evt);
-        }
+            private void OnCursorIndexChange()
+            {
+                IncrementVersion(VersionChangeType.Repaint);
+            }
 
-        bool ITextInputField.hasFocus
-        {
-            get { return hasFocus; }
-        }
+            protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight, MeasureMode heightMode)
+            {
+                return TextElement.MeasureVisualElementTextSize(this, m_ParentField.m_Text, desiredWidth, widthMode, desiredHeight, heightMode);
+            }
 
-        string ITextElement.text
-        {
-            get { return m_Text; }
-            set { m_Text = value; }
-        }
+            protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
+            {
+                base.ExecuteDefaultActionAtTarget(evt);
 
-        void ITextInputField.SyncTextEngine()
-        {
-            SyncTextEngine();
-        }
+                if (elementPanel != null && elementPanel.contextualMenuManager != null)
+                {
+                    elementPanel.contextualMenuManager.DisplayMenuIfEventMatches(evt, this);
+                }
 
-        bool ITextInputField.AcceptCharacter(char c)
-        {
-            return AcceptCharacter(c);
-        }
+                if (evt.eventTypeId == ContextualMenuPopulateEvent.TypeId())
+                {
+                    ContextualMenuPopulateEvent e = evt as ContextualMenuPopulateEvent;
+                    int count = e.menu.MenuItems().Count;
+                    BuildContextualMenu(e);
 
-        string ITextInputField.CullString(string s)
-        {
-            return CullString(s);
-        }
+                    if (count > 0 && e.menu.MenuItems().Count > count)
+                    {
+                        e.menu.InsertSeparator(null, count);
+                    }
+                }
 
-        void ITextInputField.UpdateText(string value)
-        {
-            UpdateText(value);
+                editorEventHandler.ExecuteDefaultActionAtTarget(evt);
+            }
+
+            protected internal override void ExecuteDefaultAction(EventBase evt)
+            {
+                base.ExecuteDefaultAction(evt);
+
+                editorEventHandler.ExecuteDefaultAction(evt);
+            }
+
+            bool ITextInputField.hasFocus => hasFocus;
+
+            string ITextElement.text
+            {
+                get { return m_ParentField.m_Text; }
+                set { m_ParentField.m_Text = value; }
+            }
+
+            void ITextInputField.SyncTextEngine()
+            {
+                SyncTextEngine();
+            }
+
+            bool ITextInputField.AcceptCharacter(char c)
+            {
+                return AcceptCharacter(c);
+            }
+
+            string ITextInputField.CullString(string s)
+            {
+                return CullString(s);
+            }
+
+            void ITextInputField.UpdateText(string value)
+            {
+                UpdateText(value);
+            }
         }
     }
 }

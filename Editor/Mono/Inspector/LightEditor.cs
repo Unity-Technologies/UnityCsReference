@@ -22,6 +22,7 @@ namespace UnityEditor
             public SerializedProperty lightType { get; private set; }
             public SerializedProperty range { get; private set; }
             public SerializedProperty spotAngle { get; private set; }
+            public SerializedProperty innerSpotAngle { get; private set; }
             public SerializedProperty cookieSize { get; private set; }
             public SerializedProperty color { get; private set; }
             public SerializedProperty intensity { get; private set; }
@@ -69,6 +70,7 @@ namespace UnityEditor
                 public static readonly GUIContent Shape = EditorGUIUtility.TrTextContent("Shape", "Specifies the shape of the Area light. Possible types are Rectangle and Disc.");
                 public static readonly GUIContent Range = EditorGUIUtility.TrTextContent("Range", "Controls how far the light is emitted from the center of the object.");
                 public static readonly GUIContent SpotAngle = EditorGUIUtility.TrTextContent("Spot Angle", "Controls the angle in degrees at the base of a Spot light's cone.");
+                public static readonly GUIContent InnerOuterSpotAngle = EditorGUIUtility.TrTextContent("Inner / Outer Spot Angle", "Controls the inner and outer angle in degrees, at the base of a Spot light's cone.");
                 public static readonly GUIContent Color = EditorGUIUtility.TrTextContent("Color", "Controls the color being emitted by the light.");
                 public static readonly GUIContent UseColorTemperature = EditorGUIUtility.TrTextContent("Use color temperature mode", "Choose between RGB and temperature mode for light's color.");
                 public static readonly GUIContent ColorFilter = EditorGUIUtility.TrTextContent("Filter", "A colored gel can be put in front of the light source to tint the light.");
@@ -167,6 +169,7 @@ namespace UnityEditor
                 lightType = m_SerializedObject.FindProperty("m_Type");
                 range = m_SerializedObject.FindProperty("m_Range");
                 spotAngle = m_SerializedObject.FindProperty("m_SpotAngle");
+                innerSpotAngle = m_SerializedObject.FindProperty("m_InnerSpotAngle");
                 cookieSize = m_SerializedObject.FindProperty("m_CookieSize");
                 color = m_SerializedObject.FindProperty("m_Color");
                 intensity = m_SerializedObject.FindProperty("m_Intensity");
@@ -297,6 +300,43 @@ namespace UnityEditor
             public void DrawSpotAngle()
             {
                 EditorGUILayout.Slider(spotAngle, 1f, 179f, Styles.SpotAngle);
+            }
+
+            public void DrawInnerAndOuterSpotAngle()
+            {
+                float textFieldWidth = 45f;
+
+                float min = innerSpotAngle.floatValue;
+                float max = spotAngle.floatValue;
+
+                var rect = EditorGUILayout.GetControlRect(true, EditorGUIUtility.singleLineHeight);
+                // This widget is a little bit of a special case.
+                // The right hand side of the min max slider will control the reset of the max value
+                // The left hand side of the min max slider will control the reset of the min value
+                // The label itself will not have a right click and reset value.
+
+                rect = EditorGUI.PrefixLabel(rect, Styles.InnerOuterSpotAngle);
+                EditorGUI.BeginProperty(new Rect(rect) { width = rect.width * 0.5f }, Styles.InnerOuterSpotAngle, innerSpotAngle);
+                EditorGUI.BeginProperty(new Rect(rect) { xMin = rect.x + rect.width * 0.5f }, GUIContent.none, spotAngle);
+
+                var minRect = new Rect(rect) { width = textFieldWidth };
+                var maxRect = new Rect(rect) { xMin = rect.xMax - textFieldWidth };
+                var sliderRect = new Rect(rect) { xMin = minRect.xMax + EditorGUI.kSpacing, xMax = maxRect.xMin - EditorGUI.kSpacing };
+                EditorGUI.DelayedFloatField(minRect,  innerSpotAngle, GUIContent.none);
+
+                EditorGUI.BeginChangeCheck();
+                EditorGUI.MinMaxSlider(sliderRect, ref min, ref max, 0f, 179f);
+
+                if (EditorGUI.EndChangeCheck())
+                {
+                    innerSpotAngle.floatValue = min;
+                    spotAngle.floatValue = max;
+                }
+
+                EditorGUI.DelayedFloatField(maxRect,  spotAngle, GUIContent.none);
+
+                EditorGUI.EndProperty();
+                EditorGUI.EndProperty();
             }
 
             public void DrawArea()

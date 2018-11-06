@@ -5,7 +5,7 @@
 using System;
 using UnityEngine.Bindings;
 
-namespace UnityEngine.StyleSheets
+namespace UnityEngine.UIElements
 {
     [Serializable]
     [VisibleToOtherModules("UnityEngine.UIElementsModule")]
@@ -48,7 +48,7 @@ namespace UnityEngine.StyleSheets
 
         public override string ToString()
         {
-            return string.Format("[StyleSelectorPart: value={0}, type={1}]", value, type);
+            return UnityString.Format("[StyleSelectorPart: value={0}, type={1}]", value, type);
         }
 
         public static StyleSelectorPart CreateClass(string className)

@@ -141,7 +141,7 @@ namespace UnityEditor
             public static readonly GUIContent applicationBuildNumber = EditorGUIUtility.TrTextContent("Build");
             public static readonly GUIContent appleDeveloperTeamID = EditorGUIUtility.TrTextContent("iOS Developer Team ID", "Developers can retrieve their Team ID by visiting the Apple Developer site under Account > Membership.");
             public static readonly GUIContent useOnDemandResources = EditorGUIUtility.TrTextContent("Use on demand resources*");
-            public static readonly GUIContent gcIncremental = EditorGUIUtility.TrTextContent("Use incremental GC (Experimental)");
+            public static readonly GUIContent gcIncremental = EditorGUIUtility.TrTextContent("Use incremental GC (Experimental)", "With incremental Garbage Collection, the Garbage Collector will try to time-slice the collection task into multiple steps, to avoid long GC times preventing content from running smoothly.");
             public static readonly GUIContent accelerometerFrequency = EditorGUIUtility.TrTextContent("Accelerometer Frequency*");
             public static readonly GUIContent cameraUsageDescription = EditorGUIUtility.TrTextContent("Camera Usage Description*", "String shown to the user when requesting permission to use the device camera. Written to the NSCameraUsageDescription field in Xcode project's info.plist file");
             public static readonly GUIContent locationUsageDescription = EditorGUIUtility.TrTextContent("Location Usage Description*", "String shown to the user when requesting permission to access the device location. Written to the NSLocationWhenInUseUsageDescription field in Xcode project's info.plist file.");
@@ -283,8 +283,7 @@ namespace UnityEditor
         SerializedProperty m_DisableInputManager;
 
         SerializedProperty m_AllowUnsafeCode;
-        /* Uncomment this once we want to expose this setting */
-        //SerializedProperty m_GCIncremental;
+        SerializedProperty m_GCIncremental;
 
         // General
         SerializedProperty m_CompanyName;
@@ -442,8 +441,7 @@ namespace UnityEditor
             m_DisableInputManager           = FindPropertyAssert("disableOldInputManagerSupport");
 
             m_AllowUnsafeCode               = FindPropertyAssert("allowUnsafeCode");
-            /* Uncomment this once we want to expose this setting */
-            //m_GCIncremental                 = FindPropertyAssert("gcIncremental");
+            m_GCIncremental                 = FindPropertyAssert("gcIncremental");
 
             m_DefaultScreenWidth            = FindPropertyAssert("defaultScreenWidth");
             m_DefaultScreenHeight           = FindPropertyAssert("defaultScreenHeight");
@@ -2012,17 +2010,17 @@ namespace UnityEditor
                     }
                 }
 
-                /* Uncomment this once we want to expose this setting */
-                /*
-                bool gcIncrementalEnabled = BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", platform.defaultTarget);
+                bool gcIncrementalEnabled = BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", platform.defaultTarget) && PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest;
                 if (targetGroup == BuildTargetGroup.iOS)
-                    gcIncrementalEnabled = gcIncrementalEnabled && PlayerSettings.GetScriptingBackend(targetGroup) == ScriptingImplementation.IL2CPP && PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest;
+                    gcIncrementalEnabled = gcIncrementalEnabled && PlayerSettings.GetScriptingBackend(targetGroup) == ScriptingImplementation.IL2CPP;
 
                 using (new EditorGUI.DisabledScope(!gcIncrementalEnabled))
                 {
-                    EditorGUILayout.PropertyField(m_GCIncremental, SettingsContent.gcIncremental);
+                    if (gcIncrementalEnabled)
+                        EditorGUILayout.PropertyField(m_GCIncremental, SettingsContent.gcIncremental);
+                    else
+                        EditorGUILayout.Toggle(SettingsContent.gcIncremental, false);
                 }
-                */
             }
 
             bool showMobileSection =

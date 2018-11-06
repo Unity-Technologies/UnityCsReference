@@ -6,11 +6,13 @@ using UnityEngine;
 using System.Linq;
 using System;
 using System.Collections.Generic;
-using UnityEditor.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements;
 using UnityEngine.Scripting;
 using UnityEngine.Internal;
 using Unity.Experimental.EditorMode;
+
+using SerializableJsonDictionary = UnityEditor.Experimental.UIElements.SerializableJsonDictionary;
+using ExperimentalVisualElement = UnityEngine.Experimental.UIElements.VisualElement;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -44,7 +46,27 @@ namespace UnityEditor
 
         private readonly Dictionary<Type, VisualElement> m_RootElementPerEditorMode = new Dictionary<Type, VisualElement>();
 
-        internal VisualElement rootVisualContainer
+        //temporary for backward compatibility
+        internal ExperimentalVisualElement m_RootVisualContainer;
+        internal ExperimentalVisualElement rootVisualContainer
+        {
+            get
+            {
+                if (m_RootVisualContainer == null)
+                {
+                    m_RootVisualContainer =  new ExperimentalVisualElement()
+                    {
+                        name = VisualElementUtils.GetUniqueName("rootVisualContainer"),
+                        pickingMode = UnityEngine.Experimental.UIElements.PickingMode.Ignore,     // do not eat events so IMGUI gets them
+                        persistenceKey = name
+                    };
+                    UnityEditor.Experimental.UIElements.UIElementsEditorUtility.AddDefaultEditorStyleSheets(m_RootVisualContainer);
+                }
+                return m_RootVisualContainer;
+            }
+        }
+
+        public VisualElement rootVisualElement
         {
             get
             {
@@ -70,6 +92,11 @@ namespace UnityEditor
             return root;
         }
 
+        internal VisualElement GetRootVisualElementForCurrentMode()
+        {
+            return EditorModes.GetRootElement(this);
+        }
+
         internal void RemoveOverride<TMode>() where TMode : EditorMode
         {
             RemoveOverride(typeof(TMode));
@@ -92,15 +119,15 @@ namespace UnityEditor
             {
                 name = VisualElementUtils.GetUniqueName(name),
                 pickingMode = PickingMode.Ignore, // do not eat events so IMGUI gets them
-                persistenceKey = name
+                viewDataKey = name
             };
-            UIElementsEditorUtility.AddDefaultEditorStyleSheets(root);
+            UIElements.UIElementsEditorUtility.AddDefaultEditorStyleSheets(root);
             return root;
         }
 
         [HideInInspector]
         [SerializeField]
-        private SerializableJsonDictionary m_PersistentViewDataDictionary;
+        private SerializableJsonDictionary m_ViewDataDictionary;
 
         private bool m_EnableViewDataPersistence;
 
@@ -109,21 +136,21 @@ namespace UnityEditor
             get
             {
                 // If persistence is disabled, just don't even create the dictionary. Return null.
-                if (m_EnableViewDataPersistence && m_PersistentViewDataDictionary == null)
+                if (m_EnableViewDataPersistence && m_ViewDataDictionary == null)
                 {
                     string editorPrefFileName = this.GetType().ToString();
-                    m_PersistentViewDataDictionary = EditorWindowPersistentViewData.instance[editorPrefFileName];
+                    m_ViewDataDictionary = UIElements.EditorWindowViewData.instance[editorPrefFileName];
                 }
-                return m_PersistentViewDataDictionary;
+                return m_ViewDataDictionary;
             }
         }
 
-        internal void SavePersistentViewData()
+        internal void SaveViewData()
         {
-            if (m_EnableViewDataPersistence && m_PersistentViewDataDictionary != null)
+            if (m_EnableViewDataPersistence && m_ViewDataDictionary != null)
             {
                 string editorPrefFileName = this.GetType().ToString();
-                EditorWindowPersistentViewData.instance.Save(editorPrefFileName, m_PersistentViewDataDictionary);
+                UIElements.EditorWindowViewData.instance.Save(editorPrefFileName, m_ViewDataDictionary);
             }
         }
 
@@ -141,9 +168,9 @@ namespace UnityEditor
         internal void ClearPersistentViewData()
         {
             string editorPrefFileName = this.GetType().ToString();
-            EditorWindowPersistentViewData.instance.Clear(editorPrefFileName);
-            DestroyImmediate(m_PersistentViewDataDictionary);
-            m_PersistentViewDataDictionary = null;
+            UIElements.EditorWindowViewData.instance.Clear(editorPrefFileName);
+            DestroyImmediate(m_ViewDataDictionary);
+            m_ViewDataDictionary = null;
         }
 
         // The GameView rect is in GUI space of the view
@@ -637,9 +664,26 @@ namespace UnityEditor
         {
             ShowWithMode(ShowMode.AuxWindow);
             SavedGUIState guiState = SavedGUIState.Create();
-            m_Parent.visualTree.panel.dispatcher?.PushDispatcherContext();
+
+            if (m_Parent.uieMode == GUIView.UIElementsMode.Public)
+            {
+                m_Parent.visualTree.panel.dispatcher?.PushDispatcherContext();
+            }
+            else if (m_Parent.uieMode == GUIView.UIElementsMode.Experimental)
+            {
+                m_Parent.experimentalVisualTree.panel.dispatcher?.PushDispatcherContext();
+            }
             MakeModal(m_Parent.window);
-            m_Parent.visualTree.panel.dispatcher?.PopDispatcherContext();
+
+            if (m_Parent.uieMode == GUIView.UIElementsMode.Public)
+            {
+                m_Parent.visualTree.panel.dispatcher?.PopDispatcherContext();
+            }
+            else if (m_Parent.uieMode == GUIView.UIElementsMode.Experimental)
+            {
+                m_Parent.experimentalVisualTree.panel.dispatcher?.PushDispatcherContext();
+            }
+
             guiState.ApplyAndForget();
         }
 
@@ -1119,22 +1163,34 @@ namespace UnityEditor
     {
         public static class UIElementsEntryPoint
         {
-            public static VisualElement GetRootVisualContainer(this EditorWindow window)
+            public static ExperimentalVisualElement GetRootVisualContainer(this EditorWindow window)
             {
-                return window.rootVisualContainer;
+                var result = window.rootVisualContainer;
+
+                //this nasty code is temporary, thank god!
+                if (result.panel == null && window.m_Parent != null && window.m_Parent.actualView == window)
+                {
+                    window.m_Parent.RegisterExperimentalUIElementWindow();
+                }
+
+                return result;
             }
 
-            // Returns the default one if the EditorMode doesn't override it.
-            internal static VisualElement GetRootVisualContainer<TMode>(this EditorWindow window) where TMode : EditorMode
+            public static void SetAntiAliasing(this EditorWindow window, int aa)
             {
-                return window.GetRootElement<TMode>(false);
+                window.antiAliasing = aa;
             }
 
-            internal static VisualElement GetRootVisualContainerForCurrentMode(this EditorWindow window)
+            public static int GetAntiAliasing(this EditorWindow window)
             {
-                return EditorModes.GetRootElement(window);
+                return window.antiAliasing;
             }
-
+        }
+    }
+    namespace UIElements
+    {
+        public static class UIElementsEntryPoint
+        {
             public static void SetAntiAliasing(this EditorWindow window, int aa)
             {
                 window.antiAliasing = aa;

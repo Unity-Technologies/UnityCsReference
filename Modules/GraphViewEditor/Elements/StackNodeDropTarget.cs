@@ -6,11 +6,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
-using UnityEngine.Experimental.UIElements.StyleSheets;
+using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     public partial class StackNode : IDropTarget
     {
@@ -26,9 +25,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         private List<ValueAnimation<Rect>> m_AddAnimations;
         private List<ValueAnimation<Rect>> m_RemoveAnimations;
-        private StyleValue<int> m_AnimationDuration;
-        private const string k_AnimationDuration = "animation-duration";
-        private int animationDuration => m_AnimationDuration.GetSpecifiedValueOrDefault(40);
+        private int m_AnimationDuration = 40;
+        private static CustomStyleProperty<int> s_AnimationDuration = new CustomStyleProperty<int>("--animation-duration");
+        private int animationDuration => m_AnimationDuration;
 
         private List<GraphElement> m_DraggedElements;
 
@@ -57,7 +56,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             VisualElement preview = dropPreviewTemplate(element);
             preview.Add(new Label(element.title));
             preview.AddToClassList(k_PreviewClass);
-            preview.style.positionType = PositionType.Relative;
             return preview;
         }
 
@@ -86,7 +84,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                 foreach (VisualElement preview in m_CurrentPreviews)
                 {
-                    Rect startRect = new Rect(Vector2.zero, preview.layout.size);
+                    Vector2 size = new Vector2(preview.style.width.value.value, preview.style.height.value.value);
+                    Rect startRect = new Rect(Vector2.zero, size);
                     Rect endRect = startRect;
 
                     startRect.height = 0f;
@@ -106,7 +105,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 foreach (VisualElement currentPreview in m_CurrentPreviews)
                 {
-                    currentPreview.style.positionType = PositionType.Relative;
+                    currentPreview.style.position = Position.Relative;
                 }
             }
         }
@@ -175,8 +174,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             if (preview != null)
             {
-                preview.layout = layout;
-                preview.style.positionType = PositionType.Relative;
+                preview.style.width = layout.width;
+                preview.style.height = layout.height;
             }
         }
 
@@ -258,8 +257,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                         : draggedElement.layout.width;
                 }
 
-                preview.layout = new Rect(0, 0, previewWidth, draggedElement.layout.height + separatorHeight);
-
+                preview.style.width = previewWidth;
+                preview.style.height = draggedElement.layout.height + separatorHeight;
                 previews.Add(preview);
             }
 

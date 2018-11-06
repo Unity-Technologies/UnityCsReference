@@ -5,28 +5,27 @@
 using System;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEditor.Experimental.UIElements;
+using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     public class InspectorElement : BindableElement
     {
-        private static readonly string s_InspectorClassName = "unity-inspector-element";
-        private static readonly string s_CustomInspectorClassName = "unity-inspector-element__custom-inspector-container";
-        private static readonly string s_IMGUIContainerClassName = "unity-inspector-element__imgui-container";
+        public static readonly string ussClassName = "unity-inspector-element";
+        public static readonly string customInspectorUssClassName = ussClassName + "__custom-inspector-container";
+        public static readonly string iMGUIContainerUssClassName = ussClassName + "__imgui-container";
 
-        private static readonly string s_IMGUIInspectorClassName = "unity-inspector-element--imgui";
-        private static readonly string s_UIEInspectorClassName = "unity-inspector-element--uie";
+        public static readonly string iMGUIInspectorVariantUssClassName = ussClassName + "--imgui";
+        public static readonly string uIEInspectorVariantUssClassName = ussClassName + "--uie";
 
-        private static readonly string s_NoInspectorFoundClassName = "unity-inspector-element--no-inspector-found";
-        private static readonly string s_UIECustomFoundClassName = "unity-inspector-element--uie-custom";
-        private static readonly string s_IMGUICustomFoundClassName = "unity-inspector-element--imgui-custom";
-        private static readonly string s_IMGUIDefaultFoundClassName = "unity-inspector-element--imgui-default";
-        private static readonly string s_UIEDefaultFoundClassName = "unity-inspector-element--uie-default";
-        private static readonly string s_DebugModeClassName = "unity-inspector-element--debug";
-        private static readonly string s_DebugInternalModeClassName = "unity-inspector-element--debug-internal";
+        public static readonly string noInspectorFoundVariantUssClassName = ussClassName + "--no-inspector-found";
+        public static readonly string uIECustomVariantUssClassName = ussClassName + "--uie-custom";
+        public static readonly string iMGUICustomVariantUssClassName = ussClassName + "--imgui-custom";
+        public static readonly string iMGUIDefaultVariantUssClassName = ussClassName + "--imgui-default";
+        public static readonly string uIEDefaultVariantUssClassName = ussClassName + "--uie-default";
+        public static readonly string debugVariantUssClassName = ussClassName + "--debug";
+        public static readonly string debugInternalVariantUssClassName = ussClassName + "--debug-internal";
 
         public new class UxmlFactory : UxmlFactory<InspectorElement, UxmlTraits> {}
 
@@ -59,7 +58,7 @@ namespace UnityEditor.Experimental.UIElements
 
         internal InspectorElement(Object obj, Mode mode)
         {
-            AddToClassList(s_InspectorClassName);
+            AddToClassList(ussClassName);
 
             this.mode = mode;
 
@@ -73,15 +72,15 @@ namespace UnityEditor.Experimental.UIElements
         {
             Clear();
 
-            RemoveFromClassList(s_IMGUIInspectorClassName);
-            RemoveFromClassList(s_UIEInspectorClassName);
-            RemoveFromClassList(s_NoInspectorFoundClassName);
-            RemoveFromClassList(s_UIECustomFoundClassName);
-            RemoveFromClassList(s_IMGUICustomFoundClassName);
-            RemoveFromClassList(s_IMGUIDefaultFoundClassName);
-            RemoveFromClassList(s_UIEDefaultFoundClassName);
-            RemoveFromClassList(s_DebugModeClassName);
-            RemoveFromClassList(s_DebugInternalModeClassName);
+            RemoveFromClassList(iMGUIInspectorVariantUssClassName);
+            RemoveFromClassList(uIEInspectorVariantUssClassName);
+            RemoveFromClassList(noInspectorFoundVariantUssClassName);
+            RemoveFromClassList(uIECustomVariantUssClassName);
+            RemoveFromClassList(iMGUICustomVariantUssClassName);
+            RemoveFromClassList(iMGUIDefaultVariantUssClassName);
+            RemoveFromClassList(uIEDefaultVariantUssClassName);
+            RemoveFromClassList(debugVariantUssClassName);
+            RemoveFromClassList(debugInternalVariantUssClassName);
 
             var bindObject = evt.bindObject;
             if (bindObject == null)
@@ -91,7 +90,7 @@ namespace UnityEditor.Experimental.UIElements
             var customInspector = CreateInspectorElementFromEditor(bindObject, customEditor);
 
             if (customInspector != this)
-                shadow.Add(customInspector);
+                hierarchy.Add(customInspector);
         }
 
         protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
@@ -153,13 +152,13 @@ namespace UnityEditor.Experimental.UIElements
                 {
                     var field = new PropertyField(property);
                     field.name = "PropertyField:" + property.propertyPath;
-                    shadow.Add(field);
+                    hierarchy.Add(field);
                 }
                 while (property.NextVisible(false));
             }
 
-            AddToClassList(s_UIEDefaultFoundClassName);
-            AddToClassList(s_UIEInspectorClassName);
+            AddToClassList(uIEDefaultVariantUssClassName);
+            AddToClassList(uIEInspectorVariantUssClassName);
 
             return this;
         }
@@ -181,21 +180,21 @@ namespace UnityEditor.Experimental.UIElements
 
             if (editor is GenericInspector)
             {
-                AddToClassList(s_IMGUIDefaultFoundClassName);
+                AddToClassList(iMGUIDefaultVariantUssClassName);
                 if ((mode & Mode.DebugMod) > 0)
                 {
-                    AddToClassList(s_DebugModeClassName);
+                    AddToClassList(debugVariantUssClassName);
                     editor.m_InspectorMode = InspectorMode.Debug;
                 }
                 else if ((mode & Mode.DebugInternalMod) > 0)
                 {
-                    AddToClassList(s_DebugInternalModeClassName);
+                    AddToClassList(debugInternalVariantUssClassName);
                     editor.m_InspectorMode = InspectorMode.DebugInternal;
                 }
             }
             else
             {
-                AddToClassList(s_IMGUICustomFoundClassName);
+                AddToClassList(iMGUICustomVariantUssClassName);
             }
 
             var inspector = new IMGUIContainer(() =>
@@ -221,11 +220,11 @@ namespace UnityEditor.Experimental.UIElements
             });
 
             if (!(editor is GenericInspector))
-                inspector.AddToClassList(s_CustomInspectorClassName);
+                inspector.AddToClassList(customInspectorUssClassName);
 
-            inspector.AddToClassList(s_IMGUIContainerClassName);
+            inspector.AddToClassList(iMGUIContainerUssClassName);
 
-            AddToClassList(s_IMGUIInspectorClassName);
+            AddToClassList(iMGUIInspectorVariantUssClassName);
 
             return inspector;
         }
@@ -240,12 +239,12 @@ namespace UnityEditor.Experimental.UIElements
 
             if ((mode & Mode.UIECustom) > 0)
             {
-                inspectorElement = (editor as UIElementsEditor)?.CreateInspectorGUI();
+                inspectorElement = (editor as UnityEditor.Experimental.UIElementsEditor)?.CreateInspectorGUI();
                 if (inspectorElement != null)
                 {
-                    AddToClassList(s_UIECustomFoundClassName);
-                    AddToClassList(s_UIEInspectorClassName);
-                    inspectorElement.AddToClassList(s_CustomInspectorClassName);
+                    AddToClassList(uIECustomVariantUssClassName);
+                    AddToClassList(uIEInspectorVariantUssClassName);
+                    inspectorElement.AddToClassList(customInspectorUssClassName);
                 }
             }
 
@@ -257,8 +256,8 @@ namespace UnityEditor.Experimental.UIElements
 
             if (inspectorElement == null)
             {
-                AddToClassList(s_NoInspectorFoundClassName);
-                AddToClassList(s_UIEInspectorClassName);
+                AddToClassList(noInspectorFoundVariantUssClassName);
+                AddToClassList(uIEInspectorVariantUssClassName);
                 inspectorElement = new Label("No inspector found given the current Inspector.Mode.");
             }
 

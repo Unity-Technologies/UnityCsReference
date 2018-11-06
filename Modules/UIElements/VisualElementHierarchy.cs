@@ -6,36 +6,26 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine.Experimental.UIElements.StyleEnums;
-using UnityEngine.Experimental.UIElements.StyleSheets;
-using UnityEngine.StyleSheets;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
-    public partial class VisualElement : IEnumerable<VisualElement>
+    public partial class VisualElement
     {
-        public Hierarchy shadow
+        public Hierarchy hierarchy
         {
             get; private set;
         }
 
-        public enum ClippingOptions
-        {
-            ClipContents, // default value, content of this element and its children will be clipped
-            NoClipping, // no clipping
-            ClipAndCacheContents // Renders contents to an cache texture
-        }
+        bool m_CacheAsBitmap = false;
 
-        ClippingOptions m_ClippingOptions = ClippingOptions.NoClipping;
-
-        public ClippingOptions clippingOptions
+        public bool cacheAsBitmap
         {
-            get { return m_ClippingOptions; }
+            get { return m_CacheAsBitmap; }
             set
             {
-                if (m_ClippingOptions != value)
+                if (m_CacheAsBitmap != value)
                 {
-                    m_ClippingOptions = value;
+                    m_CacheAsBitmap = value;
                     IncrementVersion(VersionChangeType.Repaint);
                 }
             }
@@ -43,7 +33,7 @@ namespace UnityEngine.Experimental.UIElements
 
         internal bool ShouldClip()
         {
-            return style.overflow != Overflow.Visible || clippingOptions != ClippingOptions.NoClipping;
+            return computedStyle.overflow.value != Overflow.Visible;
         }
 
         // parent in visual tree
@@ -79,9 +69,14 @@ namespace UnityEngine.Experimental.UIElements
         // IVisualElementHierarchy container
         public void Add(VisualElement child)
         {
+            if (child == null)
+            {
+                return;
+            }
+
             if (contentContainer == this)
             {
-                shadow.Add(child);
+                hierarchy.Add(child);
             }
             else
             {
@@ -93,9 +88,14 @@ namespace UnityEngine.Experimental.UIElements
 
         public void Insert(int index, VisualElement element)
         {
+            if (element == null)
+            {
+                return;
+            }
+
             if (contentContainer == this)
             {
-                shadow.Insert(index, element);
+                hierarchy.Insert(index, element);
             }
             else
             {
@@ -109,7 +109,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (contentContainer == this)
             {
-                shadow.Remove(element);
+                hierarchy.Remove(element);
             }
             else
             {
@@ -121,7 +121,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (contentContainer == this)
             {
-                shadow.RemoveAt(index);
+                hierarchy.RemoveAt(index);
             }
             else
             {
@@ -133,7 +133,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (contentContainer == this)
             {
-                shadow.Clear();
+                hierarchy.Clear();
             }
             else
             {
@@ -145,7 +145,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (contentContainer == this)
             {
-                return shadow.ElementAt(index);
+                return hierarchy.ElementAt(index);
             }
 
             return contentContainer?.ElementAt(index);
@@ -162,7 +162,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 if (contentContainer == this)
                 {
-                    return shadow.childCount;
+                    return hierarchy.childCount;
                 }
                 return contentContainer?.childCount ?? 0;
             }
@@ -172,7 +172,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (contentContainer == this)
             {
-                return shadow.IndexOf(element);
+                return hierarchy.IndexOf(element);
             }
             return contentContainer?.IndexOf(element) ?? -1;
         }
@@ -181,7 +181,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (contentContainer == this)
             {
-                return shadow.Children();
+                return hierarchy.Children();
             }
             return contentContainer?.Children() ?? s_EmptyList;
         }
@@ -190,7 +190,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (contentContainer == this)
             {
-                shadow.Sort(comp);
+                hierarchy.Sort(comp);
             }
             else
             {
@@ -200,38 +200,48 @@ namespace UnityEngine.Experimental.UIElements
 
         public void BringToFront()
         {
-            if (shadow.parent == null)
+            if (hierarchy.parent == null)
                 return;
 
-            shadow.parent.shadow.BringToFront(this);
+            hierarchy.parent.hierarchy.BringToFront(this);
         }
 
         public void SendToBack()
         {
-            if (shadow.parent == null)
+            if (hierarchy.parent == null)
                 return;
 
-            shadow.parent.shadow.SendToBack(this);
+            hierarchy.parent.hierarchy.SendToBack(this);
         }
 
         public void PlaceBehind(VisualElement sibling)
         {
-            if (shadow.parent == null || sibling.shadow.parent != shadow.parent)
+            if (sibling == null)
+            {
+                throw new ArgumentNullException(nameof(sibling));
+            }
+
+            if (hierarchy.parent == null || sibling.hierarchy.parent != hierarchy.parent)
             {
                 throw new ArgumentException("VisualElements are not siblings");
             }
 
-            shadow.parent.shadow.PlaceBehind(this, sibling);
+            hierarchy.parent.hierarchy.PlaceBehind(this, sibling);
         }
 
         public void PlaceInFront(VisualElement sibling)
         {
-            if (shadow.parent == null || sibling.shadow.parent != shadow.parent)
+            if (sibling == null)
+            {
+                throw new ArgumentNullException(nameof(sibling));
+            }
+
+            if (hierarchy.parent == null || sibling.hierarchy.parent != hierarchy.parent)
             {
                 throw new ArgumentException("VisualElements are not siblings");
             }
 
-            shadow.parent.shadow.PlaceInFront(this, sibling);
+            hierarchy.parent.hierarchy.PlaceInFront(this, sibling);
         }
 
         public struct Hierarchy
@@ -262,14 +272,14 @@ namespace UnityEngine.Experimental.UIElements
                     throw new ArgumentException("Cannot insert null child");
 
                 if (index > childCount)
-                    throw new IndexOutOfRangeException("Index out of range: " + index);
+                    throw new ArgumentOutOfRangeException("Index out of range: " + index);
 
                 if (child == m_Owner)
                     throw new ArgumentException("Cannot insert element as its own child");
 
                 child.RemoveFromHierarchy();
 
-                child.shadow.SetParent(m_Owner);
+                child.hierarchy.SetParent(m_Owner);
                 if (m_Owner.m_Children == null)
                 {
                     //TODO: Trigger a release on finalizer or something, this means we'll need to make the pool thread-safe as well
@@ -294,7 +304,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (child == null)
                     throw new ArgumentException("Cannot remove null child");
 
-                if (child.shadow.parent != m_Owner)
+                if (child.hierarchy.parent != m_Owner)
                     throw new ArgumentException("This visualElement is not my child");
 
                 if (m_Owner.m_Children != null)
@@ -307,12 +317,12 @@ namespace UnityEngine.Experimental.UIElements
             public void RemoveAt(int index)
             {
                 if (index < 0 || index >= childCount)
-                    throw new IndexOutOfRangeException("Index out of range: " + index);
+                    throw new ArgumentOutOfRangeException("Index out of range: " + index);
 
                 var child = m_Owner.m_Children[index];
                 RemoveChildAtIndex(index);
 
-                child.shadow.SetParent(null);
+                child.hierarchy.SetParent(null);
 
                 if (childCount == 0)
                 {
@@ -334,7 +344,7 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     foreach (VisualElement e in m_Owner.m_Children)
                     {
-                        e.shadow.SetParent(null);
+                        e.hierarchy.SetParent(null);
                         e.m_LogicalParent = null;
                         m_Owner.elementPanel?.OnVersionChanged(e, VersionChangeType.Hierarchy);
                     }
@@ -446,7 +456,7 @@ namespace UnityEngine.Experimental.UIElements
                     return m_Owner.m_Children[index];
                 }
 
-                throw new IndexOutOfRangeException("Index out of range: " + index);
+                throw new ArgumentOutOfRangeException("Index out of range: " + index);
             }
 
             public IEnumerable<VisualElement> Children()
@@ -518,6 +528,32 @@ namespace UnityEngine.Experimental.UIElements
                     VisualElementListPool.Release(children);
                 }
             }
+
+            public bool Equals(Hierarchy other)
+            {
+                return other == this;
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) return false;
+                return obj is Hierarchy && Equals((Hierarchy)obj);
+            }
+
+            public override int GetHashCode()
+            {
+                return (m_Owner != null ? m_Owner.GetHashCode() : 0);
+            }
+
+            public static bool operator==(Hierarchy x, Hierarchy y)
+            {
+                return ReferenceEquals(x.m_Owner, y.m_Owner);
+            }
+
+            public static bool operator!=(Hierarchy x, Hierarchy y)
+            {
+                return !(x == y);
+            }
         }
 
         /// <summary>
@@ -525,9 +561,9 @@ namespace UnityEngine.Experimental.UIElements
         /// </summary>
         public void RemoveFromHierarchy()
         {
-            if (shadow.parent != null)
+            if (hierarchy.parent != null)
             {
-                shadow.parent.shadow.Remove(this);
+                hierarchy.parent.hierarchy.Remove(this);
             }
         }
 
@@ -541,7 +577,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public T GetFirstAncestorOfType<T>() where T : class
         {
-            VisualElement ancestor = shadow.parent;
+            VisualElement ancestor = hierarchy.parent;
             while (ancestor != null)
             {
                 T castedAncestor = ancestor as T;
@@ -549,7 +585,7 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     return castedAncestor;
                 }
-                ancestor = ancestor.shadow.parent;
+                ancestor = ancestor.hierarchy.parent;
             }
             return null;
         }
@@ -558,12 +594,12 @@ namespace UnityEngine.Experimental.UIElements
         {
             while (child != null)
             {
-                if (child.shadow.parent == this)
+                if (child.hierarchy.parent == this)
                 {
                     return true;
                 }
 
-                child = child.shadow.parent;
+                child = child.hierarchy.parent;
             }
 
             return false;
@@ -592,6 +628,11 @@ namespace UnityEngine.Experimental.UIElements
 
         public VisualElement FindCommonAncestor(VisualElement other)
         {
+            if (other == null)
+            {
+                throw new ArgumentNullException(nameof(other));
+            }
+
             if (panel != other.panel)
             {
                 return null;
@@ -603,7 +644,7 @@ namespace UnityEngine.Experimental.UIElements
             while (thisSide != null)
             {
                 thisDepth++;
-                thisSide = thisSide.shadow.parent;
+                thisSide = thisSide.hierarchy.parent;
             }
 
             VisualElement otherSide = other;
@@ -611,7 +652,7 @@ namespace UnityEngine.Experimental.UIElements
             while (otherSide != null)
             {
                 otherDepth++;
-                otherSide = otherSide.shadow.parent;
+                otherSide = otherSide.hierarchy.parent;
             }
 
             //we reset
@@ -622,62 +663,23 @@ namespace UnityEngine.Experimental.UIElements
             while (thisDepth > otherDepth)
             {
                 thisDepth--;
-                thisSide = thisSide.shadow.parent;
+                thisSide = thisSide.hierarchy.parent;
             }
 
             while (otherDepth > thisDepth)
             {
                 otherDepth--;
-                otherSide = otherSide.shadow.parent;
+                otherSide = otherSide.hierarchy.parent;
             }
 
             // Now both are at the same depth, We then walk up the tree we hit the same element
             while (thisSide != otherSide)
             {
-                thisSide = thisSide.shadow.parent;
-                otherSide = otherSide.shadow.parent;
+                thisSide = thisSide.hierarchy.parent;
+                otherSide = otherSide.hierarchy.parent;
             }
 
             return thisSide;
-        }
-
-        public IEnumerator<VisualElement> GetEnumerator()
-        {
-            if (contentContainer == this)
-            {
-                return shadow.Children().GetEnumerator();
-            }
-
-            IEnumerator<VisualElement> result;
-            if (contentContainer != null)
-            {
-                result = contentContainer.GetEnumerator();
-            }
-            else
-            {
-                result = (IEnumerator<VisualElement>)s_EmptyList.GetEnumerator();
-            }
-            return result;
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            if (contentContainer == this)
-            {
-                return ((IEnumerable)shadow.Children()).GetEnumerator();
-            }
-
-            IEnumerator result;
-            if (contentContainer != null)
-            {
-                result = ((IEnumerable)contentContainer).GetEnumerator();
-            }
-            else
-            {
-                result = s_EmptyList.GetEnumerator();
-            }
-
-            return result;
         }
     }
 }

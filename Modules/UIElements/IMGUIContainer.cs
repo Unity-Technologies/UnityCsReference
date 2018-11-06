@@ -5,9 +5,9 @@
 using System;
 using System.Collections.Generic;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
-    public class IMGUIContainer : VisualElement
+    public class IMGUIContainer : VisualElement, IDisposable
     {
         public new class UxmlFactory : UxmlFactory<IMGUIContainer, UxmlTraits> {}
 
@@ -15,7 +15,8 @@ namespace UnityEngine.Experimental.UIElements
         {
             public UxmlTraits()
             {
-                m_FocusIndex.defaultValue = 0;
+                focusIndex.defaultValue = 0;
+                focusable.defaultValue = true;
             }
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -81,21 +82,25 @@ namespace UnityEngine.Experimental.UIElements
             get { return base.canGrabFocus && hasFocusableControls; }
         }
 
+        public static readonly string ussClassName = "unity-imgui-container";
+
         public IMGUIContainer()
             : this(null) {}
 
         public IMGUIContainer(Action onGUIHandler)
         {
+            AddToClassList(ussClassName);
+
             m_OnGUIHandler = onGUIHandler;
             contextType = ContextType.Editor;
-            focusIndex = 0;
+            focusable = true;
 
             requireMeasureFunction = true;
 
-            style.overflow = StyleEnums.Overflow.Hidden;
+            style.overflow = Overflow.Hidden;
         }
 
-        protected override void DoRepaint(IStylePainter painter)
+        internal override void DoRepaint(IStylePainter painter)
         {
             lastWorldClip = elementPanel.repaintData.currentWorldClip;
             var stylePainter = (IStylePainterInternal)painter;
@@ -387,7 +392,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             base.HandleEvent(evt);
 
-            if (evt.propagationPhase == PropagationPhase.DefaultAction)
+            if (evt == null || evt.propagationPhase == PropagationPhase.DefaultAction)
             {
                 return;
             }
@@ -444,9 +449,11 @@ namespace UnityEngine.Experimental.UIElements
             if (newKeyboardFocusControlID > 0)
             {
                 newKeyboardFocusControlID = 0;
-                Event focusCommand = new Event();
-                focusCommand.type = EventType.ExecuteCommand;
-                focusCommand.commandName = EventCommandNames.NewKeyboardFocus;
+                Event focusCommand = new Event
+                {
+                    type = EventType.ExecuteCommand,
+                    commandName = EventCommandNames.NewKeyboardFocus
+                };
 
                 HandleIMGUIEvent(focusCommand);
             }
@@ -479,6 +486,11 @@ namespace UnityEngine.Experimental.UIElements
 
         protected internal override void ExecuteDefaultAction(EventBase evt)
         {
+            if (evt == null)
+            {
+                return;
+            }
+
             // no call to base.ExecuteDefaultAction(evt):
             // - we dont want mouse click to directly give focus to IMGUIContainer:
             //   they should be handled by IMGUI and if an IMGUI control grabs the
@@ -488,26 +500,26 @@ namespace UnityEngine.Experimental.UIElements
             //   They are focusable, but only for the purpose of focusing their children.
 
             // Here, we set flags that will be acted upon in DoOnGUI(), since we need to change IMGUI state.
-            if (evt.GetEventTypeId() == BlurEvent.TypeId())
+            if (evt.eventTypeId == BlurEvent.TypeId())
             {
                 // A lost focus event is ... a lost focus event.
                 // The specific handling of the IMGUI will be done in the DoOnGUI() above...
                 lostFocus = true;
             }
-            else if (evt.GetEventTypeId() == FocusEvent.TypeId())
+            else if (evt.eventTypeId == FocusEvent.TypeId())
             {
                 FocusEvent fe = evt as FocusEvent;
                 receivedFocus = true;
                 focusChangeDirection = fe.direction;
             }
-            else if (evt.GetEventTypeId() == DetachFromPanelEvent.TypeId())
+            else if (evt.eventTypeId == DetachFromPanelEvent.TypeId())
             {
                 if (elementPanel != null)
                 {
                     elementPanel.IMGUIContainersCount--;
                 }
             }
-            else if (evt.GetEventTypeId() == AttachToPanelEvent.TypeId())
+            else if (evt.eventTypeId == AttachToPanelEvent.TypeId())
             {
                 if (elementPanel != null)
                 {
@@ -574,6 +586,20 @@ namespace UnityEngine.Experimental.UIElements
                 // during repaint, we must use in case the current transform is not relative to Panel
                 // this is to account for the pixel caching feature
                 transform =  container.elementPanel.repaintData.currentOffset * container.worldTransform;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposeManaged)
+        {
+            if (disposeManaged)
+            {
+                m_ObjectGUIState?.Dispose();
             }
         }
     }

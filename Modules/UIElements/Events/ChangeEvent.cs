@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public interface IChangeEvent
     {
@@ -16,7 +16,12 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.Bubbles | EventFlags.TricklesDown;
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown;
             previousValue = default(T);
             newValue = default(T);
         }
@@ -31,7 +36,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public ChangeEvent()
         {
-            Init();
+            LocalInit();
         }
     }
 }

@@ -53,7 +53,7 @@ namespace UnityEditor
         {
             string str = "Measured execution times:\n----------------------------\n";
             foreach (KeyValuePair<string, float> kvp in m_Timers)
-                str += string.Format("{0,6:0.0} ms: {1} in {2} calls\n", kvp.Value * 1000, kvp.Key, m_Calls[kvp.Key]);
+                str += UnityString.Format("{0,6:0.0} ms: {1} in {2} calls\n", kvp.Value * 1000, kvp.Key, m_Calls[kvp.Key]);
             Debug.Log(str);
             m_Names.Clear();
             m_StartTime.Clear();

@@ -6,9 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     public class LayerMaskField : MaskField
     {
@@ -21,7 +21,11 @@ namespace UnityEditor.Experimental.UIElements
             get { return null; }
             set
             {
-                Debug.LogWarning(L10n.Tr("LayerMaskField doesn't support the formatting of the selected value."));
+                if (value != null)
+                {
+                    Debug.LogWarning(L10n.Tr("LayerMaskField doesn't support the formatting of the selected value."));
+                }
+
                 m_FormatSelectedValueCallback = null;
             }
         }
@@ -31,7 +35,11 @@ namespace UnityEditor.Experimental.UIElements
             get { return null; }
             set
             {
-                Debug.LogWarning(L10n.Tr("LayerMaskField doesn't support the formatting of the list items."));
+                if (value != null)
+                {
+                    Debug.LogWarning(L10n.Tr("LayerMaskField doesn't support the formatting of the list items."));
+                }
+
                 m_FormatListItemCallback = null;
             }
         }
@@ -48,13 +56,25 @@ namespace UnityEditor.Experimental.UIElements
             choicesMasks = new List<int>(layerValues);
         }
 
-        public LayerMaskField(int defaultMask) : this()
+        public new static readonly string ussClassName = "unity-layer-mask-field";
+
+        public LayerMaskField(int defaultMask)
+            : this(null, defaultMask) {}
+
+        public LayerMaskField(string label, int defaultMask)
+            : this(label)
         {
             SetValueWithoutNotify(defaultMask);
         }
 
         public LayerMaskField()
+            : this(null) {}
+
+
+        public LayerMaskField(string label)
+            : base(label)
         {
+            AddToClassList(ussClassName);
             UpdateLayersInfo();
         }
 

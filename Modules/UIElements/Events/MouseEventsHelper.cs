@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     struct MousePositionTracker
     {
@@ -40,7 +40,7 @@ namespace UnityEngine.Experimental.UIElements
             while (p != null)
             {
                 prevDepth++;
-                p = p.shadow.parent;
+                p = p.hierarchy.parent;
             }
 
             int currDepth = 0;
@@ -48,7 +48,7 @@ namespace UnityEngine.Experimental.UIElements
             while (c != null)
             {
                 currDepth++;
-                c = c.shadow.parent;
+                c = c.hierarchy.parent;
             }
 
             p = previousTopElementUnderMouse;
@@ -63,7 +63,7 @@ namespace UnityEngine.Experimental.UIElements
                 }
 
                 prevDepth--;
-                p = p.shadow.parent;
+                p = p.hierarchy.parent;
             }
 
             // We want to send enter events after all the leave events.
@@ -75,7 +75,7 @@ namespace UnityEngine.Experimental.UIElements
                 enteringElements.Add(c);
 
                 currDepth--;
-                c = c.shadow.parent;
+                c = c.hierarchy.parent;
             }
 
             // Now p and c are at the same depth. Go up the tree until p == c.
@@ -89,8 +89,8 @@ namespace UnityEngine.Experimental.UIElements
 
                 enteringElements.Add(c);
 
-                p = p.shadow.parent;
-                c = c.shadow.parent;
+                p = p.hierarchy.parent;
+                c = c.hierarchy.parent;
             }
 
             for (var i = enteringElements.Count - 1; i >= 0; i--)

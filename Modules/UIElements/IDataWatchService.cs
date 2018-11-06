@@ -4,9 +4,9 @@
 
 using System;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
-    public interface IDataWatchHandle : IDisposable
+    internal interface IDataWatchHandle : IDisposable
     {
         Object watched { get; }
         bool disposed { get; }

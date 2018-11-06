@@ -6,10 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     public class SelectionDragger : Dragger
     {
@@ -123,15 +122,15 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
 
             EventBase e = evt as EventBase;
-            if (e.GetEventTypeId() == DragExitedEvent.TypeId())
+            if (e.eventTypeId == DragExitedEvent.TypeId())
             {
                 dropTarget.DragExited();
             }
-            else if (e.GetEventTypeId() == DragEnterEvent.TypeId())
+            else if (e.eventTypeId == DragEnterEvent.TypeId())
             {
                 dropTarget.DragEnter(evt as DragEnterEvent, selection, dropTarget, dragSource);
             }
-            else if (e.GetEventTypeId() == DragLeaveEvent.TypeId())
+            else if (e.eventTypeId == DragLeaveEvent.TypeId())
             {
                 dropTarget.DragLeave(evt as DragLeaveEvent, selection, dropTarget, dragSource);
             }
@@ -141,11 +140,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 return;
             }
 
-            if (e.GetEventTypeId() == DragPerformEvent.TypeId())
+            if (e.eventTypeId == DragPerformEvent.TypeId())
             {
                 dropTarget.DragPerform(evt as DragPerformEvent, selection, dropTarget, dragSource);
             }
-            else if (e.GetEventTypeId() == DragUpdatedEvent.TypeId())
+            else if (e.eventTypeId == DragUpdatedEvent.TypeId())
             {
                 dropTarget.DragUpdated(evt as DragUpdatedEvent, selection, dropTarget, dragSource);
             }
@@ -230,7 +229,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     }
 
                     Rect geometry = ce.GetPosition();
-                    Rect geometryInContentViewSpace = ce.shadow.parent.ChangeCoordinatesTo(m_GraphView.contentViewContainer, geometry);
+                    Rect geometryInContentViewSpace = ce.hierarchy.parent.ChangeCoordinatesTo(m_GraphView.contentViewContainer, geometry);
                     m_OriginalPos[ce] = new OriginalPos
                     {
                         pos = geometryInContentViewSpace,
@@ -318,7 +317,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 GraphElement ce = v.Key;
 
                 // Protect against stale visual elements that have been deparented since the start of the manipulation
-                if (ce.shadow.parent == null)
+                if (ce.hierarchy.parent == null)
                     continue;
 
                 if (!v.Value.dragStarted)
@@ -411,7 +410,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             newPost.x = originalPos.x - (m_MouseDiff.x - m_ItemPanDiff.x) * panSpeed.x / scale.x * element.transform.scale.x;
             newPost.y = originalPos.y - (m_MouseDiff.y - m_ItemPanDiff.y) * panSpeed.y / scale.y * element.transform.scale.y;
 
-            element.SetPosition(m_GraphView.contentViewContainer.ChangeCoordinatesTo(element.shadow.parent, newPost));
+            element.SetPosition(m_GraphView.contentViewContainer.ChangeCoordinatesTo(element.hierarchy.parent, newPost));
         }
 
         protected new void OnMouseUp(MouseUpEvent evt)

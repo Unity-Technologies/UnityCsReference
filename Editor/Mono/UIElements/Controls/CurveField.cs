@@ -5,11 +5,11 @@
 using System;
 using UnityEngine;
 using UnityEditorInternal;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleSheets;
+using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 using Object = UnityEngine.Object;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     public class CurveField : BaseField<AnimationCurve>
     {
@@ -17,16 +17,17 @@ namespace UnityEditor.Experimental.UIElements
 
         public new class UxmlTraits : BaseField<AnimationCurve>.UxmlTraits {}
 
-        private const string k_CurveColorProperty = "curve-color";
+        public new static readonly string ussClassName = "unity-curve-field";
+        public static readonly string contentUssClassName = ussClassName + "__content";
+        public static readonly string borderUssClassName = ussClassName + "__border";
+
+        private static CustomStyleProperty<Color> s_CurveColorProperty = new CustomStyleProperty<Color>("--unity-curve-color");
         public Rect ranges { get; set; }
 
-        StyleValue<Color> m_CurveColor;
+        Color m_CurveColor = Color.green;
         private Color curveColor
         {
-            get
-            {
-                return m_CurveColor.GetSpecifiedValueOrDefault(Color.green);
-            }
+            get { return m_CurveColor; }
         }
 
         private bool m_ValueNull;
@@ -50,10 +51,11 @@ namespace UnityEditor.Experimental.UIElements
                 {
                     m_RenderMode = value;
 
-                    m_Content = new CurveFieldContent();
                     if (renderMode == RenderMode.Mesh)
                     {
-                        Insert(0, m_Content);
+                        m_Content = new CurveFieldContent();
+                        m_Content.AddToClassList(contentUssClassName);
+                        visualInput.Insert(0, m_Content);
                     }
                     else
                     {
@@ -81,7 +83,7 @@ namespace UnityEditor.Experimental.UIElements
             {
                 if (m_ValueNull) return null;
 
-                return CopyCurve(m_Value);
+                return CopyCurve(rawValue);
             }
             set
             {
@@ -90,7 +92,7 @@ namespace UnityEditor.Experimental.UIElements
                 {
                     if (panel != null)
                     {
-                        using (ChangeEvent<AnimationCurve> evt = ChangeEvent<AnimationCurve>.GetPooled(m_Value, value))
+                        using (ChangeEvent<AnimationCurve> evt = ChangeEvent<AnimationCurve>.GetPooled(rawValue, value))
                         {
                             evt.target = this;
                             SetValueWithoutNotify(value);
@@ -107,51 +109,52 @@ namespace UnityEditor.Experimental.UIElements
         CurveFieldContent m_Content;
 
         public CurveField()
+            : this(null) {}
+
+        public CurveField(string label)
+            : base(label, null)
         {
+            AddToClassList(ussClassName);
+
             ranges = Rect.zero;
 
-            m_Value = new AnimationCurve(new Keyframe[0]);
+            rawValue = new AnimationCurve(new Keyframe[0]);
 
-            VisualElement borderElement = new VisualElement() { name = "border", pickingMode = PickingMode.Ignore };
-            Add(borderElement);
+            VisualElement borderElement = new VisualElement() { name = "unity-border", pickingMode = PickingMode.Ignore };
+            borderElement.AddToClassList(borderUssClassName);
+            visualInput.Add(borderElement);
         }
 
         void OnDetach()
         {
             if (m_Mesh != null)
                 Object.DestroyImmediate(m_Mesh);
-            if (style.backgroundImage.value != null)
-                Object.DestroyImmediate(style.backgroundImage.value);
+            if (visualInput.style.backgroundImage.value.texture != null)
+                Object.DestroyImmediate(visualInput.style.backgroundImage.value.texture);
             m_Mesh = null;
-            style.backgroundImage = null;
+            visualInput.style.backgroundImage = new Background(null);
             m_TextureDirty = true;
-        }
-
-        [Obsolete("This method is replaced by simply using this.value. The default behaviour has been changed to notify when changed. If the behaviour is not to be notified, SetValueWithoutNotify() must be used.", false)]
-        public override void SetValueAndNotify(AnimationCurve newValue)
-        {
-            value = newValue;
         }
 
         public override void SetValueWithoutNotify(AnimationCurve newValue)
         {
             m_ValueNull = newValue == null;
-            if (!m_ValueNull)
+            if (newValue != null)
             {
-                m_Value.keys = newValue.keys;
-                m_Value.preWrapMode = newValue.preWrapMode;
-                m_Value.postWrapMode = newValue.postWrapMode;
+                rawValue.keys = newValue.keys;
+                rawValue.preWrapMode = newValue.preWrapMode;
+                rawValue.postWrapMode = newValue.postWrapMode;
             }
             else
             {
-                m_Value.keys = new Keyframe[0];
-                m_Value.preWrapMode = WrapMode.Once;
-                m_Value.postWrapMode = WrapMode.Once;
+                rawValue.keys = new Keyframe[0];
+                rawValue.preWrapMode = WrapMode.Once;
+                rawValue.postWrapMode = WrapMode.Once;
             }
             m_TextureDirty = true;
-            if (CurveEditorWindow.visible && Object.ReferenceEquals(CurveEditorWindow.curve, m_Value))
+            if (CurveEditorWindow.visible && Object.ReferenceEquals(CurveEditorWindow.curve, rawValue))
             {
-                CurveEditorWindow.curve = m_Value;
+                CurveEditorWindow.curve = rawValue;
                 CurveEditorWindow.instance.Repaint();
             }
 
@@ -160,14 +163,14 @@ namespace UnityEditor.Experimental.UIElements
             m_Content?.IncrementVersion(VersionChangeType.Repaint);
         }
 
-        protected override void OnStyleResolved(ICustomStyle style)
+        private void OnCustomStyleResolved(CustomStyleResolvedEvent e)
         {
-            base.OnStyleResolved(style);
+            Color oldColor = m_CurveColor;
+            Color colorValue = Color.clear;
+            if (e.customStyle.TryGetValue(s_CurveColorProperty, out colorValue))
+                m_CurveColor = colorValue;
 
-            Color color = curveColor;
-            style.ApplyCustomProperty(k_CurveColorProperty, ref m_CurveColor);
-
-            if (color != curveColor && renderMode == RenderMode.Texture)
+            if (m_CurveColor != oldColor && renderMode == RenderMode.Texture)
             {
                 // The mesh texture is updated at each repaint, the standard texture should however be regenerated
                 m_TextureDirty = true;
@@ -180,10 +183,10 @@ namespace UnityEditor.Experimental.UIElements
                 return;
 
             CurveEditorSettings settings = new CurveEditorSettings();
-            if (m_Value == null)
-                m_Value = new AnimationCurve();
+            if (rawValue == null)
+                rawValue = new AnimationCurve();
             CurveEditorWindow.instance.Show(OnCurveChanged, settings);
-            CurveEditorWindow.curve = m_Value;
+            CurveEditorWindow.curve = rawValue;
 
             CurveEditorWindow.color = curveColor;
         }
@@ -192,23 +195,28 @@ namespace UnityEditor.Experimental.UIElements
         {
             base.ExecuteDefaultAction(evt);
 
+            if (evt == null)
+            {
+                return;
+            }
+
             if ((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse || (evt as KeyDownEvent)?.character == '\n')
                 ShowCurveEditor();
-            else if (evt.GetEventTypeId() == DetachFromPanelEvent.TypeId())
+            else if (evt.eventTypeId == DetachFromPanelEvent.TypeId())
                 OnDetach();
-            if (evt.GetEventTypeId() == GeometryChangedEvent.TypeId())
+            if (evt.eventTypeId == GeometryChangedEvent.TypeId())
                 m_TextureDirty = true;
         }
 
         void OnCurveChanged(AnimationCurve curve)
         {
-            CurveEditorWindow.curve = m_Value;
-            value = m_Value;
+            CurveEditorWindow.curve = rawValue;
+            value = rawValue;
         }
 
-        public override void OnPersistentDataReady()
+        internal override void OnViewDataReady()
         {
-            base.OnPersistentDataReady();
+            base.OnViewDataReady();
             m_TextureDirty = true;
         }
 
@@ -363,7 +371,7 @@ namespace UnityEditor.Experimental.UIElements
             if (m_TextureDirty || m_Mesh == null)
             {
                 m_TextureDirty = false;
-                style.backgroundImage = null;
+                visualInput.style.backgroundImage = new Background(null);
 
                 FillCurveData();
             }
@@ -376,8 +384,8 @@ namespace UnityEditor.Experimental.UIElements
 
             m_TextureDirty = false;
 
-            int previewWidth = (int)layout.width;
-            int previewHeight = (int)layout.height;
+            int previewWidth = (int)visualInput.layout.width;
+            int previewHeight = (int)visualInput.layout.height;
 
             Rect rangeRect = new Rect(0, 0, 1, 1);
 
@@ -385,17 +393,17 @@ namespace UnityEditor.Experimental.UIElements
             {
                 rangeRect = ranges;
             }
-            else if (!m_ValueNull && m_Value.keys.Length > 1)
+            else if (!m_ValueNull && rawValue.keys.Length > 1)
             {
                 float xMin = Mathf.Infinity;
                 float yMin = Mathf.Infinity;
                 float xMax = -Mathf.Infinity;
                 float yMax = -Mathf.Infinity;
 
-                for (int i = 0; i < m_Value.keys.Length; ++i)
+                for (int i = 0; i < rawValue.keys.Length; ++i)
                 {
-                    float y = m_Value.keys[i].value;
-                    float x = m_Value.keys[i].time;
+                    float y = rawValue.keys[i].value;
+                    float x = rawValue.keys[i].time;
                     if (xMin > x)
                     {
                         xMin = x;
@@ -426,27 +434,28 @@ namespace UnityEditor.Experimental.UIElements
                 rangeRect = Rect.MinMaxRect(xMin, yMin, xMax, yMax);
             }
 
-            if (previewHeight > 0 && previewWidth > 0)
+            if (previewHeight > 1 && previewWidth > 1)
             {
                 if (!m_ValueNull)
                 {
-                    style.backgroundImage = AnimationCurvePreviewCache.GenerateCurvePreview(
+                    visualInput.style.backgroundImage = AnimationCurvePreviewCache.GenerateCurvePreview(
                         previewWidth,
                         previewHeight,
                         rangeRect,
-                        m_Value,
+                        rawValue,
                         curveColor,
-                        style.backgroundImage.value);
+                        visualInput.computedStyle.backgroundImage.value.texture);
                 }
                 else
                 {
-                    style.backgroundImage = null;
+                    visualInput.style.backgroundImage = null;
                 }
             }
         }
 
         Mesh m_Mesh = null;
-        protected override void DoRepaint(IStylePainter painter)
+
+        internal override void DoRepaint(IStylePainter painter)
         {
             if (renderMode == RenderMode.Mesh)
             {
@@ -479,7 +488,7 @@ namespace UnityEditor.Experimental.UIElements
             {
                 base.ExecuteDefaultAction(evt);
 
-                if (evt.GetEventTypeId() == DetachFromPanelEvent.TypeId())
+                if (evt?.eventTypeId == DetachFromPanelEvent.TypeId())
                     OnDetach();
             }
 
@@ -489,7 +498,7 @@ namespace UnityEditor.Experimental.UIElements
                 m_Mat = null;
             }
 
-            protected override void DoRepaint(IStylePainter painter)
+            internal override void DoRepaint(IStylePainter painter)
             {
                 if (m_Mesh != null)
                 {
@@ -502,17 +511,17 @@ namespace UnityEditor.Experimental.UIElements
 
                     float scale = worldTransform.MultiplyVector(Vector3.one).x;
 
-                    float realWidth = CurveField.k_EdgeWidth;
-                    if (realWidth * scale < CurveField.k_MinEdgeWidth)
+                    float realWidth = k_EdgeWidth;
+                    if (realWidth * scale < k_MinEdgeWidth)
                     {
-                        realWidth = CurveField.k_MinEdgeWidth / scale;
+                        realWidth = k_MinEdgeWidth / scale;
                     }
 
                     // Send the view zoom factor so that the antialias width do not grow when zooming in.
-                    m_Mat.SetFloat("_ZoomFactor", scale * realWidth / CurveField.k_EdgeWidth * EditorGUIUtility.pixelsPerPoint);
+                    m_Mat.SetFloat("_ZoomFactor", scale * realWidth / k_EdgeWidth * EditorGUIUtility.pixelsPerPoint);
 
                     // Send the view zoom correction so that the vertex shader can scale the edge triangles when below m_MinWidth.
-                    m_Mat.SetFloat("_ZoomCorrection", realWidth / CurveField.k_EdgeWidth);
+                    m_Mat.SetFloat("_ZoomCorrection", realWidth / k_EdgeWidth);
 
                     m_Mat.SetColor("_Color", (QualitySettings.activeColorSpace == ColorSpace.Linear) ? curveColor.gamma : curveColor);
 

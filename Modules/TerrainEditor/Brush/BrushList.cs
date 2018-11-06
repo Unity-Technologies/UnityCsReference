@@ -45,17 +45,21 @@ namespace UnityEditor
             var arr = new List<Brush>();
             int idx = 1;
             Texture2D t = null;
+            Brush brush = null;
 
-            // Load brushes from editor resources
+            // Load builtin brushes from editor resources
             do
             {
-                t = (Texture2D)EditorGUIUtility.Load(EditorResources.brushesPath + "builtin_brush_" + idx + ".png");
-                if (t)
-                    arr.Add(Brush.CreateInstance(t, AnimationCurve.Constant(0, 1, 1), Brush.kMaxRadiusScale, true));
+                brush = (Brush)EditorGUIUtility.Load(EditorResources.brushesPath + "builtin_brush_" + idx + ".brush");
+                if (brush != null && brush.m_Mask != null)
+                {
+                    brush.readOnly = true;
+                    arr.Add(brush);
+                }
 
                 idx++;
             }
-            while (t);
+            while (brush);
 
             // Load user created brushes from the Assets/Gizmos folder
             idx = 0;

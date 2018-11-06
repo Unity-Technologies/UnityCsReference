@@ -3,13 +3,15 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Reflection;
+using System.Globalization;
+using System.Collections.Generic;
+using System.Linq;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public abstract class UxmlAttributeDescription
     {
-        protected const string k_XmlSchemaNamespace = "http://www.w3.org/2001/XMLSchema";
+        protected const string xmlSchemaNamespace = "http://www.w3.org/2001/XMLSchema";
 
         protected UxmlAttributeDescription()
         {
@@ -26,7 +28,15 @@ namespace UnityEngine.Experimental.UIElements
         }
 
         public string name { get; set; }
-        public string[] obsoleteNames { get; set; }
+
+        string[] m_ObsoleteNames;
+
+        public IEnumerable<string> obsoleteNames
+        {
+            get { return m_ObsoleteNames; }
+            set { m_ObsoleteNames = value.ToArray(); }
+        }
+
         public string type { get; protected set; }
         public string typeNamespace { get; protected set; }
         public abstract string defaultValueAsString { get; }
@@ -37,16 +47,16 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (name == null)
             {
-                if (obsoleteNames == null || obsoleteNames.Length == 0)
+                if (m_ObsoleteNames == null || m_ObsoleteNames.Length == 0)
                 {
                     Debug.LogError("Attribute description has no name.");
                     value = null;
                     return false;
                 }
 
-                for (var i = 0; i < obsoleteNames.Length; i++)
+                for (var i = 0; i < m_ObsoleteNames.Length; i++)
                 {
-                    if (bag.TryGetAttributeValue(obsoleteNames[i], out value))
+                    if (bag.TryGetAttributeValue(m_ObsoleteNames[i], out value))
                     {
                         if (cc.visualTreeAsset != null)
                         {
@@ -62,11 +72,11 @@ namespace UnityEngine.Experimental.UIElements
 
             if (!bag.TryGetAttributeValue(name, out value))
             {
-                if (obsoleteNames != null)
+                if (m_ObsoleteNames != null)
                 {
-                    for (var i = 0; i < obsoleteNames.Length; i++)
+                    for (var i = 0; i < m_ObsoleteNames.Length; i++)
                     {
-                        if (bag.TryGetAttributeValue(obsoleteNames[i], out value))
+                        if (bag.TryGetAttributeValue(m_ObsoleteNames[i], out value))
                         {
                             if (cc.visualTreeAsset != null)
                             {
@@ -84,8 +94,25 @@ namespace UnityEngine.Experimental.UIElements
             return true;
         }
 
+        protected bool TryGetValueFromBag<T>(IUxmlAttributes bag, CreationContext cc, Func<string, T, T> converterFunc, T defaultValue, ref T value)
+        {
+            string stringValue;
+            if (TryGetValueFromBagAsString(bag, cc, out stringValue))
+            {
+                value = converterFunc(stringValue, defaultValue);
+                return true;
+            }
+
+            return false;
+        }
+
         protected T GetValueFromBag<T>(IUxmlAttributes bag, CreationContext cc, Func<string, T, T> converterFunc, T defaultValue)
         {
+            if (converterFunc == null)
+            {
+                throw new ArgumentNullException(nameof(converterFunc));
+            }
+
             string value;
             if (TryGetValueFromBagAsString(bag, cc, out value))
             {
@@ -96,28 +123,34 @@ namespace UnityEngine.Experimental.UIElements
         }
     }
 
-    public class UxmlStringAttributeDescription : UxmlAttributeDescription
+    public abstract class TypedUxmlAttributeDescription<T> : UxmlAttributeDescription
+    {
+        public abstract T GetValueFromBag(IUxmlAttributes bag, CreationContext cc);
+
+        public T defaultValue { get; set; }
+
+        public override string defaultValueAsString { get { return defaultValue.ToString(); } }
+    }
+
+    public class UxmlStringAttributeDescription : TypedUxmlAttributeDescription<string>
     {
         public UxmlStringAttributeDescription()
         {
             type = "string";
-            typeNamespace = k_XmlSchemaNamespace;
+            typeNamespace = xmlSchemaNamespace;
             defaultValue = "";
         }
 
-        public string defaultValue { get; set; }
-
         public override string defaultValueAsString { get { return defaultValue; } }
 
-        [Obsolete("Pass a creation context to the method.")]
-        public string GetValueFromBag(IUxmlAttributes bag)
-        {
-            return GetValueFromBag(bag, new CreationContext());
-        }
-
-        public string GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
+        public override string GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
         {
             return GetValueFromBag(bag, cc, ConvertValueToString, defaultValue);
+        }
+
+        public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref string value)
+        {
+            return TryGetValueFromBag(bag, cc, ConvertValueToString, defaultValue, ref value);
         }
 
         static string ConvertValueToString(string v, string defaultValue)
@@ -126,28 +159,25 @@ namespace UnityEngine.Experimental.UIElements
         }
     }
 
-    public class UxmlFloatAttributeDescription : UxmlAttributeDescription
+    public class UxmlFloatAttributeDescription : TypedUxmlAttributeDescription<float>
     {
         public UxmlFloatAttributeDescription()
         {
             type = "float";
-            typeNamespace = k_XmlSchemaNamespace;
+            typeNamespace = xmlSchemaNamespace;
             defaultValue = 0.0f;
         }
 
-        public float defaultValue { get; set; }
+        public override string defaultValueAsString { get { return defaultValue.ToString(CultureInfo.InvariantCulture.NumberFormat); } }
 
-        public override string defaultValueAsString { get { return defaultValue.ToString(); } }
-
-        [Obsolete("Pass a creation context to the method.")]
-        public float GetValueFromBag(IUxmlAttributes bag)
-        {
-            return GetValueFromBag(bag, new CreationContext());
-        }
-
-        public float GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
+        public override float GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
         {
             return GetValueFromBag(bag, cc, ConvertValueToFloat, defaultValue);
+        }
+
+        public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref float value)
+        {
+            return TryGetValueFromBag(bag, cc, ConvertValueToFloat, defaultValue, ref value);
         }
 
         static float ConvertValueToFloat(string v, float defaultValue)
@@ -159,28 +189,25 @@ namespace UnityEngine.Experimental.UIElements
         }
     }
 
-    public class UxmlDoubleAttributeDescription : UxmlAttributeDescription
+    public class UxmlDoubleAttributeDescription : TypedUxmlAttributeDescription<double>
     {
         public UxmlDoubleAttributeDescription()
         {
             type = "double";
-            typeNamespace = k_XmlSchemaNamespace;
+            typeNamespace = xmlSchemaNamespace;
             defaultValue = 0.0;
         }
 
-        public double defaultValue { get; set; }
+        public override string defaultValueAsString { get { return defaultValue.ToString(CultureInfo.InvariantCulture.NumberFormat); } }
 
-        public override string defaultValueAsString { get { return defaultValue.ToString(); } }
-
-        [Obsolete("Pass a creation context to the method.")]
-        public double GetValueFromBag(IUxmlAttributes bag)
-        {
-            return GetValueFromBag(bag, new CreationContext());
-        }
-
-        public double GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
+        public override double GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
         {
             return GetValueFromBag(bag, cc, ConvertValueToDouble, defaultValue);
+        }
+
+        public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref double value)
+        {
+            return TryGetValueFromBag(bag, cc, ConvertValueToDouble, defaultValue, ref value);
         }
 
         static double ConvertValueToDouble(string v, double defaultValue)
@@ -192,28 +219,25 @@ namespace UnityEngine.Experimental.UIElements
         }
     }
 
-    public class UxmlIntAttributeDescription : UxmlAttributeDescription
+    public class UxmlIntAttributeDescription : TypedUxmlAttributeDescription<int>
     {
         public UxmlIntAttributeDescription()
         {
             type = "int";
-            typeNamespace = k_XmlSchemaNamespace;
+            typeNamespace = xmlSchemaNamespace;
             defaultValue = 0;
         }
 
-        public int defaultValue { get; set; }
-
         public override string defaultValueAsString { get { return defaultValue.ToString(); } }
 
-        [Obsolete("Pass a creation context to the method.")]
-        public int GetValueFromBag(IUxmlAttributes bag)
-        {
-            return GetValueFromBag(bag, new CreationContext());
-        }
-
-        public int GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
+        public override int GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
         {
             return GetValueFromBag(bag, cc, ConvertValueToInt, defaultValue);
+        }
+
+        public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref int value)
+        {
+            return TryGetValueFromBag(bag, cc, ConvertValueToInt, defaultValue, ref value);
         }
 
         static int ConvertValueToInt(string v, int defaultValue)
@@ -226,28 +250,25 @@ namespace UnityEngine.Experimental.UIElements
         }
     }
 
-    public class UxmlLongAttributeDescription : UxmlAttributeDescription
+    public class UxmlLongAttributeDescription : TypedUxmlAttributeDescription<long>
     {
         public UxmlLongAttributeDescription()
         {
             type = "long";
-            typeNamespace = k_XmlSchemaNamespace;
+            typeNamespace = xmlSchemaNamespace;
             defaultValue = 0;
         }
 
-        public long defaultValue { get; set; }
-
         public override string defaultValueAsString { get { return defaultValue.ToString(); } }
 
-        [Obsolete("Pass a creation context to the method.")]
-        public long GetValueFromBag(IUxmlAttributes bag)
-        {
-            return GetValueFromBag(bag, new CreationContext());
-        }
-
-        public long GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
+        public override long GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
         {
             return GetValueFromBag(bag, cc, ConvertValueToLong, defaultValue);
+        }
+
+        public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref long value)
+        {
+            return TryGetValueFromBag(bag, cc, ConvertValueToLong, defaultValue, ref value);
         }
 
         static long ConvertValueToLong(string v, long defaultValue)
@@ -259,28 +280,25 @@ namespace UnityEngine.Experimental.UIElements
         }
     }
 
-    public class UxmlBoolAttributeDescription : UxmlAttributeDescription
+    public class UxmlBoolAttributeDescription : TypedUxmlAttributeDescription<bool>
     {
         public UxmlBoolAttributeDescription()
         {
             type = "boolean";
-            typeNamespace = k_XmlSchemaNamespace;
+            typeNamespace = xmlSchemaNamespace;
             defaultValue = false;
         }
 
-        public bool defaultValue { get; set; }
-
         public override string defaultValueAsString { get { return defaultValue.ToString().ToLower(); } }
 
-        [Obsolete("Pass a creation context to the method.")]
-        public bool GetValueFromBag(IUxmlAttributes bag)
-        {
-            return GetValueFromBag(bag, new CreationContext());
-        }
-
-        public bool GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
+        public override bool GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
         {
             return GetValueFromBag(bag, cc, ConvertValueToBool, defaultValue);
+        }
+
+        public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref bool value)
+        {
+            return TryGetValueFromBag(bag, cc, ConvertValueToBool, defaultValue, ref value);
         }
 
         static bool ConvertValueToBool(string v, bool defaultValue)
@@ -293,28 +311,25 @@ namespace UnityEngine.Experimental.UIElements
         }
     }
 
-    public class UxmlColorAttributeDescription : UxmlAttributeDescription
+    public class UxmlColorAttributeDescription : TypedUxmlAttributeDescription<Color>
     {
         public UxmlColorAttributeDescription()
         {
             type = "string";
-            typeNamespace = k_XmlSchemaNamespace;
+            typeNamespace = xmlSchemaNamespace;
             defaultValue = new Color(0, 0, 0, 1);
         }
 
-        public Color defaultValue { get; set; }
-
         public override string defaultValueAsString { get { return defaultValue.ToString(); } }
 
-        [Obsolete("Pass a creation context to the method.")]
-        public Color GetValueFromBag(IUxmlAttributes bag)
-        {
-            return GetValueFromBag(bag, new CreationContext());
-        }
-
-        public Color GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
+        public override Color GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
         {
             return GetValueFromBag(bag, cc, ConvertValueToColor, defaultValue);
+        }
+
+        public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref Color value)
+        {
+            return TryGetValueFromBag(bag, cc, ConvertValueToColor, defaultValue, ref value);
         }
 
         static Color ConvertValueToColor(string v, Color defaultValue)
@@ -326,7 +341,7 @@ namespace UnityEngine.Experimental.UIElements
         }
     }
 
-    public class UxmlEnumAttributeDescription<T> : UxmlAttributeDescription where T : struct, IConvertible
+    public class UxmlEnumAttributeDescription<T> : TypedUxmlAttributeDescription<T> where T : struct, IConvertible
     {
         public UxmlEnumAttributeDescription()
         {
@@ -336,30 +351,31 @@ namespace UnityEngine.Experimental.UIElements
             }
 
             type = "string";
-            typeNamespace = k_XmlSchemaNamespace;
+            typeNamespace = xmlSchemaNamespace;
             defaultValue = new T();
 
             UxmlEnumeration enumRestriction = new UxmlEnumeration();
+
+            var values = new List<string>();
             foreach (T item in Enum.GetValues(typeof(T)))
             {
-                enumRestriction.values.Add(item.ToString());
+                values.Add(item.ToString(CultureInfo.InvariantCulture));
             }
+            enumRestriction.values = values;
+
             restriction = enumRestriction;
         }
 
-        public T defaultValue { get; set; }
+        public override string defaultValueAsString { get { return defaultValue.ToString(CultureInfo.InvariantCulture.NumberFormat); } }
 
-        public override string defaultValueAsString { get { return defaultValue.ToString(); } }
-
-        [Obsolete("Pass a creation context to the method.")]
-        public T GetValueFromBag(IUxmlAttributes bag)
-        {
-            return GetValueFromBag(bag, new CreationContext());
-        }
-
-        public T GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
+        public override T GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
         {
             return GetValueFromBag(bag, cc, ConvertValueToEnum, defaultValue);
+        }
+
+        public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref T value)
+        {
+            return TryGetValueFromBag(bag, cc, ConvertValueToEnum, defaultValue, ref value);
         }
 
         static U ConvertValueToEnum<U>(string v, U defaultValue)

@@ -4,7 +4,7 @@
 
 using UnityEngine.Bindings;
 
-namespace UnityEngine.StyleSheets
+namespace UnityEngine.UIElements
 {
     [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal enum StyleSelectorRelationship

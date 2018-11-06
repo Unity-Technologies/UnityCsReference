@@ -4,7 +4,7 @@
 
 using System;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     internal class ClampedDragger<T> : Clickable
         where T : IComparable<T>
@@ -65,7 +65,7 @@ namespace UnityEngine.Experimental.UIElements
 
         new void OnMouseMove(MouseMoveEvent evt)
         {
-            if (m_Active)
+            if (active)
             {
                 // Let base class Clickable handle the mouse event first
                 // (although nothing much happens in the base class on mouse drags)

@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
-using UnityEngine.StyleSheets;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.StyleSheets
 {
@@ -234,7 +234,7 @@ namespace UnityEditor.StyleSheets
         public StyleSheetResolver(ResolvingOptions options = null)
         {
             Options = options ?? new ResolvingOptions();
-            Sheets = new List<UnityEngine.StyleSheets.StyleSheet>();
+            Sheets = new List<UnityEngine.UIElements.StyleSheet>();
             Rules = new Dictionary<string, Rule>();
             m_ResolvedSheet = null;
             Variables = new Dictionary<string, Property>();

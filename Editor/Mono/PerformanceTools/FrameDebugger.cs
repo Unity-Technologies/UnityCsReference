@@ -1036,7 +1036,7 @@ namespace UnityEditor
             {
                 GUILayout.Label(t.name, EditorStyles.miniLabel, GUILayout.MinWidth(kNameFieldWidth));
                 DrawShaderPropertyFlags(t.flags);
-                GUILayout.Label(t.value.ToString(kFloatFormat), EditorStyles.miniLabel, GUILayout.MinWidth(kValueFieldWidth));
+                GUILayout.Label(t.value.ToString(kFloatFormat, CultureInfo.InvariantCulture.NumberFormat), EditorStyles.miniLabel, GUILayout.MinWidth(kValueFieldWidth));
                 ShaderPropertyCopyValueMenu(GUILayoutUtility.GetLastRect(), t.value);
             }
             else
@@ -1050,7 +1050,7 @@ namespace UnityEditor
                 if (GUI.Button(buttonRect, Styles.arrayValuePopupButton))
                 {
                     ArrayValuePopup.GetValueStringDelegate getValueString =
-                        (int index, bool highPrecision) => floats[index].value.ToString(highPrecision ? kFloatDetailedFormat : kFloatFormat);
+                        (int index, bool highPrecision) => floats[index].value.ToString(highPrecision ? kFloatDetailedFormat : kFloatFormat, CultureInfo.InvariantCulture.NumberFormat);
 
                     PopupWindowWithoutFocus.Show(
                         buttonRect,
@@ -1318,7 +1318,7 @@ namespace UnityEditor
             // only add depth offset if non zero
             if (rasterState.slopeScaledDepthBias != 0 || rasterState.depthBias != 0)
             {
-                string offsetText = string.Format("{0}, {1}", rasterState.slopeScaledDepthBias, rasterState.depthBias);
+                string offsetText = UnityString.Format("{0}, {1}", rasterState.slopeScaledDepthBias, rasterState.depthBias);
                 EditorGUILayout.LabelField("Offset", offsetText);
             }
 

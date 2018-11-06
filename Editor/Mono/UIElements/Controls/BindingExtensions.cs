@@ -6,9 +6,9 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     internal class SerializedObjectBindEvent : EventBase<SerializedObjectBindEvent>
     {
@@ -24,7 +24,12 @@ namespace UnityEditor.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            this.flags = EventFlags.Cancellable; // Also makes it not propagatable.
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
+            this.propagation = EventPropagation.Cancellable; // Also makes it not propagatable.
             m_BindObject = null;
         }
 
@@ -33,6 +38,11 @@ namespace UnityEditor.Experimental.UIElements
             SerializedObjectBindEvent e = GetPooled();
             e.m_BindObject = obj;
             return e;
+        }
+
+        public SerializedObjectBindEvent()
+        {
+            LocalInit();
         }
     }
 
@@ -50,7 +60,12 @@ namespace UnityEditor.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            this.flags = EventFlags.Cancellable; // Also makes it not propagatable.
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
+            this.propagation = EventPropagation.Cancellable; // Also makes it not propagatable.
             m_BindProperty = null;
         }
 
@@ -60,12 +75,17 @@ namespace UnityEditor.Experimental.UIElements
             e.m_BindProperty = obj;
             return e;
         }
+
+        public SerializedPropertyBindEvent()
+        {
+            LocalInit();
+        }
     }
 
     public static class BindingExtensions
     {
         // visual element style changes wrt its property state
-        internal static readonly string k_PrefabOverrideClassName = "unity-prefab-override";
+        public static readonly string prefabOverrideUssClassName = "unity-prefab-override";
 
         public static void Bind(this VisualElement element, SerializedObject obj)
         {
@@ -74,11 +94,16 @@ namespace UnityEditor.Experimental.UIElements
 
         public static void Unbind(this VisualElement element)
         {
+            if (element == null)
+            {
+                throw new ArgumentNullException(nameof(element));
+            }
+
             RemoveBinding(element);
 
-            for (int i = 0; i < element.shadow.childCount; ++i)
+            for (int i = 0; i < element.hierarchy.childCount; ++i)
             {
-                Unbind(element.shadow[i]);
+                Unbind(element.hierarchy[i]);
             }
         }
 
@@ -89,6 +114,11 @@ namespace UnityEditor.Experimental.UIElements
 
         public static void BindProperty(this IBindable field, SerializedProperty property)
         {
+            if (property == null)
+            {
+                throw new ArgumentNullException(nameof(property));
+            }
+
             DoBindProperty(field, new SerializedObjectUpdateWrapper(property.serializedObject), property);
         }
 
@@ -143,9 +173,9 @@ namespace UnityEditor.Experimental.UIElements
                 }
             }
 
-            for (int i = 0; i < element.shadow.childCount; ++i)
+            for (int i = 0; i < element.hierarchy.childCount; ++i)
             {
-                Bind(element.shadow[i], objWrapper, parentProperty);
+                Bind(element.hierarchy[i], objWrapper, parentProperty);
             }
         }
 
@@ -526,9 +556,9 @@ namespace UnityEditor.Experimental.UIElements
             protected static void UpdateElementStyle(VisualElement element, SerializedProperty prop)
             {
                 if (prop.serializedObject.targetObjects.Length == 1 && prop.isInstantiatedPrefab && prop.prefabOverride)
-                    element.AddToClassList(BindingExtensions.k_PrefabOverrideClassName);
+                    element.AddToClassList(BindingExtensions.prefabOverrideUssClassName);
                 else
-                    element.RemoveFromClassList(BindingExtensions.k_PrefabOverrideClassName);
+                    element.RemoveFromClassList(BindingExtensions.prefabOverrideUssClassName);
             }
 
             protected bool IsPropertyValid()
@@ -550,7 +580,7 @@ namespace UnityEditor.Experimental.UIElements
                 get { return m_Field; }
                 set
                 {
-                    m_Field?.RemoveOnValueChanged(FieldValueChanged);
+                    m_Field?.UnregisterValueChangedCallback(FieldValueChanged);
 
                     VisualElement ve = m_Field as VisualElement;
                     if (ve != null)
@@ -563,7 +593,7 @@ namespace UnityEditor.Experimental.UIElements
                     UpdateFieldIsAttached();
                     if (m_Field != null)
                     {
-                        m_Field.OnValueChanged(FieldValueChanged);
+                        m_Field.RegisterValueChangedCallback(FieldValueChanged);
 
                         ve = m_Field as VisualElement;
                         if (ve != null)
@@ -771,6 +801,11 @@ namespace UnityEditor.Experimental.UIElements
 
             protected override void SyncPropertyToField(INotifyValueChanged<TValue> c, SerializedProperty p)
             {
+                if (c == null)
+                {
+                    throw new ArgumentNullException(nameof(c));
+                }
+
                 if (!propCompareValues(lastFieldValue, p, propGetValue))
                 {
                     lastFieldValue = propGetValue(p);
@@ -854,6 +889,15 @@ namespace UnityEditor.Experimental.UIElements
 
             protected override void SyncPropertyToField(PopupField<string> c, SerializedProperty p)
             {
+                if (p == null)
+                {
+                    throw new ArgumentNullException(nameof(p));
+                }
+                if (c == null)
+                {
+                    throw new ArgumentNullException(nameof(c));
+                }
+
                 int propValueIndex = p.enumValueIndex;
                 if (propValueIndex != lastFieldValueIndex)
                 {

@@ -5,15 +5,14 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 using UnityEditorInternal;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     public class TagField : PopupField<string>
     {
         public new class UxmlFactory : UxmlFactory<TagField, UxmlTraits> {}
-
         public new class UxmlTraits : PopupField<string>.UxmlTraits
         {
             UxmlStringAttributeDescription m_Value = new UxmlStringAttributeDescription { name = "value" };
@@ -29,7 +28,7 @@ namespace UnityEditor.Experimental.UIElements
 
         internal override string GetValueToDisplay()
         {
-            return m_Value;
+            return rawValue;
         }
 
         public override string value
@@ -59,7 +58,11 @@ namespace UnityEditor.Experimental.UIElements
             get { return null; }
             set
             {
-                Debug.LogWarning(L10n.Tr("TagField doesn't support the formatting of the selected value."));
+                if (value != null)
+                {
+                    Debug.LogWarning(L10n.Tr("TagField doesn't support the formatting of the selected value."));
+                }
+
                 m_FormatSelectedValueCallback = null;
             }
         }
@@ -69,7 +72,11 @@ namespace UnityEditor.Experimental.UIElements
             get { return null; }
             set
             {
-                Debug.LogWarning(L10n.Tr("TagField doesn't support the formatting of the list items."));
+                if (value != null)
+                {
+                    Debug.LogWarning(L10n.Tr("TagField doesn't support the formatting of the list items."));
+                }
+
                 m_FormatListItemCallback = null;
             }
         }
@@ -79,15 +86,30 @@ namespace UnityEditor.Experimental.UIElements
             return new List<string>(InternalEditorUtility.tags);
         }
 
-        public TagField() : base(InitializeTags()) {}
+        public new static readonly string ussClassName = "unity-tag-field";
 
-        public TagField(string defaultValue) : this()
+        public TagField()
+            : this(null) {}
+
+        public TagField(string label, string defaultValue = null)
+            : base(label)
         {
-            SetValueWithoutNotify(defaultValue);
+            AddToClassList(ussClassName);
+
+            choices = InitializeTags();
+            if (defaultValue != null)
+            {
+                SetValueWithoutNotify(defaultValue);
+            }
         }
 
         internal override void AddMenuItems(GenericMenu menu)
         {
+            if (menu == null)
+            {
+                throw new ArgumentNullException(nameof(menu));
+            }
+
             choices = InitializeTags();
             foreach (var menuItem in choices)
             {

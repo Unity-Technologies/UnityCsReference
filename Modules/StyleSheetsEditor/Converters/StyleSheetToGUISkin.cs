@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.StyleSheets;
+using UnityEngine.UIElements;
 using UnityEngine.Internal;
 
 namespace UnityEditor.StyleSheets
@@ -424,7 +424,7 @@ namespace UnityEditor.StyleSheets
             }
             else if (ConverterUtils.ToGUIStyleSelectorName(style.name) != complexSelectorStr)
             {
-                var msg = string.Format("Selector: {0} doesn't match with -unity-name: {1}. Did you mean selector: {2} or -unity-name: {3}?",
+                var msg = UnityString.Format("Selector: {0} doesn't match with -unity-name: {1}. Did you mean selector: {2} or -unity-name: {3}?",
                     complexSelectorStr, style.name, ConverterUtils.ToGUIStyleSelectorName(style.name), ConverterUtils.ToStyleName(complexSelectorStr));
                 Debug.LogWarning(msg);
                 throw new Exception(msg);

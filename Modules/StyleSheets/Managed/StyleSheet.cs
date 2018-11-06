@@ -3,23 +3,23 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-//using TableType=System.Collections.Generic.SortedList<string, UnityEngine.StyleSheets.StyleComplexSelector>;
-using TableType = System.Collections.Generic.Dictionary<string, UnityEngine.StyleSheets.StyleComplexSelector>;
+//using TableType=System.Collections.Generic.SortedList<string, UnityEngine.UIElements.StyleComplexSelector>;
+using TableType = System.Collections.Generic.Dictionary<string, UnityEngine.UIElements.StyleComplexSelector>;
 using UnityEngine.Bindings;
 
-namespace UnityEngine.StyleSheets
+namespace UnityEngine.UIElements
 {
     [Serializable]
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-    internal class StyleSheet : ScriptableObject
+    public class StyleSheet : ScriptableObject
     {
         [SerializeField]
         StyleRule[] m_Rules;
 
-        public StyleRule[] rules
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal StyleRule[] rules
         {
             get { return m_Rules; }
-            internal set
+            set
             {
                 m_Rules = value;
                 SetupReferences();
@@ -29,10 +29,11 @@ namespace UnityEngine.StyleSheets
         [SerializeField]
         StyleComplexSelector[] m_ComplexSelectors;
 
-        public StyleComplexSelector[] complexSelectors
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal StyleComplexSelector[] complexSelectors
         {
             get { return m_ComplexSelectors; }
-            internal set
+            set
             {
                 m_ComplexSelectors = value;
                 SetupReferences();
@@ -174,72 +175,80 @@ namespace UnityEngine.StyleSheets
             }
         }
 
-        public StyleValueKeyword ReadKeyword(StyleValueHandle handle)
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal StyleValueKeyword ReadKeyword(StyleValueHandle handle)
         {
             return (StyleValueKeyword)handle.valueIndex;
         }
 
-        public float ReadFloat(StyleValueHandle handle)
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal float ReadFloat(StyleValueHandle handle)
         {
             return CheckAccess(floats, StyleValueType.Float, handle);
         }
 
-        public bool TryReadFloat(StyleValueHandle[] handles, int index, out float value)
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal bool TryReadFloat(StyleValueHandle[] handles, int index, out float value)
         {
             return TryCheckAccess(floats, StyleValueType.Float, handles, index, out value);
         }
 
-        public Color ReadColor(StyleValueHandle handle)
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal Color ReadColor(StyleValueHandle handle)
         {
             return CheckAccess(colors, StyleValueType.Color, handle);
         }
 
-        public bool TryReadColor(StyleValueHandle[] handles, int index, out Color value)
+        internal bool TryReadColor(StyleValueHandle[] handles, int index, out Color value)
         {
             return TryCheckAccess(colors, StyleValueType.Color, handles, index, out value);
         }
 
-        public string ReadString(StyleValueHandle handle)
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal string ReadString(StyleValueHandle handle)
         {
             return CheckAccess(strings, StyleValueType.String, handle);
         }
 
-        public bool TryReadString(StyleValueHandle[] handles, int index, out string value)
+        internal bool TryReadString(StyleValueHandle[] handles, int index, out string value)
         {
             return TryCheckAccess(strings, StyleValueType.String, handles, index, out value);
         }
 
-        public string ReadEnum(StyleValueHandle handle)
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal string ReadEnum(StyleValueHandle handle)
         {
             return CheckAccess(strings, StyleValueType.Enum, handle);
         }
 
-        public bool TryReadEnum(StyleValueHandle[] handles, int index, out string value)
+        internal bool TryReadEnum(StyleValueHandle[] handles, int index, out string value)
         {
             return TryCheckAccess(strings, StyleValueType.Enum, handles, index, out value);
         }
 
-        public string ReadResourcePath(StyleValueHandle handle)
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal string ReadResourcePath(StyleValueHandle handle)
         {
             return CheckAccess(strings, StyleValueType.ResourcePath, handle);
         }
 
-        public bool TryReadResourcePath(StyleValueHandle[] handles, int index, out string value)
+        internal bool TryReadResourcePath(StyleValueHandle[] handles, int index, out string value)
         {
             return TryCheckAccess(strings, StyleValueType.ResourcePath, handles, index, out value);
         }
 
-        public Object ReadAssetReference(StyleValueHandle handle)
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal Object ReadAssetReference(StyleValueHandle handle)
         {
             return CheckAccess(assets, StyleValueType.AssetReference, handle);
         }
 
-        public bool TryReadAssetReference(StyleValueHandle[] handles, int index, out Object value)
+        internal bool TryReadAssetReference(StyleValueHandle[] handles, int index, out Object value)
         {
             return TryCheckAccess(assets, StyleValueType.AssetReference, handles, index, out value);
         }
 
-        public string ReadFunctionName(StyleValueHandle handle)
+        internal string ReadFunctionName(StyleValueHandle handle)
         {
             return CheckAccess(strings, StyleValueType.Function, handle);
         }

@@ -4,9 +4,9 @@
 
 using System;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     // drags the contentContainer of a graphview around
     // add to the GraphView
@@ -34,7 +34,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             if (clampToParentEdges)
             {
-                Rect shadowRect = target.shadow.parent.rect;
+                Rect shadowRect = target.hierarchy.parent.rect;
                 if (rect.x < shadowRect.xMin)
                     rect.x = shadowRect.xMin;
                 else if (rect.xMax > shadowRect.xMax)

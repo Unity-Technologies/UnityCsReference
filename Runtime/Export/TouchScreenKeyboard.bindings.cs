@@ -95,14 +95,25 @@ namespace UnityEngine
                     case RuntimePlatform.tvOS:
                     case RuntimePlatform.Android:
                     case RuntimePlatform.Switch:
-                        return true;
+
+                    // The OnScreen keyboard is ALWAYS supported in UWP
+                    // Whether or not it can be used is determined automatically by the OS at runtime
                     case RuntimePlatform.WSAPlayerX86:
                     case RuntimePlatform.WSAPlayerX64:
                     case RuntimePlatform.WSAPlayerARM:
-                        return false;
+                        return true;
+
                     default:
                         return false;
                 }
+            }
+        }
+
+        public static bool isInPlaceEditingAllowed
+        {
+            get
+            {
+                return false;
             }
         }
 

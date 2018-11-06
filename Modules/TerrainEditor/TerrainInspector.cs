@@ -66,6 +66,7 @@ namespace UnityEditor
                 "console.warnicon");
 
             public readonly GUIContent assign = EditorGUIUtility.TrTextContent("Assign");
+            public readonly GUIContent duplicateTab = EditorGUIUtility.TrTextContent("NOTE: Inspector tab is a duplicate.  Paint functionality disabled.");
 
             // Textures
             public readonly GUIContent terrainLayers = EditorGUIUtility.TrTextContent("Terrain Layers");
@@ -1139,6 +1140,8 @@ namespace UnityEditor
 
         public void ShowBrushes(int spacing)
         {
+            EditorGUI.BeginDisabledGroup(s_activeTerrainInspector != GetInstanceID() || s_activeTerrainInspectorInstance != this);
+
             GUILayout.Space(spacing);
             bool repaint = brushList.ShowGUI();
 
@@ -1150,6 +1153,8 @@ namespace UnityEditor
 
             if (repaint)
                 Repaint();
+
+            EditorGUI.EndDisabledGroup();
         }
 
         void ResizeControlTexture(int newResolution)
@@ -1450,6 +1455,12 @@ namespace UnityEditor
                 return;
             }
 
+            if (s_activeTerrainInspector != GetInstanceID() || s_activeTerrainInspectorInstance != this)
+            {
+                GUILayout.BeginVertical(EditorStyles.helpBox);
+                GUILayout.Label(styles.duplicateTab, EditorStyles.boldLabel);
+                GUILayout.EndVertical();
+            }
 
             if (Event.current.type == EventType.Layout)
                 m_TerrainCollider = m_Terrain.gameObject.GetComponent<TerrainCollider>();
@@ -1467,6 +1478,8 @@ namespace UnityEditor
                 GUILayout.Space(3);
                 GUILayout.EndVertical();
             }
+
+            EditorGUI.BeginDisabledGroup(s_activeTerrainInspector != GetInstanceID() || s_activeTerrainInspectorInstance != this);
 
             // Show the master tool selector
             GUILayout.BeginHorizontal();
@@ -1507,6 +1520,8 @@ namespace UnityEditor
                 }
                 GUILayout.EndVertical();
             }
+
+            EditorGUI.EndDisabledGroup();
 
             switch ((TerrainTool)tool)
             {
@@ -1671,6 +1686,11 @@ namespace UnityEditor
             Terrain hitTerrain = null;
 
             RaycastHit raycastHit = new RaycastHit();
+
+            // If this is not the active terrain inspector, we shouldn't be affecting the SceneGUI
+            if (s_activeTerrainInspector != GetInstanceID() || s_activeTerrainInspectorInstance != this)
+                return;
+
             if (selectedTool == TerrainTool.Paint       ||
                 selectedTool == TerrainTool.PaintDetail ||
                 selectedTool == TerrainTool.PlaceTree)

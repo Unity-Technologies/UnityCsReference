@@ -2,13 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     public class BlackboardSection : GraphElement
     {
@@ -71,20 +69,20 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             var tpl = EditorGUIUtility.Load("UXML/GraphView/BlackboardSection.uxml") as VisualTreeAsset;
             AddStyleSheetPath(Blackboard.StyleSheetPath);
-            m_MainContainer = tpl.CloneTree(null);
+            m_MainContainer = tpl.CloneTree();
             m_MainContainer.AddToClassList("mainContainer");
 
             m_Header = m_MainContainer.Q<VisualElement>("sectionHeader");
             m_TitleLabel = m_MainContainer.Q<Label>("sectionTitleLabel");
             m_RowsContainer = m_MainContainer.Q<VisualElement>("rowsContainer");
 
-            shadow.Add(m_MainContainer);
+            hierarchy.Add(m_MainContainer);
 
             m_DragIndicator = new VisualElement();
 
             m_DragIndicator.name = "dragIndicator";
-            m_DragIndicator.style.positionType = PositionType.Absolute;
-            shadow.Add(m_DragIndicator);
+            m_DragIndicator.style.position = Position.Absolute;
+            hierarchy.Add(m_DragIndicator);
 
             ClearClassList();
             AddToClassList("blackboardSection");
@@ -127,12 +125,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             if (visible && (m_DragIndicator.parent == null))
             {
-                shadow.Add(m_DragIndicator);
+                hierarchy.Add(m_DragIndicator);
                 m_DragIndicator.visible = true;
             }
             else if ((visible == false) && (m_DragIndicator.parent != null))
             {
-                shadow.Remove(m_DragIndicator);
+                hierarchy.Remove(m_DragIndicator);
             }
         }
 
@@ -194,13 +192,13 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 {
                     VisualElement lastChild = this[childCount - 1];
 
-                    indicatorY = lastChild.ChangeCoordinatesTo(this, new Vector2(0, lastChild.layout.height + lastChild.style.marginBottom)).y;
+                    indicatorY = lastChild.ChangeCoordinatesTo(this, new Vector2(0, lastChild.layout.height + lastChild.resolvedStyle.marginBottom)).y;
                 }
                 else
                 {
                     VisualElement childAtInsertIndex = this[m_InsertIndex];
 
-                    indicatorY = childAtInsertIndex.ChangeCoordinatesTo(this, new Vector2(0, -childAtInsertIndex.style.marginTop)).y;
+                    indicatorY = childAtInsertIndex.ChangeCoordinatesTo(this, new Vector2(0, -childAtInsertIndex.resolvedStyle.marginTop)).y;
                 }
 
                 SetDragIndicatorVisible(true);

@@ -8,6 +8,7 @@ using scm = System.ComponentModel;
 using uei = UnityEngine.Internal;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
+using System.Globalization;
 
 namespace UnityEngine
 {
@@ -407,10 +408,15 @@ namespace UnityEngine
         public string ToString(string format)
         {
             return UnityString.Format("{0}\t{1}\t{2}\t{3}\n{4}\t{5}\t{6}\t{7}\n{8}\t{9}\t{10}\t{11}\n{12}\t{13}\t{14}\t{15}\n",
-                m00.ToString(format), m01.ToString(format), m02.ToString(format), m03.ToString(format),
-                m10.ToString(format), m11.ToString(format), m12.ToString(format), m13.ToString(format),
-                m20.ToString(format), m21.ToString(format), m22.ToString(format), m23.ToString(format),
-                m30.ToString(format), m31.ToString(format), m32.ToString(format), m33.ToString(format));
+                ToInvariantString(format, m00), ToInvariantString(format, m01), ToInvariantString(format, m02), ToInvariantString(format, m03),
+                ToInvariantString(format, m10), ToInvariantString(format, m11), ToInvariantString(format, m12), ToInvariantString(format, m13),
+                ToInvariantString(format, m20), ToInvariantString(format, m21), ToInvariantString(format, m22), ToInvariantString(format, m23),
+                ToInvariantString(format, m30), ToInvariantString(format, m31), ToInvariantString(format, m32), ToInvariantString(format, m33));
+        }
+
+        private string ToInvariantString(string format, float val)
+        {
+            return val.ToString(format, CultureInfo.InvariantCulture.NumberFormat);
         }
     }
 } //namespace

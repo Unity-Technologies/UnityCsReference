@@ -5,28 +5,36 @@
 using System;
 using System.Collections.Generic;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public abstract class Focusable : CallbackEventHandler
     {
         protected Focusable()
         {
-            m_FocusIndex = 0;
+            m_Focusable = true;
+            m_TabIndex = 0;
         }
 
         public abstract FocusController focusController { get; }
 
-        // See http://w3c.github.io/html/editing.html#the-tabindex-attribute
-        private int m_FocusIndex;
-        public virtual int focusIndex
+        bool m_Focusable;
+        public virtual bool focusable
         {
-            get { return m_FocusIndex; }
-            set { m_FocusIndex = value; }
+            get { return m_Focusable;}
+            set { m_Focusable = value; }
+        }
+
+        int m_TabIndex;
+        // See http://w3c.github.io/html/editing.html#the-tabindex-attribute
+        public virtual int tabIndex
+        {
+            get { return m_TabIndex;}
+            set { m_TabIndex = value; }
         }
 
         public virtual bool canGrabFocus
         {
-            get { return m_FocusIndex >= 0; }
+            get { return focusable; }
         }
 
         public virtual void Focus()
@@ -49,15 +57,12 @@ namespace UnityEngine.Experimental.UIElements
         {
             base.ExecuteDefaultAction(evt);
 
-            if (evt.GetEventTypeId() == MouseDownEvent.TypeId())
+            if (evt?.eventTypeId == MouseDownEvent.TypeId())
             {
                 Focus();
             }
 
-            if (focusController != null)
-            {
-                focusController.SwitchFocusOnEvent(evt);
-            }
+            focusController?.SwitchFocusOnEvent(evt);
         }
     }
 
@@ -79,7 +84,7 @@ namespace UnityEngine.Experimental.UIElements
 
         protected static FocusChangeDirection lastValue { get { return s_None; } }
 
-        int m_Value;
+        readonly int m_Value;
 
         protected FocusChangeDirection(int value)
         {
@@ -88,7 +93,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public static implicit operator int(FocusChangeDirection fcd)
         {
-            return fcd.m_Value;
+            return fcd?.m_Value ?? 0;
         }
     }
 

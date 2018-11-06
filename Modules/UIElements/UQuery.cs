@@ -4,10 +4,10 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine.Experimental.UIElements.StyleSheets;
-using UnityEngine.StyleSheets;
+using UnityEngine.UIElements.StyleSheets;
+using UnityEngine.UIElements;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     internal struct RuleMatcher
     {
@@ -63,7 +63,7 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        private abstract class UQueryMatcher : HierarchyTraversal
+        internal abstract class UQueryMatcher : HierarchyTraversal
         {
             internal List<RuleMatcher> m_Matchers;
 
@@ -124,7 +124,7 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        private abstract class SingleQueryMatcher : UQueryMatcher
+        internal abstract class SingleQueryMatcher : UQueryMatcher
         {
             public VisualElement match { get; set; }
 
@@ -135,7 +135,7 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        private class FirstQueryMatcher : SingleQueryMatcher
+        internal class FirstQueryMatcher : SingleQueryMatcher
         {
             protected override bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
             {
@@ -145,7 +145,7 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        private class LastQueryMatcher : SingleQueryMatcher
+        internal class LastQueryMatcher : SingleQueryMatcher
         {
             protected override bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
             {
@@ -154,7 +154,7 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        private class IndexQueryMatcher : SingleQueryMatcher
+        internal class IndexQueryMatcher : SingleQueryMatcher
         {
             private int matchCount = -1;
             private int _matchIndex;
@@ -186,476 +186,554 @@ namespace UnityEngine.Experimental.UIElements
                 return matchCount >= _matchIndex;
             }
         }
+    }
 
-
+    public struct UQueryState<T> : IEquatable<UQueryState<T>> where T : VisualElement
+    {
         //this makes it non-thread safe. But saves on allocations...
-        private static FirstQueryMatcher s_First = new FirstQueryMatcher();
-        private static LastQueryMatcher s_Last = new LastQueryMatcher();
-        private static IndexQueryMatcher s_Index = new IndexQueryMatcher();
+        private static UQuery.FirstQueryMatcher s_First = new UQuery.FirstQueryMatcher();
+        private static UQuery.LastQueryMatcher s_Last = new UQuery.LastQueryMatcher();
+        private static UQuery.IndexQueryMatcher s_Index = new UQuery.IndexQueryMatcher();
+        private static ActionQueryMatcher s_Action = new ActionQueryMatcher();
 
-        public struct QueryBuilder<T> where T : VisualElement
+        private readonly VisualElement m_Element;
+        private readonly List<RuleMatcher> m_Matchers;
+
+        internal UQueryState(VisualElement element, List<RuleMatcher> matchers)
         {
-            private List<StyleSelector> m_StyleSelectors;
-            private List<StyleSelector> styleSelectors { get { return m_StyleSelectors ?? (m_StyleSelectors = new List<StyleSelector>()); } }
+            m_Element = element;
+            m_Matchers = matchers;
+        }
 
-            private List<StyleSelectorPart> m_Parts;
-            private List<StyleSelectorPart> parts { get { return m_Parts ?? (m_Parts = new List<StyleSelectorPart>()); } }
-            private VisualElement m_Element;
-            private List<RuleMatcher> m_Matchers;
-            private StyleSelectorRelationship m_Relationship;
+        public UQueryState<T> RebuildOn(VisualElement element)
+        {
+            return new UQueryState<T>(element, m_Matchers);
+        }
 
-            private int pseudoStatesMask;
-            private int negatedPseudoStatesMask;
+        public T First()
+        {
+            s_First.Run(m_Element, m_Matchers);
 
-            public QueryBuilder(VisualElement visualElement)
-                : this()
+            // We need to make sure we don't leak a ref to the VisualElement.
+            var match = s_First.match as T;
+            s_First.match = null;
+            return match;
+        }
+
+        public T Last()
+        {
+            s_Last.Run(m_Element, m_Matchers);
+
+            // We need to make sure we don't leak a ref to the VisualElement.
+            var match = s_Last.match as T;
+            s_Last.match = null;
+            return match;
+        }
+
+        private class ListQueryMatcher : UQuery.UQueryMatcher
+        {
+            public List<T> matches { get; set; }
+
+            protected override bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
             {
-                m_Element = visualElement;
-                m_Parts = null;
-                m_StyleSelectors = null;
-                m_Relationship = StyleSelectorRelationship.None;
-                m_Matchers = new List<RuleMatcher>();
-                pseudoStatesMask = negatedPseudoStatesMask = 0;
+                matches.Add(element as T);
+                return false;
             }
 
-            public QueryBuilder<T> Class(string classname)
+            public void Reset()
             {
-                AddClass(classname);
-                return this;
-            }
-
-            public QueryBuilder<T> Name(string id)
-            {
-                AddName(id);
-                return this;
-            }
-
-            public QueryBuilder<T2> Descendents<T2>(string name = null, params string[] classNames) where T2 : VisualElement
-            {
-                FinishCurrentSelector();
-                AddType<T2>();
-                AddName(name);
-                AddClasses(classNames);
-                return AddRelationship<T2>(StyleSelectorRelationship.Descendent);
-            }
-
-            public QueryBuilder<T2> Descendents<T2>(string name = null, string classname = null) where T2 : VisualElement
-            {
-                FinishCurrentSelector();
-                AddType<T2>();
-                AddName(name);
-                AddClass(classname);
-                return AddRelationship<T2>(StyleSelectorRelationship.Descendent);
-            }
-
-            public QueryBuilder<T2> Children<T2>(string name = null, params string[] classes) where T2 : VisualElement
-            {
-                FinishCurrentSelector();
-                AddType<T2>();
-                AddName(name);
-                AddClasses(classes);
-                return AddRelationship<T2>(StyleSelectorRelationship.Child);
-            }
-
-            public QueryBuilder<T2> Children<T2>(string name = null, string className = null) where T2 : VisualElement
-            {
-                FinishCurrentSelector();
-                AddType<T2>();
-                AddName(name);
-                AddClass(className);
-                return AddRelationship<T2>(StyleSelectorRelationship.Child);
-            }
-
-            public QueryBuilder<T2> OfType<T2>(string name = null, params string[] classes) where T2 : VisualElement
-            {
-                AddType<T2>();
-                AddName(name);
-                AddClasses(classes);
-                return AddRelationship<T2>(StyleSelectorRelationship.None);
-            }
-
-            public QueryBuilder<T2> OfType<T2>(string name = null, string className = null) where T2 : VisualElement
-            {
-                AddType<T2>();
-                AddName(name);
-                AddClass(className);
-                return AddRelationship<T2>(StyleSelectorRelationship.None);
-            }
-
-            public QueryBuilder<T> Where(Func<T, bool> selectorPredicate)
-            {
-                //we can't use a static instance as in the QueryState<T>.ForEach below since the query might be long lived
-                parts.Add(StyleSelectorPart.CreatePredicate(new PredicateWrapper<T>(selectorPredicate)));
-                return this;
-            }
-
-            private void AddClass(string c)
-            {
-                if (c != null)
-                    parts.Add(StyleSelectorPart.CreateClass(c));
-            }
-
-            private void AddClasses(params string[] classes)
-            {
-                if (classes != null)
-                {
-                    for (int i = 0; i < classes.Length; i++)
-                        AddClass(classes[i]);
-                }
-            }
-
-            private void AddName(string id)
-            {
-                if (id != null)
-                    parts.Add(StyleSelectorPart.CreateId(id));
-            }
-
-            private void AddType<T2>() where T2 : VisualElement
-            {
-                if (typeof(T2) != typeof(VisualElement))
-                    parts.Add(StyleSelectorPart.CreatePredicate(IsOfType<T2>.s_Instance));
-            }
-
-            private QueryBuilder<T> AddPseudoState(PseudoStates s)
-            {
-                pseudoStatesMask = pseudoStatesMask | (int)s;
-                return this;
-            }
-
-            private QueryBuilder<T> AddNegativePseudoState(PseudoStates s)
-            {
-                negatedPseudoStatesMask = negatedPseudoStatesMask | (int)s;
-                return this;
-            }
-
-            public QueryBuilder<T> Active()
-            {
-                return AddPseudoState(PseudoStates.Active);
-            }
-
-            public QueryBuilder<T> NotActive()
-            {
-                return AddNegativePseudoState(PseudoStates.Active);
-            }
-
-            public QueryBuilder<T> Visible()
-            {
-                return Where(e => e.visible);
-            }
-
-            public QueryBuilder<T> NotVisible()
-            {
-                return Where(e => !e.visible);
-            }
-
-            public QueryBuilder<T> Hovered()
-            {
-                return AddPseudoState(PseudoStates.Hover);
-            }
-
-            public QueryBuilder<T> NotHovered()
-            {
-                return AddNegativePseudoState(PseudoStates.Hover);
-            }
-
-            public QueryBuilder<T> Checked()
-            {
-                return AddPseudoState(PseudoStates.Checked);
-            }
-
-            public QueryBuilder<T> NotChecked()
-            {
-                return AddNegativePseudoState(PseudoStates.Checked);
-            }
-
-            public QueryBuilder<T> Selected()
-            {
-                return AddPseudoState(PseudoStates.Selected);
-            }
-
-            public QueryBuilder<T> NotSelected()
-            {
-                return AddNegativePseudoState(PseudoStates.Selected);
-            }
-
-            public QueryBuilder<T> Enabled()
-            {
-                return AddNegativePseudoState(PseudoStates.Disabled);
-            }
-
-            public QueryBuilder<T> NotEnabled()
-            {
-                return AddPseudoState(PseudoStates.Disabled);
-            }
-
-            public QueryBuilder<T> Focused()
-            {
-                return AddPseudoState(PseudoStates.Focus);
-            }
-
-            public QueryBuilder<T> NotFocused()
-            {
-                return AddNegativePseudoState(PseudoStates.Focus);
-            }
-
-            private QueryBuilder<T2> AddRelationship<T2>(StyleSelectorRelationship relationship) where T2 : VisualElement
-            {
-                return new QueryBuilder<T2>(m_Element)
-                {
-                    m_Matchers = m_Matchers,
-                    m_Parts = m_Parts,
-                    m_StyleSelectors = m_StyleSelectors,
-                    m_Relationship = relationship == StyleSelectorRelationship.None ? m_Relationship : relationship,
-                    pseudoStatesMask = pseudoStatesMask,
-                    negatedPseudoStatesMask = negatedPseudoStatesMask
-                };
-            }
-
-            void AddPseudoStatesRuleIfNecessasy()
-            {
-                if (pseudoStatesMask != 0 ||
-                    negatedPseudoStatesMask != 0)
-                {
-                    parts.Add(new StyleSelectorPart() {type = StyleSelectorType.PseudoClass});
-                }
-            }
-
-            private void FinishSelector()
-            {
-                FinishCurrentSelector();
-                if (styleSelectors.Count > 0)
-                {
-                    var selector = new StyleComplexSelector();
-                    selector.selectors = styleSelectors.ToArray();
-                    styleSelectors.Clear();
-                    m_Matchers.Add(new RuleMatcher { complexSelector = selector });
-                }
-            }
-
-            private bool CurrentSelectorEmpty()
-            {
-                return parts.Count == 0 &&
-                    m_Relationship == StyleSelectorRelationship.None &&
-                    pseudoStatesMask == 0 &&
-                    negatedPseudoStatesMask == 0;
-            }
-
-            private void FinishCurrentSelector()
-            {
-                if (!CurrentSelectorEmpty())
-                {
-                    StyleSelector sel = new StyleSelector();
-                    sel.previousRelationship = m_Relationship;
-
-                    AddPseudoStatesRuleIfNecessasy();
-
-                    sel.parts = m_Parts.ToArray();
-                    sel.pseudoStateMask = pseudoStatesMask;
-                    sel.negatedPseudoStateMask = negatedPseudoStatesMask;
-                    styleSelectors.Add(sel);
-                    m_Parts.Clear();
-                    pseudoStatesMask = negatedPseudoStatesMask = 0;
-                }
-            }
-
-            public QueryState<T> Build()
-            {
-                FinishSelector();
-                return new QueryState<T>(m_Element, m_Matchers);
-            }
-
-            // Quick One-liners accessors
-            public static implicit operator T(QueryBuilder<T> s)
-            {
-                return s.First();
-            }
-
-            public T First()
-            {
-                return Build().First();
-            }
-
-            public T Last()
-            {
-                return Build().Last();
-            }
-
-            public List<T> ToList()
-            {
-                return Build().ToList();
-            }
-
-            public void ToList(List<T> results)
-            {
-                Build().ToList(results);
-            }
-
-            public T AtIndex(int index)
-            {
-                return Build().AtIndex(index);
-            }
-
-            public void ForEach<T2>(List<T2> result, Func<T, T2> funcCall)
-            {
-                Build().ForEach(result, funcCall);
-            }
-
-            public List<T2> ForEach<T2>(Func<T, T2> funcCall)
-            {
-                return Build().ForEach(funcCall);
-            }
-
-            public void ForEach(Action<T> funcCall)
-            {
-                Build().ForEach(funcCall);
+                matches = null;
             }
         }
 
-        public struct QueryState<T> where T : VisualElement
+        private static readonly ListQueryMatcher s_List = new ListQueryMatcher();
+
+        public void ToList(List<T> results)
         {
-            private readonly VisualElement m_Element;
-            private readonly List<RuleMatcher> m_Matchers;
+            s_List.matches = results;
+            s_List.Run(m_Element, m_Matchers);
+            s_List.Reset();
+        }
 
-            internal QueryState(VisualElement element, List<RuleMatcher> matchers)
+        public List<T> ToList()
+        {
+            List<T> result = new List<T>();
+            ToList(result);
+            return result;
+        }
+
+        public T AtIndex(int index)
+        {
+            s_Index.matchIndex = index;
+            s_Index.Run(m_Element, m_Matchers);
+
+            // We need to make sure we don't leak a ref to the VisualElement.
+            var match = s_Index.match as T;
+            s_Index.match = null;
+            return match;
+        }
+
+        //Convoluted trick so save on allocating memory for delegates or lambdas
+        private class ActionQueryMatcher : UQuery.UQueryMatcher
+        {
+            internal Action<T> callBack { get; set; }
+
+            protected override bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
             {
-                m_Element = element;
-                m_Matchers = matchers;
-            }
+                T castedElement = element as T;
 
-            public QueryState<T> RebuildOn(VisualElement element)
-            {
-                return new QueryState<T>(element, m_Matchers);
-            }
-
-            public T First()
-            {
-                s_First.Run(m_Element, m_Matchers);
-
-                // We need to make sure we don't leak a ref to the VisualElement.
-                var match = s_First.match as T;
-                s_First.match = null;
-                return match;
-            }
-
-            public T Last()
-            {
-                s_Last.Run(m_Element, m_Matchers);
-
-                // We need to make sure we don't leak a ref to the VisualElement.
-                var match = s_Last.match as T;
-                s_Last.match = null;
-                return match;
-            }
-
-            private class ListQueryMatcher : UQueryMatcher
-            {
-                public List<T> matches { get; set; }
-
-                protected override bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
+                if (castedElement != null)
                 {
-                    matches.Add(element as T);
-                    return false;
+                    callBack(castedElement);
                 }
 
-                public void Reset()
+                return false;
+            }
+        };
+
+        public void ForEach(Action<T> funcCall)
+        {
+            s_Action.callBack = funcCall;
+
+            s_Action.Run(m_Element, m_Matchers);
+            s_Action.callBack = null;
+        }
+
+        private class DelegateQueryMatcher<TReturnType> : UQuery.UQueryMatcher
+        {
+            public Func<T, TReturnType> callBack { get; set; }
+
+            public List<TReturnType> result { get; set; }
+
+            public static DelegateQueryMatcher<TReturnType> s_Instance = new DelegateQueryMatcher<TReturnType>();
+
+            protected override bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
+            {
+                T castedElement = element as T;
+
+                if (castedElement != null)
                 {
-                    matches = null;
+                    result.Add(callBack(castedElement));
                 }
+
+                return false;
+            }
+        }
+        public void ForEach<T2>(List<T2> result, Func<T, T2> funcCall)
+        {
+            var matcher = DelegateQueryMatcher<T2>.s_Instance;
+
+            matcher.callBack = funcCall;
+            matcher.result = result;
+            matcher.Run(m_Element, m_Matchers);
+            matcher.callBack = null;
+            matcher.result = null;
+        }
+
+        public List<T2> ForEach<T2>(Func<T, T2> funcCall)
+        {
+            List<T2> result = new List<T2>();
+            ForEach(result, funcCall);
+            return result;
+        }
+
+        public bool Equals(UQueryState<T> other)
+        {
+            return ReferenceEquals(m_Element, other.m_Element) &&
+                EqualityComparer<List<RuleMatcher>>.Default.Equals(m_Matchers, other.m_Matchers);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (!(obj is UQueryState<T>))
+            {
+                return false;
             }
 
-            private static readonly ListQueryMatcher s_List = new ListQueryMatcher();
+            return Equals((UQueryState<T>)obj);
+        }
 
-            public void ToList(List<T> results)
+        public override int GetHashCode()
+        {
+            var hashCode = 488160421;
+            hashCode = hashCode * -1521134295 + EqualityComparer<VisualElement>.Default.GetHashCode(m_Element);
+            hashCode = hashCode * -1521134295 + EqualityComparer<List<RuleMatcher>>.Default.GetHashCode(m_Matchers);
+            return hashCode;
+        }
+
+        public static bool operator==(UQueryState<T> state1, UQueryState<T> state2)
+        {
+            return state1.Equals(state2);
+        }
+
+        public static bool operator!=(UQueryState<T> state1, UQueryState<T> state2)
+        {
+            return !(state1 == state2);
+        }
+    }
+
+    public struct UQueryBuilder<T> : IEquatable<UQueryBuilder<T>> where T : VisualElement
+    {
+        private List<StyleSelector> m_StyleSelectors;
+        private List<StyleSelector> styleSelectors { get { return m_StyleSelectors ?? (m_StyleSelectors = new List<StyleSelector>()); } }
+
+        private List<StyleSelectorPart> m_Parts;
+        private List<StyleSelectorPart> parts { get { return m_Parts ?? (m_Parts = new List<StyleSelectorPart>()); } }
+        private VisualElement m_Element;
+        private List<RuleMatcher> m_Matchers;
+        private StyleSelectorRelationship m_Relationship;
+
+        private int pseudoStatesMask;
+        private int negatedPseudoStatesMask;
+
+        public UQueryBuilder(VisualElement visualElement)
+            : this()
+        {
+            m_Element = visualElement;
+            m_Parts = null;
+            m_StyleSelectors = null;
+            m_Relationship = StyleSelectorRelationship.None;
+            m_Matchers = new List<RuleMatcher>();
+            pseudoStatesMask = negatedPseudoStatesMask = 0;
+        }
+
+        public UQueryBuilder<T> Class(string classname)
+        {
+            AddClass(classname);
+            return this;
+        }
+
+        public UQueryBuilder<T> Name(string id)
+        {
+            AddName(id);
+            return this;
+        }
+
+        public UQueryBuilder<T2> Descendents<T2>(string name = null, params string[] classNames) where T2 : VisualElement
+        {
+            FinishCurrentSelector();
+            AddType<T2>();
+            AddName(name);
+            AddClasses(classNames);
+            return AddRelationship<T2>(StyleSelectorRelationship.Descendent);
+        }
+
+        public UQueryBuilder<T2> Descendents<T2>(string name = null, string classname = null) where T2 : VisualElement
+        {
+            FinishCurrentSelector();
+            AddType<T2>();
+            AddName(name);
+            AddClass(classname);
+            return AddRelationship<T2>(StyleSelectorRelationship.Descendent);
+        }
+
+        public UQueryBuilder<T2> Children<T2>(string name = null, params string[] classes) where T2 : VisualElement
+        {
+            FinishCurrentSelector();
+            AddType<T2>();
+            AddName(name);
+            AddClasses(classes);
+            return AddRelationship<T2>(StyleSelectorRelationship.Child);
+        }
+
+        public UQueryBuilder<T2> Children<T2>(string name = null, string className = null) where T2 : VisualElement
+        {
+            FinishCurrentSelector();
+            AddType<T2>();
+            AddName(name);
+            AddClass(className);
+            return AddRelationship<T2>(StyleSelectorRelationship.Child);
+        }
+
+        public UQueryBuilder<T2> OfType<T2>(string name = null, params string[] classes) where T2 : VisualElement
+        {
+            AddType<T2>();
+            AddName(name);
+            AddClasses(classes);
+            return AddRelationship<T2>(StyleSelectorRelationship.None);
+        }
+
+        public UQueryBuilder<T2> OfType<T2>(string name = null, string className = null) where T2 : VisualElement
+        {
+            AddType<T2>();
+            AddName(name);
+            AddClass(className);
+            return AddRelationship<T2>(StyleSelectorRelationship.None);
+        }
+
+        public UQueryBuilder<T> Where(Func<T, bool> selectorPredicate)
+        {
+            //we can't use a static instance as in the QueryState<T>.ForEach below since the query might be long lived
+            parts.Add(StyleSelectorPart.CreatePredicate(new UQuery.PredicateWrapper<T>(selectorPredicate)));
+            return this;
+        }
+
+        private void AddClass(string c)
+        {
+            if (c != null)
+                parts.Add(StyleSelectorPart.CreateClass(c));
+        }
+
+        private void AddClasses(params string[] classes)
+        {
+            if (classes != null)
             {
-                s_List.matches = results;
-                s_List.Run(m_Element, m_Matchers);
-                s_List.Reset();
+                for (int i = 0; i < classes.Length; i++)
+                    AddClass(classes[i]);
             }
+        }
 
-            public List<T> ToList()
+        private void AddName(string id)
+        {
+            if (id != null)
+                parts.Add(StyleSelectorPart.CreateId(id));
+        }
+
+        private void AddType<T2>() where T2 : VisualElement
+        {
+            if (typeof(T2) != typeof(VisualElement))
+                parts.Add(StyleSelectorPart.CreatePredicate(UQuery.IsOfType<T2>.s_Instance));
+        }
+
+        private UQueryBuilder<T> AddPseudoState(PseudoStates s)
+        {
+            pseudoStatesMask = pseudoStatesMask | (int)s;
+            return this;
+        }
+
+        private UQueryBuilder<T> AddNegativePseudoState(PseudoStates s)
+        {
+            negatedPseudoStatesMask = negatedPseudoStatesMask | (int)s;
+            return this;
+        }
+
+        public UQueryBuilder<T> Active()
+        {
+            return AddPseudoState(PseudoStates.Active);
+        }
+
+        public UQueryBuilder<T> NotActive()
+        {
+            return AddNegativePseudoState(PseudoStates.Active);
+        }
+
+        public UQueryBuilder<T> Visible()
+        {
+            return Where(e => e.visible);
+        }
+
+        public UQueryBuilder<T> NotVisible()
+        {
+            return Where(e => !e.visible);
+        }
+
+        public UQueryBuilder<T> Hovered()
+        {
+            return AddPseudoState(PseudoStates.Hover);
+        }
+
+        public UQueryBuilder<T> NotHovered()
+        {
+            return AddNegativePseudoState(PseudoStates.Hover);
+        }
+
+        public UQueryBuilder<T> Checked()
+        {
+            return AddPseudoState(PseudoStates.Checked);
+        }
+
+        public UQueryBuilder<T> NotChecked()
+        {
+            return AddNegativePseudoState(PseudoStates.Checked);
+        }
+
+        public UQueryBuilder<T> Selected()
+        {
+            return AddPseudoState(PseudoStates.Selected);
+        }
+
+        public UQueryBuilder<T> NotSelected()
+        {
+            return AddNegativePseudoState(PseudoStates.Selected);
+        }
+
+        public UQueryBuilder<T> Enabled()
+        {
+            return AddNegativePseudoState(PseudoStates.Disabled);
+        }
+
+        public UQueryBuilder<T> NotEnabled()
+        {
+            return AddPseudoState(PseudoStates.Disabled);
+        }
+
+        public UQueryBuilder<T> Focused()
+        {
+            return AddPseudoState(PseudoStates.Focus);
+        }
+
+        public UQueryBuilder<T> NotFocused()
+        {
+            return AddNegativePseudoState(PseudoStates.Focus);
+        }
+
+        private UQueryBuilder<T2> AddRelationship<T2>(StyleSelectorRelationship relationship) where T2 : VisualElement
+        {
+            return new UQueryBuilder<T2>(m_Element)
             {
-                List<T> result = new List<T>();
-                ToList(result);
-                return result;
-            }
-
-            public T AtIndex(int index)
-            {
-                s_Index.matchIndex = index;
-                s_Index.Run(m_Element, m_Matchers);
-
-                // We need to make sure we don't leak a ref to the VisualElement.
-                var match = s_Index.match as T;
-                s_Index.match = null;
-                return match;
-            }
-
-            //Convoluted trick so save on allocating memory for delegates or lambdas
-            private class ActionQueryMatcher : UQueryMatcher
-            {
-                internal Action<T> callBack { get; set; }
-
-                protected override bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
-                {
-                    T castedElement = element as T;
-
-                    if (castedElement != null)
-                    {
-                        callBack(castedElement);
-                    }
-
-                    return false;
-                }
+                m_Matchers = m_Matchers,
+                m_Parts = m_Parts,
+                m_StyleSelectors = m_StyleSelectors,
+                m_Relationship = relationship == StyleSelectorRelationship.None ? m_Relationship : relationship,
+                pseudoStatesMask = pseudoStatesMask,
+                negatedPseudoStatesMask = negatedPseudoStatesMask
             };
+        }
 
-            private static ActionQueryMatcher s_Action = new ActionQueryMatcher();
-
-
-            public void ForEach(Action<T> funcCall)
+        void AddPseudoStatesRuleIfNecessasy()
+        {
+            if (pseudoStatesMask != 0 ||
+                negatedPseudoStatesMask != 0)
             {
-                s_Action.callBack = funcCall;
+                parts.Add(new StyleSelectorPart() {type = StyleSelectorType.PseudoClass});
+            }
+        }
 
-                s_Action.Run(m_Element, m_Matchers);
-                s_Action.callBack = null;
+        private void FinishSelector()
+        {
+            FinishCurrentSelector();
+            if (styleSelectors.Count > 0)
+            {
+                var selector = new StyleComplexSelector();
+                selector.selectors = styleSelectors.ToArray();
+                styleSelectors.Clear();
+                m_Matchers.Add(new RuleMatcher { complexSelector = selector });
+            }
+        }
+
+        private bool CurrentSelectorEmpty()
+        {
+            return parts.Count == 0 &&
+                m_Relationship == StyleSelectorRelationship.None &&
+                pseudoStatesMask == 0 &&
+                negatedPseudoStatesMask == 0;
+        }
+
+        private void FinishCurrentSelector()
+        {
+            if (!CurrentSelectorEmpty())
+            {
+                StyleSelector sel = new StyleSelector();
+                sel.previousRelationship = m_Relationship;
+
+                AddPseudoStatesRuleIfNecessasy();
+
+                sel.parts = m_Parts.ToArray();
+                sel.pseudoStateMask = pseudoStatesMask;
+                sel.negatedPseudoStateMask = negatedPseudoStatesMask;
+                styleSelectors.Add(sel);
+                m_Parts.Clear();
+                pseudoStatesMask = negatedPseudoStatesMask = 0;
+            }
+        }
+
+        public UQueryState<T> Build()
+        {
+            FinishSelector();
+            return new UQueryState<T>(m_Element, m_Matchers);
+        }
+
+        // Quick One-liners accessors
+        public static implicit operator T(UQueryBuilder<T> s)
+        {
+            return s.First();
+        }
+
+        public static bool operator==(UQueryBuilder<T> builder1, UQueryBuilder<T> builder2)
+        {
+            return builder1.Equals(builder2);
+        }
+
+        public static bool operator!=(UQueryBuilder<T> builder1, UQueryBuilder<T> builder2)
+        {
+            return !(builder1 == builder2);
+        }
+
+        public T First()
+        {
+            return Build().First();
+        }
+
+        public T Last()
+        {
+            return Build().Last();
+        }
+
+        public List<T> ToList()
+        {
+            return Build().ToList();
+        }
+
+        public void ToList(List<T> results)
+        {
+            Build().ToList(results);
+        }
+
+        public T AtIndex(int index)
+        {
+            return Build().AtIndex(index);
+        }
+
+        public void ForEach<T2>(List<T2> result, Func<T, T2> funcCall)
+        {
+            Build().ForEach(result, funcCall);
+        }
+
+        public List<T2> ForEach<T2>(Func<T, T2> funcCall)
+        {
+            return Build().ForEach(funcCall);
+        }
+
+        public void ForEach(Action<T> funcCall)
+        {
+            Build().ForEach(funcCall);
+        }
+
+        public bool Equals(UQueryBuilder<T> other)
+        {
+            return EqualityComparer<List<StyleSelector>>.Default.Equals(m_StyleSelectors, other.m_StyleSelectors) &&
+                EqualityComparer<List<StyleSelector>>.Default.Equals(styleSelectors, other.styleSelectors) &&
+                EqualityComparer<List<StyleSelectorPart>>.Default.Equals(m_Parts, other.m_Parts) &&
+                EqualityComparer<List<StyleSelectorPart>>.Default.Equals(parts, other.parts) && ReferenceEquals(m_Element, other.m_Element) &&
+                EqualityComparer<List<RuleMatcher>>.Default.Equals(m_Matchers, other.m_Matchers) &&
+                m_Relationship == other.m_Relationship &&
+                pseudoStatesMask == other.pseudoStatesMask &&
+                negatedPseudoStatesMask == other.negatedPseudoStatesMask;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (!(obj is UQueryBuilder<T>))
+            {
+                return false;
             }
 
-            private class DelegateQueryMatcher<TReturnType> : UQueryMatcher
-            {
-                public Func<T, TReturnType> callBack { get; set; }
+            return Equals((UQueryBuilder<T>)obj);
+        }
 
-                public List<TReturnType> result { get; set; }
-
-                public static DelegateQueryMatcher<TReturnType> s_Instance = new DelegateQueryMatcher<TReturnType>();
-
-                protected override bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
-                {
-                    T castedElement = element as T;
-
-                    if (castedElement != null)
-                    {
-                        result.Add(callBack(castedElement));
-                    }
-
-                    return false;
-                }
-            }
-            public void ForEach<T2>(List<T2> result, Func<T, T2> funcCall)
-            {
-                var matcher = DelegateQueryMatcher<T2>.s_Instance;
-
-                matcher.callBack = funcCall;
-                matcher.result = result;
-                matcher.Run(m_Element, m_Matchers);
-                matcher.callBack = null;
-                matcher.result = null;
-            }
-
-            public List<T2> ForEach<T2>(Func<T, T2> funcCall)
-            {
-                List<T2> result = new List<T2>();
-                ForEach(result, funcCall);
-                return result;
-            }
+        public override int GetHashCode()
+        {
+            var hashCode = -949812380;
+            hashCode = hashCode * -1521134295 + EqualityComparer<List<StyleSelector>>.Default.GetHashCode(m_StyleSelectors);
+            hashCode = hashCode * -1521134295 + EqualityComparer<List<StyleSelector>>.Default.GetHashCode(styleSelectors);
+            hashCode = hashCode * -1521134295 + EqualityComparer<List<StyleSelectorPart>>.Default.GetHashCode(m_Parts);
+            hashCode = hashCode * -1521134295 + EqualityComparer<List<StyleSelectorPart>>.Default.GetHashCode(parts);
+            hashCode = hashCode * -1521134295 + EqualityComparer<VisualElement>.Default.GetHashCode(m_Element);
+            hashCode = hashCode * -1521134295 + EqualityComparer<List<RuleMatcher>>.Default.GetHashCode(m_Matchers);
+            hashCode = hashCode * -1521134295 + m_Relationship.GetHashCode();
+            hashCode = hashCode * -1521134295 + pseudoStatesMask.GetHashCode();
+            hashCode = hashCode * -1521134295 + negatedPseudoStatesMask.GetHashCode();
+            return hashCode;
         }
     }
 
@@ -681,31 +759,31 @@ namespace UnityEngine.Experimental.UIElements
             return e.Query<VisualElement>(name, className).Build().First();
         }
 
-        public static UQuery.QueryBuilder<VisualElement> Query(this VisualElement e, string name = null, params string[] classes)
+        public static UQueryBuilder<VisualElement> Query(this VisualElement e, string name = null, params string[] classes)
         {
             return e.Query<VisualElement>(name, classes);
         }
 
-        public static UQuery.QueryBuilder<VisualElement> Query(this VisualElement e, string name = null, string className = null)
+        public static UQueryBuilder<VisualElement> Query(this VisualElement e, string name = null, string className = null)
         {
             return e.Query<VisualElement>(name, className);
         }
 
-        public static UQuery.QueryBuilder<T> Query<T>(this VisualElement e, string name = null, params string[] classes) where T : VisualElement
+        public static UQueryBuilder<T> Query<T>(this VisualElement e, string name = null, params string[] classes) where T : VisualElement
         {
-            var queryBuilder = new UQuery.QueryBuilder<VisualElement>(e).OfType<T>(name, classes);
+            var queryBuilder = new UQueryBuilder<VisualElement>(e).OfType<T>(name, classes);
             return queryBuilder;
         }
 
-        public static UQuery.QueryBuilder<T> Query<T>(this VisualElement e, string name = null, string className = null) where T : VisualElement
+        public static UQueryBuilder<T> Query<T>(this VisualElement e, string name = null, string className = null) where T : VisualElement
         {
-            var queryBuilder = new UQuery.QueryBuilder<VisualElement>(e).OfType<T>(name, className);
+            var queryBuilder = new UQueryBuilder<VisualElement>(e).OfType<T>(name, className);
             return queryBuilder;
         }
 
-        public static UQuery.QueryBuilder<VisualElement> Query(this VisualElement e)
+        public static UQueryBuilder<VisualElement> Query(this VisualElement e)
         {
-            return new UQuery.QueryBuilder<VisualElement>(e);
+            return new UQueryBuilder<VisualElement>(e);
         }
     }
 }

@@ -158,7 +158,7 @@ namespace UnityEditorInternal
             additionalArgs = Debug.GetDiagnosticSwitch("VMIl2CppAdditionalArgs") as string;
             if (!string.IsNullOrEmpty(additionalArgs))
             {
-                arguments.Add(additionalArgs);
+                arguments.Add(additionalArgs.Trim('\''));
             }
 
             return arguments.Aggregate(String.Empty, (current, arg) => current + arg + " ");
@@ -314,6 +314,14 @@ namespace UnityEditorInternal
                 arguments.AddRange(Il2CppNativeCodeBuilderUtils.AddBuilderArguments(il2CppNativeCodeBuilder, OutputFileRelativePath(), m_PlatformProvider.includePaths, m_PlatformProvider.libraryPaths, compilerConfiguration));
             }
 
+            if (BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", m_PlatformProvider.target))
+            {
+                if (PlayerSettings.gcWBarrierValidation)
+                    arguments.Add("--write-barrier-validation");
+                if (PlayerSettings.gcIncremental && PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
+                    arguments.Add("--incremental-g-c-time-slice=3");
+            }
+
             arguments.Add(string.Format("--map-file-parser=\"{0}\"", GetMapFileParserPath()));
 
             var additionalArgs = IL2CPPUtils.GetAdditionalArguments();
@@ -439,6 +447,7 @@ namespace UnityEditorInternal
         bool supportsUsingIl2cppCore { get; }
         bool development { get; }
         bool allowDebugging { get; }
+        bool scriptsOnlyBuild { get; }
 
         BuildReport buildReport { get; }
         string[] includePaths { get; }
@@ -514,6 +523,16 @@ namespace UnityEditorInternal
             {
                 if (buildReport != null)
                     return (buildReport.summary.options & BuildOptions.AllowDebugging) == BuildOptions.AllowDebugging;
+                return false;
+            }
+        }
+
+        public virtual bool scriptsOnlyBuild
+        {
+            get
+            {
+                if (buildReport != null)
+                    return (buildReport.summary.options & BuildOptions.BuildScriptsOnly) == BuildOptions.BuildScriptsOnly;
                 return false;
             }
         }

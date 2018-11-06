@@ -3,60 +3,83 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Globalization;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     public class IntegerField : TextValueField<int>
     {
+        // This property to alleviate the fact we have to cast all the time
+        IntegerInput integerInput => (IntegerInput)textInputBase;
+
         public new class UxmlFactory : UxmlFactory<IntegerField, UxmlTraits> {}
-
-        public new class UxmlTraits : TextValueField<int>.UxmlTraits
-        {
-            UxmlIntAttributeDescription m_Value = new UxmlIntAttributeDescription { name = "value" };
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                ((IntegerField)ve).SetValueWithoutNotify(m_Value.GetValueFromBag(bag, cc));
-            }
-        }
-
-        public IntegerField()
-            : this(kMaxLengthNone) {}
-
-        public IntegerField(int maxLength)
-            : base(maxLength)
-        {
-            formatString = EditorGUI.kIntFieldFormatString;
-        }
-
-        protected override string allowedCharacters
-        {
-            get { return EditorGUI.s_AllowedCharactersForInt; }
-        }
-
-        public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, int startValue)
-        {
-            double sensitivity = NumericFieldDraggerUtility.CalculateIntDragSensitivity(startValue);
-            float acceleration = NumericFieldDraggerUtility.Acceleration(speed == DeltaSpeed.Fast, speed == DeltaSpeed.Slow);
-            long v = value;
-            v += (long)Math.Round(NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity);
-            value = MathUtils.ClampToInt(v);
-        }
+        public new class UxmlTraits : BaseFieldTraits<int, UxmlIntAttributeDescription> {}
 
         protected override string ValueToString(int v)
         {
-            return v.ToString(formatString);
+            return v.ToString(formatString, CultureInfo.InvariantCulture.NumberFormat);
         }
 
         protected override int StringToValue(string str)
         {
             long v;
-            EditorGUI.StringToLong(text, out v);
+            EditorGUI.StringToLong(str, out v);
             return MathUtils.ClampToInt(v);
+        }
+
+        public new static readonly string ussClassName = "unity-integer-field";
+
+        public IntegerField()
+            : this((string)null) {}
+
+        public IntegerField(int maxLength)
+            : this(null, maxLength) {}
+
+        public IntegerField(string label, int maxLength = kMaxLengthNone)
+            : base(label, maxLength, new IntegerInput() { name = "unity-text-input" })
+        {
+            AddToClassList(ussClassName);
+            AddLabelDragger<int>();
+        }
+
+        public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, int startValue)
+        {
+            integerInput.ApplyInputDeviceDelta(delta, speed, startValue);
+        }
+
+        class IntegerInput : TextValueInput
+        {
+            IntegerField parentIntegerField => (IntegerField)parentField;
+
+            internal IntegerInput()
+            {
+                formatString = EditorGUI.kIntFieldFormatString;
+            }
+
+            protected override string allowedCharacters => EditorGUI.s_AllowedCharactersForInt;
+
+            public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, int startValue)
+            {
+                double sensitivity = NumericFieldDraggerUtility.CalculateIntDragSensitivity(startValue);
+                float acceleration = NumericFieldDraggerUtility.Acceleration(speed == DeltaSpeed.Fast, speed == DeltaSpeed.Slow);
+                long v = parentIntegerField.value;
+                v += (long)Math.Round(NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity);
+                parentIntegerField.value = MathUtils.ClampToInt(v);
+            }
+
+            protected override string ValueToString(int v)
+            {
+                return v.ToString(formatString);
+            }
+
+            protected override int StringToValue(string str)
+            {
+                long v;
+                EditorGUI.StringToLong(str, out v);
+                return MathUtils.ClampToInt(v);
+            }
         }
     }
 }

@@ -964,7 +964,7 @@ namespace UnityEditor
 
             if (m_ShowDetailedMemoryPane == ProfilerMemoryView.Detailed)
             {
-                if (GUILayout.Button(GUIContent.Temp(string.Format(Styles.takeSample.text, m_AttachProfilerState.connectionName), Styles.takeSample.tooltip), EditorStyles.toolbarButton))
+                if (GUILayout.Button(GUIContent.Temp(UnityString.Format(Styles.takeSample.text, m_AttachProfilerState.connectionName), Styles.takeSample.tooltip), EditorStyles.toolbarButton))
                     RefreshMemoryData();
 
                 m_GatherObjectReferences = GUILayout.Toggle(m_GatherObjectReferences, Styles.gatherObjectReferences, EditorStyles.toolbarButton);
@@ -1033,7 +1033,7 @@ namespace UnityEditor
                     cpuChart.m_Data.overlays[i] = new ChartSeriesViewData(chart.name, chart.yValues.Length, chart.color);
                     for (int frameIdx = 0; frameIdx < chart.yValues.Length; ++frameIdx)
                         cpuChart.m_Data.overlays[i].xValues[frameIdx] = (float)frameIdx;
-                    int identifier = ProfilerDriver.GetStatisticsIdentifierForArea(cpuChart.m_Area, string.Format("Selected{0}", chart.name));
+                    int identifier = ProfilerDriver.GetStatisticsIdentifierForArea(cpuChart.m_Area, UnityString.Format("Selected{0}", chart.name));
                     float maxValue;
                     ProfilerDriver.GetStatisticsValues(identifier, firstEmptyFrame, cpuChart.m_DataScale, cpuChart.m_Data.overlays[i].yValues, out maxValue);
                 }

@@ -478,11 +478,15 @@ namespace UnityEditor
                     m_IgnoreBeginGUI = true;
                     messageControl = controlID;
                     var temp = GUIUtility.keyboardControl;
-                    viewThatHadFocus.SetKeyboardControl(0);
+                    if (viewThatHadFocus != null)
+                    {
+                        viewThatHadFocus.SetKeyboardControl(0);
 
-                    viewThatHadFocus.SendEvent(EditorGUIUtility.CommandEvent(CommitCommand));
+                        viewThatHadFocus.SendEvent(EditorGUIUtility.CommandEvent(CommitCommand));
+
+                        viewThatHadFocus.SetKeyboardControl(temp);
+                    }
                     m_IgnoreBeginGUI = false;
-                    viewThatHadFocus.SetKeyboardControl(temp);
                     messageControl = 0;
                 }
 

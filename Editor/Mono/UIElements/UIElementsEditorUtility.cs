@@ -3,23 +3,16 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleSheets;
-using UnityEngine.StyleSheets;
-using StyleSheet = UnityEngine.StyleSheets.StyleSheet;
+using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
-    public static class UIElementsEditorUtility
+    internal static class UIElementsEditorUtility
     {
         internal static readonly string s_DefaultCommonStyleSheetPath = "StyleSheets/DefaultCommon.uss";
         internal static readonly string s_DefaultCommonDarkStyleSheetPath = "StyleSheets/DefaultCommonDark.uss";
         internal static readonly string s_DefaultCommonLightStyleSheetPath = "StyleSheets/DefaultCommonLight.uss";
-
-        public static CursorStyle CreateDefaultCursorStyle(MouseCursor mouseCursor)
-        {
-            return new CursorStyle() { texture = null, hotspot = Vector2.zero, defaultCursorId = (int)mouseCursor };
-        }
 
         internal static int GetCursorId(StyleSheet sheet, StyleValueHandle handle)
         {
@@ -28,7 +21,7 @@ namespace UnityEditor.Experimental.UIElements
 
         internal static void AddDefaultEditorStyleSheets(VisualElement p)
         {
-            if (p.styleSheets == null)
+            if (p.styleSheets.count == 0)
             {
                 p.AddStyleSheetPath(s_DefaultCommonStyleSheetPath);
                 if (EditorGUIUtility.isProSkin)

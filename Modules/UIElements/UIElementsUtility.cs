@@ -5,9 +5,9 @@
 using System;
 using System.Collections.Generic;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
-    internal class UIElementsUtility
+    internal static class UIElementsUtility
     {
         private static Stack<IMGUIContainer> s_ContainerStack = new Stack<IMGUIContainer>();
         private static Dictionary<int, Panel> s_UIElementsCache = new Dictionary<int, Panel>();
@@ -69,7 +69,10 @@ namespace UnityEngine.Experimental.UIElements
 
                 return DoDispatch(panel);
             }
-            return false;
+
+            // Experimental: revert this when we remove the Experimental namespace
+            return UnityEngine.Experimental.UIElements.UIElementsUtility.ProcessEvent(instanceID, nativeEventPtr);
+            //return false;
         }
 
         public static void RemoveCachedPanel(int instanceID)
@@ -97,7 +100,9 @@ namespace UnityEngine.Experimental.UIElements
                 s_ContainerStack.Pop();
             }
 
-            return GUIUtility.ShouldRethrowException(exception);
+            //Experimental: re-enable this when we remove the Experimental namespace
+            return UnityEngine.Experimental.UIElements.UIElementsUtility.EndContainerGUIFromException(exception);
+            //return GUIUtility.ShouldRethrowException(exception);
         }
 
         internal static void BeginContainerGUI(GUILayoutUtility.LayoutCache cache, Event evt, IMGUIContainer container)
@@ -257,12 +262,12 @@ namespace UnityEngine.Experimental.UIElements
             return s_UIElementsCache.GetEnumerator();
         }
 
-        internal static Panel FindOrCreatePanel(ScriptableObject ownerObject, ContextType contextType, IDataWatchService dataWatch = null)
+        internal static Panel FindOrCreatePanel(ScriptableObject ownerObject, ContextType contextType)
         {
             Panel panel;
             if (!s_UIElementsCache.TryGetValue(ownerObject.GetInstanceID(), out panel))
             {
-                panel = new Panel(ownerObject, contextType, dataWatch);
+                panel = new Panel(ownerObject, contextType);
                 s_UIElementsCache.Add(ownerObject.GetInstanceID(), panel);
             }
             else

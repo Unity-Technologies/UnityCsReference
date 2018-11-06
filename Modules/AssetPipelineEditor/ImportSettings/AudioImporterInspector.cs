@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System;
 using System.Linq;
 using UnityEditor.Experimental.AssetImporters;
+using System.Globalization;
 
 namespace UnityEditor
 {
@@ -323,7 +324,7 @@ namespace UnityEditor
             GUILayout.Space(10);
 
             EditorGUILayout.HelpBox("Original Size: \t" + EditorUtility.FormatBytes(origSize) + "\nImported Size: \t" + EditorUtility.FormatBytes(compSize) + "\n" +
-                "Ratio: \t\t" + (100.0f * (float)compSize / (float)origSize).ToString("0.00") + "%", MessageType.Info);
+                "Ratio: \t\t" + (100.0f * (float)compSize / (float)origSize).ToString("0.00", CultureInfo.InvariantCulture.NumberFormat) + "%", MessageType.Info);
 
 
             if (CurrentPlatformHasAutoTranslatedCompression())

@@ -2,19 +2,15 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Linq;
-using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using UnityEditor.Experimental.AssetImporters;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.StyleSheets;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.StyleSheets
 {
     // Make sure style sheets importer after allowed dependent assets: textures and fonts
-    [ScriptedImporter(version: 4, ext: "uss", importQueueOffset: 1000)]
+    [ScriptedImporter(version: 5, ext: "uss", importQueueOffset: 1000)]
     class StyleSheetImporter : ScriptedImporter
     {
         public override void OnImportAsset(AssetImportContext ctx)

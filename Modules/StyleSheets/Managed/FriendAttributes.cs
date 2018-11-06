@@ -4,5 +4,5 @@
 
 using System.Runtime.CompilerServices;
 
-// needed for UnityEngine.StyleSheets.StyleSheet
+// needed for UnityEngine.UIElements.StyleSheet
 [assembly: InternalsVisibleTo("UnityEngine.UIElementsModule")]

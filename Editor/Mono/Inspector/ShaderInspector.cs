@@ -582,11 +582,11 @@ namespace UnityEditor
         static string FormatCount(ulong count)
         {
             if (count > 1000 * 1000 * 1000)
-                return ((double)count / 1000000000.0).ToString("f2") + "B";
+                return ((double)count / 1000000000.0).ToString("f2", CultureInfo.InvariantCulture.NumberFormat) + "B";
             if (count > 1000 * 1000)
-                return ((double)count / 1000000.0).ToString("f2") + "M";
+                return ((double)count / 1000000.0).ToString("f2", CultureInfo.InvariantCulture.NumberFormat) + "M";
             if (count > 1000)
-                return ((double)count / 1000.0).ToString("f2") + "k";
+                return ((double)count / 1000.0).ToString("f2", CultureInfo.InvariantCulture.NumberFormat) + "k";
             return count.ToString();
         }
 

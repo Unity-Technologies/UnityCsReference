@@ -5,9 +5,9 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     public class Attacher
     {
@@ -122,7 +122,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 {
                     m_WatchedObjects.Add(v);
                     v.RegisterCallback<GeometryChangedEvent>(OnTargetLayout);
-                    v = v.shadow.parent;
+                    v = v.hierarchy.parent;
                 }
 
                 v = element;
@@ -131,7 +131,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 {
                     m_WatchedObjects.Add(v);
                     v.RegisterCallback<GeometryChangedEvent>(OnTargetLayout);
-                    v = v.shadow.parent;
+                    v = v.hierarchy.parent;
                 }
             }
         }
@@ -156,9 +156,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         private void AlignOnTarget()
         {
-            Rect currentRect = new Rect(element.style.positionLeft, element.style.positionTop, element.style.width, element.style.height);
+            Rect currentRect = new Rect(element.resolvedStyle.left, element.resolvedStyle.top, element.resolvedStyle.width, element.resolvedStyle.height);
             Rect targetRect = target.rect;
-            targetRect = target.ChangeCoordinatesTo(element.shadow.parent, targetRect);
+            targetRect = target.ChangeCoordinatesTo(element.hierarchy.parent, targetRect);
 
             float centerY = 0;
             //align Vertically
@@ -211,8 +211,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
             else
             {
-                element.style.positionLeft = currentRect.xMin;
-                element.style.positionTop = currentRect.yMin;
+                element.style.left = currentRect.xMin;
+                element.style.top = currentRect.yMin;
             }
         }
     }

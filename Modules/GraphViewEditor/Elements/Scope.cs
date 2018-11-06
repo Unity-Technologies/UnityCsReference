@@ -6,11 +6,10 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
+using UnityEngine.UIElements;
 using UnityEngine.Yoga;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     public partial class Scope : GraphElement
     {
@@ -55,7 +54,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             AddStyleSheetPath("StyleSheets/GraphView/Scope.uss");
 
-            m_MainContainer = visualTree.CloneTree(null);
+            m_MainContainer = visualTree.CloneTree();
             m_MainContainer.AddToClassList("mainContainer");
 
             m_HeaderContainer = m_MainContainer.Q(name: "headerContainer");
@@ -71,9 +70,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             ClearClassList();
             AddToClassList("scope");
 
-            clippingOptions = ClippingOptions.ClipAndCacheContents;
+            cacheAsBitmap = true;
+            style.overflow = Overflow.Hidden;
 
-            style.positionType = PositionType.Absolute;
+            style.position = Position.Absolute;
             m_ContentContainer.RegisterCallback<GeometryChangedEvent>(OnSubElementGeometryChanged);
         }
 
@@ -312,9 +312,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         protected virtual void SetScopePositionOnly(Rect newPos)
         {
             m_Position = newPos.position;
-            style.positionType = PositionType.Absolute;
-            style.positionLeft = newPos.x;
-            style.positionTop = newPos.y;
+            style.position = Position.Absolute;
+            style.left = newPos.x;
+            style.top = newPos.y;
         }
 
         public override void UpdatePresenterPosition()

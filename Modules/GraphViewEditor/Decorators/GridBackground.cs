@@ -4,62 +4,53 @@
 
 using System;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleSheets;
+using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
-    public class GridBackground : VisualElement
+    public class GridBackground : ImmediateModeElement
     {
-        const string k_SpacingProperty = "spacing";
-        const string k_ThickLinesProperty = "thick-lines";
-        const string k_LineColorProperty = "line-color";
-        const string k_ThickLineColorProperty = "thick-line-color";
-        const string k_GridBackgroundColorProperty = "grid-background-color";
+        static CustomStyleProperty<float> s_SpacingProperty = new CustomStyleProperty<float>("--spacing");
+        static CustomStyleProperty<int> s_ThickLinesProperty = new CustomStyleProperty<int>("--thick-lines");
+        static CustomStyleProperty<Color> s_LineColorProperty = new CustomStyleProperty<Color>("--line-color");
+        static CustomStyleProperty<Color> s_ThickLineColorProperty = new CustomStyleProperty<Color>("--thick-line-color");
+        static CustomStyleProperty<Color> s_GridBackgroundColorProperty = new CustomStyleProperty<Color>("--grid-background-color");
 
-        StyleValue<float> m_Spacing;
-        float spacing
+        static readonly float s_DefaultSpacing = 50f;
+        static readonly int s_DefaultThickLines = 10;
+        static readonly Color s_DefaultLineColor = new Color(0f, 0f, 0f, 0.18f);
+        static readonly Color s_DefaultThickLineColor = new Color(0f, 0f, 0f, 0.38f);
+        static readonly Color s_DefaultGridBackgroundColor = new Color(0.17f, 0.17f, 0.17f, 1.0f);
+
+        float m_Spacing = s_DefaultSpacing;
+        private float spacing
         {
-            get
-            {
-                return m_Spacing.GetSpecifiedValueOrDefault(50.0f);
-            }
+            get { return m_Spacing; }
         }
 
-        StyleValue<int> m_ThickLines;
-        int thickLines
+        int m_ThickLines = s_DefaultThickLines;
+        private int thickLines
         {
-            get
-            {
-                return m_ThickLines.GetSpecifiedValueOrDefault(10);
-            }
+            get { return m_ThickLines; }
         }
 
-        StyleValue<Color> m_LineColor;
-        Color lineColor
+        Color m_LineColor = s_DefaultLineColor;
+        private Color lineColor
         {
-            get
-            {
-                return m_LineColor.GetSpecifiedValueOrDefault(new Color(0f, 0f, 0f, 0.18f));
-            }
+            get { return m_LineColor; }
         }
 
-        StyleValue<Color> m_ThickLineColor;
-        Color thickLineColor
+        Color m_ThickLineColor = s_DefaultThickLineColor;
+        private Color thickLineColor
         {
-            get
-            {
-                return m_ThickLineColor.GetSpecifiedValueOrDefault(new Color(0f, 0f, 0f, 0.38f));
-            }
+            get { return m_ThickLineColor; }
         }
 
-        StyleValue<Color> m_GridBackgroundColor;
-        Color gridBackgroundColor
+        Color m_GridBackgroundColor = s_DefaultGridBackgroundColor;
+        private Color gridBackgroundColor
         {
-            get
-            {
-                return m_GridBackgroundColor.GetSpecifiedValueOrDefault(new Color(0.17f, 0.17f, 0.17f, 1.0f));
-            }
+            get { return m_GridBackgroundColor; }
         }
 
         private VisualElement m_Container;
@@ -69,6 +60,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             pickingMode = PickingMode.Ignore;
 
             this.StretchToParentSize();
+
+            RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
         }
 
         private Vector3 Clip(Rect clipRect, Vector3 _in)
@@ -86,23 +79,32 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return _in;
         }
 
-        protected override void OnStyleResolved(ICustomStyle elementStyle)
+        private void OnCustomStyleResolved(CustomStyleResolvedEvent e)
         {
-            base.OnStyleResolved(elementStyle);
-            elementStyle.ApplyCustomProperty(k_SpacingProperty, ref m_Spacing);
-            elementStyle.ApplyCustomProperty(k_ThickLinesProperty, ref m_ThickLines);
-            elementStyle.ApplyCustomProperty(k_ThickLineColorProperty, ref m_ThickLineColor);
-            elementStyle.ApplyCustomProperty(k_LineColorProperty, ref m_LineColor);
-            elementStyle.ApplyCustomProperty(k_GridBackgroundColorProperty, ref m_GridBackgroundColor);
+            float spacingValue = 0f;
+            int thicklinesValue = 0;
+            Color thicklineColorValue = Color.clear;
+            Color lineColorValue = Color.clear;
+            Color gridColorValue = Color.clear;
+
+            ICustomStyle customStyle = e.customStyle;
+            if (customStyle.TryGetValue(s_SpacingProperty, out spacingValue))
+                m_Spacing = spacingValue;
+
+            if (customStyle.TryGetValue(s_ThickLinesProperty, out thicklinesValue))
+                m_ThickLines = thickLines;
+
+            if (customStyle.TryGetValue(s_ThickLineColorProperty, out thicklineColorValue))
+                m_ThickLineColor = thicklineColorValue;
+
+            if (customStyle.TryGetValue(s_LineColorProperty, out lineColorValue))
+                m_LineColor = lineColorValue;
+
+            if (customStyle.TryGetValue(s_GridBackgroundColorProperty, out gridColorValue))
+                m_GridBackgroundColor = gridColorValue;
         }
 
-        protected override void DoRepaint(IStylePainter painter)
-        {
-            var stylePainter = (IStylePainterInternal)painter;
-            stylePainter.DrawImmediate(Draw);
-        }
-
-        void Draw()
+        protected override void ImmediateRepaint()
         {
             VisualElement target = parent;
 

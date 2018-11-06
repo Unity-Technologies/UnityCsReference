@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public interface IMouseEvent
     {
@@ -77,7 +77,12 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.Bubbles | EventFlags.TricklesDown | EventFlags.Cancellable;
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable;
             modifiers = EventModifiers.None;
             mousePosition = Vector2.zero;
             localMousePosition = Vector2.zero;
@@ -157,7 +162,7 @@ namespace UnityEngine.Experimental.UIElements
 
         protected MouseEventBase()
         {
-            Init();
+            LocalInit();
         }
     }
 
@@ -195,12 +200,17 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
             delta = Vector3.zero;
         }
 
         public WheelEvent()
         {
-            Init();
+            LocalInit();
         }
     }
 
@@ -209,12 +219,17 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.TricklesDown | EventFlags.Cancellable;
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
+            propagation = EventPropagation.TricklesDown | EventPropagation.Cancellable;
         }
 
         public MouseEnterEvent()
         {
-            Init();
+            LocalInit();
         }
     }
 
@@ -223,12 +238,17 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.TricklesDown | EventFlags.Cancellable;
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
+            propagation = EventPropagation.TricklesDown | EventPropagation.Cancellable;
         }
 
         public MouseLeaveEvent()
         {
-            Init();
+            LocalInit();
         }
     }
 
@@ -237,12 +257,17 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.Cancellable;
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
+            propagation = EventPropagation.Cancellable;
         }
 
         public MouseEnterWindowEvent()
         {
-            Init();
+            LocalInit();
         }
     }
 
@@ -251,12 +276,17 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.Cancellable;
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
+            propagation = EventPropagation.Cancellable;
         }
 
         public MouseLeaveWindowEvent()
         {
-            Init();
+            LocalInit();
         }
     }
 
@@ -311,6 +341,11 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
             menu = null;
             m_ContextualMenuManager = null;
 
@@ -323,7 +358,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public ContextualMenuPopulateEvent()
         {
-            Init();
+            LocalInit();
         }
 
         protected internal override void PostDispatch()

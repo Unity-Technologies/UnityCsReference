@@ -5,7 +5,7 @@
 using System;
 using System.ComponentModel;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public abstract class EventBase : IDisposable
     {
@@ -13,21 +13,19 @@ namespace UnityEngine.Experimental.UIElements
 
         protected static long RegisterEventType() { return ++s_LastTypeId; }
 
-        public abstract long GetEventTypeId();
+        public virtual long eventTypeId => - 1;
 
         [Flags]
-        protected internal enum EventFlags
+        internal enum EventPropagation
         {
             None = 0,
             Bubbles = 1,
             TricklesDown = 2,
-            [Obsolete("Use TrickesDown instead of Capturable")]
-            Capturable = TricklesDown,
             Cancellable = 4,
         }
 
         [Flags]
-        enum LifeCycleFlags
+        enum LifeCycleStatus
         {
             None = 0,
             PropagationStopped = 1,
@@ -44,9 +42,9 @@ namespace UnityEngine.Experimental.UIElements
         // Read-only state
         public long timestamp { get; private set; }
 
-        protected EventFlags flags { get; set; }
+        internal EventPropagation propagation { get; set; }
 
-        LifeCycleFlags lifeCycleFlags { get; set; }
+        LifeCycleStatus lifeCycleStatus { get; set; }
 
         protected internal virtual void PreDispatch() {}
 
@@ -54,15 +52,12 @@ namespace UnityEngine.Experimental.UIElements
 
         public bool bubbles
         {
-            get { return (flags & EventFlags.Bubbles) != 0; }
+            get { return (propagation & EventPropagation.Bubbles) != 0; }
         }
-
-        [Obsolete("Use tricklesDown instead of capturable.")]
-        public bool capturable { get { return tricklesDown; } }
 
         public bool tricklesDown
         {
-            get { return (flags & EventFlags.TricklesDown) != 0; }
+            get { return (propagation & EventPropagation.TricklesDown) != 0; }
         }
 
         public IEventHandler target { get; set; }
@@ -71,16 +66,16 @@ namespace UnityEngine.Experimental.UIElements
 
         public bool isPropagationStopped
         {
-            get { return (lifeCycleFlags & LifeCycleFlags.PropagationStopped) != LifeCycleFlags.None; }
+            get { return (lifeCycleStatus & LifeCycleStatus.PropagationStopped) != LifeCycleStatus.None; }
             private set
             {
                 if (value)
                 {
-                    lifeCycleFlags |= LifeCycleFlags.PropagationStopped;
+                    lifeCycleStatus |= LifeCycleStatus.PropagationStopped;
                 }
                 else
                 {
-                    lifeCycleFlags &= ~LifeCycleFlags.PropagationStopped;
+                    lifeCycleStatus &= ~LifeCycleStatus.PropagationStopped;
                 }
             }
         }
@@ -92,16 +87,16 @@ namespace UnityEngine.Experimental.UIElements
 
         public bool isImmediatePropagationStopped
         {
-            get { return (lifeCycleFlags & LifeCycleFlags.ImmediatePropagationStopped) != LifeCycleFlags.None; }
+            get { return (lifeCycleStatus & LifeCycleStatus.ImmediatePropagationStopped) != LifeCycleStatus.None; }
             private set
             {
                 if (value)
                 {
-                    lifeCycleFlags |= LifeCycleFlags.ImmediatePropagationStopped;
+                    lifeCycleStatus |= LifeCycleStatus.ImmediatePropagationStopped;
                 }
                 else
                 {
-                    lifeCycleFlags &= ~LifeCycleFlags.ImmediatePropagationStopped;
+                    lifeCycleStatus &= ~LifeCycleStatus.ImmediatePropagationStopped;
                 }
             }
         }
@@ -114,23 +109,23 @@ namespace UnityEngine.Experimental.UIElements
 
         public bool isDefaultPrevented
         {
-            get { return (lifeCycleFlags & LifeCycleFlags.DefaultPrevented) != LifeCycleFlags.None; }
+            get { return (lifeCycleStatus & LifeCycleStatus.DefaultPrevented) != LifeCycleStatus.None; }
             private set
             {
                 if (value)
                 {
-                    lifeCycleFlags |= LifeCycleFlags.DefaultPrevented;
+                    lifeCycleStatus |= LifeCycleStatus.DefaultPrevented;
                 }
                 else
                 {
-                    lifeCycleFlags &= ~LifeCycleFlags.DefaultPrevented;
+                    lifeCycleStatus &= ~LifeCycleStatus.DefaultPrevented;
                 }
             }
         }
 
         public void PreventDefault()
         {
-            if ((flags & EventFlags.Cancellable) == EventFlags.Cancellable)
+            if ((propagation & EventPropagation.Cancellable) == EventPropagation.Cancellable)
             {
                 isDefaultPrevented = true;
             }
@@ -139,7 +134,7 @@ namespace UnityEngine.Experimental.UIElements
         // Propagation state
         public PropagationPhase propagationPhase { get; internal set; }
 
-        protected IEventHandler m_CurrentTarget;
+        IEventHandler m_CurrentTarget;
 
         public virtual IEventHandler currentTarget
         {
@@ -161,17 +156,17 @@ namespace UnityEngine.Experimental.UIElements
 
         public bool dispatch
         {
-            get { return (lifeCycleFlags & LifeCycleFlags.Dispatching) != LifeCycleFlags.None; }
+            get { return (lifeCycleStatus & LifeCycleStatus.Dispatching) != LifeCycleStatus.None; }
             internal set
             {
                 if (value)
                 {
-                    lifeCycleFlags |= LifeCycleFlags.Dispatching;
+                    lifeCycleStatus |= LifeCycleStatus.Dispatching;
                     dispatched = true;
                 }
                 else
                 {
-                    lifeCycleFlags &= ~LifeCycleFlags.Dispatching;
+                    lifeCycleStatus &= ~LifeCycleStatus.Dispatching;
                 }
             }
         }
@@ -184,48 +179,48 @@ namespace UnityEngine.Experimental.UIElements
 
         bool dispatched
         {
-            get { return (lifeCycleFlags & LifeCycleFlags.Dispatched) != LifeCycleFlags.None; }
+            get { return (lifeCycleStatus & LifeCycleStatus.Dispatched) != LifeCycleStatus.None; }
             set
             {
                 if (value)
                 {
-                    lifeCycleFlags |= LifeCycleFlags.Dispatched;
+                    lifeCycleStatus |= LifeCycleStatus.Dispatched;
                 }
                 else
                 {
-                    lifeCycleFlags &= ~LifeCycleFlags.Dispatched;
+                    lifeCycleStatus &= ~LifeCycleStatus.Dispatched;
                 }
             }
         }
 
         internal bool stopDispatch
         {
-            get { return (lifeCycleFlags & LifeCycleFlags.StopDispatch) != LifeCycleFlags.None; }
+            get { return (lifeCycleStatus & LifeCycleStatus.StopDispatch) != LifeCycleStatus.None; }
             set
             {
                 if (value)
                 {
-                    lifeCycleFlags |= LifeCycleFlags.StopDispatch;
+                    lifeCycleStatus |= LifeCycleStatus.StopDispatch;
                 }
                 else
                 {
-                    lifeCycleFlags &= ~LifeCycleFlags.StopDispatch;
+                    lifeCycleStatus &= ~LifeCycleStatus.StopDispatch;
                 }
             }
         }
 
         internal bool propagateToIMGUI
         {
-            get { return (lifeCycleFlags & LifeCycleFlags.PropagateToIMGUI) != LifeCycleFlags.None; }
+            get { return (lifeCycleStatus & LifeCycleStatus.PropagateToIMGUI) != LifeCycleStatus.None; }
             set
             {
                 if (value)
                 {
-                    lifeCycleFlags |= LifeCycleFlags.PropagateToIMGUI;
+                    lifeCycleStatus |= LifeCycleStatus.PropagateToIMGUI;
                 }
                 else
                 {
-                    lifeCycleFlags &= ~LifeCycleFlags.PropagateToIMGUI;
+                    lifeCycleStatus &= ~LifeCycleStatus.PropagateToIMGUI;
                 }
             }
         }
@@ -233,16 +228,16 @@ namespace UnityEngine.Experimental.UIElements
         private Event m_ImguiEvent;
         bool imguiEventIsValid
         {
-            get { return (lifeCycleFlags & LifeCycleFlags.IMGUIEventIsValid) != LifeCycleFlags.None; }
+            get { return (lifeCycleStatus & LifeCycleStatus.IMGUIEventIsValid) != LifeCycleStatus.None; }
             set
             {
                 if (value)
                 {
-                    lifeCycleFlags |= LifeCycleFlags.IMGUIEventIsValid;
+                    lifeCycleStatus |= LifeCycleStatus.IMGUIEventIsValid;
                 }
                 else
                 {
-                    lifeCycleFlags &= ~LifeCycleFlags.IMGUIEventIsValid;
+                    lifeCycleStatus &= ~LifeCycleStatus.IMGUIEventIsValid;
                 }
             }
         }
@@ -275,9 +270,14 @@ namespace UnityEngine.Experimental.UIElements
 
         protected virtual void Init()
         {
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
             timestamp = (long)(Time.realtimeSinceStartup * 1000.0f);
 
-            flags = EventFlags.None;
+            propagation = EventPropagation.None;
 
             target = null;
 
@@ -304,21 +304,21 @@ namespace UnityEngine.Experimental.UIElements
         protected EventBase()
         {
             m_ImguiEvent = null;
-            Init();
+            LocalInit();
         }
 
         protected bool pooled
         {
-            get { return (lifeCycleFlags & LifeCycleFlags.Pooled) != LifeCycleFlags.None; }
+            get { return (lifeCycleStatus & LifeCycleStatus.Pooled) != LifeCycleStatus.None; }
             set
             {
                 if (value)
                 {
-                    lifeCycleFlags |= LifeCycleFlags.Pooled;
+                    lifeCycleStatus |= LifeCycleStatus.Pooled;
                 }
                 else
                 {
-                    lifeCycleFlags &= ~LifeCycleFlags.Pooled;
+                    lifeCycleStatus &= ~LifeCycleStatus.Pooled;
                 }
             }
         }
@@ -383,7 +383,7 @@ namespace UnityEngine.Experimental.UIElements
             m_RefCount++;
         }
 
-        public override void Dispose()
+        public sealed override void Dispose()
         {
             if (--m_RefCount == 0)
             {
@@ -391,9 +391,6 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        public override long GetEventTypeId()
-        {
-            return s_TypeId;
-        }
+        public override long eventTypeId => s_TypeId;
     }
 }

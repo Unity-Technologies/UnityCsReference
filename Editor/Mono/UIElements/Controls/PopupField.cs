@@ -5,9 +5,9 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     public class PopupField<T> : BasePopupField<T, T>
     {
@@ -17,7 +17,7 @@ namespace UnityEditor.Experimental.UIElements
             set
             {
                 m_FormatSelectedValueCallback = value;
-                m_TextElement.text = GetValueToDisplay();
+                textElement.text = GetValueToDisplay();
             }
         }
 
@@ -85,38 +85,58 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
-        protected PopupField(List<T> choices, Func<T, string> formatSelectedValueCallback = null, Func<T, string> formatListItemCallback = null)
+        public new static readonly string ussClassName = "unity-popup-field";
+
+        public PopupField(string label = null)
+            : base(label)
         {
-            this.choices = choices;
-            m_FormatSelectedValueCallback = formatSelectedValueCallback;
-            m_FormatListItemCallback = formatListItemCallback;
+            AddToClassList(ussClassName);
         }
 
-        public PopupField(List<T> choices, T defaultValue, Func<T, string> formatSelectedValueCallback = null, Func<T, string> formatListItemCallback = null) :
-            this(choices, formatSelectedValueCallback, formatListItemCallback)
+        public PopupField(List<T> choices, T defaultValue, Func<T, string> formatSelectedValueCallback = null, Func<T, string> formatListItemCallback = null)
+            : this(null, choices, defaultValue, formatSelectedValueCallback, formatListItemCallback)
+        {
+        }
+
+        public PopupField(string label, List<T> choices, T defaultValue, Func<T, string> formatSelectedValueCallback = null, Func<T, string> formatListItemCallback = null)
+            : this(label)
         {
             if (defaultValue == null)
-                throw new ArgumentNullException("defaultValue", "defaultValue can't be null");
+                throw new ArgumentNullException(nameof(defaultValue));
 
+            this.choices = choices;
             if (!m_Choices.Contains(defaultValue))
                 throw new ArgumentException(string.Format("Default value {0} is not present in the list of possible values", defaultValue));
 
-            // Note: idx will be set when setting value
             SetValueWithoutNotify(defaultValue);
+
+            this.formatListItemCallback = formatListItemCallback;
+            this.formatSelectedValueCallback = formatSelectedValueCallback;
         }
 
-        public PopupField(List<T> choices, int defaultIndex, Func<T, string> formatSelectedValueCallback = null, Func<T, string> formatListItemCallback = null) :
-            this(choices, formatSelectedValueCallback, formatListItemCallback)
+        public PopupField(List<T> choices, int defaultIndex, Func<T, string> formatSelectedValueCallback = null, Func<T, string> formatListItemCallback = null)
+            : this(null, choices, defaultIndex, formatSelectedValueCallback, formatListItemCallback) {}
+
+        public PopupField(string label, List<T> choices, int defaultIndex, Func<T, string> formatSelectedValueCallback = null, Func<T, string> formatListItemCallback = null)
+            : this(label)
         {
+            this.choices = choices;
+
             if (defaultIndex >= m_Choices.Count || defaultIndex < 0)
                 throw new ArgumentException(string.Format("Default Index {0} is beyond the scope of possible value", value));
-
-            // Note: value will be set when setting idx
             index = defaultIndex;
+
+            this.formatListItemCallback = formatListItemCallback;
+            this.formatSelectedValueCallback = formatSelectedValueCallback;
         }
 
         internal override void AddMenuItems(GenericMenu menu)
         {
+            if (menu == null)
+            {
+                throw new ArgumentNullException(nameof(menu));
+            }
+
             foreach (T item in m_Choices)
             {
                 bool isSelected = EqualityComparer<T>.Default.Equals(item, value);

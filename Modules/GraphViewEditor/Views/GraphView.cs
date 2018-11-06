@@ -6,10 +6,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     internal interface IGraphViewSelection
     {
@@ -224,10 +224,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             style.flexDirection = FlexDirection.Column;
 
             graphViewContainer = new VisualElement();
-            graphViewContainer.style.flex = new Flex(1);
-            graphViewContainer.style.flexGrow = 1;
+            graphViewContainer.style.flexGrow = 1f;
+            graphViewContainer.style.flexBasis = 0f;
             graphViewContainer.pickingMode = PickingMode.Ignore;
-            shadow.Add(graphViewContainer);
+            hierarchy.Add(graphViewContainer);
 
             contentViewContainer = new ContentViewContainer
             {
@@ -249,7 +249,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_GraphViewChange.elementsToRemove = m_ElementsToRemove;
 
             isReframable = true;
-            focusIndex = 0;
+            focusable = true;
 
             RegisterCallback<ValidateCommandEvent>(OnValidateCommand);
             RegisterCallback<ExecuteCommandEvent>(OnExecuteCommand);
@@ -282,7 +282,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 return;
 
             m_PersistedSelection.selectedElements.Clear();
-            SavePersistentData();
+            SaveViewData();
         }
 
         private bool ShouldRecordUndo()
@@ -335,10 +335,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (m_PersistedSelection.selectedElements.Count == selection.Count && m_PersistedSelection.version == m_SavedSelectionVersion)
                 return;
 
-            if (string.IsNullOrEmpty(element.persistenceKey))
+            if (string.IsNullOrEmpty(element.viewDataKey))
                 return;
 
-            if (m_PersistedSelection.selectedElements.Contains(element.persistenceKey))
+            if (m_PersistedSelection.selectedElements.Contains(element.viewDataKey))
             {
                 AddToSelectionNoUndoRecord(element);
             }
@@ -377,7 +377,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         private void DelayPersistentDataSave()
         {
             m_OnTimerTicker = null;
-            SavePersistentData();
+            SaveViewData();
         }
 
         public void AddLayer(int index)
@@ -411,11 +411,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 element.RegisterCallback<DetachFromPanelEvent>(OnSelectedElementDetachedFromPanel);
         }
 
-        public UQuery.QueryState<GraphElement> graphElements { get; private set; }
-        private UQuery.QueryState<GraphElement> allGraphElements { get; }
-        public UQuery.QueryState<Node> nodes { get; private set; }
-        public UQuery.QueryState<Port> ports;
-        public UQuery.QueryState<Edge> edges { get; private set; }
+        public UQueryState<GraphElement> graphElements { get; private set; }
+        private UQueryState<GraphElement> allGraphElements { get; }
+        public UQueryState<Node> nodes { get; private set; }
+        public UQueryState<Port> ports;
+        public UQueryState<Edge> edges { get; private set; }
 
         [Serializable]
         class PersistedViewTransform
@@ -471,22 +471,22 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public GraphElement GetElementByGuid(string guid)
         {
-            return allGraphElements.ToList().FirstOrDefault(e => e.persistenceKey == guid);
+            return allGraphElements.ToList().FirstOrDefault(e => e.viewDataKey == guid);
         }
 
         public Node GetNodeByGuid(string guid)
         {
-            return nodes.ToList().FirstOrDefault(e => e.persistenceKey == guid);
+            return nodes.ToList().FirstOrDefault(e => e.viewDataKey == guid);
         }
 
         public Port GetPortByGuid(string guid)
         {
-            return ports.ToList().FirstOrDefault(e => e.persistenceKey == guid);
+            return ports.ToList().FirstOrDefault(e => e.viewDataKey == guid);
         }
 
         public Edge GetEdgeByGuid(string guid)
         {
-            return graphElements.ToList().OfType<Edge>().FirstOrDefault(e => e.persistenceKey == guid);
+            return graphElements.ToList().OfType<Edge>().FirstOrDefault(e => e.viewDataKey == guid);
         }
 
         public void SetupZoom(float minScaleSetup, float maxScaleSetup)
@@ -511,18 +511,18 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_PersistedViewTransform.position = contentViewContainer.transform.position;
             m_PersistedViewTransform.scale = contentViewContainer.transform.scale;
 
-            SavePersistentData();
+            SaveViewData();
         }
 
-        public override void OnPersistentDataReady()
+        internal override void OnViewDataReady()
         {
-            base.OnPersistentDataReady();
+            base.OnViewDataReady();
 
-            string key = GetFullHierarchicalPersistenceKey();
+            string key = GetFullHierarchicalViewDataKey();
 
-            m_PersistedViewTransform = GetOrCreatePersistentData<PersistedViewTransform>(m_PersistedViewTransform, key);
+            m_PersistedViewTransform = GetOrCreateViewData<PersistedViewTransform>(m_PersistedViewTransform, key);
 
-            m_PersistedSelection = GetOrCreatePersistentData<PersistedSelection>(m_PersistedSelection, key);
+            m_PersistedSelection = GetOrCreateViewData<PersistedSelection>(m_PersistedSelection, key);
 
             UpdateViewTransform(m_PersistedViewTransform.position, m_PersistedViewTransform.scale);
             RestoreSavedSelection(m_PersistedSelection);
@@ -582,8 +582,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (ShouldRecordUndo())
             {
                 RecordSelectionUndoPre();
-                m_GraphViewUndoRedoSelection.selectedElements.Add(graphElement.persistenceKey);
-                m_PersistedSelection.selectedElements.Add(graphElement.persistenceKey);
+                m_GraphViewUndoRedoSelection.selectedElements.Add(graphElement.viewDataKey);
+                m_PersistedSelection.selectedElements.Add(graphElement.viewDataKey);
                 RecordSelectionUndoPost();
             }
         }
@@ -627,8 +627,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (ShouldRecordUndo())
             {
                 RecordSelectionUndoPre();
-                m_GraphViewUndoRedoSelection.selectedElements.Remove(graphElement.persistenceKey);
-                m_PersistedSelection.selectedElements.Remove(graphElement.persistenceKey);
+                m_GraphViewUndoRedoSelection.selectedElements.Remove(graphElement.viewDataKey);
+                m_PersistedSelection.selectedElements.Remove(graphElement.viewDataKey);
                 RecordSelectionUndoPost();
             }
         }
@@ -670,42 +670,42 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public virtual void BuildContextualMenu(ContextualMenuPopulateEvent evt)
         {
-            if (evt.target is UIElements.GraphView.GraphView && nodeCreationRequest != null)
+            if (evt.target is GraphView && nodeCreationRequest != null)
             {
-                evt.menu.AppendAction("Create Node", OnContextMenuNodeCreate, DropdownMenu.MenuAction.AlwaysEnabled);
+                evt.menu.AppendAction("Create Node", OnContextMenuNodeCreate, DropdownMenuAction.AlwaysEnabled);
                 evt.menu.AppendSeparator();
             }
-            if (evt.target is UIElements.GraphView.GraphView || evt.target is Node || evt.target is Group)
+            if (evt.target is GraphView || evt.target is Node || evt.target is Group)
             {
                 evt.menu.AppendAction("Cut", (a) => { CutSelectionCallback(); },
-                    (a) => { return canCutSelection ? DropdownMenu.MenuAction.StatusFlags.Normal : DropdownMenu.MenuAction.StatusFlags.Disabled; });
+                    (a) => { return canCutSelection ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled; });
             }
-            if (evt.target is UIElements.GraphView.GraphView || evt.target is Node || evt.target is Group)
+            if (evt.target is GraphView || evt.target is Node || evt.target is Group)
             {
                 evt.menu.AppendAction("Copy", (a) => { CopySelectionCallback(); },
-                    (a) => { return canCopySelection ? DropdownMenu.MenuAction.StatusFlags.Normal : DropdownMenu.MenuAction.StatusFlags.Disabled; });
+                    (a) => { return canCopySelection ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled; });
             }
-            if (evt.target is UIElements.GraphView.GraphView)
+            if (evt.target is GraphView)
             {
                 evt.menu.AppendAction("Paste", (a) => { PasteCallback(); },
-                    (a) => { return canPaste ? DropdownMenu.MenuAction.StatusFlags.Normal : DropdownMenu.MenuAction.StatusFlags.Disabled; });
+                    (a) => { return canPaste ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled; });
             }
-            if (evt.target is UIElements.GraphView.GraphView || evt.target is Node || evt.target is Group || evt.target is Edge)
+            if (evt.target is GraphView || evt.target is Node || evt.target is Group || evt.target is Edge)
             {
                 evt.menu.AppendSeparator();
                 evt.menu.AppendAction("Delete", (a) => { DeleteSelectionCallback(AskUser.DontAskUser); },
-                    (a) => { return canDeleteSelection ? DropdownMenu.MenuAction.StatusFlags.Normal : DropdownMenu.MenuAction.StatusFlags.Disabled; });
+                    (a) => { return canDeleteSelection ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled; });
             }
-            if (evt.target is UIElements.GraphView.GraphView || evt.target is Node || evt.target is Group)
+            if (evt.target is GraphView || evt.target is Node || evt.target is Group)
             {
                 evt.menu.AppendSeparator();
                 evt.menu.AppendAction("Duplicate", (a) => { DuplicateSelectionCallback(); },
-                    (a) => { return canDuplicateSelection ? DropdownMenu.MenuAction.StatusFlags.Normal : DropdownMenu.MenuAction.StatusFlags.Disabled; });
+                    (a) => { return canDuplicateSelection ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled; });
                 evt.menu.AppendSeparator();
             }
         }
 
-        void OnContextMenuNodeCreate(DropdownMenu.MenuAction a)
+        void OnContextMenuNodeCreate(DropdownMenuAction a)
         {
             RequestNodeCreation(null, -1, a.eventInfo.mousePosition);
         }
@@ -738,7 +738,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             base.ExecuteDefaultAction(evt);
 
-            if (evt.GetEventTypeId() == DetachFromPanelEvent.TypeId())
+            if (evt.eventTypeId == DetachFromPanelEvent.TypeId())
             {
                 DetachFromPanelEvent dtpe = (DetachFromPanelEvent)evt;
 
@@ -753,7 +753,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                         ClearSavedSelection();
                 }
             }
-            else if (evt.GetEventTypeId() == AttachToPanelEvent.TypeId())
+            else if (evt.eventTypeId == AttachToPanelEvent.TypeId())
             {
                 AttachToPanelEvent atpe = (AttachToPanelEvent)evt;
 
@@ -1156,7 +1156,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             if (graphElement.IsResizable())
             {
-                graphElement.shadow.Add(new Resizer());
+                graphElement.hierarchy.Add(new Resizer());
                 graphElement.style.borderBottomWidth = 6;
             }
 

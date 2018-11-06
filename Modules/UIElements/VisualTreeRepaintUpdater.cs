@@ -6,13 +6,12 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     internal class VisualTreeRepaintUpdater : BaseVisualTreeUpdater
     {
         private HashSet<VisualElement> m_RepaintList = new HashSet<VisualElement>();
-        private bool m_WhinedOnceAboutRotatedClipSpaceThisFrame = false;
-        private ImmediateStylePainter m_StylePainter = new ImmediateStylePainter();
+        private ImmediateStylePainterImpl m_StylePainter = new ImmediateStylePainterImpl();
 
         public override string description
         {
@@ -32,8 +31,6 @@ namespace UnityEngine.Experimental.UIElements
 
         public override void Update()
         {
-            m_WhinedOnceAboutRotatedClipSpaceThisFrame = false;
-
             Rect clipRect = visualTree.ShouldClip() ? visualTree.layout : GUIClip.topmostRect;
 
             PaintSubTree(visualTree, Matrix4x4.identity, false, false, clipRect);
@@ -43,7 +40,7 @@ namespace UnityEngine.Experimental.UIElements
 
         private void PropagateToParents(VisualElement ve)
         {
-            var parent = ve.shadow.parent;
+            var parent = ve.hierarchy.parent;
             while (parent != null)
             {
                 if (!m_RepaintList.Add(parent))
@@ -51,7 +48,7 @@ namespace UnityEngine.Experimental.UIElements
                     break;
                 }
 
-                parent = parent.shadow.parent;
+                parent = parent.hierarchy.parent;
             }
         }
 
@@ -75,7 +72,7 @@ namespace UnityEngine.Experimental.UIElements
 
         internal bool ShouldUsePixelCache(VisualElement root)
         {
-            return panel.allowPixelCaching && root.clippingOptions == VisualElement.ClippingOptions.ClipAndCacheContents &&
+            return panel.allowPixelCaching && root.cacheAsBitmap &&
                 root.worldBound.size.magnitude > Mathf.Epsilon;
         }
 
@@ -85,7 +82,7 @@ namespace UnityEngine.Experimental.UIElements
                 return;
 
             if (root.visible == false ||
-                root.style.opacity.GetSpecifiedValueOrDefault(1.0f) < Mathf.Epsilon)
+                root.resolvedStyle.opacity < Mathf.Epsilon)
                 return;
 
             // update clip
@@ -106,18 +103,7 @@ namespace UnityEngine.Experimental.UIElements
                 // new global clip and hierarchical clip space option.
                 currentGlobalClip = new Rect(x1, y1, x2 - x1, y2 - y1);
                 shouldClip = true;
-                shouldCache = root.clippingOptions == VisualElement.ClippingOptions.ClipAndCacheContents;
-            }
-            else
-            {
-                //since our children are not clipped, there is no early out.
-            }
-
-            // Check for the rotated space - clipping issue.
-            if (!m_WhinedOnceAboutRotatedClipSpaceThisFrame && shouldClip && !shouldCache && DoesMatrixHaveUnsupportedRotation(root.worldTransform))
-            {
-                Debug.LogError("Panel.PaintSubTree - Rotated clip-spaces are only supported by the VisualElement.ClippingOptions.ClipAndCacheContents mode. First offending Panel:'" + root.name + "'.");
-                m_WhinedOnceAboutRotatedClipSpaceThisFrame = true;
+                shouldCache = root.cacheAsBitmap;
             }
 
             var prevElement = m_StylePainter.currentElement;
@@ -169,10 +155,10 @@ namespace UnityEngine.Experimental.UIElements
                             RenderTextureReadWrite.Linear);
                     }
 
-                    bool hasRoundedBorderRects = (root.style.borderTopLeftRadius > 0 ||
-                        root.style.borderTopRightRadius > 0 ||
-                        root.style.borderBottomLeftRadius > 0 ||
-                        root.style.borderBottomRightRadius > 0);
+                    bool hasRoundedBorderRects = (root.computedStyle.borderTopLeftRadius.value.value > 0 ||
+                        root.computedStyle.borderTopRightRadius.value.value > 0 ||
+                        root.computedStyle.borderBottomLeftRadius.value.value > 0 ||
+                        root.computedStyle.borderBottomRightRadius.value.value > 0);
 
                     RenderTexture temporaryTexture = null;
                     var old = RenderTexture.active;
@@ -211,7 +197,7 @@ namespace UnityEngine.Experimental.UIElements
                             // Paint self
                             repaintData.currentWorldClip = textureClip;
 
-                            m_StylePainter.opacity = root.style.opacity.GetSpecifiedValueOrDefault(1.0f);
+                            m_StylePainter.opacity = root.resolvedStyle.opacity;
                             root.Repaint(m_StylePainter);
                             m_StylePainter.opacity = 1.0f;
 
@@ -310,7 +296,7 @@ namespace UnityEngine.Experimental.UIElements
                     repaintData.currentWorldClip = currentGlobalClip;
                     repaintData.mousePosition = root.worldTransform.inverse.MultiplyPoint3x4(repaintData.repaintEvent.mousePosition);
 
-                    m_StylePainter.opacity = root.style.opacity.GetSpecifiedValueOrDefault(1.0f);
+                    m_StylePainter.opacity = root.resolvedStyle.opacity;
                     root.Repaint(m_StylePainter);
                     m_StylePainter.opacity = 1.0f;
 
@@ -324,14 +310,14 @@ namespace UnityEngine.Experimental.UIElements
 
         private void PaintSubTreeChildren(VisualElement root, Matrix4x4 offset, bool shouldClip, bool shouldCache, Rect textureClip)
         {
-            int count = root.shadow.childCount;
+            int count = root.hierarchy.childCount;
             for (int i = 0; i < count; i++)
             {
-                VisualElement child = root.shadow[i];
+                VisualElement child = root.hierarchy[i];
 
                 PaintSubTree(child, offset, shouldClip, shouldCache, textureClip);
 
-                if (count != root.shadow.childCount)
+                if (count != root.hierarchy.childCount)
                 {
                     throw new NotImplementedException("Visual tree is read-only during repaint");
                 }

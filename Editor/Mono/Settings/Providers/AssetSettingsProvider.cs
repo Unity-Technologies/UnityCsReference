@@ -5,7 +5,7 @@
 using System;
 using UnityEditor.Experimental;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 using UnityEditor.StyleSheets;
 using UnityEditorInternal;
 using System.Collections.Generic;
@@ -114,10 +114,10 @@ namespace UnityEditor
                 using (new EditorGUI.DisabledScope(!settingsEditor.IsEnabled()))
                 {
                     var tagrObjects = new[] { settingsEditor.serializedObject.targetObject };
-                    var rect = GUILayoutUtility.GetRect(Styles.settingsBtn.GetFloat(StyleKeyword.width), Styles.settingsBtn.GetFloat(StyleKeyword.height));
-                    rect.y = Styles.settingsBtn.GetFloat(StyleKeyword.marginTop);
+                    var rect = GUILayoutUtility.GetRect(Styles.settingsBtn.GetFloat(StyleCatalogKeyword.width), Styles.settingsBtn.GetFloat(StyleCatalogKeyword.height));
+                    rect.y = Styles.settingsBtn.GetFloat(StyleCatalogKeyword.marginTop);
                     EditorGUIUtility.DrawEditorHeaderItems(rect, tagrObjects);
-                    var settingsRect = GUILayoutUtility.GetRect(Styles.settingsBtn.GetFloat(StyleKeyword.width), Styles.settingsBtn.GetFloat(StyleKeyword.height));
+                    var settingsRect = GUILayoutUtility.GetRect(Styles.settingsBtn.GetFloat(StyleCatalogKeyword.width), Styles.settingsBtn.GetFloat(StyleCatalogKeyword.height));
                     settingsRect.y = rect.y;
                     if (GUI.Button(settingsRect, EditorGUI.GUIContents.titleSettingsIcon, Styles.settingsStyle))
                     {

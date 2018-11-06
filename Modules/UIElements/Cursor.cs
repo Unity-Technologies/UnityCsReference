@@ -5,49 +5,62 @@
 using System;
 using System.Collections.Generic;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
-    public struct CursorStyle : IEquatable<CursorStyle>
+    public struct Cursor : IEquatable<Cursor>
     {
         public Texture2D texture { get; set; }
         public Vector2 hotspot { get; set; }
         // Used to support default cursor in the editor (map to MouseCursor enum)
         internal int defaultCursorId { get; set; }
 
-
-        public bool Equals(CursorStyle other)
-        {
-            return Equals(texture, other.texture) && hotspot.Equals(other.hotspot) && defaultCursorId == other.defaultCursorId;
-        }
-
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj)) return false;
-            return obj is CursorStyle && Equals((CursorStyle)obj);
+            return obj is Cursor && Equals((Cursor)obj);
+        }
+
+        public bool Equals(Cursor other)
+        {
+            return EqualityComparer<Texture2D>.Default.Equals(texture, other.texture) &&
+                hotspot.Equals(other.hotspot) &&
+                defaultCursorId == other.defaultCursorId;
         }
 
         public override int GetHashCode()
         {
-            unchecked
-            {
-                var hashCode = (texture != null ? texture.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ hotspot.GetHashCode();
-                hashCode = (hashCode * 397) ^ defaultCursorId;
-                return hashCode;
-            }
+            var hashCode = 1500536833;
+            hashCode = hashCode * -1521134295 + EqualityComparer<Texture2D>.Default.GetHashCode(texture);
+            hashCode = hashCode * -1521134295 + EqualityComparer<Vector2>.Default.GetHashCode(hotspot);
+            hashCode = hashCode * -1521134295 + defaultCursorId.GetHashCode();
+            return hashCode;
+        }
+
+        public static bool operator==(Cursor style1, Cursor style2)
+        {
+            return style1.Equals(style2);
+        }
+
+        public static bool operator!=(Cursor style1, Cursor style2)
+        {
+            return !(style1 == style2);
+        }
+
+        public override string ToString()
+        {
+            return $"texture={texture}, hotspot={hotspot}";
         }
     }
 
     internal interface ICursorManager
     {
-        void SetCursor(CursorStyle cursor);
+        void SetCursor(Cursor cursor);
         void ResetCursor();
     }
 
     // In game implementation (not implemented yet)
     internal class CursorManager : ICursorManager
     {
-        public void SetCursor(CursorStyle cursor)
+        public void SetCursor(Cursor cursor)
         {
         }
 

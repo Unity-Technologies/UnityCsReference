@@ -263,6 +263,9 @@ namespace UnityEditor.Modules
 
         void GetBuildButtonTitles(out GUIContent buildButtonTitle, out GUIContent buildAndRunButtonTitle);
 
+        // Show path location dialog during Build or Build & Run click
+        bool AskForBuildLocation();
+
         bool ShouldDrawScriptDebuggingCheckbox();
 
         bool ShouldDrawProfilerCheckbox();
@@ -284,6 +287,10 @@ namespace UnityEditor.Modules
 
         // Grays out managed debugger options
         bool ShouldDisableManagedDebuggerCheckboxes();
+
+        // UI rendering functions for general options
+        // Todo: move all of them from BuildPlayerWindow
+        void DoScriptsOnlyGUI();
     }
 
     internal interface IBuildAnalyzer

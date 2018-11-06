@@ -4,9 +4,9 @@
 
 using System.Collections.Generic;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
-    internal sealed class VisualElementUtils
+    internal static class VisualElementUtils
     {
         private static readonly HashSet<string> s_usedNames = new HashSet<string>();
 

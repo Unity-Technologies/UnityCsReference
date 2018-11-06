@@ -144,7 +144,7 @@ namespace UnityEditorInternal
 
             additionalArgs = Debug.GetDiagnosticSwitch("VMUnityLinkerAdditionalArgs") as string;
             if (!string.IsNullOrEmpty(additionalArgs))
-                args.Add(additionalArgs);
+                args.Add(additionalArgs.Trim('\''));
 
             return RunAssemblyLinker(args, out output, out error, linkerPath, workingDirectory);
         }
@@ -302,7 +302,7 @@ namespace UnityEditorInternal
             string error;
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(platformProvider.target);
             bool isMono = PlayerSettings.GetScriptingBackend(buildTargetGroup) == ScriptingImplementation.Mono2x;
-            bool stripEngineCode = rcr != null && PlayerSettings.stripEngineCode && platformProvider.supportsEngineStripping && !EditorUserBuildSettings.buildScriptsOnly;
+            bool stripEngineCode = rcr != null && PlayerSettings.stripEngineCode && platformProvider.supportsEngineStripping && !platformProvider.scriptsOnlyBuild;
             IEnumerable<string> blacklists = Il2CppBlacklistPaths;
             if (rcr != null)
             {

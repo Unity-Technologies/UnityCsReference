@@ -3,9 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public class TooltipEvent : EventBase<TooltipEvent>
     {
@@ -15,7 +15,12 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.Bubbles | EventFlags.TricklesDown;
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown;
             rect = default(Rect);
             tooltip = string.Empty;
         }
@@ -30,7 +35,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public TooltipEvent()
         {
-            Init();
+            LocalInit();
         }
     }
 }

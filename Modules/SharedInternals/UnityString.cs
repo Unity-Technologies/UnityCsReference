@@ -6,6 +6,7 @@ using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
+using System.Globalization;
 
 namespace UnityEngine
 {
@@ -18,7 +19,7 @@ namespace UnityEngine
     {
         public static string Format(string fmt, params object[] args)
         {
-            return String.Format(fmt, args);
+            return String.Format(CultureInfo.InvariantCulture.NumberFormat, fmt, args);
         }
     }
 }

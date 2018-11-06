@@ -92,9 +92,9 @@ namespace UnityEditorInternal.Profiling
 
         protected void DrawCPUGPUTime(float cpuTimeMs, float gpuTimeMs)
         {
-            var cpuTime = cpuTimeMs > 0 ? string.Format("{0:N2}", cpuTimeMs) : "--";
-            var gpuTime = gpuTimeMs > 0 ? string.Format("{0:N2}", gpuTimeMs) : "--";
-            GUILayout.Label(string.Format(BaseStyles.cpuGPUTime.text, cpuTime, gpuTime), EditorStyles.miniLabel);
+            var cpuTime = cpuTimeMs > 0 ? UnityString.Format("{0:N2}", cpuTimeMs) : "--";
+            var gpuTime = gpuTimeMs > 0 ? UnityString.Format("{0:N2}", gpuTimeMs) : "--";
+            GUILayout.Label(UnityString.Format(BaseStyles.cpuGPUTime.text, cpuTime, gpuTime), EditorStyles.miniLabel);
         }
 
         protected void ShowLargeTooltip(Vector2 pos, Rect fullRect, string text, float lineHeight)

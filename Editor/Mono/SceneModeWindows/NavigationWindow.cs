@@ -11,6 +11,7 @@ using UnityEditor.AI;
 using UnityEditorInternal;
 using EditorNavMeshBuilder = UnityEditor.AI.NavMeshBuilder;
 using Object = UnityEngine.Object;
+using System.Globalization;
 
 namespace UnityEditor
 {
@@ -850,7 +851,7 @@ namespace UnityEditor
                 float betterSlope = (walkableClimbVx * ch) / (cs * 2.0f);
                 float betterSlopeAngle = Mathf.Atan(betterSlope) / Mathf.PI * 180.0f;
                 float betterStep = (slopeVx - 1) * ch;
-                EditorGUILayout.HelpBox("Step Height conflicts with Max Slope. This makes some slopes unwalkable.\nConsider decreasing Max Slope to < " + betterSlopeAngle.ToString("0.0") + " degrees.\nOr, increase Step Height to > " + betterStep.ToString("0.00") + ".", MessageType.Warning);
+                EditorGUILayout.HelpBox("Step Height conflicts with Max Slope. This makes some slopes unwalkable.\nConsider decreasing Max Slope to < " + betterSlopeAngle.ToString("0.0", CultureInfo.InvariantCulture.NumberFormat) + " degrees.\nOr, increase Step Height to > " + betterStep.ToString("0.00") + ".", MessageType.Warning);
             }
 
             EditorGUILayout.Space();
@@ -902,7 +903,7 @@ namespace UnityEditor
                     }
 
                     float voxelsPerRadius = m_CellSize.floatValue > 0 ? (m_AgentRadius.floatValue / m_CellSize.floatValue) : 0.0f;
-                    EditorGUILayout.LabelField(" ", voxelsPerRadius.ToString("0.00") + " voxels per agent radius", EditorStyles.miniLabel);
+                    EditorGUILayout.LabelField(" ", voxelsPerRadius.ToString("0.00", CultureInfo.InvariantCulture.NumberFormat) + " voxels per agent radius", EditorStyles.miniLabel);
 
                     if (m_ManualCellSize.boolValue)
                     {
@@ -914,18 +915,18 @@ namespace UnityEditor
                         if ((int)Mathf.Floor(m_AgentHeight.floatValue / cellheight) > 250)
                         {
                             float goodValue = (m_AgentHeight.floatValue / 250.0f) / kCellSizeToHeightRatio;
-                            EditorGUILayout.HelpBox("The number of voxels per agent height is too high. This will reduce the accuracy of the navmesh. Consider using voxel size of at least " + goodValue.ToString("0.000") + ".", MessageType.Warning);
+                            EditorGUILayout.HelpBox("The number of voxels per agent height is too high. This will reduce the accuracy of the navmesh. Consider using voxel size of at least " + goodValue.ToString("0.000", CultureInfo.InvariantCulture.NumberFormat) + ".", MessageType.Warning);
                         }
 
                         if (voxelsPerRadius < 1.0f)
                         {
                             float goodValue = m_AgentRadius.floatValue / 2.0f;
-                            EditorGUILayout.HelpBox("The number of voxels per agent radius is too small. The agent may not avoid walls and ledges properly. Consider using a voxel size less than " + goodValue.ToString("0.000") + " (2 voxels per agent radius).", MessageType.Warning);
+                            EditorGUILayout.HelpBox("The number of voxels per agent radius is too small. The agent may not avoid walls and ledges properly. Consider using a voxel size less than " + goodValue.ToString("0.000", CultureInfo.InvariantCulture.NumberFormat) + " (2 voxels per agent radius).", MessageType.Warning);
                         }
                         else if (voxelsPerRadius > 8.0f)
                         {
                             float goodValue = m_AgentRadius.floatValue / 8.0f;
-                            EditorGUILayout.HelpBox("The number of voxels per agent radius is too high. It can cause excessive build times. Consider using voxel size closer to " + goodValue.ToString("0.000") + " (8 voxels per radius).", MessageType.Warning);
+                            EditorGUILayout.HelpBox("The number of voxels per agent radius is too high. It can cause excessive build times. Consider using voxel size closer to " + goodValue.ToString("0.000", CultureInfo.InvariantCulture.NumberFormat) + " (8 voxels per radius).", MessageType.Warning);
                         }
                     }
 

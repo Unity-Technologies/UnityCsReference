@@ -5,15 +5,8 @@
 using System;
 using System.Collections.Generic;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
-    [Obsolete("Use TrickleDown instead of Capture.")]
-    public enum Capture
-    {
-        NoCapture = 0,
-        Capture = 1
-    }
-
     public enum TrickleDown
     {
         NoTrickleDown = 0,
@@ -23,10 +16,7 @@ namespace UnityEngine.Experimental.UIElements
     internal enum CallbackPhase
     {
         TargetAndBubbleUp = 1 << 0,
-        TrickleDownAndTarget = 1 << 1,
-
-        [Obsolete("Use TrickleDownAndTarget instead of CaptureAndTarget.")]
-        CaptureAndTarget = TrickleDownAndTarget
+        TrickleDownAndTarget = 1 << 1
     }
 
     internal class EventCallbackListPool
@@ -64,12 +54,6 @@ namespace UnityEngine.Experimental.UIElements
         List<EventCallbackFunctorBase> m_List;
         public int trickleDownCallbackCount { get; private set; }
         public int bubbleUpCallbackCount { get; private set; }
-
-        [Obsolete("Use trickleDownCallbackCount instead of capturingCallbackCount.")]
-        public int capturingCallbackCount { get { return trickleDownCallbackCount; } }
-
-        [Obsolete("Use bubbleUpCallbackCount instead of bubblingCallbackCount.")]
-        public int bubblingCallbackCount { get { return bubbleUpCallbackCount; } }
 
         public EventCallbackList()
         {
@@ -265,13 +249,6 @@ namespace UnityEngine.Experimental.UIElements
             return callbackList.Remove(eventTypeId, callback, callbackPhase);
         }
 
-        [Obsolete("Use TrickleDown instead of Capture.")]
-        public void RegisterCallback<TEventType>(EventCallback<TEventType> callback, Capture useCapture) where TEventType : EventBase<TEventType>, new()
-        {
-            TrickleDown td = (TrickleDown)useCapture;
-            RegisterCallback<TEventType>(callback, td);
-        }
-
         public void RegisterCallback<TEventType>(EventCallback<TEventType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
             if (callback == null)
@@ -286,13 +263,6 @@ namespace UnityEngine.Experimental.UIElements
                 callbackList = GetCallbackListForWriting();
                 callbackList.Add(new EventCallbackFunctor<TEventType>(callback, callbackPhase));
             }
-        }
-
-        [Obsolete("Use TrickleDown instead of Capture.")]
-        public void RegisterCallback<TEventType, TCallbackArgs>(EventCallback<TEventType, TCallbackArgs> callback, TCallbackArgs userArgs, Capture useCapture) where TEventType : EventBase<TEventType>, new()
-        {
-            TrickleDown td = (TrickleDown)useCapture;
-            RegisterCallback<TEventType, TCallbackArgs>(callback, userArgs, td);
         }
 
         public void RegisterCallback<TEventType, TCallbackArgs>(EventCallback<TEventType, TCallbackArgs> callback, TCallbackArgs userArgs, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
@@ -317,24 +287,10 @@ namespace UnityEngine.Experimental.UIElements
             callbackList.Add(new EventCallbackFunctor<TEventType, TCallbackArgs>(callback, userArgs, callbackPhase));
         }
 
-        [Obsolete("Use TrickleDown instead of Capture.")]
-        public bool UnregisterCallback<TEventType>(EventCallback<TEventType> callback, Capture useCapture) where TEventType : EventBase<TEventType>, new()
-        {
-            TrickleDown td = (TrickleDown)useCapture;
-            return UnregisterCallback<TEventType>(callback, td);
-        }
-
         public bool UnregisterCallback<TEventType>(EventCallback<TEventType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
             long eventTypeId = EventBase<TEventType>.TypeId();
             return UnregisterCallback(eventTypeId, callback, useTrickleDown);
-        }
-
-        [Obsolete("Use TrickleDown instead of Capture.")]
-        public bool UnregisterCallback<TEventType, TCallbackArgs>(EventCallback<TEventType, TCallbackArgs> callback, Capture useCapture) where TEventType : EventBase<TEventType>, new()
-        {
-            TrickleDown td = (TrickleDown)useCapture;
-            return UnregisterCallback<TEventType, TCallbackArgs>(callback, td);
         }
 
         public bool UnregisterCallback<TEventType, TCallbackArgs>(EventCallback<TEventType, TCallbackArgs> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
@@ -393,12 +349,6 @@ namespace UnityEngine.Experimental.UIElements
                     m_TemporaryCallbacks = null;
                 }
             }
-        }
-
-        [Obsolete("Use HasTrickleDownHandlers instead of HasCaptureHandlers.")]
-        public bool HasCaptureHandlers()
-        {
-            return HasTrickleDownHandlers();
         }
 
         public bool HasTrickleDownHandlers()

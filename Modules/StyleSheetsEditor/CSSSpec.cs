@@ -4,7 +4,7 @@
 
 using System;
 using System.Text.RegularExpressions;
-using UnityEngine.StyleSheets;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.StyleSheets
 {

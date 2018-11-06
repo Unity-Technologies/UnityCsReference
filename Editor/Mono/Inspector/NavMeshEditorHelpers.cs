@@ -127,11 +127,11 @@ namespace UnityEditor.AI
             Handles.DrawAAPolyLine(2.0f, radiusLine);
 
             // Labels
-            GUI.Label(new Rect(baseX + cylinderRadius + 5, baseY - cylinderHeight * 0.5f - 10, 150, 20), string.Format("H = {0}", agentHeight));
-            GUI.Label(new Rect(baseX, baseY - cylinderHeight - cylinderRadius * squash - 15, 150, 20), string.Format("R = {0}", agentRadius));
+            GUI.Label(new Rect(baseX + cylinderRadius + 5, baseY - cylinderHeight * 0.5f - 10, 150, 20), UnityString.Format("H = {0}", agentHeight));
+            GUI.Label(new Rect(baseX, baseY - cylinderHeight - cylinderRadius * squash - 15, 150, 20), UnityString.Format("R = {0}", agentRadius));
 
-            GUI.Label(new Rect((startX + stepX) * 0.5f - 20, startY - 15, 150, 20), string.Format("{0}", agentClimb));
-            GUI.Label(new Rect(slopeStartX + 20, slopeStartY - 15, 150, 20), string.Format("{0}\u00b0", agentSlope));
+            GUI.Label(new Rect((startX + stepX) * 0.5f - 20, startY - 15, 150, 20), UnityString.Format("{0}", agentClimb));
+            GUI.Label(new Rect(slopeStartX + 20, slopeStartY - 15, 150, 20), UnityString.Format("{0}\u00b0", agentSlope));
 
             Handles.color = oldColor;
         }

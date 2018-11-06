@@ -60,7 +60,7 @@ namespace UnityEditor
 
                 m_quality = EditorGUILayout.Slider("Quality", m_quality, 0.0f, 1.0f);
                 GUILayout.Label(
-                    string.Format("Approx. {0:0.00} " + (size < kbsize ? "kB" : "MB") + ", {1} kbps",
+                    UnityString.Format("Approx. {0:0.00} " + (size < kbsize ? "kB" : "MB") + ", {1} kbps",
                         size / (size < kbsize ? 1024.0f : kbsize), bitrate / 1000), EditorStyles.helpBox);
                 GUILayout.EndVertical();
             }

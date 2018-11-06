@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     internal class TouchScreenTextEditorEventHandler : TextEditorEventHandler
     {
@@ -32,7 +32,7 @@ namespace UnityEngine.Experimental.UIElements
 
             long mouseEventType = MouseDownEvent.TypeId();
 
-            if (evt.GetEventTypeId() == mouseEventType)
+            if (evt.eventTypeId == mouseEventType)
             {
                 textInputField.SyncTextEngine();
                 textInputField.UpdateText(editorEngine.text);

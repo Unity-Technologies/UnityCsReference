@@ -8,6 +8,23 @@ namespace UnityEditor.Modules
 {
     internal class DefaultBuildWindowExtension : IBuildWindowExtension
     {
+        internal class Styles
+        {
+            public GUIContent buildScriptsOnly = EditorGUIUtility.TrTextContent("Scripts Only Build", "Scripts Only Build re-compiles only scripts in the current Project, it skips processing other assets. When you Build, it will produce a new Player build, based on a previous successful build.");
+        }
+
+        static private Styles m_Styles = null;
+
+        internal Styles styles
+        {
+            get
+            {
+                if (m_Styles == null)
+                    m_Styles = new Styles();
+                return m_Styles;
+            }
+        }
+
         public virtual void ShowPlatformBuildOptions() {}
         public virtual void ShowPlatformBuildWarnings() {}
         public virtual void ShowInternalPlatformBuildOptions() {}
@@ -19,6 +36,11 @@ namespace UnityEditor.Modules
             buildAndRunButtonTitle = null;
         }
 
+        public virtual bool AskForBuildLocation()
+        {
+            return true;
+        }
+
         public virtual bool ShouldDrawScriptDebuggingCheckbox() { return true; }
         public virtual bool ShouldDrawProfilerCheckbox() { return true; }
         public virtual bool ShouldDrawDevelopmentPlayerCheckbox() { return true; }
@@ -28,5 +50,10 @@ namespace UnityEditor.Modules
         public virtual bool ShouldDrawForceOptimizeScriptsCheckbox() { return false; }
         public virtual bool ShouldDrawWaitForManagedDebugger() { return false; }
         public virtual bool ShouldDisableManagedDebuggerCheckboxes() { return false; }
+
+        public virtual void DoScriptsOnlyGUI()
+        {
+            EditorUserBuildSettings.buildScriptsOnly = EditorGUILayout.Toggle(styles.buildScriptsOnly, EditorUserBuildSettings.buildScriptsOnly);
+        }
     }
 }

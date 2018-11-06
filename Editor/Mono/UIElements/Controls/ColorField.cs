@@ -4,26 +4,24 @@
 
 using System;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     public class ColorField : BaseField<Color>
     {
         public new class UxmlFactory : UxmlFactory<ColorField, UxmlTraits> {}
 
-        public new class UxmlTraits : BaseField<Color>.UxmlTraits
+        public new class UxmlTraits : BaseFieldTraits<Color, UxmlColorAttributeDescription>
         {
-            UxmlColorAttributeDescription m_Value = new UxmlColorAttributeDescription { name = "value" };
-            UxmlBoolAttributeDescription m_ShowEyeDropper = new UxmlBoolAttributeDescription { name = "show-eye-dropper", obsoleteNames = new[] { "showEyeDropper" }, defaultValue = true };
-            UxmlBoolAttributeDescription m_ShowAlpha = new UxmlBoolAttributeDescription { name = "show-alpha", obsoleteNames = new[] { "showAlpha" }, defaultValue = true };
+            UxmlBoolAttributeDescription m_ShowEyeDropper = new UxmlBoolAttributeDescription { name = "show-eye-dropper", defaultValue = true };
+            UxmlBoolAttributeDescription m_ShowAlpha = new UxmlBoolAttributeDescription { name = "show-alpha", defaultValue = true };
             UxmlBoolAttributeDescription m_Hdr = new UxmlBoolAttributeDescription { name = "hdr" };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
 
-                ((ColorField)ve).SetValueWithoutNotify(m_Value.GetValueFromBag(bag, cc));
                 ((ColorField)ve).showEyeDropper = m_ShowEyeDropper.GetValueFromBag(bag, cc);
                 ((ColorField)ve).showAlpha = m_ShowAlpha.GetValueFromBag(bag, cc);
                 ((ColorField)ve).hdr = m_Hdr.GetValueFromBag(bag, cc);
@@ -40,54 +38,63 @@ namespace UnityEditor.Experimental.UIElements
         private IMGUIContainer m_ColorField;
 
         // Since the ColorField is containing a child in the focus ring,
-        //     it must make sure the child focus follow the focusIndex
-        public override int focusIndex
+        //     it must make sure the child focus follows the tabIndex / focusable
+        public override int tabIndex
         {
-            get { return base.focusIndex; }
+            get { return base.tabIndex; }
             set
             {
-                base.focusIndex = value;
+                base.tabIndex = value;
                 if (m_ColorField != null)
                 {
-                    m_ColorField.focusIndex = value;
+                    m_ColorField.tabIndex = value;
                 }
             }
         }
 
+        public override bool focusable
+        {
+            get { return base.focusable; }
+            set
+            {
+                base.focusable = value;
+                if (m_ColorField != null)
+                {
+                    m_ColorField.focusable = value;
+                }
+            }
+        }
+
+        public new static readonly string ussClassName = "unity-color-field";
 
         public ColorField()
+            : this(null) {}
+
+        public ColorField(string label)
+            : base(label, null)
         {
+            AddToClassList(ussClassName);
+
             showEyeDropper = true;
             showAlpha = true;
 
             // The focus on a color field is implemented like a BaseCompoundField : the ColorField and its inner child
             // are both put in the focus ring. When the ColorField is receiving the Focus, it is "delegating" it to the inner child,
             // which is, in this case, the IMGUIContainer.
-            m_ColorField = new IMGUIContainer(OnGUIHandler) { name = "InternalColorField", useUIElementsFocusStyle = true };
-            Add(m_ColorField);
-        }
-
-        [Obsolete("This method is replaced by simply using this.value. The default behaviour has been changed to notify when changed. If the behaviour is not to be notified, SetValueWithoutNotify() must be used.", false)]
-        public override void SetValueAndNotify(Color newValue)
-        {
-            if (value != newValue)
-            {
-                value = newValue;
-            }
+            m_ColorField = new IMGUIContainer(OnGUIHandler) { name = "unity-internal-color-field", useUIElementsFocusStyle = true };
+            visualInput = m_ColorField;
         }
 
         protected internal override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
 
-            if (evt.GetEventTypeId() == FocusEvent.TypeId())
+            if (evt?.eventTypeId == FocusEvent.TypeId())
             {
                 m_SetKbControl = true;
-                // Make sure the inner IMGUIContainer is receiving the focus
-                m_ColorField.Focus();
             }
 
-            if (evt.GetEventTypeId() == BlurEvent.TypeId())
+            if (evt?.eventTypeId == BlurEvent.TypeId())
             {
                 m_ResetKbControl = true;
             }
@@ -95,7 +102,7 @@ namespace UnityEditor.Experimental.UIElements
 
         protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
-            if (evt.GetEventTypeId() == KeyDownEvent.TypeId())
+            if (evt?.eventTypeId == KeyDownEvent.TypeId())
             {
                 m_ColorField.HandleEvent(evt);
             }

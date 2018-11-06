@@ -5,10 +5,10 @@
 using System;
 using UnityEngine;
 using UnityEditorInternal;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     public class GradientField : BaseField<Gradient>
     {
@@ -27,24 +27,17 @@ namespace UnityEditor.Experimental.UIElements
             {
                 if (m_ValueNull) return null;
 
-                return GradientCopy(m_Value);
+                return GradientCopy(rawValue);
             }
             set
             {
                 if (value != null || !m_ValueNull)  // let's not reinitialize an initialized gradient
                 {
-                    if (panel != null)
+                    using (ChangeEvent<Gradient> evt = ChangeEvent<Gradient>.GetPooled(rawValue, value))
                     {
-                        using (ChangeEvent<Gradient> evt = ChangeEvent<Gradient>.GetPooled(m_Value, value))
-                        {
-                            evt.target = this;
-                            SetValueWithoutNotify(value);
-                            SendEvent(evt);
-                        }
-                    }
-                    else
-                    {
+                        evt.target = this;
                         SetValueWithoutNotify(value);
+                        SendEvent(evt);
                     }
                 }
             }
@@ -59,32 +52,45 @@ namespace UnityEditor.Experimental.UIElements
             return gradientCopy;
         }
 
-        public GradientField()
-        {
-            VisualElement borderElement = new VisualElement() { name = "border", pickingMode = PickingMode.Ignore };
-            Add(borderElement);
+        public new static readonly string ussClassName = "unity-gradient-field";
+        public static readonly string borderUssClassName = ussClassName + "__border";
 
-            m_Value = new Gradient();
+        public GradientField()
+            : this(null) {}
+
+        public GradientField(string label)
+            : base(label, null)
+        {
+            AddToClassList(ussClassName);
+            VisualElement borderElement = new VisualElement() { name = "unity-border", pickingMode = PickingMode.Ignore };
+            borderElement.AddToClassList(borderUssClassName);
+            visualInput.Add(borderElement);
+            rawValue = new Gradient();
         }
 
         protected internal override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
 
+            if (evt == null)
+            {
+                return;
+            }
+
             if ((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse || (evt as KeyDownEvent)?.character == '\n')
                 ShowGradientPicker();
-            else if (evt.GetEventTypeId() == DetachFromPanelEvent.TypeId())
+            else if (evt.eventTypeId == DetachFromPanelEvent.TypeId())
                 OnDetach();
-            else if (evt.GetEventTypeId() == AttachToPanelEvent.TypeId())
+            else if (evt.eventTypeId == AttachToPanelEvent.TypeId())
                 OnAttach();
         }
 
         void OnDetach()
         {
-            if (style.backgroundImage.value != null)
+            if (style.backgroundImage.value.texture != null)
             {
-                Object.DestroyImmediate(style.backgroundImage.value);
-                style.backgroundImage = null;
+                Object.DestroyImmediate(style.backgroundImage.value.texture);
+                style.backgroundImage = new Background(null);
             }
         }
 
@@ -95,12 +101,12 @@ namespace UnityEditor.Experimental.UIElements
 
         void ShowGradientPicker()
         {
-            GradientPicker.Show(m_Value, true, OnGradientChanged);
+            GradientPicker.Show(rawValue, true, OnGradientChanged);
         }
 
-        public override void OnPersistentDataReady()
+        internal override void OnViewDataReady()
         {
-            base.OnPersistentDataReady();
+            base.OnViewDataReady();
             UpdateGradientTexture();
         }
 
@@ -108,13 +114,13 @@ namespace UnityEditor.Experimental.UIElements
         {
             if (m_ValueNull)
             {
-                style.backgroundImage = null;
+                visualInput.style.backgroundImage = new Background(null);
             }
             else
             {
-                Texture2D gradientTexture = UnityEditorInternal.GradientPreviewCache.GenerateGradientPreview(value, style.backgroundImage.value);
+                Texture2D gradientTexture = UnityEditorInternal.GradientPreviewCache.GenerateGradientPreview(value, computedStyle.backgroundImage.value.texture);
 
-                style.backgroundImage = gradientTexture;
+                visualInput.style.backgroundImage = gradientTexture;
 
                 IncrementVersion(VersionChangeType.Repaint); // since the Texture2D object can be reused, force dirty because the backgroundImage change will only trigger the Dirty if the Texture2D objects are different.
             }
@@ -131,25 +137,19 @@ namespace UnityEditor.Experimental.UIElements
         public override void SetValueWithoutNotify(Gradient newValue)
         {
             m_ValueNull = newValue == null;
-            if (!m_ValueNull)
+            if (newValue != null)
             {
-                m_Value.colorKeys = newValue.colorKeys;
-                m_Value.alphaKeys = newValue.alphaKeys;
-                m_Value.mode = newValue.mode;
+                rawValue.colorKeys = newValue.colorKeys;
+                rawValue.alphaKeys = newValue.alphaKeys;
+                rawValue.mode = newValue.mode;
             }
             else // restore the internal gradient to the default state.
             {
-                m_Value.colorKeys = new[] { k_WhiteKeyBegin, k_WhiteKeyEnd };
-                m_Value.alphaKeys = new[] { k_AlphaKeyBegin, k_AlphaKeyEnd };
-                m_Value.mode = GradientMode.Blend;
+                rawValue.colorKeys = new[] { k_WhiteKeyBegin, k_WhiteKeyEnd };
+                rawValue.alphaKeys = new[] { k_AlphaKeyBegin, k_AlphaKeyEnd };
+                rawValue.mode = GradientMode.Blend;
             }
             UpdateGradientTexture();
-        }
-
-        [Obsolete("This method is replaced by simply using this.value. The default behaviour has been changed to notify when changed. If the behaviour is not to be notified, SetValueWithoutNotify() must be used.", false)]
-        public override void SetValueAndNotify(Gradient newValue)
-        {
-            value = newValue;
         }
     }
 }

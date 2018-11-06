@@ -246,15 +246,16 @@ namespace UnityEngine
             get { return SupportsMotionVectors(); }
         }
 
+        [Obsolete("supportsRenderToCubemap always returns true, no need to call it")]
         public static bool supportsRenderToCubemap
         {
-            get { return SupportsRenderToCubemap(); }
+            get { return true; } // all platforms support these days
         }
 
-        // Are image effects supported? (RO)
+        [Obsolete("supportsImageEffects always returns true, no need to call it")]
         public static bool supportsImageEffects
         {
-            get { return SupportsImageEffects(); }
+            get { return true; } // all platforms support these days
         }
 
         public static bool supports3DTextures
@@ -440,6 +441,15 @@ namespace UnityEngine
             get { return SupportsAsyncGPUReadback();  }
         }
 
+        public static bool supportsSetConstantBuffer
+        {
+            get { return SupportsSetConstantBuffer(); }
+        }
+        public static bool minConstantBufferOffsetAlignment
+        {
+            get { return MinConstantBufferOffsetAlignment(); }
+        }
+
         public static bool supportsMipStreaming
         {
             get { return SupportsMipStreaming(); }
@@ -553,12 +563,6 @@ namespace UnityEngine
         [FreeFunction("SupportsMotionVectors")]
         static extern bool SupportsMotionVectors();
 
-        [FreeFunction("ScriptingGraphicsCaps::SupportsRenderToCubemap")]
-        static extern bool SupportsRenderToCubemap();
-
-        [FreeFunction("ScriptingGraphicsCaps::SupportsImageEffects")]
-        static extern bool SupportsImageEffects();
-
         [FreeFunction("ScriptingGraphicsCaps::Supports3DTextures")]
         static extern bool Supports3DTextures();
 
@@ -639,6 +643,12 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsAsyncGPUReadback")]
         static extern bool SupportsAsyncGPUReadback();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsSetConstantBuffer")]
+        static extern bool SupportsSetConstantBuffer();
+
+        [FreeFunction("ScriptingGraphicsCaps::MinConstantBufferOffsetAlignment")]
+        static extern bool MinConstantBufferOffsetAlignment();
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsMipStreaming")]
         static extern bool SupportsMipStreaming();

@@ -5,11 +5,13 @@
 using System;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using System.Runtime.InteropServices;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     [NativeHeader("Modules/UIElements/ImmediateStylePainter.h")]
-    internal partial class ImmediateStylePainter
+    [StructLayout(LayoutKind.Sequential)]
+    internal class ImmediateStylePainter
     {
         internal static extern void DrawRect(Rect screenRect, Color color, Vector4 borderWidths, Vector4 borderRadiuses);
 

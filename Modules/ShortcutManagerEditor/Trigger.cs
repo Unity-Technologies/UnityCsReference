@@ -13,10 +13,11 @@ namespace UnityEditor.ShortcutManagement
     {
         IDirectory m_Directory;
         IConflictResolver m_ConflictResolver;
+        IContextManager m_CurrentContextManager;
 
         List<KeyCombination> m_KeyCombinationSequence = new List<KeyCombination>();
         List<ShortcutEntry> m_Entries = new List<ShortcutEntry>();
-        Dictionary<KeyCode, Tuple<ShortcutEntry, object>> m_ActiveClutches = new Dictionary<KeyCode, Tuple<ShortcutEntry, object>>();
+        Dictionary<KeyCode, KeyValuePair<ShortcutEntry, object>> m_ActiveClutches = new Dictionary<KeyCode, KeyValuePair<ShortcutEntry, object>>();
 
         public event Action<ShortcutEntry, ShortcutArguments> invokingAction;
 
@@ -33,10 +34,10 @@ namespace UnityEditor.ShortcutManagement
 
             if (evt.type == EventType.KeyUp)
             {
-                Tuple<ShortcutEntry, object> clutchTuple;
-                if (m_ActiveClutches.TryGetValue(evt.keyCode, out clutchTuple))
+                KeyValuePair<ShortcutEntry, object> clutchKeyValuePair;
+                if (m_ActiveClutches.TryGetValue(evt.keyCode, out clutchKeyValuePair))
                 {
-                    var clutchContext = m_ActiveClutches[evt.keyCode].Item2;
+                    var clutchContext = m_ActiveClutches[evt.keyCode].Value;
 
                     m_ActiveClutches.Remove(evt.keyCode);
                     var args = new ShortcutArguments
@@ -44,8 +45,8 @@ namespace UnityEditor.ShortcutManagement
                         context = clutchContext,
                         stage = ShortcutStage.End
                     };
-                    invokingAction?.Invoke(clutchTuple.Item1, args);
-                    clutchTuple.Item1.action(args);
+                    invokingAction?.Invoke(clutchKeyValuePair.Key, args);
+                    clutchKeyValuePair.Key.action(args);
                 }
                 return;
             }
@@ -70,7 +71,8 @@ namespace UnityEditor.ShortcutManagement
             // Deal ONLY with prioritycontext
             if (entries.Count() > 1 && contextManager.HasAnyPriorityContext())
             {
-                entries = m_Entries.FindAll(a => contextManager.HasPriorityContextOfType(a.context));
+                m_CurrentContextManager = contextManager;
+                entries = m_Entries.FindAll(CurrentContextManagerHasPriorityContextFor);
                 if (!entries.Any())
                     entries = m_Entries;
             }
@@ -103,7 +105,7 @@ namespace UnityEditor.ShortcutManagement
                             case ShortcutType.Clutch:
                                 if (!m_ActiveClutches.ContainsKey(evt.keyCode))
                                 {
-                                    m_ActiveClutches.Add(evt.keyCode, new Tuple<ShortcutEntry, object>(shortcutEntry, args.context));
+                                    m_ActiveClutches.Add(evt.keyCode, new KeyValuePair<ShortcutEntry, object>(shortcutEntry, args.context));
                                     args.stage = ShortcutStage.Begin;
                                     invokingAction?.Invoke(shortcutEntry, args);
                                     shortcutEntry.action(args);
@@ -135,15 +137,15 @@ namespace UnityEditor.ShortcutManagement
 
         public void ResetActiveClutches()
         {
-            foreach (var clutchTuple in m_ActiveClutches.Values)
+            foreach (var clutchKeyValuePair in m_ActiveClutches.Values)
             {
                 var args = new ShortcutArguments
                 {
-                    context = clutchTuple.Item2,
+                    context = clutchKeyValuePair.Value,
                     stage = ShortcutStage.End,
                 };
-                invokingAction?.Invoke(clutchTuple.Item1, args);
-                clutchTuple.Item1.action(args);
+                invokingAction?.Invoke(clutchKeyValuePair.Key, args);
+                clutchKeyValuePair.Key.action(args);
             }
 
             m_ActiveClutches.Clear();
@@ -170,6 +172,11 @@ namespace UnityEditor.ShortcutManagement
         void Reset()
         {
             m_KeyCombinationSequence.Clear();
+        }
+
+        bool CurrentContextManagerHasPriorityContextFor(ShortcutEntry entry)
+        {
+            return m_CurrentContextManager.HasPriorityContextOfType(entry.context);
         }
     }
 }

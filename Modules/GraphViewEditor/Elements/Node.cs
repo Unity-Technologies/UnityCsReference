@@ -5,10 +5,9 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     public class Node : GraphElement
     {
@@ -131,16 +130,16 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public override Rect GetPosition()
         {
-            if (style.positionType == PositionType.Absolute)
-                return new Rect(style.positionLeft, style.positionTop, layout.width, layout.height);
+            if (resolvedStyle.position == Position.Absolute)
+                return new Rect(resolvedStyle.left, resolvedStyle.top, layout.width, layout.height);
             return layout;
         }
 
         public override void SetPosition(Rect newPos)
         {
-            style.positionType = PositionType.Absolute;
-            style.positionLeft = newPos.x;
-            style.positionTop = newPos.y;
+            style.position = Position.Absolute;
+            style.left = newPos.x;
+            style.top = newPos.y;
         }
 
         protected virtual void OnPortRemoved(Port port)
@@ -234,15 +233,15 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             // Show output container only if we have one or more child
             if (outputVisible)
             {
-                if (outputContainer.shadow.parent != m_OutputContainerParent)
+                if (outputContainer.hierarchy.parent != m_OutputContainerParent)
                 {
-                    m_OutputContainerParent.shadow.Add(outputContainer);
+                    m_OutputContainerParent.hierarchy.Add(outputContainer);
                     outputContainer.BringToFront();
                 }
             }
             else
             {
-                if (outputContainer.shadow.parent == m_OutputContainerParent)
+                if (outputContainer.hierarchy.parent == m_OutputContainerParent)
                 {
                     outputContainer.RemoveFromHierarchy();
                 }
@@ -250,15 +249,15 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             if (inputVisible)
             {
-                if (inputContainer.shadow.parent != m_InputContainerParent)
+                if (inputContainer.hierarchy.parent != m_InputContainerParent)
                 {
-                    m_InputContainerParent.shadow.Add(inputContainer);
+                    m_InputContainerParent.hierarchy.Add(inputContainer);
                     inputContainer.SendToBack();
                 }
             }
             else
             {
-                if (inputContainer.shadow.parent == m_InputContainerParent)
+                if (inputContainer.hierarchy.parent == m_InputContainerParent)
                 {
                     inputContainer.RemoveFromHierarchy();
                 }
@@ -333,12 +332,13 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             if (borderContainer != null)
             {
-                borderContainer.clippingOptions = ClippingOptions.ClipAndCacheContents;
+                borderContainer.cacheAsBitmap = true;
+                borderContainer.style.overflow = Overflow.Hidden;
                 mainContainer = borderContainer;
                 var selection = main.Q(name: "selection-border");
                 if (selection != null)
                 {
-                    selection.clippingOptions = ClippingOptions.NoClipping; //fixes issues with selection border being clipped when zooming out
+                    selection.style.overflow = Overflow.Visible; //fixes issues with selection border being clipped when zooming out
                 }
             }
             else
@@ -351,7 +351,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             if (inputContainer != null)
             {
-                m_InputContainerParent = inputContainer.shadow.parent;
+                m_InputContainerParent = inputContainer.hierarchy.parent;
             }
 
             m_CollapsibleArea = main.Q(name: "collapsible-area");
@@ -361,7 +361,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             if (outputContainer != null)
             {
-                m_OutputContainerParent = outputContainer.shadow.parent;
+                m_OutputContainerParent = outputContainer.hierarchy.parent;
                 topContainer = output.parent;
             }
 
@@ -387,7 +387,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             this.AddManipulator(new ContextualMenuManipulator(BuildContextualMenu));
 
-            style.positionType = PositionType.Absolute;
+            style.position = Position.Absolute;
         }
 
         void AddConnectionsToDeleteSet(VisualElement container, ref HashSet<GraphElement> toDelete)
@@ -410,7 +410,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             toDelete.UnionWith(toDeleteList);
         }
 
-        void DisconnectAll(DropdownMenu.MenuAction a)
+        void DisconnectAll(DropdownMenuAction a)
         {
             HashSet<GraphElement> toDelete = new HashSet<GraphElement>();
 
@@ -428,7 +428,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        DropdownMenu.MenuAction.StatusFlags DisconnectAllStatus(DropdownMenu.MenuAction a)
+        DropdownMenuAction.Status DisconnectAllStatus(DropdownMenuAction a)
         {
             VisualElement[] containers =
             {
@@ -442,12 +442,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 {
                     if (elem.connected)
                     {
-                        return DropdownMenu.MenuAction.StatusFlags.Normal;
+                        return DropdownMenuAction.Status.Normal;
                     }
                 }
             }
 
-            return DropdownMenu.MenuAction.StatusFlags.Disabled;
+            return DropdownMenuAction.Status.Disabled;
         }
 
         public virtual void BuildContextualMenu(ContextualMenuPopulateEvent evt)

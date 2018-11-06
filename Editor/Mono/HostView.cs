@@ -5,10 +5,9 @@
 using UnityEngine;
 using System;
 using System.Reflection;
-using UnityEditor.Experimental.UIElements.Debugger;
-using UnityEngine.Experimental.UIElements.StyleEnums;
-using UnityEngine.Experimental.UIElements;
-
+using UnityEditor.UIElements.Debugger;
+using UnityEngine.UIElements;
+using ExperimentalUI = UnityEngine.Experimental.UIElements;
 using Unity.Experimental.EditorMode;
 
 namespace UnityEditor
@@ -67,12 +66,24 @@ namespace UnityEditor
 
             RectOffset margins = GetBorderSize();
 
-            IStyle style = EditorModes.GetRootElement(view).style;
-            style.positionTop = margins.top;
-            style.positionBottom = margins.bottom;
-            style.positionLeft = margins.left;
-            style.positionRight = margins.right;
-            style.positionType = PositionType.Absolute;
+            if (view.m_RootVisualContainer != null)
+            {
+                var style = view.m_RootVisualContainer.style;
+                style.positionTop = margins.top;
+                style.positionBottom = margins.bottom;
+                style.positionLeft = margins.left;
+                style.positionRight = margins.right;
+                style.positionType = ExperimentalUI.StyleEnums.PositionType.Absolute;
+            }
+            else
+            {
+                IStyle style = EditorModes.GetRootElement(view).style;
+                style.top = margins.top;
+                style.bottom = margins.bottom;
+                style.left = margins.left;
+                style.right = margins.right;
+                style.position = Position.Absolute;
+            }
         }
 
         protected override void SetPosition(Rect newPos)
@@ -358,6 +369,16 @@ namespace UnityEditor
             mi?.Invoke(obj, null);
         }
 
+        internal void RegisterExperimentalUIElementWindow()
+        {
+            SwitchUIElementsMode(GUIView.UIElementsMode.Experimental);
+            experimentalVisualTree.Add(m_ActualView.m_RootVisualContainer);
+
+            m_ExperimentalPanel.getViewDataDictionary = m_ActualView.GetViewDataDictionary;
+            m_ExperimentalPanel.savePersistentViewData = m_ActualView.SaveViewData;
+            m_ExperimentalPanel.name = m_ActualView.GetType().Name;
+        }
+
         protected void RegisterSelectedPane(bool sendEvents)
         {
             if (!m_ActualView)
@@ -365,10 +386,18 @@ namespace UnityEditor
 
             m_ActualView.m_Parent = this;
 
-            visualTree.Add(EditorModes.GetRootElement(m_ActualView));
-            panel.getViewDataDictionary = m_ActualView.GetViewDataDictionary;
-            panel.savePersistentViewData = m_ActualView.SavePersistentViewData;
-            panel.name = m_ActualView.GetType().Name;
+            if (m_ActualView.m_RootVisualContainer != null)
+            {
+                RegisterExperimentalUIElementWindow();
+            }
+            else
+            {
+                SwitchUIElementsMode(GUIView.UIElementsMode.Public);
+                visualTree.Add(EditorModes.GetRootElement(m_ActualView));
+                panel.getViewDataDictionary = m_ActualView.GetViewDataDictionary;
+                panel.saveViewData = m_ActualView.SaveViewData;
+                panel.name = m_ActualView.GetType().Name;
+            }
 
             if (GetPaneMethod("Update") != null)
                 EditorApplication.update += SendUpdate;
@@ -411,13 +440,25 @@ namespace UnityEditor
         {
             if (!m_ActualView)
                 return;
-
-            var root = EditorModes.GetRootElement(m_ActualView);
-            if (root.shadow.parent == visualTree)
+            if (m_ActualView.m_RootVisualContainer != null)
             {
-                visualTree.Remove(root);
-                panel.getViewDataDictionary = null;
-                panel.savePersistentViewData = null;
+                var root = m_ActualView.m_RootVisualContainer;
+                if (m_ExperimentalPanel != null && root.shadow.parent == m_ExperimentalPanel.visualTree)
+                {
+                    root.RemoveFromHierarchy();
+                    experimentalPanel.getViewDataDictionary = null;
+                    experimentalPanel.savePersistentViewData = null;
+                }
+            }
+            else
+            {
+                var root = EditorModes.GetRootElement(m_ActualView);
+                if (root.hierarchy.parent == visualTree)
+                {
+                    root.RemoveFromHierarchy();
+                    panel.getViewDataDictionary = null;
+                    panel.saveViewData = null;
+                }
             }
 
             if (GetPaneMethod("Update") != null)
@@ -530,7 +571,14 @@ namespace UnityEditor
             if (window == null)
                 return;
 
-            UIElementsDebugger.OpenAndInspectWindow(window);
+            if (window.m_RootVisualContainer != null)
+            {
+                UnityEditor.Experimental.UIElements.Debugger.UIElementsDebugger.OpenAndInspectWindow(window);
+            }
+            else
+            {
+                UIElementsDebugger.OpenAndInspectWindow(window);
+            }
         }
 
         internal void Reload(object userData)
@@ -631,10 +679,10 @@ namespace UnityEditor
         static void PropagateDirtyRepaint(VisualElement ve)
         {
             ve.MarkDirtyRepaint();
-            var count = ve.shadow.childCount;
+            var count = ve.hierarchy.childCount;
             for (var i = 0; i < count; i++)
             {
-                var child = ve.shadow[i];
+                var child = ve.hierarchy[i];
                 PropagateDirtyRepaint(child);
             }
         }

@@ -5,18 +5,8 @@
 using System;
 using System.Collections.Generic;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
-    // value that determines if a event handler stops propagation of events or allows it to continue.
-    // TODO: [Obsolete("Call EventBase.StopPropagation() instead of using EventPropagation.Stop.")]
-    public enum  EventPropagation
-    {
-        // continue event propagation after this handler
-        Continue,
-        // stop event propagation after this handler
-        Stop
-    }
-
     // With the following VisualElement tree existing
     // root
     //  container A
@@ -39,24 +29,54 @@ namespace UnityEngine.Experimental.UIElements
         Immediate = 2,
     }
 
-    public sealed class EventDispatcher
+    public struct EventDispatcherGate : IDisposable, IEquatable<EventDispatcherGate>
     {
-        public struct Gate : IDisposable
+        EventDispatcher m_Dispatcher;
+
+        public EventDispatcherGate(EventDispatcher d)
         {
-            EventDispatcher m_Dispatcher;
-
-            public Gate(EventDispatcher d)
+            if (d == null)
             {
-                m_Dispatcher = d;
-                m_Dispatcher.CloseGate();
+                throw new ArgumentNullException(nameof(d));
             }
-
-            public void Dispose()
-            {
-                m_Dispatcher.OpenGate();
-            }
+            m_Dispatcher = d;
+            m_Dispatcher.CloseGate();
         }
 
+        public void Dispose()
+        {
+            m_Dispatcher.OpenGate();
+        }
+
+        public bool Equals(EventDispatcherGate other)
+        {
+            return Equals(m_Dispatcher, other.m_Dispatcher);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            return obj is EventDispatcherGate && Equals((EventDispatcherGate)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return (m_Dispatcher != null ? m_Dispatcher.GetHashCode() : 0);
+        }
+
+        public static bool operator==(EventDispatcherGate left, EventDispatcherGate right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator!=(EventDispatcherGate left, EventDispatcherGate right)
+        {
+            return !left.Equals(right);
+        }
+    }
+
+    public sealed class EventDispatcher
+    {
         struct EventRecord
         {
             public EventBase m_Event;
@@ -119,7 +139,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             evt.MarkReceivedByDispatcher();
 
-            if (evt.GetEventTypeId() == IMGUIEvent.TypeId())
+            if (evt.eventTypeId == IMGUIEvent.TypeId())
             {
                 Event e = evt.imguiEvent;
                 if (e.type == EventType.Repaint)
@@ -239,7 +259,7 @@ namespace UnityEngine.Experimental.UIElements
             // Sometimes (in tests only?) we receive Used events. Protect our verification from this case.
             bool imguiEventIsInitiallyUsed = e != null && e.type == EventType.Used;
 
-            using (new Gate(this))
+            using (new EventDispatcherGate(this))
             {
                 evt.PreDispatch();
 

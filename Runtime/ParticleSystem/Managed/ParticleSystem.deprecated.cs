@@ -40,34 +40,27 @@ namespace UnityEngine
         public partial struct ShapeModule
         {
             [Obsolete("Please use scale instead. (UnityUpgradable) -> UnityEngine.ParticleSystem/ShapeModule.scale", false)]
-            public Vector3 box { get { return GetScale(m_ParticleSystem); } set { SetScale(m_ParticleSystem, value); } }
-            // Scale. (Meshes)
+            public Vector3 box { get { return scale; } set { scale = value; } }
             [Obsolete("meshScale property is deprecated.Please use scale instead.", false)]
             public float meshScale { get { return scale.x; } set { scale = new Vector3(value, value, value); } }
             [Obsolete("randomDirection property is deprecated. Use randomDirectionAmount instead.", false)]
             public bool randomDirection { get { return (randomDirectionAmount >= 0.5f); } set { randomDirectionAmount = value ? 1.0f : 0.0f; } }
         }
 
-        public partial struct CollisionModule
-        {
-            [Obsolete("enableInteriorCollisions property is deprecated and is no longer required and has no effect on the particle system.", false)]
-            public bool enableInteriorCollisions { get { return GetEnableInteriorCollisions(m_ParticleSystem); } set { SetEnableInteriorCollisions(m_ParticleSystem, value); } }
-        }
-
         public partial struct SubEmittersModule
         {
             [Obsolete("birth0 property is deprecated. Use AddSubEmitter, RemoveSubEmitter, SetSubEmitterSystem and GetSubEmitterSystem instead.", false)]
-            public ParticleSystem birth0 { get { return GetBirth(m_ParticleSystem, 0); } set { SetBirth(m_ParticleSystem, 0, value); } }
+            extern public ParticleSystem birth0 { get; set; }
             [Obsolete("birth1 property is deprecated. Use AddSubEmitter, RemoveSubEmitter, SetSubEmitterSystem and GetSubEmitterSystem instead.", false)]
-            public ParticleSystem birth1 { get { return GetBirth(m_ParticleSystem, 1); } set { SetBirth(m_ParticleSystem, 1, value); } }
+            extern public ParticleSystem birth1 { get; set; }
             [Obsolete("collision0 property is deprecated. Use AddSubEmitter, RemoveSubEmitter, SetSubEmitterSystem and GetSubEmitterSystem instead.", false)]
-            public ParticleSystem collision0 { get { return GetCollision(m_ParticleSystem, 0); } set { SetCollision(m_ParticleSystem, 0, value); } }
+            extern public ParticleSystem collision0 { get; set; }
             [Obsolete("collision1 property is deprecated. Use AddSubEmitter, RemoveSubEmitter, SetSubEmitterSystem and GetSubEmitterSystem instead.", false)]
-            public ParticleSystem collision1 { get { return GetCollision(m_ParticleSystem, 1); } set { SetCollision(m_ParticleSystem, 1, value); } }
+            extern public ParticleSystem collision1 { get; set; }
             [Obsolete("death0 property is deprecated. Use AddSubEmitter, RemoveSubEmitter, SetSubEmitterSystem and GetSubEmitterSystem instead.", false)]
-            public ParticleSystem death0 { get { return GetDeath(m_ParticleSystem, 0); } set { SetDeath(m_ParticleSystem, 0, value); } }
+            extern public ParticleSystem death0 { get; set; }
             [Obsolete("death1 property is deprecated. Use AddSubEmitter, RemoveSubEmitter, SetSubEmitterSystem and GetSubEmitterSystem instead.", false)]
-            public ParticleSystem death1 { get { return GetDeath(m_ParticleSystem, 1); } set { SetDeath(m_ParticleSystem, 1, value); } }
+            extern public ParticleSystem death1 { get; set; }
         }
 
         public partial struct TextureSheetAnimationModule

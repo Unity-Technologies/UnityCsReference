@@ -6,9 +6,9 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.Assertions;
 using System.Linq;
-using UnityEngine.Experimental.UIElements.StyleSheets;
+using UnityEngine.UIElements.StyleSheets;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     internal class TreeView : VisualElement
     {
@@ -18,14 +18,12 @@ namespace UnityEngine.Experimental.UIElements
         private static readonly string s_ItemIndentsContainerName = "unity-tree-view__item-indents";
         private static readonly string s_ItemIndentName = "unity-tree-view__item-indent";
         private static readonly string s_ItemContentContainerName = "unity-tree-view__item-content";
-        private const int k_DefaultItemHeight = 30;
-        private const string k_ItemHeightProperty = "-unity-item-height";
 
         public new class UxmlFactory : UxmlFactory<TreeView, UxmlTraits> {}
 
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
-            UxmlIntAttributeDescription m_ItemHeight = new UxmlIntAttributeDescription { name = "item-height", defaultValue = k_DefaultItemHeight };
+            UxmlIntAttributeDescription m_ItemHeight = new UxmlIntAttributeDescription { name = "item-height", defaultValue = ListView.s_DefaultItemHeight };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -149,9 +147,9 @@ namespace UnityEngine.Experimental.UIElements
             m_ListView = new ListView();
             m_ListView.name = s_ListViewName;
             m_ListView.itemsSource = m_ItemWrappers;
-            m_ListView.persistenceKey = s_ListViewName;
+            m_ListView.viewDataKey = s_ListViewName;
             m_ListView.AddToClassList(s_ListViewName);
-            shadow.Add(m_ListView);
+            hierarchy.Add(m_ListView);
 
             m_ListView.makeItem = MakeTreeItem;
             m_ListView.bindItem = BindTreeItem;
@@ -163,6 +161,7 @@ namespace UnityEngine.Experimental.UIElements
             m_ScrollView.contentContainer.RegisterCallback<KeyDownEvent>(OnKeyDown);
 
             RegisterCallback<MouseUpEvent>(OnTreeViewMouseUp, TrickleDown.TrickleDown);
+            RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
         }
 
         public TreeView(
@@ -186,13 +185,13 @@ namespace UnityEngine.Experimental.UIElements
             ListViewRefresh();
         }
 
-        public override void OnPersistentDataReady()
+        internal override void OnViewDataReady()
         {
-            base.OnPersistentDataReady();
+            base.OnViewDataReady();
 
-            string key = GetFullHierarchicalPersistenceKey();
+            string key = GetFullHierarchicalViewDataKey();
 
-            OverwriteFromPersistedData(this, key);
+            OverwriteFromViewData(this, key);
 
             Refresh();
         }
@@ -424,7 +423,7 @@ namespace UnityEngine.Experimental.UIElements
                 name = s_ItemName,
                 style =
                 {
-                    flexDirection = StyleEnums.FlexDirection.Row
+                    flexDirection = FlexDirection.Row
                 }
             };
             itemContainer.AddToClassList(s_ItemName);
@@ -435,16 +434,16 @@ namespace UnityEngine.Experimental.UIElements
                 name = s_ItemIndentsContainerName,
                 style =
                 {
-                    flexDirection = StyleEnums.FlexDirection.Row
+                    flexDirection = FlexDirection.Row
                 }
             };
             indents.AddToClassList(s_ItemIndentsContainerName);
-            itemContainer.shadow.Add(indents);
+            itemContainer.hierarchy.Add(indents);
 
             var toggle = new Toggle() { name = s_ItemToggleName };
             toggle.AddToClassList(s_ItemToggleName);
-            toggle.OnValueChanged(ToggleExpandedState);
-            itemContainer.shadow.Add(toggle);
+            toggle.RegisterValueChangedCallback(ToggleExpandedState);
+            itemContainer.hierarchy.Add(toggle);
 
             var userContentContainer = new VisualElement()
             {
@@ -524,7 +523,7 @@ namespace UnityEngine.Experimental.UIElements
 
             ListViewRefresh();
 
-            SavePersistentData();
+            SaveViewData();
         }
 
         private void ExpandItemByIndex(int index)
@@ -541,7 +540,7 @@ namespace UnityEngine.Experimental.UIElements
 
             ListViewRefresh();
 
-            SavePersistentData();
+            SaveViewData();
         }
 
         private void ToggleExpandedState(ChangeEvent<bool> evt)
@@ -591,14 +590,14 @@ namespace UnityEngine.Experimental.UIElements
             CreateWrappers(m_RootItems, 0, ref m_ItemWrappers);
         }
 
-        protected override void OnStyleResolved(ICustomStyle styles)
+        private void OnCustomStyleResolved(CustomStyleResolvedEvent e)
         {
-            base.OnStyleResolved(styles);
-
             var oldHeight = m_ListView.itemHeight;
-            styles.ApplyCustomProperty(k_ItemHeightProperty, ref m_ListView.m_ItemHeight);
+            int height = 0;
+            if (!m_ListView.m_ItemHeightIsInline && e.customStyle.TryGetValue(ListView.s_ItemHeightProperty, out height))
+                m_ListView.m_ItemHeight = height;
 
-            if (m_ListView.m_ItemHeight.GetSpecifiedValueOrDefault(oldHeight) != oldHeight)
+            if (m_ListView.m_ItemHeight != oldHeight)
                 m_ListView.Refresh();
         }
     }

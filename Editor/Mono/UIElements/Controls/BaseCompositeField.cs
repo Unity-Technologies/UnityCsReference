@@ -5,95 +5,199 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
-    /// <summary>
-    ///  This is the base class for the compound fields of type TMain.
-    /// </summary>
-    /// <typeparam name="TValue">The type of the object to be represented by the fields (example: Vector3)</typeparam>
-    /// <typeparam name="TField">The type of a single field in the compound field. (example: for a Vector3, this is FloatField)</typeparam>
-    /// <typeparam name="TFieldValue">The basic type of an individual object contained in the TField. (example: for a FloatField, this is a float)</typeparam>
-    public abstract class BaseCompositeField<TValue, TField, TFieldValue> : BaseField<TValue>
+    public abstract class BaseCompositeField<TValueType, TField, TFieldValue> : BaseField<TValueType>
         where TField : TextValueField<TFieldValue>, new()
     {
-        public new class UxmlTraits : BaseField<TValue>.UxmlTraits {}
-
         internal struct FieldDescription
         {
-            public delegate void WriteDelegate(ref TValue val, TFieldValue fieldValue);
+            public delegate void WriteDelegate(ref TValueType val, TFieldValue fieldValue);
 
             internal readonly string name;
-            internal readonly Func<TValue, TFieldValue> read;
+            internal readonly string ussName;
+            internal readonly Func<TValueType, TFieldValue> read;
             internal readonly WriteDelegate write;
 
-            public FieldDescription(string name, Func<TValue, TFieldValue> read, WriteDelegate write)
+            public FieldDescription(string name, string ussName, Func<TValueType, TFieldValue> read, WriteDelegate write)
             {
                 this.name = name;
+                this.ussName = ussName;
                 this.read = read;
                 this.write = write;
             }
         }
 
-        public override int focusIndex
+        public new class UxmlTraits : BaseField<TValueType>.UxmlTraits
         {
-            get { return base.focusIndex; }
+            UxmlStringAttributeDescription m_Label = new UxmlStringAttributeDescription { name = "label" };
+
+            protected UxmlTraits()
+            {
+                focusIndex.defaultValue = 0;
+                focusable.defaultValue = true;
+            }
+
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                base.Init(ve, bag, cc);
+                ((BaseField<TValueType>)ve).label = m_Label.GetValueFromBag(bag, cc);
+            }
+        }
+
+        public override bool focusable
+        {
+            get { return base.focusable; }
             set
             {
-                base.focusIndex = value;
+                base.focusable = value;
                 if ((m_Fields != null) && (m_Fields.Count > 0))
                 {
                     foreach (var field in m_Fields)
                     {
-                        field.focusIndex = value;
+                        field.focusable = focusable;
                     }
                 }
             }
         }
-        protected List<TField> m_Fields;
-        internal abstract FieldDescription[] DescribeFields();
 
-        bool m_ShouldUpdateDisplay;
-        protected BaseCompositeField()
+        public override int tabIndex
         {
-            AddToClassList("compositeField");
+            get { return base.tabIndex; }
+            set
+            {
+                base.tabIndex = value;
+                if ((m_Fields != null) && (m_Fields.Count > 0))
+                {
+                    foreach (var field in m_Fields)
+                    {
+                        field.tabIndex = value;
+                    }
+                }
+            }
+        }
+
+        private VisualElement GetSpacer()
+        {
+            var spacer = new VisualElement();
+            spacer.AddToClassList(spacerUssClassName);
+            spacer.visible = false;
+            spacer.focusable = false;
+            return spacer;
+        }
+
+        List<TField> m_Fields;
+        internal List<TField> fields => m_Fields;
+
+        internal abstract FieldDescription[] DescribeFields();
+        bool m_ShouldUpdateDisplay;
+
+        public new static readonly string ussClassName = "unity-composite-field";
+        public static readonly string spacerUssClassName = ussClassName + "__field-spacer";
+        public static readonly string multilineVariantUssClassName = ussClassName + "--multi-line";
+        public static readonly string fieldGroupUssClassName = ussClassName + "__field-group";
+        public static readonly string fieldUssClassName = ussClassName + "__field";
+        public static readonly string firstFieldVariantUssClassName = fieldUssClassName + "--first";
+        public static readonly string twoLinesVariantUssClassName = ussClassName + "--two-lines";
+
+        protected BaseCompositeField(string label, int fieldsByLine)
+            : base(label, null)
+        {
+            AddToClassList(ussClassName);
             m_ShouldUpdateDisplay = true;
             m_Fields = new List<TField>();
             FieldDescription[] fieldDescriptions = DescribeFields();
-            foreach (var desc in fieldDescriptions)
-            {
-                var fieldContainer = new VisualElement();
-                fieldContainer.AddToClassList("field");
-                fieldContainer.Add(new Label(desc.name));
-                var field = new TField();
-                fieldContainer.Add(field);
-                field.OnValueChanged(e =>
-                {
-                    TValue cur = value;
-                    desc.write(ref cur, e.newValue);
 
-                    // Here, just check and make sure the text is updated in the basic field and is the same as the value...
-                    // For example, backspace done on a selected value will empty the field (text == "") but the value will be 0.
-                    // Or : a text of "2+3" is valid until enter is pressed, so not equal to a value of "5".
-                    if (e.newValue.ToString() != ((TField)e.currentTarget).text)
+            int numberOfLines = 1;
+            if (fieldsByLine > 1)
+            {
+                numberOfLines = fieldDescriptions.Length / fieldsByLine;
+            }
+
+            var isMultiLine = false;
+            if (numberOfLines > 1)
+            {
+                isMultiLine = true;
+                AddToClassList(multilineVariantUssClassName);
+            }
+
+            for (int i = 0; i < numberOfLines; i++)
+            {
+                VisualElement newLineGroup = null;
+                if (isMultiLine)
+                {
+                    newLineGroup = new VisualElement();
+                    newLineGroup.AddToClassList(fieldGroupUssClassName);
+                }
+
+                bool firstField = true;
+                for (int j = i * fieldsByLine; j < ((i * fieldsByLine) + fieldsByLine); j++)
+                {
+                    var desc = fieldDescriptions[j];
+                    var field = new TField()
                     {
-                        m_ShouldUpdateDisplay = false;
+                        name = desc.ussName
+                    };
+                    field.AddToClassList(fieldUssClassName);
+                    if (firstField)
+                    {
+                        field.AddToClassList(firstFieldVariantUssClassName);
+                        firstField = false;
                     }
 
-                    value = cur;
-                    m_ShouldUpdateDisplay = true;
-                });
-                m_Fields.Add(field);
-                shadow.Add(fieldContainer);
+                    field.label = desc.name;
+                    field.RegisterValueChangedCallback(e =>
+                    {
+                        TValueType cur = value;
+                        desc.write(ref cur, e.newValue);
+
+                        // Here, just check and make sure the text is updated in the basic field and is the same as the value...
+                        // For example, backspace done on a selected value will empty the field (text == "") but the value will be 0.
+                        // Or : a text of "2+3" is valid until enter is pressed, so not equal to a value of "5".
+                        if (e.newValue.ToString() != ((TField)e.currentTarget).text)
+                        {
+                            m_ShouldUpdateDisplay = false;
+                        }
+
+                        value = cur;
+                        m_ShouldUpdateDisplay = true;
+                    });
+                    m_Fields.Add(field);
+                    if (isMultiLine)
+                    {
+                        newLineGroup.Add(field);
+                    }
+                    else
+                    {
+                        visualInput.hierarchy.Add(field);
+                    }
+                }
+
+                if (fieldsByLine < 3)
+                {
+                    int fieldsToAdd = 3 - fieldsByLine;
+                    for (int countToAdd = 0; countToAdd < fieldsToAdd; countToAdd++)
+                    {
+                        if (isMultiLine)
+                        {
+                            newLineGroup.Add(GetSpacer());
+                        }
+                        else
+                        {
+                            visualInput.hierarchy.Add(GetSpacer());
+                        }
+                    }
+                }
+
+                if (isMultiLine)
+                {
+                    visualInput.hierarchy.Add(newLineGroup);
+                }
             }
 
             UpdateDisplay();
-        }
-
-        public override VisualElement contentContainer
-        {
-            get { return null; }
         }
 
         private void UpdateDisplay()
@@ -104,15 +208,15 @@ namespace UnityEditor.Experimental.UIElements
                 FieldDescription[] fieldDescriptions = DescribeFields();
                 foreach (var fd in fieldDescriptions)
                 {
-                    m_Fields[i].value = (fd.read(m_Value));
+                    m_Fields[i].value = (fd.read(rawValue));
                     i++;
                 }
             }
         }
 
-        public override void SetValueWithoutNotify(TValue newValue)
+        public override void SetValueWithoutNotify(TValueType newValue)
         {
-            var displayNeedsUpdate = m_ShouldUpdateDisplay && !EqualityComparer<TValue>.Default.Equals(m_Value, newValue);
+            var displayNeedsUpdate = m_ShouldUpdateDisplay && !EqualityComparer<TValueType>.Default.Equals(rawValue, newValue);
 
             // Make sure to call the base class to set the value...
             base.SetValueWithoutNotify(newValue);
@@ -129,7 +233,7 @@ namespace UnityEditor.Experimental.UIElements
             base.ExecuteDefaultAction(evt);
 
             // Focus first field if any
-            if (evt.GetEventTypeId() == FocusEvent.TypeId() && m_Fields.Count > 0)
+            if (evt?.eventTypeId == FocusEvent.TypeId() && m_Fields.Count > 0)
                 m_Fields[0].Focus();
         }
     }

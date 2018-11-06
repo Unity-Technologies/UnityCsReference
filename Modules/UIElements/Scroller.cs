@@ -4,45 +4,9 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine.Experimental.UIElements.StyleEnums;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
-    // TODO: Using ScrollerButton class for now, as Button class uses Skin styles by default because of the GUISkinStyle attribute
-    // ScrollerButton is a repeat button without any skin styles
-    public class ScrollerButton : VisualElement
-    {
-        public new class UxmlFactory : UxmlFactory<ScrollerButton, UxmlTraits> {}
-
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            UxmlLongAttributeDescription m_Delay = new UxmlLongAttributeDescription { name = "delay" };
-            UxmlLongAttributeDescription m_Interval = new UxmlLongAttributeDescription { name = "interval" };
-
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                ((ScrollerButton)ve).clickable = new Clickable(null, m_Delay.GetValueFromBag(bag, cc), m_Interval.GetValueFromBag(bag, cc));
-            }
-        }
-
-        public Clickable clickable;
-
-        public ScrollerButton() {}
-
-        public ScrollerButton(System.Action clickEvent, long delay, long interval)
-        {
-            clickable = new Clickable(clickEvent, delay, interval);
-            this.AddManipulator(clickable);
-        }
-    }
-
     public class Scroller : VisualElement
     {
         public new class UxmlFactory : UxmlFactory<Scroller, UxmlTraits> {}
@@ -75,8 +39,8 @@ namespace UnityEngine.Experimental.UIElements
         public event System.Action<float> valueChanged;
 
         public Slider slider { get; private set; }
-        public ScrollerButton lowButton { get; private set; }
-        public ScrollerButton highButton { get; private set; }
+        public RepeatButton lowButton { get; private set; }
+        public RepeatButton highButton { get; private set; }
 
         public float value
         {
@@ -98,40 +62,54 @@ namespace UnityEngine.Experimental.UIElements
 
         public SliderDirection direction
         {
-            get { return style.flexDirection == FlexDirection.Row ? SliderDirection.Horizontal : SliderDirection.Vertical; }
+            get { return resolvedStyle.flexDirection == FlexDirection.Row ? SliderDirection.Horizontal : SliderDirection.Vertical; }
             set
             {
                 if (value == SliderDirection.Horizontal)
                 {
                     style.flexDirection = FlexDirection.Row;
-                    AddToClassList("horizontal");
+                    AddToClassList(horizontalVariantUssClassName);
+                    RemoveFromClassList(verticalVariantUssClassName);
                 }
                 else
                 {
                     style.flexDirection = FlexDirection.Column;
-                    AddToClassList("vertical");
+                    AddToClassList(verticalVariantUssClassName);
+                    RemoveFromClassList(horizontalVariantUssClassName);
                 }
             }
         }
 
         internal const float kDefaultPageSize = 20.0f;
 
+        public static readonly string ussClassName = "unity-scroller";
+        public static readonly string horizontalVariantUssClassName = ussClassName + "--horizontal";
+        public static readonly string verticalVariantUssClassName = ussClassName + "--vertical";
+        public static readonly string sliderUssClassName = ussClassName + "__slider";
+        public static readonly string lowButtonUssClassName = ussClassName + "__low-button";
+        public static readonly string highButtonUssClassName = ussClassName + "__high-button";
+
         public Scroller()
             : this(0, 0, null) {}
 
         public Scroller(float lowValue, float highValue, System.Action<float> valueChanged, SliderDirection direction = SliderDirection.Vertical)
         {
+            AddToClassList(ussClassName);
+
             this.direction = direction;
             this.valueChanged = valueChanged;
 
             // Add children in correct order
-            slider = new Slider(lowValue, highValue, direction, kDefaultPageSize) {name = "Slider", persistenceKey = "Slider"};
-            slider.OnValueChanged(OnSliderValueChange);
+            slider = new Slider(lowValue, highValue, direction, kDefaultPageSize) {name = "unity-slider", viewDataKey = "Slider"};
+            slider.AddToClassList(sliderUssClassName);
+            slider.RegisterValueChangedCallback(OnSliderValueChange);
 
             Add(slider);
-            lowButton = new ScrollerButton(ScrollPageUp, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) {name = "LowButton"};
+            lowButton = new RepeatButton(ScrollPageUp, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) { name = "unity-low-button" };
+            lowButton.AddToClassList(lowButtonUssClassName);
             Add(lowButton);
-            highButton = new ScrollerButton(ScrollPageDown, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) {name = "HighButton"};
+            highButton = new RepeatButton(ScrollPageDown, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) { name = "unity-high-button" };
+            highButton.AddToClassList(highButtonUssClassName);
             Add(highButton);
         }
 
@@ -146,8 +124,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             value = evt.newValue;
 
-            if (valueChanged != null)
-                valueChanged(slider.value);
+            valueChanged?.Invoke(slider.value);
             this.IncrementVersion(VersionChangeType.Repaint);
         }
 

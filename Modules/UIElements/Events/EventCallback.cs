@@ -4,7 +4,7 @@
 
 using System;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public delegate void EventCallback<in TEventType>(TEventType evt);
 
@@ -44,8 +44,8 @@ namespace UnityEngine.Experimental.UIElements
 
     internal class EventCallbackFunctor<TEventType> : EventCallbackFunctorBase where TEventType : EventBase<TEventType>, new()
     {
-        EventCallback<TEventType> m_Callback;
-        long m_EventTypeId;
+        readonly EventCallback<TEventType> m_Callback;
+        readonly long m_EventTypeId;
 
         public EventCallbackFunctor(EventCallback<TEventType> callback, CallbackPhase phase) : base(phase)
         {
@@ -56,9 +56,9 @@ namespace UnityEngine.Experimental.UIElements
         public override void Invoke(EventBase evt)
         {
             if (evt == null)
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(evt));
 
-            if (evt.GetEventTypeId() != m_EventTypeId)
+            if (evt.eventTypeId != m_EventTypeId)
                 return;
 
             if (PhaseMatches(evt))
@@ -75,8 +75,8 @@ namespace UnityEngine.Experimental.UIElements
 
     internal class EventCallbackFunctor<TEventType, TCallbackArgs> : EventCallbackFunctorBase where TEventType : EventBase<TEventType>, new()
     {
-        EventCallback<TEventType, TCallbackArgs> m_Callback;
-        long m_EventTypeId;
+        readonly EventCallback<TEventType, TCallbackArgs> m_Callback;
+        readonly long m_EventTypeId;
 
         internal TCallbackArgs userArgs { get; set; }
 
@@ -90,9 +90,9 @@ namespace UnityEngine.Experimental.UIElements
         public override void Invoke(EventBase evt)
         {
             if (evt == null)
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(evt));
 
-            if (evt.GetEventTypeId() != m_EventTypeId)
+            if (evt.eventTypeId != m_EventTypeId)
                 return;
 
             if (PhaseMatches(evt))

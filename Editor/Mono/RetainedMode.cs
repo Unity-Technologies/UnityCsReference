@@ -4,16 +4,23 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEditor.Experimental.UIElements;
-using UnityEditor.Experimental.UIElements.Debugger;
+using UnityEditor.UIElements.Debugger;
+using UnityEditor.StyleSheets;
+using UnityEditor.UIElements;
 using UnityEngine;
 using Object = UnityEngine.Object;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleSheets;
+using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.Scripting;
+
+using UXMLImporterImpl = UnityEditor.Experimental.UIElements.UXMLImporterImpl;
+
+using ExperimentalUI = UnityEngine.Experimental.UIElements;
+using EditorExperimentalUI = UnityEditor.Experimental.UIElements;
 
 namespace UnityEditor
 {
+    [InitializeOnLoad]
     class RetainedMode : AssetPostprocessor
     {
         private const string k_UielementsUxmllivereloadPrefsKey = "UIElements_UXMLLiveReload";
@@ -25,10 +32,23 @@ namespace UnityEditor
         }
 
         static bool s_FontInitialized = false;
+
         static RetainedMode()
         {
             UIElementsUtility.s_BeginContainerCallback = OnBeginContainer;
             UIElementsUtility.s_EndContainerCallback = OnEndContainer;
+
+            ExperimentalUI.UIElementsUtility.s_BeginContainerCallback = (v) => OnBeginContainer(null);
+            ExperimentalUI.UIElementsUtility.s_EndContainerCallback = (v) => OnEndContainer(null);
+
+            Panel.loadResourceFunc = StyleSheetResourceUtil.LoadResource;
+            StyleSheetApplicator.getCursorIdFunc = UIElementsEditorUtility.GetCursorId;
+            Panel.TimeSinceStartup = () => (long)(EditorApplication.timeSinceStartup * 1000.0f);
+            Panel.instanceIdToObjectFunc = EditorUtility.InstanceIDToObject;
+
+            ExperimentalUI.Panel.loadResourceFunc = StyleSheetResourceUtil.LoadResource;
+            ExperimentalUI.StyleSheets.StyleSheetApplicator.getCursorIdFunc = EditorExperimentalUI.UIElementsEditorUtility.GetCursorId;
+            ExperimentalUI.Panel.TimeSinceStartup = () => (long)(EditorApplication.timeSinceStartup * 1000.0f);
         }
 
         static void OnBeginContainer(IMGUIContainer c)
@@ -51,39 +71,80 @@ namespace UnityEditor
         {
             DataWatchService.sharedInstance.PollNativeData();
 
-            var iterator = UIElementsUtility.GetPanelsIterator();
-            while (iterator.MoveNext())
             {
-                var panel = iterator.Current.Value;
+                var iterator = UIElementsUtility.GetPanelsIterator();
+                while (iterator.MoveNext())
+                {
+                    var panel = iterator.Current.Value;
 
-                // Game panels' scheduler are ticked by the engine
-                if (panel.contextType != ContextType.Editor)
-                    continue;
+                    // Game panels' scheduler are ticked by the engine
+                    if (panel.contextType != ContextType.Editor)
+                        continue;
 
-                // Dispatch all timer update messages to each scheduled item
-                panel.timerEventScheduler.UpdateScheduledEvents();
-                panel.UpdateBindings();
+                    // Dispatch all timer update messages to each scheduled item
+                    panel.timerEventScheduler.UpdateScheduledEvents();
+                    panel.UpdateBindings();
+                }
+            }
+
+            //temporary Experimental wrapper
+            {
+                var iterator = ExperimentalUI.UIElementsUtility.GetPanelsIterator();
+                while (iterator.MoveNext())
+                {
+                    var panel = iterator.Current.Value;
+
+                    // Game panels' scheduler are ticked by the engine
+                    if (panel.contextType != ExperimentalUI.ContextType.Editor)
+                        continue;
+
+                    // Dispatch all timer update messages to each scheduled item
+                    panel.timerEventScheduler.UpdateScheduledEvents();
+                    panel.UpdateBindings();
+                }
             }
         }
 
         [RequiredByNativeCode]
         static void RequestRepaintForPanels()
         {
-            var iterator = UIElementsUtility.GetPanelsIterator();
-            while (iterator.MoveNext())
             {
-                var panel = iterator.Current.Value;
-
-                // Game panels' scheduler are ticked by the engine
-                if (panel.contextType != ContextType.Editor)
-                    continue;
-
-                // Dispatch might have triggered a repaint request.
-                if (panel.isDirty)
+                var iterator = UIElementsUtility.GetPanelsIterator();
+                while (iterator.MoveNext())
                 {
-                    var guiView = panel.ownerObject as GUIView;
-                    if (guiView != null)
-                        guiView.Repaint();
+                    var panel = iterator.Current.Value;
+
+                    // Game panels' scheduler are ticked by the engine
+                    if (panel.contextType != ContextType.Editor)
+                        continue;
+
+                    // Dispatch might have triggered a repaint request.
+                    if (panel.isDirty)
+                    {
+                        var guiView = panel.ownerObject as GUIView;
+                        if (guiView != null)
+                            guiView.Repaint();
+                    }
+                }
+            }
+
+            {
+                var iterator = ExperimentalUI.UIElementsUtility.GetPanelsIterator();
+                while (iterator.MoveNext())
+                {
+                    var panel = iterator.Current.Value;
+
+                    // Game panels' scheduler are ticked by the engine
+                    if (panel.contextType != ExperimentalUI.ContextType.Editor)
+                        continue;
+
+                    // Dispatch might have triggered a repaint request.
+                    if (panel.isDirty)
+                    {
+                        var guiView = panel.ownerObject as GUIView;
+                        if (guiView != null)
+                            guiView.Repaint();
+                    }
                 }
             }
         }
@@ -111,8 +172,8 @@ namespace UnityEditor
 
                         // the inline stylesheet cache might get out of date.
                         // Usually called by the USS importer, which might not get called here
-                        StyleSheetCache.ClearCaches();
-
+                        UnityEngine.UIElements.StyleSheets.StyleSheetCache.ClearCaches();
+                        ExperimentalUI.StyleSheets.StyleSheetCache.ClearCaches();
                         if (UxmlLiveReloadIsEnabled && Unsupported.IsDeveloperMode())
                         {
                             // Delay the view reloading so we do not try to reload the view that
@@ -132,13 +193,26 @@ namespace UnityEditor
         {
             try
             {
-                var it = UIElementsUtility.GetPanelsIterator();
-                while (it.MoveNext())
                 {
-                    var view = it.Current.Value.ownerObject as HostView;
-                    if (view != null && view.actualView != null && !(view.actualView is UIElementsDebugger))
+                    var it = ExperimentalUI.UIElementsUtility.GetPanelsIterator();
+                    while (it.MoveNext())
                     {
-                        view.Reload(view.actualView);
+                        var view = it.Current.Value.ownerObject as HostView;
+                        if (view != null && view.actualView != null && !(view.actualView is UIElementsDebugger))
+                        {
+                            view.Reload(view.actualView);
+                        }
+                    }
+                }
+                {
+                    var it = UIElementsUtility.GetPanelsIterator();
+                    while (it.MoveNext())
+                    {
+                        var view = it.Current.Value.ownerObject as HostView;
+                        if (view != null && view.actualView != null && !(view.actualView is UIElementsDebugger))
+                        {
+                            view.Reload(view.actualView);
+                        }
                     }
                 }
             }
@@ -154,23 +228,44 @@ namespace UnityEditor
         public static void FlagStyleSheetChange()
         {
             // clear caches that depend on loaded style sheets
-            StyleSheetCache.ClearCaches();
+            UnityEngine.UIElements.StyleSheets.StyleSheetCache.ClearCaches();
+            ExperimentalUI.StyleSheets.StyleSheetCache.ClearCaches();
 
-            // for now we don't bother tracking which panel depends on which style sheet
-            var iterator = UIElementsUtility.GetPanelsIterator();
-            while (iterator.MoveNext())
             {
-                var panel = iterator.Current.Value;
+                // for now we don't bother tracking which panel depends on which style sheet
+                var iterator = ExperimentalUI.UIElementsUtility.GetPanelsIterator();
+                while (iterator.MoveNext())
+                {
+                    var panel = iterator.Current.Value;
 
-                // In-game doesn't support styling
-                if (panel.contextType != ContextType.Editor)
-                    continue;
+                    // In-game doesn't support styling
+                    if (panel.contextType != ExperimentalUI.ContextType.Editor)
+                        continue;
 
-                panel.DirtyStyleSheets();
+                    panel.DirtyStyleSheets();
 
-                var guiView = panel.ownerObject as GUIView;
-                if (guiView != null)
-                    guiView.Repaint();
+                    var guiView = panel.ownerObject as GUIView;
+                    if (guiView != null)
+                        guiView.Repaint();
+                }
+            }
+            {
+                // for now we don't bother tracking which panel depends on which style sheet
+                var iterator = UIElementsUtility.GetPanelsIterator();
+                while (iterator.MoveNext())
+                {
+                    var panel = iterator.Current.Value;
+
+                    // In-game doesn't support styling
+                    if (panel.contextType != ContextType.Editor)
+                        continue;
+
+                    panel.DirtyStyleSheets();
+
+                    var guiView = panel.ownerObject as GUIView;
+                    if (guiView != null)
+                        guiView.Repaint();
+                }
             }
         }
     }

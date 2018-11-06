@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using UnityEditor.Experimental;
 using UnityEngine;
-using UnityEngine.StyleSheets;
+using UnityEngine.UIElements;
 using Debug = UnityEngine.Debug;
 
 namespace UnityEditor.StyleSheets
@@ -62,7 +62,7 @@ namespace UnityEditor.StyleSheets
         any = 1L << 63
     }
 
-    internal static class StyleKeyword
+    internal static class StyleCatalogKeyword
     {
         public readonly static int root = "".GetHashCode();
 
@@ -183,8 +183,8 @@ namespace UnityEditor.StyleSheets
         }
 
         // Root access, i.e. :root {...}
-        public SVC(int property, T defaultValue = default(T)) : this(StyleKeyword.root, property, defaultValue, StyleState.root) {}
-        public SVC(string property, T defaultValue = default(T)) : this(StyleKeyword.root, property.GetHashCode(), defaultValue, StyleState.root) {}
+        public SVC(int property, T defaultValue = default(T)) : this(StyleCatalogKeyword.root, property, defaultValue, StyleState.root) {}
+        public SVC(string property, T defaultValue = default(T)) : this(StyleCatalogKeyword.root, property.GetHashCode(), defaultValue, StyleState.root) {}
 
         public static implicit operator T(SVC<T> sc) { return sc.value; }
 

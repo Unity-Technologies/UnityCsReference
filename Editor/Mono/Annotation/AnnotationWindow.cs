@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace UnityEditor
 {
@@ -103,7 +104,7 @@ namespace UnityEditor
 
             float displaySize = texelWorldSize * 32.0f; // The 32 is default icon size, so we show worldsize for 32 pixel icons.
             int numDecimals = MathUtils.GetNumberOfDecimalsForMinimumDifference(displaySize * 0.1f);
-            return displaySize.ToString("N" + numDecimals);
+            return displaySize.ToString("N" + numDecimals, CultureInfo.InvariantCulture.NumberFormat);
         }
 
         public void MonoScriptIconChanged(MonoScript monoScript)

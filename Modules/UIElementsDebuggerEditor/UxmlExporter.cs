@@ -8,13 +8,13 @@ using System.Linq;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements.Debugger
+namespace UnityEditor.UIElements.Debugger
 {
     class UxmlExporter
     {
-        private const string UIElementsNamespace = "UnityEngine.Experimental.UIElements";
+        private const string UIElementsNamespace = "UnityEngine.UIElements";
 
         [Flags]
         public enum ExportOptions

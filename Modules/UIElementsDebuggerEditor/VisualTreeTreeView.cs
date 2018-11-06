@@ -6,10 +6,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.IMGUI.Controls;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 using TreeView = UnityEditor.IMGUI.Controls.TreeView;
 
-namespace UnityEditor.Experimental.UIElements.Debugger
+namespace UnityEditor.UIElements.Debugger
 {
     class VisualTreeItem : TreeViewItem
     {
@@ -54,7 +54,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             tree.AddChild(child);
 
             IEnumerable<VisualElement> childElements = includeShadowHierarchy
-                ? elt.shadow.Children()
+                ? elt.hierarchy.Children()
                 : (elt.contentContainer == null ? Enumerable.Empty<VisualElement>() : elt.Children());
             foreach (VisualElement childElement in childElements)
             {

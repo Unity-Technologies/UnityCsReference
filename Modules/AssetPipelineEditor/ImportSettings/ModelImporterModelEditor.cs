@@ -211,14 +211,14 @@ namespace UnityEditor
                         {
                             GUIContent content = m_FileScaleUnit.hasMultipleDifferentValues
                                 ? EditorGUI.mixedValueContent
-                                : GUIContent.Temp(string.Format(L10n.Tr("1{0} (File) to {1}m (Unity)"), m_FileScaleUnit.stringValue, m_FileScaleFactor.floatValue));
+                                : GUIContent.Temp(UnityString.Format(L10n.Tr("1{0} (File) to {1}m (Unity)"), m_FileScaleUnit.stringValue, m_FileScaleFactor.floatValue));
                             EditorGUILayout.LabelField(content, GUILayout.ExpandWidth(true));
                         }
                         else
                         {
                             GUIContent content = m_FileScaleUnit.hasMultipleDifferentValues
                                 ? EditorGUI.mixedValueContent
-                                : GUIContent.Temp(string.Format(L10n.Tr("1 unit (File) to {0}m (Unity)"), m_FileScale.floatValue));
+                                : GUIContent.Temp(UnityString.Format(L10n.Tr("1 unit (File) to {0}m (Unity)"), m_FileScale.floatValue));
                             EditorGUILayout.LabelField(content);
                         }
                     }

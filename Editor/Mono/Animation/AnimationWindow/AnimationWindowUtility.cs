@@ -1036,12 +1036,21 @@ namespace UnityEditorInternal
         // What is the first animation player component (Animator or Animation) when recursing parent tree toward root
         public static Component GetClosestAnimationPlayerComponentInParents(Transform tr)
         {
-            Animator animator = GetClosestAnimatorInParents(tr);
-            if (animator != null)
-                return animator;
-            Animation animation = GetClosestAnimationInParents(tr);
-            if (animation != null)
-                return animation;
+            while (true)
+            {
+                var animator = tr.GetComponent<Animator>();
+                if (animator != null)
+                    return animator;
+
+                var animation = tr.GetComponent<Animation>();
+                if (animation != null)
+                    return animation;
+
+                if (tr == tr.root)
+                    break;
+
+                tr = tr.parent;
+            }
             return null;
         }
 

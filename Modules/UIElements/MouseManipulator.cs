@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public abstract class MouseManipulator : Manipulator
     {
@@ -32,6 +32,11 @@ namespace UnityEngine.Experimental.UIElements
 
         protected bool CanStopManipulation(IMouseEvent e)
         {
+            if (e == null)
+            {
+                return false;
+            }
+
             return ((MouseButton)e.button == m_currentActivator.button);
         }
     }

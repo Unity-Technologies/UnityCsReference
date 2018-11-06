@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
 namespace Unity.Experimental.EditorMode
 {
@@ -488,7 +488,7 @@ namespace Unity.Experimental.EditorMode
                     var parent = window.m_Parent;
                     if (parent.visualTree.Contains(root))
                     {
-                        parent.visualTree.shadow.Remove(root);
+                        parent.visualTree.hierarchy.Remove(root);
                     }
                 }
 

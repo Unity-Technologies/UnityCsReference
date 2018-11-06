@@ -5,7 +5,7 @@
 using System;
 using UnityEngine;
 
-namespace UnityEditor.Experimental.UIElements.Debugger
+namespace UnityEditor.UIElements.Debugger
 {
     class PanelPickerWindow : EditorWindow
     {

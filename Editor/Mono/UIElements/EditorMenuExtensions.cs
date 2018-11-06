@@ -3,9 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     static class EditorMenuExtensions
     {
@@ -16,19 +16,21 @@ namespace UnityEditor.Experimental.UIElements
             var genericMenu = new GenericMenu();
             foreach (var item in menu.MenuItems())
             {
-                var action = item as DropdownMenu.MenuAction;
+                var action = item as DropdownMenuAction;
                 if (action != null)
                 {
-                    if ((action.status & DropdownMenu.MenuAction.StatusFlags.Hidden) == DropdownMenu.MenuAction.StatusFlags.Hidden)
+                    if ((action.status & DropdownMenuAction.Status.Hidden) == DropdownMenuAction.Status.Hidden
+                        || action.status == 0)
                     {
                         continue;
                     }
 
-                    bool isChecked = (action.status & DropdownMenu.MenuAction.StatusFlags.Checked) == DropdownMenu.MenuAction.StatusFlags.Checked;
 
-                    if ((action.status & DropdownMenu.MenuAction.StatusFlags.Disabled) == DropdownMenu.MenuAction.StatusFlags.Disabled)
+                    bool isChecked = (action.status & DropdownMenuAction.Status.Checked) == DropdownMenuAction.Status.Checked;
+
+                    if ((action.status & DropdownMenuAction.Status.Disabled) == DropdownMenuAction.Status.Disabled)
                     {
-                        genericMenu.AddDisabledItem(new GUIContent(action.name));
+                        genericMenu.AddDisabledItem(new GUIContent(action.name), isChecked);
                     }
                     else
                     {
@@ -40,7 +42,7 @@ namespace UnityEditor.Experimental.UIElements
                 }
                 else
                 {
-                    var separator = item as DropdownMenu.Separator;
+                    var separator = item as DropdownMenuSeparator;
                     if (separator != null)
                     {
                         genericMenu.AddSeparator(separator.subMenuPath);

@@ -10,8 +10,7 @@ using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEditor.Scripting.ScriptCompilation;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.StyleSheets;
+using UnityEngine.UIElements;
 using UnityEngine.Video;
 
 namespace UnityEditorInternal
@@ -43,7 +42,7 @@ namespace UnityEditorInternal
                 case "anim": return EditorGUIUtility.FindTexture(typeof(Animation));
                 case "meta": return EditorGUIUtility.FindTexture("MetaFile Icon");
                 case "mixer": return EditorGUIUtility.FindTexture(typeof(UnityEditor.Audio.AudioMixerController));
-                case "uxml": return EditorGUIUtility.FindTexture(typeof(VisualTreeAsset));
+                case "uxml": return EditorGUIUtility.FindTexture(typeof(UnityEngine.Experimental.UIElements.VisualTreeAsset));
                 case "uss": return EditorGUIUtility.FindTexture(typeof(StyleSheet));
 
                 case "ttf": case "otf": case "fon": case "fnt":

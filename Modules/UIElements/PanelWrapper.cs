@@ -7,9 +7,9 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.UIR;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEngine.Internal.Experimental.UIElements
+namespace UnityEngine.Internal.UIElements
 {
     /// <summary>
     /// <c>Panel</c> being internal, this wrapper is used in Graphics Tests to perform basic operations that would
@@ -226,7 +226,7 @@ namespace UnityEngine.Internal.Experimental.UIElements
 
         public void DrawBackground()
         {
-            IStyle style = currentElement.style;
+            IResolvedStyle style = currentElement.resolvedStyle;
             if (style.backgroundColor != Color.clear)
             {
                 var painterParams = RectStylePainterParameters.GetDefault(currentElement);

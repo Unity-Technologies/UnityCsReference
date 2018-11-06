@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using uei = UnityEngine.Internal;
+using System.Globalization;
 
 namespace UnityEngine
 {
@@ -122,7 +123,7 @@ namespace UnityEngine
         // Returns a nicely formatted string for this vector.
         public string ToString(string format)
         {
-            return UnityString.Format("({0}, {1})", x.ToString(format), y.ToString(format));
+            return UnityString.Format("({0}, {1})", x.ToString(format, CultureInfo.InvariantCulture.NumberFormat), y.ToString(format, CultureInfo.InvariantCulture.NumberFormat));
         }
 
         // used to allow Vector2s to be used as keys in hash tables

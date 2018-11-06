@@ -519,6 +519,7 @@ namespace UnityEditorInternal
             var clipPlayable = AnimationClipPlayable.Create(m_Graph, state.activeAnimationClip);
             clipPlayable.SetOverrideLoopTime(true);
             clipPlayable.SetLoopTime(false);
+            clipPlayable.SetApplyFootIK(false);
 
             m_GraphRoot = (Playable)clipPlayable;
 

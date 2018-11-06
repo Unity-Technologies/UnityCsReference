@@ -3,8 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor.Experimental.U2D;
-using UnityEditor.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements;
+using UnityEditor.UIElements;
+using UnityEngine.UIElements;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.U2D.Interface;
@@ -119,11 +119,11 @@ namespace UnityEditor
         private void AddMainUI(VisualElement mainView)
         {
             var visualTree = EditorGUIUtility.Load("UXML/SpriteEditor/SpriteFrameModuleInspector.uxml") as VisualTreeAsset;
-            m_SelectedFrameInspector = visualTree.CloneTree(null).Q("spriteFrameModuleInspector");
+            m_SelectedFrameInspector = visualTree.CloneTree().Q("spriteFrameModuleInspector");
 
             m_NameElement = m_SelectedFrameInspector.Q("name");
             m_NameField = m_SelectedFrameInspector.Q<PropertyControl<string>>("spriteName");
-            m_NameField.OnValueChanged((evt) =>
+            m_NameField.RegisterValueChangedCallback((evt) =>
             {
                 if (hasSelected)
                 {
@@ -142,7 +142,7 @@ namespace UnityEditor
 
             m_PositionElement = m_SelectedFrameInspector.Q("position");
             m_PositionFieldX = m_PositionElement.Q<PropertyControl<long>>("positionX");
-            m_PositionFieldX.OnValueChanged((evt) =>
+            m_PositionFieldX.RegisterValueChangedCallback((evt) =>
             {
                 if (hasSelected)
                 {
@@ -154,7 +154,7 @@ namespace UnityEditor
             });
 
             m_PositionFieldY = m_PositionElement.Q<PropertyControl<long>>("positionY");
-            m_PositionFieldY.OnValueChanged((evt) =>
+            m_PositionFieldY.RegisterValueChangedCallback((evt) =>
             {
                 if (hasSelected)
                 {
@@ -166,7 +166,7 @@ namespace UnityEditor
             });
 
             m_PositionFieldW = m_PositionElement.Q<PropertyControl<long>>("positionW");
-            m_PositionFieldW.OnValueChanged((evt) =>
+            m_PositionFieldW.RegisterValueChangedCallback((evt) =>
             {
                 if (hasSelected)
                 {
@@ -178,7 +178,7 @@ namespace UnityEditor
             });
 
             m_PositionFieldH = m_PositionElement.Q<PropertyControl<long>>("positionH");
-            m_PositionFieldH.OnValueChanged((evt) =>
+            m_PositionFieldH.RegisterValueChangedCallback((evt) =>
             {
                 if (hasSelected)
                 {
@@ -191,7 +191,7 @@ namespace UnityEditor
 
             var borderElement = m_SelectedFrameInspector.Q("border");
             m_BorderFieldL = borderElement.Q<PropertyControl<long>>("borderL");
-            m_BorderFieldL.OnValueChanged((evt) =>
+            m_BorderFieldL.RegisterValueChangedCallback((evt) =>
             {
                 if (hasSelected)
                 {
@@ -203,7 +203,7 @@ namespace UnityEditor
             });
 
             m_BorderFieldT = borderElement.Q<PropertyControl<long>>("borderT");
-            m_BorderFieldT.OnValueChanged((evt) =>
+            m_BorderFieldT.RegisterValueChangedCallback((evt) =>
             {
                 if (hasSelected)
                 {
@@ -216,7 +216,7 @@ namespace UnityEditor
             });
 
             m_BorderFieldR = borderElement.Q<PropertyControl<long>>("borderR");
-            m_BorderFieldR.OnValueChanged((evt) =>
+            m_BorderFieldR.RegisterValueChangedCallback((evt) =>
             {
                 if (hasSelected)
                 {
@@ -228,7 +228,7 @@ namespace UnityEditor
             });
 
             m_BorderFieldB = borderElement.Q<PropertyControl<long>>("borderB");
-            m_BorderFieldB.OnValueChanged((evt) =>
+            m_BorderFieldB.RegisterValueChangedCallback((evt) =>
             {
                 if (hasSelected)
                 {
@@ -241,7 +241,7 @@ namespace UnityEditor
 
             m_PivotField = m_SelectedFrameInspector.Q<EnumField>("pivotField");
             m_PivotField.Init(SpriteAlignment.Center);
-            m_PivotField.OnValueChanged((evt) =>
+            m_PivotField.RegisterValueChangedCallback((evt) =>
             {
                 if (hasSelected)
                 {
@@ -257,7 +257,7 @@ namespace UnityEditor
 
             m_PivotUnitModeField = m_SelectedFrameInspector.Q<EnumField>("pivotUnitModeField");
             m_PivotUnitModeField.Init(PivotUnitMode.Normalized);
-            m_PivotUnitModeField.OnValueChanged((evt) =>
+            m_PivotUnitModeField.RegisterValueChangedCallback((evt) =>
             {
                 if (hasSelected)
                 {
@@ -272,7 +272,7 @@ namespace UnityEditor
 
             m_CustomPivotElement = m_SelectedFrameInspector.Q("customPivot");
             m_CustomPivotFieldX = m_CustomPivotElement.Q<PropertyControl<double>>("customPivotX");
-            m_CustomPivotFieldX.OnValueChanged((evt) =>
+            m_CustomPivotFieldX.RegisterValueChangedCallback((evt) =>
             {
                 if (hasSelected)
                 {
@@ -288,7 +288,7 @@ namespace UnityEditor
             });
 
             m_CustomPivotFieldY = m_CustomPivotElement.Q<PropertyControl<double>>("customPivotY");
-            m_CustomPivotFieldY.OnValueChanged((evt) =>
+            m_CustomPivotFieldY.RegisterValueChangedCallback((evt) =>
             {
                 if (hasSelected)
                 {

@@ -3,21 +3,25 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
-using UnityEngine.Experimental.UIElements.StyleSheets;
+using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.Profiling;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     public class Edge : GraphElement
     {
         private const float k_EndPointRadius = 4.0f;
         private const float k_InterceptWidth = 6.0f;
-        private const string k_EdgeWidthProperty = "edge-width";
-        private const string k_SelectedEdgeColorProperty = "selected-edge-color";
-        private const string k_GhostEdgeColorProperty = "ghost-edge-color";
-        private const string k_EdgeColorProperty = "edge-color";
+        private static CustomStyleProperty<int> s_EdgeWidthProperty = new CustomStyleProperty<int>("--edge-width");
+        private static CustomStyleProperty<Color> s_SelectedEdgeColorProperty = new CustomStyleProperty<Color>("--selected-edge-color");
+        private static CustomStyleProperty<Color> s_GhostEdgeColorProperty = new CustomStyleProperty<Color>("--ghost-edge-color");
+        private static CustomStyleProperty<Color> s_EdgeColorProperty = new CustomStyleProperty<Color>("--edge-color");
+
+        private static readonly int s_DefaultEdgeWidth = 2;
+        private static readonly Color s_DefaultSelectedColor = new Color(240 / 255f, 240 / 255f, 240 / 255f);
+        private static readonly Color s_DefaultColor = new Color(146 / 255f, 146 / 255f, 146 / 255f);
+        private static readonly Color s_DefaultGhostColor = new Color(85 / 255f, 85 / 255f, 85 / 255f);
 
         private GraphView m_GraphView;
 
@@ -119,40 +123,28 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        StyleValue<int> m_EdgeWidth;
+        int m_EdgeWidth = s_DefaultEdgeWidth;
         public int edgeWidth
         {
-            get
-            {
-                return m_EdgeWidth.GetSpecifiedValueOrDefault(2);
-            }
+            get { return m_EdgeWidth; }
         }
 
-        StyleValue<Color> m_SelectedColor;
+        Color m_SelectedColor = s_DefaultSelectedColor;
         public Color selectedColor
         {
-            get
-            {
-                return m_SelectedColor.GetSpecifiedValueOrDefault(new Color(240 / 255f, 240 / 255f, 240 / 255f));
-            }
+            get { return m_SelectedColor; }
         }
 
-        StyleValue<Color> m_DefaultColor;
+        Color m_DefaultColor = s_DefaultColor;
         public Color defaultColor
         {
-            get
-            {
-                return m_DefaultColor.GetSpecifiedValueOrDefault(new Color(146 / 255f, 146 / 255f, 146 / 255f));
-            }
+            get { return m_DefaultColor; }
         }
 
-        StyleValue<Color> m_GhostColor;
+        Color m_GhostColor = s_DefaultGhostColor;
         public Color ghostColor
         {
-            get
-            {
-                return m_GhostColor.GetSpecifiedValueOrDefault(new Color(85 / 255f, 85 / 255f, 85 / 255f));
-            }
+            get { return m_GhostColor; }
         }
 
         protected Vector2[] PointsAndTangents
@@ -166,7 +158,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             ClearClassList();
             AddToClassList("edge");
-            style.positionType = PositionType.Absolute;
+            style.position = Position.Absolute;
 
             Add(edgeControl);
 
@@ -222,20 +214,32 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return true;
         }
 
-        protected override void DoRepaint(IStylePainter painter)
+        internal override void DoRepaint(IStylePainter painter)
         {
             // Edges do NOT call base.DoRepaint. It would create a visual artifact.
             DrawEdge();
         }
 
-        protected override void OnStyleResolved(ICustomStyle styles)
+        protected override void OnCustomStyleResolved(ICustomStyle styles)
         {
-            base.OnStyleResolved(styles);
+            base.OnCustomStyleResolved(styles);
 
-            styles.ApplyCustomProperty(k_EdgeWidthProperty, ref m_EdgeWidth);
-            styles.ApplyCustomProperty(k_SelectedEdgeColorProperty, ref m_SelectedColor);
-            styles.ApplyCustomProperty(k_GhostEdgeColorProperty, ref m_GhostColor);
-            styles.ApplyCustomProperty(k_EdgeColorProperty, ref m_DefaultColor);
+            int edgeWidthValue = 0;
+            Color selectColorValue = Color.clear;
+            Color edgeColorValue = Color.clear;
+            Color ghostColorValue = Color.clear;
+
+            if (styles.TryGetValue(s_EdgeWidthProperty, out edgeWidthValue))
+                m_EdgeWidth = edgeWidthValue;
+
+            if (styles.TryGetValue(s_SelectedEdgeColorProperty, out selectColorValue))
+                m_SelectedColor = selectColorValue;
+
+            if (styles.TryGetValue(s_EdgeColorProperty, out edgeColorValue))
+                m_DefaultColor = edgeColorValue;
+
+            if (styles.TryGetValue(s_GhostEdgeColorProperty, out ghostColorValue))
+                m_GhostColor = ghostColorValue;
         }
 
         protected virtual void DrawEdge()
@@ -316,7 +320,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 }
 
 
-                e = e.shadow.parent;
+                e = e.hierarchy.parent;
             }
         }
 
@@ -338,7 +342,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     e.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
                 }
 
-                e = e.shadow.parent;
+                e = e.hierarchy.parent;
             }
         }
 

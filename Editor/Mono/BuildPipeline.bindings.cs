@@ -69,6 +69,9 @@ namespace UnityEditor
         // Build scripts only
         BuildScriptsOnly = 1 << 15,
 
+        // Patches the application package without recreating it, applicable to platforms like Android where app packaging is involved
+        PatchPackage = 1 << 16,
+
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("BuildOptions.IL2CPP is deprecated and has no effect. Use PlayerSettings.SetScriptingBackend() instead.", true)]
         Il2CPP = 0,

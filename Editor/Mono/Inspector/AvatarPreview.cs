@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Globalization;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Rendering;
@@ -503,7 +504,7 @@ namespace UnityEditor
             timeControl.playbackSpeed = PreviewSlider(timeControl.playbackSpeed, 0.03f);
             if (EditorGUI.EndChangeCheck())
                 EditorPrefs.SetFloat(kSpeedPref, timeControl.playbackSpeed);
-            GUILayout.Label(timeControl.playbackSpeed.ToString("f2"), s_Styles.preLabel);
+            GUILayout.Label(timeControl.playbackSpeed.ToString("f2", CultureInfo.InvariantCulture.NumberFormat), s_Styles.preLabel);
         }
 
         private RenderTexture RenderPreviewShadowmap(Light light, float scale, Vector3 center, Vector3 floorPos, out Matrix4x4 outShadowMatrix)
@@ -796,7 +797,7 @@ namespace UnityEditor
             rect.y = rect.yMax - 20;
             float time = timeControl.currentTime - timeControl.startTime;
             EditorGUI.DropShadowLabel(new Rect(rect.x, rect.y, rect.width, 20),
-                string.Format("{0,2}:{1:00} ({2:000.0%}) Frame {3}", (int)time, Repeat(Mathf.FloorToInt(time * fps), fps), timeControl.normalizedTime, Mathf.FloorToInt(timeControl.currentTime * fps))
+                UnityString.Format("{0,2}:{1:00} ({2:000.0%}) Frame {3}", (int)time, Repeat(Mathf.FloorToInt(time * fps), fps), timeControl.normalizedTime, Mathf.FloorToInt(timeControl.currentTime * fps))
             );
         }
 

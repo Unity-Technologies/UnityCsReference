@@ -11,6 +11,7 @@ using UnityEditorInternal.Profiling;
 using Object = UnityEngine.Object;
 using UnityEditor.AnimatedValues;
 using Unity.Profiling;
+using System.Globalization;
 
 namespace UnityEditorInternal
 {
@@ -724,15 +725,15 @@ namespace UnityEditorInternal
             if (!m_SelectedEntry.IsValid() || m_SelectedEntry.frameId != frameIndex)
                 return;
 
-            string durationString = string.Format(m_SelectedEntry.duration >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", m_SelectedEntry.duration);
+            string durationString = UnityString.Format(m_SelectedEntry.duration >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", m_SelectedEntry.duration);
 
             System.Text.StringBuilder text = new System.Text.StringBuilder();
-            text.Append(string.Format("{0}\n{1}", m_SelectedEntry.name, durationString));
+            text.Append(UnityString.Format("{0}\n{1}", m_SelectedEntry.name, durationString));
 
             // Show total duration if more than one instance
             if (m_SelectedEntry.instanceCount > 1)
             {
-                string totalDurationString = string.Format(m_SelectedEntry.totalDuration >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", m_SelectedEntry.totalDuration);
+                string totalDurationString = UnityString.Format(m_SelectedEntry.totalDuration >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", m_SelectedEntry.totalDuration);
                 text.Append(string.Format("\n{0}: {1} ({2} {3})", styles.localizedStringTotal, totalDurationString, m_SelectedEntry.instanceCount, styles.localizedStringInstances));
             }
 
@@ -912,7 +913,7 @@ namespace UnityEditorInternal
                 time /= 1000;
                 format = k_TickFormatSeconds;
             }
-            return string.Format(format, time.ToString("N" + Mathf.Max(0, -log10)));
+            return UnityString.Format(format, time.ToString("N" + Mathf.Max(0, -log10), CultureInfo.InvariantCulture.NumberFormat));
         }
 
         void DrawOutOfRangeOverlay(Rect rect, float frameTime)
@@ -954,7 +955,7 @@ namespace UnityEditorInternal
             EditorGUI.DrawRect(selectionRect, styles.rangeSelectionColor);
 
             // Duration label
-            var labelText = string.Format(k_TickFormatMilliseconds, m_RangeSelection.duration.ToString("N3"));
+            var labelText = UnityString.Format(k_TickFormatMilliseconds, m_RangeSelection.duration.ToString("N3", CultureInfo.InvariantCulture.NumberFormat));
             Chart.DoLabel(startPixel + (endPixel - startPixel) / 2, rect.yMin + 3, labelText, -0.5f);
         }
 

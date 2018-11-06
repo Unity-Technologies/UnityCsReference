@@ -4,45 +4,49 @@
 
 using System;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public class Toggle : BaseField<bool>
     {
         public new class UxmlFactory : UxmlFactory<Toggle, UxmlTraits> {}
 
-        public new class UxmlTraits : BaseField<bool>.UxmlTraits
+        public new class UxmlTraits : BaseFieldTraits<bool, UxmlBoolAttributeDescription>
         {
-            UxmlStringAttributeDescription m_Label = new UxmlStringAttributeDescription { name = "label" };
-            UxmlBoolAttributeDescription m_Value = new UxmlBoolAttributeDescription { name = "value" };
+            UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
-                ((Toggle)ve).text = m_Label.GetValueFromBag(bag, cc);
-                ((Toggle)ve).SetValueWithoutNotify(m_Value.GetValueFromBag(bag, cc));
+                ((Toggle)ve).text = m_Text.GetValueFromBag(bag, cc);
             }
         }
 
-        Action m_ClickEvent;
+        public new static readonly string ussClassName = "unity-toggle";
+        public static readonly string noTextVariantUssClassName = ussClassName + "--no-text";
+        public static readonly string checkmarkUssClassName = ussClassName + "__checkmark";
+        public static readonly string textUssClassName = ussClassName + "__text";
 
         private Label m_Label;
 
         public Toggle()
+            : this(null) {}
+
+        public Toggle(string label)
+            : base(label, null)
         {
+            AddToClassList(ussClassName);
+            AddToClassList(noTextVariantUssClassName);
+
             // Allocate and add the checkmark to the hierarchy
-            var checkMark = new VisualElement() { name = "Checkmark", pickingMode = PickingMode.Ignore };
-            Add(checkMark);
+            var checkMark = new VisualElement() { name = "unity-checkmark", pickingMode = PickingMode.Ignore };
+            checkMark.AddToClassList(checkmarkUssClassName);
+            visualInput.Add(checkMark);
 
             // Set-up the label and text...
             text = null;
 
+            visualInput.AddManipulator(new Clickable(OnClick));
             this.AddManipulator(new Clickable(OnClick));
-        }
-
-        [Obsolete("Use Toggle() with OnValueChanged() instead.", false)]
-        public Toggle(System.Action clickEvent) : this()
-        {
-            OnToggle(clickEvent);
         }
 
         public string text
@@ -55,9 +59,13 @@ namespace UnityEngine.Experimental.UIElements
                     // Lazy allocation of label if needed...
                     if (m_Label == null)
                     {
-                        m_Label = new Label();
-                        m_Label.pickingMode = PickingMode.Ignore;
-                        Add(m_Label);
+                        m_Label = new Label
+                        {
+                            pickingMode = PickingMode.Ignore
+                        };
+                        m_Label.AddToClassList(textUssClassName);
+                        RemoveFromClassList(noTextVariantUssClassName);
+                        visualInput.Add(m_Label);
                     }
 
                     m_Label.text = value;
@@ -65,6 +73,7 @@ namespace UnityEngine.Experimental.UIElements
                 else if (m_Label != null)
                 {
                     Remove(m_Label);
+                    AddToClassList(noTextVariantUssClassName);
                     m_Label = null;
                 }
             }
@@ -74,35 +83,13 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (newValue)
             {
-                pseudoStates |= PseudoStates.Checked;
+                visualInput.pseudoStates |= PseudoStates.Checked;
             }
             else
             {
-                pseudoStates &= ~PseudoStates.Checked;
+                visualInput.pseudoStates &= ~PseudoStates.Checked;
             }
             base.SetValueWithoutNotify(newValue);
-        }
-
-        [Obsolete("Use OnValueChanged() instead.", false)]
-        public void OnToggle(Action clickEvent)
-        {
-            if ((clickEvent != null) && (this.m_ClickEvent == null))
-            {
-                // Forward the clickEvent by the InternalOnValueChanged notification
-                OnValueChanged(InternalOnValueChanged);
-            }
-            else if ((clickEvent == null) && (this.m_ClickEvent != null))
-            {
-                // Don't need to keep being notified...
-                UnregisterCallback<ChangeEvent<bool>>(InternalOnValueChanged);
-            }
-
-            this.m_ClickEvent = clickEvent;
-        }
-
-        void InternalOnValueChanged(ChangeEvent<bool> evt)
-        {
-            m_ClickEvent?.Invoke();
         }
 
         void OnClick()
@@ -114,7 +101,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             base.ExecuteDefaultActionAtTarget(evt);
 
-            if (((evt as KeyDownEvent)?.character == '\n') || ((evt as KeyDownEvent)?.character == ' '))
+            if ((evt != null && ((evt as KeyDownEvent)?.character == '\n')) || ((evt as KeyDownEvent)?.character == ' '))
             {
                 OnClick();
                 evt.StopPropagation();

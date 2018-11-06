@@ -4,9 +4,9 @@
 
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     public interface IToolbarMenuElement
     {
@@ -17,7 +17,7 @@ namespace UnityEditor.Experimental.UIElements
     {
         public static void ShowMenu(this IToolbarMenuElement tbe)
         {
-            if (!tbe.menu.MenuItems().Any())
+            if (tbe == null || !tbe.menu.MenuItems().Any())
                 return;
 
             var ve = tbe as VisualElement;

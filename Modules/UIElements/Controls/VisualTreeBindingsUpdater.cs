@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using UnityEngine.Profiling;
 using System.Linq;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     internal class VisualTreeBindingsUpdater : BaseVisualTreeHierarchyTrackerUpdater
     {
@@ -47,10 +47,10 @@ namespace UnityEngine.Experimental.UIElements
                 StartTracking(ve);
             }
 
-            int count = ve.shadow.childCount;
+            int count = ve.hierarchy.childCount;
             for (int i = 0; i < count; i++)
             {
-                var child = ve.shadow[i];
+                var child = ve.hierarchy[i];
                 StartTrackingRecursive(child);
             }
         }
@@ -59,10 +59,10 @@ namespace UnityEngine.Experimental.UIElements
         {
             StopTracking(ve);
 
-            int count = ve.shadow.childCount;
+            int count = ve.hierarchy.childCount;
             for (int i = 0; i < count; i++)
             {
-                var child = ve.shadow[i];
+                var child = ve.hierarchy[i];
                 StopTrackingRecursive(child);
             }
         }

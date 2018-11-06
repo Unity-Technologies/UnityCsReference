@@ -10,7 +10,7 @@ using System.Linq;
 using UnityEditor.StyleSheets;
 using UnityEditor.Experimental;
 using UnityEditorInternal;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 using UnityEngine.XR;
 
 namespace UnityEditor
@@ -22,19 +22,19 @@ namespace UnityEditor
             public static readonly StyleBlock tabHighlight = EditorResources.GetStyle("tab-highlight");
 
             private static readonly StyleBlock tab = EditorResources.GetStyle("tab");
-            public static readonly float tabMinWidth = tab.GetFloat(StyleKeyword.minWidth, 50.0f);
-            public static readonly float tabMaxWidth = tab.GetFloat(StyleKeyword.maxWidth, 150.0f);
-            public static readonly float tabWidthPadding = tab.GetFloat(StyleKeyword.paddingRight);
+            public static readonly float tabMinWidth = tab.GetFloat(StyleCatalogKeyword.minWidth, 50.0f);
+            public static readonly float tabMaxWidth = tab.GetFloat(StyleCatalogKeyword.maxWidth, 150.0f);
+            public static readonly float tabWidthPadding = tab.GetFloat(StyleCatalogKeyword.paddingRight);
 
-            public static readonly float tabDragWidth = EditorResources.GetStyle("tab-drag").GetFloat(StyleKeyword.width, 100.0f);
-            public static readonly float tabDropdownOptions = EditorResources.GetStyle("tab-dropdown-options").GetFloat(StyleKeyword.width, 40.0f);
+            public static readonly float tabDragWidth = EditorResources.GetStyle("tab-drag").GetFloat(StyleCatalogKeyword.width, 100.0f);
+            public static readonly float tabDropdownOptions = EditorResources.GetStyle("tab-dropdown-options").GetFloat(StyleCatalogKeyword.width, 40.0f);
 
             private static StyleBlock tabScrollButton = EditorResources.GetStyle("tab-scroll-button");
             private static StyleBlock tabScrollButtonHover = EditorResources.GetStyle("tab-scroll-button", StyleState.focus);
-            public static readonly Color tabScrollButtonBackgroundColor = tabScrollButton.GetColor(StyleKeyword.backgroundColor);
-            public static readonly float tabScrollButtonTopMargin = tabScrollButton.GetFloat(StyleKeyword.marginTop, 1.0f);
-            public static readonly Color tabScrollButtonBlendColor = tabScrollButton.GetColor(StyleKeyword.color, Color.white);
-            public static readonly Color tabScrollButtonHoverBlendColor = tabScrollButtonHover.GetColor(StyleKeyword.color, Color.white);
+            public static readonly Color tabScrollButtonBackgroundColor = tabScrollButton.GetColor(StyleCatalogKeyword.backgroundColor);
+            public static readonly float tabScrollButtonTopMargin = tabScrollButton.GetFloat(StyleCatalogKeyword.marginTop, 1.0f);
+            public static readonly Color tabScrollButtonBlendColor = tabScrollButton.GetColor(StyleCatalogKeyword.color, Color.white);
+            public static readonly Color tabScrollButtonHoverBlendColor = tabScrollButtonHover.GetColor(StyleCatalogKeyword.color, Color.white);
             public static readonly Texture2D tabScrollPrevButtonImg = EditorGUIUtility.LoadIconRequired("tab_prev");
             public static readonly Texture2D tabScrollNextButtonImg = EditorGUIUtility.LoadIconRequired("tab_next");
         }
@@ -151,7 +151,16 @@ namespace UnityEditor
 
             base.OnEnable();
 
-            imguiContainer.name = VisualElementUtils.GetUniqueName("Dockarea");
+            if (uieMode == UIElementsMode.Experimental)
+            {
+                if (experimentalImguiContainer != null)
+                    experimentalImguiContainer.name = VisualElementUtils.GetUniqueName("Dockarea");
+            }
+            else
+            {
+                if (imguiContainer != null)
+                    imguiContainer.name = VisualElementUtils.GetUniqueName("Dockarea");
+            }
         }
 
         public void AddTab(EditorWindow pane, bool sendPaneEvents = true)
@@ -982,9 +991,9 @@ namespace UnityEditor
 
         private void DrawTabHighlight(Rect tabHighlightRect)
         {
-            var tabLineMargin = Styles.tabHighlight.GetRect(StyleKeyword.margin);
-            var tabHighlightColor = Styles.tabHighlight.GetColor(StyleKeyword.color);
-            var tabHighlightHeight = Styles.tabHighlight.GetInt(StyleKeyword.height);
+            var tabLineMargin = Styles.tabHighlight.GetRect(StyleCatalogKeyword.margin);
+            var tabHighlightColor = Styles.tabHighlight.GetColor(StyleCatalogKeyword.color);
+            var tabHighlightHeight = Styles.tabHighlight.GetInt(StyleCatalogKeyword.height);
             using (new GUI.ColorScope(tabHighlightColor))
             {
                 for (int i = 0; i < tabHighlightHeight; ++i)

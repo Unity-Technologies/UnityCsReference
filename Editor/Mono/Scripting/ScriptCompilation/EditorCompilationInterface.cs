@@ -114,6 +114,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
+        public static void SetAssetPathsMetaData(AssetPathMetaData[] assetPathMetaDatas)
+        {
+            Instance.SetAssetPathsMetaData(assetPathMetaDatas);
+        }
+
+        [RequiredByNativeCode]
         public static void SetAllScripts(string[] allScripts)
         {
             Instance.SetAllScripts(allScripts);
@@ -219,12 +225,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public static void SetAllCustomScriptAssemblyJsons(string[] allAssemblyJsons)
         {
             EmitExceptionsAsErrors(Instance.SetAllCustomScriptAssemblyJsons(allAssemblyJsons));
-        }
-
-        [RequiredByNativeCode]
-        public static void SetAllPackageAssemblies(EditorCompilation.PackageAssembly[] packageAssemblies)
-        {
-            Instance.SetAllPackageAssemblies(packageAssemblies);
         }
 
         [RequiredByNativeCode]

@@ -441,6 +441,16 @@ namespace UnityEditor.ShortcutManagement
             el.style.paddingTop = 2;
             el.style.positionTop = 2;
         }
+
+        public static void StyleEntryOverriden(VisualElement el)
+        {
+            el.style.fontStyleAndWeight = FontStyle.Bold;
+        }
+
+        public static void StyleEntryNormal(VisualElement el)
+        {
+            el.style.fontStyleAndWeight = FontStyle.Normal;
+        }
     }
 
     class ShortcutManagerWindowView : IShortcutManagerWindowView
@@ -583,6 +593,17 @@ namespace UnityEditor.ShortcutManagement
             bindingTextElement.text = KeyCombination.SequenceToString(shortcutEntry.combinations);
             bindingField.SetValueWithoutNotify(shortcutEntry.combinations.ToList());
             bindingField.OnValueChanged(EditingShortcutEntryBindingChanged);
+
+            if (shortcutEntry.overridden)
+            {
+                StyleUtility.StyleEntryOverriden(nameElement);
+                StyleUtility.StyleEntryOverriden(bindingTextElement);
+            }
+            else
+            {
+                StyleUtility.StyleEntryNormal(nameElement);
+                StyleUtility.StyleEntryNormal(bindingTextElement);
+            }
 
             if (m_EditingBindings == shortcutEntry)
             {

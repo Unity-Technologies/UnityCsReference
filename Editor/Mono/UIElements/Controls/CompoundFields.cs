@@ -5,12 +5,23 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     public class RectField : BaseCompositeField<Rect, FloatField, float>
     {
+        internal override FieldDescription[] DescribeFields()
+        {
+            return new[]
+            {
+                new FieldDescription("X", "unity-x-input", r => r.x, (ref Rect r, float v) => r.x = v),
+                new FieldDescription("Y", "unity-y-input", r => r.y, (ref Rect r, float v) => r.y = v),
+                new FieldDescription("W", "unity-w-input", r => r.width, (ref Rect r, float v) => r.width = v),
+                new FieldDescription("H", "unity-h-input", r => r.height, (ref Rect r, float v) => r.height = v),
+            };
+        }
+
         public new class UxmlFactory : UxmlFactory<RectField, UxmlTraits> {}
 
         public new class UxmlTraits : BaseCompositeField<Rect, FloatField, float>.UxmlTraits
@@ -24,25 +35,37 @@ namespace UnityEditor.Experimental.UIElements
             {
                 base.Init(ve, bag, cc);
 
-                RectField r = (RectField)ve;
+                var r = (RectField)ve;
                 r.SetValueWithoutNotify(new Rect(m_XValue.GetValueFromBag(bag, cc), m_YValue.GetValueFromBag(bag, cc), m_WValue.GetValueFromBag(bag, cc), m_HValue.GetValueFromBag(bag, cc)));
             }
         }
 
-        internal override FieldDescription[] DescribeFields()
+        public new static readonly string ussClassName = "unity-rect-field";
+
+        public RectField()
+            : this(null) {}
+
+        public RectField(string label)
+            : base(label, 2)
         {
-            return new[]
-            {
-                new FieldDescription("X", r => r.x, (ref Rect r, float v) => r.x = v),
-                new FieldDescription("Y", r => r.y, (ref Rect r, float v) => r.y = v),
-                new FieldDescription("W", r => r.width, (ref Rect r, float v) => r.width = v),
-                new FieldDescription("H", r => r.height, (ref Rect r, float v) => r.height = v),
-            };
+            AddToClassList(ussClassName);
+            AddToClassList(twoLinesVariantUssClassName);
         }
     }
 
     public class RectIntField : BaseCompositeField<RectInt, IntegerField, int>
     {
+        internal override FieldDescription[] DescribeFields()
+        {
+            return new[]
+            {
+                new FieldDescription("X", "unity-x-input", r => r.x, (ref RectInt r, int v) => r.x = v),
+                new FieldDescription("Y", "unity-y-input", r => r.y, (ref RectInt r, int v) => r.y = v),
+                new FieldDescription("W", "unity-w-input", r => r.width, (ref RectInt r, int v) => r.width = v),
+                new FieldDescription("H", "unity-h-input", r => r.height, (ref RectInt r, int v) => r.height = v),
+            };
+        }
+
         public new class UxmlFactory : UxmlFactory<RectIntField, UxmlTraits> {}
 
         public new class UxmlTraits : BaseCompositeField<RectInt, IntegerField, int>.UxmlTraits
@@ -61,20 +84,30 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
-        internal override FieldDescription[] DescribeFields()
+        public new static readonly string ussClassName = "unity-rect-int-field";
+
+        public RectIntField()
+            : this(null) {}
+
+        public RectIntField(string label)
+            : base(label, 2)
         {
-            return new[]
-            {
-                new FieldDescription("X", r => r.x, (ref RectInt r, int v) => r.x = v),
-                new FieldDescription("Y", r => r.y, (ref RectInt r, int v) => r.y = v),
-                new FieldDescription("W", r => r.width, (ref RectInt r, int v) => r.width = v),
-                new FieldDescription("H", r => r.height, (ref RectInt r, int v) => r.height = v),
-            };
+            AddToClassList(ussClassName);
+            AddToClassList(twoLinesVariantUssClassName);
         }
     }
 
     public class Vector2Field : BaseCompositeField<Vector2, FloatField, float>
     {
+        internal override FieldDescription[] DescribeFields()
+        {
+            return new[]
+            {
+                new FieldDescription("X", "unity-x-input", r => r.x, (ref Vector2 r, float v) => r.x = v),
+                new FieldDescription("Y", "unity-y-input", r => r.y, (ref Vector2 r, float v) => r.y = v),
+            };
+        }
+
         public new class UxmlFactory : UxmlFactory<Vector2Field, UxmlTraits> {}
 
         public new class UxmlTraits : BaseCompositeField<Vector2, FloatField, float>.UxmlTraits
@@ -86,23 +119,35 @@ namespace UnityEditor.Experimental.UIElements
             {
                 base.Init(ve, bag, cc);
 
-                Vector2Field f = (Vector2Field)ve;
-                f.value = new Vector2(m_XValue.GetValueFromBag(bag, cc), m_YValue.GetValueFromBag(bag, cc));
+                var f = (Vector2Field)ve;
+                f.SetValueWithoutNotify(new Vector2(m_XValue.GetValueFromBag(bag, cc), m_YValue.GetValueFromBag(bag, cc)));
             }
         }
 
-        internal override FieldDescription[] DescribeFields()
+        public new static readonly string ussClassName = "unity-vector2-field";
+
+        public Vector2Field()
+            : this(null) {}
+
+        public Vector2Field(string label)
+            : base(label, 2)
         {
-            return new[]
-            {
-                new FieldDescription("X", r => r.x, (ref Vector2 r, float v) => r.x = v),
-                new FieldDescription("Y", r => r.y, (ref Vector2 r, float v) => r.y = v),
-            };
+            AddToClassList(ussClassName);
         }
     }
 
     public class Vector3Field : BaseCompositeField<Vector3, FloatField, float>
     {
+        internal override FieldDescription[] DescribeFields()
+        {
+            return new[]
+            {
+                new FieldDescription("X", "unity-x-input", r => r.x, (ref Vector3 r, float v) => r.x = v),
+                new FieldDescription("Y", "unity-y-input", r => r.y, (ref Vector3 r, float v) => r.y = v),
+                new FieldDescription("Z", "unity-z-input", r => r.z, (ref Vector3 r, float v) => r.z = v),
+            };
+        }
+
         public new class UxmlFactory : UxmlFactory<Vector3Field, UxmlTraits> {}
 
         public new class UxmlTraits : BaseCompositeField<Vector3, FloatField, float>.UxmlTraits
@@ -115,24 +160,37 @@ namespace UnityEditor.Experimental.UIElements
             {
                 base.Init(ve, bag, cc);
 
-                Vector3Field f = (Vector3Field)ve;
-                f.value = new Vector3(m_XValue.GetValueFromBag(bag, cc), m_YValue.GetValueFromBag(bag, cc), m_ZValue.GetValueFromBag(bag, cc));
+                var f = (Vector3Field)ve;
+                f.SetValueWithoutNotify(new Vector3(m_XValue.GetValueFromBag(bag, cc), m_YValue.GetValueFromBag(bag, cc), m_ZValue.GetValueFromBag(bag, cc)));
             }
         }
 
+        public new static readonly string ussClassName = "unity-vector3-field";
+
+        public Vector3Field()
+            : this(null) {}
+
+        public Vector3Field(string label)
+            : base(label, 3)
+        {
+            AddToClassList(ussClassName);
+        }
+    }
+
+
+    public class Vector4Field : BaseCompositeField<Vector4, FloatField, float>
+    {
         internal override FieldDescription[] DescribeFields()
         {
             return new[]
             {
-                new FieldDescription("X", r => r.x, (ref Vector3 r, float v) => r.x = v),
-                new FieldDescription("Y", r => r.y, (ref Vector3 r, float v) => r.y = v),
-                new FieldDescription("Z", r => r.z, (ref Vector3 r, float v) => r.z = v),
+                new FieldDescription("X", "unity-x-input", r => r.x, (ref Vector4 r, float v) => r.x = v),
+                new FieldDescription("Y", "unity-y-input", r => r.y, (ref Vector4 r, float v) => r.y = v),
+                new FieldDescription("Z", "unity-z-input", r => r.z, (ref Vector4 r, float v) => r.z = v),
+                new FieldDescription("W", "unity-w-input", r => r.w, (ref Vector4 r, float v) => r.w = v),
             };
         }
-    }
 
-    public class Vector4Field : BaseCompositeField<Vector4, FloatField, float>
-    {
         public new class UxmlFactory : UxmlFactory<Vector4Field, UxmlTraits> {}
 
         public new class UxmlTraits : BaseCompositeField<Vector4, FloatField, float>.UxmlTraits
@@ -146,25 +204,35 @@ namespace UnityEditor.Experimental.UIElements
             {
                 base.Init(ve, bag, cc);
 
-                Vector4Field f = (Vector4Field)ve;
-                f.value = new Vector4(m_XValue.GetValueFromBag(bag, cc), m_YValue.GetValueFromBag(bag, cc), m_ZValue.GetValueFromBag(bag, cc), m_WValue.GetValueFromBag(bag, cc));
+                var f = (Vector4Field)ve;
+                f.SetValueWithoutNotify(new Vector4(m_XValue.GetValueFromBag(bag, cc), m_YValue.GetValueFromBag(bag, cc), m_ZValue.GetValueFromBag(bag, cc), m_WValue.GetValueFromBag(bag, cc)));
             }
         }
 
+        public new static readonly string ussClassName = "unity-vector4-field";
+
+        public Vector4Field()
+            : this(null) {}
+
+        public Vector4Field(string label)
+            : base(label, 4)
+        {
+            AddToClassList(ussClassName);
+        }
+    }
+
+
+    public class Vector2IntField : BaseCompositeField<Vector2Int, IntegerField, int>
+    {
         internal override FieldDescription[] DescribeFields()
         {
             return new[]
             {
-                new FieldDescription("X", r => r.x, (ref Vector4 r, float v) => r.x = v),
-                new FieldDescription("Y", r => r.y, (ref Vector4 r, float v) => r.y = v),
-                new FieldDescription("Z", r => r.z, (ref Vector4 r, float v) => r.z = v),
-                new FieldDescription("W", r => r.w, (ref Vector4 r, float v) => r.w = v),
+                new FieldDescription("X", "unity-x-input", r => r.x, (ref Vector2Int r, int v) => r.x = v),
+                new FieldDescription("Y", "unity-y-input", r => r.y, (ref Vector2Int r, int v) => r.y = v),
             };
         }
-    }
 
-    public class Vector2IntField : BaseCompositeField<Vector2Int, IntegerField, int>
-    {
         public new class UxmlFactory : UxmlFactory<Vector2IntField, UxmlTraits> {}
 
         public new class UxmlTraits : BaseCompositeField<Vector2Int, IntegerField, int>.UxmlTraits
@@ -177,22 +245,34 @@ namespace UnityEditor.Experimental.UIElements
                 base.Init(ve, bag, cc);
 
                 var f = (Vector2IntField)ve;
-                f.value = new Vector2Int(m_XValue.GetValueFromBag(bag, cc), m_YValue.GetValueFromBag(bag, cc));
+                f.SetValueWithoutNotify(new Vector2Int(m_XValue.GetValueFromBag(bag, cc), m_YValue.GetValueFromBag(bag, cc)));
             }
         }
 
-        internal override FieldDescription[] DescribeFields()
+        public new static readonly string ussClassName = "unity-vector2-int-field";
+
+        public Vector2IntField()
+            : this(null) {}
+
+        public Vector2IntField(string label)
+            : base(label, 2)
         {
-            return new[]
-            {
-                new FieldDescription("X", r => r.x, (ref Vector2Int r, int v) => r.x = v),
-                new FieldDescription("Y", r => r.y, (ref Vector2Int r, int v) => r.y = v),
-            };
+            AddToClassList(ussClassName);
         }
     }
 
     public class Vector3IntField : BaseCompositeField<Vector3Int, IntegerField, int>
     {
+        internal override FieldDescription[] DescribeFields()
+        {
+            return new[]
+            {
+                new FieldDescription("X", "unity-x-input", r => r.x, (ref Vector3Int r, int v) => r.x = v),
+                new FieldDescription("Y", "unity-y-input", r => r.y, (ref Vector3Int r, int v) => r.y = v),
+                new FieldDescription("Z", "unity-z-input", r => r.z, (ref Vector3Int r, int v) => r.z = v),
+            };
+        }
+
         public new class UxmlFactory : UxmlFactory<Vector3IntField, UxmlTraits> {}
 
         public new class UxmlTraits : BaseCompositeField<Vector3Int, IntegerField, int>.UxmlTraits
@@ -206,17 +286,19 @@ namespace UnityEditor.Experimental.UIElements
                 base.Init(ve, bag, cc);
 
                 var f = (Vector3IntField)ve;
-                f.value = new Vector3Int(m_XValue.GetValueFromBag(bag, cc), m_YValue.GetValueFromBag(bag, cc), m_ZValue.GetValueFromBag(bag, cc));
+                f.SetValueWithoutNotify(new Vector3Int(m_XValue.GetValueFromBag(bag, cc), m_YValue.GetValueFromBag(bag, cc), m_ZValue.GetValueFromBag(bag, cc)));
             }
         }
-        internal override FieldDescription[] DescribeFields()
+
+        public new static readonly string ussClassName = "unity-vector3-int-field";
+
+        public Vector3IntField()
+            : this(null) {}
+
+        public Vector3IntField(string label)
+            : base(label, 3)
         {
-            return new[]
-            {
-                new FieldDescription("X", r => r.x, (ref Vector3Int r, int v) => r.x = v),
-                new FieldDescription("Y", r => r.y, (ref Vector3Int r, int v) => r.y = v),
-                new FieldDescription("Z", r => r.z, (ref Vector3Int r, int v) => r.z = v),
-            };
+            AddToClassList(ussClassName);
         }
     }
 }

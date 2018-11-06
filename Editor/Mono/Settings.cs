@@ -99,9 +99,9 @@ namespace UnityEditor
             Load();
 
             if (m_SeparateColors)
-                return String.Format(System.Globalization.CultureInfo.InvariantCulture, "{0};{1};{2};{3};{4};{5};{6};{7};{8}", m_Name, m_Color.r, m_Color.g, m_Color.b, m_Color.a, m_OptionalDarkColor.r, m_OptionalDarkColor.g, m_OptionalDarkColor.b, m_OptionalDarkColor.a);
+                return UnityString.Format("{0};{1};{2};{3};{4};{5};{6};{7};{8}", m_Name, m_Color.r, m_Color.g, m_Color.b, m_Color.a, m_OptionalDarkColor.r, m_OptionalDarkColor.g, m_OptionalDarkColor.b, m_OptionalDarkColor.a);
 
-            return String.Format(System.Globalization.CultureInfo.InvariantCulture, "{0};{1};{2};{3};{4}", m_Name, m_Color.r, m_Color.g, m_Color.b, m_Color.a);
+            return UnityString.Format("{0};{1};{2};{3};{4}", m_Name, m_Color.r, m_Color.g, m_Color.b, m_Color.a);
         }
 
         public void FromUniqueString(string s)

@@ -12,7 +12,7 @@ using UnityEngine;
 namespace UnityEditor.ShortcutManagement
 {
     [Serializable]
-    public struct KeyCombination
+    public struct KeyCombination : IEquatable<KeyCombination>
     {
         [SerializeField]
         KeyCode m_KeyCode;
@@ -232,6 +232,25 @@ namespace UnityEditor.ShortcutManagement
             }
 
             return true;
+        }
+
+        public bool Equals(KeyCombination other)
+        {
+            return m_KeyCode == other.m_KeyCode && m_Modifiers == other.m_Modifiers;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            return obj is KeyCombination && Equals((KeyCombination)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return ((int)m_KeyCode * 397) ^ (int)m_Modifiers;
+            }
         }
     }
 }

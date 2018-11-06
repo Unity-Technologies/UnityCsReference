@@ -5,9 +5,10 @@
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     public partial class Group : Scope
     {
@@ -47,7 +48,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_DropArea.name = "dropArea";
 
             var visualTree = EditorGUIUtility.Load("UXML/GraphView/GroupTitle.uxml") as VisualTreeAsset;
-            VisualElement titleContainer = visualTree.CloneTree(null);
+            VisualElement titleContainer = visualTree.CloneTree();
 
             titleContainer.name = "titleContainer";
 
@@ -56,8 +57,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_TitleEditor = titleContainer.Q(name: "titleField") as TextField;
             m_TitleEditor.visible = false;
 
-            m_TitleEditor.RegisterCallback<FocusOutEvent>(e => { OnEditTitleFinished(); });
-            m_TitleEditor.RegisterCallback<KeyDownEvent>(TitleEditorOnKeyDown);
+            m_TitleEditor.Q("unity-text-input").RegisterCallback<FocusOutEvent>(e => { OnEditTitleFinished(); });
+            m_TitleEditor.Q("unity-text-input").RegisterCallback<KeyDownEvent>(TitleEditorOnKeyDown);
 
             VisualElement contentContainerPlaceholder = this.Q(name: "contentContainerPlaceholder");
             contentContainerPlaceholder.Insert(0, m_DropArea);
@@ -113,10 +114,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 case KeyCode.Escape:
                     m_EditTitleCancelled = true;
-                    m_TitleEditor.Blur();
+                    m_TitleEditor.Q("unity-text-input").Blur();
                     break;
                 case KeyCode.Return:
-                    m_TitleEditor.Blur();
+                    m_TitleEditor.Q("unity-text-input").Blur();
                     break;
                 default:
                     break;

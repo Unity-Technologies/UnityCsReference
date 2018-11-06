@@ -70,7 +70,7 @@ namespace UnityEditor.IMGUI.Controls
 
         public override string ToString()
         {
-            return string.Format("Item: '{0}' ({1}), has {2} children, depth {3}, parent id {4}", displayName, id, hasChildren ? children.Count : 0, depth, (parent != null) ? parent.id : -1);
+            return UnityString.Format("Item: '{0}' ({1}), has {2} children, depth {3}, parent id {4}", displayName, id, hasChildren ? children.Count : 0, depth, (parent != null) ? parent.id : -1);
         }
     }
 

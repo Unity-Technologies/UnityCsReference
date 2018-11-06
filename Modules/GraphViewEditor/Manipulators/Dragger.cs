@@ -2,12 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements.GraphView
+namespace UnityEditor.Experimental.GraphView
 {
     public class Dragger : MouseManipulator
     {
@@ -32,7 +30,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             if (clampToParentEdges)
             {
-                Rect shadowRect = target.shadow.parent.rect;
+                Rect shadowRect = target.hierarchy.parent.rect;
                 if (rect.x < shadowRect.xMin)
                     rect.x = shadowRect.xMin;
                 else if (rect.xMax > shadowRect.xMax)
@@ -110,14 +108,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                 Rect rect = CalculatePosition(target.layout.x + diff.x, target.layout.y + diff.y, target.layout.width, target.layout.height);
 
-                if (target.style.positionType == PositionType.Manual)
+                if (target.isLayoutManual)
                 {
                     target.layout = rect;
                 }
-                else if (target.style.positionType == PositionType.Absolute)
+                else if (target.resolvedStyle.position == Position.Absolute)
                 {
-                    target.style.positionLeft = rect.x;
-                    target.style.positionTop = rect.y;
+                    target.style.left = rect.x;
+                    target.style.top = rect.y;
                 }
 
                 e.StopPropagation();

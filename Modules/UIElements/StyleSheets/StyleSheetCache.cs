@@ -4,9 +4,8 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine.StyleSheets;
 
-namespace UnityEngine.Experimental.UIElements.StyleSheets
+namespace UnityEngine.UIElements.StyleSheets
 {
     internal static class StyleSheetCache
     {
@@ -75,14 +74,12 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             {"padding-right", StylePropertyID.PaddingRight},
             {"padding-bottom", StylePropertyID.PaddingBottom},
             {"position", StylePropertyID.Position},
-            {"-unity-position", StylePropertyID.PositionType},
             {"align-self", StylePropertyID.AlignSelf},
             {"-unity-text-align", StylePropertyID.UnityTextAlign},
             {"-unity-font-style", StylePropertyID.FontStyleAndWeight},
-            {"-unity-clipping", StylePropertyID.TextClipping},
             {"-unity-font", StylePropertyID.Font},
             {"font-size", StylePropertyID.FontSize},
-            {"-unity-word-wrap", StylePropertyID.WordWrap},
+            {"white-space", StylePropertyID.WhiteSpace},
             {"color", StylePropertyID.Color},
             {"flex-direction", StylePropertyID.FlexDirection},
             {"background-color", StylePropertyID.BackgroundColor},
@@ -168,8 +165,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             {"font", "-unity-font" },
             {"background-size", "-unity-background-scale-mode" },
             {"font-style", "-unity-font-style" },
-            {"position-type", "-unity-position" },
-            {"text-clipping", "-unity-clipping" },
+            {"position-type", "position" },
             {"border-left", "border-left-width"},
             {"border-top", "border-top-width"},
             {"border-right", "border-right-width"},
@@ -193,7 +189,14 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             name = MapDeprecatedPropertyName(name, sheet.name, rule.line);
             if (!s_NameToIDCache.TryGetValue(name, out id))
             {
-                id = StylePropertyID.Custom;
+                if (name.StartsWith("--"))
+                {
+                    id = StylePropertyID.Custom;
+                }
+                else
+                {
+                    id = StylePropertyID.Unknown;
+                }
             }
             return id;
         }

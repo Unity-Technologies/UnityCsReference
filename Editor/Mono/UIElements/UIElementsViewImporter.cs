@@ -12,17 +12,25 @@ using ExCSS;
 using UnityEditor.Experimental.AssetImporters;
 using UnityEditor.StyleSheets;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using StyleSheet = UnityEngine.StyleSheets.StyleSheet;
+
+using StyleSheet = UnityEngine.UIElements.StyleSheet;
+using VisualTreeAsset = UnityEngine.Experimental.UIElements.VisualTreeAsset;
+using TemplateAsset = UnityEngine.Experimental.UIElements.TemplateAsset;
+using VisualElementAsset = UnityEngine.UIElements.VisualElementAsset;
 
 namespace UnityEditor.Experimental.UIElements
 {
     // Make sure UXML is imported after assets than can be addressed in USS
-    [ScriptedImporter(version: 4, ext: "uxml", importQueueOffset: 1000)]
+    [ScriptedImporter(version: 5, ext: "uxml", importQueueOffset: 1000)]
     internal class UIElementsViewImporter : ScriptedImporter
     {
         public override void OnImportAsset(AssetImportContext args)
         {
+            if (args == null)
+            {
+                throw new ArgumentNullException(nameof(args));
+            }
+
             VisualTreeAsset vta;
 
             var importer = new UXMLImporterImpl(args);
@@ -100,6 +108,8 @@ namespace UnityEditor.Experimental.UIElements
                         return "USS in 'style' attribute is invalid: {0}";
                     case ImportErrorCode.StyleReferenceEmptyOrMissingPathAttr:
                         return "USS in 'style' attribute is invalid: {0}";
+                    case ImportErrorCode.SlotsAreExperimental:
+                        return "Slot are an experimental feature. Syntax and semantic may change in the future.";
                     case ImportErrorCode.DuplicateSlotDefinition:
                         return "Slot definition '{0}' is defined more than once";
                     case ImportErrorCode.SlotUsageInNonTemplate:
@@ -124,9 +134,9 @@ namespace UnityEditor.Experimental.UIElements
                 string message = ErrorMessage(code);
                 string lineInfo = xmlLineInfo == null
                     ? ""
-                    : string.Format(" ({0},{1})", xmlLineInfo.LineNumber, xmlLineInfo.LinePosition);
-                return string.Format("{0}{1}: {2} - {3}", filePath, lineInfo, error,
-                    string.Format(message, context == null ? "<null>" : context.ToString()));
+                    : UnityString.Format(" ({0},{1})", xmlLineInfo.LineNumber, xmlLineInfo.LinePosition);
+                return UnityString.Format("{0}{1}: {2} - {3}", filePath, lineInfo, error,
+                    UnityString.Format(message, context == null ? "<null>" : context.ToString()));
             }
         }
 
@@ -162,7 +172,7 @@ namespace UnityEditor.Experimental.UIElements
                             Debug.LogErrorFormat(obj, error.ToString());
                             break;
                         default:
-                            throw new ArgumentOutOfRangeException();
+                            throw new ArgumentOutOfRangeException(nameof(error));
                     }
                 }
                 catch (FormatException)
@@ -179,7 +189,7 @@ namespace UnityEditor.Experimental.UIElements
                             Debug.LogError(error.ToString());
                             break;
                         default:
-                            throw new ArgumentOutOfRangeException();
+                            throw new ArgumentOutOfRangeException(nameof(error));
                     }
                 }
             }
@@ -325,7 +335,7 @@ namespace UnityEditor.Experimental.UIElements
                         break;
                     case k_TemplateNameAttr:
                         name = xAttribute.Value;
-                        if (name == String.Empty)
+                        if (String.IsNullOrEmpty(name))
                         {
                             logger.LogError(ImportErrorType.Semantic,
                                 ImportErrorCode.TemplateHasEmptyName,
@@ -427,7 +437,14 @@ namespace UnityEditor.Experimental.UIElements
         {
             VisualElementAsset vea = null;
 
-            if (elt.Name.LocalName == k_TemplateInstanceNode && elt.Name.NamespaceName == "UnityEngine.Experimental.UIElements")
+            string elementNamespaceName = elt.Name.NamespaceName;
+
+            if (elementNamespaceName.StartsWith("UnityEditor.Experimental.UIElements") || elementNamespaceName.StartsWith("UnityEngine.Experimental.UIElements"))
+            {
+                elementNamespaceName = elementNamespaceName.Replace(".Experimental.UIElements", ".UIElements");
+            }
+
+            if (elt.Name.LocalName == k_TemplateInstanceNode && elementNamespaceName == "UnityEngine.UIElements")
             {
                 XAttribute sourceAttr = elt.Attribute(k_TemplateInstanceSourceAttr);
                 if (sourceAttr == null || String.IsNullOrEmpty(sourceAttr.Value))
@@ -449,16 +466,9 @@ namespace UnityEditor.Experimental.UIElements
             }
             else
             {
-                string fullName = String.IsNullOrEmpty(elt.Name.NamespaceName)
+                string fullName = String.IsNullOrEmpty(elementNamespaceName)
                     ? elt.Name.LocalName
-                    : elt.Name.NamespaceName + "." + elt.Name.LocalName;
-
-                if (fullName == typeof(VisualContainer).FullName)
-                {
-                    Debug.LogWarning("VisualContainer is obsolete, use VisualElement now");
-                    fullName = typeof(VisualElement).FullName;
-                }
-
+                    : elementNamespaceName + "." + elt.Name.LocalName;
                 vea = new VisualElementAsset(fullName);
             }
 
@@ -492,12 +502,14 @@ namespace UnityEditor.Experimental.UIElements
                         vta.contentContainerId = res.id;
                         continue;
                     case k_SlotDefinitionAttr:
+                        logger.LogError(ImportErrorType.Syntax, ImportErrorCode.SlotsAreExperimental, null, Error.Level.Warning, elt);
                         if (String.IsNullOrEmpty(xattr.Value))
                             logger.LogError(ImportErrorType.Semantic, ImportErrorCode.SlotDefinitionHasEmptyName, null, Error.Level.Fatal, elt);
                         else if (!vta.AddSlotDefinition(xattr.Value, res.id))
                             logger.LogError(ImportErrorType.Semantic, ImportErrorCode.DuplicateSlotDefinition, xattr.Value, Error.Level.Fatal, elt);
                         continue;
                     case k_SlotUsageAttr:
+                        logger.LogError(ImportErrorType.Syntax, ImportErrorCode.SlotsAreExperimental, null, Error.Level.Warning, elt);
                         var templateAsset = parent as TemplateAsset;
                         if (templateAsset == null)
                         {
@@ -565,6 +577,7 @@ namespace UnityEditor.Experimental.UIElements
         TemplateHasEmptyName,
         TemplateInstanceHasEmptySource,
         StyleReferenceEmptyOrMissingPathAttr,
+        SlotsAreExperimental,
         DuplicateSlotDefinition,
         SlotUsageInNonTemplate,
         SlotDefinitionHasEmptyName,

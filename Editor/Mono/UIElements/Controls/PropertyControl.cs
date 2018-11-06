@@ -6,9 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     static class BuiltInTypeConverter
     {
@@ -90,11 +90,14 @@ namespace UnityEditor.Experimental.UIElements
 
             public UxmlTraits()
             {
+                focusIndex.defaultValue = 0;
+                focusable.defaultValue = true;
+
                 m_TypeOf.restriction = new UxmlEnumeration
                 {
                     values = Enum.GetValues(typeof(DataType)).Cast<DataType>()
                         .Where(dt => dt != DataType.Unsupported)
-                        .Select(dt => dt.ToString()).ToList()
+                        .Select(dt => dt.ToString())
                 };
             }
 
@@ -130,21 +133,29 @@ namespace UnityEditor.Experimental.UIElements
         private Label m_Label;
         private BaseField<TType> m_Field;
 
+        public new static readonly string ussClassName = "unity-property-control";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public static readonly string draggerUssClassName = ussClassName + "__dragger";
+        public static readonly string controlUssClassName = ussClassName + "__control";
+
         public PropertyControl()
             : this("")
         {}
 
         public PropertyControl(string labelText)
+            : base(null)
         {
             Init("", labelText);
         }
 
         private void Init(string initialValue, string labelText)
         {
+            AddToClassList(ussClassName);
+            focusable = true;
             CacheType();
 
-            AddToClassList("propertyControl");
             m_Label = new Label(labelText);
+            m_Label.AddToClassList(labelUssClassName);
 
             Add(m_Label);
             CreateControl();
@@ -201,7 +212,7 @@ namespace UnityEditor.Experimental.UIElements
             var dragger = new FieldMouseDragger<TDraggerType>((IValueField<TDraggerType>)m_Field);
             dragger.SetDragZone(m_Label);
 
-            m_Label.AddToClassList("propertyControlDragger");
+            m_Label.AddToClassList(draggerUssClassName);
         }
 
         private static TTo ConvertType<TFrom, TTo>(TFrom value)
@@ -241,12 +252,12 @@ namespace UnityEditor.Experimental.UIElements
             if (m_Field == null)
                 throw new NotSupportedException($"Unsupported type attribute: {typeof(TType)}");
 
-            m_Field.AddToClassList("propertyControlControl");
-            m_Field.OnValueChanged(OnFieldValueChanged);
+            m_Field.AddToClassList(controlUssClassName);
+            m_Field.RegisterValueChangedCallback(OnFieldValueChanged);
             Add(m_Field);
         }
 
-        public string label
+        public new string label
         {
             get { return m_Label.text; }
             set { m_Label.text = value; }
@@ -288,12 +299,6 @@ namespace UnityEditor.Experimental.UIElements
             m_Field.SetValueWithoutNotify(newValue);
         }
 
-        [Obsolete("This method is replaced by simply using this.value. The default behaviour has been changed to notify when changed. If the behaviour is not to be notified, SetValueWithoutNotify() must be used.", false)]
-        public override void SetValueAndNotify(TType newValue)
-        {
-            value = newValue;
-        }
-
         public override TType value
         {
             get { return GetValueDelegate(); }
@@ -304,9 +309,16 @@ namespace UnityEditor.Experimental.UIElements
         {
             base.ExecuteDefaultAction(evt);
 
+            if (evt == null)
+            {
+                return;
+            }
+
             // Delegate focus to the control
-            if (evt.GetEventTypeId() == FocusEvent.TypeId())
+            if (evt.eventTypeId == FocusEvent.TypeId())
+            {
                 m_Field.Focus();
+            }
         }
     }
 }

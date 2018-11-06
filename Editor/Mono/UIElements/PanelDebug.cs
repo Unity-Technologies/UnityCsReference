@@ -5,9 +5,9 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements
+namespace UnityEditor.UIElements
 {
     internal class PanelDebug : IPanelDebug
     {
@@ -39,7 +39,7 @@ namespace UnityEditor.Experimental.UIElements
 
         public void AttachDebugger(IPanelDebugger debugger)
         {
-            if (m_Debuggers.Add(debugger))
+            if (debugger != null && m_Debuggers.Add(debugger))
             {
                 debugger.panelDebug = this;
                 m_Panel.visualTree.MarkDirtyRepaint();
@@ -48,9 +48,12 @@ namespace UnityEditor.Experimental.UIElements
 
         public void DetachDebugger(IPanelDebugger debugger)
         {
-            debugger.panelDebug = null;
-            m_Debuggers.Remove(debugger);
-            m_Panel.visualTree.MarkDirtyRepaint();
+            if (debugger != null)
+            {
+                debugger.panelDebug = null;
+                m_Debuggers.Remove(debugger);
+                m_Panel.visualTree.MarkDirtyRepaint();
+            }
         }
 
         public void Refresh()
@@ -101,9 +104,9 @@ namespace UnityEditor.Experimental.UIElements
                 ve.worldBound,
                 Color.HSVToRGB(ve.controlid * 11 % 32 / 32.0f, .6f, 1.0f)));
 
-            for (int i = 0; i < ve.shadow.childCount; i++)
+            for (int i = 0; i < ve.hierarchy.childCount; i++)
             {
-                var child = ve.shadow[i];
+                var child = ve.hierarchy[i];
                 RecordRepaintData(child);
             }
         }

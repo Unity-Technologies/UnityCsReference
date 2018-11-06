@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor.Experimental.UIElements.Debugger;
+using UnityEditor.UIElements.Debugger;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -22,9 +22,9 @@ namespace UnityEditor
 
         public void ClearElement()
         {
-            if (m_PaddingHighlighter != null && m_PaddingHighlighter.shadow.parent != null)
+            if (m_PaddingHighlighter != null && m_PaddingHighlighter.hierarchy.parent != null)
             {
-                var parent = m_PaddingHighlighter.shadow.parent;
+                var parent = m_PaddingHighlighter.hierarchy.parent;
 
                 m_PaddingHighlighter.RemoveFromHierarchy();
                 m_ContentHighlighter.RemoveFromHierarchy();

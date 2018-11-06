@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Globalization;
 using UnityEngine;
 
 namespace UnityEditor.IMGUI.Controls
@@ -314,7 +315,7 @@ namespace UnityEditor.IMGUI.Controls
 
         public override string ToString()
         {
-            return "Input: startRow " + startRow + " endRow " + endRow + " rowsRect " + rowsRect + " startTime " + startTime + " anitmationDuration" + animationDuration + " " + expanding + " " + item.displayName;
+            return "Input: startRow " + startRow + " endRow " + endRow + " rowsRect " + rowsRect + " startTime " + startTime.ToString(CultureInfo.InvariantCulture.NumberFormat) + " anitmationDuration" + animationDuration + " " + expanding + " " + item.displayName;
         }
     }
 } // UnityEditor

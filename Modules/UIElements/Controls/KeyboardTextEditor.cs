@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     internal class KeyboardTextEditorEventHandler : TextEditorEventHandler
     {
@@ -29,27 +29,27 @@ namespace UnityEngine.Experimental.UIElements
         {
             base.ExecuteDefaultActionAtTarget(evt);
 
-            if (evt.GetEventTypeId() == MouseDownEvent.TypeId())
+            if (evt.eventTypeId == MouseDownEvent.TypeId())
             {
                 OnMouseDown(evt as MouseDownEvent);
             }
-            else if (evt.GetEventTypeId() == MouseUpEvent.TypeId())
+            else if (evt.eventTypeId == MouseUpEvent.TypeId())
             {
                 OnMouseUp(evt as MouseUpEvent);
             }
-            else if (evt.GetEventTypeId() == MouseMoveEvent.TypeId())
+            else if (evt.eventTypeId == MouseMoveEvent.TypeId())
             {
                 OnMouseMove(evt as MouseMoveEvent);
             }
-            else if (evt.GetEventTypeId() == KeyDownEvent.TypeId())
+            else if (evt.eventTypeId == KeyDownEvent.TypeId())
             {
                 OnKeyDown(evt as KeyDownEvent);
             }
-            else if (evt.GetEventTypeId() == ValidateCommandEvent.TypeId())
+            else if (evt.eventTypeId == ValidateCommandEvent.TypeId())
             {
                 OnValidateCommandEvent(evt as ValidateCommandEvent);
             }
-            else if (evt.GetEventTypeId() == ExecuteCommandEvent.TypeId())
+            else if (evt.eventTypeId == ExecuteCommandEvent.TypeId())
             {
                 OnExecuteCommandEvent(evt as ExecuteCommandEvent);
             }

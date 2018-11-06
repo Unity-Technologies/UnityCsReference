@@ -8,6 +8,7 @@ using System.Linq;
 using System;
 using UnityEditorInternal;
 using UnityEditor.Audio;
+using System.Globalization;
 
 namespace UnityEditor
 {
@@ -496,7 +497,7 @@ namespace UnityEditor
         {
             if (m_ChangingWetMixIndex == m_IndexCounter && showLevel)
             {
-                return string.Format("{0:F1} dB", effect.GetValueForMixLevel(m_Controller, snapshot));
+                return UnityString.Format("{0:F1} dB", effect.GetValueForMixLevel(m_Controller, snapshot));
             }
 
             if (effect.IsSend() && effect.sendTarget != null)
@@ -1294,7 +1295,7 @@ namespace UnityEditor
             styles.totalVULevel.padding.right = (int)((p.stripRect.width - textWidth) * 0.5f);
             float vu_level = Mathf.Max(p.vuinfo_level[8], k_MinVULevel);
             Rect rect = p.bgRects[p.kTotalVULevelIndex];
-            GUI.Label(rect, string.Format("{0:F1} dB", vu_level), styles.totalVULevel);
+            GUI.Label(rect, string.Format(CultureInfo.InvariantCulture.NumberFormat, "{0:F1} dB", vu_level), styles.totalVULevel);
         }
 
         GUIContent addText = EditorGUIUtility.TrTextContent("Add..");

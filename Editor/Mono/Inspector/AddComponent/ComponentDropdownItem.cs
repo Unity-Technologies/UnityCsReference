@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEditorInternal;
 
 namespace UnityEditor.AdvancedDropdown
 {
@@ -10,6 +11,12 @@ namespace UnityEditor.AdvancedDropdown
     {
         private string m_MenuPath;
         private bool m_IsLegacy;
+
+        struct ComponentMenuCommandInfo
+        {
+            public int instanceID;
+            public string guid;
+        };
 
         internal ComponentDropdownItem() : base("ROOT", -1)
         {
@@ -24,7 +31,14 @@ namespace UnityEditor.AdvancedDropdown
             m_MenuPath = menuPath;
             m_IsLegacy = menuPath.Contains("Legacy");
 
-            if (command.StartsWith("SCRIPT"))
+            if (command.StartsWith("ASSET"))
+            {
+                var info = JsonUtility.FromJson<ComponentMenuCommandInfo>(command.Substring(5));
+                var obj = EditorUtility.InstanceIDToObject(info.instanceID);
+                var icon = AssetPreview.GetMiniThumbnail(obj);
+                m_Content = new GUIContent(name, icon);
+            }
+            else if (command.StartsWith("SCRIPT"))
             {
                 var scriptId = int.Parse(command.Substring(6));
                 var obj = EditorUtility.InstanceIDToObject(scriptId);

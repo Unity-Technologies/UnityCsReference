@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public interface IKeyboardEvent
     {
@@ -62,7 +62,12 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.Bubbles | EventFlags.TricklesDown | EventFlags.Cancellable;
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable;
             modifiers = default(EventModifiers);
             character = default(char);
             keyCode = default(KeyCode);
@@ -92,7 +97,7 @@ namespace UnityEngine.Experimental.UIElements
 
         protected KeyboardEventBase()
         {
-            Init();
+            LocalInit();
         }
     }
 

@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using System;
+using System.Globalization;
 
 namespace UnityEditor
 {
@@ -205,7 +206,7 @@ namespace UnityEditor
             private void PrintValue()
             {
                 Rect textRect = new Rect(position.x + knobSize.x / 2 - 8, position.y + knobSize.y / 2 - 8, position.width, 20);
-                string value = currentValue.ToString("0.##");  //FIXME: This needs to be done so it can handle any range types.
+                string value = currentValue.ToString("0.##", CultureInfo.InvariantCulture.NumberFormat);  //FIXME: This needs to be done so it can handle any range types.
                 GUI.Label(textRect, value + " " + unit);
             }
 
@@ -222,7 +223,7 @@ namespace UnityEditor
                 style.normal.textColor = new Color(.703f, .703f, .703f, 1.0f);
                 style.fontStyle = FontStyle.Normal;
 
-                string newStr = EditorGUI.DelayedTextField(inputRect, currentValue.ToString("0.##"), style);
+                string newStr = EditorGUI.DelayedTextField(inputRect, currentValue.ToString("0.##", CultureInfo.InvariantCulture.NumberFormat), style);
                 if (EditorGUI.EndChangeCheck() && !String.IsNullOrEmpty(newStr))
                 {
                     KnobState().isEditing = false;

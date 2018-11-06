@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     public abstract class ContextualMenuManager
     {
@@ -14,7 +14,7 @@ namespace UnityEngine.Experimental.UIElements
 
             using (ContextualMenuPopulateEvent cme = ContextualMenuPopulateEvent.GetPooled(triggerEvent, menu, target, this))
             {
-                target.SendEvent(cme);
+                target?.SendEvent(cme);
             }
         }
 

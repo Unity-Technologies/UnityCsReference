@@ -4,7 +4,7 @@
 
 using System;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     internal class VisualTreeTransformClipUpdater : BaseVisualTreeUpdater
     {
@@ -34,10 +34,10 @@ namespace UnityEngine.Experimental.UIElements
             ve.isWorldTransformDirty = true;
             ve.isWorldClipDirty = true;
 
-            int count = ve.shadow.childCount;
+            int count = ve.hierarchy.childCount;
             for (int i = 0; i < count; i++)
             {
-                var child = ve.shadow[i];
+                var child = ve.hierarchy[i];
                 if (child.isWorldTransformDirty && child.isWorldClipDirty)
                     continue;
 
@@ -49,10 +49,10 @@ namespace UnityEngine.Experimental.UIElements
         {
             ve.isWorldClipDirty = true;
 
-            int count = ve.shadow.childCount;
+            int count = ve.hierarchy.childCount;
             for (int i = 0; i < count; i++)
             {
-                var child = ve.shadow[i];
+                var child = ve.hierarchy[i];
                 if (child.isWorldClipDirty)
                     continue;
 

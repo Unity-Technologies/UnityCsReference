@@ -4,6 +4,7 @@
 
 //#define DEBUG_PLOT_GAIN
 
+using System.Globalization;
 using UnityEngine;
 
 namespace UnityEditor
@@ -252,11 +253,11 @@ namespace UnityEditor
                 // Threshold text and line
                 textStyle10.normal.textColor = ScaleAlpha(thresholdColor, blend);
                 EditorGUI.DrawRect(new Rect(r.x + thresholdPosX, r.y, 1, r.height), textStyle10.normal.textColor);
-                DrawText(r.x + thresholdPosX + 4, r.y + 6, string.Format("Threshold: {0:F1} dB", threshold));
+                DrawText(r.x + thresholdPosX + 4, r.y + 6, string.Format(CultureInfo.InvariantCulture.NumberFormat, "Threshold: {0:F1} dB", threshold));
 
                 // Sidechain text and line
                 textStyle10.normal.textColor = ScaleAlpha(sidechainColor, blend);
-                DrawText(r.x + 4, r.y + r.height - 10, sidechainLevel < -80 ? "Input: None" : string.Format("Input: {0:F1} dB", sidechainLevel));
+                DrawText(r.x + 4, r.y + r.height - 10, sidechainLevel < -80 ? "Input: None" : string.Format(CultureInfo.InvariantCulture.NumberFormat, "Input: {0:F1} dB", sidechainLevel));
 
                 if (dragtype == DragType.Ratio)
                 {

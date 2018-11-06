@@ -36,7 +36,7 @@ namespace UnityEditor
                 GUILayout.EndVertical();
                 Color old = GUI.color;
                 GUI.color = new Color(limit, 1.0f - limit, 0.0f, 1.0f);
-                GUILayout.Box(string.Format("{0:00.00}ms", ms), GUILayout.MinWidth(40), GUILayout.Height(20));
+                GUILayout.Box(UnityString.Format("{0:00.00}ms", ms), GUILayout.MinWidth(40), GUILayout.Height(20));
                 GUI.color = old;
 
                 GUILayout.EndHorizontal();

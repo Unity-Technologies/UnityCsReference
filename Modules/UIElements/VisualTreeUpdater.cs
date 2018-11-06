@@ -7,12 +7,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Profiling;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     // Update phases, the order of the enum define the updater order
     internal enum VisualTreeUpdatePhase
     {
-        PersistentData,
+        ViewData,
         Bindings,
         Styles,
         Layout,
@@ -100,6 +100,7 @@ namespace UnityEngine.Experimental.UIElements
             styleUpdater.DirtyStyleSheets();
         }
 
+
         public void SetUpdater(IVisualTreeUpdater updater, VisualTreeUpdatePhase phase)
         {
             updater.panel = m_Panel;
@@ -119,7 +120,7 @@ namespace UnityEngine.Experimental.UIElements
 
         private void SetDefaultUpdaters()
         {
-            SetUpdater<VisualTreePersistentDataUpdater>(VisualTreeUpdatePhase.PersistentData);
+            SetUpdater<VisualTreeViewDataUpdater>(VisualTreeUpdatePhase.ViewData);
             SetUpdater<VisualTreeBindingsUpdater>(VisualTreeUpdatePhase.Bindings);
             SetUpdater<VisualTreeStyleUpdater>(VisualTreeUpdatePhase.Styles);
             SetUpdater<VisualTreeLayoutUpdater>(VisualTreeUpdatePhase.Layout);

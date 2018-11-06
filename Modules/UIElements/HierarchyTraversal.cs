@@ -4,9 +4,8 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine.StyleSheets;
 
-namespace UnityEngine.Experimental.UIElements.StyleSheets
+namespace UnityEngine.UIElements.StyleSheets
 {
     // Utility class to abstract away the concerne of traversing the visual tree
     internal abstract class HierarchyTraversal
@@ -23,13 +22,13 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         {
             int i = 0;
 
-            while (i < element.shadow.childCount)
+            while (i < element.hierarchy.childCount)
             {
-                var child = element.shadow[i];
+                var child = element.hierarchy[i];
                 TraverseRecursive(child, depth + 1);
 
                 // if the child has been moved to another parent, which happens when its parent has changed, then do not increment the iterator
-                if (child.shadow.parent != element)
+                if (child.hierarchy.parent != element)
                     continue;
                 i++;
             }

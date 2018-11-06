@@ -3,31 +3,32 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using UnityEngine.Experimental.UIElements.StyleEnums;
+using UnityEngine.Experimental.UIElements.StyleSheets;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
-    public class TextField : TextInputFieldBase<string>
+    public class TextField : TextInputBaseField<string>
     {
-        public new class UxmlFactory : UxmlFactory<TextField, UxmlTraits> {}
+        // This property to alleviate the fact we have to cast all the time
+        TextInput textInput => (TextInput)textInputBase;
 
-        public new class UxmlTraits : TextInputFieldBase<string>.UxmlTraits
+        public new class UxmlFactory : UxmlFactory<TextField, UxmlTraits> {}
+        public new class UxmlTraits : BaseFieldTraits<string, UxmlStringAttributeDescription>
         {
             UxmlBoolAttributeDescription m_Multiline = new UxmlBoolAttributeDescription { name = "multiline" };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
-                base.Init(ve, bag, cc);
-
                 TextField field = ((TextField)ve);
                 field.multiline = m_Multiline.GetValueFromBag(bag, cc);
-                field.SetValueWithoutNotify(field.text);
+                base.Init(ve, bag, cc);
             }
         }
-
-        // TODO: Switch over to default style properties
-
         // Multiline (lossy behaviour when deactivated)
         bool m_Multiline;
+
         public bool multiline
         {
             get { return m_Multiline; }
@@ -50,13 +51,28 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        public TextField() : this(kMaxLengthNone, false, false, char.MinValue)
+        public void SelectRange(int rangeCursorIndex, int selectionIndex)
         {
+            textInput.SelectRange(rangeCursorIndex, selectionIndex);
         }
 
-        public TextField(int maxLength, bool multiline, bool isPasswordField, char maskChar) : base(maxLength, maskChar)
+        public new static readonly string ussClassName = "unity-text-field";
+
+        public TextField()
+            : this(null) {}
+
+        public TextField(int maxLength, bool multiline, bool isPasswordField, char maskChar)
+            : this(null, maxLength, multiline, isPasswordField, maskChar) {}
+
+        public TextField(string label)
+            : this(label, kMaxLengthNone, false, false, char.MinValue) {}
+
+        public TextField(string label, int maxLength, bool multiline, bool isPasswordField, char maskChar)
+            : base(label, maxLength, maskChar, new TextInput() { name = "unity-text-input" })
         {
-            m_Value = "";
+            AddToClassList(ussClassName);
+            pickingMode = PickingMode.Ignore;
+            SetValueWithoutNotify("");
             this.multiline = multiline;
             this.isPasswordField = isPasswordField;
         }
@@ -67,104 +83,117 @@ namespace UnityEngine.Experimental.UIElements
             set
             {
                 base.value = value;
-                text = m_Value;
+                text = rawValue;
             }
         }
 
         public override void SetValueWithoutNotify(string newValue)
         {
             base.SetValueWithoutNotify(newValue);
-            text = m_Value;
+            text = rawValue;
         }
 
-        public void SelectRange(int cursorIndex, int selectionIndex)
+        internal override void OnViewDataReady()
         {
-            if (editorEngine != null)
-            {
-                editorEngine.cursorIndex = cursorIndex;
-                editorEngine.selectIndex = selectionIndex;
-            }
-        }
+            base.OnViewDataReady();
 
-        public override void OnPersistentDataReady()
-        {
-            base.OnPersistentDataReady();
+            string key = GetFullHierarchicalViewDataKey();
 
-            string key = GetFullHierarchicalPersistenceKey();
-
-            OverwriteFromPersistedData(this, key);
+            OverwriteFromViewData(this, key);
 
             // Here we must make sure the value is restored on screen from the saved value !
-            text = m_Value;
+            text = rawValue;
         }
 
-        internal override void SyncTextEngine()
+        class TextInput : TextInputBase
         {
-            editorEngine.multiline = multiline;
-            editorEngine.isPasswordField = isPasswordField;
+            TextField parentTextField => (TextField)parentField;
 
-            base.SyncTextEngine();
-        }
-
-        protected override void DoRepaint(IStylePainter painter)
-        {
-            var stylePainter = (IStylePainterInternal)painter;
-            if (isPasswordField)
+            internal TextInput()
+                : base()
             {
-                // if we use system keyboard we will have normal text returned (hiding symbols is done inside os)
-                // so before drawing make sure we hide them ourselves
-                string drawText = "".PadRight(text.Length, maskChar);
-                if (!hasFocus)
+            }
+
+            public void SelectRange(int cursorIndex, int selectionIndex)
+            {
+                if (editorEngine != null)
                 {
-                    // We don't have the focus, don't draw the selection and cursor
-                    if (!string.IsNullOrEmpty(drawText) && contentRect.width > 0.0f && contentRect.height > 0.0f)
+                    editorEngine.cursorIndex = cursorIndex;
+                    editorEngine.selectIndex = selectionIndex;
+                }
+            }
+
+            internal override void SyncTextEngine()
+            {
+                if (parentTextField != null)
+                {
+                    editorEngine.multiline = parentTextField.multiline;
+                    editorEngine.isPasswordField = parentTextField.isPasswordField;
+                }
+
+                base.SyncTextEngine();
+            }
+
+            internal override void DoRepaint(IStylePainter painter)
+            {
+                var stylePainter = (IStylePainterInternal)painter;
+                if (parentTextField.isPasswordField)
+                {
+                    // if we use system keyboard we will have normal text returned (hiding symbols is done inside os)
+                    // so before drawing make sure we hide them ourselves
+                    string drawText = "".PadRight(parentTextField.text.Length, parentTextField.maskChar);
+                    if (!hasFocus)
                     {
-                        var textParams = TextStylePainterParameters.GetDefault(this, text);
-                        textParams.text = drawText;
-                        stylePainter.DrawText(textParams);
+                        // We don't have the focus, don't draw the selection and cursor
+                        if (!string.IsNullOrEmpty(drawText) && contentRect.width > 0.0f && contentRect.height > 0.0f)
+                        {
+                            var textParams = TextStylePainterParameters.GetDefault(this, parentTextField.text);
+                            textParams.text = drawText;
+                            stylePainter.DrawText(textParams);
+                        }
+                    }
+                    else
+                    {
+                        DrawWithTextSelectionAndCursor(stylePainter, drawText);
                     }
                 }
                 else
                 {
-                    DrawWithTextSelectionAndCursor(stylePainter, drawText);
+                    base.DoRepaint(painter);
                 }
             }
-            else
-            {
-                base.DoRepaint(painter);
-            }
-        }
 
-        protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
-        {
-            base.ExecuteDefaultActionAtTarget(evt);
-
-            if (evt.GetEventTypeId() == KeyDownEvent.TypeId())
+            protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
             {
-                KeyDownEvent kde = evt as KeyDownEvent;
-                if (!isDelayed || kde.character == '\n')
+                base.ExecuteDefaultActionAtTarget(evt);
+
+                if (evt.eventTypeId == KeyDownEvent.TypeId())
                 {
-                    value = text;
+                    KeyDownEvent kde = evt as KeyDownEvent;
+                    if (!parentTextField.isDelayed || kde.character == '\n')
+                    {
+                        parentTextField.value = parentTextField.text;
+                    }
                 }
-            }
-            else if (evt.GetEventTypeId() == ExecuteCommandEvent.TypeId())
-            {
-                ExecuteCommandEvent commandEvt = evt as ExecuteCommandEvent;
-                string cmdName = commandEvt.commandName;
-                if (!isDelayed && (cmdName == EventCommandNames.Paste || cmdName == EventCommandNames.Cut))
+                else if (evt.eventTypeId == ExecuteCommandEvent.TypeId())
                 {
-                    value = text;
+                    ExecuteCommandEvent commandEvt = evt as ExecuteCommandEvent;
+                    string cmdName = commandEvt.commandName;
+                    if (!parentTextField.isDelayed && (cmdName == EventCommandNames.Paste || cmdName == EventCommandNames.Cut))
+                    {
+                        parentTextField.value = parentTextField.text;
+                    }
                 }
             }
-        }
 
-        protected internal override void ExecuteDefaultAction(EventBase evt)
-        {
-            base.ExecuteDefaultAction(evt);
-
-            if (isDelayed && evt.GetEventTypeId() == BlurEvent.TypeId())
+            protected internal override void ExecuteDefaultAction(EventBase evt)
             {
-                value = text;
+                base.ExecuteDefaultAction(evt);
+
+                if (parentTextField.isDelayed && evt?.eventTypeId == BlurEvent.TypeId())
+                {
+                    parentTextField.value = parentTextField.text;
+                }
             }
         }
     }

@@ -5,45 +5,72 @@
 using System;
 using System.Collections.Generic;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
-    public abstract class BaseField<T> : BindableElement, INotifyValueChanged<T>
+    public abstract class BaseField<TValueType> : BindableElement, INotifyValueChanged<TValueType>
     {
-        [SerializeField]
-        protected T m_Value;
-        public new class UxmlTraits : BindableElement.UxmlTraits
-        {
-            public UxmlTraits()
-            {
-                m_FocusIndex.defaultValue = 0;
-            }
+        public static readonly string ussClassName = "unity-base-field";
+        public static readonly string labelUssClassName = ussClassName + "__label";
+        public static readonly string inputUssClassName = ussClassName + "__input";
+        public static readonly string noLabelVariantUssClassName = ussClassName + "--no-label";
+        public static readonly string labelDraggerVariantUssClassName = labelUssClassName + "--with-dragger";
 
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get
-                {
-                    yield break;
-                }
-            }
-        }
 
-        public BaseField()
-        {
-            // Fields are focusable by default
-            focusIndex = 0;
-            m_Value = default(T);
-        }
+        private VisualElement m_VisualInput;
 
-        public virtual T value
+        internal VisualElement visualInput
         {
-            get { return m_Value; }
+            get { return m_VisualInput; }
             set
             {
-                if (!EqualityComparer<T>.Default.Equals(m_Value, value))
+                // Get rid of the older value...
+                if (m_VisualInput != null)
+                {
+                    if (m_VisualInput.parent == this)
+                    {
+                        m_VisualInput.RemoveFromHierarchy();
+                    }
+
+                    m_VisualInput = null;
+                }
+
+                // Handle the new value...
+                if (value != null)
+                {
+                    m_VisualInput = value;
+                }
+                else
+                {
+                    m_VisualInput = new VisualElement() { pickingMode = PickingMode.Ignore };
+                }
+                m_VisualInput.focusable = true;
+                m_VisualInput.AddToClassList(inputUssClassName);
+                Add(m_VisualInput);
+            }
+        }
+
+        [SerializeField]
+        TValueType m_Value;
+
+        protected TValueType rawValue
+        {
+            get { return m_Value; }
+            set { m_Value = value; }
+        }
+
+        public virtual TValueType value
+        {
+            get
+            {
+                return m_Value;
+            }
+            set
+            {
+                if (!EqualityComparer<TValueType>.Default.Equals(m_Value, value))
                 {
                     if (panel != null)
                     {
-                        using (ChangeEvent<T> evt = ChangeEvent<T>.GetPooled(m_Value, value))
+                        using (ChangeEvent<TValueType> evt = ChangeEvent<TValueType>.GetPooled(m_Value, value))
                         {
                             evt.target = this;
                             SetValueWithoutNotify(value);
@@ -58,45 +85,146 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        [Obsolete("This method is replaced by simply using this.value. The default behaviour has been changed to notify when changed. If the behaviour is not to be notified, SetValueWithoutNotify() must be used.", false)]
-        public virtual void SetValueAndNotify(T newValue)
+        public Label labelElement { get; private set; }
+        public string label
         {
-            value = newValue;
-        }
-
-        public override void OnPersistentDataReady()
-        {
-            base.OnPersistentDataReady();
-            var key = GetFullHierarchicalPersistenceKey();
-
-            var oldValue = m_Value;
-            OverwriteFromPersistedData(this, key);
-
-            if (!EqualityComparer<T>.Default.Equals(oldValue, m_Value))
-                using (ChangeEvent<T> evt = ChangeEvent<T>.GetPooled(oldValue, m_Value))
+            get
+            {
+                return labelElement.text;
+            }
+            set
+            {
+                if (labelElement.text != value)
                 {
-                    evt.target = this;
-                    SendEvent(evt);
+                    labelElement.text = value;
+
+                    if (string.IsNullOrEmpty(labelElement.text))
+                    {
+                        AddToClassList(noLabelVariantUssClassName);
+                        labelElement.RemoveFromHierarchy();
+                    }
+                    else
+                    {
+                        if (!Contains(labelElement))
+                        {
+                            Insert(0, labelElement);
+                            RemoveFromClassList(noLabelVariantUssClassName);
+                        }
+                    }
                 }
+            }
         }
 
-        public void OnValueChanged(EventCallback<ChangeEvent<T>> callback)
+        internal BaseField(string label)
         {
-            RegisterCallback(callback);
+            // Make sure to make the element focusable...
+            focusable = true;
+            AddToClassList(ussClassName);
+
+            labelElement = new Label();
+            labelElement.AddToClassList(labelUssClassName);
+            if (label != null)
+            {
+                this.label = label;
+            }
+            else
+            {
+                AddToClassList(noLabelVariantUssClassName);
+            }
+
+            m_VisualInput = null;
         }
 
-        public void RemoveOnValueChanged(EventCallback<ChangeEvent<T>> callback)
+        protected BaseField(string label, VisualElement visualInput)
+            : this(label)
         {
-            UnregisterCallback(callback);
+            this.visualInput = visualInput;
+            focusable = true;
+        }
+        public override bool focusable
+        {
+            get { return base.focusable; }
+            set
+            {
+                base.focusable = value;
+                if (labelElement != null)
+                {
+                    labelElement.focusable = value;
+                }
+            }
         }
 
-        public virtual void SetValueWithoutNotify(T newValue)
+        public override int tabIndex
+        {
+            get { return base.tabIndex; }
+            set
+            {
+                base.tabIndex = value;
+                if (labelElement != null)
+                {
+                    labelElement.tabIndex = value;
+                }
+            }
+        }
+
+        public virtual void SetValueWithoutNotify(TValueType newValue)
         {
             m_Value = newValue;
 
-            if (!string.IsNullOrEmpty(persistenceKey))
-                SavePersistentData();
+            if (!string.IsNullOrEmpty(viewDataKey))
+                SaveViewData();
             MarkDirtyRepaint();
+        }
+
+        internal override void OnViewDataReady()
+        {
+            base.OnViewDataReady();
+
+            if (m_VisualInput != null)
+            {
+                var key = GetFullHierarchicalViewDataKey();
+                var oldValue = m_Value;
+                OverwriteFromViewData(this, key);
+
+                if (!EqualityComparer<TValueType>.Default.Equals(oldValue, m_Value))
+                {
+                    using (ChangeEvent<TValueType> evt = ChangeEvent<TValueType>.GetPooled(oldValue, m_Value))
+                    {
+                        evt.target = this;
+                        SendEvent(evt);
+                    }
+                }
+            }
+        }
+
+        protected internal override void ExecuteDefaultAction(EventBase evt)
+        {
+            base.ExecuteDefaultAction(evt);
+
+            if (evt.eventTypeId == FocusEvent.TypeId())
+            {
+                m_VisualInput?.Focus();
+            }
+        }
+    }
+
+    public class BaseFieldTraits<TValueType, TValueUxmlAttributeType> : BindableElement.UxmlTraits
+        where TValueUxmlAttributeType : TypedUxmlAttributeDescription<TValueType>, new()
+    {
+        TValueUxmlAttributeType m_Value = new TValueUxmlAttributeType { name = "value" };
+        UxmlStringAttributeDescription m_Label = new UxmlStringAttributeDescription { name = "label" };
+
+        protected BaseFieldTraits()
+        {
+            focusIndex.defaultValue = 0;
+            focusable.defaultValue = true;
+        }
+
+        public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+        {
+            base.Init(ve, bag, cc);
+            ((INotifyValueChanged<TValueType>)ve).SetValueWithoutNotify(m_Value.GetValueFromBag(bag, cc));
+            ((BaseField<TValueType>)ve).label = m_Label.GetValueFromBag(bag, cc);
         }
     }
 }

@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace UnityEngine.Experimental.UIElements
+namespace UnityEngine.UIElements
 {
     static class VisualElementFactoryRegistry
     {
@@ -99,22 +99,20 @@ namespace UnityEngine.Experimental.UIElements
                 new Image.UxmlFactory(),
                 new Label.UxmlFactory(),
                 new RepeatButton.UxmlFactory(),
-                new ScrollerButton.UxmlFactory(),
                 new ScrollView.UxmlFactory(),
                 new Scroller.UxmlFactory(),
                 new Slider.UxmlFactory(),
                 new SliderInt.UxmlFactory(),
                 new MinMaxSlider.UxmlFactory(),
-                new TextField.UxmlFactory(),
                 new Toggle.UxmlFactory(),
-                new VisualContainer.UxmlFactory(),
+                new TextField.UxmlFactory(),
                 new TemplateContainer.UxmlFactory(),
                 new Box.UxmlFactory(),
                 new PopupWindow.UxmlFactory(),
                 new ListView.UxmlFactory(),
                 new TreeView.UxmlFactory(),
                 new Foldout.UxmlFactory(),
-                new BindableElement.UxmlFactory(),
+                new BindableElement.UxmlFactory()
             };
 
             foreach (var factory in factories)

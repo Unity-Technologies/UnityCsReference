@@ -807,7 +807,7 @@ namespace UnityEditor
             set;
         }
 
-        internal static extern bool gcIncremental
+        public static extern bool gcIncremental
         {
             [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
             get;

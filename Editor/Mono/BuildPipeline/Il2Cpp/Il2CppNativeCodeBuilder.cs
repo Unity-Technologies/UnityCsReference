@@ -84,7 +84,7 @@ namespace UnityEditorInternal
             get { return true; }
         }
 
-        internal bool OverriddenCacheDirectory
+        internal virtual bool OverriddenCacheDirectory
         {
             get
             {
