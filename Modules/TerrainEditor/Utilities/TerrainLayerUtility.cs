@@ -122,14 +122,17 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(tileOffset, s_Styles.tilingOffset);
         }
 
-        internal static int AddTerrainLayer(Terrain terrain, TerrainLayer inputLayer)
+        internal static void AddTerrainLayer(Terrain terrain, TerrainLayer inputLayer)
         {
+            if (inputLayer == null)
+                return;
+
             var terrainData = terrain.terrainData;
             var layers = terrainData.terrainLayers;
             for (var idx = 0; idx < layers.Length; ++idx)
             {
                 if (layers[idx] == inputLayer)
-                    return idx;
+                    return;
             }
 
             Undo.RegisterCompleteObjectUndo(terrainData, "Add terrain layer");
@@ -139,29 +142,31 @@ namespace UnityEditor
             Array.Copy(layers, 0, newarray, 0, newIndex);
             newarray[newIndex] = inputLayer;
             terrainData.terrainLayers = newarray;
-            EditorUtility.SetDirty(terrain);
-            return newIndex;
         }
 
-        internal static int ReplaceTerrainLayer(Terrain terrain, int index, TerrainLayer inputLayer)
+        internal static void ReplaceTerrainLayer(Terrain terrain, int index, TerrainLayer inputLayer)
         {
+            if (inputLayer == null)
+            {
+                RemoveTerrainLayer(terrain, index);
+                return;
+            }
+
             var layers = terrain.terrainData.terrainLayers;
             // Make sure the selection is legit
             if (index < 0 || index > layers.Length)
-                return index;
+                return;
             // See if they're already using this layer
             for (var idx = 0; idx < layers.Length; ++idx)
             {
                 if (layers[idx] == inputLayer)
-                    return idx;
+                    return;
             }
 
-            Undo.RegisterCompleteObjectUndo(terrain.terrainData, "Add terrain layer");
+            Undo.RegisterCompleteObjectUndo(terrain.terrainData, "Replace terrain layer");
 
             layers[index] = inputLayer;
-            EditorUtility.SetDirty(terrain);
             terrain.terrainData.terrainLayers = layers;
-            return index;
         }
 
         internal static void RemoveTerrainLayer(Terrain terrain, int index)

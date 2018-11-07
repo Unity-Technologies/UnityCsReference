@@ -240,7 +240,7 @@ namespace UnityEngine.Experimental.UIElements
 
         protected virtual void Init()
         {
-            timestamp = DateTime.Now.Ticks;
+            timestamp = (long)(Time.realtimeSinceStartup * 1000.0f);
 
             flags = EventFlags.None;
 

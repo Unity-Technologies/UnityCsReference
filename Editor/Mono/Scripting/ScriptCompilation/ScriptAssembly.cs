@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Scripting.Compilers;
 using UnityEditor.Compilation;
@@ -43,6 +44,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
     class ScriptAssembly
     {
+        public string OriginPath { get; set; }
         public AssemblyFlags Flags { get; set; }
         public BuildTarget BuildTarget { get; set; }
         public SupportedLanguage Language { get; set; }
@@ -72,7 +74,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return References.Concat(ScriptAssemblyReferences.Select(a => a.FullPath)).ToArray();
         }
 
-        public MonoIsland ToMonoIsland(EditorScriptCompilationOptions options, string buildOutputDirectory)
+        public MonoIsland ToMonoIsland(EditorScriptCompilationOptions options, string buildOutputDirectory, string projectPath = null)
         {
             bool buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;
             bool developmentBuild = (options & EditorScriptCompilationOptions.BuildingDevelopmentBuild) == EditorScriptCompilationOptions.BuildingDevelopmentBuild;
@@ -80,6 +82,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var references = ScriptAssemblyReferences.Select(a => AssetPath.Combine(a.OutputDirectory, a.Filename));
 
             var referencesArray = references.Concat(References).ToArray();
+
+            var responseFileProvider = Language?.CreateResponseFileProvider();
+            if (!string.IsNullOrEmpty(projectPath) && responseFileProvider != null)
+            {
+                responseFileProvider.ProjectPath = projectPath;
+            }
+
+            List<string> reposeFiles = responseFileProvider?.Get(OriginPath) ?? new List<string>();
 
             var outputPath = AssetPath.Combine(buildOutputDirectory, Filename);
 
@@ -91,7 +101,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 Files,
                 referencesArray,
                 Defines,
-                outputPath);
+                outputPath,
+                reposeFiles.ToArray());
         }
     }
 }

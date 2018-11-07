@@ -47,15 +47,32 @@ namespace UnityEditor.Scripting
 
                 string stdOut, stdErr;
                 var assemblyFullPath = ResolveAssemblyPath(assemblyPath);
-                var exitCode = RunUpdatingProgram("AssemblyUpdater.exe", "-u -a " + assemblyFullPath + APIVersionArgument() + AssemblySearchPathArgument() + ConfigurationProviderAssembliesPathArgument(), out stdOut, out stdErr);
+                var exitCode = RunUpdatingProgram("AssemblyUpdater.exe", "-u -a " + assemblyFullPath + APIVersionArgument() + AssemblySearchPathArgument() + ConfigurationProviderAssembliesPathArgument() + NuGetArgument(), out stdOut, out stdErr);
                 if (stdOut.Length > 0)
                     APIUpdaterLogger.WriteToFile("Assembly update output ({0})\r\n{1}", assemblyFullPath, stdOut);
+
+                if (IsWarning(exitCode))
+                    APIUpdaterLogger.WriteWarningToConsole(stdOut);
 
                 if (IsError(exitCode))
                     APIUpdaterLogger.WriteErrorToConsole("Error {0} running AssemblyUpdater. Its output is: `{1}`", exitCode, stdErr);
             }
 
             APIUpdaterLogger.WriteToFile("Update finished in {0}s", sw.Elapsed.TotalSeconds);
+        }
+
+        private static string NuGetArgument()
+        {
+            var nugetPath = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "NuGet.exe");
+            if (!File.Exists(nugetPath))
+                return string.Empty;
+
+            return " --nuget-path \"" + nugetPath + "\"";
+        }
+
+        private static bool IsWarning(int exitCode)
+        {
+            return (exitCode & (1 << 6)) != 0;
         }
 
         private static bool IsError(int exitCode)
@@ -80,7 +97,7 @@ namespace UnityEditor.Scripting
                 return false;
 
             string stdOut, stdErr;
-            var ret = RunUpdatingProgram("AssemblyUpdater.exe", TimeStampArgument() + APIVersionArgument() + "--check-update-required -a " + CommandLineFormatter.PrepareFileName(assemblyFullPath) + AssemblySearchPathArgument() + ConfigurationProviderAssembliesPathArgument(), out stdOut, out stdErr);
+            var ret = RunUpdatingProgram("AssemblyUpdater.exe", TimeStampArgument() + APIVersionArgument() + "--check-update-required -a " + CommandLineFormatter.PrepareFileName(assemblyFullPath) + AssemblySearchPathArgument() + ConfigurationProviderAssembliesPathArgument() + NuGetArgument(), out stdOut, out stdErr);
             {
                 Console.WriteLine("{0}{1}", stdOut, stdErr);
                 switch (ret)
@@ -91,7 +108,14 @@ namespace UnityEditor.Scripting
                     case 2: return true;
 
                     default:
-                        Debug.LogError(stdOut + Environment.NewLine + stdErr);
+                        if (IsWarning(ret))
+                        {
+                            Debug.LogWarning(stdOut + Environment.NewLine + stdErr);
+                        }
+                        else
+                        {
+                            Debug.LogError(stdOut + Environment.NewLine + stdErr);
+                        }
                         return false;
                 }
             }

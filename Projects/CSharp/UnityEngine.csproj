@@ -1551,6 +1551,9 @@
   <Compile Include="..\..\Modules\Tilemap\Managed\TileBase.cs">
     <Link>Modules\Tilemap\Managed\TileBase.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\Tilemap\Managed\Tilemap.cs">
+    <Link>Modules\Tilemap\Managed\Tilemap.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\Tilemap\ScriptBindings\Tilemap.bindings.cs">
     <Link>Modules\Tilemap\ScriptBindings\Tilemap.bindings.cs</Link>
   </Compile>

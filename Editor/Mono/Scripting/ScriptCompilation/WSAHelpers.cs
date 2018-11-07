@@ -36,6 +36,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public static bool BuildingForDotNet(BuildTarget buildTarget, bool buildingForEditor, string assemblyName)
         {
+            if (buildingForEditor)
+                return false;
+
             if (buildTarget != BuildTarget.WSAPlayer)
                 return false;
 

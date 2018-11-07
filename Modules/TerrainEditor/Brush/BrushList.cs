@@ -72,6 +72,7 @@ namespace UnityEditor
             arr.AddRange(
                 AssetDatabase.FindAssets($"t:{typeof(Brush).Name}")
                     .Select(p => AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(p), typeof(Brush)) as Brush)
+                    .Where(b => b != null && b.texture != null)
             );
 
             m_BrushList = arr.ToArray();
@@ -154,7 +155,7 @@ namespace UnityEditor
             if (selectedIndex == -1)
                 return;
 
-            Brush b = m_BrushList == null ? null : m_BrushList[m_SelectedBrush];
+            Brush b = m_BrushList == null ? null : GetActiveBrush();
 
             // if the brush has been deleted outside unity rebuild the brush list
             if (b == null)
@@ -232,9 +233,8 @@ namespace UnityEditor
                         return;
 
                     var brushName = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(ProjectWindowUtil.GetActiveFolderPath(), "NewBrush.brush"));
-                    var newBrush = Brush.CreateInstance(null, AnimationCurve.Linear(0, 0, 1, 1), Brush.kMaxRadiusScale, false);
+                    var newBrush = Brush.CreateInstance((Texture2D)selection, AnimationCurve.Linear(0, 0, 1, 1), Brush.kMaxRadiusScale, false);
                     AssetDatabase.CreateAsset(newBrush, brushName);
-                    newBrush.m_Mask = (Texture2D)selection;
                     LoadBrushes();
                 }, null);
         }
@@ -244,7 +244,7 @@ namespace UnityEditor
             GUIContent[] retval = new GUIContent[brushes.Length];
 
             for (int i = 0; i < brushes.Length; i++)
-                retval[i] = new GUIContent(brushes[i].thumbnail);
+                retval[i] = new GUIContent(brushes[i].thumbnail, brushes[i].name);
 
             return retval;
         }

@@ -228,47 +228,52 @@ namespace UnityEditor.VisualStudioIntegration
         {
             // Only synchronize islands that have associated source files and ones that we actually want in the project.
             // This also filters out DLLs coming from .asmdef files in packages.
-            IEnumerable<MonoIsland> islands = EditorCompilationInterface.GetAllMonoIslands().
-                Where(i => 0 < i._files.Length && i._files.Any(f => ShouldFileBePartOfSolution(f)));
+            IEnumerable<MonoIsland> islands = EditorCompilationInterface.Instance.GetAllScriptAssemblies(EditorScriptCompilationOptions.BuildingForEditor | EditorCompilationInterface.GetAdditionalEditorScriptCompilationOptions())
+                .Where(i => 0 < i.Files.Length && i.Files.Any(ShouldFileBePartOfSolution))
+                .Select(x => x.ToMonoIsland(EditorScriptCompilationOptions.BuildingForEditor, string.Empty, _projectDirectory)).ToList();
 
             var allAssetProjectParts = GenerateAllAssetProjectParts();
 
-            var responseFilePath = Path.Combine("Assets", MonoCSharpCompiler.ResponseFilename);
-
             var monoIslands = islands.ToList();
-
 
             SyncSolution(monoIslands);
             var allProjectIslands = RelevantIslandsForMode(monoIslands, ModeForCurrentExternalEditor()).ToList();
+
             foreach (MonoIsland island in allProjectIslands)
             {
-                var responseFileData = parseResponseFileData(island, responseFilePath);
-                SyncProject(island, allAssetProjectParts, responseFileData, allProjectIslands);
+                SyncProject(island, allAssetProjectParts, ParseResponseFileData(island), allProjectIslands);
             }
 
             if (scriptEditor == ScriptEditorUtility.ScriptEditor.VisualStudioCode)
                 WriteVSCodeSettingsFiles();
         }
 
-        ScriptCompilerBase.ResponseFileData parseResponseFileData(MonoIsland island, string responseFilePath)
+        IEnumerable<ScriptCompilerBase.ResponseFileData> ParseResponseFileData(MonoIsland island)
         {
             var systemReferenceDirectories = CSharpLanguage.GetCSharpCompiler(island._target, true, "Assembly-CSharp") == CSharpCompiler.Microsoft
-                && PlayerSettings.GetScriptingBackend(BuildPipeline.GetBuildTargetGroup(island._target)) == ScriptingImplementation.WinRTDotNET
-                ? MicrosoftCSharpCompiler.GetClassLibraries(island._target)
+                && PlayerSettings.GetScriptingBackend(BuildPipeline.GetBuildTargetGroup(island._target)) == ScriptingImplementation.WinRTDotNET && !island._editor
+                ? MicrosoftCSharpCompiler.GetClassLibraries(island._target, island._editor)
                 : MonoLibraryHelpers.GetSystemReferenceDirectories(island._api_compatibility_level);
 
-            ScriptCompilerBase.ResponseFileData responseFileData = ScriptCompilerBase.ParseResponseFileFromFile(
-                Path.Combine(_projectDirectory, responseFilePath),
+            Dictionary<string, ScriptCompilerBase.ResponseFileData> responseFilesData = island._responseFiles.ToDictionary(x => x, x => ScriptCompilerBase.ParseResponseFileFromFile(
+                Path.Combine(_projectDirectory, x),
                 _projectDirectory,
-                systemReferenceDirectories);
+                systemReferenceDirectories
+            ));
 
-            if (responseFileData.Errors.Length > 0)
+            Dictionary<string, ScriptCompilerBase.ResponseFileData> responseFilesWithErrors = responseFilesData.Where(x => x.Value.Errors.Any())
+                .ToDictionary(x => x.Key, x => x.Value);
+
+            if (responseFilesWithErrors.Any())
             {
-                foreach (var error in responseFileData.Errors)
-                    UnityEngine.Debug.LogErrorFormat("{0} Parse Error : {1}", responseFilePath, error);
+                foreach (var error in responseFilesWithErrors)
+                    foreach (var valueError in error.Value.Errors)
+                    {
+                        UnityEngine.Debug.LogErrorFormat("{0} Parse Error : {1}", error.Key, valueError);
+                    }
             }
 
-            return responseFileData;
+            return responseFilesData.Select(x => x.Value);
         }
 
         Dictionary<string, string> GenerateAllAssetProjectParts()
@@ -325,10 +330,10 @@ namespace UnityEditor.VisualStudioIntegration
 
         void SyncProject(MonoIsland island,
             Dictionary<string, string> allAssetsProjectParts,
-            ScriptCompilerBase.ResponseFileData responseFileData,
+            IEnumerable<ScriptCompilerBase.ResponseFileData> responseFilesData,
             List<MonoIsland> allProjectIslands)
         {
-            SyncProjectFileIfNotChanged(ProjectFile(island), ProjectText(island, ModeForCurrentExternalEditor(), allAssetsProjectParts, responseFileData, allProjectIslands));
+            SyncProjectFileIfNotChanged(ProjectFile(island), ProjectText(island, ModeForCurrentExternalEditor(), allAssetsProjectParts, responseFilesData, allProjectIslands));
         }
 
         static void SyncProjectFileIfNotChanged(string path, string newContents)
@@ -385,10 +390,10 @@ namespace UnityEditor.VisualStudioIntegration
         string ProjectText(MonoIsland island,
             Mode mode,
             Dictionary<string, string> allAssetsProjectParts,
-            ScriptCompilerBase.ResponseFileData responseFileData,
+            IEnumerable<ScriptCompilerBase.ResponseFileData> responseFilesData,
             List<MonoIsland> allProjectIslands)
         {
-            var projectBuilder = new StringBuilder(ProjectHeader(island, responseFileData));
+            var projectBuilder = new StringBuilder(ProjectHeader(island, responseFilesData));
             var references = new List<string>();
             var projectReferences = new List<Match>();
             Match match;
@@ -462,7 +467,7 @@ namespace UnityEditor.VisualStudioIntegration
                 AppendReference(fullReference, projectBuilder);
             }
 
-            var responseRefs = responseFileData.FullPathReferences.Select(r => r.Assembly);
+            var responseRefs = responseFilesData.SelectMany(x => x.FullPathReferences.Select(r => r.Assembly));
             foreach (var reference in responseRefs)
             {
                 AppendReference(reference, projectBuilder);
@@ -515,7 +520,7 @@ namespace UnityEditor.VisualStudioIntegration
         }
 
         private string ProjectHeader(MonoIsland island,
-            ScriptCompilerBase.ResponseFileData responseFileData)
+            IEnumerable<ScriptCompilerBase.ResponseFileData> responseFilesData)
         {
             string targetframeworkversion = "v3.5";
             string targetLanguageVersion = "4";
@@ -548,14 +553,14 @@ namespace UnityEditor.VisualStudioIntegration
                 toolsversion, productversion, ProjectGuid(island._output),
                 _settings.EngineAssemblyPath,
                 _settings.EditorAssemblyPath,
-                string.Join(";", new[] { "DEBUG", "TRACE"}.Concat(island._defines).Concat(responseFileData.Defines).Distinct().ToArray()),
+                string.Join(";", new[] { "DEBUG", "TRACE"}.Concat(island._defines).Concat(responseFilesData.SelectMany(x => x.Defines)).Distinct().ToArray()),
                 MSBuildNamespaceUri,
                 Path.GetFileNameWithoutExtension(island._output),
                 EditorSettings.projectGenerationRootNamespace,
                 targetframeworkversion,
                 targetLanguageVersion,
                 baseDirectory,
-                island._allowUnsafeCode | responseFileData.Unsafe
+                island._allowUnsafeCode | responseFilesData.Any(x => x.Unsafe)
             };
 
             try

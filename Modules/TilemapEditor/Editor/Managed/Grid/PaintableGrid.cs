@@ -42,6 +42,9 @@ namespace UnityEditor
 
         protected virtual void OnBrushPickCancelled() {}
 
+        protected virtual void OnEditStart() {}
+        protected virtual void OnEditEnd() {}
+
         internal static PaintableGrid s_LastActivePaintableGrid;
 
         private Vector2Int m_PreviousMouseGridPosition;
@@ -61,7 +64,22 @@ namespace UnityEditor
         public Grid.CellLayout cellLayout { get { return CellLayout(); } }
         public int zPosition { get { return m_ZPosition; } set { m_ZPosition = value; } }
 
-        protected bool executing { get { return m_IsExecuting; } set { m_IsExecuting = value && isHotControl; } }
+        protected bool executing
+        {
+            get { return m_IsExecuting; }
+            set
+            {
+                var isExecuting = value && isHotControl;
+                if (isExecuting != m_IsExecuting)
+                {
+                    if (isExecuting)
+                        OnEditStart();
+                    else
+                        OnEditEnd();
+                }
+                m_IsExecuting = isExecuting;
+            }
+        }
 
         protected bool isHotControl { get { return GUIUtility.hotControl == m_PermanentControlID; } }
         protected bool mouseGridPositionChanged { get { return m_MouseGridPositionChanged; } }
@@ -341,6 +359,8 @@ namespace UnityEditor
             {
                 case EventType.MouseDown:
                     RegisterUndo();
+                    GUIUtility.hotControl = m_PermanentControlID;
+                    executing = true;
                     if (IsErasingEvent(evt))
                     {
                         if (EditMode.editMode != EditMode.SceneViewEditMode.GridEraser)
@@ -353,13 +373,11 @@ namespace UnityEditor
                             EditMode.ChangeEditMode(EditMode.SceneViewEditMode.GridPainting, GridPaintingState.instance);
                         Paint(new Vector3Int(mouseGridPosition.x, mouseGridPosition.y, zPosition));
                     }
-
                     Event.current.Use();
-                    GUIUtility.hotControl = m_PermanentControlID;
                     GUI.changed = true;
-                    executing = true;
                     break;
                 case EventType.MouseDrag:
+                    executing = true;
                     if (isHotControl && mouseGridPositionChanged)
                     {
                         List<Vector2Int> points = GridEditorUtility.GetPointsOnLine(m_PreviousMouseGridPosition, mouseGridPosition).ToList();
@@ -376,7 +394,6 @@ namespace UnityEditor
                         Event.current.Use();
                         GUI.changed = true;
                     }
-                    executing = true;
                     break;
                 case EventType.MouseUp:
                     executing = false;
@@ -422,9 +439,9 @@ namespace UnityEditor
                 }
                 if (evt.type == EventType.MouseUp && evt.button == 0 && isHotControl)
                 {
-                    executing = false;
                     RegisterUndo();
                     FloodFill(new Vector3Int(mouseGridPosition.x, mouseGridPosition.y, zPosition));
+                    executing = false;
                     GUI.changed = true;
                     Event.current.Use();
                     GUIUtility.hotControl = 0;

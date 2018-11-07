@@ -406,12 +406,17 @@ namespace UnityEditor.SceneManagement
                 {
                     HandleSelectionWhenSwithingToNewPrefabMode(GetCurrentPrefabStage().prefabContentsRoot, previousFileID);
                 }
-            }
-            SceneView.RepaintAll();
 
-            var newPrefabStage = m_PrefabStages.Last();
-            Assert.IsTrue(newPrefabStage.prefabAssetPath == prefabAssetPath);
-            return newPrefabStage;
+                var newPrefabStage = m_PrefabStages.Last();
+                Assert.IsTrue(newPrefabStage.prefabAssetPath == prefabAssetPath);
+                SceneView.RepaintAll();
+                return newPrefabStage;
+            }
+            else
+            {
+                // Failed to switch to new stage
+                return null;
+            }
         }
 
         static UInt64 GetFileIDForCorrespondingObjectFromSourceAtPath(GameObject gameObject, string prefabAssetPath)

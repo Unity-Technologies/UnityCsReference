@@ -216,7 +216,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return value == null || value.All(char.IsWhiteSpace);
         }
 
-        static bool EvaluateDefine(string expr, ICollection<string> defines)
+        public static bool EvaluateDefine(string expr, ICollection<string> defines)
         {
             var res = new List<string>();
             var pos = 0;
@@ -290,12 +290,24 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         static bool ApplyOp(char op, Stack<bool> values)
         {
-            if (op == '&') return values.Pop() && values.Pop();
-            if (op == '|') return values.Pop() || values.Pop();
-            if (op == '!') return !values.Pop();
-            if (op == '=') return values.Pop() == values.Pop();
-
-            return false;
+            var val1 = values.Pop();
+            switch (op)
+            {
+                case '&':
+                {
+                    var val2 = values.Pop();
+                    return val1 && val2;
+                }
+                case '|':
+                {
+                    var val2 = values.Pop();
+                    return val1 || val2;
+                }
+                case '!': return !val1;
+                case '=': return val1 == values.Pop();
+                default:
+                    throw new NotImplementedException($"{op}: unrecognized operator");
+            }
         }
 
         /// <returns>Returns whether 'op2' has higher or same precedence as 'op1'.</returns>

@@ -11,6 +11,7 @@ using UnityEditor.Modules;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEditor.Utils;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace UnityEditor.Scripting.Compilers
 {
@@ -24,10 +25,10 @@ namespace UnityEditor.Scripting.Compilers
 
         BuildTarget BuildTarget => m_Island._target;
 
-        public static string[] GetClassLibraries(BuildTarget buildTarget)
+        public static string[] GetClassLibraries(BuildTarget buildTarget, bool buildingForEditor)
         {
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(buildTarget);
-            if (PlayerSettings.GetScriptingBackend(buildTargetGroup) != ScriptingImplementation.WinRTDotNET)
+            if (!IsBuildingForDotNetScriptingBackend(buildTargetGroup, buildingForEditor))
             {
                 return new string[] {};
             }
@@ -51,11 +52,11 @@ namespace UnityEditor.Scripting.Compilers
             arguments.Add("/langversion:latest");
 
             var platformSupportModule = ModuleManager.FindPlatformSupportModule(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget));
-            if (platformSupportModule != null)
+            if (platformSupportModule != null && !m_Island._editor)
             {
                 var compilationExtension = platformSupportModule.CreateCompilationExtension();
 
-                arguments.AddRange(GetClassLibraries(BuildTarget).Select(r => "/reference:\"" + r + "\""));
+                arguments.AddRange(GetClassLibraries(BuildTarget, m_Island._editor).Select(r => "/reference:\"" + r + "\""));
                 arguments.AddRange(compilationExtension.GetAdditionalAssemblyReferences().Select(r => "/reference:\"" + r + "\""));
                 arguments.AddRange(compilationExtension.GetWindowsMetadataReferences().Select(r => "/reference:\"" + r + "\""));
                 arguments.AddRange(compilationExtension.GetAdditionalDefines().Select(d => "/define:" + d));
@@ -115,10 +116,26 @@ namespace UnityEditor.Scripting.Compilers
                 ThrowCompilerNotFoundException(csc);
 
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(BuildTarget);
-            if (!AddCustomResponseFileIfPresent(arguments, ReponseFilename) && PlayerSettings.GetScriptingBackend(buildTargetGroup) != ScriptingImplementation.WinRTDotNET)
+
+            var responseFiles = m_Island._responseFiles?.ToDictionary(Path.GetFileName) ?? new Dictionary<string, string>();
+            KeyValuePair<string, string> obsoleteResponseFile = responseFiles
+                .SingleOrDefault(x => CompilerSpecificResponseFiles.MicrosoftCSharpCompilerObsolete.Contains(x.Key));
+
+            if (!string.IsNullOrEmpty(obsoleteResponseFile.Key))
             {
-                if (AddCustomResponseFileIfPresent(arguments, "mcs.rsp"))
-                    UnityEngine.Debug.LogWarning($"Using obsolete custom response file 'mcs.rsp'. Please use '{ReponseFilename}' instead.");
+                if (!IsBuildingForDotNetScriptingBackend(buildTargetGroup, m_Island._editor))
+                {
+                    Debug.LogWarning($"Using obsolete custom response file '{obsoleteResponseFile.Key}'. Please use '{CompilerSpecificResponseFiles.MicrosoftCSharpCompiler}' instead.");
+                }
+                else
+                {
+                    responseFiles.Remove(obsoleteResponseFile.Key);
+                }
+            }
+
+            foreach (var reposeFile in responseFiles)
+            {
+                AddResponseFileToArguments(arguments, reposeFile.Value);
             }
 
             var responseFile = CommandLineFormatter.GenerateResponseFile(arguments);
@@ -187,7 +204,7 @@ namespace UnityEditor.Scripting.Compilers
             var disableOptimizations = m_Island._development_player || (m_Island._editor && EditorPrefs.GetBool("AllowAttachedDebuggingOfEditor", true));
             if (!disableOptimizations)
             {
-                if (PlayerSettings.GetScriptingBackend(buildTargetGroup) == ScriptingImplementation.WinRTDotNET)
+                if (IsBuildingForDotNetScriptingBackend(buildTargetGroup, m_Island._editor))
                     arguments.Add("/debug:pdbonly");
                 else
                     arguments.Add("/debug:portable");
@@ -195,7 +212,7 @@ namespace UnityEditor.Scripting.Compilers
             }
             else
             {
-                if (PlayerSettings.GetScriptingBackend(buildTargetGroup) == ScriptingImplementation.WinRTDotNET)
+                if (IsBuildingForDotNetScriptingBackend(buildTargetGroup, m_Island._editor))
                     arguments.Add("/debug:full");
                 else
                     arguments.Add("/debug:portable");
@@ -207,12 +224,20 @@ namespace UnityEditor.Scripting.Compilers
             return StartCompilerImpl(arguments, argsPrefix);
         }
 
+        private static bool IsBuildingForDotNetScriptingBackend(BuildTargetGroup buildTargetGroup, bool buildingForEditor)
+        {
+            if (buildingForEditor)
+                return false;
+
+            return buildTargetGroup == BuildTargetGroup.WSA && PlayerSettings.GetScriptingBackend(buildTargetGroup) == ScriptingImplementation.WinRTDotNET;
+        }
+
         protected override string[] GetSystemReferenceDirectories()
         {
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(BuildTarget);
-            if (BuildTarget == BuildTarget.WSAPlayer && PlayerSettings.GetScriptingBackend(buildTargetGroup) == ScriptingImplementation.WinRTDotNET)
+            if (IsBuildingForDotNetScriptingBackend(buildTargetGroup, m_Island._editor))
             {
-                return GetClassLibraries(BuildTarget).Select(library => Directory.GetParent(library).FullName).Distinct().ToArray();
+                return GetClassLibraries(BuildTarget, m_Island._editor).Select(library => Directory.GetParent(library).FullName).Distinct().ToArray();
             }
 
             return MonoLibraryHelpers.GetSystemReferenceDirectories(m_Island._api_compatibility_level);

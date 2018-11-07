@@ -158,7 +158,7 @@ namespace UnityEditorInternal
             additionalArgs = Debug.GetDiagnosticSwitch("VMIl2CppAdditionalArgs") as string;
             if (!string.IsNullOrEmpty(additionalArgs))
             {
-                arguments.Add(additionalArgs);
+                arguments.Add(additionalArgs.Trim('\''));
             }
 
             return arguments.Aggregate(String.Empty, (current, arg) => current + arg + " ");

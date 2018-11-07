@@ -294,7 +294,7 @@ namespace UnityEngine.XR.WSA.WebCam
     public sealed class PhotoCaptureFrame : IDisposable
     {
 #pragma warning disable 169
-        private IntPtr m_NativePtr;
+        internal IntPtr m_NativePtr;
 
         public int dataLength { get; private set; }
 

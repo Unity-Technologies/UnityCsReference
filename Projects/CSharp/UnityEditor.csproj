@@ -3087,6 +3087,9 @@
   <Compile Include="..\..\Editor\Mono\Scripting\Compilers\CompilerOutputParserBase.cs">
     <Link>Editor\Mono\Scripting\Compilers\CompilerOutputParserBase.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\Scripting\Compilers\CompilerSpecificReponseFiles.cs">
+    <Link>Editor\Mono\Scripting\Compilers\CompilerSpecificReponseFiles.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\Scripting\Compilers\Il2CppOutputParser.cs">
     <Link>Editor\Mono\Scripting\Compilers\Il2CppOutputParser.cs</Link>
   </Compile>
@@ -3096,17 +3099,26 @@
   <Compile Include="..\..\Editor\Mono\Scripting\Compilers\MicrosoftCSharpCompilerOutputParser.cs">
     <Link>Editor\Mono\Scripting\Compilers\MicrosoftCSharpCompilerOutputParser.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\Scripting\Compilers\MicrosoftCSharpResponseFileProvider.cs">
+    <Link>Editor\Mono\Scripting\Compilers\MicrosoftCSharpResponseFileProvider.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\Scripting\Compilers\MonoCSharpCompiler.cs">
     <Link>Editor\Mono\Scripting\Compilers\MonoCSharpCompiler.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\Scripting\Compilers\MonoCSharpCompilerOutputParser.cs">
     <Link>Editor\Mono\Scripting\Compilers\MonoCSharpCompilerOutputParser.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\Scripting\Compilers\MonoCSharpResponseFileProvider.cs">
+    <Link>Editor\Mono\Scripting\Compilers\MonoCSharpResponseFileProvider.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\Scripting\Compilers\MonoScriptCompilerBase.cs">
     <Link>Editor\Mono\Scripting\Compilers\MonoScriptCompilerBase.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\Scripting\Compilers\NuGetPackageResolver.cs">
     <Link>Editor\Mono\Scripting\Compilers\NuGetPackageResolver.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\Scripting\Compilers\ResponseFileProvider.cs">
+    <Link>Editor\Mono\Scripting\Compilers\ResponseFileProvider.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\Scripting\Compilers\ScriptCompilerBase.cs">
     <Link>Editor\Mono\Scripting\Compilers\ScriptCompilerBase.cs</Link>

@@ -175,7 +175,7 @@ namespace UnityEditor
 
         // TODO: Having an non-obsolete method that takes an obsolete enum types as parameter is no good.
 #pragma warning disable 0618 // Type or member is obsolete
-        private static GameObject SavePrefab(GameObject inputObject, string path, ReplacePrefabOptions replaceOptions, PrefabCreationFlags creationFlags)
+        private static GameObject SavePrefab(GameObject inputObject, string path, ReplacePrefabOptions replaceOptions, PrefabCreationFlags creationFlags, out bool success)
         {
             if (inputObject == null)
                 throw new ArgumentNullException("inputObject is null");
@@ -195,15 +195,21 @@ namespace UnityEditor
             if (!VerifyNestingFromScript(new GameObject[] {inputObject}, prefabGUID, PrefabUtility.GetPrefabInstanceHandle(inputObject)))
                 throw new ArgumentException("Cyclic nesting detected");
 
-            return SavePrefab_Internal(inputObject, path, replaceOptions, creationFlags);
+            return SavePrefab_Internal(inputObject, path, replaceOptions, creationFlags, out success);
+        }
+
+        private static GameObject SavePrefab(GameObject inputObject, string path, ReplacePrefabOptions replaceOptions, PrefabCreationFlags creationFlags)
+        {
+            bool success;
+            return SavePrefab(inputObject, path, replaceOptions, creationFlags, out success);
         }
 
 #pragma warning restore 0618 // Type or member is obsolete
 
         // TODO: Having an non-obsolete method that takes an obsolete enum types as parameter is no good.
-        [NativeMethod("SavePrefab", IsFreeFunction = true)]
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
 #pragma warning disable 0618 // Type or member is obsolete
-        extern private static GameObject SavePrefab_Internal([NotNull] GameObject root, string path, ReplacePrefabOptions replaceOptions, PrefabCreationFlags createOptions);
+        extern private static GameObject SavePrefab_Internal([NotNull] GameObject root, string path, ReplacePrefabOptions replaceOptions, PrefabCreationFlags createOptions, out bool success);
 #pragma warning restore 0618 // Type or member is obsolete
 
         internal static void AddGameObjectsToPrefabAndConnect(GameObject[] gameObjects, Object targetPrefab)

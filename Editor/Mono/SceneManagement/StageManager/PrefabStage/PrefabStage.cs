@@ -319,11 +319,11 @@ namespace UnityEditor.Experimental.SceneManagement
             m_InitialSceneDirtyID = m_PreviewScene.dirtyID;
         }
 
-        // Is internal so we can use it in Tests
-        internal void SavePrefab()
+        // Returns true if saved succesfully (internal so we can use it in Tests)
+        internal bool SavePrefab()
         {
             if (!initialized)
-                return;
+                return false;
 
             m_AnalyticsDidUserSave = true;
             m_AnalyticsDidUserModify = true;
@@ -335,21 +335,35 @@ namespace UnityEditor.Experimental.SceneManagement
                 prefabSaving(m_PrefabContentsRoot);
 
             var startTime = EditorApplication.timeSinceStartup;
-            var prefabAssetRoot = PrefabUtility.SaveAsPrefabAsset(m_PrefabContentsRoot, m_PrefabAssetPath);
+
+            bool savedSuccesfully;
+            PrefabUtility.SaveAsPrefabAsset(m_PrefabContentsRoot, m_PrefabAssetPath, out savedSuccesfully);
             m_LastSavingDuration = (float)(EditorApplication.timeSinceStartup - startTime);
 
-            if (prefabAssetRoot != null)
+            if (savedSuccesfully)
             {
                 ClearDirtiness();
 
                 if (prefabSaved != null)
                     prefabSaved(m_PrefabContentsRoot);
             }
+            else
+            {
+                string title = L10n.Tr("Saving Failed");
+                string message = L10n.Tr("Saving failed. Check the Console window to get more insight into what needs to be fixed.");
+                if (autoSave)
+                    message += L10n.Tr("\n\nAuto Save has been temporarily disabled.");
+                EditorUtility.DisplayDialog(title, message, L10n.Tr("OK"));
+
+                m_TemporarilyDisableAutoSave = true;
+            }
 
             if (SceneHierarchy.s_DebugPrefabStage)
                 Debug.Log("SAVE PREFAB ended");
 
             showingSavingLabel = false;
+
+            return savedSuccesfully;
         }
 
         internal bool SaveAsNewPrefab(string newPath, bool asCopy)
@@ -464,8 +478,7 @@ namespace UnityEditor.Experimental.SceneManagement
             if (!CheckRenamedPrefabRootWhenSaving(showCancelButton))
                 return false;
 
-            SavePrefab();
-            return true;
+            return SavePrefab();
         }
 
         // Returns true if we should continue saving

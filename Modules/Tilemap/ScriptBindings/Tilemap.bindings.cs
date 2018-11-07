@@ -267,20 +267,8 @@ namespace UnityEngine.Tilemaps
             public TileData m_TileData;
         }
 
-        internal static event Action<Tilemap, SyncTile[]> tilemapTileChanged;
-
-        internal static void SetSyncTileCallback(Action<Tilemap, SyncTile[]> callback)
-        {
-            Tilemap.tilemapTileChanged += callback;
-        }
-
-        internal static void RemoveSyncTileCallback(Action<Tilemap, SyncTile[]> callback)
-        {
-            Tilemap.tilemapTileChanged -= callback;
-        }
-
         [RequiredByNativeCode]
-        private static bool HasSyncTileCallback()
+        internal static bool HasSyncTileCallback()
         {
             return (Tilemap.tilemapTileChanged != null);
         }
@@ -291,7 +279,7 @@ namespace UnityEngine.Tilemaps
             if (Tilemap.tilemapTileChanged == null)
                 return;
 
-            Tilemap.tilemapTileChanged(this, syncTiles);
+            HandleSyncTileCallback(syncTiles);
         }
 
     }

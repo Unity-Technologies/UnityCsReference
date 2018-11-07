@@ -64,6 +64,9 @@ namespace UnityEditor
         {
             if (m_UpdateThumbnail || m_Thumbnail == null)
             {
+                if (m_Mask == null)
+                    m_Mask = DefaultMask();
+
                 m_Thumbnail = GenerateBrushTexture(m_Mask, m_Falloff, m_RadiusScale, 64, 64, true);
                 m_UpdateThumbnail = false;
             }

@@ -142,11 +142,7 @@ namespace UnityEditor
 
             EditorGUILayout.PropertyField(m_MaskInteraction, Contents.maskInteractionLabel);
 
-            if (EditorGUILayout.BeginFadeGroup(1.0f - m_ShowDrawMode.faded))
-            {
-                EditorGUILayout.PropertyField(m_SpriteSortPoint, Contents.spriteSortPointLabel);
-            }
-            EditorGUILayout.EndFadeGroup();
+            EditorGUILayout.PropertyField(m_SpriteSortPoint, Contents.spriteSortPointLabel);
 
             RenderRenderingLayer();
 

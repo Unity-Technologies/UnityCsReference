@@ -19,6 +19,11 @@ namespace UnityEditor.Scripting
             Debug.LogErrorFormat(msg, args);
         }
 
+        public static void WriteWarningToConsole(string msg, params object[] args)
+        {
+            Debug.LogWarningFormat(msg, args);
+        }
+
         public static void WriteInfoToConsole(string line)
         {
             Debug.Log(line);

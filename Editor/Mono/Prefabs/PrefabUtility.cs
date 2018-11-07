@@ -985,7 +985,8 @@ namespace UnityEditor
             }
 
             var empty = new GameObject("EmptyPrefab");
-            var assetObject = SaveAsPrefabAsset(empty, path);
+            bool success;
+            var assetObject = SaveAsPrefabAsset(empty, path, out success);
             Object.DestroyImmediate(empty);
             return PrefabUtility.GetPrefabObject(assetObject);
         }
@@ -1040,7 +1041,7 @@ namespace UnityEditor
             return instanceRoot != null && instanceRoot == gameObject;
         }
 
-        public static GameObject SaveAsPrefabAsset(GameObject instanceRoot, string assetPath)
+        public static GameObject SaveAsPrefabAsset(GameObject instanceRoot, string assetPath, out bool success)
         {
             SaveAsPrefabAssetArgumentCheck(instanceRoot);
 
@@ -1049,11 +1050,23 @@ namespace UnityEditor
                 creationFlags = PrefabCreationFlags.CreateVariant;
 
 #pragma warning disable CS0618 // Type or member is obsolete
-            return SavePrefab(instanceRoot, assetPath, ReplacePrefabOptions.Default, creationFlags);
+            return SavePrefab(instanceRoot, assetPath, ReplacePrefabOptions.Default, creationFlags, out success);
 #pragma warning restore CS0618 // Type or member is obsolete
         }
 
+        public static GameObject SaveAsPrefabAsset(GameObject instanceRoot, string assetPath)
+        {
+            bool success;
+            return SaveAsPrefabAsset(instanceRoot, assetPath, out success);
+        }
+
         public static GameObject SaveAsPrefabAssetAndConnect(GameObject instanceRoot, string assetPath, InteractionMode action)
+        {
+            bool success;
+            return SaveAsPrefabAssetAndConnect(instanceRoot, assetPath, action, out success);
+        }
+
+        public static GameObject SaveAsPrefabAssetAndConnect(GameObject instanceRoot, string assetPath, InteractionMode action, out bool success)
         {
             SaveAsPrefabAssetArgumentCheck(instanceRoot);
 
@@ -1069,8 +1082,13 @@ namespace UnityEditor
                 creationFlags = PrefabCreationFlags.CreateVariant;
 
 #pragma warning disable CS0618 // Type or member is obsolete
-            var assetRoot = SavePrefab(instanceRoot, assetPath, ReplacePrefabOptions.ConnectToPrefab, creationFlags);
+            var assetRoot = SavePrefab(instanceRoot, assetPath, ReplacePrefabOptions.ConnectToPrefab, creationFlags, out success);
 #pragma warning restore CS0618 // Type or member is obsolete
+
+            if (!success)
+            {
+                return null;
+            }
 
             if (action == InteractionMode.UserAction)
             {

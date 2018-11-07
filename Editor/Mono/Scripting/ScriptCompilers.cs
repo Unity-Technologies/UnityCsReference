@@ -28,6 +28,7 @@ namespace UnityEditor.Scripting
         public readonly string[] _files;
         public readonly string[] _references;
         public readonly string[] _defines;
+        public readonly string[] _responseFiles;
         public readonly string _output;
 
         public MonoIsland(BuildTarget target, ApiCompatibilityLevel api_compatibility_level, bool allowUnsafeCode, string[] files, string[] references, string[] defines, string output)
@@ -41,6 +42,7 @@ namespace UnityEditor.Scripting
             _references = references;
             _defines = defines;
             _output = output;
+            _responseFiles = null;
         }
 
         public MonoIsland(BuildTarget target, bool editor, bool development_player, bool allowUnsafeCode, ApiCompatibilityLevel api_compatibility_level, string[] files, string[] references, string[] defines, string output)
@@ -54,6 +56,13 @@ namespace UnityEditor.Scripting
             _references = references;
             _defines = defines;
             _output = output;
+            _responseFiles = null;
+        }
+
+        public MonoIsland(BuildTarget target, bool editor, bool development_player, bool allowUnsafeCode, ApiCompatibilityLevel api_compatibility_level, string[] files, string[] references, string[] defines, string output, string[] responseFiles)
+            : this(target, editor, development_player, allowUnsafeCode, api_compatibility_level, files, references, defines, output)
+        {
+            _responseFiles = responseFiles;
         }
 
         public string GetExtensionOfSourceFiles()
