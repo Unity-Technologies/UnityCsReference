@@ -230,6 +230,18 @@ namespace UnityEditor
                 gridBrush.MoveEnd(grid, brushTarget, position);
         }
 
+        protected override void OnEditStart()
+        {
+            if (GridPaintingState.activeBrushEditor != null && grid != null)
+                GridPaintingState.activeBrushEditor.OnEditStart(grid, brushTarget);
+        }
+
+        protected override void OnEditEnd()
+        {
+            if (GridPaintingState.activeBrushEditor != null && grid != null)
+                GridPaintingState.activeBrushEditor.OnEditEnd(grid, brushTarget);
+        }
+
         protected override void ClearGridSelection()
         {
             GridSelection.Clear();

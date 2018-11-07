@@ -35,6 +35,7 @@ namespace UnityEditor
     {
         Debug = 0,
         Release = 1,
+        Master = 2,
     }
 
     // Must be in sync with kAspectRatioSerializeNames and kAspectRatioValues

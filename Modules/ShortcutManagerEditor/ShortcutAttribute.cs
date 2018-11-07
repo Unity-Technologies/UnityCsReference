@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
+using UnityEngineInternal;
 
 namespace UnityEditor.ShortcutManagement
 {
@@ -22,10 +23,7 @@ namespace UnityEditor.ShortcutManagement
         internal string identifier { get; }
         internal Type context { get; }
         internal string defaultKeyCombination { get; }
-
-
-        static readonly object[] k_ReusableShortcutArgs = { null };
-        static readonly object[] k_EmptyReusableShortcutArgs = {};
+        Action m_NoArgumentsAction;
 
         public ShortcutAttribute(string identifier, Type context = null, string defaultKeyCombination = null)
         {
@@ -38,6 +36,11 @@ namespace UnityEditor.ShortcutManagement
         static extern void ShortcutMethodWithArgs(ShortcutArguments args);
         [RequiredSignature]
         static extern void ShortcutMethodNoArgs();
+
+        void NoArgumentShortcutMethodProxy(ShortcutArguments arguments)
+        {
+            m_NoArgumentsAction();
+        }
 
         public override ShortcutEntry CreateShortcutEntry(MethodInfo methodInfo)
         {
@@ -52,20 +55,15 @@ namespace UnityEditor.ShortcutManagement
             var type = this is ClutchShortcutAttribute ? ShortcutType.Clutch : ShortcutType.Action;
             var methodParams = methodInfo.GetParameters();
             Action<ShortcutArguments> action;
-            if (methodParams.Length == 0)
-            {
-                action = shortcutArgs =>
-                {
-                    methodInfo.Invoke(null, k_EmptyReusableShortcutArgs);
-                };
-            }
+
+            // We instantiate this as the specific delegate type in advance,
+            // because passing ShortcutArguments in object[] via MethodInfo.Invoke() causes boxing/allocation
+            if (methodParams.Any())
+                action = (Action<ShortcutArguments>)methodInfo.CreateDelegate(typeof(Action<ShortcutArguments>), null);
             else
             {
-                action = shortcutArgs =>
-                {
-                    k_ReusableShortcutArgs[0] = shortcutArgs;
-                    methodInfo.Invoke(null, k_ReusableShortcutArgs);
-                };
+                m_NoArgumentsAction = (Action)methodInfo.CreateDelegate(typeof(Action), null);
+                action = NoArgumentShortcutMethodProxy;
             }
 
             return new ShortcutEntry(identifier, defaultCombination, action, context, type);

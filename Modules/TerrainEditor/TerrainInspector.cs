@@ -483,7 +483,7 @@ namespace UnityEditor
             public Texture settingsIcon = EditorGUIUtility.IconContent("SettingsIcon").image;
 
             // List of tools supported by the editor
-            public GUIContent[] toolIcons =
+            public readonly GUIContent[] toolIcons =
             {
                 EditorGUIUtility.TrIconContent("TerrainInspector.TerrainToolSplat", "Paint Terrain"),
                 EditorGUIUtility.TrIconContent("TerrainInspector.TerrainToolTrees", "Paint Trees"),
@@ -491,7 +491,7 @@ namespace UnityEditor
                 EditorGUIUtility.TrIconContent("TerrainInspector.TerrainToolSettings", "Terrain Settings")
             };
 
-            public GUIContent[] toolNames =
+            public readonly GUIContent[] toolNames =
             {
                 EditorGUIUtility.TrTextContent("Paint Terrain", "Select a tool from the drop down list"),
                 EditorGUIUtility.TrTextContent("Paint Trees", "Click to paint trees.\n\nHold shift and click to erase trees.\n\nHold Ctrl and click to erase only trees of the selected type."),
@@ -499,83 +499,87 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Terrain Settings")
             };
 
-            public GUIContent brushSize = EditorGUIUtility.TrTextContent("Brush Size", "Size of the brush used to paint.");
-            public GUIContent opacity = EditorGUIUtility.TrTextContent("Opacity", "Strength of the applied effect.");
-            public GUIContent targetStrength = EditorGUIUtility.TrTextContent("Target Strength", "Maximum opacity you can reach by painting continuously.");
-            public GUIContent settings = EditorGUIUtility.TrTextContent("Settings");
-            public GUIContent mismatchedTerrainData = EditorGUIUtility.TextContentWithIcon(
+            public readonly GUIContent brushSize = EditorGUIUtility.TrTextContent("Brush Size", "Size of the brush used to paint.");
+            public readonly GUIContent opacity = EditorGUIUtility.TrTextContent("Opacity", "Strength of the applied effect.");
+            public readonly GUIContent targetStrength = EditorGUIUtility.TrTextContent("Target Strength", "Maximum opacity you can reach by painting continuously.");
+            public readonly GUIContent settings = EditorGUIUtility.TrTextContent("Settings");
+            public readonly GUIContent mismatchedTerrainData = EditorGUIUtility.TextContentWithIcon(
                 "The TerrainData used by the TerrainCollider component is different from this terrain. Would you like to assign the same TerrainData to the TerrainCollider component?",
                 "console.warnicon");
 
-            public GUIContent assign = EditorGUIUtility.TrTextContent("Assign");
-            public GUIContent duplicateTab = EditorGUIUtility.TrTextContent("NOTE: Inspector tab is a duplicate.  Paint functionality disabled.");
+            public readonly GUIContent assign = EditorGUIUtility.TrTextContent("Assign");
+            public readonly GUIContent duplicateTab = EditorGUIUtility.TrTextContent("NOTE: Inspector tab is a duplicate.  Paint functionality disabled.");
 
             // Textures
-            public GUIContent terrainLayers = EditorGUIUtility.TrTextContent("Terrain Layers");
-            public GUIContent editTerrainLayers = EditorGUIUtility.TrTextContent("Edit Terrain Layers...");
+            public readonly GUIContent terrainLayers = EditorGUIUtility.TrTextContent("Terrain Layers");
+            public readonly GUIContent editTerrainLayers = EditorGUIUtility.TrTextContent("Edit Terrain Layers...");
 
             // Trees
-            public GUIContent trees = EditorGUIUtility.TrTextContent("Trees");
-            public GUIContent noTrees = EditorGUIUtility.TrTextContent("No Trees defined", "Use edit button below to add new tree types.");
-            public GUIContent editTrees = EditorGUIUtility.TrTextContent("Edit Trees...", "Add/remove tree types.");
-            public GUIContent treeDensity = EditorGUIUtility.TrTextContent("Tree Density", "How dense trees are you painting");
-            public GUIContent treeHeight = EditorGUIUtility.TrTextContent("Tree Height", "Height of the planted trees");
-            public GUIContent treeHeightRandomLabel = EditorGUIUtility.TrTextContent("Random?", "Enable random variation in tree height (variation)");
-            public GUIContent treeHeightRandomToggle = EditorGUIUtility.TrTextContent("", "Enable random variation in tree height (variation)");
-            public GUIContent lockWidth = EditorGUIUtility.TrTextContent("Lock Width to Height", "Let the tree width be the same with height");
-            public GUIContent treeWidth = EditorGUIUtility.TrTextContent("Tree Width", "Width of the planted trees");
-            public GUIContent treeWidthRandomLabel = EditorGUIUtility.TrTextContent("Random?", "Enable random variation in tree width (variation)");
-            public GUIContent treeWidthRandomToggle = EditorGUIUtility.TrTextContent("", "Enable random variation in tree width (variation)");
-            public GUIContent treeColorVar = EditorGUIUtility.TrTextContent("Color Variation", "Amount of random shading applied to trees");
-            public GUIContent treeRotation = EditorGUIUtility.TrTextContent("Random Tree Rotation", "Enable?");
-            public GUIContent massPlaceTrees = EditorGUIUtility.TrTextContent("Mass Place Trees", "The Mass Place Trees button is a very useful way to create an overall covering of trees without painting over the whole landscape. Following a mass placement, you can still use painting to add or remove trees to create denser or sparser areas.");
-            public GUIContent treeLightmapStatic = EditorGUIUtility.TrTextContent("Tree Lightmap Static", "The state of the Lightmap Static flag for the tree prefab root GameObject. The flag can be changed on the prefab. When disabled, this tree will not be visible to the lightmapper. When enabled, any child GameObjects which also have the static flag enabled, will be present in lightmap calculations. Regardless of the Static flag, each tree instance receives its own light probe and no lightmap texels.");
+            public readonly GUIContent trees = EditorGUIUtility.TrTextContent("Trees");
+            public readonly GUIContent noTrees = EditorGUIUtility.TrTextContent("No Trees defined", "Use edit button below to add new tree types.");
+            public readonly GUIContent editTrees = EditorGUIUtility.TrTextContent("Edit Trees...", "Add/remove tree types.");
+            public readonly GUIContent treeDensity = EditorGUIUtility.TrTextContent("Tree Density", "How dense trees are you painting");
+            public readonly GUIContent treeHeight = EditorGUIUtility.TrTextContent("Tree Height", "Height of the planted trees");
+            public readonly GUIContent treeHeightRandomLabel = EditorGUIUtility.TrTextContent("Random?", "Enable random variation in tree height (variation)");
+            public readonly GUIContent treeHeightRandomToggle = EditorGUIUtility.TrTextContent("", "Enable random variation in tree height (variation)");
+            public readonly GUIContent lockWidth = EditorGUIUtility.TrTextContent("Lock Width to Height", "Let the tree width be the same with height");
+            public readonly GUIContent treeWidth = EditorGUIUtility.TrTextContent("Tree Width", "Width of the planted trees");
+            public readonly GUIContent treeWidthRandomLabel = EditorGUIUtility.TrTextContent("Random?", "Enable random variation in tree width (variation)");
+            public readonly GUIContent treeWidthRandomToggle = EditorGUIUtility.TrTextContent("", "Enable random variation in tree width (variation)");
+            public readonly GUIContent treeColorVar = EditorGUIUtility.TrTextContent("Color Variation", "Amount of random shading applied to trees");
+            public readonly GUIContent treeRotation = EditorGUIUtility.TrTextContent("Random Tree Rotation", "Enable?");
+            public readonly GUIContent massPlaceTrees = EditorGUIUtility.TrTextContent("Mass Place Trees", "The Mass Place Trees button is a very useful way to create an overall covering of trees without painting over the whole landscape. Following a mass placement, you can still use painting to add or remove trees to create denser or sparser areas.");
+            public readonly GUIContent treeLightmapStatic = EditorGUIUtility.TrTextContent("Tree Lightmap Static", "The state of the Lightmap Static flag for the tree prefab root GameObject. The flag can be changed on the prefab. When disabled, this tree will not be visible to the lightmapper. When enabled, any child GameObjects which also have the static flag enabled, will be present in lightmap calculations. Regardless of the Static flag, each tree instance receives its own light probe and no lightmap texels.");
 
             // Details
-            public GUIContent details = EditorGUIUtility.TrTextContent("Details");
-            public GUIContent editDetails = EditorGUIUtility.TrTextContent("Edit Details...", "Add/remove detail meshes");
-            public GUIContent detailTargetStrength = EditorGUIUtility.TrTextContent("Target Strength", "Target amount");
+            public readonly GUIContent details = EditorGUIUtility.TrTextContent("Details");
+            public readonly GUIContent editDetails = EditorGUIUtility.TrTextContent("Edit Details...", "Add/remove detail meshes");
+            public readonly GUIContent detailTargetStrength = EditorGUIUtility.TrTextContent("Target Strength", "Target amount");
 
             // Heightmaps
-            public GUIContent height = EditorGUIUtility.TrTextContent("Height", "You can set the Height property manually or you can shift-click on the terrain to sample the height at the mouse position (rather like the \"eyedropper\" tool in an image editor).");
+            public readonly GUIContent height = EditorGUIUtility.TrTextContent("Height", "You can set the Height property manually or you can shift-click on the terrain to sample the height at the mouse position (rather like the \"eyedropper\" tool in an image editor).");
 
-            public GUIContent textures = EditorGUIUtility.TrTextContent("Texture Resolutions (Require resampling on change)");
-            public GUIContent importRaw  = EditorGUIUtility.TrTextContent("Import Raw...", "The Import Raw button allows you to set the terrain's heightmap from an image file in the RAW grayscale format. RAW format can be generated by third party terrain editing tools (such as Bryce) and can also be opened, edited and saved by Photoshop. This allows for sophisticated generation and editing of terrains outside Unity.");
-            public GUIContent exportRaw = EditorGUIUtility.TrTextContent("Export Raw...", "The Export Raw button allows you to save the terrain's heightmap to an image file in the RAW grayscale format. RAW format can be generated by third party terrain editing tools (such as Bryce) and can also be opened, edited and saved by Photoshop. This allows for sophisticated generation and editing of terrains outside Unity.");
-            public GUIContent flatten = EditorGUIUtility.TrTextContent("Flatten", "The Flatten button levels the whole terrain to the chosen height.");
+            public readonly GUIContent textures = EditorGUIUtility.TrTextContent("Texture Resolutions (On Terrain Data)");
+            public readonly GUIContent requireResampling = EditorGUIUtility.TrTextContent("Require resampling on change");
+            public readonly GUIContent importRaw  = EditorGUIUtility.TrTextContent("Import Raw...", "The Import Raw button allows you to set the terrain's heightmap from an image file in the RAW grayscale format. RAW format can be generated by third party terrain editing tools (such as Bryce) and can also be opened, edited and saved by Photoshop. This allows for sophisticated generation and editing of terrains outside Unity.");
+            public readonly GUIContent exportRaw = EditorGUIUtility.TrTextContent("Export Raw...", "The Export Raw button allows you to save the terrain's heightmap to an image file in the RAW grayscale format. RAW format can be generated by third party terrain editing tools (such as Bryce) and can also be opened, edited and saved by Photoshop. This allows for sophisticated generation and editing of terrains outside Unity.");
+            public readonly GUIContent flatten = EditorGUIUtility.TrTextContent("Flatten", "The Flatten button levels the whole terrain to the chosen height.");
 
-            public GUIContent bakeLightProbesForTrees = EditorGUIUtility.TrTextContent("Bake Light Probes For Trees", "If the option is enabled, Unity will create internal light probes at the position of each tree (these probes are internal and will not affect other renderers in the scene) and apply them to tree renderers for lighting. Otherwise trees are still affected by LightProbeGroups. The option is only effective for trees that have LightProbe enabled on their prototype prefab.");
-            public GUIContent deringLightProbesForTrees = EditorGUIUtility.TrTextContent("Remove Light Probe Ringing", "When enabled, removes visible overshooting often observed as ringing on objects affected by intense lighting at the expense of reduced contrast.");
-            public GUIContent refresh = EditorGUIUtility.TrTextContent("Refresh", "When you save a tree asset from the modelling app, you will need to click the Refresh button (shown in the inspector when the tree painting tool is selected) in order to see the updated trees on your terrain.");
+            public readonly GUIContent bakeLightProbesForTrees = EditorGUIUtility.TrTextContent("Bake Light Probes For Trees", "If the option is enabled, Unity will create internal light probes at the position of each tree (these probes are internal and will not affect other renderers in the scene) and apply them to tree renderers for lighting. Otherwise trees are still affected by LightProbeGroups. The option is only effective for trees that have LightProbe enabled on their prototype prefab.");
+            public readonly GUIContent deringLightProbesForTrees = EditorGUIUtility.TrTextContent("Remove Light Probe Ringing", "When enabled, removes visible overshooting often observed as ringing on objects affected by intense lighting at the expense of reduced contrast.");
+            public readonly GUIContent refresh = EditorGUIUtility.TrTextContent("Refresh", "When you save a tree asset from the modelling app, you will need to click the Refresh button (shown in the inspector when the tree painting tool is selected) in order to see the updated trees on your terrain.");
 
             // Settings
-            public GUIContent groupingID = EditorGUIUtility.TrTextContent("Grouping ID", "Grouping ID for auto connection");
-            public GUIContent allowAutoConnect = EditorGUIUtility.TrTextContent("Auto connect", "Allow the current terrain tile automatically connect to neighboring tiles sharing the same grouping ID.");
-            public GUIContent attemptReconnect = EditorGUIUtility.TrTextContent("Reconnect", "Will attempt to re-run auto connection");
-            public GUIContent drawTerrain = EditorGUIUtility.TrTextContent("Draw", "Toggle the rendering of terrain");
-            public GUIContent drawInstancedTerrain = EditorGUIUtility.TrTextContent("Draw Instanced" , "Toggle terrain instancing rendering");
-            public GUIContent pixelError = EditorGUIUtility.TrTextContent("Pixel Error", "The accuracy of the mapping between the terrain maps (heightmap, textures, etc) and the generated terrain; higher values indicate lower accuracy but lower rendering overhead.");
-            public GUIContent baseMapDist = EditorGUIUtility.TrTextContent("Base Map Dist.", "The maximum distance at which terrain textures will be displayed at full resolution. Beyond this distance, a lower resolution composite image will be used for efficiency.");
-            public GUIContent castShadows = EditorGUIUtility.TrTextContent("Cast Shadows", "Does the terrain cast shadows?");
-            public GUIContent material = EditorGUIUtility.TrTextContent("Material", "The material used to render the terrain. This will affect how the color channels of a terrain texture are interpreted.");
-            public GUIContent reflectionProbes = EditorGUIUtility.TrTextContent("Reflection Probes", "How reflection probes are used on terrain. Only effective when using built-in standard material or a custom material which supports rendering with reflection.");
-            public GUIContent thickness = EditorGUIUtility.TrTextContent("Thickness", "How much the terrain collision volume should extend along the negative Y-axis. Objects are considered colliding with the terrain from the surface to a depth equal to the thickness. This helps prevent high-speed moving objects from penetrating into the terrain without using expensive continuous collision detection.");
-            public GUIContent preserveTreePrototypeLayers = EditorGUIUtility.TextContent("Preserve Tree Prototype Layers|Enable this option if you want your tree instances to take on the layer values of their prototype prefabs, rather than the terrain GameObject's layer.");
-            public GUIContent drawTrees = EditorGUIUtility.TrTextContent("Draw", "Should trees, grass and details be drawn?");
-            public GUIContent detailObjectDistance = EditorGUIUtility.TrTextContent("Detail Distance", "The distance (from camera) beyond which details will be culled.");
-            public GUIContent collectDetailPatches = EditorGUIUtility.TrTextContent("Collect Detail Patches", "Should detail patches in the Terrain be removed from memory when not visible?");
-            public GUIContent detailObjectDensity = EditorGUIUtility.TrTextContent("Detail Density", "The number of detail/grass objects in a given unit of area. The value can be set lower to reduce rendering overhead.");
-            public GUIContent treeDistance = EditorGUIUtility.TrTextContent("Tree Distance", "The distance (from camera) beyond which trees will be culled.");
-            public GUIContent treeBillboardDistance = EditorGUIUtility.TrTextContent("Billboard Start", "The distance (from camera) at which 3D tree objects will be replaced by billboard images.");
-            public GUIContent treeCrossFadeLength = EditorGUIUtility.TrTextContent("Fade Length", "Distance over which trees will transition between 3D objects and billboards.");
-            public GUIContent treeMaximumFullLODCount = EditorGUIUtility.TrTextContent("Max Mesh Trees", "The maximum number of visible trees that will be represented as solid 3D meshes. Beyond this limit, trees will be replaced with billboards.");
-
-            public GUIContent wavingGrassStrength = EditorGUIUtility.TrTextContent("Speed", "The speed of the wind as it blows grass.");
-            public GUIContent wavingGrassSpeed = EditorGUIUtility.TrTextContent("Size", "The size of the 'ripples' on grassy areas as the wind blows over them.");
-            public GUIContent wavingGrassAmount = EditorGUIUtility.TrTextContent("Bending", "The degree to which grass objects are bent over by the wind.");
-            public GUIContent wavingGrassTint = EditorGUIUtility.TrTextContent("Grass Tint", "Overall color tint applied to grass objects.");
-
-            public static readonly GUIContent detailResolutionWarning = EditorGUIUtility.TrTextContent("You may reduce CPU draw call overhead by setting the detail resolution per patch as high as possible, relative to detail resolution.");
+            public readonly GUIContent basicTerrain = EditorGUIUtility.TrTextContent("Basic Terrain");
+            public readonly GUIContent groupingID = EditorGUIUtility.TrTextContent("Grouping ID", "Grouping ID for auto connection");
+            public readonly GUIContent allowAutoConnect = EditorGUIUtility.TrTextContent("Auto connect", "Allow the current terrain tile automatically connect to neighboring tiles sharing the same grouping ID.");
+            public readonly GUIContent attemptReconnect = EditorGUIUtility.TrTextContent("Reconnect", "Will attempt to re-run auto connection");
+            public readonly GUIContent drawTerrain = EditorGUIUtility.TrTextContent("Draw", "Toggle the rendering of terrain");
+            public readonly GUIContent drawInstancedTerrain = EditorGUIUtility.TrTextContent("Draw Instanced" , "Toggle terrain instancing rendering");
+            public readonly GUIContent pixelError = EditorGUIUtility.TrTextContent("Pixel Error", "The accuracy of the mapping between the terrain maps (heightmap, textures, etc) and the generated terrain; higher values indicate lower accuracy but lower rendering overhead.");
+            public readonly GUIContent baseMapDist = EditorGUIUtility.TrTextContent("Base Map Dist.", "The maximum distance at which terrain textures will be displayed at full resolution. Beyond this distance, a lower resolution composite image will be used for efficiency.");
+            public readonly GUIContent castShadows = EditorGUIUtility.TrTextContent("Cast Shadows", "Does the terrain cast shadows?");
+            public readonly GUIContent material = EditorGUIUtility.TrTextContent("Material", "The material used to render the terrain. This will affect how the color channels of a terrain texture are interpreted.");
+            public readonly GUIContent reflectionProbes = EditorGUIUtility.TrTextContent("Reflection Probes", "How reflection probes are used on terrain. Only effective when using built-in standard material or a custom material which supports rendering with reflection.");
+            public readonly GUIContent preserveTreePrototypeLayers = EditorGUIUtility.TextContent("Preserve Tree Prototype Layers|Enable this option if you want your tree instances to take on the layer values of their prototype prefabs, rather than the terrain GameObject's layer.");
+            public readonly GUIContent treeAndDetails = EditorGUIUtility.TrTextContent("Tree & Detail Objects");
+            public readonly GUIContent drawTrees = EditorGUIUtility.TrTextContent("Draw", "Should trees, grass and details be drawn?");
+            public readonly GUIContent detailObjectDistance = EditorGUIUtility.TrTextContent("Detail Distance", "The distance (from camera) beyond which details will be culled.");
+            public readonly GUIContent collectDetailPatches = EditorGUIUtility.TrTextContent("Collect Detail Patches", "Should detail patches in the Terrain be removed from memory when not visible?");
+            public readonly GUIContent detailObjectDensity = EditorGUIUtility.TrTextContent("Detail Density", "The number of detail/grass objects in a given unit of area. The value can be set lower to reduce rendering overhead.");
+            public readonly GUIContent treeDistance = EditorGUIUtility.TrTextContent("Tree Distance", "The distance (from camera) beyond which trees will be culled.");
+            public readonly GUIContent treeBillboardDistance = EditorGUIUtility.TrTextContent("Billboard Start", "The distance (from camera) at which 3D tree objects will be replaced by billboard images.");
+            public readonly GUIContent treeCrossFadeLength = EditorGUIUtility.TrTextContent("Fade Length", "Distance over which trees will transition between 3D objects and billboards.");
+            public readonly GUIContent treeMaximumFullLODCount = EditorGUIUtility.TrTextContent("Max Mesh Trees", "The maximum number of visible trees that will be represented as solid 3D meshes. Beyond this limit, trees will be replaced with billboards.");
+            public readonly GUIContent physics = EditorGUIUtility.TrTextContent("Physics (On Terrain Data)");
+            public readonly GUIContent thickness = EditorGUIUtility.TrTextContent("Thickness", "How much the terrain collision volume should extend along the negative Y-axis. Objects are considered colliding with the terrain from the surface to a depth equal to the thickness. This helps prevent high-speed moving objects from penetrating into the terrain without using expensive continuous collision detection.");
+            public readonly GUIContent grassWindSettings = EditorGUIUtility.TrTextContent("Wind Settings for Grass (On Terrain Data)");
+            public readonly GUIContent wavingGrassStrength = EditorGUIUtility.TrTextContent("Speed", "The speed of the wind as it blows grass.");
+            public readonly GUIContent wavingGrassSpeed = EditorGUIUtility.TrTextContent("Size", "The size of the 'ripples' on grassy areas as the wind blows over them.");
+            public readonly GUIContent wavingGrassAmount = EditorGUIUtility.TrTextContent("Bending", "The degree to which grass objects are bent over by the wind.");
+            public readonly GUIContent wavingGrassTint = EditorGUIUtility.TrTextContent("Grass Tint", "Overall color tint applied to grass objects.");
+            public readonly GUIContent meshResolution = EditorGUIUtility.TrTextContent("Mesh Resolution (On Terrain Data)");
+            public readonly GUIContent detailResolutionWarning = EditorGUIUtility.TrTextContent("You may reduce CPU draw call overhead by setting the detail resolution per patch as high as possible, relative to detail resolution.");
         }
         static Styles styles;
 
@@ -1251,7 +1255,7 @@ namespace UnityEditor
         {
             GUILayout.Space(3);
 
-            EditorGUILayout.HelpBox(Styles.detailResolutionWarning.text, MessageType.Warning);
+            EditorGUILayout.HelpBox(styles.detailResolutionWarning.text, MessageType.Warning);
 
             int maxMeshes = m_Terrain.terrainData.detailPatchCount * m_Terrain.terrainData.detailPatchCount;
             EditorGUILayout.LabelField("Detail patches currently allocated: " + maxMeshes);
@@ -1298,144 +1302,230 @@ namespace UnityEditor
             m_DetailStrength = Mathf.Round(m_DetailStrength * 16.0f) / 16.0f;
         }
 
+        private bool m_ShowBasicTerrainSettings = true;
+        private bool m_ShowTreeAndDetailSettings = true;
+        private bool m_ShowPhysicsSettings = true;
+        private bool m_ShowGrassWindSettings = true;
+
+        private void MarkDirty()
+        {
+            EditorApplication.SetSceneRepaintDirty();
+            EditorUtility.SetDirty(m_Terrain);
+
+            if (!EditorApplication.isPlaying)
+                SceneManagement.EditorSceneManager.MarkSceneDirty(m_Terrain.gameObject.scene);
+        }
+
+        private void MarkTerrainDataDirty()
+        {
+            // In cases where terrain data is embedded in the scene (i.e. it's not an asset),
+            // we need to dirty the scene if terrainData has changed.
+            if (!EditorUtility.IsPersistent(m_Terrain.terrainData) && !EditorApplication.isPlaying)
+                SceneManagement.EditorSceneManager.MarkSceneDirty(m_Terrain.gameObject.scene);
+        }
+
         public void ShowSettings()
         {
             TerrainData terrainData = m_Terrain.terrainData;
 
-            EditorGUI.BeginChangeCheck();
-
-            GUILayout.Label(L10n.Tr("Base Terrain"), EditorStyles.boldLabel);
-
-            m_Terrain.groupingID = EditorGUILayout.IntField(styles.groupingID, m_Terrain.groupingID);
-
-            EditorGUILayout.BeginHorizontal();
-            m_Terrain.allowAutoConnect = EditorGUILayout.Toggle(styles.allowAutoConnect, m_Terrain.allowAutoConnect);
-            if (GUILayout.Button(styles.attemptReconnect))
-                Terrain.SetConnectivityDirty();
-            EditorGUILayout.EndHorizontal();
-
-            m_Terrain.drawHeightmap = EditorGUILayout.Toggle(styles.drawTerrain, m_Terrain.drawHeightmap);
-            m_Terrain.drawInstanced = EditorGUILayout.Toggle(styles.drawInstancedTerrain, m_Terrain.drawInstanced);
-            m_Terrain.heightmapPixelError = EditorGUILayout.Slider(styles.pixelError, m_Terrain.heightmapPixelError, 1, 200); // former string formatting: ""
-            m_Terrain.basemapDistance = EditorGUILayout.Slider(styles.baseMapDist, m_Terrain.basemapDistance, 0, 2000); // former string formatting: ""
-            m_Terrain.castShadows = EditorGUILayout.Toggle(styles.castShadows, m_Terrain.castShadows);
-
-            m_Terrain.materialType = (Terrain.MaterialType)EditorGUILayout.EnumPopup(styles.material, m_Terrain.materialType);
-
-            // Make sure we don't reference any custom material if we are to use a built-in shader.
-            if (m_Terrain.materialType != Terrain.MaterialType.Custom)
-                m_Terrain.materialTemplate = null;
-
-            m_ShowBuiltinSpecularSettings.target = m_Terrain.materialType == Terrain.MaterialType.BuiltInLegacySpecular;
-            m_ShowCustomMaterialSettings.target = m_Terrain.materialType == Terrain.MaterialType.Custom;
-            m_ShowReflectionProbesGUI.target = m_Terrain.materialType == Terrain.MaterialType.BuiltInStandard || m_Terrain.materialType == Terrain.MaterialType.Custom;
-
-            if (EditorGUILayout.BeginFadeGroup(m_ShowBuiltinSpecularSettings.faded))
+            m_ShowBasicTerrainSettings = EditorGUILayout.FoldoutTitlebar(m_ShowBasicTerrainSettings, styles.basicTerrain, true);
+            if (m_ShowBasicTerrainSettings)
             {
-                EditorGUI.indentLevel++;
-                m_Terrain.legacySpecular = EditorGUILayout.ColorField("Specular Color", m_Terrain.legacySpecular);
-                m_Terrain.legacyShininess = EditorGUILayout.Slider("Shininess", m_Terrain.legacyShininess, 0.03f, 1.0f);
-                EditorGUI.indentLevel--;
-            }
-            EditorGUILayout.EndFadeGroup();
+                ++EditorGUI.indentLevel;
+                EditorGUI.BeginChangeCheck();
 
-            if (EditorGUILayout.BeginFadeGroup(m_ShowCustomMaterialSettings.faded))
-            {
-                EditorGUI.indentLevel++;
-                m_Terrain.materialTemplate = EditorGUILayout.ObjectField("Custom Material", m_Terrain.materialTemplate, typeof(Material), false) as Material;
+                var groupingID = EditorGUILayout.IntField(styles.groupingID, m_Terrain.groupingID);
 
-                // Warn if shader needs tangent basis
-                if (m_Terrain.materialTemplate != null)
-                {
-                    Shader s = m_Terrain.materialTemplate.shader;
-                    if (ShaderUtil.HasTangentChannel(s))
-                    {
-                        GUIContent c = EditorGUIUtility.TrTextContent("Can't use materials with shaders which need tangent geometry on terrain, use shaders in Nature/Terrain instead.");
-                        EditorGUILayout.HelpBox(c.text, MessageType.Warning, false);
-                    }
-                }
-                EditorGUI.indentLevel--;
-            }
-            EditorGUILayout.EndFadeGroup();
+                EditorGUILayout.BeginHorizontal();
+                var allowAutoConnect = EditorGUILayout.Toggle(styles.allowAutoConnect, m_Terrain.allowAutoConnect);
+                if (GUILayout.Button(styles.attemptReconnect))
+                    Terrain.SetConnectivityDirty();
+                EditorGUILayout.EndHorizontal();
 
-            if (EditorGUILayout.BeginFadeGroup(m_ShowReflectionProbesGUI.faded))
-            {
-                m_Terrain.reflectionProbeUsage = (ReflectionProbeUsage)EditorGUILayout.EnumPopup(styles.reflectionProbes, m_Terrain.reflectionProbeUsage);
-                if (m_Terrain.reflectionProbeUsage != ReflectionProbeUsage.Off)
+                var drawHeightmap = EditorGUILayout.Toggle(styles.drawTerrain, m_Terrain.drawHeightmap);
+                var drawInstanced = EditorGUILayout.Toggle(styles.drawInstancedTerrain, m_Terrain.drawInstanced);
+                var heightmapPixelError = EditorGUILayout.Slider(styles.pixelError, m_Terrain.heightmapPixelError, 1, 200); // former string formatting: ""
+                var basemapDistance = EditorGUILayout.Slider(styles.baseMapDist, m_Terrain.basemapDistance, 0, 2000); // former string formatting: ""
+                var castShadows = EditorGUILayout.Toggle(styles.castShadows, m_Terrain.castShadows);
+
+                var materialType = (Terrain.MaterialType)EditorGUILayout.EnumPopup(styles.material, m_Terrain.materialType);
+                var materialTemplate = m_Terrain.materialTemplate;
+
+                m_ShowBuiltinSpecularSettings.target = materialType == Terrain.MaterialType.BuiltInLegacySpecular;
+                m_ShowCustomMaterialSettings.target = materialType == Terrain.MaterialType.Custom;
+                m_ShowReflectionProbesGUI.target = materialType == Terrain.MaterialType.BuiltInStandard || materialType == Terrain.MaterialType.Custom;
+
+                var legacySpecular = m_Terrain.legacySpecular;
+                var legacyShininess = m_Terrain.legacyShininess;
+                if (EditorGUILayout.BeginFadeGroup(m_ShowBuiltinSpecularSettings.faded))
                 {
                     EditorGUI.indentLevel++;
-                    m_Terrain.GetClosestReflectionProbes(m_BlendInfoList);
-                    RendererEditorBase.Probes.ShowClosestReflectionProbes(m_BlendInfoList);
+                    legacySpecular = EditorGUILayout.ColorField("Specular Color", legacySpecular);
+                    legacyShininess = EditorGUILayout.Slider("Shininess", legacyShininess, 0.03f, 1.0f);
                     EditorGUI.indentLevel--;
                 }
-            }
-            EditorGUILayout.EndFadeGroup();
+                EditorGUILayout.EndFadeGroup();
 
-            terrainData.thickness = EditorGUILayout.FloatField(styles.thickness, terrainData.thickness);
-
-            GUILayout.Label("Tree & Detail Objects", EditorStyles.boldLabel);
-            m_Terrain.drawTreesAndFoliage = EditorGUILayout.Toggle(styles.drawTrees, m_Terrain.drawTreesAndFoliage);
-            m_Terrain.bakeLightProbesForTrees = EditorGUILayout.Toggle(styles.bakeLightProbesForTrees, m_Terrain.bakeLightProbesForTrees);
-            using (new EditorGUI.DisabledScope(!m_Terrain.bakeLightProbesForTrees))
-                m_Terrain.deringLightProbesForTrees = EditorGUILayout.Toggle(styles.deringLightProbesForTrees, m_Terrain.deringLightProbesForTrees);
-            m_Terrain.preserveTreePrototypeLayers = EditorGUILayout.Toggle(styles.preserveTreePrototypeLayers, m_Terrain.preserveTreePrototypeLayers);
-            m_Terrain.detailObjectDistance = EditorGUILayout.Slider(styles.detailObjectDistance, m_Terrain.detailObjectDistance, 0, 250); // former string formatting: ""
-            m_Terrain.collectDetailPatches = EditorGUILayout.Toggle(styles.collectDetailPatches, m_Terrain.collectDetailPatches);
-            m_Terrain.detailObjectDensity = EditorGUILayout.Slider(styles.detailObjectDensity, m_Terrain.detailObjectDensity, 0.0f, 1.0f);
-            m_Terrain.treeDistance = EditorGUILayout.Slider(styles.treeDistance, m_Terrain.treeDistance, 0, 2000); // former string formatting: ""
-            m_Terrain.treeBillboardDistance = EditorGUILayout.Slider(styles.treeBillboardDistance, m_Terrain.treeBillboardDistance, 5, 2000); // former string formatting: ""
-            m_Terrain.treeCrossFadeLength = EditorGUILayout.Slider(styles.treeCrossFadeLength, m_Terrain.treeCrossFadeLength, 0, 200); // former string formatting: ""
-            m_Terrain.treeMaximumFullLODCount = EditorGUILayout.IntSlider(styles.treeMaximumFullLODCount, m_Terrain.treeMaximumFullLODCount, 0, 10000);
-
-            // Only do this check once per frame.
-            if (Event.current.type == EventType.Layout)
-            {
-                m_LODTreePrototypePresent = false;
-                for (int i = 0; i < terrainData.treePrototypes.Length; ++i)
+                if (EditorGUILayout.BeginFadeGroup(m_ShowCustomMaterialSettings.faded))
                 {
-                    if (TerrainEditorUtility.IsLODTreePrototype(terrainData.treePrototypes[i].prefab))
+                    EditorGUI.indentLevel++;
+                    materialTemplate = EditorGUILayout.ObjectField("Custom Material", materialTemplate, typeof(Material), false) as Material;
+
+                    // Warn if shader needs tangent basis
+                    if (materialTemplate != null)
                     {
-                        m_LODTreePrototypePresent = true;
-                        break;
+                        Shader s = materialTemplate.shader;
+                        if (ShaderUtil.HasTangentChannel(s))
+                        {
+                            GUIContent c = EditorGUIUtility.TrTextContent("Can't use materials with shaders which need tangent geometry on terrain, use shaders in Nature/Terrain instead.");
+                            EditorGUILayout.HelpBox(c.text, MessageType.Warning, false);
+                        }
+                    }
+                    EditorGUI.indentLevel--;
+                }
+                EditorGUILayout.EndFadeGroup();
+
+                var reflectionProbeUsage = m_Terrain.reflectionProbeUsage;
+                if (EditorGUILayout.BeginFadeGroup(m_ShowReflectionProbesGUI.faded))
+                {
+                    reflectionProbeUsage = (ReflectionProbeUsage)EditorGUILayout.EnumPopup(styles.reflectionProbes, reflectionProbeUsage);
+                    if (reflectionProbeUsage != ReflectionProbeUsage.Off)
+                    {
+                        EditorGUI.indentLevel++;
+                        RendererEditorBase.Probes.ShowClosestReflectionProbes(m_BlendInfoList);
+                        EditorGUI.indentLevel--;
                     }
                 }
+                EditorGUILayout.EndFadeGroup();
+
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(m_Terrain, "Terrain property change");
+
+                    // Make sure we don't reference any custom material if we are to use a built-in shader.
+                    if (materialType != Terrain.MaterialType.Custom)
+                        materialTemplate = null;
+                    m_Terrain.GetClosestReflectionProbes(m_BlendInfoList);
+
+                    m_Terrain.groupingID = groupingID;
+                    m_Terrain.allowAutoConnect = allowAutoConnect;
+                    m_Terrain.drawHeightmap = drawHeightmap;
+                    m_Terrain.drawInstanced = drawInstanced;
+                    m_Terrain.heightmapPixelError = heightmapPixelError;
+                    m_Terrain.basemapDistance = basemapDistance;
+                    m_Terrain.castShadows = castShadows;
+                    m_Terrain.materialType = materialType;
+                    m_Terrain.materialTemplate = materialTemplate;
+                    m_Terrain.legacySpecular = legacySpecular;
+                    m_Terrain.legacyShininess = legacyShininess;
+                    m_Terrain.reflectionProbeUsage = reflectionProbeUsage;
+
+                    MarkDirty();
+                }
+                --EditorGUI.indentLevel;
             }
 
-            if (m_LODTreePrototypePresent)
-                EditorGUILayout.HelpBox("Tree Distance, Billboard Start, Fade Length and Max Mesh Trees have no effect on SpeedTree trees. Please use the LOD Group component on the tree prefab to control LOD settings.", MessageType.Info);
-
-            if (EditorGUI.EndChangeCheck())
+            m_ShowTreeAndDetailSettings = EditorGUILayout.FoldoutTitlebar(m_ShowTreeAndDetailSettings, styles.treeAndDetails, true);
+            if (m_ShowTreeAndDetailSettings)
             {
-                EditorApplication.SetSceneRepaintDirty();
-                EditorUtility.SetDirty(m_Terrain);
+                ++EditorGUI.indentLevel;
+                EditorGUI.BeginChangeCheck();
 
-                if (!EditorApplication.isPlaying)
-                    SceneManagement.EditorSceneManager.MarkSceneDirty(m_Terrain.gameObject.scene);
+                var drawTreesAndFoliage = EditorGUILayout.Toggle(styles.drawTrees, m_Terrain.drawTreesAndFoliage);
+                var bakeLightProbesForTrees = EditorGUILayout.Toggle(styles.bakeLightProbesForTrees, m_Terrain.bakeLightProbesForTrees);
+                var deringLightProbesForTrees = m_Terrain.deringLightProbesForTrees;
+                using (new EditorGUI.DisabledScope(!bakeLightProbesForTrees))
+                    deringLightProbesForTrees = EditorGUILayout.Toggle(styles.deringLightProbesForTrees, deringLightProbesForTrees);
+                var preserveTreePrototypeLayers = EditorGUILayout.Toggle(styles.preserveTreePrototypeLayers, m_Terrain.preserveTreePrototypeLayers);
+                var detailObjectDistance = EditorGUILayout.Slider(styles.detailObjectDistance, m_Terrain.detailObjectDistance, 0, 250); // former string formatting: ""
+                var detailObjectDensity = EditorGUILayout.Slider(styles.detailObjectDensity, m_Terrain.detailObjectDensity, 0.0f, 1.0f);
+                var treeDistance = EditorGUILayout.Slider(styles.treeDistance, m_Terrain.treeDistance, 0, 5000); // former string formatting: ""
+                var treeBillboardDistance = EditorGUILayout.Slider(styles.treeBillboardDistance, m_Terrain.treeBillboardDistance, 5, 2000); // former string formatting: ""
+                var treeCrossFadeLength = EditorGUILayout.Slider(styles.treeCrossFadeLength, m_Terrain.treeCrossFadeLength, 0, 200); // former string formatting: ""
+                var treeMaximumFullLODCount = EditorGUILayout.IntSlider(styles.treeMaximumFullLODCount, m_Terrain.treeMaximumFullLODCount, 0, 10000);
+
+                // Only do this check once per frame.
+                if (Event.current.type == EventType.Layout)
+                {
+                    m_LODTreePrototypePresent = false;
+                    for (int i = 0; i < terrainData.treePrototypes.Length; ++i)
+                    {
+                        if (TerrainEditorUtility.IsLODTreePrototype(terrainData.treePrototypes[i].prefab))
+                        {
+                            m_LODTreePrototypePresent = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (m_LODTreePrototypePresent)
+                    EditorGUILayout.HelpBox("Tree Distance, Billboard Start, Fade Length and Max Mesh Trees have no effect on SpeedTree trees. Please use the LOD Group component on the tree prefab to control LOD settings.", MessageType.Info);
+
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(m_Terrain, "Terrain property change");
+
+                    m_Terrain.drawTreesAndFoliage = drawTreesAndFoliage;
+                    m_Terrain.bakeLightProbesForTrees = bakeLightProbesForTrees;
+                    m_Terrain.deringLightProbesForTrees = deringLightProbesForTrees;
+                    m_Terrain.preserveTreePrototypeLayers = preserveTreePrototypeLayers;
+                    m_Terrain.detailObjectDistance = detailObjectDistance;
+                    m_Terrain.detailObjectDensity = detailObjectDensity;
+                    m_Terrain.treeDistance = treeDistance;
+                    m_Terrain.treeBillboardDistance = treeBillboardDistance;
+                    m_Terrain.treeCrossFadeLength = treeCrossFadeLength;
+                    m_Terrain.treeMaximumFullLODCount = treeMaximumFullLODCount;
+
+                    MarkDirty();
+                }
+                --EditorGUI.indentLevel;
             }
 
-            EditorGUI.BeginChangeCheck();
-
-            GUILayout.Label("Wind Settings for Grass", EditorStyles.boldLabel);
-            float wavingGrassStrength = EditorGUILayout.Slider(styles.wavingGrassStrength, terrainData.wavingGrassStrength, 0, 1); // former string formatting: "%"
-            float wavingGrassSpeed = EditorGUILayout.Slider(styles.wavingGrassSpeed, terrainData.wavingGrassSpeed, 0, 1); // former string formatting: "%"
-            float wavingGrassAmount = EditorGUILayout.Slider(styles.wavingGrassAmount, terrainData.wavingGrassAmount, 0, 1); // former string formatting: "%"
-            Color wavingGrassTint = EditorGUILayout.ColorField(styles.wavingGrassTint, terrainData.wavingGrassTint);
-
-            if (EditorGUI.EndChangeCheck())
+            m_ShowPhysicsSettings = EditorGUILayout.FoldoutTitlebar(m_ShowPhysicsSettings, styles.physics, true);
+            if (m_ShowPhysicsSettings)
             {
-                // Apply terrain settings only when something has changed. Otherwise we needlessly dirty the object and it will show up as modified.
-                terrainData.wavingGrassStrength = wavingGrassStrength;
-                terrainData.wavingGrassSpeed = wavingGrassSpeed;
-                terrainData.wavingGrassAmount = wavingGrassAmount;
-                terrainData.wavingGrassTint = wavingGrassTint;
+                ++EditorGUI.indentLevel;
+                EditorGUI.BeginChangeCheck();
+                var thickness = EditorGUILayout.FloatField(styles.thickness, terrainData.thickness);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(terrainData, "TerrainData property change");
+                    terrainData.thickness = thickness;
 
-                // In cases where terrain data is embedded in the scene (i.e. it's not an asset),
-                // we need to dirty the scene if terrainData has changed.
-                if (!EditorUtility.IsPersistent(terrainData) && !EditorApplication.isPlaying)
-                    SceneManagement.EditorSceneManager.MarkSceneDirty(m_Terrain.gameObject.scene);
+                    // In cases where terrain data is embedded in the scene (i.e. it's not an asset),
+                    // we need to dirty the scene if terrainData has changed.
+                    if (!EditorUtility.IsPersistent(terrainData) && !EditorApplication.isPlaying)
+                        SceneManagement.EditorSceneManager.MarkSceneDirty(m_Terrain.gameObject.scene);
+                }
+                --EditorGUI.indentLevel;
             }
 
-            ShowResolution();
+            m_ShowGrassWindSettings = EditorGUILayout.FoldoutTitlebar(m_ShowGrassWindSettings, styles.grassWindSettings, true);
+            if (m_ShowGrassWindSettings)
+            {
+                ++EditorGUI.indentLevel;
+                EditorGUI.BeginChangeCheck();
+
+                var wavingGrassStrength = EditorGUILayout.Slider(styles.wavingGrassStrength, terrainData.wavingGrassStrength, 0, 1); // former string formatting: "%"
+                var wavingGrassSpeed = EditorGUILayout.Slider(styles.wavingGrassSpeed, terrainData.wavingGrassSpeed, 0, 1); // former string formatting: "%"
+                var wavingGrassAmount = EditorGUILayout.Slider(styles.wavingGrassAmount, terrainData.wavingGrassAmount, 0, 1); // former string formatting: "%"
+                var wavingGrassTint = EditorGUILayout.ColorField(styles.wavingGrassTint, terrainData.wavingGrassTint);
+
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(terrainData, "TerrainData property change");
+
+                    terrainData.wavingGrassStrength = wavingGrassStrength;
+                    terrainData.wavingGrassSpeed = wavingGrassSpeed;
+                    terrainData.wavingGrassAmount = wavingGrassAmount;
+                    terrainData.wavingGrassTint = wavingGrassTint;
+
+                    MarkTerrainDataDirty();
+                }
+                --EditorGUI.indentLevel;
+            }
+
+            ShowResolution(terrainData);
             ShowTextures();
 
             RenderLightingFields();
@@ -1498,7 +1588,7 @@ namespace UnityEditor
 
             Undo.RegisterCompleteObjectUndo(m_Terrain.terrainData, "Resize Heightmap");
 
-            m_Terrain.terrainData.alphamapResolution = newResolution;
+            td.alphamapResolution = newResolution;
             for (int i = 0; i < oldAlphaMaps.Length; i++)
             {
                 RenderTexture.active = oldAlphaMaps[i];
@@ -1539,18 +1629,33 @@ namespace UnityEditor
             Repaint();
         }
 
+        private bool m_ShowTextures = true;
         public void ShowTextures()
         {
-            GUILayout.Label(styles.textures, EditorStyles.boldLabel);
+            m_ShowTextures = EditorGUILayout.FoldoutTitlebar(m_ShowTextures, styles.textures, true);
+            if (!m_ShowTextures)
+                return;
+
+            ++EditorGUI.indentLevel;
+
+            EditorGUILayout.HelpBox(styles.requireResampling.text, MessageType.Info);
 
             GUILayout.BeginVertical();
 
             // base texture
             GUILayout.BeginHorizontal();
+            EditorGUI.BeginChangeCheck();
             int baseTextureResolution = EditorGUILayout.DelayedIntField(EditorGUIUtility.TrTextContent("Base Texture Resolution", "Resolution of the composite texture used on the terrain when viewed from a distance greater than the Basemap Distance."), m_Terrain.terrainData.baseMapResolution);
-            baseTextureResolution = Mathf.Clamp(Mathf.ClosestPowerOfTwo(baseTextureResolution), 16, 2048);
-            if (m_Terrain.terrainData.baseMapResolution != baseTextureResolution)
-                m_Terrain.terrainData.baseMapResolution = baseTextureResolution;
+            if (EditorGUI.EndChangeCheck())
+            {
+                baseTextureResolution = Mathf.Clamp(Mathf.ClosestPowerOfTwo(baseTextureResolution), 16, 2048);
+                if (m_Terrain.terrainData.baseMapResolution != baseTextureResolution)
+                {
+                    Undo.RecordObject(m_Terrain.terrainData, "TerrainData property change");
+                    m_Terrain.terrainData.baseMapResolution = baseTextureResolution;
+                    MarkTerrainDataDirty();
+                }
+            }
             GUILayout.EndHorizontal();
 
             // splatmap control texture
@@ -1560,7 +1665,10 @@ namespace UnityEditor
             m_CurrentControlTextureResolution = EditorGUILayout.IntField(EditorGUIUtility.TrTextContent("Control Texture Resolution", "Resolution of the \"splatmap\" that controls the blending of the different terrain textures."), m_CurrentControlTextureResolution);
             m_CurrentControlTextureResolution = Mathf.Clamp(Mathf.ClosestPowerOfTwo(m_CurrentControlTextureResolution), 16, 2048);
             if (m_CurrentControlTextureResolution != m_Terrain.terrainData.alphamapResolution && GUILayout.Button("Resize", GUILayout.Width(128)))
+            {
                 ResizeControlTexture(m_CurrentControlTextureResolution);
+                MarkTerrainDataDirty();
+            }
 
             GUILayout.EndHorizontal();
 
@@ -1574,7 +1682,10 @@ namespace UnityEditor
             m_CurrentHeightmapResolution = Mathf.Clamp(m_CurrentHeightmapResolution, kMinimumResolution, kMaximumResolution);
             m_CurrentHeightmapResolution = m_Terrain.terrainData.GetAdjustedSize(m_CurrentHeightmapResolution);
             if (m_CurrentHeightmapResolution != m_Terrain.terrainData.heightmapResolution && GUILayout.Button("Resize", GUILayout.Width(128)))
+            {
                 ResizeHeightmap(m_CurrentHeightmapResolution);
+                MarkTerrainDataDirty();
+            }
 
             GUILayout.EndHorizontal();
 
@@ -1593,18 +1704,26 @@ namespace UnityEditor
                 TerrainMenus.ExportHeightmapRaw();
             }
             GUILayout.EndHorizontal();
+
+            --EditorGUI.indentLevel;
         }
 
-        public void ShowResolution()
-        {
-            GUILayout.Label("Mesh Resolutions", EditorStyles.boldLabel);
+        private bool m_ShowResolution = true;
 
-            float terrainWidth = m_Terrain.terrainData.size.x;
-            float terrainHeight = m_Terrain.terrainData.size.y;
-            float terrainLength = m_Terrain.terrainData.size.z;
-            int detailResolution = m_Terrain.terrainData.detailResolution;
-            int detailPatchCount = m_Terrain.terrainData.detailPatchCount;
-            int detailResolutionPerPatch = m_Terrain.terrainData.detailResolutionPerPatch;
+        public void ShowResolution(TerrainData terrainData)
+        {
+            m_ShowResolution = EditorGUILayout.FoldoutTitlebar(m_ShowResolution, styles.meshResolution, true);
+            if (!m_ShowResolution)
+                return;
+
+            ++EditorGUI.indentLevel;
+
+            float terrainWidth = terrainData.size.x;
+            float terrainHeight = terrainData.size.y;
+            float terrainLength = terrainData.size.z;
+            int detailResolution = terrainData.detailResolution;
+            int detailPatchCount = terrainData.detailPatchCount;
+            int detailResolutionPerPatch = terrainData.detailResolutionPerPatch;
 
             EditorGUI.BeginChangeCheck();
 
@@ -1633,30 +1752,33 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck())
             {
                 var undoObjects = new List<UnityEngine.Object>();
-                undoObjects.Add(m_Terrain.terrainData);
-                undoObjects.AddRange(m_Terrain.terrainData.alphamapTextures);
+                undoObjects.Add(terrainData);
+                undoObjects.AddRange(terrainData.alphamapTextures);
 
                 Undo.RegisterCompleteObjectUndo(undoObjects.ToArray(), "Set Resolution");
 
-                m_Terrain.terrainData.size = new Vector3(terrainWidth, terrainHeight, terrainLength);
+                terrainData.size = new Vector3(terrainWidth, terrainHeight, terrainLength);
 
-                bool resolutionChanged = m_Terrain.terrainData.detailResolution != detailResolution;
+                bool resolutionChanged = terrainData.detailResolution != detailResolution;
                 if (resolutionChanged)
                 {
                     detailResolutionPerPatch = Mathf.Min(detailResolutionPerPatch, detailResolution);
                 }
 
-                bool resolutionPerPatchChanged = m_Terrain.terrainData.detailResolutionPerPatch != detailResolutionPerPatch;
+                bool resolutionPerPatchChanged = terrainData.detailResolutionPerPatch != detailResolutionPerPatch;
                 if (resolutionPerPatchChanged)
                 {
                     detailResolution = Mathf.Max(detailResolution, detailResolutionPerPatch);
                 }
 
                 if (resolutionChanged || resolutionPerPatchChanged)
-                    ResizeDetailResolution(m_Terrain.terrainData, detailResolution, detailResolutionPerPatch);
+                    ResizeDetailResolution(terrainData, detailResolution, detailResolutionPerPatch);
 
+                MarkTerrainDataDirty();
                 m_Terrain.Flush();
             }
+
+            --EditorGUI.indentLevel;
         }
 
         void ResizeDetailResolution(TerrainData terrainData, int resolution, int resolutionPerPatch)

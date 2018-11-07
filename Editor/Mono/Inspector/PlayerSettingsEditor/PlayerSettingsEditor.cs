@@ -2259,6 +2259,7 @@ namespace UnityEditor
                 {
                     Il2CppCompilerConfiguration.Debug,
                     Il2CppCompilerConfiguration.Release,
+                    Il2CppCompilerConfiguration.Master,
                 };
             }
 

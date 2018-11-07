@@ -99,7 +99,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             if (graphView != null)
             {
-                graphView.RestorePersistedSelection();
+                graphView.RestorePersitentSelectionForElement(element);
             }
         }
 

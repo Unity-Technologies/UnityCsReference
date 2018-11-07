@@ -122,7 +122,7 @@ namespace UnityEditorInternal
 
             additionalArgs = Debug.GetDiagnosticSwitch("VMUnityLinkerAdditionalArgs") as string;
             if (!string.IsNullOrEmpty(additionalArgs))
-                args.Add(additionalArgs);
+                args.Add(additionalArgs.Trim('\''));
 
             return RunAssemblyLinker(args, out output, out error, linkerPath, workingDirectory);
         }

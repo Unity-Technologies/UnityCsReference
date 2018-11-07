@@ -14,25 +14,50 @@ namespace UnityEditor.Experimental.UIElements.GraphView
     internal interface IGraphViewSelection
     {
         int version { get; set; }
-        List<string> selectedElements { get; set; }
+
+        HashSet<string> selectedElements { get; }
     }
 
-    internal class GraphViewUndoRedoSelection : ScriptableObject, IGraphViewSelection
+    internal class GraphViewUndoRedoSelection : ScriptableObject, IGraphViewSelection, ISerializationCallbackReceiver
     {
         [SerializeField]
         private int m_Version;
+
         [SerializeField]
-        private List<string> m_SelectedElements;
+        string[] m_SelectedElementsArray;
+
+        [NonSerialized]
+        private HashSet<string> m_SelectedElements = new HashSet<string>();
 
         public int version
         {
             get { return m_Version; }
             set { m_Version = value; }
         }
-        public List<string> selectedElements
+
+        public HashSet<string> selectedElements => m_SelectedElements;
+
+        public void OnBeforeSerialize()
         {
-            get { return m_SelectedElements; }
-            set { m_SelectedElements = value; }
+            if (m_SelectedElements.Count == 0)
+                return;
+
+            m_SelectedElementsArray = new string[m_SelectedElements.Count];
+
+            m_SelectedElements.CopyTo(m_SelectedElementsArray);
+        }
+
+        public void OnAfterDeserialize()
+        {
+            m_SelectedElements.Clear();
+
+            if (m_SelectedElementsArray == null || m_SelectedElementsArray.Length == 0)
+                return;
+
+            foreach (string guid in m_SelectedElementsArray)
+            {
+                m_SelectedElements.Add(guid);
+            }
         }
     }
 
@@ -84,22 +109,46 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public ViewTransformChanged viewTransformChanged { get; set; }
 
         [Serializable]
-        class PersistedSelection : IGraphViewSelection
+        class PersistedSelection : IGraphViewSelection, ISerializationCallbackReceiver
         {
             [SerializeField]
             private int m_Version;
+
             [SerializeField]
-            private List<string> m_SelectedElements;
+            string[] m_SelectedElementsArray;
+
+            [NonSerialized]
+            private HashSet<string> m_SelectedElements = new HashSet<string>();
 
             public int version
             {
                 get { return m_Version; }
                 set { m_Version = value; }
             }
-            public List<string> selectedElements
+
+            public HashSet<string> selectedElements => m_SelectedElements;
+
+            public void OnBeforeSerialize()
             {
-                get { return m_SelectedElements; }
-                set { m_SelectedElements = value; }
+                if (m_SelectedElements.Count == 0)
+                    return;
+
+                m_SelectedElementsArray = new string[m_SelectedElements.Count];
+
+                m_SelectedElements.CopyTo(m_SelectedElementsArray);
+            }
+
+            public void OnAfterDeserialize()
+            {
+                if (m_SelectedElementsArray == null || m_SelectedElementsArray.Length == 0)
+                    return;
+
+                m_SelectedElements.Clear();
+
+                foreach (string guid in m_SelectedElementsArray)
+                {
+                    m_SelectedElements.Add(guid);
+                }
             }
         }
         private const string k_SelectionUndoRedoLabel = "Change GraphView Selection";
@@ -270,12 +319,28 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 selectionObjectToSync = m_PersistedSelection;
 
             selectionObjectToSync.selectedElements.Clear();
-            selectionObjectToSync.selectedElements.AddRange(graphViewSelection.selectedElements);
+
+            foreach (string guid in graphViewSelection.selectedElements)
+            {
+                selectionObjectToSync.selectedElements.Add(guid);
+            }
         }
 
-        internal void RestorePersistedSelection()
+        internal void RestorePersitentSelectionForElement(GraphElement element)
         {
-            RestoreSavedSelection(m_PersistedSelection);
+            if (m_PersistedSelection == null)
+                return;
+
+            if (m_PersistedSelection.selectedElements.Count == selection.Count && m_PersistedSelection.version == m_SavedSelectionVersion)
+                return;
+
+            if (string.IsNullOrEmpty(element.persistenceKey))
+                return;
+
+            if (m_PersistedSelection.selectedElements.Contains(element.persistenceKey))
+            {
+                AddToSelectionNoUndoRecord(element);
+            }
         }
 
         private void UndoRedoPerformed()
@@ -456,8 +521,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_PersistedViewTransform = GetOrCreatePersistentData<PersistedViewTransform>(m_PersistedViewTransform, key);
 
             m_PersistedSelection = GetOrCreatePersistentData<PersistedSelection>(m_PersistedSelection, key);
-            if (m_PersistedSelection.selectedElements == null)
-                m_PersistedSelection.selectedElements = new List<string>();
 
             UpdateViewTransform(m_PersistedViewTransform.position, m_PersistedViewTransform.scale);
             RestoreSavedSelection(m_PersistedSelection);
@@ -501,11 +564,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         // ISelection implementation
         public List<ISelectable> selection { get; protected set; }
-
-        internal void AddToPersistedSelection(string guid)
-        {
-            m_PersistedSelection.selectedElements.Add(guid);
-        }
 
         // functions to ISelection extensions
         public virtual void AddToSelection(ISelectable selectable)
@@ -701,7 +759,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 {
                     Undo.undoRedoPerformed += UndoRedoPerformed;
                     m_GraphViewUndoRedoSelection = ScriptableObject.CreateInstance<GraphViewUndoRedoSelection>();
-                    m_GraphViewUndoRedoSelection.selectedElements = new List<string>();
                     m_GraphViewUndoRedoSelection.hideFlags = HideFlags.HideAndDontSave;
                 }
             }
@@ -1110,7 +1167,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             // Attempt to restore selection on the new element if it
             // was previously selected (same GUID).
-            RestorePersistedSelection();
+            RestorePersitentSelectionForElement(graphElement);
         }
 
         public void RemoveElement(GraphElement graphElement)

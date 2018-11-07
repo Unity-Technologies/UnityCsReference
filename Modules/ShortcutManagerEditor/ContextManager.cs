@@ -27,7 +27,7 @@ namespace UnityEditor.ShortcutManagement
         public static readonly GlobalContext globalContext = new GlobalContext();
         public static readonly Type globalContextType = typeof(GlobalContext);
 
-        WeakReference m_FocusedWindow;
+        WeakReference m_FocusedWindow = new WeakReference(null);
 
         List<IShortcutToolContext> m_PriorityContexts = new List<IShortcutToolContext>();
 
@@ -41,15 +41,15 @@ namespace UnityEditor.ShortcutManagement
         {
             get
             {
-                if (m_FocusedWindow != null && m_FocusedWindow.IsAlive && m_FocusedWindow.Target != null)
-                    return m_FocusedWindow.Target as EditorWindow;
+                if (m_FocusedWindow.Target != null && m_FocusedWindow.IsAlive)
+                    return (EditorWindow)m_FocusedWindow.Target;
                 return null;
             }
         }
 
         public void SetFocusedWindow(EditorWindow window)
         {
-            m_FocusedWindow = new WeakReference(window);
+            m_FocusedWindow.Target = window;
         }
 
         static bool IsPriorityContext(IShortcutToolContext context)

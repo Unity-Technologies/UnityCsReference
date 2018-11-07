@@ -53,20 +53,24 @@ namespace UnityEditor.Scripting.Compilers
                 arguments.Add(preparedFileName);
             }
 
-            if (!AddCustomResponseFileIfPresent(arguments, ResponseFilename))
+            var responseFiles  = m_Island._responseFiles?.ToDictionary(Path.GetFileName) ?? new Dictionary<string, string>();
+            KeyValuePair<string, string> obsoleteResponseFile = responseFiles
+                .SingleOrDefault(x => CompilerSpecificResponseFiles.MonoCSharpCompilerObsolete.Contains(x.Key));
+            if (!string.IsNullOrEmpty(obsoleteResponseFile.Key))
             {
-                if (m_Island._api_compatibility_level == ApiCompatibilityLevel.NET_2_0_Subset
-                    && AddCustomResponseFileIfPresent(arguments, "smcs.rsp"))
+                if (m_Island._api_compatibility_level == ApiCompatibilityLevel.NET_2_0_Subset)
                 {
-                    Debug.LogWarning("Using obsolete custom response file \'smcs.rsp\'. " +
-                        $"Please use '{ResponseFilename}' instead.");
+                    Debug.LogWarning($"Using obsolete custom response file '{obsoleteResponseFile.Key}'. Please use '{ResponseFilename}' instead.");
                 }
-                else if (m_Island._api_compatibility_level == ApiCompatibilityLevel.NET_2_0
-                         && AddCustomResponseFileIfPresent(arguments, "gmcs.rsp"))
+                else
                 {
-                    Debug.LogWarning("Using obsolete custom response file \'gmcs.rsp\'. " +
-                        $"Please use '{ResponseFilename}' instead.");
+                    responseFiles.Remove(obsoleteResponseFile.Key);
                 }
+            }
+
+            foreach (var responseFile in responseFiles)
+            {
+                AddResponseFileToArguments(arguments, responseFile.Value);
             }
 
             return StartCompiler(

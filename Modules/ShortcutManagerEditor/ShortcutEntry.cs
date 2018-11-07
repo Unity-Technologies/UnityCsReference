@@ -64,13 +64,15 @@ namespace UnityEditor.ShortcutManagement
 
         public Identifier identifier => m_Identifier;
 
-        public IEnumerable<KeyCombination> combinations => activeCombination;
+        public IList<KeyCombination> combinations => activeCombination;
 
         public bool overridden => m_OverridenCombinations != null;
 
         public Action<ShortcutArguments> action => m_Action;
         public Type context => m_Context;
         public ShortcutType type => m_Type;
+
+        ShortcutModifiers m_ReservedModifier;
 
         internal ShortcutEntry(Identifier id, IEnumerable<KeyCombination> defaultCombination, Action<ShortcutArguments> action, Type context, ShortcutType type)
         {
@@ -79,6 +81,10 @@ namespace UnityEditor.ShortcutManagement
             m_Context = context ?? ContextManager.globalContextType;
             m_Action = action;
             m_Type = type;
+
+            if (typeof(IShortcutToolContext).IsAssignableFrom(m_Context))
+                foreach (var attribute in m_Context.GetCustomAttributes(typeof(ReserveModifiersAttribute), true))
+                    m_ReservedModifier |= (attribute as ReserveModifiersAttribute).modifier;
         }
 
         public override string ToString()
@@ -101,43 +107,18 @@ namespace UnityEditor.ShortcutManagement
             if (activeCombination.Count < prefix.Count)
                 return false;
 
-            if (prefix.Count != 0)
+            if (prefix.Count != 0 && typeof(IShortcutToolContext).IsAssignableFrom(m_Context))
             {
-                var contextType = context;
-                if (typeof(IShortcutToolContext).IsAssignableFrom(contextType))
+                var lastKeyCombination = prefix.Last();
+                lastKeyCombination = new KeyCombination(lastKeyCombination.keyCode, lastKeyCombination.modifiers & ~m_ReservedModifier);
+
+                for (int i = 0; i < prefix.Count - 1; i++)
                 {
-                    var attributes = contextType.GetCustomAttributes(typeof(ReserveModifiersAttribute), true);
-
-                    var lastKeyCombination = prefix.Last();
-                    var newModifier = lastKeyCombination.modifiers;
-
-                    foreach (var attribute in attributes)
-                    {
-                        var modifier = (attribute as ReserveModifiersAttribute).modifier;
-                        if ((modifier & ShortcutModifiers.Shift) == ShortcutModifiers.Shift)
-                        {
-                            newModifier = newModifier & ~ShortcutModifiers.Shift;
-                        }
-                        if ((modifier & ShortcutModifiers.Alt) == ShortcutModifiers.Alt)
-                        {
-                            newModifier = newModifier & ~ShortcutModifiers.Alt;
-                        }
-                        if ((modifier & ShortcutModifiers.ControlOrCommand) == ShortcutModifiers.ControlOrCommand)
-                        {
-                            newModifier = newModifier & ~ShortcutModifiers.ControlOrCommand;
-                        }
-                    }
-
-                    lastKeyCombination = new KeyCombination(lastKeyCombination.keyCode, newModifier);
-
-                    for (int i = 0; i < prefix.Count - 1; i++)
-                    {
-                        if (!prefix[i].Equals(activeCombination[i]))
-                            return false;
-                    }
-
-                    return lastKeyCombination.Equals(activeCombination[prefix.Count - 1]);
+                    if (!prefix[i].Equals(activeCombination[i]))
+                        return false;
                 }
+
+                return lastKeyCombination.Equals(activeCombination[prefix.Count - 1]);
             }
 
             for (int i = 0; i < prefix.Count; i++)

@@ -4,6 +4,7 @@
 
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 namespace UnityEditor
 {
@@ -34,6 +35,28 @@ namespace UnityEditor
         public virtual void OnToolDeactivated(GridBrushBase.Tool tool) {}
         public virtual void RegisterUndo(GameObject brushTarget, GridBrushBase.Tool tool) {}
         public virtual GameObject[] validTargets { get { return null; } }
+
+        internal void OnEditStart(GridLayout gridLayout, GameObject brushTarget)
+        {
+            SetBufferSyncTile(brushTarget, true);
+        }
+
+        internal void OnEditEnd(GridLayout gridLayout, GameObject brushTarget)
+        {
+            SetBufferSyncTile(brushTarget, false);
+        }
+
+        private void SetBufferSyncTile(GameObject brushTarget, bool active)
+        {
+            if (brushTarget == null || !Tilemap.HasSyncTileCallback())
+                return;
+
+            var tilemaps = brushTarget.GetComponentsInChildren<Tilemap>();
+            foreach (var tilemap in tilemaps)
+            {
+                tilemap.bufferSyncTile = active;
+            }
+        }
 
         internal static void OnPaintSceneGUIInternal(GridLayout gridLayout, GameObject brushTarget, BoundsInt position, GridBrushBase.Tool tool, bool executing)
         {
