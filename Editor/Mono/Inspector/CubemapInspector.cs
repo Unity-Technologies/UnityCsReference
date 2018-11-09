@@ -121,7 +121,7 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck())
             {
                 // reformat the cubemap
-                if (TextureUtil.ReformatCubemap(ref c, faceSize, faceSize, c.format, useMipMap, linear))
+                if (TextureUtil.ReformatCubemap(c, faceSize, faceSize, c.format, useMipMap, linear))
                     InitTexturesFromCubemap();
 
                 TextureUtil.MarkCubemapReadable(c, readable);
