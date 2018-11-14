@@ -59,16 +59,16 @@ namespace UnityEditor
                 var lines = File.ReadAllLines(shortcut.FullName);
                 foreach (var line in lines)
                 {
-                    if (line.StartsWith("Exec=\""))
-                    {
-                        var path = line.Split('"').Where((item, index) => index == 1).SingleOrDefault();
-                        if (!string.IsNullOrEmpty(path))
-                        {
-                            var buildTxtPath = Path.Combine(path, pathToBuildTxt);
-                            var buildNumber = GetBuildNumber(buildTxtPath);
-                            paths.Add(new RiderInfo(buildNumber, path, false));
-                        }
-                    }
+                    if (!line.StartsWith("Exec=\""))
+                        continue;
+                    var path = line.Split('"').Where((item, index) => index == 1).SingleOrDefault();
+                    if (string.IsNullOrEmpty(path))
+                        continue;
+                    var buildTxtPath = Path.Combine(path, pathToBuildTxt);
+                    var buildNumber = GetBuildNumber(buildTxtPath);
+                    if (paths.Any(a => a.Path == path)) // avoid adding similar build as from toolbox
+                        continue;
+                    paths.Add(new RiderInfo(buildNumber, path, false));
                 }
             }
 

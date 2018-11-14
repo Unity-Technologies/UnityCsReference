@@ -250,7 +250,14 @@ namespace UnityEditor.VisualStudioIntegration
 
         IEnumerable<ScriptCompilerBase.ResponseFileData> ParseResponseFileData(MonoIsland island)
         {
-            var systemReferenceDirectories = CSharpLanguage.GetCSharpCompiler(island._target, true, "Assembly-CSharp") == CSharpCompiler.Microsoft
+            var scriptAssembly = new ScriptAssembly
+            {
+                Filename = "Assembly-CSharp.dll",
+                Language = ScriptCompilers.CSharpSupportedLanguage,
+                Flags = Scripting.ScriptCompilation.AssemblyFlags.None
+            };
+
+            var systemReferenceDirectories = CSharpLanguage.GetCSharpCompiler(island._target, true, scriptAssembly) == CSharpCompiler.Microsoft
                 && PlayerSettings.GetScriptingBackend(BuildPipeline.GetBuildTargetGroup(island._target)) == ScriptingImplementation.WinRTDotNET && !island._editor
                 ? MicrosoftCSharpCompiler.GetClassLibraries(island._target, island._editor)
                 : MonoLibraryHelpers.GetSystemReferenceDirectories(island._api_compatibility_level);
@@ -531,8 +538,7 @@ namespace UnityEditor.VisualStudioIntegration
 
             if (PlayerSettingsEditor.IsLatestApiCompatibility(island._api_compatibility_level))
             {
-                if (ScriptEditorUtility.GetScriptEditorFromPreferences() == ScriptEditorUtility.ScriptEditor.Rider
-                    || ScriptEditorUtility.GetScriptEditorFromPreferences() == ScriptEditorUtility.ScriptEditor.VisualStudioCode)
+                if (ScriptEditorUtility.GetScriptEditorFromPreferences() == ScriptEditorUtility.ScriptEditor.VisualStudioCode)
                 {
                     targetframeworkversion = "v4.5";
                 }

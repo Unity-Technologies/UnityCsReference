@@ -44,11 +44,12 @@ namespace UnityEditor.ShortcutManagement
             Menu.GetMenuItemDefaultShortcuts(names, defaultShortcuts);
             entries.Capacity += names.Count;
 
-            for (int index = 0; index < names.Count; ++index)
+            for (var index = 0; index < names.Count; ++index)
             {
                 var keys = new List<KeyCombination>();
-                if (!string.IsNullOrEmpty(defaultShortcuts[index]))
-                    keys.Add(KeyCombination.ParseLegacyBindingString(defaultShortcuts[index]));
+                KeyCombination keyCombination;
+                if (KeyCombination.TryParseMenuItemBindingString(defaultShortcuts[index], out keyCombination))
+                    keys.Add(keyCombination);
                 entries.Add(new MenuItemEntryDiscoveryInfo(names[index], keys));
             }
 

@@ -232,7 +232,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 pendingAssemblies.Remove(assembly);
                 var island = assembly.ToMonoIsland(options, buildOutputDirectory);
-                var compiler = ScriptCompilers.CreateCompilerInstance(island, buildingForEditor, island._target, assembly.RunUpdater);
+                var compiler = ScriptCompilers.CreateCompilerInstance(assembly, island, buildingForEditor, island._target, assembly.RunUpdater);
 
                 compilerTasks.Add(assembly, compiler);
 

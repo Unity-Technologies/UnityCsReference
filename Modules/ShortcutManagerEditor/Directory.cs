@@ -33,41 +33,39 @@ namespace UnityEditor.ShortcutManagement
             }
         }
 
-        void FindShortcutEntries(List<KeyCombination> combinationSequence, List<ShortcutEntry> outputShortcuts, Predicate<ShortcutEntry> filter)
+        private List<ShortcutEntry> GetShortcutEntriesForPrimaryKey(List<KeyCombination> combinationSequence)
         {
-            outputShortcuts.Clear();
-
-            Assert.IsNotNull(combinationSequence);
-            Assert.IsTrue(combinationSequence.Count > 0, "Sequence can not be empty");
-            List<ShortcutEntry> entries = m_IndexedShortcutEntries[(int)combinationSequence[0].keyCode];
-            if (entries == null)
-                return;
-
-            m_CombinationSequence = combinationSequence;
-            m_Predicate = filter;
-            foreach (var entry in entries)
-                if (ShortcutStartsWithCombinationSequenceAndSatisfiesPredicate(entry))
-                    outputShortcuts.Add(entry);
+            if (combinationSequence == null || combinationSequence.Count < 1)
+                return null;
+            return m_IndexedShortcutEntries[(int)combinationSequence[0].keyCode];
         }
 
+        // These two overloads have some duplication to avoid creating predicates etc.
         public void FindShortcutEntries(List<KeyCombination> combinationSequence, Type[] context, List<ShortcutEntry> outputShortcuts)
         {
-            m_ShortcutEntryContextList = context;
-            Predicate<ShortcutEntry> filter = null;
-            if (context != null)
-                filter = ShortcutEntryMatchesAnyContext;
-            FindShortcutEntries(combinationSequence, outputShortcuts, filter);
+            outputShortcuts.Clear();
+            List<ShortcutEntry> entries = GetShortcutEntriesForPrimaryKey(combinationSequence);
+            if (entries == null)
+                return;
+            foreach (var entry in entries)
+                if (entry.StartsWith(combinationSequence) && ShortcutEntryMatchesAnyContext(entry.context, context))
+                    outputShortcuts.Add(entry);
         }
 
         public void FindShortcutEntries(List<KeyCombination> combinationSequence, IContextManager contextManager, List<ShortcutEntry> outputShortcuts)
         {
-            m_ContextManager = contextManager;
-            FindShortcutEntries(combinationSequence, outputShortcuts, ShortcutEntrySatisfiesContextManager);
+            outputShortcuts.Clear();
+            List<ShortcutEntry> entries = GetShortcutEntriesForPrimaryKey(combinationSequence);
+            if (entries == null)
+                return;
+            foreach (var entry in entries)
+                if (entry.StartsWith(combinationSequence) && ShortcutEntrySatisfiesContextManager(contextManager, entry))
+                    outputShortcuts.Add(entry);
         }
 
         public void FindShortcutEntries(List<KeyCombination> combinationSequence, List<ShortcutEntry> outputShortcuts)
         {
-            FindShortcutEntries(combinationSequence, outputShortcuts, null);
+            FindShortcutEntries(combinationSequence, (Type[])null, outputShortcuts);
         }
 
         public ShortcutEntry FindShortcutEntry(Identifier identifier)
@@ -94,36 +92,29 @@ namespace UnityEditor.ShortcutManagement
         //////////////////////////////
         // Lambda elimination helpers
         //////////////////////////////
-        static Type m_ShortcutEntryContext;
-        static Type[] m_ShortcutEntryContextList;
-        static List<KeyCombination> m_CombinationSequence;
-        static Predicate<ShortcutEntry> m_Predicate;
-        static IContextManager m_ContextManager;
-
-        static bool ShortcutStartsWithCombinationSequenceAndSatisfiesPredicate(ShortcutEntry entry)
+        static bool ShortcutEntryMatchesAnyContext(Type shortcutEntryContext, Type[] contextList)
         {
-            return entry.StartsWith(m_CombinationSequence) && (m_Predicate == null || m_Predicate(entry));
+            if (contextList == null)
+                return true;
+            foreach (var type in contextList)
+                if (ShortcutEntryMatchesContext(shortcutEntryContext, type))
+                    return true;
+            return false;
         }
 
-        static bool ShortcutEntryMatchesAnyContext(ShortcutEntry entry)
+        static bool ShortcutEntryMatchesContext(Type shortcutEntryContext, Type context)
         {
-            m_ShortcutEntryContext = entry.context;
-            return m_ShortcutEntryContextList == null || m_ShortcutEntryContextList.Any(ShortcutEntryMatchesContext);
+            return context == shortcutEntryContext ||
+                (shortcutEntryContext != null && shortcutEntryContext.IsAssignableFrom(context));
         }
 
-        static bool ShortcutEntryMatchesContext(Type context)
+        static bool ShortcutEntrySatisfiesContextManager(IContextManager contextManager, ShortcutEntry entry)
         {
-            return context == m_ShortcutEntryContext ||
-                (m_ShortcutEntryContext != null && m_ShortcutEntryContext.IsAssignableFrom(context));
-        }
-
-        static bool ShortcutEntrySatisfiesContextManager(ShortcutEntry entry)
-        {
-            return m_ContextManager.HasActiveContextOfType(entry.context) &&
+            return contextManager.HasActiveContextOfType(entry.context) &&
                 // Emulate old play mode shortcut behavior
                 // * Menu shortcuts are always active
                 // * Non-menu shortcuts only apply when the game view does not have focus
-                (!m_ContextManager.playModeContextIsActive ||
+                (!contextManager.playModeContextIsActive ||
                     entry.type == ShortcutType.Menu);
         }
     }

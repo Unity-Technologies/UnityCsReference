@@ -21,9 +21,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         static CachedReferences cachedReferences;
 
         public static string[] GetSystemLibraryReferences(ApiCompatibilityLevel apiCompatibilityLevel, BuildTarget buildTarget, SupportedLanguage supportedLanguage,
-            bool buildingForEditor, string assemblyName)
+            bool buildingForEditor, ScriptAssembly scriptAssembly)
         {
-            if (WSAHelpers.BuildingForDotNet(buildTarget, buildingForEditor, assemblyName))
+            if (WSAHelpers.BuildingForDotNet(buildTarget, buildingForEditor, scriptAssembly))
                 return new string[0];
 
             // The language may not be compatible with these additional references

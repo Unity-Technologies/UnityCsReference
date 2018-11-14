@@ -450,29 +450,37 @@ namespace UnityEditor
 
             UpdateCombinedCompatibility();
 
-            m_ReferencesList = new ReorderableList(m_State.references, typeof(AssemblyDefinitionReference), false, false, true, true);
+            m_ReferencesList = new ReorderableList(m_State.references, typeof(AssemblyDefinitionReference), true, false, true, true);
             m_ReferencesList.drawElementCallback = DrawReferenceListElement;
             m_ReferencesList.onAddCallback = AddReferenceListElement;
             m_ReferencesList.onRemoveCallback = RemoveReferenceListElement;
+            m_ReferencesList.onReorderCallback = ReorderableListChanged;
 
             m_ReferencesList.elementHeight = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
             m_ReferencesList.headerHeight = 3;
 
-            m_DefineConstraints = new ReorderableList(m_State.defineConstraints, typeof(DefineConstraint), false, false, true, true);
+            m_DefineConstraints = new ReorderableList(m_State.defineConstraints, typeof(DefineConstraint), true, false, true, true);
             m_DefineConstraints.drawElementCallback = DrawDefineConstraintListElement;
             m_DefineConstraints.onAddCallback = AddDefineConstraintListElement;
             m_DefineConstraints.onRemoveCallback = RemoveDefineConstraintListElement;
+            m_DefineConstraints.onReorderCallback = ReorderableListChanged;
 
             m_DefineConstraints.elementHeight = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
             m_DefineConstraints.headerHeight = 3;
 
-            m_PrecompiledReferencesList = new ReorderableList(m_State.precompiledReferences, typeof(PrecompiledReference), false, false, true, true);
+            m_PrecompiledReferencesList = new ReorderableList(m_State.precompiledReferences, typeof(PrecompiledReference), true, false, true, true);
             m_PrecompiledReferencesList.drawElementCallback = DrawPrecompiledReferenceListElement;
             m_PrecompiledReferencesList.onAddCallback = AddPrecompiledReferenceListElement;
             m_PrecompiledReferencesList.onRemoveCallback = RemovePrecompiledReferenceListElement;
+            m_PrecompiledReferencesList.onReorderCallback = ReorderableListChanged;
 
             m_PrecompiledReferencesList.elementHeight = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
             m_PrecompiledReferencesList.headerHeight = 3;
+        }
+
+        void ReorderableListChanged(ReorderableList list)
+        {
+            m_State.modified = true;
         }
 
         private void DrawDefineConstraintListElement(Rect rect, int index, bool isactive, bool isfocused)

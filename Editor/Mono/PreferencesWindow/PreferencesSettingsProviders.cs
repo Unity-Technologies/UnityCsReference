@@ -187,10 +187,9 @@ namespace UnityEditor
             }
         }
 
-        public PreferencesProvider(string path)
-            : base(path)
+        public PreferencesProvider(string path, IEnumerable<string> keywords = null)
+            : base(path, SettingsScope.User, keywords)
         {
-            scopes = SettingsScopes.User;
             prefWinExtensions = ModuleManager.GetPreferenceWindowExtensions();
             ReadPreferences();
         }
@@ -198,45 +197,40 @@ namespace UnityEditor
         [SettingsProvider]
         internal static SettingsProvider CreateGeneralProvider()
         {
-            var settings = new PreferencesProvider("Preferences/_General") { label = "General" };
-            settings.PopulateSearchKeywordsFromGUIContentProperties<GeneralProperties>();
-            settings.guiHandler = searchContext => { settings.OnGUI(searchContext, settings.ShowGeneral); };
+            var settings = new PreferencesProvider("Preferences/_General", GetSearchKeywordsFromGUIContentProperties<GeneralProperties>()) { label = "General" };
+            settings.guiHandler = searchContext => { OnGUI(searchContext, settings.ShowGeneral); };
             return settings;
         }
 
         [SettingsProvider]
         internal static SettingsProvider CreateExternalToolsProvider()
         {
-            var settings = new PreferencesProvider("Preferences/External Tools");
-            settings.PopulateSearchKeywordsFromGUIContentProperties<ExternalProperties>();
-            settings.guiHandler = searchContext => { settings.OnGUI(searchContext, settings.ShowExternalApplications); };
+            var settings = new PreferencesProvider("Preferences/External Tools", GetSearchKeywordsFromGUIContentProperties<ExternalProperties>());
+            settings.guiHandler = searchContext => { OnGUI(searchContext, settings.ShowExternalApplications); };
             return settings;
         }
 
         [SettingsProvider]
         internal static SettingsProvider CreateColorsProvider()
         {
-            var settings = new PreferencesProvider("Preferences/Colors");
-            settings.PopulateSearchKeywordsFromGUIContentProperties<ColorsProperties>();
-            settings.guiHandler = searchContext => { settings.OnGUI(searchContext, settings.ShowColors); };
+            var settings = new PreferencesProvider("Preferences/Colors", GetSearchKeywordsFromGUIContentProperties<ColorsProperties>());
+            settings.guiHandler = searchContext => { OnGUI(searchContext, settings.ShowColors); };
             return settings;
         }
 
         [SettingsProvider]
         internal static SettingsProvider CreateGICacheProvider()
         {
-            var settings = new PreferencesProvider("Preferences/GI Cache");
-            settings.PopulateSearchKeywordsFromGUIContentProperties<GICacheProperties>();
-            settings.guiHandler = searchContext => { settings.OnGUI(searchContext, settings.ShowGICache); };
+            var settings = new PreferencesProvider("Preferences/GI Cache", GetSearchKeywordsFromGUIContentProperties<GICacheProperties>());
+            settings.guiHandler = searchContext => { OnGUI(searchContext, settings.ShowGICache); };
             return settings;
         }
 
         [SettingsProvider]
         internal static SettingsProvider Create2DProvider()
         {
-            var settings = new PreferencesProvider("Preferences/2D");
-            settings.PopulateSearchKeywordsFromGUIContentProperties<TwoDProperties>();
-            settings.guiHandler = searchContext => { settings.OnGUI(searchContext, settings.Show2D); };
+            var settings = new PreferencesProvider("Preferences/2D", GetSearchKeywordsFromGUIContentProperties<TwoDProperties>());
+            settings.guiHandler = searchContext => { OnGUI(searchContext, settings.Show2D); };
             return settings;
         }
 
@@ -244,7 +238,7 @@ namespace UnityEditor
         internal static SettingsProvider CreateKeysProvider()
         {
             var settings = new PreferencesProvider("Preferences/Keys");
-            settings.guiHandler = searchContext => { settings.OnGUI(searchContext, settings.ShowShortcuts); };
+            settings.guiHandler = searchContext => { OnGUI(searchContext, settings.ShowShortcuts); };
             return settings;
         }
 
@@ -276,7 +270,7 @@ namespace UnityEditor
             if (editorLanguages.Length > 1)
             {
                 var settings = new PreferencesProvider("Preferences/Languages");
-                settings.guiHandler = searchContext => { settings.OnGUI(searchContext, settings.ShowLanguage); };
+                settings.guiHandler = searchContext => { OnGUI(searchContext, settings.ShowLanguage); };
                 return settings;
             }
 
@@ -290,14 +284,14 @@ namespace UnityEditor
             if (Unsupported.IsDeveloperMode() || UnityConnect.preferencesEnabled)
             {
                 var settings = new PreferencesProvider("Preferences/Unity Services");
-                settings.guiHandler = searchContext => { settings.OnGUI(searchContext, settings.ShowUnityConnectPrefs); };
+                settings.guiHandler = searchContext => { OnGUI(searchContext, settings.ShowUnityConnectPrefs); };
                 return settings;
             }
             return null;
         }
 
         // Group Preference sections with the same name
-        private void OnGUI(string searchContext, Action<string> drawAction)
+        private static void OnGUI(string searchContext, Action<string> drawAction)
         {
             using (new SettingsWindow.GUIScope())
                 drawAction(searchContext);
@@ -528,7 +522,7 @@ namespace UnityEditor
 
         private static void RevertPrefKeys()
         {
-            foreach (KeyValuePair<string, PrefKey> kvp in Settings.Prefs<PrefKey>())
+            foreach (KeyValuePair<string, PrefKey> kvp in PrefSettings.Prefs<PrefKey>())
             {
                 kvp.Value.ResetToDefault();
                 EditorPrefs.SetString(kvp.Value.Name, kvp.Value.ToUniqueString());
@@ -589,7 +583,7 @@ namespace UnityEditor
                 )
             );
             m_SortedKeyEntries.AddRange(
-                Settings.Prefs<PrefKey>().Select(pk => new KeyValuePair<string, object>(pk.Key, pk.Value))
+                PrefSettings.Prefs<PrefKey>().Select(pk => new KeyValuePair<string, object>(pk.Key, pk.Value))
             );
             m_SortedKeyEntries.Sort((k1, k2) => k1.Key.CompareTo(k2.Key));
             foreach (var keyEntry in m_SortedKeyEntries)
@@ -614,7 +608,10 @@ namespace UnityEditor
                     }
 
                     if (changeCheckScope.changed)
+                    {
                         GUIUtility.keyboardControl = controlID;
+                        m_InvalidKeyMessage = "";
+                    }
                 }
             }
 
@@ -650,7 +647,7 @@ namespace UnityEditor
                     Event.current.Use();
                     break;
                 case KeyCode.DownArrow:
-                    if (m_SelectedShortcut < ShortcutIntegration.instance.profileManager.GetAllShortcuts().Count() + Settings.Prefs<PrefKey>().Count())
+                    if (m_SelectedShortcut < ShortcutIntegration.instance.profileManager.GetAllShortcuts().Count() + PrefSettings.Prefs<PrefKey>().Count())
                     {
                         m_SelectedShortcut++;
                         m_ValidKeyChange = true;
@@ -666,6 +663,7 @@ namespace UnityEditor
             ShortcutController shortcutController = ShortcutIntegration.instance;
             var collisions = new List<ShortcutEntry>();
             m_ValidKeyChange = true;
+            m_InvalidKeyMessage = "";
             Type context = selectedShortcut?.context;
             string identifier = selectedShortcut != null
                 ? selectedShortcut.identifier.path
@@ -678,20 +676,19 @@ namespace UnityEditor
                 new[] { context },
                 collisions);
 
-            if (collisions.Any())
+            if (collisions.Any() && !Equals(identifier, collisions[0].identifier.path))
             {
                 m_ValidKeyChange = false;
                 m_InvalidKeyMessage = string.Format(k_KeyCollisionFormat, BuildDescription(e), identifier, collisions[0].identifier);
                 return;
             }
 
-
             // Check prefkeys
             string selectedToolName = identifier.Split('/')[0];
 
             // Setting the same key to the same action is ok.
             // Setting the same key to a different action from a different tool is ok too.
-            KeyValuePair<string, PrefKey> collision = Settings.Prefs<PrefKey>().FirstOrDefault(kvp =>
+            KeyValuePair<string, PrefKey> collision = PrefSettings.Prefs<PrefKey>().FirstOrDefault(kvp =>
                 kvp.Value.KeyboardEvent.Equals(e) &&
                 kvp.Key.Split('/')[0] == selectedToolName && kvp.Key != identifier
             );
@@ -794,7 +791,7 @@ namespace UnityEditor
                         if (m_ValidKeyChange)
                         {
                             selectedKey.KeyboardEvent = e;
-                            Settings.Set(selectedKey.Name, selectedKey);
+                            PrefSettings.Set(selectedKey.Name, selectedKey);
                         }
                     }
                     else if (GUIUtility.keyboardControl == controlID && Event.current.type == EventType.KeyDown)
@@ -849,6 +846,7 @@ namespace UnityEditor
             if (GUILayout.Button(ColorsProperties.userDefaults, GUILayout.Width(120)))
             {
                 m_ValidKeyChange = true;
+                m_InvalidKeyMessage = "";
                 RevertShortcuts();
                 RevertPrefKeys();
             }
@@ -856,7 +854,7 @@ namespace UnityEditor
 
         private void RevertColors()
         {
-            foreach (KeyValuePair<string, PrefColor> kvp in Settings.Prefs<PrefColor>())
+            foreach (KeyValuePair<string, PrefColor> kvp in PrefSettings.Prefs<PrefColor>())
             {
                 kvp.Value.ResetToDefault();
                 EditorPrefs.SetString(kvp.Value.Name, kvp.Value.ToUniqueString());
@@ -867,7 +865,7 @@ namespace UnityEditor
         {
             if (s_CachedColors == null)
             {
-                s_CachedColors = OrderPrefs(Settings.Prefs<PrefColor>());
+                s_CachedColors = OrderPrefs(PrefSettings.Prefs<PrefColor>());
             }
 
             var changedColor = false;
@@ -887,7 +885,7 @@ namespace UnityEditor
                     }
                 }
                 if (ccolor != null)
-                    Settings.Set(ccolor.Name, ccolor);
+                    PrefSettings.Set(ccolor.Name, ccolor);
             }
             GUILayout.Space(5f);
 

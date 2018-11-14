@@ -34,7 +34,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return useDotNetCore;
         }
 
-        public static bool BuildingForDotNet(BuildTarget buildTarget, bool buildingForEditor, string assemblyName)
+        public static bool BuildingForDotNet(BuildTarget buildTarget, bool buildingForEditor, ScriptAssembly scriptAssembly)
         {
             if (buildingForEditor)
                 return false;
@@ -42,7 +42,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (buildTarget != BuildTarget.WSAPlayer)
                 return false;
 
-            if (CSharpLanguage.GetCSharpCompiler(buildTarget, buildingForEditor, assemblyName) != CSharpCompiler.Microsoft)
+            if (CSharpLanguage.GetCSharpCompiler(buildTarget, buildingForEditor, scriptAssembly) != CSharpCompiler.Microsoft)
                 return false;
 
             if (PlayerSettings.GetScriptingBackend(BuildPipeline.GetBuildTargetGroup(buildTarget)) != ScriptingImplementation.WinRTDotNET)

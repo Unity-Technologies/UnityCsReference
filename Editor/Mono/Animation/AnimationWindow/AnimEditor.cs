@@ -22,25 +22,6 @@ namespace UnityEditor
         PingPong = (int)WrapMode.PingPong
     }
 
-    class AnimationShortcutContex : IShortcutToolContext
-    {
-        AnimEditor m_AnimEditor;
-        public AnimationShortcutContex(AnimEditor animEditor)
-        {
-            m_AnimEditor = animEditor;
-        }
-
-        public bool active
-        {
-            get { return !animEditor.stateDisabled && !animEditor.state.animatorIsOptimized; }
-        }
-
-        public AnimEditor animEditor
-        {
-            get { return m_AnimEditor; }
-        }
-    }
-
     internal class AnimEditor : ScriptableObject
     {
         // Active Animation windows
@@ -101,8 +82,6 @@ namespace UnityEditor
                 return EditorGUIUtility.isProSkin ? s_InRangeColorDark : s_InRangeColorLight;
             }
         }
-
-        AnimationShortcutContex m_AnimationShortcutContex;
 
         internal const int kSliderThickness = 15;
         internal const int kLayoutRowHeight = EditorGUI.kWindowToolbarHeight + 1;
@@ -356,9 +335,6 @@ namespace UnityEditor
 
             m_CurveEditor.curvesUpdated += SaveChangedCurvesFromCurveEditor;
             m_CurveEditor.OnEnable();
-
-            m_AnimationShortcutContex = new AnimationShortcutContex(this);
-            ShortcutIntegration.instance.contextManager.RegisterToolContext(m_AnimationShortcutContex);
         }
 
         public void OnDisable()
@@ -375,7 +351,6 @@ namespace UnityEditor
                 m_DopeSheet.OnDisable();
 
             m_State.OnDisable();
-            ShortcutIntegration.instance.contextManager.DeregisterToolContext(m_AnimationShortcutContex);
         }
 
         public void OnDestroy()
@@ -729,10 +704,13 @@ namespace UnityEditor
 
         static void ExecuteShortcut(ShortcutArguments args, Action<AnimEditor> exp)
         {
-            var animEditorContext = (AnimationShortcutContex)args.context;
-            var animEditor = animEditorContext.animEditor;
+            var animationWindow = (AnimationWindow)args.context;
+            var animEditor = animationWindow.animEditor;
 
-            if (EditorWindow.focusedWindow != animEditor.m_OwnerWindow)
+            if (EditorWindow.focusedWindow != animationWindow)
+                return;
+
+            if (animEditor.stateDisabled || animEditor.state.animatorIsOptimized)
                 return;
 
             exp(animEditor);
@@ -746,14 +724,14 @@ namespace UnityEditor
         }
 
         [FormerlyPrefKeyAs("Animation/Show Curves", "c")]
-        [Shortcut("Animation/Show Curves", typeof(AnimationShortcutContex), "c")]
+        [Shortcut("Animation/Show Curves", typeof(AnimationWindow), "c")]
         static void ShowCurves(ShortcutArguments args)
         {
             ExecuteShortcut(args, animEditor => { animEditor.SwitchBetweenCurvesAndDopesheet(); });
         }
 
         [FormerlyPrefKeyAs("Animation/Play Animation", " ")]
-        [Shortcut("Animation/Play Animation", typeof(AnimationShortcutContex), " ")]
+        [Shortcut("Animation/Play Animation", typeof(AnimationWindow), " ")]
         static void TogglePlayAnimation(ShortcutArguments args)
         {
             ExecuteShortcut(args, controlInterface =>
@@ -766,75 +744,74 @@ namespace UnityEditor
         }
 
         [FormerlyPrefKeyAs("Animation/Next Frame", ".")]
-        [Shortcut("Animation/Next Frame", typeof(AnimationShortcutContex), ".")]
+        [Shortcut("Animation/Next Frame", typeof(AnimationWindow), ".")]
         static void NextFrame(ShortcutArguments args)
         {
             ExecuteShortcut(args, controlInterface => controlInterface.GoToNextFrame());
         }
 
         [FormerlyPrefKeyAs("Animation/Previous Frame", ",")]
-        [Shortcut("Animation/Previous Frame", typeof(AnimationShortcutContex), ",")]
+        [Shortcut("Animation/Previous Frame", typeof(AnimationWindow), ",")]
         static void PreviousFrame(ShortcutArguments args)
         {
             ExecuteShortcut(args, controlInterface => controlInterface.GoToPreviousFrame());
         }
 
         [FormerlyPrefKeyAs("Animation/Previous Keyframe", "&,")]
-        [Shortcut("Animation/Previous Keyframe", typeof(AnimationShortcutContex), "&,")]
+        [Shortcut("Animation/Previous Keyframe", typeof(AnimationWindow), "&,")]
         static void PreviousKeyFrame(ShortcutArguments args)
         {
             ExecuteShortcut(args, controlInterface => controlInterface.GoToPreviousKeyframe());
         }
 
         [FormerlyPrefKeyAs("Animation/Next Keyframe", "&.")]
-        [Shortcut("Animation/Next Keyframe", typeof(AnimationShortcutContex), "&.")]
+        [Shortcut("Animation/Next Keyframe", typeof(AnimationWindow), "&.")]
         static void NextKeyFrame(ShortcutArguments args)
         {
             ExecuteShortcut(args, controlInterface => controlInterface.GoToNextKeyframe());
         }
 
         [FormerlyPrefKeyAs("Animation/First Keyframe", "#,")]
-        [Shortcut("Animation/First Keyframe", typeof(AnimationShortcutContex), "#,")]
+        [Shortcut("Animation/First Keyframe", typeof(AnimationWindow), "#,")]
         static void FirstKeyFrame(ShortcutArguments args)
         {
             ExecuteShortcut(args, controlInterface => controlInterface.GoToFirstKeyframe());
         }
 
         [FormerlyPrefKeyAs("Animation/Last Keyframe", "#.")]
-        [Shortcut("Animation/Last Keyframe", typeof(AnimationShortcutContex), "#.")]
+        [Shortcut("Animation/Last Keyframe", typeof(AnimationWindow), "#.")]
         static void LastKeyFrame(ShortcutArguments args)
         {
             ExecuteShortcut(args, controlInterface => controlInterface.GoToLastKeyframe());
         }
 
         [FormerlyPrefKeyAs("Animation/Key Selected", "k")]
-        [Shortcut("Animation/Key Selected", typeof(AnimationShortcutContex), "k")]
+        [Shortcut("Animation/Key Selected", null, "k")]
         static void KeySelected(ShortcutArguments args)
         {
-            var animEditorContext = (AnimationShortcutContex)args.context;
-            var animEditor = animEditorContext.animEditor;
-
-            if (!animEditor.m_State.previewing)
+            AnimationWindow animationWindow = AnimationWindow.GetAllAnimationWindows().Find(aw => (aw.state.previewing || aw == EditorWindow.focusedWindow));
+            if (animationWindow == null)
                 return;
+
+            var animEditor = animationWindow.animEditor;
 
             animEditor.SaveCurveEditorKeySelection();
             AnimationWindowUtility.AddSelectedKeyframes(animEditor.m_State, animEditor.controlInterface.time);
-            if (!animEditor.m_OwnerWindow.hasFocus)
-                animEditor.controlInterface.ClearCandidates();
+            animEditor.controlInterface.ClearCandidates();
             animEditor.UpdateSelectedKeysToCurveEditor();
 
             animEditor.Repaint();
         }
 
         [FormerlyPrefKeyAs("Animation/Key Modified", "#k")]
-        [Shortcut("Animation/Key Modified", typeof(AnimationShortcutContex), "#k")]
+        [Shortcut("Animation/Key Modified", null, "#k")]
         static void KeyModified(ShortcutArguments args)
         {
-            var animEditorContext = (AnimationShortcutContex)args.context;
-            var animEditor = animEditorContext.animEditor;
-
-            if (!animEditor.m_State.previewing)
+            AnimationWindow animationWindow = AnimationWindow.GetAllAnimationWindows().Find(aw => (aw.state.previewing || aw == EditorWindow.focusedWindow));
+            if (animationWindow == null)
                 return;
+
+            var animEditor = animationWindow.animEditor;
 
             animEditor.SaveCurveEditorKeySelection();
             animEditor.controlInterface.ProcessCandidates();
@@ -1226,6 +1203,7 @@ namespace UnityEditor
             settings.allowDeleteLastKeyInCurve = true;
             settings.rectangleToolFlags = CurveEditorSettings.RectangleToolFlags.FullRectangleTool;
             settings.undoRedoSelection = true;
+            settings.flushCurveCache = false; // Curve Wrappers are cached in AnimationWindowState.
 
             m_CurveEditor.shownArea = new Rect(1, 1, 1, 1);
             m_CurveEditor.settings = settings;

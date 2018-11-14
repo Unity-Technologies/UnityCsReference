@@ -47,10 +47,13 @@ namespace UnityEditor.ShortcutManagement
             var identifier = new Identifier(methodInfo, this);
 
             IEnumerable<KeyCombination> defaultCombination;
-            if (defaultKeyCombination == null)
-                defaultCombination = Enumerable.Empty<KeyCombination>();
+
+            KeyCombination keyCombination;
+            if (KeyCombination.TryParseMenuItemBindingString(defaultKeyCombination, out keyCombination))
+                defaultCombination = new[] { keyCombination };
             else
-                defaultCombination = new[] { KeyCombination.ParseLegacyBindingString(defaultKeyCombination) };
+                defaultCombination = Enumerable.Empty<KeyCombination>();
+
 
             var type = this is ClutchShortcutAttribute ? ShortcutType.Clutch : ShortcutType.Action;
             var methodParams = methodInfo.GetParameters();

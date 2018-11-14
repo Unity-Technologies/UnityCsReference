@@ -51,13 +51,6 @@ namespace UnityEditor
             setAxisUiScalarsCallback = null;
         }
 
-        // Fix for  case 1086532 - Audio source inspector leaks memory
-        ~CurveWrapper()
-        {
-            if (m_Renderer != null)
-                m_Renderer.FlushCache();
-        }
-
         internal enum SelectionMode
         {
             None = 0,
@@ -231,6 +224,8 @@ namespace UnityEditor
             }
             set
             {
+                FlushCurvesCache();
+
                 m_AnimationCurves = value;
 
                 curveIDToIndexMap.Clear();
@@ -257,6 +252,22 @@ namespace UnityEditor
 
             curveID = -1;
             return false;
+        }
+
+        void FlushCurvesCache()
+        {
+            if (!settings.flushCurveCache)
+                return;
+
+            if (m_AnimationCurves == null)
+                return;
+
+            for (int i = 0; i < m_AnimationCurves.Length; ++i)
+            {
+                CurveWrapper curveWrapper = m_AnimationCurves[i];
+                if (curveWrapper.renderer != null)
+                    curveWrapper.renderer.FlushCache();
+            }
         }
 
         private List<int> m_DrawOrder = new List<int>(); // contains curveIds (last element topmost)
@@ -605,6 +616,8 @@ namespace UnityEditor
 
             if (m_PointRenderer != null)
                 m_PointRenderer.FlushCache();
+
+            FlushCurvesCache();
         }
 
         public void OnDestroy()

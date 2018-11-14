@@ -402,7 +402,7 @@ namespace UnityEditor
             );
         }
 
-        // This method is called both from ApplyPropertyOverride (one time) and ApplyObjectOverride (many times).
+        // This method is called both from ApplyPropertyOverride and ApplyObjectOverride.
         // In the former case, optionalSingleInstanceProperty is passed along as is the only property that should be processed.
         // In the latter, all properties in the prefabInstanceObject are iterated.
         // An alternative approach was considered where the method takes an array of SerializedProperties,
@@ -418,8 +418,6 @@ namespace UnityEditor
         // again require storing information about that for each property in some kind of list, which we want to avoid.
         static void ApplyPropertyOverrides(Object prefabInstanceObject, SerializedProperty optionalSingleInstanceProperty, string assetPath, InteractionMode action)
         {
-            bool singleProperty = optionalSingleInstanceProperty != null;
-
             Object prefabSourceObject = GetCorrespondingObjectFromSourceAtPath(prefabInstanceObject, assetPath);
             if (prefabSourceObject == null)
                 return;
@@ -430,18 +428,38 @@ namespace UnityEditor
             List<SerializedObject> serializedObjects = new List<SerializedObject>();
 
             bool isObjectOnRootInAsset = IsObjectOnRootInAsset(prefabInstanceObject, assetPath);
-            if (singleProperty)
+
+            SerializedProperty property;
+            if (optionalSingleInstanceProperty != null)
             {
-                if (optionalSingleInstanceProperty.prefabOverride)
-                    ApplySingleProperty(optionalSingleInstanceProperty, prefabSourceSerializedObject, assetPath, isObjectOnRootInAsset, true, serializedObjects, action);
+                property = optionalSingleInstanceProperty.Copy();
             }
             else
             {
                 SerializedObject so = new SerializedObject(prefabInstanceObject);
-                SerializedProperty property = so.GetIterator();
+                property = so.GetIterator();
+            }
+
+            if (!property.hasVisibleChildren)
+            {
+                if (property.prefabOverride)
+                    ApplySingleProperty(property, prefabSourceSerializedObject, assetPath, isObjectOnRootInAsset, true, serializedObjects, action);
+            }
+            else
+            {
                 while (property.Next(property.hasChildren))
                 {
-                    if (property.prefabOverride)
+                    // If we apply a property that has child properties that are object references if they
+                    // reference non-asset objects, those references will get lost, since ApplySingleProperty
+                    // only patches up references in the provided property; not its children.
+                    // This could be fixed by letting ApplySingleProperty patch up all its child properties as well,
+                    // but then calling ApplySingleProperty n times would result in time complexity n*log(n).
+                    // Instead we only call ApplySingleProperty for leaf properties - the ones that actually contain
+                    // the data. Here, that means properties with hasVisibleChildren=false.
+                    // Note that an object reference property has hasVisibleChildren=false but has hasChildren=true.
+                    // Applying all leaf properties applies exactly all data there is to apply only once and ensures
+                    // that when an object reference is applied, it's via its own property and not a parent property.
+                    if (property.prefabOverride && !property.hasVisibleChildren)
                         ApplySingleProperty(property, prefabSourceSerializedObject, assetPath, isObjectOnRootInAsset, false, serializedObjects, action);
                 }
             }
@@ -486,9 +504,9 @@ namespace UnityEditor
             }
 
             prefabSourceSerializedObject.CopyFromSerializedProperty(instanceProperty);
-            SerializedProperty sourceProperty = prefabSourceSerializedObject.FindProperty(instanceProperty.propertyPath);
 
             // Abort if property has reference to object in scene.
+            SerializedProperty sourceProperty = prefabSourceSerializedObject.FindProperty(instanceProperty.propertyPath);
             if (sourceProperty.propertyType == SerializedPropertyType.ObjectReference)
             {
                 MapObjectReferencePropertyToSourceIfApplicable(sourceProperty, assetPath);
@@ -574,9 +592,6 @@ namespace UnityEditor
             );
         }
 
-        // TODO Review. This method is redundant since there was already a method for it,
-        // but it fits in with a consistent naming scheme where methods come in pairs of
-        // Apply[x] and Revert[X]. Maybe obsolete the old one?
         public static void RevertObjectOverride(Object instanceComponentOrGameObject, InteractionMode action)
         {
             CheckInstanceIsNotPersistent(instanceComponentOrGameObject);

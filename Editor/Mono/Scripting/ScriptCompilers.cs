@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using UnityEditor.Scripting.Compilers;
+using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.Scripting
 {
@@ -139,14 +140,14 @@ namespace UnityEditor.Scripting
             throw new ApplicationException(string.Format("Script file extension '{0}' is not supported", extension));
         }
 
-        internal static ScriptCompilerBase CreateCompilerInstance(MonoIsland island, bool buildingForEditor, BuildTarget targetPlatform, bool runUpdater)
+        internal static ScriptCompilerBase CreateCompilerInstance(ScriptAssembly scriptAssembly, MonoIsland island, bool buildingForEditor, BuildTarget targetPlatform, bool runUpdater)
         {
             if (island._files.Length == 0) throw new ArgumentException("Cannot compile MonoIsland with no files");
 
             foreach (var lang in SupportedLanguages)
             {
                 if (lang.GetExtensionICanCompile() == island.GetExtensionOfSourceFiles())
-                    return lang.CreateCompiler(island, buildingForEditor, targetPlatform, runUpdater);
+                    return lang.CreateCompiler(scriptAssembly, island, buildingForEditor, targetPlatform, runUpdater);
             }
 
             throw new ApplicationException(string.Format("Unable to find a suitable compiler for sources with extension '{0}' (Output assembly: {1})", island.GetExtensionOfSourceFiles(), island._output));

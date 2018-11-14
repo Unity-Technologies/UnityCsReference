@@ -17,7 +17,7 @@ namespace UnityEngine.Scripting
             Enabled = 1,
         }
 
-        public static Action<Mode> GCModeChanged;
+        public static event Action<Mode> GCModeChanged;
 
         public static Mode GCMode
         {

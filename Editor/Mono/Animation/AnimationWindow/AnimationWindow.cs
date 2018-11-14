@@ -31,6 +31,14 @@ namespace UnityEditor
         private GUIContent m_DefaultTitleContent;
         private GUIContent m_RecordTitleContent;
 
+        internal AnimEditor animEditor
+        {
+            get
+            {
+                return m_AnimEditor;
+            }
+        }
+
         internal AnimationWindowState state
         {
             get
