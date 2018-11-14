@@ -21,12 +21,24 @@ namespace UnityEditor
 
         internal new static void Show(Rect activatorRect, PopupWindowContent windowContent, PopupLocation[] locationPriorityOrder)
         {
+            if (windowContent == null)
+                throw new System.ArgumentNullException(nameof(windowContent));
+
+            if (s_PopupWindowWithoutFocus != null)
+            {
+                s_PopupWindowWithoutFocus.CloseContent();
+            }
+
             if (ShouldShowWindow(activatorRect))
             {
                 if (s_PopupWindowWithoutFocus == null)
                     s_PopupWindowWithoutFocus = CreateInstance<PopupWindowWithoutFocus>();
 
                 s_PopupWindowWithoutFocus.Init(activatorRect, windowContent, locationPriorityOrder, ShowMode.PopupMenu, false);
+            }
+            else
+            {
+                windowContent.OnClose();
             }
         }
 

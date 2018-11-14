@@ -676,7 +676,16 @@ namespace UnityEditor.UIElements.Debugger
                         EditorGUI.indentLevel++;
                         for (int j = 0; j < props.Length; j++)
                         {
-                            string s = rule.matchRecord.sheet.ReadAsString(props[j].values[0]);
+                            string s = "";
+                            for (int k = 0; k < props[j].values.Length; k++)
+                            {
+                                if (k > 0)
+                                    s += " ";
+
+                                s += rule.matchRecord.sheet.ReadAsString(props[j].values[k]);
+                            }
+
+                            s = s.ToLower();
                             EditorGUILayout.LabelField(new GUIContent(props[j].name), new GUIContent(s));
                         }
 

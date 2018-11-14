@@ -6,7 +6,6 @@ using System;
 using System.Linq;
 using System.Text;
 using System.Collections.Generic;
-
 using UnityEngine;
 
 namespace UnityEditor.ShortcutManagement
@@ -21,6 +20,46 @@ namespace UnityEditor.ShortcutManagement
 
         public KeyCode keyCode => m_KeyCode;
         public ShortcutModifiers modifiers => m_Modifiers;
+
+        static Dictionary<KeyCode, string> s_KeyCodeToMenuItemKeyCodeString = new Dictionary<KeyCode, string>()
+        {
+            { KeyCode.LeftArrow, "LEFT" },
+            { KeyCode.UpArrow, "UP" },
+            { KeyCode.RightArrow, "RIGHT" },
+            { KeyCode.DownArrow, "DOWN" },
+
+            { KeyCode.PageDown, "PGDN" },
+            { KeyCode.PageUp, "PGUP" },
+            { KeyCode.Home, "HOME" },
+            { KeyCode.Insert, "INS" },
+            { KeyCode.Delete, "DEL" },
+            { KeyCode.End, "END" },
+
+            { KeyCode.F1, "F1" },
+            { KeyCode.F2, "F2" },
+            { KeyCode.F3, "F3" },
+            { KeyCode.F4, "F4" },
+            { KeyCode.F5, "F5" },
+            { KeyCode.F6, "F6" },
+            { KeyCode.F7, "F7" },
+            { KeyCode.F8, "F8" },
+            { KeyCode.F9, "F9" },
+            { KeyCode.F10, "F10" },
+            { KeyCode.F11, "F11" },
+            { KeyCode.F12, "F12" }
+        };
+
+        static Dictionary<string, KeyCode> s_MenuItemKeyCodeStringToKeyCode;
+
+        static KeyCombination()
+        {
+            // Populate s_MenuItemKeyCodeStringToKeyCode by reversing s_KeyCodeToMenuItemKeyCodeString
+            s_MenuItemKeyCodeStringToKeyCode = new Dictionary<string, KeyCode>(s_KeyCodeToMenuItemKeyCodeString.Count);
+            foreach (var entry in s_KeyCodeToMenuItemKeyCodeString)
+            {
+                s_MenuItemKeyCodeStringToKeyCode.Add(entry.Value, entry.Key);
+            }
+        }
 
         public KeyCombination(KeyCode keyCode, ShortcutModifiers shortcutModifiers = ShortcutModifiers.None)
         {
@@ -38,13 +77,12 @@ namespace UnityEditor.ShortcutManagement
             return new KeyCombination(keyCode, ConvertEventModifiersToShortcutModifiers(modifiers, false));
         }
 
-        internal static KeyCombination ParseLegacyBindingString(string binding)
+        internal static KeyCombination FromPrefKeyKeyboardEvent(Event evt)
         {
-            var keyEvent = Event.KeyboardEvent(binding);
-            return new KeyCombination(keyEvent.keyCode, ConvertEventModifiersToShortcutModifiers(keyEvent.modifiers, true));
+            return new KeyCombination(evt.keyCode, ConvertEventModifiersToShortcutModifiers(evt.modifiers, true));
         }
 
-        private static ShortcutModifiers ConvertEventModifiersToShortcutModifiers(EventModifiers eventModifiers, bool coalesceCommandAndControl)
+        static ShortcutModifiers ConvertEventModifiersToShortcutModifiers(EventModifiers eventModifiers, bool coalesceCommandAndControl)
         {
             ShortcutModifiers modifiers = ShortcutModifiers.None;
             if ((eventModifiers & EventModifiers.Alt) != 0)
@@ -122,9 +160,121 @@ namespace UnityEditor.ShortcutManagement
             if (modifiers == ShortcutModifiers.None)
                 builder.Append("_");
 
-            VisualizeKeyCode(keyCode, builder);
+            KeyCodeToMenuItemKeyCodeString(keyCode, builder);
 
             return builder.ToString();
+        }
+
+        static void KeyCodeToMenuItemKeyCodeString(KeyCode keyCode, StringBuilder builder)
+        {
+            string keyCodeString;
+            if (s_KeyCodeToMenuItemKeyCodeString.TryGetValue(keyCode, out keyCodeString))
+            {
+                builder.Append(keyCodeString);
+                return;
+            }
+
+            var character = (char)keyCode;
+            if (character >= ' ' && character <= '@' ||
+                character >= '[' && character <= '~')
+                builder.Append(character.ToString());
+        }
+
+        internal static bool TryParseMenuItemBindingString(string menuItemBindingString, out KeyCombination keyCombination)
+        {
+            if (string.IsNullOrEmpty(menuItemBindingString))
+            {
+                keyCombination = default(KeyCombination);
+                return false;
+            }
+
+            var modifiers = ShortcutModifiers.None;
+            var startIndex = 0;
+            var found = false;
+            do
+            {
+                found = true;
+                if (startIndex >= menuItemBindingString.Length)
+                {
+                    found = false;
+                    break;
+                }
+
+                switch (menuItemBindingString[startIndex])
+                {
+                    case '&':
+                        modifiers |= ShortcutModifiers.Alt;
+                        startIndex++;
+                        break;
+
+                    case '%':
+                        modifiers |= ShortcutModifiers.Action;
+                        startIndex++;
+                        break;
+
+                    case '#':
+                        modifiers |= ShortcutModifiers.Shift;
+                        startIndex++;
+                        break;
+
+                    case '_':
+                        startIndex++;
+                        break;
+
+                    default:
+                        found = false;
+                        break;
+                }
+            }
+            while (found);
+
+            var keyCodeString = menuItemBindingString.Substring(startIndex, menuItemBindingString.Length - startIndex);
+            KeyCode keyCode;
+            ShortcutModifiers additionalModifiers;
+            if (!TryParseMenuItemKeyCodeString(keyCodeString, out keyCode, out additionalModifiers))
+            {
+                keyCombination = default(KeyCombination);
+                return false;
+            }
+
+            modifiers |= additionalModifiers;
+            keyCombination = new KeyCombination(keyCode, modifiers);
+            return true;
+        }
+
+        static bool TryParseMenuItemKeyCodeString(string keyCodeString, out KeyCode keyCode, out ShortcutModifiers additionalModifiers)
+        {
+            keyCode = default(KeyCode);
+            additionalModifiers = ShortcutModifiers.None;
+
+            if (string.IsNullOrEmpty(keyCodeString))
+                return false;
+
+            if (s_MenuItemKeyCodeStringToKeyCode.TryGetValue(keyCodeString, out keyCode))
+                return true;
+
+            if (keyCodeString.Length != 1)
+                return false;
+
+            var character = keyCodeString[0];
+            if (character >= 'A' && character <= 'Z')
+            {
+                keyCode = KeyCode.A + (character - 'A');
+                additionalModifiers = ShortcutModifiers.Shift;
+                return true;
+            }
+
+            keyCode = (KeyCode)character;
+            return Enum.IsDefined(typeof(KeyCode), keyCode);
+        }
+
+        internal static string SequenceToMenuString(IEnumerable<KeyCombination> keyCombinations)
+        {
+            if (!keyCombinations.Any())
+                return "";
+
+            //TODO: once we start supporting chords we need to figure out how to represent that for menus.
+            return keyCombinations.Single().ToMenuShortcutString();
         }
 
         static void VisualizeModifiers(ShortcutModifiers modifiers, StringBuilder builder)
@@ -155,83 +305,126 @@ namespace UnityEditor.ShortcutManagement
                 builder.Append(keyCode.ToString());
         }
 
+        static Dictionary<KeyCode, string> s_KeyCodeNamesMacOS = new Dictionary<KeyCode, string>
+        {
+            { KeyCode.Backspace, "⌫" },
+            { KeyCode.Tab, "⇥" },
+            { KeyCode.Return, "↩" },
+            { KeyCode.Escape, "⎋" },
+            { KeyCode.Delete, "⌦" },
+            { KeyCode.UpArrow, "↑" },
+            { KeyCode.DownArrow, "↓" },
+            { KeyCode.RightArrow, "→" },
+            { KeyCode.LeftArrow, "←" },
+            { KeyCode.Home, "↖" },
+            { KeyCode.End, "↘" },
+            { KeyCode.PageUp, "⇞" },
+            { KeyCode.PageDown, "⇟" },
+        };
+
+        static Dictionary<KeyCode, string> s_KeyCodeNamesNotMacOS = new Dictionary<KeyCode, string>
+        {
+            { KeyCode.Return, "Enter" },
+            { KeyCode.Escape, "Esc" },
+            { KeyCode.Delete, "Del" },
+            { KeyCode.UpArrow, "Up Arrow" },
+            { KeyCode.DownArrow, "Down Arrow" },
+            { KeyCode.RightArrow, "Right Arrow" },
+            { KeyCode.LeftArrow, "Left Arrow" },
+            { KeyCode.PageUp, "Page Up" },
+            { KeyCode.PageDown, "Page Down" },
+        };
+
+        static Dictionary<KeyCode, string> s_KeyCodeNamesCommon = new Dictionary<KeyCode, string>
+        {
+            { KeyCode.Exclaim, "!" },
+            { KeyCode.DoubleQuote, "\"" },
+            { KeyCode.Hash, "#" },
+            { KeyCode.Dollar, "$" },
+            { KeyCode.Percent, "%" },
+            { KeyCode.Ampersand, "&" },
+            { KeyCode.Quote, "'" },
+            { KeyCode.LeftParen, "(" },
+            { KeyCode.RightParen, ")" },
+            { KeyCode.Asterisk, "*" },
+            { KeyCode.Plus, "+" },
+            { KeyCode.Comma, "," },
+            { KeyCode.Minus, "-" },
+            { KeyCode.Period, "." },
+            { KeyCode.Slash, "/" },
+            { KeyCode.Alpha0, "0" },
+            { KeyCode.Alpha1, "1" },
+            { KeyCode.Alpha2, "2" },
+            { KeyCode.Alpha3, "3" },
+            { KeyCode.Alpha4, "4" },
+            { KeyCode.Alpha5, "5" },
+            { KeyCode.Alpha6, "6" },
+            { KeyCode.Alpha7, "7" },
+            { KeyCode.Alpha8, "8" },
+            { KeyCode.Alpha9, "9" },
+            { KeyCode.Colon, ":" },
+            { KeyCode.Semicolon, ";" },
+            { KeyCode.Less, "<" },
+            { KeyCode.Equals, "=" },
+            { KeyCode.Greater, ">" },
+            { KeyCode.Question, "?" },
+            { KeyCode.At, "@" },
+            { KeyCode.LeftBracket, "[" },
+            { KeyCode.Backslash, "\\" },
+            { KeyCode.RightBracket, "]" },
+            { KeyCode.Caret, "^" },
+            { KeyCode.Underscore, "_" },
+            { KeyCode.BackQuote, "`" },
+            { KeyCode.LeftCurlyBracket, "{" },
+            { KeyCode.Pipe, "|" },
+            { KeyCode.RightCurlyBracket, "}" },
+            { KeyCode.Tilde, "~" },
+            { KeyCode.Keypad0, "Num 0" },
+            { KeyCode.Keypad1, "Num 1" },
+            { KeyCode.Keypad2, "Num 2" },
+            { KeyCode.Keypad3, "Num 3" },
+            { KeyCode.Keypad4, "Num 4" },
+            { KeyCode.Keypad5, "Num 5" },
+            { KeyCode.Keypad6, "Num 6" },
+            { KeyCode.Keypad7, "Num 7" },
+            { KeyCode.Keypad8, "Num 8" },
+            { KeyCode.Keypad9, "Num 9" },
+            { KeyCode.KeypadPeriod, "Num ." },
+            { KeyCode.KeypadDivide, "Num /" },
+            { KeyCode.KeypadMultiply, "Num *" },
+            { KeyCode.KeypadMinus, "Num -" },
+            { KeyCode.KeypadPlus, "Num +" },
+            { KeyCode.KeypadEnter, "Num Enter" },
+            { KeyCode.KeypadEquals, "Num =" },
+        };
+
         static bool TryFormatKeycode(KeyCode code, StringBuilder builder)
         {
+            string name;
             if (Application.platform == RuntimePlatform.OSXEditor)
             {
-                switch (code)
+                if (s_KeyCodeNamesMacOS.TryGetValue(code, out name))
                 {
-                    case KeyCode.Return:
-                        builder.Append("↩");
-                        break;
-                    case KeyCode.Backspace:
-                        builder.Append("⌫");
-                        break;
-                    case KeyCode.Delete:
-                        builder.Append("⌦");
-                        break;
-                    case KeyCode.Escape:
-                        builder.Append("⎋");
-                        break;
-                    case KeyCode.RightArrow:
-                        builder.Append("→");
-                        break;
-                    case KeyCode.LeftArrow:
-                        builder.Append("←");
-                        break;
-                    case KeyCode.UpArrow:
-                        builder.Append("↑");
-                        break;
-                    case KeyCode.DownArrow:
-                        builder.Append("↓");
-                        break;
-                    case KeyCode.PageUp:
-                        builder.Append("⇞");
-                        break;
-                    case KeyCode.PageDown:
-                        builder.Append("⇟");
-                        break;
-                    case KeyCode.Home:
-                        builder.Append("↖");
-                        break;
-                    case KeyCode.End:
-                        builder.Append("↘");
-                        break;
-                    case KeyCode.Tab:
-                        builder.Append("⇥");
-                        break;
-                    default:
-                        return false;
+                    builder.Append(name);
+                    return true;
                 }
             }
             else
             {
-                switch (code)
+                if (s_KeyCodeNamesNotMacOS.TryGetValue(code, out name))
                 {
-                    case KeyCode.Delete:
-                        builder.Append("DEL");
-                        break;
-                    case KeyCode.Backspace:
-                        builder.Append("BACKSPACE");
-                        break;
-                    case KeyCode.LeftArrow:
-                        builder.Append("LEFT");
-                        break;
-                    case KeyCode.RightArrow:
-                        builder.Append("RIGHT");
-                        break;
-                    case KeyCode.UpArrow:
-                        builder.Append("UP");
-                        break;
-                    case KeyCode.DownArrow:
-                        builder.Append("DOWN");
-                        break;
-                    default:
-                        return false;
+                    builder.Append(name);
+                    return true;
                 }
             }
 
-            return true;
+            if (s_KeyCodeNamesCommon.TryGetValue(code, out name))
+            {
+                builder.Append(name);
+                return true;
+            }
+
+            return false;
         }
 
         public bool Equals(KeyCombination other)

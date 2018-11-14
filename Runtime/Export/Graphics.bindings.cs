@@ -253,16 +253,28 @@ namespace UnityEngine
         extern private static void Internal_DrawProceduralIndirect(MeshTopology topology, ComputeBuffer bufferWithArgs, int argsOffset);
 
         [FreeFunction("GraphicsScripting::BlitMaterial")]
-        extern private static void Internal_BlitMaterial(Texture source, RenderTexture dest, [NotNull] Material mat, int pass, bool setRT);
+        extern private static void Internal_BlitMaterial5(Texture source, RenderTexture dest, [NotNull] Material mat, int pass, bool setRT);
+
+        [FreeFunction("GraphicsScripting::BlitMaterial")]
+        extern private static void Internal_BlitMaterial6(Texture source, RenderTexture dest, [NotNull] Material mat, int pass, bool setRT, int destDepthSlice);
 
         [FreeFunction("GraphicsScripting::BlitMultitap")]
-        extern private static void Internal_BlitMultiTap(Texture source, RenderTexture dest, [NotNull] Material mat, [NotNull] Vector2[] offsets);
+        extern private static void Internal_BlitMultiTap4(Texture source, RenderTexture dest, [NotNull] Material mat, [NotNull] Vector2[] offsets);
+
+        [FreeFunction("GraphicsScripting::BlitMultitap")]
+        extern private static void Internal_BlitMultiTap5(Texture source, RenderTexture dest, [NotNull] Material mat, [NotNull] Vector2[] offsets, int destDepthSlice);
 
         [FreeFunction("GraphicsScripting::Blit")]
         extern private static void Blit2(Texture source, RenderTexture dest);
 
         [FreeFunction("GraphicsScripting::Blit")]
+        extern private static void Blit3(Texture source, RenderTexture dest, int sourceDepthSlice, int destDepthSlice);
+
+        [FreeFunction("GraphicsScripting::Blit")]
         extern private static void Blit4(Texture source, RenderTexture dest, Vector2 scale, Vector2 offset);
+
+        [FreeFunction("GraphicsScripting::Blit")]
+        extern private static void Blit5(Texture source, RenderTexture dest, Vector2 scale, Vector2 offset, int sourceDepthSlice, int destDepthSlice);
 
         [NativeMethod(Name = "GraphicsScripting::CreateGPUFence", IsFreeFunction = true, ThrowsException = true)]
         extern private static IntPtr CreateGPUFenceImpl(GraphicsFenceType fenceType, SynchronisationStageFlags stage);

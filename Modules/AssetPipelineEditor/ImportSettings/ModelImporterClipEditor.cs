@@ -174,7 +174,6 @@ namespace UnityEditor
         public ModelImporterClipEditor(AssetImporterEditor panelContainer)
             : base(panelContainer)
         {}
-
         internal override void OnEnable()
         {
             m_ClipAnimations = serializedObject.FindProperty("m_ClipAnimations");
@@ -207,6 +206,7 @@ namespace UnityEditor
             // Find all serialized property before calling SetupDefaultClips
             if (m_ClipAnimations.arraySize == 0)
                 SetupDefaultClips();
+
 
             selectedClipIndex = EditorPrefs.GetInt("ModelImporterClipEditor.ActiveClipIndex", 0);
             ValidateClipSelectionIndex();
@@ -270,14 +270,15 @@ namespace UnityEditor
             }
         }
 
-        // When switching to explicitly defined clips, we must fix up the recycleID's to not lose AnimationClip references.
+        // When switching to explicitly defined clips, we must fix up the internalID's to not lose AnimationClip references.
         // When m_ClipAnimations is defined, the clips are identified by the clipName
         // When m_ClipAnimations is not defined, the clips are identified by the takeName
         void PatchDefaultClipTakeNamesToSplitClipNames()
         {
             foreach (TakeInfo takeInfo in singleImporter.importedTakeInfos)
             {
-                PatchImportSettingRecycleID.Patch(serializedObject, 74, takeInfo.name, takeInfo.defaultClipName);
+                UnityType animationClipType = UnityType.FindTypeByName("AnimationClip");
+                ImportSettingInternalID.Rename(serializedObject, animationClipType, takeInfo.name, takeInfo.defaultClipName);
             }
         }
 
@@ -703,11 +704,21 @@ namespace UnityEditor
 
                     if (EditorGUI.EndChangeCheck())
                     {
+                        clip.name = clip.name.Trim();
+                        if (clip.name == String.Empty)
+                        {
+                            clip.name = currentName;
+                        }
                         // We renamed the clip name, try to maintain the localIdentifierInFile so we don't lose any data.
                         if (clip.name != currentName)
                         {
+                            var newName = clip.name;
+                            clip.name = currentName;
+                            clip.name = MakeUniqueClipName(newName);
+
                             TransferDefaultClipsToCustomClips();
-                            PatchImportSettingRecycleID.Patch(serializedObject, 74, currentName, clip.name);
+                            UnityType animationClipType = UnityType.FindTypeByName("AnimationClip");
+                            ImportSettingInternalID.Rename(serializedObject, animationClipType, currentName, clip.name);
                         }
 
                         int newTakeIndex = m_AnimationClipEditor.takeIndex;
@@ -817,46 +828,36 @@ namespace UnityEditor
             return name.Substring(0, openingBracket - 1);
         }
 
-        /// <summary>
-        /// Finds the next duplicate number.
-        /// </summary>
-        /// <returns>The next duplicate number (-1 if there is no other clip with the same name).</returns>
-        /// <param name="baseName">Base name.</param>
-        int FindNextDuplicateNumber(string baseName)
+        string FindNextAvailableName(string baseName)
         {
-            int nextNumber = -1;
-
+            string[] allClipNames = new string[m_ClipAnimations.arraySize];
             for (int i = 0; i < m_ClipAnimations.arraySize; ++i)
             {
                 AnimationClipInfoProperties clip = GetAnimationClipInfoAtIndex(i);
-
-                int clipNumber;
-                string clipBaseName = RemoveDuplicateSuffix(clip.name, out clipNumber);
-                if (clipBaseName == baseName)
+                allClipNames[i] = clip.name;
+            }
+            Array.Sort(allClipNames, StringComparer.InvariantCulture);
+            string resultName = baseName;
+            for (var i = 0; i < allClipNames.Length; i++)
+            {
+                var found = Array.BinarySearch(allClipNames, resultName);
+                if (found < 0)
                 {
-                    // Same base, so next number is at least 1.
-                    if (nextNumber == -1)
-                        nextNumber = 1;
-
-                    // Next number is one more than the maximum number found.
-                    if (clipNumber != -1)
-                        nextNumber = Math.Max(nextNumber, clipNumber + 1);
+                    return resultName;
                 }
+
+                var nextNumber = i + 1;
+                resultName = baseName +  " (" + nextNumber + ")";
             }
 
-            return nextNumber;
+            return resultName;
         }
 
         string MakeUniqueClipName(string name)
         {
             int dummy;
             string baseName = RemoveDuplicateSuffix(name, out dummy);
-
-            int nextNumber = FindNextDuplicateNumber(baseName);
-            if (nextNumber != -1)
-                name = baseName + " (" + nextNumber + ")";
-
-            return name;
+            return FindNextAvailableName(baseName);
         }
 
         void RemoveClip(int index)
@@ -885,6 +886,7 @@ namespace UnityEditor
 
             info.name = uniqueName;
             SetupTakeNameAndFrames(info, takeInfo);
+            info.internalID = 0L;
             info.wrapMode = (int)WrapMode.Default;
             info.loop = false;
             info.orientationOffsetY = 0;

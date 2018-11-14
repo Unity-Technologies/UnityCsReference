@@ -51,6 +51,7 @@ namespace UnityEngine
         {
             if (imageTexCoords == null)
                 throw new ArgumentNullException("imageTexCoords");
+
             GetImageTexCoordsInternal(imageTexCoords);
         }
 
@@ -66,6 +67,7 @@ namespace UnityEngine
         {
             if (imageTexCoords == null)
                 throw new ArgumentNullException("imageTexCoords");
+
             SetImageTexCoordsInternalList(imageTexCoords);
         }
 
@@ -81,6 +83,7 @@ namespace UnityEngine
         {
             if (vertices == null)
                 throw new ArgumentNullException("vertices");
+
             GetVerticesInternal(vertices);
         }
 
@@ -96,6 +99,7 @@ namespace UnityEngine
         {
             if (vertices == null)
                 throw new ArgumentNullException("vertices");
+
             SetVerticesInternalList(vertices);
         }
 
@@ -111,6 +115,7 @@ namespace UnityEngine
         {
             if (indices == null)
                 throw new ArgumentNullException("indices");
+
             GetIndicesInternal(indices);
         }
 
@@ -126,6 +131,7 @@ namespace UnityEngine
         {
             if (indices == null)
                 throw new ArgumentNullException("indices");
+
             SetIndicesInternalList(indices);
         }
 

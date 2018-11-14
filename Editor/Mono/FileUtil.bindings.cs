@@ -122,6 +122,9 @@ namespace UnityEditor
         internal static extern string ResolveSymlinks(string path);
 
         [FreeFunction]
+        internal static extern string ResolveRedirectedPath(string path);
+
+        [FreeFunction]
         internal static extern bool IsSymlink(string path);
 
         // Replaces a file.

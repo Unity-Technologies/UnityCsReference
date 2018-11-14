@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor.Experimental;
+using UnityEditor.StyleSheets;
 using UnityEngine;
 
 // See Style Guide in wiki for more information on editor styles.
@@ -298,6 +299,16 @@ namespace UnityEditor
 
         // the list of editor styles to use
         private static EditorStyles[] s_CachedStyles = { null, null };
+
+        internal static GUIStyle FromUSS(string ussStyleRuleName, string ussInPlaceStyleOverride = null)
+        {
+            return GUIStyleExtensions.FromUSS(ussStyleRuleName, ussInPlaceStyleOverride);
+        }
+
+        internal static GUIStyle ApplyUSS(GUIStyle style, string ussStyleRuleName, string ussInPlaceStyleOverride = null)
+        {
+            return GUIStyleExtensions.ApplyUSS(style, ussStyleRuleName, ussInPlaceStyleOverride);
+        }
 
         internal static void UpdateSkinCache()
         {

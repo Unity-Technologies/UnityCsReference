@@ -25,7 +25,6 @@ namespace UnityEditor.ShortcutManagement
         void RefreshKeyboard();
         void RefreshCategoryList();
         void RefreshShortcutList();
-
         void UpdateSearchFilterOptions();
 
         RebindResolution HandleRebindWillCreateConflict(ShortcutEntry entry, IList<KeyCombination> newBinding, IList<ShortcutEntry> conflicts);
@@ -47,7 +46,10 @@ namespace UnityEditor.ShortcutManagement
     interface IShortcutManagerWindowViewController
     {
         List<string> GetAvailableProfiles();
-        string activeProfile { get; set; }
+        string activeProfile
+        {
+            get; set;
+        }
         bool CanCreateProfile(string newProfileId);
         void CreateProfile(string newProfileId);
         bool CanRenameActiveProfile();
@@ -59,9 +61,15 @@ namespace UnityEditor.ShortcutManagement
         IList<string> GetCategories();
 
         void SetCategorySelected(string category);
-        int selectedCategoryIndex { get; }
+        int selectedCategoryIndex
+        {
+            get;
+        }
 
-        SearchOption searchMode { get; set; }
+        SearchOption searchMode
+        {
+            get; set;
+        }
         void SetSearch(string newSearch);
         string GetSearch();
         List<KeyCombination> GetBindingSearch();
@@ -75,8 +83,14 @@ namespace UnityEditor.ShortcutManagement
 
         IList<ShortcutEntry> GetShortcutList();
         IList<string> GetShortcutPathList();
-        ShortcutEntry selectedEntry { get; }
-        int selectedEntryIndex { get; }
+        ShortcutEntry selectedEntry
+        {
+            get;
+        }
+        int selectedEntryIndex
+        {
+            get;
+        }
         void ShortcutEntrySelected(ShortcutEntry shortcutEntry);
 
         void DragEntryAndDropIntoKey(KeyCode keyCode, EventModifiers eventModifier, ShortcutEntry entry);
@@ -87,7 +101,10 @@ namespace UnityEditor.ShortcutManagement
         EventModifiers GetSelectedEventModifiers();
 
         IList<ShortcutEntry> GetSelectedKeyShortcuts();
-        int selectedKeyDetail { get; }
+        int selectedKeyDetail
+        {
+            get;
+        }
 
         void NavigateTo(ShortcutEntry shortcutEntry);
 
@@ -170,7 +187,6 @@ namespace UnityEditor.ShortcutManagement
 
             var root = view.GetVisualElementHierarchyRoot();
             rootVisualContainer.Add(root);
-
 
             m_ViewController.OnEnable();
             EditorApplication.modifierKeysChanged += OnModifiersMightHaveChanged;

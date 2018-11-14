@@ -30,6 +30,10 @@ namespace UnityEditor
         SerializedProperty m_CopyAvatar;
         SerializedProperty m_LegacyGenerateAnimations;
         SerializedProperty m_AnimationCompression;
+        SerializedProperty m_SkinWeightsMode;
+        SerializedProperty m_MaxBonesPerVertex;
+        SerializedProperty m_MinBoneWeight;
+        SerializedProperty m_OptimizeGameObjects;
 
         SerializedProperty m_RootMotionBoneName;
 
@@ -38,8 +42,6 @@ namespace UnityEditor
 
         SerializedProperty m_RigImportErrors;
         SerializedProperty m_RigImportWarnings;
-
-        SerializedProperty m_OptimizeGameObjects;
 
         SerializedProperty m_HumanBoneArray;
         SerializedProperty m_Skeleton;
@@ -105,6 +107,15 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Copy From Other Avatar", "Copy an Avatar from another file to import muscle clip. No avatar will be created.")
             };
 
+            public static GUIContent SkinWeightsMode = EditorGUIUtility.TrTextContent("Skin Weights", "Control how many bone weights are imported.");
+            public static GUIContent[] SkinWeightsModeOpt =
+            {
+                EditorGUIUtility.TrTextContent("Standard (4 Bones)", "Import a maximum of 4 bones per vertex."),
+                EditorGUIUtility.TrTextContent("Custom", "Import a custom number of bones per vertex.")
+            };
+            public static GUIContent MaxBonesPerVertex = EditorGUIUtility.TrTextContent("Max Bones/Vertex", "Number of bones that can affect each vertex.");
+            public static GUIContent MinBoneWeight = EditorGUIUtility.TrTextContent("Min Bone Weight", "Bone weights smaller than this value are rejected. The remaining weights are scaled to add up to 1.0.");
+
             public static GUIContent UpdateReferenceClips = EditorGUIUtility.TrTextContent("Update reference clips", "Click on this button to update all the @convention file referencing this file. Should set all these files to Copy From Other Avatar, set the source Avatar to this one and reimport all these files.");
 
             public static GUIContent ImportMessages = EditorGUIUtility.TrTextContent("Import Messages");
@@ -119,7 +130,6 @@ namespace UnityEditor
         {
             m_AnimationType = serializedObject.FindProperty("m_AnimationType");
             m_AvatarSource = serializedObject.FindProperty("m_LastHumanDescriptionAvatarSource");
-            m_OptimizeGameObjects = serializedObject.FindProperty("m_OptimizeGameObjects");
 
             // Generic bone setup
             m_RootMotionBoneName = serializedObject.FindProperty("m_HumanDescription.m_RootMotionBoneName");
@@ -144,6 +154,12 @@ namespace UnityEditor
             m_CopyAvatar = serializedObject.FindProperty("m_CopyAvatar");
             m_LegacyGenerateAnimations = serializedObject.FindProperty("m_LegacyGenerateAnimations");
             m_AnimationCompression = serializedObject.FindProperty("m_AnimationCompression");
+
+            m_SkinWeightsMode = serializedObject.FindProperty("skinWeightsMode");
+            m_MaxBonesPerVertex = serializedObject.FindProperty("maxBonesPerVertex");
+            m_MinBoneWeight = serializedObject.FindProperty("minBoneWeight");
+
+            m_OptimizeGameObjects = serializedObject.FindProperty("m_OptimizeGameObjects");
 
             m_RigImportErrors = serializedObject.FindProperty("m_RigImportErrors");
             m_RigImportWarnings = serializedObject.FindProperty("m_RigImportWarnings");
@@ -513,6 +529,17 @@ With this option, this model will not create any avatar but only import animatio
                     GenericGUI();
                 else if (animationType == ModelImporterAnimationType.Legacy)
                     LegacyGUI();
+            }
+
+            if (animationType != ModelImporterAnimationType.None || m_AnimationType.hasMultipleDifferentValues)
+            {
+                EditorGUILayout.Popup(m_SkinWeightsMode, Styles.SkinWeightsModeOpt, Styles.SkinWeightsMode);
+
+                if (m_SkinWeightsMode.intValue == (int)ModelImporterSkinWeights.Custom)
+                {
+                    EditorGUILayout.IntSlider(m_MaxBonesPerVertex, 1, 32, Styles.MaxBonesPerVertex);
+                    EditorGUILayout.Slider(m_MinBoneWeight, 0.001f, 0.5f, Styles.MinBoneWeight);
+                }
             }
 
             ShowUpdateReferenceClip();

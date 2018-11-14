@@ -864,5 +864,8 @@ namespace UnityEditorInternal
 
         [FreeFunction("InternalEditorUtilityBindings::LayerMaskToConcatenatedLayersMaskInternal")]
         extern private static int LayerMaskToConcatenatedLayersMaskInternal(int mask);
+
+        [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
+        internal static extern bool IsScriptReloadRequested();
     }
 }

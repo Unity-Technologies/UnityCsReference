@@ -22,6 +22,5 @@ namespace UnityEngine
 
         [FreeFunction("LineUtility_Bindings::GenerateSimplifiedPoints2D", IsThreadSafe = true)]
         extern internal static void GenerateSimplifiedPoints2D(object pointsList, float tolerance, object simplifiedPoints);
-
     }
 }

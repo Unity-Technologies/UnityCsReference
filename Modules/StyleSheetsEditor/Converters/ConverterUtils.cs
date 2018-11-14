@@ -372,7 +372,7 @@ namespace UnityEditor.StyleSheets
 
         public static void Assign(this GUIStyle style, GUIStyle src)
         {
-            style.active.Assign(src.active);
+            style.name = src.name;
             style.alignment = src.alignment;
             style.border = src.border;
             style.clipping = src.clipping;
@@ -526,13 +526,14 @@ namespace UnityEditor.StyleSheets
 
         public static string ToStyleName(string selectorName)
         {
-            if (selectorName.StartsWith(k_CustomGUIStyleSelectorPrefix))
+            // Type selector:
+            var lowerSelector = selectorName.ToLower();
+            if (k_GuiStyleTypeNames.ContainsKey(lowerSelector))
             {
-                return selectorName.Replace(k_CustomGUIStyleSelectorPrefix, "").Replace("-", " ");
+                return lowerSelector;
             }
 
-            // Type selector:
-            return selectorName.ToLower();
+            return selectorName.Replace(k_CustomGUIStyleSelectorPrefix, "").Replace("-", " ").Replace(".", "");
         }
 
         public static string ToGUIStyleSelectorName(string guiStyleName)

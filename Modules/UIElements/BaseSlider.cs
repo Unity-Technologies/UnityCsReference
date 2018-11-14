@@ -126,14 +126,8 @@ namespace UnityEngine.UIElements
         public static readonly string trackerUssClassName = ussClassName + "__tracker";
         public static readonly string draggerUssClassName = ussClassName + "__dragger";
 
-        internal BaseSlider()
-            : this(null) {}
-
-        internal BaseSlider(string label)
-            : base(label, null) {}
-
         internal BaseSlider(string label, TValueType start, TValueType end, SliderDirection direction = SliderDirection.Horizontal, float pageSize = kDefaultPageSize)
-            : this(label)
+            : base(label, null)
         {
             AddToClassList(ussClassName);
 
@@ -325,6 +319,11 @@ namespace UnityEngine.UIElements
         protected internal override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
+
+            if (evt == null)
+            {
+                return;
+            }
 
             if (evt.eventTypeId == GeometryChangedEvent.TypeId())
             {

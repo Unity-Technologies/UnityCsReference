@@ -69,10 +69,10 @@ namespace UnityEditor.ShortcutManagement
             // We instantiate this as the specific delegate type in advance,
             // because passing ShortcutArguments in object[] via MethodInfo.Invoke() causes boxing/allocation
             if (methodParams.Any())
-                action = (Action<ShortcutArguments>)methodInfo.CreateDelegate(typeof(Action<ShortcutArguments>), null);
+                action = (Action<ShortcutArguments>)Delegate.CreateDelegate(typeof(Action<ShortcutArguments>), null, methodInfo);
             else
             {
-                m_NoArgumentsAction = (Action)methodInfo.CreateDelegate(typeof(Action), null);
+                m_NoArgumentsAction = (Action)Delegate.CreateDelegate(typeof(Action), null, methodInfo);
                 action = NoArgumentShortcutMethodProxy;
             }
 

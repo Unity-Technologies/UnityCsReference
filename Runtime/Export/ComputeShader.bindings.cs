@@ -208,26 +208,6 @@ namespace UnityEngine
         [FreeFunction(Name = "ComputeShader_Bindings::InternalSetData", HasExplicitThis = true, ThrowsException = true)]
         extern private void InternalSetData(System.Array data, int managedBufferStartIndex, int computeBufferStartIndex, int count, int elemSize);
 
-        public unsafe NativeArray<T> BeginBufferWrite<T>(int dest_offset, int size) where T : struct
-        {
-            void* ptr = BeginBufferWrite(dest_offset, size);
-            NativeArray<T> array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(ptr, size / UnsafeUtility.SizeOf<T>(), Allocator.None);
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, AtomicSafetyHandle.Create());
-            return array;
-        }
-
-        [NativeMethod]
-        extern public unsafe void* BeginBufferWrite(int dst_offset, int size);
-        public unsafe void EndBufferWrite<T>(NativeArray<T> array) where T : struct
-        {
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(array));
-            EndBufferWrite(array.Length * UnsafeUtility.SizeOf<T>());
-        }
-
-        [NativeMethod]
-        extern public void EndBufferWrite(int size);
-
-
         // Read buffer data.
         [System.Security.SecurityCritical] // due to Marshal.SizeOf
         public void GetData(System.Array data)

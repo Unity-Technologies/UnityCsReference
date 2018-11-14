@@ -70,27 +70,11 @@ namespace UnityEngine.WSA
             item();
         }
 
-        [Obsolete("TryInvokeOnAppThread is deprecated, use InvokeOnAppThread")]
-        public static bool TryInvokeOnAppThread(AppCallbackItem item, bool waitUntilDone)
-        {
-            item();
-            return true;
-        }
-
-        [Obsolete("TryInvokeOnUIThread is deprecated, use InvokeOnUIThread")]
-        public static bool TryInvokeOnUIThread(AppCallbackItem item, bool waitUntilDone)
-        {
-            item();
-            return true;
-        }
-
-
+        [ThreadAndSerializationSafe]
+        internal static extern void InternalInvokeOnAppThread(object item, bool waitUntilDone);
 
         [ThreadAndSerializationSafe]
-        internal static extern bool InternalTryInvokeOnAppThread(AppCallbackItem item, bool waitUntilDone);
-
-        [ThreadAndSerializationSafe]
-        internal static extern bool InternalTryInvokeOnUIThread(AppCallbackItem item, bool waitUntilDone);
+        internal static extern void InternalInvokeOnUIThread(object item, bool waitUntilDone);
 
         [ThreadAndSerializationSafe]
         public static extern bool RunningOnAppThread();

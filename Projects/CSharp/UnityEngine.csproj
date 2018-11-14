@@ -22,7 +22,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\artifacts\Bee.CSharpSupport\UnityEngine\Debug\</OutputPath>
-    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_HUB;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_DIRECTOR;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_DUCK_TYPING;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_GRID;ENABLE_HOLOLENS_MODULE_API;ENABLE_LOCALIZATION;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_TEXTURE_STREAMING;ENABLE_TILEMAP;ENABLE_TIMELINE;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;INCLUDE_GI;INCLUDE_PUBNUB;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IOS_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS4_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
+    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_HUB;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_DIRECTOR;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_DUCK_TYPING;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_GRID;ENABLE_HOLOLENS_MODULE_API;ENABLE_LOCALIZATION;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_TEXTURE_STREAMING;ENABLE_TILEMAP;ENABLE_TIMELINE;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;INCLUDE_GI;INCLUDE_PUBNUB;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IOS_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS4_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -34,7 +34,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\..\artifacts\Bee.CSharpSupport\UnityEngine\Release\</OutputPath>
-    <DefineConstants>COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_HUB;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_DIRECTOR;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_DUCK_TYPING;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_GRID;ENABLE_HOLOLENS_MODULE_API;ENABLE_LOCALIZATION;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_TEXTURE_STREAMING;ENABLE_TILEMAP;ENABLE_TIMELINE;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;INCLUDE_GI;INCLUDE_PUBNUB;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IOS_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS4_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
+    <DefineConstants>COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_HUB;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_DIRECTOR;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_DUCK_TYPING;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_GRID;ENABLE_HOLOLENS_MODULE_API;ENABLE_LOCALIZATION;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_TEXTURE_STREAMING;ENABLE_TILEMAP;ENABLE_TIMELINE;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;INCLUDE_GI;INCLUDE_PUBNUB;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IOS_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS4_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -97,9 +97,6 @@
   </Compile>
   <Compile Include="..\..\Runtime\Export\Application.cs">
     <Link>Runtime\Export\Application.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\Export\ArrayUtils.cs">
-    <Link>Runtime\Export\ArrayUtils.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Export\AssemblyInfo.cs">
     <Link>Runtime\Export\AssemblyInfo.cs</Link>
@@ -551,9 +548,6 @@
   <Compile Include="..\..\Runtime\Export\Mesh.cs">
     <Link>Runtime\Export\Mesh.cs</Link>
   </Compile>
-  <Compile Include="..\..\Runtime\Export\Metro.cs">
-    <Link>Runtime\Export\Metro.cs</Link>
-  </Compile>
   <Compile Include="..\..\Runtime\Export\MonoBehaviour.bindings.cs">
     <Link>Runtime\Export\MonoBehaviour.bindings.cs</Link>
   </Compile>
@@ -827,33 +821,6 @@
   <Compile Include="..\..\Runtime\Export\Serialization\FormerlySerializedAsAttribute.cs">
     <Link>Runtime\Export\Serialization\FormerlySerializedAsAttribute.cs</Link>
   </Compile>
-  <Compile Include="..\..\Runtime\Export\Serialization\IPPtrRemapper.cs">
-    <Link>Runtime\Export\Serialization\IPPtrRemapper.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\Export\Serialization\ISerializedNamedStateReader.cs">
-    <Link>Runtime\Export\Serialization\ISerializedNamedStateReader.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\Export\Serialization\ISerializedNamedStateWriter.cs">
-    <Link>Runtime\Export\Serialization\ISerializedNamedStateWriter.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\Export\Serialization\ISerializedStateReader.cs">
-    <Link>Runtime\Export\Serialization\ISerializedStateReader.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\Export\Serialization\ISerializedStateWriter.cs">
-    <Link>Runtime\Export\Serialization\ISerializedStateWriter.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\Export\Serialization\IUnitySerializable.cs">
-    <Link>Runtime\Export\Serialization\IUnitySerializable.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\Export\Serialization\PPtrRemapper.cs">
-    <Link>Runtime\Export\Serialization\PPtrRemapper.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\Export\Serialization\SerializedStateReader.cs">
-    <Link>Runtime\Export\Serialization\SerializedStateReader.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\Export\Serialization\SerializedStateWriter.cs">
-    <Link>Runtime\Export\Serialization\SerializedStateWriter.cs</Link>
-  </Compile>
   <Compile Include="..\..\Runtime\Export\Serialization\UnitySurrogateSelector.cs">
     <Link>Runtime\Export\Serialization\UnitySurrogateSelector.cs</Link>
   </Compile>
@@ -1025,9 +992,6 @@
   <Compile Include="..\..\Runtime\Export\WaitWhile.cs">
     <Link>Runtime\Export\WaitWhile.cs</Link>
   </Compile>
-  <Compile Include="..\..\Runtime\Export\WinRT\NetFxCoreExtensions.cs">
-    <Link>Runtime\Export\WinRT\NetFxCoreExtensions.cs</Link>
-  </Compile>
   <Compile Include="..\..\Runtime\Export\Windows\AppTrial.bindings.cs">
     <Link>Runtime\Export\Windows\AppTrial.bindings.cs</Link>
   </Compile>
@@ -1111,9 +1075,6 @@
   </Compile>
   <Compile Include="..\..\Runtime\Profiler\ScriptBindings\Sampler.bindings.cs">
     <Link>Runtime\Profiler\ScriptBindings\Sampler.bindings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\Scripting\ManagedReference\SerializableManagedRefTests.Resources.cs">
-    <Link>Runtime\Scripting\ManagedReference\SerializableManagedRefTests.Resources.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Transform\ScriptBindings\RectTransform.bindings.cs">
     <Link>Runtime\Transform\ScriptBindings\RectTransform.bindings.cs</Link>
@@ -1306,6 +1267,9 @@
   </Compile>
   <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationPlayableOutput.bindings.cs">
     <Link>Modules\Animation\ScriptBindings\AnimationPlayableOutput.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationPlayableOutputExtensions.bindings.cs">
+    <Link>Modules\Animation\ScriptBindings\AnimationPlayableOutputExtensions.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationPosePlayable.bindings.cs">
     <Link>Modules\Animation\ScriptBindings\AnimationPosePlayable.bindings.cs</Link>
@@ -2630,9 +2594,6 @@
   <Compile Include="..\..\Modules\Wind\Public\WindZone.bindings.cs">
     <Link>Modules\Wind\Public\WindZone.bindings.cs</Link>
   </Compile>
-  <Compile Include="..\..\Modules\XR\DotNetHelper.cs">
-    <Link>Modules\XR\DotNetHelper.cs</Link>
-  </Compile>
   <Compile Include="..\..\Modules\XR\ScriptBindings\InputTracking.cs">
     <Link>Modules\XR\ScriptBindings\InputTracking.cs</Link>
   </Compile>
@@ -2756,11 +2717,17 @@
   <Compile Include="..\..\Runtime\Networking\ScriptBindings\UNETworking.bindings.cs">
     <Link>Runtime\Networking\ScriptBindings\UNETworking.bindings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\ParticleSystem\Managed\IParticleSystemJob.cs">
+    <Link>Runtime\ParticleSystem\Managed\IParticleSystemJob.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\ParticleSystem\Managed\ParticleSystem.deprecated.cs">
     <Link>Runtime\ParticleSystem\Managed\ParticleSystem.deprecated.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\ParticleSystem\Managed\ParticleSystemEnums.cs">
     <Link>Runtime\ParticleSystem\Managed\ParticleSystemEnums.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\ParticleSystem\Managed\ParticleSystemJobStructs.cs">
+    <Link>Runtime\ParticleSystem\Managed\ParticleSystemJobStructs.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\ParticleSystem\Managed\ParticleSystemRenderer.deprecated.cs">
     <Link>Runtime\ParticleSystem\Managed\ParticleSystemRenderer.deprecated.cs</Link>
@@ -2887,9 +2854,6 @@
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Cloth\ClothBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Cloth\ClothBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\ParticleSystem\ParticleSystemBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\ParticleSystem\ParticleSystemBindings.gen.cs</Link>
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\VR\VRTestBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\VR\VRTestBindings.gen.cs</Link>

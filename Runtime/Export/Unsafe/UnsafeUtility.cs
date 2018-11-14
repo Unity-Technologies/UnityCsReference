@@ -10,24 +10,13 @@ namespace Unity.Collections.LowLevel.Unsafe
 {
     public static partial class UnsafeUtility
     {
-        // just to hide .net API differences
-        private static bool IsValueType(Type t)
-        {
-            return t.IsValueType;
-        }
-
-        private static bool IsPrimitive(Type t)
-        {
-            return t.IsPrimitive;
-        }
-
-        private static bool IsBlittableValueType(Type t) { return IsValueType(t) && IsBlittable(t); }
+        private static bool IsBlittableValueType(Type t) { return t.IsValueType && IsBlittable(t); }
 
         private static string GetReasonForTypeNonBlittableImpl(Type t, string name)
         {
-            if (!IsValueType(t))
+            if (!t.IsValueType)
                 return String.Format("{0} is not blittable because it is not of value type ({1})\n", name, t);
-            if (IsPrimitive(t))
+            if (t.IsPrimitive)
                 return String.Format("{0} is not blittable ({1})\n", name, t);
 
             string ret = "";

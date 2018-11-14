@@ -266,7 +266,6 @@ namespace UnityEngine
         }
     }
 
-
     [Serializable]
     [RequiredByNativeCode]
     public class UnityException : SystemException

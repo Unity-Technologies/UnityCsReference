@@ -165,6 +165,9 @@ namespace UnityEditor
         [FreeFunction("ResolveSymlinks")]
         public static extern string ResolveSymlinks(string path);
 
+        [FreeFunction("ResolveRedirectedPath")]
+        public static extern string ResolveRedirectedPath(string path);
+
         [FreeFunction("AssetDatabase::SetApplicationSettingCompressAssetsOnImport")]
         public static extern void SetApplicationSettingCompressAssetsOnImport(bool value);
 

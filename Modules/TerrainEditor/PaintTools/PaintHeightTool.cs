@@ -10,6 +10,21 @@ namespace UnityEditor.Experimental.TerrainAPI
 {
     internal class PaintHeightTool : TerrainPaintTool<PaintHeightTool>
     {
+        class Styles
+        {
+            public readonly GUIContent description = EditorGUIUtility.TrTextContent("Left click to raise.\n\nHold shift and left click to lower.");
+        }
+
+        private static Styles m_styles;
+        private Styles GetStyles()
+        {
+            if (m_styles == null)
+            {
+                m_styles = new Styles();
+            }
+            return m_styles;
+        }
+
         public override string GetName()
         {
             return "Raise or Lower Terrain";
@@ -17,7 +32,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         public override string GetDesc()
         {
-            return "Left click to raise.\n\nHold shift and left click to lower.";
+            return GetStyles().description.text;
         }
 
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)

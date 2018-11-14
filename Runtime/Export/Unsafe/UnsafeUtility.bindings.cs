@@ -14,7 +14,6 @@ namespace Unity.Collections.LowLevel.Unsafe
     [StaticAccessor("UnsafeUtility", StaticAccessorType.DoubleColon)]
     public static partial class UnsafeUtility
     {
-
         [ThreadSafe]
         extern static int GetFieldOffsetInStruct(FieldInfo field);
 

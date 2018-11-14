@@ -497,14 +497,24 @@ namespace UnityEngine
             Blit2(source, dest);
         }
 
+        public static void Blit(Texture source, RenderTexture dest, int sourceDepthSlice, int destDepthSlice)
+        {
+            Blit3(source, dest, sourceDepthSlice, destDepthSlice);
+        }
+
         public static void Blit(Texture source, RenderTexture dest, Vector2 scale, Vector2 offset)
         {
             Blit4(source, dest, scale, offset);
         }
 
+        public static void Blit(Texture source, RenderTexture dest, Vector2 scale, Vector2 offset, int sourceDepthSlice, int destDepthSlice)
+        {
+            Blit5(source, dest, scale, offset, sourceDepthSlice, destDepthSlice);
+        }
+
         public static void Blit(Texture source, RenderTexture dest, Material mat, [uei.DefaultValue("-1")] int pass)
         {
-            Internal_BlitMaterial(source, dest, mat, pass, true);
+            Internal_BlitMaterial5(source, dest, mat, pass, true);
         }
 
         public static void Blit(Texture source, RenderTexture dest, Material mat)
@@ -514,7 +524,12 @@ namespace UnityEngine
 
         public static void Blit(Texture source, Material mat, [uei.DefaultValue("-1")] int pass)
         {
-            Internal_BlitMaterial(source, null, mat, pass, false);
+            Internal_BlitMaterial5(source, null, mat, pass, false);
+        }
+
+        public static void Blit(Texture source, Material mat, int pass, int destDepthSlice)
+        {
+            Internal_BlitMaterial6(source, null, mat, pass, false, destDepthSlice);
         }
 
         public static void Blit(Texture source, Material mat)
@@ -528,7 +543,16 @@ namespace UnityEngine
             // do explicit argument exception instead of potential nullref coming from native side
             if (offsets.Length == 0)
                 throw new ArgumentException("empty offsets list passed.", "offsets");
-            Internal_BlitMultiTap(source, dest, mat, offsets);
+            Internal_BlitMultiTap4(source, dest, mat, offsets);
+        }
+
+        public static void BlitMultiTap(Texture source, RenderTexture dest, Material mat, int destDepthSlice, params Vector2[] offsets)
+        {
+            // in case params were not passed, we will end up with empty array (not null) but our cpp code is not ready for that.
+            // do explicit argument exception instead of potential nullref coming from native side
+            if (offsets.Length == 0)
+                throw new ArgumentException("empty offsets list passed.", "offsets");
+            Internal_BlitMultiTap5(source, dest, mat, offsets, destDepthSlice);
         }
     }
 }

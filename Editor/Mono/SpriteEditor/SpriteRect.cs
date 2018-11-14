@@ -35,6 +35,9 @@ namespace UnityEditor
         [SerializeField]
         string m_SpriteID;
 
+        [SerializeField]
+        internal long m_InternalID;
+
         GUID m_GUID;
 
         public string name
@@ -113,6 +116,18 @@ namespace UnityEditor
         public static GUID GetSpriteIDFromSerializedProperty(SerializedProperty sp)
         {
             return new GUID(sp.FindPropertyRelative("m_SpriteID").stringValue);
+        }
+
+        internal long internalID
+        {
+            get
+            {
+                return m_InternalID;
+            }
+            set
+            {
+                m_InternalID = value;
+            }
         }
     }
 

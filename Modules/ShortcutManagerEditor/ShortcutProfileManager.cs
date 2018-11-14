@@ -226,21 +226,30 @@ namespace UnityEditor.ShortcutManagement
             switch (CanRenameProfile(profile, newProfileId))
             {
                 case CanRenameProfileResult.Success:
+                {
                     var newProfile = new ShortcutProfile(newProfileId, profile.entries, profile.parentId);
-                    m_LoadedProfiles.Remove(profile.id);
                     m_LoadedProfiles.Add(newProfile.id, newProfile);
                     SaveShortcutProfile(newProfile);
-                    foreach (var childProfile in m_LoadedProfiles.Values)
+                    foreach (var childProfile in m_LoadedProfiles.Values.Where(childProfile => childProfile.parent == profile))
                     {
-                        if (childProfile.parent == profile)
-                        {
-                            childProfile.parent = newProfile;
-                            childProfile.parentId = newProfile.id;
-                            SaveShortcutProfile(childProfile);
-                        }
+                        childProfile.parent = newProfile;
+                        childProfile.parentId = newProfile.id;
+                        SaveShortcutProfile(childProfile);
                     }
-                    activeProfile = newProfile;
+
+                    if (activeProfile == profile)
+                        activeProfile = newProfile;
+
+                    try
+                    {
+                        DeleteProfile(profile);
+                    }
+                    catch (Exception exception)
+                    {
+                        Debug.LogError($"Error removing old shortcut profile: {exception}");
+                    }
                     break;
+                }
 
                 case CanRenameProfileResult.ProfileNotFound:
                     throw new ArgumentException("Profile not found", nameof(profile));
@@ -369,6 +378,22 @@ namespace UnityEditor.ShortcutManagement
             return ancestors;
         }
 
+        static bool TryParseUniquePrefKeyString(string prefString, out string name, out Event keyboardEvent, out string shortcut)
+        {
+            int i = prefString.IndexOf(";");
+            if (i < 0)
+            {
+                name = null;
+                keyboardEvent = null;
+                shortcut = null;
+                return false;
+            }
+            name = prefString.Substring(0, i);
+            shortcut = prefString.Substring(i + 1);
+            keyboardEvent = Event.KeyboardEvent(shortcut);
+            return true;
+        }
+
         void MigrateUserSpecifiedPrefKeys(IEnumerable<MethodInfo> methodsWithFormerlyPrefKeyAs, List<ShortcutEntry> entries)
         {
             KeyCombination[] tempKeyCombinations = new KeyCombination[1];
@@ -383,26 +408,32 @@ namespace UnityEditor.ShortcutManagement
                 if (entry == null || entry.overridden)
                     continue;
 
+                // Parse default pref key value from FormerlyPrefKeyAs attribute
                 var prefKeyAttr = (FormerlyPrefKeyAsAttribute)Attribute.GetCustomAttribute(method, typeof(FormerlyPrefKeyAsAttribute));
-                var prefKeyDefaultValue = KeyCombination.ParseLegacyBindingString(prefKeyAttr.defaultValue);
+                var prefKeyDefaultValue = $"{prefKeyAttr.name};{prefKeyAttr.defaultValue}";
                 string name;
-                string binding;
                 Event keyboardEvent;
-                var parsed = PrefKey.TryParseUniquePrefString(EditorPrefs.GetString(prefKeyAttr.name, prefKeyAttr.defaultValue), out name, out keyboardEvent, out binding);
-                if (!parsed)
+                string shortcut;
+                if (!TryParseUniquePrefKeyString(prefKeyDefaultValue, out name, out keyboardEvent, out shortcut))
                     continue;
-                var prefKeyCurrentValue = KeyCombination.ParseLegacyBindingString(binding);
+                var prefKeyDefaultKeyCombination = KeyCombination.FromPrefKeyKeyboardEvent(keyboardEvent);
+
+                // Parse current pref key value (falling back on default pref key value)
+                if (!TryParseUniquePrefKeyString(EditorPrefs.GetString(prefKeyAttr.name, prefKeyDefaultValue), out name, out keyboardEvent, out shortcut))
+                    continue;
+                var prefKeyCurrentKeyCombination = KeyCombination.FromPrefKeyKeyboardEvent(keyboardEvent);
+
                 // only migrate pref keys that the user actually overwrote
-                if (!prefKeyCurrentValue.Equals(prefKeyDefaultValue))
+                if (!prefKeyCurrentKeyCombination.Equals(prefKeyDefaultKeyCombination))
                 {
                     string invalidBindingMessage;
-                    tempKeyCombinations[0] = prefKeyCurrentValue;
+                    tempKeyCombinations[0] = prefKeyCurrentKeyCombination;
                     if (!m_BindingValidator.IsBindingValid(tempKeyCombinations, out invalidBindingMessage))
                     {
                         Debug.LogWarning($"Could not migrate existing binding for shortcut \"{entry.identifier.path}\" with invalid binding.\n{invalidBindingMessage}.");
                         continue;
                     }
-                    entry.SetOverride(new List<KeyCombination> { prefKeyCurrentValue });
+                    entry.SetOverride(new List<KeyCombination> { prefKeyCurrentKeyCombination });
                 }
             }
         }

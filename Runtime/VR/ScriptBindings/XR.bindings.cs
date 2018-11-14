@@ -269,10 +269,7 @@ namespace UnityEngine.Experimental.XR
             return TryGetGeometryScriptingInternal(geometry, boundaryType);
         }
 
-        [NativeConditional("!ENABLE_DOTNET")]
         extern private static bool TryGetGeometryScriptingInternal(List<Vector3> geometry, Type boundaryType);
-        [NativeConditional("ENABLE_DOTNET")]
-        extern private static Vector3[] TryGetGeometryArrayInternal(Type boundaryType);
     }
 
 }

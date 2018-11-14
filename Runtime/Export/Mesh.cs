@@ -107,7 +107,6 @@ namespace UnityEngine
                 return;
 
             NoAllocHelpers.EnsureListElemCount(buffer, capacity);
-
             GetArrayFromChannelImpl(channel, channelType, dim, NoAllocHelpers.ExtractArrayFromList(buffer));
         }
 
@@ -481,8 +480,21 @@ namespace UnityEngine
             if (boneWeights == null)
                 throw new ArgumentNullException("The result boneWeights list cannot be null.", "boneWeights");
 
-            NoAllocHelpers.EnsureListElemCount(boneWeights, GetBoneWeightCount());
+            if (HasBoneWeights())
+                NoAllocHelpers.EnsureListElemCount(boneWeights, vertexCount);
             GetBoneWeightsNonAllocImpl(NoAllocHelpers.ExtractArrayFromListT(boneWeights));
+        }
+
+        public BoneWeight[] boneWeights
+        {
+            get
+            {
+                return GetBoneWeightsImpl();
+            }
+            set
+            {
+                SetBoneWeightsImpl(value);
+            }
         }
 
         //
@@ -629,6 +641,48 @@ namespace UnityEngine
         }
 
         public static bool operator!=(BoneWeight lhs, BoneWeight rhs)
+        {
+            // Returns true in the presence of NaN values.
+            return !(lhs == rhs);
+        }
+    }
+
+    [Serializable]
+    [UsedByNativeCode]
+    public struct BoneWeight1 : IEquatable<BoneWeight1>
+    {
+        [SerializeField]
+        private float m_Weight;
+        [SerializeField]
+        private int m_BoneIndex;
+
+        public float weight { get { return m_Weight; } set { m_Weight = value; } }
+
+        public int boneIndex { get { return m_BoneIndex; } set { m_BoneIndex = value; } }
+
+        public override bool Equals(object other)
+        {
+            return other is BoneWeight1 && Equals((BoneWeight1)other);
+        }
+
+        public bool Equals(BoneWeight1 other)
+        {
+            return boneIndex.Equals(other.boneIndex) && weight.Equals(other.weight);
+        }
+
+        // used to allow BoneWeights to be used as keys in hash tables
+        public override int GetHashCode()
+        {
+            return boneIndex.GetHashCode() ^ weight.GetHashCode();
+        }
+
+        public static bool operator==(BoneWeight1 lhs, BoneWeight1 rhs)
+        {
+            // Returns false in the presence of NaN values.
+            return lhs.boneIndex == rhs.boneIndex && lhs.weight == rhs.weight;
+        }
+
+        public static bool operator!=(BoneWeight1 lhs, BoneWeight1 rhs)
         {
             // Returns true in the presence of NaN values.
             return !(lhs == rhs);

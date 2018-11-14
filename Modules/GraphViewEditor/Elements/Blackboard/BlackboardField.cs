@@ -82,6 +82,17 @@ namespace UnityEditor.Experimental.GraphView
             this.AddManipulator(new ContextualMenuManipulator(BuildContextualMenu));
         }
 
+        protected internal override void ExecuteDefaultAction(EventBase evt)
+        {
+            base.ExecuteDefaultAction(evt);
+
+            if (evt.eventTypeId == AttachToPanelEvent.TypeId())
+            {
+                var graphView = GetFirstAncestorOfType<GraphView>();
+                graphView.RestorePersitentSelectionForElement(this);
+            }
+        }
+
         private void OnTextFieldKeyPressed(KeyDownEvent e)
         {
             switch (e.keyCode)

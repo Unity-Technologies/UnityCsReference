@@ -9,6 +9,24 @@ namespace UnityEngine.UIElements
 {
     public abstract class BaseField<TValueType> : BindableElement, INotifyValueChanged<TValueType>
     {
+        public new class UxmlFactory : UxmlFactory<BaseField<TValueType>, UxmlTraits> {}
+        public new class UxmlTraits : BindableElement.UxmlTraits
+        {
+            UxmlStringAttributeDescription m_Label = new UxmlStringAttributeDescription { name = "label" };
+
+            public UxmlTraits()
+            {
+                focusIndex.defaultValue = 0;
+                focusable.defaultValue = true;
+            }
+
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                base.Init(ve, bag, cc);
+                ((BaseField<TValueType>)ve).label = m_Label.GetValueFromBag(bag, cc);
+            }
+        }
+
         public static readonly string ussClassName = "unity-base-field";
         public static readonly string labelUssClassName = ussClassName + "__label";
         public static readonly string inputUssClassName = ussClassName + "__input";
@@ -201,6 +219,11 @@ namespace UnityEngine.UIElements
         {
             base.ExecuteDefaultAction(evt);
 
+            if (evt == null)
+            {
+                return;
+            }
+
             if (evt.eventTypeId == FocusEvent.TypeId())
             {
                 m_VisualInput?.Focus();
@@ -208,23 +231,15 @@ namespace UnityEngine.UIElements
         }
     }
 
-    public class BaseFieldTraits<TValueType, TValueUxmlAttributeType> : BindableElement.UxmlTraits
+    public class BaseFieldTraits<TValueType, TValueUxmlAttributeType> : BaseField<TValueType>.UxmlTraits
         where TValueUxmlAttributeType : TypedUxmlAttributeDescription<TValueType>, new()
     {
         TValueUxmlAttributeType m_Value = new TValueUxmlAttributeType { name = "value" };
-        UxmlStringAttributeDescription m_Label = new UxmlStringAttributeDescription { name = "label" };
-
-        protected BaseFieldTraits()
-        {
-            focusIndex.defaultValue = 0;
-            focusable.defaultValue = true;
-        }
 
         public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
         {
             base.Init(ve, bag, cc);
             ((INotifyValueChanged<TValueType>)ve).SetValueWithoutNotify(m_Value.GetValueFromBag(bag, cc));
-            ((BaseField<TValueType>)ve).label = m_Label.GetValueFromBag(bag, cc);
         }
     }
 }

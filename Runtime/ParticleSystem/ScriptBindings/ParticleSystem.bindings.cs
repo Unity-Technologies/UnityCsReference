@@ -6,7 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
+
+using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Experimental.ParticleSystemJobs;
 
 namespace UnityEngine
 {
@@ -14,8 +18,9 @@ namespace UnityEngine
     [NativeHeader("Runtime/ParticleSystem/ParticleSystem.h")]
     [NativeHeader("Runtime/ParticleSystem/ParticleSystemGeometryJob.h")]
     [NativeHeader("Runtime/ParticleSystem/ScriptBindings/ParticleSystemScriptBindings.h")]
+    [UsedByNativeCode]
     [RequireComponent(typeof(Transform))]
-    public partial class ParticleSystem : Component
+    public sealed partial class ParticleSystem : Component
     {
         // Properties
         extern public bool isPlaying
@@ -77,6 +82,7 @@ namespace UnityEngine
 
         [FreeFunction(Name = "ParticleSystemScriptBindings::GetParticleCurrentColor", HasExplicitThis = true)]
         extern internal Color32 GetParticleCurrentColor(ref Particle particle);
+
 
         // Set/get particles
         [FreeFunction(Name = "ParticleSystemScriptBindings::SetParticles", HasExplicitThis = true)]
@@ -154,6 +160,17 @@ namespace UnityEngine
 
         [FreeFunction(Name = "ParticleSystemGeometryJob::ResetPreMappedBufferMemory")]
         extern public static void ResetPreMappedBufferMemory();
+
+        public unsafe void SetJob<T>(T job) where T : struct, IParticleSystemJob
+        {
+            IntPtr jobReflectionData = ProcessParticleSystemJobStruct<T>.GetJobReflectionData();
+            UnsafeUtility.CopyStructureToPtr(ref job, (void*)GetJobSystemPtr(jobReflectionData));
+        }
+
+        [NativeName("ClearJobSystemPtr")]
+        extern public void ClearJob();
+
+        extern private IntPtr GetJobSystemPtr(IntPtr jobReflectionData);
 
 
         [FreeFunction(Name = "ParticleSystemEditor::SetupDefaultParticleSystemType", HasExplicitThis = true)]

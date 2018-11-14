@@ -142,7 +142,6 @@ namespace UnityEngine
             Debug.Log(message);
         }
 
-
         [NativeMethod(IsThreadSafe = true)]
         extern static void ConstructorCheck([Writable] Object self);
 

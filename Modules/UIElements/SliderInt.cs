@@ -16,7 +16,7 @@ namespace UnityEngine.UIElements
             UxmlIntAttributeDescription m_LowValue = new UxmlIntAttributeDescription { name = "low-value" };
             UxmlIntAttributeDescription m_HighValue = new UxmlIntAttributeDescription { name = "high-value", defaultValue = kDefaultHighValue };
             UxmlIntAttributeDescription m_PageSize = new UxmlIntAttributeDescription { name = "page-size", defaultValue = (int)kDefaultPageSize };
-            UxmlEnumAttributeDescription<SliderDirection> m_Direction = new UxmlEnumAttributeDescription<SliderDirection> { name = "direction", defaultValue = SliderDirection.Vertical };
+            UxmlEnumAttributeDescription<SliderDirection> m_Direction = new UxmlEnumAttributeDescription<SliderDirection> { name = "direction", defaultValue = SliderDirection.Horizontal };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {

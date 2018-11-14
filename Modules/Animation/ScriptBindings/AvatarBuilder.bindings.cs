@@ -113,11 +113,13 @@ namespace UnityEngine
         {
             if (go == null)
                 throw new NullReferenceException();
+
             return BuildHumanAvatarInternal(go, humanDescription);
         }
 
         [FreeFunction("AvatarBuilderBindings::BuildHumanAvatar")]
         extern private static Avatar BuildHumanAvatarInternal(GameObject go, HumanDescription humanDescription);
+
         [FreeFunction("AvatarBuilderBindings::BuildGenericAvatar")]
         extern public static Avatar BuildGenericAvatar([NotNull] GameObject go, [NotNull] string rootMotionTransformName);
     }

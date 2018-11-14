@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor.AnimatedValues;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
@@ -11,11 +12,42 @@ namespace UnityEditor
 {
     internal static class SceneViewMotion
     {
+        [NonSerialized]
+        static bool s_Initialized;
+        static SceneView s_SceneView;
         static Vector3 s_Motion;
-        static float s_FlySpeed = 0;
-        const float kFlyAcceleration = 1.8f;
-        static float s_StartZoom = 0, s_ZoomSpeed = 0f;
-        static float s_TotalMotion = 0;
+        static float k_FlySpeed = 9f;
+        const float k_DefaultFpsEaseDuration = .4f;
+        static float s_StartZoom = 0f, s_ZoomSpeed = 0f;
+        static float s_TotalMotion = 0f;
+        static float s_FPSScrollWheelMultiplier = .01f;
+        static bool s_Moving;
+        static AnimVector3 s_FlySpeed = new AnimVector3(Vector3.zero) { speed = 1f / k_DefaultFpsEaseDuration };
+
+        static SavedFloat s_EasingDuration = new SavedFloat("SceneViewMotion.easeDuration", k_DefaultFpsEaseDuration);
+        static SavedBool s_MovementEasing = new SavedBool("SceneViewMotion.movementEasing", true);
+
+        // how many seconds should the camera take to go from stand-still to full speed.
+        internal static float movementEasingDuration
+        {
+            get { return s_EasingDuration.value; }
+            set
+            {
+                s_EasingDuration.value = Mathf.Clamp(value, 0f, 10f);
+                s_FlySpeed.speed = 1f / s_EasingDuration.value;
+            }
+        }
+
+        static float movementEasingSpeed
+        {
+            get { return 1f / s_EasingDuration.value; }
+        }
+
+        internal static bool movementEasingEnabled
+        {
+            get { return s_MovementEasing.value; }
+            set { s_MovementEasing.value = value; }
+        }
 
         enum MotionState
         {
@@ -23,14 +55,27 @@ namespace UnityEditor
             kActive,
             kDragging
         }
-        private static MotionState s_CurrentState;
+
+        static MotionState s_CurrentState;
 
         static int s_ViewToolID = GUIUtility.GetPermanentControlID();
 
         static readonly CameraFlyModeContext s_CameraFlyModeContext = new CameraFlyModeContext();
 
+        static void Init()
+        {
+            if (s_Initialized)
+                return;
+            s_Initialized = true;
+            movementEasingDuration = movementEasingDuration;
+        }
+
         public static void DoViewTool(SceneView view)
         {
+            Init();
+
+            s_SceneView = view;
+
             Event evt = Event.current;
 
             // Ensure we always call the GetControlID the same number of times
@@ -48,8 +93,7 @@ namespace UnityEditor
             {
                 if (inputSamplingScope.currentlyMoving)
                     view.viewIsLockedToObject = false;
-                if (inputSamplingScope.inputVectorChanged)
-                    s_FlySpeed = 0;
+
                 s_Motion = inputSamplingScope.currentInputVector;
             }
 
@@ -62,11 +106,9 @@ namespace UnityEditor
                 case EventType.KeyDown:         HandleKeyDown(view); break;
                 case EventType.Layout:
                 {
-                    Vector3 motion = GetMovementDirection();
-                    // This seems to be the best way to have a continuously repeating event
-                    if (GUIUtility.hotControl == id && motion.sqrMagnitude != 0)
+                    if (GUIUtility.hotControl == id || s_FlySpeed.isAnimating || s_Moving)
                     {
-                        view.pivot = view.pivot + view.rotation * motion;
+                        view.pivot = view.pivot + view.rotation * GetMovementDirection();
                         view.Repaint();
                     }
                 }
@@ -85,21 +127,26 @@ namespace UnityEditor
 
         static Vector3 GetMovementDirection()
         {
-            var deltaTime = CameraFlyModeContext.deltaTime;
-            if (s_Motion.sqrMagnitude == 0)
+            s_Moving = s_Motion.sqrMagnitude > 0f;
+
+            var speedModifier = s_SceneView.sceneViewCameraSettings.speed;
+
+            if (Event.current.shift)
+                speedModifier *= 5f;
+
+            if (movementEasingEnabled)
             {
-                s_FlySpeed = 0;
-                return Vector3.zero;
+                s_FlySpeed.target = s_Moving ? s_Motion.normalized * k_FlySpeed * speedModifier : Vector3.zero;
             }
             else
             {
-                float speed = Event.current.shift ? 5 : 1;
-                if (s_FlySpeed == 0)
-                    s_FlySpeed = 9;
-                else
-                    s_FlySpeed = s_FlySpeed * Mathf.Pow(kFlyAcceleration, deltaTime);
-                return s_Motion.normalized * s_FlySpeed * speed * deltaTime;
+                if (!s_Moving)
+                    return s_FlySpeed.value = Vector3.zero;
+
+                s_FlySpeed.value = s_Motion.normalized * speedModifier * k_FlySpeed;
             }
+
+            return s_FlySpeed.value * CameraFlyModeContext.deltaTime;
         }
 
         private static void HandleMouseDown(SceneView view, int id, int button)
@@ -174,7 +221,6 @@ namespace UnityEditor
                 }
 
                 ResetDragState();
-
                 Event.current.Use();
             }
         }
@@ -278,7 +324,7 @@ namespace UnityEditor
 
                                 // The reason we calculate the camera position from the pivot, rotation and distance,
                                 // rather than just getting it from the camera transform is that the camera transform
-                                // is the *output* of camera motion calculations. It shouldn't be input and putput at the same time,
+                                // is the *output* of camera motion calculations. It shouldn't be input and output at the same time,
                                 // otherwise we easily get accumulated error.
                                 // We did get accumulated error before when we did this - the camera would continuously move slightly in FPS mode
                                 // even when not holding down any arrow/ASDW keys or moving the mouse.
@@ -318,6 +364,7 @@ namespace UnityEditor
                     case ViewTool.Zoom:
                     {
                         float zoomDelta = HandleUtility.niceMouseDeltaZoom * (evt.shift ? 9 : 3);
+
                         if (view.orthographic)
                         {
                             view.size = Mathf.Max(.0001f, view.size * (1 + zoomDelta * .001f));
@@ -325,6 +372,7 @@ namespace UnityEditor
                         else
                         {
                             s_TotalMotion += zoomDelta;
+
                             if (s_TotalMotion < 0)
                                 view.size = s_StartZoom * (1 + s_TotalMotion * .001f);
                             else
@@ -348,31 +396,55 @@ namespace UnityEditor
 
         private static void HandleScrollWheel(SceneView view, bool zoomTowardsCenter)
         {
-            var initialDistance = view.cameraDistance;
-            var mouseRay = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
-            var mousePivot = mouseRay.origin + mouseRay.direction * view.cameraDistance;
-            var pivotVector = mousePivot - view.pivot;
-
-            float zoomDelta = Event.current.delta.y;
-            if (!view.orthographic)
+            if (Tools.s_LockedViewTool == ViewTool.FPS)
             {
-                float relativeDelta = Mathf.Abs(view.size) * zoomDelta * .015f;
-                const float deltaCutoff = .3f;
-                if (relativeDelta > 0 && relativeDelta < deltaCutoff)
-                    relativeDelta = deltaCutoff;
-                else if (relativeDelta < 0 && relativeDelta > -deltaCutoff)
-                    relativeDelta = -deltaCutoff;
+                float scrollWheelDelta = Event.current.delta.y * s_FPSScrollWheelMultiplier;
+                view.sceneViewCameraSettings.speedNormalized -= scrollWheelDelta;
 
-                view.size += relativeDelta;
+                float cameraSpeed = view.sceneViewCameraSettings.speed;
+                string cameraSpeedDisplayValue = cameraSpeed.ToString(cameraSpeed < 0.1f ? "F2" : cameraSpeed < 10f ? "F1" : "F0");
+                if (cameraSpeed < 0.1f)
+                    cameraSpeedDisplayValue = cameraSpeedDisplayValue.TrimStart(new Char[] {'0'});
+                GUIContent cameraSpeedContent = EditorGUIUtility.TempContent(string.Format("{0}x", cameraSpeedDisplayValue));
+
+                view.ShowNotification(cameraSpeedContent, .5f);
             }
             else
             {
-                view.size = Mathf.Abs(view.size) * (zoomDelta * .015f + 1.0f);
-            }
+                var initialDistance = view.cameraDistance;
+                var mouseRay = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
+                var mousePivot = mouseRay.origin + mouseRay.direction * view.cameraDistance;
+                var pivotVector = mousePivot - view.pivot;
 
-            var percentage = 1f - (view.cameraDistance / initialDistance);
-            if (!zoomTowardsCenter)
-                view.pivot += pivotVector * percentage;
+                float zoomDelta = Event.current.delta.y;
+
+                if (!view.orthographic)
+                {
+                    float relativeDelta = Mathf.Abs(view.size) * zoomDelta * .015f;
+                    const float deltaCutoff = .3f;
+                    if (relativeDelta > 0 && relativeDelta < deltaCutoff)
+                        relativeDelta = deltaCutoff;
+                    else if (relativeDelta < 0 && relativeDelta > -deltaCutoff)
+                        relativeDelta = -deltaCutoff;
+
+                    if (movementEasingEnabled)
+                        view.m_Size.SetTarget(view.m_Size.target + relativeDelta, movementEasingSpeed);
+                    else
+                        view.m_Size.value += relativeDelta;
+                }
+                else
+                {
+                    if (movementEasingEnabled)
+                        view.m_Size.SetTarget(Mathf.Abs(view.m_Size.target) * (zoomDelta * .015f + 1.0f), movementEasingSpeed);
+                    else
+                        view.m_Size.value = Mathf.Abs(view.size) * (zoomDelta * .015f + 1.0f);
+                }
+
+                var percentage = 1f - (view.cameraDistance / initialDistance);
+
+                if (!zoomTowardsCenter)
+                    view.pivot += pivotVector * percentage;
+            }
 
             Event.current.Use();
         }

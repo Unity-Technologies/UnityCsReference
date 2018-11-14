@@ -88,7 +88,10 @@ namespace UnityEngine.Experimental.U2D
                 case VertexAttribute.TexCoord4:
                 case VertexAttribute.TexCoord5:
                 case VertexAttribute.TexCoord6:
+                case VertexAttribute.TexCoord7:
                     channelTypeMatches = typeof(T) == typeof(Vector2); break;
+                case VertexAttribute.BlendWeight:
+                    channelTypeMatches = typeof(T) == typeof(BoneWeight); break;
                 default:
                     throw new InvalidOperationException(String.Format("The requested channel '{0}' is unknown.", channel));
             }
@@ -139,19 +142,6 @@ namespace UnityEngine.Experimental.U2D
             SetIndicesData(sprite, src.GetUnsafeReadOnlyPtr(), src.Length);
         }
 
-        unsafe public static NativeArray<BoneWeight> GetBoneWeights(this Sprite sprite)
-        {
-            var info = GetBoneWeightsInfo(sprite);
-            var arr = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<BoneWeight>(info.buffer, info.count, Allocator.Invalid);
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref arr, sprite.GetSafetyHandle());
-            return arr;
-        }
-
-        unsafe public static void SetBoneWeights(this Sprite sprite, NativeArray<BoneWeight> src)
-        {
-            SetBoneWeightsData(sprite, src.GetUnsafeReadOnlyPtr(), src.Length);
-        }
-
         public static SpriteBone[] GetBones(this Sprite sprite)
         {
             return GetBoneInfo(sprite);
@@ -182,9 +172,6 @@ namespace UnityEngine.Experimental.U2D
         extern private static SpriteBone[] GetBoneInfo(Sprite sprite);
         extern private static void SetBoneData(Sprite sprite, SpriteBone[] src);
 
-        extern private static SpriteChannelInfo GetBoneWeightsInfo(Sprite sprite);
-        unsafe extern private static void SetBoneWeightsData(Sprite sprite, void* src, int count);
-
         extern internal static AtomicSafetyHandle GetSafetyHandle(this Sprite sprite);
     }
 
@@ -192,22 +179,19 @@ namespace UnityEngine.Experimental.U2D
     [NativeHeader("Runtime/Graphics/Mesh/SpriteRenderer.h")]
     public static class SpriteRendererDataAccessExtensions
     {
-        public unsafe static NativeArray<Vector3> GetDeformableVertices(this SpriteRenderer spriteRenderer)
+        internal unsafe static void SetDeformableBuffer(this SpriteRenderer spriteRenderer, NativeArray<Vector3> src)
         {
-            var info = GetDeformableChannelInfo(spriteRenderer, VertexAttribute.Position);
-            var arr = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector3>(info.buffer, info.count, Allocator.Invalid);
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref arr, spriteRenderer.GetSafetyHandle());
-            return arr;
+            if (spriteRenderer.sprite == null)
+                throw new InvalidOperationException(String.Format("spriteRenderer does not have a valid sprite set."));
+
+            if (src.Length != spriteRenderer.sprite.GetVertexCount())
+                throw new InvalidOperationException(String.Format("The src length {0} must match the vertex count of source Sprite {1}.", src.Length, spriteRenderer.sprite.GetVertexCount()));
+
+            SetDeformableBuffer(spriteRenderer, src.GetUnsafeReadOnlyPtr(), src.Length);
         }
 
         extern public static void DeactivateDeformableBuffer(this SpriteRenderer renderer);
-
-        extern public static void UpdateDeformableBuffer(this SpriteRenderer spriteRenderer, JobHandle fence);
-
-        extern private static SpriteChannelInfo GetDeformableChannelInfo(this SpriteRenderer sprite, VertexAttribute channel);
-
-        extern private static AtomicSafetyHandle GetSafetyHandle(this SpriteRenderer spriteRenderer);
-
         extern internal static void SetLocalAABB(this SpriteRenderer renderer, Bounds aabb);
+        extern private unsafe static void SetDeformableBuffer(SpriteRenderer spriteRenderer, void* src, int count);
     }
 }

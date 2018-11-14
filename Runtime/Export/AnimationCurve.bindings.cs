@@ -272,8 +272,6 @@ namespace UnityEngine
         // Creates an animation curve from arbitrary number of keyframes.
         public AnimationCurve(params Keyframe[] keys) { m_Ptr = Internal_Create(keys); }
 
-        // *undocumented*
-
         // Creates an empty animation curve
         [RequiredByNativeCode]
         public AnimationCurve()  { m_Ptr = Internal_Create(null); }

@@ -22,12 +22,14 @@ namespace UnityEngine
 public partial struct ClothSphereColliderPair
 {
     public SphereCollider first
-            { get { return m_First; } set { m_First = value; } }
+
+        { get { return m_First; } set { m_First = value; } }
     private SphereCollider m_First;
     
     
     public SphereCollider second
-            { get { return m_Second; } set { m_Second = value; } }
+
+        { get { return m_Second; } set { m_Second = value; } }
     private SphereCollider m_Second;
     
             public ClothSphereColliderPair(SphereCollider a)
@@ -150,8 +152,6 @@ public sealed partial class Cloth : Component
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal void GetVirtualParticleIndicesMono (object indicesOutList) ;
 
-    
-    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal void SetVirtualParticleIndicesMono (object indicesInList) ;
@@ -160,8 +160,6 @@ public sealed partial class Cloth : Component
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal void GetVirtualParticleWeightsMono (object weightsOutList) ;
 
-    
-    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal void SetVirtualParticleWeightsMono (object weightsInList) ;
@@ -170,8 +168,6 @@ public sealed partial class Cloth : Component
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal void GetSelfAndInterCollisionIndicesMono (object indicesOutList) ;
 
-    
-    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal void SetSelfAndInterCollisionIndicesMono (object indicesInList) ;

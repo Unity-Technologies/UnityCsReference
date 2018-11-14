@@ -246,7 +246,7 @@ namespace UnityEngine
             }
         }
 
-        static internal int profilerCaptureFlags { get { return 0; } }
+        extern static internal int profilerCaptureFlags { get; }
 
         // Returns the current time of the audio system. This is based on the number of samples the audio system processes and is therefore more exact than the time obtained via the Time.time property.
         // It is constant while Unity is paused.

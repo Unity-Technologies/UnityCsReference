@@ -393,13 +393,156 @@ namespace UnityEditor
 
         // How large an area the scene view covers (measured diagonally). Modify this for immediate effect, or use LookAt to animate it nicely.
         [SerializeField]
-        AnimFloat m_Size = new AnimFloat(kDefaultViewSize);
+        internal AnimFloat m_Size = new AnimFloat(kDefaultViewSize);
 
         [SerializeField]
         internal AnimBool m_Ortho = new AnimBool();
 
         [NonSerialized]
         Camera m_Camera;
+
+        [Serializable]
+        public class SceneViewCameraSettings
+        {
+            const float kAbsoluteSpeedMin = .01f;
+            const float kAbsoluteSpeedMax = 99f;
+
+            [SerializeField]
+            float m_Speed;
+            [SerializeField]
+            float m_SpeedNormalized;
+            [SerializeField]
+            float m_SpeedMin;
+            [SerializeField]
+            float m_SpeedMax;
+
+            [SerializeField]
+            float m_FieldOfView;
+            [SerializeField]
+            float m_NearClip;
+            [SerializeField]
+            float m_FarClip;
+
+            public SceneViewCameraSettings()
+            {
+                m_Speed = 1f;
+                m_SpeedNormalized = .5f;
+                m_SpeedMin = .01f;
+                m_SpeedMax = 2f;
+                fieldOfView = kPerspectiveFov;
+                nearClip = .03f;
+                farClip = 1000f;
+            }
+
+            public float speed
+            {
+                get
+                {
+                    return m_Speed;
+                }
+                set
+                {
+                    speedNormalized = Mathf.InverseLerp(m_SpeedMin, m_SpeedMax, value);
+                }
+            }
+
+            public float speedNormalized
+            {
+                get
+                {
+                    return m_SpeedNormalized;
+                }
+                set
+                {
+                    m_SpeedNormalized = Mathf.Clamp01(value);
+                    float speed = Mathf.Lerp(m_SpeedMin, m_SpeedMax, m_SpeedNormalized);
+                    // Round to nearest decimal: 2 decimal points when between [0.01, 0.1]; 1 decimal point when between [0.1, 10]; integral between [10, 99]
+                    speed = (float)(System.Math.Round((double)speed, speed < 0.1f ? 2 : speed < 10f ? 1 : 0));
+                    m_Speed = Mathf.Clamp(speed, m_SpeedMin, m_SpeedMax);
+                }
+            }
+
+            public float speedMin
+            {
+                get
+                {
+                    return m_SpeedMin;
+                }
+                set
+                {
+                    float[] m_Vector2Floats = { value, m_SpeedMax };
+                    SetSpeedMinMax(m_Vector2Floats);
+                }
+            }
+
+            public float speedMax
+            {
+                get
+                {
+                    return m_SpeedMax;
+                }
+                set
+                {
+                    float[] m_Vector2Floats = { m_SpeedMin, value };
+                    SetSpeedMinMax(m_Vector2Floats);
+                }
+            }
+
+            internal void SetSpeedMinMax(float[] floatValues)
+            {
+                // Round to nearest decimal: 2 decimal points when between [0.01, 0.1]; 1 decimal point when between [0.1, 10]; integral between [10, 99]
+                floatValues[0] = (float)(Math.Round((double)floatValues[0], floatValues[0] < 0.1f ? 2 : floatValues[0] < 10f ? 1 : 0));
+                floatValues[1] = (float)(Math.Round((double)floatValues[1], floatValues[1] < 0.1f ? 2 : floatValues[1] < 10f ? 1 : 0));
+
+                floatValues[0] = Mathf.Clamp(floatValues[0], kAbsoluteSpeedMin, kAbsoluteSpeedMax - 1f);
+
+                bool floatsAreEqual = Mathf.Abs(floatValues[0] - floatValues[1]) < Mathf.Epsilon;
+
+                // Ensure there is at least a range of 1
+                if (floatsAreEqual || floatValues[0] > floatValues[1])
+                    floatValues[1] = floatValues[0] + 1f;
+
+                floatValues[1] = Mathf.Clamp(floatValues[1], kAbsoluteSpeedMin + 0.01f, kAbsoluteSpeedMax);
+
+                m_SpeedMin = floatValues[0];
+                m_SpeedMax = floatValues[1];
+
+                // This will clamp the speed to the new range
+                speed = m_Speed;
+            }
+
+            public float fieldOfView
+            {
+                get { return m_FieldOfView; }
+                set { m_FieldOfView = value; }
+            }
+
+            public float nearClip
+            {
+                get { return m_NearClip; }
+                set { m_NearClip = value; }
+            }
+
+            public float farClip
+            {
+                get { return m_FarClip; }
+                set { m_FarClip = value; }
+            }
+        }
+
+        [SerializeField]
+        private SceneViewCameraSettings m_SceneViewCameraSettings;
+
+        public SceneViewCameraSettings sceneViewCameraSettings
+        {
+            get { return m_SceneViewCameraSettings; }
+            set { m_SceneViewCameraSettings = value; }
+        }
+
+        public void ResetSceneViewCameraSettings()
+        {
+            m_SceneViewCameraSettings = new SceneViewCameraSettings();
+        }
 
         [SerializeField]
         bool m_ShowGlobalGrid = true;
@@ -496,6 +639,8 @@ namespace UnityEditor
             public static GUIContent renderDocContent;
             public static GUIStyle gizmoButtonStyle;
             public static GUIStyle fxDropDownStyle;
+            public static GUIContent sceneViewCameraContent = EditorGUIUtility.TrIconContent("SceneViewCamera", "Settings for the Scene view camera.");
+
             static Styles()
             {
                 gizmoButtonStyle = (GUIStyle)"GV Gizmo DropDown";
@@ -627,8 +772,7 @@ namespace UnityEditor
 
         public override void OnEnable()
         {
-            if (string.IsNullOrEmpty(titleContent.text) || titleContent.text.Contains("UnityEditor"))
-                titleContent = GetLocalizedTitleContent();
+            titleContent = GetLocalizedTitleContent();
             m_RectSelection = new RectSelection(this);
             if (grid == null)
                 grid = new SceneViewGrid();
@@ -693,6 +837,9 @@ namespace UnityEditor
 
             if (sceneViewState == null)
                 m_SceneViewState = new SceneViewState();
+
+            if (m_SceneViewCameraSettings == null)
+                m_SceneViewCameraSettings = new SceneViewCameraSettings();
 
             if (m_2DMode || EditorSettings.defaultBehaviorMode == EditorBehaviorMode.Mode2D)
             {
@@ -827,6 +974,14 @@ namespace UnityEditor
             var allOn = GUI.Toggle(fxRect, sceneViewState.allEnabled, Styles.fx, Styles.fxDropDownStyle);
             if (allOn != sceneViewState.allEnabled)
                 sceneViewState.SetAllEnabled(allOn);
+
+            Rect sceneCameraRect = GUILayoutUtility.GetRect(Styles.sceneViewCameraContent, EditorStyles.toolbarDropDown);
+            if (EditorGUI.DropdownButton(sceneCameraRect, Styles.sceneViewCameraContent, FocusType.Passive, EditorStyles.toolbarDropDown))
+            {
+                Rect rect = GUILayoutUtility.topLevel.GetLast();
+                PopupWindow.Show(rect, new SceneViewCameraWindow(this));
+                GUIUtility.ExitGUI();
+            }
         }
 
         void ToolbarGizmosDropdownGUI()
@@ -1475,7 +1630,7 @@ namespace UnityEditor
             // Clear (color/skybox)
             // We do funky FOV interpolation when switching between ortho and perspective. However,
             // for the skybox we always want to use the same FOV.
-            float skyboxFOV = GetVerticalFOV(kPerspectiveFov);
+            float skyboxFOV = GetVerticalFOV(m_SceneViewCameraSettings.fieldOfView);
             float realFOV = m_Camera.fieldOfView;
 
             var clearFlags = m_Camera.clearFlags;
@@ -2175,6 +2330,13 @@ namespace UnityEditor
             }
         }
 
+        float perspectiveFov
+        {
+            get
+            {
+                return m_SceneViewCameraSettings.fieldOfView;
+            }
+        }
 
         /// Is the scene view ortho.
         public bool orthographic
@@ -2189,7 +2351,8 @@ namespace UnityEditor
 
         public void FixNegativeSize()
         {
-            float fov = kPerspectiveFov;
+            float fov = perspectiveFov;
+
             if (size < 0)
             {
                 float distance = size / Mathf.Tan(fov * 0.5f * Mathf.Deg2Rad);
@@ -2202,7 +2365,8 @@ namespace UnityEditor
 
         float CalcCameraDist()
         {
-            float fov = m_Ortho.Fade(kPerspectiveFov, 0);
+            float fov = m_Ortho.Fade(perspectiveFov, 0);
+
             if (fov > kOrthoThresholdAngle)
             {
                 m_Camera.orthographic = false;
@@ -2317,7 +2481,7 @@ namespace UnityEditor
 
             m_Camera.transform.rotation = m_Rotation.value;
 
-            float fov = m_Ortho.Fade(kPerspectiveFov, 0);
+            float fov = m_Ortho.Fade(perspectiveFov, 0);
             if (fov > kOrthoThresholdAngle)
             {
                 m_Camera.orthographic = false;
@@ -2337,11 +2501,11 @@ namespace UnityEditor
                 //m_Camera.orthographicSize = Mathf.Sqrt((size * size) / (1 + aspect));
                 m_Camera.orthographicSize = GetVerticalOrthoSize();
             }
-            m_Camera.transform.position = m_Position.value + m_Camera.transform.rotation * new Vector3(0, 0, -cameraDistance);
 
-            float farClip = Mathf.Max(1000f, 2000f * size);
-            m_Camera.nearClipPlane = farClip * 0.000005f;
-            m_Camera.farClipPlane = farClip;
+            m_Camera.nearClipPlane = m_SceneViewCameraSettings.nearClip;
+            m_Camera.farClipPlane = m_SceneViewCameraSettings.farClip;
+
+            m_Camera.transform.position = m_Position.value + m_Camera.transform.rotation * new Vector3(0, 0, -cameraDistance);
 
             // In 2D mode, camera position z should not go to positive value.
             if (m_2DMode && m_Camera.transform.position.z >= 0)

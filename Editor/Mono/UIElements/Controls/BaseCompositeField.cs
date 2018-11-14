@@ -30,23 +30,6 @@ namespace UnityEditor.UIElements
             }
         }
 
-        public new class UxmlTraits : BaseField<TValueType>.UxmlTraits
-        {
-            UxmlStringAttributeDescription m_Label = new UxmlStringAttributeDescription { name = "label" };
-
-            protected UxmlTraits()
-            {
-                focusIndex.defaultValue = 0;
-                focusable.defaultValue = true;
-            }
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                ((BaseField<TValueType>)ve).label = m_Label.GetValueFromBag(bag, cc);
-            }
-        }
-
         public override bool focusable
         {
             get { return base.focusable; }

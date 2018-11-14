@@ -177,7 +177,7 @@ namespace UnityEditor.Modules
                 if (s_PackageManager != null)
                     LoadUnityExtensions();
                 else
-                    Debug.LogError("Failed to load package manager");
+                    Debug.LogError("Failed to load extension manager");
             }
         }
 
@@ -301,7 +301,7 @@ namespace UnityEditor.Modules
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error enumerating assemblies looking for package manager. {0}", ex);
+                Console.WriteLine("Error enumerating assemblies looking for extension manager. {0}", ex);
             }
 
 
@@ -323,7 +323,7 @@ namespace UnityEditor.Modules
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error scanning for packages. {0}", ex);
+                Console.WriteLine("Error scanning for extensions. {0}", ex);
                 return;
             }
 
@@ -334,13 +334,13 @@ namespace UnityEditor.Modules
                 package = locatorType.InvokeMember("GetPackageManager", BindingFlags.Public | BindingFlags.Static | BindingFlags.InvokeMethod, null, null, new[] { Application.unityVersion }) as Unity.DataContract.PackageInfo;
                 if (package == null)
                 {
-                    Console.WriteLine("No package manager found!");
+                    Console.WriteLine("No extension manager found!");
                     return;
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error scanning for packages. {0}", ex);
+                Console.WriteLine("Error scanning for extensions. {0}", ex);
                 return;
             }
 
@@ -350,7 +350,7 @@ namespace UnityEditor.Modules
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error initializing package manager. {0}", ex);
+                Console.WriteLine("Error initializing extension manager. {0}", ex);
             }
 
 

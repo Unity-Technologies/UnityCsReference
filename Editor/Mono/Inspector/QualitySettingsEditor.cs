@@ -491,7 +491,7 @@ namespace UnityEditor
             var shadowCascade2SplitProperty = currentSettings.FindPropertyRelative("shadowCascade2Split");
             var shadowCascade4SplitProperty = currentSettings.FindPropertyRelative("shadowCascade4Split");
             var shadowMaskUsageProperty = currentSettings.FindPropertyRelative("shadowmaskMode");
-            var blendWeightsProperty = currentSettings.FindPropertyRelative("blendWeights");
+            var skinWeightsProperty = currentSettings.FindPropertyRelative("skinWeights");
             var textureQualityProperty = currentSettings.FindPropertyRelative("textureQuality");
             var anisotropicTexturesProperty = currentSettings.FindPropertyRelative("anisotropicTextures");
             var antiAliasingProperty = currentSettings.FindPropertyRelative("antiAliasing");
@@ -581,7 +581,7 @@ namespace UnityEditor
 
             GUILayout.Space(10);
             GUILayout.Label(EditorGUIUtility.TempContent("Other"), EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(blendWeightsProperty);
+            EditorGUILayout.PropertyField(skinWeightsProperty);
             EditorGUILayout.PropertyField(vSyncCountProperty, Content.kVSyncCountLabel);
             EditorGUILayout.PropertyField(lodBiasProperty, Content.kLODBiasLabel);
             EditorGUILayout.PropertyField(maximumLODLevelProperty);

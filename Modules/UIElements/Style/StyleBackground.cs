@@ -62,7 +62,7 @@ namespace UnityEngine.UIElements
 
         internal bool Apply<U>(U other, StylePropertyApplyMode mode) where U : IStyleValue<Background>
         {
-            if (this.CanApply(other.specificity, mode))
+            if (StyleValueExtensions.CanApply(specificity, other.specificity, mode))
             {
                 value = other.value;
                 keyword = other.keyword;

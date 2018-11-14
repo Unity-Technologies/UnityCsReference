@@ -200,7 +200,7 @@ namespace UnityEditor.ShortcutManagement
 
         public bool CanRenameActiveProfile()
         {
-            return m_ShortcutProfileManager.activeProfile != null;
+            return CanDeleteActiveProfile();
         }
 
         public bool CanRenameActiveProfile(string newProfileId)
@@ -653,9 +653,14 @@ namespace UnityEditor.ShortcutManagement
             return !IsModifier(code) && !IsReservedKey(code);
         }
 
-        public bool IsModifier(KeyCode code)
+        public static bool IsModifier(KeyCode code)
         {
             return ModifierFromKeyCode(code) != EventModifiers.None;
+        }
+
+        bool IKeyBindingStateProvider.IsModifier(KeyCode code)
+        {
+            return ShortcutManagerWindowViewController.IsModifier(code);
         }
 
         public bool IsReservedKey(KeyCode code)
@@ -663,22 +668,27 @@ namespace UnityEditor.ShortcutManagement
             return !m_BindingValidator.IsBindingValid(code);
         }
 
-        public EventModifiers ModifierFromKeyCode(KeyCode k)
+        EventModifiers IKeyBindingStateProvider.ModifierFromKeyCode(KeyCode k)
+        {
+            return ShortcutManagerWindowViewController.ModifierFromKeyCode(k);
+        }
+
+        public static EventModifiers ModifierFromKeyCode(KeyCode k)
         {
             switch (k)
             {
                 case KeyCode.LeftShift:
                 case KeyCode.RightShift:
                     return EventModifiers.Shift;
-                case KeyCode.LeftControl:
-                case KeyCode.RightControl:
-                    return EventModifiers.Control;
                 case KeyCode.LeftAlt:
                 case KeyCode.RightAlt:
                     return EventModifiers.Alt;
+                case KeyCode.LeftControl:
+                case KeyCode.RightControl:
+                    return SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX ? EventModifiers.None : EventModifiers.Control;
                 case KeyCode.LeftCommand:
                 case KeyCode.RightCommand:
-                    return EventModifiers.Command;
+                    return SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX ? EventModifiers.Command : EventModifiers.None;
                 default:
                     return EventModifiers.None;
             }

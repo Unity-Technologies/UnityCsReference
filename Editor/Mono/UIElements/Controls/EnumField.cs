@@ -12,7 +12,7 @@ namespace UnityEditor.UIElements
     {
         public new class UxmlFactory : UxmlFactory<EnumField, UxmlTraits> {}
 
-        public new class UxmlTraits : BindableElement.UxmlTraits
+        public new class UxmlTraits : BaseField<Enum>.UxmlTraits
         {
             UxmlStringAttributeDescription m_Type = new UxmlStringAttributeDescription { name = "type", use = UxmlAttributeDescription.Use.Required };
             UxmlStringAttributeDescription m_Value = new UxmlStringAttributeDescription { name = "value" };
@@ -68,16 +68,10 @@ namespace UnityEditor.UIElements
         public new static readonly string ussClassName = "unity-enum-field";
         public static readonly string textUssClassName = ussClassName + "__text";
 
-        public EnumField(string label)
-            : base(label, null)
-        {
-            Initialize(null);
-        }
-
         public EnumField()
             : this((string)null) {}
 
-        public EnumField(string label, Enum defaultValue)
+        public EnumField(string label, Enum defaultValue = null)
             : base(label, null)
         {
             AddToClassList(ussClassName);

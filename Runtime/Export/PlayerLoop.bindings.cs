@@ -361,7 +361,6 @@ namespace UnityEngine.Experimental.LowLevel
             return sys;
         }
 
-
         [NativeMethod(IsFreeFunction = true)]
         private static extern PlayerLoopSystemInternal[] GetDefaultPlayerLoopInternal();
         [NativeMethod(IsFreeFunction = true)]

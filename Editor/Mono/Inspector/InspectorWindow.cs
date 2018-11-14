@@ -102,6 +102,12 @@ namespace UnityEditor
             public static GUIStyle stickyNotePerforce = "VCS_StickyNoteP4";
             public static GUIStyle stickyNoteLabel = "VCS_StickyNoteLabel";
             public static readonly GUIContent VCS_NotConnectedMessage = EditorGUIUtility.TrTextContent("VCS Plugin {0} is enabled but not connected");
+            public static readonly string objectDisabledModuleWarningFormat = L10n.Tr(
+                "The built-in package '{0}', which implements this component type, has been disabled in Package Manager. This object will be removed in play mode and from any builds you make."
+            );
+            public static readonly string objectDisabledModuleWithDependencyWarningFormat = L10n.Tr(
+                "The built-in package '{0}', which is required by the package '{1}', which implements this component type, has been disabled in Package Manager. This object will be removed in play mode and from any builds you make."
+            );
         }
 
         internal InspectorWindow()
@@ -1250,7 +1256,15 @@ namespace UnityEditor
             Rect contentRect = new Rect();
             bool excludedClass = ModuleMetadata.GetModuleIncludeSettingForObject(target) == ModuleIncludeSetting.ForceExclude;
             if (excludedClass)
-                EditorGUILayout.HelpBox("The built-in package '" + ModuleMetadata.GetExcludingModuleForObject(target) + "', which is required this component type has been disabled in Package Manager. This object will be removed in play mode and from any builds you make.", MessageType.Warning);
+            {
+                var objectModule = ModuleMetadata.GetModuleForObject(target);
+                var excludingModule = ModuleMetadata.GetExcludingModuleForObject(target);
+                if (objectModule == excludingModule)
+                    EditorGUILayout.HelpBox(string.Format(Styles.objectDisabledModuleWarningFormat, objectModule), MessageType.Warning);
+                else
+                    EditorGUILayout.HelpBox(string.Format(Styles.objectDisabledModuleWithDependencyWarningFormat, excludingModule, objectModule), MessageType.Warning);
+            }
+
 
             using (new EditorGUI.DisabledScope(!editor.IsEnabled() || excludedClass))
             {

@@ -831,7 +831,7 @@ namespace UnityEditor
                 }
 
                 var editorMousePosition = Event.current.mousePosition;
-                var gameMousePosition = (editorMousePosition - gameViewTarget.position) * gameMouseScale;
+                var gameMousePosition = (editorMousePosition + gameMouseOffset) * gameMouseScale;
 
                 if (type == EventType.Repaint)
                 {

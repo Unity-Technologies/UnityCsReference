@@ -10,20 +10,19 @@ namespace UnityEditor.AnimatedValues
 {
     public abstract class BaseAnimValue<T>
     {
-        private T m_Start;
+        T m_Start;
+        T m_Target;
 
-        [SerializeField]
-        private T m_Target;
+        double m_LastTime;
+        double m_LerpPosition = 1f;
 
-        private double m_LastTime;
-        private double m_LerpPosition = 1f;
-
+        float m_Speed;
         public float speed = 2f;
 
         [NonSerialized]
         public UnityEvent valueChanged;
 
-        private bool m_Animating;
+        bool m_Animating;
 
         protected BaseAnimValue(T value)
         {
@@ -40,7 +39,7 @@ namespace UnityEditor.AnimatedValues
             valueChanged.AddListener(callback);
         }
 
-        private static T2 Clamp<T2>(T2 val, T2 min, T2 max) where T2 : IComparable<T2>
+        static T2 Clamp<T2>(T2 val, T2 min, T2 max) where T2 : IComparable<T2>
         {
             if (val.CompareTo(min) < 0) return min;
             if (val.CompareTo(max) > 0) return max;
@@ -49,10 +48,16 @@ namespace UnityEditor.AnimatedValues
 
         protected void BeginAnimating(T newTarget, T newStart)
         {
+            BeginAnimating(newTarget, newStart, speed);
+        }
+
+        void BeginAnimating(T newTarget, T newStart, float animationSpeed)
+        {
+            m_Speed = animationSpeed;
             m_Start = newStart;
             m_Target = newTarget;
-
-            EditorApplication.update += Update;
+            if (!m_Animating)
+                EditorApplication.update += Update;
             m_Animating = true;
             m_LastTime = EditorApplication.timeSinceStartup;
             m_LerpPosition = 0;
@@ -63,7 +68,7 @@ namespace UnityEditor.AnimatedValues
             get { return m_Animating; }
         }
 
-        private void Update()
+        void Update()
         {
             if (!m_Animating)
                 return;
@@ -91,12 +96,12 @@ namespace UnityEditor.AnimatedValues
             }
         }
 
-        private void UpdateLerpPosition()
+        void UpdateLerpPosition()
         {
             double nowTime = EditorApplication.timeSinceStartup;
             double deltaTime = nowTime - m_LastTime;
 
-            m_LerpPosition = Clamp(m_LerpPosition + (deltaTime * speed), 0.0, 1.0);
+            m_LerpPosition = Clamp(m_LerpPosition + (deltaTime * m_Speed), 0.0, 1.0);
             m_LastTime = nowTime;
         }
 
@@ -131,6 +136,12 @@ namespace UnityEditor.AnimatedValues
                 if (!m_Target.Equals(value))
                     BeginAnimating(value, this.value);
             }
+        }
+
+        internal void SetTarget(T newTarget, float animationSpeed)
+        {
+            if (!m_Target.Equals(newTarget))
+                BeginAnimating(newTarget, value, animationSpeed);
         }
 
         public T value

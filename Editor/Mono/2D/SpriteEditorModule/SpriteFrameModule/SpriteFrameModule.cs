@@ -218,6 +218,8 @@ namespace UnityEditor
             spriteRect.name = name;
             spriteRect.originalName = spriteRect.name;
             spriteRect.border = border;
+            spriteRect.internalID = 0L;
+
             spriteEditor.SetDataModified();
 
             m_RectsCache.spriteRects.Add(spriteRect);

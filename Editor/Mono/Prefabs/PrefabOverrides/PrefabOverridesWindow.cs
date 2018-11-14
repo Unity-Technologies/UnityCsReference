@@ -49,12 +49,17 @@ namespace UnityEditor
 
             public static GUIContent infoMultiple = EditorGUIUtility.TrTextContent("Multiple Prefabs selected. Cannot show overrides.");
             public static GUIContent infoMultipleNoApply = EditorGUIUtility.TrTextContent("Multiple Prefabs selected. Cannot show overrides.\nApplying is not possible for one or more Prefabs. Select individual Prefabs for details.");
-            public static GUIContent warningDisconnected = EditorGUIUtility.TrTextContent("Disconnected. Cannot show overrides.");
-            public static GUIContent infoInvalidAsset = EditorGUIUtility.TrTextContent("Click on individual items to review and revert.\nThe Prefab file contains an invalid script. Applying is not possible. Enter Prefab Mode and remove the script.");
-            public static GUIContent infoInvalidInstance = EditorGUIUtility.TrTextContent("Click on individual items to review and revert.\nThe Prefab instance contains an invalid script. Applying is not possible. Remove the script.");
-            public static GUIContent infoModel = EditorGUIUtility.TrTextContent("Click on individual items to review and revert.\nApplying to a model Prefab is not possible.");
-            public static GUIContent infoImmutable = EditorGUIUtility.TrTextContent("Click on individual items to review and revert.\nThe Prefab file is immutable. Applying is not possible.");
+
+            // Messages related to the overrides list.
+            public static GUIContent infoModel = EditorGUIUtility.TrTextContent("Click on individual items to review and revert.\nApplying to a Model Prefab is not possible.");
             public static GUIContent infoDefault = EditorGUIUtility.TrTextContent("Click on individual items to review, revert and apply.");
+            public static GUIContent infoNoApply = EditorGUIUtility.TrTextContent("Click on individual items to review and revert.");
+            public static GUIContent warningDisconnected = EditorGUIUtility.TrTextContent("Disconnected. Cannot show overrides.");
+
+            // Messages related to reasons for inability to apply.
+            public static GUIContent warningInvalidAsset = EditorGUIUtility.TrTextContent("The Prefab file contains an invalid script. Applying is not possible. Enter Prefab Mode and remove or recover the script.");
+            public static GUIContent warningInvalidInstance = EditorGUIUtility.TrTextContent("The Prefab instance contains an invalid script. Applying is not possible. Remove or recover the script.");
+            public static GUIContent warningImmutable = EditorGUIUtility.TrTextContent("The Prefab file is immutable. Applying is not possible.");
 
             public static GUIStyle boldRightAligned;
 
@@ -121,6 +126,15 @@ namespace UnityEditor
             return m_AnyOverrides && !HasMultiSelection();
         }
 
+        bool IsShowingApplyWarning()
+        {
+            return
+                !HasMultiSelection() &&
+                (m_AnyOverrides || m_Disconnected) &&
+                !m_ModelPrefab &&
+                (m_InvalidComponentOnInstance || m_InvalidComponentOnAsset || m_Immutable);
+        }
+
         public override Vector2 GetWindowSize()
         {
             var height = k_HeaderHeight;
@@ -134,8 +148,10 @@ namespace UnityEditor
                 if (DisplayingTreeView())
                     height += k_TreeViewPadding.top + m_TreeView.totalHeight + k_TreeViewPadding.bottom;
 
-                if (IsShowingActionButton())
-                    height += k_ApplyButtonHeight + k_HelpBoxHeight;
+                height += k_ApplyButtonHeight + k_HelpBoxHeight;
+
+                if (IsShowingApplyWarning())
+                    height += k_HelpBoxHeight; // A second help box in this case.
             }
 
             // Width should be no smaller than minimum width, but we could potentially improve
@@ -201,16 +217,26 @@ namespace UnityEditor
                     Rect treeViewRect = GUILayoutUtility.GetRect(100, 1000, 0, 1000);
                     m_TreeView.OnGUI(treeViewRect);
 
-                    if (m_InvalidComponentOnAsset)
-                        EditorGUILayout.HelpBox(Styles.infoInvalidAsset.text, MessageType.Info);
-                    else if (m_InvalidComponentOnInstance)
-                        EditorGUILayout.HelpBox(Styles.infoInvalidInstance.text, MessageType.Info);
-                    else if (m_ModelPrefab)
+                    // Display info message telling user they can click on individual items for more detailed actions.
+                    if (m_ModelPrefab)
                         EditorGUILayout.HelpBox(Styles.infoModel.text, MessageType.Info);
-                    else if (m_Immutable)
-                        EditorGUILayout.HelpBox(Styles.infoImmutable.text, MessageType.Info);
+                    else if (m_Immutable || m_InvalidComponentOnInstance)
+                        EditorGUILayout.HelpBox(Styles.infoNoApply.text, MessageType.Info);
                     else
                         EditorGUILayout.HelpBox(Styles.infoDefault.text, MessageType.Info);
+                }
+
+                if (IsShowingApplyWarning())
+                {
+                    // Display warnings about edge cases that make it impossible to apply.
+                    // Model Prefabs are not an edge case and not needed to warn about so it's
+                    // not included here but rather combined into the info message above.
+                    if (m_InvalidComponentOnAsset)
+                        EditorGUILayout.HelpBox(Styles.warningInvalidAsset.text, MessageType.Warning);
+                    else if (m_InvalidComponentOnInstance)
+                        EditorGUILayout.HelpBox(Styles.warningInvalidInstance.text, MessageType.Warning);
+                    else
+                        EditorGUILayout.HelpBox(Styles.warningImmutable.text, MessageType.Warning);
                 }
             }
 

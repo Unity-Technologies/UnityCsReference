@@ -332,9 +332,9 @@ namespace UnityEditor.StyleSheets
             return sb.ToString();
         }
 
-        public static void WriteStyleSheet(StyleSheet sheet, string path)
+        public static void WriteStyleSheet(StyleSheet sheet, string path, UssExportOptions options = null)
         {
-            File.WriteAllText(path, ToUssString(sheet));
+            File.WriteAllText(path, ToUssString(sheet, options));
         }
     }
 }

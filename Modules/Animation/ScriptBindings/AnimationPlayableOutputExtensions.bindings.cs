@@ -1,0 +1,40 @@
+// Unity C# reference source
+// Copyright (c) Unity Technologies. For terms of use, see
+// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+
+using System;
+using UnityEngine;
+using UnityEngine.Scripting;
+using UnityEngine.Bindings;
+using UnityEngine.Playables;
+using UnityEngine.Animations;
+
+namespace UnityEngine.Experimental.Animations
+{
+    public enum AnimationStreamSource
+    {
+        DefaultValues,
+        PreviousInputs
+    }
+
+    [NativeHeader("Modules/Animation/ScriptBindings/AnimationPlayableOutputExtensions.bindings.h")]
+    [NativeHeader("Modules/Animation/AnimatorDefines.h")]
+    [StaticAccessor("AnimationPlayableOutputExtensionsBindings", StaticAccessorType.DoubleColon)]
+    public static class AnimationPlayableOutputExtensions
+    {
+        public static AnimationStreamSource GetAnimationStreamSource(this AnimationPlayableOutput output)
+        {
+            return InternalGetAnimationStreamSource(output.GetHandle());
+        }
+
+        public static void SetAnimationStreamSource(this AnimationPlayableOutput output, AnimationStreamSource streamSource)
+        {
+            InternalSetAnimationStreamSource(output.GetHandle(), streamSource);
+        }
+
+        [NativeThrows]
+        extern private static AnimationStreamSource InternalGetAnimationStreamSource(PlayableOutputHandle output);
+        [NativeThrows]
+        extern private static void InternalSetAnimationStreamSource(PlayableOutputHandle output, AnimationStreamSource streamSource);
+    };
+}

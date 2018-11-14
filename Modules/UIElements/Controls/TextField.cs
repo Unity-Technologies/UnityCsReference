@@ -167,6 +167,11 @@ namespace UnityEngine.UIElements
             {
                 base.ExecuteDefaultActionAtTarget(evt);
 
+                if (evt == null)
+                {
+                    return;
+                }
+
                 if (evt.eventTypeId == KeyDownEvent.TypeId())
                 {
                     KeyDownEvent kde = evt as KeyDownEvent;

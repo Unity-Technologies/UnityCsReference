@@ -12,7 +12,7 @@ namespace UnityEngine.UIElements
 
         public CustomStyleProperty(string propertyName)
         {
-            if (!propertyName.StartsWith("--"))
+            if (!String.IsNullOrEmpty(propertyName) && !propertyName.StartsWith("--"))
                 throw new ArgumentException($"Custom style property \"{propertyName}\" must start with \"--\" prefix.");
 
             name = propertyName;

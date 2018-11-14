@@ -26,7 +26,7 @@ namespace UnityEditor.Scripting.Compilers
 
         public static string PrepareFileName(string input)
         {
-            input = FileUtil.ResolveSymlinks(input);
+            input = FileUtil.ResolveRedirectedPath(input);
             if (Application.platform == RuntimePlatform.WindowsEditor)
                 return EscapeCharsWindows(input);
             return EscapeCharsQuote(input);

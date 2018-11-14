@@ -19,6 +19,7 @@ using UnityEngine.Events;
 using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
 using VR = UnityEditorInternal.VR;
 using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
+using UnityEngine.Rendering;
 
 // ************************************* READ BEFORE EDITING **************************************
 //
@@ -1231,7 +1232,8 @@ namespace UnityEditor
         {
             { BuildTargetGroup.Standalone, new List<ColorGamut> { ColorGamut.sRGB, ColorGamut.DisplayP3 } },
             { BuildTargetGroup.iOS, new List<ColorGamut> { ColorGamut.sRGB, ColorGamut.DisplayP3 } },
-            { BuildTargetGroup.tvOS, new List<ColorGamut> { ColorGamut.sRGB, ColorGamut.DisplayP3 } }
+            { BuildTargetGroup.tvOS, new List<ColorGamut> { ColorGamut.sRGB, ColorGamut.DisplayP3 } },
+            { BuildTargetGroup.Android, new List<ColorGamut> {ColorGamut.sRGB, ColorGamut.DisplayP3 } }
         };
 
         private static bool IsColorGamutSupportedOnTargetGroup(BuildTargetGroup targetGroup, ColorGamut gamut)
@@ -1591,9 +1593,12 @@ namespace UnityEditor
                         EditorGUILayout.Toggle(SettingsContent.staticBatching, false);
                 }
 
-                using (new EditorGUI.DisabledScope(!dynamicBatchingSupported))
+                if (GraphicsSettings.renderPipelineAsset == null)
                 {
-                    dynamicBatching = EditorGUILayout.Toggle(SettingsContent.dynamicBatching, dynamicBatching != 0) ? 1 : 0;
+                    using (new EditorGUI.DisabledScope(!dynamicBatchingSupported))
+                    {
+                        dynamicBatching = EditorGUILayout.Toggle(SettingsContent.dynamicBatching, dynamicBatching != 0) ? 1 : 0;
+                    }
                 }
 
                 if (EditorGUI.EndChangeCheck())

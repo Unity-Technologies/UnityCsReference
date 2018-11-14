@@ -494,11 +494,8 @@ namespace UnityEngine.XR
             GetNodeStates_Internal(nodeStates);
         }
 
-        [NativeConditional("ENABLE_VR && !ENABLE_DOTNET")]
+        [NativeConditional("ENABLE_VR")]
         extern private static void GetNodeStates_Internal(List<XRNodeState> nodeStates);
-
-        [NativeConditional("ENABLE_VR && ENABLE_DOTNET")]
-        extern private static XRNodeState[] GetNodeStates_Internal_WinRT();
 
         [NativeConditional("ENABLE_VR")]
         extern public static bool disablePositionalTracking

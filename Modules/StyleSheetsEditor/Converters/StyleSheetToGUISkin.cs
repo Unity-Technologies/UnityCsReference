@@ -424,10 +424,10 @@ namespace UnityEditor.StyleSheets
             }
             else if (ConverterUtils.ToGUIStyleSelectorName(style.name) != complexSelectorStr)
             {
-                var msg = UnityString.Format("Selector: {0} doesn't match with -unity-name: {1}. Did you mean selector: {2} or -unity-name: {3}?",
-                    complexSelectorStr, style.name, ConverterUtils.ToGUIStyleSelectorName(style.name), ConverterUtils.ToStyleName(complexSelectorStr));
+                var msg = $"Selector: {complexSelectorStr} doesn't match with -unity-name: {style.name}. Did you mean selector: {ConverterUtils.ToGUIStyleSelectorName(style.name)} or -unity-name: {ConverterUtils.ToStyleName(complexSelectorStr)}?";
                 Debug.LogWarning(msg);
-                throw new Exception(msg);
+                if (throwIfIncomplete)
+                    throw new Exception(msg);
             }
 
             // GUIStyle.overflow

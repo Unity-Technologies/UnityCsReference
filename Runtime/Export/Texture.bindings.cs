@@ -194,7 +194,6 @@ namespace UnityEngine
         [FreeFunction("Texture2DScripting::GenerateAtlas")]
         extern private static void GenerateAtlasImpl(Vector2[] sizes, int padding, int atlasSize, [Out] Rect[] rect);
 
-
         extern public bool streamingMipmaps { get; }
         extern public int streamingMipmapsPriority { get; }
 
@@ -381,6 +380,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Graphics/Texture2DArray.h")]
     public sealed partial class Texture2DArray : Texture
     {
+        extern static public int allSlices { [NativeName("GetAllTextureLayersIdentifier")] get; }
         extern public int depth { [NativeName("GetTextureLayerCount")] get; }
         extern public TextureFormat format { [NativeName("GetTextureFormat")] get; }
 
@@ -643,8 +643,6 @@ namespace UnityEngine
         {
             GetUpdateZonesInternal(updateZones);
         }
-
-
 
         [FreeFunction(Name = "CustomRenderTextureScripting::SetUpdateZonesInternal", HasExplicitThis = true)]
         extern private void SetUpdateZonesInternal(CustomRenderTextureUpdateZone[] updateZones);

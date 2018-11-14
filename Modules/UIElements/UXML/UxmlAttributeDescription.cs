@@ -99,7 +99,15 @@ namespace UnityEngine.UIElements
             string stringValue;
             if (TryGetValueFromBagAsString(bag, cc, out stringValue))
             {
-                value = converterFunc(stringValue, defaultValue);
+                if (converterFunc != null)
+                {
+                    value = converterFunc(stringValue, defaultValue);
+                }
+                else
+                {
+                    value = defaultValue;
+                }
+
                 return true;
             }
 

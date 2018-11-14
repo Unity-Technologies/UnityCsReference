@@ -35,6 +35,10 @@ namespace UnityEngine.UIElements
 
         public bool Matches(IMouseEvent e)
         {
+            if (e == null)
+            {
+                return false;
+            }
             // Default clickCount field value is 0 since we're in a struct -- this case is covered if the user
             // did not explicitly set clickCount
             var minClickCount = (clickCount == 0 || (e.clickCount >= clickCount));

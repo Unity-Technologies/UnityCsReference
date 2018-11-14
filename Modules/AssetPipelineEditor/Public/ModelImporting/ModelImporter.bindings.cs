@@ -345,6 +345,12 @@ namespace UnityEditor
         X8 = 8
     }
 
+    public enum ModelImporterSkinWeights
+    {
+        Standard = 0,
+        Custom = 1,
+    }
+
     [UsedByNativeCode]
     [NativeType(Header = "Editor/Src/Animation/HumanTemplate.h")]
     public sealed partial class HumanTemplate : Object
@@ -646,6 +652,47 @@ namespace UnityEditor
                 }
             }
         }
+
+        public extern ModelImporterSkinWeights skinWeights
+        {
+            [NativeMethod("GetSkinWeightsMode")]
+            get;
+            [NativeMethod("SetSkinWeightsMode")]
+            set;
+        }
+
+        public int maxBonesPerVertex
+        {
+            get { return GetMaxBonesPerVertex(); }
+
+            set
+            {
+                if (value < 1 || value > 32)
+                    throw new ArgumentOutOfRangeException(nameof(maxBonesPerVertex), value, "Value must be in the range 1 - 32.");
+                if (skinWeights != ModelImporterSkinWeights.Custom)
+                    Debug.LogWarning("ModelImporter.maxBonesPerVertex is ignored unless ModelImporter.skinWeights is set to ModelImporterSkinWeights.Custom.");
+                SetMaxBonesPerVertex(value);
+            }
+        }
+        private extern int GetMaxBonesPerVertex();
+        private extern void SetMaxBonesPerVertex(int value);
+
+        public float minBoneWeight
+        {
+            get { return GetMinBoneWeight(); }
+
+            set
+            {
+                if (!(value >= 0.0f && value <= 1.0f))
+                    throw new ArgumentOutOfRangeException(nameof(minBoneWeight), value, "Value must be in the range 0 - 1.");
+                if (skinWeights != ModelImporterSkinWeights.Custom)
+                    Debug.LogWarning("ModelImporter.minBoneWeight is ignored unless ModelImporter.skinWeights is set to ModelImporterSkinWeights.Custom.");
+                SetMinBoneWeight(value);
+            }
+        }
+
+        private extern float GetMinBoneWeight();
+        private extern void SetMinBoneWeight(float value);
 
         [System.Obsolete("normalImportMode is deprecated. Use importNormals instead")]
         public ModelImporterTangentSpaceMode normalImportMode

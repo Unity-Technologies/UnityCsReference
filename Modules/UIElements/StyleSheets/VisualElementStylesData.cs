@@ -163,7 +163,7 @@ namespace UnityEngine.UIElements.StyleSheets
                 style.font = font.value;
             }
 
-            style.fontSize = (int)fontSize.GetSpecifiedValueOrDefault(style.fontSize);
+            style.fontSize = (int)fontSize.GetSpecifiedValueOrDefault((float)style.fontSize);
             style.fontStyle = (FontStyle)(fontStyleAndWeight.GetSpecifiedValueOrDefault((int)style.fontStyle));
 
             AssignRect(style.margin, ref marginLeft, ref marginTop, ref marginRight, ref marginBottom);
@@ -192,10 +192,10 @@ namespace UnityEngine.UIElements.StyleSheets
 
         void AssignRect(RectOffset rect, ref StyleLength left, ref StyleLength top, ref StyleLength right, ref StyleLength bottom)
         {
-            rect.left = (int)left.GetSpecifiedValueOrDefault(rect.left);
-            rect.top = (int)top.GetSpecifiedValueOrDefault(rect.top);
-            rect.right = (int)right.GetSpecifiedValueOrDefault(rect.right);
-            rect.bottom = (int)bottom.GetSpecifiedValueOrDefault(rect.bottom);
+            rect.left = (int)left.GetSpecifiedValueOrDefault((float)rect.left);
+            rect.top = (int)top.GetSpecifiedValueOrDefault((float)rect.top);
+            rect.right = (int)right.GetSpecifiedValueOrDefault((float)rect.right);
+            rect.bottom = (int)bottom.GetSpecifiedValueOrDefault((float)rect.bottom);
         }
 
         void AssignRect(RectOffset rect, ref StyleInt left, ref StyleInt top, ref StyleInt right, ref StyleInt bottom)
@@ -236,32 +236,32 @@ namespace UnityEngine.UIElements.StyleSheets
 
             targetNode.FlexGrow = flexGrow.GetSpecifiedValueOrDefault(float.NaN);
             targetNode.FlexShrink = flexShrink.GetSpecifiedValueOrDefault(float.NaN);
-            targetNode.Left = left.GetSpecifiedValueOrDefault(float.NaN);
-            targetNode.Top = top.GetSpecifiedValueOrDefault(float.NaN);
-            targetNode.Right = right.GetSpecifiedValueOrDefault(float.NaN);
-            targetNode.Bottom = bottom.GetSpecifiedValueOrDefault(float.NaN);
-            targetNode.MarginLeft = marginLeft.GetSpecifiedValueOrDefault(float.NaN);
-            targetNode.MarginTop = marginTop.GetSpecifiedValueOrDefault(float.NaN);
-            targetNode.MarginRight = marginRight.GetSpecifiedValueOrDefault(float.NaN);
-            targetNode.MarginBottom = marginBottom.GetSpecifiedValueOrDefault(float.NaN);
-            targetNode.PaddingLeft = paddingLeft.GetSpecifiedValueOrDefault(float.NaN);
-            targetNode.PaddingTop = paddingTop.GetSpecifiedValueOrDefault(float.NaN);
-            targetNode.PaddingRight = paddingRight.GetSpecifiedValueOrDefault(float.NaN);
-            targetNode.PaddingBottom = paddingBottom.GetSpecifiedValueOrDefault(float.NaN);
-            targetNode.BorderLeftWidth = borderLeftWidth.GetSpecifiedValueOrDefault(float.NaN);
-            targetNode.BorderTopWidth = borderTopWidth.GetSpecifiedValueOrDefault(float.NaN);
-            targetNode.BorderRightWidth = borderRightWidth.GetSpecifiedValueOrDefault(float.NaN);
-            targetNode.BorderBottomWidth = borderBottomWidth.GetSpecifiedValueOrDefault(float.NaN);
-            targetNode.Width = width.GetSpecifiedValueOrDefault(float.NaN);
-            targetNode.Height = height.GetSpecifiedValueOrDefault(float.NaN);
+            targetNode.Left = left.ToYogaValue();
+            targetNode.Top = top.ToYogaValue();
+            targetNode.Right = right.ToYogaValue();
+            targetNode.Bottom = bottom.ToYogaValue();
+            targetNode.MarginLeft = marginLeft.ToYogaValue();
+            targetNode.MarginTop = marginTop.ToYogaValue();
+            targetNode.MarginRight = marginRight.ToYogaValue();
+            targetNode.MarginBottom = marginBottom.ToYogaValue();
+            targetNode.PaddingLeft = paddingLeft.ToYogaValue();
+            targetNode.PaddingTop = paddingTop.ToYogaValue();
+            targetNode.PaddingRight = paddingRight.ToYogaValue();
+            targetNode.PaddingBottom = paddingBottom.ToYogaValue();
+            targetNode.BorderLeftWidth = borderLeftWidth.value;
+            targetNode.BorderTopWidth = borderTopWidth.value;
+            targetNode.BorderRightWidth = borderRightWidth.value;
+            targetNode.BorderBottomWidth = borderBottomWidth.value;
+            targetNode.Width = width.ToYogaValue();
+            targetNode.Height = height.ToYogaValue();
 
             targetNode.PositionType = (YogaPositionType)position.value;
             targetNode.Overflow = (YogaOverflow)(overflow.value);
             targetNode.AlignSelf = (YogaAlign)(alignSelf.value);
-            targetNode.MaxWidth = maxWidth.GetSpecifiedValueOrDefault(float.NaN);
-            targetNode.MaxHeight = maxHeight.GetSpecifiedValueOrDefault(float.NaN);
-            targetNode.MinWidth = minWidth.GetSpecifiedValueOrDefault(float.NaN);
-            targetNode.MinHeight = minHeight.GetSpecifiedValueOrDefault(float.NaN);
+            targetNode.MaxWidth = maxWidth.ToYogaValue();
+            targetNode.MaxHeight = maxHeight.ToYogaValue();
+            targetNode.MinWidth = minWidth.ToYogaValue();
+            targetNode.MinHeight = minHeight.ToYogaValue();
 
             // Note: the following applies to VisualContainer only
             // but it won't cause any trouble and we avoid making this method virtual
@@ -279,16 +279,23 @@ namespace UnityEngine.UIElements.StyleSheets
                 var styleProperty = rule.properties[i];
                 var propertyID = propertyIDs[i];
 
-                if (propertyID == StylePropertyID.Unknown)
-                    continue;
-
-                if (propertyID == StylePropertyID.Custom)
+                switch (propertyID)
                 {
-                    ApplyCustomStyleProperty(sheet, styleProperty, specificity);
-                }
-                else
-                {
-                    ApplyStyleProperty(s_StyleSheetApplicator, sheet, propertyID, styleProperty.values, specificity);
+                    case StylePropertyID.Unknown:
+                        break;
+                    case StylePropertyID.Custom:
+                        ApplyCustomStyleProperty(sheet, styleProperty, specificity);
+                        break;
+                    case StylePropertyID.BorderRadius:
+                    case StylePropertyID.BorderWidth:
+                    case StylePropertyID.Flex:
+                    case StylePropertyID.Margin:
+                    case StylePropertyID.Padding:
+                        ApplyShorthandProperty(sheet, propertyID, styleProperty.values, specificity);
+                        break;
+                    default:
+                        ApplyStyleProperty(s_StyleSheetApplicator, sheet, propertyID, styleProperty.values, specificity);
+                        break;
                 }
             }
         }
@@ -311,10 +318,6 @@ namespace UnityEngine.UIElements.StyleSheets
 
                 case StylePropertyID.BackgroundImage:
                     applicator.ApplyImage(sheet, handles, specificity, ref backgroundImage);
-                    break;
-
-                case StylePropertyID.Flex:
-                    applicator.ApplyFlexShorthand(sheet, handles, specificity, this);
                     break;
 
                 case StylePropertyID.FlexBasis:
@@ -513,16 +516,37 @@ namespace UnityEngine.UIElements.StyleSheets
                     applicator.ApplyFloat(sheet, handles, specificity, ref opacity);
                     break;
 
-                    // Shorthand values
-                case StylePropertyID.BorderRadius:
-                    applicator.ApplyLength(sheet, handles, specificity, ref borderTopLeftRadius);
-                    applicator.ApplyLength(sheet, handles, specificity, ref borderTopRightRadius);
-                    applicator.ApplyLength(sheet, handles, specificity, ref borderBottomLeftRadius);
-                    applicator.ApplyLength(sheet, handles, specificity, ref borderBottomRightRadius);
-                    break;
-
                 case StylePropertyID.Visibility:
                     applicator.ApplyEnum<Visibility>(sheet, handles, specificity, ref visibility);
+                    break;
+
+                default:
+                    throw new ArgumentException(string.Format("Non exhaustive switch statement (value={0})", propertyID));
+            }
+        }
+
+        internal void ApplyShorthandProperty(StyleSheet sheet, StylePropertyID propertyID, StyleValueHandle[] handles, int specificity)
+        {
+            switch (propertyID)
+            {
+                case StylePropertyID.BorderRadius:
+                    ShorthandApplicator.ApplyBorderRadius(sheet, handles, specificity, this);
+                    break;
+
+                case StylePropertyID.BorderWidth:
+                    ShorthandApplicator.ApplyBorderWidth(sheet, handles, specificity, this);
+                    break;
+
+                case StylePropertyID.Flex:
+                    ShorthandApplicator.ApplyFlex(sheet, handles, specificity, this);
+                    break;
+
+                case StylePropertyID.Margin:
+                    ShorthandApplicator.ApplyMargin(sheet, handles, specificity, this);
+                    break;
+
+                case StylePropertyID.Padding:
+                    ShorthandApplicator.ApplyPadding(sheet, handles, specificity, this);
                     break;
 
                 default:
@@ -688,8 +712,8 @@ namespace UnityEngine.UIElements.StyleSheets
         StyleColor IComputedStyle.borderColor => borderColor;
         StyleBackground IComputedStyle.backgroundImage => backgroundImage;
         StyleEnum<ScaleMode> IComputedStyle.unityBackgroundScaleMode => backgroundScaleMode.ToStyleEnum((ScaleMode)backgroundScaleMode.value);
-        StyleEnum<Align> IComputedStyle.alignItems => alignItems.ToStyleEnum((Align)alignItems.value);
-        StyleEnum<Align> IComputedStyle.alignContent => alignContent.ToStyleEnum((Align)alignContent.value);
+        StyleEnum<Align> IComputedStyle.alignItems => (Align)alignItems.GetSpecifiedValueOrDefault((int)DefaultAlignItems);
+        StyleEnum<Align> IComputedStyle.alignContent => (Align)alignContent.GetSpecifiedValueOrDefault((int)DefaultAlignContent);
         StyleEnum<Justify> IComputedStyle.justifyContent => justifyContent.ToStyleEnum((Justify)justifyContent.value);
         StyleFloat IComputedStyle.borderLeftWidth => borderLeftWidth;
         StyleFloat IComputedStyle.borderTopWidth => borderTopWidth;

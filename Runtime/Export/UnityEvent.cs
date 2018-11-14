@@ -149,7 +149,7 @@ namespace UnityEngine.Events
         public InvokableCall(object target, MethodInfo theFunction)
             : base(target, theFunction)
         {
-            Delegate += (UnityAction)theFunction.CreateDelegate(typeof(UnityAction), target);
+            Delegate += (UnityAction)System.Delegate.CreateDelegate(typeof(UnityAction), target, theFunction);
         }
 
         public InvokableCall(UnityAction action)
@@ -175,7 +175,7 @@ namespace UnityEngine.Events
             //              Comment from Microsoft:
             //              Desktop behavior regarding identity has never really been guaranteed. The desktop aggressively caches and reuses MethodInfo objects so identity checks often work by accident.
             //              .Net Native doesn’t guarantee identity and caches a lot less
-            return Delegate.Target == targetObj && Delegate.GetMethodInfo().Equals(method);
+            return Delegate.Target == targetObj && Delegate.Method.Equals(method);
         }
     }
 
@@ -186,7 +186,7 @@ namespace UnityEngine.Events
         public InvokableCall(object target, MethodInfo theFunction)
             : base(target, theFunction)
         {
-            Delegate += (UnityAction<T1>)theFunction.CreateDelegate(typeof(UnityAction<T1>), target);
+            Delegate += (UnityAction<T1>)System.Delegate.CreateDelegate(typeof(UnityAction<T1>), target, theFunction);
         }
 
         public InvokableCall(UnityAction<T1> action)
@@ -212,7 +212,7 @@ namespace UnityEngine.Events
 
         public override bool Find(object targetObj, MethodInfo method)
         {
-            return Delegate.Target == targetObj && Delegate.GetMethodInfo().Equals(method);
+            return Delegate.Target == targetObj && Delegate.Method.Equals(method);
         }
     }
 
@@ -223,7 +223,7 @@ namespace UnityEngine.Events
         public InvokableCall(object target, MethodInfo theFunction)
             : base(target, theFunction)
         {
-            Delegate = (UnityAction<T1, T2>)theFunction.CreateDelegate(typeof(UnityAction<T1, T2>), target);
+            Delegate = (UnityAction<T1, T2>)System.Delegate.CreateDelegate(typeof(UnityAction<T1, T2>), target, theFunction);
         }
 
         public InvokableCall(UnityAction<T1, T2> action)
@@ -250,7 +250,7 @@ namespace UnityEngine.Events
 
         public override bool Find(object targetObj, MethodInfo method)
         {
-            return Delegate.Target == targetObj && Delegate.GetMethodInfo().Equals(method);
+            return Delegate.Target == targetObj && Delegate.Method.Equals(method);
         }
     }
 
@@ -261,7 +261,7 @@ namespace UnityEngine.Events
         public InvokableCall(object target, MethodInfo theFunction)
             : base(target, theFunction)
         {
-            Delegate = (UnityAction<T1, T2, T3>)theFunction.CreateDelegate(typeof(UnityAction<T1, T2, T3>), target);
+            Delegate = (UnityAction<T1, T2, T3>)System.Delegate.CreateDelegate(typeof(UnityAction<T1, T2, T3>), target, theFunction);
         }
 
         public InvokableCall(UnityAction<T1, T2, T3> action)
@@ -289,7 +289,7 @@ namespace UnityEngine.Events
 
         public override bool Find(object targetObj, MethodInfo method)
         {
-            return Delegate.Target == targetObj && Delegate.GetMethodInfo().Equals(method);
+            return Delegate.Target == targetObj && Delegate.Method.Equals(method);
         }
     }
 
@@ -300,7 +300,7 @@ namespace UnityEngine.Events
         public InvokableCall(object target, MethodInfo theFunction)
             : base(target, theFunction)
         {
-            Delegate = (UnityAction<T1, T2, T3, T4>)theFunction.CreateDelegate(typeof(UnityAction<T1, T2, T3, T4>), target);
+            Delegate = (UnityAction<T1, T2, T3, T4>)System.Delegate.CreateDelegate(typeof(UnityAction<T1, T2, T3, T4>), target, theFunction);
         }
 
         public InvokableCall(UnityAction<T1, T2, T3, T4> action)
@@ -329,7 +329,7 @@ namespace UnityEngine.Events
 
         public override bool Find(object targetObj, MethodInfo method)
         {
-            return Delegate.Target == targetObj && Delegate.GetMethodInfo().Equals(method);
+            return Delegate.Target == targetObj && Delegate.Method.Equals(method);
         }
     }
 
@@ -862,7 +862,6 @@ namespace UnityEngine.Events
             }
             return null;
         }
-
 
         protected bool ValidateRegistration(MethodInfo method, object targetObj, PersistentListenerMode mode)
         {

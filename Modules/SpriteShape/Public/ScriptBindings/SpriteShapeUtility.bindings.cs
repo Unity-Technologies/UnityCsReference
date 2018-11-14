@@ -49,6 +49,5 @@ namespace UnityEngine.Experimental.U2D
         [NativeThrows]
         [FreeFunction("SpriteShapeUtility::GenerateSpriteShape")]
         extern public static void GenerateSpriteShape(SpriteShapeRenderer renderer, SpriteShapeParameters shapeParams, ShapeControlPoint[] points, SpriteShapeMetaData[] metaData, AngleRangeInfo[] angleRange, Sprite[] sprites, Sprite[] corners);
-
     }
 }

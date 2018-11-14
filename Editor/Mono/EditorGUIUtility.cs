@@ -1145,9 +1145,9 @@ namespace UnityEditor
             EditorStyles.UpdateSkinCache();
         }
 
-        internal static Rect DragZoneRect(Rect position)
+        internal static Rect DragZoneRect(Rect position, bool hasLabel = true)
         {
-            return new Rect(position.x, position.y, labelWidth, position.height);
+            return new Rect(position.x, position.y, hasLabel ? labelWidth : 0, position.height);
         }
 
         internal static void SetBoldDefaultFont(bool isBold)

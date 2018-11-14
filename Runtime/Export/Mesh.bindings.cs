@@ -3,10 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
-using System.Runtime.InteropServices;
 using UnityEngine.Rendering;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine
 {
@@ -110,8 +112,47 @@ namespace UnityEngine
 
         // skinning
 
-        extern private int GetBoneWeightCount();
-        [NativeName("BoneWeightsFromScript")] extern public BoneWeight[] boneWeights { get; set; }
+        [NativeMethod("HasBoneWeights")]
+        extern private bool HasBoneWeights();
+        [FreeFunction(Name = "MeshScripting::GetBoneWeights", HasExplicitThis = true)]
+        extern private BoneWeight[] GetBoneWeightsImpl();
+        [FreeFunction(Name = "MeshScripting::SetBoneWeights", HasExplicitThis = true)]
+        extern private void SetBoneWeightsImpl(BoneWeight[] weights);
+
+        public unsafe void SetBoneWeights(NativeArray<byte> bonesPerVertex, NativeArray<BoneWeight1> weights)
+        {
+            InternalSetBoneWeights((IntPtr)bonesPerVertex.GetUnsafeReadOnlyPtr(), bonesPerVertex.Length, (IntPtr)weights.GetUnsafeReadOnlyPtr(), weights.Length);
+        }
+
+        [System.Security.SecurityCritical] // to prevent accidentally making this public in the future
+        [FreeFunction(Name = "MeshScripting::SetBoneWeights", HasExplicitThis = true)]
+        extern private void InternalSetBoneWeights(IntPtr bonesPerVertex, int bonesPerVertexSize, IntPtr weights, int weightsSize);
+
+        public unsafe NativeArray<BoneWeight1> GetAllBoneWeights()
+        {
+            var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<BoneWeight1>((void*)GetAllBoneWeightsArray(), GetAllBoneWeightsArraySize(), Allocator.None);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, GetReadOnlySafetyHandle(SafetyHandleIndex.BonesWeightsArray));
+            return array;
+        }
+
+        public unsafe NativeArray<byte> GetBonesPerVertex()
+        {
+            int size = HasBoneWeights() ? vertexCount : 0;
+            var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<byte>((void*)GetBonesPerVertexArray(), size, Allocator.None);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, GetReadOnlySafetyHandle(SafetyHandleIndex.BonesPerVertexArray));
+            return array;
+        }
+
+        [FreeFunction(Name = "MeshScripting::GetAllBoneWeightsArraySize", HasExplicitThis = true)]
+        extern private int GetAllBoneWeightsArraySize();
+
+        [System.Security.SecurityCritical] // to prevent accidentally making this public in the future
+        [FreeFunction(Name = "MeshScripting::GetAllBoneWeightsArray", HasExplicitThis = true)]
+        extern private IntPtr GetAllBoneWeightsArray();
+
+        [System.Security.SecurityCritical] // to prevent accidentally making this public in the future
+        [FreeFunction(Name = "MeshScripting::GetBonesPerVertexArray", HasExplicitThis = true)]
+        extern private IntPtr GetBonesPerVertexArray();
 
         extern private int GetBindposeCount();
         [NativeName("BindPosesFromScript")] extern public Matrix4x4[] bindposes { get; set; }
@@ -121,6 +162,16 @@ namespace UnityEngine
 
         [FreeFunction(Name = "MeshScripting::ExtractBindPosesIntoArray", HasExplicitThis = true)]
         extern private void GetBindposesNonAllocImpl([Out] Matrix4x4[] values);
+
+        private enum SafetyHandleIndex
+        {
+            // Keep in sync with SafetyHandleIndex in C++ Mesh class
+            BonesPerVertexArray,
+            BonesWeightsArray,
+        }
+
+        [FreeFunction(Name = "MeshScripting::GetReadOnlySafetyHandle", HasExplicitThis = true)]
+        extern private AtomicSafetyHandle GetReadOnlySafetyHandle(SafetyHandleIndex index);
 
         // random things
 

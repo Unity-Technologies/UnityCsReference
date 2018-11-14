@@ -32,7 +32,6 @@ namespace UnityEngine
         {
             object[] attributes = callback.Method.GetCustomAttributes(typeof(BeforeRenderOrderAttribute), true);
             BeforeRenderOrderAttribute updateOrder = (attributes != null && attributes.Length > 0) ? attributes[0] as BeforeRenderOrderAttribute : null;
-
             return updateOrder != null ? updateOrder.order : 0;
         }
 

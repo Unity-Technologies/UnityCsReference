@@ -103,8 +103,7 @@ namespace UnityEngine
                 if (executeMode > 0)
                     return executeMode;
 
-                klass = klass
-                        .BaseType;
+                klass = klass.BaseType;
             }
             return 0;
         }

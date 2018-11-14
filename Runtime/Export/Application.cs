@@ -202,7 +202,6 @@ namespace UnityEngine
             }
         }
 
-
         // Calls a function in the containing web page __(Web Player only)__.
         [Obsolete("Application.ExternalCall is deprecated. See https://docs.unity3d.com/Manual/webgl-interactingwithbrowserscripting.html for alternatives.")]
         public static void ExternalCall(string functionName, params object[] args)
@@ -226,7 +225,6 @@ namespace UnityEngine
             sb.Append(';');
             return sb.ToString();
         }
-
 
         [Obsolete("use Application.isEditor instead")]
         public static bool isPlayer

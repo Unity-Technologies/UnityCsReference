@@ -295,10 +295,15 @@ namespace UnityEditor
         // Show a notification message.
         public void ShowNotification(GUIContent notification)
         {
+            ShowNotification(notification, kWarningFadeoutTime);
+        }
+
+        public void ShowNotification(GUIContent notification, double fadeoutWait)
+        {
             m_Notification = new GUIContent(notification);
-            if (m_FadeoutTime == 0)
+            if (m_FadeoutTime < Mathf.Epsilon)
                 EditorApplication.update += CheckForWindowRepaint;
-            m_FadeoutTime = (float)(EditorApplication.timeSinceStartup + kWarningFadeoutWait);
+            m_FadeoutTime = (float)(EditorApplication.timeSinceStartup + fadeoutWait);
         }
 
         // Stop showing notification message.

@@ -539,6 +539,16 @@ namespace UnityEditor
             if (m_CurveEditor.InLiveEdit())
                 return;
 
+            // prevent rebuilding wrappers if any curve has changes
+            if (m_CurveEditor.animationCurves != null)
+            {
+                for (int i = 0; i < m_CurveEditor.animationCurves.Length; i++)
+                {
+                    if (m_CurveEditor.animationCurves[i].changed)
+                        return;
+                }
+            }
+
             m_CurveEditor.animationCurves = GetCurveWrapperArray();
             SyncShownCurvesToLegend(GetShownAudioCurves());
         }

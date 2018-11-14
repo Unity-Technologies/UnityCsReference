@@ -1377,6 +1377,10 @@ namespace UnityEngine
             return defaultPhysicsScene.Raycast(ray.origin, ray.direction, results, maxDistance, layerMask, queryTriggerInteraction);
         }
 
+        // This is not actually called by native code, but needs the [RequiredByNativeCode]
+        // attribute as it is called by reflection from GraphicsRaycaster.cs, to avoid a hard
+        // dependency to this module.
+        [RequiredByNativeCode]
         [ExcludeFromDocs]
         static public int RaycastNonAlloc(Ray ray, RaycastHit[] results, float maxDistance, int layerMask)
         {

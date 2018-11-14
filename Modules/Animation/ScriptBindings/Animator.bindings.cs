@@ -679,12 +679,6 @@ namespace UnityEngine
         [FreeFunction(Name = "AnimatorBindings::GetAnimatorClipInfoInternal", HasExplicitThis = true)]
         extern private void GetAnimatorClipInfoInternal(int layerIndex, bool isCurrent, object clips);
 
-
-        [NativeConditional("ENABLE_DOTNET")]
-        [FreeFunction(Name = "AnimatorBindings::GetAnimatorClipInfoInternalWinRT", HasExplicitThis = true)]
-        extern private AnimatorClipInfo[] GetAnimatorClipInfoInternalWinRT(int layerIndex, bool isCurrent);
-
-
         // Gets the list of AnimatorClipInfo currently played by the next state
         public void GetNextAnimatorClipInfo(int layerIndex, List<AnimatorClipInfo> clips)
         {

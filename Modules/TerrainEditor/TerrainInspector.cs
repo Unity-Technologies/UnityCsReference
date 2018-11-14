@@ -732,9 +732,6 @@ namespace UnityEditor
             ShowRefreshPrototypes();
             GUILayout.EndHorizontal();
 
-            if (PaintTreesTool.instance.selectedTree == PaintTreesTool.kInvalidTree)
-                return;
-
             GUILayout.Label(styles.settings, EditorStyles.boldLabel);
             // Placement distance
             PaintTreesTool.instance.brushSize = EditorGUILayout.Slider(styles.brushSize, PaintTreesTool.instance.brushSize, 1, Mathf.Min(m_Terrain.terrainData.size.x, m_Terrain.terrainData.size.z)); // former string formatting: ""
@@ -809,6 +806,9 @@ namespace UnityEditor
                 GUILayout.EndHorizontal();
             }
 
+            if (PaintTreesTool.instance.selectedTree == PaintTreesTool.kInvalidTree)
+                return;
+
             GUILayout.Space(5);
 
             if (TerrainEditorUtility.IsLODTreePrototype(m_Terrain.terrainData.treePrototypes[PaintTreesTool.instance.selectedTree].m_Prefab))
@@ -848,9 +848,7 @@ namespace UnityEditor
         public void ShowDetails()
         {
             LoadDetailIcons();
-
-            bool repaint = brushList.ShowGUI();
-            brushList.ShowEditGUI();
+            ShowBrushes(0, true, true, false, false);
 
             // Detail picker
             GUI.changed = false;
@@ -880,10 +878,6 @@ namespace UnityEditor
 
             // Strength
             PaintDetailsTool.instance.detailStrength = EditorGUILayout.Slider(styles.detailTargetStrength, PaintDetailsTool.instance.detailStrength, 0, 1); // former string formatting: "%"
-            PaintDetailsTool.instance.detailStrength = Mathf.Round(PaintDetailsTool.instance.detailStrength * 16.0f) / 16.0f;
-
-            if (repaint)
-                Repaint();
         }
 
         private bool m_ShowBasicTerrainSettings = true;
@@ -1138,18 +1132,26 @@ namespace UnityEditor
             }
         }
 
-        public void ShowBrushes(int spacing)
+        public void ShowBrushes(int spacing, bool showBrushes, bool showBrushEditor, bool showBrushSize, bool showBrushStrength)
         {
             EditorGUI.BeginDisabledGroup(s_activeTerrainInspector != GetInstanceID() || s_activeTerrainInspectorInstance != this);
 
             GUILayout.Space(spacing);
-            bool repaint = brushList.ShowGUI();
+            bool repaint = false;
+            if (showBrushes)
+                repaint = brushList.ShowGUI();
 
-            float safetyFactorHack = 0.9375f;
-            m_Size = EditorGUILayout.Slider(styles.brushSize, m_Size, 0.1f, Mathf.Round(Mathf.Min(m_Terrain.terrainData.size.x, m_Terrain.terrainData.size.z) * safetyFactorHack));
-            m_Strength = PercentSlider(styles.opacity, m_Strength, kMinBrushStrength, 1); // former string formatting: "0.0%"
+            if (showBrushSize)
+            {
+                float safetyFactorHack = 0.9375f;
+                m_Size = EditorGUILayout.Slider(styles.brushSize, m_Size, 0.1f, Mathf.Round(Mathf.Min(m_Terrain.terrainData.size.x, m_Terrain.terrainData.size.z) * safetyFactorHack));
+            }
 
-            brushList.ShowEditGUI();
+            if (showBrushStrength)
+                m_Strength = PercentSlider(styles.opacity, m_Strength, kMinBrushStrength, 1); // former string formatting: "0.0%"
+
+            if (showBrushEditor)
+                brushList.ShowEditGUI();
 
             if (repaint)
                 Repaint();

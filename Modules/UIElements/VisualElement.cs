@@ -505,9 +505,7 @@ namespace UnityEngine.UIElements
                 if (string.IsNullOrEmpty(m_TypeName))
                 {
                     var type = GetType();
-                    bool isGeneric = false;
-                    isGeneric = type.IsGenericType;
-
+                    bool isGeneric = type.IsGenericType;
                     m_TypeName = isGeneric ? type.Name.Remove(type.Name.IndexOf('`')) : type.Name;
                 }
 
@@ -578,6 +576,10 @@ namespace UnityEngine.UIElements
         protected internal override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
+            if (evt == null)
+            {
+                return;
+            }
 
             if (evt.eventTypeId == MouseOverEvent.TypeId() || evt.eventTypeId == MouseOutEvent.TypeId())
             {

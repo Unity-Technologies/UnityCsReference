@@ -93,7 +93,6 @@ namespace UnityEngine.UIElements.StyleSheets
             {"border-top-width", StylePropertyID.BorderTopWidth},
             {"border-right-width", StylePropertyID.BorderRightWidth},
             {"border-bottom-width", StylePropertyID.BorderBottomWidth},
-            {"border-radius", StylePropertyID.BorderRadius},
             {"border-top-left-radius", StylePropertyID.BorderTopLeftRadius},
             {"border-top-right-radius", StylePropertyID.BorderTopRightRadius},
             {"border-bottom-right-radius", StylePropertyID.BorderBottomRightRadius},
@@ -105,6 +104,11 @@ namespace UnityEngine.UIElements.StyleSheets
             {"opacity", StylePropertyID.Opacity},
             {"cursor", StylePropertyID.Cursor},
             {"visibility", StylePropertyID.Visibility},
+            // Shorthands
+            {"border-radius", StylePropertyID.BorderRadius},
+            {"border-width", StylePropertyID.BorderWidth},
+            {"margin", StylePropertyID.Margin},
+            {"padding", StylePropertyID.Padding}
         };
 
         internal static void ClearCaches()

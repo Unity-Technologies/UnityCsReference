@@ -105,9 +105,15 @@ namespace UnityEditor
         [FreeFunction("AssetImporterBindings::LocalFileIDToClassID")]
         extern internal static  int LocalFileIDToClassID(long fileId);
 
+        [FreeFunction("AssetImporterBindings::MakeLocalFileIDWithHash")]
+        extern internal static long MakeLocalFileIDWithHash(int persistentTypeId, string name, long offset);
+        extern internal long MakeInternalID(int persistentTypeId, string name);
+
         extern public void AddRemap(SourceAssetIdentifier identifier, Object externalObject);
 
         extern public bool RemoveRemap(SourceAssetIdentifier identifier);
+
+        extern internal void RenameSubAssets(int peristentTypeId, string[] oldNames, string[] newNames);
 
         [FreeFunction("AssetImporterBindings::GetIdentifiers")]
         extern private static SourceAssetIdentifier[] GetIdentifiers(AssetImporter self);
@@ -134,5 +140,8 @@ namespace UnityEditor
 
         [FreeFunction("AssetImporterBindings::RegisterImporter")]
         extern internal static  void RegisterImporter(Type importer, int importerVersion, int queuePos, string fileExt, bool supportsImportDependencyHinting);
+
+        [FreeFunction("AssetImporterBindings::SupportsRemappedAssetType", HasExplicitThis = true, IsThreadSafe = true)]
+        public extern bool SupportsRemappedAssetType(Type type);
     }
 }

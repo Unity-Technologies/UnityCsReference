@@ -282,6 +282,11 @@ namespace UnityEngine.UIElements
         {
             base.ExecuteDefaultAction(evt);
 
+            if (evt == null)
+            {
+                return;
+            }
+
             if (evt.eventTypeId == GeometryChangedEvent.TypeId())
             {
                 UpdateDragElementPosition((GeometryChangedEvent)evt);

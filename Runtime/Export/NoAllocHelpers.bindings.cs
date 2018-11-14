@@ -15,7 +15,6 @@ namespace UnityEngine
     [NativeHeader("Runtime/Export/NoAllocHelpers.bindings.h")]
     internal sealed class NoAllocHelpers
     {
-
         public static void ResizeList<T>(List<T> list, int size)
         {
             if (list == null)

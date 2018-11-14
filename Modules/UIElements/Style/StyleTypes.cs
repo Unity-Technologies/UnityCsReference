@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.UIElements.StyleSheets;
+using UnityEngine.Yoga;
 
 namespace UnityEngine.UIElements
 {
@@ -63,16 +64,37 @@ namespace UnityEngine.UIElements
             return defaultValue;
         }
 
-        internal static bool CanApply<T>(this IStyleValue<T> styleValue, int otherSpecificity, StylePropertyApplyMode mode)
+        internal static float GetSpecifiedValueOrDefault(this StyleLength styleValue, float defaultValue)
+        {
+            if (styleValue.specificity > UndefinedSpecificity)
+                return styleValue.value.value;
+
+            return defaultValue;
+        }
+
+        internal static YogaValue ToYogaValue(this StyleLength styleValue)
+        {
+            if (styleValue.specificity > UndefinedSpecificity)
+            {
+                if (styleValue.keyword == StyleKeyword.Auto)
+                    return YogaValue.Auto();
+
+                return styleValue.value.value;
+            }
+
+            return float.NaN;
+        }
+
+        internal static bool CanApply(int specificity, int otherSpecificity, StylePropertyApplyMode mode)
         {
             switch (mode)
             {
                 case StylePropertyApplyMode.Copy:
                     return true;
                 case StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity:
-                    return otherSpecificity >= styleValue.specificity;
+                    return otherSpecificity >= specificity;
                 case StylePropertyApplyMode.CopyIfNotInline:
-                    return styleValue.specificity < InlineSpecificity;
+                    return specificity < InlineSpecificity;
                 default:
                     Debug.Assert(false, "Invalid mode " + mode);
                     return false;

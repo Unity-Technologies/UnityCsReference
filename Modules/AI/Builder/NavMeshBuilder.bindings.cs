@@ -64,6 +64,7 @@ namespace UnityEngine.AI
                 position = position,
                 rotation = rotation
             };
+
             UpdateNavMeshDataListInternal(data, buildSettings, sources, localBounds);
             return data;
         }

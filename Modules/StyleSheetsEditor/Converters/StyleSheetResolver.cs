@@ -465,6 +465,10 @@ namespace UnityEditor.StyleSheets
                 if (variables.TryGetValue(value.AsString(), out varProperty))
                 {
                     property.Values[i] = varProperty.Values[0];
+                    for (var varValuesIndex = 1; varValuesIndex < varProperty.Values.Count; ++varValuesIndex)
+                    {
+                        property.Values.Insert(++i, varProperty.Values[varValuesIndex]);
+                    }
                 }
                 else if (options != null && options.ThrowIfCannotResolve)
                 {

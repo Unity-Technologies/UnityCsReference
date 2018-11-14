@@ -92,6 +92,7 @@ namespace UnityEngine.UIElements.StyleSheets
         Opacity,
         // Shorthand value
         BorderRadius,
+        BorderWidth,
         Flex,
         Margin,
         Padding,

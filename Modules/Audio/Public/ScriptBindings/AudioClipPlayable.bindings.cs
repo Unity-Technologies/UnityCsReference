@@ -90,6 +90,45 @@ namespace UnityEngine.Audio
             SetLoopedInternal(ref m_Handle, value);
         }
 
+        internal float GetVolume()
+        {
+            return GetVolumeInternal(ref m_Handle);
+        }
+
+        internal void SetVolume(float value)
+        {
+            if (value < 0.0f || value > 1.0f)
+                throw new ArgumentException("Trying to set AudioClipPlayable volume outside of range (0.0 - 1.0): " + value);
+
+            SetVolumeInternal(ref m_Handle, value);
+        }
+
+        internal float GetStereoPan()
+        {
+            return GetStereoPanInternal(ref m_Handle);
+        }
+
+        internal void SetStereoPan(float value)
+        {
+            if (value < -1.0f || value > 1.0f)
+                throw new ArgumentException("Trying to set AudioClipPlayable stereo pan outside of range (-1.0 - 1.0): " + value);
+
+            SetStereoPanInternal(ref m_Handle, value);
+        }
+
+        internal float GetSpatialBlend()
+        {
+            return GetSpatialBlendInternal(ref m_Handle);
+        }
+
+        internal void SetSpatialBlend(float value)
+        {
+            if (value < 0.0f || value > 1.0f)
+                throw new ArgumentException("Trying to set AudioClipPlayable spatial blend outside of range (0.0 - 1.0): " + value);
+
+            SetSpatialBlendInternal(ref m_Handle, value);
+        }
+
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("IsPlaying() has been deprecated. Use IsChannelPlaying() instead (UnityUpgradable) -> IsChannelPlaying()", true)]
         public bool IsPlaying()
@@ -166,6 +205,24 @@ namespace UnityEngine.Audio
 
         [NativeThrows]
         extern private static void SetLoopedInternal(ref PlayableHandle hdl, bool looped);
+
+        [NativeThrows]
+        extern private static float GetVolumeInternal(ref PlayableHandle hdl);
+
+        [NativeThrows]
+        extern private static void SetVolumeInternal(ref PlayableHandle hdl, float volume);
+
+        [NativeThrows]
+        extern private static float GetStereoPanInternal(ref PlayableHandle hdl);
+
+        [NativeThrows]
+        extern private static void SetStereoPanInternal(ref PlayableHandle hdl, float stereoPan);
+
+        [NativeThrows]
+        extern private static float GetSpatialBlendInternal(ref PlayableHandle hdl);
+
+        [NativeThrows]
+        extern private static void SetSpatialBlendInternal(ref PlayableHandle hdl, float spatialBlend);
 
         [NativeThrows]
         extern private static bool GetIsChannelPlayingInternal(ref PlayableHandle hdl);

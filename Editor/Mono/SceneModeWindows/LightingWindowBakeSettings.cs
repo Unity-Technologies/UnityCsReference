@@ -70,7 +70,8 @@ namespace UnityEditor
         SerializedProperty m_PVRFilteringAtrousPositionSigmaIndirect;
         SerializedProperty m_PVRFilteringAtrousPositionSigmaAO;
 
-        SerializedProperty  m_BounceScale;
+        SerializedProperty m_BounceScale;
+        SerializedProperty m_ExportTrainingData;
 
         static bool PlayerHasSM20Support()
         {
@@ -130,6 +131,7 @@ namespace UnityEditor
 
             //dev debug properties
             m_BounceScale = so.FindProperty("m_GISettings.m_BounceScale");
+            m_ExportTrainingData = so.FindProperty("m_LightmapEditorSettings.m_ExportTrainingData");
         }
 
         public void OnEnable()
@@ -346,8 +348,13 @@ namespace UnityEditor
             Lightmapping.concurrentJobsType = (Lightmapping.ConcurrentJobsType)EditorGUILayout.IntPopup(Styles.ConcurrentJobs, (int)Lightmapping.concurrentJobsType, Styles.ConcurrentJobsTypeStrings, Styles.ConcurrentJobsTypeValues);
             Lightmapping.enlightenForceUpdates = EditorGUILayout.Toggle(Styles.ForceUpdates, Lightmapping.enlightenForceUpdates);
             Lightmapping.enlightenForceWhiteAlbedo = EditorGUILayout.Toggle(Styles.ForceWhiteAlbedo, Lightmapping.enlightenForceWhiteAlbedo);
-            Lightmapping.filterMode = (FilterMode)EditorGUILayout.EnumPopup(EditorGUIUtility.TempContent("Filter Mode"), Lightmapping.filterMode);
 
+            if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU)
+            {
+                EditorGUILayout.PropertyField(m_ExportTrainingData, Styles.ExportTrainingData);
+            }
+
+            Lightmapping.filterMode = (FilterMode)EditorGUILayout.EnumPopup(EditorGUIUtility.TempContent("Filter Mode"), Lightmapping.filterMode);
             EditorGUILayout.Slider(m_BounceScale, 0.0f, 10.0f, Styles.BounceScale);
 
             if (GUILayout.Button("Clear disk cache", GUILayout.Width(LightingWindow.kButtonWidth)))
@@ -419,10 +426,11 @@ namespace UnityEditor
 
                                 if (LightmapEditorSettings.sampling != LightmapEditorSettings.Sampling.Auto)
                                 {
-                                    // Update those constants also in LightmapBake.cpp UpdateSamples().
+                                    // Update those constants also in LightmapBake.cpp UpdateSamples() and LightmapBake.h.
+                                    // NOTE: sample count needs to be a power of two as we are using Sobol sequence.
                                     const int kMinDirectSamples = 1;
-                                    const int kMinSamples = 10;
-                                    const int kMaxSamples = 100000;
+                                    const int kMinSamples = 8;
+                                    const int kMaxSamples = 131072;
 
                                     // Sample count
                                     // TODO(PVR): make non-fixed sampling modes work.
@@ -672,6 +680,7 @@ namespace UnityEditor
             public static readonly GUIContent ConcurrentJobs = EditorGUIUtility.TrTextContent("Concurrent Jobs", "The amount of simultaneously scheduled jobs.");
             public static readonly GUIContent ForceWhiteAlbedo = EditorGUIUtility.TrTextContent("Force White Albedo", "Force white albedo during lighting calculations.");
             public static readonly GUIContent ForceUpdates = EditorGUIUtility.TrTextContent("Force Updates", "Force continuous updates of runtime indirect lighting calculations.");
+            public static readonly GUIContent ExportTrainingData = EditorGUIUtility.TrTextContent("Export Training Data", "Exports unfiltered textures, normals, positions.");
             public static readonly GUIStyle   LabelStyle = EditorStyles.wordWrappedMiniLabel;
             public static readonly GUIContent IndirectResolution = EditorGUIUtility.TrTextContent("Indirect Resolution", "Sets the resolution in texels that are used per unit for objects being lit by indirect lighting. The larger the value, the more significant the impact will be on the time it takes to bake the lighting.");
             public static readonly GUIContent LightmapResolution = EditorGUIUtility.TrTextContent("Lightmap Resolution", "Sets the resolution in texels that are used per unit for objects being lit by baked global illumination. Larger values will result in increased time to calculate the baked lighting.");

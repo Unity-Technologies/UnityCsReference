@@ -12,7 +12,28 @@ namespace UnityEditor.Experimental.TerrainAPI
     internal class StampTool : TerrainPaintTool<StampTool>
     {
         [SerializeField]
-        float m_StampHeight = 0.0f;
+        float m_StampHeightTerrainSpace = 0.0f;
+
+        [SerializeField]
+        float m_MaxBlendAdd = 0.0f;
+
+        class Styles
+        {
+            public readonly GUIContent description = EditorGUIUtility.TrTextContent("Left click to stamp the brush onto the terrain.\n\nHold control and mousewheel to adjust height.\nHold shift to invert the stamp.");
+            public readonly GUIContent height = EditorGUIUtility.TrTextContent("Stamp Height", "You can set the Stamp Height manually or you can hold shift and mouse wheel on the terrain to adjust it.");
+            public readonly GUIContent down = EditorGUIUtility.TrTextContent("Subtract", "Subtract the stamp from the terrain.");
+            public readonly GUIContent maxadd = EditorGUIUtility.TrTextContent("Max <--> Add", "Blend between adding the heights, and taking the maximum.");
+        }
+
+        private static Styles m_styles;
+        private Styles GetStyles()
+        {
+            if (m_styles == null)
+            {
+                m_styles = new Styles();
+            }
+            return m_styles;
+        }
 
         public override string GetName()
         {
@@ -21,14 +42,19 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         public override string GetDesc()
         {
-            return "Left click to stamp the brush onto the terrain.\n\nHold shift and mousewheel to adjust height.";
+            return GetStyles().description.text;
         }
 
-        private void ApplyBrushInternal(PaintContext paintContext, float brushStrength, Texture brushTexture, BrushTransform brushXform)
+        private void ApplyBrushInternal(PaintContext paintContext, float brushStrength, Texture brushTexture, BrushTransform brushXform, Terrain terrain, bool negate)
         {
             Material mat = TerrainPaintUtility.GetBuiltinPaintMaterial();
 
-            Vector4 brushParams = new Vector4(0.01f * brushStrength, 0.0f, m_StampHeight, 0.0f);
+            float height = m_StampHeightTerrainSpace / terrain.terrainData.size.y;
+            if (negate)
+            {
+                height = -height;
+            }
+            Vector4 brushParams = new Vector4(brushStrength, 0.0f, height, m_MaxBlendAdd);
             mat.SetTexture("_BrushTex", brushTexture);
             mat.SetVector("_BrushParams", brushParams);
 
@@ -45,7 +71,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, editContext.uv, editContext.brushSize, 0.0f);
             PaintContext paintContext = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds());
-            ApplyBrushInternal(paintContext, editContext.brushStrength, editContext.brushTexture, brushXform);
+            ApplyBrushInternal(paintContext, editContext.brushStrength, editContext.brushTexture, brushXform, terrain, Event.current.shift);
             TerrainPaintUtility.EndPaintHeightmap(paintContext, "Terrain Paint - Stamp");
             return true;
         }
@@ -53,10 +79,13 @@ namespace UnityEditor.Experimental.TerrainAPI
         public override void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext)
         {
             Event evt = Event.current;
-            if (evt.shift && (evt.type == EventType.ScrollWheel))
+            if (evt.control && (evt.type == EventType.ScrollWheel))
             {
-                m_StampHeight += Event.current.delta.y * -0.0000007f * editContext.raycastHit.distance;
+                const float k_mouseWheelToHeightRatio = -0.0004f;
+                // we use distance to modify the scroll speed, so that when a user is up close to the brush, they get fine adjustment, and when the user is far from the brush, it adjusts quickly
+                m_StampHeightTerrainSpace += Event.current.delta.y * k_mouseWheelToHeightRatio * editContext.raycastHit.distance;
                 evt.Use();
+                editContext.Repaint();
             }
 
             // We're only doing painting operations, early out if it's not a repaint
@@ -75,7 +104,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
                 // draw result preview
                 {
-                    ApplyBrushInternal(paintContext, editContext.brushStrength, editContext.brushTexture, brushXform);
+                    ApplyBrushInternal(paintContext, editContext.brushStrength, editContext.brushTexture, brushXform, terrain, evt.shift);
 
                     // restore old render target
                     RenderTexture.active = paintContext.oldRenderTexture;
@@ -92,10 +121,24 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
+            Styles styles = GetStyles();
             EditorGUI.BeginChangeCheck();
-            m_StampHeight = EditorGUILayout.Slider(new GUIContent("Stamp Height", "You can set the Stamp Height manually or you can hold shift and mouse wheel on the terrain to adjust it."), m_StampHeight * terrain.terrainData.size.y, 0, terrain.terrainData.size.y) / terrain.terrainData.size.y;
+            {
+                EditorGUI.BeginChangeCheck();
+                float height = Mathf.Abs(m_StampHeightTerrainSpace);
+                bool stampDown = (m_StampHeightTerrainSpace < 0.0f);
+                height = EditorGUILayout.PowerSlider(styles.height, height, 0, terrain.terrainData.size.y, 2.0f);
+                stampDown = EditorGUILayout.Toggle(styles.down, stampDown);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    m_StampHeightTerrainSpace = (stampDown ? -height : height);
+                }
+            }
+            m_MaxBlendAdd = EditorGUILayout.Slider(styles.maxadd, m_MaxBlendAdd, 0.0f, 1.0f);
             if (EditorGUI.EndChangeCheck())
+            {
                 Save(true);
+            }
 
             // show built-in brushes
             editContext.ShowBrushesGUI(5);

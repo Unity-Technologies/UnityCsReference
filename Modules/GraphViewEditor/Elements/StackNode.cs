@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
@@ -63,6 +64,12 @@ namespace UnityEditor.Experimental.GraphView
             else if (evt.eventTypeId == AttachToPanelEvent.TypeId())
             {
                 graphView = GetFirstAncestorOfType<GraphView>();
+
+                // Restore selections on children.
+                foreach (var child in Children().OfType<GraphElement>())
+                {
+                    graphView.RestorePersitentSelectionForElement(child);
+                }
             }
         }
 

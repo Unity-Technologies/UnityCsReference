@@ -84,10 +84,12 @@ namespace UnityEngine.UIElements
             if (newValue)
             {
                 visualInput.pseudoStates |= PseudoStates.Checked;
+                pseudoStates |= PseudoStates.Checked;
             }
             else
             {
                 visualInput.pseudoStates &= ~PseudoStates.Checked;
+                pseudoStates &= ~PseudoStates.Checked;
             }
             base.SetValueWithoutNotify(newValue);
         }
@@ -101,7 +103,12 @@ namespace UnityEngine.UIElements
         {
             base.ExecuteDefaultActionAtTarget(evt);
 
-            if ((evt != null && ((evt as KeyDownEvent)?.character == '\n')) || ((evt as KeyDownEvent)?.character == ' '))
+            if (evt == null)
+            {
+                return;
+            }
+
+            if (((evt as KeyDownEvent)?.character == '\n') || ((evt as KeyDownEvent)?.character == ' '))
             {
                 OnClick();
                 evt.StopPropagation();

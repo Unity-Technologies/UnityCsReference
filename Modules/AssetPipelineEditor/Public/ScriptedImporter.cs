@@ -28,6 +28,17 @@ namespace UnityEditor.Experimental.AssetImporters
 
         public abstract void OnImportAsset(AssetImportContext ctx);
 
+        public new virtual bool SupportsRemappedAssetType(Type type)
+        {
+            return false;
+        }
+
+        [RequiredByNativeCode]
+        private static bool SupportsRemappedAssetTypeProxy(ScriptedImporter importer, Type type)
+        {
+            return importer.SupportsRemappedAssetType(type);
+        }
+
         [RequiredByNativeCode]
         internal static void RegisterScriptedImporters()
         {

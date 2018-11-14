@@ -57,6 +57,7 @@ namespace UnityEditor
             public static readonly GUIContent editorSkin = EditorGUIUtility.TrTextContent("Editor Skin");
             public static readonly GUIContent[] editorSkinOptions = { EditorGUIUtility.TrTextContent("Personal"), EditorGUIUtility.TrTextContent("Professional") };
             public static readonly GUIContent enableAlphaNumericSorting = EditorGUIUtility.TrTextContent("Enable Alpha Numeric Sorting");
+            public static readonly GUIContent asyncShaderCompilation = EditorGUIUtility.TrTextContent("Asynchronous Shader Compilation");
         }
 
         internal class ExternalProperties
@@ -140,6 +141,7 @@ namespace UnityEditor
         private static SystemLanguage[] m_stableLanguages = { SystemLanguage.English };
 
         private bool m_AllowAlphaNumericHierarchy = false;
+        private bool m_AsyncShaderCompilation = true;
 
         private string[] m_ScriptApps;
         private string[] m_ScriptAppsEditions;
@@ -455,6 +457,8 @@ namespace UnityEditor
             bool oldAlphaNumeric = m_AllowAlphaNumericHierarchy;
             m_AllowAlphaNumericHierarchy = EditorGUILayout.Toggle(GeneralProperties.enableAlphaNumericSorting, m_AllowAlphaNumericHierarchy);
 
+            m_AsyncShaderCompilation = EditorGUILayout.Toggle(GeneralProperties.asyncShaderCompilation, m_AsyncShaderCompilation);
+
             if (InternalEditorUtility.IsGpuDeviceSelectionSupported())
             {
                 // Cache gpu devices
@@ -762,6 +766,7 @@ namespace UnityEditor
             EditorPrefs.SetString("Editor.kEditorLocale", m_SelectedLanguage);
 
             EditorPrefs.SetBool("AllowAlphaNumericHierarchy", m_AllowAlphaNumericHierarchy);
+            EditorPrefs.SetBool("AsynchronousShaderCompilation", m_AsyncShaderCompilation);
             EditorPrefs.SetString("GpuDeviceName", m_GpuDevice);
 
             EditorPrefs.SetBool("GICacheEnableCustomPath", m_GICacheSettings.m_EnableCustomPath);
@@ -869,6 +874,7 @@ namespace UnityEditor
             m_EnableEditorLocalization = EditorPrefs.GetBool("Editor.kEnableEditorLocalization", true);
             m_SelectedLanguage = EditorPrefs.GetString("Editor.kEditorLocale", LocalizationDatabase.GetDefaultEditorLanguage().ToString());
             m_AllowAlphaNumericHierarchy = EditorPrefs.GetBool("AllowAlphaNumericHierarchy", false);
+            m_AsyncShaderCompilation = EditorPrefs.GetBool("AsynchronousShaderCompilation", true);
 
             m_CompressAssetsOnImport = Unsupported.GetApplicationSettingCompressAssetsOnImport();
             m_GpuDevice = EditorPrefs.GetString("GpuDeviceName");

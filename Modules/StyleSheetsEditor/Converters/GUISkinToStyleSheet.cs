@@ -27,16 +27,25 @@ namespace UnityEditor.StyleSheets
             // Note: Same order as CSS which is NOT the same order as the RectOffset constructor
 
             if (helper.options.exportDefaultValues || offset.left != defaultValue.left)
+            {
                 helper.AddProperty(ConverterUtils.ToUssPropertyName(name, "left", suffix), offset.left, comment);
+                comment = "";
+            }
 
             if (helper.options.exportDefaultValues || offset.right != defaultValue.right)
-                helper.AddProperty(ConverterUtils.ToUssPropertyName(name, "right", suffix), offset.right);
+            {
+                helper.AddProperty(ConverterUtils.ToUssPropertyName(name, "right", suffix), offset.right, comment);
+                comment = "";
+            }
 
             if (helper.options.exportDefaultValues || offset.top != defaultValue.top)
-                helper.AddProperty(ConverterUtils.ToUssPropertyName(name, "top", suffix), offset.top);
+            {
+                helper.AddProperty(ConverterUtils.ToUssPropertyName(name, "top", suffix), offset.top, comment);
+                comment = "";
+            }
 
             if (helper.options.exportDefaultValues || offset.bottom != defaultValue.bottom)
-                helper.AddProperty(ConverterUtils.ToUssPropertyName(name, "bottom", suffix), offset.bottom);
+                helper.AddProperty(ConverterUtils.ToUssPropertyName(name, "bottom", suffix), offset.bottom, comment);
         }
 
         private static void AddPropertyResource(StyleSheetBuilderHelper helper, string name, Object resource, string comment = "")

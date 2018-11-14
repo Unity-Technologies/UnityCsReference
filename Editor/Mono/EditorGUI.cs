@@ -126,8 +126,8 @@ namespace UnityEditor
         private static readonly GUIContent s_SizeLabel = EditorGUIUtility.TrTextContent("Size");
         internal static GUIContent s_PleasePressAKey = EditorGUIUtility.TrTextContent("[Please press a key]");
 
-        internal static readonly GUIContent s_ClipingPlanesLabel = EditorGUIUtility.TrTextContent("Clipping Planes", "Distances from the camera to start and stop rendering.");
-        internal static readonly GUIContent[] s_NearAndFarLabels = { EditorGUIUtility.TrTextContent("Near", "The closest point relative to the camera that drawing will occur."), EditorGUIUtility.TrTextContent("Far", "The furthest point relative to the camera that drawing will occur.\n") };
+        internal static readonly GUIContent s_ClipingPlanesLabel = EditorGUIUtility.TrTextContent("Clipping Planes", "The distances from the Camera where rendering starts and stops.");
+        internal static readonly GUIContent[] s_NearAndFarLabels = { EditorGUIUtility.TrTextContent("Near", "The closest point to the Camera where drawing occurs."), EditorGUIUtility.TrTextContent("Far", "The furthest point from the Camera that drawing occurs.") };
         internal const float kNearFarLabelsWidth = 35f;
 
         private static int s_ColorPickID;
@@ -2232,7 +2232,7 @@ namespace UnityEditor
         public static float Slider(Rect position, float value, float leftValue, float rightValue)
         {
             int id = GUIUtility.GetControlID(s_SliderHash, FocusType.Keyboard, position);
-            return DoSlider(IndentedRect(position), EditorGUIUtility.DragZoneRect(position), id, value, leftValue, rightValue, kFloatFieldFormatString);
+            return DoSlider(IndentedRect(position), EditorGUIUtility.DragZoneRect(position, false), id, value, leftValue, rightValue, kFloatFieldFormatString);
         }
 
         public static float Slider(Rect position, string label, float value, float leftValue, float rightValue)

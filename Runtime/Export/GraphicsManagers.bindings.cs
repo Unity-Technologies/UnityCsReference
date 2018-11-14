@@ -91,7 +91,10 @@ namespace UnityEngine
         extern public static bool  billboardsFaceCameraPosition     { get; set; }
         extern public static float resolutionScalingFixedDPIFactor  { get; set; }
 
-        extern public static BlendWeights blendWeights   { get; set; }
+        [Obsolete("blendWeights is obsolete. Use skinWeights instead (UnityUpgradable) -> skinWeights", true)]
+        extern public static BlendWeights blendWeights   { [NativeName("GetSkinWeights")] get; [NativeName("SetSkinWeights")] set; }
+
+        extern public static SkinWeights skinWeights { get; set; }
 
         extern public static bool streamingMipmapsActive { get; set; }
         extern public static float streamingMipmapsMemoryBudget { get; set; }

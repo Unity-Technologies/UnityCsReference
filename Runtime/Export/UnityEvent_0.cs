@@ -32,7 +32,7 @@ namespace UnityEngine.Events
 
         public void RemoveListener(UnityAction call)
         {
-            RemoveListener(call.Target, call.GetMethodInfo());
+            RemoveListener(call.Target, call.Method);
         }
 
         protected override MethodInfo FindMethod_Impl(string name, object targetObj)

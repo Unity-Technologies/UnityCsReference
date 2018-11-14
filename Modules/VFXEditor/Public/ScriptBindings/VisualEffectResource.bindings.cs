@@ -359,6 +359,8 @@ namespace UnityEditor.Experimental.VFX
 
         public extern VFXShaderSourceDesc[] shaderSources { get; set; }
 
+        public extern bool compileInitialVariants { get; set; }
+
         public void SetRuntimeData(VFXExpressionSheet sheet, VFXEditorSystemDesc[] systemDesc, VFXEventDesc[] eventDesc, VFXGPUBufferDesc[] bufferDesc, VFXCPUBufferDesc[] cpuBufferDesc)
         {
             var internalSheet = new VFXExpressionSheetInternal();
@@ -373,6 +375,8 @@ namespace UnityEditor.Experimental.VFX
         extern private void SetRuntimeData(VFXExpressionSheetInternal sheet, VFXEditorSystemDesc[] systemDesc, VFXEventDesc[] eventDesc, VFXGPUBufferDesc[] bufferDesc, VFXCPUBufferDesc[] cpuBufferDesc);
         extern public VFXRendererSettings rendererSettings { get; set; }
         extern public VFXUpdateMode updateMode { get; set; }
+        extern public float preWarmDeltaTime { get; set; }
+        extern public uint preWarmStepCount { get; set; }
         extern public VFXCullingFlags cullingFlags { get; set; }
 
         extern public void MarkRuntimeVersion();

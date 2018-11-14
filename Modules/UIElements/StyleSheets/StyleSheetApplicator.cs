@@ -19,9 +19,6 @@ namespace UnityEngine.UIElements.StyleSheets
         void ApplyImage(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleBackground property);
         void ApplyFont(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleFont property);
         void ApplyCursor(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleCursor property);
-
-        // Shorthand
-        void ApplyFlexShorthand(StyleSheet sheet, StyleValueHandle[] handles, int specificity, VisualElementStylesData styleData);
     }
 
     internal class StyleSheetApplicator : IStyleSheetApplicator
@@ -30,16 +27,12 @@ namespace UnityEngine.UIElements.StyleSheets
         internal delegate int GetCursorIdFunction(StyleSheet sheet, StyleValueHandle handle);
         internal static GetCursorIdFunction getCursorIdFunc = null;
 
-        internal static void Apply<T, U>(U val, int specificity, ref T property) where T : struct, IStyleValue<U>
-        {
-            property.Apply(new T() {value = val, specificity = specificity}, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
-        }
-
         private bool ApplyUnset<T, U>(StyleValueHandle[] handles, int specificity, ref T property) where T : struct, IStyleValue<U>
         {
             if (handles[0].valueType == StyleValueType.Keyword && handles[0].valueIndex == (int)StyleValueKeyword.Unset)
             {
-                Apply(default(U), specificity, ref property);
+                var defaultValue = default(T);
+                property.Apply(defaultValue, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
                 return true;
             }
             else
@@ -53,8 +46,8 @@ namespace UnityEngine.UIElements.StyleSheets
             if (ApplyUnset<StyleFloat, float>(handles, specificity, ref property))
                 return;
 
-            var value = sheet.ReadFloat(handles[0]);
-            Apply(value, specificity, ref property);
+            var value = sheet.ReadStyleFloat(handles[0], specificity);
+            property.Apply(value, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
         }
 
         public void ApplyFlexBasis(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleLength property)
@@ -62,18 +55,8 @@ namespace UnityEngine.UIElements.StyleSheets
             if (ApplyUnset<StyleLength, Length>(handles, specificity, ref property))
                 return;
 
-            var handle = handles[0];
-            if (handle.valueType == StyleValueType.Keyword && handle.valueIndex == (int)StyleValueKeyword.Auto)
-            {
-                var value = new StyleLength(StyleKeyword.Auto) { specificity = specificity };
-                property.Apply(value, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
-            }
-            else
-            {
-                var value = new Length(sheet.ReadFloat(handles[0]));
-                value = sheet.ReadFloat(handle);
-                Apply(value, specificity, ref property);
-            }
+            var value = sheet.ReadStyleLength(handles[0], specificity);
+            property.Apply(value, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
         }
 
         public void ApplyInt(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleInt property)
@@ -81,8 +64,8 @@ namespace UnityEngine.UIElements.StyleSheets
             if (ApplyUnset<StyleInt, int>(handles, specificity, ref property))
                 return;
 
-            var value = (int)sheet.ReadFloat(handles[0]);
-            Apply(value, specificity, ref property);
+            var value = sheet.ReadStyleInt(handles[0], specificity);
+            property.Apply(value, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
         }
 
         public void ApplyEnum<T>(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleInt property)
@@ -90,8 +73,8 @@ namespace UnityEngine.UIElements.StyleSheets
             if (ApplyUnset<StyleInt, int>(handles, specificity, ref property))
                 return;
 
-            var value = StyleSheetCache.GetEnumValue<T>(sheet, handles[0]);
-            Apply(value, specificity, ref property);
+            var value = sheet.ReadStyleEnum<T>(handles[0], specificity);
+            property.Apply(value, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
         }
 
         public void ApplyLength(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleLength property)
@@ -99,8 +82,8 @@ namespace UnityEngine.UIElements.StyleSheets
             if (ApplyUnset<StyleLength, Length>(handles, specificity, ref property))
                 return;
 
-            var value = new Length(sheet.ReadFloat(handles[0]));
-            Apply(value, specificity, ref property);
+            var value = sheet.ReadStyleLength(handles[0], specificity);
+            property.Apply(value, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
         }
 
         public void ApplyColor(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleColor property)
@@ -108,8 +91,8 @@ namespace UnityEngine.UIElements.StyleSheets
             if (ApplyUnset<StyleColor, Color>(handles, specificity, ref property))
                 return;
 
-            var value = sheet.ReadColor(handles[0]);
-            Apply(value, specificity, ref property);
+            var value = sheet.ReadStyleColor(handles[0], specificity);
+            property.Apply(value, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
         }
 
         private void CompileCursor(StyleSheet sheet, StyleValueHandle[] handles, out float hotspotX, out float hotspotY, out int cursorId, out Texture2D texture)
@@ -168,8 +151,9 @@ namespace UnityEngine.UIElements.StyleSheets
             Texture2D texture;
 
             CompileCursor(sheet, handles, out hotspotX, out hotspotY, out cursorId, out texture);
-            Cursor cursor = new Cursor() { texture = texture, hotspot = new Vector2(hotspotX, hotspotY), defaultCursorId = cursorId };
-            Apply(cursor, specificity, ref property);
+            var cursor = new Cursor() { texture = texture, hotspot = new Vector2(hotspotX, hotspotY), defaultCursorId = cursorId };
+            var styleCursor = new StyleCursor(cursor) {specificity = specificity};
+            property.Apply(styleCursor, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
         }
 
         public void ApplyFont(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleFont property)
@@ -216,7 +200,8 @@ namespace UnityEngine.UIElements.StyleSheets
 
             if (font != null)
             {
-                Apply(font, specificity, ref property);
+                var value = new StyleFont(font) {specificity = specificity};
+                property.Apply(value, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
             }
         }
 
@@ -244,7 +229,8 @@ namespace UnityEngine.UIElements.StyleSheets
                 // Load a stand-in picture to make it easier to identify which image element is missing its picture
                 source = Panel.loadResourceFunc("d_console.warnicon", typeof(Texture2D)) as Texture2D;
             }
-            Apply(new Background(source), specificity, ref property);
+            var value = new StyleBackground(source) {specificity = specificity};
+            property.Apply(value, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
         }
 
         static bool TryGetSourceFromHandle(StyleSheet sheet, StyleValueHandle handle, out Texture2D source)
@@ -290,12 +276,166 @@ namespace UnityEngine.UIElements.StyleSheets
 
             return true;
         }
+    }
 
-        private static bool CompileFlexShorthand(StyleSheet sheet, StyleValueHandle[] handles, out StyleFloat grow, out StyleFloat shrink, out StyleLength basis)
+    internal class StyleValueApplicator : IStyleSheetApplicator
+    {
+        public StyleValue currentStyleValue { get; set; }
+        public StyleCursor currentCursor { get; set; }
+
+        public void ApplyColor(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleColor property)
+        {
+            property.Apply(new StyleColor(currentStyleValue.color, currentStyleValue.keyword) {specificity = specificity}, StylePropertyApplyMode.Copy);
+        }
+
+        public void ApplyCursor(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleCursor property)
+        {
+            property.Apply(new StyleCursor(currentCursor.value, currentCursor.keyword) {specificity = specificity}, StylePropertyApplyMode.Copy);
+        }
+
+        public void ApplyEnum<T>(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleInt property)
+        {
+            property.Apply(new StyleInt((int)currentStyleValue.number, currentStyleValue.keyword) {specificity = specificity}, StylePropertyApplyMode.Copy);
+        }
+
+        public void ApplyLength(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleLength property)
+        {
+            property.Apply(new StyleLength(currentStyleValue.length, currentStyleValue.keyword) {specificity = specificity}, StylePropertyApplyMode.Copy);
+        }
+
+        public void ApplyFloat(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleFloat property)
+        {
+            property.Apply(new StyleFloat(currentStyleValue.number, currentStyleValue.keyword) {specificity = specificity}, StylePropertyApplyMode.Copy);
+        }
+
+        public void ApplyFlexBasis(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleLength property)
+        {
+            property.Apply(new StyleLength(currentStyleValue.length, currentStyleValue.keyword) {specificity = specificity}, StylePropertyApplyMode.Copy);
+        }
+
+        public void ApplyFont(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleFont property)
+        {
+            Font font = null;
+            if (currentStyleValue.resource.IsAllocated)
+                font = currentStyleValue.resource.Target as Font;
+
+            property.Apply(new StyleFont(font, currentStyleValue.keyword) {specificity = specificity}, StylePropertyApplyMode.Copy);
+        }
+
+        public void ApplyImage(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleBackground property)
+        {
+            Texture2D texture = null;
+            if (currentStyleValue.resource.IsAllocated)
+                texture = currentStyleValue.resource.Target as Texture2D;
+
+            property.Apply(new StyleBackground(texture, currentStyleValue.keyword) {specificity = specificity}, StylePropertyApplyMode.Copy);
+        }
+
+        public void ApplyInt(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleInt property)
+        {
+            property.Apply(new StyleInt((int)currentStyleValue.number, currentStyleValue.keyword) {specificity = specificity}, StylePropertyApplyMode.Copy);
+        }
+    }
+
+    internal static class ShorthandApplicator
+    {
+        public static void ApplyBorderRadius(StyleSheet sheet, StyleValueHandle[] handles, int specificity, VisualElementStylesData styleData)
+        {
+            StyleLength topLeft;
+            StyleLength topRight;
+            StyleLength bottomLeft;
+            StyleLength bottomRight;
+            CompileBoxArea(sheet, handles, specificity, out topLeft, out topRight, out bottomRight, out bottomLeft);
+
+            // border-radius doesn't support any keyword, revert to 0 in that case
+            if (topLeft.keyword != StyleKeyword.Undefined)
+                topLeft.value = 0f;
+            if (topRight.keyword != StyleKeyword.Undefined)
+                topRight.value = 0f;
+            if (bottomLeft.keyword != StyleKeyword.Undefined)
+                bottomLeft.value = 0f;
+            if (bottomRight.keyword != StyleKeyword.Undefined)
+                bottomRight.value = 0f;
+
+            styleData.borderTopLeftRadius.Apply(topLeft, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+            styleData.borderTopRightRadius.Apply(topRight, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+            styleData.borderBottomLeftRadius.Apply(bottomLeft, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+            styleData.borderBottomRightRadius.Apply(bottomRight, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+        }
+
+        public static void ApplyBorderWidth(StyleSheet sheet, StyleValueHandle[] handles, int specificity, VisualElementStylesData styleData)
+        {
+            StyleLength top;
+            StyleLength right;
+            StyleLength bottom;
+            StyleLength left;
+            CompileBoxArea(sheet, handles, specificity, out top, out right, out bottom, out left);
+
+            // border-width doesn't support any keyword, revert to 0 in that case
+            if (top.keyword != StyleKeyword.Undefined)
+                top.value = 0f;
+            if (right.keyword != StyleKeyword.Undefined)
+                right.value = 0f;
+            if (bottom.keyword != StyleKeyword.Undefined)
+                bottom.value = 0f;
+            if (left.keyword != StyleKeyword.Undefined)
+                left.value = 0f;
+
+            styleData.borderTopWidth.Apply(top.ToStyleFloat(), StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+            styleData.borderRightWidth.Apply(right.ToStyleFloat(), StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+            styleData.borderBottomWidth.Apply(bottom.ToStyleFloat(), StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+            styleData.borderLeftWidth.Apply(left.ToStyleFloat(), StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+        }
+
+        public static void ApplyFlex(StyleSheet sheet, StyleValueHandle[] handles, int specificity, VisualElementStylesData styleData)
+        {
+            StyleFloat grow;
+            StyleFloat shrink;
+            StyleLength basis;
+            bool valid = CompileFlexShorthand(sheet, handles, specificity, out grow, out shrink, out basis);
+
+            if (valid)
+            {
+                styleData.flexGrow.Apply(grow, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+                styleData.flexShrink.Apply(shrink, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+                styleData.flexBasis.Apply(basis, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+            }
+        }
+
+        public static void ApplyMargin(StyleSheet sheet, StyleValueHandle[] handles, int specificity, VisualElementStylesData styleData)
+        {
+            StyleLength top;
+            StyleLength right;
+            StyleLength bottom;
+            StyleLength left;
+            CompileBoxArea(sheet, handles, specificity, out top, out right, out bottom, out left);
+
+            styleData.marginTop.Apply(top, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+            styleData.marginRight.Apply(right, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+            styleData.marginBottom.Apply(bottom, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+            styleData.marginLeft.Apply(left, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+        }
+
+        public static void ApplyPadding(StyleSheet sheet, StyleValueHandle[] handles, int specificity, VisualElementStylesData styleData)
+        {
+            StyleLength top;
+            StyleLength right;
+            StyleLength bottom;
+            StyleLength left;
+            CompileBoxArea(sheet, handles, specificity, out top, out right, out bottom, out left);
+
+            styleData.paddingTop.Apply(top, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+            styleData.paddingRight.Apply(right, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+            styleData.paddingBottom.Apply(bottom, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+            styleData.paddingLeft.Apply(left, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+        }
+
+        private static bool CompileFlexShorthand(StyleSheet sheet, StyleValueHandle[] handles, int specificity, out StyleFloat grow, out StyleFloat shrink, out StyleLength basis)
         {
             grow = 0f;
             shrink = 0f;
             basis = StyleKeyword.Auto;
+
             bool valid = false;
 
             if (handles.Length == 1 && handles[0].valueType == StyleValueType.Keyword && handles[0].valueIndex == (int)StyleValueKeyword.Unset)
@@ -351,14 +491,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
                         if (handles.Length > 2)
                         {
-                            if (handles[2].valueType == StyleValueType.Keyword && handles[2].valueIndex == (int)StyleValueKeyword.Auto)
-                            {
-                                basis = StyleKeyword.Auto;
-                            }
-                            else if (handles[2].valueType == StyleValueType.Float)
-                            {
-                                basis = sheet.ReadFloat(handles[2]);
-                            }
+                            basis = sheet.ReadStyleLength(handles[2], specificity);
                         }
                     }
                     else if (handles[1].valueType == StyleValueType.Keyword && handles[1].valueIndex == (int)StyleValueKeyword.Auto)
@@ -368,93 +501,53 @@ namespace UnityEngine.UIElements.StyleSheets
                 }
             }
 
+            grow.specificity = specificity;
+            shrink.specificity = specificity;
+            basis.specificity = specificity;
             return valid;
         }
 
-        public void ApplyFlexShorthand(StyleSheet sheet, StyleValueHandle[] handles, int specificity, VisualElementStylesData styleData)
+        private static void CompileBoxArea(StyleSheet sheet, StyleValueHandle[] handles, int specificity, out StyleLength top, out StyleLength right, out StyleLength bottom, out StyleLength left)
         {
-            StyleFloat grow;
-            StyleFloat shrink;
-            StyleLength basis;
-            bool valid = CompileFlexShorthand(sheet, handles, out grow, out shrink, out basis);
-
-            if (valid)
+            top = 0f;
+            right = 0f;
+            bottom = 0f;
+            left = 0f;
+            switch (handles.Length)
             {
-                grow.specificity = specificity;
-                shrink.specificity = specificity;
-                basis.specificity = specificity;
-
-                styleData.flexGrow.Apply(grow, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
-                styleData.flexShrink.Apply(shrink, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
-                styleData.flexBasis.Apply(basis, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+                // apply to all four sides
+                case 0:
+                    break;
+                case 1:
+                {
+                    top = right = bottom = left = sheet.ReadStyleLength(handles[0], specificity);
+                    break;
+                }
+                // vertical | horizontal
+                case 2:
+                {
+                    top = bottom = sheet.ReadStyleLength(handles[0], specificity);
+                    left = right = sheet.ReadStyleLength(handles[1], specificity);
+                    break;
+                }
+                // top | horizontal | bottom
+                case 3:
+                {
+                    top = sheet.ReadStyleLength(handles[0], specificity);
+                    left = right = sheet.ReadStyleLength(handles[1], specificity);
+                    bottom = sheet.ReadStyleLength(handles[2], specificity);
+                    break;
+                }
+                // top | right | bottom | left
+                default:
+                {
+                    top = sheet.ReadStyleLength(handles[0], specificity);
+                    right = sheet.ReadStyleLength(handles[1], specificity);
+                    bottom = sheet.ReadStyleLength(handles[2], specificity);
+                    left = sheet.ReadStyleLength(handles[3], specificity);
+                    break;
+                }
             }
         }
-
-    }
-
-    internal class StyleValueApplicator : IStyleSheetApplicator
-    {
-        public StyleValue currentStyleValue { get; set; }
-        public StyleCursor currentCursor { get; set; }
-
-        public void ApplyColor(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleColor property)
-        {
-            property.Apply(new StyleColor(currentStyleValue.color, currentStyleValue.keyword) {specificity = specificity}, StylePropertyApplyMode.Copy);
-        }
-
-        public void ApplyCursor(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleCursor property)
-        {
-            property.Apply(new StyleCursor(currentCursor.value, currentCursor.keyword) {specificity = specificity}, StylePropertyApplyMode.Copy);
-        }
-
-        public void ApplyEnum<T>(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleInt property)
-        {
-            property.Apply(new StyleInt((int)currentStyleValue.number, currentStyleValue.keyword) {specificity = specificity}, StylePropertyApplyMode.Copy);
-        }
-
-        public void ApplyLength(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleLength property)
-        {
-            property.Apply(new StyleLength(currentStyleValue.length, currentStyleValue.keyword) {specificity = specificity}, StylePropertyApplyMode.Copy);
-        }
-
-        public void ApplyFlexShorthand(StyleSheet sheet, StyleValueHandle[] handles, int specificity, VisualElementStylesData styleData)
-        {
-            // IStyle doesn't contain a Flex property so this should never be called!
-            Debug.LogError("Cannot apply Flex shorthand on inline style value");
-        }
-
-        public void ApplyFloat(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleFloat property)
-        {
-            property.Apply(new StyleFloat(currentStyleValue.number, currentStyleValue.keyword) {specificity = specificity}, StylePropertyApplyMode.Copy);
-        }
-
-        public void ApplyFlexBasis(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleLength property)
-        {
-            property.Apply(new StyleLength(currentStyleValue.length, currentStyleValue.keyword) {specificity = specificity}, StylePropertyApplyMode.Copy);
-        }
-
-        public void ApplyFont(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleFont property)
-        {
-            Font font = null;
-            if (currentStyleValue.resource.IsAllocated)
-                font = currentStyleValue.resource.Target as Font;
-
-            property.Apply(new StyleFont(font, currentStyleValue.keyword) {specificity = specificity}, StylePropertyApplyMode.Copy);
-        }
-
-        public void ApplyImage(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleBackground property)
-        {
-            Texture2D texture = null;
-            if (currentStyleValue.resource.IsAllocated)
-                texture = currentStyleValue.resource.Target as Texture2D;
-
-            property.Apply(new StyleBackground(texture, currentStyleValue.keyword) {specificity = specificity}, StylePropertyApplyMode.Copy);
-        }
-
-        public void ApplyInt(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleInt property)
-        {
-            property.Apply(new StyleInt((int)currentStyleValue.number, currentStyleValue.keyword) {specificity = specificity}, StylePropertyApplyMode.Copy);
-        }
-
     }
 }

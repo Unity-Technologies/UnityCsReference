@@ -45,6 +45,5 @@ namespace UnityEngine.Assertions
         {
             throw new InvalidOperationException("Assert.ReferenceEquals should not be used for Assertions");
         }
-
     }
 }

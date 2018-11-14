@@ -324,6 +324,8 @@ namespace UnityEngine.Experimental.VFX
         }
 
         extern public int aliveParticleCount { get; }
+
+        extern public void Simulate(float stepDeltaTime, uint stepCount = 1);
     }
 
     // Bindings for VFXRenderer is needed but we dont want it to be accessible to users

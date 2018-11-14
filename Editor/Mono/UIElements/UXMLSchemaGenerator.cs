@@ -59,6 +59,8 @@ namespace UnityEditor.UIElements
                     }
                 }
             }
+
+            AssetDatabase.Refresh();
         }
 
         internal static Dictionary<string, string> GetNamespacePrefixDictionary()

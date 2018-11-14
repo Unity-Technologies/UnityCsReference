@@ -101,7 +101,16 @@ namespace UnityEditor
                     }
                     var so = new SerializedObject(m_SpriteDataProvider.targetObject);
                     if (oldNames.Count > 0)
-                        PatchImportSettingRecycleID.PatchMultiple(so, 213, oldNames.ToArray(), newNames.ToArray());
+                    {
+                        AssetImporter assetImporter = m_SpriteDataProvider.targetObject as AssetImporter;
+
+                        if (assetImporter != null)
+                        {
+                            UnityType spriteType = UnityType.FindTypeByName("Sprite");
+                            assetImporter.RenameSubAssets(spriteType.persistentTypeID, oldNames.ToArray(), newNames.ToArray());
+                        }
+                    }
+
                     so.ApplyModifiedPropertiesWithoutUndo();
                 }
                 m_SpriteDataProvider.SetSpriteRects(m_RectsCache?.spriteRects.ToArray());

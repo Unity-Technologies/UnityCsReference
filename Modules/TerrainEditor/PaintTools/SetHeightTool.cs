@@ -13,9 +13,28 @@ namespace UnityEditor.Experimental.TerrainAPI
     internal class SetHeightTool : TerrainPaintTool<SetHeightTool>
     {
         [SerializeField]
-        float m_Height;
+        float m_HeightWorldSpace;
+
         [SerializeField]
         bool m_FlattenAll;
+
+        class Styles
+        {
+            public readonly GUIContent description = EditorGUIUtility.TrTextContent("Left click to set the height.\n\nHold shift and left click to sample the target height.");
+            public readonly GUIContent flattenAll = EditorGUIUtility.TrTextContent("Flatten all", "If selected, it will traverse all neighbors and flatten them too");
+            public readonly GUIContent height = EditorGUIUtility.TrTextContent("Height", "You can set the Height property manually or you can shift-click on the terrain to sample the height at the mouse position (rather like the 'eyedropper' tool in an image editor).");
+            public readonly GUIContent flatten = EditorGUIUtility.TrTextContent("Flatten", "The Flatten button levels the whole terrain to the chosen height.");
+        }
+
+        private static Styles m_styles;
+        private Styles GetStyles()
+        {
+            if (m_styles == null)
+            {
+                m_styles = new Styles();
+            }
+            return m_styles;
+        }
 
         public override string GetName()
         {
@@ -24,7 +43,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         public override string GetDesc()
         {
-            return "Left click to set the height.\n\nHold shift and left click to sample the target height.";
+            return GetStyles().description.text;
         }
 
         public override void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext)
@@ -45,7 +64,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
                 // draw result preview
                 {
-                    ApplyBrushInternal(paintContext, editContext.brushStrength, editContext.brushTexture, brushXform);
+                    ApplyBrushInternal(paintContext, editContext.brushStrength, editContext.brushTexture, brushXform, terrain);
 
                     // restore old render target
                     RenderTexture.active = paintContext.oldRenderTexture;
@@ -60,11 +79,13 @@ namespace UnityEditor.Experimental.TerrainAPI
             }
         }
 
-        private void ApplyBrushInternal(PaintContext paintContext, float brushStrength, Texture brushTexture, BrushTransform brushXform)
+        private void ApplyBrushInternal(PaintContext paintContext, float brushStrength, Texture brushTexture, BrushTransform brushXform, Terrain terrain)
         {
             Material mat = TerrainPaintUtility.GetBuiltinPaintMaterial();
 
-            Vector4 brushParams = new Vector4(brushStrength * 0.01f, 0.5f * m_Height, 0.0f, 0.0f);
+            float terrainHeight = Mathf.Clamp01((m_HeightWorldSpace - terrain.transform.position.y) / terrain.terrainData.size.y);
+
+            Vector4 brushParams = new Vector4(brushStrength * 0.01f, 0.5f * terrainHeight, 0.0f, 0.0f);
             mat.SetTexture("_BrushTex", brushTexture);
             mat.SetVector("_BrushParams", brushParams);
 
@@ -77,14 +98,14 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             if (Event.current.shift)
             {
-                m_Height = terrain.terrainData.GetInterpolatedHeight(editContext.uv.x, editContext.uv.y) / terrain.terrainData.size.y;
-                editContext.RepaintAllInspectors();
+                m_HeightWorldSpace = terrain.terrainData.GetInterpolatedHeight(editContext.uv.x, editContext.uv.y) + terrain.transform.position.y;
+                editContext.Repaint(RepaintFlags.UI);
                 return true;
             }
 
             BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, editContext.uv, editContext.brushSize, 0.0f);
             PaintContext paintContext = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds());
-            ApplyBrushInternal(paintContext, editContext.brushStrength, editContext.brushTexture, brushXform);
+            ApplyBrushInternal(paintContext, editContext.brushStrength, editContext.brushTexture, brushXform, terrain);
             TerrainPaintUtility.EndPaintHeightmap(paintContext, "Terrain Paint - Set Height");
             return true;
         }
@@ -96,12 +117,14 @@ namespace UnityEditor.Experimental.TerrainAPI
             int w = terrain.terrainData.heightmapWidth;
             int h = terrain.terrainData.heightmapHeight;
 
+            float terrainHeight = Mathf.Clamp01((m_HeightWorldSpace - terrain.transform.position.y) / terrain.terrainData.size.y);
+
             float[,] heights = new float[h, w];
             for (int y = 0; y < heights.GetLength(0); y++)
             {
                 for (int x = 0; x < heights.GetLength(1); x++)
                 {
-                    heights[y, x] = m_Height;
+                    heights[y, x] = terrainHeight;
                 }
             }
             terrain.terrainData.SetHeights(0, 0, heights);
@@ -117,12 +140,14 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
-            m_FlattenAll = EditorGUILayout.Toggle(new GUIContent("Flatten all", "If selected, it will traverse all neighbors and flatten them too"), m_FlattenAll);
+            Styles styles = GetStyles();
+
+            m_FlattenAll = EditorGUILayout.Toggle(styles.flattenAll, m_FlattenAll);
 
             EditorGUI.BeginChangeCheck();
             GUILayout.BeginHorizontal();
-            m_Height = EditorGUILayout.Slider(new GUIContent("Height", "You can set the Height property manually or you can shift-click on the terrain to sample the height at the mouse position (rather like the 'eyedropper' tool in an image editor)."), m_Height * terrain.terrainData.size.y, 0, terrain.terrainData.size.y) / terrain.terrainData.size.y;
-            if (GUILayout.Button(new GUIContent("Flatten", "The Flatten button levels the whole terrain to the chosen height."), GUILayout.ExpandWidth(false)))
+            m_HeightWorldSpace = EditorGUILayout.Slider(styles.height, m_HeightWorldSpace, 0, terrain.terrainData.size.y);
+            if (GUILayout.Button(styles.flatten, GUILayout.ExpandWidth(false)))
             {
                 if (m_FlattenAll)
                     FlattenAll();

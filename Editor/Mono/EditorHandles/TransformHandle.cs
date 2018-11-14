@@ -3,8 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using UnityEditorInternal;
 using UnityEngine;
 
 namespace UnityEditor
@@ -245,6 +243,13 @@ namespace UnityEditor
         {
             public bool rotationStarted;
             public Quaternion initialRotation;
+        }
+
+        public static void TransformHandle(ref Vector3 position, ref Quaternion rotation, ref Vector3 scale)
+        {
+            TransformHandle(
+                TransformHandleIds.Default, ref position, ref rotation, ref scale, TransformHandleParam.Default
+            );
         }
 
         static bool s_IsHotInCameraAlignedMode = false;

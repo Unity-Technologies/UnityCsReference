@@ -39,8 +39,7 @@ namespace UnityEngine.UIElements
 
         IEnumerable<UxmlAttributeDescription> GetAllAttributeDescriptionForType(Type t)
         {
-            Type baseType =
-                t.BaseType;
+            Type baseType = t.BaseType;
 
             if (baseType != null)
             {

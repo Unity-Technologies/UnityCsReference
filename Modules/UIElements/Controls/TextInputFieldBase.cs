@@ -67,7 +67,7 @@ namespace UnityEngine.UIElements
 
                 m_Text = value;
                 m_TextInputBase.editorEngine.text = value;
-                IncrementVersion(VersionChangeType.Layout);
+                m_TextInputBase.IncrementVersion(VersionChangeType.Layout);
             }
         }
 
@@ -188,9 +188,9 @@ namespace UnityEngine.UIElements
                     // Setting the VisualElement text here cause a repaint since it dirty the layout flag.
                     using (InputEvent evt = InputEvent.GetPooled(m_ParentField.text, value))
                     {
-                        evt.target = this;
+                        evt.target = m_ParentField;
                         m_ParentField.text = value;
-                        SendEvent(evt);
+                        m_ParentField.SendEvent(evt);
                     }
                 }
             }
@@ -515,7 +515,7 @@ namespace UnityEngine.UIElements
 
             protected virtual void BuildContextualMenu(ContextualMenuPopulateEvent evt)
             {
-                if (evt.target is TextInputBase)
+                if (evt?.target is TextInputBase)
                 {
                     evt.menu.AppendAction("Cut", Cut, CutCopyActionStatus);
                     evt.menu.AppendAction("Copy", Copy, CutCopyActionStatus);
@@ -553,7 +553,7 @@ namespace UnityEngine.UIElements
                     elementPanel.contextualMenuManager.DisplayMenuIfEventMatches(evt, this);
                 }
 
-                if (evt.eventTypeId == ContextualMenuPopulateEvent.TypeId())
+                if (evt?.eventTypeId == ContextualMenuPopulateEvent.TypeId())
                 {
                     ContextualMenuPopulateEvent e = evt as ContextualMenuPopulateEvent;
                     int count = e.menu.MenuItems().Count;

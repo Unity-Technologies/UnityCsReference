@@ -86,13 +86,9 @@ namespace UnityEditor.UIElements
         {
             UxmlStringAttributeDescription m_TypeOf = new UxmlStringAttributeDescription { name = "value-type", obsoleteNames = new[] {"typeOf"}, use = UxmlAttributeDescription.Use.Required };
             UxmlStringAttributeDescription m_Value = new UxmlStringAttributeDescription { name = "value" };
-            UxmlStringAttributeDescription m_Label = new UxmlStringAttributeDescription { name = "label" };
 
             public UxmlTraits()
             {
-                focusIndex.defaultValue = 0;
-                focusable.defaultValue = true;
-
                 m_TypeOf.restriction = new UxmlEnumeration
                 {
                     values = Enum.GetValues(typeof(DataType)).Cast<DataType>()
@@ -106,9 +102,9 @@ namespace UnityEditor.UIElements
                 base.Init(ve, bag, cc);
 
                 var initValue = m_Value.GetValueFromBag(bag, cc);
-                var text = m_Label.GetValueFromBag(bag, cc);
                 ((PropertyControl<TType>)ve).SetValueWithoutNotify(((PropertyControl<TType>)ve).StringToValue(initValue));
-                ((PropertyControl<TType>)ve).label = text;
+                ((PropertyControl<TType>)ve).label = ((BaseField<TType>)ve).label;
+                ((BaseField<TType>)ve).label = null;
             }
 
             public string GetValueType(IUxmlAttributes bag, CreationContext cc)

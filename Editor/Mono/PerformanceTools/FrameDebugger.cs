@@ -635,6 +635,11 @@ namespace UnityEditor
                 repaint = true;
             }
 
+            if (FrameDebuggerUtility.IsLocalEnabled())
+                styles.recordButton.text = L10n.Tr("Disable");
+            else
+                styles.recordButton.text = L10n.Tr("Enable");
+
             ConnectionGUILayout.AttachToPlayerDropdown(m_AttachToPlayerState, EditorStyles.toolbarDropDown);
 
             bool isAnyEnabled = FrameDebuggerUtility.IsLocalEnabled() || FrameDebuggerUtility.IsRemoteEnabled();
@@ -890,7 +895,6 @@ namespace UnityEditor
 
             // preview / properties
             EditorGUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
             m_AdditionalInfo = (ShowAdditionalInfo)GUILayout.Toolbar((int)m_AdditionalInfo, m_AdditionalInfoGuiContents, "LargeButton", GUI.ToolbarButtonSize.FitToContents);
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
@@ -1058,7 +1062,7 @@ namespace UnityEditor
                         new[] { PopupLocation.Left, PopupLocation.Below, PopupLocation.Right });
                 }
             }
-
+            GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
         }
 
@@ -1095,7 +1099,7 @@ namespace UnityEditor
                         new[] { PopupLocation.Left, PopupLocation.Below, PopupLocation.Right });
                 }
             }
-
+            GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
         }
 
@@ -1132,7 +1136,7 @@ namespace UnityEditor
                         new[] { PopupLocation.Left, PopupLocation.Below, PopupLocation.Right });
                 }
             }
-
+            GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
         }
 
@@ -1144,7 +1148,7 @@ namespace UnityEditor
             GUILayout.Label(t.name, EditorStyles.miniLabel, GUILayout.MinWidth(kNameFieldWidth));
             DrawShaderPropertyFlags(t.flags);
             GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.miniLabel, GUILayout.MinWidth(kValueFieldWidth));
-
+            GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
         }
 
@@ -1195,7 +1199,7 @@ namespace UnityEditor
                     evt.Use();
                 }
             }
-
+            GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
         }
 

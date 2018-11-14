@@ -250,8 +250,15 @@ namespace UnityEditor.StyleSheets
         {
         }
 
+        public StyleSheetImporterImpl() : base()
+        {
+        }
+
         protected void OnImportError(StyleSheetImportErrors errors)
         {
+            if (m_Context == null)
+                return;
+
             foreach (string importError in errors.FormatErrors())
             {
                 m_Context.LogImportError(importError);
@@ -260,8 +267,8 @@ namespace UnityEditor.StyleSheets
 
         protected void OnImportSuccess(UnityStyleSheet asset)
         {
-            m_Context.AddObjectToAsset("stylesheet", asset);
-            m_Context.SetMainObject(asset);
+            m_Context?.AddObjectToAsset("stylesheet", asset);
+            m_Context?.SetMainObject(asset);
         }
 
         public void Import(UnityStyleSheet asset, string contents)

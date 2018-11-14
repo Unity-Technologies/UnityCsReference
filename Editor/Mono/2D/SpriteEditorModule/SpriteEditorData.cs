@@ -41,6 +41,8 @@ namespace UnityEditor.U2D
 
             var guidSP = so.FindProperty("m_SpriteSheet.m_SpriteID");
             spriteID = new GUID(guidSP.stringValue);
+
+            internalID = so.FindProperty("m_SpriteSheet.m_InternalID").longValue;
         }
 
         internal SpriteDataExt(SerializedProperty sp)
@@ -52,6 +54,7 @@ namespace UnityEditor.U2D
             pivot = SpriteEditorUtility.GetPivotValue(alignment, sp.FindPropertyRelative("m_Pivot").vector2Value);
             tessellationDetail = sp.FindPropertyRelative("m_TessellationDetail").floatValue;
             spriteID = new GUID(sp.FindPropertyRelative("m_SpriteID").stringValue);
+            internalID = sp.FindPropertyRelative("m_InternalID").longValue;
         }
 
         internal SpriteDataExt(SpriteRect sr)
@@ -62,6 +65,7 @@ namespace UnityEditor.U2D
             tessellationDetail = 0;
             rect = sr.rect;
             spriteID = sr.spriteID;
+            internalID = sr.internalID;
             alignment = sr.alignment;
             pivot = sr.pivot;
             spriteOutline = new List<Vector2[]>();
@@ -79,6 +83,7 @@ namespace UnityEditor.U2D
             so.FindProperty("m_SpritePivot").vector2Value = pivot;
             so.FindProperty("m_SpriteTessellationDetail").floatValue = tessellationDetail;
             so.FindProperty("m_SpriteSheet.m_SpriteID").stringValue = spriteID.ToString();
+            so.FindProperty("m_SpriteSheet.m_InternalID").longValue = internalID;
 
             var sp = so.FindProperty("m_SpriteSheet");
             if (spriteBone != null)
@@ -100,6 +105,13 @@ namespace UnityEditor.U2D
             sp.FindPropertyRelative("m_Pivot").vector2Value = pivot;
             sp.FindPropertyRelative("m_TessellationDetail").floatValue = tessellationDetail;
             sp.FindPropertyRelative("m_SpriteID").stringValue = spriteID.ToString();
+            if (internalID == 0L)
+            {
+                UnityType spriteType = UnityType.FindTypeByName("Sprite");
+                internalID = ImportSettingInternalID.MakeInternalID(sp.serializedObject, spriteType, name);
+            }
+
+            sp.FindPropertyRelative("m_InternalID").longValue = internalID;
 
             if (spriteBone != null)
                 SpriteBoneDataTransfer.Apply(sp, spriteBone);
@@ -119,6 +131,7 @@ namespace UnityEditor.U2D
             pivot = spriteRect.pivot;
             rect = spriteRect.rect;
             spriteID = spriteRect.spriteID;
+            internalID = spriteRect.internalID;
         }
     }
 }

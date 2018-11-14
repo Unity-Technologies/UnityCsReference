@@ -631,8 +631,6 @@ public sealed partial class AnimationState : TrackedReference
         get;
     }
 
-    
-    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public void AddMixingTransform (Transform mix, [uei.DefaultValue("true")]  bool recursive ) ;
@@ -643,8 +641,6 @@ public sealed partial class AnimationState : TrackedReference
         AddMixingTransform ( mix, recursive );
     }
 
-    
-    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public void RemoveMixingTransform (Transform mix) ;

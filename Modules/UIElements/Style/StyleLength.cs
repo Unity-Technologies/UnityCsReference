@@ -58,7 +58,7 @@ namespace UnityEngine.UIElements
 
         internal bool Apply<U>(U other, StylePropertyApplyMode mode) where U : IStyleValue<Length>
         {
-            if (this.CanApply(other.specificity, mode))
+            if (StyleValueExtensions.CanApply(specificity, other.specificity, mode))
             {
                 value = other.value;
                 keyword = other.keyword;
@@ -76,14 +76,6 @@ namespace UnityEngine.UIElements
         private StyleKeyword m_Keyword;
         private Length m_Value;
         private int m_Specificity;
-
-        internal float GetSpecifiedValueOrDefault(float defaultValue)
-        {
-            if (specificity > StyleValueExtensions.UndefinedSpecificity)
-                return value.value;
-
-            return defaultValue;
-        }
 
         public static bool operator==(StyleLength lhs, StyleLength rhs)
         {

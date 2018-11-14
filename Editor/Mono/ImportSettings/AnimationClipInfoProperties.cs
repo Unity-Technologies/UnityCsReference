@@ -33,6 +33,7 @@ namespace UnityEditor
 
         public string name      { get { return Get("name").stringValue; }     set { Get("name").stringValue = value; } }
         public string takeName  { get { return Get("takeName").stringValue; }  set { Get("takeName").stringValue = value; } }
+        public long internalID   { get { return Get("internalID").longValue; } set { Get("internalID").longValue = value; } }
         public float firstFrame   { get { return Get("firstFrame").floatValue; } set { Get("firstFrame").floatValue = value; } }
         public float lastFrame  { get { return Get("lastFrame").floatValue; }  set { Get("lastFrame").floatValue = value; } }
         public int wrapMode    { get { return Get("wrapMode").intValue; }    set { Get("wrapMode").intValue = value; } }

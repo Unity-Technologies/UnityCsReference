@@ -49,8 +49,6 @@ namespace UnityEngine
     [NativeHeader("Runtime/SceneManager/SceneManager.h")]
     public partial class Object
     {
-        // This has to be public on .NET scripting backend
-        // because it is set by generated IL from outside for performance reasons
         IntPtr   m_CachedPtr;
 
         private int m_InstanceID;

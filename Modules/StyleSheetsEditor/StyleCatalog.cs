@@ -75,6 +75,7 @@ namespace UnityEditor.StyleSheets
         public readonly static int backgroundAttachment = "background-attachment".GetHashCode();
         public readonly static int backgroundColor = "background-color".GetHashCode();
         public readonly static int backgroundImage = "background-image".GetHashCode();
+        public readonly static int scaledBackgroundImage = "-unity-scaled-backgrounds".GetHashCode();
         public readonly static int backgroundPosition = "background-position".GetHashCode();
         public readonly static int backgroundPositionX = "background-position-x".GetHashCode();
         public readonly static int backgroundPositionY = "background-position-y".GetHashCode();
@@ -394,24 +395,31 @@ namespace UnityEditor.StyleSheets
             return GetValueIndex(key, StyleValue.Type.Keyword) > 0;
         }
 
-        public StyleValue.Keyword GetKeyword(int key)
+        public StyleValue.Keyword GetKeyword(int key, StyleValue.Keyword defaultValue = StyleValue.Keyword.Invalid)
         {
-            return (StyleValue.Keyword)GetValueIndex(key, StyleValue.Type.Keyword);
+            var bufferIndex = GetValueIndex(key, StyleValue.Type.Keyword);
+            if (bufferIndex == -1)
+                return defaultValue;
+
+            return (StyleValue.Keyword)bufferIndex;
         }
 
-        public StyleValue.Keyword GetKeyword(string key)
+        public StyleValue.Keyword GetKeyword(string key, StyleValue.Keyword defaultValue = StyleValue.Keyword.Invalid)
         {
-            return (StyleValue.Keyword)GetValueIndex(key, StyleValue.Type.Keyword);
+            return GetKeyword(key.GetHashCode(), defaultValue);
         }
 
-        public bool GetBool(int key)
+        public bool GetBool(int key, bool defaultValue = false)
         {
-            return (StyleValue.Keyword)GetValueIndex(key, StyleValue.Type.Keyword) == StyleValue.Keyword.True;
+            var bufferIndex = GetValueIndex(key, StyleValue.Type.Keyword);
+            if (bufferIndex == -1)
+                return defaultValue;
+            return (StyleValue.Keyword)bufferIndex == StyleValue.Keyword.True;
         }
 
-        public bool GetBool(string key)
+        public bool GetBool(string key, bool defaultValue = false)
         {
-            return (StyleValue.Keyword)GetValueIndex(key, StyleValue.Type.Keyword) == StyleValue.Keyword.True;
+            return GetBool(key.GetHashCode(), defaultValue);
         }
 
         public float GetFloat(int key, float defaultValue = 0.0f)
@@ -517,14 +525,19 @@ namespace UnityEditor.StyleSheets
             return (int)GetFloat(key, defaultValue);
         }
 
-        public T GetResource<T>(int key) where T : UnityEngine.Object
+        public T GetResource<T>(int key, T defaultValue = null) where T : UnityEngine.Object
         {
-            return EditorResources.Load<UnityEngine.Object>(GetText(key), false) as T;
+            var resourceStr = GetText(key);
+            if (string.IsNullOrEmpty(resourceStr))
+            {
+                return defaultValue;
+            }
+            return EditorResources.Load<UnityEngine.Object>(resourceStr, false) as T;
         }
 
-        public T GetResource<T>(string key) where T : UnityEngine.Object
+        public T GetResource<T>(string key, T defaultValue = null) where T : UnityEngine.Object
         {
-            return EditorResources.Load<UnityEngine.Object>(GetText(key), false) as T;
+            return GetResource<T>(key.GetHashCode(), defaultValue);
         }
 
         public Texture2D GetTexture(int key, bool autoScale = false)
@@ -733,7 +746,7 @@ namespace UnityEditor.StyleSheets
         private StyleBlock[] m_Blocks;
         private readonly Dictionary<int, string> m_NameCollisionTable = new Dictionary<int, string>();
 
-        public string[] sheets { get; private set; } = {};
+        public string[] sheetPaths { get; private set; } = {};
         internal StyleBuffers buffers { get; private set; }
 
         public StyleCatalog()
@@ -814,7 +827,7 @@ namespace UnityEditor.StyleSheets
         {
             var validPaths = paths.Where(p =>
             {
-                if (sheets.Contains(p))
+                if (sheetPaths.Contains(p))
                     return false;
 
                 // Check if path can be loaded
@@ -825,7 +838,7 @@ namespace UnityEditor.StyleSheets
                 return true;
             });
 
-            sheets = sheets.Concat(validPaths).ToArray();
+            sheetPaths = sheetPaths.Concat(validPaths).ToArray();
             return true;
         }
 
@@ -835,7 +848,7 @@ namespace UnityEditor.StyleSheets
                 Refresh();
         }
 
-        public void Refresh()
+        public void Refresh(params StyleSheet[] sheets)
         {
             var strings = new List<string>();
             var numbers = new List<float>();
@@ -849,13 +862,17 @@ namespace UnityEditor.StyleSheets
             try
             {
                 var resolver = new StyleSheetResolver();
-                resolver.AddStyleSheets(sheets);
+                resolver.AddStyleSheets(sheetPaths);
+                if (sheets != null && sheets.Length > 0)
+                {
+                    resolver.AddStyleSheets(sheets);
+                }
                 resolver.Resolve();
                 Compile(resolver, numbers, colors, strings, rects, groups, functions, blocks);
             }
             catch (Exception ex)
             {
-                Debug.LogWarning("Error while refreshing stylesheet catalog: " + string.Join(", ", sheets) + "\n" + ex.Message);
+                Debug.LogWarning("Error while refreshing stylesheet catalog: " + string.Join(", ", sheetPaths) + "\n" + ex);
             }
 
             buffers = new StyleBuffers

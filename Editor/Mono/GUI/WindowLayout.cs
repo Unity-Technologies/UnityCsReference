@@ -1034,12 +1034,6 @@ namespace UnityEditor
         {
             EditorWindow.GetWindow<ConsoleWindow>();
         }
-
-        [MenuItem("Window/Experimental/Look Dev", false, 1)]
-        static void ShowLookDevTool()
-        {
-            EditorWindow.GetWindow<LookDevView>();
-        }
     }
 
     internal class WindowFocusState : ScriptableObject

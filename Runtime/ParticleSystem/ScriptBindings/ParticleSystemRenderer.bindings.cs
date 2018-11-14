@@ -13,7 +13,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/ParticleSystem/ParticleSystemRenderer.h")]
     [NativeHeader("Runtime/ParticleSystem/ScriptBindings/ParticleSystemRendererScriptBindings.h")]
     [RequireComponent(typeof(Transform))]
-    public partial class ParticleSystemRenderer : Renderer
+    public sealed partial class ParticleSystemRenderer : Renderer
     {
         [NativeName("RenderAlignment")]
         extern public ParticleSystemRenderSpace alignment { get; set; }
@@ -45,12 +45,15 @@ namespace UnityEngine
             set;
         }
 
+        [RequiredByNativeCode] // Added to any method to prevent stripping of the class
         [FreeFunction(Name = "ParticleSystemRendererScriptBindings::GetMeshes", HasExplicitThis = true)]
         extern public int GetMeshes([NotNull][Out] Mesh[] meshes);
 
         [FreeFunction(Name = "ParticleSystemRendererScriptBindings::SetMeshes", HasExplicitThis = true)]
         extern public void SetMeshes([NotNull] Mesh[] meshes, int size);
         public void SetMeshes(Mesh[] meshes) { SetMeshes(meshes, meshes.Length); }
+
+        extern public int meshCount { get; }
 
         public void BakeMesh(Mesh mesh, bool useTransform = false) { BakeMesh(mesh, Camera.main, useTransform); }
         extern public void BakeMesh([NotNull] Mesh mesh, [NotNull] Camera camera, bool useTransform = false);
