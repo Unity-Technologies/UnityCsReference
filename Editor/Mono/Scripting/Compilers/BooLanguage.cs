@@ -5,6 +5,7 @@
 using Boo.Lang.Parser;
 
 using System.Linq;
+using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.Scripting.Compilers
 {
@@ -20,7 +21,7 @@ namespace UnityEditor.Scripting.Compilers
             return "Boo";
         }
 
-        public override ScriptCompilerBase CreateCompiler(MonoIsland island, bool buildingForEditor, BuildTarget targetPlatform, bool runUpdater)
+        public override ScriptCompilerBase CreateCompiler(ScriptAssembly scriptAssembly, MonoIsland island, bool buildingForEditor, BuildTarget targetPlatform, bool runUpdater)
         {
             return new BooCompiler(island, runUpdater);
         }

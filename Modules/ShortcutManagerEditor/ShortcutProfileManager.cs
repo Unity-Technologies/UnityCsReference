@@ -91,17 +91,22 @@ namespace UnityEditor.ShortcutManagement
 
                 var prefKeyAttr =
                     (FormerlyPrefKeyAsAttribute)Attribute.GetCustomAttribute(method, typeof(FormerlyPrefKeyAsAttribute));
-                var prefKeyDefaultValue = KeyCombination.ParseLegacyBindingString(prefKeyAttr.defaultValue);
+                var prefKeyDefaultValue = $"{prefKeyAttr.name};{prefKeyAttr.defaultValue}";
                 string name;
-                string binding;
                 Event keyboardEvent;
-                var parsed = PrefKey.TryParseUniquePrefString(EditorPrefs.GetString(prefKeyAttr.name, prefKeyAttr.defaultValue), out name, out keyboardEvent, out binding);
-                if (!parsed)
+                string shortcut;
+                if (!PrefKey.TryParseUniquePrefString(prefKeyDefaultValue, out name, out keyboardEvent, out shortcut))
                     continue;
-                var prefKeyCurrentValue = KeyCombination.ParseLegacyBindingString(binding);
+                var prefKeyDefaultKeyCombination = KeyCombination.FromPrefKeyKeyboardEvent(keyboardEvent);
+
+                // Parse current pref key value (falling back on default pref key value)
+                if (!PrefKey.TryParseUniquePrefString(EditorPrefs.GetString(prefKeyAttr.name, prefKeyDefaultValue), out name, out keyboardEvent, out shortcut))
+                    continue;
+                var prefKeyCurrentKeyCombination = KeyCombination.FromPrefKeyKeyboardEvent(keyboardEvent);
+
                 // only migrate pref keys that the user actually overwrote
-                if (!prefKeyCurrentValue.Equals(prefKeyDefaultValue))
-                    entry.SetOverride(new List<KeyCombination> { prefKeyCurrentValue });
+                if (!prefKeyCurrentKeyCombination.Equals(prefKeyDefaultKeyCombination))
+                    entry.SetOverride(new List<KeyCombination> { prefKeyCurrentKeyCombination });
             }
         }
 

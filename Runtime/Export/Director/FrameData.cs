@@ -18,7 +18,9 @@ namespace UnityEngine.Playables
             Evaluate    = 1,
             SeekOccured = 2,
             Loop        = 4,
-            Hold        = 8
+            Hold        = 8,
+            EffectivePlayStateDelayed = 16,
+            EffectivePlayStatePlaying = 32
         }
 
         public enum EvaluationType
@@ -37,6 +39,8 @@ namespace UnityEngine.Playables
         internal Flags m_Flags;
         internal PlayableOutput m_Output;
 
+        private bool HasFlags(Flags flag)        { return (m_Flags & flag) == flag; }
+
         public ulong frameId                    { get { return m_FrameID; } }
         public float deltaTime                  { get { return (float)m_DeltaTime; } }
         public float weight                     { get { return m_Weight; } }
@@ -44,10 +48,22 @@ namespace UnityEngine.Playables
         public double effectiveParentDelay      { get { return m_EffectiveParentDelay; } }
         public float effectiveParentSpeed       { get { return m_EffectiveParentSpeed; } }
         public float effectiveSpeed             { get { return m_EffectiveSpeed; } }
-        public EvaluationType evaluationType    { get { return ((m_Flags & Flags.Evaluate) != 0) ? EvaluationType.Evaluate : EvaluationType.Playback; } }
-        public bool seekOccurred                { get { return (m_Flags & Flags.SeekOccured) != 0; } }
-        public bool timeLooped                  { get { return (m_Flags & Flags.Loop) != 0; } }
-        public bool timeHeld                    { get { return (m_Flags & Flags.Hold) != 0; } }
+        public EvaluationType evaluationType    { get { return HasFlags(Flags.Evaluate) ? EvaluationType.Evaluate : EvaluationType.Playback; } }
+        public bool seekOccurred                { get { return HasFlags(Flags.SeekOccured); } }
+        public bool timeLooped                  { get { return HasFlags(Flags.Loop); } }
+        public bool timeHeld                    { get { return HasFlags(Flags.Hold); } }
         public PlayableOutput output            { get { return m_Output; } }
+
+        public PlayState effectivePlayState
+        {
+            get
+            {
+                if (HasFlags(Flags.EffectivePlayStateDelayed))
+                    return PlayState.Delayed;
+                if (HasFlags(Flags.EffectivePlayStatePlaying))
+                    return PlayState.Playing;
+                return PlayState.Paused;
+            }
+        }
     }
 }

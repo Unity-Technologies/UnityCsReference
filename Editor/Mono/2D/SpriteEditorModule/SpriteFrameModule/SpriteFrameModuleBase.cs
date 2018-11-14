@@ -327,6 +327,7 @@ namespace UnityEditor
         protected static Rect ClampSpriteRect(Rect rect, float maxX, float maxY)
         {
             // Clamp rect to width height
+            rect = FlipNegativeRect(rect);
             Rect newRect = new Rect();
 
             newRect.xMin = Mathf.Clamp(rect.xMin, 0, maxX - 1);

@@ -432,7 +432,7 @@ namespace UnityEditor.VersionControl
             bool showSettingsButton = Mathf.FloorToInt(position.width - s_ToolbarButtonsWidth - s_SettingsButtonWidth) > 0;
             if (showSettingsButton && GUILayout.Button("Settings", EditorStyles.toolbarButton))
             {
-                SettingsWindow.OpenProjectSettings("Project/Editor");
+                SettingsService.OpenProjectSettings("Project/Editor");
                 EditorWindow.FocusWindowIfItsOpen<InspectorWindow>();
                 GUIUtility.ExitGUI();
             }

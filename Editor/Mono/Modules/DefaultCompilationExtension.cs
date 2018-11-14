@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Mono.Cecil;
+using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
 
 namespace UnityEditor.Modules
@@ -12,7 +13,7 @@ namespace UnityEditor.Modules
     internal class DefaultCompilationExtension
         : ICompilationExtension
     {
-        public virtual CSharpCompiler GetCsCompiler(bool buildingForEditor, string assemblyName)
+        public virtual CSharpCompiler GetCsCompiler(bool buildingForEditor, ScriptAssembly scriptAssemly)
         {
             if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
                 return CSharpCompiler.Microsoft;

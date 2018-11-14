@@ -108,6 +108,14 @@ namespace UnityEditor
             mainView.UnregisterCallback<SpriteSelectionChangeEvent>(SelectionChange);
         }
 
+        private void UpdatePositionField(Rect rect)
+        {
+            m_PositionFieldX.SetValueWithoutNotify((long)selectedSpriteRect.x);
+            m_PositionFieldY.SetValueWithoutNotify((long)selectedSpriteRect.y);
+            m_PositionFieldW.SetValueWithoutNotify((long)selectedSpriteRect.width);
+            m_PositionFieldH.SetValueWithoutNotify((long)selectedSpriteRect.height);
+        }
+
         private void AddMainUI(VisualElement mainView)
         {
             var visualTree = EditorGUIUtility.Load("UXML/SpriteEditor/SpriteFrameModuleInspector.uxml") as VisualTreeAsset;
@@ -141,7 +149,7 @@ namespace UnityEditor
                     var rect = selectedSpriteRect;
                     rect.x = evt.newValue;
                     selectedSpriteRect = rect;
-                    m_PositionFieldX.SetValueWithoutNotify((long)selectedSpriteRect.x);
+                    UpdatePositionField(selectedSpriteRect);
                 }
             });
 
@@ -153,7 +161,7 @@ namespace UnityEditor
                     var rect = selectedSpriteRect;
                     rect.y = evt.newValue;
                     selectedSpriteRect = rect;
-                    m_PositionFieldY.SetValueWithoutNotify((long)selectedSpriteRect.y);
+                    UpdatePositionField(selectedSpriteRect);
                 }
             });
 
@@ -165,7 +173,7 @@ namespace UnityEditor
                     var rect = selectedSpriteRect;
                     rect.width = evt.newValue;
                     selectedSpriteRect = rect;
-                    m_PositionFieldW.SetValueWithoutNotify((long)selectedSpriteRect.width);
+                    UpdatePositionField(selectedSpriteRect);
                 }
             });
 
@@ -177,7 +185,7 @@ namespace UnityEditor
                     var rect = selectedSpriteRect;
                     rect.height = evt.newValue;
                     selectedSpriteRect = rect;
-                    m_PositionFieldH.SetValueWithoutNotify((long)selectedSpriteRect.height);
+                    UpdatePositionField(selectedSpriteRect);
                 }
             });
 

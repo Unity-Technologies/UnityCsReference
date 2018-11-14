@@ -75,7 +75,7 @@ namespace UnityEditor.MemoryProfiler
         [SerializeField]
         internal VirtualMachineInformation m_VirtualMachineInformation = default(VirtualMachineInformation);
 
-        internal PackedMemorySnapshot(Profiling.Memory.Experimental.PackedMemorySnapshot snapshot)
+        public PackedMemorySnapshot(Profiling.Memory.Experimental.PackedMemorySnapshot snapshot)
         {
             int cacheCapacity = 128;
             string[] cacheString = new string[cacheCapacity];

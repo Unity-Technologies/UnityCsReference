@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEditor.DeploymentTargets;
 using UnityEngine;
 using Mono.Cecil;
+using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.Modules
 {
@@ -399,7 +400,7 @@ namespace UnityEditor.Modules
 
     internal interface ICompilationExtension
     {
-        CSharpCompiler GetCsCompiler(bool buildingForEditor, string assemblyName);
+        CSharpCompiler GetCsCompiler(bool buildingForEditor, ScriptAssembly scriptAssembly);
         string[] GetCompilerExtraAssemblyPaths(bool isEditor, string assemblyPathName);
         IAssemblyResolver GetAssemblyResolver(bool buildingForEditor, string assemblyPath, string[] searchDirectories);
 

@@ -4,7 +4,6 @@
 
 using Microsoft.Win32;
 using UnityEngine;
-using UnityEditor;
 using UnityEditor.Collaboration;
 using UnityEditorInternal;
 using System.Collections.Generic;
@@ -119,14 +118,13 @@ namespace UnityEditor
         [SettingsProvider]
         internal static SettingsProvider CreateSettingsProvider()
         {
-            return new SettingsProvider("Preferences/Cache Server")
+            return new SettingsProvider("Preferences/Cache Server", SettingsScope.User)
             {
                 guiHandler = searchContext =>
                 {
                     using (new SettingsWindow.GUIScope())
                         OnGUI(searchContext);
-                },
-                scopes = SettingsScopes.User
+                }
             };
         }
 

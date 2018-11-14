@@ -127,7 +127,7 @@ namespace UnityEngine.Profiling.Memory.Experimental
             return metaDataBytes;
         }
 
-        private static int WriteIntToByteArray(byte[] array, int offset, int value)
+        internal static int WriteIntToByteArray(byte[] array, int offset, int value)
         {
             unsafe
             {
@@ -141,7 +141,7 @@ namespace UnityEngine.Profiling.Memory.Experimental
             return offset;
         }
 
-        private static int WriteStringToByteArray(byte[] array, int offset, string value)
+        internal static int WriteStringToByteArray(byte[] array, int offset, string value)
         {
             if (value.Length != 0)
             {

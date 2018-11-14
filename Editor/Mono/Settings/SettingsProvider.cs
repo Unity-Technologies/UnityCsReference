@@ -13,59 +13,59 @@ using UnityEngine.Internal;
 
 namespace UnityEditor
 {
-    [ExcludeFromDocs, Flags]
-    public enum SettingsScopes : uint
+    public enum SettingsScope
     {
-        None = 0,
-
-        Any = 0xFFFFFFFF,
-
-        User = 1U << 1,
-        Project = 1U << 2,
-
-        BuiltIn = 1U << 10,
-        Package = 1U << 11,
-
-        // User defined
-        Custom1 = 1U << 21,
-        Custom2 = 1U << 22,
-        Custom3 = 1U << 23,
-        Custom4 = 1U << 24,
-        Custom5 = 1U << 25,
-        Custom6 = 1U << 26,
-        Custom7 = 1U << 27,
-        Custom8 = 1U << 28,
-        Custom9 = 1U << 29,
-
-        Reserved = 1U << 30,
-        Reserved1 = 1U << 31
+        User,
+        Project
     }
 
     [ExcludeFromDocs]
+    public enum SettingsScopes
+    {
+        User,
+        Project
+    }
+
     public class SettingsProvider
     {
         private string m_Label;
+        private string m_Name;
+        private HashSet<string> m_Keywords;
 
         internal SettingsWindow settingsWindow { get; set; }
+        internal string[] pathTokens { get; }
+        internal Texture2D icon { get; set; }
 
-        public string name { get; set; }
 
         public string label
         {
             get
             {
                 if (String.IsNullOrEmpty(m_Label))
-                    return name;
+                    return m_Name;
                 return m_Label;
             }
-            set { m_Label = value; }
+            set { m_Label = L10n.Tr(value); }
         }
 
-        public string settingsPath { get; set; }
-        public string[] pathTokens { get; }
-        public Texture2D icon { get; set; }
-        public HashSet<string> keywords { get; set; }
-        public SettingsScopes scopes { get; set; }
+        public string settingsPath { get; }
+        public SettingsScope scope { get; private set; }
+
+        [ExcludeFromDocs]
+        public SettingsScopes scopes
+        {
+            get { return (SettingsScopes)scope; }
+            set { scope = (SettingsScope)value; }
+        }
+
+        public IEnumerable<string> keywords
+        {
+            get { return m_Keywords; }
+            set
+            {
+                m_Keywords = new HashSet<string>(value);
+            }
+        }
 
         public Action<string> guiHandler { get; set; }
         public Action titleBarGuiHandler { get; set; }
@@ -74,13 +74,13 @@ namespace UnityEditor
         public Action deactivateHandler { get; set; }
         public Func<string, bool> hasSearchInterestHandler { get; set; }
 
-        public SettingsProvider(string path, SettingsScopes scopes = SettingsScopes.Any)
+        public SettingsProvider(string path, SettingsScope scopes = SettingsScope.Project, IEnumerable<string> keywords = null)
         {
             settingsPath = path;
-            name = Path.GetFileName(settingsPath);
+            m_Name = L10n.Tr(Path.GetFileName(settingsPath));
             pathTokens = settingsPath.Split('/');
-            this.scopes = scopes;
-            keywords = new HashSet<string>();
+            this.scope = scopes;
+            m_Keywords = keywords == null ? new HashSet<string>() : new HashSet<string>(keywords);
         }
 
         public virtual void OnActivate(string searchContext, VisualElement rootElement)
@@ -125,36 +125,50 @@ namespace UnityEditor
             footerBarGuiHandler?.Invoke();
         }
 
+        public void Repaint()
+        {
+            settingsWindow.Repaint();
+        }
+
         public void PopulateSearchKeywordsFromGUIContentProperties<T>()
         {
-            GetSearchKeywordsFromGUIContentProperties<T>(keywords);
+            keywords = GetSearchKeywordsFromGUIContentProperties<T>();
         }
 
         #region Helper
-        public static void GetSearchKeywordsFromGUIContentProperties<T>(ICollection<string> searchKeywords)
+        public static IEnumerable<string> GetSearchKeywordsFromGUIContentProperties<T>()
         {
-            var keywords = typeof(T).GetFields(BindingFlags.Static | BindingFlags.Public)
+            return typeof(T).GetFields(BindingFlags.Static | BindingFlags.Public)
                 .Where(field => typeof(GUIContent).IsAssignableFrom(field.FieldType))
                 .Select(field => ((GUIContent)field.GetValue(null)).text)
                 .Concat(typeof(T).GetProperties(BindingFlags.Static | BindingFlags.Public)
                     .Where(prop => typeof(GUIContent).IsAssignableFrom(prop.PropertyType))
                     .Select(prop => ((GUIContent)prop.GetValue(null, null)).text))
                 .Where(content => content != null)
-                .Select(content => content.ToLowerInvariant());
-
-            foreach (var keyword in keywords)
-            {
-                searchKeywords.Add(keyword);
-            }
+                .Select(content => content.ToLowerInvariant())
+                .Distinct();
         }
 
-        public static void GetSearchKeywordsFromSerializedObject(SerializedObject serializedObject, ICollection<string> searchKeywords)
+        public static IEnumerable<string> GetSearchKeywordsFromSerializedObject(SerializedObject serializedObject)
         {
+            var keywords = new HashSet<string>();
             var property = serializedObject.GetIterator();
             while (property.NextVisible(true))
             {
-                searchKeywords.Add(property.displayName);
+                keywords.Add(property.displayName);
             }
+            return keywords;
+        }
+
+        public static IEnumerable<string> GetSearchKeywordsFromPath(string path)
+        {
+            var obj = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);
+            if (obj != null)
+            {
+                return GetSearchKeywordsFromSerializedObject(new SerializedObject(obj));
+            }
+
+            return new string[] {};
         }
 
         #endregion

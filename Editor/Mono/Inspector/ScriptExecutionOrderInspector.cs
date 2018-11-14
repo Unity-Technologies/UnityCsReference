@@ -815,11 +815,10 @@ namespace UnityEditor
         [SettingsProvider]
         internal static SettingsProvider CreateProjectSettingsProvider()
         {
-            var provider = new AssetSettingsProvider("Project/Script Execution Order", Resources.FindObjectsOfTypeAll(typeof(MonoManager)).First())
-            {
-                icon = EditorGUIUtility.FindTexture("cs Script")
-            };
-            provider.PopulateSearchKeywordsFromGUIContentProperties<Content>();
+            var provider = new AssetSettingsProvider(
+                "Project/Script Execution Order",
+                () => Editor.CreateEditor(Resources.FindObjectsOfTypeAll(typeof(MonoManager)).First()),
+                SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Content>());
             return provider;
         }
     }

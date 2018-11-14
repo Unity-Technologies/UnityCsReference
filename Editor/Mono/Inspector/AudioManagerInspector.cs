@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
 using UnityEditorInternal;
 
 using System.Collections.Generic;
@@ -133,9 +132,9 @@ namespace UnityEditor
         [SettingsProvider]
         static SettingsProvider CreateProjectSettingsProvider()
         {
-            var provider = new AssetSettingsProvider("Project/Audio", "ProjectSettings/AudioManager.asset");
-            provider.icon = EditorGUIUtility.IconContent("Audio Mixer").image as Texture2D;
-            provider.PopulateSearchKeywordsFromGUIContentProperties<Styles>();
+            var provider = AssetSettingsProvider.CreateProviderFromAssetPath(
+                "Project/Audio", "ProjectSettings/AudioManager.asset",
+                SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Styles>());
             return provider;
         }
     }

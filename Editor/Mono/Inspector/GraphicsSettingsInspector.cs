@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Events;
@@ -10,7 +12,6 @@ using BuiltinShadersEditor          = UnityEditor.GraphicsSettingsWindow.Builtin
 using AlwaysIncludedShadersEditor   = UnityEditor.GraphicsSettingsWindow.AlwaysIncludedShadersEditor;
 using ShaderStrippingEditor         = UnityEditor.GraphicsSettingsWindow.ShaderStrippingEditor;
 using ShaderPreloadEditor           = UnityEditor.GraphicsSettingsWindow.ShaderPreloadEditor;
-
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 
@@ -180,20 +181,19 @@ namespace UnityEditor
         [SettingsProvider]
         static SettingsProvider CreateProjectSettingsProvider()
         {
-            var provider = new AssetSettingsProvider("Project/Graphics", "ProjectSettings/GraphicsSettings.asset");
-            provider.PopulateSearchKeywordsFromGUIContentProperties<Styles>();
-            provider.PopulateSearchKeywordsFromGUIContentProperties<TierSettingsEditor.Styles>();
-            provider.PopulateSearchKeywordsFromGUIContentProperties<BuiltinShadersEditor.Styles>();
-            provider.PopulateSearchKeywordsFromGUIContentProperties<ShaderStrippingEditor.Styles>();
-            provider.PopulateSearchKeywordsFromGUIContentProperties<ShaderPreloadEditor.Styles>();
+            var provider = AssetSettingsProvider.CreateProviderFromAssetPath("Project/Graphics", "ProjectSettings/GraphicsSettings.asset");
+            var graphicsEditor = Editor.CreateEditor(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/GraphicsSettings.asset")) as GraphicsSettingsInspector;
+            provider.keywords = SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Styles>()
+                .Concat(SettingsProvider.GetSearchKeywordsFromGUIContentProperties<TierSettingsEditor.Styles>())
+                .Concat(SettingsProvider.GetSearchKeywordsFromGUIContentProperties<BuiltinShadersEditor.Styles>())
+                .Concat(SettingsProvider.GetSearchKeywordsFromGUIContentProperties<ShaderStrippingEditor.Styles>())
+                .Concat(SettingsProvider.GetSearchKeywordsFromGUIContentProperties<ShaderPreloadEditor.Styles>())
+                .Concat(SettingsProvider.GetSearchKeywordsFromSerializedObject(graphicsEditor.serializedObject))
+                .Concat(SettingsProvider.GetSearchKeywordsFromSerializedObject(graphicsEditor.alwaysIncludedShadersEditor.serializedObject));
 
-            var graphicSettings = provider.CreateEditor() as GraphicsSettingsInspector;
-            SettingsProvider.GetSearchKeywordsFromSerializedObject(graphicSettings.serializedObject, provider.keywords);
-            SettingsProvider.GetSearchKeywordsFromSerializedObject(graphicSettings.alwaysIncludedShadersEditor.serializedObject, provider.keywords);
-
-            provider.onEditorCreated = editor =>
+            provider.activateHandler = (searchContext, rootElement) =>
             {
-                (editor as GraphicsSettingsInspector).SetSectionOpenListener(provider.settingsWindow.Repaint);
+                (provider.settingsEditor as GraphicsSettingsInspector)?.SetSectionOpenListener(provider.Repaint);
             };
 
             provider.icon = EditorGUIUtility.FindTexture("UnityEngine/UI/GraphicRaycaster Icon");

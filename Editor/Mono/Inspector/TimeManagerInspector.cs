@@ -3,9 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
-using UnityEditorInternal;
-using System.Collections;
 
 namespace UnityEditor
 {
@@ -48,11 +45,9 @@ namespace UnityEditor
         [SettingsProvider]
         internal static SettingsProvider CreateProjectSettingsProvider()
         {
-            var provider = new AssetSettingsProvider("Project/Time", "ProjectSettings/TimeManager.asset")
-            {
-                icon = EditorGUIUtility.FindTexture("UnityEngine/Timeline/TimelineAsset Icon")
-            };
-            provider.PopulateSearchKeywordsFromGUIContentProperties<Content>();
+            var provider = AssetSettingsProvider.CreateProviderFromAssetPath(
+                "Project/Time", "ProjectSettings/TimeManager.asset",
+                SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Content>());
             return provider;
         }
     }

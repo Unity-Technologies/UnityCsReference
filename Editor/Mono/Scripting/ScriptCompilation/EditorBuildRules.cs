@@ -58,6 +58,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             public TargetAssembly()
             {
                 References = new List<TargetAssembly>();
+                Defines = new string[0];
             }
 
             public TargetAssembly(string name,
@@ -550,8 +551,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (runUpdaterAssemblies != null && runUpdaterAssemblies.Contains(scriptAssembly.Filename))
                     scriptAssembly.RunUpdater = true;
 
+                var compilerDefines = scriptAssembly.Language.GetCompilerDefines(settings.BuildTarget,
+                    buildingForEditor,
+                    scriptAssembly);
+
                 scriptAssembly.OutputDirectory = settings.OutputDirectory;
-                scriptAssembly.Defines = targetAssembly.Defines;
+                scriptAssembly.Defines = targetAssembly.Defines.Concat(compilerDefines).ToArray();
                 scriptAssembly.Files = sourceFiles.ToArray();
 
                 if (targetAssembly.Type == TargetAssemblyType.Predefined)
@@ -668,7 +673,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (buildingForEditor && assemblies.EditorAssemblyReferences != null)
                 references.AddRange(assemblies.EditorAssemblyReferences);
 
-            references.AddRange(MonoLibraryHelpers.GetSystemLibraryReferences(scriptAssembly.ApiCompatibilityLevel, scriptAssembly.BuildTarget, scriptAssembly.Language, buildingForEditor, scriptAssembly.Filename));
+            references.AddRange(MonoLibraryHelpers.GetSystemLibraryReferences(scriptAssembly.ApiCompatibilityLevel, scriptAssembly.BuildTarget, scriptAssembly.Language, buildingForEditor, scriptAssembly));
 
             scriptAssembly.ScriptAssemblyReferences = scriptAssemblyReferences.ToArray();
             scriptAssembly.References = references.ToArray();

@@ -88,11 +88,9 @@ namespace UnityEditor
         [SettingsProvider]
         internal static SettingsProvider CreateProjectSettingsProvider()
         {
-            var provider = new AssetSettingsProvider("Project/Physics 2D", "ProjectSettings/Physics2DSettings.asset")
-            {
-                icon = EditorGUIUtility.IconContent("Profiler.Physics2D").image as Texture2D
-            };
-            SettingsProvider.GetSearchKeywordsFromSerializedObject(provider.CreateEditor().serializedObject, provider.keywords);
+            var provider = AssetSettingsProvider.CreateProviderFromAssetPath(
+                "Project/Physics 2D", "ProjectSettings/Physics2DSettings.asset",
+                SettingsProvider.GetSearchKeywordsFromPath("ProjectSettings/Physics2DSettings.asset"));
             return provider;
         }
 

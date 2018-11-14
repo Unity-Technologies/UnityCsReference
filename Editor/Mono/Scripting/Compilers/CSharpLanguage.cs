@@ -39,16 +39,16 @@ namespace UnityEditor.Scripting.Compilers
         }
 
         public static CSharpCompiler GetCSharpCompiler(BuildTarget targetPlatform, bool buildingForEditor,
-            string assemblyName)
+            ScriptAssembly scriptAssembly)
         {
             var target = ModuleManager.GetTargetStringFromBuildTarget(targetPlatform);
             var extension = ModuleManager.GetCompilationExtension(target);
-            return extension.GetCsCompiler(buildingForEditor, assemblyName);
+            return extension.GetCsCompiler(buildingForEditor, scriptAssembly);
         }
 
-        public override ScriptCompilerBase CreateCompiler(MonoIsland island, bool buildingForEditor, BuildTarget targetPlatform, bool runUpdater)
+        public override ScriptCompilerBase CreateCompiler(ScriptAssembly scriptAssembly, MonoIsland island, bool buildingForEditor, BuildTarget targetPlatform, bool runUpdater)
         {
-            switch (GetCSharpCompiler(targetPlatform, buildingForEditor, island._output))
+            switch (GetCSharpCompiler(targetPlatform, buildingForEditor, scriptAssembly))
             {
                 case CSharpCompiler.Microsoft:
                     return new MicrosoftCSharpCompiler(island, runUpdater);
@@ -61,6 +61,25 @@ namespace UnityEditor.Scripting.Compilers
         public override bool CompilerRequiresAdditionalReferences()
         {
             return true;
+        }
+
+        public override string[] GetCompilerDefines(BuildTarget targetPlatform, bool buildingForEditor,
+            ScriptAssembly scriptAssembly)
+        {
+            var compiler = GetCSharpCompiler(targetPlatform, buildingForEditor, scriptAssembly);
+
+            if (compiler == CSharpCompiler.Microsoft)
+            {
+                var defines = new string[]
+                {
+                    "CSHARP_7_OR_LATER", // Incremental Compiler adds this.
+                    "CSHARP_7_3_OR_NEWER",
+                };
+
+                return defines;
+            }
+
+            return new string[0];
         }
 
         static string[] GetSystemReferenceDirectories(ApiCompatibilityLevel apiCompatibilityLevel)

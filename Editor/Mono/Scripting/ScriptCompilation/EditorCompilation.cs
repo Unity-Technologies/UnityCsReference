@@ -149,10 +149,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     if (index != -1)
                         message.message = message.message.Substring(0, index);
                     var moduleName = match.Groups[1].Value;
-                    moduleName = ModuleMetadata.GetExcludingModule(moduleName);
+                    var excludingModuleName = ModuleMetadata.GetExcludingModule(moduleName);
                     moduleName = GetNiceDisplayNameForModule(moduleName);
+                    excludingModuleName = GetNiceDisplayNameForModule(excludingModuleName);
 
-                    message.message += string.Format("Enable the built in package '{0}' in the Package Manager window to fix this error.", moduleName);
+                    if (moduleName == excludingModuleName)
+                        message.message += string.Format("Enable the built in package '{0}' in the Package Manager window to fix this error.", moduleName);
+                    else
+                        message.message += string.Format("Enable the built in package '{0}', which is required by package '{1}', in the Package Manager window to fix this error.", excludingModuleName, moduleName);
                 }
             }
         }
@@ -1607,7 +1611,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var customReferences = EditorBuildRules.GetCompiledCustomAssembliesReferences(scriptAssembly, customTargetAssemblies, GetCompileScriptsOutputDirectory());
             var precompiledReferences = EditorBuildRules.GetPrecompiledReferences(scriptAssembly, EditorBuildRules.TargetAssemblyType.Custom, options, EditorBuildRules.EditorCompatibility.CompatibleWithEditor, precompiledAssemblies);
-            var additionalReferences = MonoLibraryHelpers.GetSystemLibraryReferences(scriptAssembly.ApiCompatibilityLevel, scriptAssembly.BuildTarget, scriptAssembly.Language, buildingForEditor, scriptAssembly.Filename);
+            var additionalReferences = MonoLibraryHelpers.GetSystemLibraryReferences(scriptAssembly.ApiCompatibilityLevel, scriptAssembly.BuildTarget, scriptAssembly.Language, buildingForEditor, scriptAssembly);
             string[] editorReferences = buildingForEditor ? ModuleUtils.GetAdditionalReferencesForUserScripts() : new string[0];
 
             var references = new List<string>();

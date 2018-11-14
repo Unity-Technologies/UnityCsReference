@@ -30,7 +30,8 @@ namespace UnityEditor
         }
 
         // Use this for initialization
-        [MenuItem("Window/General/Asset Store %9", false, 301)]
+        // Index at 1499 because "Package Manager" is 1500, pairing tools for user to get external content
+        [MenuItem("Window/Asset Store %9", false, 1499)]
         public static AssetStoreWindow Init()
         {
             AssetStoreWindow window = EditorWindow.GetWindow<AssetStoreWindow>(typeof(SceneView));

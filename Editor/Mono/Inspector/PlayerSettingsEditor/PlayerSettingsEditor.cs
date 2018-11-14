@@ -7,7 +7,6 @@ using UnityEngine;
 using UnityEditor.Build;
 using UnityEditor.SceneManagement;
 using UnityEditor.PlatformSupport;
-using UnityEditor.Rendering;
 using UnityEditorInternal;
 using System;
 using System.Collections.Generic;
@@ -2589,14 +2588,12 @@ namespace UnityEditor
         [SettingsProvider]
         internal static SettingsProvider CreateProjectSettingsProvider()
         {
-            var provider = new AssetSettingsProvider("Project/Player", "ProjectSettings/ProjectSettings.asset")
+            var provider = AssetSettingsProvider.CreateProviderFromAssetPath(
+                "Project/Player", "ProjectSettings/ProjectSettings.asset",
+                SettingsProvider.GetSearchKeywordsFromGUIContentProperties<SettingsContent>());
+            provider.activateHandler = (searchContext, rootElement) =>
             {
-                icon = EditorGUIUtility.LoadIconRequired("BuildSettings.Editor")
-            };
-            provider.PopulateSearchKeywordsFromGUIContentProperties<SettingsContent>();
-            provider.onEditorCreated = editor =>
-            {
-                (editor as PlayerSettingsEditor).SetSectionOpenListener(provider.settingsWindow.Repaint);
+                (provider.settingsEditor as PlayerSettingsEditor)?.SetSectionOpenListener(provider.Repaint);
             };
             return provider;
         }

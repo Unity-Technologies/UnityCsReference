@@ -3,11 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine.Internal;
 
 namespace UnityEditor
 {
-    [AttributeUsage(AttributeTargets.Method), ExcludeFromDocs]
+    [AttributeUsage(AttributeTargets.Method)]
     public sealed class SettingsProviderAttribute : Attribute
     {
         [RequiredSignature]
@@ -17,7 +16,7 @@ namespace UnityEditor
         }
     }
 
-    [AttributeUsage(AttributeTargets.Method), ExcludeFromDocs]
+    [AttributeUsage(AttributeTargets.Method)]
     public sealed class SettingsProviderGroupAttribute : Attribute
     {
         [RequiredSignature]

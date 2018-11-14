@@ -348,11 +348,9 @@ namespace UnityEditor
         [SettingsProvider]
         static SettingsProvider CreateProjectSettingsProvider()
         {
-            var provider = new AssetSettingsProvider("Project/Tags and Layers", "ProjectSettings/TagManager.asset")
-            {
-                icon = EditorGUIUtility.LoadIconRequired("CustomSorting")
-            };
-            provider.PopulateSearchKeywordsFromGUIContentProperties<Styles>();
+            var provider = AssetSettingsProvider.CreateProviderFromAssetPath(
+                "Project/Tags and Layers", "ProjectSettings/TagManager.asset",
+                SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Styles>());
             return provider;
         }
     }

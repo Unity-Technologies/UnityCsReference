@@ -313,7 +313,7 @@ namespace UnityEditor.U2D
             {
                 if (GUILayout.Button(s_Styles.disabledPackLabel, EditorStyles.helpBox))
                 {
-                    SettingsWindow.OpenProjectSettings("Project/Editor");
+                    SettingsService.OpenProjectSettings("Project/Editor");
                 }
             }
 

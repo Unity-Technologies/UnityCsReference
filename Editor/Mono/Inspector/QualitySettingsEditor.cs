@@ -608,12 +608,9 @@ namespace UnityEditor
         [SettingsProvider]
         internal static SettingsProvider CreateProjectSettingsProvider()
         {
-            var provider = new AssetSettingsProvider("Project/Quality", "ProjectSettings/QualitySettings.asset")
-            {
-                icon = EditorGUIUtility.LoadIconRequired("Profiler.Rendering")
-            };
-            provider.PopulateSearchKeywordsFromGUIContentProperties<Styles>();
-            SettingsProvider.GetSearchKeywordsFromSerializedObject(provider.CreateEditor().serializedObject, provider.keywords);
+            var provider = AssetSettingsProvider.CreateProviderFromAssetPath(
+                "Project/Quality", "ProjectSettings/QualitySettings.asset",
+                SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Styles>().Concat(SettingsProvider.GetSearchKeywordsFromPath("ProjectSettings/QualitySettings.asset")));
             return provider;
         }
     }

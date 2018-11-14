@@ -6,7 +6,6 @@ using System;
 using System.Linq;
 using System.Text;
 using System.Collections.Generic;
-
 using UnityEngine;
 
 namespace UnityEditor.ShortcutManagement
@@ -22,6 +21,46 @@ namespace UnityEditor.ShortcutManagement
         public KeyCode keyCode => m_KeyCode;
         public ShortcutModifiers modifiers => m_Modifiers;
 
+        static Dictionary<KeyCode, string> s_KeyCodeToMenuItemKeyCodeString = new Dictionary<KeyCode, string>()
+        {
+            { KeyCode.LeftArrow, "LEFT" },
+            { KeyCode.UpArrow, "UP" },
+            { KeyCode.RightArrow, "RIGHT" },
+            { KeyCode.DownArrow, "DOWN" },
+
+            { KeyCode.PageDown, "PGDN" },
+            { KeyCode.PageUp, "PGUP" },
+            { KeyCode.Home, "HOME" },
+            { KeyCode.Insert, "INS" },
+            { KeyCode.Delete, "DEL" },
+            { KeyCode.End, "END" },
+
+            { KeyCode.F1, "F1" },
+            { KeyCode.F2, "F2" },
+            { KeyCode.F3, "F3" },
+            { KeyCode.F4, "F4" },
+            { KeyCode.F5, "F5" },
+            { KeyCode.F6, "F6" },
+            { KeyCode.F7, "F7" },
+            { KeyCode.F8, "F8" },
+            { KeyCode.F9, "F9" },
+            { KeyCode.F10, "F10" },
+            { KeyCode.F11, "F11" },
+            { KeyCode.F12, "F12" }
+        };
+
+        static Dictionary<string, KeyCode> s_MenuItemKeyCodeStringToKeyCode;
+
+        static KeyCombination()
+        {
+            // Populate s_MenuItemKeyCodeStringToKeyCode by reversing s_KeyCodeToMenuItemKeyCodeString
+            s_MenuItemKeyCodeStringToKeyCode = new Dictionary<string, KeyCode>(s_KeyCodeToMenuItemKeyCodeString.Count);
+            foreach (var entry in s_KeyCodeToMenuItemKeyCodeString)
+            {
+                s_MenuItemKeyCodeStringToKeyCode.Add(entry.Value, entry.Key);
+            }
+        }
+
         public KeyCombination(KeyCode keyCode, ShortcutModifiers shortcutModifiers = ShortcutModifiers.None)
         {
             m_KeyCode = keyCode;
@@ -30,16 +69,20 @@ namespace UnityEditor.ShortcutManagement
 
         internal static KeyCombination FromKeyboardInput(Event evt)
         {
-            return new KeyCombination(evt.keyCode, ConvertEventModifiersToShortcutModifiers(evt.modifiers, false));
+            return FromKeyboardInput(evt.keyCode, evt.modifiers);
         }
 
-        internal static KeyCombination ParseLegacyBindingString(string binding)
+        internal static KeyCombination FromKeyboardInput(KeyCode keyCode, EventModifiers modifiers)
         {
-            var keyEvent = Event.KeyboardEvent(binding);
-            return new KeyCombination(keyEvent.keyCode, ConvertEventModifiersToShortcutModifiers(keyEvent.modifiers, true));
+            return new KeyCombination(keyCode, ConvertEventModifiersToShortcutModifiers(modifiers, false));
         }
 
-        private static ShortcutModifiers ConvertEventModifiersToShortcutModifiers(EventModifiers eventModifiers, bool coalesceCommandAndControl)
+        internal static KeyCombination FromPrefKeyKeyboardEvent(Event evt)
+        {
+            return new KeyCombination(evt.keyCode, ConvertEventModifiersToShortcutModifiers(evt.modifiers, true));
+        }
+
+        static ShortcutModifiers ConvertEventModifiersToShortcutModifiers(EventModifiers eventModifiers, bool coalesceCommandAndControl)
         {
             ShortcutModifiers modifiers = ShortcutModifiers.None;
             if ((eventModifiers & EventModifiers.Alt) != 0)
@@ -117,9 +160,112 @@ namespace UnityEditor.ShortcutManagement
             if (modifiers == ShortcutModifiers.None)
                 builder.Append("_");
 
-            VisualizeKeyCode(keyCode, builder);
+            KeyCodeToMenuItemKeyCodeString(keyCode, builder);
 
             return builder.ToString();
+        }
+
+        static void KeyCodeToMenuItemKeyCodeString(KeyCode keyCode, StringBuilder builder)
+        {
+            string keyCodeString;
+            if (s_KeyCodeToMenuItemKeyCodeString.TryGetValue(keyCode, out keyCodeString))
+            {
+                builder.Append(keyCodeString);
+                return;
+            }
+
+            var character = (char)keyCode;
+            if (character >= ' ' && character <= '@' ||
+                character >= '[' && character <= '~')
+                builder.Append(character.ToString());
+        }
+
+        internal static bool TryParseMenuItemBindingString(string menuItemBindingString, out KeyCombination keyCombination)
+        {
+            if (string.IsNullOrEmpty(menuItemBindingString))
+            {
+                keyCombination = default(KeyCombination);
+                return false;
+            }
+
+            var modifiers = ShortcutModifiers.None;
+            var startIndex = 0;
+            var found = false;
+            do
+            {
+                found = true;
+                if (startIndex >= menuItemBindingString.Length)
+                {
+                    found = false;
+                    break;
+                }
+
+                switch (menuItemBindingString[startIndex])
+                {
+                    case '&':
+                        modifiers |= ShortcutModifiers.Alt;
+                        startIndex++;
+                        break;
+
+                    case '%':
+                        modifiers |= ShortcutModifiers.ControlOrCommand;
+                        startIndex++;
+                        break;
+
+                    case '#':
+                        modifiers |= ShortcutModifiers.Shift;
+                        startIndex++;
+                        break;
+
+                    case '_':
+                        startIndex++;
+                        break;
+
+                    default:
+                        found = false;
+                        break;
+                }
+            }
+            while (found);
+
+            var keyCodeString = menuItemBindingString.Substring(startIndex, menuItemBindingString.Length - startIndex);
+            KeyCode keyCode;
+            ShortcutModifiers additionalModifiers;
+            if (!TryParseMenuItemKeyCodeString(keyCodeString, out keyCode, out additionalModifiers))
+            {
+                keyCombination = default(KeyCombination);
+                return false;
+            }
+
+            modifiers |= additionalModifiers;
+            keyCombination = new KeyCombination(keyCode, modifiers);
+            return true;
+        }
+
+        static bool TryParseMenuItemKeyCodeString(string keyCodeString, out KeyCode keyCode, out ShortcutModifiers additionalModifiers)
+        {
+            keyCode = default(KeyCode);
+            additionalModifiers = ShortcutModifiers.None;
+
+            if (string.IsNullOrEmpty(keyCodeString))
+                return false;
+
+            if (s_MenuItemKeyCodeStringToKeyCode.TryGetValue(keyCodeString, out keyCode))
+                return true;
+
+            if (keyCodeString.Length != 1)
+                return false;
+
+            var character = keyCodeString[0];
+            if (character >= 'A' && character <= 'Z')
+            {
+                keyCode = KeyCode.A + (character - 'A');
+                additionalModifiers = ShortcutModifiers.Shift;
+                return true;
+            }
+
+            keyCode = (KeyCode)character;
+            return Enum.IsDefined(typeof(KeyCode), keyCode);
         }
 
         static void VisualizeModifiers(ShortcutModifiers modifiers, StringBuilder builder)

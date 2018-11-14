@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.Scripting.ScriptCompilation;
+
 namespace UnityEditor.Scripting.Compilers
 {
     internal class UnityScriptLanguage : SupportedLanguage
@@ -16,7 +18,7 @@ namespace UnityEditor.Scripting.Compilers
             return "UnityScript";
         }
 
-        public override ScriptCompilerBase CreateCompiler(MonoIsland island, bool buildingForEditor, BuildTarget targetPlatform, bool runUpdater)
+        public override ScriptCompilerBase CreateCompiler(ScriptAssembly scriptAssembly, MonoIsland island, bool buildingForEditor, BuildTarget targetPlatform, bool runUpdater)
         {
             return new UnityScriptCompiler(island, runUpdater);
         }

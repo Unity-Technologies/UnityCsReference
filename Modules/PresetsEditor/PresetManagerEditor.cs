@@ -209,11 +209,9 @@ namespace UnityEditor.Presets
         [SettingsProvider]
         static SettingsProvider CreatePresetManagerProvider()
         {
-            var provider = new AssetSettingsProvider("Project/Preset Manager", "ProjectSettings/PresetManager.asset")
-            {
-                icon = EditorGUIUtility.FindTexture("UnityEditor/Presets/Preset Icon")
-            };
-            provider.PopulateSearchKeywordsFromGUIContentProperties<Content>();
+            var provider = AssetSettingsProvider.CreateProviderFromAssetPath(
+                "Project/Preset Manager", "ProjectSettings/PresetManager.asset",
+                SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Content>());
             return provider;
         }
     }

@@ -180,19 +180,13 @@ namespace UnityEngine
                         evt.modifiers |= EventModifiers.Alt; startIdx++;
                         break;
                     case '^': // Ctrl
+                        evt.modifiers |= EventModifiers.Control; startIdx++;
+                        break;
                     case '%':
-                        if (SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX)
-                            // ios?
-                            evt.modifiers |= EventModifiers.Command;
-                        else
-                            evt.modifiers |= EventModifiers.Control;
-                        startIdx++;
+                        evt.modifiers |= EventModifiers.Command; startIdx++;
                         break;
                     case '#':
                         evt.modifiers |= EventModifiers.Shift; startIdx++;
-                        break;
-                    case '_':
-                        startIdx++;
                         break;
                     default:
                         found = false;
@@ -268,7 +262,7 @@ namespace UnityEngine
                     {
                         evt.character = subStr.ToLower()[0];
                         evt.keyCode = (KeyCode)evt.character;
-                        if (evt.modifiers != EventModifiers.None && evt.modifiers != EventModifiers.Shift)
+                        if (evt.modifiers != 0)
                             evt.character = (char)0;
                     }
                     break;
