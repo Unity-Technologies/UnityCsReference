@@ -198,8 +198,12 @@ namespace UnityEditor
             // iOS
             GameViewSize k_iPhone_750p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 750, 1334, "iPhone 1334x750 Portrait");
             GameViewSize k_iPhone_750p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 1334, 750, "iPhone 1334x750 Landscape");
-            GameViewSize k_iPhone_X_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 1125, 2436, "iPhoneX 2436x1125 Portrait");
-            GameViewSize k_iPhone_X_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 2436, 1125, "iPhoneX 2436x1125 Landscape");
+            GameViewSize k_iPhone_X_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 1125, 2436, "iPhone X/XS 2436x1125 Portrait");
+            GameViewSize k_iPhone_X_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 2436, 1125, "iPhone X/XS 2436x1125 Landscape");
+            GameViewSize k_iPhone_828p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 828, 1792, "iPhone XR 1792x828 Portrait");
+            GameViewSize k_iPhone_828p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 1792, 828, "iPhone XR 1792x828 Landscape");
+            GameViewSize k_iPhone_1242p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 1242, 2688, "iPhone XS Max 2688x1242 Portrait");
+            GameViewSize k_iPhone_1242p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 2688, 1242, "iPhone XS Max 2688x1242 Landscape");
 
             GameViewSize k_iPad_1536p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 2048, 1536, "iPad 2048x1536 Landscape");
             GameViewSize k_iPad_1536p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 1536, 2048, "iPad 2048x1536 Portrait");
@@ -236,6 +240,8 @@ namespace UnityEditor
                 k_iPhone_750p_Portrait, k_iPhone_750p_Landscape,
                 k_1080p_Portrait, k_1080p_Landscape,
                 k_iPhone_X_Portrait, k_iPhone_X_Landscape,
+                k_iPhone_828p_Portrait, k_iPhone_828p_Landscape,
+                k_iPhone_1242p_Portrait, k_iPhone_1242p_Landscape,
                 k_iPad_1536p_Landscape, k_iPad_1536p_Portrait,
                 k_iPad_2048p_Landscape, k_iPad_2048p_Portrait,
                 k_iPad_1668p_Landscape, k_iPad_1668p_Portrait,

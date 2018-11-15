@@ -30,7 +30,6 @@ namespace UnityEditor
 
         SerializedProperty m_SupportsEmbeddedMaterials;
 
-        SerializedProperty m_UseSRGBMaterialColor;
         private bool m_HasEmbeddedMaterials = false;
 
         static class Styles
@@ -100,7 +99,6 @@ namespace UnityEditor
 
             public static GUIContent RemapOptions = EditorGUIUtility.TrTextContent("On Demand Remap");
             public static GUIContent RemapMaterialsInProject = EditorGUIUtility.TrTextContent("Search and Remap", "Click on this button to search and remap the materials from the project.");
-            public static GUIContent SRGBMaterialColor = EditorGUIUtility.TrTextContent("sRGB Albedo Colors", "Albedo colors in gamma space. Disable this for projects using linear color space.");
         }
 
         public ModelImporterMaterialEditor(AssetImporterEditor panelContainer)
@@ -111,6 +109,7 @@ namespace UnityEditor
         {
             // We need to display BasedOnTextureName_Or_ModelNameAndMaterialName obsolete option for objects which use this option
 #pragma warning disable 618
+            m_MaterialName = serializedObject.FindProperty("m_MaterialName");
             m_ShowAllMaterialNameOptions = (m_MaterialName.intValue == (int)ModelImporterMaterialName.BasedOnTextureName_Or_ModelNameAndMaterialName);
 #pragma warning restore 618
         }
@@ -158,7 +157,18 @@ namespace UnityEditor
 
             m_SupportsEmbeddedMaterials = serializedObject.FindProperty("m_SupportsEmbeddedMaterials");
 
-            m_UseSRGBMaterialColor = serializedObject.FindProperty("m_UseSRGBMaterialColor");
+            UpdateShowAllMaterialNameOptions();
+        }
+
+        internal override void ResetValues()
+        {
+            base.ResetValues();
+            UpdateShowAllMaterialNameOptions();
+        }
+
+        internal override void PostApply()
+        {
+            UpdateShowAllMaterialNameOptions();
         }
 
         public override void OnInspectorGUI()
@@ -356,8 +366,6 @@ namespace UnityEditor
         {
             serializedObject.UpdateIfRequiredOrScript();
 
-            UpdateShowAllMaterialNameOptions();
-
             EditorGUILayout.PropertyField(m_ImportMaterials, Styles.ImportMaterials);
 
             string materialHelp = string.Empty;
@@ -365,7 +373,6 @@ namespace UnityEditor
             {
                 if (m_ImportMaterials.boolValue)
                 {
-                    EditorGUILayout.PropertyField(m_UseSRGBMaterialColor, Styles.SRGBMaterialColor);
                     EditorGUILayout.Popup(m_MaterialLocation, Styles.MaterialLocationOpt, Styles.MaterialLocation);
                     if (!m_MaterialLocation.hasMultipleDifferentValues)
                     {
