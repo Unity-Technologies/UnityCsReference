@@ -87,21 +87,25 @@ namespace UnityEditor.U2D.Common
             int allSize = platformSettings[0].maxTextureSize;
             TextureImporterFormat allFormat = platformSettings[0].format;
             int allCompressionQuality = platformSettings[0].compressionQuality;
+            var allAlphaSplit = platformSettings[0].allowsAlphaSplitting;
 
             var newOverride = allOverride;
             var newSize = allSize;
             var newFormat = allFormat;
             var newCompressionQuality = allCompressionQuality;
+            var newAlphaSplit = allAlphaSplit;
 
             bool mixedOverride = false;
             bool mixedSize = false;
             bool mixedFormat = false;
             bool mixedCompression = false;
+            var mixedAlphaSplit = false;
 
             bool overrideChanged = false;
             bool sizeChanged = false;
             bool formatChanged = false;
             bool compressionChanged = false;
+            var alphaSplitChanged = false;
 
             for (var i = 1; i < platformSettings.Count; ++i)
             {
@@ -114,6 +118,8 @@ namespace UnityEditor.U2D.Common
                     mixedFormat = true;
                 if (settings.compressionQuality != allCompressionQuality)
                     mixedCompression = true;
+                if (settings.allowsAlphaSplitting != allAlphaSplit)
+                    mixedAlphaSplit = true;
             }
 
             newOverride = view.DrawOverride(allOverride, mixedOverride, out overrideChanged);
@@ -167,9 +173,17 @@ namespace UnityEditor.U2D.Common
                 {
                     newCompressionQuality = view.DrawCompressionQualitySlider(allCompressionQuality, mixedCompression, out compressionChanged);
                 }
+
+                // show the ETC1 split option only for sprites on platforms supporting ETC.
+                bool isETCPlatform = formatHelper.IsETC1SupportedByBuildTarget(buildTarget);
+                bool isETCFormatSelected = formatHelper.IsTextureFormatETC1Compression((TextureFormat)allFormat);
+                if (isETCPlatform && isETCFormatSelected)
+                {
+                    newAlphaSplit = view.DrawAlphaSplit(allAlphaSplit, mixedAlphaSplit, mixedOverride || !allOverride, out alphaSplitChanged);
+                }
             }
 
-            if (overrideChanged || sizeChanged || formatChanged || compressionChanged)
+            if (overrideChanged || sizeChanged || formatChanged || compressionChanged || alphaSplitChanged)
             {
                 for (var i = 0; i < platformSettings.Count; ++i)
                 {
@@ -181,6 +195,8 @@ namespace UnityEditor.U2D.Common
                         platformSettings[i].format = newFormat;
                     if (compressionChanged)
                         platformSettings[i].compressionQuality = newCompressionQuality;
+                    if (alphaSplitChanged)
+                        platformSettings[i].allowsAlphaSplitting = newAlphaSplit;
                 }
 
                 return true;

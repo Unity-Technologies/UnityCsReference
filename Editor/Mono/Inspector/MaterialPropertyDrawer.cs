@@ -496,7 +496,7 @@ namespace UnityEditor
     internal class MaterialEnumDrawer : MaterialPropertyDrawer
     {
         private readonly GUIContent[] names;
-        private readonly int[] values;
+        private readonly float[] values;
 
         // Single argument: enum type name; entry names & values fetched via reflection
         public MaterialEnumDrawer(string enumName)
@@ -513,7 +513,7 @@ namespace UnityEditor
                     this.names[i] = new GUIContent(enumNames[i]);
 
                 var enumVals = Enum.GetValues(enumType);
-                values = new int[enumVals.Length];
+                values = new float[enumVals.Length];
                 for (var i = 0; i < enumVals.Length; ++i)
                     values[i] = (int)enumVals.GetValue(i);
             }
@@ -538,9 +538,9 @@ namespace UnityEditor
             for (int i = 0; i < enumNames.Length; ++i)
                 this.names[i] = new GUIContent(enumNames[i]);
 
-            values = new int[vals.Length];
+            values = new float[vals.Length];
             for (int i = 0; i < vals.Length; ++i)
-                values[i] = (int)vals[i];
+                values[i] = vals[i];
         }
 
         public override float GetPropertyHeight(MaterialProperty prop, string label, MaterialEditor editor)
@@ -563,14 +563,25 @@ namespace UnityEditor
             }
 
             EditorGUI.BeginChangeCheck();
-
             EditorGUI.showMixedValue = prop.hasMixedValue;
-            var value = (int)prop.floatValue;
-            value = EditorGUI.IntPopup(position, label, value, names, values);
+
+            var value = prop.floatValue;
+            int selectedIndex = -1;
+            for (var index = 0; index < values.Length; index++)
+            {
+                var i = values[index];
+                if (i == value)
+                {
+                    selectedIndex = index;
+                    break;
+                }
+            }
+
+            var selIndex = EditorGUI.Popup(position, label, selectedIndex, names);
             EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
             {
-                prop.floatValue = value;
+                prop.floatValue = values[selIndex];
             }
         }
     }

@@ -12,6 +12,7 @@ namespace UnityEditor.U2D.Interface
         string buildPlatformTitle { get; set; }
         TextureImporterCompression DrawCompression(TextureImporterCompression defaultValue, bool isMixedValue, out bool changed);
         bool DrawUseCrunchedCompression(bool defaultValue, bool isMixedValue, out bool changed);
+        bool DrawAlphaSplit(bool defaultValue, bool isMixedValue, bool isDisabled, out bool changed);
         bool DrawOverride(bool defaultValue, bool isMixedValue, out bool changed);
         int DrawMaxSize(int defaultValue, bool isMixedValue, out bool changed);
         TextureImporterFormat DrawFormat(TextureImporterFormat defaultValue, int[] displayValues, string[] displayStrings, bool isMixedValue, bool isDisabled, out bool changed);
@@ -24,6 +25,10 @@ namespace UnityEditor.U2D.Interface
         void AcquireTextureFormatValuesAndStrings(BuildTarget buildTarget, out int[] displayValues, out string[] displayStrings);
 
         bool TextureFormatRequireCompressionQualityInput(TextureImporterFormat format);
+
+        bool IsETC1SupportedByBuildTarget(BuildTarget buildTarget);
+
+        bool IsTextureFormatETC1Compression(TextureFormat format);
     }
 
     internal interface ITexturePlatformSettingsController

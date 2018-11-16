@@ -144,6 +144,10 @@ internal static partial class SpriteAtlasExtensions
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  Texture2D[] GetPreviewAlphaTextures (this SpriteAtlas spriteAtlas) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  TextureImporterFormat FormatDetermineByAtlasSettings (this SpriteAtlas spriteAtlas, BuildTarget target) ;
 
 }
