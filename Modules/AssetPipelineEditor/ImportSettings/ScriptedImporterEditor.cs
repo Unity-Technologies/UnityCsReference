@@ -16,7 +16,20 @@ namespace UnityEditor.Experimental.AssetImporters
 
         public override void OnInspectorGUI()
         {
-            DrawDefaultInspector();
+            // Copy-paste of DrawDefaultInspector code because we are drawing the same way
+            // but need to NOT call serializedObject.ApplyModifiedProperties
+            // because it would break the Apply/Revert buttons.
+
+            SerializedProperty property = serializedObject.GetIterator();
+            bool expanded = true;
+            while (property.NextVisible(expanded))
+            {
+                using (new EditorGUI.DisabledScope("m_Script" == property.propertyPath))
+                {
+                    EditorGUILayout.PropertyField(property, true);
+                }
+                expanded = false;
+            }
 
             ApplyRevertGUI();
         }

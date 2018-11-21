@@ -145,15 +145,7 @@ namespace UnityEditor.Experimental.SceneManagement
 
             if (m_PrefabContentsRoot != null)
             {
-                // Create the environment scene and move the prefab root to this scene to ensure the correct rendersettings (skybox etc) are used in Prefab Mode.
-                string environmentEditingScenePath = PrefabStageUtility.GetEnvironmentScenePathForPrefab(m_PrefabContentsRoot);
-                Scene environmentScene = PrefabStageUtility.CreatePreviewScene(environmentEditingScenePath);
-                environmentScene.name = m_PrefabContentsRoot.name;
-                SceneManager.MoveGameObjectToScene(m_PrefabContentsRoot, environmentScene);
-                if (!PrefabStageUtility.HandleAutoReparenting(m_PrefabContentsRoot, environmentScene))
-                {
-                    m_PrefabContentsRoot.transform.SetAsFirstSibling();
-                }
+                Scene environmentScene = PrefabStageUtility.MovePrefabRootToEnvironmentScene(m_PrefabContentsRoot);
 
                 // Close the temporary prefab loading scene and set the environment scene as the scene of the stage
                 EditorSceneManager.ClosePreviewScene(m_PreviewScene);
@@ -179,6 +171,11 @@ namespace UnityEditor.Experimental.SceneManagement
                 if (prefabStageOpened != null)
                 {
                     prefabStageOpened(this);
+
+                    // Update environment scene objects after the 'prefabStageOpened' user callback so we can
+                    // ensure: correct hideflags and that our prefab root is not under a prefab instance (which would mark it as an added object).
+                    // Note: The user can have reparented and created new GameObjects in the environment scene during this callback.
+                    EnsureParentOfPrefabRootIsUnpacked();
                     UpdateEnvironmentHideFlags();
                 }
             }
@@ -275,6 +272,19 @@ namespace UnityEditor.Experimental.SceneManagement
             m_HideFlagUtility.UpdateEnvironmentHideFlags();
         }
 
+        void EnsureParentOfPrefabRootIsUnpacked()
+        {
+            var parent = m_PrefabContentsRoot.transform.parent;
+            if (parent != null)
+            {
+                if (PrefabUtility.IsPartOfPrefabInstance(parent))
+                {
+                    var outerMostPrefabInstance = PrefabUtility.GetOutermostPrefabInstanceRoot(parent);
+                    PrefabUtility.UnpackPrefabInstance(outerMostPrefabInstance, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
+                }
+            }
+        }
+
         bool isTextFieldCaretShowing
         {
             get { return EditorGUI.IsEditingTextField() && !EditorGUIUtility.textFieldHasSelection; }
@@ -346,6 +356,11 @@ namespace UnityEditor.Experimental.SceneManagement
 
                 if (prefabSaved != null)
                     prefabSaved(m_PrefabContentsRoot);
+
+                // After saving the Prefab any Prefab instances in the environment scene
+                // that are dependent on the saved Prefab will have lost their hideflags
+                // so here we set them again.
+                UpdateEnvironmentHideFlags();
             }
             else
             {

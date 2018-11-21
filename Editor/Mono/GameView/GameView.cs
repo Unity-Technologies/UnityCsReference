@@ -297,11 +297,6 @@ namespace UnityEditor
 
         float gameMouseScale { get { return EditorGUIUtility.pixelsPerPoint / m_ZoomArea.scale.y; } }
 
-        Vector2 WindowToGameMousePosition(Vector2 windowMousePosition)
-        {
-            return (windowMousePosition + gameMouseOffset) * gameMouseScale;
-        }
-
         void InitializeZoomArea()
         {
             m_ZoomArea = new ZoomableArea(true, false);
@@ -382,7 +377,6 @@ namespace UnityEditor
                 EnforceZoomAreaConstraints();
             }
 
-            CopyDimensionsToParentView();
             m_LastWindowPixelSize = position.size * EditorGUIUtility.pixelsPerPoint;
             EditorApplication.SetSceneRepaintDirty();
 
@@ -415,12 +409,6 @@ namespace UnityEditor
             }
 
             InternalEditorUtility.OnGameViewFocus(false);
-        }
-
-        internal void CopyDimensionsToParentView()
-        {
-            if (m_Parent)
-                SetParentGameViewDimensions(targetInParent, clippedTargetInParent, targetSize);
         }
 
         // Call when number of available aspects can have changed (after deserialization or gui change)
@@ -796,9 +784,6 @@ namespace UnityEditor
 
                 DoToolbarGUI();
 
-                // Setup game view dimensions, so that player loop can use it for input
-                CopyDimensionsToParentView();
-
                 // This isn't ideal. Custom Cursors set by editor extensions for other windows can leak into the game view.
                 // To fix this we should probably stop using the global custom cursor (intended for runtime) for custom editor cursors.
                 // This has been noted for Cursors tech debt.
@@ -830,14 +815,22 @@ namespace UnityEditor
                 if (playing)
                     EditorGUIUtility.keyboardControl = 0;
 
-                var editorMousePosition = Event.current.mousePosition;
-                var gameMousePosition = WindowToGameMousePosition(editorMousePosition);
-
                 GUI.color = Color.white; // Get rid of play mode tint
 
                 var originalEventType = Event.current.type;
 
                 m_ZoomArea.BeginViewGUI();
+
+                // Setup game view dimensions, so that player loop can use it for input
+                var gameViewTarget = GUIClip.UnclipToWindow(m_ZoomArea.drawRect);
+                if (m_Parent)
+                {
+                    var zoomedTarget = new Rect(targetInView.position + gameViewTarget.position, targetInView.size);
+                    SetParentGameViewDimensions(zoomedTarget, gameViewTarget, targetSize);
+                }
+
+                var editorMousePosition = Event.current.mousePosition;
+                var gameMousePosition = (editorMousePosition + gameMouseOffset) * gameMouseScale;
 
                 if (type == EventType.Repaint)
                 {

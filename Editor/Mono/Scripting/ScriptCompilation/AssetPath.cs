@@ -18,6 +18,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return ReplaceSeparators(SystemPath.GetFullPath(path.NormalizePath()));
         }
 
+        public static string Combine(params string[] paths)
+        {
+            return ReplaceSeparators(Paths.Combine(paths));
+        }
+
         public static string Combine(string path1, string path2)
         {
             return ReplaceSeparators(SystemPath.Combine(path1, path2));

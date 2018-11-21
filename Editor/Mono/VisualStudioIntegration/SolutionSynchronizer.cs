@@ -50,8 +50,6 @@ namespace UnityEditor.VisualStudioIntegration
         static internal readonly Dictionary<string, ScriptingLanguage> BuiltinSupportedExtensions = new Dictionary<string, ScriptingLanguage>
         {
             {"cs", ScriptingLanguage.CSharp},
-            {"js", ScriptingLanguage.UnityScript},
-            {"boo", ScriptingLanguage.Boo},
             {"uxml", ScriptingLanguage.None},
             {"uss", ScriptingLanguage.None},
             {"shader", ScriptingLanguage.None},
@@ -263,7 +261,7 @@ namespace UnityEditor.VisualStudioIntegration
                 : MonoLibraryHelpers.GetSystemReferenceDirectories(island._api_compatibility_level);
 
             Dictionary<string, ScriptCompilerBase.ResponseFileData> responseFilesData = island._responseFiles.ToDictionary(x => x, x => ScriptCompilerBase.ParseResponseFileFromFile(
-                Path.Combine(_projectDirectory, x),
+                x,
                 _projectDirectory,
                 systemReferenceDirectories
             ));
@@ -474,7 +472,7 @@ namespace UnityEditor.VisualStudioIntegration
                 AppendReference(fullReference, projectBuilder);
             }
 
-            var responseRefs = responseFilesData.SelectMany(x => x.FullPathReferences.Select(r => r.Assembly));
+            var responseRefs = responseFilesData.SelectMany(x => x.FullPathReferences);
             foreach (var reference in responseRefs)
             {
                 AppendReference(reference, projectBuilder);

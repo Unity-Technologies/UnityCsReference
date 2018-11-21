@@ -510,6 +510,9 @@ namespace UnityEngine
         extern public static bool callbacksOnDisable { get; set; }
 
         [StaticAccessor("GetPhysics2DSettings()")]
+        extern public static bool reuseCollisionCallbacks { get; set; }
+
+        [StaticAccessor("GetPhysics2DSettings()")]
         extern public static bool autoSyncTransforms { get; set; }
 
         [StaticAccessor("GetPhysics2DSettings()")]
@@ -2298,98 +2301,6 @@ namespace UnityEngine
         }
     }
 
-    [UsedByNativeCode]
-    [StructLayout(LayoutKind.Sequential)]
-    internal unsafe partial struct CachedContactPoints2D
-    {
-        public ContactPoint2D this[int i]
-        {
-            get
-            {
-                // No need to limit the index here as it is limited by the contact count when accessed.
-                // Adding a constant here will just introduce something else that will need updating
-                // should the contact point cache change in the future.
-                fixed(ContactPoint2D * contact = &m_Contact0)
-                {
-                    return *(contact + i);
-                }
-            }
-        }
-
-        // It would've been nice to have some fixed array here but it's not possible.
-        // Using a fixed primitive type array isn't possible either as the size cannot be specified as an explicit constant.
-        ContactPoint2D m_Contact0;
-        ContactPoint2D m_Contact1;
-        ContactPoint2D m_Contact2;
-        ContactPoint2D m_Contact3;
-        ContactPoint2D m_Contact4;
-        ContactPoint2D m_Contact5;
-        ContactPoint2D m_Contact6;
-        ContactPoint2D m_Contact7;
-        ContactPoint2D m_Contact8;
-        ContactPoint2D m_Contact9;
-
-        ContactPoint2D m_Contact10;
-        ContactPoint2D m_Contact11;
-        ContactPoint2D m_Contact12;
-        ContactPoint2D m_Contact13;
-        ContactPoint2D m_Contact14;
-        ContactPoint2D m_Contact15;
-        ContactPoint2D m_Contact16;
-        ContactPoint2D m_Contact17;
-        ContactPoint2D m_Contact18;
-        ContactPoint2D m_Contact19;
-
-        ContactPoint2D m_Contact20;
-        ContactPoint2D m_Contact21;
-        ContactPoint2D m_Contact22;
-        ContactPoint2D m_Contact23;
-        ContactPoint2D m_Contact24;
-        ContactPoint2D m_Contact25;
-        ContactPoint2D m_Contact26;
-        ContactPoint2D m_Contact27;
-        ContactPoint2D m_Contact28;
-        ContactPoint2D m_Contact29;
-
-        ContactPoint2D m_Contact30;
-        ContactPoint2D m_Contact31;
-        ContactPoint2D m_Contact32;
-        ContactPoint2D m_Contact33;
-        ContactPoint2D m_Contact34;
-        ContactPoint2D m_Contact35;
-        ContactPoint2D m_Contact36;
-        ContactPoint2D m_Contact37;
-        ContactPoint2D m_Contact38;
-        ContactPoint2D m_Contact39;
-
-        ContactPoint2D m_Contact40;
-        ContactPoint2D m_Contact41;
-        ContactPoint2D m_Contact42;
-        ContactPoint2D m_Contact43;
-        ContactPoint2D m_Contact44;
-        ContactPoint2D m_Contact45;
-        ContactPoint2D m_Contact46;
-        ContactPoint2D m_Contact47;
-        ContactPoint2D m_Contact48;
-        ContactPoint2D m_Contact49;
-
-        ContactPoint2D m_Contact50;
-        ContactPoint2D m_Contact51;
-        ContactPoint2D m_Contact52;
-        ContactPoint2D m_Contact53;
-        ContactPoint2D m_Contact54;
-        ContactPoint2D m_Contact55;
-        ContactPoint2D m_Contact56;
-        ContactPoint2D m_Contact57;
-        ContactPoint2D m_Contact58;
-        ContactPoint2D m_Contact59;
-
-        ContactPoint2D m_Contact60;
-        ContactPoint2D m_Contact61;
-        ContactPoint2D m_Contact62;
-        ContactPoint2D m_Contact63;
-    }
-
     // Describes a collision.
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
@@ -2402,8 +2313,11 @@ namespace UnityEngine
         internal Vector2 m_RelativeVelocity;
         internal int m_Enabled;
         internal int m_ContactCount;
-        internal CachedContactPoints2D m_CachedContactPoints;
-        internal ContactPoint2D[] m_LegacyContactArray;
+        internal ContactPoint2D[] m_RecycledContacts;
+        internal ContactPoint2D[] m_LegacyContacts;
+
+        // Return the appropriate contacts array.
+        private ContactPoint2D[] GetContacts_Internal() { return m_LegacyContacts == null ? m_RecycledContacts : m_LegacyContacts; }
 
         // The first collider involved in the collision.
         public Collider2D collider { get { return Object.FindObjectFromInstanceID(m_Collider) as Collider2D; } }
@@ -2434,21 +2348,13 @@ namespace UnityEngine
         {
             get
             {
-                if (m_LegacyContactArray == null)
+                if (m_LegacyContacts == null)
                 {
-                    m_LegacyContactArray = new ContactPoint2D[m_ContactCount];
-                    if (m_ContactCount > 0)
-                    {
-                        {
-                            for (var i = 0; i < m_ContactCount; ++i)
-                            {
-                                m_LegacyContactArray[i] = m_CachedContactPoints[i];
-                            }
-                        }
-                    }
+                    m_LegacyContacts = new ContactPoint2D[m_ContactCount];
+                    Array.Copy(m_RecycledContacts, m_LegacyContacts, m_ContactCount);
                 }
 
-                return m_LegacyContactArray;
+                return m_LegacyContacts;
             }
         }
 
@@ -2461,34 +2367,17 @@ namespace UnityEngine
             if (index < 0 || index >= m_ContactCount)
                 throw new ArgumentOutOfRangeException(String.Format("Cannot get contact at index {0}. There are {1} contact(s).", index, m_ContactCount));
 
-            return m_CachedContactPoints[index];
+            return GetContacts_Internal()[index];
         }
 
         // Get contacts for this collision.
         public int GetContacts(ContactPoint2D[] contacts)
         {
             if (contacts == null)
-                throw new ArgumentNullException("Cannot get contacts into a NULL array.");
+                throw new NullReferenceException("Cannot get contacts as the provided array is NULL.");
 
-            var contactCount = Mathf.Min(contacts.Length, m_ContactCount);
-            if (contactCount == 0)
-                return 0;
-
-            // If we have an existing contact array then use that and copy it.
-            if (m_LegacyContactArray != null)
-            {
-                Array.Copy(m_LegacyContactArray, contacts, contactCount);
-                return contactCount;
-            }
-
-            // Copy the cached contact points instead.
-            if (m_ContactCount > 0)
-            {
-                for (var i = 0; i < contactCount; ++i)
-                {
-                    contacts[i] = m_CachedContactPoints[i];
-                }
-            }
+            var contactCount = Mathf.Min(m_ContactCount, contacts.Length);
+            Array.Copy(GetContacts_Internal(), contacts, contactCount);
             return contactCount;
         }
     };

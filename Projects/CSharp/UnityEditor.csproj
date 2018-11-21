@@ -3066,15 +3066,6 @@
   <Compile Include="..\..\Editor\Mono\Scripting\Compilers\APIUpdaterHelper.cs">
     <Link>Editor\Mono\Scripting\Compilers\APIUpdaterHelper.cs</Link>
   </Compile>
-  <Compile Include="..\..\Editor\Mono\Scripting\Compilers\BooCompiler.cs">
-    <Link>Editor\Mono\Scripting\Compilers\BooCompiler.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\Scripting\Compilers\BooCompilerOutputParser.cs">
-    <Link>Editor\Mono\Scripting\Compilers\BooCompilerOutputParser.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\Scripting\Compilers\BooLanguage.cs">
-    <Link>Editor\Mono\Scripting\Compilers\BooLanguage.cs</Link>
-  </Compile>
   <Compile Include="..\..\Editor\Mono\Scripting\Compilers\CSharpCompilerOutputParserBase.cs">
     <Link>Editor\Mono\Scripting\Compilers\CSharpCompilerOutputParserBase.cs</Link>
   </Compile>
@@ -3128,15 +3119,6 @@
   </Compile>
   <Compile Include="..\..\Editor\Mono\Scripting\Compilers\UWPReferences.cs">
     <Link>Editor\Mono\Scripting\Compilers\UWPReferences.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\Scripting\Compilers\UnityScriptCompiler.cs">
-    <Link>Editor\Mono\Scripting\Compilers\UnityScriptCompiler.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\Scripting\Compilers\UnityScriptCompilerOutputParser.cs">
-    <Link>Editor\Mono\Scripting\Compilers\UnityScriptCompilerOutputParser.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\Scripting\Compilers\UnityScriptLanguage.cs">
-    <Link>Editor\Mono\Scripting\Compilers\UnityScriptLanguage.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\Scripting\NativeClassExtensionUtilities.cs">
     <Link>Editor\Mono\Scripting\NativeClassExtensionUtilities.cs</Link>

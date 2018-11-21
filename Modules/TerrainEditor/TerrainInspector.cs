@@ -2142,8 +2142,19 @@ namespace UnityEditor
             {
                 if (hitValidTerrain)
                 {
-                    float brushSize = selectedTool == TerrainTool.PlaceTree ? TreePainter.brushSize : m_Size;
-                    TerrainPaintUtilityEditor.ShowDefaultPreviewBrush(hitTerrain, brushList.GetCircleBrush().texture, brushSize);
+                    float brushSize;
+                    Texture2D brushTexture;
+                    if (selectedTool == TerrainTool.PaintDetail)
+                    {
+                        brushSize = m_Size;
+                        brushTexture = brushList.GetActiveBrush().texture;
+                    }
+                    else
+                    {
+                        brushSize = TreePainter.brushSize;
+                        brushTexture = brushList.GetCircleBrush().texture;
+                    }
+                    TerrainPaintUtilityEditor.ShowDefaultPreviewBrush(hitTerrain, brushTexture, brushSize);
                 }
             }
 

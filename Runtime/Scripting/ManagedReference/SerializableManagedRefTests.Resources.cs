@@ -7,14 +7,18 @@ using System.Runtime.InteropServices;
 
 namespace EmbeddedScriptedObjectsTests
 {
+    public sealed class ExtensionOfNativeClass : Attribute {}
+
     // Mimic exactly data layout of UnityEnging.Object!
     [StructLayout(LayoutKind.Sequential)]
     public class Object
     {
-        public IntPtr   m_CachedPtr;
-        public int      m_InstanceID;
+        public IntPtr m_CachedPtr;
+        public int m_InstanceID;
+        public string m_UnityRuntimeErrorString;
     }
 
+    [ExtensionOfNativeClass]
     public class DummyClass : Object
     {
         public int Attribute1 = 1;
