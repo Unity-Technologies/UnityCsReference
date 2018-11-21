@@ -15,13 +15,13 @@ namespace UnityEditor.Scripting.Compilers
 {
     class MonoCSharpCompiler : MonoScriptCompilerBase
     {
-        public static readonly string ReponseFilename = "mcs.rsp";
+        public static readonly string ResponseFilename = "mcs.rsp";
 
         public MonoCSharpCompiler(MonoIsland island, bool runUpdater) : base(island, runUpdater)
         {
         }
 
-        override protected Program StartCompiler()
+        protected override Program StartCompiler()
         {
             var arguments = new List<string>
             {
@@ -29,43 +29,56 @@ namespace UnityEditor.Scripting.Compilers
                 "-target:library",
                 "-nowarn:0169",
                 "-langversion:" + ((EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest) ? "6" : "4"),
-                "-out:" + PrepareFileName(_island._output),
+                "-out:" + PrepareFileName(m_Island._output),
                 "-nostdlib",
             };
 
-            if (_island._allowUnsafeCode)
+            if (m_Island._allowUnsafeCode)
                 arguments.Add("-unsafe");
 
-            if (!_island._development_player && !_island._editor)
+            if (!m_Island._development_player && !m_Island._editor)
                 arguments.Add("-optimize");
 
-            foreach (string dll in _island._references)
+            foreach (string dll in m_Island._references)
                 arguments.Add("-r:" + PrepareFileName(dll));
-            foreach (string define in _island._defines.Distinct())
+            foreach (string define in m_Island._defines.Distinct())
                 arguments.Add("-define:" + define);
-            foreach (string source in _island._files)
+
+            foreach (string source in m_Island._files)
                 arguments.Add(PrepareFileName(source));
 
-            if (!AddCustomResponseFileIfPresent(arguments, ReponseFilename))
+            if (!AddCustomResponseFileIfPresent(arguments, ResponseFilename))
             {
-                if (_island._api_compatibility_level == ApiCompatibilityLevel.NET_2_0_Subset && AddCustomResponseFileIfPresent(arguments, "smcs.rsp"))
-                    Debug.LogWarning(string.Format("Using obsolete custom response file 'smcs.rsp'. Please use '{0}' instead.", ReponseFilename));
-                else if (_island._api_compatibility_level == ApiCompatibilityLevel.NET_2_0 && AddCustomResponseFileIfPresent(arguments, "gmcs.rsp"))
-                    Debug.LogWarning(string.Format("Using obsolete custom response file 'gmcs.rsp'. Please use '{0}' instead.", ReponseFilename));
+                if (m_Island._api_compatibility_level == ApiCompatibilityLevel.NET_2_0_Subset
+                    && AddCustomResponseFileIfPresent(arguments, "smcs.rsp"))
+                {
+                    Debug.LogWarning("Using obsolete custom response file \'smcs.rsp\'. " +
+                        $"Please use '{ResponseFilename}' instead.");
+                }
+                else if (m_Island._api_compatibility_level == ApiCompatibilityLevel.NET_2_0
+                         && AddCustomResponseFileIfPresent(arguments, "gmcs.rsp"))
+                {
+                    Debug.LogWarning("Using obsolete custom response file \'gmcs.rsp\'. " +
+                        $"Please use '{ResponseFilename}' instead.");
+                }
             }
-            return StartCompiler(_island._target, GetCompilerPath(arguments), arguments, BuildPipeline.CompatibilityProfileToClassLibFolder(_island._api_compatibility_level), false, MonoInstallationFinder.GetMonoInstallation(MonoInstallationFinder.MonoBleedingEdgeInstallation));
+
+            return StartCompiler(
+                m_Island._target,
+                GetCompilerPath(),
+                arguments,
+                BuildPipeline.CompatibilityProfileToClassLibFolder(m_Island._api_compatibility_level),
+                false,
+                MonoInstallationFinder.GetMonoInstallation(MonoInstallationFinder.MonoBleedingEdgeInstallation)
+                );
         }
 
-        private string GetCompilerPath(List<string> arguments)
+        static string GetCompilerPath()
         {
             string dir = MonoInstallationFinder.GetProfileDirectory("4.5", MonoInstallationFinder.MonoBleedingEdgeInstallation);
             var compilerPath = Path.Combine(dir, "mcs.exe");
             if (File.Exists(compilerPath))
             {
-                var systemAssemblyDirectory = MonoLibraryHelpers.GetSystemReferenceDirectory(_island._api_compatibility_level);
-
-                if (!string.IsNullOrEmpty(systemAssemblyDirectory) && Directory.Exists(systemAssemblyDirectory))
-                    arguments.Add("-lib:" + PrepareFileName(systemAssemblyDirectory));
                 return compilerPath;
             }
 
@@ -75,6 +88,11 @@ namespace UnityEditor.Scripting.Compilers
         protected override CompilerOutputParserBase CreateOutputParser()
         {
             return new MonoCSharpCompilerOutputParser();
+        }
+
+        protected override string[] GetSystemReferenceDirectories()
+        {
+            return MonoLibraryHelpers.GetSystemReferenceDirectories(m_Island._api_compatibility_level);
         }
 
         public static string[] Compile(string[] sources, string[] references, string[] defines, string outputFile, bool allowUnsafeCode)

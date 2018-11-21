@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using UnityEditor.Modules;
+using UnityEditor.Scripting.ScriptCompilation;
 using UnityEditor.Utils;
 
 namespace UnityEditor.Scripting.Compilers
@@ -18,18 +19,18 @@ namespace UnityEditor.Scripting.Compilers
         {
         }
 
-        private BuildTarget BuildTarget { get { return _island._target; } }
+        BuildTarget BuildTarget => m_Island._target;
 
-        private string[] GetClassLibraries()
+        public static string[] GetClassLibraries(BuildTarget buildTarget)
         {
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(BuildTarget);
+            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(buildTarget);
             if (PlayerSettings.GetScriptingBackend(buildTargetGroup) != ScriptingImplementation.WinRTDotNET)
             {
                 return new string[] {};
             }
 
-            if (BuildTarget != BuildTarget.WSAPlayer)
-                throw new InvalidOperationException(string.Format("MicrosoftCSharpCompiler cannot build for .NET Scripting backend for BuildTarget.{0}.", BuildTarget));
+            if (buildTarget != BuildTarget.WSAPlayer)
+                throw new InvalidOperationException($"MicrosoftCSharpCompiler cannot build for .NET Scripting backend for BuildTarget. {buildTarget}.");
 
             var resolver = new NuGetPackageResolver { ProjectLockFile = @"UWP\project.lock.json" };
             return resolver.Resolve();
@@ -47,13 +48,16 @@ namespace UnityEditor.Scripting.Compilers
             arguments.Add("/langversion:latest");
 
             var platformSupportModule = ModuleManager.FindPlatformSupportModule(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget));
-            var compilationExtension = platformSupportModule.CreateCompilationExtension();
+            if (platformSupportModule != null)
+            {
+                var compilationExtension = platformSupportModule.CreateCompilationExtension();
 
-            arguments.AddRange(GetClassLibraries().Select(r => "/reference:\"" + r + "\""));
-            arguments.AddRange(compilationExtension.GetAdditionalAssemblyReferences().Select(r => "/reference:\"" + r + "\""));
-            arguments.AddRange(compilationExtension.GetWindowsMetadataReferences().Select(r => "/reference:\"" + r + "\""));
-            arguments.AddRange(compilationExtension.GetAdditionalDefines().Select(d => "/define:" + d));
-            arguments.AddRange(compilationExtension.GetAdditionalSourceFiles());
+                arguments.AddRange(GetClassLibraries(BuildTarget).Select(r => "/reference:\"" + r + "\""));
+                arguments.AddRange(compilationExtension.GetAdditionalAssemblyReferences().Select(r => "/reference:\"" + r + "\""));
+                arguments.AddRange(compilationExtension.GetWindowsMetadataReferences().Select(r => "/reference:\"" + r + "\""));
+                arguments.AddRange(compilationExtension.GetAdditionalDefines().Select(d => "/define:" + d));
+                arguments.AddRange(compilationExtension.GetAdditionalSourceFiles());
+            }
         }
 
         private static void ThrowCompilerNotFoundException(string path)
@@ -63,13 +67,13 @@ namespace UnityEditor.Scripting.Compilers
 
         private Program StartCompilerImpl(List<string> arguments, string argsPrefix)
         {
-            foreach (string dll in _island._references)
+            foreach (string dll in m_Island._references)
                 arguments.Add("/reference:" + PrepareFileName(dll));
 
-            foreach (string define in _island._defines.Distinct())
+            foreach (string define in m_Island._defines.Distinct())
                 arguments.Add("/define:" + define);
 
-            foreach (string source in _island._files)
+            foreach (var source in m_Island._files)
             {
                 arguments.Add(PrepareFileName(source).Replace('/', '\\'));
             }
@@ -93,7 +97,7 @@ namespace UnityEditor.Scripting.Compilers
 
         protected override Program StartCompiler()
         {
-            var outputPath = PrepareFileName(_island._output);
+            var outputPath = PrepareFileName(m_Island._output);
 
             // Always build with "/debug:pdbonly", "/optimize+", because even if the assembly is optimized
             // it seems you can still succesfully debug C# scripts in Visual Studio
@@ -104,10 +108,10 @@ namespace UnityEditor.Scripting.Compilers
                 "/out:" + outputPath
             };
 
-            if (_island._allowUnsafeCode)
+            if (m_Island._allowUnsafeCode)
                 arguments.Add("/unsafe");
 
-            if (!_island._development_player)
+            if (!m_Island._development_player)
             {
                 arguments.Add("/debug:pdbonly");
                 arguments.Add("/optimize+");
@@ -121,6 +125,17 @@ namespace UnityEditor.Scripting.Compilers
             string argsPrefix;
             FillCompilerOptions(arguments, out argsPrefix);
             return StartCompilerImpl(arguments, argsPrefix);
+        }
+
+        protected override string[] GetSystemReferenceDirectories()
+        {
+            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(BuildTarget);
+            if (BuildTarget == BuildTarget.WSAPlayer && PlayerSettings.GetScriptingBackend(buildTargetGroup) == ScriptingImplementation.WinRTDotNET)
+            {
+                return GetClassLibraries(BuildTarget).Select(library => Directory.GetParent(library).FullName).Distinct().ToArray();
+            }
+
+            return MonoLibraryHelpers.GetSystemReferenceDirectories(m_Island._api_compatibility_level);
         }
 
         protected override string[] GetStreamContainingCompilerMessages()

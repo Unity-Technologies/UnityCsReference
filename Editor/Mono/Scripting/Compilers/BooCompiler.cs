@@ -23,24 +23,29 @@ namespace UnityEditor.Scripting.Compilers
             {
                 "-debug",
                 "-target:library",
-                "-out:" + _island._output,
+                "-out:" + m_Island._output,
                 "-x-type-inference-rule-attribute:" + typeof(UnityEngineInternal.TypeInferenceRuleAttribute)
             };
 
-            foreach (string dll in _island._references)
+            foreach (string dll in m_Island._references)
                 arguments.Add("-r:" + PrepareFileName(dll));
-            foreach (string define in _island._defines.Distinct())
+            foreach (string define in m_Island._defines.Distinct())
                 arguments.Add("-define:" + define);
-            foreach (string source in _island._files)
+            foreach (string source in m_Island._files)
                 arguments.Add(PrepareFileName(source));
 
             string compilerPath = Path.Combine(GetBooCompilerDirectory(), "booc.exe");
-            return StartCompiler(_island._target, compilerPath, arguments, GetBooProfileDirectory());
+            return StartCompiler(m_Island._target, compilerPath, arguments, GetBooProfileDirectory());
         }
 
         protected override CompilerOutputParserBase CreateOutputParser()
         {
             return new BooCompilerOutputParser();
+        }
+
+        protected override string[] GetSystemReferenceDirectories()
+        {
+            return new[] { GetBooCompilerDirectory() };
         }
 
         string GetBooCompilerDirectory()
@@ -54,7 +59,7 @@ namespace UnityEditor.Scripting.Compilers
         string GetBooProfileDirectory()
         {
             if (PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy)
-                return BuildPipeline.CompatibilityProfileToClassLibFolder(_island._api_compatibility_level);
+                return BuildPipeline.CompatibilityProfileToClassLibFolder(m_Island._api_compatibility_level);
 
             return k_UnityScriptProfileDirectory;
         }
