@@ -288,14 +288,8 @@ namespace UnityEditor
             Texture2D icon = null;
             switch (Path.GetExtension(destName))
             {
-                case ".js":
-                    icon = EditorGUIUtility.IconContent("js Script Icon").image as Texture2D;
-                    break;
                 case ".cs":
                     icon = EditorGUIUtility.IconContent("cs Script Icon").image as Texture2D;
-                    break;
-                case ".boo":
-                    icon = EditorGUIUtility.IconContent("boo Script Icon").image as Texture2D;
                     break;
                 case ".shader":
                     icon = EditorGUIUtility.IconContent<Shader>().image as Texture2D;

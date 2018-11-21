@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using UnityEditor.Utils;
+using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
 
 namespace UnityEditor.Scripting.Compilers
@@ -32,7 +32,7 @@ namespace UnityEditor.Scripting.Compilers
         {
             if (!string.IsNullOrEmpty(folderToLookForResponseFilesIn) && !Path.IsPathRooted(folderToLookForResponseFilesIn))
             {
-                folderToLookForResponseFilesIn = Path.Combine(ProjectPath, folderToLookForResponseFilesIn);
+                folderToLookForResponseFilesIn = AssetPath.Combine(ProjectPath, folderToLookForResponseFilesIn);
             }
 
             var result = new List<string>();
@@ -58,7 +58,7 @@ namespace UnityEditor.Scripting.Compilers
             }
 
             //We only look for the specific response file in the folder.
-            var responseFilePath = Path.Combine(path, ResponseFileName);
+            var responseFilePath = AssetPath.Combine(path, ResponseFileName);
 
             if (File.Exists(responseFilePath))
             {
@@ -69,7 +69,7 @@ namespace UnityEditor.Scripting.Compilers
 
         protected string GetDefaultResponseFiles()
         {
-            var rootResponseFilePath = Paths.Combine(ProjectPath, k_AssetsFolder, ResponseFileName);
+            var rootResponseFilePath = AssetPath.Combine(ProjectPath, k_AssetsFolder, ResponseFileName);
             if (File.Exists(rootResponseFilePath))
             {
                 return rootResponseFilePath;
@@ -77,7 +77,7 @@ namespace UnityEditor.Scripting.Compilers
 
             foreach (var obsoleteResponseFileName in ObsoleteResponseFileNames)
             {
-                var obsoleteResponseFilePath = Paths.Combine(ProjectPath, k_AssetsFolder, obsoleteResponseFileName);
+                var obsoleteResponseFilePath = AssetPath.Combine(ProjectPath, k_AssetsFolder, obsoleteResponseFileName);
                 if (File.Exists(obsoleteResponseFilePath))
                 {
                     return obsoleteResponseFilePath;

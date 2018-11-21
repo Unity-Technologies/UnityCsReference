@@ -123,8 +123,15 @@ namespace UnityEditor
             AssemblyReloadEvents.beforeAssemblyReload -= CloseWindow;
 
             s_LastClosedTime = EditorApplication.timeSinceStartup;
+            CloseContent();
+        }
+
+        // Change to private protected once available in C#.
+        internal void CloseContent()
+        {
             if (m_WindowContent != null)
                 m_WindowContent.OnClose();
+            m_WindowContent = null;
         }
     }
 }

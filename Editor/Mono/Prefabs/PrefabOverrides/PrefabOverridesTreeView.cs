@@ -20,7 +20,7 @@ namespace UnityEditor
         string m_PrefabAssetPath { get; set; }
         GameObject m_PrefabInstanceRoot { get; set; }
         GameObject m_PrefabAssetRoot { get; set; }
-        int m_ShowPreviewForID = -1;
+        int m_LastShownPreviewWindowRowID = -1;
 
         enum ToggleValue { FALSE, TRUE, MIXED };
         enum ItemType { PREFAB_OBJECT, ADDED_OBJECT, REMOVED_OBJECT };
@@ -397,69 +397,54 @@ namespace UnityEditor
                 }
             }
 
-            DoPreviewPopup(item, args.rowRect);
+            if (args.selected && state.selectedIDs.Count == 1 && item.id != m_LastShownPreviewWindowRowID)
+            {
+                DoPreviewPopup(item, args.rowRect);
+            }
+            // Ensure preview is shown when clicking on an already selected item (the preview might have been closed)
+            if (Event.current.type == EventType.MouseDown && args.rowRect.Contains(Event.current.mousePosition))
+            {
+                DoPreviewPopup(item, args.rowRect);
+            }
         }
 
         void DoPreviewPopup(PrefabOverridesTreeViewItem item, Rect rowRect)
         {
-            if (item != null)
+            if (item == null || item.obj == null)
+                return;
+
+            if (PopupWindowWithoutFocus.IsVisible())
             {
-                // Ensure preview is shown when clicking on an already selected item (the preview might have been closed)
-                if (Event.current.type == EventType.MouseDown && rowRect.Contains(Event.current.mousePosition) && !PopupWindowWithoutFocus.IsVisible())
-                    m_ShowPreviewForID = item.id;
-
-                // Show preview
-                if (item.id == m_ShowPreviewForID && Event.current.type != EventType.Layout)
-                {
-                    m_ShowPreviewForID = -1;
-                    if (item.obj != null)
-                    {
-                        Rect buttonRect = rowRect;
-                        buttonRect.width = EditorGUIUtility.currentViewWidth;
-                        Object rowObject = item.obj;
-
-                        Object instance, source;
-                        if (item.type == ItemType.REMOVED_OBJECT)
-                        {
-                            instance = null;
-                            source = rowObject;
-                        }
-                        else if (item.type == ItemType.ADDED_OBJECT)
-                        {
-                            instance = rowObject;
-                            source = null;
-                        }
-                        else
-                        {
-                            instance = rowObject;
-                            source = PrefabUtility.GetCorrespondingObjectFromSource(rowObject);
-                        }
-
-                        PopupWindowWithoutFocus.Show(
-                            buttonRect,
-                            new ComparisonViewPopup(source, instance, item.singleModification, this),
-                            new[] { PopupLocation.Right, PopupLocation.Left, PopupLocation.Below });
-                    }
-                }
-            }
-        }
-
-        protected override void SelectionChanged(IList<int> selectedIds)
-        {
-            base.SelectionChanged(selectedIds);
-            if (selectedIds.Count == 1)
-            {
-                // Not guaranteed to be a PrefabOverridesTreeViewItem.
-                // If there are no overrides, the one item in the tree is not.
-                var selectedItem = FindItem(selectedIds[0], rootItem) as PrefabOverridesTreeViewItem;
-                if (selectedItem != null && selectedItem.obj != null)
-                {
-                    m_ShowPreviewForID = selectedIds[0];
+                if (item.id == m_LastShownPreviewWindowRowID)
                     return;
-                }
             }
 
-            PopupWindowWithoutFocus.Hide();
+            Rect buttonRect = rowRect;
+            buttonRect.width = EditorGUIUtility.currentViewWidth;
+            Object rowObject = item.obj;
+
+            Object instance, source;
+            if (item.type == ItemType.REMOVED_OBJECT)
+            {
+                instance = null;
+                source = rowObject;
+            }
+            else if (item.type == ItemType.ADDED_OBJECT)
+            {
+                instance = rowObject;
+                source = null;
+            }
+            else
+            {
+                instance = rowObject;
+                source = PrefabUtility.GetCorrespondingObjectFromSource(rowObject);
+            }
+
+            m_LastShownPreviewWindowRowID = item.id;
+            PopupWindowWithoutFocus.Show(
+                buttonRect,
+                new ComparisonViewPopup(source, instance, item.singleModification, this),
+                new[] { PopupLocation.Right, PopupLocation.Left, PopupLocation.Below });
         }
 
         public GameObject selectedGameObject

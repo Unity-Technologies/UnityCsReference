@@ -213,7 +213,7 @@ namespace UnityEngine
         // Contains the path to the StreamingAssets folder (RO).
         extern public static string streamingAssetsPath
         {
-            [FreeFunction("GetStreamingAssetsPath")]
+            [FreeFunction("GetStreamingAssetsPath", IsThreadSafe = true)]
             get;
         }
 

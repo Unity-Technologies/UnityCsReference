@@ -138,6 +138,8 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
         }
     }
 
+    protected virtual void ShowArchitectureSpecificOptions() {}
+
     public override void ShowPlatformBuildOptions()
     {
         BuildTarget selectedTarget = GetBestStandaloneTarget(EditorUserBuildSettings.selectedStandaloneTarget);
@@ -180,6 +182,8 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
             EditorUserBuildSettings.selectedStandaloneTarget = newTarget;
             GUIUtility.ExitGUI();
         }
+
+        ShowArchitectureSpecificOptions();
 
         EditorUserBuildSettings.enableHeadlessMode = EditorGUILayout.Toggle(m_HeadlessMode, EditorUserBuildSettings.enableHeadlessMode);
 

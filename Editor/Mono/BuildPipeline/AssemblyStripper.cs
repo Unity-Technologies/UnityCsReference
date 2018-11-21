@@ -81,6 +81,7 @@ namespace UnityEditorInternal
             args.Add($"--dotnetruntime={GetRuntimeArgumentValueForLinker(buildTargetGroup)}");
             args.Add($"--dotnetprofile={GetProfileArgumentValueForLinker(buildTargetGroup)}");
             args.Add("--use-editor-options");
+            args.Add($"--include-directory={CommandLineFormatter.PrepareFileName(workingDirectory)}");
 
             if (EditorUserBuildSettings.allowDebugging)
                 args.Add("--editor-settings-flag=AllowDebugging");

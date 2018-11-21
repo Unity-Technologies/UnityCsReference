@@ -1455,6 +1455,7 @@ namespace UnityEngine
         extern public static bool autoSimulation { get; set; }
         extern public static void SyncTransforms();
         extern public static bool autoSyncTransforms { get; set; }
+        extern public static bool reuseCollisionCallbacks { get; set; }
 
         [NativeName("ComputePenetration")]
         [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()")]

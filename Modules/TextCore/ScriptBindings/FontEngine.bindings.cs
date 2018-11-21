@@ -135,6 +135,8 @@ namespace UnityEngine.TextCore.LowLevel
     {
         private static readonly FontEngine s_Instance = new FontEngine();
 
+        private static uint[] s_GlyphIndexesToMarshall;
+
         private static GlyphMarshallingStruct[] s_GlyphMarshallingStruct_IN = new GlyphMarshallingStruct[16];
         private static GlyphMarshallingStruct[] s_GlyphMarshallingStruct_OUT = new GlyphMarshallingStruct[16];
 
@@ -742,7 +744,9 @@ namespace UnityEngine.TextCore.LowLevel
         [NativeMethod(Name = "TextCore::FontEngine::ReleaseSharedTextureData", IsThreadSafe = true, IsFreeFunction = true)]
         internal extern static void ReleaseSharedTexture();
 
-
+        /// <summary>
+        /// Internal function used to add glyph to atlas texture.
+        /// </summary>
         internal static bool TryAddGlyphToTexture(uint glyphIndex, int padding, GlyphPackingMode packingMode, List<GlyphRect> freeGlyphRects, List<GlyphRect> usedGlyphRects, GlyphRenderMode renderMode, Texture2D texture, out Glyph glyph)
         {
             // Determine potential total allocations required for glyphs and glyph rectangles.
@@ -799,11 +803,100 @@ namespace UnityEngine.TextCore.LowLevel
             return false;
         }
 
+        //
         [NativeMethod(Name = "TextCore::FontEngine::TryAddGlyphToTexture", IsThreadSafe = true, IsFreeFunction = true)]
         extern static bool TryAddGlyphToTexture_Internal(uint glyphIndex, int padding,
             GlyphPackingMode packingMode, [Out] GlyphRect[] freeGlyphRects, ref int freeGlyphRectCount, [Out] GlyphRect[] usedGlyphRects, ref int usedGlyphRectCount,
             GlyphRenderMode renderMode, Texture2D texture, out GlyphMarshallingStruct glyph);
 
+        /// <summary>
+        /// Internal function used to add multiple glyphs to atlas texture.
+        /// </summary>
+        internal static bool TryAddGlyphsToTexture(List<uint> glyphIndexes, int padding, GlyphPackingMode packingMode, List<GlyphRect> freeGlyphRects, List<GlyphRect> usedGlyphRects, GlyphRenderMode renderMode, Texture2D texture, out Glyph[] glyphs)
+        {
+            glyphs = null;
+
+            if (glyphIndexes == null || glyphIndexes.Count == 0)
+                return false;
+
+            int glyphCount = glyphIndexes.Count;
+
+            // Make sure marshalling glyph index array allocations are appropriate.
+            if (s_GlyphIndexesToMarshall == null || s_GlyphIndexesToMarshall.Length < glyphCount)
+            {
+                if (s_GlyphIndexesToMarshall == null)
+                    s_GlyphIndexesToMarshall = new uint[glyphCount];
+                else
+                {
+                    int newSize = Mathf.NextPowerOfTwo(glyphCount + 1);
+                    s_GlyphIndexesToMarshall = new uint[newSize];
+                }
+            }
+
+            // Determine potential total allocations required for glyphs and glyph rectangles.
+            int freeGlyphRectCount = freeGlyphRects.Count;
+            int usedGlyphRectCount = usedGlyphRects.Count;
+            int totalGlyphRects = freeGlyphRectCount + usedGlyphRectCount + glyphCount;
+
+            // Make sure marshalling array(s) allocations are appropriate.
+            if (s_FreeGlyphRects.Length < totalGlyphRects || s_UsedGlyphRects.Length < totalGlyphRects)
+            {
+                int newSize = Mathf.NextPowerOfTwo(totalGlyphRects + 1);
+                s_FreeGlyphRects = new GlyphRect[newSize];
+                s_UsedGlyphRects = new GlyphRect[newSize];
+            }
+
+            // Make sure marshaling array allocations are appropriate.
+            if (s_GlyphMarshallingStruct_OUT.Length < glyphCount)
+            {
+                int newSize = Mathf.NextPowerOfTwo(glyphCount + 1);
+                s_GlyphMarshallingStruct_OUT = new GlyphMarshallingStruct[newSize];
+            }
+
+            // Copy glyph indexes and glyph rect data to marshalling arrays.
+            int glyphRectCount = Mathf.Max(freeGlyphRectCount, usedGlyphRectCount, glyphCount);
+            for (int i = 0; i < glyphRectCount; i++)
+            {
+                if (i < glyphCount)
+                    s_GlyphIndexesToMarshall[i] = glyphIndexes[i];
+
+                if (i < freeGlyphRectCount)
+                    s_FreeGlyphRects[i] = freeGlyphRects[i];
+
+                if (i < usedGlyphRectCount)
+                    s_UsedGlyphRects[i] = usedGlyphRects[i];
+            }
+
+            // Marshall data over to the native side.
+            bool allGlyphsAdded = TryAddGlyphsToTexture_Internal(s_GlyphIndexesToMarshall, padding, packingMode, s_FreeGlyphRects, ref freeGlyphRectCount, s_UsedGlyphRects, ref usedGlyphRectCount, renderMode, texture, s_GlyphMarshallingStruct_OUT, ref glyphCount);
+
+            // Allocate array of glyphs
+            glyphs = new Glyph[glyphCount];
+
+            freeGlyphRects.Clear();
+            usedGlyphRects.Clear();
+
+            // Copy marshalled free and used GlyphRect data over.
+            glyphRectCount = Mathf.Max(freeGlyphRectCount, usedGlyphRectCount, glyphCount);
+            for (int i = 0; i < glyphRectCount; i++)
+            {
+                if (i < glyphCount)
+                    glyphs[i] = new Glyph(s_GlyphMarshallingStruct_OUT[i]);
+
+                if (i < freeGlyphRectCount)
+                    freeGlyphRects.Add(s_FreeGlyphRects[i]);
+
+                if (i < usedGlyphRectCount)
+                    usedGlyphRects.Add(s_UsedGlyphRects[i]);
+            }
+
+            return allGlyphsAdded;
+        }
+
+        [NativeMethod(Name = "TextCore::FontEngine::TryAddGlyphsToTexture", IsThreadSafe = true, IsFreeFunction = true)]
+        extern static bool TryAddGlyphsToTexture_Internal(uint[] glyphIndex, int padding,
+            GlyphPackingMode packingMode, [Out] GlyphRect[] freeGlyphRects, ref int freeGlyphRectCount, [Out] GlyphRect[] usedGlyphRects, ref int usedGlyphRectCount,
+            GlyphRenderMode renderMode, Texture2D texture, [Out] GlyphMarshallingStruct[] glyphs, ref int glyphCount);
 
         /// <summary>
         /// Internal function used to retrieve positional adjustments for pairs of glyphs.
@@ -845,6 +938,13 @@ namespace UnityEngine.TextCore.LowLevel
         // ================================================
         // Experimental / Testing / Benchmarking Functions
         // ================================================
+
+        /// <summary>
+        /// Internal function used to reset an atlas texture to black
+        /// </summary>
+        /// <param name="srcTexture"></param>
+        [NativeMethod(Name = "TextCore::FontEngine::ResetAtlasTexture", IsFreeFunction = true)]
+        internal extern static void ResetAtlasTexture(Texture2D texture);
 
         /// <summary>
         /// Internal function used for testing rasterizing of shapes and glyphs.

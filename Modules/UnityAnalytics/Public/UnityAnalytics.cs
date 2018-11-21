@@ -32,6 +32,16 @@ namespace UnityEngine.Analytics
 
     public static partial class Analytics
     {
+        public static bool playerOptedOut
+        {
+            get
+            {
+                if (!IsInitialized())
+                    return false;
+                return playerOptedOutInternal;
+            }
+        }
+
         public static bool limitUserTracking
         {
             get

@@ -112,7 +112,7 @@ namespace UnityEditor.RestService
 
             var result = new JSONValue();
             result["name"] = island.Name;
-            result["language"] = island.Name.Contains("Boo") ? "Boo" : island.Name.Contains("UnityScript") ? "UnityScript" : "C#";
+            result["language"] = "C#";
             result["files"] = ToJSON(island.MonoIsland._files);
             result["defines"] = ToJSON(island.MonoIsland._defines);
             result["references"] = ToJSON(island.MonoIsland._references);

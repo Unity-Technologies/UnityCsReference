@@ -16,14 +16,8 @@ namespace UnityEditor.Scripting.Compilers
     {
         public class ResponseFileData
         {
-            public class Reference
-            {
-                public String Alias;
-                public String Assembly;
-            }
-
             public string[] Defines;
-            public Reference[] FullPathReferences;
+            public string[] FullPathReferences;
             public bool Unsafe;
             public string[] Errors;
             public string[] OtherArguments;
@@ -38,9 +32,7 @@ namespace UnityEditor.Scripting.Compilers
         static readonly char[] CompilerOptionArgumentSeperators = { ';', ',' };
 
         private Program process;
-        private string _responseFile = null;
         private bool _runAPIUpdater;
-        string m_ProjectDirectory;
 
         // ToDo: would be nice to move MonoIsland to MonoScriptCompilerBase
         protected MonoIsland m_Island;
@@ -53,7 +45,6 @@ namespace UnityEditor.Scripting.Compilers
         {
             m_Island = island;
             _runAPIUpdater = runAPIUpdater;
-            m_ProjectDirectory = Directory.GetParent(Application.dataPath).FullName.ConvertSeparatorsToUnity();
         }
 
         protected string[] GetErrorOutput()
@@ -79,11 +70,6 @@ namespace UnityEditor.Scripting.Compilers
             {
                 process.Dispose();
                 process = null;
-            }
-            if (_responseFile != null)
-            {
-                File.Delete(_responseFile);
-                _responseFile = null;
             }
         }
 
@@ -126,7 +112,7 @@ namespace UnityEditor.Scripting.Compilers
         protected void AddResponseFileToArguments(List<string> arguments, string responseFileName)
         {
             var responseFileData = ParseResponseFileFromFile(
-                Path.Combine(m_ProjectDirectory, responseFileName),
+                responseFileName,
                 Application.dataPath,
                 GetSystemReferenceDirectories());
             foreach (var error in responseFileData.Errors)
@@ -136,7 +122,7 @@ namespace UnityEditor.Scripting.Compilers
 
             arguments.AddRange(responseFileData.Defines.Distinct().Select(define => "/define:" + define));
             arguments.AddRange(responseFileData.FullPathReferences.Select(reference =>
-                "/reference:" + PrepareFileName(reference.Assembly)));
+                "/reference:" + PrepareFileName(reference)));
             if (responseFileData.Unsafe)
             {
                 arguments.Add("/unsafe");
@@ -150,26 +136,47 @@ namespace UnityEditor.Scripting.Compilers
             string projectDirectory,
             string[] systemReferenceDirectories)
         {
-            if (!File.Exists(responseFilePath))
+            var relativeResponseFilePath = GetRelativePath(responseFilePath, projectDirectory);
+            var responseFile = AssetDatabase.LoadAssetAtPath<TextAsset>(relativeResponseFilePath);
+
+            if (!responseFile && File.Exists(responseFilePath))
+            {
+                var responseFileText = File.ReadAllText(responseFilePath);
+                return ParseResponseFileText(
+                    responseFileText,
+                    responseFilePath,
+                    projectDirectory,
+                    systemReferenceDirectories);
+            }
+
+            if (!responseFile)
             {
                 var empty = new ResponseFileData
                 {
                     Defines = new string[0],
-                    FullPathReferences = new ResponseFileData.Reference[0],
+                    FullPathReferences = new string[0],
                     Unsafe = false,
-                    Errors = new string[0]
+                    Errors = new string[0],
+                    OtherArguments = new string[0],
                 };
 
                 return empty;
             }
 
-            var responseFileText = File.ReadAllText(responseFilePath);
-
             return ParseResponseFileText(
-                responseFileText,
-                responseFilePath,
+                responseFile.text,
+                responseFile.name,
                 projectDirectory,
                 systemReferenceDirectories);
+        }
+
+        static string GetRelativePath(string responseFilePath, string projectDirectory)
+        {
+            if (Path.IsPathRooted(responseFilePath) && responseFilePath.Contains(projectDirectory))
+            {
+                responseFilePath = responseFilePath.Substring(Directory.GetParent(Application.dataPath).FullName.Length + 1);
+            }
+            return responseFilePath;
         }
 
         // From:
@@ -238,14 +245,14 @@ namespace UnityEditor.Scripting.Compilers
         }
 
         static ResponseFileData ParseResponseFileText(
-            string responseFileText,
-            string responseFileName,
+            string fileContent,
+            string fileName,
             string projectDirectory,
             string[] systemReferenceDirectories)
         {
             var compilerOptions = new List<CompilerOption>();
 
-            var responseFileStrings = ResponseFileTextToStrings(responseFileText);
+            var responseFileStrings = ResponseFileTextToStrings(fileContent);
 
             foreach (var line in responseFileStrings)
             {
@@ -271,7 +278,7 @@ namespace UnityEditor.Scripting.Compilers
 
             var responseArguments = new List<string>();
             var defines = new List<string>();
-            var references = new List<ResponseFileData.Reference>();
+            var references = new List<string>();
             bool unsafeDefined = false;
             var errors = new List<string>();
 
@@ -320,32 +327,22 @@ namespace UnityEditor.Scripting.Compilers
                             continue;
                         }
 
-                        ResponseFileData.Reference responseReference;
+                        var responseReference = reference;
 
                         int index = reference.IndexOf('=');
                         if (index > -1)
                         {
-                            string alias = reference.Substring(0, index);
-                            string assembly = reference.Substring(index + 1);
+                            var assembly = reference.Substring(index + 1);
 
-                            responseReference = new ResponseFileData.Reference { Alias = alias, Assembly = assembly };
-                        }
-                        else
-                        {
-                            responseReference = new ResponseFileData.Reference { Alias = string.Empty, Assembly = reference };
+                            responseReference = assembly;
                         }
 
-                        string fullPathReference = "";
-                        var referencePath = responseReference.Assembly;
-                        if (Path.IsPathRooted(referencePath))
-                        {
-                            fullPathReference = referencePath;
-                        }
-                        else
+                        var fullPathReference = responseReference;
+                        if (!Path.IsPathRooted(responseReference))
                         {
                             foreach (var directory in systemReferenceDirectories)
                             {
-                                var systemReferencePath = Paths.Combine(directory, referencePath);
+                                var systemReferencePath = Paths.Combine(directory, responseReference);
                                 if (File.Exists(systemReferencePath))
                                 {
                                     fullPathReference = systemReferencePath;
@@ -353,7 +350,7 @@ namespace UnityEditor.Scripting.Compilers
                                 }
                             }
 
-                            var userPath = Paths.Combine(projectDirectory, referencePath);
+                            var userPath = Paths.Combine(projectDirectory, responseReference);
                             if (File.Exists(userPath))
                             {
                                 fullPathReference = userPath;
@@ -362,12 +359,12 @@ namespace UnityEditor.Scripting.Compilers
 
                         if (fullPathReference == "")
                         {
-                            errors.Add($"{responseFileName}: not parsed correctly: {responseReference.Assembly} could not be found as a system library.\n" +
+                            errors.Add($"{fileName}: not parsed correctly: {responseReference} could not be found as a system library.\n" +
                                 "If this was meant as a user reference please provide the relative path from project root (parent of the Assets folder) in the response file.");
                             continue;
                         }
 
-                        responseReference.Assembly = fullPathReference.Replace('\\', '/');
+                        responseReference = fullPathReference.Replace('\\', '/');
                         references.Add(responseReference);
                     }
                     break;
@@ -413,6 +410,11 @@ namespace UnityEditor.Scripting.Compilers
         {
             if (!Poll())
                 Debug.LogWarning("Compile process is not finished yet. This should not happen.");
+
+            if (process == null)
+            {
+                return new CompilerMessage[0];
+            }
 
             DumpStreamOutputToLog();
 

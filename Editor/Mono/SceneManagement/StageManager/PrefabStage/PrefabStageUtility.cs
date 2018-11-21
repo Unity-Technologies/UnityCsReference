@@ -102,12 +102,12 @@ namespace UnityEditor.Experimental.SceneManagement
             return prefabInstanceRoot;
         }
 
-        internal static string GetEnvironmentScenePathForPrefab(GameObject prefabInstanceRoot)
+        static string GetEnvironmentScenePathForPrefab(bool isUIPrefab)
         {
             string environmentEditingScenePath = "";
 
             // If prefab root has RectTransform, try to use UI environment.
-            if (prefabInstanceRoot.GetComponent<RectTransform>() != null)
+            if (isUIPrefab)
             {
                 if (EditorSettings.prefabUIEnvironment != null)
                     environmentEditingScenePath = AssetDatabase.GetAssetPath(EditorSettings.prefabUIEnvironment);
@@ -125,7 +125,7 @@ namespace UnityEditor.Experimental.SceneManagement
             return environmentEditingScenePath;
         }
 
-        internal static Scene CreatePreviewScene(string environmentEditingScenePath)
+        static Scene LoadOrCreatePreviewScene(string environmentEditingScenePath)
         {
             Scene previewScene;
             if (!string.IsNullOrEmpty(environmentEditingScenePath))
@@ -135,7 +135,6 @@ namespace UnityEditor.Experimental.SceneManagement
                 var visitor = new TransformVisitor();
                 foreach (var root in roots)
                 {
-                    visitor.VisitAndAllowEarlyOut(root.transform, UnpackPrefabInstance, null);
                     visitor.VisitAll(root.transform, AppendEnvironmentName, null);
                 }
             }
@@ -145,16 +144,6 @@ namespace UnityEditor.Experimental.SceneManagement
             }
 
             return previewScene;
-        }
-
-        static bool UnpackPrefabInstance(Transform transform, object userData)
-        {
-            if (PrefabUtility.IsPartOfNonAssetPrefabInstance(transform))
-            {
-                PrefabUtility.UnpackPrefabInstance(transform.gameObject, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
-                return false;
-            }
-            return true;
         }
 
         static void AppendEnvironmentName(Transform transform, object userData)
@@ -201,36 +190,44 @@ namespace UnityEditor.Experimental.SceneManagement
             }
         }
 
-        internal static bool HandleAutoReparenting(GameObject instanceRoot, Scene scene)
+        internal static Scene MovePrefabRootToEnvironmentScene(GameObject prefabInstanceRoot)
         {
-            if (instanceRoot == null)
-                return false;
+            bool isUIPrefab = PrefabStageUtility.IsUI(prefabInstanceRoot);
 
-            if (HandleUIReparenting(instanceRoot, scene))
-                return true;
+            // Create the environment scene and move the prefab root to this scene to ensure
+            // the correct rendersettings (skybox etc) are used in Prefab Mode.
+            string environmentEditingScenePath = GetEnvironmentScenePathForPrefab(isUIPrefab);
+            Scene environmentScene = LoadOrCreatePreviewScene(environmentEditingScenePath);
+            environmentScene.name = prefabInstanceRoot.name;
+            SceneManager.MoveGameObjectToScene(prefabInstanceRoot, environmentScene);
 
-            return false;
+            if (isUIPrefab)
+                HandleUIReparentingIfNeeded(prefabInstanceRoot, environmentScene);
+            else
+                prefabInstanceRoot.transform.SetAsFirstSibling();
+
+            return environmentScene;
         }
 
-        static bool HandleUIReparenting(GameObject instanceRoot, Scene scene)
+        static bool IsUI(GameObject root)
         {
-            // We need a Canvas in order to render UI so below we ensure the prefab instance is under a Canvas
+            // We require a RectTransform and a CanvasRenderer to be considered a UI prefab.
+            // E.g 3D TextMeshPro uses RectTransform but a MeshRenderer so should not be considered a UI prefab
+            // This function needs to be peformant since it is called every time a prefab is opened in a prefab stage.
+            return root.GetComponent<RectTransform>() != null && root.GetComponentInChildren<CanvasRenderer>(true) != null;
+        }
+
+        static void HandleUIReparentingIfNeeded(GameObject instanceRoot, Scene scene)
+        {
+            // We need a Canvas in order to render UI so ensure the prefab instance is under a Canvas
             Canvas canvas = instanceRoot.GetComponent<Canvas>();
             if (canvas != null)
-                return true;
+                return;
 
-            bool rootHasRectTransform = instanceRoot.transform is RectTransform;
-            if (rootHasRectTransform)
-            {
-                GameObject canvasGameObject = GetOrCreateCanvasGameObject(instanceRoot, scene);
-                instanceRoot.transform.SetParent(canvasGameObject.transform, false);
-                return true;
-            }
-
-            return false;
+            GameObject canvasGameObject = GetOrCreateCanvasGameObject(instanceRoot, scene);
+            instanceRoot.transform.SetParent(canvasGameObject.transform, false);
         }
 
-        // TODO: make hooks for extensions to handle setting up
         static GameObject GetOrCreateCanvasGameObject(GameObject instanceRoot, Scene scene)
         {
             Canvas canvas = GetCanvasInScene(instanceRoot, scene);

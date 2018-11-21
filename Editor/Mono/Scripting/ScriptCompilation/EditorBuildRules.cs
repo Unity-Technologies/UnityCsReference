@@ -394,7 +394,19 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 HashSet<string> assemblySourceFiles;
 
                 var scriptExtension = ScriptCompilers.GetExtensionOfSourceFile(dirtySourceFile);
-                var scriptLanguage = ScriptCompilers.GetLanguageFromExtension(scriptExtension);
+                SupportedLanguage scriptLanguage = null;
+
+                try
+                {
+                    scriptLanguage = ScriptCompilers.GetLanguageFromExtension(scriptExtension);
+                }
+                catch (Exception e)
+                {
+                    // UnityScript/Boo support has been disabled but not removed,
+                    // so we log the exception and skip the source file.
+                    UnityEngine.Debug.Log(e);
+                    continue;
+                }
 
                 if (!dirtyTargetAssemblies.TryGetValue(targetAssembly, out assemblySourceFiles))
                 {
