@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
 using UnityEditor.Utils;
 
@@ -22,9 +23,10 @@ namespace UnityEditor.Scripting.Compilers
             }
 
             public string[] Defines;
-            public Reference[] References;
+            public Reference[] FullPathReferences;
             public bool Unsafe;
             public string[] Errors;
+            public string[] OtherArguments;
         }
 
         public class CompilerOption
@@ -38,9 +40,10 @@ namespace UnityEditor.Scripting.Compilers
         private Program process;
         private string _responseFile = null;
         private bool _runAPIUpdater;
+        string m_ProjectDirectory;
 
         // ToDo: would be nice to move MonoIsland to MonoScriptCompilerBase
-        protected MonoIsland _island;
+        protected MonoIsland m_Island;
 
         protected abstract Program StartCompiler();
 
@@ -48,8 +51,9 @@ namespace UnityEditor.Scripting.Compilers
 
         protected ScriptCompilerBase(MonoIsland island, bool runAPIUpdater)
         {
-            _island = island;
+            m_Island = island;
             _runAPIUpdater = runAPIUpdater;
+            m_ProjectDirectory = Directory.GetParent(Application.dataPath).FullName.ConvertSeparatorsToUnity();
         }
 
         protected string[] GetErrorOutput()
@@ -98,14 +102,16 @@ namespace UnityEditor.Scripting.Compilers
 
         protected string GetMonoProfileLibDirectory()
         {
-            var profile = BuildPipeline.CompatibilityProfileToClassLibFolder(_island._api_compatibility_level);
+            var profile = BuildPipeline.CompatibilityProfileToClassLibFolder(m_Island._api_compatibility_level);
 
-            var monoInstall = (PlayerSettingsEditor.IsLatestApiCompatibility(_island._api_compatibility_level))
+            var monoInstall = PlayerSettingsEditor.IsLatestApiCompatibility(m_Island._api_compatibility_level)
                 ? MonoInstallationFinder.MonoBleedingEdgeInstallation
                 : MonoInstallationFinder.MonoInstallation;
 
             return MonoInstallationFinder.GetProfileDirectory(profile, monoInstall);
         }
+
+        protected abstract string[] GetSystemReferenceDirectories();
 
         protected bool AddCustomResponseFileIfPresent(List<string> arguments, string responseFileName)
         {
@@ -114,19 +120,36 @@ namespace UnityEditor.Scripting.Compilers
             if (!File.Exists(relativeCustomResponseFilePath))
                 return false;
 
-            arguments.Add("@" + relativeCustomResponseFilePath);
+            var responseFileData = ParseResponseFileFromFile(
+                    Path.Combine(m_ProjectDirectory, relativeCustomResponseFilePath),
+                    Application.dataPath,
+                    GetSystemReferenceDirectories());
+            foreach (var error in responseFileData.Errors)
+            {
+                Debug.LogError($"{relativeCustomResponseFilePath} Parse Error : {error}");
+            }
+
+            arguments.AddRange(responseFileData.Defines.Distinct().Select(define => "/define:" + define));
+            arguments.AddRange(responseFileData.FullPathReferences.Select(reference =>
+                    "/reference:" + PrepareFileName(reference.Assembly)));
+
+            if (responseFileData.Unsafe) arguments.Add("/unsafe");
+            arguments.AddRange(responseFileData.OtherArguments);
 
             return true;
         }
 
-        public static ResponseFileData ParseResponseFileFromFile(string responseFilePath)
+        public static ResponseFileData ParseResponseFileFromFile(
+            string responseFilePath,
+            string projectDirectory,
+            string[] systemReferenceDirectories)
         {
             if (!File.Exists(responseFilePath))
             {
                 var empty = new ResponseFileData
                 {
                     Defines = new string[0],
-                    References = new ResponseFileData.Reference[0],
+                    FullPathReferences = new ResponseFileData.Reference[0],
                     Unsafe = false,
                     Errors = new string[0]
                 };
@@ -136,7 +159,11 @@ namespace UnityEditor.Scripting.Compilers
 
             var responseFileText = File.ReadAllText(responseFilePath);
 
-            return ParseResponseFileText(responseFileText);
+            return ParseResponseFileText(
+                responseFileText,
+                responseFilePath,
+                projectDirectory,
+                systemReferenceDirectories);
         }
 
         // From:
@@ -204,7 +231,11 @@ namespace UnityEditor.Scripting.Compilers
             return args.ToArray();
         }
 
-        public static ResponseFileData ParseResponseFileText(string responseFileText)
+        static ResponseFileData ParseResponseFileText(
+            string responseFileText,
+            string responseFileName,
+            string projectDirectory,
+            string[] systemReferenceDirectories)
         {
             var compilerOptions = new List<CompilerOption>();
 
@@ -232,6 +263,7 @@ namespace UnityEditor.Scripting.Compilers
                 compilerOptions.Add(new CompilerOption { Arg = arg, Value = value });
             }
 
+            var responseArguments = new List<string>();
             var defines = new List<string>();
             var references = new List<ResponseFileData.Reference>();
             bool unsafeDefined = false;
@@ -276,24 +308,61 @@ namespace UnityEditor.Scripting.Compilers
                             break;
                         }
 
-                        foreach (string reference in refs)
+                        var reference = refs[0];
+                        if (reference.Length == 0)
                         {
-                            if (reference.Length == 0)
-                                continue;
+                            continue;
+                        }
 
-                            int index = reference.IndexOf('=');
-                            if (index > -1)
+                        ResponseFileData.Reference responseReference;
+
+                        int index = reference.IndexOf('=');
+                        if (index > -1)
+                        {
+                            string alias = reference.Substring(0, index);
+                            string assembly = reference.Substring(index + 1);
+
+                            responseReference = new ResponseFileData.Reference { Alias = alias, Assembly = assembly };
+                        }
+                        else
+                        {
+                            responseReference = new ResponseFileData.Reference { Alias = string.Empty, Assembly = reference };
+                        }
+
+                        string fullPathReference = "";
+                        var referencePath = responseReference.Assembly;
+                        if (Path.IsPathRooted(referencePath))
+                        {
+                            fullPathReference = referencePath;
+                        }
+                        else
+                        {
+                            foreach (var directory in systemReferenceDirectories)
                             {
-                                string alias = reference.Substring(0, index);
-                                string assembly = reference.Substring(index + 1);
-
-                                references.Add(new ResponseFileData.Reference { Alias = alias, Assembly = assembly });
+                                var systemReferencePath = Paths.Combine(directory, referencePath);
+                                if (File.Exists(systemReferencePath))
+                                {
+                                    fullPathReference = systemReferencePath;
+                                    break;
+                                }
                             }
-                            else
+
+                            var userPath = Paths.Combine(projectDirectory, referencePath);
+                            if (File.Exists(userPath))
                             {
-                                references.Add(new ResponseFileData.Reference { Alias = string.Empty, Assembly = reference });
+                                fullPathReference = userPath;
                             }
                         }
+
+                        if (fullPathReference == "")
+                        {
+                            errors.Add($"{responseFileName}: not parsed correctly: {responseReference.Assembly} could not be found as a system library.\n" +
+                                "If this was meant as a user reference please provide the relative path from project root (parent of the Assets folder) in the response file.");
+                            continue;
+                        }
+
+                        responseReference.Assembly = fullPathReference.Replace('\\', '/');
+                        references.Add(responseReference);
                     }
                     break;
 
@@ -309,15 +378,20 @@ namespace UnityEditor.Scripting.Compilers
                         unsafeDefined = false;
                     }
                     break;
+                    default:
+                        var valueWithColon = value.Length == 0 ? "" : ":" + value;
+                        responseArguments.Add(arg + valueWithColon);
+                        break;
                 }
             }
 
             var responseFileData = new ResponseFileData
             {
                 Defines = defines.ToArray(),
-                References = references.ToArray(),
+                FullPathReferences = references.ToArray(),
                 Unsafe = unsafeDefined,
-                Errors = errors.ToArray()
+                Errors = errors.ToArray(),
+                OtherArguments = responseArguments.ToArray(),
             };
 
             return responseFileData;
@@ -336,7 +410,10 @@ namespace UnityEditor.Scripting.Compilers
 
             DumpStreamOutputToLog();
 
-            return CreateOutputParser().Parse(GetStreamContainingCompilerMessages(), CompilationHadFailure()).ToArray();
+            return CreateOutputParser().Parse(
+                GetStreamContainingCompilerMessages(),
+                CompilationHadFailure()
+                ).ToArray();
         }
 
         protected bool CompilationHadFailure()
@@ -367,7 +444,11 @@ namespace UnityEditor.Scripting.Compilers
 
                 string[] stdOutput = GetStandardOutput();
 
-                Console.WriteLine("-----CompilerOutput:-stdout--exitcode: " + process.ExitCode + "--compilationhadfailure: " + hadCompilationFailure + "--outfile: " + _island._output);
+                Console.WriteLine(
+                    "-----CompilerOutput:-stdout--exitcode: " + process.ExitCode
+                    + "--compilationhadfailure: " + hadCompilationFailure
+                    + "--outfile: " + m_Island._output
+                    );
                 foreach (string line in stdOutput)
                     Console.WriteLine(line);
 
@@ -383,7 +464,10 @@ namespace UnityEditor.Scripting.Compilers
             if (!_runAPIUpdater)
                 return;
 
-            APIUpdaterHelper.UpdateScripts(responseFile, _island.GetExtensionOfSourceFiles());
+            APIUpdaterHelper.UpdateScripts(
+                responseFile,
+                m_Island.GetExtensionOfSourceFiles()
+                );
         }
     }
 
