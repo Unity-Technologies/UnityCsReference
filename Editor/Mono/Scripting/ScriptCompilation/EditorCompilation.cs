@@ -272,40 +272,83 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return filePaths;
         }
 
-        string CustomTargetAssembliesToFilePaths(EditorBuildRules.TargetAssembly targetAssembly)
+        string CustomTargetAssemblyToFilePath(EditorBuildRules.TargetAssembly targetAssembly)
         {
             return FindCustomTargetAssemblyFromTargetAssembly(targetAssembly).FilePath;
         }
 
-        void CheckCyclicAssemblyReferencesDFS(EditorBuildRules.TargetAssembly visitAssembly, HashSet<EditorBuildRules.TargetAssembly> visited)
+        public struct CheckCyclicAssemblyReferencesFunctions
         {
-            if (visited.Contains(visitAssembly))
-                throw new Compilation.AssemblyDefinitionException("Assembly with cyclic references detected", CustomTargetAssembliesToFilePaths(visited));
+            public Func<EditorBuildRules.TargetAssembly, string> ToFilePathFunc;
+            public Func<IEnumerable<EditorBuildRules.TargetAssembly>, string[]> ToFilePathsFunc;
+        }
 
+        static void CheckCyclicAssemblyReferencesDFS(EditorBuildRules.TargetAssembly visitAssembly,
+            HashSet<EditorBuildRules.TargetAssembly> visited,
+            HashSet<EditorBuildRules.TargetAssembly> recursion,
+            CheckCyclicAssemblyReferencesFunctions functions)
+        {
             visited.Add(visitAssembly);
+            recursion.Add(visitAssembly);
 
             foreach (var reference in visitAssembly.References)
             {
                 if (reference.Filename == visitAssembly.Filename)
-                    throw new Compilation.AssemblyDefinitionException("Assembly contains a references to itself", CustomTargetAssembliesToFilePaths(visitAssembly));
+                {
+                    throw new Compilation.AssemblyDefinitionException("Assembly contains a references to itself",
+                        functions.ToFilePathFunc(visitAssembly));
+                }
 
-                CheckCyclicAssemblyReferencesDFS(reference, visited);
+                if (recursion.Contains(reference))
+                {
+                    throw new Compilation.AssemblyDefinitionException("Assembly with cyclic references detected",
+                        functions.ToFilePathsFunc(recursion));
+                }
+
+                if (!visited.Contains(reference))
+                {
+                    CheckCyclicAssemblyReferencesDFS(reference,
+                        visited,
+                        recursion,
+                        functions);
+                }
             }
 
-            visited.Remove(visitAssembly);
+            recursion.Remove(visitAssembly);
         }
 
-        void CheckCyclicAssemblyReferences()
+        public static void CheckCyclicAssemblyReferences(EditorBuildRules.TargetAssembly[] customTargetAssemblies,
+            CheckCyclicAssemblyReferencesFunctions functions)
         {
             if (customTargetAssemblies == null || customTargetAssemblies.Length < 1)
                 return;
 
             var visited = new HashSet<EditorBuildRules.TargetAssembly>();
 
+            foreach (var assembly in customTargetAssemblies)
+            {
+                if (!visited.Contains(assembly))
+                {
+                    var recursion = new HashSet<EditorBuildRules.TargetAssembly>();
+
+                    CheckCyclicAssemblyReferencesDFS(assembly,
+                        visited,
+                        recursion,
+                        functions);
+                }
+            }
+        }
+
+        void CheckCyclicAssemblyReferences()
+        {
             try
             {
-                foreach (var assembly in customTargetAssemblies)
-                    CheckCyclicAssemblyReferencesDFS(assembly, visited);
+                CheckCyclicAssemblyReferencesFunctions functions;
+
+                functions.ToFilePathFunc = CustomTargetAssemblyToFilePath;
+                functions.ToFilePathsFunc = CustomTargetAssembliesToFilePaths;
+
+                CheckCyclicAssemblyReferences(customTargetAssemblies, functions);
             }
             catch (Exception e)
             {

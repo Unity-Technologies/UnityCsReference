@@ -223,13 +223,6 @@ namespace UnityEditor
                     options.options |= BuildOptions.AllowDebugging;
                 if (EditorUserBuildSettings.symlinkLibraries)
                     options.options |= BuildOptions.SymlinkLibraries;
-
-                if (buildTarget == BuildTarget.Android)
-                {
-                    if (EditorUserBuildSettings.exportAsGoogleAndroidProject)
-                        options.options |= BuildOptions.AcceptExternalModificationsToPlayer;
-                }
-
                 if (EditorUserBuildSettings.enableHeadlessMode)
                     options.options |= BuildOptions.EnableHeadlessMode;
                 if (EditorUserBuildSettings.connectProfiler && (developmentBuild || buildTarget == BuildTarget.WSAPlayer))

@@ -19,8 +19,6 @@ namespace UnityEditor
             AboutWindow w = EditorWindow.GetWindowWithRect<AboutWindow>(new Rect(100, 100, 570, 340), true, "About Unity");
             w.position = new Rect(100, 100, 570, 340);
             w.m_Parent.window.m_DontSaveToLayout = true;
-
-            AboutWindowNames.ParseCredits();
         }
 
         private static GUIContent s_MonoLogo, s_AgeiaLogo, s_Header;
@@ -40,6 +38,8 @@ namespace UnityEditor
         {
             EditorApplication.update += UpdateScroll;
             m_LastScrollUpdate = EditorApplication.timeSinceStartup;
+
+            AboutWindowNames.ParseCreditsIfNecessary();
         }
 
         public void OnDisable()
