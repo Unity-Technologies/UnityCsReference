@@ -18,16 +18,17 @@ namespace UnityEngine.Experimental
 {
     public interface ISubsystemDescriptor
     {
+        bool disablesLegacyVr { get; }
     }
 
-    internal interface ISubsystemDescriptorImpl
+    internal interface ISubsystemDescriptorImpl : ISubsystemDescriptor
     {
         IntPtr ptr { get; set; }
     }
 
     [UsedByNativeCode("XRSubsystemDescriptorBase")]
     [StructLayout(LayoutKind.Sequential)]
-    public class IntegratedSubsystemDescriptor : ISubsystemDescriptor, ISubsystemDescriptorImpl
+    public class IntegratedSubsystemDescriptor : ISubsystemDescriptorImpl
     {
         internal IntPtr m_Ptr;
 
@@ -36,12 +37,18 @@ namespace UnityEngine.Experimental
             get { return Internal_SubsystemDescriptors.GetId(m_Ptr); }
         }
 
+        public bool disablesLegacyVr
+        {
+            get { return Internal_SubsystemDescriptors.GetDisablesLegacyVR(m_Ptr); }
+        }
+
         IntPtr ISubsystemDescriptorImpl.ptr { get { return m_Ptr; } set { m_Ptr = value; } }
     }
 
     public abstract class SubsystemDescriptor : ISubsystemDescriptor
     {
         public string id { get; set; }
+        public bool disablesLegacyVr { get; set; }
         public System.Type subsystemImplementationType { get; set; }
     }
 
@@ -188,6 +195,9 @@ namespace UnityEngine.Experimental
 
         [NativeConditional("ENABLE_XR")]
         public static extern string GetId(IntPtr descriptorPtr);
+
+        [NativeConditional("ENABLE_XR")]
+        public static extern bool GetDisablesLegacyVR(IntPtr descriptorPtr);
     }
 
     [NativeType(Header = "Modules/XR/XRSubsystemManager.h")]
@@ -196,6 +206,20 @@ namespace UnityEngine.Experimental
         static SubsystemManager()
         {
             StaticConstructScriptingClassMap();
+        }
+
+        public static void GetAllSubsystemDescriptors(List<ISubsystemDescriptor> descriptors)
+        {
+            descriptors.Clear();
+            foreach (var descriptor in Internal_SubsystemDescriptors.s_IntegratedSubsystemDescriptors)
+            {
+                descriptors.Add(descriptor);
+            }
+
+            foreach (var descriptor in Internal_SubsystemDescriptors.s_StandaloneSubsystemDescriptors)
+            {
+                descriptors.Add(descriptor);
+            }
         }
 
         public static void GetSubsystemDescriptors<T>(List<T> descriptors)
@@ -237,6 +261,28 @@ namespace UnityEngine.Experimental
 
         [NativeConditional("ENABLE_XR")]
         extern internal static void StaticConstructScriptingClassMap();
+
+        public static event Action reloadSubsytemsStarted;
+
+        [RequiredByNativeCode]
+        static void Internal_ReloadSubsystemsStarted()
+        {
+            if (reloadSubsytemsStarted != null)
+            {
+                reloadSubsytemsStarted();
+            }
+        }
+
+        public static event Action reloadSubsytemsCompleted;
+
+        [RequiredByNativeCode]
+        static void Internal_ReloadSubsystemsCompleted()
+        {
+            if (reloadSubsytemsCompleted != null)
+            {
+                reloadSubsytemsCompleted();
+            }
+        }
     }
 
     public interface ISubsystem

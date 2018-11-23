@@ -1100,9 +1100,6 @@ namespace UnityEditor
             if (name == "Direct3D12")
                 name = "Direct3D12 (Experimental)";
 
-            if (name == "XboxOneD3D12")
-                name = "XboxOneD3D12 (Experimental)";
-
             // For WebGL, display the actual WebGL version names instead of corresponding GLES APIs for clarification.
             if (target == BuildTarget.WebGL)
             {

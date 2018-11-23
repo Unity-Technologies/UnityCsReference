@@ -44,7 +44,6 @@ namespace UnityEditor
             Panel.loadResourceFunc = StyleSheetResourceUtil.LoadResource;
             StyleSheetApplicator.getCursorIdFunc = UIElementsEditorUtility.GetCursorId;
             Panel.TimeSinceStartup = () => (long)(EditorApplication.timeSinceStartup * 1000.0f);
-            Panel.instanceIdToObjectFunc = EditorUtility.InstanceIDToObject;
 
             ExperimentalUI.Panel.loadResourceFunc = StyleSheetResourceUtil.LoadResource;
             ExperimentalUI.StyleSheets.StyleSheetApplicator.getCursorIdFunc = EditorExperimentalUI.UIElementsEditorUtility.GetCursorId;
@@ -66,17 +65,17 @@ namespace UnityEditor
             HandleUtility.EndHandles();
         }
 
+        static List<Panel> panelsIteration = new List<Panel>();
+
         [RequiredByNativeCode]
         static void UpdateSchedulers()
         {
             DataWatchService.sharedInstance.PollNativeData();
 
             {
-                var iterator = UIElementsUtility.GetPanelsIterator();
-                while (iterator.MoveNext())
+                UIElementsUtility.GetAllPanels(panelsIteration);
+                foreach (var panel in panelsIteration)
                 {
-                    var panel = iterator.Current.Value;
-
                     // Game panels' scheduler are ticked by the engine
                     if (panel.contextType != ContextType.Editor)
                         continue;

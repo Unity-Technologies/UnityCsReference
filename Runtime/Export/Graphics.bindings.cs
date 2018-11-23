@@ -192,6 +192,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Graphics/CopyTexture.h")]
     [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
     [NativeHeader("Runtime/Shaders/ComputeShader.h")]
+    [NativeHeader("Runtime/Misc/PlayerSettings.h")]
     public partial class Graphics
     {
         [FreeFunction("GraphicsScripting::GetMaxDrawMeshInstanceCount")] extern private static int Internal_GetMaxDrawMeshInstanceCount();
@@ -201,6 +202,11 @@ namespace UnityEngine
         public static ColorGamut activeColorGamut { get { return GetActiveColorGamut(); } }
 
         [StaticAccessor("GetGfxDevice()", StaticAccessorType.Dot)] extern public static UnityEngine.Rendering.GraphicsTier activeTier { get; set; }
+
+        [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+        [NativeMethod(Name = "GetPreserveFramebufferAlpha")]
+        extern internal static bool GetPreserveFramebufferAlpha();
+        public static bool preserveFramebufferAlpha { get { return GetPreserveFramebufferAlpha(); } }
 
         [FreeFunction("GraphicsScripting::GetActiveColorBuffer")] extern private static RenderBuffer GetActiveColorBuffer();
         [FreeFunction("GraphicsScripting::GetActiveDepthBuffer")] extern private static RenderBuffer GetActiveDepthBuffer();
@@ -246,11 +252,29 @@ namespace UnityEngine
         [FreeFunction("GraphicsScripting::DrawMeshInstancedIndirect")]
         extern private static void Internal_DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material material, Bounds bounds, ComputeBuffer bufferWithArgs, int argsOffset, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, int layer, Camera camera, LightProbeUsage lightProbeUsage, LightProbeProxyVolume lightProbeProxyVolume);
 
+        [FreeFunction("GraphicsScripting::DrawProceduralNow")]
+        extern private static void Internal_DrawProceduralNow(MeshTopology topology, int vertexCount, int instanceCount);
+
+        [FreeFunction("GraphicsScripting::DrawProceduralIndexedNow")]
+        extern private static void Internal_DrawProceduralIndexedNow(MeshTopology topology, GraphicsBuffer indexBuffer, int indexCount, int instanceCount);
+
+        [FreeFunction("GraphicsScripting::DrawProceduralIndirectNow")]
+        extern private static void Internal_DrawProceduralIndirectNow(MeshTopology topology, ComputeBuffer bufferWithArgs, int argsOffset);
+
+        [FreeFunction("GraphicsScripting::DrawProceduralIndexedIndirectNow")]
+        extern private static void Internal_DrawProceduralIndexedIndirectNow(MeshTopology topology, GraphicsBuffer indexBuffer, ComputeBuffer bufferWithArgs, int argsOffset);
+
         [FreeFunction("GraphicsScripting::DrawProcedural")]
-        extern private static void Internal_DrawProcedural(MeshTopology topology, int vertexCount, int instanceCount);
+        extern private static void Internal_DrawProcedural(Material material, Bounds bounds, MeshTopology topology, int vertexCount, int instanceCount, Camera camera, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, int layer);
+
+        [FreeFunction("GraphicsScripting::DrawProceduralIndexed")]
+        extern private static void Internal_DrawProceduralIndexed(Material material, Bounds bounds, MeshTopology topology, GraphicsBuffer indexBuffer, int indexCount, int instanceCount, Camera camera, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, int layer);
 
         [FreeFunction("GraphicsScripting::DrawProceduralIndirect")]
-        extern private static void Internal_DrawProceduralIndirect(MeshTopology topology, ComputeBuffer bufferWithArgs, int argsOffset);
+        extern private static void Internal_DrawProceduralIndirect(Material material, Bounds bounds, MeshTopology topology, ComputeBuffer bufferWithArgs, int argsOffset, Camera camera, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, int layer);
+
+        [FreeFunction("GraphicsScripting::DrawProceduralIndexedIndirect")]
+        extern private static void Internal_DrawProceduralIndexedIndirect(Material material, Bounds bounds, MeshTopology topology, GraphicsBuffer indexBuffer, ComputeBuffer bufferWithArgs, int argsOffset, Camera camera, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, int layer);
 
         [FreeFunction("GraphicsScripting::BlitMaterial")]
         extern private static void Internal_BlitMaterial5(Texture source, RenderTexture dest, [NotNull] Material mat, int pass, bool setRT);

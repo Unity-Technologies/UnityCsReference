@@ -68,6 +68,10 @@ namespace UnityEngine.UIElements
         [NonSerialized]
         internal TableType orderedClassSelectors;
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        [NonSerialized]
+        internal bool hasSelectorsCached;
+
         static bool TryCheckAccess<T>(T[] list, StyleValueType type, StyleValueHandle[] handles, int index, out T value)
         {
             bool result = false;
@@ -108,6 +112,10 @@ namespace UnityEngine.UIElements
 
         void OnEnable()
         {
+            // This flag exists for the sole purpose of letting the UIElementsModule
+            // detect if it needs to cache data on a currently used style sheet after a re-import
+            // moving caching knowledge in this module would remove the need for this.
+            hasSelectorsCached = false;
             SetupReferences();
         }
 

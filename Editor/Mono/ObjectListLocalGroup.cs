@@ -45,7 +45,7 @@ namespace UnityEditor
             public bool ShowNone { get { return m_ShowNoneItem; } }
             public override bool NeedsRepaint { get { return false; } protected set {} }
             List<int> m_LastRenderedAssetInstanceIDs = new List<int>();
-            List<int> m_LastRenderedAssetDirtyIDs = new List<int>();
+            List<int> m_LastRenderedAssetDirtyCounts = new List<int>();
 
             public bool m_ListMode = false;
             FilteredHierarchy m_FilteredHierarchy;
@@ -229,23 +229,23 @@ namespace UnityEditor
             void ClearDirtyStateTracking()
             {
                 m_LastRenderedAssetInstanceIDs.Clear();
-                m_LastRenderedAssetDirtyIDs.Clear();
+                m_LastRenderedAssetDirtyCounts.Clear();
             }
 
             void AddDirtyStateFor(int instanceID)
             {
                 m_LastRenderedAssetInstanceIDs.Add(instanceID);
-                m_LastRenderedAssetDirtyIDs.Add(EditorUtility.GetDirtyIndex(instanceID));
+                m_LastRenderedAssetDirtyCounts.Add(EditorUtility.GetDirtyCount(instanceID));
             }
 
             public bool IsAnyLastRenderedAssetsDirty()
             {
                 for (int i = 0; i < m_LastRenderedAssetInstanceIDs.Count; ++i)
                 {
-                    int dirtyIndex = EditorUtility.GetDirtyIndex(m_LastRenderedAssetInstanceIDs[i]);
-                    if (dirtyIndex != m_LastRenderedAssetDirtyIDs[i])
+                    int dirtyCount = EditorUtility.GetDirtyCount(m_LastRenderedAssetInstanceIDs[i]);
+                    if (dirtyCount != m_LastRenderedAssetDirtyCounts[i])
                     {
-                        m_LastRenderedAssetDirtyIDs[i] = dirtyIndex;
+                        m_LastRenderedAssetDirtyCounts[i] = dirtyCount;
                         return true;
                     }
                 }

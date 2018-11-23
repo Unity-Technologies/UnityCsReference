@@ -10,6 +10,25 @@ namespace UnityEditor.Experimental.TerrainAPI
 {
     internal class SmoothHeightTool : TerrainPaintTool<SmoothHeightTool>
     {
+        [SerializeField]
+        public float m_direction = 0.0f;     // -1 to 1
+
+        class Styles
+        {
+            public readonly GUIContent description = EditorGUIUtility.TrTextContent("Click to smooth the terrain height.");
+            public readonly GUIContent direction = EditorGUIUtility.TrTextContent("Blur Direction", "Blur only up (1.0), only down (-1.0) or both (0.0)");
+        }
+
+        private static Styles m_styles;
+        private Styles GetStyles()
+        {
+            if (m_styles == null)
+            {
+                m_styles = new Styles();
+            }
+            return m_styles;
+        }
+
         public override string GetName()
         {
             return "Smooth Height";
@@ -17,11 +36,17 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         public override string GetDesc()
         {
-            return "Click to average out the terrain height.";
+            return GetStyles().description.text;
         }
 
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
+            Styles styles = GetStyles();
+            EditorGUI.BeginChangeCheck();
+            m_direction = EditorGUILayout.Slider(styles.direction, m_direction, -1.0f, 1.0f);
+            if (EditorGUI.EndChangeCheck())
+                Save(true);
+
             editContext.ShowBrushesGUI(5);
         }
 
@@ -29,12 +54,15 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             Material mat = TerrainPaintUtility.GetBuiltinPaintMaterial();
 
-            brushStrength = Event.current.shift ? -brushStrength : brushStrength;
-
             Vector4 brushParams = new Vector4(brushStrength, 0.0f, 0.0f, 0.0f);
             mat.SetTexture("_BrushTex", brushTexture);
             mat.SetVector("_BrushParams", brushParams);
-
+            Vector4 smoothWeights = new Vector4(
+                Mathf.Clamp01(1.0f - Mathf.Abs(m_direction)),   // centered
+                Mathf.Clamp01(-m_direction),                    // min
+                Mathf.Clamp01(m_direction),                     // max
+                0.0f);                                          // unused
+            mat.SetVector("_SmoothWeights", smoothWeights);
             TerrainPaintUtility.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
 
             Graphics.Blit(paintContext.sourceRenderTexture, paintContext.destinationRenderTexture, mat, (int)TerrainPaintUtility.BuiltinPaintMaterialPasses.SmoothHeights);

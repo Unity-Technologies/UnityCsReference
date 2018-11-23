@@ -45,7 +45,7 @@ namespace UnityEngine.UIElements
         public override int GetHashCode()
         {
             var hashCode = 851985039;
-            hashCode = hashCode * -1521134295 + texture.GetHashCode();
+            hashCode = hashCode * -1521134295 + EqualityComparer<Texture2D>.Default.GetHashCode(texture);
             return hashCode;
         }
 

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor.UIElements.Debugger;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -10,6 +9,9 @@ namespace UnityEditor
 {
     internal class ElementHighlighter
     {
+        internal static readonly Color kSizePaddingSecondaryColor = new Color(194f / 255, 237f / 255, 138f / 255);
+        internal static readonly Color kSizeSecondaryColor = new Color(139f / 255, 181f / 255, 192f / 255);
+
         private VisualElement m_PaddingHighlighter;
         private VisualElement m_ContentHighlighter;
 
@@ -44,14 +46,14 @@ namespace UnityEditor
             {
                 var borderWidth = 1f;
                 m_PaddingHighlighter = new VisualElement();
-                m_PaddingHighlighter.style.borderColor = UIElementsDebugger.Styles.kSizePaddingSecondaryColor;
+                m_PaddingHighlighter.style.borderColor = kSizePaddingSecondaryColor;
                 m_PaddingHighlighter.style.borderLeftWidth = borderWidth;
                 m_PaddingHighlighter.style.borderRightWidth = borderWidth;
                 m_PaddingHighlighter.style.borderTopWidth = borderWidth;
                 m_PaddingHighlighter.style.borderBottomWidth = borderWidth;
                 m_PaddingHighlighter.pickingMode = PickingMode.Ignore;
                 m_ContentHighlighter = new VisualElement();
-                m_ContentHighlighter.style.borderColor = UIElementsDebugger.Styles.kSizeSecondaryColor;
+                m_ContentHighlighter.style.borderColor = kSizeSecondaryColor;
                 m_ContentHighlighter.style.borderLeftWidth = borderWidth;
                 m_ContentHighlighter.style.borderRightWidth = borderWidth;
                 m_ContentHighlighter.style.borderTopWidth = borderWidth;

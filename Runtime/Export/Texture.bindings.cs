@@ -27,6 +27,11 @@ namespace UnityEngine
         [NativeProperty("AnisoLimit")] extern public static AnisotropicFiltering anisotropicFiltering { get; set; }
         [NativeName("SetGlobalAnisoLimits")] extern public static void SetGlobalAnisotropicFilteringLimits(int forcedMin, int globalMax);
 
+        public virtual GraphicsFormat graphicsFormat
+        {
+            get { return GraphicsFormatUtility.GetFormat(this); }
+        }
+
         extern private int GetDataWidth();
         extern private int GetDataHeight();
         extern private TextureDimension GetDimension();
@@ -152,6 +157,7 @@ namespace UnityEngine
 
         [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] extern public static Texture2D whiteTexture { get; }
         [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] extern public static Texture2D blackTexture { get; }
+        [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] extern public static Texture2D normalTexture { get; }
 
         extern public void Compress(bool highQuality);
 
@@ -202,6 +208,14 @@ namespace UnityEngine
             [FreeFunction(Name = "GetTextureStreamingManager().GetRequestedMipmapLevel", HasExplicitThis = true)]
             get;
             [FreeFunction(Name = "GetTextureStreamingManager().SetRequestedMipmapLevel", HasExplicitThis = true)]
+            set;
+        }
+
+        extern internal bool loadAllMips
+        {
+            [FreeFunction(Name = "GetTextureStreamingManager().GetLoadAllMips", HasExplicitThis = true)]
+            get;
+            [FreeFunction(Name = "GetTextureStreamingManager().SetLoadAllMips", HasExplicitThis = true)]
             set;
         }
 
@@ -490,7 +504,7 @@ namespace UnityEngine
         extern public bool isCreated { [NativeName("IsInitialized")] get; }
 
         [FreeFunction(Name = "SparseTextureScripting::Create", ThrowsException = true)]
-        extern private static void Internal_Create([Writable] SparseTexture mono, int width, int height, TextureFormat format, bool linear, int mipCount);
+        extern private static void Internal_Create([Writable] SparseTexture mono, int width, int height, GraphicsFormat format, int mipCount);
 
         [FreeFunction(Name = "SparseTextureScripting::UpdateTile", HasExplicitThis = true)]
         extern public void UpdateTile(int tileX, int tileY, int miplevel, Color32[] data);
@@ -515,11 +529,17 @@ namespace UnityEngine
         override extern public int height { get; set; }
         override extern public TextureDimension dimension { get; set; }
 
-        [NativeProperty("MipMap")] extern public bool useMipMap { get; set; }
-        [NativeProperty("SRGBReadWrite")] extern public bool sRGB { get; }
-        [NativeProperty("ColorFormat")] extern public RenderTextureFormat format { get; set; }
-        [NativeProperty("VRUsage")] extern public VRTextureUsage vrUsage { get; set; }
-        [NativeProperty("Memoryless")] extern public RenderTextureMemoryless memorylessMode { get; set; }
+        [NativeProperty("ColorFormat")]             extern public new GraphicsFormat graphicsFormat { get; set; }
+        [NativeProperty("MipMap")]                  extern public bool useMipMap { get; set; }
+        [NativeProperty("SRGBReadWrite")]           extern public bool sRGB { get; }
+        [NativeProperty("VRUsage")]                 extern public VRTextureUsage vrUsage { get; set; }
+        [NativeProperty("Memoryless")]              extern public RenderTextureMemoryless memorylessMode { get; set; }
+
+        public RenderTextureFormat format
+        {
+            get { return GraphicsFormatUtility.GetRenderTextureFormat(graphicsFormat); }
+            set { graphicsFormat = GraphicsFormatUtility.GetGraphicsFormat(value, sRGB); }
+        }
 
         extern public bool autoGenerateMips { get; set; }
         extern public int volumeDepth { get; set; }
@@ -615,7 +635,7 @@ namespace UnityEngine
     public sealed partial class CustomRenderTexture : RenderTexture
     {
         [FreeFunction(Name = "CustomRenderTextureScripting::Create")]
-        extern private static void Internal_CreateCustomRenderTexture([Writable] CustomRenderTexture rt, RenderTextureReadWrite readWrite);
+        extern private static void Internal_CreateCustomRenderTexture([Writable] CustomRenderTexture rt);
 
         [NativeName("TriggerUpdate")]
         extern public void Update(int count);

@@ -3,29 +3,57 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
-using UnityEditor.Modules;
+using UnityEditor;
+using UnityEditor.Build.Player;
+using UnityEditor.Build.Reporting;
 using UnityEditor.Scripting;
 using UnityEditor.Scripting.Compilers;
-using UnityEngine;
-using UnityEditor;
-using UnityEditor.Build.Reporting;
 using UnityEditor.Utils;
+using UnityEngine;
 using Debug = UnityEngine.Debug;
-using PackageInfo = Unity.DataContract.PackageInfo;
-using System.Xml.Linq;
-using System.Xml.XPath;
-using UnityEditor.Build.Player;
 
 namespace UnityEditorInternal
 {
     internal class IL2CPPUtils
     {
+        private static readonly string[] BaseDefinesWindows = new[]
+        {
+            "_CRT_SECURE_NO_WARNINGS",
+            "_WINSOCK_DEPRECATED_NO_WARNINGS",
+            "WIN32",
+            "WINDOWS",
+            "_UNICODE",
+            "UNICODE",
+        };
+
+        private static readonly string[] BaseDefines20 = new[]
+        {
+            "ALL_INTERIOR_POINTERS=1",
+            "GC_GCJ_SUPPORT=1",
+            "JAVA_FINALIZATION=1",
+            "NO_EXECUTE_PERMISSION=1",
+            "GC_NO_THREADS_DISCOVERY=1",
+            "IGNORE_DYNAMIC_LOADING=1",
+            "GC_DONT_REGISTER_MAIN_STATIC_DATA=1",
+            "GC_VERSION_MAJOR=7",
+            "GC_VERSION_MINOR=7",
+            "GC_VERSION_MICRO=0",
+            "GC_THREADS=1",
+            "USE_MMAP=1",
+            "USE_MUNMAP=1",
+        }.ToArray();
+
+        private static readonly string[] BaseDefines46 = BaseDefines20.Concat(new[]
+        {
+            "NET_4_0=1",
+            "UNITY_AOT=1",
+            "NET_STANDARD_2_0=1"
+        }).ToArray();
+
         public const string BinaryMetadataSuffix = "-metadata.dat";
 
         internal static IIl2CppPlatformProvider PlatformProviderForNotModularPlatform(BuildTarget target, bool developmentBuild)
@@ -125,6 +153,92 @@ namespace UnityEditorInternal
                 default:
                     return false;
             }
+        }
+
+        internal static string[] GetBuilderDefinedDefines(IIl2CppPlatformProvider il2cppPlatformProvider, BuildTargetGroup buildTargetGroup)
+        {
+            List<string> defines = new List<string>();
+            var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
+
+            switch (apiCompatibilityLevel)
+            {
+                case ApiCompatibilityLevel.NET_2_0:
+                case ApiCompatibilityLevel.NET_2_0_Subset:
+                    defines.AddRange(BaseDefines20);
+                    break;
+
+                case ApiCompatibilityLevel.NET_4_6:
+                case ApiCompatibilityLevel.NET_Standard_2_0:
+                    defines.AddRange(BaseDefines46);
+                    break;
+
+                default:
+                    throw new InvalidOperationException($"IL2CPP doesn't support building with {apiCompatibilityLevel} API compatibility level!");
+            }
+
+
+            var target = il2cppPlatformProvider.target;
+            if (target == BuildTarget.StandaloneWindows || target == BuildTarget.StandaloneWindows64 ||
+                target == BuildTarget.XboxOne || target == BuildTarget.WSAPlayer)
+            {
+                defines.AddRange(BaseDefinesWindows);
+
+                if (target == BuildTarget.WSAPlayer)
+                {
+                    defines.Add("WINAPI_FAMILY=WINAPI_FAMILY_APP");
+                }
+                else
+                {
+                    defines.Add("WINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP");
+                }
+            }
+
+            if (EnableIL2CPPDebugger(il2cppPlatformProvider, buildTargetGroup))
+                defines.Add("IL2CPP_MONO_DEBUGGER=1");
+
+            if (BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", target))
+            {
+                var hasGCBarrierValidation = PlayerSettings.gcWBarrierValidation;
+                if (hasGCBarrierValidation)
+                {
+                    defines.Add("IL2CPP_ENABLE_STRICT_WRITE_BARRIERS=1");
+                    defines.Add("IL2CPP_ENABLE_WRITE_BARRIER_VALIDATION=1");
+                }
+
+                var hasIncrementalGCTimeSlice = PlayerSettings.gcIncremental && (apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6 || apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0);
+
+                if (hasGCBarrierValidation || hasIncrementalGCTimeSlice)
+                {
+                    var timeslice = hasIncrementalGCTimeSlice ? "3" : "0";
+                    defines.Add("IL2CPP_ENABLE_WRITE_BARRIERS=1");
+                    defines.Add($"IL2CPP_INCREMENTAL_TIME_SLICE={timeslice}");
+                }
+            }
+
+            return defines.ToArray();
+        }
+
+        internal static string[] GetBuildingIL2CPPArguments(IIl2CppPlatformProvider il2cppPlatformProvider, BuildTargetGroup buildTargetGroup)
+        {
+            // When changing this function, don't forget to change GetBuilderDefinedDefines!
+            var arguments = new List<string>();
+            var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
+
+            if (EnableIL2CPPDebugger(il2cppPlatformProvider, buildTargetGroup))
+                arguments.Add("--enable-debugger");
+
+            if (BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", il2cppPlatformProvider.target))
+            {
+                var hasGCBarrierValidation = PlayerSettings.gcWBarrierValidation;
+                if (hasGCBarrierValidation)
+                    arguments.Add("--write-barrier-validation");
+
+                var hasIncrementalGCTimeSlice = PlayerSettings.gcIncremental && (apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6 || apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0);
+                if (hasIncrementalGCTimeSlice)
+                    arguments.Add("--incremental-g-c-time-slice=3");
+            }
+
+            return arguments.ToArray();
         }
 
         internal static string GetIl2CppFolder()
@@ -300,11 +414,9 @@ namespace UnityEditorInternal
                 arguments.Add("--mono-runtime");
 
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
+            var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
+            arguments.Add(string.Format("--dotnetprofile=\"{0}\"", IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(apiCompatibilityLevel)));
 
-            arguments.Add(string.Format("--dotnetprofile=\"{0}\"", IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup))));
-
-            if (IL2CPPUtils.EnableIL2CPPDebugger(m_PlatformProvider, buildTargetGroup) && platformSupportsManagedDebugging)
-                arguments.Add("--enable-debugger");
 
             var il2CppNativeCodeBuilder = m_PlatformProvider.CreateIl2CppNativeCodeBuilder();
             if (il2CppNativeCodeBuilder != null)
@@ -314,14 +426,7 @@ namespace UnityEditorInternal
                 arguments.AddRange(Il2CppNativeCodeBuilderUtils.AddBuilderArguments(il2CppNativeCodeBuilder, OutputFileRelativePath(), m_PlatformProvider.includePaths, m_PlatformProvider.libraryPaths, compilerConfiguration));
             }
 
-            if (BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", m_PlatformProvider.target))
-            {
-                if (PlayerSettings.gcWBarrierValidation)
-                    arguments.Add("--write-barrier-validation");
-                if (PlayerSettings.gcIncremental && PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
-                    arguments.Add("--incremental-g-c-time-slice=3");
-            }
-
+            arguments.AddRange(IL2CPPUtils.GetBuildingIL2CPPArguments(m_PlatformProvider, buildTargetGroup));
             arguments.Add(string.Format("--map-file-parser=\"{0}\"", GetMapFileParserPath()));
 
             var additionalArgs = IL2CPPUtils.GetAdditionalArguments();
@@ -331,6 +436,11 @@ namespace UnityEditorInternal
             arguments.Add("--directory=\"" + Path.GetFullPath(inputDirectory) + "\"");
 
             arguments.Add(string.Format("--generatedcppdir=\"{0}\"", Path.GetFullPath(outputDirectory)));
+
+            // NOTE: any arguments added here that affect how generated code is built need
+            // to also be added to PlatformDependent\Win\Extensions\Managed\VisualStudioProjectHelpers.cs
+            // as that file generated project files that invoke back into IL2CPP in order to build
+            // generated code
 
             string progressMessage = "Converting managed assemblies to C++";
             if (il2CppNativeCodeBuilder != null)

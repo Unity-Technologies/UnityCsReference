@@ -8,9 +8,9 @@ using System.Linq;
 using UnityEngine;
 using UnityEditorInternal;
 
-namespace UnityEditor.AdvancedDropdown
+namespace UnityEditor.AddComponent
 {
-    class NewScriptDropdownItem : AdvancedDropdownItem
+    class NewScriptDropdownItem : ComponentDropdownItem
     {
         private readonly char[] kInvalidPathChars = new char[] {'<', '>', ':', '"', '|', '?', '*', (char)0};
         private readonly char[] kPathSepChars = new char[] {'/', '\\'};
@@ -26,13 +26,10 @@ namespace UnityEditor.AdvancedDropdown
             get { return m_ClassName; }
         }
 
-        public NewScriptDropdownItem() : base("New Script", L10n.Tr("New Script"), -1) {}
-
-        public override bool OnAction()
+        public NewScriptDropdownItem()
+            : base("New Script")
         {
-            Create(AddComponentWindow.s_AddComponentWindow.m_GameObjects);
-            GUIUtility.ExitGUI();
-            return true;
+            localizedName = L10n.Tr("New Script");
         }
 
         internal bool CanCreate()
@@ -62,7 +59,7 @@ namespace UnityEditor.AdvancedDropdown
             return blockReason;
         }
 
-        internal void Create(GameObject[] gameObjects)
+        internal void Create(GameObject[] gameObjects, string searchString)
         {
             if (!CanCreate())
                 return;
@@ -75,15 +72,6 @@ namespace UnityEditor.AdvancedDropdown
                 script.SetScriptTypeWasJustCreatedFromComponentMenu();
                 InternalEditorUtility.AddScriptComponentUncheckedUndoable(go, script);
             }
-
-            AddComponentWindow.SendUsabilityAnalyticsEvent(new AddComponentWindow.AnalyticsEventData
-            {
-                name = m_ClassName,
-                filter = AddComponentWindow.s_AddComponentWindow.searchString,
-                isNewScript = true
-            });
-
-            AddComponentWindow.s_AddComponentWindow.Close();
         }
 
         private bool InvalidTargetPath()

@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Text;
 using UnityEditor.Experimental;
 using UnityEngine;
 
@@ -38,14 +37,14 @@ namespace UnityEditor.StyleSheets
 
             style.fixedWidth = styleBlock.GetFloat(StyleCatalogKeyword.width, style.fixedWidth);
             style.fixedHeight = styleBlock.GetFloat(StyleCatalogKeyword.height, style.fixedHeight);
-            style.margin = EditorResources.SetStyleRectOffset(styleBlock, "margin", style.margin);
-            style.padding = EditorResources.SetStyleRectOffset(styleBlock, "padding", style.padding);
+            style.margin = GetStyleRectOffset(styleBlock, "margin", style.margin);
+            style.padding = GetStyleRectOffset(styleBlock, "padding", style.padding);
 
             style.stretchHeight = styleBlock.GetBool("-unity-stretch-height".GetHashCode(), style.stretchHeight);
             style.stretchWidth = styleBlock.GetBool("-unity-stretch-width".GetHashCode(), style.stretchWidth);
 
-            style.border = EditorResources.SetStyleRectOffset(styleBlock, "-unity-slice", style.border);
-            style.overflow = EditorResources.SetStyleRectOffset(styleBlock, "-unity-overflow", style.overflow);
+            style.border = GetStyleRectOffset(styleBlock, "-unity-slice", style.border);
+            style.overflow = GetStyleRectOffset(styleBlock, "-unity-overflow", style.overflow);
 
             var contentOffsetKey = "-unity-content-offset".GetHashCode();
             if (styleBlock.HasValue(contentOffsetKey, StyleValue.Type.Rect))
@@ -54,15 +53,15 @@ namespace UnityEditor.StyleSheets
                 style.contentOffset = new Vector2(contentOffsetSize.width, contentOffsetSize.height);
             }
 
-            style.font = styleBlock.GetResource<Font>("-unity-font".GetHashCode(), style.font);
-            style.font = styleBlock.GetResource<Font>("font".GetHashCode(), style.font);
+            style.font = styleBlock.GetResource("-unity-font".GetHashCode(), style.font);
+            style.font = styleBlock.GetResource("font".GetHashCode(), style.font);
 
             if (style.fontSize == 0 || styleBlock.HasValue(StyleCatalogKeyword.fontSize, StyleValue.Type.Number))
             {
                 var defaultFontSize = rootBlock.GetInt("--unity-font-size", style.fontSize);
                 style.fontSize = styleBlock.GetInt(StyleCatalogKeyword.fontSize, useExtensionDefaultValues ? defaultFontSize : style.fontSize);
             }
-            style.fontStyle = EditorResources.ParseEnum(styleBlock, "font-style".GetHashCode(), style.fontStyle);
+            style.fontStyle = ParseEnum(styleBlock, "font-style".GetHashCode(), style.fontStyle);
 
             style.imagePosition = ConverterUtils.ToImagePosition(styleBlock.GetText("-unity-image-position".GetHashCode(), ConverterUtils.ToUssString(style.imagePosition)));
             style.clipping = ConverterUtils.ToTextClipping(styleBlock.GetText("-unity-clipping".GetHashCode(), ConverterUtils.ToUssString(style.clipping)));
@@ -142,6 +141,31 @@ namespace UnityEditor.StyleSheets
             var blockName = ussStyleRuleName.Replace(".", "");
             PopulateFromUSS(EditorResources.styleCatalog, style, blockName, ussInPlaceStyleOverride);
             return style;
+        }
+
+        internal static RectOffset GetStyleRectOffset(StyleBlock block, int propertyKey, RectOffset src)
+        {
+            var rect = block.GetRect(propertyKey, new StyleRect(src));
+            return new RectOffset(Mathf.RoundToInt(rect.left), Mathf.RoundToInt(rect.right), Mathf.RoundToInt(rect.top), Mathf.RoundToInt(rect.bottom));
+        }
+
+        internal static RectOffset GetStyleRectOffset(StyleBlock block, string propertyKey, RectOffset src)
+        {
+            return GetStyleRectOffset(block, propertyKey.GetHashCode(), src);
+        }
+
+        internal static T ParseEnum<T>(StyleBlock block, int key, T defaultValue)
+        {
+            try
+            {
+                if (block.HasValue(key, StyleValue.Type.Text))
+                    return (T)Enum.Parse(typeof(T), block.GetText(key), true);
+                return defaultValue;
+            }
+            catch
+            {
+                return defaultValue;
+            }
         }
     }
 }

@@ -25,6 +25,16 @@ namespace UnityEditor.Experimental
             styleCatalog.Refresh();
         }
 
+        private static bool CanEnableExtendedStyles()
+        {
+            var rootBlock = styleCatalog.GetStyle(StyleCatalogKeyword.root, StyleState.root);
+            var styleExtensionDisabled = rootBlock.GetBool("-unity-disable-style-extensions");
+            var runningTests = Application.isTestRun || Application.isBatchMode;
+            if (!styleExtensionDisabled && !runningTests)
+                return true;
+            return false;
+        }
+
         private static bool IsEditorStyleSheet(string path)
         {
             var pathLowerCased = path.ToLower();
@@ -54,6 +64,53 @@ namespace UnityEditor.Experimental
 
             styleCatalog.AddPaths(paths);
             styleCatalog.Refresh();
+
+            if (CanEnableExtendedStyles())
+            {
+                // Update gui skin style layouts
+                var skin = GUIUtility.GetDefaultSkin();
+                if (skin != null)
+                {
+                    skin.ForEachGUIStyleProperty(UpdateGUIStyleProperties);
+                    foreach (var style in skin.customStyles)
+                        UpdateGUIStyleProperties(style.name, style);
+                }
+            }
+        }
+
+        private static void ResetDeprecatedBackgroundImage(GUIStyleState state)
+        {
+            state.background = null;
+            if (state.scaledBackgrounds != null && state.scaledBackgrounds.Length >= 1)
+                state.scaledBackgrounds[0] = null;
+        }
+
+        private static void UpdateGUIStyleProperties(string name, GUIStyle style)
+        {
+            var sname = style.name.Replace(' ', '-');
+            var block = styleCatalog.GetStyle(sname);
+            if (!block.IsValid())
+                return;
+
+            try
+            {
+                GUIStyleExtensions.PopulateStyle(styleCatalog, style, sname);
+
+                // The new style extension do not support state backgrounds anymore.
+                // Any background images needs to be defined in the uss data files.
+                ResetDeprecatedBackgroundImage(style.normal);
+                ResetDeprecatedBackgroundImage(style.hover);
+                ResetDeprecatedBackgroundImage(style.active);
+                ResetDeprecatedBackgroundImage(style.focused);
+                ResetDeprecatedBackgroundImage(style.onNormal);
+                ResetDeprecatedBackgroundImage(style.onHover);
+                ResetDeprecatedBackgroundImage(style.onActive);
+                ResetDeprecatedBackgroundImage(style.onFocused);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"Failed to parse extended style properties for {sname}\n{ex.Message}");
+            }
         }
 
         // Returns the editor resources absolute file system path.
@@ -108,26 +165,6 @@ namespace UnityEditor.Experimental
                 catalog.AddPath(path);
             catalog.Refresh();
             return catalog;
-        }
-
-        internal static RectOffset SetStyleRectOffset(StyleBlock block, string propertyKey, RectOffset src)
-        {
-            var rect = block.GetRect(propertyKey, new StyleRect(src));
-            return new RectOffset(Mathf.RoundToInt(rect.left), Mathf.RoundToInt(rect.right), Mathf.RoundToInt(rect.top), Mathf.RoundToInt(rect.bottom));
-        }
-
-        internal static T ParseEnum<T>(StyleBlock block, int key, T defaultValue)
-        {
-            try
-            {
-                if (block.HasValue(key, StyleValue.Type.Text))
-                    return (T)Enum.Parse(typeof(T), block.GetText(key), true);
-                return defaultValue;
-            }
-            catch
-            {
-                return defaultValue;
-            }
         }
     }
 }

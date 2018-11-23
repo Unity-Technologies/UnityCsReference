@@ -4,12 +4,12 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEditor.Experimental.AssetImporters;
 using System.Collections;
 using System.IO;
 using UnityEditorInternal;
 using UnityEditor;
-
 
 namespace UnityEditor
 {
@@ -21,7 +21,7 @@ namespace UnityEditor
         public static void CreateNewDefaultTerrainLayer()
         {
             TerrainLayer terrainLayer = new TerrainLayer();
-            ProjectWindowUtil.CreateAsset(terrainLayer, "Untitled.terrainlayer");
+            ProjectWindowUtil.CreateAsset(terrainLayer, "New Terrain Layer.terrainlayer");
         }
 
         private class Styles
@@ -359,7 +359,7 @@ namespace UnityEditor
             PreviewHelpers.AdjustWidthAndHeightForStaticPreview(texwidth, texheight, ref width, ref height);
 
             RenderTexture oldRT = RenderTexture.active;
-            RenderTexture tempRT = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32);
+            RenderTexture tempRT = RenderTexture.GetTemporary(width, height, 0, SystemInfo.GetGraphicsFormat(DefaultFormat.LDR));
             Graphics.Blit(t.diffuseTexture, tempRT);
             Texture2D previewTexture = new Texture2D(width, height, TextureFormat.ARGB32, false);
             RenderTexture.active = tempRT;

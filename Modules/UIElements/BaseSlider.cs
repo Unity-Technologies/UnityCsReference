@@ -255,7 +255,6 @@ namespace UnityEngine.UIElements
             if (needsElement)
             {
                 IStyle inlineStyles = dragElement.style;
-                IComputedStyle computedStyle = dragElement.computedStyle;
                 dragElement.visible = true;
 
                 // Any factor smaller than 1f will necessitate a drag element

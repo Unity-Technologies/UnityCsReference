@@ -12,6 +12,13 @@ namespace UnityEditor
     public sealed partial class Selection
     {
         public static System.Action selectionChanged;
+        internal static event System.Action<int> selectedObjectWasDestroyed;
+
+        private static void Internal_SelectedObjectWasDestroyed(int instanceID)
+        {
+            if (selectedObjectWasDestroyed != null)
+                selectedObjectWasDestroyed(instanceID);
+        }
 
         private static void Internal_CallSelectionChanged()
         {

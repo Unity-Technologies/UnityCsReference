@@ -215,6 +215,20 @@ namespace UnityEditor
             return projectBrowser.GetActiveFolderPath();
         }
 
+        internal static bool TryGetActiveFolderPath(out string path)
+        {
+            ProjectBrowser projectBrowser = GetProjectBrowserIfExists();
+
+            path = string.Empty;
+
+            if (projectBrowser == null || !projectBrowser.IsTwoColumns())
+                return false;
+
+            path = projectBrowser.GetActiveFolderPath();
+
+            return true;
+        }
+
         internal static void EndNameEditAction(EndNameEditAction action, int instanceId, string pathName, string resourceFile)
         {
             pathName = AssetDatabase.GenerateUniqueAssetPath(pathName);

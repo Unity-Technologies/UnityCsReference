@@ -327,6 +327,7 @@ namespace UnityEditor.U2D
         protected virtual void LoadOutline()
         {
             m_Outline = ScriptableObject.CreateInstance<SpriteOutlineModel>();
+            m_Outline.hideFlags = HideFlags.HideAndDontSave;
             var spriteDataProvider = spriteEditorWindow.GetDataProvider<ISpriteEditorDataProvider>();
             var outlineDataProvider = spriteEditorWindow.GetDataProvider<ISpriteOutlineDataProvider>();
             foreach (var rect in spriteDataProvider.GetSpriteRects())

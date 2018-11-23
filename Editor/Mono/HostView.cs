@@ -21,10 +21,7 @@ namespace UnityEditor
         internal GUIStyle background;
         [SerializeField] private EditorWindow m_ActualView;
 
-        [System.NonSerialized] private Rect m_BackgroundClearRect = new Rect(0, 0, 0, 0);
         [System.NonSerialized] protected readonly RectOffset m_BorderSize = new RectOffset();
-
-        private bool m_IsGameView;
 
         // Cached version of the static color for the actual object instance...
         Color m_PlayModeDarkenColor;
@@ -41,7 +38,6 @@ namespace UnityEditor
                 return;
             DeregisterSelectedPane(clearActualView: true, sendEvents: true);
             m_ActualView = value;
-            m_IsGameView = m_ActualView is GameView;
             RegisterSelectedPane(sendEvents);
             actualViewChanged?.Invoke(this);
         }
@@ -50,8 +46,7 @@ namespace UnityEditor
         {
             DeregisterSelectedPane(clearActualView: false, sendEvents: true);
             RegisterSelectedPane(sendEvents: true);
-            if (actualViewChanged != null)
-                actualViewChanged(this);
+            actualViewChanged?.Invoke(this);
         }
 
         internal void UpdateMargins(EditorWindow window)
@@ -195,13 +190,13 @@ namespace UnityEditor
         protected override void OnDestroy()
         {
             if (m_ActualView)
-                UnityEngine.Object.DestroyImmediate(m_ActualView, true);
+                DestroyImmediate(m_ActualView, true);
             base.OnDestroy();
         }
 
-        protected System.Type[] GetPaneTypes()
+        protected Type[] GetPaneTypes()
         {
-            return new System.Type[]
+            return new[]
             {
                 typeof(SceneView),
                 typeof(GameView),
@@ -245,17 +240,17 @@ namespace UnityEditor
             EditorModes.OnHierarchyChange(m_ActualView);
         }
 
-        System.Reflection.MethodInfo GetPaneMethod(string methodName)
+        MethodInfo GetPaneMethod(string methodName)
         {
             return GetPaneMethod(methodName, m_ActualView);
         }
 
-        System.Reflection.MethodInfo GetPaneMethod(string methodName, object obj)
+        MethodInfo GetPaneMethod(string methodName, object obj)
         {
             if (obj == null)
                 return null;
 
-            System.Type t = obj.GetType();
+            Type t = obj.GetType();
 
             while (t != null)
             {
@@ -312,9 +307,6 @@ namespace UnityEditor
 
             DoWindowDecorationStart();
 
-            if (m_IsGameView) // GameView exits GUI, so draw overlay border earlier
-                GUI.Box(onGUIPosition, GUIContent.none, HostViewStyles.overlay);
-
             BeginOffsetArea(viewRect, GUIContent.none, "TabWindowBackground");
 
             EditorGUIUtility.ResetGUIState();
@@ -365,7 +357,7 @@ namespace UnityEditor
 
         protected void Invoke(string methodName, object obj)
         {
-            System.Reflection.MethodInfo mi = GetPaneMethod(methodName, obj);
+            MethodInfo mi = GetPaneMethod(methodName, obj);
             mi?.Invoke(obj, null);
         }
 
@@ -514,10 +506,16 @@ namespace UnityEditor
 
         protected virtual RectOffset GetBorderSize() { return m_BorderSize; }
 
-        protected void ShowGenericMenu(float topOffset)
+        protected bool HasExtraDockAreaButton()
+        {
+            MethodInfo mi = GetPaneMethod("ShowButton", m_ActualView);
+            return mi != null;
+        }
+
+        protected void ShowGenericMenu(float leftOffset, float topOffset)
         {
             GUIStyle gs = "PaneOptions";
-            Rect paneMenu = new Rect(position.width - gs.fixedWidth - 4, topOffset, gs.fixedWidth, gs.fixedHeight);
+            Rect paneMenu = new Rect(leftOffset, topOffset, gs.fixedWidth, gs.fixedHeight);
             if (EditorGUI.DropdownButton(paneMenu, GUIContent.none, FocusType.Passive, "PaneOptions"))
                 PopupGenericMenu(m_ActualView, paneMenu);
 
@@ -525,15 +523,15 @@ namespace UnityEditor
             MethodInfo mi = GetPaneMethod("ShowButton", m_ActualView);
             if (mi != null)
             {
-                const float rightOffset = 18f;
-                object[] lockButton = { new Rect(position.width - gs.fixedWidth - rightOffset, topOffset - 4f, 16, 16) };
+                const float rightOffset = 16f;
+                object[] lockButton = { new Rect(leftOffset - rightOffset, topOffset - 4f, 16, 16) };
                 mi.Invoke(m_ActualView, lockButton);
             }
 
             // Developer-mode render doc button to enable capturing any HostView content/panels
             if (Unsupported.IsDeveloperMode() && UnityEditorInternal.RenderDoc.IsLoaded() && UnityEditorInternal.RenderDoc.IsSupported())
             {
-                Rect renderDocRect = new Rect(position.width - gs.fixedWidth - (mi == null ? 20 : 36), Mathf.Floor(background.margin.top + 4), 17, 16);
+                Rect renderDocRect = new Rect(leftOffset - (mi == null ? 16 : 32), Mathf.Floor(background.margin.top + 4), 17, 16);
                 RenderDocCaptureButton(renderDocRect);
             }
         }
@@ -600,7 +598,7 @@ namespace UnityEditor
 
                 // Destroy window.
                 dockArea.RemoveTab(window, false); // Don't kill dock if empty.
-                UnityEngine.Object.DestroyImmediate(window, true);
+                DestroyImmediate(window, true);
 
                 // Create window.
                 window = EditorWindow.CreateInstance(windowType) as EditorWindow;
@@ -668,7 +666,7 @@ namespace UnityEditor
                 m_PlayModeDarkenColor = newColorToUse;
                 UIElementsUtility.editorPlayModeTintColor = newColorToUse;
 
-                // Make sure to dirty the right imguicontainer in this HostView (and all its children / parents)
+                // Make sure to dirty the right imgui container in this HostView (and all its children / parents)
                 // The MarkDirtyRepaint() function is dirtying the element itself and its parent, but not the children explicitely.
                 // ... and in the repaint function, it check for the current rendered element, not the parent.
                 // Since the HostView "hosts" an IMGUIContainer or any VisualElement, we have to make sure to dirty everything here.
@@ -692,16 +690,10 @@ namespace UnityEditor
             if (Event.current.type != EventType.Repaint)
                 return;
             EditorWindow view = actualView;
-            if (view != null && view.dontClearBackground)
-            {
-                if (backgroundValid && position == m_BackgroundClearRect)
-                    return;
-            }
-            GL.Clear(true, true, EditorApplication.isPlayingOrWillChangePlaymode ?
+            GL.Clear(true, true, EditorApplication.isPlayingOrWillChangePlaymode && !view.dontClearBackground ?
                 EditorGUIUtility.kViewBackgroundColor * kPlayModeDarken.Color :
                 EditorGUIUtility.kViewBackgroundColor);
             backgroundValid = true;
-            m_BackgroundClearRect = position;
         }
     }
 }

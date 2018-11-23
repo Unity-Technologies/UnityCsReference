@@ -54,20 +54,14 @@ namespace UnityEngine.UIElements
         internal const int kMaxLengthNone = -1;
 
         public new static readonly string ussClassName = "unity-base-text-field";
-
-        private string m_Text;
+        public static readonly string textInputUssName = "unity-text-input";
 
         public string text
         {
-            get { return m_Text; }
+            get { return m_TextInputBase.text; }
             protected set
             {
-                if (m_Text == value)
-                    return;
-
-                m_Text = value;
-                m_TextInputBase.editorEngine.text = value;
-                m_TextInputBase.IncrementVersion(VersionChangeType.Layout);
+                m_TextInputBase.text = value;
             }
         }
 
@@ -97,22 +91,24 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public void SelectAll()
+        // Password field (indirectly lossy behaviour when activated via multiline)
+        public bool isPasswordField
         {
-            m_TextInputBase.SelectAll();
+            get { return m_TextInputBase.isPasswordField; }
+            set { m_TextInputBase.isPasswordField = value; }
         }
 
-        // Password field (indirectly lossy behaviour when activated via multiline)
-        public virtual bool isPasswordField { get; set; }
+        public Color selectionColor => m_TextInputBase.selectionColor;
+        public Color cursorColor => m_TextInputBase.cursorColor;
 
-        Color m_SelectionColor = Color.clear;
-        Color m_CursorColor = Color.grey;
 
-        public Color selectionColor => m_SelectionColor;
-        public Color cursorColor => m_CursorColor;
         public int cursorIndex => m_TextInputBase.cursorIndex;
         public int selectIndex => m_TextInputBase.selectIndex;
-        public int maxLength { get; set; }
+        public int maxLength
+        {
+            get { return m_TextInputBase.maxLength; }
+            set { m_TextInputBase.maxLength = value; }
+        }
 
         public bool doubleClickSelectsWord
         {
@@ -127,7 +123,11 @@ namespace UnityEngine.UIElements
 
         public bool isDelayed { get; set; }
 
-        public char maskChar { get; set; }
+        public char maskChar
+        {
+            get { return m_TextInputBase.maskChar; }
+            set { m_TextInputBase.maskChar = value; }
+        }
 
         /* internal for VisualTree tests */
         internal TextEditorEventHandler editorEventHandler => m_TextInputBase.editorEventHandler;
@@ -136,6 +136,12 @@ namespace UnityEngine.UIElements
         internal TextEditorEngine editorEngine  => m_TextInputBase.editorEngine;
 
         internal bool hasFocus => m_TextInputBase.hasFocus;
+
+        public void SelectAll()
+        {
+            m_TextInputBase.SelectAll();
+        }
+
         internal void SyncTextEngine()
         {
             m_TextInputBase.SyncTextEngine();
@@ -153,24 +159,13 @@ namespace UnityEngine.UIElements
             : base(label, textInputBase)
         {
             AddToClassList(ussClassName);
-
             m_TextInputBase = textInputBase;
-            this.maxLength = maxLength;
-            this.maskChar = maskChar;
-            m_TextInputBase.parentField = this;
-            m_Text = "";
+            m_TextInputBase.maxLength = maxLength;
+            m_TextInputBase.maskChar = maskChar;
         }
 
         protected abstract class TextInputBase : VisualElement, ITextInputField
         {
-            TextInputBaseField<TValueType> m_ParentField;
-
-            internal TextInputBaseField<TValueType> parentField
-            {
-                get { return m_ParentField; }
-                set { m_ParentField = value; }
-            }
-
             public void SelectAll()
             {
                 editorEngine?.SelectAll();
@@ -183,14 +178,14 @@ namespace UnityEngine.UIElements
 
             private void UpdateText(string value)
             {
-                if (m_ParentField.text != value)
+                if (text != value)
                 {
                     // Setting the VisualElement text here cause a repaint since it dirty the layout flag.
-                    using (InputEvent evt = InputEvent.GetPooled(m_ParentField.text, value))
+                    using (InputEvent evt = InputEvent.GetPooled(text, value))
                     {
-                        evt.target = m_ParentField;
-                        m_ParentField.text = value;
-                        m_ParentField.SendEvent(evt);
+                        evt.target = parent;
+                        text = value;
+                        parent?.SendEvent(evt);
                     }
                 }
             }
@@ -205,6 +200,11 @@ namespace UnityEngine.UIElements
                 get { return editorEngine.selectIndex; }
             }
 
+            public int maxLength { get; set; }
+            public char maskChar { get; set; }
+
+            public virtual bool isPasswordField { get; set; }
+
             public bool doubleClickSelectsWord { get; set; }
             public bool tripleClickSelectsLine { get; set; }
 
@@ -214,6 +214,14 @@ namespace UnityEngine.UIElements
             {
                 get { return TouchScreenKeyboard.isSupported; }
             }
+
+
+            Color m_SelectionColor = Color.clear;
+            Color m_CursorColor = Color.grey;
+
+            public Color selectionColor => m_SelectionColor;
+            public Color cursorColor => m_CursorColor;
+
 
             internal bool hasFocus
             {
@@ -227,10 +235,26 @@ namespace UnityEngine.UIElements
             internal TextEditorEngine editorEngine { get; private set; }
 
 
-            public static readonly string ussClassName = "unity-text-input";
+            private string m_Text;
+
+            public string text
+            {
+                get { return m_Text; }
+                set
+                {
+                    if (m_Text == value)
+                        return;
+
+                    m_Text = value;
+                    editorEngine.text = value;
+                    IncrementVersion(VersionChangeType.Layout);
+                }
+            }
+
             internal TextInputBase()
             {
-                AddToClassList(ussClassName);
+                m_Text = string.Empty;
+                name = TextField.textInputUssName;
 
                 requireMeasureFunction = true;
 
@@ -257,7 +281,7 @@ namespace UnityEngine.UIElements
 
             DropdownMenuAction.Status CutCopyActionStatus(DropdownMenuAction a)
             {
-                return (editorEngine.hasSelection && !m_ParentField.isPasswordField) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
+                return (editorEngine.hasSelection && !isPasswordField) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
             }
 
             DropdownMenuAction.Status PasteActionStatus(DropdownMenuAction a)
@@ -288,29 +312,22 @@ namespace UnityEngine.UIElements
 
             private void OnCustomStyleResolved(CustomStyleResolvedEvent e)
             {
-                Color selectionColorValue = Color.clear;
-                Color cursorColorValue = Color.clear;
+                Color selectionValue = Color.clear;
+                Color cursorValue = Color.clear;
 
                 ICustomStyle customStyle = e.customStyle;
-                if (customStyle.TryGetValue(s_SelectionColorProperty, out selectionColorValue))
-                    m_ParentField.m_SelectionColor = selectionColorValue;
+                if (customStyle.TryGetValue(s_SelectionColorProperty, out selectionValue))
+                    m_SelectionColor = selectionValue;
 
-                if (customStyle.TryGetValue(s_CursorColorProperty, out cursorColorValue))
-                    m_ParentField.m_CursorColor = cursorColorValue;
+                if (customStyle.TryGetValue(s_CursorColorProperty, out cursorValue))
+                    m_CursorColor = cursorValue;
 
-                effectiveStyle.WriteToGUIStyle(editorEngine.style);
+                ComputedStyle.WriteToGUIStyle(computedStyle, editorEngine.style);
             }
 
             internal virtual void SyncTextEngine()
             {
-                if (parentField != null)
-                {
-                    editorEngine.text = CullString(m_ParentField.text);
-                }
-                else
-                {
-                    editorEngine.text = "";
-                }
+                editorEngine.text = CullString(text);
 
                 editorEngine.SaveBackup();
 
@@ -321,8 +338,8 @@ namespace UnityEngine.UIElements
 
             internal string CullString(string s)
             {
-                if (m_ParentField.maxLength >= 0 && s != null && s.Length > m_ParentField.maxLength)
-                    return s.Substring(0, m_ParentField.maxLength);
+                if (maxLength >= 0 && s != null && s.Length > maxLength)
+                    return s.Substring(0, maxLength);
                 return s;
             }
 
@@ -347,21 +364,21 @@ namespace UnityEngine.UIElements
 
                     // if we use system keyboard we will have normal text returned (hiding symbols is done inside os)
                     // so before drawing make sure we hide them ourselves
-                    string drawText = m_ParentField.text;
+                    string drawText = text;
                     if (touchScreenEditor != null && !string.IsNullOrEmpty(touchScreenEditor.secureText))
-                        drawText = "".PadRight(touchScreenEditor.secureText.Length, m_ParentField.maskChar);
+                        drawText = "".PadRight(touchScreenEditor.secureText.Length, maskChar);
 
-                    m_ParentField.text = drawText;
+                    text = drawText;
                 }
                 else
                 {
                     if (!hasFocus)
                     {
-                        stylePainter.DrawText(m_ParentField.text);
+                        stylePainter.DrawText(text);
                     }
                     else
                     {
-                        DrawWithTextSelectionAndCursor(stylePainter, m_ParentField.text);
+                        DrawWithTextSelectionAndCursor(stylePainter, text);
                     }
                 }
             }
@@ -382,7 +399,7 @@ namespace UnityEngine.UIElements
 
                 float textScaling = TextNative.ComputeTextScaling(worldTransform);
 
-                var textParams = TextStylePainterParameters.GetDefault(this, m_ParentField.text);
+                var textParams = TextStylePainterParameters.GetDefault(this, text);
                 textParams.text = " ";
                 textParams.wordWrapWidth = 0.0f;
                 textParams.wordWrap = false;
@@ -395,7 +412,7 @@ namespace UnityEngine.UIElements
                 Input.compositionCursorPos = editorEngine.graphicalCursorPos - scrollOffset +
                     new Vector2(localPosition.x, localPosition.y + lineHeight);
 
-                Color drawCursorColor = m_ParentField.cursorColor;
+                Color drawCursorColor = cursorColor;
 
                 int selectionEndIndex = string.IsNullOrEmpty(Input.compositionString)
                     ? selectIndex
@@ -407,14 +424,14 @@ namespace UnityEngine.UIElements
                 if ((cursorIndex != selectionEndIndex) && !isDragging)
                 {
                     var painterParams = RectStylePainterParameters.GetDefault(this);
-                    painterParams.color = m_ParentField.selectionColor;
+                    painterParams.color = selectionColor;
                     painterParams.border.SetWidth(0.0f);
                     painterParams.border.SetRadius(0.0f);
 
                     int min = cursorIndex < selectionEndIndex ? cursorIndex : selectionEndIndex;
                     int max = cursorIndex > selectionEndIndex ? cursorIndex : selectionEndIndex;
 
-                    cursorParams = CursorPositionStylePainterParameters.GetDefault(this, m_ParentField.text);
+                    cursorParams = CursorPositionStylePainterParameters.GetDefault(this, text);
                     cursorParams.text = editorEngine.text;
                     cursorParams.wordWrapWidth = wordWrapWidth;
                     cursorParams.cursorIndex = min;
@@ -457,7 +474,7 @@ namespace UnityEngine.UIElements
                 // Draw the text with the scroll offset
                 if (!string.IsNullOrEmpty(editorEngine.text) && contentRect.width > 0.0f && contentRect.height > 0.0f)
                 {
-                    textParams = TextStylePainterParameters.GetDefault(this, m_ParentField.text);
+                    textParams = TextStylePainterParameters.GetDefault(this, text);
                     textParams.rect = new Rect(contentRect.x - scrollOffset.x, contentRect.y - scrollOffset.y, contentRect.width + scrollOffset.x, contentRect.height + scrollOffset.y);
                     textParams.text = editorEngine.text;
                     painter.DrawText(textParams);
@@ -468,7 +485,7 @@ namespace UnityEngine.UIElements
                 {
                     if (cursorIndex == selectionEndIndex && computedStyle.unityFont.value != null)
                     {
-                        cursorParams = CursorPositionStylePainterParameters.GetDefault(this, m_ParentField.text);
+                        cursorParams = CursorPositionStylePainterParameters.GetDefault(this, text);
                         cursorParams.text = editorEngine.text;
                         cursorParams.wordWrapWidth = wordWrapWidth;
                         cursorParams.cursorIndex = cursorIndex;
@@ -487,7 +504,7 @@ namespace UnityEngine.UIElements
                     // Draw alternate cursor, if any
                     if (editorEngine.altCursorPosition != -1)
                     {
-                        cursorParams = CursorPositionStylePainterParameters.GetDefault(this, m_ParentField.text);
+                        cursorParams = CursorPositionStylePainterParameters.GetDefault(this, text);
                         cursorParams.text = editorEngine.text.Substring(0, editorEngine.altCursorPosition);
                         cursorParams.wordWrapWidth = wordWrapWidth;
                         cursorParams.cursorIndex = editorEngine.altCursorPosition;
@@ -541,7 +558,7 @@ namespace UnityEngine.UIElements
 
             protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight, MeasureMode heightMode)
             {
-                return TextElement.MeasureVisualElementTextSize(this, m_ParentField.m_Text, desiredWidth, widthMode, desiredHeight, heightMode);
+                return TextElement.MeasureVisualElementTextSize(this, m_Text, desiredWidth, widthMode, desiredHeight, heightMode);
             }
 
             protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
@@ -576,12 +593,6 @@ namespace UnityEngine.UIElements
             }
 
             bool ITextInputField.hasFocus => hasFocus;
-
-            string ITextElement.text
-            {
-                get { return m_ParentField.m_Text; }
-                set { m_ParentField.m_Text = value; }
-            }
 
             void ITextInputField.SyncTextEngine()
             {

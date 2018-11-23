@@ -4,7 +4,6 @@
 
 using System;
 using Unity.Collections.LowLevel.Unsafe;
-using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 
 namespace UnityEngine.Rendering
@@ -31,9 +30,9 @@ namespace UnityEngine.Rendering
         [RequiredByNativeCode]
         internal static void CleanupRenderPipeline()
         {
-            if (s_CurrentPipelineAsset != null)
+            if (currentPipeline != null && !currentPipeline.disposed)
             {
-                s_CurrentPipelineAsset.DestroyInstances();
+                currentPipeline.Dispose();
                 s_CurrentPipelineAsset = null;
                 currentPipeline = null;
                 SupportedRenderingFeatures.active = new SupportedRenderingFeatures();
@@ -56,20 +55,18 @@ namespace UnityEngine.Rendering
         {
             if (!ReferenceEquals(s_CurrentPipelineAsset, pipelineAsset))
             {
-                if (s_CurrentPipelineAsset != null)
-                {
-                    // Required because when switching to a RenderPipeline asset for the first time
-                    // it will call OnValidate on the new asset before cleaning up the old one. Thus we
-                    // reset the rebuild in order to cleanup properly.
-                    CleanupRenderPipeline();
-                }
-
+                // Required because when switching to a RenderPipeline asset for the first time
+                // it will call OnValidate on the new asset before cleaning up the old one. Thus we
+                // reset the rebuild in order to cleanup properly.
+                CleanupRenderPipeline();
                 s_CurrentPipelineAsset = pipelineAsset;
             }
 
             if (s_CurrentPipelineAsset != null
                 && (currentPipeline == null || currentPipeline.disposed))
+            {
                 currentPipeline = s_CurrentPipelineAsset.InternalCreatePipeline();
+            }
         }
     }
 }

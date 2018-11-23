@@ -285,6 +285,25 @@ namespace UnityEngine.Rendering
             DrawProcedural(matrix, material, shaderPass, topology, vertexCount, 1);
         }
 
+        public void DrawProcedural(GraphicsBuffer indexBuffer, Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, int indexCount, int instanceCount, MaterialPropertyBlock properties)
+        {
+            if (indexBuffer == null)
+                throw new ArgumentNullException("indexBuffer");
+            if (material == null)
+                throw new ArgumentNullException("material");
+            Internal_DrawProceduralIndexed(indexBuffer, matrix, material, shaderPass, topology, indexCount, instanceCount, properties);
+        }
+
+        public void DrawProcedural(GraphicsBuffer indexBuffer, Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, int indexCount, int instanceCount)
+        {
+            DrawProcedural(indexBuffer, matrix, material, shaderPass, topology, indexCount, instanceCount, null);
+        }
+
+        public void DrawProcedural(GraphicsBuffer indexBuffer, Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, int indexCount)
+        {
+            DrawProcedural(indexBuffer, matrix, material, shaderPass, topology, indexCount, 1);
+        }
+
         public void DrawProceduralIndirect(Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, ComputeBuffer bufferWithArgs, int argsOffset, MaterialPropertyBlock properties)
         {
             if (material == null)
@@ -305,6 +324,27 @@ namespace UnityEngine.Rendering
         public void DrawProceduralIndirect(Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, ComputeBuffer bufferWithArgs)
         {
             DrawProceduralIndirect(matrix, material, shaderPass, topology, bufferWithArgs, 0);
+        }
+
+        public void DrawProceduralIndirect(GraphicsBuffer indexBuffer, Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, ComputeBuffer bufferWithArgs, int argsOffset, MaterialPropertyBlock properties)
+        {
+            if (indexBuffer == null)
+                throw new ArgumentNullException("indexBuffer");
+            if (material == null)
+                throw new ArgumentNullException("material");
+            if (bufferWithArgs == null)
+                throw new ArgumentNullException("bufferWithArgs");
+            Internal_DrawProceduralIndexedIndirect(indexBuffer, matrix, material, shaderPass, topology, bufferWithArgs, argsOffset, properties);
+        }
+
+        public void DrawProceduralIndirect(GraphicsBuffer indexBuffer, Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, ComputeBuffer bufferWithArgs, int argsOffset)
+        {
+            DrawProceduralIndirect(indexBuffer, matrix, material, shaderPass, topology, bufferWithArgs, argsOffset, null);
+        }
+
+        public void DrawProceduralIndirect(GraphicsBuffer indexBuffer, Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, ComputeBuffer bufferWithArgs)
+        {
+            DrawProceduralIndirect(indexBuffer, matrix, material, shaderPass, topology, bufferWithArgs, 0);
         }
 
         public void DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, int shaderPass, Matrix4x4[] matrices, int count, MaterialPropertyBlock properties)
@@ -593,6 +633,11 @@ namespace UnityEngine.Rendering
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
 
             SetShadowSamplingMode_Impl(ref shadowmap, mode);
+        }
+
+        public void SetSinglePassStereo(SinglePassStereoMode mode)
+        {
+            Internal_SetSinglePassStereo(mode);
         }
 
         public void IssuePluginEvent(IntPtr callback, int eventID)

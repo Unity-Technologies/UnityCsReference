@@ -150,6 +150,8 @@ namespace UnityEditor
             {
                 m_StageHandling.PrefabStageHeaderGUI(prefabHeaderRect);
             }
+
+            SceneVisibilityHierarchyGUI.DrawBackground(treeViewRect);
             m_SceneHierarchy.OnGUI(treeViewRect);
         }
 

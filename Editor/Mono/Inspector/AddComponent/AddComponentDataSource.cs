@@ -2,13 +2,23 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.IMGUI.Controls;
 
-namespace UnityEditor.AdvancedDropdown
+namespace UnityEditor.AddComponent
 {
     internal class AddComponentDataSource : AdvancedDropdownDataSource
     {
+        private static readonly string kSearchHeader = L10n.Tr("Search");
+        AdvancedDropdownState m_State;
+
+        public AddComponentDataSource(AdvancedDropdownState state)
+        {
+            m_State = state;
+        }
+
         protected override AdvancedDropdownItem FetchData()
         {
             return RebuildTree();
@@ -17,7 +27,7 @@ namespace UnityEditor.AdvancedDropdown
         protected AdvancedDropdownItem RebuildTree()
         {
             m_SearchableElements = new List<AdvancedDropdownItem>();
-            AdvancedDropdownItem root = new ComponentDropdownItem();
+            AdvancedDropdownItem root = new ComponentDropdownItem("ROOT");
             var menuDictionary = GetMenuDictionary();
             menuDictionary.Sort(CompareItems);
             for (var i = 0; i < menuDictionary.Count; i++)
@@ -37,28 +47,26 @@ namespace UnityEditor.AdvancedDropdown
                     var path = paths[j];
                     if (j == paths.Length - 1)
                     {
-                        var element = new ComponentDropdownItem(path, L10n.Tr(path), menuPath, menu.Value);
-                        element.SetParent(parent);
+                        var element = new ComponentDropdownItem(path, menuPath, menu.Value);
+                        element.localizedName = L10n.Tr(path);
                         parent.AddChild(element);
                         m_SearchableElements.Add(element);
                         continue;
                     }
-                    var group = parent.children.SingleOrDefault(c => c.name == path);
+                    var group = (ComponentDropdownItem)parent.children.SingleOrDefault(c => c.name == path);
                     if (group == null)
                     {
-                        group = new ComponentDropdownItem(path, L10n.Tr(path), -1);
-                        group.SetParent(parent);
+                        group = new ComponentDropdownItem(path);
+                        group.localizedName = L10n.Tr(path);
                         parent.AddChild(group);
                     }
                     parent = group;
                 }
             }
             root = root.children.Single();
-            root.SetParent(null);
-            var newScript = new ComponentDropdownItem("New script", L10n.Tr("New script"), -1);
+            var newScript = new ComponentDropdownItem("New script");
+            newScript.localizedName = L10n.Tr("New script");
             newScript.AddChild(new NewScriptDropdownItem());
-            newScript.SetParent(root);
-            newScript.selectedItem = 0;
             root.AddChild(newScript);
             return root;
         }
@@ -92,16 +100,53 @@ namespace UnityEditor.AdvancedDropdown
 
         protected override AdvancedDropdownItem Search(string searchString)
         {
-            var searchTree = base.Search(searchString);
+            if (string.IsNullOrEmpty(searchString) || m_SearchableElements == null)
+                return null;
+
+            // Support multiple search words separated by spaces.
+            var searchWords = searchString.ToLower().Split(' ');
+
+            // We keep two lists. Matches that matches the start of an item always get first priority.
+            var matchesStart = new List<AdvancedDropdownItem>();
+            var matchesWithin = new List<AdvancedDropdownItem>();
+
+            bool found = false;
+            foreach (var e in m_SearchableElements)
+            {
+                var addComponentItem = (ComponentDropdownItem)e;
+                var name = addComponentItem.searchableName.ToLower().Replace(" ", "");
+                if (AddMatchItem(e, name, searchWords, matchesStart, matchesWithin))
+                    found = true;
+            }
+            if (!found)
+            {
+                foreach (var e in m_SearchableElements)
+                {
+                    var addComponentItem = (ComponentDropdownItem)e;
+                    var name = addComponentItem.searchableNameLocalized.Replace(" ", "");
+                    AddMatchItem(e, name, searchWords, matchesStart, matchesWithin);
+                }
+            }
+
+            var searchTree = new AdvancedDropdownItem(kSearchHeader);
+            matchesStart.Sort();
+            foreach (var element in matchesStart)
+            {
+                searchTree.AddChild(element);
+            }
+            matchesWithin.Sort();
+            foreach (var element in matchesWithin)
+            {
+                searchTree.AddChild(element);
+            }
             if (searchTree != null)
             {
-                var addNewScriptGroup = new ComponentDropdownItem("New script", L10n.Tr("New script"), -1);
+                var addNewScriptGroup = new ComponentDropdownItem("New script");
+                addNewScriptGroup.name = L10n.Tr("New script");
+                m_State.SetSelectedIndex(addNewScriptGroup, 0);
                 var addNewScript = new NewScriptDropdownItem();
                 addNewScript.className = searchString;
                 addNewScriptGroup.AddChild(addNewScript);
-                addNewScript.SetParent(addNewScriptGroup);
-                addNewScriptGroup.SetParent(searchTree);
-                addNewScriptGroup.selectedItem = 0;
                 searchTree.AddChild(addNewScriptGroup);
             }
             return searchTree;

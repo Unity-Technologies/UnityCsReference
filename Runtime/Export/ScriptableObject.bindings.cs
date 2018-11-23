@@ -35,7 +35,7 @@ namespace UnityEngine
         // Creates an instance of a scriptable object with /type/.
         public static ScriptableObject CreateInstance(Type type)
         {
-            return CreateScriptableObjectInstanceFromType(type);
+            return CreateScriptableObjectInstanceFromType(type, true);
         }
 
         // Creates an instance of a scriptable object with /T/.
@@ -51,6 +51,9 @@ namespace UnityEngine
         extern static ScriptableObject CreateScriptableObjectInstanceFromName(string className);
 
         [FreeFunction("Scripting::CreateScriptableObjectWithType")]
-        extern static ScriptableObject CreateScriptableObjectInstanceFromType(Type type);
+        extern internal static ScriptableObject CreateScriptableObjectInstanceFromType(Type type, bool applyDefaultsAndReset);
+
+        [FreeFunction("Scripting::ResetAndApplyDefaultInstances")]
+        extern internal static void ResetAndApplyDefaultInstances(Object obj);
     }
 }

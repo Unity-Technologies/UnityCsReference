@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEngine.UIElements
 {
@@ -52,24 +53,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private bool DoesMatrixHaveUnsupportedRotation(Matrix4x4 m)
-        {
-            Func<float, bool> ApproximatelyZero = delegate(float f)
-            { return Math.Abs(f) < 1e-4f; };
-
-            // In order to pass on rotation angles that are multiples of 90 degrees, we check for two zeroes per row.
-            for (int column = 0; column < 3; ++column)
-            {
-                int zeroCount = 0;
-                zeroCount += ApproximatelyZero(m[0, column]) ? 1 : 0;
-                zeroCount += ApproximatelyZero(m[1, column]) ? 1 : 0;
-                zeroCount += ApproximatelyZero(m[2, column]) ? 1 : 0;
-                if (zeroCount < 2)
-                    return true;
-            }
-            return false;
-        }
-
         internal bool ShouldUsePixelCache(VisualElement root)
         {
             return panel.allowPixelCaching && root.cacheAsBitmap &&
@@ -82,7 +65,8 @@ namespace UnityEngine.UIElements
                 return;
 
             if (root.visible == false ||
-                root.resolvedStyle.opacity < Mathf.Epsilon)
+                root.resolvedStyle.opacity < Mathf.Epsilon ||
+                root.resolvedStyle.display == DisplayStyle.None)
                 return;
 
             // update clip
@@ -151,8 +135,7 @@ namespace UnityEngine.UIElements
                             textureWidth,
                             textureHeight,
                             32,         // depth
-                            RenderTextureFormat.ARGB32,
-                            RenderTextureReadWrite.Linear);
+                            GraphicsFormat.R8G8B8A8_UNorm);
                     }
 
                     bool hasRoundedBorderRects = (root.computedStyle.borderTopLeftRadius.value.value > 0 ||
@@ -172,8 +155,7 @@ namespace UnityEngine.UIElements
                             // converting the cache to sRGB requires a shader to do it, and this whole pixel cache
                             // thing is slated to go away, so we take a short-cut here and use a linear texture
                             // along with the use of manualTex2SRGBEnabled to get the correct results.
-                            temporaryTexture = cache = RenderTexture.GetTemporary(textureWidth, textureHeight, 32,
-                                RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+                            temporaryTexture = cache = RenderTexture.GetTemporary(textureWidth, textureHeight, 32, GraphicsFormat.R8G8B8A8_UNorm);
                         }
 
                         // render the texture again to clip the round rect borders

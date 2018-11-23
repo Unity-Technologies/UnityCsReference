@@ -52,6 +52,12 @@ namespace UnityEditor
                 if (_assemblyFileNames.Contains(assemblyFileName))
                     continue;
 
+                // It is possible to have references to missing assemblies, if the compiler emitted an assembly reference
+                // which was not actually needed (https://github.com/dotnet/roslyn/issues/31192), so that UnityLinker would
+                // then delete such an assembly.
+                if (!File.Exists(fileName))
+                    continue;
+
                 var assemblyDefinition = AssemblyDefinition.ReadAssembly(fileName, new ReaderParameters { AssemblyResolver = resolver });
 
                 if (ignoreSystemDlls && IsIgnoredSystemDll(assemblyDefinition))

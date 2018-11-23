@@ -452,6 +452,8 @@ namespace UnityEditor
         public static void ResetMotion()
         {
             s_Motion = Vector3.zero;
+            s_FlySpeed.value = Vector3.zero;
+            s_Moving = false;
         }
 
         public static void DeactivateFlyModeContext()

@@ -37,7 +37,7 @@ namespace UnityEditor.UIElements
             : this(null, maxLength) {}
 
         public DoubleField(string label, int maxLength = kMaxLengthNone)
-            : base(label, maxLength, new DoubleInput() { name = "unity-text-input" })
+            : base(label, maxLength, new DoubleInput())
         {
             AddToClassList(ussClassName);
             AddLabelDragger<double>();
@@ -50,7 +50,7 @@ namespace UnityEditor.UIElements
 
         class DoubleInput : TextValueInput
         {
-            DoubleField parentDoubleField => (DoubleField)parentField;
+            DoubleField parentDoubleField => (DoubleField)parent;
 
             internal DoubleInput()
             {

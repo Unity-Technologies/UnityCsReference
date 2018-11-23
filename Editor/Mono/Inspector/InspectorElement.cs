@@ -52,7 +52,7 @@ namespace UnityEditor.UIElements
 
         internal Mode mode { get; private set; }
 
-        public InspectorElement() : this(null) {}
+        public InspectorElement() : this(null as Object) {}
 
         public InspectorElement(Object obj) : this(obj, Mode.Normal) {}
 
@@ -61,11 +61,58 @@ namespace UnityEditor.UIElements
             AddToClassList(ussClassName);
 
             this.mode = mode;
-
             if (obj == null)
-                return;
+            {
+                if (!GenericInspector.ObjectIsMonoBehaviourOrScriptableObject(obj))
+                {
+                    return;
+                }
+            }
 
             this.Bind(new SerializedObject(obj));
+        }
+
+        public InspectorElement(SerializedObject obj) : this(obj, Mode.Normal) {}
+
+        internal InspectorElement(SerializedObject obj, Mode mode)
+        {
+            AddToClassList(ussClassName);
+
+            this.mode = mode;
+            if (obj.targetObject == null)
+            {
+                if (!GenericInspector.ObjectIsMonoBehaviourOrScriptableObject(obj.targetObject))
+                {
+                    return;
+                }
+            }
+
+            this.Bind(obj);
+        }
+
+        public InspectorElement(Editor editor) : this(editor, Mode.Normal) {}
+
+        internal InspectorElement(Editor editor, Mode mode)
+        {
+            AddToClassList(ussClassName);
+
+            this.mode = mode;
+
+            if (editor.targets.Length == 0)
+            {
+                return;
+            }
+
+            var targetObject = editor.targets[0];
+            if (targetObject == null)
+            {
+                if (!GenericInspector.ObjectIsMonoBehaviourOrScriptableObject(targetObject))
+                {
+                    return;
+                }
+            }
+
+            this.Bind(editor.serializedObject);
         }
 
         private void Reset(SerializedObjectBindEvent evt)
@@ -86,10 +133,19 @@ namespace UnityEditor.UIElements
             if (bindObject == null)
                 return;
 
-            var customEditor = GetOrCreateEditor(bindObject);
-            var customInspector = CreateInspectorElementFromEditor(bindObject, customEditor);
+            var editor = GetOrCreateEditor(bindObject);
+            if (editor == null)
+            {
+                return;
+            }
 
-            if (customInspector != this)
+            var customInspector = CreateInspectorElementFromEditor(editor);
+            if (customInspector == null)
+            {
+                customInspector = CreateDefaultInspector(bindObject);
+            }
+
+            if (customInspector != null && customInspector != this)
                 hierarchy.Add(customInspector);
         }
 
@@ -104,40 +160,19 @@ namespace UnityEditor.UIElements
             Reset(bindEvent);
         }
 
-        private bool HasCustomEditor(SerializedObject serializedObject)
-        {
-            var target = serializedObject?.targetObject;
-            if (target == null)
-                return false;
-
-            return ActiveEditorTracker.HasCustomEditor(target);
-        }
-
         private Editor GetOrCreateEditor(SerializedObject serializedObject)
         {
             var target = serializedObject?.targetObject;
-            if (target == null)
-                return null;
-
             var activeEditors = ActiveEditorTracker.sharedTracker?.activeEditors;
-            var editor = activeEditors?.FirstOrDefault((e) => e.target == target);
+            var editor =  activeEditors?.FirstOrDefault((e) => e.target == target || e.serializedObject == serializedObject);
+
             if (editor == null)
+            {
                 editor = Editor.CreateEditor(target);
+                // TODO - When we create an editor here, we never destroy it. Need to store a reference to the editor and call DestroyImmediate on it when the InspectorElement is being destroyed or unparented.
+            }
 
             return editor;
-        }
-
-        private Object GetInspectedObject()
-        {
-            var activeEditors = ActiveEditorTracker.sharedTracker?.activeEditors;
-            if (activeEditors == null)
-                return null;
-
-            Editor editor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(activeEditors);
-            if (editor == null)
-                return null;
-
-            return editor.target;
         }
 
         private VisualElement CreateDefaultInspector(SerializedObject serializedObject)
@@ -157,10 +192,27 @@ namespace UnityEditor.UIElements
                 while (property.NextVisible(false));
             }
 
+            if (serializedObject.targetObject == null)
+            {
+                AddMissingScriptLabel(serializedObject);
+            }
+
             AddToClassList(uIEDefaultVariantUssClassName);
             AddToClassList(uIEInspectorVariantUssClassName);
 
             return this;
+        }
+
+        bool AddMissingScriptLabel(SerializedObject serializedObject)
+        {
+            SerializedProperty scriptProperty = serializedObject.FindProperty("m_Script");
+            if (scriptProperty != null)
+            {
+                hierarchy.Add(new IMGUIContainer(() => GenericInspector.CheckIfScriptLoaded(scriptProperty)));
+                return true;
+            }
+
+            return false;
         }
 
         private VisualElement CreateIMGUIInspectorFromEditor(SerializedObject serializedObject, Editor editor)
@@ -175,7 +227,7 @@ namespace UnityEditor.UIElements
             {
                 editor = ScriptableObject.CreateInstance<GenericInspector>();
                 editor.hideFlags = HideFlags.HideAndDontSave;
-                editor.InternalSetTargets(new UnityEngine.Object[] {serializedObject.targetObject});
+                editor.InternalSetTargets(new[] { serializedObject.targetObject });
             }
 
             if (editor is GenericInspector)
@@ -197,26 +249,109 @@ namespace UnityEditor.UIElements
                 AddToClassList(iMGUICustomVariantUssClassName);
             }
 
-            var inspector = new IMGUIContainer(() =>
+            IMGUIContainer inspector = null;
+            inspector = new IMGUIContainer(() =>
             {
-                var originalWideMode = EditorGUIUtility.wideMode;
-                EditorGUIUtility.wideMode = true;
-                GUIStyle editorWrapper = (editor.UseDefaultMargins() ? EditorStyles.inspectorDefaultMargins : GUIStyle.none);
-                EditorGUILayout.BeginVertical(editorWrapper);
+                if (!editor.serializedObject.isValid)
                 {
-                    GUI.changed = false;
+                    return;
+                }
 
+                using (new EditorGUI.DisabledScope(!editor.IsEnabled()))
+                {
+                    var genericEditor = editor as GenericInspector;
+                    if (genericEditor != null)
+                    {
+                        switch (mode)
+                        {
+                            case Mode.Normal:
+                                genericEditor.m_InspectorMode = InspectorMode.Normal;
+                                break;
+                            case Mode.Default:
+                                genericEditor.m_InspectorMode = InspectorMode.Debug;
+                                break;
+                            case Mode.Custom:
+                                genericEditor.m_InspectorMode = InspectorMode.DebugInternal;
+                                break;
+                            case Mode.IMGUI:
+                                break;
+                        }
+                    }
+
+                    //set the current PropertyHandlerCache to the current editor
+                    ScriptAttributeUtility.propertyHandlerCache = editor.propertyHandlerCache;
+
+                    EditorGUIUtility.ResetGUIState();
+                    var originalWideMode = EditorGUIUtility.wideMode;
+
+                    EditorGUIUtility.hierarchyMode = true;
+                    var inspectorWidth = inspector.layout.width;
+                    // the inspector's width can be NaN if this is our first layout check.
+                    // If that's the case we'll set wideMode to true to avoid computing too tall an inspector on the first layout calculation
+                    if (!float.IsNaN(inspectorWidth))
+                    {
+                        EditorGUIUtility.wideMode = inspectorWidth > Editor.k_WideModeMinWidth;
+                    }
+                    else
+                    {
+                        EditorGUIUtility.wideMode = true;
+                    }
+
+                    GUIStyle editorWrapper = (editor.UseDefaultMargins() ? EditorStyles.inspectorDefaultMargins : GUIStyle.none);
                     try
                     {
-                        editor.OnInspectorGUI();
+                        GUI.changed = false;
+
+                        using (new InspectorWindowUtils.LayoutGroupChecker())
+                        {
+                            EditorGUILayout.BeginVertical(editorWrapper);
+                            {
+                                try
+                                {
+                                    var rebuildOptimizedGUIBlocks = GetRebuildOptimizedGUIBlocks(editor.target);
+                                    rebuildOptimizedGUIBlocks |= editor.isInspectorDirty;
+                                    float height;
+                                    if (editor.GetOptimizedGUIBlock(rebuildOptimizedGUIBlocks, visible, out height))
+                                    {
+                                        var contentRect = GUILayoutUtility.GetRect(0, visible ? height : 0);
+
+                                        // Layout events are ignored in the optimized code path
+                                        // The exception is when we are drawing a GenericInspector, they always use the optimized path and must therefore run at least one layout calculation in it
+                                        if (Event.current.type == EventType.Layout && !(editor is GenericInspector))
+                                        {
+                                            return;
+                                        }
+
+                                        // Draw content
+                                        if (visible)
+                                        {
+                                            GUI.changed = false;
+                                            editor.OnOptimizedInspectorGUI(contentRect);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        editor.OnInspectorGUI();
+                                    }
+                                }
+                                catch (Exception e)
+                                {
+                                    if (GUIUtility.ShouldRethrowException(e))
+                                    {
+                                        throw;
+                                    }
+
+                                    Debug.LogException(e);
+                                }
+                            }
+                            EditorGUILayout.EndVertical();
+                        }
                     }
-                    catch (Exception e)
+                    finally
                     {
-                        Debug.LogException(e);
+                        EditorGUIUtility.wideMode = originalWideMode;
                     }
                 }
-                EditorGUILayout.EndVertical();
-                EditorGUIUtility.wideMode = originalWideMode;
             });
 
             if (!(editor is GenericInspector))
@@ -229,11 +364,17 @@ namespace UnityEditor.UIElements
             return inspector;
         }
 
-        private VisualElement CreateInspectorElementFromEditor(SerializedObject serializedObject, Editor editor)
+        private VisualElement CreateInspectorElementFromEditor(Editor editor)
         {
-            var target = serializedObject?.targetObject;
+            var serializedObject = editor.serializedObject;
+            var target = editor.targets[0];
             if (target == null)
-                return null;
+            {
+                if (!GenericInspector.ObjectIsMonoBehaviourOrScriptableObject(target))
+                {
+                    return null;
+                }
+            }
 
             VisualElement inspectorElement = null;
 
@@ -262,6 +403,37 @@ namespace UnityEditor.UIElements
             }
 
             return inspectorElement;
+        }
+
+        bool m_IsOpenForEdit;
+        bool m_InvalidateGUIBlockCache = true;
+
+        private bool GetRebuildOptimizedGUIBlocks(Object inspectedObject)
+        {
+            var rebuildOptimizedGUIBlocks = false;
+
+            if (Event.current.type == EventType.Repaint)
+            {
+                string msg;
+                if (inspectedObject != null
+                    && m_IsOpenForEdit != Editor.IsAppropriateFileOpenForEdit(inspectedObject, out msg))
+                {
+                    m_IsOpenForEdit = !m_IsOpenForEdit;
+                    rebuildOptimizedGUIBlocks = true;
+                }
+
+                if (m_InvalidateGUIBlockCache)
+                {
+                    rebuildOptimizedGUIBlocks = true;
+                    m_InvalidateGUIBlockCache = false;
+                }
+            }
+            else if (Event.current.type == EventType.ExecuteCommand && Event.current.commandName == EventCommandNames.EyeDropperUpdate)
+            {
+                rebuildOptimizedGUIBlocks = true;
+            }
+
+            return rebuildOptimizedGUIBlocks;
         }
     }
 }

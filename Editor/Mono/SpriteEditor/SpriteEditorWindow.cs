@@ -502,6 +502,12 @@ namespace UnityEditor
             {
                 applyRevertDrawArea.width = EditorStyles.toolbarButton.CalcSize(SpriteEditorWindowStyles.applyButtonLabel).x;
                 applyRevertDrawArea.x -= applyRevertDrawArea.width;
+
+                // End delayed text editing before the button click event happens. Fixed case 1089668.
+                IEvent e = m_EventSystem.current;
+                if (e.type == EventType.MouseDown && applyRevertDrawArea.Contains(e.mousePosition))
+                    GUI.FocusControl("");
+
                 if (GUI.Button(applyRevertDrawArea, SpriteEditorWindowStyles.applyButtonLabel, EditorStyles.toolbarButton))
                 {
                     DoApply();

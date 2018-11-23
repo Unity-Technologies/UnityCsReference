@@ -58,7 +58,10 @@ namespace UnityEditor
                 {
                     win.Init(activatorRect, windowContent, locationPriorityOrder, showMode, true);
                 }
-                EditorGUIUtility.ExitGUI(); // Needed to prevent GUILayout errors on OSX
+                if (Event.current != null)
+                {
+                    EditorGUIUtility.ExitGUI(); // Needed to prevent GUILayout errors on OSX
+                }
             }
         }
 
@@ -98,6 +101,8 @@ namespace UnityEditor
 
         private void FitWindowToContent()
         {
+            if (m_WindowContent == null)
+                return;
             Vector2 wantedSize = m_WindowContent.GetWindowSize();
             if (m_LastWantedSize != wantedSize)
             {

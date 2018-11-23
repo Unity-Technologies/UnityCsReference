@@ -8,7 +8,6 @@ using UnityEngine.Bindings;
 namespace UnityEngine.Scripting
 {
     [NativeHeader("Runtime/Scripting/GarbageCollector.h")]
-    [VisibleToOtherModules]
     public static class GarbageCollector
     {
         public enum Mode
@@ -42,5 +41,11 @@ namespace UnityEngine.Scripting
         extern static void SetMode(Mode mode);
         [NativeThrows]
         extern static Mode GetMode();
+
+        public extern static bool isIncremental { [NativeMethod("GetIncrementalEnabled")] get; }
+
+        public extern static ulong incrementalTimeSliceNanoseconds { get; set; }
+
+        public extern static bool CollectIncremental(ulong nanoseconds);
     }
 }

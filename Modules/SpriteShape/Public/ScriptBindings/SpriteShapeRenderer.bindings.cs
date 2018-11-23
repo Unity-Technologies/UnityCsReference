@@ -80,6 +80,19 @@ namespace UnityEngine.Experimental.U2D
     [NativeType(Header = "Modules/SpriteShape/Public/SpriteShapeRenderer.h")]
     public class SpriteShapeRenderer : Renderer
     {
+        public extern Color color
+        {
+            get;
+            set;
+        }
+
+        public extern SpriteMaskInteraction maskInteraction
+        {
+            get;
+            set;
+        }
+
+
         extern internal int GetVertexCount();
         extern internal int GetIndexCount();
         extern internal Bounds GetLocalAABB();

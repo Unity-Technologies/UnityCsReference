@@ -55,10 +55,12 @@ namespace UnityEngine.UIElements
                     if (selected)
                     {
                         element.AddToClassList(ListView.itemSelectedVariantUssClassName);
+                        element.pseudoStates |= PseudoStates.Checked;
                     }
                     else
                     {
                         element.RemoveFromClassList(ListView.itemSelectedVariantUssClassName);
+                        element.pseudoStates &= ~PseudoStates.Checked;
                     }
                 }
             }

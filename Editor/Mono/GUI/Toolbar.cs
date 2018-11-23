@@ -10,29 +10,53 @@ using UnityEditor;
 using UnityEditor.Web;
 using UnityEditor.Connect;
 using UnityEditorInternal;
+using UnityEditor.EditorTools;
 
 namespace UnityEditor
 {
     class Toolbar : GUIView
     {
+        // Number of buttons present in the tools toolbar.
+        const int k_ToolCount = 7;
+
+        // Count of the transform tools + custom editor tool.
+        const int k_TransformToolCount = 6;
+
         void InitializeToolIcons()
         {
             if (s_ToolIcons != null)
                 return;
 
-            s_ToolIcons = new GUIContent[]
-            {
-                EditorGUIUtility.TrIconContent("MoveTool", "Move Tool"),
-                EditorGUIUtility.TrIconContent("RotateTool", "Rotate Tool"),
-                EditorGUIUtility.TrIconContent("ScaleTool", "Scale Tool"),
-                EditorGUIUtility.TrIconContent("RectTool", "Rect Tool"),
-                EditorGUIUtility.TrIconContent("TransformTool", "Move, Rotate or Scale selected objects."),
-                EditorGUIUtility.IconContent("MoveTool On"),
-                EditorGUIUtility.IconContent("RotateTool On"),
-                EditorGUIUtility.IconContent("ScaleTool On"),
-                EditorGUIUtility.IconContent("RectTool On"),
-                EditorGUIUtility.IconContent("TransformTool On"),
-            };
+            s_ToolIcons = new GUIContent[k_TransformToolCount * 2];
+
+            int index = 0;
+
+            s_ToolIcons[index++] = EditorGUIUtility.TrIconContent("MoveTool", "Move Tool");
+            s_ToolIcons[index++] = EditorGUIUtility.TrIconContent("RotateTool", "Rotate Tool");
+            s_ToolIcons[index++] = EditorGUIUtility.TrIconContent("ScaleTool", "Scale Tool");
+            s_ToolIcons[index++] = EditorGUIUtility.TrIconContent("RectTool", "Rect Tool");
+            s_ToolIcons[index++] = EditorGUIUtility.TrIconContent("TransformTool", "Move, Rotate or Scale selected objects.");
+            s_ToolIcons[index++] = EditorGUIUtility.TrTextContent("Editor tool");
+
+            s_ToolIcons[index++] = EditorGUIUtility.IconContent("MoveTool On");
+            s_ToolIcons[index++] = EditorGUIUtility.IconContent("RotateTool On");
+            s_ToolIcons[index++] = EditorGUIUtility.IconContent("ScaleTool On");
+            s_ToolIcons[index++] = EditorGUIUtility.IconContent("RectTool On");
+            s_ToolIcons[index++] = EditorGUIUtility.IconContent("TransformTool On");
+            s_ToolIcons[index] = EditorGUIUtility.TrTextContent("Editor tool");
+
+            index = 0;
+
+            s_ToolControlNames = new string[k_ToolCount];
+            s_ToolControlNames[index++] = "ToolbarPersistentToolsPan";
+            s_ToolControlNames[index++] = "ToolbarPersistentToolsTranslate";
+            s_ToolControlNames[index++] = "ToolbarPersistentToolsRotate";
+            s_ToolControlNames[index++] = "ToolbarPersistentToolsScale";
+            s_ToolControlNames[index++] = "ToolbarPersistentToolsRect";
+            s_ToolControlNames[index++] = "ToolbarPersistentToolsTransform";
+            s_ToolControlNames[index] = "ToolbarPersistentToolsCustom";
+
+            s_ShownToolIcons = new GUIContent[k_ToolCount];
 
             string viewToolsTooltipText = "Hand Tool";
 
@@ -48,18 +72,6 @@ namespace UnityEditor
                 EditorGUIUtility.TrIconContent("ViewToolZoom On", viewToolsTooltipText),
                 EditorGUIUtility.TrIconContent("ViewToolOrbit On"),
                 EditorGUIUtility.TrIconContent("ViewToolOrbit On", viewToolsTooltipText)
-            };
-
-            s_PivotIcons = new GUIContent[]
-            {
-                EditorGUIUtility.TrTextContentWithIcon("Center", "Toggle Tool Handle Position\n\nThe tool handle is placed at the center of the selection.", "ToolHandleCenter"),
-                EditorGUIUtility.TrTextContentWithIcon("Pivot", "Toggle Tool Handle Position\n\nThe tool handle is placed at the active object's pivot point.", "ToolHandlePivot"),
-            };
-
-            s_PivotRotation = new GUIContent[]
-            {
-                EditorGUIUtility.TrTextContentWithIcon("Local", "Toggle Tool Handle Rotation\n\nTool handles are in the active object's rotation.", "ToolHandleLocal"),
-                EditorGUIUtility.TrTextContentWithIcon("Global", "Toggle Tool Handle Rotation\n\nTool handles are in global rotation.", "ToolHandleGlobal")
             };
 
             s_LayerContent = EditorGUIUtility.TrTextContent("Layers", "Which layers are visible in the Scene views.");
@@ -81,22 +93,13 @@ namespace UnityEditor
         }
 
         static GUIContent[] s_ToolIcons;
-        static readonly string[] s_ToolControlNames = new[]
-        {
-            "ToolbarPersistentToolsPan",
-            "ToolbarPersistentToolsTranslate",
-            "ToolbarPersistentToolsRotate",
-            "ToolbarPersistentToolsScale",
-            "ToolbarPersistentToolsRect",
-            "ToolbarPersistentToolsTransform",
-        };
+        static string[] s_ToolControlNames;
         static GUIContent[] s_ViewToolIcons;
-        static GUIContent[] s_PivotIcons;
-        static GUIContent[] s_PivotRotation;
         static GUIContent   s_LayerContent;
         static GUIContent[] s_PlayIcons;
         private static GUIContent s_AccountContent;
         static GUIContent   s_CloudIcon;
+        internal static event Action<Rect> toolSettingsGui;
 
         static class Styles
         {
@@ -104,8 +107,6 @@ namespace UnityEditor
             public static readonly GUIStyle dropdown = "Dropdown";
             public static readonly GUIStyle appToolbar = "AppToolbar";
             public static readonly GUIStyle command = "Command";
-            public static readonly GUIStyle buttonLeft = "ButtonLeft";
-            public static readonly GUIStyle buttonRight = "ButtonRight";
             public static readonly GUIStyle commandLeft = "CommandLeft";
             public static readonly GUIStyle commandMid = "CommandMid";
             public static readonly GUIStyle commandRight = "CommandRight";
@@ -115,6 +116,7 @@ namespace UnityEditor
         {
             base.OnEnable();
             EditorApplication.modifierKeysChanged += Repaint;
+
             // when undo or redo is done, we need to reset global tools rotation
             Undo.undoRedoPerformed += OnSelectionChange;
 
@@ -128,11 +130,12 @@ namespace UnityEditor
             base.OnDisable();
             EditorApplication.modifierKeysChanged -= Repaint;
             Undo.undoRedoPerformed -= OnSelectionChange;
+
             UnityConnect.instance.StateChanged -= OnUnityConnectStateChanged;
         }
 
         // The actual array we display. We build this every frame to make sure it looks correct i.r.t. selection :)
-        static GUIContent[] s_ShownToolIcons = { null, null, null, null, null, null };
+        static GUIContent[] s_ShownToolIcons;
 
         public static Toolbar get = null;
         public static bool requestShowCollabToolbar = false;
@@ -176,16 +179,6 @@ namespace UnityEditor
         }
 
 
-        Rect GetThinArea(Rect pos)
-        {
-            return new Rect(pos.x, 7, pos.width, 18);
-        }
-
-        Rect GetThickArea(Rect pos)
-        {
-            return new Rect(pos.x, 5, pos.width, 24);
-        }
-
         void ReserveWidthLeft(float width, ref Rect pos)
         {
             pos.x -= width;
@@ -200,11 +193,11 @@ namespace UnityEditor
 
         protected override void OldOnGUI()
         {
-            float space = 10;
-            float largeSpace = 20;
-            float standardButtonWidth = 32;
-            float pivotButtonWidth = 64;
-            float dropdownWidth = 80;
+            const float space = 10;
+            const float largeSpace = 20;
+            const float standardButtonWidth = 32;
+            const float dropdownWidth = 80;
+            const float playPauseStopWidth = 140;
 
             InitializeToolIcons();
 
@@ -221,18 +214,20 @@ namespace UnityEditor
             ReserveWidthRight(space, ref pos);
 
             ReserveWidthRight(standardButtonWidth * s_ShownToolIcons.Length, ref pos);
-            DoToolButtons(GetThickArea(pos));
+            DoToolButtons(EditorToolGUI.GetThickArea(pos));
 
             ReserveWidthRight(largeSpace, ref pos);
 
-            ReserveWidthRight(pivotButtonWidth * 2, ref pos);
-            DoPivotButtons(GetThinArea(pos));
+            int playModeControlsStart = Mathf.RoundToInt((position.width - playPauseStopWidth) / 2);
+
+            pos.x += pos.width;
+            pos.width = (playModeControlsStart - pos.x) - largeSpace;
+            DoToolSettings(EditorToolGUI.GetThickArea(pos));
 
             // Position centered controls.
-            float playPauseStopWidth = 100;
-            pos = new Rect(Mathf.RoundToInt((position.width - playPauseStopWidth) / 2), 0, 140, 0);
+            pos = new Rect(playModeControlsStart, 0, 140, 0);
 
-            GUILayout.BeginArea(GetThickArea(pos));
+            GUILayout.BeginArea(EditorToolGUI.GetThickArea(pos));
             GUILayout.BeginHorizontal();
             {
                 DoPlayButtons(isOrWillEnterPlaymode);
@@ -247,33 +242,33 @@ namespace UnityEditor
             ReserveWidthLeft(space, ref pos);
 
             ReserveWidthLeft(dropdownWidth, ref pos);
-            DoLayoutDropDown(GetThinArea(pos));
+            DoLayoutDropDown(EditorToolGUI.GetThinArea(pos));
 
             ReserveWidthLeft(space, ref pos);
 
             ReserveWidthLeft(dropdownWidth, ref pos);
-            DoLayersDropDown(GetThinArea(pos));
+            DoLayersDropDown(EditorToolGUI.GetThinArea(pos));
 
             ReserveWidthLeft(largeSpace, ref pos);
 
             ReserveWidthLeft(dropdownWidth, ref pos);
-            if (EditorGUI.DropdownButton(GetThinArea(pos), s_AccountContent, FocusType.Passive, Styles.dropdown))
+            if (EditorGUI.DropdownButton(EditorToolGUI.GetThinArea(pos), s_AccountContent, FocusType.Passive, Styles.dropdown))
             {
-                ShowUserMenu(GetThinArea(pos));
+                ShowUserMenu(EditorToolGUI.GetThinArea(pos));
             }
 
 
             ReserveWidthLeft(space, ref pos);
 
             ReserveWidthLeft(32, ref pos);
-            if (GUI.Button(GetThinArea(pos), s_CloudIcon))
+            if (GUI.Button(EditorToolGUI.GetThinArea(pos), s_CloudIcon))
                 UnityConnectServiceCollection.instance.ShowService(HubAccess.kServiceName, true, "cloud_icon"); // Should show hub when it's done
 
             foreach (SubToolbar subToolbar in s_SubToolbars)
             {
                 ReserveWidthLeft(space, ref pos);
                 ReserveWidthLeft(subToolbar.Width, ref pos);
-                subToolbar.OnGUI(GetThinArea(pos));
+                subToolbar.OnGUI(EditorToolGUI.GetThinArea(pos));
             }
 
 
@@ -324,47 +319,63 @@ namespace UnityEditor
 
         void DoToolButtons(Rect rect)
         {
+            const int builtinIconsLength = 6;
+
             // Handle temporary override with ALT
             GUI.changed = false;
 
             int displayTool = Tools.viewToolActive ? 0 : (int)Tools.current;
 
-            // Change the icon to match the correct view tool
-            for (int i = 1; i < s_ShownToolIcons.Length; i++)
+            for (int i = 1; i < builtinIconsLength; i++)
             {
                 s_ShownToolIcons[i] = s_ToolIcons[i - 1 + (i == displayTool ? s_ShownToolIcons.Length - 1 : 0)];
                 s_ShownToolIcons[i].tooltip = s_ToolIcons[i - 1].tooltip;
             }
+
+            var lastCustomTool = EditorToolContext.GetLastCustomTool();
+
+            if (lastCustomTool != null)
+                s_ShownToolIcons[builtinIconsLength] = lastCustomTool.toolbarIcon ?? GUIContent.none;
+            else
+                s_ShownToolIcons[builtinIconsLength] = GUIContent.none;
+
             s_ShownToolIcons[0] = s_ViewToolIcons[(int)Tools.viewTool + (displayTool == 0 ? s_ShownToolIcons.Length - 1 : 0)];
 
             displayTool = GUI.Toolbar(rect, displayTool, s_ShownToolIcons, s_ToolControlNames, Styles.command, GUI.ToolbarButtonSize.FitToContents);
+
             if (GUI.changed)
             {
-                Tools.current = (Tool)displayTool;
-                Tools.ResetGlobalHandleRotation();
+                var evt = Event.current;
+
+                if (displayTool == (int)Tool.Custom &&
+                    (
+                        EditorToolContext.GetLastCustomTool() == null
+                        || evt.button == 1
+                        || (evt.button == 0 && evt.modifiers == EventModifiers.Alt))
+                )
+                {
+                    EditorToolGUI.DoToolHistoryContextMenu();
+                }
+                else
+                {
+                    Tools.current = (Tool)displayTool;
+                    Tools.ResetGlobalHandleRotation();
+                }
             }
         }
 
-        void DoPivotButtons(Rect rect)
+        void DoToolSettings(Rect rect)
         {
-            GUI.SetNextControlName("ToolbarToolPivotPositionButton");
-            Tools.pivotMode = (PivotMode)EditorGUI.CycleButton(new Rect(rect.x, rect.y, rect.width / 2, rect.height), (int)Tools.pivotMode, s_PivotIcons, Styles.buttonLeft);
-            if (Tools.current == Tool.Scale && Selection.transforms.Length < 2)
-                GUI.enabled = false;
-            GUI.SetNextControlName("ToolbarToolPivotOrientationButton");
-            PivotRotation tempPivot = (PivotRotation)EditorGUI.CycleButton(new Rect(rect.x + rect.width / 2, rect.y, rect.width / 2, rect.height), (int)Tools.pivotRotation, s_PivotRotation, Styles.buttonRight);
-            if (Tools.pivotRotation != tempPivot)
+            if (toolSettingsGui != null)
             {
-                Tools.pivotRotation = tempPivot;
-                if (tempPivot == PivotRotation.Global)
-                    Tools.ResetGlobalHandleRotation();
+                toolSettingsGui(rect);
+                return;
             }
 
-            if (Tools.current == Tool.Scale)
-                GUI.enabled = true;
-
-            if (GUI.changed)
-                Tools.RepaintAllToolViews();
+            const float pivotButtonsWidth = 128;
+            rect.width = pivotButtonsWidth;
+            rect = EditorToolGUI.GetThinArea(rect);
+            EditorToolGUI.DoBuiltinToolSettings(rect);
         }
 
         void DoPlayButtons(bool isOrWillEnterPlaymode)

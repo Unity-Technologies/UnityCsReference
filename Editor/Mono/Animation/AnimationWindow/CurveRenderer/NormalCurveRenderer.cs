@@ -37,6 +37,7 @@ namespace UnityEditor
                 {
                     Shader shader = (Shader)EditorGUIUtility.LoadRequired("Editors/AnimationWindow/Curve.shader");
                     s_CurveMaterial = new Material(shader);
+                    s_CurveMaterial.hideFlags = HideFlags.HideAndDontSave;
                 }
 
                 return s_CurveMaterial;

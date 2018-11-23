@@ -38,8 +38,9 @@ namespace UnityEditor.UIElements
             : this(null, maxLength) {}
 
         public LongField(string label, int maxLength = kMaxLengthNone)
-            : base(label, maxLength, new LongInput() { name = "unity-text-input" })
+            : base(label, maxLength, new LongInput())
         {
+            // weird: this looks like a mistake
             AddToClassList(TextField.ussClassName);
             AddLabelDragger<long>();
         }
@@ -51,7 +52,7 @@ namespace UnityEditor.UIElements
 
         class LongInput : TextValueInput
         {
-            LongField parentLongField => (LongField)parentField;
+            LongField parentLongField => (LongField)parent;
 
             internal LongInput()
             {

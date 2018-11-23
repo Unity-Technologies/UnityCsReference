@@ -44,6 +44,7 @@ namespace UnityEditor
         internal extern int GetKeyboardControl();
         internal extern void GrabPixels(RenderTexture rd, Rect rect);
         internal extern void MarkHotRegion(Rect hotRegionRect);
+        internal extern void EnableVSync(bool value);
 
         protected extern void Internal_SetAsActiveWindow();
 

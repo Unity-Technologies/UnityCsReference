@@ -42,6 +42,7 @@ namespace UnityEditor
                 {
                     Shader shader = (Shader)EditorGUIUtility.LoadRequired("Editors/AnimationWindow/ControlPoint.shader");
                     s_Material = new Material(shader);
+                    s_Material.hideFlags = HideFlags.HideAndDontSave;
                 }
 
                 return s_Material;

@@ -222,9 +222,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static void SetAllCustomScriptAssemblyJsons(string[] allAssemblyJsons)
+        public static void SetAllCustomScriptAssemblyJsons(string[] allAssemblyJsons, string[] guids)
         {
-            EmitExceptionsAsErrors(Instance.SetAllCustomScriptAssemblyJsons(allAssemblyJsons));
+            EmitExceptionsAsErrors(Instance.SetAllCustomScriptAssemblyJsons(allAssemblyJsons, guids));
         }
 
         [RequiredByNativeCode]

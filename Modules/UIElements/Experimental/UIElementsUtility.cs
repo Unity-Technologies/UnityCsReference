@@ -32,10 +32,10 @@ namespace UnityEngine.Experimental.UIElements
 
             GUIUtility.cleanupRoots += CleanupRoots;
 
-            GUIUtility.enabledStateChanged += EnabledStateChanged;
+            GUIUtility.guiChanged += MakeCurrentIMGUIContainerDirty;
         }
 
-        static void EnabledStateChanged()
+        static void MakeCurrentIMGUIContainerDirty()
         {
             if (s_ContainerStack.Count > 0)
             {

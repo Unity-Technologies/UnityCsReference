@@ -15,10 +15,10 @@ namespace UnityEngine.UIElements.StyleSheets
         public StyleSheet data;
     }
 
-    internal class VisualElementStylesData : ICustomStyle, IComputedStyle
+    internal class VisualElementStylesData : ICustomStyle
     {
         private static StyleSheetApplicator s_StyleSheetApplicator = new StyleSheetApplicator();
-        public static VisualElementStylesData none = new VisualElementStylesData(true);
+        public static readonly VisualElementStylesData none = new VisualElementStylesData(true);
 
         internal readonly bool isShared;
         internal YogaNode yogaNode;
@@ -79,6 +79,7 @@ namespace UnityEngine.UIElements.StyleSheets
         internal StyleFloat opacity;
         internal StyleCursor cursor;
         internal StyleInt visibility;
+        internal StyleInt display;
 
         public int customPropertiesCount
         {
@@ -149,61 +150,7 @@ namespace UnityEngine.UIElements.StyleSheets
             opacity.Apply(other.opacity, mode);
             cursor.Apply(other.cursor, mode);
             visibility.Apply(other.visibility, mode);
-        }
-
-        public void WriteToGUIStyle(GUIStyle style)
-        {
-            style.alignment = (TextAnchor)(unityTextAlign.GetSpecifiedValueOrDefault((int)style.alignment));
-            style.wordWrap = whiteSpace.specificity > StyleValueExtensions.UndefinedSpecificity
-                ? (WhiteSpace)whiteSpace.value == WhiteSpace.Normal
-                : style.wordWrap;
-            style.clipping = (TextClipping)(overflow.GetSpecifiedValueOrDefault((int)style.clipping));
-            if (font.value != null)
-            {
-                style.font = font.value;
-            }
-
-            style.fontSize = (int)fontSize.GetSpecifiedValueOrDefault((float)style.fontSize);
-            style.fontStyle = (FontStyle)(fontStyleAndWeight.GetSpecifiedValueOrDefault((int)style.fontStyle));
-
-            AssignRect(style.margin, ref marginLeft, ref marginTop, ref marginRight, ref marginBottom);
-            AssignRect(style.padding, ref paddingLeft, ref paddingTop, ref paddingRight, ref paddingBottom);
-            AssignRect(style.border, ref sliceLeft, ref sliceTop, ref sliceRight, ref sliceBottom);
-            AssignState(style.normal);
-            AssignState(style.focused);
-            AssignState(style.hover);
-            AssignState(style.active);
-            AssignState(style.onNormal);
-            AssignState(style.onFocused);
-            AssignState(style.onHover);
-            AssignState(style.onActive);
-        }
-
-        void AssignState(GUIStyleState state)
-        {
-            state.textColor = color.GetSpecifiedValueOrDefault(state.textColor);
-            if (backgroundImage.value.texture != null)
-            {
-                state.background = backgroundImage.value.texture;
-                if (state.scaledBackgrounds == null || state.scaledBackgrounds.Length < 1 || state.scaledBackgrounds[0] != backgroundImage.value.texture)
-                    state.scaledBackgrounds = new Texture2D[1] { backgroundImage.value.texture };
-            }
-        }
-
-        void AssignRect(RectOffset rect, ref StyleLength left, ref StyleLength top, ref StyleLength right, ref StyleLength bottom)
-        {
-            rect.left = (int)left.GetSpecifiedValueOrDefault((float)rect.left);
-            rect.top = (int)top.GetSpecifiedValueOrDefault((float)rect.top);
-            rect.right = (int)right.GetSpecifiedValueOrDefault((float)rect.right);
-            rect.bottom = (int)bottom.GetSpecifiedValueOrDefault((float)rect.bottom);
-        }
-
-        void AssignRect(RectOffset rect, ref StyleInt left, ref StyleInt top, ref StyleInt right, ref StyleInt bottom)
-        {
-            rect.left = left.GetSpecifiedValueOrDefault(rect.left);
-            rect.top = top.GetSpecifiedValueOrDefault(rect.top);
-            rect.right = right.GetSpecifiedValueOrDefault(rect.right);
-            rect.bottom = bottom.GetSpecifiedValueOrDefault(rect.bottom);
+            display.Apply(other.display, mode);
         }
 
         public void ApplyLayoutValues()
@@ -214,8 +161,11 @@ namespace UnityEngine.UIElements.StyleSheets
             SyncWithLayout(yogaNode);
         }
 
-        internal const Align DefaultAlignContent = Align.FlexStart;
-        internal const Align DefaultAlignItems = Align.Stretch;
+        internal const float k_DefaultFlexGrow = 0f;
+        internal const float k_DefaultFlexShrink = 1f;
+
+        internal const Align k_DefaultAlignContent = Align.FlexStart;
+        internal const Align k_DefaultAlignItems = Align.Stretch;
 
         public void SyncWithLayout(YogaNode targetNode)
         {
@@ -234,8 +184,8 @@ namespace UnityEngine.UIElements.StyleSheets
                 targetNode.FlexBasis = fb.GetSpecifiedValueOrDefault(float.NaN);
             }
 
-            targetNode.FlexGrow = flexGrow.GetSpecifiedValueOrDefault(float.NaN);
-            targetNode.FlexShrink = flexShrink.GetSpecifiedValueOrDefault(float.NaN);
+            targetNode.FlexGrow = flexGrow.GetSpecifiedValueOrDefault(k_DefaultFlexGrow);
+            targetNode.FlexShrink = flexShrink.GetSpecifiedValueOrDefault(k_DefaultFlexShrink);
             targetNode.Left = left.ToYogaValue();
             targetNode.Top = top.ToYogaValue();
             targetNode.Right = right.ToYogaValue();
@@ -263,13 +213,12 @@ namespace UnityEngine.UIElements.StyleSheets
             targetNode.MinWidth = minWidth.ToYogaValue();
             targetNode.MinHeight = minHeight.ToYogaValue();
 
-            // Note: the following applies to VisualContainer only
-            // but it won't cause any trouble and we avoid making this method virtual
             targetNode.FlexDirection = (YogaFlexDirection)flexDirection.value;
-            targetNode.AlignContent = (YogaAlign)alignContent.GetSpecifiedValueOrDefault((int)DefaultAlignContent);
-            targetNode.AlignItems = (YogaAlign)alignItems.GetSpecifiedValueOrDefault((int)DefaultAlignItems);
+            targetNode.AlignContent = (YogaAlign)alignContent.GetSpecifiedValueOrDefault((int)k_DefaultAlignContent);
+            targetNode.AlignItems = (YogaAlign)alignItems.GetSpecifiedValueOrDefault((int)k_DefaultAlignItems);
             targetNode.JustifyContent = (YogaJustify)justifyContent.value;
             targetNode.Wrap = (YogaWrap)flexWrap.value;
+            targetNode.Display = (YogaDisplay)display.value;
         }
 
         internal void ApplyRule(StyleSheet sheet, int specificity, StyleRule rule, StylePropertyID[] propertyIDs)
@@ -305,15 +254,15 @@ namespace UnityEngine.UIElements.StyleSheets
             switch (propertyID)
             {
                 case StylePropertyID.AlignContent:
-                    applicator.ApplyEnum<Align>(sheet, handles, specificity, ref alignContent);
+                    applicator.ApplyAlign(sheet, handles, specificity, ref alignContent);
                     break;
 
                 case StylePropertyID.AlignItems:
-                    applicator.ApplyEnum<Align>(sheet, handles, specificity, ref alignItems);
+                    applicator.ApplyAlign(sheet, handles, specificity, ref alignItems);
                     break;
 
                 case StylePropertyID.AlignSelf:
-                    applicator.ApplyEnum<Align>(sheet, handles, specificity, ref alignSelf);
+                    applicator.ApplyAlign(sheet, handles, specificity, ref alignSelf);
                     break;
 
                 case StylePropertyID.BackgroundImage:
@@ -520,6 +469,10 @@ namespace UnityEngine.UIElements.StyleSheets
                     applicator.ApplyEnum<Visibility>(sheet, handles, specificity, ref visibility);
                     break;
 
+                case StylePropertyID.Display:
+                    applicator.ApplyDisplay(sheet, handles, specificity, ref display);
+                    break;
+
                 default:
                     throw new ArgumentException(string.Format("Non exhaustive switch statement (value={0})", propertyID));
             }
@@ -675,60 +628,5 @@ namespace UnityEngine.UIElements.StyleSheets
 
             return false;
         }
-
-        StyleLength IComputedStyle.width => width;
-        StyleLength IComputedStyle.height => height;
-        StyleLength IComputedStyle.maxWidth => maxWidth.GetSpecifiedValueOrDefault<StyleLength, Length>(StyleKeyword.None);
-        StyleLength IComputedStyle.maxHeight => maxHeight.GetSpecifiedValueOrDefault<StyleLength, Length>(StyleKeyword.None);
-        StyleLength IComputedStyle.minWidth => minWidth.GetSpecifiedValueOrDefault<StyleLength, Length>(StyleKeyword.Auto);
-        StyleLength IComputedStyle.minHeight => minHeight.GetSpecifiedValueOrDefault<StyleLength, Length>(StyleKeyword.Auto);
-        StyleLength IComputedStyle.flexBasis => flexBasis.GetSpecifiedValueOrDefault<StyleLength, Length>(StyleKeyword.Auto);
-        StyleFloat IComputedStyle.flexGrow => flexGrow;
-        StyleFloat IComputedStyle.flexShrink => flexShrink;
-        StyleEnum<FlexDirection> IComputedStyle.flexDirection => flexDirection.ToStyleEnum((FlexDirection)flexDirection.value);
-        StyleEnum<Wrap> IComputedStyle.flexWrap => flexWrap.ToStyleEnum((Wrap)flexWrap.value);
-        StyleEnum<Overflow> IComputedStyle.overflow => overflow.ToStyleEnum((Overflow)overflow.value);
-        StyleLength IComputedStyle.left => left;
-        StyleLength IComputedStyle.top => top;
-        StyleLength IComputedStyle.right => right;
-        StyleLength IComputedStyle.bottom => bottom;
-        StyleLength IComputedStyle.marginLeft => marginLeft;
-        StyleLength IComputedStyle.marginTop => marginTop;
-        StyleLength IComputedStyle.marginRight => marginRight;
-        StyleLength IComputedStyle.marginBottom => marginBottom;
-        StyleLength IComputedStyle.paddingLeft => paddingLeft;
-        StyleLength IComputedStyle.paddingTop => paddingTop;
-        StyleLength IComputedStyle.paddingRight => paddingRight;
-        StyleLength IComputedStyle.paddingBottom => paddingBottom;
-        StyleEnum<Position> IComputedStyle.position => position.ToStyleEnum((Position)position.value);
-        StyleEnum<Align> IComputedStyle.alignSelf => alignSelf.ToStyleEnum((Align)alignSelf.value);
-        StyleEnum<TextAnchor> IComputedStyle.unityTextAlign => unityTextAlign.ToStyleEnum((TextAnchor)unityTextAlign.value);
-        StyleEnum<FontStyle> IComputedStyle.unityFontStyleAndWeight => fontStyleAndWeight.ToStyleEnum((FontStyle)fontStyleAndWeight.value);
-        StyleFont IComputedStyle.unityFont => font;
-        StyleLength IComputedStyle.fontSize => fontSize;
-        StyleEnum<WhiteSpace> IComputedStyle.whiteSpace => whiteSpace.ToStyleEnum((WhiteSpace)whiteSpace.value);
-        StyleColor IComputedStyle.color => color;
-        StyleColor IComputedStyle.backgroundColor => backgroundColor;
-        StyleColor IComputedStyle.borderColor => borderColor;
-        StyleBackground IComputedStyle.backgroundImage => backgroundImage;
-        StyleEnum<ScaleMode> IComputedStyle.unityBackgroundScaleMode => backgroundScaleMode.ToStyleEnum((ScaleMode)backgroundScaleMode.value);
-        StyleEnum<Align> IComputedStyle.alignItems => (Align)alignItems.GetSpecifiedValueOrDefault((int)DefaultAlignItems);
-        StyleEnum<Align> IComputedStyle.alignContent => (Align)alignContent.GetSpecifiedValueOrDefault((int)DefaultAlignContent);
-        StyleEnum<Justify> IComputedStyle.justifyContent => justifyContent.ToStyleEnum((Justify)justifyContent.value);
-        StyleFloat IComputedStyle.borderLeftWidth => borderLeftWidth;
-        StyleFloat IComputedStyle.borderTopWidth => borderTopWidth;
-        StyleFloat IComputedStyle.borderRightWidth => borderRightWidth;
-        StyleFloat IComputedStyle.borderBottomWidth => borderBottomWidth;
-        StyleLength IComputedStyle.borderTopLeftRadius => borderTopLeftRadius;
-        StyleLength IComputedStyle.borderTopRightRadius => borderTopRightRadius;
-        StyleLength IComputedStyle.borderBottomRightRadius => borderBottomRightRadius;
-        StyleLength IComputedStyle.borderBottomLeftRadius => borderBottomLeftRadius;
-        StyleInt IComputedStyle.unitySliceLeft => sliceLeft;
-        StyleInt IComputedStyle.unitySliceTop => sliceTop;
-        StyleInt IComputedStyle.unitySliceRight => sliceRight;
-        StyleInt IComputedStyle.unitySliceBottom => sliceBottom;
-        StyleFloat IComputedStyle.opacity => opacity.GetSpecifiedValueOrDefault(1.0f);
-        StyleCursor IComputedStyle.cursor => cursor;
-        StyleEnum<Visibility> IComputedStyle.visibility => visibility.ToStyleEnum((Visibility)visibility.value);
     }
 }

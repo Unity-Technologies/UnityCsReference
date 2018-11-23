@@ -4,10 +4,12 @@
 
 using System;
 using System.Runtime.InteropServices;
+using UnityEngine;
 using UnityEngine.Bindings;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Collections;
 using UnityEngine.Scripting;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEngine.Rendering
 {
@@ -64,6 +66,13 @@ namespace UnityEngine.Rendering
     [StaticAccessor("AsyncGPUReadbackManager::GetInstance()", StaticAccessorType.Dot)]
     public static class AsyncGPUReadback
     {
+        internal static void ValidateFormat(Texture src, GraphicsFormat dstformat)
+        {
+            GraphicsFormat srcformat = GraphicsFormatUtility.GetFormat(src);
+            if (!SystemInfo.IsFormatSupported(srcformat, FormatUsage.ReadPixels))
+                Debug.LogError(String.Format("'{0}' doesn't support ReadPixels usage on this platform. Async GPU readback failed.", srcformat));
+        }
+
         static private void SetUpScriptingRequest(AsyncGPUReadbackRequest request, Action<AsyncGPUReadbackRequest> callback)
         {
             request.SetScriptingCallback(callback);
@@ -93,6 +102,12 @@ namespace UnityEngine.Rendering
 
         static public AsyncGPUReadbackRequest Request(Texture src, int mipIndex, TextureFormat dstFormat, Action<AsyncGPUReadbackRequest> callback = null)
         {
+            return Request(src, mipIndex, GraphicsFormatUtility.GetGraphicsFormat(dstFormat, QualitySettings.activeColorSpace == ColorSpace.Linear), callback);
+        }
+
+        static public AsyncGPUReadbackRequest Request(Texture src, int mipIndex, GraphicsFormat dstFormat, Action<AsyncGPUReadbackRequest> callback = null)
+        {
+            ValidateFormat(src, dstFormat);
             AsyncGPUReadbackRequest request = Request_Internal_Texture_2(src, mipIndex, dstFormat);
             SetUpScriptingRequest(request, callback);
             return request;
@@ -107,6 +122,12 @@ namespace UnityEngine.Rendering
 
         static public AsyncGPUReadbackRequest Request(Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth, TextureFormat dstFormat, Action<AsyncGPUReadbackRequest> callback = null)
         {
+            return Request(src, mipIndex, x, width, y, height, z, depth, GraphicsFormatUtility.GetGraphicsFormat(dstFormat, QualitySettings.activeColorSpace == ColorSpace.Linear), callback);
+        }
+
+        static public AsyncGPUReadbackRequest Request(Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth, GraphicsFormat dstFormat, Action<AsyncGPUReadbackRequest> callback = null)
+        {
+            ValidateFormat(src, dstFormat);
             AsyncGPUReadbackRequest request = Request_Internal_Texture_4(src, mipIndex, x, width, y, height, z, depth, dstFormat);
             SetUpScriptingRequest(request, callback);
             return request;
@@ -119,10 +140,10 @@ namespace UnityEngine.Rendering
         [NativeMethod("Request")]
         static private extern AsyncGPUReadbackRequest Request_Internal_Texture_1([NotNull] Texture src, int mipIndex);
         [NativeMethod("Request")]
-        static private extern AsyncGPUReadbackRequest Request_Internal_Texture_2([NotNull] Texture src, int mipIndex, TextureFormat dstFormat);
+        static private extern AsyncGPUReadbackRequest Request_Internal_Texture_2([NotNull] Texture src, int mipIndex, GraphicsFormat dstFormat);
         [NativeMethod("Request")]
         static private extern AsyncGPUReadbackRequest Request_Internal_Texture_3([NotNull] Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth);
         [NativeMethod("Request")]
-        static private extern AsyncGPUReadbackRequest Request_Internal_Texture_4([NotNull] Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth, TextureFormat dstFormat);
+        static private extern AsyncGPUReadbackRequest Request_Internal_Texture_4([NotNull] Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth, GraphicsFormat dstFormat);
     }
 }

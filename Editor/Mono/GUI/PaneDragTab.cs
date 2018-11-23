@@ -155,7 +155,7 @@ namespace UnityEditor
             {
                 Color oldGUIColor = GUI.color;
                 GUI.color = Color.white;
-                s_PaneStyle.Draw(new Rect(0, 0, position.width, position.height), m_Content, false,  false, true, true);
+                s_PaneStyle.Draw(new Rect(0, 0, position.width, position.height), m_TabVisible ? GUIContent.none : m_Content, false,  false, true, true);
                 if (m_TabVisible)
                 {
                     s_TabStyle.Draw(new Rect(0, 0, position.width, position.height), m_Content, false,  false, true, true);

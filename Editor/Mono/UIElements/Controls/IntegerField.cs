@@ -38,7 +38,7 @@ namespace UnityEditor.UIElements
             : this(null, maxLength) {}
 
         public IntegerField(string label, int maxLength = kMaxLengthNone)
-            : base(label, maxLength, new IntegerInput() { name = "unity-text-input" })
+            : base(label, maxLength, new IntegerInput())
         {
             AddToClassList(ussClassName);
             AddLabelDragger<int>();
@@ -51,7 +51,7 @@ namespace UnityEditor.UIElements
 
         class IntegerInput : TextValueInput
         {
-            IntegerField parentIntegerField => (IntegerField)parentField;
+            IntegerField parentIntegerField => (IntegerField)parent;
 
             internal IntegerInput()
             {

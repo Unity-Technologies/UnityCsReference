@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor
 {
@@ -10,6 +11,10 @@ namespace UnityEditor
     {
         [SerializeField]
         private InspectorWindow m_ParentInspectorWindow;
+
+        VisualElement m_previewElement;
+
+        VisualElement previewElement => m_previewElement ?? (m_previewElement = rootVisualContainer.Q<VisualElement>("preview"));
 
         public void SetParentInspector(InspectorWindow inspector)
         {
@@ -21,15 +26,24 @@ namespace UnityEditor
 
         protected override void OnEnable()
         {
-            base.OnEnable();
             titleContent = EditorGUIUtility.TrTextContent("Preview");
             minSize = new Vector2(260, 220);
+
+            AddInspectorWindow(this);
+            var tpl = EditorGUIUtility.Load("UXML/InspectorWindow/PreviewWindow.uxml") as VisualTreeAsset;
+            var container = tpl.CloneTree(null);
+            container.AddToClassList("mainContainer");
+            rootVisualContainer.shadow.Add(container);
+
+            rootVisualContainer.AddStyleSheetPath("StyleSheets/InspectorWindow/PreviewWindow.uss");
+
+            RebuildContentsContainers();
         }
 
         protected override void OnDisable()
         {
             base.OnDisable();
-            m_ParentInspectorWindow.Repaint();
+            m_ParentInspectorWindow.RebuildContentsContainers();
         }
 
         protected override void CreateTracker()
@@ -43,16 +57,31 @@ namespace UnityEditor
             return m_ParentInspectorWindow.GetLastInteractedEditor();
         }
 
-        protected override void OnGUI()
+        internal override void RebuildContentsContainers()
+        {
+            var preview = previewElement;
+            preview.Clear();
+            var container = new IMGUIContainer(() =>
+            {
+                CreatePreviewables();
+                DrawPreview();
+            });
+            container.style.flexGrow = 1f;
+            container.style.flexShrink = 0f;
+            container.style.flexBasis = 0f;
+
+            preview.Add(container);
+        }
+
+        protected void DrawPreview()
         {
             if (m_ParentInspectorWindow == null)
             {
                 Close();
                 EditorGUIUtility.ExitGUI();
             }
-            Editor.m_AllowMultiObjectAccess = true;
 
-            CreatePreviewables();
+            Editor.m_AllowMultiObjectAccess = true;
 
             // Do we have an editor that supports previews? Null if not.
             IPreviewable[] editorsWithPreviews = GetEditorsWithPreviews(tracker.activeEditors);
@@ -61,7 +90,7 @@ namespace UnityEditor
             bool hasPreview = (editor != null) && editor.HasPreviewGUI();
 
             // Toolbar
-            Rect toolbarRect = EditorGUILayout.BeginHorizontal(GUIContent.none, Styles.preToolbar, GUILayout.Height(17));
+            Rect toolbarRect = EditorGUILayout.BeginHorizontal(GUIContent.none, Styles.preToolbar, GUILayout.Height(kBottomToolbarHeight));
             {
                 GUILayout.FlexibleSpace();
                 var labelRect = GUILayoutUtility.GetLastRect();

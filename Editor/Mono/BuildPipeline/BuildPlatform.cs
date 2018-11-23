@@ -57,7 +57,17 @@ namespace UnityEditor.Build
             DiscoveredTargetInfo[] buildTargets = BuildTargetDiscovery.GetBuildTargetInfoList();
 
             // Standalone needs to be first
-            buildPlatformsList.Add(new BuildPlatform(BuildPipeline.GetBuildTargetGroupDisplayName(BuildTargetGroup.Standalone), "BuildSettings.Standalone", BuildTargetGroup.Standalone, BuildTarget.StandaloneWindows, true));
+            // Before we had BuildTarget.StandaloneWindows for BuildPlatform.defaultTarget
+            // But that doesn't make a lot of sense, as editor use it in places, so it should agree with editor platform
+            // TODO: should we poke module manager for target support? i think we can assume support for standalone for editor platform
+            // TODO: even then - picking windows standalone unconditionally wasn't much better
+            BuildTarget standaloneTarget = BuildTarget.StandaloneWindows;
+            if (Application.platform == RuntimePlatform.OSXEditor)
+                standaloneTarget = BuildTarget.StandaloneOSX;
+            else if (Application.platform == RuntimePlatform.LinuxEditor)
+                standaloneTarget = BuildTarget.StandaloneLinux;
+
+            buildPlatformsList.Add(new BuildPlatform(BuildPipeline.GetBuildTargetGroupDisplayName(BuildTargetGroup.Standalone), "BuildSettings.Standalone", BuildTargetGroup.Standalone, standaloneTarget, true));
 
             foreach (var target in buildTargets)
             {

@@ -15,25 +15,40 @@ namespace UnityEngine.Experimental.VFX
     internal class VFXExpressionNoise
     {
         [NativeName("Value::Generate")]
-        extern static internal float GenerateValueNoise1D(float coordinate, float amplitude, float frequency, int octaveCount, float persistence);
+        extern static internal Vector2 GenerateValueNoise1D(float coordinate, float amplitude, float frequency, int octaveCount, float persistence);
         [NativeName("Value::Generate")]
-        extern static internal float GenerateValueNoise2D(Vector2 coordinate, float amplitude, float frequency, int octaveCount, float persistence);
+        extern static internal Vector3 GenerateValueNoise2D(Vector2 coordinate, float amplitude, float frequency, int octaveCount, float persistence);
         [NativeName("Value::Generate")]
-        extern static internal float GenerateValueNoise3D(Vector3 coordinate, float amplitude, float frequency, int octaveCount, float persistence);
+        extern static internal Vector4 GenerateValueNoise3D(Vector3 coordinate, float amplitude, float frequency, int octaveCount, float persistence);
+
+        [NativeName("Value::GenerateCurl")]
+        extern static internal Vector2 GenerateValueCurlNoise2D(Vector2 coordinate, float amplitude, float frequency, int octaveCount, float persistence);
+        [NativeName("Value::GenerateCurl")]
+        extern static internal Vector3 GenerateValueCurlNoise3D(Vector3 coordinate, float amplitude, float frequency, int octaveCount, float persistence);
 
         [NativeName("Perlin::Generate")]
-        extern static internal float GeneratePerlinNoise1D(float coordinate, float amplitude, float frequency, int octaveCount, float persistence);
+        extern static internal Vector2 GeneratePerlinNoise1D(float coordinate, float amplitude, float frequency, int octaveCount, float persistence);
         [NativeName("Perlin::Generate")]
-        extern static internal float GeneratePerlinNoise2D(Vector2 coordinate, float amplitude, float frequency, int octaveCount, float persistence);
+        extern static internal Vector3 GeneratePerlinNoise2D(Vector2 coordinate, float amplitude, float frequency, int octaveCount, float persistence);
         [NativeName("Perlin::Generate")]
-        extern static internal float GeneratePerlinNoise3D(Vector3 coordinate, float amplitude, float frequency, int octaveCount, float persistence);
+        extern static internal Vector4 GeneratePerlinNoise3D(Vector3 coordinate, float amplitude, float frequency, int octaveCount, float persistence);
 
-        [NativeName("Simplex::Generate")]
-        extern static internal float GenerateSimplexNoise1D(float coordinate, float amplitude, float frequency, int octaveCount, float persistence);
-        [NativeName("Simplex::Generate")]
-        extern static internal float GenerateSimplexNoise2D(Vector2 coordinate, float amplitude, float frequency, int octaveCount, float persistence);
-        [NativeName("Simplex::Generate")]
-        extern static internal float GenerateSimplexNoise3D(Vector3 coordinate, float amplitude, float frequency, int octaveCount, float persistence);
+        [NativeName("Perlin::GenerateCurl")]
+        extern static internal Vector2 GeneratePerlinCurlNoise2D(Vector2 coordinate, float amplitude, float frequency, int octaveCount, float persistence);
+        [NativeName("Perlin::GenerateCurl")]
+        extern static internal Vector3 GeneratePerlinCurlNoise3D(Vector3 coordinate, float amplitude, float frequency, int octaveCount, float persistence);
+
+        [NativeName("Cellular::Generate")]
+        extern static internal Vector2 GenerateCellularNoise1D(float coordinate, float amplitude, float frequency, int octaveCount, float persistence);
+        [NativeName("Cellular::Generate")]
+        extern static internal Vector3 GenerateCellularNoise2D(Vector2 coordinate, float amplitude, float frequency, int octaveCount, float persistence);
+        [NativeName("Cellular::Generate")]
+        extern static internal Vector4 GenerateCellularNoise3D(Vector3 coordinate, float amplitude, float frequency, int octaveCount, float persistence);
+
+        [NativeName("Cellular::GenerateCurl")]
+        extern static internal Vector2 GenerateCellularCurlNoise2D(Vector2 coordinate, float amplitude, float frequency, int octaveCount, float persistence);
+        [NativeName("Cellular::GenerateCurl")]
+        extern static internal Vector3 GenerateCellularCurlNoise3D(Vector3 coordinate, float amplitude, float frequency, int octaveCount, float persistence);
 
         [NativeName("Voro::Generate")]
         extern static internal float GenerateVoroNoise2D(Vector2 coordinate, float amplitude, float frequency, float warp, float smoothness);

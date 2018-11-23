@@ -94,7 +94,8 @@ namespace UnityEditor.Experimental.AssetImporters
         private SpriteImportData[] m_SpriteImportData;
         [NativeName("spritePackingTag")]
         private string m_SpritePackingTag;
-
+        [NativeName("secondarySpriteTextures")]
+        private SecondarySpriteTexture[] m_SecondarySpriteTextures;
 
         public TextureGenerationSettings(TextureImporterType type)
         {
@@ -103,6 +104,7 @@ namespace UnityEditor.Experimental.AssetImporters
             m_QualifyForSpritePacking = false;
             m_SpritePackingTag = "";
             m_SpriteImportData = null;
+            m_SecondarySpriteTextures = null;
 
             m_SourceTextureInformation = new SourceTextureInformation();
             m_SourceTextureInformation.width = m_SourceTextureInformation.height = 0;
@@ -211,6 +213,7 @@ namespace UnityEditor.Experimental.AssetImporters
         public SourceTextureInformation sourceTextureInformation { get { return m_SourceTextureInformation; } set { m_SourceTextureInformation = value; } }
         public SpriteImportData[] spriteImportData { get { return m_SpriteImportData; } set { m_SpriteImportData = value; } }
         public string spritePackingTag { get { return m_SpritePackingTag; } set { m_SpritePackingTag = value; } }
+        public SecondarySpriteTexture[] secondarySpriteTextures { get { return m_SecondarySpriteTextures; } set { m_SecondarySpriteTextures = value; } }
     };
 
 

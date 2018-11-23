@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.U2D;
 using UnityEditor.Build;
 using UnityEditor.U2D.Common;
@@ -575,9 +576,9 @@ namespace UnityEditor.U2D
             if (m_PreviewTextures != null && m_PreviewPage < m_PreviewTextures.Length)
             {
                 Texture2D t = m_PreviewTextures[m_PreviewPage];
-                TextureFormat format = TextureUtil.GetTextureFormat(t);
+                GraphicsFormat format = GraphicsFormatUtility.GetFormat(t);
 
-                return string.Format("{0}x{1} {2}\n{3}", t.width, t.height, TextureUtil.GetTextureFormatString(format), EditorUtility.FormatBytes(TextureUtil.GetStorageMemorySizeLong(t)));
+                return string.Format("{0}x{1} {2}\n{3}", t.width, t.height, GraphicsFormatUtility.GetFormatString(format), EditorUtility.FormatBytes(TextureUtil.GetStorageMemorySizeLong(t)));
             }
             return "";
         }

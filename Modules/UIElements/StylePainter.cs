@@ -82,7 +82,7 @@ namespace UnityEngine.UIElements
                 bottomLeftRadius);
         }
 
-        public static void SetFromStyle(ref BorderParameters border, IComputedStyle style)
+        public static void SetFromStyle(ref BorderParameters border, ComputedStyle style)
         {
             border.SetWidth(style.borderTopWidth.value, style.borderRightWidth.value, style.borderBottomWidth.value, style.borderLeftWidth.value);
             border.SetRadius(style.borderTopLeftRadius.value.value, style.borderTopRightRadius.value.value, style.borderBottomRightRadius.value.value, style.borderBottomLeftRadius.value.value);
@@ -105,7 +105,7 @@ namespace UnityEngine.UIElements
 
         public static TextureStylePainterParameters GetDefault(VisualElement ve)
         {
-            IComputedStyle style = ve.computedStyle;
+            ComputedStyle style = ve.computedStyle;
             var painterParams = new TextureStylePainterParameters
             {
                 rect = GUIUtility.AlignRectToDevice(ve.rect),
@@ -132,7 +132,7 @@ namespace UnityEngine.UIElements
 
         public static RectStylePainterParameters GetDefault(VisualElement ve)
         {
-            IComputedStyle style = ve.computedStyle;
+            ComputedStyle style = ve.computedStyle;
             var painterParams = new RectStylePainterParameters
             {
                 rect = GUIUtility.AlignRectToDevice(ve.rect),
@@ -159,7 +159,7 @@ namespace UnityEngine.UIElements
 
         public static TextStylePainterParameters GetDefault(VisualElement ve, string text)
         {
-            IComputedStyle style = ve.computedStyle;
+            ComputedStyle style = ve.computedStyle;
             var painterParams = new TextStylePainterParameters
             {
                 rect = ve.contentRect,
@@ -231,7 +231,7 @@ namespace UnityEngine.UIElements
 
         public static CursorPositionStylePainterParameters GetDefault(VisualElement ve, string text)
         {
-            IComputedStyle style = ve.computedStyle;
+            ComputedStyle style = ve.computedStyle;
             var painterParams = new CursorPositionStylePainterParameters() {
                 rect = ve.contentRect,
                 text = text,

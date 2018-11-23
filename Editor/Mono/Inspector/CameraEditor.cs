@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering;
 using AnimatedBool = UnityEditor.AnimatedValues.AnimBool;
 using UnityEngine.Scripting;
 using UnityEditor.Modules;
@@ -26,7 +27,7 @@ namespace UnityEditor
             public static GUIContent background = EditorGUIUtility.TrTextContent("Background", "The Camera clears the screen to this color before rendering.");
             public static GUIContent projection = EditorGUIUtility.TrTextContent("Projection", "How the Camera renders perspective.\n\nChoose Perspective to render objects with perspective.\n\nChoose Orthographic to render objects uniformly, with no sense of perspective.");
             public static GUIContent size = EditorGUIUtility.TrTextContent("Size", "The vertical size of the camera view.");
-            public static GUIContent fieldOfView = EditorGUIUtility.TrTextContent("Field of View", "The height of the camera’s view angle, measured in degrees vertically, or along the local Y axis.");
+            public static GUIContent fieldOfView = EditorGUIUtility.TrTextContent("Field of View", "The camera’s view angle measured in degrees along the selected axis.");
             public static GUIContent viewportRect = EditorGUIUtility.TrTextContent("Viewport Rect", "Four values that indicate where on the screen this camera view will be drawn. Measured in Viewport Coordinates (values 0–1).");
             public static GUIContent sensorSize = EditorGUIUtility.TrTextContent("Sensor Size", "The size of the camera sensor in millimeters.");
             public static GUIContent lensShift = EditorGUIUtility.TrTextContent("Lens Shift", "Offset from the camera sensor. Use these properties to simulate a shift lens. Measured as a multiple of the sensor size.");
@@ -39,6 +40,7 @@ namespace UnityEditor
             public static GUIContent allowMSAA = EditorGUIUtility.TrTextContent("MSAA", "Use Multi Sample Anti-Aliasing to reduce aliasing.");
             public static GUIContent gateFit = EditorGUIUtility.TrTextContent("Gate Fit", "Determines how the rendered area (resolution gate) fits into the sensor area (film gate).");
             public static GUIContent allowDynamicResolution = EditorGUIUtility.TrTextContent("Allow Dynamic Resolution", "Scales render textures to support dynamic resolution if the target platform/graphics API supports it.");
+            public static GUIContent FOVAxisMode = EditorGUIUtility.TrTextContent("FOV Axis", "Field of view axis.");
             public static GUIStyle invisibleButton = "InvisibleButton";
             public static GUIContent[] displayedOptions = new[] { new GUIContent("Off"), new GUIContent("Use Graphics Settings") };
             public static int[] optionValues = new[] { 0, 1 };
@@ -111,7 +113,7 @@ namespace UnityEditor
             public SerializedProperty lensShift { get; private set; }
             public SerializedProperty focalLength { get; private set; }
             public SerializedProperty gateFit { get; private set; }
-            public SerializedProperty fieldOfView { get; private set; }
+            public SerializedProperty verticalFOV { get; private set; }
             public SerializedProperty orthographic { get; private set; }
             public SerializedProperty orthographicSize { get; private set; }
             public SerializedProperty depth { get; private set; }
@@ -126,7 +128,7 @@ namespace UnityEditor
             public SerializedProperty stereoSeparation { get; private set; }
             public SerializedProperty nearClippingPlane { get; private set; }
             public SerializedProperty farClippingPlane { get; private set; }
-
+            public SerializedProperty fovAxisMode { get; private set; }
 
             public SerializedProperty targetDisplay { get; private set; }
 
@@ -153,7 +155,8 @@ namespace UnityEditor
                 projectionMatrixMode = m_SerializedObject.FindProperty("m_projectionMatrixMode");
                 nearClippingPlane = m_SerializedObject.FindProperty("near clip plane");
                 farClippingPlane = m_SerializedObject.FindProperty("far clip plane");
-                fieldOfView = m_SerializedObject.FindProperty("field of view");
+                verticalFOV = m_SerializedObject.FindProperty("field of view");
+                fovAxisMode = m_SerializedObject.FindProperty("m_FOVAxisMode");
                 orthographic = m_SerializedObject.FindProperty("orthographic");
                 orthographicSize = m_SerializedObject.FindProperty("orthographic size");
                 depth = m_SerializedObject.FindProperty("m_Depth");
@@ -214,16 +217,57 @@ namespace UnityEditor
                         EditorGUILayout.PropertyField(orthographicSize, Styles.size);
                     else
                     {
+                        float fovCurrentValue;
+                        bool multipleDifferentFovValues = false;
                         bool isPhysicalCamera = projectionMatrixMode.intValue == (int)Camera.ProjectionMatrixMode.PhysicalPropertiesBased;
 
-                        GUIContent content = EditorGUI.BeginProperty(EditorGUILayout.BeginHorizontal(), Styles.fieldOfView, fieldOfView);
-                        EditorGUI.BeginDisabled(projectionMatrixMode.hasMultipleDifferentValues || isPhysicalCamera && (focalLength.hasMultipleDifferentValues || sensorSize.hasMultipleDifferentValues));
+                        var rect = EditorGUILayout.GetControlRect();
+                        var guiContent = EditorGUI.BeginProperty(rect, Styles.FOVAxisMode, fovAxisMode);
+                        EditorGUI.showMixedValue = fovAxisMode.hasMultipleDifferentValues;
+
                         EditorGUI.BeginChangeCheck();
-                        float fovNewValue = EditorGUILayout.Slider(content, fieldOfView.floatValue, 0.00001f, 179f);
-                        bool fovChanged = EditorGUI.EndChangeCheck();
+                        var fovAxisNewVal = (int)(Camera.FieldOfViewAxis)EditorGUI.EnumPopup(rect, guiContent, (Camera.FieldOfViewAxis)fovAxisMode.intValue);
+                        if (EditorGUI.EndChangeCheck())
+                            fovAxisMode.intValue = fovAxisNewVal;
+                        EditorGUI.EndProperty();
+
+                        bool fovAxisVertical = fovAxisMode.intValue == 0;
+
+                        if (!fovAxisVertical && !fovAxisMode.hasMultipleDifferentValues)
+                        {
+                            var targets = m_SerializedObject.targetObjects;
+                            var camera0 = targets[0] as Camera;
+                            float aspectRatio = isPhysicalCamera ? sensorSize.vector2Value.x / sensorSize.vector2Value.y : camera0.aspect;
+                            // camera.aspect is not serialized so we have to check all targets.
+                            fovCurrentValue = Camera.VerticalToHorizontalFieldOfView(camera0.fieldOfView, aspectRatio);
+                            if (m_SerializedObject.targetObjectsCount > 1)
+                            {
+                                foreach (Camera camera in targets)
+                                {
+                                    if (camera.fieldOfView != fovCurrentValue)
+                                    {
+                                        multipleDifferentFovValues = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            fovCurrentValue = verticalFOV.floatValue;
+                            multipleDifferentFovValues = fovAxisMode.hasMultipleDifferentValues;
+                        }
+
+                        EditorGUI.showMixedValue = multipleDifferentFovValues;
+                        var content = EditorGUI.BeginProperty(EditorGUILayout.BeginHorizontal(), Styles.fieldOfView, verticalFOV);
+                        EditorGUI.BeginDisabled(projectionMatrixMode.hasMultipleDifferentValues || isPhysicalCamera && (sensorSize.hasMultipleDifferentValues || fovAxisMode.hasMultipleDifferentValues));
+                        EditorGUI.BeginChangeCheck();
+                        var fovNewValue = EditorGUILayout.Slider(content, fovCurrentValue, 0.00001f, 179f);
+                        var fovChanged = EditorGUI.EndChangeCheck();
                         EditorGUI.EndDisabled();
                         EditorGUILayout.EndHorizontal();
                         EditorGUI.EndProperty();
+                        EditorGUI.showMixedValue = false;
 
                         content = EditorGUI.BeginProperty(EditorGUILayout.BeginHorizontal(), Styles.physicalCamera, projectionMatrixMode);
                         EditorGUI.showMixedValue = projectionMatrixMode.hasMultipleDifferentValues;
@@ -245,7 +289,8 @@ namespace UnityEditor
                                 using (var checkScope = new EditorGUI.ChangeCheckScope())
                                 {
                                     EditorGUI.showMixedValue = focalLength.hasMultipleDifferentValues;
-                                    float focalLengthVal = fovChanged ? Camera.FOVToFocalLength(fovNewValue, sensorSize.vector2Value.y) : focalLength.floatValue;
+                                    float sensorLength = fovAxisVertical ? sensorSize.vector2Value.y : sensorSize.vector2Value.x;
+                                    float focalLengthVal = fovChanged ? Camera.FieldOfViewToFocalLength(fovNewValue, sensorLength) : focalLength.floatValue;
                                     focalLengthVal = EditorGUILayout.FloatField(Styles.focalLength, focalLengthVal);
                                     if (checkScope.changed || fovChanged)
                                         focalLength.floatValue = focalLengthVal;
@@ -280,7 +325,7 @@ namespace UnityEditor
                         }
                         else if (fovChanged)
                         {
-                            fieldOfView.floatValue = fovNewValue;
+                            verticalFOV.floatValue = fovAxisVertical ? fovNewValue : Camera.HorizontalToVerticalFieldOfView(fovNewValue, (m_SerializedObject.targetObjects[0] as Camera).aspect);
                         }
                         EditorGUILayout.Space();
                     }
@@ -759,7 +804,7 @@ namespace UnityEditor
         {
             if (m_PreviewTexture == null || m_PreviewTexture.width != width || m_PreviewTexture.height != height)
             {
-                m_PreviewTexture = new RenderTexture(width, height, 24, RenderTextureFormat.Default, RenderTextureReadWrite.sRGB);
+                m_PreviewTexture = new RenderTexture(width, height, 24, SystemInfo.GetGraphicsFormat(DefaultFormat.LDR));
             }
             return m_PreviewTexture;
         }
@@ -784,6 +829,7 @@ namespace UnityEditor
             CameraEditorUtils.DrawFrustumGizmo(camera);
         }
 
+        private static Vector2 s_PreviousMainGameViewTargetSize;
         public virtual void OnSceneGUI()
         {
             var c = (Camera)target;
@@ -791,6 +837,13 @@ namespace UnityEditor
             if (!CameraEditorUtils.IsViewportRectValidToRender(c.rect))
                 return;
 
+            Vector2 currentMainGameViewTargetSize = GameView.GetMainGameViewTargetSize();
+            if (s_PreviousMainGameViewTargetSize != currentMainGameViewTargetSize)
+            {
+                // a gameView size change can affect horizontal FOV, refresh the inspector when that happens.
+                Repaint();
+                s_PreviousMainGameViewTargetSize = currentMainGameViewTargetSize;
+            }
             SceneViewOverlay.Window(EditorGUIUtility.TrTextContent("Camera Preview"), OnOverlayGUI, (int)SceneViewOverlay.Ordering.Camera, target, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
 
             CameraEditorUtils.HandleFrustum(c, referenceTargetIndex);

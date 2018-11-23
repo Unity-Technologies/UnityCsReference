@@ -92,7 +92,7 @@ namespace UnityEditor.UIElements
         // Implements a control with a value of type T backed by a text.
         protected abstract class TextValueInput : TextInputBase
         {
-            TextValueField<TValueType> textValueFieldParent => (TextValueField<TValueType>)parentField;
+            TextValueField<TValueType> textValueFieldParent => (TextValueField<TValueType>)parent;
 
             protected TextValueInput()
             {

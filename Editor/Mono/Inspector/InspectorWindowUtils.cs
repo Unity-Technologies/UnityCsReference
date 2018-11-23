@@ -11,6 +11,39 @@ namespace UnityEditor
 {
     internal static class InspectorWindowUtils
     {
+        public struct LayoutGroupChecker : IDisposable
+        {
+            // cache the layout group we expect to have at the end of drawing this editor
+            GUILayoutGroup m_ExpectedGroup;
+            GUILayoutGroup expectedGroup => m_ExpectedGroup ?? (m_ExpectedGroup = GUILayoutUtility.current.topLevel);
+
+            public void Dispose()
+            {
+                if (GUIUtility.guiIsExiting)
+                {
+                    return; //Something has already requested an ExitGUI
+                }
+
+                // Check and try to cleanup layout groups.
+                if (GUILayoutUtility.current.topLevel != expectedGroup)
+                {
+                    if (!GUILayoutUtility.current.layoutGroups.Contains(expectedGroup))
+                    {
+                        // We can't recover from this, so we error.
+                        Debug.LogError("Expected top level layout group missing! Too many GUILayout.EndScrollView/EndVertical/EndHorizontal?");
+                        GUIUtility.ExitGUI();
+                    }
+                    else
+                    {
+                        // We can recover from this, so we warning.
+                        Debug.LogWarning("Unexpected top level layout group! Missing GUILayout.EndScrollView/EndVertical/EndHorizontal?");
+
+                        while (GUILayoutUtility.current.topLevel != expectedGroup)
+                            GUILayoutUtility.EndLayoutGroup();
+                    }
+                }
+            }
+        }
         public static void GetPreviewableTypes(out Dictionary<Type, List<Type>> previewableTypes)
         {
             // We initialize this list once per InspectorWindow, instead of globally.
@@ -64,6 +97,11 @@ namespace UnityEditor
             return null;
         }
 
+        internal static bool IsExcludedClass(Object target)
+        {
+            return ModuleMetadata.GetModuleIncludeSettingForObject(target) == ModuleIncludeSetting.ForceExclude;
+        }
+
         public static void DisplayDeprecationMessageIfNecessary(Editor editor)
         {
             if (!editor || !editor.target)
@@ -79,34 +117,6 @@ namespace UnityEditor
 
             string message = String.IsNullOrEmpty(obsoleteAttribute.Message) ? "This component has been marked as obsolete." : obsoleteAttribute.Message;
             EditorGUILayout.HelpBox(message, obsoleteAttribute.IsError ? MessageType.Error : MessageType.Warning);
-        }
-
-        public static bool GetRebuildOptimizedGUIBlocks(Object inspectedObject, ref bool isOpenForEdit, ref bool invalidateGUIBlockCache)
-        {
-            var rebuildOptimizedGUIBlocks = false;
-
-            if (Event.current.type == EventType.Repaint)
-            {
-                string msg;
-                if (inspectedObject != null
-                    && isOpenForEdit != Editor.IsAppropriateFileOpenForEdit(inspectedObject, out msg))
-                {
-                    isOpenForEdit = !isOpenForEdit;
-                    rebuildOptimizedGUIBlocks = true;
-                }
-
-                if (invalidateGUIBlockCache)
-                {
-                    rebuildOptimizedGUIBlocks = true;
-                    invalidateGUIBlockCache = false;
-                }
-            }
-            else if (Event.current.type == EventType.ExecuteCommand && Event.current.commandName == EventCommandNames.EyeDropperUpdate)
-            {
-                rebuildOptimizedGUIBlocks = true;
-            }
-
-            return rebuildOptimizedGUIBlocks;
         }
     }
 }

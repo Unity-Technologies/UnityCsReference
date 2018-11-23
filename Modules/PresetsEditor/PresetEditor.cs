@@ -231,7 +231,7 @@ namespace UnityEditor.Presets
             GUILayout.BeginHorizontal(Style.inspectorBig);
             GUILayout.Space(38);
             GUILayout.BeginVertical();
-            GUILayout.Space(19);
+            GUILayout.Space(k_HeaderHeight);
             GUILayout.BeginHorizontal();
             EditorGUILayout.GetControlRect();
             GUILayout.EndHorizontal();

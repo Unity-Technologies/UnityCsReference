@@ -9,17 +9,22 @@ using System.Linq;
 using System.Text;
 using ExCSS.Model.Extensions;
 using UnityEditor.Experimental;
-using UnityEditor.Experimental.UIElements;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Assertions;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.ShortcutManagement
 {
     //TODO: migrate those into USS.
     class StyleUtility
     {
+        public static void NormalTextElement(VisualElement el)
+        {
+            StyleUtility.NormalTextColor(el);
+            el.style.whiteSpace = WhiteSpace.NoWrap;
+        }
+
         public static void NormalTextColor(VisualElement el)
         {
             if (EditorGUIUtility.isProSkin)
@@ -35,13 +40,13 @@ namespace UnityEditor.ShortcutManagement
         public static void StyleVisible(VisualElement el)
         {
             el.style.visibility = Visibility.Visible;
-            el.style.positionType = PositionType.Relative;
+            el.style.position = Position.Relative;
         }
 
         public static void StyleHidden(VisualElement el)
         {
             el.style.visibility = Visibility.Hidden;
-            el.style.positionType = PositionType.Absolute;
+            el.style.position = Position.Absolute;
         }
 
         public static void StyleColumnDirection(VisualElement el)
@@ -62,21 +67,24 @@ namespace UnityEditor.ShortcutManagement
         public static void StyleFlexibleElement(VisualElement el)
         {
             el.style.flexGrow = 1;
-            el.style.flexBasis = 0;
+            el.style.flexBasis = 0f;
+            el.style.justifyContent = Justify.Center;
         }
 
         public static void StyleFlexibleTableCell(VisualElement el)
         {
             StyleFlexibleElement(el);
-            el.style.flexBasis = 0;
+            el.style.flexBasis = 0f;
             el.style.overflow = Overflow.Hidden;
         }
 
         public static void StyleResizeHandle(VisualElement el)
         {
             el.style.width = 10;
-            el.style.positionType = PositionType.Absolute;
-            el.style.cursor = UIElementsEditorUtility.CreateDefaultCursorStyle(MouseCursor.ResizeHorizontal);
+            el.style.position = Position.Absolute;
+            el.style.cursor =
+                new UnityEngine.UIElements.Cursor() { texture = null, hotspot = Vector2.zero, defaultCursorId = (int)MouseCursor.ResizeHorizontal };
+            //UIElementsEditorUtility.CreateDefaultCursorStyle(MouseCursor.ResizeHorizontal);
             StyleHeaderHeight(el);
             StyleBorderColor(el);
 
@@ -84,11 +92,11 @@ namespace UnityEditor.ShortcutManagement
             StyleBorderColor(visualElement);
             visualElement.style.backgroundColor = visualElement.style.borderColor;
             StyleHeaderHeight(visualElement);
-            visualElement.style.positionType = PositionType.Relative;
-            visualElement.style.marginTop = visualElement.style.height * ((1f / 3) / 2);
-            visualElement.style.marginLeft = el.style.width / 2;
+            visualElement.style.position = Position.Relative;
+            visualElement.style.marginTop = visualElement.style.height.value.value * ((1f / 3) / 2);
+            visualElement.style.marginLeft = el.style.width.value.value / 2;
             visualElement.style.width = 1;
-            visualElement.style.height = visualElement.style.height * (2f / 3);
+            visualElement.style.height = visualElement.style.height.value.value * (2f / 3);
             visualElement.pickingMode = PickingMode.Ignore;
             el.Add(visualElement);
         }
@@ -116,17 +124,14 @@ namespace UnityEditor.ShortcutManagement
         public static void StyleHeaderText(VisualElement el)
         {
             el.style.unityTextAlign = TextAnchor.MiddleLeft;
-            el.style.fontStyleAndWeight = FontStyle.Bold;
+            el.style.unityFontStyleAndWeight = FontStyle.Bold;
+
             StyleTextRow(el);
         }
 
         static void StyleBorderAround(VisualElement el)
         {
-            el.style.borderLeftWidth = 1;
-            el.style.borderBottomWidth = 1;
-            el.style.borderTopWidth = 1;
-            el.style.borderRightWidth = 1;
-
+            StyleBorderWidths(el, 1);
             StyleBorderColor(el);
         }
 
@@ -139,6 +144,14 @@ namespace UnityEditor.ShortcutManagement
             element.style.paddingLeft = padding;
         }
 
+        private static void StyleBorderRadius(VisualElement element, float radius)
+        {
+            element.style.borderTopLeftRadius = radius;
+            element.style.borderTopRightRadius = radius;
+            element.style.borderBottomLeftRadius = radius;
+            element.style.borderBottomRightRadius = radius;
+        }
+
         public static void StylePanel(VisualElement element)
         {
             StyleBorderAround(element);
@@ -148,12 +161,12 @@ namespace UnityEditor.ShortcutManagement
             else
                 element.style.backgroundColor = new Color(229f / 255f, 229f / 255f, 229f / 255f);
 
-            element.style.borderRadius = 5f;
+            StyleBorderRadius(element, 5f);
         }
 
         public static void StyleTextRowNoPadding(VisualElement el)
         {
-            NormalTextColor(el);
+            NormalTextElement(el);
             el.style.unityTextAlign = TextAnchor.MiddleLeft;
         }
 
@@ -222,12 +235,17 @@ namespace UnityEditor.ShortcutManagement
             StylePanel(el);
         }
 
+        private static void StyleBorderWidths(VisualElement el, float borderWidth)
+        {
+            el.style.borderLeftWidth = borderWidth;
+            el.style.borderBottomWidth = borderWidth;
+            el.style.borderTopWidth = borderWidth;
+            el.style.borderRightWidth = borderWidth;
+        }
+
         static void StyleThinBorder(VisualElement el)
         {
-            el.style.borderLeftWidth = 1;
-            el.style.borderBottomWidth = 1;
-            el.style.borderTopWidth = 1;
-            el.style.borderRightWidth = 1;
+            StyleBorderWidths(el, 1);
         }
 
         internal const int k_KeySize = 34;
@@ -238,10 +256,10 @@ namespace UnityEditor.ShortcutManagement
 
             StyleThinBorder(el);
 
-            el.style.borderRadius = 5;
+            StyleBorderRadius(el, 5);
 
             el.style.unityTextAlign = TextAnchor.MiddleCenter;
-            el.style.wordWrap = true;
+            el.style.whiteSpace = WhiteSpace.Normal;
 
             StyleNormal(el);
         }
@@ -257,7 +275,7 @@ namespace UnityEditor.ShortcutManagement
 
         public static void StyleDefault(VisualElement key)
         {
-            NormalTextColor(key);
+            NormalTextElement(key);
         }
 
         public static void StyleNormal(VisualElement keyElement)
@@ -285,10 +303,7 @@ namespace UnityEditor.ShortcutManagement
         {
             keyElement.style.borderColor = new Color(60f / 255f, 153f / 255f, 252f / 255f);
 
-            keyElement.style.borderLeftWidth = 2;
-            keyElement.style.borderBottomWidth = 2;
-            keyElement.style.borderTopWidth = 2;
-            keyElement.style.borderRightWidth = 2;
+            StyleBorderWidths(keyElement, 2);
         }
 
         public static void StyleBoundToContext(VisualElement keyElement)
@@ -376,18 +391,24 @@ namespace UnityEditor.ShortcutManagement
 
         public static void StyleSearchTextField(VisualElement el)
         {
-            el.style.backgroundImage = null;
-            el.style.marginLeft = 0;
-            el.style.marginRight = 0;
-            el.style.marginTop = 1;
-            el.style.fontSize = 9;
-            el.style.flexGrow = 1;
+            var input =  el.Q(TextField.textInputUssName);
+            if (input != null)
+            {
+                input.style.backgroundImage = null;
+                input.style.marginLeft = 0f;
+                input.style.marginRight = 0f;
+                input.style.marginTop = 1;
+                input.style.fontSize = 9;
+                input.style.flexGrow = 1;
+                el.style.flexGrow = 1;
+            }
         }
 
         public static void StyleActiveProfileDropdownButton(VisualElement el)
         {
-            el.AddToClassList("popupField");
             NormalTextColor(el);
+            el.AddToClassList(PopupField<string>.textUssClassName);
+            el.AddToClassList(PopupField<string>.inputUssClassName);
             FixPopupStyle(el);
         }
 
@@ -400,7 +421,7 @@ namespace UnityEditor.ShortcutManagement
                 el.style.backgroundImage = (Texture2D)EditorGUIUtility.Load(EditorResources.lightSkinSourcePath + "Images/toolbarsearchpopup.png");
             el.style.paddingLeft = 17;
             el.style.height = 14;
-            el.style.sliceLeft = 15;
+            el.style.unitySliceLeft = 15;
             el.style.marginTop = 2;
             el.style.flexGrow = 1;
         }
@@ -417,7 +438,7 @@ namespace UnityEditor.ShortcutManagement
         {
             StyleBorderAround(el);
             StyleBorderColor(el);
-            el.style.borderRadius = 5;
+            StyleBorderRadius(el, 5);
             el.style.marginLeft = 10;
             el.style.paddingRight = 5;
             el.style.paddingLeft = 5;
@@ -439,13 +460,14 @@ namespace UnityEditor.ShortcutManagement
 
         public static void FixPopupStyle(VisualElement el)
         {
-            el.style.paddingRight += 12;
-            el.style.width = 115;
+            el.style.paddingRight = el.resolvedStyle.paddingRight + 12;
+            el.style.minWidth = 115;
+            el.style.paddingBottom = 2;
         }
 
         public static void StyleProfileOptionsDropdown(VisualElement profileContextMenu)
         {
-            profileContextMenu.style.backgroundScaleMode = ScaleMode.ScaleToFit;
+            profileContextMenu.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
             if (EditorGUIUtility.isProSkin)
                 profileContextMenu.style.backgroundImage = (Texture2D)EditorGUIUtility.Load(EditorResources.iconsPath + "d__Popup.png");
             else
@@ -457,30 +479,30 @@ namespace UnityEditor.ShortcutManagement
             el.style.width = 100;
             el.style.height = 15;
             el.style.backgroundImage = (Texture2D)EditorGUIUtility.Load(EditorResources.lightSkinSourcePath + "Images/TextField.png");
-            el.style.sliceLeft = 3;
-            el.style.sliceRight = 3;
-            el.style.sliceTop = 3;
-            el.style.sliceBottom = 3;
+            el.style.unitySliceLeft = 3;
+            el.style.unitySliceRight = 3;
+            el.style.unitySliceTop = 3;
+            el.style.unitySliceBottom = 3;
             el.style.paddingLeft = 2;
             el.style.paddingRight = 2;
             el.style.paddingTop = 2;
-            el.style.positionTop = 2;
+            el.style.top = 2;
         }
 
         public static void StyleEntryOverriden(VisualElement el)
         {
-            el.style.fontStyleAndWeight = FontStyle.Bold;
+            el.style.unityFontStyleAndWeight = FontStyle.Bold;
         }
 
         public static void StyleEntryNormal(VisualElement el)
         {
-            el.style.fontStyleAndWeight = FontStyle.Normal;
+            el.style.unityFontStyleAndWeight = FontStyle.Normal;
         }
     }
 
     class ShortcutManagerWindowView : IShortcutManagerWindowView
     {
-        const int k_ListItemHeight = 20;
+        const int k_ListItemHeight = 21;
         VisualElement m_Root;
         IShortcutManagerWindowViewController m_ViewController;
         IKeyBindingStateProvider m_BindingStateProvider;
@@ -573,10 +595,12 @@ namespace UnityEditor.ShortcutManagement
             StyleUtility.StyleRow(bindingContainer);
 
             StyleUtility.StyleTextRowNoPadding(shortcutBinding);
-            StyleUtility.StyleAsTextField(rebindControl);
+            StyleUtility.StyleAsTextField(rebindControl.input);
             StyleUtility.StyleHidden(rebindControl);
 
-            rebindControl.RegisterCallback<BlurEvent>(OnRebindControlBlurred);
+            shortcutBinding.style.flexGrow = 1;
+
+            rebindControl.input.RegisterCallback<BlurEvent>(OnRebindControlBlurred);
             rebindControl.RegisterCallback<DetachFromPanelEvent>(OnRebindControlDetachedFromPanel);
             rebindControl.OnCancel += RebindControl_OnCancel;
 
@@ -610,16 +634,16 @@ namespace UnityEditor.ShortcutManagement
         {
             var shortcutEntry = m_ViewController.GetShortcutList()[index];
 
-            var children = shortcutElementTemplate.Children().ToList();
-            var nameElement = (TextElement)children[0];
-            var bindingContainer = children[1];
+            var nameElement = (TextElement)shortcutElementTemplate[0];
+            var bindingContainer = shortcutElementTemplate[1];
             var bindingTextElement = bindingContainer.Query<TextElement>().First();
             var bindingField = bindingContainer.Query<ShortcutTextField>().First();
 
             nameElement.text = m_ViewController.GetShortcutPathList()[index];
+            nameElement.tooltip = nameElement.text;
             bindingTextElement.text = KeyCombination.SequenceToString(shortcutEntry.combinations);
             bindingField.SetValueWithoutNotify(shortcutEntry.combinations.ToList());
-            bindingField.OnValueChanged(EditingShortcutEntryBindingChanged);
+            bindingField.RegisterValueChangedCallback(EditingShortcutEntryBindingChanged);
 
             if (shortcutEntry.overridden)
             {
@@ -709,7 +733,7 @@ namespace UnityEditor.ShortcutManagement
             ShowAppropriateSearchField();
 
             m_SearchTextField.value = m_ViewController.GetSearch();
-            m_SearchTextField.OnValueChanged(OnSearchStringChanged);
+            m_SearchTextField.RegisterValueChangedCallback(OnSearchStringChanged);
 
             m_SearchCancelEnding.RegisterCallback<MouseDownEvent>(CancelSearchClicked);
 
@@ -837,7 +861,7 @@ namespace UnityEditor.ShortcutManagement
                 var label = new TextElement() { text = labels[i] };
                 StyleUtility.StyleKey(colorField);
                 styles[i](colorField);
-                StyleUtility.NormalTextColor(label);
+                StyleUtility.NormalTextElement(label);
                 StyleUtility.StyleHeaderLabelColor(colorField);
                 container.Add(colorField);
                 container.Add(label);
@@ -884,7 +908,7 @@ namespace UnityEditor.ShortcutManagement
             foreach (var filter in filters)
             {
                 var filterElement = new TextElement() { text = filter };
-                StyleUtility.NormalTextColor(filterElement);
+                StyleUtility.NormalTextElement(filterElement);
 
                 StyleUtility.StyleFilterElement(filterElement);
 
@@ -970,7 +994,7 @@ namespace UnityEditor.ShortcutManagement
 
             StyleUtility.StyleFlexibleElement(m_ShortcutsTable);
 
-            m_HorizontalColumnDragger = new HorizontalColumnDragger(50, m_ShortcutsTable);
+            m_HorizontalColumnDragger = new HorizontalColumnDragger(75, m_ShortcutsTable);
             shortcutsTableResizeHandle.AddManipulator(m_HorizontalColumnDragger);
             shortcutsTableHeaderName.pickingMode = PickingMode.Ignore;
             shortcutsTableHeaderBindings.pickingMode = PickingMode.Ignore;
@@ -1058,18 +1082,22 @@ namespace UnityEditor.ShortcutManagement
         void ShortcutTableEntryChosen(object obj)
         {
             var entry = (ShortcutEntry)obj;
-            var row = m_ShortcutsTable.Query<VisualElement>().Selected().First();
+            var row = m_ShortcutsTable.Query<VisualElement>().Checked().First();
             StartRebind(entry, row);
         }
 
         void StartRebind(ShortcutEntry entry, VisualElement row)
         {
             m_EditingBindings = entry;
-            var bindingInput = row.Query<ShortcutTextField>().First();
-            var textElement = bindingInput.parent.Query<TextElement>().First();
-            StyleUtility.StyleVisible(bindingInput);
-            StyleUtility.StyleHidden(textElement);
-            bindingInput.Focus();
+
+            if (row != null)
+            {
+                var bindingInput = row.Query<ShortcutTextField>().First();
+                var textElement = bindingInput.parent.Query<TextElement>().First();
+                StyleUtility.StyleVisible(bindingInput);
+                StyleUtility.StyleHidden(textElement);
+                bindingInput.Focus();
+            }
         }
 
         void EndRebind(bool refresh = true)
@@ -1488,7 +1516,8 @@ namespace UnityEditor.ShortcutManagement
 
             StyleUtility.StyleKeyboardElement(this);
 
-            focusIndex = 0;
+            focusable = true;
+            tabIndex = 0;
 
             StyleUtility.StyleRow(mainContainer);
 
@@ -1584,7 +1613,7 @@ namespace UnityEditor.ShortcutManagement
                     {
                         var keyElement = new Key(keyDef.keycode, keyDef.displayName);
                         StyleUtility.StyleVerticalKeySizing(keyElement);
-                        StyleUtility.StyleDefault(keyElement);
+                        StyleUtility.NormalTextColor(keyElement);
 
                         Action<Key> keyStyler;
                         if (dictionaryKeyStyle.TryGetValue(keyDef.keycode, out keyStyler))
@@ -1772,92 +1801,105 @@ namespace UnityEditor.ShortcutManagement
         }
     }
 
-    class ShortcutTextField : TextInputFieldBase<List<KeyCombination>>
+    class ShortcutTextField : TextInputBaseField<List<KeyCombination>>
     {
-        const int maxChordLength = 1;
         List<KeyCombination> m_WorkingValue = new List<KeyCombination>();
-        HashSet<KeyCode> m_KeyDown = new HashSet<KeyCode>();
+        public VisualElement input => textInputBase;
         public List<KeyCombination> WorkingValue => m_WorkingValue;
 
         public event Action<List<KeyCombination>> OnWorkingValueChanged;
         public event Action OnCancel;
 
-        public ShortcutTextField() : base(kMaxLengthNone, char.MinValue)
+        const int maxChordLength = 1;
+        HashSet<KeyCode> m_KeyDown = new HashSet<KeyCode>();
+
+        private class ShortcutInput : TextInputBase
         {
-            m_Value = new List<KeyCombination>();
+            public override bool isPasswordField => false;
         }
 
-        public override bool isPasswordField => false;
-
-        protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
+        public ShortcutTextField() : base(kMaxLengthNone, char.MinValue, new ShortcutInput())
         {
-            if (evt.GetEventTypeId() == KeyDownEvent.TypeId())
-            {
-                var kde = (KeyDownEvent)evt;
-                if (kde.keyCode != KeyCode.None)
-                {
-                    if (!m_KeyDown.Contains(kde.keyCode))
-                    {
-                        m_KeyDown.Add(kde.keyCode);
+            rawValue = new List<KeyCombination>();
 
-                        if (kde.keyCode == KeyCode.Escape)
-                        {
-                            Revert();
-                            if (OnCancel != null)
-                                OnCancel();
-                            evt.StopPropagation();
-                        }
-                        else if (kde.keyCode == KeyCode.Return)
+            RegisterEvents(visualInput);
+        }
+
+        private void RegisterEvents(VisualElement input)
+        {
+            input.RegisterCallback<KeyDownEvent>(OnKeyDown);
+            input.RegisterCallback<KeyUpEvent>(OnKeyUp);
+            input.RegisterCallback<FocusEvent>((evt) => {
+                StartNewCombination();
+                evt.StopPropagation();
+                textInputBase.editorEngine.MoveTextEnd();
+            });
+            input.RegisterCallback<BlurEvent>((evt) =>
+            {
+                Apply();
+                evt.StopPropagation();
+                textInputBase.editorEngine.MoveTextEnd();
+            });
+        }
+
+        void OnKeyDown(KeyDownEvent kde)
+        {
+            if (kde.keyCode != KeyCode.None)
+            {
+                if (!m_KeyDown.Contains(kde.keyCode))
+                {
+                    //TODO: call ShortcutManagerWindowViewController.IsModifier instead
+                    m_KeyDown.Add(kde.keyCode);
+
+                    if (kde.keyCode == KeyCode.Escape)
+                    {
+                        Revert();
+                        OnCancel?.Invoke();
+                        kde.StopPropagation();
+                    }
+                    else if (kde.keyCode == KeyCode.Return)
+                    {
+                        Apply();
+                        kde.StopPropagation();
+                    }
+                    else if (!ShortcutManagerWindowViewController.IsModifier(kde.keyCode))
+                    {
+                        AppendKeyCombination(kde.keyCode, kde.modifiers);
+                        if (WorkingValue.Count == maxChordLength)
                         {
                             Apply();
-                            evt.StopPropagation();
                         }
-                        else if (!ShortcutManagerWindowViewController.IsModifier(kde.keyCode))
-                        {
-                            AppendKeyCombination(kde.keyCode, kde.modifiers);
-                            if (WorkingValue.Count == maxChordLength)
-                            {
-                                Apply();
-                            }
-                            evt.StopPropagation();
-                        }
+                        kde.StopPropagation();
                     }
                 }
             }
-            else if (evt.GetEventTypeId() == KeyUpEvent.TypeId())
-            {
-                var kue = (KeyUpEvent)evt;
-                m_KeyDown.Remove(kue.keyCode);
-            }
-            else if (evt.GetEventTypeId() == FocusEvent.TypeId())
-            {
-                StartNewCombination();
-            }
-            else if (evt.GetEventTypeId() == BlurEvent.TypeId())
-            {
-                Apply();
-            }
-            else
-            {
-                base.ExecuteDefaultActionAtTarget(evt);
-            }
-            editorEngine.MoveTextEnd();
+            textInputBase.editorEngine.MoveTextEnd();
+        }
+
+        void OnKeyUp(KeyUpEvent kue)
+        {
+            m_KeyDown.Remove(kue.keyCode);
+            kue.StopPropagation();
+            textInputBase.editorEngine.MoveTextEnd();
+        }
+
+        void InvokeWorkingValueChanged()
+        {
+            OnWorkingValueChanged?.Invoke(m_WorkingValue);
         }
 
         void AppendKeyCombination(KeyCode keyCode, EventModifiers modifiers)
         {
             m_WorkingValue.Add(KeyCombination.FromKeyboardInput(keyCode, modifiers));
             text = KeyCombination.SequenceToString(m_WorkingValue);
-            if (OnWorkingValueChanged != null)
-                OnWorkingValueChanged(m_WorkingValue);
+            InvokeWorkingValueChanged();
         }
 
         void StartNewCombination()
         {
             m_WorkingValue.Clear();
             text = "";
-            if (OnWorkingValueChanged != null)
-                OnWorkingValueChanged(m_WorkingValue);
+            InvokeWorkingValueChanged();
         }
 
         void Apply()
@@ -1870,11 +1912,10 @@ namespace UnityEditor.ShortcutManagement
         void Revert()
         {
             RevertWithoutNotify();
-            if (OnWorkingValueChanged != null)
-                OnWorkingValueChanged(m_WorkingValue);
+            InvokeWorkingValueChanged();
         }
 
-        void RevertWithoutNotify()
+        public void RevertWithoutNotify()
         {
             m_WorkingValue.Clear();
             m_WorkingValue.AddRange(value);
@@ -1883,19 +1924,19 @@ namespace UnityEditor.ShortcutManagement
 
         public override void SetValueWithoutNotify(List<KeyCombination> newValue)
         {
-            if (!ReferenceEquals(m_Value, newValue))
+            if (!ReferenceEquals(rawValue, newValue))
             {
-                m_Value.Clear();
+                rawValue.Clear();
                 if (newValue != null)
-                    m_Value.AddRange(newValue);
+                    rawValue.AddRange(newValue);
             }
 
-            text = KeyCombination.SequenceToString(m_Value);
+            text = KeyCombination.SequenceToString(rawValue);
             RevertWithoutNotify();
 
 
-            if (!string.IsNullOrEmpty(persistenceKey))
-                SavePersistentData();
+            if (!string.IsNullOrEmpty(viewDataKey))
+                SaveViewData();
             MarkDirtyRepaint();
         }
     }
@@ -1913,6 +1954,8 @@ namespace UnityEditor.ShortcutManagement
         {
             activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
             m_Active = false;
+
+            // TODO: Replace this with the maximum text width of the left and right TextElements
             m_ClampPositionPadding = clampPositionPadding;
             m_Elements = elements;
         }
@@ -1970,7 +2013,7 @@ namespace UnityEditor.ShortcutManagement
             Vector2 diff = e.localMousePosition - m_Start;
 
             m_TargetPosition = target.layout.x + diff.x;
-            m_TargetPosition = Mathf.Clamp(m_TargetPosition, m_ClampPositionPadding, target.parent.layout.width - m_ClampPositionPadding - target.style.width);
+            m_TargetPosition = Mathf.Clamp(m_TargetPosition, m_ClampPositionPadding, target.parent.layout.width - m_ClampPositionPadding - target.style.width.value.value);
 
             UpdateElements(m_TargetPosition);
 
@@ -1990,11 +2033,11 @@ namespace UnityEditor.ShortcutManagement
 
         void UpdateElements(float handlePosition)
         {
-            target.style.positionLeft = m_TargetPosition;
+            target.style.left = m_TargetPosition;
             UpdateElement(target.parent, handlePosition, 0);
 
-            float verticalScrollOffset = m_Elements.Q(className: "unity-scrollview-vertical-scroller").layout.width;
-            foreach (var el in m_Elements)
+            float verticalScrollOffset = m_Elements.Q(className: ScrollView.vScrollerUssClassName).layout.width;
+            foreach (var el in m_Elements.Children())
             {
                 UpdateElement(el, handlePosition, verticalScrollOffset);
             }
@@ -2002,8 +2045,8 @@ namespace UnityEditor.ShortcutManagement
 
         void UpdateElement(VisualElement el, float handlePosition, float offset)
         {
-            float totalPadding = el.ElementAt(0).style.paddingLeft + el.ElementAt(0).style.paddingRight + el.ElementAt(1).style.paddingLeft + el.ElementAt(1).style.paddingRight;
-            float percentage = (handlePosition + (target.style.width) / 2 - totalPadding / 2) / (target.parent.layout.width - (totalPadding + offset));
+            float totalPadding = el.ElementAt(0).style.paddingLeft.value.value + el.ElementAt(0).style.paddingRight.value.value + el.ElementAt(1).style.paddingLeft.value.value + el.ElementAt(1).style.paddingRight.value.value;
+            float percentage = (handlePosition + (target.style.width.value.value) / 2 - totalPadding / 2) / (target.parent.layout.width - (totalPadding + offset));
 
             el.ElementAt(0).style.flexGrow = percentage;
             el.ElementAt(1).style.flexGrow = 1 - percentage;

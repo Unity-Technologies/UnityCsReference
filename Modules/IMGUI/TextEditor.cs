@@ -1229,13 +1229,14 @@ namespace UnityEngine
             if (isPasswordField)
                 return;
 
-            string copyStr;
-            if (cursorIndex < selectIndex)
-                copyStr = text.Substring(cursorIndex, selectIndex - cursorIndex);
-            else
-                copyStr = text.Substring(selectIndex, cursorIndex - selectIndex);
+            string selectedRenderedText = style.Internal_GetSelectedRenderedText(localPosition, m_Content, selectIndex, cursorIndex);
 
-            GUIUtility.systemCopyBuffer = copyStr;
+            GUIUtility.systemCopyBuffer = selectedRenderedText;
+        }
+
+        internal Rect[] GetHyperlinksRect()
+        {
+            return style.Internal_GetHyperlinksRect(localPosition, m_Content);
         }
 
         static string ReplaceNewlinesWithSpaces(string value)

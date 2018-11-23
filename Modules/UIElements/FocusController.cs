@@ -200,14 +200,18 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public void SwitchFocusOnEvent(EventBase e)
+        internal Focusable SwitchFocusOnEvent(EventBase e)
         {
             FocusChangeDirection direction = focusRing.GetFocusChangeDirection(focusedElement, e);
             if (direction != FocusChangeDirection.none)
             {
                 Focusable f = focusRing.GetNextFocusable(focusedElement, direction);
                 SwitchFocus(f, direction);
+                // f does not have the focus yet. It will when the series of focus events will have been handled.
+                return f;
             }
+
+            return focusedElement;
         }
 
         /// <summary>
@@ -215,11 +219,11 @@ namespace UnityEngine.UIElements
         /// </summary>
         internal int imguiKeyboardControl { get; set; }
 
-        internal void SyncIMGUIFocus(int imguiKeyboardControlID, Focusable imguiContainerHavingKeyboardControl)
+        internal void SyncIMGUIFocus(int imguiKeyboardControlID, Focusable imguiContainerHavingKeyboardControl, bool forceSwitch)
         {
             imguiKeyboardControl = imguiKeyboardControlID;
 
-            if (imguiKeyboardControl != 0)
+            if (forceSwitch || imguiKeyboardControl != 0)
             {
                 SwitchFocus(imguiContainerHavingKeyboardControl, FocusChangeDirection.unspecified);
             }

@@ -78,6 +78,7 @@ namespace UnityEngine.UIElements.StyleSheets
         BackgroundScaleMode,
         Cursor,
         Visibility,
+        Display,
         // All string values
         BackgroundImage,
         // All color values

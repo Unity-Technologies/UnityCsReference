@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using UnityEngine.Rendering;
-
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor
 {
@@ -41,6 +41,23 @@ namespace UnityEditor
             // Ensure we have not scaled size below 2 pixels
             width = Mathf.Clamp(width, 2, orgWidth);
             height = Mathf.Clamp(height, 2, orgHeight);
+        }
+    }
+
+    internal class TextureMipLevels
+    {
+        public Texture2D texture { get; }
+        public int lastMipmapLevel;
+        public bool loadAllMips;
+
+        public TextureMipLevels(Texture2D _texture)
+        {
+            texture = _texture;
+            if (texture)
+            {
+                lastMipmapLevel = texture.loadedMipmapLevel;
+                loadAllMips = texture.loadAllMips;
+            }
         }
     }
 
@@ -122,6 +139,8 @@ namespace UnityEditor
 
         CubemapPreview m_CubemapPreview = new CubemapPreview();
 
+        List<TextureMipLevels> m_TextureMipLevels = new List<TextureMipLevels>();
+
         public static bool IsNormalMap(Texture t)
         {
             TextureUsageMode mode = TextureUtil.GetUsageMode(t);
@@ -135,11 +154,58 @@ namespace UnityEditor
             m_WrapW = serializedObject.FindProperty("m_TextureSettings.m_WrapW");
             m_FilterMode = serializedObject.FindProperty("m_TextureSettings.m_FilterMode");
             m_Aniso = serializedObject.FindProperty("m_TextureSettings.m_Aniso");
+
+            RecordTextureMipLevels();
+        }
+
+        private void RecordTextureMipLevels()
+        {
+            m_TextureMipLevels.Clear();
+            foreach (var item in targets)
+            {
+                Texture2D texture = item as Texture2D;
+                if (texture)
+                {
+                    m_TextureMipLevels.Add(new TextureMipLevels(texture));
+                    texture.loadAllMips = true;
+                }
+            }
+        }
+
+        private void RestoreLastTextureMipLevels()
+        {
+            foreach (TextureMipLevels textureInfo in m_TextureMipLevels)
+            {
+                if (textureInfo.texture == null)
+                    continue;
+
+                textureInfo.texture.loadAllMips = textureInfo.loadAllMips;
+            }
         }
 
         protected virtual void OnDisable()
         {
+            RestoreLastTextureMipLevels();
+
             m_CubemapPreview.OnDisable();
+        }
+
+        public override bool RequiresConstantRepaint()
+        {
+            foreach (TextureMipLevels textureInfo in m_TextureMipLevels)
+            {
+                if (textureInfo.texture == null)
+                    continue;
+
+                // See if texture has new mips loaded
+                if (textureInfo.texture.loadedMipmapLevel != textureInfo.lastMipmapLevel)
+                {
+                    textureInfo.lastMipmapLevel = textureInfo.texture.loadedMipmapLevel;
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         internal void SetCubemapIntensity(float intensity)
@@ -681,11 +747,9 @@ namespace UnityEditor
             Rect savedViewport = ShaderUtil.rawViewportRect;
 
             RenderTexture tmp = RenderTexture.GetTemporary(
-                width,
-                height,
+                width, height,
                 0,
-                RenderTextureFormat.Default,
-                RenderTextureReadWrite.sRGB);
+                SystemInfo.GetGraphicsFormat(DefaultFormat.LDR));
             Material mat = EditorGUI.GetMaterialForSpecialTexture(texture);
             if (mat != null)
                 Graphics.Blit(texture, tmp, mat);
@@ -864,7 +928,7 @@ class PreviewGUI
                 }
                 else
                 {
-                    // Get the same number of Control IDs so the ID generation for childrent don't depend on number of things above
+                    // Get the same number of Control IDs so the ID generation for children don't depend on number of things above
                     scrollPosition.x = 0;
                 }
 

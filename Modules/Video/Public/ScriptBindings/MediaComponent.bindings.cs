@@ -77,6 +77,8 @@ namespace UnityEngineInternal.Video
         extern public void SetPlaybackSpeed(float value);
         extern public bool GetLoop();
         extern public void SetLoop(bool value);
+
+        extern static internal bool PlatformSupportsH265();
     }
 }
 

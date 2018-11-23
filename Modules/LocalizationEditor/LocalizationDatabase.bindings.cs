@@ -31,6 +31,9 @@ namespace UnityEditor
         [NativeMethod("GetLocalizationResourceFolderIF")]
         extern public static string GetLocalizationResourceFolder();
 
+        [NativeMethod("GetCultureIF")]
+        extern public static string GetCulture(SystemLanguage lang);
+
         extern public static bool enableEditorLocalization { get; set; }
 
         // The "MarkForTranslation" method is used as a marker for xgettext and similar tools.

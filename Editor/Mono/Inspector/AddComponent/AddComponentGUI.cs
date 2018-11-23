@@ -2,9 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 
-namespace UnityEditor.AdvancedDropdown
+namespace UnityEditor.AddComponent
 {
     internal class AddComponentGUI : AdvancedDropdownGUI
     {
@@ -14,20 +16,26 @@ namespace UnityEditor.AdvancedDropdown
         }
 
         private Vector2 m_IconSize = new Vector2(16, 16);
+        private Action<NewScriptDropdownItem> m_OnCreateNewScript;
 
-        public override Vector2 iconSize => m_IconSize;
-        public override GUIStyle lineStyle => Styles.itemStyle;
+        internal override Vector2 iconSize => m_IconSize;
+        internal override GUIStyle lineStyle => Styles.itemStyle;
 
-        public AddComponentGUI(AdvancedDropdownDataSource dataSource) : base(dataSource)
+        public AddComponentGUI(AdvancedDropdownDataSource dataSource, Action<NewScriptDropdownItem> onCreateNewScript) : base(dataSource)
         {
+            m_OnCreateNewScript = onCreateNewScript;
         }
 
-        public override void DrawItem(AdvancedDropdownItem item, bool selected, bool hasSearch)
+        internal override void DrawItem(AdvancedDropdownItem item, string name, Texture2D icon, bool enabled, bool drawArrow, bool selected, bool hasSearch)
         {
             var newScriptItem = item as NewScriptDropdownItem;
             if (newScriptItem == null)
             {
-                base.DrawItem(item, selected, hasSearch);
+                if (hasSearch && item is ComponentDropdownItem)
+                {
+                    name = ((ComponentDropdownItem)item).searchableName;
+                }
+                base.DrawItem(item, name, icon, enabled, drawArrow, selected, hasSearch);
                 return;
             }
 
@@ -50,7 +58,7 @@ namespace UnityEditor.AdvancedDropdown
             {
                 if (GUILayout.Button(L10n.Tr("Create and Add")))
                 {
-                    newScriptItem.Create(AddComponentWindow.s_AddComponentWindow.m_GameObjects);
+                    m_OnCreateNewScript(newScriptItem);
                 }
             }
 

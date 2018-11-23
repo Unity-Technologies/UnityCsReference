@@ -44,6 +44,7 @@ namespace UnityEditor
                     }
                     uieMode = GUIView.UIElementsMode.Public;
                     m_Panel = UIElementsUtility.FindOrCreatePanel(this, ContextType.Editor);
+                    m_Panel.name = GetType().Name;
                     m_Panel.cursorManager = m_CursorManager;
                     m_Panel.contextualMenuManager = s_ContextualMenuManager;
                     m_Panel.panelDebug = new PanelDebug(m_Panel);

@@ -23,7 +23,7 @@ namespace UnityEngine.UIElements
 
         public ICustomStyle customStyle
         {
-            get { return effectiveStyle; }
+            get { return specifiedStyle; }
         }
 
         // this allows us to not expose all styles accessors directly on VisualElement class
@@ -85,6 +85,7 @@ namespace UnityEngine.UIElements
         int IResolvedStyle.unitySliceBottom => computedStyle.unitySliceBottom.value;
         float IResolvedStyle.opacity => computedStyle.opacity.value;
         Visibility IResolvedStyle.visibility => computedStyle.visibility.value;
+        DisplayStyle IResolvedStyle.display => computedStyle.display.value;
 
         public VisualElementStyleSheetSet styleSheets => new VisualElementStyleSheetSet(this);
 
@@ -142,26 +143,26 @@ namespace UnityEngine.UIElements
 
             for (int i = 0; i < styleSheetList.Count; i++)
             {
-                // Check if the asset is destroyed, meaning that the custom comparison operator returns null
-                if (styleSheetList[i] == null && !ReferenceEquals(styleSheetList[i], null))
-                {
-                    var styleSheet = Panel.instanceIdToObjectFunc(styleSheetList[i].GetInstanceID()) as StyleSheet;
-                    styleSheetList[i] = styleSheet;
-                    OnNewStyleSheet(styleSheet);
-                    // NOTE: no need to increment version here, this is done implicitely on the root
-                }
+                OnNewStyleSheet(styleSheetList[i]);
+                // NOTE: no need to increment version here, this is done implicitely on the root
             }
         }
 
 
+        // Moving knowledge of PseudoStates to the StyleSheet modules would make this much easier
         internal void OnNewStyleSheet(StyleSheet styleSheet)
         {
+            if (styleSheet.hasSelectorsCached)
+                return;
+
             // Every time we load a new style sheet, we cache some data on them
             // This is done at this level because this uses UIElements specific data
             for (int i = 0, count = styleSheet.complexSelectors.Length; i < count; i++)
             {
                 styleSheet.complexSelectors[i].CachePseudoStateMasks();
             }
+
+            styleSheet.hasSelectorsCached = true;
         }
     }
 }

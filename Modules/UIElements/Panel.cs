@@ -47,28 +47,41 @@ namespace UnityEngine.UIElements
         public Event repaintEvent { get; set; }
     }
 
+    internal interface IGlobalPanelDebugger
+    {
+        bool InterceptMouseEvent(IPanel panel, IMouseEvent ev);
+        void OnPostMouseEvent(IPanel panel, IMouseEvent ev);
+    }
+
     internal interface IPanelDebugger
     {
         IPanelDebug panelDebug { get; set; }
 
-        bool showOverlay { get; }
-
-        bool InterceptEvents(Event ev);
+        void Disconnect();
         void Refresh();
+        void OnVersionChanged(VisualElement ele, VersionChangeType changeTypeFlag);
+
+        bool InterceptEvent(EventBase ev);
+        void PostProcessEvent(EventBase ev);
     }
 
     internal interface IPanelDebug
     {
-        bool showOverlay { get; }
-        uint highlightedElement { get; }
+        IPanel panel { get; }
+        VisualElement visualTree { get; }
 
         void AttachDebugger(IPanelDebugger debugger);
         void DetachDebugger(IPanelDebugger debugger);
+        void DetachAllDebuggers();
+        IEnumerable<IPanelDebugger> GetAttachedDebuggers();
+
+        void MarkDirtyRepaint();
 
         void Refresh();
+        void OnVersionChanged(VisualElement ele, VersionChangeType changeTypeFlag);
 
-        void SetHighlightElement(VisualElement ve);
-        bool InterceptEvents(Event ev);
+        bool InterceptEvent(EventBase ev);
+        void PostProcessEvent(EventBase ev);
     }
 
     // Passed-in to every element of the visual tree
@@ -103,6 +116,8 @@ namespace UnityEngine.UIElements
         {
             if (disposed)
                 return;
+
+            panelDebug.DetachAllDebuggers();
 
             if (disposing)
                 UIElementsUtility.RemoveCachedPanel(ownerObject.GetInstanceID());
@@ -223,8 +238,6 @@ namespace UnityEngine.UIElements
     // Strategy to load assets must be provided in the context of Editor or Runtime
     internal delegate Object LoadResourceFunction(string pathName, System.Type type);
 
-    internal delegate Object InstanceIDToObject(int instanceID);
-
     // Strategy to fetch real time since startup in the context of Editor or Runtime
     internal delegate long TimeMsFunction();
 
@@ -278,7 +291,7 @@ namespace UnityEngine.UIElements
         public override EventInterests IMGUIEventInterests { get; set; }
 
         internal static LoadResourceFunction loadResourceFunc = null;
-        internal static InstanceIDToObject instanceIdToObjectFunc = null;
+
         internal string name
         {
             get { return m_PanelName; }
@@ -530,6 +543,7 @@ namespace UnityEngine.UIElements
         {
             ++m_Version;
             m_VisualTreeUpdater.OnVersionChanged(ve, versionChangeType);
+            panelDebug?.OnVersionChanged(ve, versionChangeType);
         }
 
         internal override void SetUpdater(IVisualTreeUpdater updater, VisualTreeUpdatePhase phase)

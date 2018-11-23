@@ -334,6 +334,7 @@ namespace UnityEditor
 
         const float kImageSectionWidth = 44;
         internal const float k_WideModeMinWidth = 330f;
+        internal const float k_HeaderHeight = 19f;
 
         internal delegate void OnEditorGUIDelegate(Editor editor, Rect drawRect);
         internal static OnEditorGUIDelegate OnPostIconGUI = null;
@@ -825,7 +826,7 @@ namespace UnityEditor
             GUILayout.BeginHorizontal(BaseStyles.inspectorBig);
             GUILayout.Space(kImageSectionWidth - 6);
             GUILayout.BeginVertical();
-            GUILayout.Space(19);
+            GUILayout.Space(k_HeaderHeight);
             GUILayout.BeginHorizontal();
             if (leftMargin > 0f)
                 GUILayout.Space(leftMargin);
@@ -1019,6 +1020,8 @@ namespace UnityEditor
             // disable editor if any objects in the editor are not editable
             foreach (UnityObject target in targets)
             {
+                if (target == null)
+                    return false;
                 if ((target.hideFlags & HideFlags.NotEditable) != 0)
                     return false;
 

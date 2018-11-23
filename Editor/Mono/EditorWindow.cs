@@ -121,6 +121,7 @@ namespace UnityEditor
                 pickingMode = PickingMode.Ignore, // do not eat events so IMGUI gets them
                 viewDataKey = name
             };
+            root.pseudoStates |= PseudoStates.Root;
             UIElements.UIElementsEditorUtility.AddDefaultEditorStyleSheets(root);
             return root;
         }

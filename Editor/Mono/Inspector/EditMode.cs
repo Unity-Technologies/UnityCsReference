@@ -3,7 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.ComponentModel;
 using UnityEditor;
+using UnityEditor.EditorTools;
 using UnityEngine;
 
 namespace UnityEditorInternal
@@ -29,11 +31,7 @@ namespace UnityEditorInternal
         {
             ownerID = SessionState.GetInt(kOwnerStringKey, ownerID);
             editMode = (SceneViewEditMode)SessionState.GetInt(kEditModeStringKey, (int)editMode);
-            toolBeforeEnteringEditMode = (Tool)SessionState.GetInt(kPrevToolStringKey, (int)toolBeforeEnteringEditMode);
             Selection.selectionChanged += OnSelectionChange;
-
-            if (s_Debug)
-                Debug.Log("EditMode static constructor: " + ownerID + " " + editMode + " " + toolBeforeEnteringEditMode);
         }
 
         private const float k_EditColliderbuttonWidth = 33;
@@ -48,7 +46,6 @@ namespace UnityEditorInternal
         public delegate void OnEditModeStartFunc(Editor editor, SceneViewEditMode mode);
         internal static event Action<IToolModeOwner, SceneViewEditMode> editModeStarted;
 
-        private static Tool s_ToolBeforeEnteringEditMode = Tool.Move;
         private static int s_OwnerID;
         private static SceneViewEditMode s_EditMode;
 
@@ -79,18 +76,6 @@ namespace UnityEditorInternal
             ParticleSystemShapeModulePosition,
             ParticleSystemShapeModuleRotation,
             ParticleSystemShapeModuleScale
-        }
-
-        private static Tool toolBeforeEnteringEditMode
-        {
-            get { return s_ToolBeforeEnteringEditMode; }
-            set
-            {
-                s_ToolBeforeEnteringEditMode = value;
-                SessionState.SetInt(kPrevToolStringKey, (int)s_ToolBeforeEnteringEditMode);
-                if (s_Debug)
-                    Debug.Log("Set toolBeforeEnteringEditMode " + value);
-            }
         }
 
         public static bool IsOwner(Editor editor)
@@ -128,25 +113,18 @@ namespace UnityEditorInternal
             {
                 if (s_EditMode == SceneViewEditMode.None && value != SceneViewEditMode.None)
                 {
-                    // We consider Tool.None to be exotic fallback state and want to always recover to something else (like move) instead
-                    toolBeforeEnteringEditMode = Tools.current != Tool.None ? Tools.current : Tool.Move;
+                    // EditorToolContext remembers the last persistent tool used
                     Tools.current = Tool.None;
                 }
                 else if (s_EditMode != SceneViewEditMode.None && value == SceneViewEditMode.None)
                 {
-                    ResetToolToPrevious();
+                    EditorToolContext.RestorePreviousTool();
                 }
                 s_EditMode = value;
                 SessionState.SetInt(kEditModeStringKey, (int)s_EditMode);
                 if (s_Debug)
                     Debug.Log("Set editMode " + s_EditMode);
             }
-        }
-
-        public static void ResetToolToPrevious()
-        {
-            if (Tools.current == Tool.None)
-                Tools.current = toolBeforeEnteringEditMode;
         }
 
         static void EndSceneViewEditing()
@@ -165,8 +143,16 @@ namespace UnityEditorInternal
         public static void QuitEditMode()
         {
             if (Tools.current == Tool.None && editMode != SceneViewEditMode.None)
-                ResetToolToPrevious();
+                EditorToolContext.RestorePreviousTool();
+
             EndSceneViewEditing();
+        }
+
+        [Obsolete("Obsolete msg (UnityUpgradable) -> UnityEditor.EditorTools.EditorTools.RestorePreviousTool()")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static void ResetToolToPrevious()
+        {
+            EditorToolContext.RestorePreviousTool();
         }
 
         static void DetectMainToolChange()

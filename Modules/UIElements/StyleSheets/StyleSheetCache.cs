@@ -104,6 +104,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"opacity", StylePropertyID.Opacity},
             {"cursor", StylePropertyID.Cursor},
             {"visibility", StylePropertyID.Visibility},
+            {"display", StylePropertyID.Display},
             // Shorthands
             {"border-radius", StylePropertyID.BorderRadius},
             {"border-width", StylePropertyID.BorderWidth},
@@ -123,12 +124,32 @@ namespace UnityEngine.UIElements.StyleSheets
 
             SheetHandleKey key = new SheetHandleKey(sheet, handle.valueIndex);
 
-            int value;
+            int value = 0;
+
             if (!s_EnumToIntCache.TryGetValue(key, out value))
             {
                 string enumValueName = sheet.ReadEnum(handle).Replace("-", string.Empty);
-                object enumValue = Enum.Parse(typeof(T), enumValueName, true);
-                value = (int)enumValue;
+
+                object enumValue = null;
+
+                // Until we fully resolve enum values at import
+                // we need to be extra resilient to invalid enum values
+                try
+                {
+                    enumValue = Enum.Parse(typeof(T), enumValueName, true);
+                }
+                catch (Exception)
+                {
+                    enumValue = null;
+                    Debug.LogError("Invalid value for " + typeof(T).Name + ": " + enumValueName);
+                }
+                finally
+                {
+                    if (enumValue != null)
+                    {
+                        value = (int)enumValue;
+                    }
+                }
                 s_EnumToIntCache.Add(key, value);
             }
             Debug.Assert(Enum.GetName(typeof(T), value) != null);

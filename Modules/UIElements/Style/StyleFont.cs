@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
@@ -113,7 +114,7 @@ namespace UnityEngine.UIElements
         {
             var hashCode = 917506989;
             hashCode = hashCode * -1521134295 + m_Keyword.GetHashCode();
-            hashCode = hashCode * -1521134295 + m_Value.GetHashCode();
+            hashCode = hashCode * -1521134295 + EqualityComparer<Font>.Default.GetHashCode(m_Value);
             hashCode = hashCode * -1521134295 + m_Specificity.GetHashCode();
             return hashCode;
         }

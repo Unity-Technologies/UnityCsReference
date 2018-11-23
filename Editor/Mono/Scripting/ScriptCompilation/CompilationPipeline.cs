@@ -34,6 +34,12 @@ namespace UnityEditor.Compilation
         Player = 1
     }
 
+    public enum AssemblyDefinitionReferenceType
+    {
+        Name = 0,
+        Guid = 1
+    }
+
     public class Assembly
     {
         public string name { get; private set; }
@@ -203,6 +209,29 @@ namespace UnityEditor.Compilation
             return GetAssemblyDefinitionFilePathFromAssemblyName(EditorCompilationInterface.Instance, assemblyName);
         }
 
+        public static string GetAssemblyDefinitionFilePathFromAssemblyReference(string reference)
+        {
+            return GetAssemblyDefinitionFilePathFromAssemblyReference(EditorCompilationInterface.Instance, reference);
+        }
+
+        public static AssemblyDefinitionReferenceType GetAssemblyDefinitionReferenceType(string reference)
+        {
+            return GUIDReference.IsGUIDReference(reference) ? AssemblyDefinitionReferenceType.Guid : AssemblyDefinitionReferenceType.Name;
+        }
+
+        public static string GUIDToAssemblyDefinitionReferenceGUID(string guid)
+        {
+            return GUIDReference.GUIDToGUIDReference(guid);
+        }
+
+        public static string AssemblyDefinitionReferenceGUIDToGUID(string reference)
+        {
+            if (GetAssemblyDefinitionReferenceType(reference) != AssemblyDefinitionReferenceType.Guid)
+                throw new ArgumentException($"{reference} is not a GUID reference", "reference");
+
+            return GUIDReference.GUIDReferenceToGUID(reference);
+        }
+
         public static AssemblyDefinitionPlatform[] GetAssemblyDefinitionPlatforms()
         {
             if (assemblyDefinitionPlatforms == null)
@@ -334,6 +363,20 @@ namespace UnityEditor.Compilation
             try
             {
                 var customScriptAssembly = editorCompilation.FindCustomScriptAssemblyFromAssemblyName(assemblyName);
+                return customScriptAssembly.FilePath;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        internal static string GetAssemblyDefinitionFilePathFromAssemblyReference(EditorCompilation editorCompilation,
+            string reference)
+        {
+            try
+            {
+                var customScriptAssembly = editorCompilation.FindCustomScriptAssemblyFromAssemblyReference(reference);
                 return customScriptAssembly.FilePath;
             }
             catch (Exception)

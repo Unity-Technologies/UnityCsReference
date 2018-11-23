@@ -35,9 +35,10 @@ namespace UnityEngine.UIElements.StyleSheets
                 s_PseudoStates["active"] = new PseudoStateData(PseudoStates.Active, false);
                 s_PseudoStates["hover"] = new PseudoStateData(PseudoStates.Hover, false);
                 s_PseudoStates["checked"] = new PseudoStateData(PseudoStates.Checked, false);
-                s_PseudoStates["selected"] = new PseudoStateData(PseudoStates.Selected, false);
+                s_PseudoStates["selected"] = new PseudoStateData(PseudoStates.Checked, false); //for backward-compatibility
                 s_PseudoStates["disabled"] = new PseudoStateData(PseudoStates.Disabled, false);
                 s_PseudoStates["focus"] = new PseudoStateData(PseudoStates.Focus, false);
+                s_PseudoStates["root"] = new PseudoStateData(PseudoStates.Root, false);
 
                 // A few substates can be negated, meaning them match if the flag is not set
                 s_PseudoStates["inactive"] = new PseudoStateData(PseudoStates.Active, true);

@@ -54,6 +54,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             public string[] Defines { get; set; }
             public OptionalUnityReferences OptionalUnityReferences { get; set; }
             public ScriptCompilerOptions CompilerOptions { get; set; }
+            public List<VersionDefine> VersionDefines { get; set; }
 
             public TargetAssembly()
             {
@@ -79,6 +80,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 Type = type;
                 CompilerOptions = compilerOptions;
                 PrecompiledReferences = new List<PrecompiledAssembly>();
+                VersionDefines = new List<VersionDefine>();
             }
 
             public string FullPath(string outputDirectory)
@@ -217,11 +219,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var targetAssemblies = new List<TargetAssembly>();
             var nameToTargetAssembly = new Dictionary<string, TargetAssembly>();
 
-
             // Create TargetAssemblies
             foreach (var customAssembly in customScriptAssemblies)
             {
                 var lowerPathPrefix = customAssembly.PathPrefix.ToLower(CultureInfo.InvariantCulture);
+
 
                 var targetAssembly = new TargetAssembly(customAssembly.Name + ".dll",
                     null,
@@ -234,6 +236,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 {
                     OptionalUnityReferences = customAssembly.OptionalUnityReferences,
                     PrecompiledReferences = new List<PrecompiledAssembly>(),
+                    VersionDefines = customAssembly.VersionDefines != null
+                        ? customAssembly.VersionDefines.ToList() : new List<VersionDefine>(),
                 };
 
                 targetAssemblies.Add(targetAssembly);

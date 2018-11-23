@@ -62,8 +62,10 @@ namespace UnityEditor.Experimental.GraphView
             Assert.IsTrue(m_TextField != null);
 
             m_TextField.visible = false;
-            m_TextField.Q("unity-text-input").RegisterCallback<FocusOutEvent>(e => { OnEditTextFinished(); });
-            m_TextField.Q("unity-text-input").RegisterCallback<KeyDownEvent>(OnTextFieldKeyPressed);
+
+            var textinput = m_TextField.Q(TextField.textInputUssName);
+            textinput.RegisterCallback<FocusOutEvent>(e => { OnEditTextFinished(); });
+            textinput.RegisterCallback<KeyDownEvent>(OnTextFieldKeyPressed);
 
             Add(mainContainer);
 
@@ -99,11 +101,11 @@ namespace UnityEditor.Experimental.GraphView
             {
                 case KeyCode.Escape:
                     m_EditTitleCancelled = true;
-                    m_TextField.Q("unity-text-input").Blur();
+                    m_TextField.Q(TextField.textInputUssName).Blur();
                     break;
                 case KeyCode.Return:
                 case KeyCode.KeypadEnter:
-                    m_TextField.Q("unity-text-input").Blur();
+                    m_TextField.Q(TextField.textInputUssName).Blur();
                     break;
                 default:
                     break;

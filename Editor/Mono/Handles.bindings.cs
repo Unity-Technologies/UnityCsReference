@@ -44,10 +44,10 @@ namespace UnityEditor
         internal static extern bool IsCameraDrawModeEnabled(Camera camera, DrawCameraMode drawMode);
 
         [FreeFunction]
-        static extern void Internal_DrawCameraWithGrid(Camera cam, DrawCameraMode renderMode, ref DrawGridParameters gridParam);
+        static extern void Internal_DrawCameraWithGrid(Camera cam, DrawCameraMode renderMode, ref DrawGridParameters gridParam, bool drawGizmos);
 
         [FreeFunction]
-        static extern void Internal_DrawCamera(Camera cam, DrawCameraMode renderMode);
+        static extern void Internal_DrawCamera(Camera cam, DrawCameraMode renderMode, bool drawGizmos);
 
         [FreeFunction]
         static extern void Internal_FinishDrawingCamera(Camera cam, [DefaultValue("true")] bool drawGizmos);

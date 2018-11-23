@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.Experimental.U2D;
 using UnityEditor.Experimental.U2D;
 using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor
 {
@@ -141,8 +142,7 @@ namespace UnityEditor
                 width,
                 height,
                 0,
-                RenderTextureFormat.Default,
-                RenderTextureReadWrite.Linear);
+                SystemInfo.GetGraphicsFormat(DefaultFormat.LDR));
 
             RenderTexture.active = tmp;
 
@@ -229,7 +229,7 @@ namespace UnityEditor
                     spriteRendererMaterial.SetVector("_MainTex_TexelSize", _oldTexelSize);
             }
 
-            var tmp2 = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+            var tmp2 = RenderTexture.GetTemporary(width, height, 0, GraphicsFormat.R8G8B8A8_UNorm);
             Graphics.Blit(tmp, tmp2, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
 
             RenderTexture.active = tmp2;

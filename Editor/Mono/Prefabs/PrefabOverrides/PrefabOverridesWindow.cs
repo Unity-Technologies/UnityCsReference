@@ -266,6 +266,7 @@ namespace UnityEditor
                     }
                 }
             }
+
             GUILayout.EndHorizontal();
         }
 

@@ -301,7 +301,7 @@ namespace UnityEditorInternal
         // individual element height accessor
         public float elementHeight = 21;
         // header height accessor
-        public float headerHeight = 18;
+        public float headerHeight = 20;
         // footer height accessor
         public float footerHeight = 13;
         // show default background

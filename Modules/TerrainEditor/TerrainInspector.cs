@@ -9,6 +9,7 @@ GUILayout.TextureGrid number of horiz elements doesn't work
 using System;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering;
 using UnityEditor.AnimatedValues;
 using System.Collections.Generic;
 using System.Reflection;
@@ -1168,7 +1169,7 @@ namespace UnityEditor
             for (int i = 0; i < oldAlphaMaps.Length; i++)
             {
                 td.alphamapTextures[i].filterMode = FilterMode.Bilinear;
-                oldAlphaMaps[i] = RenderTexture.GetTemporary(newResolution, newResolution, 0, RenderTextureFormat.ARGB32);
+                oldAlphaMaps[i] = RenderTexture.GetTemporary(newResolution, newResolution, 0, SystemInfo.GetGraphicsFormat(DefaultFormat.LDR));
                 Graphics.Blit(td.alphamapTextures[i], oldAlphaMaps[i]);
             }
 

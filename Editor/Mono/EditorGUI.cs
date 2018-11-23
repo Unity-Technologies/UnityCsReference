@@ -8,6 +8,9 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
+using System.Text.RegularExpressions;
+using System.Xml;
+using System.Xml.Linq;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -208,6 +211,7 @@ namespace UnityEditor
             s_ChangedStack.Clear();
             s_PropertyStack.Clear();
             ScriptAttributeUtility.s_DrawerStack.Clear();
+            s_FoldoutHeaderGroupActive = false;
         }
 
         private static readonly Stack<PropertyGUIData> s_PropertyStack = new Stack<PropertyGUIData>();
@@ -883,6 +887,17 @@ namespace UnityEditor
                             }
                             s_SelectAllOnMouseUp = false;
                         }
+                        else if (!s_Dragged && evt.button == 0)
+                        {
+                            //extract hyperlink info
+                            Dictionary<string, string> hyperlinkInfos;
+                            if (HasClickedOnHyperlink(text, editor.cursorIndex, editor, out hyperlinkInfos)) // check if the cursor is between a hyperlink tag and store the hyperlink infos (tag arguments in a dictionary)
+                            {
+                                //raise event with the infos
+                                hyperLinkClicked(typeof(EditorGUI),
+                                    new EditorGUILayout.HyperLinkClickedEventArgs(hyperlinkInfos));
+                            }
+                        }
                         editor.MouseDragSelectsWholeWords(false);
                         s_DragToPosition = true;
                         s_Dragged = false;
@@ -1113,6 +1128,18 @@ namespace UnityEditor
                     // Only change mouse cursor if hotcontrol is not grabbed
                     if (GUIUtility.hotControl == 0)
                     {
+                        // if the current editor is editing this control, we can update the mouse cursor for hyperlinks
+                        // if not, we need to update it (else we won't have the hyperlinks rect)
+                        //    but it has a cost for perf so we're not doing it yet
+                        if (editor.IsEditingControl(id))
+                        {
+                            // Add the link cursor for the hyperlinks found on the editor
+                            foreach (var rect in editor.GetHyperlinksRect())
+                            {
+                                EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
+                            }
+                        }
+
                         EditorGUIUtility.AddCursorRect(position, MouseCursor.Text);
                     }
 
@@ -1158,6 +1185,62 @@ namespace UnityEditor
 
             return origText;
         }
+
+        private static bool HasClickedOnHyperlink(string text, int cursorIndex, RecycledTextEditor editor, out Dictionary<string, string> hyperlinkInfos)
+        {
+            Vector2 mousePosition = Event.current.mousePosition;
+            hyperlinkInfos = new Dictionary<string, string>();
+            if (cursorIndex > 0)
+            {
+                bool hitHyperlink = false;
+                foreach (var rect in editor.GetHyperlinksRect())
+                {
+                    if (rect.Contains(mousePosition))
+                    {
+                        hitHyperlink = true;
+                        break;
+                    }
+                }
+
+                if (hitHyperlink)
+                {
+                    int indexBeginTag = text.Substring(0, editor.cursorIndex)
+                        .LastIndexOf("<a ", StringComparison.Ordinal);
+                    // We should always have the cursor index in the tag but it might not be the case for the first pixels of the hyperlink rect
+                    // Validity check for that case
+                    if (indexBeginTag >= 0)
+                    {
+                        int indexBeginTagClose =
+                            text.Substring(indexBeginTag, cursorIndex - indexBeginTag).IndexOf('>');
+
+                        string beginTag = text.Substring(indexBeginTag, indexBeginTagClose);
+                        // Regex to find the attribute value
+                        Regex regex = new Regex(@"(?<=\b="")[^""]*");
+                        MatchCollection matches = regex.Matches(beginTag);
+
+                        int endPreviousAttributeIndex = 0;
+                        // for each attribute we need to find the attribute name
+                        foreach (Match match in matches)
+                        {
+                            // We are only working on the text between the previous attribute and the current
+                            string namePart = beginTag.Substring(endPreviousAttributeIndex,
+                                (match.Index - 2) - endPreviousAttributeIndex); // -2 is the character before ="
+                            int indexName = namePart.LastIndexOf(' ') + 1;
+                            string name = namePart.Substring(indexName);
+                            // Add the name of the attribute and its value in the dictionary
+                            hyperlinkInfos.Add(name, match.Value);
+
+                            endPreviousAttributeIndex = match.Index + match.Value.Length + 1;
+                        }
+
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        internal static event EventHandler hyperLinkClicked;
 
         // KEYEVENTFIELD HERE ===============================================================
         internal static Event KeyEventField(Rect position, Event evt)
@@ -4231,6 +4314,7 @@ namespace UnityEditor
             GUIStyle style = EditorStyles.colorField;
             Color origColor = value;
             value = showMixedValue ? Color.white : value;
+            bool hovered = position.Contains(evt.mousePosition);
 
             switch (evt.GetTypeForControl(id))
             {
@@ -4240,7 +4324,7 @@ namespace UnityEditor
                         position.width -= 20;
                     }
 
-                    if (position.Contains(evt.mousePosition))
+                    if (hovered)
                     {
                         switch (evt.button)
                         {
@@ -4287,7 +4371,7 @@ namespace UnityEditor
                     if (showEyedropper)
                     {
                         position.width += 20;
-                        if (position.Contains(evt.mousePosition))
+                        if (hovered)
                         {
                             GUIUtility.keyboardControl = id;
                             EyeDropper.Start(GUIView.current);
@@ -4316,11 +4400,11 @@ namespace UnityEditor
 
                     if (showEyedropper)
                     {
-                        style.Draw(position, GUIContent.none, id); // Draw box outline and eyedropper icon
+                        style.Draw(position, GUIContent.none, id, false, hovered); // Draw box outline and eyedropper icon
                     }
                     else
                     {
-                        EditorStyles.colorPickerBox.Draw(position, GUIContent.none, id); // Draw box outline
+                        EditorStyles.colorPickerBox.Draw(position, GUIContent.none, id, false, hovered); // Draw box outline
                     }
 
                     break;
@@ -9500,6 +9584,16 @@ This warning only shows up in development builds.", helpTopic, pageName);
         {
             Rect r = s_LastRect = GetControlRect(false, EditorGUI.kSingleLineHeight, style, options);
             return EditorGUI.AdvancedPopup(r, selectedIndex, displayedOptions, style);
+        }
+
+        internal class HyperLinkClickedEventArgs : EventArgs
+        {
+            public Dictionary<string, string> hyperlinkInfos { get; private set; }
+
+            public HyperLinkClickedEventArgs(Dictionary<string, string> hyperlinkInfos)
+            {
+                this.hyperlinkInfos = hyperlinkInfos;
+            }
         }
     }
 }

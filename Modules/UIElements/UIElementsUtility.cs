@@ -28,10 +28,10 @@ namespace UnityEngine.UIElements
             GUIUtility.cleanupRoots += CleanupRoots;
             GUIUtility.endContainerGUIFromException += EndContainerGUIFromException;
 
-            GUIUtility.enabledStateChanged += EnabledStateChanged;
+            GUIUtility.guiChanged += MakeCurrentIMGUIContainerDirty;
         }
 
-        static void EnabledStateChanged()
+        internal static void MakeCurrentIMGUIContainerDirty()
         {
             if (s_ContainerStack.Count > 0)
             {
@@ -255,6 +255,16 @@ namespace UnityEngine.UIElements
             }
 
             return usesEvent;
+        }
+
+        internal static void GetAllPanels(List<Panel> panels)
+        {
+            panels.Clear();
+            var iterator = GetPanelsIterator();
+            while (iterator.MoveNext())
+            {
+                panels.Add(iterator.Current.Value);
+            }
         }
 
         internal static Dictionary<int, Panel>.Enumerator GetPanelsIterator()

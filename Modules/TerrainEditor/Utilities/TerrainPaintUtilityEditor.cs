@@ -166,7 +166,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             proceduralMaterial.SetVector("_TerrainObjectToWorldOffset", terrainPos);
 
             proceduralMaterial.SetPass(materialPassIndex);
-            Graphics.DrawProcedural(MeshTopology.Triangles, vertexCount);
+            Graphics.DrawProceduralNow(MeshTopology.Triangles, vertexCount);
 
             heightmapTexture.filterMode = oldFilter;
         }

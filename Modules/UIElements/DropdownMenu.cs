@@ -125,10 +125,42 @@ namespace UnityEngine.UIElements
             menuItems.Add(menuAction);
         }
 
+        public void AppendAction(string actionName, Action<DropdownMenuAction> action, DropdownMenuAction.Status status = DropdownMenuAction.Status.Normal)
+        {
+            if (status == DropdownMenuAction.Status.Normal)
+            {
+                AppendAction(actionName, action, DropdownMenuAction.AlwaysEnabled);
+            }
+            else if (status == DropdownMenuAction.Status.Disabled)
+            {
+                AppendAction(actionName, action, DropdownMenuAction.AlwaysDisabled);
+            }
+            else
+            {
+                AppendAction(actionName, action, e => status);
+            }
+        }
+
         public void InsertAction(int atIndex, string actionName, Action<DropdownMenuAction> action, Func<DropdownMenuAction, DropdownMenuAction.Status> actionStatusCallback, object userData = null)
         {
             DropdownMenuAction menuAction = new DropdownMenuAction(actionName, action, actionStatusCallback, userData);
             menuItems.Insert(atIndex, menuAction);
+        }
+
+        public void InsertAction(int atIndex, string actionName, Action<DropdownMenuAction> action, DropdownMenuAction.Status status = DropdownMenuAction.Status.Normal)
+        {
+            if (status == DropdownMenuAction.Status.Normal)
+            {
+                InsertAction(atIndex, actionName, action, DropdownMenuAction.AlwaysEnabled);
+            }
+            else if (status == DropdownMenuAction.Status.Disabled)
+            {
+                InsertAction(atIndex, actionName, action, DropdownMenuAction.AlwaysDisabled);
+            }
+            else
+            {
+                InsertAction(atIndex, actionName, action, e => status);
+            }
         }
 
         public void AppendSeparator(string subMenuPath = null)

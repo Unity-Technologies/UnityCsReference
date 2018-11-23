@@ -44,7 +44,7 @@ namespace UnityEditor.StyleSheets
             m_Errors = new StyleSheetImportErrors();
         }
 
-        public string assetPath
+        public virtual string assetPath
         {
             get
             {
@@ -254,7 +254,7 @@ namespace UnityEditor.StyleSheets
         {
         }
 
-        protected void OnImportError(StyleSheetImportErrors errors)
+        protected virtual void OnImportError(StyleSheetImportErrors errors)
         {
             if (m_Context == null)
                 return;
@@ -265,7 +265,7 @@ namespace UnityEditor.StyleSheets
             }
         }
 
-        protected void OnImportSuccess(UnityStyleSheet asset)
+        protected virtual void OnImportSuccess(UnityStyleSheet asset)
         {
             m_Context?.AddObjectToAsset("stylesheet", asset);
             m_Context?.SetMainObject(asset);

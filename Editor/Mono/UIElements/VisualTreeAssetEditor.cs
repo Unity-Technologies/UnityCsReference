@@ -62,7 +62,9 @@ namespace UnityEditor.UIElements
             if (m_Panel == null)
             {
                 m_Panel = UIElementsUtility.FindOrCreatePanel(m_LastTree, ContextType.Editor);
-                UIElementsEditorUtility.AddDefaultEditorStyleSheets(m_Panel.visualTree);
+                var visualTree = m_Panel.visualTree;
+                visualTree.pseudoStates |= PseudoStates.Root;
+                UIElementsEditorUtility.AddDefaultEditorStyleSheets(visualTree);
                 m_Panel.allowPixelCaching = false;
                 dirty = true;
             }

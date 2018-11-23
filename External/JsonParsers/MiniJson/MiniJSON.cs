@@ -32,7 +32,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Text;
 
 namespace UnityEditor
@@ -447,31 +446,37 @@ namespace UnityEditor
 		/// Converts a IDictionary / IList object or a simple type (string, int, etc.) into a JSON string
 		/// </summary>
 		/// <param name="json">A Dictionary&lt;string, object&gt; / List&lt;object&gt;</param>
+		/// <param name="pretty">A boolean to indicate whether or not JSON should be prettified, default is false.</param>
+		/// <param name="indentText">A string to ibe used as indentText, default is 2 spaces.</param>
 		/// <returns>A JSON encoded string, or null if object 'json' is not serializable</returns>
-		public static string Serialize (object obj)
+		public static string Serialize (object obj, bool pretty = false, string indentText = "  ")
 		{
-			return Serializer.Serialize (obj);
+			return Serializer.Serialize (obj, pretty, indentText);
 		}
 
 		sealed class Serializer
 		{
+			readonly string indentText;
+			bool pretty;
 			StringBuilder builder;
 
-			Serializer ()
+			Serializer (bool pretty, string indentText)
 			{
 				builder = new StringBuilder ();
+				this.pretty = pretty;
+				this.indentText = indentText;
 			}
 
-			public static string Serialize (object obj)
+			public static string Serialize (object obj, bool pretty, string indentText)
 			{
-				var instance = new Serializer ();
+				var instance = new Serializer (pretty, indentText);
 
-				instance.SerializeValue (obj);
+				instance.SerializeValue (obj, 0);
 
 				return instance.builder.ToString ();
 			}
 
-			void SerializeValue (object value)
+			void SerializeValue (object value, int indent)
 			{
 				IList asList;
 				IDictionary asDict;
@@ -491,11 +496,11 @@ namespace UnityEditor
 				}
 				else if ((asList = value as IList) != null)
 				{
-					SerializeArray (asList);
+					SerializeArray (asList, indent);
 				}
 				else if ((asDict = value as IDictionary) != null)
 				{
-					SerializeObject (asDict);
+					SerializeObject (asDict, indent);
 				}
 				else if (value is char)
 				{
@@ -503,52 +508,104 @@ namespace UnityEditor
 				}
 				else
 				{
-					SerializeOther (value);
+					SerializeOther (value, indent);
 				}
 			}
 
-			void SerializeObject (IDictionary obj)
+			void SerializeObject (IDictionary obj, int indent)
 			{
+				if (pretty && obj.Keys.Count == 0)
+				{
+						builder.Append("{}");
+						return;
+				}
+
 				bool first = true;
+				string indentLine = null;
 
 				builder.Append ('{');
+				if (pretty)
+				{
+					builder.Append('\n');
+					indentLine = string.Concat(Enumerable.Repeat(indentText, indent).ToArray());
+				}
 
 				foreach (object e in obj.Keys)
 				{
 					if (!first)
 					{
 						builder.Append (',');
+						if (pretty)
+							builder.Append ('\n');
+					}
+
+					if (pretty)
+					{
+						builder.Append(indentLine);
+						builder.Append(indentText);
 					}
 
 					SerializeString (e.ToString ());
 					builder.Append (':');
+					if (pretty)
+						builder.Append (' ');
 
-					SerializeValue (obj[e]);
+					SerializeValue (obj[e], indent + 1);
 
 					first = false;
 				}
 
+				if (pretty)
+				{
+					builder.Append('\n');
+					builder.Append(indentLine);
+				}
 				builder.Append ('}');
 			}
 
-			void SerializeArray (IList anArray)
+			void SerializeArray (IList anArray, int indent)
 			{
-				builder.Append ('[');
+				if (pretty && anArray.Count == 0)
+				{
+						builder.Append("[]");
+						return;
+				}
 
 				bool first = true;
+				string indentLine = null;
+
+				builder.Append ('[');
+				if (pretty)
+				{
+					builder.Append('\n');
+					indentLine = string.Concat(Enumerable.Repeat(indentText, indent).ToArray());
+				}
 
 				foreach (object obj in anArray)
 				{
 					if (!first)
 					{
 						builder.Append (',');
+						if (pretty)
+							builder.Append ('\n');
 					}
 
-					SerializeValue (obj);
+					if (pretty)
+					{
+						builder.Append(indentLine);
+						builder.Append(indentText);
+					}
+
+					SerializeValue (obj, indent + 1);
 
 					first = false;
 				}
 
+				if (pretty)
+				{
+					builder.Append('\n');
+					builder.Append(indentLine);
+				}
 				builder.Append (']');
 			}
 
@@ -600,7 +657,7 @@ namespace UnityEditor
 				builder.Append ('\"');
 			}
 
-			void SerializeOther (object value)
+			void SerializeOther (object value, int indent)
 			{
 				// NOTE: decimals lose precision during serialization.
 				// They always have, I'm just letting you know.
@@ -630,7 +687,7 @@ namespace UnityEditor
 					{
 						map.Add (property.Name, property.GetValue (value, null));
 					}
-					SerializeObject (map);
+					SerializeObject (map, indent);
 				}
 			}
 		}

@@ -547,14 +547,16 @@ namespace UnityEngine.UIElements
             return AddNegativePseudoState(PseudoStates.Checked);
         }
 
+        [Obsolete("Use Checked() instead")]
         public UQueryBuilder<T> Selected()
         {
-            return AddPseudoState(PseudoStates.Selected);
+            return AddPseudoState(PseudoStates.Checked);
         }
 
+        [Obsolete("Use NotChecked() instead")]
         public UQueryBuilder<T> NotSelected()
         {
-            return AddNegativePseudoState(PseudoStates.Selected);
+            return AddNegativePseudoState(PseudoStates.Checked);
         }
 
         public UQueryBuilder<T> Enabled()

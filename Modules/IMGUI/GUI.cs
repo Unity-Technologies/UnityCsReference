@@ -845,7 +845,7 @@ namespace UnityEngine
             return Toolbar(position, selected, contents, null, style, buttonSize);
         }
 
-        internal static int Toolbar(Rect position, int selected, GUIContent[] contents, string[] controlNames, GUIStyle style, ToolbarButtonSize buttonSize)
+        internal static int Toolbar(Rect position, int selected, GUIContent[] contents, string[] controlNames, GUIStyle style, ToolbarButtonSize buttonSize, bool[] contentsEnabled = null)
         {
             GUIUtility.CheckOnGUI();
 
@@ -853,7 +853,7 @@ namespace UnityEngine
             GUIStyle firstStyle, midStyle, lastStyle;
             FindStyles(ref style, out firstStyle, out midStyle, out lastStyle, "left", "mid", "right");
 
-            return DoButtonGrid(position, selected, contents, controlNames, contents.Length, style, firstStyle, midStyle, lastStyle, buttonSize);
+            return DoButtonGrid(position, selected, contents, controlNames, contents.Length, style, firstStyle, midStyle, lastStyle, buttonSize, contentsEnabled);
         }
 
         public static int SelectionGrid(Rect position, int selected, string[] texts, int xCount)
@@ -976,7 +976,7 @@ namespace UnityEngine
         }
 
         // Make a button grid
-        private static int DoButtonGrid(Rect position, int selected, GUIContent[] contents, string[] controlNames, int xCount, GUIStyle style, GUIStyle firstStyle, GUIStyle midStyle, GUIStyle lastStyle, ToolbarButtonSize buttonSize)
+        private static int DoButtonGrid(Rect position, int selected, GUIContent[] contents, string[] controlNames, int xCount, GUIStyle style, GUIStyle firstStyle, GUIStyle midStyle, GUIStyle lastStyle, ToolbarButtonSize buttonSize, bool[] contentsEnabled = null)
         {
             GUIUtility.CheckOnGUI();
             int count = contents.Length;
@@ -987,6 +987,9 @@ namespace UnityEngine
                 Debug.LogWarning("You are trying to create a SelectionGrid with zero or less elements to be displayed in the horizontal direction. Set xCount to a positive value.");
                 return selected;
             }
+
+            if (contentsEnabled != null && contentsEnabled.Length != count)
+                throw new ArgumentException("contentsEnabled");
 
             // Figure out how large each element should be
             int rows = count / xCount;
@@ -1007,6 +1010,8 @@ namespace UnityEngine
             int selectedButtonID = 0;
             for (int buttonIndex = 0; buttonIndex < count; ++buttonIndex)
             {
+                bool wasEnabled = enabled;
+                enabled &= (contentsEnabled == null || contentsEnabled[buttonIndex]);
                 var buttonRect = buttonRects[buttonIndex];
                 var content = contents[buttonIndex];
 
@@ -1058,6 +1063,8 @@ namespace UnityEngine
                         }
                         break;
                 }
+
+                enabled = wasEnabled;
             }
 
             // draw selected button at the end so it overflows nicer
@@ -1067,7 +1074,11 @@ namespace UnityEngine
                 var content = contents[selected];
                 var isMouseOver = buttonRect.Contains(Event.current.mousePosition);
                 var isHotControl = GUIUtility.hotControl == selectedButtonID;
+                var wasEnabled = enabled;
+                enabled &= (contentsEnabled == null || contentsEnabled[selected]);
+
                 selectedButtonStyle.Draw(buttonRect, content, isMouseOver && (enabled || isHotControl) && (isHotControl || GUIUtility.hotControl == 0), enabled && isHotControl, true, false);
+                enabled = wasEnabled;
             }
 
             return selected;

@@ -67,19 +67,21 @@ namespace UnityEditor.UIElements
 
         public new static readonly string ussClassName = "unity-enum-field";
         public static readonly string textUssClassName = ussClassName + "__text";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
 
         public EnumField()
             : this((string)null) {}
+
+        public EnumField(Enum defaultValue)
+            : this(null, defaultValue) {}
 
         public EnumField(string label, Enum defaultValue = null)
             : base(label, null)
         {
             AddToClassList(ussClassName);
+            visualInput.AddToClassList(inputUssClassName);
             Initialize(defaultValue);
         }
-
-        public EnumField(Enum defaultValue)
-            : this(null, defaultValue) {}
 
         public void Init(Enum defaultValue)
         {

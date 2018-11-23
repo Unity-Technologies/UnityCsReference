@@ -77,9 +77,11 @@ namespace UnityEngine.UIElements
 
         int newKeyboardFocusControlID = 0;
 
+        bool isDockArea => parent.parent == null && name.StartsWith("Dockarea");
+
         public override bool canGrabFocus
         {
-            get { return base.canGrabFocus && hasFocusableControls; }
+            get { return base.canGrabFocus && (hasFocusableControls || isDockArea); }
         }
 
         public static readonly string ussClassName = "unity-imgui-container";
@@ -150,8 +152,15 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private void DoOnGUI(Event evt, Matrix4x4 worldTransform, Rect clippingRect, bool isComputingLayout = false)
+        private void DoOnGUI(Event evt, Matrix4x4 parentTransform, Rect clippingRect, bool isComputingLayout = false)
         {
+            // If we are computing the layout, we should not try to get the worldTransform...
+            // it is dependant on the layout, which is being calculated (thus, not good)
+            // therefore, we should be passing in the identity matrix as our parent transform
+            // we use this below to push a clip scope, we used to simply not push this assuming it had already been done somewhere,
+            // this is not the case for all IMGUIContainers which can lead to attempts to access the root clipping scope
+            Debug.Assert(!isComputingLayout || parentTransform == Matrix4x4.identity);
+
             // Extra checks are needed here because client code might have changed the IMGUIContainer
             // since we enter HandleIMGUIEvent()
             if (m_OnGUIHandler == null
@@ -164,6 +173,10 @@ namespace UnityEngine.UIElements
             int guiClipCount = GUIClip.Internal_GetCount();
 
             SaveGlobals();
+
+            // Save a copy of the container size.
+            var previousMeasuredWidth = cache.topLevel.minWidth;
+            var previousMeasuredHeight = cache.topLevel.minHeight;
 
             UIElementsUtility.BeginContainerGUI(cache, evt, this);
 
@@ -243,17 +256,7 @@ namespace UnityEngine.UIElements
 
             try
             {
-                // If we are computing the layout, we should not try to get the worldTransform...
-                // it is dependant on the layout, which is being calculated (thus, not good)
-                if (!isComputingLayout)
-                {
-                    // Push UIElements matrix in GUIClip to make mouse position relative to the IMGUIContainer top left
-                    using (new GUIClip.ParentClipScope(worldTransform, clippingRect))
-                    {
-                        m_OnGUIHandler();
-                    }
-                }
-                else
+                using (new GUIClip.ParentClipScope(parentTransform, clippingRect))
                 {
                     m_OnGUIHandler();
                 }
@@ -288,16 +291,17 @@ namespace UnityEngine.UIElements
                             // If CheckForTabEvent returns -1 or -2, we have reach the end/beginning of its control list.
                             // We should switch the focus to the next VisualElement.
                             Focusable currentFocusedElement = focusController.focusedElement;
+                            Focusable nextFocusedElement = null;
                             using (KeyDownEvent e = KeyDownEvent.GetPooled('\t', KeyCode.Tab, result == -1 ? EventModifiers.None : EventModifiers.Shift))
                             {
-                                focusController.SwitchFocusOnEvent(e);
+                                nextFocusedElement = focusController.SwitchFocusOnEvent(e);
                             }
 
                             if (currentFocusedElement == this)
                             {
-                                if (focusController.focusedElement == this)
+                                if (nextFocusedElement == this)
                                 {
-                                    // We still have the focus. We should cycle around our controls.
+                                    // We will still have the focus. We should cycle around our controls.
                                     if (result == -2)
                                     {
                                         GUIUtility.SetKeyboardControlToLastControlId();
@@ -312,7 +316,7 @@ namespace UnityEngine.UIElements
                                 }
                                 else
                                 {
-                                    // We lost the focus. Set the focused element ID to 0 until next
+                                    // We will lose the focus. Set the focused element ID to 0 until next
                                     // IMGUIContainer have a chance to set it to its own control.
                                     // Doing this will ensure we draw ourselves without any focused control.
                                     GUIUtility.keyboardControl = 0;
@@ -329,9 +333,14 @@ namespace UnityEngine.UIElements
                         else if (result == 0)
                         {
                             // This means the event is not a tab. Synchronize our focus info with IMGUI.
-                            if ((currentKeyboardFocus != GUIUtility.keyboardControl) || (originalEventType == EventType.MouseDown))
+
+                            if (originalEventType == EventType.MouseDown && isDockArea)
                             {
-                                focusController.SyncIMGUIFocus(GUIUtility.keyboardControl, this);
+                                focusController.SyncIMGUIFocus(focusController.imguiKeyboardControl, this, true);
+                            }
+                            else if ((currentKeyboardFocus != GUIUtility.keyboardControl) || (originalEventType == EventType.MouseDown))
+                            {
+                                focusController.SyncIMGUIFocus(GUIUtility.keyboardControl, this, false);
                             }
                             else if (GUIUtility.keyboardControl != focusController.imguiKeyboardControl)
                             {
@@ -346,7 +355,7 @@ namespace UnityEngine.UIElements
                                 else
                                 {
                                     // In this case, the focused element is NOT the right one in the Focus Controller... we also have to refocus...
-                                    focusController.SyncIMGUIFocus(GUIUtility.keyboardControl, this);
+                                    focusController.SyncIMGUIFocus(GUIUtility.keyboardControl, this, false);
                                 }
                             }
                         }
@@ -359,6 +368,14 @@ namespace UnityEngine.UIElements
             // This will copy Event.current into evt.
             UIElementsUtility.EndContainerGUI(evt);
             RestoreGlobals();
+
+            // See if the container size has changed. This is to make absolutely sure the VisualElement resizes
+            // if the IMGUI content resizes.
+            if (evt.type == EventType.Layout &&
+                (!Mathf.Approximately(previousMeasuredWidth, cache.topLevel.minWidth) || !Mathf.Approximately(previousMeasuredHeight, cache.topLevel.minHeight)))
+            {
+                IncrementVersion(VersionChangeType.Layout);
+            }
 
             if (!isExitGUIException)
             {
@@ -505,6 +522,9 @@ namespace UnityEngine.UIElements
                 // A lost focus event is ... a lost focus event.
                 // The specific handling of the IMGUI will be done in the DoOnGUI() above...
                 lostFocus = true;
+
+                // On lost focus, we need to repaint to remove any focused element blue borders.
+                IncrementVersion(VersionChangeType.Repaint);
             }
             else if (evt.eventTypeId == FocusEvent.TypeId())
             {
@@ -542,8 +562,8 @@ namespace UnityEngine.UIElements
                 // set the transform in an invalid state.
                 // Since DoOnGUI doesn't use the worldTransform and clipping rect we can pass anything.
                 DoOnGUI(evt, Matrix4x4.identity, Rect.zero, true);
-                measuredWidth = m_Cache.topLevel.minWidth;
-                measuredHeight = m_Cache.topLevel.minHeight;
+                measuredWidth = cache.topLevel.minWidth;
+                measuredHeight = cache.topLevel.minHeight;
             }
 
             switch (widthMode)

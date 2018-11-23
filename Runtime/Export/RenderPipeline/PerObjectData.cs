@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.ComponentModel;
 
 namespace UnityEngine.Rendering
 {
@@ -14,9 +15,13 @@ namespace UnityEngine.Rendering
         ReflectionProbes = (1 << 1),
         LightProbeProxyVolume = (1 << 2),
         Lightmaps = (1 << 3),
-        LightIndices = (1 << 4),
+        LightData = (1 << 4),
         MotionVectors = (1 << 5),
+        LightIndices = (1 << 6),
+        [EditorBrowsable(EditorBrowsableState.Never)]
         LightIndices8 = (1 << 6),
+        ReflectionProbeData = (1 << 7),
+        [EditorBrowsable(EditorBrowsableState.Never)]
         ReflectionProbeIndices = (1 << 7),
         OcclusionProbe = (1 << 8),
         OcclusionProbeProxyVolume = (1 << 9),

@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEditor.AdvancedDropdown;
+using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 
 namespace UnityEditor
@@ -104,7 +104,7 @@ namespace UnityEditor
 
                 s_Instance.windowClosed += w =>
                 {
-                    m_Result = w.GetSelectedIndex();
+                    m_Result =  w.GetSelectedItem().elementIndex;
                     m_WindowClosed = true;
                 };
             }
@@ -133,7 +133,7 @@ namespace UnityEditor
 
                 s_Instance.windowClosed += w =>
                 {
-                    m_Result = w.GetSelectedIndex();
+                    m_Result = w.GetSelectedItem().elementIndex;
                     m_WindowClosed = true;
                 };
                 GUIUtility.ExitGUI();
@@ -164,8 +164,9 @@ namespace UnityEditor
             {
                 s_CurrentControl = id;
                 ResetAndCreateWindow();
-                InitMultiselectPopupWindow(rect, new MultiselectDataSource(options));
-
+                var dataSource = new MultiselectDataSource(options);
+                InitMultiselectPopupWindow(rect, dataSource);
+                s_Instance.selectionChanged += dataSource.UpdateSelectedId;
                 s_Instance.selectionChanged += i =>
                 {
                     m_ShouldReturnValue = true;
@@ -227,8 +228,9 @@ namespace UnityEditor
             {
                 s_CurrentControl = id;
                 ResetAndCreateWindow();
-                InitMultiselectPopupWindow(rect, new MultiselectDataSource(mask, displayedOptions, flagValues));
-
+                var dataSource = new MultiselectDataSource(mask, displayedOptions, flagValues);
+                InitMultiselectPopupWindow(rect, dataSource);
+                s_Instance.selectionChanged += dataSource.UpdateSelectedId;
                 s_Instance.selectionChanged += i =>
                 {
                     m_ShouldReturnValue = true;

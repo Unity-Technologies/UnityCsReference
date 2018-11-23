@@ -379,18 +379,10 @@ namespace UnityEditor
             {
                 return;
             }
-            while (true)
+            referencedObject = GetCorrespondingObjectFromSourceAtPath(referencedObject, assetPath);
+            if (referencedObject != null)
             {
-                referencedObject = PrefabUtility.GetCorrespondingObjectFromSource(referencedObject);
-                if (referencedObject == null)
-                {
-                    break;
-                }
-                if (AssetDatabase.GetAssetPath(referencedObject) == assetPath)
-                {
-                    property.objectReferenceValue = referencedObject;
-                    break;
-                }
+                property.objectReferenceValue = referencedObject;
             }
         }
 
@@ -440,13 +432,31 @@ namespace UnityEditor
 
             bool isObjectOnRootInAsset = IsObjectOnRootInAsset(prefabInstanceObject, assetPath);
 
-            SerializedProperty property;
+            SerializedProperty property = null;
+            SerializedProperty endProperty = null;
             if (optionalSingleInstanceProperty != null)
             {
-                property = optionalSingleInstanceProperty.Copy();
+                bool cancel;
+                property = GetArrayPropertyIfGivenPropertyIsPartOfArrayElementInInstanceWhichDoesNotExistInAsset(
+                    optionalSingleInstanceProperty,
+                    prefabSourceSerializedObject,
+                    action,
+                    out cancel);
+
+                if (cancel)
+                    return;
+
+                if (property == null)
+                {
+                    // We didn't find any mismatching array so just use the property the user supplied.
+                    property = optionalSingleInstanceProperty.Copy();
+                }
+                endProperty = property.GetEndProperty();
             }
             else
             {
+                // Note: Mismatching array sizes are not a problem when applying entire component,
+                // since array sizes will always be applied before array content.
                 SerializedObject so = new SerializedObject(prefabInstanceObject);
                 property = so.GetIterator();
             }
@@ -458,7 +468,7 @@ namespace UnityEditor
             }
             else
             {
-                while (property.Next(property.hasVisibleChildren))
+                while (property.Next(property.hasVisibleChildren) && (endProperty == null || !SerializedProperty.EqualContents(property, endProperty)))
                 {
                     // If we apply a property that has child properties that are object references, and if they
                     // reference non-asset objects, those references will get lost, since ApplySingleProperty
@@ -488,6 +498,75 @@ namespace UnityEditor
                 if (action == InteractionMode.UserAction)
                     Undo.FlushUndoRecordObjects(); // flush'es ensure that SavePrefab() on undo/redo on the source happens in the right order
             }
+        }
+
+        // Returns null if property is not part of array where whole array needs to be appled.
+        static SerializedProperty GetArrayPropertyIfGivenPropertyIsPartOfArrayElementInInstanceWhichDoesNotExistInAsset(
+            SerializedProperty optionalSingleInstanceProperty,
+            SerializedObject prefabSourceSerializedObject,
+            InteractionMode action,
+            out bool cancel)
+        {
+            cancel = false;
+
+            // Check if the property is part of an array with mismatching size,
+            // and in that case make the property be that entire array.
+            string propertyPath = optionalSingleInstanceProperty.propertyPath;
+            int fullPropertyPathLength = optionalSingleInstanceProperty.propertyPath.Length;
+            int startSearchIndex = 0;
+            const string arrayElementIndexPrefix = ".Array.data[";
+            // We need to handle nested arrays, hence the while loop.
+            while (startSearchIndex < fullPropertyPathLength)
+            {
+                int arrayPropertySplitIndex = propertyPath.IndexOf(arrayElementIndexPrefix, startSearchIndex);
+
+                // Break if no array was found in property path.
+                if (arrayPropertySplitIndex < 0)
+                    return null;
+
+                // Find property path for array.
+                string arrayPropertyPath = propertyPath.Substring(0, arrayPropertySplitIndex);
+
+                // Find array element index start and length up front since we need it either way.
+                int arrayElementIndexStart = arrayPropertySplitIndex + arrayElementIndexPrefix.Length;
+                int arrayElementIndexLength = propertyPath.IndexOf(']', arrayElementIndexStart) - arrayElementIndexStart;
+
+                // Check if found array has different length on instance than on Asset.
+                SerializedProperty arrayPropertyOnInstance = optionalSingleInstanceProperty.serializedObject.FindProperty(arrayPropertyPath);
+                SerializedProperty arrayPropertyOnAsset = prefabSourceSerializedObject.FindProperty(arrayPropertyPath);
+                if (arrayPropertyOnInstance.arraySize > arrayPropertyOnAsset.arraySize)
+                {
+                    // Array size mismatches. Check if the property the user is attempting to apply
+                    // resides in an element which exceeds the array in the Prefab Asset.
+                    string arrayElementIndexString = propertyPath.Substring(arrayElementIndexStart, arrayElementIndexLength);
+                    int indexInArray;
+                    if (!int.TryParse(arrayElementIndexString, out indexInArray))
+                    {
+                        // This should not be able to happen, but fallback by using array.
+                        Debug.LogError("Misformed arrayElementIndexString " + arrayElementIndexString);
+                        return arrayPropertyOnInstance;
+                    }
+
+                    if (indexInArray >= arrayPropertyOnAsset.arraySize)
+                    {
+                        if (action == InteractionMode.UserAction && !EditorUtility.DisplayDialog(
+                            "Mismatching array size",
+                            string.Format("The property is part of an array element which does not exist in the source Prefab because the corresponding array there is shorter. Do you want to apply the entire array '{0}'?", arrayPropertyOnInstance.displayName),
+                            "Apply Array",
+                            "Cancel"))
+                        {
+                            cancel = true;
+                            return null;
+                        }
+
+                        return arrayPropertyOnInstance;
+                    }
+                }
+
+                // Array does not mismatch, so look if there are other arrays (deeper in property path) that do.
+                startSearchIndex = arrayPropertySplitIndex + arrayElementIndexPrefix.Length + arrayElementIndexLength + 1;
+            }
+            return null;
         }
 
         // Since method is called for each overridden property in a component.

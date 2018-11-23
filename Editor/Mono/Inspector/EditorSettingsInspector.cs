@@ -56,7 +56,8 @@ namespace UnityEditor
             public static GUIContent lineEndingForNewScripts = EditorGUIUtility.TrTextContent("Line Endings For New Scripts");
 
             public static GUIContent streamingSettings = EditorGUIUtility.TrTextContent("Streaming Settings");
-            public static GUIContent enableTextureStreaming = EditorGUIUtility.TrTextContent("Enable Texture Streaming In Play Mode", "Texture Streaming must be enabled in Quality Settings for mipmap streaming to function in Play Mode");
+            public static GUIContent enablePlayModeTextureStreaming = EditorGUIUtility.TrTextContent("Enable Texture Streaming In Play Mode", "Texture Streaming must be enabled in Quality Settings for mipmap streaming to function in Play Mode");
+            public static GUIContent enableEditModeTextureStreaming = EditorGUIUtility.TrTextContent("Enable Texture Streaming In Edit Mode", "Texture Streaming must be enabled in Quality Settings for mipmap streaming to function in Edit Mode");
         }
 
         struct PopupElement
@@ -184,6 +185,7 @@ namespace UnityEditor
         };
 
         SerializedProperty m_EnableTextureStreamingInPlayMode;
+        SerializedProperty m_EnableTextureStreamingInEditMode;
 
         public void OnEnable()
         {
@@ -202,6 +204,7 @@ namespace UnityEditor
             BuildRemoteDeviceList();
 
             m_EnableTextureStreamingInPlayMode = serializedObject.FindProperty("m_EnableTextureStreamingInPlayMode");
+            m_EnableTextureStreamingInEditMode = serializedObject.FindProperty("m_EnableTextureStreamingInEditMode");
         }
 
         public void OnDisable()
@@ -507,7 +510,8 @@ namespace UnityEditor
             GUILayout.Space(10);
             GUILayout.Label(Content.streamingSettings, EditorStyles.boldLabel);
 
-            EditorGUILayout.PropertyField(m_EnableTextureStreamingInPlayMode, Content.enableTextureStreaming);
+            EditorGUILayout.PropertyField(m_EnableTextureStreamingInPlayMode, Content.enablePlayModeTextureStreaming);
+            EditorGUILayout.PropertyField(m_EnableTextureStreamingInEditMode, Content.enableEditModeTextureStreaming);
         }
 
         static int GetIndexById(DevDevice[] elements, string id, int defaultIndex)

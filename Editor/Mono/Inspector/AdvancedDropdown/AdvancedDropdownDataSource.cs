@@ -3,31 +3,28 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using System.Linq;
 
-namespace UnityEditor.AdvancedDropdown
+namespace UnityEditor.IMGUI.Controls
 {
     internal abstract class AdvancedDropdownDataSource
     {
-        private static string kSearchHeader = "Search";
-        private readonly string kSearchHeaderLocalized = UnityEditor.L10n.Tr("Search");
+        private static readonly string kSearchHeader = L10n.Tr("Search");
 
         private AdvancedDropdownItem m_MainTree;
         private AdvancedDropdownItem m_SearchTree;
+        private List<int> m_SelectedIDs = new List<int>();
 
         public AdvancedDropdownItem mainTree { get { return m_MainTree; }}
         public AdvancedDropdownItem searchTree { get { return m_SearchTree; }}
+        public List<int> selectedIDs { get { return m_SelectedIDs; }}
 
+        protected AdvancedDropdownItem root { get { return m_MainTree; }}
         protected List<AdvancedDropdownItem> m_SearchableElements;
-
-        public List<string> selectedIds = new List<string>();
 
         public void ReloadData()
         {
             m_MainTree = FetchData();
-        }
-
-        public virtual void UpdateSelectedId(AdvancedDropdownItem item)
-        {
         }
 
         protected abstract AdvancedDropdownItem FetchData();
@@ -37,7 +34,7 @@ namespace UnityEditor.AdvancedDropdown
             m_SearchTree = Search(search);
         }
 
-        private bool AddMatchItem(AdvancedDropdownItem e, string name, string[] searchWords, SortedList<string, AdvancedDropdownItem> matchesStart, SortedList<string, AdvancedDropdownItem> matchesWithin)
+        protected bool AddMatchItem(AdvancedDropdownItem e, string name, string[] searchWords, List<AdvancedDropdownItem> matchesStart, List<AdvancedDropdownItem> matchesWithin)
         {
             var didMatchAll = true;
             var didMatchStart = false;
@@ -64,51 +61,66 @@ namespace UnityEditor.AdvancedDropdown
             if (didMatchAll)
             {
                 if (didMatchStart)
-                    matchesStart.Add(e.id, e);
+                    matchesStart.Add(e);
                 else
-                    matchesWithin.Add(e.id, e);
+                    matchesWithin.Add(e);
             }
             return didMatchAll;
         }
 
-        virtual protected AdvancedDropdownItem Search(string searchString)
+        protected virtual AdvancedDropdownItem Search(string searchString)
         {
-            if (string.IsNullOrEmpty(searchString) || m_SearchableElements == null)
+            if (m_SearchableElements == null)
+            {
+                BuildSearchableElements();
+            }
+            if (string.IsNullOrEmpty(searchString))
                 return null;
 
             // Support multiple search words separated by spaces.
             var searchWords = searchString.ToLower().Split(' ');
 
             // We keep two lists. Matches that matches the start of an item always get first priority.
-            var matchesStart = new SortedList<string, AdvancedDropdownItem>();
-            var matchesWithin = new SortedList<string, AdvancedDropdownItem>();
+            var matchesStart = new List<AdvancedDropdownItem>();
+            var matchesWithin = new List<AdvancedDropdownItem>();
 
-            bool found = false;
             foreach (var e in m_SearchableElements)
             {
-                var name = e.searchableName.ToLower().Replace(" ", "");
-                if (AddMatchItem(e, name, searchWords, matchesStart, matchesWithin))
-                    found = true;
-            }
-            if (!found)
-            {
-                foreach (var e in m_SearchableElements)
-                {
-                    var name = e.searchableNameLocalized.Replace(" ", "");
-                    AddMatchItem(e, name, searchWords, matchesStart, matchesWithin);
-                }
+                var name = e.name.ToLower().Replace(" ", "");
+                AddMatchItem(e, name, searchWords, matchesStart, matchesWithin);
             }
 
-            var searchTree = new AdvancedDropdownItem(kSearchHeader, kSearchHeaderLocalized, -1);
+            var searchTree = new AdvancedDropdownItem(kSearchHeader);
+            matchesStart.Sort();
             foreach (var element in matchesStart)
             {
-                searchTree.AddChild(element.Value);
+                searchTree.AddChild(element);
             }
+            matchesWithin.Sort();
             foreach (var element in matchesWithin)
             {
-                searchTree.AddChild(element.Value);
+                searchTree.AddChild(element);
             }
             return searchTree;
+        }
+
+        void BuildSearchableElements()
+        {
+            m_SearchableElements = new List<AdvancedDropdownItem>();
+            BuildSearchableElements(root);
+        }
+
+        void BuildSearchableElements(AdvancedDropdownItem item)
+        {
+            if (!item.children.Any())
+            {
+                m_SearchableElements.Add(item);
+                return;
+            }
+            foreach (var child in item.children)
+            {
+                BuildSearchableElements(child);
+            }
         }
     }
 }

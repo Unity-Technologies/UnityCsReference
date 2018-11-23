@@ -31,12 +31,6 @@ namespace UnityEditor.UIElements
         bool m_IsUssEnable = true;
         bool m_IsUxmlEnable = true;
 
-        [MenuItem("Assets/Create/UIElements Editor Window", true)]
-        public static bool IsValidPath()
-        {
-            return ProjectWindowUtil.GetActiveFolderPath().Split('/').Contains("Editor");
-        }
-
         [MenuItem("Assets/Create/UIElements Editor Window")]
         public static void CreateTemplateMenuItem()
         {
@@ -48,7 +42,30 @@ namespace UnityEditor.UIElements
 
         public void init()
         {
-            m_Folder = ProjectWindowUtil.GetActiveFolderPath();
+            m_Folder = string.Empty;
+
+            if (!ProjectWindowUtil.TryGetActiveFolderPath(out m_Folder))
+            {
+                if (Selection.activeObject != null)
+                {
+                    m_Folder = AssetDatabase.GetAssetPath(Selection.activeObject);
+
+                    if (!AssetDatabase.IsValidFolder(m_Folder))
+                    {
+                        m_Folder = Path.GetDirectoryName(m_Folder);
+                    }
+
+                    if (!AssetDatabase.IsValidFolder(m_Folder))
+                    {
+                        m_Folder = string.Empty;
+                    }
+                }
+            }
+
+            if (string.IsNullOrEmpty(m_Folder))
+            {
+                m_Folder = "Assets/Editor";
+            }
         }
 
         public void OnEnable()
@@ -83,13 +100,10 @@ namespace UnityEditor.UIElements
 
             m_ErrorMessageBox = m_Root.Q<VisualElement>("errorMessageBox");
 
-            var queryFieldInput = new UQueryBuilder<VisualElement>();
-            queryFieldInput.Name("unity-text-input");
-
             var cSharpTextField = m_Root.Q<TextField>("cSharpTextField");
             cSharpTextField.RegisterCallback<ChangeEvent<string>>(OnCSharpValueChanged);
 
-            var cSharpTextInput = cSharpTextField.Q<VisualElement>("unity-text-input");
+            var cSharpTextInput = cSharpTextField.Q<VisualElement>(TextField.textInputUssName);
             cSharpTextInput.RegisterCallback<KeyDownEvent>(OnReturnKey);
             cSharpTextInput.RegisterCallback<FocusEvent>(e => HideErrorMessage());
 
@@ -114,7 +128,7 @@ namespace UnityEditor.UIElements
                 m_UxmlName = e.newValue;
             });
 
-            var uxmlTextInput = uxmlTextField.Q<VisualElement>("unity-text-input");
+            var uxmlTextInput = uxmlTextField.Q<VisualElement>(TextField.textInputUssName);
             uxmlTextInput.RegisterCallback<KeyDownEvent>(OnReturnKey);
             uxmlTextInput.RegisterCallback<FocusEvent>(e => HideErrorMessage());
 
@@ -137,7 +151,7 @@ namespace UnityEditor.UIElements
                 m_UssName = e.newValue;
             });
 
-            var ussTextInput = ussTextField.Q<VisualElement>("unity-text-input");
+            var ussTextInput = ussTextField.Q<VisualElement>(TextField.textInputUssName);
             ussTextInput.RegisterCallback<KeyDownEvent>(OnReturnKey);
             ussTextInput.RegisterCallback<FocusEvent>(e => HideErrorMessage());
 
@@ -187,24 +201,33 @@ namespace UnityEditor.UIElements
             {
                 m_Root.SetEnabled(false);
 
+                if (!Directory.Exists(m_Folder))
+                {
+                    Directory.CreateDirectory(m_Folder);
+                }
+
                 if (m_IsUxmlEnable)
                 {
                     var uxmlPath = Path.Combine(m_Folder, m_UxmlName + ".uxml");
-                    ProjectWindowUtil.CreateAssetWithContent(uxmlPath, UIElementsTemplate.CreateUXMLTemplate(m_Folder),
-                        EditorGUIUtility.FindTexture(typeof(VisualTreeAsset)));
+                    File.WriteAllText(uxmlPath, UIElementsTemplate.CreateUXMLTemplate(m_Folder));
                 }
 
                 if (m_IsUssEnable)
                 {
                     var ussPath = Path.Combine(m_Folder, m_UssName + ".uss");
-                    ProjectWindowUtil.CreateAssetWithContent(ussPath, UIElementsTemplate.CreateUssTemplate(),
-                        EditorGUIUtility.FindTexture(typeof(VisualTreeAsset)));
+                    File.WriteAllText(ussPath, UIElementsTemplate.CreateUssTemplate());
+                }
+
+                if (m_IsUssEnable || m_IsUxmlEnable)
+                {
+                    AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
                 }
 
                 if (m_IsCSharpEnable)
                 {
                     var cSharpPath = Path.Combine(m_Folder, m_CSharpName + ".cs");
-                    ProjectWindowUtil.CreateScriptAssetWithContent(cSharpPath, UIElementsTemplate.CreateCSharpTemplate(m_CSharpName, m_UxmlName, m_UssName, m_Folder));
+                    File.WriteAllText(cSharpPath, UIElementsTemplate.CreateCSharpTemplate(m_CSharpName, m_UxmlName, m_UssName, m_Folder));
+                    AssetDatabase.Refresh();
                 }
                 else
                 {
@@ -241,14 +264,19 @@ namespace UnityEditor.UIElements
 
             if (m_IsUssEnable)
             {
-                m_Root.Q<TextField>("ussTextField").value = m_CSharpName + "_style";
-                m_UssName = m_CSharpName + "_style";
+                m_Root.Q<TextField>("ussTextField").value = m_CSharpName;
+                m_UssName = m_CSharpName;
             }
         }
 
         bool IsInputValid()
         {
             if (!IsAtLeastOneFileCreated())
+            {
+                return false;
+            }
+
+            if (!IsValidPath())
             {
                 return false;
             }
@@ -268,8 +296,14 @@ namespace UnityEditor.UIElements
                 return false;
             }
 
-            if (!IsUssAndUxmlNamedDifferently())
+            return true;
+        }
+
+        bool IsValidPath()
+        {
+            if (m_Folder.Split('/').Contains("Editor") == false)
             {
+                m_ErrorMessage = "The target path must be located inside an Editor folder";
                 return false;
             }
 
@@ -285,17 +319,6 @@ namespace UnityEditor.UIElements
             }
 
             return isAtLeastOneFileCreated;
-        }
-
-        bool IsUssAndUxmlNamedDifferently()
-        {
-            bool isUssAndUxmlNamedDifferently = (m_UssName != m_UxmlName) || (!m_IsUxmlEnable || !m_IsUssEnable);
-            if (!isUssAndUxmlNamedDifferently)
-            {
-                m_ErrorMessage = "The uss file and the uxml file must have different name.";
-            }
-
-            return isUssAndUxmlNamedDifferently;
         }
 
         bool Validate(string name, string extension)

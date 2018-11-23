@@ -95,5 +95,6 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.XR.Remoting.Editor")]
 [assembly: InternalsVisibleTo("UnityEngine.Common")]
 [assembly: InternalsVisibleTo("Unity.GraphViewTestUtilities.Editor")]
+[assembly: InternalsVisibleTo("Unity.ProBuilder.Editor")]
 
 [assembly: AssemblyIsEditorAssembly]

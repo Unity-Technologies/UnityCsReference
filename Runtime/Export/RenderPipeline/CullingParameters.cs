@@ -306,6 +306,10 @@ namespace UnityEngine.Rendering
         private float m_AccurateOcclusionThreshold;
         CameraProperties m_CameraProperties;
         private int m_MaximumPortalCullingJobs;
+        const int k_CullingJobCountLowerLimit = 1;
+
+        // Keep in synch with C++ version `kUmbraCullingJobsUpperLimit`.
+        const int k_CullingJobCountUpperLimit = 16;
 
         Matrix4x4 m_StereoViewMatrix;
         Matrix4x4 m_StereoProjectionMatrix;
@@ -405,10 +409,20 @@ namespace UnityEngine.Rendering
             get { return m_MaximumPortalCullingJobs; }
             set
             {
-                if (value < 1 || value > 16)
-                    throw new ArgumentOutOfRangeException("Invlaid culling job count (1 <= count <= 16)");
+                if (value < k_CullingJobCountLowerLimit || value > k_CullingJobCountUpperLimit)
+                    throw new ArgumentOutOfRangeException($"{nameof(maximumPortalCullingJobs)} was {maximumPortalCullingJobs}, but must be in range {k_CullingJobCountLowerLimit} to {k_CullingJobCountUpperLimit}");
                 m_MaximumPortalCullingJobs = value;
             }
+        }
+
+        public static int cullingJobsLowerLimit
+        {
+            get { return k_CullingJobCountLowerLimit; }
+        }
+
+        public static int cullingJobsUpperLimit
+        {
+            get { return k_CullingJobCountUpperLimit; }
         }
 
         public float GetLayerCullingDistance(int layerIndex)

@@ -549,6 +549,9 @@ namespace UnityEditor.StyleSheets
         {
             foreach (var complexSelector in sheet.complexSelectors)
             {
+                if (complexSelector.rule == null)
+                    continue;
+
                 var selectorName = StyleSheetToUss.ToUssSelector(complexSelector);
                 Rule aggregateRule;
                 if (!Rules.TryGetValue(selectorName, out aggregateRule))
@@ -714,6 +717,9 @@ namespace UnityEditor.StyleSheets
                     case StyleValueType.String:
                     case StyleValueType.ResourcePath:
                         helper.builder.AddValue(value.AsString(), value.ValueType);
+                        break;
+                    case StyleValueType.Function:
+                        // TODO: convert the function and its parameters to the proper string representation.
                         break;
                     default:
                         throw new Exception("Unhandled value type: " + value.ValueType);

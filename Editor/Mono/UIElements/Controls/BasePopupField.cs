@@ -61,6 +61,7 @@ namespace UnityEditor.UIElements
 
         public new static readonly string ussClassName = "unity-base-popup-field";
         public static readonly string textUssClassName = ussClassName + "__text";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
 
         internal BasePopupField()
             : this(null) {}
@@ -75,6 +76,7 @@ namespace UnityEditor.UIElements
                 pickingMode = PickingMode.Ignore
             };
             m_TextElement.AddToClassList(textUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
             visualInput.Add(m_TextElement);
 
             choices = new List<TValueChoice>();

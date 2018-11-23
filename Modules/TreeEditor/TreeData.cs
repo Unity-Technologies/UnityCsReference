@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.Profiling;
 using UnityEditor;
 using System.IO;
@@ -1247,7 +1248,7 @@ namespace TreeEditor
 
             // setup temporary render texure
             SavedRenderTargetState renderTextureState = new SavedRenderTargetState();
-            RenderTexture targetTexture = RenderTexture.GetTemporary(texWidth, texHeight, 0, RenderTextureFormat.ARGB32);
+            RenderTexture targetTexture = RenderTexture.GetTemporary(texWidth, texHeight, 0, SystemInfo.GetGraphicsFormat(DefaultFormat.LDR));
 
             bool oldFog = RenderSettings.fog;
             Unsupported.SetRenderSettingsUseFogNoDirty(false);

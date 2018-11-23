@@ -125,6 +125,9 @@ namespace UnityEngine
         [NonSerialized]
         RectOffset m_Border, m_Padding, m_Margin, m_Overflow;
 
+        // Internal callback used to override how gui styles are rendered.
+        internal static DrawHandler onDraw;
+
         // Rendering settings for when the component is displayed normally.
         public GUIStyleState normal
         {
@@ -255,7 +258,7 @@ namespace UnityEngine
 
         public void Draw(Rect position, GUIContent content, int controlID, bool on, bool hover)
         {
-            Draw(position, content, controlID, hover, false, on, false);
+            Draw(position, content, controlID, hover, false, on, controlID == GUIUtility.keyboardControl);
         }
 
         private void Draw(Rect position, GUIContent content, int controlId, bool isHover, bool isActive, bool on, bool hasKeyboardFocus)
@@ -266,10 +269,14 @@ namespace UnityEngine
             if (content == null)
                 throw new Exception("Style.Draw may not be called with GUIContent that is null.");
 
-            if (controlId == -1)
-                Internal_Draw(position, content, isHover, isActive, on, hasKeyboardFocus);
-            else
-                Internal_Draw2(position, content, controlId, on);
+            var drawStates = new DrawStates(controlId, isHover, isActive, on, hasKeyboardFocus);
+            if (onDraw == null || !onDraw(this, position, content, drawStates))
+            {
+                if (controlId == -1)
+                    Internal_Draw(position, content, isHover, isActive, on, hasKeyboardFocus);
+                else
+                    Internal_Draw2(position, content, controlId, on);
+            }
         }
 
         // PrefixLabel has to be drawn with an alternative draw method.
@@ -282,7 +289,12 @@ namespace UnityEngine
         internal void DrawPrefixLabel(Rect position, GUIContent content, int controlID)
         {
             if (content != null)
+            {
+                var drawStates = new DrawStates(controlID, position.Contains(Event.current.mousePosition), false, false,
+                    GUIUtility.keyboardControl == controlID);
+                if (onDraw == null || !onDraw(this, position, content, drawStates))
                 Internal_DrawPrefixLabel(position, content, controlID, false);
+            }
             else
                 Debug.LogError("Style.DrawPrefixLabel may not be called with GUIContent that is null.");
         }
@@ -325,8 +337,13 @@ namespace UnityEngine
                 cursorColor = GUI.skin.settings.cursorColor;
 
             bool hovered = position.Contains(Event.current.mousePosition);
-            Internal_DrawWithTextSelection(position, content, hovered, isActive, false, hasKeyboardFocus,
+            var drawStates = new DrawStates(-1, hovered, isActive, false, hasKeyboardFocus,
                 drawSelectionAsComposition, firstSelectedCharacter, lastSelectedCharacter, cursorColor, selectionColor);
+            if (onDraw == null || !onDraw(this, position, content, drawStates))
+            {
+                Internal_DrawWithTextSelection(position, content, hovered, isActive, false, hasKeyboardFocus,
+                    drawSelectionAsComposition, firstSelectedCharacter, lastSelectedCharacter, cursorColor, selectionColor);
+            }
         }
 
         internal void DrawWithTextSelection(Rect position, GUIContent content, int controlID, int firstSelectedCharacter,

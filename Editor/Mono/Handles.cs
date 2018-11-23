@@ -343,9 +343,23 @@ namespace UnityEditor
             Handles.DrawLine(points[3], points[8]);
         }
 
+        public static bool ShouldRenderGizmos()
+        {
+            GameView gv = GameView.GetRenderingGameView();
+            SceneView sv = SceneView.currentDrawingSceneView;
+
+            if (gv != null)
+                return gv.IsShowingGizmos();
+
+            if (sv != null)
+                return sv.drawGizmos;
+
+            return false;
+        }
+
         public static void DrawGizmos(Camera camera)
         {
-            if (GameView.GetRenderingGameView() != null && GameView.GetRenderingGameView().IsShowingGizmos())
+            if (ShouldRenderGizmos())
                 Internal_DoDrawGizmos(camera);
         }
 
@@ -1338,9 +1352,9 @@ namespace UnityEditor
                 else
                 {
                     if (drawGrid)
-                        Internal_DrawCameraWithGrid(camera, drawMode, ref gridParam);
+                        Internal_DrawCameraWithGrid(camera, drawMode, ref gridParam, renderGizmos);
                     else
-                        Internal_DrawCamera(camera, drawMode);
+                        Internal_DrawCamera(camera, drawMode, renderGizmos);
 
                     // VR scene cameras finish drawing with each eye render
                     if (finish && camera.cameraType != CameraType.VR)
@@ -1359,9 +1373,9 @@ namespace UnityEditor
             DrawCameraImpl(position, camera, drawMode, true, gridParam, true);
         }
 
-        internal static void DrawCameraStep1(Rect position, Camera camera, DrawCameraMode drawMode, DrawGridParameters gridParam)
+        internal static void DrawCameraStep1(Rect position, Camera camera, DrawCameraMode drawMode, DrawGridParameters gridParam, bool drawGizmos)
         {
-            DrawCameraImpl(position, camera, drawMode, true, gridParam, false);
+            DrawCameraImpl(position, camera, drawMode, true, gridParam, false, drawGizmos);
         }
 
         internal static void DrawCameraStep2(Camera camera, DrawCameraMode drawMode, bool drawGizmos)

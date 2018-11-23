@@ -516,9 +516,13 @@ namespace UnityEditor.UIElements
             {
                 if (!wasUpdated)
                 {
-                    obj.UpdateIfRequiredOrScript();
-                    obj.UpdateExpandedState();
-                    UpdateRevision();
+                    if (obj.isValid)
+                    {
+                        obj.UpdateIfRequiredOrScript();
+                        obj.UpdateExpandedState();
+                        UpdateRevision();
+                    }
+
                     wasUpdated = true;
                 }
             }
@@ -629,7 +633,7 @@ namespace UnityEditor.UIElements
                 }
             }
 
-            protected bool isFieldAttached {get; private set; }
+            protected bool isFieldAttached { get; private set; }
 
             private void FieldValueChanged(ChangeEvent<TValue> evt)
             {
@@ -649,7 +653,6 @@ namespace UnityEditor.UIElements
                     }
 
                     UpdateLastFieldValue();
-
                     if (IsPropertyValid())
                     {
                         if (SyncFieldValueToProperty())

@@ -58,6 +58,8 @@ namespace UnityEngine.Rendering
 
         extern private void DrawSkybox_Internal(Camera camera);
 
+        extern private void DrawGizmos_Internal(Camera camera, GizmoSubset gizmoSubset);
+
         internal IntPtr Internal_GetPtr()
         {
             return m_Ptr;

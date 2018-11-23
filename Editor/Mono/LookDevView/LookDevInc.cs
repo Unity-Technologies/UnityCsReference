@@ -5,6 +5,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering;
 using UnityEditor.AnimatedValues;
 using System.Collections.Generic;
 using UnityEditorInternal;
@@ -364,10 +365,10 @@ namespace UnityEditor
 
 
             if (m_SelectionTexture == null)
-                m_SelectionTexture = new RenderTexture((int)LookDevEnvironmentWindow.m_HDRIWidth, (int)LookDevEnvironmentWindow.m_latLongHeight, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Default);
+                m_SelectionTexture = new RenderTexture((int)LookDevEnvironmentWindow.m_HDRIWidth, (int)LookDevEnvironmentWindow.m_latLongHeight, 0, SystemInfo.GetGraphicsFormat(DefaultFormat.LDR));
 
             if (m_BrightestPointRT == null)
-                m_BrightestPointRT = new RenderTexture((int)LookDevEnvironmentWindow.m_HDRIWidth, (int)LookDevEnvironmentWindow.m_latLongHeight, 0, RenderTextureFormat.ARGBHalf, RenderTextureReadWrite.Default);
+                m_BrightestPointRT = new RenderTexture((int)LookDevEnvironmentWindow.m_HDRIWidth, (int)LookDevEnvironmentWindow.m_latLongHeight, 0, GraphicsFormat.R16G16B16A16_SFloat);
 
             if (m_BrightestPointTexture == null)
                 m_BrightestPointTexture = new Texture2D((int)LookDevEnvironmentWindow.m_HDRIWidth, (int)LookDevEnvironmentWindow.m_latLongHeight, TextureFormat.RGBAHalf, false);

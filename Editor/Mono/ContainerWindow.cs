@@ -23,26 +23,20 @@ namespace UnityEditor
 
         internal bool m_DontSaveToLayout = false;
 
-        const float kBorderSize = 4;
+        const float kBorderSize = 11;
         const float kTitleHeight = 24;
 
         private int m_ButtonCount;
         private float m_TitleBarWidth;
 
-        // Fit a container window to the screen.
-        static internal bool macEditor { get { return Application.platform == RuntimePlatform.OSXEditor; } }
-
-        const float kButtonWidth = 13, kButtonHeight = 13, kButtonSpacing = 3, kButtonTop = 0;
+        const float kButtonWidth = 13, kButtonHeight = 13, kButtonSpacing = 2, kButtonTop = 4;
 
         private static class Styles
         {
             // Title Bar Buttons (Non)
-            public static GUIStyle buttonClose = macEditor ? "WinBtnCloseMac" : "WinBtnClose";
-            public static GUIStyle buttonMin = macEditor ? "WinBtnMinMac" : "WinBtnClose";
-            public static GUIStyle buttonMax = macEditor ? "WinBtnMaxMac" : "WinBtnMax";
-
-            // Title Bar Button when window is not focused (OSX only)
-            public static GUIStyle buttonInactive = "WinBtnInactiveMac";
+            public static GUIStyle buttonClose = "WinBtnClose";
+            public static GUIStyle buttonMax = "WinBtnMax";
+            public static GUIStyle buttonRestore = "WinBtnMax";//"WinBtnRestore";
         }
 
         public ContainerWindow()
@@ -55,14 +49,14 @@ namespace UnityEditor
             hideFlags = HideFlags.DontSave;
         }
 
-        internal ShowMode showMode { get { return (ShowMode)m_ShowMode; } }
+        internal ShowMode showMode => (ShowMode)m_ShowMode;
 
         internal static bool IsPopup(ShowMode mode)
         {
             return (ShowMode.PopupMenu == mode);
         }
 
-        internal bool isPopup { get { return IsPopup((ShowMode)m_ShowMode); } }
+        internal bool isPopup => IsPopup((ShowMode)m_ShowMode);
 
         internal void ShowPopup()
         {
@@ -91,13 +85,7 @@ namespace UnityEditor
             rootView.Reflow();
         }
 
-        static Color skinBackgroundColor
-        {
-            get
-            {
-                return EditorGUIUtility.isProSkin ? Color.gray.RGBMultiplied(0.3f).AlphaMultiplied(0.5f) : Color.gray.AlphaMultiplied(0.32f);
-            }
-        }
+        static Color skinBackgroundColor => EditorGUIUtility.isProSkin ? Color.gray.RGBMultiplied(0.3f).AlphaMultiplied(0.5f) : Color.gray.AlphaMultiplied(0.32f);
 
         // Show the editor window.
         public void Show(ShowMode showMode, bool loadPosition, bool displayImmediately, bool setFocus)
@@ -369,11 +357,7 @@ namespace UnityEditor
             if (hasWindowButtons)
             {
                 GUIStyle close = Styles.buttonClose;
-                GUIStyle min = Styles.buttonMin;
-                GUIStyle max = Styles.buttonMax;
-
-                if (macEditor && (GUIView.focusedView == null || GUIView.focusedView.window != this))
-                    close = min = max = Styles.buttonInactive;
+                GUIStyle maxOrRestore = maximized ? Styles.buttonRestore : Styles.buttonMax;
 
                 BeginTitleBarButtons(windowPosition);
                 if (TitleBarButton(close))
@@ -381,12 +365,7 @@ namespace UnityEditor
                     Close();
                     GUIUtility.ExitGUI();
                 }
-                if (macEditor && TitleBarButton(min))
-                {
-                    Minimize();
-                    GUIUtility.ExitGUI();
-                }
-                if (TitleBarButton(max))
+                if (TitleBarButton(maxOrRestore))
                     ToggleMaximize();
             }
 
@@ -402,6 +381,16 @@ namespace UnityEditor
         private bool TitleBarButton(GUIStyle style)
         {
             var buttonRect = new Rect(m_TitleBarWidth - kButtonWidth * ++m_ButtonCount - kBorderSize, kButtonTop, kButtonWidth, kButtonHeight);
+            var guiView = rootView as GUIView;
+            if (guiView == null)
+            {
+                var splitView = rootView as SplitView;
+                if (splitView != null)
+                    guiView = splitView.children.Length > 0 ? splitView.children[0] as GUIView : null;
+            }
+            if (guiView != null)
+                guiView.MarkHotRegion(GUIClip.UnclipToWindow(buttonRect));
+
             return GUI.Button(buttonRect, GUIContent.none, style);
         }
 

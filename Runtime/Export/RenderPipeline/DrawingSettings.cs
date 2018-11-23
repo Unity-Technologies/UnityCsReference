@@ -28,6 +28,7 @@ namespace UnityEngine.Rendering
 #pragma warning disable 414
         int m_OverrideMaterialInstanceId;
         int m_OverrideMaterialPassIndex;
+        int m_MainLightIndex;
         int m_UseSrpBatcher; // only needed to match native struct
 #pragma warning restore 414
 
@@ -39,6 +40,7 @@ namespace UnityEngine.Rendering
 
             m_OverrideMaterialInstanceId = 0;
             m_OverrideMaterialPassIndex = 0;
+            m_MainLightIndex = -1;
 
             fixed(int* p = shaderPassNames)
             {
@@ -101,6 +103,12 @@ namespace UnityEngine.Rendering
         {
             get { return m_OverrideMaterialPassIndex; }
             set { m_OverrideMaterialPassIndex = value; }
+        }
+
+        public int mainLightIndex
+        {
+            get { return m_MainLightIndex; }
+            set { m_MainLightIndex = value; }
         }
 
         public ShaderTagId GetShaderPassName(int index)

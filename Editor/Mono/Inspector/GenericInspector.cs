@@ -30,7 +30,7 @@ namespace UnityEditor
             if (behaviour != null && AudioUtil.HasAudioCallback(behaviour) && AudioUtil.GetCustomFilterChannelCount(behaviour) > 0)
                 return false;
 
-            if (IsMissingMonoBehaviourTarget())
+            if (ObjectIsMonoBehaviourOrScriptableObject(target))
                 return false;
 
             if (isDirty)
@@ -156,6 +156,16 @@ namespace UnityEditor
 
             EditorGUILayout.PropertyField(scriptProperty);
 
+            CheckIfScriptLoaded(scriptProperty);
+
+            if (serializedObject.ApplyModifiedProperties())
+                EditorUtility.ForceRebuildInspectors();
+
+            return true;
+        }
+
+        internal static void CheckIfScriptLoaded(SerializedProperty scriptProperty)
+        {
             MonoScript targetScript = scriptProperty.objectReferenceValue as MonoScript;
             bool showScriptWarning =
                 targetScript == null || !targetScript.GetScriptTypeWasJustCreatedFromComponentMenu();
@@ -165,11 +175,6 @@ namespace UnityEditor
                     "The associated script can not be loaded.\nPlease fix any compile errors\nand assign a valid script.");
                 EditorGUILayout.HelpBox(text, MessageType.Warning, true);
             }
-
-            if (serializedObject.ApplyModifiedProperties())
-                EditorUtility.ForceRebuildInspectors();
-
-            return true;
         }
 
         private bool ResetOptimizedBlock(OptimizedBlockState resetState = OptimizedBlockState.CheckOptimizedBlock)
@@ -185,11 +190,11 @@ namespace UnityEditor
             CleanupPropertyEditor();
         }
 
-        internal bool IsMissingMonoBehaviourTarget()
+        internal static bool ObjectIsMonoBehaviourOrScriptableObject(Object obj)
         {
-            if (target) // This test for native reference state first.
+            if (obj) // This test for native reference state first.
             {
-                var behaviour = target as MonoBehaviour;
+                var behaviour = obj as MonoBehaviour;
                 if (behaviour != null)
                 {
                     var generatorAsset = ScriptGeneratorAsset.FromMonoBehaviour(behaviour);
@@ -198,14 +203,14 @@ namespace UnityEditor
                         return false;
                     }
                 }
-                return target.GetType() == typeof(MonoBehaviour) || target.GetType() == typeof(ScriptableObject);
+                return obj.GetType() == typeof(MonoBehaviour) || obj.GetType() == typeof(ScriptableObject);
             }
-            return target is MonoBehaviour || target is ScriptableObject;
+            return obj is MonoBehaviour || obj is ScriptableObject;
         }
 
         public override void OnInspectorGUI()
         {
-            if (IsMissingMonoBehaviourTarget() && MissingMonoBehaviourGUI())
+            if (ObjectIsMonoBehaviourOrScriptableObject(target) && MissingMonoBehaviourGUI())
                 return;
 
             base.OnInspectorGUI();

@@ -15,6 +15,9 @@ namespace UnityEngine
             [NativeHeader("Runtime/Graphics/GraphicsFormatUtility.bindings.h")]
             public class GraphicsFormatUtility
             {
+                [FreeFunction]
+                extern internal static GraphicsFormat GetFormat(Texture texture);
+
                 public static GraphicsFormat GetGraphicsFormat(TextureFormat format, bool isSRGB)
                 {
                     return GetGraphicsFormat_Native_TextureFormat(format, isSRGB);
@@ -23,8 +26,13 @@ namespace UnityEngine
                 [FreeFunction]
                 extern private static GraphicsFormat GetGraphicsFormat_Native_TextureFormat(TextureFormat format, bool isSRGB);
 
+                public static TextureFormat GetTextureFormat(GraphicsFormat format)
+                {
+                    return GetTextureFormat_Native_GraphicsFormat(format);
+                }
+
                 [FreeFunction]
-                extern public static TextureFormat GetTextureFormat(GraphicsFormat format);
+                extern private static TextureFormat GetTextureFormat_Native_GraphicsFormat(GraphicsFormat format);
 
                 public static GraphicsFormat GetGraphicsFormat(RenderTextureFormat format, bool isSRGB)
                 {
@@ -34,8 +42,21 @@ namespace UnityEngine
                 [FreeFunction]
                 extern private static GraphicsFormat GetGraphicsFormat_Native_RenderTextureFormat(RenderTextureFormat format, bool isSRGB);
 
+                public static GraphicsFormat GetGraphicsFormat(RenderTextureFormat format, RenderTextureReadWrite readWrite)
+                {
+                    bool defaultSRGB = QualitySettings.activeColorSpace == ColorSpace.Linear;
+                    bool sRGB = readWrite == RenderTextureReadWrite.Default ? defaultSRGB : readWrite == RenderTextureReadWrite.sRGB;
+                    return GetGraphicsFormat(format, sRGB);
+                }
+
                 [FreeFunction]
                 extern public static bool IsSRGBFormat(GraphicsFormat format);
+
+                [FreeFunction]
+                extern public static GraphicsFormat GetSRGBFormat(GraphicsFormat format);
+
+                [FreeFunction]
+                extern public static GraphicsFormat GetLinearFormat(GraphicsFormat format);
 
                 [FreeFunction]
                 extern public static RenderTextureFormat GetRenderTextureFormat(GraphicsFormat format);
@@ -48,6 +69,9 @@ namespace UnityEngine
 
                 [FreeFunction]
                 extern public static UInt32 GetComponentCount(GraphicsFormat format);
+
+                [FreeFunction]
+                extern public static string GetFormatString(GraphicsFormat format);
 
                 [FreeFunction]
                 extern public static bool IsCompressedFormat(GraphicsFormat format);

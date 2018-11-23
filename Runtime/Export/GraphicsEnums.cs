@@ -351,6 +351,13 @@ namespace UnityEngine
         ETC_RGB4Crunched = 64,
         ETC2_RGBA8Crunched = 65,
 
+        ASTC_HDR_4x4 = 66,
+        ASTC_HDR_5x5 = 67,
+        ASTC_HDR_6x6 = 68,
+        ASTC_HDR_8x8 = 69,
+        ASTC_HDR_10x10 = 70,
+        ASTC_HDR_12x12 = 71,
+
         // please note that obsolete attrs are currently disabled because we have tests that checks for "no warnings"
         // yet at the same time there are packages that reference old ASTC enums.
         // hence the only way is to go to trunk -> fix packages -> obsolete
@@ -515,12 +522,23 @@ namespace UnityEngine
             {
                 Sample = 0,
                 Linear = 1,
-                Render = 3,
-                Blend = 4,
-                LoadStore = 8,
-                MSAA2x = 9,
-                MSAA4x = 10,
-                MSAA8x = 11,
+                Sparse = 2,
+                Render = 4,
+                Blend = 5,
+                GetPixels = 6,
+                SetPixels = 7,
+                ReadPixels = 8,
+                LoadStore = 9,
+                MSAA2x = 10,
+                MSAA4x = 11,
+                MSAA8x = 12,
+            }
+
+            // Keep in sync with DefaultFormat in Runtime/Graphics/Format.h
+            public enum DefaultFormat
+            {
+                LDR,
+                HDR,
             }
 
             // Keep in sync with GraphicsFormat in Runtime/Graphics/Format.h
@@ -620,12 +638,6 @@ namespace UnityEngine
                 A10R10G10B10_XRSRGBPack32 = 85,
                 A10R10G10B10_XRUNormPack32 = 86,
 
-                D16_UNorm = 90,
-                D24_UNorm = 91,
-                D24_UNorm_S8_UInt = 92,
-                D32_SFloat = 93,
-                D32_SFloat_S8_Uint = 94,
-                S8_Uint = 95,
                 [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
                 [Obsolete("Enum member GraphicsFormat.RGB_DXT1_SRGB has been deprecated. Use GraphicsFormat.RGBA_DXT1_SRGB instead (UnityUpgradable) -> RGBA_DXT1_SRGB", true)]
                 RGB_DXT1_SRGB = 96,
@@ -1586,6 +1598,14 @@ namespace UnityEngine.Rendering
         Default = 0,
         Background = 1,
         Urgent = 2
+    }
+
+    public enum SinglePassStereoMode
+    {
+        None = 0,
+        SideBySide,
+        Instancing,
+        Multiview
     }
 
     //Needs to line up with the common elements of the c++ version of this enum found GfxDeviceTypes.h

@@ -59,7 +59,6 @@ namespace UnityEditor
             var compiling = EditorApplication.isCompiling;
             var assembliesLocked = !EditorApplication.CanReloadAssemblies();
 
-            GUILayout.Space(2);
             GUILayout.BeginHorizontal();
             GUILayout.Space(2);
 

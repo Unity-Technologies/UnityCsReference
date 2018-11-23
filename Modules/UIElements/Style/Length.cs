@@ -79,7 +79,8 @@ namespace UnityEngine.UIElements
 
         public override string ToString()
         {
-            return $"{value} {unit.ToString().ToLower()}";
+            string unitStr = unit == LengthUnit.Pixel ? "px" : "";
+            return $"{value}{unitStr}";
         }
     }
 }

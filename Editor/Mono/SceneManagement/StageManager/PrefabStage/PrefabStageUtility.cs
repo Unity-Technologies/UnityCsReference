@@ -5,6 +5,7 @@
 using System;
 using System.IO;
 using UnityEditor.SceneManagement;
+using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Rendering;
@@ -15,6 +16,24 @@ namespace UnityEditor.Experimental.SceneManagement
 {
     public class PrefabStageUtility
     {
+        [Shortcut("Stage/Enter Prefab Mode", KeyCode.P)]
+        static void EnterPrefabModeShortcut()
+        {
+            var activeGameObject = Selection.activeGameObject;
+            if (activeGameObject == null)
+                return;
+
+            if (PrefabUtility.IsPartOfAnyPrefab(activeGameObject))
+            {
+                var prefabPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(activeGameObject);
+                if (!string.IsNullOrEmpty(prefabPath) && prefabPath.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase))
+                {
+                    var instanceObject = !EditorUtility.IsPersistent(activeGameObject) ? activeGameObject : null;
+                    OpenPrefab(prefabPath, instanceObject);
+                }
+            }
+        }
+
         internal static PrefabStage OpenPrefab(string prefabAssetPath)
         {
             return OpenPrefab(prefabAssetPath, null);
@@ -29,6 +48,9 @@ namespace UnityEditor.Experimental.SceneManagement
         {
             if (string.IsNullOrEmpty(prefabAssetPath))
                 throw new ArgumentNullException(prefabAssetPath);
+
+            if (!prefabAssetPath.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException("Incorrect file extension: " + prefabAssetPath + ". Must be '.prefab'", prefabAssetPath);
 
             if (AssetDatabase.LoadMainAssetAtPath(prefabAssetPath) == null)
                 throw new ArgumentException("Prefab not found at path " + prefabAssetPath, prefabAssetPath);

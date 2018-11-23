@@ -347,18 +347,6 @@ namespace UnityEngine
         {
             DrawTexture(screenRect, texture, null, -1);
         }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawProcedural(MeshTopology topology, int vertexCount)
-        {
-            DrawProcedural(topology, vertexCount, 1);
-        }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawProceduralIndirect(MeshTopology topology, ComputeBuffer bufferWithArgs)
-        {
-            DrawProceduralIndirect(topology, bufferWithArgs, 0);
-        }
     }
 
     public partial class Graphics

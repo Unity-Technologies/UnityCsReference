@@ -115,10 +115,13 @@ namespace UnityEngine.UIElements
             s_EventDispatcher = null;
         }
 
+        internal DebuggerEventDispatchingStrategy m_DebuggerEventDispatchingStrategy;
+
         EventDispatcher()
         {
             m_DispatchingStrategies = new List<IEventDispatchingStrategy>();
-            m_DispatchingStrategies.Add(new DebuggerEventDispatchingStrategy());
+            m_DebuggerEventDispatchingStrategy = new DebuggerEventDispatchingStrategy();
+            m_DispatchingStrategies.Add(m_DebuggerEventDispatchingStrategy);
             m_DispatchingStrategies.Add(new MouseCaptureDispatchingStrategy());
             m_DispatchingStrategies.Add(new KeyboardEventDispatchingStrategy());
             m_DispatchingStrategies.Add(new MouseEventDispatchingStrategy());
@@ -285,6 +288,9 @@ namespace UnityEngine.UIElements
                 }
 
                 EventDispatchUtilities.ExecuteDefaultAction(evt, panel);
+
+                m_DebuggerEventDispatchingStrategy.PostDispatch(evt, panel);
+
                 evt.PostDispatch();
 
                 Debug.Assert(imguiEventIsInitiallyUsed || evt.isPropagationStopped || e == null || e.type != EventType.Used, "Event is used but not stopped.");

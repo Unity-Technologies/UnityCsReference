@@ -39,6 +39,8 @@ namespace UnityEngine
             return CaptureScreenshotAsTexture(1, stereoCaptureMode);
         }
 
+        public static extern void CaptureScreenshotIntoRenderTexture(RenderTexture renderTexture);
+
         private static extern void CaptureScreenshot(string filename, [UnityEngine.Internal.DefaultValue("1")] int superSize, [UnityEngine.Internal.DefaultValue("1")]  StereoScreenCaptureMode CaptureMode);
         private static extern Texture2D CaptureScreenshotAsTexture(int superSize, StereoScreenCaptureMode stereoScreenCaptureMode);
 

@@ -3,7 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.SceneManagement;
+using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Scene = UnityEngine.SceneManagement.Scene;
@@ -13,6 +17,8 @@ namespace UnityEditor
     internal static class SceneVisibilityManager
     {
         internal static event Action hiddenContentChanged;
+
+        private readonly static List<GameObject> m_RootBuffer = new List<GameObject>();
 
         [InitializeOnLoadMethod]
         private static void Initialize()
@@ -24,6 +30,22 @@ namespace UnityEditor
             EditorSceneManager.sceneOpening += EditorSceneManagerOnSceneOpening;
             EditorSceneManager.sceneClosing += EditorSceneManagerOnSceneClosing;
             EditorApplication.playModeStateChanged += EditorApplicationPlayModeStateChanged;
+            StageNavigationManager.instance.stageChanged += StageNavigationManagerOnStageChanging;
+
+            PrefabStage stage = StageNavigationManager.instance.GetCurrentPrefabStage();
+            SceneVisibilityState.SetPrefabStageScene(stage == null ? default(Scene) : stage.scene);
+        }
+
+        private static void StageNavigationManagerOnStageChanging(StageNavigationItem oldItem, StageNavigationItem newItem)
+        {
+            if (!newItem.isMainStage && newItem.prefabStage != null)
+            {
+                SceneVisibilityState.SetPrefabStageScene(newItem.prefabStage.scene);
+            }
+            else
+            {
+                SceneVisibilityState.SetPrefabStageScene(default(Scene));
+            }
         }
 
         private static void EditorApplicationPlayModeStateChanged(PlayModeStateChange state)
@@ -84,9 +106,7 @@ namespace UnityEditor
             {
                 for (int i = 0; i < SceneManager.sceneCount; i++)
                 {
-                    var scene = SceneManager.GetSceneAt(i);
-                    SceneVisibilityState.ShowScene(scene);
-                    SceneVisibilityState.SetGameObjectsHidden(scene.GetRootGameObjects(), true, true);
+                    HideScene(SceneManager.GetSceneAt(i), false);
                 }
             }
             HiddenContentChanged();
@@ -110,17 +130,76 @@ namespace UnityEditor
             {
                 for (int i = 0; i < SceneManager.sceneCount; i++)
                 {
-                    var scene = SceneManager.GetSceneAt(i);
-                    SceneVisibilityState.ShowScene(scene);
+                    ShowScene(SceneManager.GetSceneAt(i), false);
                 }
             }
 
             HiddenContentChanged();
         }
 
+        private static void ShowScene(Scene scene, bool sendContentChangedEvent)
+        {
+            if (!scene.IsValid())
+                return;
+
+            SceneVisibilityState.ShowScene(scene);
+
+            if (sendContentChangedEvent)
+            {
+                HiddenContentChanged();
+            }
+        }
+
+        internal static void ShowScene(Scene scene)
+        {
+            if (!scene.IsValid())
+                return;
+
+            Undo.RecordObject(SceneVisibilityState.GetInstance(), "ShowScene");
+            ShowScene(scene, true);
+        }
+
+        private static void HideScene(Scene scene, bool sendContentChangedEvent)
+        {
+            if (!scene.IsValid())
+                return;
+
+            SceneVisibilityState.ShowScene(scene);
+            SceneVisibilityState.SetGameObjectsHidden(scene.GetRootGameObjects(), true, true);
+
+            if (sendContentChangedEvent)
+            {
+                HiddenContentChanged();
+            }
+        }
+
+        internal static void HideScene(Scene scene)
+        {
+            if (!scene.IsValid())
+                return;
+
+            Undo.RecordObject(SceneVisibilityState.GetInstance(), "HideScene");
+            HideScene(scene, true);
+        }
+
         internal static bool IsGameObjectHidden(GameObject gameObject)
         {
             return SceneVisibilityState.IsGameObjectHidden(gameObject);
+        }
+
+        internal static bool IsEntireSceneHidden(Scene scene)
+        {
+            if (scene.rootCount == 0)
+                return false;
+
+            scene.GetRootGameObjects(m_RootBuffer);
+            foreach (GameObject root in m_RootBuffer)
+            {
+                if (!IsGameObjectHidden(root) || !AreAllChildrenHidden(root))
+                    return false;
+            }
+
+            return true;
         }
 
         internal static bool IsHierarchyHidden(GameObject gameObject)
@@ -191,6 +270,49 @@ namespace UnityEditor
         internal static bool AreAllChildrenVisible(GameObject gameObject)
         {
             return SceneVisibilityState.AreAllChildrenVisible(gameObject);
+        }
+
+        //SHORTCUTS
+        [Shortcut("Scene Visibility/Toggle Visibility")]
+        internal static void ToggleSelectionGameObjectVisibility()
+        {
+            if (Selection.gameObjects.Length > 0)
+            {
+                bool shouldHide = true;
+                foreach (var gameObject in Selection.gameObjects)
+                {
+                    if (!IsGameObjectHidden(gameObject))
+                    {
+                        break;
+                    }
+
+                    shouldHide = false;
+                }
+                Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Visibility");
+                SceneVisibilityState.SetGameObjectsHidden(Selection.gameObjects, shouldHide, false);
+                HiddenContentChanged();
+            }
+        }
+
+        [Shortcut("Scene Visibility/Toggle Visibility and children")]
+        internal static void ToggleSelectionHierarchyVisibility()
+        {
+            if (Selection.gameObjects.Length > 0)
+            {
+                bool shouldHide = true;
+                foreach (var gameObject in Selection.gameObjects)
+                {
+                    if (!IsGameObjectHidden(gameObject))
+                    {
+                        break;
+                    }
+
+                    shouldHide = false;
+                }
+                Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Visibility and children");
+                SceneVisibilityState.SetGameObjectsHidden(Selection.gameObjects, shouldHide, true);
+                HiddenContentChanged();
+            }
         }
     }
 }

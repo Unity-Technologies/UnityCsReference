@@ -73,7 +73,7 @@ namespace UnityEditor.UIElements
             m_TextField.AddToClassList(textUssClassName);
             m_SearchButton.hierarchy.Add(m_TextField);
             m_TextField.RegisterValueChangedCallback(OnTextChanged);
-            m_TextField.Q("unity-text-input").RegisterCallback<KeyDownEvent>(OnTextFieldKeyDown);
+            m_TextField.Q(TextField.textInputUssName).RegisterCallback<KeyDownEvent>(OnTextFieldKeyDown);
 
             m_CancelButton = new Button(() => {}) { name = "unity-cancel" };
             m_CancelButton.AddToClassList(cancelButtonUssClassName);

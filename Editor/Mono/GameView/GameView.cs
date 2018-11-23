@@ -10,6 +10,7 @@ using UnityEditor.AnimatedValues;
 using UnityEditor.SceneManagement;
 using UnityEditor.Modules;
 using UnityEngine.Scripting;
+using UnityEngine.Experimental.Rendering;
 using System.Globalization;
 
 /*
@@ -59,6 +60,7 @@ namespace UnityEditor
             get { return Mathf.Max(kMaxScale * EditorGUIUtility.pixelsPerPoint, ScaleThatFitsTargetInView(targetSize, viewInWindow.size)); }
         }
 
+        [SerializeField] bool m_VSyncEnabled;
         [SerializeField] bool m_MaximizeOnPlay;
         [SerializeField] bool m_Gizmos;
         [SerializeField] bool m_Stats;
@@ -85,6 +87,7 @@ namespace UnityEditor
         {
             public static GUIContent gizmosContent = EditorGUIUtility.TrTextContent("Gizmos");
             public static GUIContent zoomSliderContent = EditorGUIUtility.TrTextContent("Scale", "Size of the game view on the screen.");
+            public static GUIContent vsyncContent = EditorGUIUtility.TrTextContent("VSync");
             public static GUIContent maximizeOnPlayContent = EditorGUIUtility.TrTextContent("Maximize On Play");
             public static GUIContent muteContent = EditorGUIUtility.TrTextContent("Mute Audio");
             public static GUIContent statsContent = EditorGUIUtility.TrTextContent("Stats");
@@ -311,15 +314,27 @@ namespace UnityEditor
             UpdateZoomAreaAndParent();
             dontClearBackground = true;
             s_GameViews.Add(this);
+
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
 
         public void OnDisable()
         {
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+
             s_GameViews.Remove(this);
             if (m_TargetTexture)
             {
                 DestroyImmediate(m_TargetTexture);
             }
+        }
+
+        internal static bool IsGameViewOpen()
+        {
+            if (GetMainGameView() == null)
+                return false;
+
+            return true;
         }
 
         internal static GameView GetMainGameView()
@@ -445,6 +460,12 @@ namespace UnityEditor
         public bool IsShowingGizmos()
         {
             return m_Gizmos;
+        }
+
+        public void SetShowGizmos(bool value)
+        {
+            m_Gizmos = value;
+            Repaint();
         }
 
         private void OnSelectionChange()
@@ -605,6 +626,9 @@ namespace UnityEditor
 
                 m_MaximizeOnPlay = GUILayout.Toggle(m_MaximizeOnPlay, Styles.maximizeOnPlayContent, EditorStyles.toolbarButton);
                 EditorUtility.audioMasterMute = GUILayout.Toggle(EditorUtility.audioMasterMute, Styles.muteContent, EditorStyles.toolbarButton);
+
+                DoVSyncButton();
+
                 m_Stats = GUILayout.Toggle(m_Stats, Styles.statsContent, EditorStyles.toolbarButton);
 
                 Rect r = GUILayoutUtility.GetRect(Styles.gizmosContent, Styles.gizmoButtonStyle);
@@ -620,6 +644,23 @@ namespace UnityEditor
                 m_Gizmos = GUI.Toggle(r, m_Gizmos, Styles.gizmosContent, Styles.gizmoButtonStyle);
             }
             GUILayout.EndHorizontal();
+        }
+
+        private void DoVSyncButton()
+        {
+            // Only show the vsync toggle for editor supported gfx device backend.
+            var gfxDeviceType = SystemInfo.graphicsDeviceType;
+            if (gfxDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Metal ||
+                gfxDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Vulkan ||
+                gfxDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Direct3D11 ||
+                gfxDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Direct3D12 ||
+                gfxDeviceType == UnityEngine.Rendering.GraphicsDeviceType.OpenGLCore)
+            {
+                EditorGUI.BeginChangeCheck();
+                m_VSyncEnabled = GUILayout.Toggle(m_VSyncEnabled, Styles.vsyncContent, EditorStyles.toolbarButton);
+                if (EditorGUI.EndChangeCheck() && EditorApplication.isPlaying)
+                    m_Parent.EnableVSync(m_VSyncEnabled);
+            }
         }
 
         private void SetXRRenderMode(int mode)
@@ -669,7 +710,7 @@ namespace UnityEditor
             if (!m_TargetTexture)
             {
                 m_CurrentColorSpace = QualitySettings.activeColorSpace;
-                m_TargetTexture = new RenderTexture(0, 0, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+                m_TargetTexture = new RenderTexture(0, 0, 24, SystemInfo.GetGraphicsFormat(DefaultFormat.LDR));
                 m_TargetTexture.name = "GameView RT";
                 m_TargetTexture.filterMode = FilterMode.Point;
                 m_TargetTexture.hideFlags = HideFlags.HideAndDontSave;
@@ -771,6 +812,19 @@ namespace UnityEditor
                     Vector2.zero,
                     gizmos,
                     sendInput);
+            }
+        }
+
+        private void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            if (state == PlayModeStateChange.EnteredPlayMode)
+            {
+                // Enable vsync in play mode to get as much as possible frame rate consistency
+                m_Parent.EnableVSync(m_VSyncEnabled);
+            }
+            else if (state == PlayModeStateChange.ExitingPlayMode)
+            {
+                m_Parent.EnableVSync(false);
             }
         }
 

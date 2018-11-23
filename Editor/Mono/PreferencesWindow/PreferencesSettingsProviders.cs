@@ -238,14 +238,30 @@ namespace UnityEditor
 
                 for (int i = 0; i < editorLanguages.Length; ++i)
                 {
+                    var culture = LocalizationDatabase.GetCulture(editorLanguages[i]);
+                    var langName = new System.Globalization.CultureInfo(culture).NativeName;
+
+                    // Due to the issue 1088990, workaround for both Chinese is necessary.
+                    // This workaround should be removed just after the fix.
+                    if (editorLanguages[i] == SystemLanguage.ChineseSimplified)
+                    {
+                        byte[] letters = { 0xE7, 0xAE, 0x80, 0xE4, 0xBD, 0x93, 0xE4, 0xB8, 0xAD, 0xE6, 0x96, 0x87 };
+                        langName = System.Text.Encoding.UTF8.GetString(letters);
+                    }
+                    else if (editorLanguages[i] == SystemLanguage.ChineseTraditional)
+                    {
+                        byte[] letters = { 0xE7, 0xB9, 0x81, 0xE9, 0xAB, 0x94, 0xE4, 0xB8, 0xAD, 0xE6, 0x96, 0x87 };
+                        langName = System.Text.Encoding.UTF8.GetString(letters);
+                    }
+
                     // not in stable languages list - display it as experimental language
                     if (ArrayUtility.FindIndex(m_stableLanguages, v => v == editorLanguages[i]) < 0)
                     {
-                        m_EditorLanguageNames[i] = EditorGUIUtility.TextContent(string.Format("{0} (Experimental)", editorLanguages[i].ToString()));
+                        m_EditorLanguageNames[i] = EditorGUIUtility.TextContent(string.Format("{0} (Experimental)", langName));
                     }
                     else
                     {
-                        m_EditorLanguageNames[i] = EditorGUIUtility.TextContent(editorLanguages[i].ToString());
+                        m_EditorLanguageNames[i] = EditorGUIUtility.TextContent(langName);
                     }
                 }
                 ArrayUtility.Insert(ref m_EditorLanguageNames, 0, EditorGUIUtility.TextContent(""));

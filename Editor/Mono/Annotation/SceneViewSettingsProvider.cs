@@ -14,7 +14,7 @@ namespace UnityEditor
             static bool s_Initialized;
 
             public static GUIContent cameraMovementEasingEnabled = new GUIContent("Camera Easing", "Check this to enable camera movement easing. This makes the Camera ease in when it starts moving, and ease out when it stops.");
-            public static GUIContent cameraMovementEasingDuration = new GUIContent("Camera Easing Duration", "How long it takes for the Camera speed to accelerate to full speed. Measured in seconds.");
+            public static GUIContent cameraMovementEasingDuration = new GUIContent("Duration", "How long it takes for the Camera speed to accelerate to full speed. Measured in seconds.");
 
             public static GUIStyle settings;
 
@@ -62,8 +62,10 @@ namespace UnityEditor
 
             using (new EditorGUI.DisabledScope(!SceneViewMotion.movementEasingEnabled))
             {
+                EditorGUI.indentLevel += 1;
                 if (!searching || SearchUtils.MatchSearch(searchContext, Styles.cameraMovementEasingDuration.text))
                     SceneViewMotion.movementEasingDuration = EditorGUILayout.Slider(Styles.cameraMovementEasingDuration, SceneViewMotion.movementEasingDuration, 0.001f, 3f);
+                EditorGUI.indentLevel -= 1;
             }
 
             GUILayout.EndVertical();

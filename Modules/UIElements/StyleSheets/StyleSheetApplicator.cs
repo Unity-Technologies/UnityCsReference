@@ -19,6 +19,8 @@ namespace UnityEngine.UIElements.StyleSheets
         void ApplyImage(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleBackground property);
         void ApplyFont(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleFont property);
         void ApplyCursor(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleCursor property);
+        void ApplyAlign(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleInt property);
+        void ApplyDisplay(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleInt property);
     }
 
     internal class StyleSheetApplicator : IStyleSheetApplicator
@@ -233,6 +235,50 @@ namespace UnityEngine.UIElements.StyleSheets
             property.Apply(value, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
         }
 
+        public void ApplyAlign(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleInt property)
+        {
+            if (ApplyUnset<StyleInt, int>(handles, specificity, ref property))
+                return;
+
+            if (handles[0].valueType == StyleValueType.Keyword && handles[0].valueIndex == (int)StyleValueKeyword.Auto)
+            {
+                StyleInt auto = new StyleInt((int)Align.Auto) {specificity = specificity};
+                property.Apply(auto, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+                return;
+            }
+
+            if (handles[0].valueType != StyleValueType.Enum)
+            {
+                Debug.LogError("Invalid value for align property " + sheet.ReadAsString(handles[0]));
+                return;
+            }
+
+            var value = sheet.ReadStyleEnum<Align>(handles[0], specificity);
+            property.Apply(value, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+        }
+
+        public void ApplyDisplay(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleInt property)
+        {
+            if (ApplyUnset<StyleInt, int>(handles, specificity, ref property))
+                return;
+
+            if (handles[0].valueType == StyleValueType.Keyword && handles[0].valueIndex == (int)StyleValueKeyword.None)
+            {
+                StyleInt none = new StyleInt((int)DisplayStyle.None) {specificity = specificity};
+                property.Apply(none, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+                return;
+            }
+
+            if (handles[0].valueType != StyleValueType.Enum)
+            {
+                Debug.LogError("Invalid value for display property " + sheet.ReadAsString(handles[0]));
+                return;
+            }
+
+            var value = sheet.ReadStyleEnum<DisplayStyle>(handles[0], specificity);
+            property.Apply(value, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+        }
+
         static bool TryGetSourceFromHandle(StyleSheet sheet, StyleValueHandle handle, out Texture2D source)
         {
             source = null;
@@ -334,6 +380,30 @@ namespace UnityEngine.UIElements.StyleSheets
         public void ApplyInt(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleInt property)
         {
             property.Apply(new StyleInt((int)currentStyleValue.number, currentStyleValue.keyword) {specificity = specificity}, StylePropertyApplyMode.Copy);
+        }
+
+        public void ApplyAlign(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleInt property)
+        {
+            if (currentStyleValue.keyword == StyleKeyword.Auto)
+            {
+                property.Apply(new StyleInt((int)Align.Auto) { specificity = specificity }, StylePropertyApplyMode.Copy);
+            }
+            else
+            {
+                ApplyInt(sheet, handles, specificity, ref property);
+            }
+        }
+
+        public void ApplyDisplay(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleInt property)
+        {
+            if (currentStyleValue.keyword == StyleKeyword.None)
+            {
+                property.Apply(new StyleInt((int)DisplayStyle.None) { specificity = specificity }, StylePropertyApplyMode.Copy);
+            }
+            else
+            {
+                ApplyInt(sheet, handles, specificity, ref property);
+            }
         }
     }
 

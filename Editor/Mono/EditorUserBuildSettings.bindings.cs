@@ -561,6 +561,9 @@ namespace UnityEditor
         // Enable source-level debuggers to connect.
         public static extern bool allowDebugging { get; set; }
 
+        // Wait for player connection on start
+        public static extern bool waitForPlayerConnection { get; set; }
+
         // Export as Android Google Project instead of building it
         public static extern bool exportAsGoogleAndroidProject { get; set; }
 

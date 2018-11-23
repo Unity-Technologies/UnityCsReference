@@ -84,6 +84,13 @@ namespace UnityEngine
         [FreeFunction(Name = "GUIStyle_Bindings::Internal_GetCursorStringIndex", HasExplicitThis = true)]
         internal extern int Internal_GetCursorStringIndex(Rect position, GUIContent content, Vector2 cursorPixelPosition);
 
+        [FreeFunction(Name = "GUIStyle_Bindings::Internal_GetSelectedRenderedText", HasExplicitThis = true)]
+        internal extern string Internal_GetSelectedRenderedText(Rect localPosition, GUIContent mContent,
+            int selectIndex, int cursorIndex);
+
+        [FreeFunction(Name = "GUIStyle_Bindings::Internal_GetHyperlinksRect", HasExplicitThis = true)]
+        internal extern Rect[] Internal_GetHyperlinksRect(Rect localPosition, GUIContent mContent);
+
         [FreeFunction(Name = "GUIStyle_Bindings::Internal_GetNumCharactersThatFitWithinWidth", HasExplicitThis = true)]
         internal extern int Internal_GetNumCharactersThatFitWithinWidth(string text, float width);
 
@@ -101,6 +108,11 @@ namespace UnityEngine
 
         [FreeFunction(Name = "GUIStyle_Bindings::Internal_DrawPrefixLabel", HasExplicitThis = true)]
         private extern void Internal_DrawPrefixLabel(Rect position, GUIContent content, int controlID, bool on);
+
+        [FreeFunction(Name = "GUIStyle_Bindings::Internal_DrawContent", HasExplicitThis = true)]
+        internal extern void Internal_DrawContent(Rect screenRect, GUIContent content, bool isHover, bool isActive, bool on, bool hasKeyboardFocus,
+            bool hasTextInput, bool drawSelectionAsComposition, int cursorFirst, int cursorLast, Color cursorColor, Color selectionColor,
+            Color imageColor, float textOffsetX, float textOffsetY, float imageTopOffset, float imageLeftOffset, bool overflowX, bool overflowY);
 
         [FreeFunction(Name = "GUIStyle_Bindings::SetMouseTooltip")] internal static extern void SetMouseTooltip(string tooltip, Rect screenRect);
         [FreeFunction(Name = "GUIStyle_Bindings::Internal_GetCursorFlashOffset")] private static extern float Internal_GetCursorFlashOffset();

@@ -3,8 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine;
 
-namespace UnityEditor.AdvancedDropdown
+namespace UnityEditor.IMGUI.Controls
 {
     internal class MultiselectDataSource : AdvancedDropdownDataSource
     {
@@ -48,37 +49,42 @@ namespace UnityEditor.AdvancedDropdown
 
         protected override AdvancedDropdownItem FetchData()
         {
-            var rootGroup = new AdvancedDropdownItem(string.Empty, -1);
+            var rootGroup = new AdvancedDropdownItem(string.Empty);
             for (var i = 0; i < m_OptionNames.Length; i++)
             {
                 if (i == 2)
                     rootGroup.AddSeparator();
-                var element = new AdvancedDropdownItem(m_OptionNames[i], i);
-                element.SetParent(rootGroup);
+                var element = new AdvancedDropdownItem(m_OptionNames[i]);
+                element.elementIndex = i;
                 rootGroup.AddChild(element);
             }
 
-            RebuildSelection();
+            RebuildSelection(rootGroup);
             return rootGroup;
         }
 
-        void RebuildSelection()
+        void RebuildSelection(AdvancedDropdownItem rootItem)
         {
-            selectedIds.Clear();
+            selectedIDs.Clear();
             foreach (var selectionOption in m_SelectedOptions)
             {
-                selectedIds.Add(m_OptionNames[selectionOption]);
+                var name = m_OptionNames[selectionOption];
+                foreach (var child in rootItem.children)
+                {
+                    if (child.name == name)
+                        selectedIDs.Add(child.id);
+                }
             }
         }
 
-        public override void UpdateSelectedId(AdvancedDropdownItem item)
+        public void UpdateSelectedId(AdvancedDropdownItem item)
         {
-            m_Mask = m_OptionMaskValues[item.m_Index];
+            m_Mask = m_OptionMaskValues[item.elementIndex];
             string buttonText;
             MaskFieldGUI.GetMenuOptions(m_Mask, m_DisplayNames, m_FlagValues, out buttonText, out m_OptionNames, out m_OptionMaskValues, out m_SelectedOptions);
             if (enumFlags != null)
                 m_EnumFlag = EditorGUI.IntToEnumFlags(enumFlags.GetType(), m_Mask);
-            RebuildSelection();
+            RebuildSelection(root);
         }
     }
 }

@@ -21,6 +21,8 @@ namespace UnityEditor
         MonoReloadableIntPtrClear m_Property;
         #pragma warning restore
 
+        internal static event Action editorTrackerRebuilt;
+
         public ActiveEditorTracker()
         {
             Internal_Create(this);
@@ -161,5 +163,11 @@ namespace UnityEditor
 
         [FreeFunction("Internal_SetupSharedTracker")]
         static extern void SetupSharedTracker(ActiveEditorTracker sharedTracker);
+
+        static void Internal_OnTrackerRebuild()
+        {
+            if (editorTrackerRebuilt != null)
+                editorTrackerRebuilt();
+        }
     }
 }

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -96,7 +97,10 @@ namespace UnityEditor
 
             // If user clicked area, adjust size
             if (expanded != expandedBefore)
+            {
                 previewSize = (expanded ? lastSize : 0);
+                GUI.changed = true;
+            }
 
             // Determine new expanded state
             expanded = (previewSize >= minSize / 2);
@@ -149,6 +153,11 @@ namespace UnityEditor
             // Set the sign based on whether it's collapsed or not, then save to prefs
             m_CachedPref = Mathf.Abs(m_CachedPref) * (expanded ? 1 : -1);
             EditorPrefs.SetFloat(m_PrefName, m_CachedPref);
+
+            if (m_Container != null)
+            {
+                m_Container.style.minHeight = expanded ? containerMinimumHeightExpanded : m_ContainerMinimumHeightCollapsed;
+            }
         }
 
         public void ToggleExpanded()
@@ -156,19 +165,33 @@ namespace UnityEditor
             // Reverse the sign, then save to prefs
             m_CachedPref = -m_CachedPref;
             EditorPrefs.SetFloat(m_PrefName, m_CachedPref);
+
+            if (m_Container != null)
+            {
+                m_Container.style.minHeight = m_CachedPref > 0 ? containerMinimumHeightExpanded : m_ContainerMinimumHeightCollapsed;
+            }
         }
 
         // This is the slider behavior for resizing the preview area
         public static float PixelPreciseCollapsibleSlider(int id, Rect position, float value, float min, float max, ref bool expanded)
         {
             Event evt = Event.current;
+
+            if (evt.type == EventType.Layout)
+            {
+                return value;
+            }
+
+            var mousePosition = GUIClip.UnclipToWindow(evt.mousePosition);
+            mousePosition.y -= Editor.k_HeaderHeight;
+
             switch (evt.GetTypeForControl(id))
             {
                 case EventType.MouseDown:
-                    if (GUIUtility.hotControl == 0 && evt.button == 0 && position.Contains(evt.mousePosition))
+                    if (GUIUtility.hotControl == 0 && evt.button == 0 && position.Contains(mousePosition))
                     {
                         GUIUtility.hotControl = id;
-                        s_MouseDownLocation = evt.mousePosition.y;
+                        s_MouseDownLocation = mousePosition.y;
                         s_MouseDownValue = value;
                         s_MouseDragged = false;
                         evt.Use();
@@ -177,7 +200,7 @@ namespace UnityEditor
                 case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
-                        value = Mathf.Clamp(evt.mousePosition.y - s_MouseDownLocation + s_MouseDownValue, min, max - 1);
+                        value = Mathf.Clamp(mousePosition.y - s_MouseDownLocation + s_MouseDownValue, min, max - 1);
                         GUI.changed = true;
                         s_MouseDragged = true;
                         evt.Use();
@@ -193,13 +216,33 @@ namespace UnityEditor
                     }
                     break;
                 case EventType.Repaint:
+                    const float x = 0f;
+                    const float y = 0f;
+
                     if (GUIUtility.hotControl == 0)
-                        EditorGUIUtility.AddCursorRect(position, MouseCursor.SplitResizeUpDown);
+                    {
+                        EditorGUIUtility.AddCursorRect(new Rect(x, y, position.width, position.height), MouseCursor.SplitResizeUpDown);
+                    }
+
                     if (GUIUtility.hotControl == id)
-                        EditorGUIUtility.AddCursorRect(new Rect(position.x, position.y - 100, position.width, position.height + 200), MouseCursor.SplitResizeUpDown);
+                    {
+                        const int yMove = 100;
+                        const int heightMove = yMove * 2;
+                        EditorGUIUtility.AddCursorRect(new Rect(x, y - yMove, position.width, position.height + heightMove), MouseCursor.SplitResizeUpDown);
+                    }
                     break;
             }
             return value;
+        }
+
+        IMGUIContainer m_Container;
+        internal float containerMinimumHeightExpanded;
+        float m_ContainerMinimumHeightCollapsed;
+
+        internal void SetContainer(IMGUIContainer container, float minimumHeightCollapsed)
+        {
+            m_Container = container;
+            m_ContainerMinimumHeightCollapsed = minimumHeightCollapsed;
         }
     }
 }

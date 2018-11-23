@@ -293,7 +293,7 @@ namespace UnityEngine
         // Is GPU draw call instancing supported? (RO)
         public static bool supportsInstancing
         {
-            get { return SupportsInstancing();  }
+            get { return SupportsInstancing(); }
         }
 
         // Is quad topology supported by hardware? (RO)
@@ -310,7 +310,7 @@ namespace UnityEngine
 
         public static bool supportsSparseTextures
         {
-            get { return SupportsSparseTextures();  }
+            get { return SupportsSparseTextures(); }
         }
 
         // How many simultaneous render targets (MRTs) are supported? (RO)
@@ -438,7 +438,7 @@ namespace UnityEngine
 
         public static bool supportsAsyncGPUReadback
         {
-            get { return SupportsAsyncGPUReadback();  }
+            get { return SupportsAsyncGPUReadback(); }
         }
 
         public static bool supportsSetConstantBuffer
@@ -655,5 +655,8 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::IsFormatSupported")]
         extern public static bool IsFormatSupported(GraphicsFormat format, FormatUsage usage);
+
+        [FreeFunction("ScriptingGraphicsCaps::GetGraphicsFormat")]
+        extern public static GraphicsFormat GetGraphicsFormat(DefaultFormat format);
     }
 }

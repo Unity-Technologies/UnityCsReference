@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEditor;
 using System.Globalization;
 
@@ -100,8 +101,8 @@ namespace UnityEditor
         {
             Texture t = target as Texture;
             string info = t.width.ToString() + "x" + t.height.ToString();
-            TextureFormat format = TextureUtil.GetTextureFormat(t);
-            info += "  " + TextureUtil.GetTextureFormatString(format);
+            GraphicsFormat format = GraphicsFormatUtility.GetFormat(t);
+            info += "  " + GraphicsFormatUtility.GetFormatString(format);
             return info;
         }
     }

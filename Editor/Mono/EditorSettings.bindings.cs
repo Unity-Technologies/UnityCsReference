@@ -172,6 +172,9 @@ namespace UnityEditor
         public static extern int etcTextureBestCompressor {[NativeMethod("GetEtcTextureBestCompressorNoOffset")] get; set; }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern bool enableTextureStreamingInEditMode { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern bool enableTextureStreamingInPlayMode { get; set; }
 
         public static string[] projectGenerationUserExtensions

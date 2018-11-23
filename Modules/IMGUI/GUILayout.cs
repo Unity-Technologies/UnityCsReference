@@ -119,8 +119,10 @@ namespace UnityEngine
         public static int Toolbar(int selected, string[] texts, GUIStyle style, GUI.ToolbarButtonSize buttonSize, params GUILayoutOption[] options)   { return Toolbar(selected, GUIContent.Temp(texts), style, buttonSize, options); }
         public static int Toolbar(int selected, Texture[] images, GUIStyle style, GUI.ToolbarButtonSize buttonSize, params GUILayoutOption[] options) { return Toolbar(selected, GUIContent.Temp(images), style, buttonSize, options); }
         public static int Toolbar(int selected, GUIContent[] contents, GUIStyle style, params GUILayoutOption[] options) { return Toolbar(selected, contents, style, GUI.ToolbarButtonSize.Fixed, options); }
-        // Make a toolbar
-        public static int Toolbar(int selected, GUIContent[] contents, GUIStyle style, GUI.ToolbarButtonSize buttonSize, params GUILayoutOption[] options)
+        public static int Toolbar(int selected, GUIContent[] contents, GUIStyle style, GUI.ToolbarButtonSize buttonSize, params GUILayoutOption[] options) { return Toolbar(selected, contents, null, style, buttonSize, options); }
+        public static int Toolbar(int selected, GUIContent[] contents, bool[] enabled, GUIStyle style, params GUILayoutOption[] options) { return Toolbar(selected, contents, enabled, style, GUI.ToolbarButtonSize.Fixed, options); }
+
+        public static int Toolbar(int selected, GUIContent[] contents, bool[] enabled, GUIStyle style, GUI.ToolbarButtonSize buttonSize, params GUILayoutOption[] options)
         {
             GUIStyle firstStyle, midStyle, lastStyle;
             GUI.FindStyles(ref style, out firstStyle, out midStyle, out lastStyle, "left", "mid", "right");
@@ -171,7 +173,7 @@ namespace UnityEngine
                     break;
             }
 
-            return GUI.Toolbar(GUILayoutUtility.GetRect(size.x, size.y, style, options), selected, contents, style, buttonSize);
+            return GUI.Toolbar(GUILayoutUtility.GetRect(size.x, size.y, style, options), selected, contents, null, style, buttonSize, enabled);
         }
 
         public static int SelectionGrid(int selected, string[] texts, int xCount, params GUILayoutOption[] options)                    { return SelectionGrid(selected, GUIContent.Temp(texts), xCount, GUI.skin.button, options); }

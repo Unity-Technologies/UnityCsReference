@@ -629,6 +629,7 @@ namespace UnityEditor
                 rect.xMax -=
                     GameObjectTreeViewGUI.GameObjectStyles.rightArrow.fixedWidth +
                     GameObjectTreeViewGUI.GameObjectStyles.rightArrow.margin.horizontal;
+
                 EditorApplication.hierarchyWindowItemOnGUI(instanceID, rect);
             }
         }

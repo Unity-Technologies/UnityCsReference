@@ -57,8 +57,8 @@ namespace UnityEditor.Experimental.GraphView
             m_TitleEditor = titleContainer.Q(name: "titleField") as TextField;
             m_TitleEditor.visible = false;
 
-            m_TitleEditor.Q("unity-text-input").RegisterCallback<FocusOutEvent>(e => { OnEditTitleFinished(); });
-            m_TitleEditor.Q("unity-text-input").RegisterCallback<KeyDownEvent>(TitleEditorOnKeyDown);
+            m_TitleEditor.Q(TextField.textInputUssName).RegisterCallback<FocusOutEvent>(e => { OnEditTitleFinished(); });
+            m_TitleEditor.Q(TextField.textInputUssName).RegisterCallback<KeyDownEvent>(TitleEditorOnKeyDown);
 
             VisualElement contentContainerPlaceholder = this.Q(name: "contentContainerPlaceholder");
             contentContainerPlaceholder.Insert(0, m_DropArea);
@@ -114,10 +114,10 @@ namespace UnityEditor.Experimental.GraphView
             {
                 case KeyCode.Escape:
                     m_EditTitleCancelled = true;
-                    m_TitleEditor.Q("unity-text-input").Blur();
+                    m_TitleEditor.Q(TextField.textInputUssName).Blur();
                     break;
                 case KeyCode.Return:
-                    m_TitleEditor.Q("unity-text-input").Blur();
+                    m_TitleEditor.Q(TextField.textInputUssName).Blur();
                     break;
                 default:
                     break;

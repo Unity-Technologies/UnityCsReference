@@ -5,6 +5,7 @@
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEditorInternal;
+using UnityEditor.EditorTools;
 
 namespace UnityEditor
 {
@@ -37,12 +38,13 @@ namespace UnityEditor
         Scale = 3,
         Rect = 4,
         Transform = 5,
+        Custom = 6,
         None = -1
     }
 
     public sealed partial class Tools : ScriptableObject
     {
-        private static Tools get
+        static Tools get
         {
             get
             {
@@ -54,25 +56,21 @@ namespace UnityEditor
                 return s_Get;
             }
         }
-        private static Tools s_Get;
 
+        static Tools s_Get;
         internal delegate void OnToolChangedFunc(Tool from, Tool to);
         internal static OnToolChangedFunc onToolChanged;
 
         public static Tool current
         {
             get { return get.currentTool; }
-            set
-            {
-                if (get.currentTool != value)
-                {
-                    Tool oldTool = get.currentTool;
-                    get.currentTool = value;
-                    if (onToolChanged != null)
-                        onToolChanged(oldTool, value);
-                    Tools.RepaintAllToolViews();
-                }
-            }
+            set { EditorToolContext.activeTool = EditorToolUtility.GetEditorToolWithEnum(value); }
+        }
+
+        internal static void SyncToolEnum()
+        {
+            get.currentTool = EditorToolUtility.GetEnumWithEditorTool(EditorToolContext.GetActiveTool());
+            RepaintAllToolViews();
         }
 
         public static ViewTool viewTool
@@ -388,6 +386,11 @@ namespace UnityEditor
             pivotRotation = (PivotRotation)EditorPrefs.GetInt("PivotRotation", 0);
             visibleLayers = EditorPrefs.GetInt("VisibleLayers", -1);
             lockedLayers = EditorPrefs.GetInt("LockedLayers", 0);
+            EditorToolContext.toolChanged += (from, to) =>
+            {
+                if (onToolChanged != null)
+                    onToolChanged(EditorToolUtility.GetEnumWithEditorTool(from), EditorToolUtility.GetEnumWithEditorTool(to));
+            };
         }
 
         internal static void OnSelectionChange()
@@ -474,8 +477,7 @@ namespace UnityEditor
 
         internal static void RepaintAllToolViews()
         {
-            if (Toolbar.get)
-                Toolbar.get.Repaint();
+            Toolbar.RepaintToolbar();
             SceneView.RepaintAll();
             InspectorWindow.RepaintAllInspectors();
         }

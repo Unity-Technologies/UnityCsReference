@@ -4,8 +4,7 @@
 
 using System;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleSheets;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.ShortcutManagement
 {
@@ -49,7 +48,7 @@ namespace UnityEditor.ShortcutManagement
 
             m_Header = new TextElement();
             StyleUtility.NormalTextColor(m_Header);
-            m_Header.style.fontStyleAndWeight = StyleValue<FontStyle>.Create(FontStyle.Bold);
+            m_Header.style.unityFontStyleAndWeight = FontStyle.Bold;
             m_Header.style.paddingBottom = m_Header.style.paddingTop = 10;
 
             var spacer = new VisualElement();
@@ -69,7 +68,7 @@ namespace UnityEditor.ShortcutManagement
             m_TextField = new TextField();
             m_TextField.style.flexGrow = 1;
             m_TextField.style.height = 16;
-            m_TextField.OnValueChanged(OnTextFieldValueChanged);
+            m_TextField.RegisterValueChangedCallback(OnTextFieldValueChanged);
             m_TextField.RegisterCallback<KeyDownEvent>(OnTextFieldKeyDown);
 
             textContainer.Add(m_ValueLabel);
@@ -94,16 +93,19 @@ namespace UnityEditor.ShortcutManagement
             cancelButton.style.flexGrow = 1;
             cancelButton.style.height = 20;
 
+
             buttons.Add(buttonSpacer);
             buttons.Add(buttonSpacer2);
             if (SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX)
             {
                 buttons.Add(cancelButton);
+                m_SubmitButton.style.marginLeft = 6;
                 buttons.Add(m_SubmitButton);
             }
             else
             {
                 buttons.Add(m_SubmitButton);
+                cancelButton.style.marginLeft = 6;
                 buttons.Add(cancelButton);
             }
 
@@ -113,7 +115,7 @@ namespace UnityEditor.ShortcutManagement
             root.Add(textContainer);
             root.Add(buttons);
 
-            rootVisualContainer.Add(root);
+            rootVisualElement.Add(root);
         }
 
         void UpdateValidation()

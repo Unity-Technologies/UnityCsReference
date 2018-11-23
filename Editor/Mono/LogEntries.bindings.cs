@@ -36,6 +36,7 @@ namespace UnityEditor
     internal sealed class LogEntries
     {
         public static extern void RowGotDoubleClicked(int index);
+        public static extern void OpenFileOnSpecificLine(string filePath, int line);
 
         [FreeFunction]
         public static extern string GetStatusText();

@@ -83,7 +83,23 @@ namespace UnityEngine
         {
             get
             {
-                return GetActiveImp(nativeDisplay);
+                return GetActiveImpl(nativeDisplay);
+            }
+        }
+
+        public bool requiresBlitToBackbuffer
+        {
+            get
+            {
+                return RequiresBlitToBackbufferImpl(nativeDisplay);
+            }
+        }
+
+        public bool requiresSrgbBlitToBackbuffer
+        {
+            get
+            {
+                return RequiresSrgbBlitToBackbufferImpl(nativeDisplay);
             }
         }
 
@@ -175,6 +191,12 @@ namespace UnityEngine
         extern private static int RelativeMouseAtImpl(int x, int y, out int rx, out int ry);
 
         [FreeFunction("UnityDisplayManager_DisplayActive")]
-        extern private static bool GetActiveImp(IntPtr nativeDisplay);
+        extern private static bool GetActiveImpl(IntPtr nativeDisplay);
+
+        [FreeFunction("UnityDisplayManager_RequiresBlitToBackbuffer")]
+        extern private static bool RequiresBlitToBackbufferImpl(IntPtr nativeDisplay);
+
+        [FreeFunction("UnityDisplayManager_RequiresSRGBBlitToBackbuffer")]
+        extern private static bool RequiresSrgbBlitToBackbufferImpl(IntPtr nativeDisplay);
     }
 }

@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using System.Collections.Generic;
 using UnityEditor.Experimental.U2D;
 using UnityEditor.U2D.Interface;
@@ -550,7 +551,7 @@ namespace UnityEditor
 
             SavedRenderTargetState savedRTState = new SavedRenderTargetState();
 
-            RenderTexture tmp = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.Default, RenderTextureReadWrite.Default);
+            RenderTexture tmp = RenderTexture.GetTemporary(width, height, 0, SystemInfo.GetGraphicsFormat(DefaultFormat.LDR));
             RenderTexture.active = tmp;
             GL.Clear(true, true, new Color(0f, 0f, 0f, 0.1f));
 
@@ -612,8 +613,7 @@ namespace UnityEditor
                 width,
                 height,
                 0,
-                RenderTextureFormat.Default,
-                RenderTextureReadWrite.sRGB);
+                SystemInfo.GetGraphicsFormat(DefaultFormat.LDR));
 
             Graphics.Blit(original, tmp);
 

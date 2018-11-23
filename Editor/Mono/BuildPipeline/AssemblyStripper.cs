@@ -81,6 +81,7 @@ namespace UnityEditorInternal
             args.Add($"--dotnetruntime={GetRuntimeArgumentValueForLinker(buildTargetGroup)}");
             args.Add($"--dotnetprofile={GetProfileArgumentValueForLinker(buildTargetGroup)}");
             args.Add("--use-editor-options");
+            args.Add($"--include-directory={CommandLineFormatter.PrepareFileName(workingDirectory)}");
 
             if (EditorUserBuildSettings.allowDebugging)
                 args.Add("--editor-settings-flag=AllowDebugging");
@@ -418,7 +419,7 @@ namespace UnityEditorInternal
                 sb.AppendLine($"\t<assembly fullname=\"{Path.GetFileNameWithoutExtension(assemblyTypePair.Key)}\">");
                 foreach (var type in assemblyTypePair.Value)
                 {
-                    sb.AppendLine($"\t\t<type fullname=\"{type}\"/>");
+                    sb.AppendLine($"\t\t<type fullname=\"{type}\" preserve=\"nothing\"/>");
                 }
                 sb.AppendLine("\t</assembly>");
             }

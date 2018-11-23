@@ -20,9 +20,9 @@ namespace UnityEngine.UIElements
         Active    = 1 << 0,     // control is currently pressed in the case of a button
         Hover     = 1 << 1,     // mouse is over control, set and removed from dispatcher automatically
         Checked   = 1 << 3,     // usually associated with toggles of some kind to change visible style
-        Selected  = 1 << 4,     // selected, used to denote the current selected state and associate a visual style from CSS
         Disabled  = 1 << 5,     // control will not respond to user input
         Focus     = 1 << 6,     // control has the keyboard focus. This is activated deactivated by the dispatcher automatically
+        Root      = 1 << 7,     // set on the root visual element
     }
 
     public enum PickingMode
@@ -506,7 +506,16 @@ namespace UnityEngine.UIElements
                 {
                     var type = GetType();
                     bool isGeneric = type.IsGenericType;
-                    m_TypeName = isGeneric ? type.Name.Remove(type.Name.IndexOf('`')) : type.Name;
+                    m_TypeName = type.Name;
+
+                    if (isGeneric)
+                    {
+                        int genericTypeIndex = m_TypeName.IndexOf('`');
+                        if (genericTypeIndex >= 0)
+                        {
+                            m_TypeName = m_TypeName.Remove(genericTypeIndex);
+                        }
+                    }
                 }
 
                 return m_TypeName;
@@ -529,7 +538,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal VisualElementStylesData effectiveStyle
+        internal VisualElementStylesData specifiedStyle
         {
             get
             {
@@ -537,12 +546,18 @@ namespace UnityEngine.UIElements
             }
         }
 
+        // Styles that children inherit
+        internal InheritedStylesData propagatedStyle = InheritedStylesData.none;
+
+        // Styles inherited from the parent
+        internal InheritedStylesData inheritedStyle = InheritedStylesData.none;
+
         internal bool hasInlineStyle
         {
             get { return m_Style != m_SharedStyle; }
         }
 
-        internal IComputedStyle computedStyle { get { return m_Style; } }
+        internal ComputedStyle computedStyle { get; private set; }
 
         // Opacity is not fully supported so it's hidden from public API for now
         internal float opacity
@@ -561,6 +576,7 @@ namespace UnityEngine.UIElements
             controlid = ++s_NextId;
 
             hierarchy = new Hierarchy(this);
+            computedStyle = new ComputedStyle(this);
 
             m_ClassList = s_EmptyClassList;
             m_FullTypeName = string.Empty;
@@ -974,11 +990,11 @@ namespace UnityEngine.UIElements
         {
             if (hasInlineStyle)
             {
-                effectiveStyle.SyncWithLayout(yogaNode);
+                specifiedStyle.SyncWithLayout(yogaNode);
             }
             else
             {
-                yogaNode.CopyStyle(effectiveStyle.yogaNode);
+                yogaNode.CopyStyle(specifiedStyle.yogaNode);
             }
         }
 
@@ -1001,8 +1017,6 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            int previousCustomStyleCount = m_Style.customPropertiesCount;
-
             if (hasInlineStyle)
             {
                 m_Style.Apply(sharedStyle, StylePropertyApplyMode.CopyIfNotInline);
@@ -1014,19 +1028,10 @@ namespace UnityEngine.UIElements
 
             m_SharedStyle = sharedStyle;
 
-            if (previousCustomStyleCount > 0 || m_Style.customPropertiesCount > 0)
-            {
-                using (var evt = CustomStyleResolvedEvent.GetPooled())
-                {
-                    evt.target = this;
-                    SendEvent(evt);
-                }
-            }
-
             FinalizeLayout();
 
             // This is a pre-emptive since we do not know if style changes actually cause a repaint or a layout
-            // But thouse should be the only possible type of changes needed
+            // But those should be the only possible type of changes needed
             IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint);
         }
 

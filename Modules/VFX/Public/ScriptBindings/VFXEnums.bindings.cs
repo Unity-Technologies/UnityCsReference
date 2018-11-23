@@ -129,14 +129,20 @@ namespace UnityEngine.Experimental.VFX
         ValueNoise1D,
         ValueNoise2D,
         ValueNoise3D,
+        ValueCurlNoise2D,
+        ValueCurlNoise3D,
 
         PerlinNoise1D,
         PerlinNoise2D,
         PerlinNoise3D,
+        PerlinCurlNoise2D,
+        PerlinCurlNoise3D,
 
-        SimplexNoise1D,
-        SimplexNoise2D,
-        SimplexNoise3D,
+        CellularNoise1D,
+        CellularNoise2D,
+        CellularNoise3D,
+        CellularCurlNoise2D,
+        CellularCurlNoise3D,
 
         VoroNoise2D,
 

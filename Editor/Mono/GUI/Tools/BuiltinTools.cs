@@ -3,17 +3,53 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
+using UnityEditor.EditorTools;
 using UnityEditor.SceneManagement;
-using UnityEditorInternal;
 
 namespace UnityEditor
 {
-    internal abstract class ManipulationTool
+    [CustomEditor(typeof(ManipulationTool<>), true)]
+    class ManipulationToolCustomEditor : Editor
     {
-        protected virtual void OnToolGUI(SceneView view)
+        const float k_PivotButtonsWidth = 128f;
+        const float k_Padding = 4;
+        GUIContent m_HandlePositionAndRotation = EditorGUIUtility.TrTextContent("Handle Position and Rotation");
+
+        public override void OnInspectorGUI()
         {
-            if (!Selection.activeTransform || Tools.s_Hidden)
+            var labelWidth = Mathf.Max(EditorGUIUtility.labelWidth, EditorStyles.label.CalcSize(m_HandlePositionAndRotation).x + k_Padding);
+
+            Rect m_Rect = new Rect(k_Padding, k_Padding, labelWidth, EditorGUIUtility.singleLineHeight);
+
+            m_Rect = EditorToolGUI.GetThinArea(m_Rect);
+
+            GUI.Label(m_Rect, m_HandlePositionAndRotation);
+
+            m_Rect.x += m_Rect.width;
+
+            m_Rect.width = k_PivotButtonsWidth;
+
+            m_Rect = EditorToolGUI.GetThinArea(m_Rect);
+
+            EditorToolGUI.DoBuiltinToolSettings(m_Rect);
+        }
+    }
+
+    [CustomEditor(typeof(ViewModeTool))]
+    class ViewModeToolCustomEditor : Editor
+    {
+        public override void OnInspectorGUI()
+        {
+        }
+    }
+
+    internal abstract class ManipulationTool<T> : EditorTool where T : EditorTool
+    {
+        public override void OnToolGUI(EditorWindow window)
+        {
+            var view = window as SceneView;
+
+            if (!view || !Selection.activeTransform || Tools.s_Hidden)
                 return;
 
             if (!StageUtility.IsGameObjectRenderedByCamera(Selection.activeTransform.gameObject, Camera.current))
@@ -30,10 +66,10 @@ namespace UnityEditor
             }
         }
 
-        public abstract void ToolGUI(SceneView view, Vector3 handlePosition, bool isStatic);
+        protected abstract void ToolGUI(SceneView view, Vector3 handlePosition, bool isStatic);
     }
 
-    internal class ManipulationToolUtility
+    static class ManipulationToolUtility
     {
         public static Vector3 minDragDifference { get; set; }
         public static void SetMinDragDifferenceForPos(Vector3 position)
@@ -88,19 +124,32 @@ namespace UnityEditor
         }
     }
 
-    internal class TransformTool : ManipulationTool
+    class NoneTool : EditorTool
     {
-        static TransformTool s_Instance;
+        public override GUIContent toolbarIcon
+        {
+            get { return GUIContent.none; }
+        }
+    }
+
+    class ViewModeTool : EditorTool
+    {
+        public override GUIContent toolbarIcon
+        {
+            get { return GUIContent.none; }
+        }
+    }
+
+    class TransformTool : ManipulationTool<TransformTool>
+    {
         static Vector3 s_Scale;
 
-        public static void OnGUI(SceneView view)
+        public override GUIContent toolbarIcon
         {
-            if (s_Instance == null)
-                s_Instance = new TransformTool();
-            s_Instance.OnToolGUI(view);
+            get { return EditorGUIUtility.TrTextContentWithIcon("Transform Tool", "Transform Tool", "TransformTool"); }
         }
 
-        public override void ToolGUI(SceneView view, Vector3 handlePosition, bool isStatic)
+        protected override void ToolGUI(SceneView view, Vector3 handlePosition, bool isStatic)
         {
             var ids = Handles.TransformHandleIds.Default;
             TransformManipulator.BeginManipulationHandling(false);
@@ -170,17 +219,14 @@ namespace UnityEditor
         }
     }
 
-    internal class MoveTool : ManipulationTool
+    class MoveTool : ManipulationTool<MoveTool>
     {
-        private static MoveTool s_Instance;
-        public static void OnGUI(SceneView view)
+        public override GUIContent toolbarIcon
         {
-            if (s_Instance == null)
-                s_Instance = new MoveTool();
-            s_Instance.OnToolGUI(view);
+            get { return EditorGUIUtility.TrTextContentWithIcon("Move Tool", "Move Tool", "MoveTool"); }
         }
 
-        public override void ToolGUI(SceneView view, Vector3 handlePosition, bool isStatic)
+        protected override void ToolGUI(SceneView view, Vector3 handlePosition, bool isStatic)
         {
             TransformManipulator.BeginManipulationHandling(false);
             EditorGUI.BeginChangeCheck();
@@ -208,17 +254,14 @@ namespace UnityEditor
         }
     }
 
-    internal class RotateTool : ManipulationTool
+    class RotateTool : ManipulationTool<RotateTool>
     {
-        private static RotateTool s_Instance;
-        public static void OnGUI(SceneView view)
+        public override GUIContent toolbarIcon
         {
-            if (s_Instance == null)
-                s_Instance = new RotateTool();
-            s_Instance.OnToolGUI(view);
+            get { return EditorGUIUtility.TrTextContentWithIcon("Rotate Tool", "Rotate Tool", "RotateTool"); }
         }
 
-        public override void ToolGUI(SceneView view, Vector3 handlePosition, bool isStatic)
+        protected override void ToolGUI(SceneView view, Vector3 handlePosition, bool isStatic)
         {
             if (Tools.pivotRotation == PivotRotation.Global && Event.current.GetTypeForControl(GUIUtility.hotControl) == EventType.MouseUp)
             {
@@ -267,19 +310,16 @@ namespace UnityEditor
         }
     }
 
-    internal class ScaleTool : ManipulationTool
+    class ScaleTool : ManipulationTool<ScaleTool>
     {
-        private static ScaleTool s_Instance;
-        public static void OnGUI(SceneView view)
+        public override GUIContent toolbarIcon
         {
-            if (s_Instance == null)
-                s_Instance = new ScaleTool();
-            s_Instance.OnToolGUI(view);
+            get { return EditorGUIUtility.TrTextContentWithIcon("Scale Tool", "Scale Tool", "ScaleTool"); }
         }
 
         private static Vector3 s_CurrentScale = Vector3.one;
 
-        public override void ToolGUI(SceneView view, Vector3 handlePosition, bool isStatic)
+        protected override void ToolGUI(SceneView view, Vector3 handlePosition, bool isStatic)
         {
             // Allow global space scaling for multi-selection but not for a single object
             Quaternion handleRotation = Selection.transforms.Length > 1 ?
@@ -303,10 +343,8 @@ namespace UnityEditor
         }
     }
 
-    internal class RectTool : ManipulationTool
+    class RectTool : ManipulationTool<RectTool>
     {
-        private static RectTool s_Instance;
-
         internal const string kChangingLeft = "ChangingLeft";
         internal const string kChangingRight = "ChangingRight";
         internal const string kChangingTop = "ChangingTop";
@@ -319,11 +357,9 @@ namespace UnityEditor
 
         const float kMinVisibleSize = 0.2f;
 
-        public static void OnGUI(SceneView view)
+        public override GUIContent toolbarIcon
         {
-            if (s_Instance == null)
-                s_Instance = new RectTool();
-            s_Instance.OnToolGUI(view);
+            get { return EditorGUIUtility.TrTextContentWithIcon("Rect Tool", "Rect Tool", "RectTool"); }
         }
 
         public static Vector2 GetLocalRectPoint(Rect rect, int index)
@@ -338,7 +374,7 @@ namespace UnityEditor
             return Vector3.zero;
         }
 
-        public override void ToolGUI(SceneView view, Vector3 handlePosition, bool isStatic)
+        protected override void ToolGUI(SceneView view, Vector3 handlePosition, bool isStatic)
         {
             Rect rect = Tools.handleRect;
             Quaternion rectRotation = Tools.handleRectRotation;

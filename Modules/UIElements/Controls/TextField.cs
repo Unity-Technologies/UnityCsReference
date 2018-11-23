@@ -26,30 +26,13 @@ namespace UnityEngine.UIElements
                 base.Init(ve, bag, cc);
             }
         }
-        // Multiline (lossy behaviour when deactivated)
-        bool m_Multiline;
 
         public bool multiline
         {
-            get { return m_Multiline; }
-            set
-            {
-                m_Multiline = value;
-                if (!value)
-                    text = text.Replace("\n", "");
-            }
+            get { return textInput.multiline; }
+            set { textInput.multiline = value; }
         }
 
-        // Password field (indirectly lossy behaviour when activated via multiline)
-        public override bool isPasswordField
-        {
-            set
-            {
-                base.isPasswordField = value;
-                if (value)
-                    multiline = false;
-            }
-        }
 
         public void SelectRange(int rangeCursorIndex, int selectionIndex)
         {
@@ -68,7 +51,7 @@ namespace UnityEngine.UIElements
             : this(label, kMaxLengthNone, false, false, char.MinValue) {}
 
         public TextField(string label, int maxLength, bool multiline, bool isPasswordField, char maskChar)
-            : base(label, maxLength, maskChar, new TextInput() { name = "unity-text-input" })
+            : base(label, maxLength, maskChar, new TextInput())
         {
             AddToClassList(ussClassName);
             pickingMode = PickingMode.Ignore;
@@ -107,8 +90,32 @@ namespace UnityEngine.UIElements
 
         class TextInput : TextInputBase
         {
-            TextField parentTextField => (TextField)parentField;
+            TextField parentTextField => (TextField)parent;
 
+            // Multiline (lossy behaviour when deactivated)
+            bool m_Multiline;
+
+            public bool multiline
+            {
+                get { return m_Multiline; }
+                set
+                {
+                    m_Multiline = value;
+                    if (!value)
+                        text = text.Replace("\n", "");
+                }
+            }
+
+            // Password field (indirectly lossy behaviour when activated via multiline)
+            public override bool isPasswordField
+            {
+                set
+                {
+                    base.isPasswordField = value;
+                    if (value)
+                        multiline = false;
+                }
+            }
             internal TextInput()
                 : base()
             {

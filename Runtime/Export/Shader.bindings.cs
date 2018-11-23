@@ -52,6 +52,8 @@ namespace UnityEngine
 
         [FreeFunction(Name = "ShaderScripting::PropertyToID", IsThreadSafe = true)] extern public static int PropertyToID(string name);
 
+        extern public Shader GetDependency(string name);
+
         [NativeProperty("CustomEditorName")] extern internal string customEditor { get; }
     }
 
@@ -157,6 +159,8 @@ namespace UnityEngine
         [FreeFunction("MaterialScripting::GetShaderKeywords", HasExplicitThis = true)] extern private string[] GetShaderKeywords();
         [FreeFunction("MaterialScripting::SetShaderKeywords", HasExplicitThis = true)] extern private void SetShaderKeywords(string[] names);
         public string[] shaderKeywords { get { return GetShaderKeywords(); } set { SetShaderKeywords(value); } }
+
+        extern public int ComputeCRC();
 
         [FreeFunction("MaterialScripting::GetTexturePropertyNames", HasExplicitThis = true)]
         extern public String[] GetTexturePropertyNames();

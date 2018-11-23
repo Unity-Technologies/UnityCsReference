@@ -16,7 +16,6 @@ namespace UnityEditor
         bool m_TargetAbove;
         int m_TargetIndex = -1;
         int m_LastIndex = -1;
-        float m_LastMarkerY = 0f;
 
         enum DraggingMode
         {
@@ -48,21 +47,39 @@ namespace UnityEditor
             var markerY = contentRect.yMax;
 
             m_LastIndex = editorIndex;
-            m_LastMarkerY = markerY;
 
             HandleEditorDragging(editors, editorIndex, targetRect, markerY, false);
         }
 
-        public void HandleDraggingToBottomArea(Editor[] editors, Rect bottomRect)
+        public void HandleDraggingInBottomArea(Editor[] editors, Rect bottomRect, Rect contentRect)
         {
-            var editorIndex = m_LastIndex;
-            if (editorIndex >= 0 && editorIndex < editors.Length)
-                HandleEditorDragging(editors, editorIndex, bottomRect, m_LastMarkerY, true);
+            if (m_LastIndex >= 0 && m_LastIndex < editors.Length)
+            {
+                m_BottomArea = bottomRect;
+                HandleEditorDragging(editors, m_LastIndex, bottomRect, contentRect.yMax, true);
+            }
+            else
+            {
+                m_BottomArea = Rect.zero;
+            }
+        }
+
+        Rect m_BottomArea;
+
+        internal void HandleDragPerformInBottomArea(Editor[] editors, Rect targetRect)
+        {
+            if (m_LastIndex >= 0 && m_LastIndex  < editors.Length)
+            {
+                HandleEditorDragging(editors, m_LastIndex, GetTargetRect(targetRect), targetRect.yMax, true);
+            }
+
+            m_BottomArea = Rect.zero;
         }
 
         void HandleEditorDragging(Editor[] editors, int editorIndex, Rect targetRect, float markerY, bool bottomTarget)
         {
             var evt = Event.current;
+
             switch (evt.type)
             {
                 case EventType.DragUpdated:
@@ -161,78 +178,7 @@ namespace UnityEditor
                 case EventType.DragPerform:
                     if (m_TargetIndex != -1)
                     {
-                        var draggingMode = DragAndDrop.GetGenericData(k_DraggingModeKey) as DraggingMode ? ;
-                        if (!draggingMode.HasValue || draggingMode.Value == DraggingMode.NotApplicable)
-                        {
-                            m_TargetIndex = -1;
-                            return;
-                        }
-
-                        if (!editors[m_TargetIndex].targets.All(t => t is Component))
-                            return;
-
-                        var targetComponents = editors[m_TargetIndex].targets.Cast<Component>().ToArray();
-
-                        if (draggingMode.Value == DraggingMode.Script)
-                        {
-                            var scripts = DragAndDrop.objectReferences.Cast<MonoScript>();
-
-                            // Ensure all script components can be added
-                            var valid = true;
-                            foreach (var targetComponent in targetComponents)
-                            {
-                                var gameObject = targetComponent.gameObject;
-                                if (scripts.Any(s => !ComponentUtility.WarnCanAddScriptComponent(targetComponent.gameObject, s)))
-                                {
-                                    valid = false;
-                                    break;
-                                }
-                            }
-
-                            if (valid)
-                            {
-                                Undo.IncrementCurrentGroup();
-                                var undoGroup = Undo.GetCurrentGroup();
-
-                                // Add script components
-                                var index = 0;
-                                var addedComponents = new Component[targetComponents.Length * scripts.Count()];
-                                for (int i = 0; i < targetComponents.Length; i++)
-                                {
-                                    var targetComponent = targetComponents[i];
-                                    var gameObject = targetComponent.gameObject;
-                                    bool targetIsTransform = targetComponent is Transform;
-                                    foreach (var script in scripts)
-                                        addedComponents[index++] = ObjectFactory.AddComponent(gameObject, script.GetClass());
-
-                                    // If the target is a Transform, the AddComponent might have replaced it with a RectTransform.
-                                    // Handle this possibility by updating the target component.
-                                    if (targetIsTransform)
-                                        targetComponents[i] = gameObject.transform;
-                                }
-
-                                // Move added components relative to target components
-                                if (!ComponentUtility.MoveComponentsRelativeToComponents(addedComponents, targetComponents, m_TargetAbove))
-                                {
-                                    // Revert added components if move operation fails (e.g. user aborts when asked to break prefab instance)
-                                    Undo.RevertAllDownToGroup(undoGroup);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            // Handle dragging components
-                            var sourceComponents = DragAndDrop.objectReferences.Cast<Component>().ToArray();
-                            if (sourceComponents.Length == 0 || targetComponents.Length == 0)
-                                return;
-
-                            MoveOrCopyComponents(sourceComponents, targetComponents, EditorUtility.EventHasDragCopyModifierPressed(evt), false);
-                        }
-
-                        m_TargetIndex = -1;
-                        DragAndDrop.AcceptDrag();
-                        evt.Use();
-                        EditorGUIUtility.ExitGUI();
+                        HandleDragPerformEvent(editors, evt, ref m_TargetIndex);
                     }
                     break;
 
@@ -241,7 +187,10 @@ namespace UnityEditor
                     break;
 
                 case EventType.Repaint:
-                    if (m_TargetIndex != -1 && targetRect.Contains(evt.mousePosition))
+                    if (m_TargetIndex != -1 &&
+                        (targetRect.Contains(evt.mousePosition) ||
+                         m_BottomArea.Contains(GUIClip.UnclipToWindow(evt.mousePosition)) &&
+                         editorIndex == editors.Length - 1))
                     {
                         Styles.insertionMarker.Draw(GetMarkerRect(targetRect, markerY, m_TargetAbove), false, false, false, false);
                     }
@@ -249,16 +198,96 @@ namespace UnityEditor
             }
         }
 
+        void HandleDragPerformEvent(Editor[] editors, Event evt, ref int targetIndex)
+        {
+            if (targetIndex != -1)
+            {
+                var draggingMode = DragAndDrop.GetGenericData(k_DraggingModeKey) as DraggingMode ? ;
+                if (!draggingMode.HasValue || draggingMode.Value == DraggingMode.NotApplicable)
+                {
+                    targetIndex = -1;
+                    return;
+                }
+
+                if (!editors[targetIndex].targets.All(t => t is Component))
+                    return;
+
+                var targetComponents = editors[targetIndex].targets.Cast<Component>().ToArray();
+
+                if (draggingMode.Value == DraggingMode.Script)
+                {
+                    var scripts = DragAndDrop.objectReferences.Cast<MonoScript>();
+
+                    // Ensure all script components can be added
+                    var valid = true;
+                    foreach (var targetComponent in targetComponents)
+                    {
+                        var gameObject = targetComponent.gameObject;
+                        if (scripts.Any(s => !ComponentUtility.WarnCanAddScriptComponent(targetComponent.gameObject, s)))
+                        {
+                            valid = false;
+                            break;
+                        }
+                    }
+
+                    if (valid)
+                    {
+                        Undo.IncrementCurrentGroup();
+                        var undoGroup = Undo.GetCurrentGroup();
+
+                        // Add script components
+                        var index = 0;
+                        var addedComponents = new Component[targetComponents.Length * scripts.Count()];
+                        for (int i = 0; i < targetComponents.Length; i++)
+                        {
+                            var targetComponent = targetComponents[i];
+                            var gameObject = targetComponent.gameObject;
+                            bool targetIsTransform = targetComponent is Transform;
+                            foreach (var script in scripts)
+                                addedComponents[index++] = ObjectFactory.AddComponent(gameObject, script.GetClass());
+
+                            // If the target is a Transform, the AddComponent might have replaced it with a RectTransform.
+                            // Handle this possibility by updating the target component.
+                            if (targetIsTransform)
+                                targetComponents[i] = gameObject.transform;
+                        }
+
+                        // Move added components relative to target components
+                        if (!ComponentUtility.MoveComponentsRelativeToComponents(addedComponents, targetComponents, m_TargetAbove))
+                        {
+                            // Revert added components if move operation fails (e.g. user aborts when asked to break prefab instance)
+                            Undo.RevertAllDownToGroup(undoGroup);
+                        }
+                    }
+                }
+                else
+                {
+                    // Handle dragging components
+                    var sourceComponents = DragAndDrop.objectReferences.Cast<Component>().ToArray();
+                    if (sourceComponents.Length == 0 || targetComponents.Length == 0)
+                        return;
+
+                    MoveOrCopyComponents(sourceComponents, targetComponents, EditorUtility.EventHasDragCopyModifierPressed(evt), false);
+                }
+
+                targetIndex = -1;
+                DragAndDrop.AcceptDrag();
+                evt.Use();
+                EditorGUIUtility.ExitGUI();
+            }
+        }
+
         private static Rect GetTargetRect(Rect contentRect)
         {
-            var targetHeight = 8f;
+            var targetHeight = 6f;
             var yPos = contentRect.yMax - targetHeight * .75f;
-            return new Rect(contentRect.x, yPos, contentRect.width, targetHeight * 2f + 1f);
+            var uiDragTargetHeight = targetHeight * .75f;
+            return new Rect(contentRect.x, yPos + uiDragTargetHeight / (targetHeight * .25f), contentRect.width, uiDragTargetHeight);
         }
 
         private static Rect GetMarkerRect(Rect targetRect, float markerY, bool targetAbove)
         {
-            var markerRect = new Rect(targetRect.x, markerY, targetRect.width, 3f);
+            var markerRect = new Rect(targetRect);
             if (!targetAbove)
                 markerRect.y += 2f;
 

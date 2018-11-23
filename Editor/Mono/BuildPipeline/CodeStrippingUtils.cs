@@ -67,7 +67,7 @@ namespace UnityEditor
         {
             // This function can be used to inject user-readable dependency information for specific classes which would not be obvious otherwise.
             // Can also be used to set up dependencies to modules which cannot be derived by the build pipeline without custom rules
-            if (UnityEngine.Connect.UnityConnectSettings.enabled || UnityEngine.Analytics.PerformanceReporting.enabled || UnityEngine.Analytics.Analytics.enabled)
+            if (UnityEngine.Connect.UnityConnectSettings.enabled || UnityEditor.CrashReporting.CrashReportingSettings.enabled || UnityEngine.Analytics.PerformanceReporting.enabled || UnityEngine.Analytics.Analytics.enabled)
             {
                 string requiredMessage = "Required by HW Statistics (See Player Settings)";
                 const string icon = "class/PlayerSettings";
@@ -75,10 +75,10 @@ namespace UnityEditor
                 {
                     requiredMessage = "Required by Analytics Performance Reporting (See Analytics Services Window)";
                     AddNativeModuleInStrippingInfo("PerformanceReporting", requiredMessage, strippingInfo, nativeModules, icon);
-
-                    requiredMessage = "Required by UnityAnalytics (See Services Window)";
-                    AddNativeModuleInStrippingInfo("UnityAnalytics", requiredMessage, strippingInfo, nativeModules, icon);
                 }
+                requiredMessage = "Required by UnityAnalytics (See Services Window)";
+                AddNativeModuleInStrippingInfo("UnityAnalytics", requiredMessage, strippingInfo, nativeModules, icon);
+
                 AddNativeModuleInStrippingInfo("UnityConnect", requiredMessage, strippingInfo, nativeModules, icon);
                 strippingInfo.RegisterDependency("UnityConnectSettings", "Required by UnityAnalytics");
             }

@@ -8,20 +8,9 @@ namespace UnityEngine.Rendering
 {
     public abstract class RenderPipelineAsset : ScriptableObject
     {
-        private readonly List<RenderPipeline> m_Pipelines = new List<RenderPipeline>();
-
-        internal void DestroyInstances()
-        {
-            foreach (var pipeline in m_Pipelines)
-                pipeline.Dispose();
-            m_Pipelines.Clear();
-        }
-
         internal RenderPipeline InternalCreatePipeline()
         {
             var pipeline = CreatePipeline();
-            if (pipeline != null)
-                m_Pipelines.Add(pipeline);
             return pipeline;
         }
 
@@ -55,16 +44,14 @@ namespace UnityEngine.Rendering
 
         protected abstract RenderPipeline CreatePipeline();
 
-        protected IEnumerable<RenderPipeline> instances => m_Pipelines;
-
         protected virtual void OnValidate()
         {
-            DestroyInstances();
+            RenderPipelineManager.CleanupRenderPipeline();
         }
 
         protected virtual void OnDisable()
         {
-            DestroyInstances();
+            RenderPipelineManager.CleanupRenderPipeline();
         }
     }
 }

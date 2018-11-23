@@ -69,12 +69,12 @@ namespace UnityEngine
 
         public bool Contains(Vector3Int position)
         {
-            return position.x >= m_Position.x
-                && position.y >= m_Position.y
-                && position.z >= m_Position.z
-                && position.x < m_Position.x + m_Size.x
-                && position.y < m_Position.y + m_Size.y
-                && position.z < m_Position.z + m_Size.z;
+            return position.x >= xMin
+                && position.y >= yMin
+                && position.z >= zMin
+                && position.x < xMax
+                && position.y < yMax
+                && position.z < zMax;
         }
 
         public override string ToString()

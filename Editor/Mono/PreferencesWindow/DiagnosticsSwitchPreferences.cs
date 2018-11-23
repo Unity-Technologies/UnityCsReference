@@ -4,25 +4,68 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor
 {
-    internal static class DiagnosticSwitchPreferences
+    internal class DiagnosticSwitchPreferences : SettingsProvider
     {
-        private const uint kMaxRangeForSlider = 10;
-
-        private static class Resources
+        private static class Styles
         {
             public static GUIStyle title = "OL Title";
             public static GUIStyle scrollArea = "OL Box";
             public static Texture2D smallWarningIcon;
             public static GUIContent restartNeededWarning = EditorGUIUtility.TrTextContent("Some settings will not take effect until you restart Unity.");
 
-            static Resources()
+            static Styles()
             {
                 smallWarningIcon = EditorGUIUtility.LoadIconRequired("console.warnicon.sml");
             }
+        }
+
+        private const uint kMaxRangeForSlider = 10;
+        bool m_HasAnyUnappliedSwitches;
+
+        public DiagnosticSwitchPreferences()
+            : base("Preferences/Diagnostics", SettingsScope.User)
+        {
+        }
+
+        public override bool HasSearchInterest(string searchContext)
+        {
+            var switches = new List<DiagnosticSwitch>();
+            Debug.GetDiagnosticSwitches(switches);
+            foreach (var diagSwitch in switches)
+            {
+                if (PassesFilter(diagSwitch, searchContext))
+                    return true;
+            }
+            return false;
+        }
+
+        public override void OnGUI(string searchContext)
+        {
+            m_HasAnyUnappliedSwitches = false;
+            using (new SettingsWindow.GUIScope())
+            {
+                var switches = new List<DiagnosticSwitch>();
+                Debug.GetDiagnosticSwitches(switches);
+                switches.Sort((a, b) => Comparer<string>.Default.Compare(a.name, b.name));
+
+                m_HasAnyUnappliedSwitches = switches.Any(HasUnappliedValues);
+                for (var i = 0; i < switches.Count; ++i)
+                {
+                    m_HasAnyUnappliedSwitches |= DisplaySwitch(switches[i]);
+                }
+            }
+        }
+
+        public override void OnFooterBarGUI()
+        {
+            var helpBox = GUILayoutUtility.GetRect(Styles.restartNeededWarning, EditorStyles.helpBox, GUILayout.MinHeight(40));
+            if (m_HasAnyUnappliedSwitches)
+                EditorGUI.HelpBox(helpBox, Styles.restartNeededWarning.text, MessageType.Warning);
         }
 
         private static bool PassesFilter(DiagnosticSwitch diagnosticSwitch, string filterString)
@@ -31,18 +74,27 @@ namespace UnityEditor
                 || SearchUtils.MatchSearchGroups(filterString, diagnosticSwitch.name);
         }
 
-        private static bool DisplaySwitch(DiagnosticSwitch diagnosticSwitch)
+        private static bool HasUnappliedValues(DiagnosticSwitch diagnosticSwitch)
+        {
+            return !Equals(diagnosticSwitch.value, diagnosticSwitch.persistentValue);
+        }
+
+        private bool DisplaySwitch(DiagnosticSwitch diagnosticSwitch)
         {
             var labelText = new GUIContent(diagnosticSwitch.name, diagnosticSwitch.name + "\n\n" + diagnosticSwitch.description);
-            bool hasUnappliedValue = !System.Object.Equals(diagnosticSwitch.value, diagnosticSwitch.persistentValue);
+            var hasUnappliedValue = HasUnappliedValues(diagnosticSwitch);
 
             EditorGUI.BeginChangeCheck();
 
             var rowRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.label, GUILayout.ExpandWidth(true));
             var warningRect = new Rect(rowRect.x, rowRect.y, rowRect.height, rowRect.height);
+            if (m_HasAnyUnappliedSwitches)
+            {
+                rowRect.x += warningRect.width;
+            }
 
             if (hasUnappliedValue && Event.current.type == EventType.Repaint)
-                GUI.DrawTexture(warningRect, Resources.smallWarningIcon);
+                GUI.DrawTexture(warningRect, Styles.smallWarningIcon);
 
             if (diagnosticSwitch.value is bool)
             {
@@ -129,42 +181,7 @@ namespace UnityEditor
         [SettingsProvider]
         internal static SettingsProvider CreateDiagnosticProvider()
         {
-            return new SettingsProvider("Preferences/Diagnostics", SettingsScope.User)
-            {
-                guiHandler = searchContext =>
-                {
-                    using (new SettingsWindow.GUIScope())
-                        OnGUI(searchContext);
-                },
-                hasSearchInterestHandler = searchContext =>
-                {
-                    var switches = new List<DiagnosticSwitch>();
-                    Debug.GetDiagnosticSwitches(switches);
-                    foreach (var diagSwitch in switches)
-                    {
-                        if (PassesFilter(diagSwitch, searchContext))
-                            return true;
-                    }
-                    return false;
-                }
-            };
-        }
-
-        private static void OnGUI(string searchContext)
-        {
-            List<DiagnosticSwitch> switches = new List<DiagnosticSwitch>();
-            Debug.GetDiagnosticSwitches(switches);
-            switches.Sort((a, b) => Comparer<string>.Default.Compare(a.name, b.name));
-
-            bool hasAnyUnappliedSwitches = false;
-            for (int i = 0; i < switches.Count; ++i)
-            {
-                hasAnyUnappliedSwitches |= DisplaySwitch(switches[i]);
-            }
-
-            var helpBox = GUILayoutUtility.GetRect(Resources.restartNeededWarning, EditorStyles.helpBox, GUILayout.MinHeight(40));
-            if (hasAnyUnappliedSwitches)
-                EditorGUI.HelpBox(helpBox, Resources.restartNeededWarning.text, MessageType.Warning);
+            return new DiagnosticSwitchPreferences();
         }
     }
 }

@@ -2343,11 +2343,11 @@ namespace UnityEngine
         internal Vector2 m_RelativeVelocity;
         internal int m_Enabled;
         internal int m_ContactCount;
-        internal ContactPoint2D[] m_RecycledContacts;
+        internal ContactPoint2D[] m_ReusedContacts;
         internal ContactPoint2D[] m_LegacyContacts;
 
         // Return the appropriate contacts array.
-        private ContactPoint2D[] GetContacts_Internal() { return m_LegacyContacts == null ? m_RecycledContacts : m_LegacyContacts; }
+        private ContactPoint2D[] GetContacts_Internal() { return m_LegacyContacts == null ? m_ReusedContacts : m_LegacyContacts; }
 
         // The first collider involved in the collision.
         public Collider2D collider { get { return Object.FindObjectFromInstanceID(m_Collider) as Collider2D; } }
@@ -2381,7 +2381,7 @@ namespace UnityEngine
                 if (m_LegacyContacts == null)
                 {
                     m_LegacyContacts = new ContactPoint2D[m_ContactCount];
-                    Array.Copy(m_RecycledContacts, m_LegacyContacts, m_ContactCount);
+                    Array.Copy(m_ReusedContacts, m_LegacyContacts, m_ContactCount);
                 }
 
                 return m_LegacyContacts;
@@ -2403,8 +2403,22 @@ namespace UnityEngine
         // Get contacts for this collision.
         public int GetContacts(ContactPoint2D[] contacts)
         {
+            if (contacts == null)
+                throw new NullReferenceException("Cannot get contacts as the provided array is NULL.");
+
             var contactCount = Mathf.Min(m_ContactCount, contacts.Length);
             Array.Copy(GetContacts_Internal(), contacts, contactCount);
+            return contactCount;
+        }
+
+        // Get contacts for this collision.
+        public int GetContacts(List<ContactPoint2D> contacts)
+        {
+            if (contacts == null)
+                throw new NullReferenceException("Cannot get contacts as the provided list is NULL.");
+
+            contacts.Clear();
+            contacts.AddRange(GetContacts_Internal());
             return contactCount;
         }
     };
@@ -2694,6 +2708,22 @@ namespace UnityEngine
 
         // The rotation of the rigidbody.
         extern public float rotation { get; set; }
+
+        public void SetRotation(float angle)
+        {
+            SetRotation_Angle(angle);
+        }
+
+        [NativeMethod("SetRotation")]
+        extern private void SetRotation_Angle(float angle);
+
+        public void SetRotation(Quaternion rotation)
+        {
+            SetRotation_Quaternion(rotation);
+        }
+
+        [NativeMethod("SetRotation")]
+        extern private void SetRotation_Quaternion(Quaternion rotation);
 
         // Moves the rigidbody to /position/ during the next fixed update.
         extern public void MovePosition(Vector2 position);

@@ -117,7 +117,7 @@ namespace UnityEngine.UIElements
 
         public void DrawBackground()
         {
-            IComputedStyle style = currentElement.computedStyle;
+            ComputedStyle style = currentElement.computedStyle;
 
             if (style.backgroundColor != Color.clear)
             {
@@ -135,7 +135,7 @@ namespace UnityEngine.UIElements
 
         public void DrawBorder()
         {
-            IComputedStyle style = currentElement.computedStyle;
+            ComputedStyle style = currentElement.computedStyle;
             if (style.borderColor != Color.clear && (style.borderLeftWidth.value > 0.0f || style.borderTopWidth.value > 0.0f || style.borderRightWidth.value > 0.0f || style.borderBottomWidth.value > 0.0f))
             {
                 var painterParams = RectStylePainterParameters.GetDefault(currentElement);

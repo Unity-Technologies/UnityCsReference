@@ -59,6 +59,7 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
+
         public Port input
         {
             get { return m_InputPort; }
@@ -301,49 +302,66 @@ namespace UnityEditor.Experimental.GraphView
             return pos;
         }
 
-        void TrackGraphElement(VisualElement e)
+        void OnTrackOnAttach(AttachToPanelEvent e)
         {
-            while (e != null)
+            Port port = (Port)e.target;
+            port.UnregisterCallback<AttachToPanelEvent>(OnTrackOnAttach);
+            DoTrackGraphElement(port);
+        }
+
+        void TrackGraphElement(Port port)
+        {
+            if (port.panel != null) // if the panel is null therefore the port is not yet attached to its hierarchy, so postpone the register
             {
-                if (e is GraphView.Layer)
-                {
-                    return;
-                }
-
-                if (e is Port)
-                {
-                    e.RegisterCallback<GeometryChangedEvent>(OnPortGeometryChanged);
-                }
-                else
-                {
-                    e.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
-                }
-
-
-                e = e.hierarchy.parent;
+                DoTrackGraphElement(port);
+            }
+            else
+            {
+                port.RegisterCallback<AttachToPanelEvent>(OnTrackOnAttach);
             }
         }
 
-        void UntrackGraphElement(VisualElement e)
+        void UntrackGraphElement(Port port)
         {
-            while (e != null)
+            port.UnregisterCallback<AttachToPanelEvent>(OnTrackOnAttach);
+            DoUntrackGraphElement(port);
+        }
+
+        void DoTrackGraphElement(Port port)
+        {
+            port.RegisterCallback<GeometryChangedEvent>(OnPortGeometryChanged);
+
+            VisualElement current = port.hierarchy.parent;
+            while (current != null)
             {
-                if (e is GraphView.Layer)
+                if (current is Node || current is GraphView.Layer)
                 {
-                    return;
+                    break;
                 }
+                current.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
 
-                if (e is Port)
-                {
-                    e.UnregisterCallback<GeometryChangedEvent>(OnPortGeometryChanged);
-                }
-                else
-                {
-                    e.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
-                }
-
-                e = e.hierarchy.parent;
+                current = current.hierarchy.parent;
             }
+
+            port.node.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+        }
+
+        void DoUntrackGraphElement(Port port)
+        {
+            port.UnregisterCallback<GeometryChangedEvent>(OnPortGeometryChanged);
+
+            VisualElement current = port.hierarchy.parent;
+            while (current != null)
+            {
+                if (current is Node || current is GraphView.Layer)
+                {
+                    break;
+                }
+                port.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+
+                current = current.hierarchy.parent;
+            }
+            port.node.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         }
 
         private void OnPortGeometryChanged(GeometryChangedEvent evt)

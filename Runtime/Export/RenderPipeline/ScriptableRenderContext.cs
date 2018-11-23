@@ -165,6 +165,12 @@ namespace UnityEngine.Rendering
             DrawSkybox_Internal(camera);
         }
 
+        public void DrawGizmos(Camera camera, GizmoSubset gizmoSubset)
+        {
+            Validate();
+            DrawGizmos_Internal(camera, gizmoSubset);
+        }
+
         public unsafe CullingResults Cull(ref ScriptableCullingParameters parameters)
         {
             var results = new CullingResults();

@@ -34,6 +34,24 @@ namespace UnityEditor
 
         private bool m_HasEmbeddedMaterials = false;
 
+        class ExternalObjectCache
+        {
+            public SerializedProperty materialProp = null;
+            public Material material = null;
+            public int propertyIdx = 0;
+        }
+
+        class MaterialCache
+        {
+            public string name;
+            public string type;
+            public string assembly;
+        }
+
+        List<MaterialCache> m_MaterialsCache = new List<MaterialCache>();
+        Dictionary<Tuple<string, string>, ExternalObjectCache> m_ExternalObjectsCache = new Dictionary<Tuple<string, string>, ExternalObjectCache>();
+        Object m_CacheCurrentTarget = null;
+
         static class Styles
         {
             public static GUIContent ImportMaterials = EditorGUIUtility.TrTextContent("Import Materials");
@@ -161,6 +179,45 @@ namespace UnityEditor
             m_SupportsEmbeddedMaterials = serializedObject.FindProperty("m_SupportsEmbeddedMaterials");
 
             m_UseSRGBMaterialColor = serializedObject.FindProperty("m_UseSRGBMaterialColor");
+
+            if (m_CacheCurrentTarget != target)
+            {
+                m_CacheCurrentTarget = target;
+                BuildMaterialsCache();
+                BuildExternalObjectsCache();
+            }
+        }
+
+        private void BuildMaterialsCache()
+        {
+            m_MaterialsCache.Clear();
+            for (int materialIdx = 0; materialIdx < m_Materials.arraySize; ++materialIdx)
+            {
+                var mat = new MaterialCache();
+                var id = m_Materials.GetArrayElementAtIndex(materialIdx);
+                mat.name = id.FindPropertyRelative("name").stringValue;
+                mat.type = id.FindPropertyRelative("type").stringValue;
+                mat.assembly = id.FindPropertyRelative("assembly").stringValue;
+                m_MaterialsCache.Add(mat);
+            }
+        }
+
+        private void BuildExternalObjectsCache()
+        {
+            m_ExternalObjectsCache.Clear();
+            for (int externalObjectIdx = 0, count = m_ExternalObjects.arraySize; externalObjectIdx < count; ++externalObjectIdx)
+            {
+                var pair = m_ExternalObjects.GetArrayElementAtIndex(externalObjectIdx);
+
+                var cachedObject = new ExternalObjectCache();
+                cachedObject.materialProp = pair.FindPropertyRelative("second");
+                cachedObject.material = cachedObject.materialProp != null ? cachedObject.materialProp.objectReferenceValue as Material : null;
+                cachedObject.propertyIdx = externalObjectIdx;
+                var externalName = pair.FindPropertyRelative("first.name").stringValue;
+                var externalType = pair.FindPropertyRelative("first.type").stringValue;
+
+                m_ExternalObjectsCache.Add(new Tuple<string, string>(externalName, externalType), cachedObject);
+            }
         }
 
         public override void OnInspectorGUI()
@@ -433,64 +490,60 @@ namespace UnityEditor
                 if (MaterialRemapOptons())
                     return;
 
-                // The list of material names is immutable, whereas the map of external objects can change based on user actions.
-                // For each material name, map the external object associated with it.
-                // The complexity comes from the fact that we may not have an external object in the map, so we can't make a property out of it
-                for (int materialIdx = 0; materialIdx < m_Materials.arraySize; ++materialIdx)
+                DoMaterialRemapList();
+            }
+        }
+
+        internal override void ResetValues()
+        {
+            BuildMaterialsCache();
+            BuildExternalObjectsCache();
+        }
+
+        void DoMaterialRemapList()
+        {
+            // The list of material names is immutable, whereas the map of external objects can change based on user actions.
+            // For each material name, map the external object associated with it.
+            // The complexity comes from the fact that we may not have an external object in the map, so we can't make a property out of it
+            for (int materialIdx = 0; materialIdx < m_MaterialsCache.Count; ++materialIdx)
+            {
+                var mat = m_MaterialsCache[materialIdx];
+
+                ExternalObjectCache cachedExternalObject;
+
+                GUIContent nameLabel = EditorGUIUtility.TextContent(mat.name);
+                nameLabel.tooltip = mat.name;
+
+                if (m_ExternalObjectsCache.TryGetValue(new Tuple<string, string>(mat.name, mat.type), out cachedExternalObject))
                 {
-                    var id = m_Materials.GetArrayElementAtIndex(materialIdx);
-                    var name = id.FindPropertyRelative("name").stringValue;
-                    var type = id.FindPropertyRelative("type").stringValue;
-                    var assembly = id.FindPropertyRelative("assembly").stringValue;
-
-                    SerializedProperty materialProp = null;
+                    EditorGUI.BeginChangeCheck();
+                    EditorGUILayout.ObjectField(cachedExternalObject.materialProp, typeof(Material), nameLabel);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        if (cachedExternalObject.materialProp.objectReferenceValue == null)
+                        {
+                            m_ExternalObjects.DeleteArrayElementAtIndex(cachedExternalObject.propertyIdx);
+                            BuildExternalObjectsCache();
+                        }
+                    }
+                }
+                else
+                {
                     Material material = null;
-                    var propertyIdx = 0;
-
-                    for (int externalObjectIdx = 0, count = m_ExternalObjects.arraySize; externalObjectIdx < count; ++externalObjectIdx)
+                    EditorGUI.BeginChangeCheck();
+                    material = EditorGUILayout.ObjectField(nameLabel, material, typeof(Material), false) as Material;
+                    if (EditorGUI.EndChangeCheck())
                     {
-                        var pair = m_ExternalObjects.GetArrayElementAtIndex(externalObjectIdx);
-                        var externalName = pair.FindPropertyRelative("first.name").stringValue;
-                        var externalType = pair.FindPropertyRelative("first.type").stringValue;
+                        if (material != null)
+                        {
+                            var newIndex = m_ExternalObjects.arraySize++;
+                            var pair = m_ExternalObjects.GetArrayElementAtIndex(newIndex);
+                            pair.FindPropertyRelative("first.name").stringValue = mat.name;
+                            pair.FindPropertyRelative("first.type").stringValue = mat.type;
+                            pair.FindPropertyRelative("first.assembly").stringValue = mat.assembly;
+                            pair.FindPropertyRelative("second").objectReferenceValue = material;
 
-                        if (externalName == name && externalType == type)
-                        {
-                            materialProp = pair.FindPropertyRelative("second");
-                            material = materialProp != null ? materialProp.objectReferenceValue as Material : null;
-                            propertyIdx = externalObjectIdx;
-                            break;
-                        }
-                    }
-
-                    GUIContent nameLabel = EditorGUIUtility.TextContent(name);
-                    nameLabel.tooltip = name;
-                    if (materialProp != null)
-                    {
-                        EditorGUI.BeginChangeCheck();
-                        EditorGUILayout.ObjectField(materialProp, typeof(Material), nameLabel);
-                        if (EditorGUI.EndChangeCheck())
-                        {
-                            if (materialProp.objectReferenceValue == null)
-                            {
-                                m_ExternalObjects.DeleteArrayElementAtIndex(propertyIdx);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        EditorGUI.BeginChangeCheck();
-                        material = EditorGUILayout.ObjectField(nameLabel, material, typeof(Material), false) as Material;
-                        if (EditorGUI.EndChangeCheck())
-                        {
-                            if (material != null)
-                            {
-                                var newIndex = m_ExternalObjects.arraySize++;
-                                var pair = m_ExternalObjects.GetArrayElementAtIndex(newIndex);
-                                pair.FindPropertyRelative("first.name").stringValue = name;
-                                pair.FindPropertyRelative("first.type").stringValue = type;
-                                pair.FindPropertyRelative("first.assembly").stringValue = assembly;
-                                pair.FindPropertyRelative("second").objectReferenceValue = material;
-                            }
+                            BuildExternalObjectsCache();
                         }
                     }
                 }

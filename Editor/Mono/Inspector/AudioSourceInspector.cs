@@ -104,6 +104,7 @@ namespace UnityEditor
             public GUIContent spatialRightLabel = EditorGUIUtility.TrTextContent("3D");
             public GUIContent panLeftLabel = EditorGUIUtility.TrTextContent("Left");
             public GUIContent panRightLabel = EditorGUIUtility.TrTextContent("Right");
+            public string xAxisLabel = L10n.Tr("Distance");
         }
         static Styles ms_Styles;
 
@@ -251,6 +252,9 @@ namespace UnityEditor
             wrapper.renderer = new NormalCurveRenderer(curve);
             wrapper.renderer.SetCustomRange(0.0f, 1.0f);
             wrapper.getAxisUiScalarsCallback = GetAxisScalars;
+            wrapper.useScalingInKeyEditor = true;
+            wrapper.xAxisLabel = ms_Styles.xAxisLabel;
+            wrapper.yAxisLabel = audioCurve.legend.text;
             return wrapper;
         }
 

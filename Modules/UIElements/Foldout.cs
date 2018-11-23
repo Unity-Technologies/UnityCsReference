@@ -56,17 +56,7 @@ namespace UnityEngine.UIElements
         {
             m_Value = newValue;
             m_Toggle.value = m_Value;
-
-            if (m_Value)
-            {
-                contentContainer.visible = true;
-                contentContainer.style.position = Position.Relative;
-            }
-            else
-            {
-                contentContainer.visible = false;
-                contentContainer.style.position = Position.Absolute;
-            }
+            contentContainer.style.display = newValue ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         public static readonly string ussClassName = "unity-foldout";

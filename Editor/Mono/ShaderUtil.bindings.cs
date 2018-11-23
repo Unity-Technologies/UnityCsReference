@@ -194,7 +194,7 @@ namespace UnityEditor
             return IsShaderPropertyNonModifiableTexurePropertyImpl(s, propertyIdx);
         }
 
-        extern internal static string GetDependency(Shader s, string name);
+        extern static public void ClearCachedData([NotNull] Shader s);
 
         extern internal static int GetTextureBindingIndex(Shader s, int texturePropertyID);
         extern internal static int GetTextureSamplerBindingIndex(Shader s, int texturePropertyID);

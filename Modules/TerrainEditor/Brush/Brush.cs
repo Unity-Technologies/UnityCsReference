@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.Serialization;
 
 namespace UnityEditor
@@ -14,7 +15,7 @@ namespace UnityEditor
         public static void CreateNewDefaultBrush()
         {
             Brush b = CreateInstance(DefaultMask(), AnimationCurve.Linear(0, 0, 1, 1), 1.0f, false);
-            ProjectWindowUtil.CreateAsset(b, "Untitled.brush");
+            ProjectWindowUtil.CreateAsset(b, "New Brush.brush");
         }
 
         // Don't instantiate directly, use Brush.CreateInstance()
@@ -128,7 +129,7 @@ namespace UnityEditor
             falloffTex.Apply();
 
             RenderTexture oldRT = RenderTexture.active;
-            RenderTextureFormat outputRenderFormat = isThumbnail ? RenderTextureFormat.ARGB32 : Terrain.heightmapRenderTextureFormat;
+            GraphicsFormat outputRenderFormat = isThumbnail ? SystemInfo.GetGraphicsFormat(DefaultFormat.LDR) : Terrain.heightmapFormat;
             TextureFormat outputTexFormat = isThumbnail ? TextureFormat.ARGB32 : Terrain.heightmapTextureFormat;
 
             // build brush texture
@@ -137,6 +138,7 @@ namespace UnityEditor
 
             Vector4 brushParams = new Vector4(radiusScale * 0.5f, mask.format != TextureFormat.Alpha8 ? 1.0f : 0.0f, blackRemap, whiteRemap);
             RenderTexture tempRT = RenderTexture.GetTemporary(width, height, 0, outputRenderFormat);
+
             s_CreateBrushMaterial.SetTexture("_BrushFalloff", falloffTex);
             s_CreateBrushMaterial.SetVector("_BrushParams", brushParams);
             Graphics.Blit(mask, tempRT, s_CreateBrushMaterial);

@@ -36,7 +36,7 @@ namespace UnityEditor.UIElements
             : this(null, maxLength) {}
 
         public FloatField(string label, int maxLength = kMaxLengthNone)
-            : base(label, maxLength, new FloatInput() { name = "unity-text-input" })
+            : base(label, maxLength, new FloatInput())
         {
             AddToClassList(ussClassName);
             AddLabelDragger<float>();
@@ -49,7 +49,7 @@ namespace UnityEditor.UIElements
 
         class FloatInput : TextValueInput
         {
-            FloatField parentFloatField => (FloatField)parentField;
+            FloatField parentFloatField => (FloatField)parent;
 
             internal FloatInput()
             {

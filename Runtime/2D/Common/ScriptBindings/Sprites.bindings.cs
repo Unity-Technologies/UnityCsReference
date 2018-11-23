@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -48,6 +49,13 @@ namespace UnityEngine
     {
         Center = 0,
         Pivot = 1
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SecondarySpriteTexture
+    {
+        public string name;
+        public Texture2D texture;
     }
 
     [NativeHeader("Runtime/2D/Common/ScriptBindings/SpritesMarshalling.h")]

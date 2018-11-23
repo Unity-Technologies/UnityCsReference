@@ -3,14 +3,14 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Callbacks;
 using UnityEngine;
 using Event = UnityEngine.Event;
 
-namespace UnityEditor.AdvancedDropdown
+namespace UnityEditor.IMGUI.Controls
 {
-    [InitializeOnLoad]
     internal class AdvancedDropdownWindow : EditorWindow
     {
         private static class Styles
@@ -29,13 +29,15 @@ namespace UnityEditor.AdvancedDropdown
                 previewHeader.padding.bottom += 2;
             }
         }
-        protected static readonly float kBorderThickness = 1f;
-        protected static readonly float kRightMargin = 13f;
+        private static readonly float kBorderThickness = 1f;
+        private static readonly float kRightMargin = 13f;
 
-        protected AdvancedDropdownGUI gui = null;
-        public AdvancedDropdownDataSource dataSource = null;
+        private AdvancedDropdownGUI m_Gui = null;
+        private AdvancedDropdownDataSource m_DataSource = null;
+        private AdvancedDropdownState m_State = null;
 
-        protected AdvancedDropdownItem m_CurrentlyRenderedTree;
+        private AdvancedDropdownItem m_CurrentlyRenderedTree;
+        protected AdvancedDropdownItem renderedTreeItem => m_CurrentlyRenderedTree;
 
         private AdvancedDropdownItem m_AnimationTree;
         private float m_NewAnimTarget = 0;
@@ -43,22 +45,57 @@ namespace UnityEditor.AdvancedDropdown
         private bool m_ScrollToSelected = true;
         private float m_InitialSelectionPosition = 0f;
         private Rect m_ButtonRectScreenPos;
-
-
-        [NonSerialized]
+        private Stack<AdvancedDropdownItem> m_ViewsStack = new Stack<AdvancedDropdownItem>();
         private bool m_DirtyList = true;
 
-        protected string m_Search = "";
+        private string m_Search = "";
         private bool hasSearch { get { return !string.IsNullOrEmpty(m_Search); } }
+        protected internal string searchString
+        {
+            get { return m_Search; }
+            set
+            {
+                m_Search = value;
+                m_DataSource.RebuildSearch(m_Search);
+                m_CurrentlyRenderedTree = m_DataSource.mainTree;
+                if (hasSearch)
+                {
+                    m_CurrentlyRenderedTree = m_DataSource.searchTree;
+                    if (state.GetSelectedIndex(m_CurrentlyRenderedTree) < 0)
+                    {
+                        state.SetSelectedIndex(m_CurrentlyRenderedTree, 0);
+                    }
+                }
+            }
+        }
 
-        public event Action<AdvancedDropdownWindow> windowClosed;
-        public event Action<AdvancedDropdownItem> selectionChanged;
-        public bool showHeader { get; set; } = true;
-        public bool searchable { get; set; } = true;
-        public bool closeOnSelection { get; set; } = true;
+        internal bool showHeader { get; set; } = true;
+        internal bool searchable { get; set; } = true;
+        internal bool closeOnSelection { get; set; } = true;
 
         protected virtual bool isSearchFieldDisabled { get; set; }
         protected virtual bool setInitialSelectionPosition { get; } = true;
+
+        protected internal AdvancedDropdownState state
+        {
+            get { return m_State; }
+            set { m_State = value; }
+        }
+
+        protected internal AdvancedDropdownGUI gui
+        {
+            get { return m_Gui; }
+            set { m_Gui = value; }
+        }
+
+        protected internal AdvancedDropdownDataSource dataSource
+        {
+            get { return m_DataSource; }
+            set { m_DataSource = value; }
+        }
+
+        public event Action<AdvancedDropdownWindow> windowClosed;
+        public event Action<AdvancedDropdownItem> selectionChanged;
 
         protected virtual void OnEnable()
         {
@@ -77,9 +114,10 @@ namespace UnityEditor.AdvancedDropdown
             EditorGUIUtility.editingTextField = false;
         }
 
-        public static T CreateAndInit<T>(Rect rect) where T : AdvancedDropdownWindow
+        public static T CreateAndInit<T>(Rect rect, AdvancedDropdownState state) where T : AdvancedDropdownWindow
         {
             var instance = CreateInstance<T>();
+            instance.m_State = state;
             instance.Init(rect);
             return instance;
         }
@@ -87,28 +125,44 @@ namespace UnityEditor.AdvancedDropdown
         public void Init(Rect buttonRect)
         {
             m_ButtonRectScreenPos = EditorGUIUtility.GUIToScreenRect(buttonRect);
-            if (dataSource == null)
-                dataSource = new MultiLevelDataSource();
-            if (gui == null)
-                gui = new AdvancedDropdownGUI(dataSource);
-            selectionChanged += dataSource.UpdateSelectedId;
+            if (m_State == null)
+                m_State = new AdvancedDropdownState();
+            if (m_DataSource == null)
+                m_DataSource = new MultiLevelDataSource();
+            if (m_Gui == null)
+                m_Gui = new AdvancedDropdownGUI(m_DataSource);
+            m_Gui.state = m_State;
 
             // Has to be done before calling Show / ShowWithMode
             buttonRect = GUIUtility.GUIToScreenRect(buttonRect);
-
             OnDirtyList();
-
-            m_CurrentlyRenderedTree = hasSearch ? dataSource.searchTree : dataSource.mainTree;
+            m_CurrentlyRenderedTree = hasSearch ? m_DataSource.searchTree : m_DataSource.mainTree;
             ShowAsDropDown(buttonRect, CalculateWindowSize(buttonRect), GetLocationPriority());
-
             if (setInitialSelectionPosition)
             {
-                m_InitialSelectionPosition = gui.GetSelectionHeight(dataSource, buttonRect);
+                m_InitialSelectionPosition = m_Gui.GetSelectionHeight(m_DataSource, buttonRect);
             }
             wantsMouseMove = true;
+            SetSelectionFromState();
         }
 
-        protected virtual PopupLocation[] GetLocationPriority()
+        void SetSelectionFromState()
+        {
+            var selectedIndex = m_State.GetSelectedIndex(m_CurrentlyRenderedTree);
+            while (selectedIndex >= 0)
+            {
+                var child = m_State.GetSelectedChild(m_CurrentlyRenderedTree);
+                if (child == null)
+                    break;
+                selectedIndex = m_State.GetSelectedIndex(child);
+                if (selectedIndex < 0)
+                    break;
+                m_ViewsStack.Push(m_CurrentlyRenderedTree);
+                m_CurrentlyRenderedTree = child;
+            }
+        }
+
+        PopupLocation[] GetLocationPriority()
         {
             return new[]
             {
@@ -119,23 +173,23 @@ namespace UnityEditor.AdvancedDropdown
 
         protected virtual Vector2 CalculateWindowSize(Rect buttonRect)
         {
-            var size = gui.CalculateContentSize(dataSource);
+            var size = m_Gui.CalculateContentSize(m_DataSource);
             // Add 1 pixel for each border
             size.x += kBorderThickness * 2;
             size.y += kBorderThickness * 2;
             size.x += kRightMargin;
 
-            size.y += gui.searchHeight;
+            size.y += m_Gui.searchHeight;
 
             if (showHeader)
             {
-                size.y += gui.headerHeight;
+                size.y += m_Gui.headerHeight;
             }
 
             size.y = Mathf.Clamp(size.y, minSize.y, maxSize.y);
 
             var fitRect = ContainerWindow.FitRectToScreen(new Rect(buttonRect.x, buttonRect.y, size.x, size.y), true, true);
-            // If the scrollbar is visible, we want to add extra space to compansate it
+            // If the scrollbar is visible, we want to add extra space to compensate it
             if (fitRect.height < size.y)
                 size.x += GUI.skin.verticalScrollbar.fixedWidth;
 
@@ -143,6 +197,14 @@ namespace UnityEditor.AdvancedDropdown
             if (size.x < buttonRect.width)
             {
                 size.x = buttonRect.width;
+            }
+            if (size.x < minSize.x)
+            {
+                size.x = minSize.x;
+            }
+            if (size.y < minSize.y)
+            {
+                size.y = minSize.y;
             }
 
             return new Vector2(size.x, size.y);
@@ -203,19 +265,22 @@ namespace UnityEditor.AdvancedDropdown
         private void OnDirtyList()
         {
             m_DirtyList = false;
-            dataSource.ReloadData();
+            m_DataSource.ReloadData();
             if (hasSearch)
-                dataSource.RebuildSearch(m_Search);
+            {
+                m_DataSource.RebuildSearch(searchString);
+                if (state.GetSelectedIndex(m_CurrentlyRenderedTree) < 0)
+                {
+                    state.SetSelectedIndex(m_CurrentlyRenderedTree, 0);
+                }
+            }
         }
 
         private void OnGUISearch()
         {
-            gui.DrawSearchField(isSearchFieldDisabled, m_Search, (newSearch) =>
+            m_Gui.DrawSearchField(isSearchFieldDisabled, m_Search, (newSearch) =>
             {
-                dataSource.RebuildSearch(newSearch);
-                m_CurrentlyRenderedTree =
-                    string.IsNullOrEmpty(newSearch) ? dataSource.mainTree : dataSource.searchTree;
-                m_Search = newSearch;
+                searchString = newSearch;
             });
         }
 
@@ -233,30 +298,30 @@ namespace UnityEditor.AdvancedDropdown
                 // Always do these
                 if (evt.keyCode == KeyCode.DownArrow)
                 {
-                    m_CurrentlyRenderedTree.MoveDownSelection();
+                    m_State.MoveDownSelection(m_CurrentlyRenderedTree);
                     m_ScrollToSelected = true;
                     evt.Use();
                 }
                 if (evt.keyCode == KeyCode.UpArrow)
                 {
-                    m_CurrentlyRenderedTree.MoveUpSelection();
+                    m_State.MoveUpSelection(m_CurrentlyRenderedTree);
                     m_ScrollToSelected = true;
                     evt.Use();
                 }
                 if (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter)
                 {
-                    var selected = m_CurrentlyRenderedTree.GetSelectedChild();
-                    if (selected != null && selected.children.Any())
+                    var selected = m_State.GetSelectedChild(m_CurrentlyRenderedTree);
+                    if (selected != null)
                     {
-                        GoToChild(m_CurrentlyRenderedTree);
-                    }
-                    else
-                    {
-                        if (selected != null && selected.OnAction())
+                        if (selected.children.Any())
+                        {
+                            GoToChild();
+                        }
+                        else
                         {
                             if (selectionChanged != null)
                             {
-                                selectionChanged(m_CurrentlyRenderedTree.GetSelectedChild());
+                                selectionChanged(m_State.GetSelectedChild(m_CurrentlyRenderedTree));
                             }
                             if (closeOnSelection)
                             {
@@ -277,9 +342,11 @@ namespace UnityEditor.AdvancedDropdown
                     }
                     if (evt.keyCode == KeyCode.RightArrow)
                     {
-                        var child = m_CurrentlyRenderedTree.GetSelectedChild();
-                        if (child != null && child.children.Any())
-                            GoToChild(m_CurrentlyRenderedTree);
+                        var idx = m_State.GetSelectedIndex(m_CurrentlyRenderedTree);
+                        if (idx > -1 && m_CurrentlyRenderedTree.children.ElementAt(idx).children.Any())
+                        {
+                            GoToChild();
+                        }
                         evt.Use();
                     }
                     if (evt.keyCode == KeyCode.Escape)
@@ -298,9 +365,9 @@ namespace UnityEditor.AdvancedDropdown
             Close();
         }
 
-        internal string GetIdOfSelectedItem()
+        internal AdvancedDropdownItem GetSelectedItem()
         {
-            return m_CurrentlyRenderedTree.GetSelectedChild().id;
+            return m_State.GetSelectedChild(m_CurrentlyRenderedTree);
         }
 
         protected virtual bool SpecialKeyboardHandling(Event evt)
@@ -318,10 +385,10 @@ namespace UnityEditor.AdvancedDropdown
             areaPosition.height -= kBorderThickness * 2;
             areaPosition.width -= kBorderThickness * 2;
 
-            GUILayout.BeginArea(gui.GetAnimRect(areaPosition, anim));
+            GUILayout.BeginArea(m_Gui.GetAnimRect(areaPosition, anim));
             // Header
             if (showHeader)
-                gui.DrawHeader(group, GoToParent);
+                m_Gui.DrawHeader(group, GoToParent, m_ViewsStack.Count > 0);
 
             DrawList(group);
             GUILayout.EndArea();
@@ -330,24 +397,30 @@ namespace UnityEditor.AdvancedDropdown
         private void DrawList(AdvancedDropdownItem item)
         {
             // Start of scroll view list
-            item.m_Scroll = GUILayout.BeginScrollView(item.m_Scroll, GUIStyle.none, GUI.skin.verticalScrollbar);
-            EditorGUIUtility.SetIconSize(gui.iconSize);
+            m_State.SetScrollState(item, GUILayout.BeginScrollView(m_State.GetScrollState(item), GUIStyle.none, GUI.skin.verticalScrollbar));
+            EditorGUIUtility.SetIconSize(m_Gui.iconSize);
             Rect selectedRect = new Rect();
-            for (var i = 0; i < item.children.Count; i++)
+            for (var i = 0; i < item.children.Count(); i++)
             {
-                var child = item.children[i];
+                var child = item.children.ElementAt(i);
+                bool selected = m_State.GetSelectedIndex(item) == i;
 
-                // Select the first item when searching
-                if (hasSearch && !item.selectionExists && item.selectedItem < 0)
+                if (child.IsSeparator())
                 {
-                    item.selectedItem = 0;
+                    m_Gui.DrawLineSeparator();
                 }
-                bool selected = item.selectionExists && i == item.selectedItem;
+                else
+                {
+                    m_Gui.DrawItem(child, child.name, child.icon, child.enabled, child.children.Any(), selected, hasSearch);
+                }
 
-                gui.DrawItem(child, selected, hasSearch);
                 var r = GUILayoutUtility.GetLastRect();
                 if (selected)
                     selectedRect = r;
+
+                // Skip input handling for the tree used for animation
+                if (item != m_CurrentlyRenderedTree)
+                    continue;
 
                 // Select the element the mouse cursor is over.
                 // Only do it on mouse move - keyboard controls are allowed to overwrite this until the next time the mouse moves.
@@ -355,30 +428,28 @@ namespace UnityEditor.AdvancedDropdown
                 {
                     if (!selected && r.Contains(Event.current.mousePosition))
                     {
-                        item.selectedItem = i;
+                        m_State.SetSelectedIndex(item, i);
                         Event.current.Use();
                     }
                 }
                 if (Event.current.type == EventType.MouseUp && r.Contains(Event.current.mousePosition))
                 {
-                    item.selectedItem = i;
-                    if (m_CurrentlyRenderedTree.GetSelectedChild().children.Any())
+                    m_State.SetSelectedIndex(item, i);
+                    var selectedChild = m_State.GetSelectedChild(item);
+                    if (selectedChild.children.Any())
                     {
-                        GoToChild(m_CurrentlyRenderedTree);
+                        GoToChild();
                     }
                     else
                     {
-                        if (m_CurrentlyRenderedTree.GetSelectedChild().OnAction())
+                        if (!selectedChild.IsSeparator() && selectionChanged != null)
                         {
-                            if (selectionChanged != null)
-                            {
-                                selectionChanged(m_CurrentlyRenderedTree.GetSelectedChild());
-                            }
-                            if (closeOnSelection)
-                            {
-                                CloseWindow();
-                                GUIUtility.ExitGUI();
-                            }
+                            selectionChanged(selectedChild);
+                        }
+                        if (closeOnSelection)
+                        {
+                            CloseWindow();
+                            GUIUtility.ExitGUI();
                         }
                     }
                     Event.current.Use();
@@ -391,8 +462,8 @@ namespace UnityEditor.AdvancedDropdown
             if (m_ScrollToSelected && m_InitialSelectionPosition != 0)
             {
                 float diffOfPopupAboveTheButton = m_ButtonRectScreenPos.y - position.y;
-                diffOfPopupAboveTheButton -= gui.searchHeight + gui.headerHeight;
-                item.m_Scroll.y = m_InitialSelectionPosition - diffOfPopupAboveTheButton;
+                diffOfPopupAboveTheButton -= m_Gui.searchHeight + m_Gui.headerHeight;
+                m_State.SetScrollState(item, new Vector2(0, m_InitialSelectionPosition - diffOfPopupAboveTheButton));
                 m_ScrollToSelected = false;
                 m_InitialSelectionPosition = 0;
             }
@@ -401,14 +472,14 @@ namespace UnityEditor.AdvancedDropdown
             {
                 m_ScrollToSelected = false;
                 Rect scrollRect = GUILayoutUtility.GetLastRect();
-                if (selectedRect.yMax - scrollRect.height > item.m_Scroll.y)
+                if (selectedRect.yMax - scrollRect.height > m_State.GetScrollState(item).y)
                 {
-                    item.m_Scroll.y = selectedRect.yMax - scrollRect.height;
+                    m_State.SetScrollState(item, new Vector2(0, selectedRect.yMax - scrollRect.height));
                     Repaint();
                 }
-                if (selectedRect.y < item.m_Scroll.y)
+                if (selectedRect.y < m_State.GetScrollState(item).y)
                 {
-                    item.m_Scroll.y = selectedRect.y;
+                    m_State.SetScrollState(item, new Vector2(0, selectedRect.y));
                     Repaint();
                 }
             }
@@ -416,31 +487,27 @@ namespace UnityEditor.AdvancedDropdown
 
         protected void GoToParent()
         {
-            if (m_CurrentlyRenderedTree.parent == null)
+            if (m_ViewsStack.Count == 0)
                 return;
-            m_LastTime = System.DateTime.Now.Ticks;
+            m_LastTime = DateTime.Now.Ticks;
             if (m_NewAnimTarget > 0)
                 m_NewAnimTarget = -1 + m_NewAnimTarget;
             else
                 m_NewAnimTarget = -1;
             m_AnimationTree = m_CurrentlyRenderedTree;
-            m_CurrentlyRenderedTree = m_CurrentlyRenderedTree.parent;
+            m_CurrentlyRenderedTree = m_ViewsStack.Pop();
         }
 
-        private void GoToChild(AdvancedDropdownItem parent)
+        private void GoToChild()
         {
-            m_LastTime = System.DateTime.Now.Ticks;
+            m_ViewsStack.Push(m_CurrentlyRenderedTree);
+            m_LastTime = DateTime.Now.Ticks;
             if (m_NewAnimTarget < 0)
                 m_NewAnimTarget = 1 + m_NewAnimTarget;
             else
                 m_NewAnimTarget = 1;
-            m_CurrentlyRenderedTree = parent.GetSelectedChild();
-            m_AnimationTree = parent;
-        }
-
-        public int GetSelectedIndex()
-        {
-            return m_CurrentlyRenderedTree.GetSelectedChildIndex();
+            m_AnimationTree = m_CurrentlyRenderedTree;
+            m_CurrentlyRenderedTree = m_State.GetSelectedChild(m_CurrentlyRenderedTree);
         }
 
         [DidReloadScripts]

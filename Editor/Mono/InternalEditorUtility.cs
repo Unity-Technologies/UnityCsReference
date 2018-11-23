@@ -420,5 +420,18 @@ namespace UnityEditorInternal
         {
             return GetCompilationDefines(options, targetGroup, target, PlayerSettings.GetApiCompatibilityLevel(targetGroup));
         }
+
+        public static void SetShowGizmos(bool value)
+        {
+            GameView view = GameView.GetMainGameView();
+
+            if (view == null)
+                view = GameView.GetRenderingGameView();
+
+            if (view == null)
+                return;
+
+            view.SetShowGizmos(value);
+        }
     }
 }

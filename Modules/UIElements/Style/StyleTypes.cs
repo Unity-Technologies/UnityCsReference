@@ -37,7 +37,7 @@ namespace UnityEngine.UIElements
             return new StyleFloat(styleLength.value.value, styleLength.keyword) { specificity = styleLength.specificity };
         }
 
-        // Convert StyleInt to StyleEnum for IComputedStyle
+        // Convert StyleInt to StyleEnum for ComputedStyle
         internal static StyleEnum<T> ToStyleEnum<T>(this StyleInt styleInt, T value) where T : struct, IConvertible
         {
             return new StyleEnum<T>(value, styleInt.keyword) {specificity = styleInt.specificity };

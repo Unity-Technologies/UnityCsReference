@@ -44,12 +44,12 @@ namespace UnityEngine
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static Func<Exception, bool> endContainerGUIFromException;
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal static Action enabledStateChanged;
+        internal static Action guiChanged;
 
         [RequiredByNativeCode]
         private static void MarkGUIChanged()
         {
-            enabledStateChanged?.Invoke();
+            guiChanged?.Invoke();
         }
 
         public static int GetControlID(FocusType focus)

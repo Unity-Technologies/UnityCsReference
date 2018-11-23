@@ -61,21 +61,124 @@ namespace UnityEngine.XR
         }
     }
 
-    public struct InputUsage<T> : IEquatable<InputUsage<T>>
+    internal enum InputFeatureType : UInt32
     {
-        public string name { get; set; }
+        Custom = 0,
+        Binary, /// Boolean
+        DiscreteStates, /// Integer
+        Axis1D, /// Float
+        Axis2D, /// XRVector2
+        Axis3D, /// XRVector3
+        Rotation, /// XRQuaternion
+        Hand, /// XRHand
+        Bone, /// XRBone
+        Eyes, /// XREyes
 
-        public InputUsage(string usageName) { name = usageName; }
+        kUnityXRInputFeatureTypeInvalid = UInt32.MaxValue
+    };
+
+    public enum InputDeviceRole : UInt32
+    {
+        Unknown = 0,
+        Generic,
+        LeftHanded,
+        RightHanded,
+        GameController,
+        TrackingReference,
+        HardwareTracker,
+        LegacyController
+    };
+
+    [RequiredByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    [NativeConditional("ENABLE_VR")]
+    [NativeHeader("Modules/XR/Subsystems/Input/Public/XRInputDevices.h")]
+    public struct InputFeatureUsage : IEquatable<InputFeatureUsage>
+    {
+        internal string m_Name;
+        [NativeName("m_FeatureType")]  internal InputFeatureType m_InternalType;
+
+        public string name { get { return m_Name; } internal set { m_Name = value; } }
+        internal InputFeatureType internalType { get { return m_InternalType; } set { m_InternalType = value; } }
+        public Type type
+        {
+            get
+            {
+                switch (m_InternalType)
+                {
+                    case InputFeatureType.Custom:           throw new InvalidCastException("No valid managed type for Custom native types.");
+                    case InputFeatureType.Binary:           return typeof(bool);
+                    case InputFeatureType.DiscreteStates:   return typeof(uint);
+                    case InputFeatureType.Axis1D:           return typeof(float);
+                    case InputFeatureType.Axis2D:           return typeof(Vector2);
+                    case InputFeatureType.Axis3D:           return typeof(Vector3);
+                    case InputFeatureType.Rotation:         return typeof(Quaternion);
+                    case InputFeatureType.Hand:             return typeof(Hand);
+                    case InputFeatureType.Bone:             return typeof(Bone);
+                    case InputFeatureType.Eyes:             return typeof(Eyes);
+
+                    default: throw new InvalidCastException("No valid managed type for unknown native type.");
+                }
+            }
+        }
+
+        internal InputFeatureUsage(string name, InputFeatureType type)
+        {
+            m_Name = name;
+            m_InternalType = type;
+        }
 
         public override bool Equals(object obj)
         {
-            if (!(obj is InputUsage<T>))
+            if (!(obj is InputFeatureUsage))
                 return false;
 
-            return Equals((InputUsage<T>)obj);
+            return Equals((InputFeatureUsage)obj);
         }
 
-        public bool Equals(InputUsage<T> other)
+        public bool Equals(InputFeatureUsage other)
+        {
+            return name == other.name && internalType == other.internalType;
+        }
+
+        public override int GetHashCode()
+        {
+            return name.GetHashCode() ^ (internalType.GetHashCode() << 1);
+        }
+
+        public static bool operator==(InputFeatureUsage a, InputFeatureUsage b)
+        {
+            return a.Equals(b);
+        }
+
+        public static bool operator!=(InputFeatureUsage a, InputFeatureUsage b)
+        {
+            return !(a == b);
+        }
+
+        public InputFeatureUsage<T> As<T>()
+        {
+            if (type != typeof(T))
+                throw new ArgumentException("InputFeatureUsage type does not match out variable type.");
+            return new InputFeatureUsage<T>(this.name);
+        }
+    }
+
+    public struct InputFeatureUsage<T> : IEquatable<InputFeatureUsage<T>>
+    {
+        public string name { get; set; }
+
+        public InputFeatureUsage(string usageName) { name = usageName; }
+
+        public override bool Equals(object obj)
+        {
+            if (!(obj is InputFeatureUsage<T>))
+                return false;
+
+            return Equals((InputFeatureUsage<T>)obj);
+        }
+
+        public bool Equals(InputFeatureUsage<T> other)
         {
             return name == other.name;
         }
@@ -85,12 +188,12 @@ namespace UnityEngine.XR
             return name.GetHashCode();
         }
 
-        public static bool operator==(InputUsage<T> a, InputUsage<T> b)
+        public static bool operator==(InputFeatureUsage<T> a, InputFeatureUsage<T> b)
         {
             return a.Equals(b);
         }
 
-        public static bool operator!=(InputUsage<T> a, InputUsage<T> b)
+        public static bool operator!=(InputFeatureUsage<T> a, InputFeatureUsage<T> b)
         {
             return !(a == b);
         }
@@ -98,67 +201,67 @@ namespace UnityEngine.XR
 
     public static class CommonUsages
     {
-        public static InputUsage<bool> isTracked = new InputUsage<bool>("IsTracked");
-        public static InputUsage<bool> primaryButton = new InputUsage<bool>("PrimaryButton");
-        public static InputUsage<bool> primaryTouch = new InputUsage<bool>("PrimaryTouch");
-        public static InputUsage<bool> secondaryButton = new InputUsage<bool>("SecondaryButton");
-        public static InputUsage<bool> secondaryTouch = new InputUsage<bool>("SecondaryTouch");
-        public static InputUsage<bool> gripButton = new InputUsage<bool>("GripButton");
-        public static InputUsage<bool> triggerButton = new InputUsage<bool>("TriggerButton");
-        public static InputUsage<bool> menuButton = new InputUsage<bool>("MenuButton");
-        public static InputUsage<bool> primary2DAxisClick = new InputUsage<bool>("Primary2DAxisClick");
-        public static InputUsage<bool> primary2DAxisTouch = new InputUsage<bool>("Primary2DAxisTouch");
-        public static InputUsage<bool> thumbrest = new InputUsage<bool>("Thumbrest");
-        public static InputUsage<bool> indexTouch = new InputUsage<bool>("IndexTouch");
-        public static InputUsage<bool> thumbTouch = new InputUsage<bool>("ThumbTouch");
+        public static InputFeatureUsage<bool> isTracked = new InputFeatureUsage<bool>("IsTracked");
+        public static InputFeatureUsage<bool> primaryButton = new InputFeatureUsage<bool>("PrimaryButton");
+        public static InputFeatureUsage<bool> primaryTouch = new InputFeatureUsage<bool>("PrimaryTouch");
+        public static InputFeatureUsage<bool> secondaryButton = new InputFeatureUsage<bool>("SecondaryButton");
+        public static InputFeatureUsage<bool> secondaryTouch = new InputFeatureUsage<bool>("SecondaryTouch");
+        public static InputFeatureUsage<bool> gripButton = new InputFeatureUsage<bool>("GripButton");
+        public static InputFeatureUsage<bool> triggerButton = new InputFeatureUsage<bool>("TriggerButton");
+        public static InputFeatureUsage<bool> menuButton = new InputFeatureUsage<bool>("MenuButton");
+        public static InputFeatureUsage<bool> primary2DAxisClick = new InputFeatureUsage<bool>("Primary2DAxisClick");
+        public static InputFeatureUsage<bool> primary2DAxisTouch = new InputFeatureUsage<bool>("Primary2DAxisTouch");
+        public static InputFeatureUsage<bool> thumbrest = new InputFeatureUsage<bool>("Thumbrest");
+        public static InputFeatureUsage<bool> indexTouch = new InputFeatureUsage<bool>("IndexTouch");
+        public static InputFeatureUsage<bool> thumbTouch = new InputFeatureUsage<bool>("ThumbTouch");
 
-        public static InputUsage<float> batteryLevel = new InputUsage<float>("BatteryLevel");
-        public static InputUsage<float> trigger = new InputUsage<float>("Trigger");
-        public static InputUsage<float> grip = new InputUsage<float>("Grip");
-        public static InputUsage<float> indexFinger = new InputUsage<float>("IndexFinger");
-        public static InputUsage<float> middleFinger = new InputUsage<float>("MiddleFinger");
-        public static InputUsage<float> ringFinger = new InputUsage<float>("RingFinger");
-        public static InputUsage<float> pinkyFinger = new InputUsage<float>("PinkyFinger");
-        public static InputUsage<float> combinedTrigger = new InputUsage<float>("CombinedTrigger");
+        public static InputFeatureUsage<float> batteryLevel = new InputFeatureUsage<float>("BatteryLevel");
+        public static InputFeatureUsage<float> trigger = new InputFeatureUsage<float>("Trigger");
+        public static InputFeatureUsage<float> grip = new InputFeatureUsage<float>("Grip");
+        public static InputFeatureUsage<float> indexFinger = new InputFeatureUsage<float>("IndexFinger");
+        public static InputFeatureUsage<float> middleFinger = new InputFeatureUsage<float>("MiddleFinger");
+        public static InputFeatureUsage<float> ringFinger = new InputFeatureUsage<float>("RingFinger");
+        public static InputFeatureUsage<float> pinkyFinger = new InputFeatureUsage<float>("PinkyFinger");
+        public static InputFeatureUsage<float> combinedTrigger = new InputFeatureUsage<float>("CombinedTrigger");
 
-        public static InputUsage<Vector2> primary2DAxis = new InputUsage<Vector2>("Primary2DAxis");
-        public static InputUsage<Vector2> dPad = new InputUsage<Vector2>("DPad");
-        public static InputUsage<Vector2> secondary2DAxis = new InputUsage<Vector2>("Secondary2DAxis");
+        public static InputFeatureUsage<Vector2> primary2DAxis = new InputFeatureUsage<Vector2>("Primary2DAxis");
+        public static InputFeatureUsage<Vector2> dPad = new InputFeatureUsage<Vector2>("DPad");
+        public static InputFeatureUsage<Vector2> secondary2DAxis = new InputFeatureUsage<Vector2>("Secondary2DAxis");
 
-        public static InputUsage<Vector3> devicePosition = new InputUsage<Vector3>("DevicePosition");
-        public static InputUsage<Vector3> leftEyePosition = new InputUsage<Vector3>("LeftEyePosition");
-        public static InputUsage<Vector3> rightEyePosition = new InputUsage<Vector3>("RightEyePosition");
-        public static InputUsage<Vector3> centerEyePosition = new InputUsage<Vector3>("CenterEyePosition");
-        public static InputUsage<Vector3> colorCameraPosition = new InputUsage<Vector3>("CameraPosition");
-        public static InputUsage<Vector3> deviceVelocity = new InputUsage<Vector3>("DeviceVelocity");
-        public static InputUsage<Vector3> deviceAngularVelocity = new InputUsage<Vector3>("DeviceAngularVelocity");
-        public static InputUsage<Vector3> leftEyeVelocity = new InputUsage<Vector3>("LeftEyeVelocity");
-        public static InputUsage<Vector3> leftEyeAngularVelocity = new InputUsage<Vector3>("LeftEyeAngularVelocity");
-        public static InputUsage<Vector3> rightEyeVelocity = new InputUsage<Vector3>("RightEyeVelocity");
-        public static InputUsage<Vector3> rightEyeAngularVelocity = new InputUsage<Vector3>("RightEyeAngularVelocity");
-        public static InputUsage<Vector3> centerEyeVelocity = new InputUsage<Vector3>("CenterEyeVelocity");
-        public static InputUsage<Vector3> centerEyeAngularVelocity = new InputUsage<Vector3>("CenterEyeAngularVelocity");
-        public static InputUsage<Vector3> colorCameraVelocity = new InputUsage<Vector3>("CameraVelocity");
-        public static InputUsage<Vector3> colorCameraAngularVelocity = new InputUsage<Vector3>("CameraAngularVelocity");
-        public static InputUsage<Vector3> deviceAcceleration = new InputUsage<Vector3>("DeviceAcceleration");
-        public static InputUsage<Vector3> deviceAngularAcceleration = new InputUsage<Vector3>("DeviceAngularAcceleration");
-        public static InputUsage<Vector3> leftEyeAcceleration = new InputUsage<Vector3>("LeftEyeAcceleration");
-        public static InputUsage<Vector3> leftEyeAngularAcceleration = new InputUsage<Vector3>("LeftEyeAngularAcceleration");
-        public static InputUsage<Vector3> rightEyeAcceleration = new InputUsage<Vector3>("RightEyeAcceleration");
-        public static InputUsage<Vector3> rightEyeAngularAcceleration = new InputUsage<Vector3>("RightEyeAngularAcceleration");
-        public static InputUsage<Vector3> centerEyeAcceleration = new InputUsage<Vector3>("CenterEyeAcceleration");
-        public static InputUsage<Vector3> centerEyeAngularAcceleration = new InputUsage<Vector3>("CenterEyeAngularAcceleration");
-        public static InputUsage<Vector3> colorCameraAcceleration = new InputUsage<Vector3>("CameraAcceleration");
-        public static InputUsage<Vector3> colorCameraAngularAcceleration = new InputUsage<Vector3>("CameraAngularAcceleration");
+        public static InputFeatureUsage<Vector3> devicePosition = new InputFeatureUsage<Vector3>("DevicePosition");
+        public static InputFeatureUsage<Vector3> leftEyePosition = new InputFeatureUsage<Vector3>("LeftEyePosition");
+        public static InputFeatureUsage<Vector3> rightEyePosition = new InputFeatureUsage<Vector3>("RightEyePosition");
+        public static InputFeatureUsage<Vector3> centerEyePosition = new InputFeatureUsage<Vector3>("CenterEyePosition");
+        public static InputFeatureUsage<Vector3> colorCameraPosition = new InputFeatureUsage<Vector3>("CameraPosition");
+        public static InputFeatureUsage<Vector3> deviceVelocity = new InputFeatureUsage<Vector3>("DeviceVelocity");
+        public static InputFeatureUsage<Vector3> deviceAngularVelocity = new InputFeatureUsage<Vector3>("DeviceAngularVelocity");
+        public static InputFeatureUsage<Vector3> leftEyeVelocity = new InputFeatureUsage<Vector3>("LeftEyeVelocity");
+        public static InputFeatureUsage<Vector3> leftEyeAngularVelocity = new InputFeatureUsage<Vector3>("LeftEyeAngularVelocity");
+        public static InputFeatureUsage<Vector3> rightEyeVelocity = new InputFeatureUsage<Vector3>("RightEyeVelocity");
+        public static InputFeatureUsage<Vector3> rightEyeAngularVelocity = new InputFeatureUsage<Vector3>("RightEyeAngularVelocity");
+        public static InputFeatureUsage<Vector3> centerEyeVelocity = new InputFeatureUsage<Vector3>("CenterEyeVelocity");
+        public static InputFeatureUsage<Vector3> centerEyeAngularVelocity = new InputFeatureUsage<Vector3>("CenterEyeAngularVelocity");
+        public static InputFeatureUsage<Vector3> colorCameraVelocity = new InputFeatureUsage<Vector3>("CameraVelocity");
+        public static InputFeatureUsage<Vector3> colorCameraAngularVelocity = new InputFeatureUsage<Vector3>("CameraAngularVelocity");
+        public static InputFeatureUsage<Vector3> deviceAcceleration = new InputFeatureUsage<Vector3>("DeviceAcceleration");
+        public static InputFeatureUsage<Vector3> deviceAngularAcceleration = new InputFeatureUsage<Vector3>("DeviceAngularAcceleration");
+        public static InputFeatureUsage<Vector3> leftEyeAcceleration = new InputFeatureUsage<Vector3>("LeftEyeAcceleration");
+        public static InputFeatureUsage<Vector3> leftEyeAngularAcceleration = new InputFeatureUsage<Vector3>("LeftEyeAngularAcceleration");
+        public static InputFeatureUsage<Vector3> rightEyeAcceleration = new InputFeatureUsage<Vector3>("RightEyeAcceleration");
+        public static InputFeatureUsage<Vector3> rightEyeAngularAcceleration = new InputFeatureUsage<Vector3>("RightEyeAngularAcceleration");
+        public static InputFeatureUsage<Vector3> centerEyeAcceleration = new InputFeatureUsage<Vector3>("CenterEyeAcceleration");
+        public static InputFeatureUsage<Vector3> centerEyeAngularAcceleration = new InputFeatureUsage<Vector3>("CenterEyeAngularAcceleration");
+        public static InputFeatureUsage<Vector3> colorCameraAcceleration = new InputFeatureUsage<Vector3>("CameraAcceleration");
+        public static InputFeatureUsage<Vector3> colorCameraAngularAcceleration = new InputFeatureUsage<Vector3>("CameraAngularAcceleration");
 
-        public static InputUsage<Quaternion> deviceRotation = new InputUsage<Quaternion>("DeviceRotation");
-        public static InputUsage<Quaternion> leftEyeRotation = new InputUsage<Quaternion>("LeftEyeRotation");
-        public static InputUsage<Quaternion> rightEyeRotation = new InputUsage<Quaternion>("RightEyeRotation");
-        public static InputUsage<Quaternion> centerEyeRotation = new InputUsage<Quaternion>("CenterEyeRotation");
-        public static InputUsage<Quaternion> colorCameraRotation = new InputUsage<Quaternion>("CameraRotation");
+        public static InputFeatureUsage<Quaternion> deviceRotation = new InputFeatureUsage<Quaternion>("DeviceRotation");
+        public static InputFeatureUsage<Quaternion> leftEyeRotation = new InputFeatureUsage<Quaternion>("LeftEyeRotation");
+        public static InputFeatureUsage<Quaternion> rightEyeRotation = new InputFeatureUsage<Quaternion>("RightEyeRotation");
+        public static InputFeatureUsage<Quaternion> centerEyeRotation = new InputFeatureUsage<Quaternion>("CenterEyeRotation");
+        public static InputFeatureUsage<Quaternion> colorCameraRotation = new InputFeatureUsage<Quaternion>("CameraRotation");
 
-        public static InputUsage<Hand> handData = new InputUsage<Hand>("HandData");
-        public static InputUsage<Eyes> eyesData = new InputUsage<Eyes>("EyesData");
+        public static InputFeatureUsage<Hand> handData = new InputFeatureUsage<Hand>("HandData");
+        public static InputFeatureUsage<Eyes> eyesData = new InputFeatureUsage<Eyes>("EyesData");
     };
 
     [UsedByNativeCode]
@@ -169,7 +272,9 @@ namespace UnityEngine.XR
         private UInt64 m_DeviceId;
         internal InputDevice(UInt64 deviceId) { m_DeviceId = deviceId; }
 
-        public bool IsValid { get { return InputDevices.IsDeviceValid(m_DeviceId); } }
+        public bool isValid { get { return InputDevices.IsDeviceValid(m_DeviceId); } }
+        public string name { get { return InputDevices.GetDeviceName(m_DeviceId); } }
+        public InputDeviceRole role { get { return InputDevices.GetDeviceRole(m_DeviceId); } }
 
         // Haptics
         public bool SendHapticImpulse(uint channel, float amplitude, float duration = 1.0f)     { return InputDevices.SendHapticImpulse(m_DeviceId, channel, amplitude, duration); }
@@ -177,16 +282,22 @@ namespace UnityEngine.XR
         public bool TryGetHapticCapabilities(out HapticCapabilities capabilities)               { return InputDevices.TryGetHapticCapabilities(m_DeviceId, out capabilities); }
         public void StopHaptics()                                                               { InputDevices.StopHaptics(m_DeviceId); }
 
+        // Feature Usages
+        public bool TryGetFeatureUsages(List<InputFeatureUsage> featureUsages)
+        {
+            return InputDevices.TryGetFeatureUsages(m_DeviceId, featureUsages);
+        }
+
         // Features
-        public bool TryGetFeatureValue(InputUsage<bool> usage, out bool value)                  { return InputDevices.TryGetFeatureValue_bool(m_DeviceId, usage.name, out value); }
-        public bool TryGetFeatureValue(InputUsage<uint> usage, out uint value)                  { return InputDevices.TryGetFeatureValue_UInt32(m_DeviceId, usage.name, out value); }
-        public bool TryGetFeatureValue(InputUsage<float> usage, out float value)                { return InputDevices.TryGetFeatureValue_float(m_DeviceId, usage.name, out value); }
-        public bool TryGetFeatureValue(InputUsage<Vector2> usage, out Vector2 value)            { return InputDevices.TryGetFeatureValue_Vector2f(m_DeviceId, usage.name, out value); }
-        public bool TryGetFeatureValue(InputUsage<Vector3> usage, out Vector3 value)            { return InputDevices.TryGetFeatureValue_Vector3f(m_DeviceId, usage.name, out value); }
-        public bool TryGetFeatureValue(InputUsage<Quaternion> usage, out Quaternion value)      { return InputDevices.TryGetFeatureValue_Quaternionf(m_DeviceId, usage.name, out value); }
-        public bool TryGetFeatureValue(InputUsage<Hand> usage, out Hand value)                  { return InputDevices.TryGetFeatureValue_XRHand(m_DeviceId, usage.name, out value); }
-        public bool TryGetFeatureValue(InputUsage<Bone> usage, out Bone value)                  { return InputDevices.TryGetFeatureValue_XRBone(m_DeviceId, usage.name, out value); }
-        public bool TryGetFeatureValue(InputUsage<Eyes> usage, out Eyes value)                  { return InputDevices.TryGetFeatureValue_XREyes(m_DeviceId, usage.name, out value); }
+        public bool TryGetFeatureValue(InputFeatureUsage<bool> usage, out bool value)              { return InputDevices.TryGetFeatureValue_bool(m_DeviceId, usage.name, out value); }
+        public bool TryGetFeatureValue(InputFeatureUsage<uint> usage, out uint value)              { return InputDevices.TryGetFeatureValue_UInt32(m_DeviceId, usage.name, out value); }
+        public bool TryGetFeatureValue(InputFeatureUsage<float> usage, out float value)            { return InputDevices.TryGetFeatureValue_float(m_DeviceId, usage.name, out value); }
+        public bool TryGetFeatureValue(InputFeatureUsage<Vector2> usage, out Vector2 value)        { return InputDevices.TryGetFeatureValue_Vector2f(m_DeviceId, usage.name, out value); }
+        public bool TryGetFeatureValue(InputFeatureUsage<Vector3> usage, out Vector3 value)        { return InputDevices.TryGetFeatureValue_Vector3f(m_DeviceId, usage.name, out value); }
+        public bool TryGetFeatureValue(InputFeatureUsage<Quaternion> usage, out Quaternion value)  { return InputDevices.TryGetFeatureValue_Quaternionf(m_DeviceId, usage.name, out value); }
+        public bool TryGetFeatureValue(InputFeatureUsage<Hand> usage, out Hand value)              { return InputDevices.TryGetFeatureValue_XRHand(m_DeviceId, usage.name, out value); }
+        public bool TryGetFeatureValue(InputFeatureUsage<Bone> usage, out Bone value)              { return InputDevices.TryGetFeatureValue_XRBone(m_DeviceId, usage.name, out value); }
+        public bool TryGetFeatureValue(InputFeatureUsage<Eyes> usage, out Eyes value)              { return InputDevices.TryGetFeatureValue_XREyes(m_DeviceId, usage.name, out value); }
 
         public override bool Equals(object obj)
         {
@@ -255,7 +366,7 @@ namespace UnityEngine.XR
             return Hand_TryGetFingerBonesAsList(this, finger, bonesOut);
         }
 
-        private static extern bool Hand_TryGetFingerBonesAsList(Hand hand, HandFinger finger, List<Bone> bonesOut);
+        private static extern bool Hand_TryGetFingerBonesAsList(Hand hand, HandFinger finger, [NotNull] List<Bone> bonesOut);
 
         public override bool Equals(object obj)
         {
@@ -403,6 +514,9 @@ namespace UnityEngine.XR
         public bool TryGetParentBone(out Bone parentBone) { return Bone_TryGetParentBone(this, out parentBone); }
         private static extern bool Bone_TryGetParentBone(Bone bone, out Bone parentBone);
 
+        public bool TryGetChildBones(List<Bone> childBones) { return Bone_TryGetChildBones(this, childBones); }
+        private static extern bool Bone_TryGetChildBones(Bone bone, [NotNull] List<Bone> childBones);
+
         public override bool Equals(object obj)
         {
             if (!(obj is Bone))
@@ -441,17 +555,60 @@ namespace UnityEngine.XR
     [StaticAccessor("XRInputDevices::Get()", StaticAccessorType.Dot)]
     public partial class InputDevices
     {
-        [NativeConditional("ENABLE_VR", "InputDevice::Identity")]
         public static InputDevice GetDeviceAtXRNode(XRNode node)
         {
             UInt64 deviceId = InputTracking.GetDeviceIdAtXRNode(node);
             return new InputDevice(deviceId);
         }
 
+        public static void GetDevicesAtXRNode(XRNode node, List<InputDevice> inputDevices)
+        {
+            if (null == inputDevices)
+                throw new ArgumentNullException("inputDevices");
+
+            List<UInt64> deviceIds = new List<UInt64>();
+            InputTracking.GetDeviceIdsAtXRNode_Internal(node, deviceIds);
+
+            inputDevices.Clear();
+            foreach (var deviceId in deviceIds)
+            {
+                InputDevice nodeDevice = new InputDevice(deviceId);
+                if (nodeDevice.isValid)
+                    inputDevices.Add(nodeDevice);
+            }
+        }
+
+        public static void GetDevices(List<InputDevice> inputDevices)
+        {
+            if (null == inputDevices)
+                throw new ArgumentNullException("inputDevices");
+
+            inputDevices.Clear();
+            GetDevices_Internal(inputDevices);
+        }
+
+        public static void GetDevicesWithRole(InputDeviceRole role, List<InputDevice> inputDevices)
+        {
+            if (null == inputDevices)
+                throw new ArgumentNullException("inputDevices");
+
+            List<InputDevice> allDevices = new List<InputDevice>();
+            GetDevices_Internal(allDevices);
+
+            inputDevices.Clear();
+            foreach (var device in allDevices)
+                if (device.role == role)
+                    inputDevices.Add(device);
+        }
+
+        private static extern void GetDevices_Internal([NotNull] List<InputDevice> inputDevices);
+
         internal static extern bool SendHapticImpulse(UInt64 deviceId, uint channel, float amplitude, float duration);
-        internal static extern bool SendHapticBuffer(UInt64 deviceId, uint channel, byte[] buffer);
+        internal static extern bool SendHapticBuffer(UInt64 deviceId, uint channel, [NotNull] byte[] buffer);
         internal static extern bool TryGetHapticCapabilities(UInt64 deviceId, out HapticCapabilities capabilities);
         internal static extern void StopHaptics(UInt64 deviceId);
+
+        internal static extern bool TryGetFeatureUsages(UInt64 deviceId, [NotNull] List<InputFeatureUsage> featureUsages);
 
         internal static extern bool TryGetFeatureValue_bool(UInt64 deviceId, string usage, out bool value);
         internal static extern bool TryGetFeatureValue_UInt32(UInt64 deviceId, string usage, out uint value);
@@ -464,6 +621,8 @@ namespace UnityEngine.XR
         internal static extern bool TryGetFeatureValue_XREyes(UInt64 deviceId, string usage, out Eyes value);
 
         internal static extern bool IsDeviceValid(UInt64 deviceId);
+        internal static extern string GetDeviceName(UInt64 deviceId);
+        internal static extern InputDeviceRole GetDeviceRole(UInt64 deviceId);
     }
 
     [NativeHeader("Modules/XR/Subsystems/Input/Public/XRInputTrackingFacade.h")]
@@ -486,16 +645,14 @@ namespace UnityEngine.XR
         public static void GetNodeStates(List<XRNodeState> nodeStates)
         {
             if (null == nodeStates)
-            {
                 throw new ArgumentNullException("nodeStates");
-            }
 
             nodeStates.Clear();
             GetNodeStates_Internal(nodeStates);
         }
 
         [NativeConditional("ENABLE_VR")]
-        extern private static void GetNodeStates_Internal(List<XRNodeState> nodeStates);
+        extern private static void GetNodeStates_Internal([NotNull] List<XRNodeState> nodeStates);
 
         [NativeConditional("ENABLE_VR")]
         extern public static bool disablePositionalTracking
@@ -509,5 +666,9 @@ namespace UnityEngine.XR
         [NativeHeader("Modules/XR/Subsystems/Input/Public/XRInputTracking.h")]
         [StaticAccessor("XRInputTracking::Get()", StaticAccessorType.Dot)]
         internal static extern UInt64 GetDeviceIdAtXRNode(XRNode node);
+
+        [NativeHeader("Modules/XR/Subsystems/Input/Public/XRInputTracking.h")]
+        [StaticAccessor("XRInputTracking::Get()", StaticAccessorType.Dot)]
+        internal static extern void GetDeviceIdsAtXRNode_Internal(XRNode node, [NotNull] List<UInt64> deviceIds);
     }
 }

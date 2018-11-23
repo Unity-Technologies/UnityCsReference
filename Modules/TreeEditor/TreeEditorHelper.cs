@@ -58,10 +58,7 @@ namespace TreeEditor
 
         public static string GetOptimizedShaderName(Shader shader)
         {
-            if (shader)
-                return ShaderUtil.GetDependency(shader, kOptimizedShaderDependency);
-
-            return null;
+            return shader?.GetDependency(kOptimizedShaderDependency)?.name;
         }
 
         private static bool IsTreeShader(Shader shader)

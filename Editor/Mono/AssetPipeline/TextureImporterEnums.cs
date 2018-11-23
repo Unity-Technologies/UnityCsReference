@@ -200,6 +200,19 @@ namespace UnityEditor
         ETC_RGB4Crunched = 64,
         // ETC2_RGBA8 crunched texture format.
         ETC2_RGBA8Crunched = 65,
+
+        // ASTC (block size 4x4) compressed HDR RGB(A) texture format.
+        ASTC_HDR_4x4 = 66,
+        // ASTC (block size 5x5) compressed HDR RGB(A)  texture format.
+        ASTC_HDR_5x5 = 67,
+        // ASTC (block size 4x6x6) compressed HDR RGB(A) texture format.
+        ASTC_HDR_6x6 = 68,
+        // ASTC (block size 8x8) compressed HDR RGB(A) texture format.
+        ASTC_HDR_8x8 = 69,
+        // ASTC (block size 10x10) compressed HDR RGB(A) texture format.
+        ASTC_HDR_10x10 = 70,
+        // ASTC (block size 12x12) compressed HDR RGB(A) texture format.
+        ASTC_HDR_12x12 = 71,
     }
 
     // Mip map filter for [[TextureImporter]].

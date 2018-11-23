@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEngine.Experimental.TerrainAPI
 {
@@ -60,6 +61,7 @@ namespace UnityEngine.Experimental.TerrainAPI
             public int mapIndex;                  // for splatmap operations, the splatmap index on this Terrain containing the desired TerrainLayer weight
             public int channelIndex;              // for splatmap operations, the channel on the splatmap containing the desired TerrainLayer weight
         }
+
 
         [Flags]
         internal enum ToolAction

@@ -441,7 +441,7 @@ namespace UnityEngine.UIElements
             itemContainer.hierarchy.Add(indents);
 
             var toggle = new Toggle() { name = s_ItemToggleName };
-            toggle.AddToClassList(s_ItemToggleName);
+            toggle.AddToClassList(Foldout.toggleUssClassName);
             toggle.RegisterValueChangedCallback(ToggleExpandedState);
             itemContainer.hierarchy.Add(toggle);
 
@@ -489,8 +489,8 @@ namespace UnityEngine.UIElements
                 return;
 
             // Bind user content container.
-            var userContentContainer = element.Q(s_ItemContentContainerName);
-            m_BindItem(userContentContainer.ElementAt(0), item);
+            var userContentContainer = element.Q(s_ItemContentContainerName).ElementAt(0);
+            m_BindItem(userContentContainer, item);
         }
 
         private int GetItemId(int index)

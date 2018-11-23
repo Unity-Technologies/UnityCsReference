@@ -134,6 +134,12 @@ namespace UnityEditor
             TextureImporterFormat.ASTC_8x8,
             TextureImporterFormat.ASTC_10x10,
             TextureImporterFormat.ASTC_12x12,
+            TextureImporterFormat.ASTC_HDR_4x4,
+            TextureImporterFormat.ASTC_HDR_5x5,
+            TextureImporterFormat.ASTC_HDR_6x6,
+            TextureImporterFormat.ASTC_HDR_8x8,
+            TextureImporterFormat.ASTC_HDR_10x10,
+            TextureImporterFormat.ASTC_HDR_12x12
         };
 
         enum CookieMode

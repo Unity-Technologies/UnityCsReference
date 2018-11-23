@@ -32,7 +32,7 @@ namespace UnityEngine.UIElements
             get { return m_Image; }
             set
             {
-                m_ImageIsInline = true;
+                m_ImageIsInline = value != null;
                 if (m_Image != value)
                 {
                     m_Image = value;
@@ -146,7 +146,7 @@ namespace UnityEngine.UIElements
 
             ICustomStyle customStyle = e.customStyle;
             if (!m_ImageIsInline && customStyle.TryGetValue(s_ImageProperty, out textureValue))
-                image = textureValue;
+                m_Image = textureValue;
 
             if (!m_ScaleModeIsInline && customStyle.TryGetValue(s_ScaleModeProperty, out scaleModeValue))
                 scaleMode = (ScaleMode)scaleModeValue;

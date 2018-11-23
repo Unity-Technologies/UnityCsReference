@@ -61,6 +61,13 @@ namespace UnityEngine.Analytics
         }
 
         [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
+        private extern static bool playerOptedOutInternal
+        {
+            [NativeMethod("GetPlayerOptedOut")]
+            get;
+        }
+
+        [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
         private extern static bool limitUserTrackingInternal
         {
             [NativeMethod("GetLimitUserTracking")]

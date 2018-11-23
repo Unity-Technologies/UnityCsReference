@@ -38,10 +38,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
     }
 
+#pragma warning disable 649
+    [Serializable]
+    class VersionDefine
+    {
+        public string name;
+        public string expression;
+        public string define;
+    }
+
     [System.Serializable]
     class CustomScriptAssemblyData
     {
-#pragma warning disable 649
         public string name;
         public string[] references;
         public string[] optionalUnityReferences;
@@ -52,6 +60,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string[] precompiledReferences;
         public bool autoReferenced;
         public string[] defineConstraints;
+        public VersionDefine[] versionDefines;
 
         public static CustomScriptAssemblyData FromJson(string json)
         {
@@ -116,6 +125,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string FilePath { get; set; }
         public string PathPrefix { get; set; }
         public string Name { get; set; }
+        public string GUID { get; set; }
         public string[] References { get; set; }
         public OptionalUnityReferences OptionalUnityReferences { get; set; }
         public CustomScriptAssemblyPlatform[] IncludePlatforms { get; set;  }
@@ -128,6 +138,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string[] PrecompiledReferences { get; set; }
         public bool AutoReferenced { get; set; }
         public string[] DefineConstraints { get; set; }
+        public VersionDefine[] VersionDefines { get; set; }
 
         public AssemblyFlags AssemblyFlags
         {
@@ -254,7 +265,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return customScriptAssembly;
         }
 
-        public static CustomScriptAssembly FromCustomScriptAssemblyData(string path, CustomScriptAssemblyData customScriptAssemblyData)
+        public static CustomScriptAssembly FromCustomScriptAssemblyData(string path, string guid, CustomScriptAssemblyData customScriptAssemblyData)
         {
             if (customScriptAssemblyData == null)
                 return null;
@@ -264,6 +275,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var customScriptAssembly = new CustomScriptAssembly();
 
             customScriptAssembly.Name = customScriptAssemblyData.name;
+            customScriptAssembly.GUID = guid;
             customScriptAssembly.References = customScriptAssemblyData.references;
             customScriptAssembly.FilePath = path;
             customScriptAssembly.PathPrefix = pathPrefix;
@@ -271,6 +283,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             customScriptAssembly.OverrideReferences = customScriptAssemblyData.overrideReferences;
             customScriptAssembly.PrecompiledReferences = customScriptAssemblyData.precompiledReferences ?? new string[0];
             customScriptAssembly.DefineConstraints = customScriptAssemblyData.defineConstraints ?? new string[0];
+            customScriptAssembly.VersionDefines = (customScriptAssemblyData.versionDefines ?? new VersionDefine[0]);
 
             customScriptAssemblyData.optionalUnityReferences = customScriptAssemblyData.optionalUnityReferences ?? new string[0];
             foreach (var optionalUnityReferenceString in customScriptAssemblyData.optionalUnityReferences)

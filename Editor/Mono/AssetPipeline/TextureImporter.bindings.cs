@@ -314,6 +314,8 @@ namespace UnityEditor
         [NativeProperty("SpriteMetaDatas")]
         public extern SpriteMetaData[] spritesheet { get; set; }
 
+        public extern SecondarySpriteTexture[] secondarySpriteTextures { get; set; }
+
         public extern string spritePackingTag { get; set; }
 
         // The number of pixels in one unit. Note: The C++ side still uses the name pixelsToUnits which is misleading,

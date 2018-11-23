@@ -467,17 +467,68 @@ namespace UnityEngine
             Internal_DrawMeshInstancedIndirect(mesh, submeshIndex, material, bounds, bufferWithArgs, argsOffset, properties, castShadows, receiveShadows, layer, camera, lightProbeUsage, lightProbeProxyVolume);
         }
 
-        public static void DrawProcedural(MeshTopology topology, int vertexCount, [uei.DefaultValue("1")] int instanceCount)
+        // TODO - deprecate these and auto-upgrade to DrawProceduralNow/DrawProceduralIndirectNow when case 1098032 is fixed
+        public static void DrawProcedural(MeshTopology topology, int vertexCount, [uei.DefaultValue("1")] int instanceCount) { DrawProceduralNow(topology, vertexCount, instanceCount); }
+        public static void DrawProceduralIndirect(MeshTopology topology, ComputeBuffer bufferWithArgs, [uei.DefaultValue("0")] int argsOffset) { DrawProceduralIndirectNow(topology, bufferWithArgs, argsOffset); }
+
+        public static void DrawProceduralNow(MeshTopology topology, int vertexCount, int instanceCount = 1)
         {
-            Internal_DrawProcedural(topology, vertexCount, instanceCount);
+            Internal_DrawProceduralNow(topology, vertexCount, instanceCount);
         }
 
-        public static void DrawProceduralIndirect(MeshTopology topology, ComputeBuffer bufferWithArgs, [uei.DefaultValue("0")] int argsOffset)
+        public static void DrawProceduralNow(MeshTopology topology, GraphicsBuffer indexBuffer, int indexCount, int instanceCount = 1)
+        {
+            if (indexBuffer == null)
+                throw new ArgumentNullException("indexBuffer");
+            Internal_DrawProceduralIndexedNow(topology, indexBuffer, indexCount, instanceCount);
+        }
+
+        public static void DrawProceduralIndirectNow(MeshTopology topology, ComputeBuffer bufferWithArgs, int argsOffset = 0)
         {
             if (bufferWithArgs == null)
                 throw new ArgumentNullException("bufferWithArgs");
 
-            Internal_DrawProceduralIndirect(topology, bufferWithArgs, argsOffset);
+            Internal_DrawProceduralIndirectNow(topology, bufferWithArgs, argsOffset);
+        }
+
+        public static void DrawProceduralIndirectNow(MeshTopology topology, GraphicsBuffer indexBuffer, ComputeBuffer bufferWithArgs, int argsOffset = 0)
+        {
+            if (indexBuffer == null)
+                throw new ArgumentNullException("indexBuffer");
+            if (bufferWithArgs == null)
+                throw new ArgumentNullException("bufferWithArgs");
+
+            Internal_DrawProceduralIndexedIndirectNow(topology, indexBuffer, bufferWithArgs, argsOffset);
+        }
+
+        public static void DrawProcedural(Material material, Bounds bounds, MeshTopology topology, int vertexCount, int instanceCount = 1, Camera camera = null, MaterialPropertyBlock properties = null, ShadowCastingMode castShadows = ShadowCastingMode.On, bool receiveShadows = true, int layer = 0)
+        {
+            Internal_DrawProcedural(material, bounds, topology, vertexCount, instanceCount, camera, properties, castShadows, receiveShadows, layer);
+        }
+
+        public static void DrawProcedural(Material material, Bounds bounds, MeshTopology topology, GraphicsBuffer indexBuffer, int indexCount, int instanceCount = 1, Camera camera = null, MaterialPropertyBlock properties = null, ShadowCastingMode castShadows = ShadowCastingMode.On, bool receiveShadows = true, int layer = 0)
+        {
+            if (indexBuffer == null)
+                throw new ArgumentNullException("indexBuffer");
+            Internal_DrawProceduralIndexed(material, bounds, topology, indexBuffer, indexCount, instanceCount, camera, properties, castShadows, receiveShadows, layer);
+        }
+
+        public static void DrawProceduralIndirect(Material material, Bounds bounds, MeshTopology topology, ComputeBuffer bufferWithArgs, int argsOffset = 0, Camera camera = null, MaterialPropertyBlock properties = null, ShadowCastingMode castShadows = ShadowCastingMode.On, bool receiveShadows = true, int layer = 0)
+        {
+            if (bufferWithArgs == null)
+                throw new ArgumentNullException("bufferWithArgs");
+
+            Internal_DrawProceduralIndirect(material, bounds, topology, bufferWithArgs, argsOffset, camera, properties, castShadows, receiveShadows, layer);
+        }
+
+        public static void DrawProceduralIndirect(Material material, Bounds bounds, MeshTopology topology, GraphicsBuffer indexBuffer, ComputeBuffer bufferWithArgs, int argsOffset = 0, Camera camera = null, MaterialPropertyBlock properties = null, ShadowCastingMode castShadows = ShadowCastingMode.On, bool receiveShadows = true, int layer = 0)
+        {
+            if (indexBuffer == null)
+                throw new ArgumentNullException("indexBuffer");
+            if (bufferWithArgs == null)
+                throw new ArgumentNullException("bufferWithArgs");
+
+            Internal_DrawProceduralIndexedIndirect(material, bounds, topology, indexBuffer, bufferWithArgs, argsOffset, camera, properties, castShadows, receiveShadows, layer);
         }
     }
 }

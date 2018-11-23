@@ -60,5 +60,6 @@ namespace UnityEngine.UIElements
         StyleFloat opacity { get; set; }
         StyleEnum<Visibility> visibility { get; set; }
         StyleCursor cursor { get; set; }
+        StyleEnum<DisplayStyle> display { get; set; }
     }
 }

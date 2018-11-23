@@ -29,7 +29,7 @@ namespace UnityEngine
     {
         [NativeProperty("Near")] extern public float nearClipPlane { get; set; }
         [NativeProperty("Far")]  extern public float farClipPlane  { get; set; }
-        [NativeProperty("Fov")]  extern public float fieldOfView   { get; set; }
+        [NativeProperty("VerticalFieldOfView")]  extern public float fieldOfView   { get; set; }
 
         extern public RenderingPath renderingPath { get; set; }
         extern public RenderingPath actualRenderingPath {[NativeName("CalculateRenderingPath")] get;  }
@@ -97,7 +97,7 @@ namespace UnityEngine
         extern public Vector2 lensShift  { get; set; }
         extern public float focalLength  { get; set; }
         extern public GateFitMode gateFit  { get; set; }
-
+        public enum FieldOfViewAxis { Vertical, Horizontal };
         extern public float GetGateFittedFieldOfView();
         extern public Vector2 GetGateFittedLensShift();
 
@@ -190,8 +190,15 @@ namespace UnityEngine
             CalculateProjectionMatrixFromPhysicalPropertiesInternal(out output, focalLength, sensorSize, lensShift, nearClip, farClip, gateFitParameters.aspect, gateFitParameters.mode);
         }
 
-        extern public static float FocalLengthToFOV(float focalLength, float sensorSize);
-        extern public static float FOVToFocalLength(float fov, float sensorSize);
+        [NativeName("FocalLengthToFieldOfView_Safe")]
+        extern public static float FocalLengthToFieldOfView(float focalLength, float sensorSize);
+
+        [NativeName("FieldOfViewToFocalLength_Safe")]
+        extern public static float FieldOfViewToFocalLength(float fieldOfView, float sensorSize);
+
+        [NativeName("HorizontalToVerticalFieldOfView_Safe")]
+        extern public static float HorizontalToVerticalFieldOfView(float horizontalFieldOfView, float aspectRatio);
+        extern public static float VerticalToHorizontalFieldOfView(float verticalFieldOfView, float aspectRatio);
 
         extern public static Camera main {[FreeFunction("FindMainCamera")] get; }
         extern public static Camera current {[FreeFunction("GetCurrentCameraPtr")] get; }

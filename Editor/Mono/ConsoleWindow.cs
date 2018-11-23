@@ -290,6 +290,7 @@ namespace UnityEditor
         {
             position = new Rect(200, 200, 800, 400);
             m_ListView = new ListViewState(0, 0);
+            EditorGUI.hyperLinkClicked += EditorGUI_HyperLinkClicked;
         }
 
         void OnEnable()
@@ -706,8 +707,12 @@ namespace UnityEditor
 
             // Display active text (We want word wrapped text with a vertical scrollbar)
             m_TextScroll = GUILayout.BeginScrollView(m_TextScroll, Constants.Box);
-            float height = Constants.MessageStyle.CalcHeight(GUIContent.Temp(m_ActiveText), position.width);
-            EditorGUILayout.SelectableLabel(m_ActiveText, Constants.MessageStyle, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true), GUILayout.MinHeight(height));
+
+            string stackWithHyperlinks = StacktraceWithHyperlinks(m_ActiveText);
+            float height = Constants.MessageStyle.CalcHeight(GUIContent.Temp(stackWithHyperlinks), position.width);
+            EditorGUILayout.SelectableLabel(stackWithHyperlinks, Constants.MessageStyle, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true), GUILayout.MinHeight(height));
+
+
             GUILayout.EndScrollView();
 
             SplitterGUILayout.EndVerticalSplit();
@@ -719,6 +724,54 @@ namespace UnityEditor
                     EditorGUIUtility.systemCopyBuffer = m_ActiveText;
                 e.Use();
             }
+        }
+
+        private static string StacktraceWithHyperlinks(string stacktraceText)
+        {
+            StringBuilder textWithHyperlinks = new StringBuilder();
+            var lines = stacktraceText.Split(new string[] {"\n"}, StringSplitOptions.None);
+            for (int i = 0; i < lines[i].Length; ++i)
+            {
+                string textBeforeFilePath = ") (at ";
+                int filePathIndex = lines[i].IndexOf(textBeforeFilePath, StringComparison.Ordinal);
+                if (filePathIndex > 0)
+                {
+                    filePathIndex += textBeforeFilePath.Length;
+                    if (lines[i][filePathIndex] != '<') // sometimes no url is given, just an id between <>, we can't do an hyperlink
+                    {
+                        string filePathPart = lines[i].Substring(filePathIndex);
+                        int lineIndex = filePathPart.LastIndexOf(":", StringComparison.Ordinal); // LastIndex because the url can contain ':' ex:"C:"
+                        if (lineIndex > 0)
+                        {
+                            int endLineIndex = filePathPart.IndexOf(")", StringComparison.Ordinal);
+                            if (endLineIndex > 0)
+                            {
+                                string lineString =
+                                    filePathPart.Substring(lineIndex + 1, (endLineIndex) - (lineIndex + 1));
+                                string filePath = filePathPart.Substring(0, lineIndex);
+
+                                textWithHyperlinks.Append(lines[i].Substring(0, filePathIndex));
+                                textWithHyperlinks.Append("<a href=\"" + filePath + "\"" + " line=\"" + lineString + "\">");
+                                textWithHyperlinks.Append(filePath + ":" + lineString);
+                                textWithHyperlinks.AppendLine("</a>)");
+
+                                continue; // continue to evade the default case
+                            }
+                        }
+                    }
+                }
+                // default case if no hyperlink : we just write the line
+                textWithHyperlinks.AppendLine(lines[i]);
+            }
+
+            return textWithHyperlinks.ToString();
+        }
+
+        private void EditorGUI_HyperLinkClicked(object sender, EventArgs e)
+        {
+            EditorGUILayout.HyperLinkClickedEventArgs args = (EditorGUILayout.HyperLinkClickedEventArgs)e;
+
+            LogEntries.OpenFileOnSpecificLine(args.hyperlinkInfos["href"], Int32.Parse(args.hyperlinkInfos["line"]));
         }
 
         public static bool GetConsoleErrorPause()

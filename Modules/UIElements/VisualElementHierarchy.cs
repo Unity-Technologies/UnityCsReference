@@ -293,7 +293,7 @@ namespace UnityEngine.UIElements
 
                 PutChildAtIndex(child, index);
 
-                child.SetEnabledFromHierarchy(m_Owner.enabledInHierarchy);
+                child.PropagateEnabledToChildren(m_Owner.enabledInHierarchy);
 
                 child.IncrementVersion(VersionChangeType.Hierarchy);
                 m_Owner.IncrementVersion(VersionChangeType.Hierarchy);

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine;
 
 namespace UnityEditor
@@ -33,12 +32,13 @@ namespace UnityEditor
         GUIContent m_CameraSpeedSliderContent;
         GUIContent[] m_CameraSpeedMinMax;
         GUIContent m_FieldOfView;
+        GUIContent m_DynamicClip;
 
-        const int k_FieldCount = 8;
-        const int k_WindowWidth = 280;
+        const int k_FieldCount = 9;
+        const int k_WindowWidth = 300;
         const int k_WindowHeight = ((int)EditorGUI.kSingleLineHeight) * k_FieldCount + kFrameWidth * 2;
         const int kFrameWidth = 10;
-        const float k_PrefixLabelWidth = 100f;
+        const float k_PrefixLabelWidth = 120f;
         const float kMinMaxSpeedLabelWidth = 26f;
         const float k_NearClipMin = .01f;
 
@@ -60,6 +60,8 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Max", "The maximum speed of the camera in the Scene view. Valid values are between [0.02, 99].")
             };
             m_FieldOfView = EditorGUIUtility.TrTextContent("Field of View", "The height of the Camera's view angle. Measured in degrees vertically, or along the local Y axis.");
+            m_DynamicClip = EditorGUIUtility.TrTextContent("Dynamic Clipping",
+                "Check this to enable camera's near and far clipping planes to be calculated relative to the viewport size of the Scene.");
         }
 
         public override void OnGUI(Rect rect)
@@ -103,16 +105,19 @@ namespace UnityEditor
                 settings.fieldOfView = EditorGUILayout.Slider(m_FieldOfView, settings.fieldOfView, 4f, 179f);
             }
 
+            settings.dynamicClip = EditorGUILayout.Toggle(m_DynamicClip, settings.dynamicClip);
 
-            float near = settings.nearClip, far = settings.farClip;
-            ClipPlanesField(EditorGUI.s_ClipingPlanesLabel, ref near, ref far, EditorGUI.kNearFarLabelsWidth);
-            settings.nearClip = near;
-            settings.farClip = far;
+            using (new EditorGUI.DisabledScope(settings.dynamicClip))
+            {
+                float near = settings.nearClip, far = settings.farClip;
+                ClipPlanesField(EditorGUI.s_ClipingPlanesLabel, ref near, ref far, EditorGUI.kNearFarLabelsWidth);
+                settings.nearClip = near;
+                settings.farClip = far;
+                settings.nearClip = Mathf.Max(k_NearClipMin, settings.nearClip);
+                if (settings.nearClip > settings.farClip)
+                    settings.farClip = settings.nearClip + k_NearClipMin;
+            }
 
-            settings.nearClip = Mathf.Max(k_NearClipMin, settings.nearClip);
-
-            if (settings.nearClip > settings.farClip)
-                settings.farClip = settings.nearClip + k_NearClipMin;
 
             if (EditorGUI.EndChangeCheck())
                 m_SceneView.Repaint();

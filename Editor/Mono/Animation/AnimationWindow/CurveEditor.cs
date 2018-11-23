@@ -131,6 +131,10 @@ namespace UnityEditor
         // An additional vertical min / max range clamp when editing multiple curves with different ranges
         public float vRangeMin = -Mathf.Infinity;
         public float vRangeMax = Mathf.Infinity;
+
+        public bool useScalingInKeyEditor = false;
+        public string xAxisLabel = null;
+        public string yAxisLabel = null;
     }
 
     //  Control point collection renderer
@@ -2193,7 +2197,8 @@ namespace UnityEditor
             switch (evt.GetTypeForControl(id))
             {
                 case EventType.Layout:
-                    HandleUtility.AddDefaultControl(id);
+                    float distance = HandleUtility.DistanceToRectangleInternal(drawRect.position, Quaternion.identity, drawRect.size);
+                    HandleUtility.AddControl(id, distance);
                     break;
 
                 case EventType.ContextClick:
@@ -2677,7 +2682,7 @@ namespace UnityEditor
             var fieldPosition = DrawingToViewTransformPoint(m_PointEditingFieldPosition);
 
             const float kFieldHeight = 18f;
-            const float kFieldWidth = 80f;
+            const float kFieldWidth = 95f;
 
             // Keep fields in the drawing margins
             var drawAreaInMargins = Rect.MinMaxRect(leftmargin, topmargin, rect.width - rightmargin, rect.height - bottommargin);
@@ -2686,13 +2691,27 @@ namespace UnityEditor
 
             EditorGUI.BeginChangeCheck();
             GUI.SetNextControlName(kPointTimeFieldName);
+            CurveWrapper curveWrapper = GetCurveWrapperFromSelection(selectedCurves[0]);
+
+            Vector2 scale = Vector2.one;
+            if (curveWrapper.useScalingInKeyEditor && curveWrapper.getAxisUiScalarsCallback != null)
+            {
+                scale = curveWrapper.getAxisUiScalarsCallback();
+
+                // don't scale if the values are too small or negative
+                if (scale.x < 0.0001)
+                    scale.x = 1;
+                if (scale.y < 0.0001)
+                    scale.y = 1;
+            }
+
             m_NewTime = PointFieldForSelection(
                 new Rect(fieldPosition.x, fieldPosition.y, kFieldWidth, kFieldHeight),
                 1,
-                m_NewTime,
+                m_NewTime * scale.x,
                 x => GetKeyframeFromSelection(x).time,
                 (r, id, time) => TimeField(r, id, time, invSnap, timeFormat),
-                settings.xAxisLabel);
+                curveWrapper.xAxisLabel == null ? settings.xAxisLabel : curveWrapper.xAxisLabel) / scale.x;
             if (EditorGUI.EndChangeCheck())
             {
                 m_TimeWasEdited = true;
@@ -2703,10 +2722,10 @@ namespace UnityEditor
             m_NewValue = PointFieldForSelection(
                 new Rect(fieldPosition.x, fieldPosition.y + kFieldHeight, kFieldWidth, kFieldHeight),
                 2,
-                m_NewValue,
+                m_NewValue * scale.y,
                 x => GetKeyframeFromSelection(x).value,
                 (r, id, value) => ValueField(r, id, value),
-                settings.yAxisLabel);
+                curveWrapper.yAxisLabel == null ? settings.yAxisLabel : curveWrapper.yAxisLabel) / scale.y;
             if (EditorGUI.EndChangeCheck())
             {
                 m_ValueWasEdited = true;

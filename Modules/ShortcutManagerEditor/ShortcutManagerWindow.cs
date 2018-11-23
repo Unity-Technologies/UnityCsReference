@@ -6,8 +6,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
+using UnityEngine.UIElements;
+using UnityEngine.Scripting;
 
 namespace UnityEditor.ShortcutManagement
 {
@@ -157,7 +157,7 @@ namespace UnityEditor.ShortcutManagement
         SerializedShortcutManagerWindowState m_State = new SerializedShortcutManagerWindowState();
         ShortcutManagerWindowViewController m_ViewController;
 
-        [MenuItem("Edit/Shortcuts...", false, 261)]
+        [RequiredByNativeCode]
         static void Open()
         {
             var win = GetWindowDontShow<ShortcutManagerWindow>();
@@ -166,14 +166,11 @@ namespace UnityEditor.ShortcutManagement
 
         void OnEnable()
         {
+            var rootElement = rootVisualElement;
             //Workaround for the rootVisualContainer not having a height set on AuxWindows:
-            rootVisualContainer.style.positionTop = 0;
-            rootVisualContainer.style.positionBottom = 0;
-            rootVisualContainer.style.positionLeft = 0;
-            rootVisualContainer.style.positionRight = 0;
-            rootVisualContainer.style.positionType = PositionType.Absolute;
+            rootElement.StretchToParentSize();
 
-            titleContent = new GUIContent("Shortcut Manager");
+            titleContent = new GUIContent("Shortcuts");
             minSize = new Vector2(740, 700);
             maxSize = new Vector2(740, 10000);
 
@@ -186,7 +183,7 @@ namespace UnityEditor.ShortcutManagement
             m_ViewController.SetView(view);
 
             var root = view.GetVisualElementHierarchyRoot();
-            rootVisualContainer.Add(root);
+            rootElement.Add(root);
 
             m_ViewController.OnEnable();
             EditorApplication.modifierKeysChanged += OnModifiersMightHaveChanged;

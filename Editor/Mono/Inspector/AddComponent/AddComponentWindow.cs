@@ -3,14 +3,16 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEngine.Scripting;
 
-namespace UnityEditor.AdvancedDropdown
+namespace UnityEditor.AddComponent
 {
     [InitializeOnLoad]
     internal class AddComponentWindow : AdvancedDropdownWindow
     {
+        internal const string OpenAddComponentDropdown = "OpenAddComponentDropdown";
         [Serializable]
         internal class AnalyticsEventData
         {
@@ -19,44 +21,66 @@ namespace UnityEditor.AdvancedDropdown
             public bool isNewScript;
         }
 
-        internal static AddComponentWindow s_AddComponentWindow = null;
-
-        internal GameObject[] m_GameObjects;
-        internal string searchString => m_Search;
-
+        private GameObject[] m_GameObjects;
         private DateTime m_ComponentOpenTime;
         private const string kComponentSearch = "ComponentSearchString";
         private const int kMaxWindowHeight = 395 - 80;
+        private static AdvancedDropdownState s_State = new AdvancedDropdownState();
 
         protected override bool setInitialSelectionPosition { get; } = false;
-
-        public const string OpenAddComponentDropdown = "OpenAddComponentDropdown";
 
         protected override bool isSearchFieldDisabled
         {
             get
             {
-                var child = m_CurrentlyRenderedTree.GetSelectedChild();
+                var child = state.GetSelectedChild(renderedTreeItem);
                 if (child != null)
                     return child is NewScriptDropdownItem;
                 return false;
             }
         }
 
+        internal static bool Show(Rect rect, GameObject[] gos)
+        {
+            CloseAllOpenWindows<AddComponentWindow>();
+            Event.current.Use();
+            var window = CreateInstance<AddComponentWindow>();
+            window.dataSource = new AddComponentDataSource(s_State);
+            window.gui = new AddComponentGUI(window.dataSource, window.OnCreateNewScript);
+            window.state = s_State;
+            window.m_GameObjects = gos;
+            window.m_ComponentOpenTime = DateTime.UtcNow;
+            window.Init(rect);
+            window.searchString = EditorPrefs.GetString(kComponentSearch, "");
+            return true;
+        }
+
         protected override void OnEnable()
         {
             base.OnEnable();
-            dataSource = new AddComponentDataSource();
-            gui = new AddComponentGUI(dataSource);
-            s_AddComponentWindow = this;
-            m_Search = EditorPrefs.GetString(kComponentSearch, "");
             showHeader = true;
+            selectionChanged += OnItemSelected;
+        }
+
+        private void OnItemSelected(AdvancedDropdownItem item)
+        {
+            if (item is ComponentDropdownItem)
+            {
+                SendUsabilityAnalyticsEvent(new AnalyticsEventData
+                {
+                    name = name,
+                    filter = searchString,
+                    isNewScript = false
+                });
+
+                var gos = m_GameObjects;
+                EditorApplication.ExecuteMenuItemOnGameObjects(((ComponentDropdownItem)item).menuPath, gos);
+            }
         }
 
         protected override void OnDisable()
         {
-            s_AddComponentWindow = null;
-            EditorPrefs.SetString(kComponentSearch, m_Search);
+            EditorPrefs.SetString(kComponentSearch, searchString);
         }
 
         protected override Vector2 CalculateWindowSize(Rect buttonRect)
@@ -64,29 +88,9 @@ namespace UnityEditor.AdvancedDropdown
             return new Vector2(buttonRect.width, kMaxWindowHeight);
         }
 
-        internal static bool Show(Rect rect, GameObject[] gos)
-        {
-            CloseAllOpenWindows<AddComponentWindow>();
-
-            Event.current.Use();
-            s_AddComponentWindow = CreateAndInit<AddComponentWindow>(rect);
-            s_AddComponentWindow.m_GameObjects = gos;
-            s_AddComponentWindow.m_ComponentOpenTime = DateTime.UtcNow;
-            return true;
-        }
-
-        protected override PopupLocation[] GetLocationPriority()
-        {
-            return new[]
-            {
-                PopupLocation.Below,
-                PopupLocation.Above,
-            };
-        }
-
         protected override bool SpecialKeyboardHandling(Event evt)
         {
-            var createScriptMenu = m_CurrentlyRenderedTree.GetSelectedChild();
+            var createScriptMenu = state.GetSelectedChild(renderedTreeItem);
             if (createScriptMenu is NewScriptDropdownItem)
             {
                 // When creating new script name we want to dedicate both left/right arrow and backspace
@@ -94,23 +98,37 @@ namespace UnityEditor.AdvancedDropdown
                 // The only way to get back using the keyboard is pressing Esc.
                 if (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter)
                 {
-                    createScriptMenu.OnAction();
+                    OnCreateNewScript((NewScriptDropdownItem)createScriptMenu);
                     evt.Use();
                     GUIUtility.ExitGUI();
                 }
+
                 if (evt.keyCode == KeyCode.Escape)
                 {
                     GoToParent();
                     evt.Use();
                 }
+
                 return true;
             }
             return false;
         }
 
-        internal static void SendUsabilityAnalyticsEvent(AnalyticsEventData eventData)
+        void OnCreateNewScript(NewScriptDropdownItem item)
         {
-            var openTime = s_AddComponentWindow.m_ComponentOpenTime;
+            item.Create(m_GameObjects, searchString);
+            SendUsabilityAnalyticsEvent(new AnalyticsEventData
+            {
+                name = item.className,
+                filter = searchString,
+                isNewScript = true
+            });
+            Close();
+        }
+
+        internal void SendUsabilityAnalyticsEvent(AnalyticsEventData eventData)
+        {
+            var openTime = m_ComponentOpenTime;
             UsabilityAnalytics.SendEvent("executeAddComponentWindow", openTime, DateTime.UtcNow - openTime, false, eventData);
         }
 

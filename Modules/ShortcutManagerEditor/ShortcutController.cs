@@ -140,6 +140,7 @@ namespace UnityEditor.ShortcutManagement
         void OnActiveProfileChanged(IShortcutProfileManager sender, ShortcutProfile oldActiveProfile, ShortcutProfile newActiveProfile)
         {
             m_LastUsedProfileIdProvider.lastUsedProfileId = profileManager.activeProfile?.id;
+            Initialize(sender);
         }
 
         void ActivateLastUsedProfile()

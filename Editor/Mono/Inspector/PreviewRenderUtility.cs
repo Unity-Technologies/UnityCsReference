@@ -8,6 +8,7 @@ using System.Diagnostics;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.SceneManagement;
 using Debug = UnityEngine.Debug;
 using Object = UnityEngine.Object;
@@ -274,8 +275,8 @@ namespace UnityEditor
                 // Do not use GetTemporary to manage render textures. Temporary RTs are only
                 // garbage collected each N frames, and in the editor we might be wildly resizing
                 // the inspector, thus using up tons of memory.
-                RenderTextureFormat format = camera.allowHDR ? RenderTextureFormat.ARGBHalf : RenderTextureFormat.ARGB32;
-                m_RenderTexture = new RenderTexture(rtWidth, rtHeight, 16, format, RenderTextureReadWrite.Linear);
+                GraphicsFormat format = camera.allowHDR ? GraphicsFormat.R16G16B16A16_SFloat : GraphicsFormat.R8G8B8A8_UNorm;
+                m_RenderTexture = new RenderTexture(rtWidth, rtHeight, 16, format);
                 m_RenderTexture.hideFlags = HideFlags.HideAndDontSave;
 
                 camera.targetTexture = m_RenderTexture;
@@ -354,7 +355,7 @@ namespace UnityEditor
         {
             Unsupported.RestoreOverrideRenderSettings();
 
-            var tmp = RenderTexture.GetTemporary((int)m_TargetRect.width, (int)m_TargetRect.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+            var tmp = RenderTexture.GetTemporary((int)m_TargetRect.width, (int)m_TargetRect.height, 0, GraphicsFormat.R8G8B8A8_UNorm);
 
             Graphics.Blit(m_RenderTexture, tmp, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
 

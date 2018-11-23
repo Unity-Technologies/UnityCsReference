@@ -57,5 +57,6 @@ namespace UnityEngine.UIElements
         int unitySliceBottom { get; }
         float opacity { get; }
         Visibility visibility { get; }
+        DisplayStyle display { get; }
     }
 }

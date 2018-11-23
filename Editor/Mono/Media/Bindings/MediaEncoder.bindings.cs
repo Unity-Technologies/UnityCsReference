@@ -9,7 +9,9 @@ using UnityEngine.Bindings;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Object = UnityEngine.Object;
+using System.Runtime.CompilerServices;
 
+[assembly: InternalsVisibleTo("VideoTesting")]
 namespace UnityEditor.Media
 {
     [NativeHeader("Editor/Mono/Media/Bindings/MediaEncoder.bindings.h")]
@@ -33,6 +35,7 @@ namespace UnityEditor.Media
         public uint          height;
         public bool          includeAlpha; // For webm only; not applicable to mp4.
         public VideoBitrateMode bitRateMode;
+        internal VideoCodec codec;
     }
 
     public struct AudioTrackAttributes
@@ -76,6 +79,13 @@ namespace UnityEditor.Media
         ~MediaEncoder()
         {
             Dispose();
+        }
+
+        unsafe public bool AddFrame(
+            int width, int height, int rowBytes, TextureFormat format, NativeArray<byte> data)
+        {
+            return Internal_AddFrameRaw(
+                m_Ptr, width, height, rowBytes, format, data.GetUnsafeReadOnlyPtr(), data.Length);
         }
 
         public bool AddFrame(Texture2D texture)
@@ -124,6 +134,11 @@ namespace UnityEditor.Media
 
         [FreeFunction]
         extern private static bool Internal_AddFrame(IntPtr encoder, Texture2D texture);
+
+        [FreeFunction]
+        unsafe extern private static bool Internal_AddFrameRaw(
+            IntPtr encoder, int width, int height, int rowBytes, TextureFormat format, void* buffer,
+            int byteCount);
 
         [FreeFunction]
         unsafe extern private static bool Internal_AddSamples(

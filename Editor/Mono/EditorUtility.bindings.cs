@@ -187,8 +187,11 @@ namespace UnityEditor
         [FreeFunction("LoadPlatformSupportNativeLibrary")]
         internal static extern void LoadPlatformSupportNativeLibrary(string nativeLibrary);
 
-        internal static extern int GetDirtyIndex(int instanceID);
-        internal static extern bool IsDirty(int instanceID);
+        [NativeMethod("GetDirtyIndex")]
+        public static extern int GetDirtyCount(int instanceID);
+        public static int GetDirtyCount(Object target) { return target != null ? GetDirtyCount(target.GetInstanceID()) : 0; }
+        public static extern bool IsDirty(int instanceID);
+        public static bool IsDirty(Object target) { return target != null ? IsDirty(target.GetInstanceID()) : false; }
         internal static extern string SaveBuildPanel(BuildTarget target, string title, string directory, string defaultName, string extension, out bool updateExistingBuild);
         internal static extern int NaturalCompareObjectNames(Object a, Object b);
 

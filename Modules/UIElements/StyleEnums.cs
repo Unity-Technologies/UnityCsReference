@@ -58,13 +58,6 @@ namespace UnityEngine.UIElements
         SpaceAround = YogaJustify.SpaceAround
     }
 
-    public enum ImageScaleMode
-    {
-        StretchToFill = 0,
-        ScaleAndCrop = 1,
-        ScaleToFit = 2
-    }
-
     public enum Visibility
     {
         Visible = 0,
@@ -75,5 +68,12 @@ namespace UnityEngine.UIElements
     {
         Normal = 0,
         NoWrap = 1
+    }
+
+    // Display already exists in UnityEngine and would force fully qualified usage every time
+    public enum DisplayStyle
+    {
+        Flex = YogaDisplay.Flex,
+        None = YogaDisplay.None
     }
 }

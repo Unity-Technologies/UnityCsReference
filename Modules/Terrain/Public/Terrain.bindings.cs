@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.Scripting;
 
 namespace UnityEngine
@@ -173,11 +174,19 @@ namespace UnityEngine
         extern public bool deringLightProbesForTrees { get; set; }
 
         extern public bool preserveTreePrototypeLayers { get; set; }
-        [StaticAccessor("Terrain", StaticAccessorType.DoubleColon)]
-        extern static public TextureFormat heightmapTextureFormat { get; }
 
         [StaticAccessor("Terrain", StaticAccessorType.DoubleColon)]
-        extern static public RenderTextureFormat heightmapRenderTextureFormat { get; }
+        extern static public GraphicsFormat heightmapFormat { get; }
+
+        static public TextureFormat heightmapTextureFormat
+        {
+            get { return GraphicsFormatUtility.GetTextureFormat(heightmapFormat); }
+        }
+
+        static public RenderTextureFormat heightmapRenderTextureFormat
+        {
+            get { return GraphicsFormatUtility.GetRenderTextureFormat(heightmapFormat); }
+        }
 
         extern public static Terrain activeTerrain { get; }
         extern public static void SetConnectivityDirty();

@@ -47,8 +47,7 @@ namespace UnityEditor
 
         public static extern void OnSceneSaved(Scene scene);
 
-        public static extern void CalculateHiddenObjectCount(Scene scene);
-
-        public static extern int GetHiddenObjectCount(Scene scene);
+        public static extern int GetHiddenObjectCount();
+        public static extern void SetPrefabStageScene(Scene scene);
     }
 }

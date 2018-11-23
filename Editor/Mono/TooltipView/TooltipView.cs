@@ -41,7 +41,7 @@ namespace UnityEditor
             }
         }
 
-        void Setup(string tooltip, Rect rect)
+        void Setup(string tooltip, Rect rect, GUIView hostView)
         {
             m_hoverRect = rect;
             m_tooltip.text = tooltip;
@@ -59,11 +59,27 @@ namespace UnityEditor
                 m_optimalSize.y = m_Style.CalcHeight(m_tooltip, MAX_WIDTH);
             }
 
-            window.position = new Rect(
+            var popupPosition = new Rect(
                 Mathf.Floor(m_hoverRect.x + (m_hoverRect.width / 2) - (m_optimalSize.x / 2)),
                 Mathf.Floor(m_hoverRect.y + (m_hoverRect.height) + 10.0f),
                 m_optimalSize.x, m_optimalSize.y);
 
+            if (hostView != null)
+            {
+                var viewRect = hostView.screenPosition;
+                if (popupPosition.x < viewRect.x)
+                    popupPosition.x = viewRect.x;
+                if (popupPosition.xMax > viewRect.xMax)
+                    popupPosition.x -= popupPosition.xMax - viewRect.xMax;
+                if (popupPosition.y < viewRect.y)
+                    popupPosition.y = viewRect.y;
+                if (popupPosition.yMax > viewRect.yMax)
+                    popupPosition.y -= popupPosition.yMax - viewRect.yMax;
+
+                popupPosition.y = Mathf.Max(popupPosition.y, Mathf.Floor(m_hoverRect.y + (m_hoverRect.height) + 10.0f));
+            }
+
+            window.position = popupPosition;
             position = new Rect(0, 0, m_optimalSize.x, m_optimalSize.y);
 
             window.ShowTooltip();
@@ -73,7 +89,7 @@ namespace UnityEditor
             RepaintImmediately(); // Force repaint to fix that the tooltip text did sometimes not update (we did not get a new OnGUI if the rect had the same size)
         }
 
-        public static void Show(string tooltip, Rect rect)
+        public static void Show(string tooltip, Rect rect, GUIView hostView = null)
         {
             if (s_guiView == null)
             {
@@ -92,7 +108,7 @@ namespace UnityEditor
             if (s_guiView.m_tooltip.text == tooltip && rect == s_guiView.m_hoverRect)
                 return;
 
-            s_guiView.Setup(tooltip, rect);
+            s_guiView.Setup(tooltip, rect, hostView);
         }
 
         public static void Close()

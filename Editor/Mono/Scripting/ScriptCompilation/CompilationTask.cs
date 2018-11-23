@@ -173,15 +173,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             if (stopOnFirstError && CompileErrors)
             {
-                // Set empty compiler messages for all pending assemblies.
-                // Makes handling of messages easier in the editor.
-                if (pendingAssemblies.Count > 0)
-                {
-                    foreach (var pendingAssembly in pendingAssemblies)
-                        processedAssemblies.Add(pendingAssembly, new CompilerMessage[0]);
-
-                    pendingAssemblies.Clear();
-                }
+                pendingAssemblies.Clear();
 
                 bool finishedRunningCompilerTasks = (compilerTasks.Count == 0);
 

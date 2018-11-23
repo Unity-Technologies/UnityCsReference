@@ -57,6 +57,7 @@ namespace UnityEditor
             textureActualWidth = width;
             textureActualHeight = height;
             m_RectsCache = ScriptableObject.CreateInstance<SpriteRectModel>();
+            m_RectsCache.hideFlags = HideFlags.HideAndDontSave;
             m_RectsCache.spriteRects = m_SpriteDataProvider.GetSpriteRects().ToList();
             spriteEditor.spriteRects = m_RectsCache.spriteRects;
             if (spriteEditor.selectedSpriteRect != null)

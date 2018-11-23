@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering;
 using System;
 using System.Runtime.InteropServices;
 
@@ -13,7 +14,7 @@ namespace UnityEngine.Rendering
     {
         RenderBufferLoadAction m_LoadAction;
         RenderBufferStoreAction m_StoreAction;
-        RenderTextureFormat m_Format;
+        GraphicsFormat m_Format;
         RenderTargetIdentifier m_LoadStoreTarget;
         RenderTargetIdentifier m_ResolveTarget;
         Color m_ClearColor;
@@ -36,10 +37,17 @@ namespace UnityEngine.Rendering
         }
 
         // The format of this attachment
-        public RenderTextureFormat format
+        public GraphicsFormat graphicsFormat
         {
             get { return m_Format; }
             set { m_Format = value; }
+        }
+
+        // The format of this attachment, legacy.
+        public RenderTextureFormat format
+        {
+            get { return GraphicsFormatUtility.GetRenderTextureFormat(m_Format); }
+            set { m_Format = GraphicsFormatUtility.GetGraphicsFormat(value, RenderTextureReadWrite.Default); }
         }
 
         // The render texture where the load/store operations take place
@@ -116,7 +124,7 @@ namespace UnityEngine.Rendering
             m_LoadAction = RenderBufferLoadAction.Clear;
         }
 
-        public AttachmentDescriptor(RenderTextureFormat format)
+        public AttachmentDescriptor(GraphicsFormat format)
             : this()
         {
             m_LoadAction = RenderBufferLoadAction.DontCare;
@@ -128,8 +136,13 @@ namespace UnityEngine.Rendering
             m_ClearDepth = 1.0f;
         }
 
+        public AttachmentDescriptor(RenderTextureFormat format)
+            : this(GraphicsFormatUtility.GetGraphicsFormat(format, RenderTextureReadWrite.Default))
+        {
+        }
+
         public AttachmentDescriptor(RenderTextureFormat format, RenderTargetIdentifier target, bool loadExistingContents = false, bool storeResults = false, bool resolve = false)
-            : this()
+            : this(GraphicsFormatUtility.GetGraphicsFormat(format, RenderTextureReadWrite.Default))
         {}
 
         public bool Equals(AttachmentDescriptor other)

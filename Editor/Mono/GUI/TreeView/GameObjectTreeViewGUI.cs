@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEditor.Experimental;
@@ -10,6 +11,7 @@ using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -55,13 +57,20 @@ namespace UnityEditor
             : base(treeView, useHorizontalScroll)
         {
             k_TopRowMargin = 0f;
+            k_BaseIndent += SceneVisibilityHierarchyGUI.utilityBarWidth;
             m_TreeView.enableItemHovering = true;
         }
 
         public override void OnInitialize()
         {
+            SceneVisibilityManager.hiddenContentChanged += SceneVisibilityManagerOnHiddenContentChanged;
             m_PrevScollPos = m_TreeView.state.scrollPos.y;
             m_PrevTotalHeight = m_TreeView.GetTotalRect().height;
+        }
+
+        private void SceneVisibilityManagerOnHiddenContentChanged()
+        {
+            m_TreeView.Repaint();
         }
 
         public bool DetectUserInput()
@@ -296,11 +305,12 @@ namespace UnityEditor
 
             base.DoItemGUI(rect, row, item, selected, focused, useBoldFont);
 
-
             if (goItem.isSceneHeader)
                 DoAdditionalSceneHeaderGUI(goItem, rect);
             else
                 PrefabModeButton(goItem, rect);
+
+            SceneVisibilityHierarchyGUI.DoItemGUI(rect, goItem, selected, m_TreeView.hoveredItem == goItem, focused);
 
             if (SceneHierarchy.s_Debug)
                 GUI.Label(new Rect(rect.xMax - 70, rect.y, 70, rect.height), "" + row + " (" + goItem.id + ")", EditorStyles.boldLabel);

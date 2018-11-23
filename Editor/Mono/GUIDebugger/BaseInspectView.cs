@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
 
@@ -39,6 +40,7 @@ namespace UnityEditor
         public BaseInspectView(GUIViewDebuggerWindow guiViewDebuggerWindow)
         {
             m_DebuggerWindow = guiViewDebuggerWindow;
+            EditorGUI.hyperLinkClicked += EditorGUI_HyperLinkClicked;
         }
 
         public abstract void UpdateInstructions();
@@ -130,21 +132,22 @@ namespace UnityEditor
 
                     var cpos = stackframe.signature.IndexOf('(');
                     var signature = stackframe.signature.Substring(0, cpos != -1 ? cpos : stackframe.signature.Length);
-                    if (Event.current.isMouse)
-                    {
-                        callstack += string.Format("{0} [{1}:{2}]\n", signature, stackframe.sourceFile, stackframe.lineNumber);
-                    }
-                    else
-                    {
-                        callstack += string.Format("{0} [<color={3}>{1}</color>:{2}]\n", signature,
-                            stackframe.sourceFile, stackframe.lineNumber, EditorGUIUtility.isProSkin ? "#4c7effff" : "#0000ffff");
-                    }
+
+                    callstack += string.Format("{0} [<a href=\"{1}\" line=\"{2}\">{1}:{2}</a>]\n", signature,
+                        stackframe.sourceFile, stackframe.lineNumber);
                 }
 
                 float height = GUIViewDebuggerWindow.Styles.messageStyle.CalcHeight(GUIContent.Temp(callstack), availableWidth);
                 EditorGUILayout.SelectableLabel(callstack, GUIViewDebuggerWindow.Styles.messageStyle,
                     GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true), GUILayout.MinHeight(height));
             }
+        }
+
+        private void EditorGUI_HyperLinkClicked(object sender, EventArgs e)
+        {
+            EditorGUILayout.HyperLinkClickedEventArgs args = (EditorGUILayout.HyperLinkClickedEventArgs)e;
+
+            LogEntries.OpenFileOnSpecificLine(args.hyperlinkInfos["href"], Int32.Parse(args.hyperlinkInfos["line"]));
         }
 
         protected void DrawInspectedRect(Rect instructionRect)

@@ -16,9 +16,11 @@ using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
+using UnityEditor.EditorTools;
 
 namespace UnityEditor
 {
@@ -100,6 +102,30 @@ namespace UnityEditor
         internal static Color kSceneViewUpLight = new Color(0.212f, 0.227f, 0.259f, 1);
         internal static Color kSceneViewMidLight = new Color(0.114f, 0.125f, 0.133f, 1);
         internal static Color kSceneViewDownLight = new Color(0.047f, 0.043f, 0.035f, 1);
+
+        [SerializeField]
+        bool m_ShowContextualTools;
+
+        bool displayToolModes
+        {
+            get
+            {
+                return m_ShowContextualTools;
+            }
+            set
+            {
+                if (m_ShowContextualTools == value)
+                    return;
+
+                if (m_ShowContextualTools)
+                    onSceneGUIDelegate -= EditorToolGUI.DrawSceneViewTools;
+
+                m_ShowContextualTools = value;
+
+                if (m_ShowContextualTools)
+                    onSceneGUIDelegate += EditorToolGUI.DrawSceneViewTools;
+            }
+        }
 
         [SerializeField]
         string m_WindowGUID;
@@ -422,6 +448,8 @@ namespace UnityEditor
             float m_NearClip;
             [SerializeField]
             float m_FarClip;
+            [SerializeField]
+            bool m_DynamicClip;
 
             public SceneViewCameraSettings()
             {
@@ -430,8 +458,9 @@ namespace UnityEditor
                 m_SpeedMin = .01f;
                 m_SpeedMax = 2f;
                 fieldOfView = kPerspectiveFov;
-                nearClip = .03f;
-                farClip = 1000f;
+                m_DynamicClip = true;
+                m_NearClip = .03f;
+                m_FarClip = 10000f;
             }
 
             public float speed
@@ -528,6 +557,12 @@ namespace UnityEditor
                 get { return m_FarClip; }
                 set { m_FarClip = value; }
             }
+
+            public bool dynamicClip
+            {
+                get { return m_DynamicClip; }
+                set { m_DynamicClip = value; }
+            }
         }
 
         [SerializeField]
@@ -600,7 +635,6 @@ namespace UnityEditor
             }
         }
 
-
         [System.NonSerialized]
         Scene m_CustomLightsScene;
         [System.NonSerialized]
@@ -612,6 +646,9 @@ namespace UnityEditor
 
         static ArrayList s_SceneViews = new ArrayList();
         public static ArrayList sceneViews { get { return s_SceneViews; } }
+
+        static List<Camera> s_AllSceneCameraList = new List<Camera>();
+        static Camera[] s_AllSceneCameras = new Camera[] {};
 
         static Material s_AlphaOverlayMaterial;
         static Material s_DeferredOverlayMaterial;
@@ -630,6 +667,7 @@ namespace UnityEditor
 
         internal static class Styles
         {
+            public static GUIContent toolsContent = EditorGUIUtility.TrIconContent("ToolsIcon", "Hide or show the component editor tools popup in the scene.");
             public static GUIContent lighting = EditorGUIUtility.TrIconContent("SceneviewLighting", "When toggled on, the Scene lighting is used. When toggled off, a light attached to the Scene view camera is used.");
             public static GUIContent fx = EditorGUIUtility.TrIconContent("SceneviewFx", "Toggle skybox, fog, and various other effects.");
             public static GUIContent audioPlayContent = EditorGUIUtility.TrIconContent("SceneviewAudio", "Toggle audio on or off.");
@@ -637,6 +675,8 @@ namespace UnityEditor
             public static GUIContent gizmosDropDownContent = EditorGUIUtility.TrTextContent("", "Toggle the visibility of different Gizmos in the Scene view.");
             public static GUIContent mode2DContent = EditorGUIUtility.TrTextContent("2D", "When toggled on, the Scene is in 2D view. When toggled off, the Scene is in 3D view.");
             public static GUIContent renderDocContent;
+            public static GUIContent sceneVisToolbarButtonContent = EditorGUIUtility.TrIconContent("scenevis_scene_toolbar");
+            public static GUIContent sceneVisOverlayTitle = EditorGUIUtility.TrTextContent("Visibility");
             public static GUIStyle gizmoButtonStyle;
             public static GUIStyle fxDropDownStyle;
             public static GUIContent sceneViewCameraContent = EditorGUIUtility.TrIconContent("SceneViewCamera", "Settings for the Scene view camera.");
@@ -648,10 +688,6 @@ namespace UnityEditor
                 renderDocContent = EditorGUIUtility.TrIconContent("renderdoc", "Capture the current view and open in RenderDoc.");
             }
         }
-
-        // Which tool are we currently editing with.
-        // This gets updated whenever hotControl == 0, so once the user has started sth, they can't change it mid-drag by e.g. pressing alt
-        static Tool s_CurrentTool;
 
         double m_StartSearchFilterTime = -1;
         RenderTexture m_SceneTargetTexture;
@@ -722,23 +758,46 @@ namespace UnityEditor
             return lastActiveSceneView.SendEvent(EditorGUIUtility.CommandEvent(EventCommandNames.FrameSelectedWithLock));
         }
 
-        Editor[] GetActiveEditors()
+        internal Editor[] GetActiveEditors()
         {
             if (m_Tracker == null)
                 m_Tracker = ActiveEditorTracker.sharedTracker;
             return m_Tracker.activeEditors;
         }
 
-        public static Camera[] GetAllSceneCameras()
+        private static List<Camera> GetAllSceneCamerasAsList()
         {
-            ArrayList array = new ArrayList();
+            s_AllSceneCameraList.Clear();
             for (int i = 0; i < s_SceneViews.Count; ++i)
             {
                 Camera cam = ((SceneView)s_SceneViews[i]).m_Camera;
                 if (cam != null)
-                    array.Add(cam);
+                    s_AllSceneCameraList.Add(cam);
             }
-            return (Camera[])array.ToArray(typeof(Camera));
+
+            return s_AllSceneCameraList;
+        }
+
+        public static Camera[] GetAllSceneCameras()
+        {
+            List<Camera> newSceneCameras = GetAllSceneCamerasAsList();
+            if (newSceneCameras.Count == s_AllSceneCameras.Length)
+            {
+                bool cacheValid = true;
+                for (int i = 0; i < newSceneCameras.Count; ++i)
+                {
+                    if (!Object.ReferenceEquals(s_AllSceneCameras[i], newSceneCameras[i]))
+                    {
+                        cacheValid = false;
+                        break;
+                    }
+                }
+                if (cacheValid)
+                    return s_AllSceneCameras;
+            }
+
+            s_AllSceneCameras = newSceneCameras.ToArray();
+            return s_AllSceneCameras;
         }
 
         public static void RepaintAll()
@@ -798,6 +857,8 @@ namespace UnityEditor
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
 
             EditorApplication.modifierKeysChanged += RepaintAll; // Because we show handles on shift
+            SceneVisibilityManager.hiddenContentChanged += HiddenContentChanged;
+
             m_DraggingLockedState = DraggingLockedState.NotDragging;
 
             CreateSceneCameraAndLights();
@@ -807,6 +868,9 @@ namespace UnityEditor
 
             if (m_CameraMode.drawMode == DrawCameraMode.UserDefined && !s_UserDefinedModes.Contains(m_CameraMode))
                 AddCameraMode(m_CameraMode.name, m_CameraMode.section);
+
+            if (m_ShowContextualTools)
+                onSceneGUIDelegate += EditorToolGUI.DrawSceneViewTools;
 
             base.OnEnable();
 
@@ -820,6 +884,11 @@ namespace UnityEditor
         protected virtual bool SupportsStageHandling()
         {
             return true;
+        }
+
+        private void HiddenContentChanged()
+        {
+            Repaint();
         }
 
         public SceneView()
@@ -877,6 +946,7 @@ namespace UnityEditor
         {
             EditorApplication.modifierKeysChanged -= RepaintAll;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            SceneVisibilityManager.hiddenContentChanged -= HiddenContentChanged;
 
             if (m_Camera)
                 DestroyImmediate(m_Camera.gameObject, true);
@@ -926,6 +996,7 @@ namespace UnityEditor
         // event since that would not guarantee the order dependency.
         internal void OnStageChanged(StageNavigationItem previousStage, StageNavigationItem newStage)
         {
+            HiddenContentChanged();
             // audioPlay may be different in the new stage,
             // so update regardless of whether it's on or off.
             // Not if we're in Play Mode however, as audio preview
@@ -1046,7 +1117,12 @@ namespace UnityEditor
             {
                 ToolbarDisplayStateGUI();
 
+                ToolbarSceneVisibilityGUI();
+
                 EditorGUILayout.Space();
+
+                ToolbarSceneToolsGUI();
+
                 GUILayout.FlexibleSpace();
 
                 ToolbarRenderDocGUI();
@@ -1060,6 +1136,48 @@ namespace UnityEditor
 
             if (m_StageHandling != null && m_StageHandling.isShowingBreadcrumbBar)
                 m_StageHandling.BreadcrumbGUI();
+        }
+
+        private void ToolbarSceneVisibilityGUI()
+        {
+            int hiddenGameObjects = SceneVisibilityState.GetHiddenObjectCount();
+
+            using (new EditorGUI.DisabledScope(hiddenGameObjects == 0))
+            {
+                Styles.sceneVisToolbarButtonContent.text = hiddenGameObjects.ToString();
+
+                if (GUILayout.Button(Styles.sceneVisToolbarButtonContent, EditorStyles.toolbarButton))
+                    SceneVisibilityManager.ShowAll();
+            }
+        }
+
+        private void DoSceneVisibilityOverlay()
+        {
+            int hiddenGameObjects = SceneVisibilityState.GetHiddenObjectCount();
+
+            if (hiddenGameObjects > 0)
+            {
+                SceneViewOverlay.Window(Styles.sceneVisOverlayTitle,
+                    delegate(Object target, SceneView view)
+                    {
+                        int hiddenGameObjectsCount = SceneVisibilityState.GetHiddenObjectCount();
+
+                        GUILayout.BeginHorizontal();
+                        if (GUILayout.Button("Show All", EditorStyles.toolbarButton))
+                        {
+                            SceneVisibilityManager.ShowAll();
+                        }
+
+                        GUILayout.Label($"{hiddenGameObjectsCount.ToString()} hidden object{(hiddenGameObjectsCount != 1 ? "s" : "")}");
+                        GUILayout.EndHorizontal();
+                    }, (int)SceneViewOverlay.Ordering.ParticleEffect + 100,
+                    SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+            }
+        }
+
+        void ToolbarSceneToolsGUI()
+        {
+            displayToolModes = GUILayout.Toggle(displayToolModes, Styles.toolsContent, EditorStyles.toolbarButton);
         }
 
         // This method should be called after the audio play button has been toggled,
@@ -1341,11 +1459,12 @@ namespace UnityEditor
 
         private void CreateCameraTargetTexture(Rect cameraRect, bool hdr)
         {
-            // make sure we actually support ARGBHalf
-            RenderTextureFormat format = (hdr && SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.ARGBHalf)) ? RenderTextureFormat.ARGBHalf : RenderTextureFormat.ARGB32;
+            // make sure we actually support R16G16B16A16_SFloat
+            GraphicsFormat format = (hdr && SystemInfo.IsFormatSupported(GraphicsFormat.R16G16B16A16_SFloat, FormatUsage.Render)) ? GraphicsFormat.R16G16B16A16_SFloat : SystemInfo.GetGraphicsFormat(DefaultFormat.LDR);
+
             if (m_SceneTargetTexture != null)
             {
-                if (m_SceneTargetTexture.format != format)
+                if (m_SceneTargetTexture.graphicsFormat != format)
                 {
                     Object.DestroyImmediate(m_SceneTargetTexture);
                     m_SceneTargetTexture = null;
@@ -1358,7 +1477,7 @@ namespace UnityEditor
 
             if (m_SceneTargetTexture == null)
             {
-                m_SceneTargetTexture = new RenderTexture(0, 0, 24, format, RenderTextureReadWrite.sRGB);
+                m_SceneTargetTexture = new RenderTexture(0, 0, 24, format);
                 m_SceneTargetTexture.name = "SceneView RT";
                 m_SceneTargetTexture.antiAliasing = 1;
                 m_SceneTargetTexture.hideFlags = HideFlags.HideAndDontSave;
@@ -1535,7 +1654,7 @@ namespace UnityEditor
                     GUIClip.Push(new Rect(0f, 0f, position.width, position.height), Vector2.zero, Vector2.zero, true);
                     pushedGUIClip = true;
                 }
-                Handles.DrawCameraStep1(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode, gridParam);
+                Handles.DrawCameraStep1(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode, gridParam, drawGizmos);
                 DrawRenderModeOverlay(groupSpaceCameraRect);
             }
         }
@@ -2108,6 +2227,8 @@ namespace UnityEditor
             bool pushedGUIClip;
             DoDrawCamera(windowSpaceCameraRect, groupSpaceCameraRect, out pushedGUIClip);
 
+            DoSceneVisibilityOverlay();
+
             CleanupCustomSceneLighting();
             if (restoreOverrideRenderSettings)
                 Unsupported.RestoreOverrideRenderSettings();
@@ -2120,7 +2241,7 @@ namespace UnityEditor
             {
                 var currentDepthBuffer = Graphics.activeDepthBuffer;
                 var rtDesc = m_SceneTargetTexture.descriptor;
-                rtDesc.colorFormat = RenderTextureFormat.ARGB32;
+                rtDesc.graphicsFormat = SystemInfo.GetGraphicsFormat(DefaultFormat.LDR);
                 rtDesc.depthBufferBits = 0;
                 RenderTexture ldrSceneTargetTexture = RenderTexture.GetTemporary(rtDesc);
                 ldrSceneTargetTexture.name = "LDRSceneTarget";
@@ -2482,6 +2603,7 @@ namespace UnityEditor
             m_Camera.transform.rotation = m_Rotation.value;
 
             float fov = m_Ortho.Fade(perspectiveFov, 0);
+
             if (fov > kOrthoThresholdAngle)
             {
                 m_Camera.orthographic = false;
@@ -2502,8 +2624,17 @@ namespace UnityEditor
                 m_Camera.orthographicSize = GetVerticalOrthoSize();
             }
 
-            m_Camera.nearClipPlane = m_SceneViewCameraSettings.nearClip;
-            m_Camera.farClipPlane = m_SceneViewCameraSettings.farClip;
+            if (m_SceneViewCameraSettings.dynamicClip)
+            {
+                float farClip = Mathf.Max(1000f, 2000f * size);
+                m_Camera.nearClipPlane = farClip * 0.000005f;
+                m_Camera.farClipPlane = farClip;
+            }
+            else
+            {
+                m_Camera.nearClipPlane = m_SceneViewCameraSettings.nearClip;
+                m_Camera.farClipPlane = m_SceneViewCameraSettings.farClip;
+            }
 
             m_Camera.transform.position = m_Position.value + m_Camera.transform.rotation * new Vector3(0, 0, -cameraDistance);
 
@@ -2658,7 +2789,9 @@ namespace UnityEditor
         // Look at a specific point from a given direction with a given zoom level, enabling and disabling perspective
         public void LookAt(Vector3 point, Quaternion direction, float newSize, bool ortho, bool instant)
         {
+            SceneViewMotion.ResetMotion();
             FixNegativeSize();
+
             if (instant)
             {
                 m_Position.value = point;
@@ -2685,33 +2818,7 @@ namespace UnityEditor
             bool IsDragEvent = Event.current.GetTypeForControl(GUIUtility.hotControl) == EventType.MouseDrag;
             bool IsMouseUpEvent = Event.current.GetTypeForControl(GUIUtility.hotControl) == EventType.MouseUp;
 
-            // Only switch tools when we don't have a hot control.
-            if (GUIUtility.hotControl == 0)
-                s_CurrentTool = Tools.viewToolActive ? 0 : Tools.current;
-
-            Tool tool = (Event.current.type == EventType.Repaint ? Tools.current : s_CurrentTool);
-
-            switch (tool)
-            {
-                case Tool.None:
-                case Tool.View:
-                    break;
-                case Tool.Move:
-                    MoveTool.OnGUI(this);
-                    break;
-                case Tool.Rotate:
-                    RotateTool.OnGUI(this);
-                    break;
-                case Tool.Scale:
-                    ScaleTool.OnGUI(this);
-                    break;
-                case Tool.Rect:
-                    RectTool.OnGUI(this);
-                    break;
-                case Tool.Transform:
-                    TransformTool.OnGUI(this);
-                    break;
-            }
+            EditorToolContext.OnToolGUI(this);
 
             // If we are actually dragging the object(s) then disable 2D physics movement.
             if (EditorGUI.EndChangeCheck() && EditorApplication.isPlaying && IsDragEvent)
@@ -2987,9 +3094,11 @@ namespace UnityEditor
         public bool Frame(Bounds bounds, bool instant = true)
         {
             float newSize = bounds.extents.magnitude * 1.5f;
-            if (newSize == Mathf.Infinity)
+
+            if (float.IsInfinity(newSize))
                 return false;
-            if (newSize == 0)
+
+            if (newSize < Mathf.Epsilon)
                 newSize = 10;
 
             // We snap instantly into target on playmode, because things might be moving fast and lerping lags behind
