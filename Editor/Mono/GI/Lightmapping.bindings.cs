@@ -157,6 +157,7 @@ namespace UnityEditor
 
         public delegate void OnStartedFunction();
         public delegate void OnCompletedFunction();
+        internal delegate void OnWroteLightingDataAsset();
 
         // How is GI data created: iteratively or on demand by Enlighten
         [StaticAccessor("GetLightmapSettings()")]
@@ -302,6 +303,14 @@ namespace UnityEditor
         {
             if (started != null)
                 started();
+        }
+
+        internal static event OnWroteLightingDataAsset wroteLightingDataAsset;
+
+        internal static void Internal_CallOnWroteLightingDataAsset()
+        {
+            if (wroteLightingDataAsset != null)
+                wroteLightingDataAsset();
         }
 
         public static OnCompletedFunction completed;

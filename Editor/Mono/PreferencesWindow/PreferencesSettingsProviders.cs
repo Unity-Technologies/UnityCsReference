@@ -527,6 +527,13 @@ namespace UnityEditor
                 kvp.Value.ResetToDefault();
                 EditorPrefs.SetString(kvp.Value.Name, kvp.Value.ToUniqueString());
             }
+
+            // Delete PrefKeys from EditorPrefs based on key given in FormerlyPrefKeyAs attributes
+            foreach (var methodInfo in EditorAssemblies.GetAllMethodsWithAttribute<FormerlyPrefKeyAsAttribute>())
+            {
+                var attribute = (FormerlyPrefKeyAsAttribute)Attribute.GetCustomAttribute(methodInfo, typeof(FormerlyPrefKeyAsAttribute));
+                EditorPrefs.DeleteKey(attribute.name);
+            }
         }
 
         private SortedDictionary<string, List<KeyValuePair<string, T>>> OrderPrefs<T>(IEnumerable<KeyValuePair<string, T>> input)
@@ -847,8 +854,8 @@ namespace UnityEditor
             {
                 m_ValidKeyChange = true;
                 m_InvalidKeyMessage = "";
-                RevertShortcuts();
                 RevertPrefKeys();
+                RevertShortcuts();
             }
         }
 

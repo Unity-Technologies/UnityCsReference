@@ -9,6 +9,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine.Scripting;
+using UnityEngine.Experimental.Networking.PlayerConnection;
+using UnityEditor.Experimental.Networking.PlayerConnection;
+using ConnectionGUILayout = UnityEditor.Experimental.Networking.PlayerConnection.EditorGUILayout;
 
 namespace UnityEditor
 {
@@ -132,86 +135,53 @@ namespace UnityEditor
 
         int ms_LVHeight = 0;
 
-        class ConsoleAttachProfilerUI : AttachProfilerUI
+        class ConsoleAttachToPlayerState : GeneralConnectionState
         {
-            List<string> additionalMenuItems = null;
-
-            enum MenuItemIndex
+            static class Content
             {
-                PlayerLogging,
-                FullLog
+                public static GUIContent PlayerLogging = EditorGUIUtility.TrTextContent("Player Logging");
+                public static GUIContent FullLog = EditorGUIUtility.TrTextContent("Full Log (Developer Mode Only)");
             }
 
-            protected void SelectClick(object userData, string[] options, int selected)
+            public ConsoleAttachToPlayerState(EditorWindow parentWindow, Action<string> connectedCallback = null) : base(parentWindow, connectedCallback)
             {
-                if (selected == (int)MenuItemIndex.PlayerLogging)
-                {
-                    var connected = PlayerConnectionLogReceiver.instance.State != PlayerConnectionLogReceiver.ConnectionState.Disconnected;
-                    PlayerConnectionLogReceiver.instance.State = connected ? PlayerConnectionLogReceiver.ConnectionState.Disconnected : PlayerConnectionLogReceiver.ConnectionState.CleanLog;
-                    return;
-                }
-
-                if (selected == (int)MenuItemIndex.FullLog)
-                {
-                    var cleanLog = PlayerConnectionLogReceiver.instance.State == PlayerConnectionLogReceiver.ConnectionState.CleanLog;
-                    PlayerConnectionLogReceiver.instance.State = cleanLog ? PlayerConnectionLogReceiver.ConnectionState.FullLog : PlayerConnectionLogReceiver.ConnectionState.CleanLog;
-                    return;
-                }
-
-                if (selected < additionalMenuItems.Count)
-                    return;
-
-                SelectProfilerClick(userData, options, selected - additionalMenuItems.Count);
             }
 
-            protected override void OnGUIMenu(Rect connectRect, List<ProfilerChoise> profilers)
+            bool IsConnected()
             {
-                if (additionalMenuItems == null)
+                return PlayerConnectionLogReceiver.instance.State != PlayerConnectionLogReceiver.ConnectionState.Disconnected;
+            }
+
+            void PlayerLoggingOptionSelected()
+            {
+                PlayerConnectionLogReceiver.instance.State = IsConnected() ? PlayerConnectionLogReceiver.ConnectionState.Disconnected : PlayerConnectionLogReceiver.ConnectionState.CleanLog;
+            }
+
+            bool IsLoggingFullLog()
+            {
+                return PlayerConnectionLogReceiver.instance.State == PlayerConnectionLogReceiver.ConnectionState.FullLog;
+            }
+
+            void FullLogOptionSelected()
+            {
+                PlayerConnectionLogReceiver.instance.State = IsLoggingFullLog() ? PlayerConnectionLogReceiver.ConnectionState.CleanLog : PlayerConnectionLogReceiver.ConnectionState.FullLog;
+            }
+
+            public override void AddItemsToMenu(GenericMenu menu, Rect position)
+            {
+                // option to turn logging and the connection on or of
+                menu.AddItem(Content.PlayerLogging, IsConnected(), PlayerLoggingOptionSelected);
+                if (IsConnected())
                 {
-                    additionalMenuItems = new List<string> {"Player Logging"};
-                    if (Unsupported.IsDeveloperMode())
-                        additionalMenuItems.Add("Full Log (Developer Mode Only)");
-                    additionalMenuItems.Add("");
+                    // All other options but the first are only available if logging is enabled
+                    menu.AddItem(Content.FullLog, IsLoggingFullLog(), FullLogOptionSelected);
+                    menu.AddSeparator("");
+                    base.AddItemsToMenu(menu, position);
                 }
-
-                var names = additionalMenuItems.Concat(profilers.Select(p => p.Name)).ToArray();
-
-                // "Player Logging" field is always enabled.
-                var enabled = new List<bool> {true};
-                var selected = new List<int>();
-
-                var connected = PlayerConnectionLogReceiver.instance.State != PlayerConnectionLogReceiver.ConnectionState.Disconnected;
-                if (connected)
-                {
-                    selected.Add((int)MenuItemIndex.PlayerLogging);
-                    if (Unsupported.IsDeveloperMode())
-                    {
-                        if (PlayerConnectionLogReceiver.instance.State == PlayerConnectionLogReceiver.ConnectionState.FullLog)
-                            selected.Add((int)MenuItemIndex.FullLog);
-
-                        // Enable "Show Full Log"
-                        enabled.Add(true);
-                    }
-                    enabled.Add(true);
-                    enabled.AddRange(profilers.Select(p => p.Enabled));
-                }
-                else
-                {
-                    // everything but first menu item is disabled.
-                    enabled.AddRange(new bool[names.Length - 1]);
-                }
-
-                int index = profilers.FindIndex(p => p.IsSelected());
-                if (index != -1)
-                    selected.Add(index + additionalMenuItems.Count);
-
-                var seperators = new bool[enabled.Count];
-                seperators[additionalMenuItems.Count - 1] = true;
-                EditorUtility.DisplayCustomMenuWithSeparators(connectRect, names, enabled.ToArray(), seperators, selected.ToArray(), SelectClick, profilers);
             }
         }
 
-        ConsoleAttachProfilerUI m_AttachProfilerUI = new ConsoleAttachProfilerUI();
+        IConnectionState m_ConsoleAttachToPlayerState;
 
         [Flags]
         internal enum Mode
@@ -322,6 +292,9 @@ namespace UnityEditor
 
         void OnEnable()
         {
+            if (m_ConsoleAttachToPlayerState == null)
+                m_ConsoleAttachToPlayerState = new ConsoleAttachToPlayerState(this);
+
             MakeSureConsoleAlwaysOnlyOne();
 
             titleContent = GetLocalizedTitleContent();
@@ -347,6 +320,9 @@ namespace UnityEditor
 
         void OnDisable()
         {
+            m_ConsoleAttachToPlayerState?.Dispose();
+            m_ConsoleAttachToPlayerState = null;
+
             if (ms_ConsoleWindow == this)
                 ms_ConsoleWindow = null;
         }
@@ -593,7 +569,7 @@ namespace UnityEditor
             SetFlag(ConsoleFlags.ClearOnPlay, GUILayout.Toggle(HasFlag(ConsoleFlags.ClearOnPlay), Constants.ClearOnPlayLabel, Constants.MiniButton));
             SetFlag(ConsoleFlags.ErrorPause, GUILayout.Toggle(HasFlag(ConsoleFlags.ErrorPause), Constants.ErrorPauseLabel, Constants.MiniButton));
 
-            m_AttachProfilerUI.OnGUILayout(this);
+            ConnectionGUILayout.AttachToPlayerDropdown(m_ConsoleAttachToPlayerState, EditorStyles.toolbarDropDown);
 
             EditorGUILayout.Space();
 

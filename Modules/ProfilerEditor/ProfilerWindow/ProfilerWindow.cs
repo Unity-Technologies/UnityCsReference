@@ -14,6 +14,9 @@ using UnityEditorInternal.Profiling;
 using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.Scripting;
+using UnityEngine.Experimental.Networking.PlayerConnection;
+using ConnectionUtility = UnityEditor.Experimental.Networking.PlayerConnection.EditorGUIUtility;
+using ConnectionGUILayout = UnityEditor.Experimental.Networking.PlayerConnection.EditorGUILayout;
 
 
 namespace UnityEditor
@@ -46,8 +49,10 @@ namespace UnityEditor
             public static readonly GUIContent loadProfilingData = EditorGUIUtility.TrTextContent("Load", "Load binary profiling information from a file. Shift click to append to the existing data");
             public static readonly string[] loadProfilingDataFileFilters = new string[] { L10n.Tr("Profiler files"), "data,raw", L10n.Tr("All files"), "*" };
 
-            public static readonly GUIContent optionsButtonContent = EditorGUIUtility.TrIconContent("_Popup", "Options");
+            public static readonly GUIContent takeSample = EditorGUIUtility.TrTextContent("Take Sample {0}", "Warning: this may freeze the Editor and the connected Player for a moment!");
+            public static readonly GUIContent memoryUsageInEditorDisclaimer = EditorGUIUtility.TrTextContent("Memory usage in the Editor is not the same as it would be in a Player.");
 
+            public static readonly GUIContent optionsButtonContent = EditorGUIUtility.TrIconContent("_Popup", "Options");
             public static readonly GUIContent[] reasons = GetLocalizedReasons();
 
             public static readonly GUIContent accessibilityModeLabel = EditorGUIUtility.TrTextContent("Color Blind Mode");
@@ -102,7 +107,7 @@ namespace UnityEditor
         [SerializeField]
         private bool m_Recording;
 
-        private AttachProfilerUI m_AttachProfilerUI = new AttachProfilerUI();
+        private IConnectionState m_AttachProfilerState;
 
         private Vector2 m_GraphPos = Vector2.zero;
         private Vector2[] m_PaneScroll = new Vector2[Profiler.areaCount];
@@ -336,7 +341,6 @@ namespace UnityEditor
             InitializeIfNeeded();
 
             titleContent = GetLocalizedTitleContent();
-            m_AttachProfilerUI.OnProfilerTargetChanged = ClearFramesCallback;
             m_ProfilerWindows.Add(this);
             EditorApplication.playModeStateChanged += OnPlaymodeStateChanged;
             UserAccessiblitySettings.colorBlindConditionChanged += Initialize;
@@ -352,6 +356,8 @@ namespace UnityEditor
 
         void Initialize()
         {
+            m_AttachProfilerState = ConnectionUtility.GetAttachToPlayerState(this, (player) => ClearFramesCallback());
+
             int historySize = ProfilerDriver.maxHistoryLength - 1;
 
             m_Charts = new ProfilerChart[Profiler.areaCount];
@@ -501,6 +507,8 @@ namespace UnityEditor
 
         void OnDisable()
         {
+            m_AttachProfilerState.Dispose();
+            m_AttachProfilerState = null;
             m_ProfilerWindows.Remove(this);
             m_UISystemProfiler.CurrentAreaChanged(null);
             EditorApplication.playModeStateChanged -= OnPlaymodeStateChanged;
@@ -1048,13 +1056,13 @@ namespace UnityEditor
 
             if (m_ShowDetailedMemoryPane == ProfilerMemoryView.Detailed)
             {
-                if (GUILayout.Button("Take Sample: " + m_AttachProfilerUI.GetConnectedProfiler(), EditorStyles.toolbarButton))
+                if (GUILayout.Button(GUIContent.Temp(string.Format(Styles.takeSample.text, m_AttachProfilerState.connectionName), Styles.takeSample.tooltip), EditorStyles.toolbarButton))
                     RefreshMemoryData();
 
                 m_GatherObjectReferences = GUILayout.Toggle(m_GatherObjectReferences, Styles.gatherObjectReferences, EditorStyles.toolbarButton);
 
-                if (m_AttachProfilerUI.IsEditor())
-                    GUILayout.Label("Memory usage in editor is not as it would be in a player", EditorStyles.toolbarButton);
+                if (m_AttachProfilerState.connectedToTarget == ConnectionTarget.Editor)
+                    GUILayout.Label(Styles.memoryUsageInEditorDisclaimer, EditorStyles.toolbarButton);
             }
 
             GUILayout.FlexibleSpace();
@@ -1305,7 +1313,7 @@ namespace UnityEditor
                 SessionState.SetBool(kProfilerEnabledSessionKey, profilerEnabled);
             }
 
-            EditorGUI.BeginDisabledGroup(!m_AttachProfilerUI.IsEditor());
+            EditorGUI.BeginDisabledGroup(m_AttachProfilerState.connectedToTarget != ConnectionTarget.Editor);
 
             // Deep profiling
             SetProfileDeepScripts(GUILayout.Toggle(ProfilerDriver.deepProfiling, Styles.deepProfile, EditorStyles.toolbarButton));
@@ -1316,7 +1324,7 @@ namespace UnityEditor
             EditorGUI.EndDisabledGroup();
 
             // Engine attach
-            m_AttachProfilerUI.OnGUILayout(this);
+            ConnectionGUILayout.AttachToPlayerDropdown(m_AttachProfilerState, EditorStyles.toolbarDropDown);
 
             // Allocation callstacks
             AllocationCallstacksToolbarItem();

@@ -122,7 +122,7 @@ namespace UnityEditor
         }
 
         // Postprocess on all assets once an automatic import has completed
-        static void OnWillSaveAssets(string[] assets, out string[] assetsThatShouldBeSaved, out string[] assetsThatShouldBeReverted, int explicitlySaveAsset)
+        static void OnWillSaveAssets(string[] assets, out string[] assetsThatShouldBeSaved, out string[] assetsThatShouldBeReverted, bool explicitlySaveAsset)
         {
             assetsThatShouldBeReverted = new string[0];
             assetsThatShouldBeSaved = assets;
@@ -131,7 +131,7 @@ namespace UnityEditor
 
             // If we are only saving a single scene or prefab and the user explicitly said we should, skip the dialog. We don't need
             // to verify this twice.
-            if (explicitlySaveAsset != 0 && assets.Length == 1 && (assets[0].EndsWith(".unity") || assets[0].EndsWith(".prefab")))
+            if (explicitlySaveAsset && assets.Length == 1 && (assets[0].EndsWith(".unity") || assets[0].EndsWith(".prefab")))
                 showSaveDialog = false;
 
             if (showSaveDialog)

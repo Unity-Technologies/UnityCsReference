@@ -5,6 +5,22 @@
 using System;
 using UnityEngine.Events;
 
+namespace UnityEngine.Experimental.Networking.PlayerConnection
+{
+    public enum ConnectionTarget
+    {
+        None, // Only to be used from player side. The editor is always connected to itself, unless connected to a player.
+        Player,
+        Editor,
+    }
+
+    public interface IConnectionState : IDisposable
+    {
+        ConnectionTarget connectedToTarget { get; }
+        string connectionName { get; }
+    }
+}
+
 namespace UnityEngine.Networking.PlayerConnection
 {
     [Serializable]

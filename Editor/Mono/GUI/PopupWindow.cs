@@ -98,6 +98,8 @@ namespace UnityEditor
 
         private void FitWindowToContent()
         {
+            if (m_WindowContent == null)
+                return;
             Vector2 wantedSize = m_WindowContent.GetWindowSize();
             if (m_LastWantedSize != wantedSize)
             {

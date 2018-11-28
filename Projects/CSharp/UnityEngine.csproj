@@ -789,6 +789,9 @@
   <Compile Include="..\..\Runtime\Export\Scripting\APIUpdating\UpdatedFromAttribute.cs">
     <Link>Runtime\Export\Scripting\APIUpdating\UpdatedFromAttribute.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\Export\Scripting\AlwaysLinkAssemblyAttribute.cs">
+    <Link>Runtime\Export\Scripting\AlwaysLinkAssemblyAttribute.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\Export\Scripting\ExtensionOfNativeClassAttribute.cs">
     <Link>Runtime\Export\Scripting\ExtensionOfNativeClassAttribute.cs</Link>
   </Compile>

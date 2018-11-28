@@ -21,7 +21,7 @@ namespace UnityEditor
         public static void CreateNewDefaultTerrainLayer()
         {
             TerrainLayer terrainLayer = new TerrainLayer();
-            ProjectWindowUtil.CreateAsset(terrainLayer, "Untitled.terrainlayer");
+            ProjectWindowUtil.CreateAsset(terrainLayer, "New Terrain Layer.terrainlayer");
         }
 
         private class Styles
