@@ -323,8 +323,8 @@ namespace UnityEditor.SceneManagement
                 PrefabStage prefabStage = new PrefabStage();
                 m_PrefabStages.Add(prefabStage);
 
-                prefabStage.OpenStage(newStage.prefabAssetPath);
-                if (prefabStage.prefabContentsRoot == null)
+                var success = prefabStage.OpenStage(newStage.prefabAssetPath);
+                if (!success)
                 {
                     m_PrefabStages.RemoveAt(m_PrefabStages.Count - 1);
                     return false;
@@ -448,6 +448,15 @@ namespace UnityEditor.SceneManagement
                 newSelection = prefabContentsRoot;
 
             Selection.activeGameObject = newSelection;
+
+            // For Prefab Mode we restore the last expanded tree view state for the opened Prefab. For usability
+            // if a child GameObject on the Prefab Instance is selected when entering the Prefab Asset Mode we select the corresponding
+            // child GameObject in the Asset. Here we ensure that selction is revealed and framed in the Scene hierarchy.
+            if (newSelection != prefabContentsRoot)
+            {
+                foreach (SceneHierarchyWindow shw in SceneHierarchyWindow.GetAllSceneHierarchyWindows())
+                    shw.FrameObject(newSelection.GetInstanceID(), false);
+            }
         }
 
         static bool IsPartOfPrefabStage(GameObject gameObject, PrefabStage prefabStage)

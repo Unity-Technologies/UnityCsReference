@@ -2676,6 +2676,9 @@
   <Compile Include="..\..\Editor\Mono\Modules\PlatformSupportModule.cs">
     <Link>Editor\Mono\Modules\PlatformSupportModule.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\Networking\PlayerConnection\AttachToPlayerGUI.cs">
+    <Link>Editor\Mono\Networking\PlayerConnection\AttachToPlayerGUI.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\Networking\PlayerConnection\EditorConnection.cs">
     <Link>Editor\Mono\Networking\PlayerConnection\EditorConnection.cs</Link>
   </Compile>
@@ -4292,9 +4295,6 @@
   </Compile>
   <Compile Include="..\..\Modules\ProfilerEditor\MemoryProfiler\MemorySnapshotFileWriter.bindings.cs">
     <Link>Modules\ProfilerEditor\MemoryProfiler\MemorySnapshotFileWriter.bindings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\AttachProfilerUI.cs">
-    <Link>Modules\ProfilerEditor\ProfilerWindow\AttachProfilerUI.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\AudioProfilerView.cs">
     <Link>Modules\ProfilerEditor\ProfilerWindow\AudioProfilerView.cs</Link>

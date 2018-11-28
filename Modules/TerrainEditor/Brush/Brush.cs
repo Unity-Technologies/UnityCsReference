@@ -14,7 +14,7 @@ namespace UnityEditor
         public static void CreateNewDefaultBrush()
         {
             Brush b = CreateInstance(DefaultMask(), AnimationCurve.Linear(0, 0, 1, 1), 1.0f, false);
-            ProjectWindowUtil.CreateAsset(b, "Untitled.brush");
+            ProjectWindowUtil.CreateAsset(b, "New Brush.brush");
         }
 
         // Don't instantiate directly, use Brush.CreateInstance()

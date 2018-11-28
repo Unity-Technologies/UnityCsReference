@@ -136,21 +136,15 @@ namespace UnityEditor.Experimental.SceneManagement
 
             m_PrefabAssetPath = prefabPath;
 
-            // Tempoary scene used while loading the prefab
-            m_PreviewScene = EditorSceneManager.NewPreviewScene();
+            // Ensure m_PreviewScene is set before calling LoadPrefabIntoPreviewScene() so the user can request the current
+            // the PrefabStage in their OnEnable and other callbacks (if they use ExecuteInEditMode or ExecuteAlways)
+            bool isUIPrefab = PrefabStageUtility.IsUIPrefab(m_PrefabAssetPath);
+            m_PreviewScene = PrefabStageUtility.GetEnvironmentSceneOrEmptyScene(isUIPrefab);
 
-            // The user can have OnEnable and other callbacks called during LoadPrefabIntoPreviewScene (if they use ExecuteInEditMode or ExecuteAlways)
-            // where they might request the current the prefabstage, so we ensure m_PreviewScene have been setup so they can check this stage's scene.
             m_PrefabContentsRoot = PrefabStageUtility.LoadPrefabIntoPreviewScene(prefabAssetPath, m_PreviewScene);
-
             if (m_PrefabContentsRoot != null)
             {
-                Scene environmentScene = PrefabStageUtility.MovePrefabRootToEnvironmentScene(m_PrefabContentsRoot);
-
-                // Close the temporary prefab loading scene and set the environment scene as the scene of the stage
-                EditorSceneManager.ClosePreviewScene(m_PreviewScene);
-                m_PreviewScene = environmentScene;
-
+                PrefabStageUtility.HandleReparentingIfNeeded(m_PrefabContentsRoot, isUIPrefab);
                 m_PrefabFileIcon = DeterminePrefabFileIconFromInstanceRootGameObject();
                 m_InitialSceneDirtyID = m_PreviewScene.dirtyID;
                 UpdateEnvironmentHideFlags();
@@ -164,7 +158,8 @@ namespace UnityEditor.Experimental.SceneManagement
             return initialized;
         }
 
-        internal void OpenStage(string prefabPath)
+        // Returns true if opened successfully
+        internal bool OpenStage(string prefabPath)
         {
             if (LoadStage(prefabPath))
             {
@@ -178,7 +173,9 @@ namespace UnityEditor.Experimental.SceneManagement
                     EnsureParentOfPrefabRootIsUnpacked();
                     UpdateEnvironmentHideFlags();
                 }
+                return true;
             }
+            return false;
         }
 
         internal void CloseStage()
@@ -217,8 +214,8 @@ namespace UnityEditor.Experimental.SceneManagement
                 Debug.Log("RELOADING Prefab at " + m_PrefabAssetPath);
 
             StageNavigationManager.instance.PrefabStageReloading(this);
-            OpenStage(m_PrefabAssetPath);
-            StageNavigationManager.instance.PrefabStageReloaded(this);
+            if (OpenStage(m_PrefabAssetPath))
+                StageNavigationManager.instance.PrefabStageReloaded(this);
 
             if (SceneHierarchy.s_DebugPrefabStage)
                 Debug.Log("RELOADING done");
@@ -329,6 +326,21 @@ namespace UnityEditor.Experimental.SceneManagement
             m_InitialSceneDirtyID = m_PreviewScene.dirtyID;
         }
 
+        bool PromptIfMissingBasePrefabForVariant()
+        {
+            if (PrefabUtility.IsPrefabAssetMissing(m_PrefabContentsRoot))
+            {
+                string title = L10n.Tr("Saving Variant Failed");
+                string message = L10n.Tr("Can't save the Prefab Variant when its base Prefab is missing. You have to unpack the root GameObject or recover the missing base Prefab in order to save the Prefab Variant");
+                if (autoSave)
+                    message += L10n.Tr("\n\nAuto Save has been temporarily disabled.");
+                EditorUtility.DisplayDialog(title, message, L10n.Tr("OK"));
+                m_TemporarilyDisableAutoSave = true;
+                return true;
+            }
+            return false;
+        }
+
         // Returns true if saved succesfully (internal so we can use it in Tests)
         internal bool SavePrefab()
         {
@@ -345,6 +357,14 @@ namespace UnityEditor.Experimental.SceneManagement
                 prefabSaving(m_PrefabContentsRoot);
 
             var startTime = EditorApplication.timeSinceStartup;
+
+            if (PromptIfMissingBasePrefabForVariant())
+                return false;
+
+            // The user can have deleted required folders
+            var folder = Path.GetDirectoryName(m_PrefabAssetPath);
+            if (!Directory.Exists(folder))
+                Directory.CreateDirectory(folder);
 
             bool savedSuccesfully;
             PrefabUtility.SaveAsPrefabAsset(m_PrefabContentsRoot, m_PrefabAssetPath, out savedSuccesfully);
@@ -371,6 +391,7 @@ namespace UnityEditor.Experimental.SceneManagement
                 EditorUtility.DisplayDialog(title, message, L10n.Tr("OK"));
 
                 m_TemporarilyDisableAutoSave = true;
+                m_IgnoreNextAssetImportedEventForCurrentPrefab = false;
             }
 
             if (SceneHierarchy.s_DebugPrefabStage)
@@ -643,20 +664,19 @@ namespace UnityEditor.Experimental.SceneManagement
                 }
             }
 
-            // Prefab was modified on HDD
+            // Detect if our Prefab was modified on HDD outside Prefab Mode (in that case we should ask the user if he wants to reload it)
             for (int i = 0; i < importedAssets.Length; ++i)
             {
                 if (importedAssets[i] == m_PrefabAssetPath)
                 {
                     if (!m_IgnoreNextAssetImportedEventForCurrentPrefab)
                         m_PrefabWasChangedOnDisk = true;
+
+                    // Reset the ignore flag when we finally have imported the saved prefab (We set this flag when saving the Prefab from Prefab Mode)
+                    // Note we can get multiple OnAssetsChangedOnHDD events before the Prefab imported event if e.g folders of the Prefab path needs to be reimported first.
+                    m_IgnoreNextAssetImportedEventForCurrentPrefab = false;
                     break;
                 }
-            }
-
-            if (importedAssets.Length > 0)
-            {
-                m_IgnoreNextAssetImportedEventForCurrentPrefab = false;
             }
         }
 

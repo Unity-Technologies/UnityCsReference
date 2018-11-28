@@ -97,7 +97,6 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
 
         var valuePosition = DrawLabel(showContextMenu, currentOverrideState, label, position, exposedPropertyTable, exposedNameStr, exposedName, defaultValue);
 
-        EditorGUI.BeginChangeCheck();
         if (propertyMode == ExposedPropertyMode.DefaultValue || propertyMode == ExposedPropertyMode.NamedGUID)
         {
             OnRenderProperty(valuePosition, propertyName, currentReferenceValue, defaultValue, exposedName, propertyMode, exposedPropertyTable);
@@ -113,8 +112,6 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
             valuePosition.x += valuePosition.width;
             OnRenderProperty(valuePosition, new PropertyName(exposedNameStr), currentReferenceValue, defaultValue, exposedName, propertyMode, exposedPropertyTable);
         }
-
-        EditorGUI.EndDisabledGroup();
 
         GUI.color = previousColor;
         EditorGUIUtility.SetBoldDefaultFont(wasBoldDefaultFont);

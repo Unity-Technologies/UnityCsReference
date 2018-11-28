@@ -315,6 +315,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             if (op2 == '(' || op2 == ')') return false;
             if (op1 == '!' && op2 == '&') return false;
+            if (op1 == '!' && op2 == '|') return false;
             if (op1 == '&' && op2 == '|') return false;
             if (op1 == '=') return false;
 

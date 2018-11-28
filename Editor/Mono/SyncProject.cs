@@ -24,6 +24,7 @@ namespace UnityEditor
         VisualStudio2013 = 12,
         VisualStudio2015 = 14,
         VisualStudio2017 = 15,
+        VisualStudio2019 = 16,
     }
 
     internal class VisualStudioPath
@@ -275,21 +276,25 @@ namespace UnityEditor
                     }
                 }
 
-                var requiredWorkloads = new[] {"Microsoft.VisualStudio.Workload.ManagedGame"};
-                var raw = VisualStudioUtil.FindVisualStudioDevEnvPaths((int)VisualStudioVersion.VisualStudio2017, requiredWorkloads);
-
-                var visualStudioPaths = VisualStudioUtil.ParseRawDevEnvPaths(raw)
-                    .Where(vs => !requiredWorkloads.Except(vs.Workloads).Any()) // All required workloads must be present
-                    .Select(vs => new VisualStudioPath(vs.DevEnvPath, vs.Edition))
-                    .ToArray();
-
-                if (visualStudioPaths.Length != 0)
-                {
-                    versions[VisualStudioVersion.VisualStudio2017] = visualStudioPaths;
-                }
+                GetInstalledVisualStudios(VisualStudioVersion.VisualStudio2017, versions);
+                GetInstalledVisualStudios(VisualStudioVersion.VisualStudio2019, versions);
             }
 
             return versions;
+        }
+
+        private static void GetInstalledVisualStudios(VisualStudioVersion vsVersion, Dictionary<VisualStudioVersion, VisualStudioPath[]> versions)
+        {
+            var requiredWorkloads = new[] { "Microsoft.VisualStudio.Workload.ManagedGame" };
+            var raw = VisualStudioUtil.FindVisualStudioDevEnvPaths((int)vsVersion, requiredWorkloads);
+
+            var visualStudioPaths = VisualStudioUtil.ParseRawDevEnvPaths(raw)
+                .Where(vs => !requiredWorkloads.Except(vs.Workloads).Any()) // All required workloads must be present
+                .Select(vs => new VisualStudioPath(vs.DevEnvPath, vs.Edition))
+                .ToArray();
+
+            if (visualStudioPaths.Length != 0)
+                versions[vsVersion] = visualStudioPaths;
         }
 
         static string GetRegistryValue(string path, string key)

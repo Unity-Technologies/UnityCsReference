@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
@@ -12,6 +13,12 @@ namespace UnityEditor.SceneManagement
 {
     public static partial class StageUtility
     {
+        [Shortcut("Stage/Go Back", null, "o")]
+        static void GoBackShortcut()
+        {
+            StageUtility.GoBackToPreviousStage();
+        }
+
         public static bool IsGameObjectRenderedByCamera(GameObject gameObject, Camera camera)
         {
             return IsGameObjectRenderedByCameraInternal(gameObject, camera);

@@ -62,6 +62,7 @@ namespace UnityEditor.ShortcutManagement
                 entry.ResetToDefault();
             }
             m_ActiveProfile.SaveToDisk();
+            shortcutsModified?.Invoke(this);
         }
 
         public void ApplyActiveProfile()
