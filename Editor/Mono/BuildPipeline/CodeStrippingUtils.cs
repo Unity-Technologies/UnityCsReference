@@ -17,6 +17,7 @@ using UnityEditor.Build.Reporting;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine.Networking;
 using UnityEditor.Utils;
+using UnityEditor.CrashReporting;
 
 namespace UnityEditor
 {
@@ -54,24 +55,32 @@ namespace UnityEditor
             return result;
         }
 
+        private static void AddNativeModuleInStrippingInfo(string moduleName, string requiredMessage, StrippingInfo strippingInfo, HashSet<string> nativeModules, string icon)
+        {
+            nativeModules.Add(moduleName);
+            strippingInfo.AddModule(moduleName);
+            strippingInfo.RegisterDependency(StrippingInfo.ModuleName(moduleName), requiredMessage);
+            strippingInfo.SetIcon(requiredMessage, icon);
+        }
+
         public static void InjectCustomDependencies(BuildTarget target, StrippingInfo strippingInfo, HashSet<UnityType> nativeClasses,
             HashSet<string> nativeModules)
         {
             // This function can be used to inject user-readable dependency information for specific classes which would not be obvious otherwise.
             // Can also be used to set up dependencies to modules which cannot be derived by the build pipeline without custom rules
-            const string connectSettingsName = "UnityConnectSettings";
-            var connectSettings = UnityType.FindTypeByName(connectSettingsName);
-            const string cloudWebServicesManagerName = "CloudWebServicesManager";
-            var cloudWebServicesManager = UnityType.FindTypeByName(cloudWebServicesManagerName);
-            if (nativeClasses.Contains(connectSettings) || nativeClasses.Contains(cloudWebServicesManager))
+            if (UnityEngine.Connect.UnityConnectSettings.enabled || UnityEditor.CrashReporting.CrashReportingSettings.enabled || UnityEngine.Analytics.PerformanceReporting.enabled || UnityEngine.Analytics.Analytics.enabled)
             {
-                if (PlayerSettings.submitAnalytics)
+                const string icon = "class/PlayerSettings";
+
+                if (UnityEngine.Analytics.Analytics.enabled || UnityEngine.Analytics.PerformanceReporting.enabled)
                 {
-                    const string requiredMessage = "Required by HW Statistics (See Player Settings)";
-                    strippingInfo.RegisterDependency(connectSettingsName, requiredMessage);
-                    strippingInfo.RegisterDependency(cloudWebServicesManagerName, requiredMessage);
-                    strippingInfo.SetIcon(requiredMessage, "class/PlayerSettings");
+                    AddNativeModuleInStrippingInfo("PerformanceReporting", "Required by Analytics Performance Reporting (See Analytics Services Window)", strippingInfo, nativeModules, icon);
                 }
+
+                AddNativeModuleInStrippingInfo("UnityAnalytics", "Required by UnityAnalytics (See Services Window)", strippingInfo, nativeModules, icon);
+                AddNativeModuleInStrippingInfo("UnityConnect", "Required by HW Statistics (See Player Settings)", strippingInfo, nativeModules, icon);
+
+                strippingInfo.RegisterDependency("UnityConnectSettings", "Required by HW Statistics (See Player Settings)");
             }
 
             const string analyticsManagerName = "UnityAnalyticsManager";

@@ -1692,10 +1692,10 @@ namespace UnityEditor
                     EditorGUI.BeginChangeCheck();
                     LightmapEncodingQuality encodingQuality = PlayerSettings.GetLightmapEncodingQualityForPlatformGroup(targetGroup);
                     LightmapEncodingQuality[] lightmapEncodingValues = {LightmapEncodingQuality.Normal, LightmapEncodingQuality.High};
-                    encodingQuality = BuildEnumPopup(Styles.lightmapEncodingLabel, encodingQuality, lightmapEncodingValues, Styles.lightmapEncodingNames);
-                    if (EditorGUI.EndChangeCheck())
+                    LightmapEncodingQuality newEncodingQuality = BuildEnumPopup(Styles.lightmapEncodingLabel, encodingQuality, lightmapEncodingValues, Styles.lightmapEncodingNames);
+                    if (EditorGUI.EndChangeCheck() && encodingQuality != newEncodingQuality)
                     {
-                        PlayerSettings.SetLightmapEncodingQualityForPlatformGroup(targetGroup, encodingQuality);
+                        PlayerSettings.SetLightmapEncodingQualityForPlatformGroup(targetGroup, newEncodingQuality);
 
                         Lightmapping.OnUpdateLightmapEncoding(targetGroup);
 
