@@ -11,6 +11,8 @@ using UnityEngine.Assertions;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace UnityEditor.Experimental.SceneManagement
 {
@@ -91,37 +93,133 @@ namespace UnityEditor.Experimental.SceneManagement
             return false;
         }
 
-        internal static GameObject LoadPrefabIntoPreviewScene(string prefabAssetPath, Scene previewScene)
+        static bool IsDynamicallyCreatedDuringLoad(GameObject gameObject)
         {
-            Assert.AreEqual(0, previewScene.GetRootGameObjects().Length);
+            return Unsupported.GetFileIDHint(gameObject) == 0;
+        }
 
-            PrefabUtility.LoadPrefabContentsIntoPreviewScene(prefabAssetPath, previewScene);
-            var roots = previewScene.GetRootGameObjects();
-            if (roots.Length == 0)
+        static UInt64 GetPrefabOrVariantFileID(GameObject gameObject)
+        {
+            var handle = PrefabUtility.GetPrefabInstanceHandle(gameObject);
+            if (handle != null)
+                return Unsupported.GetFileIDHint(handle);
+
+            return Unsupported.GetFileIDHint(gameObject);
+        }
+
+        static GameObject FindFirstGameObjectThatMatchesFileID(Transform searchRoot, UInt64 fileID)
+        {
+            GameObject result = null;
+            var transformVisitor = new TransformVisitor();
+            transformVisitor.VisitAndAllowEarlyOut(searchRoot,
+                (transform, userdata) =>
+                {
+                    UInt64 id = GetPrefabOrVariantFileID(transform.gameObject);
+                    if (id == fileID)
+                    {
+                        result = transform.gameObject;
+                        return false; // stop searching
+                    }
+                    return true; // continue searching
+                }
+                , null);
+
+            return result;
+        }
+
+        static GameObject RepairBrokenPrefabIfNeeded(string prefabAssetPath, GameObject[] environmentRoots, GameObject[] rootsAfterLoadingPrefab)
+        {
+            var rootsLoadedFromFile = rootsAfterLoadingPrefab.Except(environmentRoots).ToList();
+
+            // Filter out the subset of roots that were loaded from the Prefab file (there can be dynamically created environment objects,
+            // created from Awake and OnEnable calls from user land, if they use ExecuteAlways or ExecuteInEditMode.
+            rootsLoadedFromFile.RemoveAll(x => IsDynamicallyCreatedDuringLoad(x));
+
+            if (rootsLoadedFromFile.Count >= 2)
             {
-                Debug.LogError("No Prefab instance root loaded..");
+                Debug.LogError(string.Format("Prefab Mode: Multiple roots detected. Combined under new generated root. Prefab '{0}'", prefabAssetPath));
+                var root = ObjectFactory.CreateGameObject("Replacement Root");
+                var rootTransform = root.GetComponent<Transform>();
+                var previewScene = rootsLoadedFromFile[0].scene;
+                SceneManager.MoveGameObjectToScene(root.gameObject, previewScene);
+
+                foreach (var go in rootsLoadedFromFile)
+                {
+                    go.GetComponent<Transform>().parent = rootTransform;
+                }
+                return root;
+            }
+
+            return null;
+        }
+
+        static GameObject FindPrefabRoot(string prefabAssetPath, GameObject[] environmentRoots, GameObject[] rootsAfterLoadingPrefab)
+        {
+            var assetRoot = AssetDatabase.LoadAssetAtPath<GameObject>(prefabAssetPath);
+            if (assetRoot == null)
+            {
+                Debug.LogError(string.Format("Opening Prefab Mode failed: The Prefab at '{0}' is broken.", prefabAssetPath));
                 return null;
             }
 
-            GameObject prefabInstanceRoot = null;
-            if (roots.Length == 1)
-                prefabInstanceRoot = roots[0];
-            else
-            {
-                prefabInstanceRoot = ObjectFactory.CreateGameObject("Replacement Root");
-                var rootTransform = prefabInstanceRoot.GetComponent<Transform>();
+            var repairedRoot = RepairBrokenPrefabIfNeeded(prefabAssetPath, environmentRoots, rootsAfterLoadingPrefab);
+            if (repairedRoot != null)
+                return repairedRoot;
 
-                for (int i = 0; i < roots.Length; ++i)
-                {
-                    roots[i].GetComponent<Transform>().parent = rootTransform;
-                }
+            // Normal use case: Find the prefab root or variant root among the roots of the scene (or as a child)
+            UInt64 prefabAssetRootFileID = GetPrefabOrVariantFileID(assetRoot);
+
+            foreach (var root in rootsAfterLoadingPrefab)
+            {
+                var prefabRoot = FindFirstGameObjectThatMatchesFileID(root.transform, prefabAssetRootFileID);
+                if (prefabRoot != null)
+                    return prefabRoot;
             }
 
-            // We need to ensure root instance name is matching filename when loading a prefab as a scene since the prefab file might contain an old root name.
-            // The same name-matching is also ensured when importing a prefab: the library prefab asset root gets the same name as the filename of the prefab.
+            Debug.LogError(string.Format("Opening Prefab Mode failed: Could not detect a Prefab root after loading '{0}'.", prefabAssetPath));
+            return null;
+        }
+
+        internal static GameObject LoadPrefabIntoPreviewScene(string prefabAssetPath, Scene previewScene)
+        {
             var prefabName = Path.GetFileNameWithoutExtension(prefabAssetPath);
-            prefabInstanceRoot.name = prefabName;
-            return prefabInstanceRoot;
+            previewScene.name = prefabName;
+
+            // Get start roots from scene (before loading in the the Prefab)
+            var environmentRoots = previewScene.GetRootGameObjects();
+
+            // Load Prefab into scene
+            try
+            {
+                PrefabUtility.LoadPrefabContentsIntoPreviewScene(prefabAssetPath, previewScene);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(string.Format("Loading Prefab failed: {0}", e.Message));
+                return null;
+            }
+
+            var rootsAfterLoadingPrefab = previewScene.GetRootGameObjects();
+            var root = FindPrefabRoot(prefabAssetPath, environmentRoots, rootsAfterLoadingPrefab);
+            if (root != null)
+            {
+                // We need to ensure root instance name is matching filename when loading a prefab as a scene since the prefab file might contain an old root name.
+                // The same name-matching is also ensured when importing a prefab: the library prefab asset root gets the same name as the filename of the prefab.
+                root.name = prefabName;
+            }
+            return root;
+        }
+
+        internal static void HandleReparentingIfNeeded(GameObject prefabInstanceRoot, bool isUIPrefab)
+        {
+            // Skip reparenting if the root is already reparented
+            if (prefabInstanceRoot.transform.parent != null)
+                return;
+
+            if (isUIPrefab)
+                HandleUIReparentingIfNeeded(prefabInstanceRoot);
+            else
+                prefabInstanceRoot.transform.SetAsFirstSibling();
         }
 
         static string GetEnvironmentScenePathForPrefab(bool isUIPrefab)
@@ -212,47 +310,40 @@ namespace UnityEditor.Experimental.SceneManagement
             }
         }
 
-        internal static Scene MovePrefabRootToEnvironmentScene(GameObject prefabInstanceRoot)
+        internal static Scene GetEnvironmentSceneOrEmptyScene(bool isUIPrefab)
         {
-            bool isUIPrefab = PrefabStageUtility.IsUI(prefabInstanceRoot);
-
             // Create the environment scene and move the prefab root to this scene to ensure
             // the correct rendersettings (skybox etc) are used in Prefab Mode.
             string environmentEditingScenePath = GetEnvironmentScenePathForPrefab(isUIPrefab);
             Scene environmentScene = LoadOrCreatePreviewScene(environmentEditingScenePath);
-            environmentScene.name = prefabInstanceRoot.name;
-            SceneManager.MoveGameObjectToScene(prefabInstanceRoot, environmentScene);
-
-            if (isUIPrefab)
-                HandleUIReparentingIfNeeded(prefabInstanceRoot, environmentScene);
-            else
-                prefabInstanceRoot.transform.SetAsFirstSibling();
-
             return environmentScene;
         }
 
-        static bool IsUI(GameObject root)
+        internal static bool IsUIPrefab(string prefabAssetPath)
         {
             // We require a RectTransform and a CanvasRenderer to be considered a UI prefab.
             // E.g 3D TextMeshPro uses RectTransform but a MeshRenderer so should not be considered a UI prefab
             // This function needs to be peformant since it is called every time a prefab is opened in a prefab stage.
+            var root = AssetDatabase.LoadAssetAtPath<GameObject>(prefabAssetPath);
+            if (root == null)
+                return false;
             return root.GetComponent<RectTransform>() != null && root.GetComponentInChildren<CanvasRenderer>(true) != null;
         }
 
-        static void HandleUIReparentingIfNeeded(GameObject instanceRoot, Scene scene)
+        static void HandleUIReparentingIfNeeded(GameObject instanceRoot)
         {
             // We need a Canvas in order to render UI so ensure the prefab instance is under a Canvas
             Canvas canvas = instanceRoot.GetComponent<Canvas>();
             if (canvas != null)
                 return;
 
-            GameObject canvasGameObject = GetOrCreateCanvasGameObject(instanceRoot, scene);
+            GameObject canvasGameObject = GetOrCreateCanvasGameObject(instanceRoot);
             instanceRoot.transform.SetParent(canvasGameObject.transform, false);
         }
 
-        static GameObject GetOrCreateCanvasGameObject(GameObject instanceRoot, Scene scene)
+        static GameObject GetOrCreateCanvasGameObject(GameObject instanceRoot)
         {
-            Canvas canvas = GetCanvasInScene(instanceRoot, scene);
+            Canvas canvas = GetCanvasInScene(instanceRoot);
             if (canvas != null)
                 return canvas.gameObject;
 
@@ -263,12 +354,13 @@ namespace UnityEditor.Experimental.SceneManagement
             root.layer = LayerMask.NameToLayer(kUILayerName);
             canvas = root.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            SceneManager.MoveGameObjectToScene(root, scene);
+            SceneManager.MoveGameObjectToScene(root, instanceRoot.scene);
             return root;
         }
 
-        static Canvas GetCanvasInScene(GameObject instanceRoot, Scene scene)
+        static Canvas GetCanvasInScene(GameObject instanceRoot)
         {
+            Scene scene = instanceRoot.scene;
             foreach (GameObject go in scene.GetRootGameObjects())
             {
                 // Do not search for Canvas's under the prefab root since we want to

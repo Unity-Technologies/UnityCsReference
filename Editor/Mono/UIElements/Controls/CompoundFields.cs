@@ -41,6 +41,8 @@ namespace UnityEditor.UIElements
         }
 
         public new static readonly string ussClassName = "unity-rect-field";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
 
         public RectField()
             : this(null) {}
@@ -50,6 +52,8 @@ namespace UnityEditor.UIElements
         {
             AddToClassList(ussClassName);
             AddToClassList(twoLinesVariantUssClassName);
+            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
         }
     }
 
@@ -85,6 +89,8 @@ namespace UnityEditor.UIElements
         }
 
         public new static readonly string ussClassName = "unity-rect-int-field";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
 
         public RectIntField()
             : this(null) {}
@@ -94,6 +100,8 @@ namespace UnityEditor.UIElements
         {
             AddToClassList(ussClassName);
             AddToClassList(twoLinesVariantUssClassName);
+            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
         }
     }
 
@@ -125,6 +133,8 @@ namespace UnityEditor.UIElements
         }
 
         public new static readonly string ussClassName = "unity-vector2-field";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
 
         public Vector2Field()
             : this(null) {}
@@ -133,6 +143,8 @@ namespace UnityEditor.UIElements
             : base(label, 2)
         {
             AddToClassList(ussClassName);
+            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
         }
     }
 
@@ -166,6 +178,8 @@ namespace UnityEditor.UIElements
         }
 
         public new static readonly string ussClassName = "unity-vector3-field";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
 
         public Vector3Field()
             : this(null) {}
@@ -174,6 +188,8 @@ namespace UnityEditor.UIElements
             : base(label, 3)
         {
             AddToClassList(ussClassName);
+            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
         }
     }
 
@@ -210,6 +226,8 @@ namespace UnityEditor.UIElements
         }
 
         public new static readonly string ussClassName = "unity-vector4-field";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
 
         public Vector4Field()
             : this(null) {}
@@ -218,6 +236,8 @@ namespace UnityEditor.UIElements
             : base(label, 4)
         {
             AddToClassList(ussClassName);
+            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
         }
     }
 
@@ -250,6 +270,8 @@ namespace UnityEditor.UIElements
         }
 
         public new static readonly string ussClassName = "unity-vector2-int-field";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
 
         public Vector2IntField()
             : this(null) {}
@@ -258,6 +280,8 @@ namespace UnityEditor.UIElements
             : base(label, 2)
         {
             AddToClassList(ussClassName);
+            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
         }
     }
 
@@ -291,6 +315,8 @@ namespace UnityEditor.UIElements
         }
 
         public new static readonly string ussClassName = "unity-vector3-int-field";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
 
         public Vector3IntField()
             : this(null) {}
@@ -299,6 +325,8 @@ namespace UnityEditor.UIElements
             : base(label, 3)
         {
             AddToClassList(ussClassName);
+            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
         }
     }
 }

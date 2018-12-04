@@ -76,7 +76,19 @@ namespace UnityEditor.Experimental.GraphView
                 AppDomain currentDomain = AppDomain.CurrentDomain;
                 foreach (Assembly assembly in currentDomain.GetAssemblies())
                 {
-                    foreach (MethodInfo method in GetExtensionMethods(assembly, typeof(NodeAdapter)))
+                    IEnumerable<MethodInfo> methods;
+
+                    try
+                    {
+                        methods = GetExtensionMethods(assembly, typeof(NodeAdapter));
+                    }
+                    // Invalid DLLs might raise this exception, simply ignore it
+                    catch (ReflectionTypeLoadException)
+                    {
+                        continue;
+                    }
+
+                    foreach (MethodInfo method in methods)
                     {
                         ParameterInfo[] methodParams = method.GetParameters();
                         if (methodParams.Length == 3)
@@ -126,6 +138,11 @@ namespace UnityEditor.Experimental.GraphView
                                 }
                             }
                         }
+                    }
+                    // Invalid DLLs might raise this exception, simply ignore it
+                    catch (ReflectionTypeLoadException)
+                    {
+                        continue;
                     }
                     catch (Exception ex)
                     {

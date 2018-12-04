@@ -580,6 +580,8 @@ namespace UnityEditor
             float searchPathHeight = DoSearchResultPathGUI();
             DoTreeView(searchPathHeight);
 
+            DoSceneVisibilityBackgroundOverflow();
+
             DoPingRequest();
             ExecuteCommands();
         }
@@ -739,6 +741,17 @@ namespace UnityEditor
         void OnEvent()
         {
             treeView.OnEvent();
+        }
+
+        // Tree view item handle their own scene visibility background.
+        // So the background doesn't stop if we don't have enough item to fill the entire tree view rect, we draw the background in the unused space.
+        private void DoSceneVisibilityBackgroundOverflow()
+        {
+            Vector2 sizeTaken = treeView.gui.GetTotalSize();
+            Rect rectWithNoRows = treeViewRect;
+            rectWithNoRows.yMin += sizeTaken.y;
+
+            SceneVisibilityHierarchyGUI.DrawBackground(rectWithNoRows);
         }
 
         void DoTreeView(float searchPathHeight)

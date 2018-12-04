@@ -7,6 +7,7 @@ using System.Linq;
 using UnityEditor.Experimental.AssetImporters;
 using UnityEngine;
 using UnityEngine.Internal;
+using UnityEngine.UIElements;
 using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor
@@ -621,7 +622,7 @@ namespace UnityEditor
         internal static bool DoDrawDefaultInspector(SerializedObject obj)
         {
             EditorGUI.BeginChangeCheck();
-            obj.Update();
+            obj.UpdateIfRequiredOrScript();
 
             // Loop through properties and create one field (including children) for each top level property.
             SerializedProperty property = obj.GetIterator();
@@ -647,10 +648,16 @@ namespace UnityEditor
         // Repaint any inspectors that shows this editor.
         public void Repaint() { InspectorWindow.RepaintAllInspectors(); }
 
-        // Implement this function to make a custom inspector.
+        // Implement this function to make a custom IMGUI inspector.
         public virtual void OnInspectorGUI()
         {
             DrawDefaultInspector();
+        }
+
+        // Implement this function to make a custom UIElements inspector.
+        public virtual VisualElement CreateInspectorGUI()
+        {
+            return null;
         }
 
         // Implement this function if you want your editor constantly repaint (every 33ms)

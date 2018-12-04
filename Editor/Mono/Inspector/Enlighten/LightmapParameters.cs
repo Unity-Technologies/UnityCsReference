@@ -24,8 +24,10 @@ namespace UnityEditor
         SerializedProperty  m_AOQuality;
         SerializedProperty  m_AOAntiAliasingSamples;
         SerializedProperty  m_BlurRadius;
-        SerializedProperty  m_BakedLightmapTag;
         SerializedProperty  m_Pushoff;
+        SerializedProperty  m_BakedLightmapTag;
+        SerializedProperty  m_LimitLightmapCount;
+        SerializedProperty  m_LightmapMaxCount;
 
         SerializedProperty  m_AntiAliasingSamples;
         SerializedProperty  m_DirectLightQuality;
@@ -48,6 +50,8 @@ namespace UnityEditor
             m_DirectLightQuality        = serializedObject.FindProperty("directLightQuality");
             m_BakedLightmapTag          = serializedObject.FindProperty("bakedLightmapTag");
             m_Pushoff                   = serializedObject.FindProperty("pushoff");
+            m_LimitLightmapCount        = serializedObject.FindProperty("limitLightmapCount");
+            m_LightmapMaxCount          = serializedObject.FindProperty("maxLightmapCount");
         }
 
         public override void OnInspectorGUI()
@@ -66,6 +70,7 @@ namespace UnityEditor
             EditorGUILayout.Space();
 
             bool usesPathTracerBakeBackend = LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.Enlighten;
+            bool usesEnlightenBackend = LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.Enlighten;
 
             GUILayout.Label(Styles.bakedGIContent, EditorStyles.boldLabel);
             using (new EditorGUI.DisabledScope(usesPathTracerBakeBackend))
@@ -77,8 +82,18 @@ namespace UnityEditor
             {
                 EditorGUILayout.PropertyField(m_DirectLightQuality, Styles.directLightQualityContent);
             }
-            EditorGUILayout.PropertyField(m_BakedLightmapTag, Styles.bakedLightmapTagContent);
             EditorGUILayout.Slider(m_Pushoff, 0.0f, 1.0f, Styles.pushoffContent);
+            EditorGUILayout.PropertyField(m_BakedLightmapTag, Styles.bakedLightmapTagContent);
+            using (new EditorGUI.DisabledScope(usesEnlightenBackend))
+            {
+                m_LimitLightmapCount.boolValue = EditorGUILayout.Toggle(Styles.limitLightmapCount, m_LimitLightmapCount.boolValue);
+                if (m_LimitLightmapCount.boolValue)
+                {
+                    EditorGUI.indentLevel++;
+                    EditorGUILayout.PropertyField(m_LightmapMaxCount, Styles.lightmapMaxCount);
+                    EditorGUI.indentLevel--;
+                }
+            }
             EditorGUILayout.Space();
 
             using (new EditorGUI.DisabledScope(usesPathTracerBakeBackend))
@@ -120,8 +135,10 @@ namespace UnityEditor
             public static readonly GUIContent aoQualityContent = EditorGUIUtility.TrTextContent("Quality", "The number of rays to cast for computing ambient occlusion.");
             public static readonly GUIContent aoAntiAliasingSamplesContent = EditorGUIUtility.TrTextContent("Anti-aliasing Samples", "The maximum number of times to supersample a texel to reduce aliasing in ambient occlusion.");
             public static readonly GUIContent isTransparent = EditorGUIUtility.TrTextContent("Is Transparent", "If enabled, the object appears transparent during GlobalIllumination lighting calculations. Backfaces are not contributing to and light travels through the surface. This is useful for emissive invisible surfaces.");
-            public static readonly GUIContent bakedLightmapTagContent = EditorGUIUtility.TrTextContent("Baked Tag", "An integer that lets you force an object into a different baked lightmap even though all the other parameters are the same. This can be useful e.g. when streaming in sections of a level.");
             public static readonly GUIContent pushoffContent = EditorGUIUtility.TrTextContent("Pushoff", "The amount to push off geometry for ray tracing, in modelling units. It is applied to all baked light maps, so it will affect direct light, indirect light and AO. Useful for getting rid of unwanted AO or shadowing.");
+            public static readonly GUIContent bakedLightmapTagContent = EditorGUIUtility.TrTextContent("Baked Tag", "An integer that lets you force an object into a different baked lightmap even though all the other parameters are the same. This can be useful e.g. when streaming in sections of a level.");
+            public static readonly GUIContent limitLightmapCount = EditorGUIUtility.TrTextContent("Limit Lightmap Count", "If enabled, objects with the same baked GI settings will be packed into a specified number of lightmaps. This may reduce the objects' lightmap resolution.");
+            public static readonly GUIContent lightmapMaxCount = EditorGUIUtility.TrTextContent("Max Lightmaps", "The maximum number of lightmaps into which objects will be packed.");
         };
     }
 }

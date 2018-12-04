@@ -2554,9 +2554,6 @@
     <Compile Include="..\..\Editor\Mono\Inspector\TransformUtils.cs">
       <Link>Editor\Mono\Inspector\TransformUtils.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\UIElementsEditor.cs">
-      <Link>Editor\Mono\Inspector\UIElementsEditor.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\UNetBehaviourInspector.cs">
       <Link>Editor\Mono\Inspector\UNetBehaviourInspector.cs</Link>
     </Compile>
@@ -2931,9 +2928,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\ScriptAttributeGUI\ScriptAttributeUtility.cs">
       <Link>Editor\Mono\ScriptAttributeGUI\ScriptAttributeUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\ScriptAttributeGUI\UIElementsPropertyDrawer.cs">
-      <Link>Editor\Mono\ScriptAttributeGUI\UIElementsPropertyDrawer.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\APIUpdater\APIUpdaterAssemblyHelper.cs">
       <Link>Editor\Mono\Scripting\APIUpdater\APIUpdaterAssemblyHelper.cs</Link>
@@ -3420,6 +3414,12 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\PanelDebug.cs">
       <Link>Editor\Mono\UIElements\PanelDebug.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UIElements\ProgressBar.cs">
+      <Link>Editor\Mono\UIElements\ProgressBar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UIElements\Renderer\EditorAtlasMonitor.cs">
+      <Link>Editor\Mono\UIElements\Renderer\EditorAtlasMonitor.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\SerializableJsonDictionary.cs">
       <Link>Editor\Mono\UIElements\SerializableJsonDictionary.cs</Link>
@@ -5098,6 +5098,24 @@
     <Compile Include="..\..\Modules\UIElementsDebuggerEditor\UIElementsDebugger.cs">
       <Link>Modules\UIElementsDebuggerEditor\UIElementsDebugger.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\UIR\Debugger\AllocatorDebugger.cs">
+      <Link>Modules\UIElementsDebuggerEditor\UIR\Debugger\AllocatorDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\UIR\Debugger\DrawChainDebugger.cs">
+      <Link>Modules\UIElementsDebuggerEditor\UIR\Debugger\DrawChainDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\UIR\Debugger\DrawChainTree.cs">
+      <Link>Modules\UIElementsDebuggerEditor\UIR\Debugger\DrawChainTree.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\UIR\Debugger\UIRDebugger.cs">
+      <Link>Modules\UIElementsDebuggerEditor\UIR\Debugger\UIRDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\UIR\PainterSwitcherWindow.cs">
+      <Link>Modules\UIElementsDebuggerEditor\UIR\PainterSwitcherWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\UIR\UIRDebugUtility.cs">
+      <Link>Modules\UIElementsDebuggerEditor\UIR\UIRDebugUtility.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElementsDebuggerEditor\UxmlExporter.cs">
       <Link>Modules\UIElementsDebuggerEditor\UxmlExporter.cs</Link>
     </Compile>
@@ -5163,6 +5181,9 @@
     </Compile>
     <Compile Include="..\..\Modules\VideoEditor\Editor\VideoUtil.bindings.cs">
       <Link>Modules\VideoEditor\Editor\VideoUtil.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\XREditor\Boot\XRBoot.bindings.cs">
+      <Link>Modules\XREditor\Boot\XRBoot.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\XREditor\Build\XRBuildUtilities.bindings.cs">
       <Link>Modules\XREditor\Build\XRBuildUtilities.bindings.cs</Link>

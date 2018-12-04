@@ -95,11 +95,16 @@ namespace UnityEditor.UIElements
         }
 
         public new static readonly string ussClassName = "unity-layer-field";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
+
 
         public LayerField(string label)
             : base(label, InitializeLayers(), 0)
         {
             AddToClassList(ussClassName);
+            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
         }
 
         public LayerField()

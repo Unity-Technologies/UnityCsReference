@@ -151,6 +151,12 @@ namespace UnityEditor.Modules
             return false;
         }
 
+        // Native binding doesn't support overloaded functions
+        internal static bool IsPlatformSupportLoadedByBuildTarget(BuildTarget target)
+        {
+            return IsPlatformSupportLoaded(GetTargetStringFromBuildTarget(target));
+        }
+
         // entry point from native
         [RequiredByNativeCode]
         internal static void RegisterAdditionalUnityExtensions()
@@ -709,58 +715,14 @@ namespace UnityEditor.Modules
             return GetPluginImporterExtension(GetTargetStringFromBuildTargetGroup(target));
         }
 
-        // This is for the smooth transition to future generic target names without subtargets
-        // This has to match IPlatformSupportModule.TargetName - not sure how this improves modularity...
-        // ADD_NEW_PLATFORM_HERE
         internal static string GetTargetStringFromBuildTarget(BuildTarget target)
         {
-            switch (target)
-            {
-                case BuildTarget.iOS: return "iOS";
-                case BuildTarget.tvOS: return "tvOS";
-                case BuildTarget.XboxOne: return "XboxOne";
-                case BuildTarget.WSAPlayer: return "Metro";
-                case BuildTarget.PS4: return "PS4";
-                case BuildTarget.WebGL: return "WebGL";
-                case BuildTarget.Lumin: return "Lumin";
-                case BuildTarget.Android: return "Android";
-                case BuildTarget.Switch: return "Switch";
-                case BuildTarget.StandaloneLinux:
-                case BuildTarget.StandaloneLinux64:
-                case BuildTarget.StandaloneLinuxUniversal:
-                    return "LinuxStandalone";
-                case BuildTarget.StandaloneWindows:
-                case BuildTarget.StandaloneWindows64:
-                    return "WindowsStandalone";
-                case BuildTarget.StandaloneOSX:
-                    // Deprecated
-#pragma warning disable 612, 618
-                case BuildTarget.StandaloneOSXIntel:
-                case BuildTarget.StandaloneOSXIntel64:
-#pragma warning restore 612, 618
-                    return "OSXStandalone";
-                default: return null;
-            }
+            return BuildTargetDiscovery.GetModuleNameForBuildTarget(target);
         }
 
-        // This is for the smooth transition to future generic target names without subtargets
         internal static string GetTargetStringFromBuildTargetGroup(BuildTargetGroup target)
         {
-            // ADD_NEW_PLATFORM_HERE
-            switch (target)
-            {
-                case BuildTargetGroup.iOS: return "iOS";
-                case BuildTargetGroup.tvOS: return "tvOS";
-                case BuildTargetGroup.XboxOne: return "XboxOne";
-                case BuildTargetGroup.WSA: return "Metro";
-                case BuildTargetGroup.PS4: return "PS4";
-                case BuildTargetGroup.WebGL: return "WebGL";
-                case BuildTargetGroup.Lumin: return "Lumin";
-                case BuildTargetGroup.Android: return "Android";
-                case BuildTargetGroup.Facebook: return "Facebook";
-                case BuildTargetGroup.Switch: return "Switch";
-                default: return null;
-            }
+            return BuildTargetDiscovery.GetModuleNameForBuildTargetGroup(target);
         }
 
         // This function returns module name depending on the combination of targetGroup x target
@@ -768,15 +730,11 @@ namespace UnityEditor.Modules
         {
             if (targetGroup == BuildTargetGroup.Unknown)
                 throw new ArgumentException("targetGroup must be valid");
-            switch (targetGroup)
-            {
-                case BuildTargetGroup.Facebook:
-                    return "Facebook";
-                case BuildTargetGroup.Standalone:
-                    return GetTargetStringFromBuildTarget(target);
-                default:
-                    return GetTargetStringFromBuildTargetGroup(targetGroup);
-            }
+
+            if (targetGroup == BuildTargetGroup.Standalone)
+                return GetTargetStringFromBuildTarget(target);
+
+            return GetTargetStringFromBuildTargetGroup(targetGroup);
         }
 
         internal static bool IsPlatformSupported(BuildTarget target)

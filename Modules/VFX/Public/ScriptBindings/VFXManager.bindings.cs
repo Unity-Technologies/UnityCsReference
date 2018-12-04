@@ -24,6 +24,9 @@ namespace UnityEngine.Experimental.VFX
 
         extern internal static string renderPipeSettingsPath { get; }
 
-        extern public static void ProcessCamera(Camera cam); // Hook for SRP
+        // Hooks for SRP
+        extern public static void ProcessCamera(Camera cam);
+        extern public static VFXCameraBufferTypes IsCameraBufferNeeded(Camera cam);
+        extern public static void SetCameraBuffer(Camera cam, VFXCameraBufferTypes type, Texture buffer, int x, int y, int width, int height);
     }
 }

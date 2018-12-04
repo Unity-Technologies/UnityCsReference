@@ -3446,15 +3446,15 @@ namespace UnityEditor
 
         // We don't expose SerializedProperty overloads with custom GUIStyle parameters according to our guidelines,
         // but we have to provide it internally because ParticleSystem uses a style that's different from everything else.
-        internal static void ObjectField(Rect position, SerializedProperty property, Type objType, GUIContent label, GUIStyle style)
+        internal static void ObjectField(Rect position, SerializedProperty property, Type objType, GUIContent label, GUIStyle style, ObjectFieldValidator validator = null)
         {
             label = BeginProperty(position, label, property);
-            ObjectFieldInternal(position, property, objType, label, style);
+            ObjectFieldInternal(position, property, objType, label, style, validator);
             EndProperty();
         }
 
         // This version doesn't do BeginProperty / EndProperty. It should not be called directly.
-        private static void ObjectFieldInternal(Rect position, SerializedProperty property, Type objType, GUIContent label, GUIStyle style)
+        private static void ObjectFieldInternal(Rect position, SerializedProperty property, Type objType, GUIContent label, GUIStyle style, ObjectFieldValidator validator = null)
         {
             int id = GUIUtility.GetControlID(s_PPtrHash, FocusType.Keyboard, position);
             position = PrefixLabel(position, id, label);
@@ -3471,7 +3471,7 @@ namespace UnityEditor
                     allowSceneObjects = true;
                 }
             }
-            DoObjectField(position, position, id, null, objType, property, null, allowSceneObjects, style);
+            DoObjectField(position, position, id, null, objType, property, validator, allowSceneObjects, style);
         }
 
         public static Object ObjectField(Rect position, Object obj, Type objType, bool allowSceneObjects)
@@ -4790,12 +4790,7 @@ namespace UnityEditor
 
             bool isAddedComponentAndEventIsRepaint = false;
             Component comp = targetObjs[0] as Component;
-            if (evt.type == EventType.Repaint &&
-                targetObjs.Length == 1 &&
-                comp != null &&
-                EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None &&
-                PrefabUtility.GetCorrespondingObjectFromSource(comp.gameObject) != null &&
-                PrefabUtility.GetCorrespondingObjectFromSource(comp) == null)
+            if (ShouldDrawOverrideBackground(targetObjs, evt, comp))
             {
                 isAddedComponentAndEventIsRepaint = true;
                 DrawOverrideBackground(position, true);
@@ -4929,6 +4924,16 @@ namespace UnityEditor
             }
 
             GUI.enabled = oldGUIEnabledState;
+        }
+
+        internal static bool ShouldDrawOverrideBackground(Object[] targetObjs, Event evt, Component comp)
+        {
+            return evt.type == EventType.Repaint &&
+                targetObjs.Length == 1 &&
+                comp != null &&
+                EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None &&
+                PrefabUtility.GetCorrespondingObjectFromSource(comp.gameObject) != null &&
+                PrefabUtility.GetCorrespondingObjectFromSource(comp) == null;
         }
 
         internal static void RemovedComponentTitlebar(Rect position, GameObject instanceGo, Component sourceComponent)
@@ -5549,7 +5554,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
             s_PropertyStack.Push(new PropertyGUIData(property, totalPosition, wasBoldDefaultFont, GUI.enabled, GUI.backgroundColor));
 
-            if (GUIDebugger.active)
+            if (GUIDebugger.active && Event.current.type != EventType.Layout)
             {
                 var targetObjectTypeName = property.serializedObject.targetObject != null ?
                     property.serializedObject.targetObject.GetType().AssemblyQualifiedName : null;
@@ -5578,7 +5583,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
         // Ends a Property wrapper started with ::ref::BeginProperty.
         public static void EndProperty()
         {
-            if (GUIDebugger.active)
+            if (GUIDebugger.active && Event.current.type != EventType.Layout)
             {
                 GUIDebugger.LogEndProperty();
             }
@@ -5647,7 +5652,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
             GUI.backgroundColor = k_OverrideMarginColor;
             position.x = 0;
-            position.width = 3;
+            position.width = 2;
             EditorStyles.overrideMargin.Draw(position, false, false, false, false);
 
             GUI.enabled = oldEnabled;
@@ -8495,6 +8500,12 @@ This warning only shows up in development builds.", helpTopic, pageName);
         {
             Rect r = s_LastRect = GetControlRect(true, EditorGUI.kSingleLineHeight, EditorStyles.objectField, options);
             EditorGUI.ObjectField(r, property, objType, label);
+        }
+
+        internal static void ObjectField(SerializedProperty property, Type objType, GUIContent label, EditorGUI.ObjectFieldValidator validator, params GUILayoutOption[] options)
+        {
+            Rect r = s_LastRect = GetControlRect(true, EditorGUI.kSingleLineHeight, EditorStyles.objectField, options);
+            EditorGUI.ObjectField(r, property, objType, label, EditorStyles.objectField, validator);
         }
 
         internal static Object MiniThumbnailObjectField(GUIContent label, Object obj, Type objType, params GUILayoutOption[] options)

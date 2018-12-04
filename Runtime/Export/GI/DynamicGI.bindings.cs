@@ -19,6 +19,7 @@ namespace UnityEngine
         public static bool  isConverged { get { return false; } }
 
         internal static int scheduledMaterialUpdatesCount { get { return 0; } }
+        internal static bool asyncMaterialUpdates { get { return false; } set {} }
         public static extern void UpdateEnvironment();
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]

@@ -28,11 +28,17 @@ namespace UnityEditor
             ScriptAttributeUtility.s_DrawerStack.Pop();
         }
 
-        // Override this method to make your own GUI for the property.
+        // Override this method to make your own GUI for the property based on IMGUI.
         public virtual void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             EditorGUI.DefaultPropertyField(position, property, label);
             EditorGUI.LabelField(position, label, EditorGUIUtility.TempContent("No GUI Implemented"));
+        }
+
+        // Override this method to make your own GUI for the property based on UIElements.
+        public virtual VisualElement CreatePropertyGUI(SerializedProperty property)
+        {
+            return null;
         }
 
         internal float GetPropertyHeightSafe(SerializedProperty property, GUIContent label)

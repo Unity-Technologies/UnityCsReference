@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using UnityEngine.UIR;
+using UnityEngine.UIElements.UIR;
 using UnityEngine.Experimental.UIElements;
 
 namespace UnityEngine.Internal.Experimental.UIElements
@@ -111,6 +111,7 @@ namespace UnityEngine.Internal.Experimental.UIElements
             public Color32 Tint;
             public Vector2 UV;
             public float TransformID;
+            public float ClippingRectID;
             public float Flags;
         }
 
@@ -162,10 +163,10 @@ namespace UnityEngine.Internal.Experimental.UIElements
             var color = painterParams.color;
 
             var m = currentElement.worldTransform;
-            m_VertexData[m_VertexOffset + 0] = new Vertex() { Position = m.MultiplyPoint(new Vector2(rect.x, rect.y)), Tint = color, UV = Vector2.zero, TransformID = 0.0f, Flags = 0.0f };
-            m_VertexData[m_VertexOffset + 1] = new Vertex() { Position = m.MultiplyPoint(new Vector2(rect.x + rect.width, rect.y)), Tint = color, UV = Vector2.zero, TransformID = 0.0f, Flags = 0.0f };
-            m_VertexData[m_VertexOffset + 2] = new Vertex() { Position = m.MultiplyPoint(new Vector2(rect.x, rect.y + rect.height)), Tint = color, UV = Vector2.zero, TransformID = 0.0f, Flags = 0.0f };
-            m_VertexData[m_VertexOffset + 3] = new Vertex() { Position = m.MultiplyPoint(new Vector2(rect.x + rect.width, rect.y + rect.height)), Tint = color, UV = Vector2.zero, TransformID = 0.0f, Flags = 0.0f };
+            m_VertexData[m_VertexOffset + 0] = new Vertex() { Position = m.MultiplyPoint(new Vector2(rect.x, rect.y)), Tint = color, UV = Vector2.zero, TransformID = 0.0f, ClippingRectID = 0.0f, Flags = 0.0f };
+            m_VertexData[m_VertexOffset + 1] = new Vertex() { Position = m.MultiplyPoint(new Vector2(rect.x + rect.width, rect.y)), Tint = color, UV = Vector2.zero, TransformID = 0.0f, ClippingRectID = 0.0f, Flags = 0.0f };
+            m_VertexData[m_VertexOffset + 2] = new Vertex() { Position = m.MultiplyPoint(new Vector2(rect.x, rect.y + rect.height)), Tint = color, UV = Vector2.zero, TransformID = 0.0f, ClippingRectID = 0.0f, Flags = 0.0f };
+            m_VertexData[m_VertexOffset + 3] = new Vertex() { Position = m.MultiplyPoint(new Vector2(rect.x + rect.width, rect.y + rect.height)), Tint = color, UV = Vector2.zero, TransformID = 0.0f, ClippingRectID = 0.0f, Flags = 0.0f };
 
             int vertexStride = m_VertexGPUBuffer.ElementStride;
             m_VertexUpdateRanges[m_VertexUpdateOffset] = new GfxUpdateBufferRange() {

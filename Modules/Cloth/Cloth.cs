@@ -7,29 +7,19 @@ using System;
 using System.Runtime.InteropServices;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
-    // The ClothSkinningCoefficient struct is used to set up how a [[Cloth]] component is allowed to move with respect to the [[SkinnedMeshRenderer]] it is attached to.
-    [UsedByNativeCode]
-    public struct ClothSkinningCoefficient
-    {
-        //Distance a vertex is allowed to travel from the skinned mesh vertex position.
-        public float maxDistance;
-
-        //Definition of a sphere a vertex is not allowed to enter. This allows collision against the animated cloth.
-        public float collisionSphereDistance;
-    }
-
-    public partial class Cloth
+    public sealed partial class Cloth
     {
         public void GetVirtualParticleIndices(List<UInt32> indices)
         {
             if (indices == null)
                 throw new ArgumentNullException("indices");
 
-            GetVirtualParticleIndicesMono(indices);
+            Internal_GetVirtualParticleIndices(indices);
         }
 
         public void SetVirtualParticleIndices(List<UInt32> indices)
@@ -37,7 +27,7 @@ namespace UnityEngine
             if (indices == null)
                 throw new ArgumentNullException("indices");
 
-            SetVirtualParticleIndicesMono(indices);
+            Internal_SetVirtualParticleIndices(indices);
         }
 
         public void GetVirtualParticleWeights(List<Vector3> weights)
@@ -45,7 +35,7 @@ namespace UnityEngine
             if (weights == null)
                 throw new ArgumentNullException("weights");
 
-            GetVirtualParticleWeightsMono(weights);
+            Internal_GetVirtualParticleWeights(weights);
         }
 
         public void SetVirtualParticleWeights(List<Vector3> weights)
@@ -53,7 +43,7 @@ namespace UnityEngine
             if (weights == null)
                 throw new ArgumentNullException("weights");
 
-            SetVirtualParticleWeightsMono(weights);
+            Internal_SetVirtualParticleWeights(weights);
         }
 
         public void GetSelfAndInterCollisionIndices(List<UInt32> indices)
@@ -61,7 +51,7 @@ namespace UnityEngine
             if (indices == null)
                 throw new ArgumentNullException("indices");
 
-            GetSelfAndInterCollisionIndicesMono(indices);
+            Internal_GetSelfAndInterCollisionIndices(indices);
         }
 
         public void SetSelfAndInterCollisionIndices(List<UInt32> indices)
@@ -69,7 +59,7 @@ namespace UnityEngine
             if (indices == null)
                 throw new ArgumentNullException("indices");
 
-            SetSelfAndInterCollisionIndicesMono(indices);
+            Internal_SetSelfAndInterCollisionIndices(indices);
         }
     }
 } // namespace

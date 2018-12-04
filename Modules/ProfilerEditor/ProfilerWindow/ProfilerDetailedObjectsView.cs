@@ -235,7 +235,7 @@ namespace UnityEditorInternal.Profiling
             string callstack = null;
             var selectedSampleId = m_TreeView.GetSelectedFrameDataViewId();
             if (selectedSampleId != -1)
-                callstack = frameDataView.ResolveItemCallstack(selectedSampleId, m_TreeView.state.selectedIDs[0]);
+                callstack = frameDataView.ResolveItemMergedSampleCallstack(selectedSampleId, m_TreeView.state.selectedIDs[0]);
 
             var showCallstack = !string.IsNullOrEmpty(callstack);
             if (showCallstack)

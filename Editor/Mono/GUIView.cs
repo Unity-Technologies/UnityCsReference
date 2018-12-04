@@ -32,6 +32,21 @@ namespace UnityEditor
         readonly EditorExperimentalUI.EditorCursorManager m_ExperimentalCursorManager = new EditorExperimentalUI.EditorCursorManager();
         static EditorExperimentalUI.EditorContextualMenuManager s_ExperimentalContextualMenuManager = new EditorExperimentalUI.EditorContextualMenuManager();
 
+        static Shader s_EditorShader = null;
+
+        static Shader EditorShader
+        {
+            get
+            {
+                if (s_EditorShader == null)
+                {
+                    s_EditorShader = EditorGUIUtility.LoadRequired("Shaders/UIElements/EditorUIE.shader") as Shader;
+                }
+
+                return s_EditorShader;
+            }
+        }
+
         protected Panel panel
         {
             get
@@ -48,7 +63,8 @@ namespace UnityEditor
                     m_Panel.cursorManager = m_CursorManager;
                     m_Panel.contextualMenuManager = s_ContextualMenuManager;
                     m_Panel.panelDebug = new PanelDebug(m_Panel);
-
+                    m_Panel.standardShader = EditorShader;
+                    UpdateDrawChainRegistration(true);
                     if (imguiContainer != null)
                         m_Panel.visualTree.Insert(0, imguiContainer);
 
@@ -299,6 +315,9 @@ namespace UnityEditor
                 if (m_Panel != null)
                     m_Panel.visualTree.Insert(0, imguiContainer);
             }
+
+            Panel.BeforeUpdaterChange += OnBeforeUpdaterChange;
+            Panel.AfterUpdaterChange += OnAfterUpdaterChange;
         }
 
         protected virtual void OnDisable()
@@ -325,10 +344,48 @@ namespace UnityEditor
 
                 if (m_Panel != null)
                 {
+                    UpdateDrawChainRegistration(false);
                     m_Panel.Dispose();
                     /// We don't set <c>m_Panel</c> to null to prevent it from being re-created from <c>panel</c>.
                 }
             }
+
+            Panel.BeforeUpdaterChange -= OnBeforeUpdaterChange;
+            Panel.AfterUpdaterChange -= OnAfterUpdaterChange;
+        }
+
+        private void OnBeforeUpdaterChange()
+        {
+            UpdateDrawChainRegistration(false);
+        }
+
+        private void OnAfterUpdaterChange()
+        {
+            UpdateDrawChainRegistration(true);
+        }
+
+        private void UpdateDrawChainRegistration(bool register)
+        {
+            var p = m_Panel as BaseVisualElementPanel;
+            if (p != null)
+            {
+                var repaintUpdater = p.GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater;
+                if (repaintUpdater != null)
+                {
+                    if (register)
+                        repaintUpdater.BeforeDrawChain += OnBeforeDrawChain;
+                    else
+                        repaintUpdater.BeforeDrawChain -= OnBeforeDrawChain;
+                }
+            }
+        }
+
+        static readonly int s_EditorColorSpaceID = Shader.PropertyToID("_EditorColorSpace");
+
+        void OnBeforeDrawChain(UIRRepaintUpdater repaintUpdater)
+        {
+            Material mat = repaintUpdater.renderDevice.GetStandardMaterial();
+            mat.SetFloat(s_EditorColorSpaceID, QualitySettings.activeColorSpace == ColorSpace.Linear ? 1 : 0);
         }
 
         protected virtual void OldOnGUI() {}

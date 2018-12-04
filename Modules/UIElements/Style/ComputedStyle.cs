@@ -28,13 +28,13 @@ namespace UnityEngine.UIElements
 
         public StyleLength width => stylesData.width;
         public StyleLength height => stylesData.height;
-        public StyleLength maxWidth => stylesData.maxWidth.GetSpecifiedValueOrDefault<StyleLength, Length>(StyleKeyword.None);
-        public StyleLength maxHeight => stylesData.maxHeight.GetSpecifiedValueOrDefault<StyleLength, Length>(StyleKeyword.None);
-        public StyleLength minWidth => stylesData.minWidth.GetSpecifiedValueOrDefault<StyleLength, Length>(StyleKeyword.Auto);
-        public StyleLength minHeight => stylesData.minHeight.GetSpecifiedValueOrDefault<StyleLength, Length>(StyleKeyword.Auto);
-        public StyleLength flexBasis => stylesData.flexBasis.GetSpecifiedValueOrDefault<StyleLength, Length>(StyleKeyword.Auto);
-        public StyleFloat flexGrow => stylesData.flexGrow.GetSpecifiedValueOrDefault<StyleFloat, float>(new StyleFloat(VisualElementStylesData.k_DefaultFlexGrow));
-        public StyleFloat flexShrink => stylesData.flexShrink.GetSpecifiedValueOrDefault<StyleFloat, float>(new StyleFloat(VisualElementStylesData.k_DefaultFlexShrink));
+        public StyleLength maxWidth => stylesData.maxWidth;
+        public StyleLength maxHeight => stylesData.maxHeight;
+        public StyleLength minWidth => stylesData.minWidth;
+        public StyleLength minHeight => stylesData.minHeight;
+        public StyleLength flexBasis => stylesData.flexBasis;
+        public StyleFloat flexGrow => stylesData.flexGrow;
+        public StyleFloat flexShrink => stylesData.flexShrink;
         public StyleEnum<FlexDirection> flexDirection => stylesData.flexDirection.ToStyleEnum((FlexDirection)stylesData.flexDirection.value);
         public StyleEnum<Wrap> flexWrap => stylesData.flexWrap.ToStyleEnum((Wrap)stylesData.flexWrap.value);
         public StyleEnum<Overflow> overflow => stylesData.overflow.ToStyleEnum((Overflow)stylesData.overflow.value);
@@ -55,9 +55,10 @@ namespace UnityEngine.UIElements
         public StyleColor backgroundColor => stylesData.backgroundColor;
         public StyleColor borderColor => stylesData.borderColor;
         public StyleBackground backgroundImage => stylesData.backgroundImage;
-        public StyleEnum<ScaleMode> unityBackgroundScaleMode => stylesData.backgroundScaleMode.ToStyleEnum((ScaleMode)stylesData.backgroundScaleMode.value);
-        public StyleEnum<Align> alignItems => (Align)stylesData.alignItems.GetSpecifiedValueOrDefault((int)VisualElementStylesData.k_DefaultAlignItems);
-        public StyleEnum<Align> alignContent => (Align)stylesData.alignContent.GetSpecifiedValueOrDefault((int)VisualElementStylesData.k_DefaultAlignContent);
+        public StyleEnum<ScaleMode> unityBackgroundScaleMode => stylesData.unityBackgroundScaleMode.ToStyleEnum((ScaleMode)stylesData.unityBackgroundScaleMode.value);
+        public StyleColor unityBackgroundImageTintColor => stylesData.unityBackgroundImageTintColor;
+        public StyleEnum<Align> alignItems => stylesData.alignItems.ToStyleEnum((Align)stylesData.alignItems.value);
+        public StyleEnum<Align> alignContent => stylesData.alignContent.ToStyleEnum((Align)stylesData.alignContent.value);
         public StyleEnum<Justify> justifyContent => stylesData.justifyContent.ToStyleEnum((Justify)stylesData.justifyContent.value);
         public StyleFloat borderLeftWidth => stylesData.borderLeftWidth;
         public StyleFloat borderTopWidth => stylesData.borderTopWidth;
@@ -67,24 +68,24 @@ namespace UnityEngine.UIElements
         public StyleLength borderTopRightRadius => stylesData.borderTopRightRadius;
         public StyleLength borderBottomRightRadius => stylesData.borderBottomRightRadius;
         public StyleLength borderBottomLeftRadius => stylesData.borderBottomLeftRadius;
-        public StyleInt unitySliceLeft => stylesData.sliceLeft;
-        public StyleInt unitySliceTop => stylesData.sliceTop;
-        public StyleInt unitySliceRight => stylesData.sliceRight;
-        public StyleInt unitySliceBottom => stylesData.sliceBottom;
-        public StyleFloat opacity => stylesData.opacity.GetSpecifiedValueOrDefault(1.0f);
+        public StyleInt unitySliceLeft => stylesData.unitySliceLeft;
+        public StyleInt unitySliceTop => stylesData.unitySliceTop;
+        public StyleInt unitySliceRight => stylesData.unitySliceRight;
+        public StyleInt unitySliceBottom => stylesData.unitySliceBottom;
+        public StyleFloat opacity => stylesData.opacity;
         public StyleEnum<DisplayStyle> display => stylesData.display.ToStyleEnum((DisplayStyle)stylesData.display.value);
         public StyleCursor cursor => stylesData.cursor;
 
         // Inherited properties
-        public StyleColor color => stylesData.color.GetSpecifiedValueOrDefault<StyleColor, Color>(inheritedStylesData.color);
-        public StyleFont unityFont => stylesData.font.GetSpecifiedValueOrDefault<StyleFont, Font>(inheritedStylesData.font);
-        public StyleLength fontSize => stylesData.fontSize.GetSpecifiedValueOrDefault<StyleLength, Length>(inheritedStylesData.fontSize);
+        public StyleColor color => stylesData.color.specificity > StyleValueExtensions.UndefinedSpecificity ? stylesData.color : inheritedStylesData.color;
+        public StyleFont unityFont => stylesData.unityFont.specificity > StyleValueExtensions.UndefinedSpecificity ? stylesData.unityFont : inheritedStylesData.font;
+        public StyleLength fontSize => stylesData.fontSize.specificity > StyleValueExtensions.UndefinedSpecificity ? stylesData.fontSize : inheritedStylesData.fontSize;
 
         public StyleEnum<FontStyle> unityFontStyleAndWeight
         {
             get
             {
-                var styleInt = stylesData.fontStyleAndWeight.GetSpecifiedValueOrDefault<StyleInt, int>(inheritedStylesData.unityFontStyle);
+                var styleInt = stylesData.unityFontStyleAndWeight.specificity > StyleValueExtensions.UndefinedSpecificity ? stylesData.unityFontStyleAndWeight : inheritedStylesData.unityFontStyle;
                 return styleInt.ToStyleEnum((FontStyle)styleInt.value);
             }
         }
@@ -93,7 +94,7 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                var styleInt = stylesData.unityTextAlign.GetSpecifiedValueOrDefault<StyleInt, int>(inheritedStylesData.unityTextAlign);
+                var styleInt = stylesData.unityTextAlign.specificity > StyleValueExtensions.UndefinedSpecificity ? stylesData.unityTextAlign : inheritedStylesData.unityTextAlign;
                 return styleInt.ToStyleEnum((TextAnchor)styleInt.value);
             }
         }
@@ -102,7 +103,7 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                var styleInt = stylesData.visibility.GetSpecifiedValueOrDefault<StyleInt, int>(inheritedStylesData.visibility);
+                var styleInt = stylesData.visibility.specificity > StyleValueExtensions.UndefinedSpecificity ? stylesData.visibility : inheritedStylesData.visibility;
                 return styleInt.ToStyleEnum((Visibility)styleInt.value);
             }
         }
@@ -111,7 +112,7 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                var styleInt = stylesData.whiteSpace.GetSpecifiedValueOrDefault<StyleInt, int>(inheritedStylesData.whiteSpace);
+                var styleInt = stylesData.whiteSpace.specificity > StyleValueExtensions.UndefinedSpecificity ? stylesData.whiteSpace : inheritedStylesData.whiteSpace;
                 return styleInt.ToStyleEnum((WhiteSpace)styleInt.value);
             }
         }

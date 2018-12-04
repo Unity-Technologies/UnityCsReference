@@ -300,21 +300,5 @@ namespace UnityEditor.UIElements
             get { return GetValueDelegate(); }
             set { SetValueDelegate(value); }
         }
-
-        protected internal override void ExecuteDefaultAction(EventBase evt)
-        {
-            base.ExecuteDefaultAction(evt);
-
-            if (evt == null)
-            {
-                return;
-            }
-
-            // Delegate focus to the control
-            if (evt.eventTypeId == FocusEvent.TypeId())
-            {
-                m_Field.Focus();
-            }
-        }
     }
 }

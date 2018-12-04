@@ -7,10 +7,12 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
 using UnityEngine.Profiling;
+using Unity.Collections;
+using UnityEngine.UIElements.UIR;
 
 namespace UnityEditor.Experimental.GraphView
 {
-    public class EdgeControl : ImmediateModeElement
+    public class EdgeControl : VisualElement
     {
         private struct EdgeCornerSweepValues
         {
@@ -316,12 +318,13 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
-        protected override void ImmediateRepaint()
+        internal override void DoRepaint(IStylePainter painter)
         {
             UnityEngine.Profiling.Profiler.BeginSample("DrawEdge");
             UpdateEdgeCaps();
             // Edges do NOT call base.DoRepaint. It would create a visual artifact.
-            Draw();
+            DrawEdge(painter);
+
             UnityEngine.Profiling.Profiler.EndSample();
         }
 
@@ -787,8 +790,8 @@ namespace UnityEditor.Experimental.GraphView
 
             rect.xMin -= margin;
             rect.yMin -= margin;
-            rect.width += margin * 2;
-            rect.height += margin * 2;
+            rect.width += margin;
+            rect.height += margin;
 
             if (layout != rect)
             {
@@ -808,6 +811,13 @@ namespace UnityEditor.Experimental.GraphView
                     s_LineMat = new Material(EditorGUIUtility.LoadRequired("GraphView/AAEdge.shader") as Shader);
                 return s_LineMat;
             }
+        }
+
+        internal virtual void DrawEdge(IStylePainter painter)
+        {
+            var stylePainter = (IStylePainterInternal)painter;
+            if (!DrawUsingUIVertices(stylePainter))
+                stylePainter.DrawImmediate(Draw);
         }
 
         void Draw()
@@ -849,6 +859,115 @@ namespace UnityEditor.Experimental.GraphView
 
             lineMat.SetPass(0);
             Graphics.DrawMeshNow(m_Mesh, Matrix4x4.identity);
+        }
+
+        bool DrawUsingUIVertices(IStylePainterInternal painter)
+        {
+            if (edgeWidth <= 0)
+                return true;
+
+            UpdateRenderPoints();
+            if (m_RenderPoints.Count == 0)
+                return true; // Don't draw anything
+
+            Color inColor = this.inputColor;
+            Color outColor = this.outputColor;
+
+            uint cpt = (uint)m_RenderPoints.Count;
+            uint wantedLength = (cpt) * 2;
+            uint indexCount = (wantedLength - 2) * 3;
+            NativeSlice<UnityEngine.UIElements.UIVertex> vertices;
+            NativeSlice<UInt16> indices;
+            UInt16 indexOffet;
+            painter.DrawMesh(MeshStylePainterParameters.GetDefault(null, wantedLength, indexCount), out vertices, out indices, out indexOffet);
+            if (vertices.Length == 0)
+                return false;
+
+            float polyLineLength = 0;
+            for (int i = 1; i < cpt; ++i)
+                polyLineLength += (m_RenderPoints[i - 1] - m_RenderPoints[i]).sqrMagnitude;
+
+            float halfWidth = edgeWidth * 0.5f;
+            float currentLength = 0;
+            float flags = (float)VertexFlags.LastType;
+
+            Matrix4x4 localToView = painter.GetRenderTransform();
+            uint transformID = painter.currentTransformID;
+            uint clippingRectID = painter.currentClippingRectID;
+
+            Vector2 unitPreviousSegment = Vector2.zero;
+            for (int i = 0; i < cpt; ++i)
+            {
+                Vector2 dir;
+                Vector2 unitNextSegment = Vector2.zero;
+                Vector2 nextSegment = Vector2.zero;
+
+                if (i < cpt - 1)
+                {
+                    nextSegment = (m_RenderPoints[i + 1] - m_RenderPoints[i]);
+                    unitNextSegment = nextSegment.normalized;
+                }
+
+
+                if (i > 0 && i < cpt - 1)
+                {
+                    dir = unitPreviousSegment + unitNextSegment;
+                    dir.Normalize();
+                }
+                else if (i > 0)
+                {
+                    dir = unitPreviousSegment;
+                }
+                else
+                {
+                    dir = unitNextSegment;
+                }
+
+                Vector2 pos = localToView.MultiplyPoint3x4(m_RenderPoints[i]);// this.LocalToWorld(m_RenderPoints[i]);
+                Vector2 uv = new Vector2(dir.y * halfWidth, -dir.x * halfWidth); // Normal scaled by half width
+                Color32 tint = Color.LerpUnclamped(inColor, outColor, currentLength / polyLineLength);
+                int index = i * 2;
+
+                vertices[index] = new UnityEngine.UIElements.UIVertex()
+                {
+                    position = new Vector3(pos.x, pos.y, 1), uv = uv, tint = tint, transformID = transformID, clippingID = clippingRectID, flags = flags
+                };
+                vertices[index + 1] = new UnityEngine.UIElements.UIVertex()
+                {
+                    position = new Vector3(pos.x, pos.y, -1), uv = uv, tint = tint, transformID = transformID, clippingID = clippingRectID, flags = flags
+                };
+
+                if (i < cpt - 2)
+                {
+                    currentLength += nextSegment.sqrMagnitude;
+                }
+                else
+                {
+                    currentLength = polyLineLength;
+                }
+
+                unitPreviousSegment = unitNextSegment;
+            }
+
+            // Fill triangle indices as it is a triangle strip
+            for (uint i = 0; i < wantedLength - 2; ++i)
+            {
+                int index = (int)(i * 3);
+                uint target = i + indexOffet;
+                if ((i & 0x01) == 0)
+                {
+                    indices[index] = (UInt16)target;
+                    indices[index + 1] = (UInt16)(target + 1);
+                    indices[index + 2] = (UInt16)(target + 2);
+                }
+                else
+                {
+                    indices[index] = (UInt16)(target + 1);
+                    indices[index + 1] = (UInt16)target;
+                    indices[index + 2] = (UInt16)(target + 2);
+                }
+            }
+            return true;
         }
 
         private void RecomputeMesh()

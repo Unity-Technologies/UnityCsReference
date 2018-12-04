@@ -75,7 +75,9 @@ namespace UnityEngine.Yoga
         {
             return new YogaValue
             {
-                value = 0f,
+                // BEGIN_UNITY @jonathanma For some styles Auto has to be NaN
+                value = float.NaN,
+                // END_UNITY
                 unit = YogaUnit.Auto
             };
         }

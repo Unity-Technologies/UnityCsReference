@@ -20,12 +20,15 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private int m_ScaleMode;
+        private ScaleMode m_ScaleMode;
         private Texture m_Image;
         private Rect m_UV;
+        private Color m_TintColor;
 
         private bool m_ImageIsInline;
         private bool m_ScaleModeIsInline;
+        private bool m_TintColorIsInline;
+
 
         public Texture image
         {
@@ -39,7 +42,7 @@ namespace UnityEngine.UIElements
                     IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
                     if (m_Image == null)
                     {
-                        m_UV = new Rect(0, 0, 1 , 1);
+                        m_UV = new Rect(0, 0, 1, 1);
                     }
                 }
             }
@@ -47,7 +50,7 @@ namespace UnityEngine.UIElements
 
         public Rect sourceRect
         {
-            get { return GetSourceRect();  }
+            get { return GetSourceRect(); }
             set
             {
                 CalculateUV(value);
@@ -62,14 +65,31 @@ namespace UnityEngine.UIElements
 
         public ScaleMode scaleMode
         {
-            get { return (ScaleMode)m_ScaleMode; }
+            get { return m_ScaleMode; }
             set
             {
                 m_ScaleModeIsInline = true;
-                if ((ScaleMode)m_ScaleMode != value)
+                if (m_ScaleMode != value)
                 {
-                    m_ScaleMode = (int)value;
+                    m_ScaleMode = value;
                     IncrementVersion(VersionChangeType.Layout);
+                }
+            }
+        }
+
+        public Color tintColor
+        {
+            get
+            {
+                return m_TintColor;
+            }
+            set
+            {
+                m_TintColorIsInline = true;
+                if (m_TintColor != value)
+                {
+                    m_TintColor = value;
+                    IncrementVersion(VersionChangeType.Repaint);
                 }
             }
         }
@@ -80,7 +100,9 @@ namespace UnityEngine.UIElements
         {
             AddToClassList(ussClassName);
 
-            this.scaleMode = ScaleMode.ScaleAndCrop;
+            m_ScaleMode = ScaleMode.ScaleAndCrop;
+            m_TintColor = Color.white;
+
             m_UV = new Rect(0, 0, 1, 1);
 
             requireMeasureFunction = true;
@@ -129,7 +151,7 @@ namespace UnityEngine.UIElements
                 rect = contentRect,
                 uv = uv,
                 texture = current,
-                color = GUI.color,
+                color = tintColor,
                 scaleMode = scaleMode
             };
             var stylePainter = (IStylePainterInternal)painter;
@@ -137,19 +159,31 @@ namespace UnityEngine.UIElements
         }
 
         static CustomStyleProperty<Texture2D> s_ImageProperty = new CustomStyleProperty<Texture2D>("--unity-image");
-        static CustomStyleProperty<int> s_ScaleModeProperty = new CustomStyleProperty<int>("--unity-image-size");
+        static CustomStyleProperty<string> s_ScaleModeProperty = new CustomStyleProperty<string>("--unity-image-size");
+        static CustomStyleProperty<Color> s_TintColorProperty = new CustomStyleProperty<Color>("--unity-image-tint-color");
+
         private void OnCustomStyleResolved(CustomStyleResolvedEvent e)
         {
             // We should consider not exposing image as a style at all, since it's intimately tied to uv/sourceRect
             Texture2D textureValue = null;
-            int scaleModeValue = 0;
-
+            string scaleModeValue;
+            Color tintValue = Color.white;
             ICustomStyle customStyle = e.customStyle;
             if (!m_ImageIsInline && customStyle.TryGetValue(s_ImageProperty, out textureValue))
                 m_Image = textureValue;
 
             if (!m_ScaleModeIsInline && customStyle.TryGetValue(s_ScaleModeProperty, out scaleModeValue))
-                scaleMode = (ScaleMode)scaleModeValue;
+            {
+                int scaleModeIntValue;
+
+                if (StyleSheetCache.TryParseEnum<ScaleMode>(scaleModeValue, out scaleModeIntValue))
+                {
+                    m_ScaleMode = (ScaleMode)scaleModeIntValue;
+                }
+            }
+
+            if (!m_TintColorIsInline && customStyle.TryGetValue(s_TintColorProperty, out tintValue))
+                m_TintColor = tintValue;
         }
 
         private void CalculateUV(Rect srcRect)
@@ -162,9 +196,9 @@ namespace UnityEngine.UIElements
                 int width = texture.width;
                 int height = texture.height;
 
-                m_UV.x =  srcRect.x / width;
+                m_UV.x = srcRect.x / width;
                 m_UV.width = srcRect.width / width;
-                m_UV.height =  srcRect.height / height;
+                m_UV.height = srcRect.height / height;
                 m_UV.y = 1.0f - m_UV.height - (srcRect.y / height);
             }
         }

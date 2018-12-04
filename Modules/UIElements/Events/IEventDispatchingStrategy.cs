@@ -38,68 +38,70 @@ namespace UnityEngine.UIElements
         {
             Debug.Assert(!evt.dispatch, "Event is being dispatched recursively.");
 
-            PropagationPaths.Type pathTypesRequested = (evt.tricklesDown ? PropagationPaths.Type.TrickleDown : PropagationPaths.Type.None);
-            pathTypesRequested |= (evt.bubbles ? PropagationPaths.Type.BubbleUp : PropagationPaths.Type.None);
+            evt.dispatch = true;
 
-            using (var paths = PropagationPaths.Build(evt.target as VisualElement, pathTypesRequested))
+            if (evt.tricklesDown && evt.path != null && evt.path.trickleDownPath.Count > 0)
             {
-                evt.dispatch = true;
+                // Phase 1: TrickleDown phase
+                // Propagate event from root to target.parent
+                evt.propagationPhase = PropagationPhase.TrickleDown;
 
-                if (evt.tricklesDown && paths != null && paths.trickleDownPath.Count > 0)
+                for (int i = evt.path.trickleDownPath.Count - 1; i >= 0; i--)
                 {
-                    // Phase 1: TrickleDown phase
-                    // Propagate event from root to target.parent
-                    evt.propagationPhase = PropagationPhase.TrickleDown;
+                    if (evt.isPropagationStopped)
+                        break;
 
-                    for (int i = paths.trickleDownPath.Count - 1; i >= 0; i--)
+                    if (evt.path.trickleDownPath[i] == evt.skipElement)
                     {
-                        if (evt.isPropagationStopped)
-                            break;
-
-                        if (paths.trickleDownPath[i] == evt.skipElement)
-                        {
-                            continue;
-                        }
-
-                        evt.currentTarget = paths.trickleDownPath[i];
-                        evt.currentTarget.HandleEvent(evt);
+                        continue;
                     }
-                }
 
-                // Phase 2: Target
-                // Call HandleEvent() even if propagation is stopped, for the default actions at target.
-                if (evt.target != null && evt.target != evt.skipElement)
-                {
-                    evt.propagationPhase = PropagationPhase.AtTarget;
-                    evt.currentTarget = evt.target;
+                    evt.currentTarget = evt.path.trickleDownPath[i];
                     evt.currentTarget.HandleEvent(evt);
                 }
+            }
 
-                // Phase 3: bubble Up phase
-                // Propagate event from target parent up to root
-                if (evt.bubbles && paths != null && paths.bubblePath.Count > 0)
+            // Phase 2: Target
+            // Call HandleEvent() even if propagation is stopped, for the default actions at target.
+            if (evt.target != null && evt.target != evt.skipElement)
+            {
+                evt.propagationPhase = PropagationPhase.AtTarget;
+                evt.currentTarget = evt.target;
+                evt.currentTarget.HandleEvent(evt);
+            }
+
+            // Phase 2+3: target/bubble up phase
+            // Propagate event from target parent up to root
+            if (evt.path != null && evt.path.targetAndBubblePath.Count > 0)
+            {
+                foreach (var element in evt.path.targetAndBubblePath)
                 {
-                    evt.propagationPhase = PropagationPhase.BubbleUp;
-
-                    foreach (VisualElement ve in paths.bubblePath)
+                    if (element.m_VisualElement == evt.skipElement)
                     {
-                        if (evt.isPropagationStopped)
-                            break;
+                        continue;
+                    }
 
-                        if (ve == evt.skipElement)
-                        {
-                            continue;
-                        }
-
-                        evt.currentTarget = ve;
+                    if (element.m_IsTarget)
+                    {
+                        evt.propagationPhase = PropagationPhase.AtTarget;
+                        evt.target = element.m_VisualElement;
+                        evt.currentTarget = evt.target;
+                        evt.currentTarget.HandleEvent(evt);
+                    }
+                    else if (evt.bubbles)
+                    {
+                        evt.propagationPhase = PropagationPhase.BubbleUp;
+                        evt.currentTarget = element.m_VisualElement;
                         evt.currentTarget.HandleEvent(evt);
                     }
                 }
 
-                evt.dispatch = false;
-                evt.propagationPhase = PropagationPhase.None;
-                evt.currentTarget = null;
+                evt.target = evt.leafTarget;
             }
+
+            evt.dispatch = false;
+            evt.propagationPhase = PropagationPhase.None;
+            evt.currentTarget = null;
         }
 
         internal static void PropagateToIMGUIContainer(VisualElement root, EventBase evt)

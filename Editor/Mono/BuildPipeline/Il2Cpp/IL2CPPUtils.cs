@@ -356,8 +356,8 @@ namespace UnityEditorInternal
                 var compilerConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(buildTargetGroup);
                 var arguments = Il2CppNativeCodeBuilderUtils.AddBuilderArguments(il2CppNativeCodeBuilder, OutputFileRelativePath(), m_PlatformProvider.includePaths, m_PlatformProvider.libraryPaths, compilerConfiguration).ToList();
 
-                arguments.Add(string.Format("--map-file-parser=\"{0}\"", GetMapFileParserPath()));
-                arguments.Add(string.Format("--generatedcppdir=\"{0}\"", Path.GetFullPath(GetCppOutputDirectoryInStagingArea())));
+                arguments.Add($"--map-file-parser={CommandLineFormatter.PrepareFileName(GetMapFileParserPath())}");
+                arguments.Add($"--generatedcppdir={CommandLineFormatter.PrepareFileName(Path.GetFullPath(GetCppOutputDirectoryInStagingArea()))}");
                 arguments.Add(string.Format("--dotnetprofile=\"{0}\"", IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup))));
                 Action<ProcessStartInfo> setupStartInfo = il2CppNativeCodeBuilder.SetupStartInfo;
                 var managedDir = Path.GetFullPath(Path.Combine(m_StagingAreaData, "Managed"));
@@ -427,15 +427,15 @@ namespace UnityEditorInternal
             }
 
             arguments.AddRange(IL2CPPUtils.GetBuildingIL2CPPArguments(m_PlatformProvider, buildTargetGroup));
-            arguments.Add(string.Format("--map-file-parser=\"{0}\"", GetMapFileParserPath()));
+            arguments.Add($"--map-file-parser={CommandLineFormatter.PrepareFileName(GetMapFileParserPath())}");
 
             var additionalArgs = IL2CPPUtils.GetAdditionalArguments();
             if (!string.IsNullOrEmpty(additionalArgs))
                 arguments.Add(additionalArgs);
 
-            arguments.Add("--directory=\"" + Path.GetFullPath(inputDirectory) + "\"");
+            arguments.Add($"--directory={CommandLineFormatter.PrepareFileName(Path.GetFullPath(inputDirectory))}");
 
-            arguments.Add(string.Format("--generatedcppdir=\"{0}\"", Path.GetFullPath(outputDirectory)));
+            arguments.Add($"--generatedcppdir={CommandLineFormatter.PrepareFileName(Path.GetFullPath(outputDirectory))}");
 
             // NOTE: any arguments added here that affect how generated code is built need
             // to also be added to PlatformDependent\Win\Extensions\Managed\VisualStudioProjectHelpers.cs
@@ -465,7 +465,7 @@ namespace UnityEditorInternal
 
                 var tempFile = Path.GetFullPath(Path.Combine(m_TempFolder, "extra-types.txt"));
                 File.WriteAllLines(tempFile, extraTypes.ToArray());
-                arguments.Add(string.Format("--extra-types-file=\"{0}\"", tempFile));
+                arguments.Add($"--extra-types-file={CommandLineFormatter.PrepareFileName(tempFile)}");
             }
 
             RunIl2CppWithArguments(arguments, setupStartInfo, workingDirectory);

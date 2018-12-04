@@ -36,7 +36,7 @@ namespace UnityEditor
             public static GUIContent unloadSceneGUIContent = new GUIContent(EditorGUIUtility.FindTexture("SceneLoadOut"), "Unload scene");
             public static GUIContent saveSceneGUIContent = new GUIContent(EditorGUIUtility.FindTexture("SceneSave"), "Save scene");
             public static GUIStyle optionsButtonStyle = "PaneOptions";
-            public static GUIStyle sceneHeaderBg = "ProjectBrowserTopBarBg";
+            public static GUIStyle sceneHeaderBg = new GUIStyle("ProjectBrowserTopBarBg") {fixedHeight = 17, };
             public static GUIStyle rightArrow = "ArrowNavigationRight";
             public static GUIStyle hoveredItemBackgroundStyle = "WhiteBackground";
             public static Color hoveredBackgroundColor =
@@ -277,10 +277,11 @@ namespace UnityEditor
             base.DrawItemBackground(rect, row, item, selected, focused);
             if (m_TreeView.hoveredItem != item)
                 return;
-            var color = GUI.backgroundColor;
-            GUI.backgroundColor = GameObjectStyles.hoveredBackgroundColor;
-            GUI.Label(rect, GUIContent.none, GameObjectStyles.hoveredItemBackgroundStyle);
-            GUI.backgroundColor = color;
+
+            using (new GUI.BackgroundColorScope(GameObjectStyles.hoveredBackgroundColor))
+            {
+                GUI.Label(rect, GUIContent.none, GameObjectStyles.hoveredItemBackgroundStyle);
+            }
         }
 
         override protected void DoItemGUI(Rect rect, int row, TreeViewItem item, bool selected, bool focused, bool useBoldFont)

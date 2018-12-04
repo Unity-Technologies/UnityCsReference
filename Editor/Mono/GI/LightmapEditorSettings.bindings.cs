@@ -56,7 +56,17 @@ namespace UnityEditor
             Auto = 1,
 
             // Setup filtering manually
-            Advanced = 2,
+            Advanced = 2
+        }
+
+        // Which path tracer denoiser is used.
+        public enum DenoiserType
+        {
+            // No denoiser
+            None = 0,
+
+            // The NVIDIA Optix AI denoiser is applied.
+            Optix = 1
         }
 
         // Which path tracer filter is used.
@@ -117,6 +127,21 @@ namespace UnityEditor
         [NativeName("PVRFilteringMode")]
         public extern static FilterMode filteringMode { get; set; }
 
+        // Which path tracer denoiser is used for the direct light.
+        [StaticAccessor("GetLightmapEditorSettings()")]
+        [NativeName("PVRDenoiserTypeDirect")]
+        public extern static DenoiserType denoiserTypeDirect { get; set; }
+
+        // Which path tracer denoiser is used for the indirect light.
+        [StaticAccessor("GetLightmapEditorSettings()")]
+        [NativeName("PVRDenoiserTypeIndirect")]
+        public extern static DenoiserType denoiserTypeIndirect { get; set; }
+
+        // Which path tracer denoiser is used for ambient occlusion.
+        [StaticAccessor("GetLightmapEditorSettings()")]
+        [NativeName("PVRDenoiserTypeAO")]
+        public extern static DenoiserType denoiserTypeAO { get; set; }
+
         // Which path tracer filter is used for the direct light.
         [StaticAccessor("GetLightmapEditorSettings()")]
         [NativeName("PVRFilterTypeDirect")]
@@ -127,7 +152,7 @@ namespace UnityEditor
         [NativeName("PVRFilterTypeIndirect")]
         public extern static FilterType filterTypeIndirect { get; set; }
 
-        // Which path tracer filter is used for AO.
+        // Which path tracer filter is used for ambient occlusion.
         [StaticAccessor("GetLightmapEditorSettings()")]
         [NativeName("PVRFilterTypeAO")]
         public extern static FilterType filterTypeAO { get; set; }
@@ -168,6 +193,10 @@ namespace UnityEditor
 
         [FreeFunction]
         extern static internal bool IsLightmappedOrDynamicLightmappedForRendering([NotNull] Renderer renderer);
+
+        [FreeFunction]
+        [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
+        extern static internal bool IsOptixDenoiserSupported();
 
         // Packing for realtime GI may fail of the mesh has zero UV or surface area. This is the outcome for the given renderer.
         [FreeFunction]

@@ -32,17 +32,17 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
         List<BuildTarget> standaloneSubtargetsList = new List<BuildTarget>();
         List<GUIContent> standaloneSubtargetStringsList = new List<GUIContent>();
 
-        if (ModuleManager.IsPlatformSupportLoaded(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget.StandaloneWindows)))
+        if (ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneWindows))
         {
             standaloneSubtargetsList.Add(BuildTarget.StandaloneWindows);
             standaloneSubtargetStringsList.Add(EditorGUIUtility.TrTextContent("Windows"));
         }
-        if (ModuleManager.IsPlatformSupportLoaded(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget.StandaloneOSX)))
+        if (ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneOSX))
         {
             standaloneSubtargetsList.Add(BuildTarget.StandaloneOSX);
             standaloneSubtargetStringsList.Add(EditorGUIUtility.TrTextContent("Mac OS X"));
         }
-        if (ModuleManager.IsPlatformSupportLoaded(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget.StandaloneLinux)))
+        if (ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneLinux))
         {
             standaloneSubtargetsList.Add(BuildTarget.StandaloneLinux);
             standaloneSubtargetStringsList.Add(EditorGUIUtility.TrTextContent("Linux"));
@@ -54,15 +54,15 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
 
     internal static BuildTarget GetBestStandaloneTarget(BuildTarget selectedTarget)
     {
-        if (ModuleManager.IsPlatformSupportLoaded(ModuleManager.GetTargetStringFromBuildTarget(selectedTarget)))
+        if (ModuleManager.IsPlatformSupportLoadedByBuildTarget(selectedTarget))
             return selectedTarget;
-        if (RuntimePlatform.WindowsEditor == Application.platform && ModuleManager.IsPlatformSupportLoaded(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget.StandaloneWindows)))
+        if (RuntimePlatform.WindowsEditor == Application.platform && ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneWindows))
             return BuildTarget.StandaloneWindows;
-        if (RuntimePlatform.OSXEditor == Application.platform && ModuleManager.IsPlatformSupportLoaded(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget.StandaloneOSX)))
+        if (RuntimePlatform.OSXEditor == Application.platform && ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneOSX))
             return BuildTarget.StandaloneOSX;
-        if (ModuleManager.IsPlatformSupportLoaded(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget.StandaloneOSX)))
+        if (ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneOSX))
             return BuildTarget.StandaloneOSX;
-        if (ModuleManager.IsPlatformSupportLoaded(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget.StandaloneLinux)))
+        if (ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneLinux))
             return BuildTarget.StandaloneLinux;
         return BuildTarget.StandaloneWindows;
     }

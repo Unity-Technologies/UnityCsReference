@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.SceneManagement;
 using UnityEditor.ShortcutManagement;
@@ -14,11 +13,18 @@ using Scene = UnityEngine.SceneManagement.Scene;
 
 namespace UnityEditor
 {
-    internal static class SceneVisibilityManager
+    internal class SceneVisibilityManager : ScriptableSingleton<SceneVisibilityManager>
     {
         internal static event Action hiddenContentChanged;
+        internal static event Action currentStageIsolated;
 
         private readonly static List<GameObject> m_RootBuffer = new List<GameObject>();
+
+        public static bool active
+        {
+            get { return SceneVisibilityState.active; }
+            set { SceneVisibilityState.active = value; }
+        }
 
         [InitializeOnLoadMethod]
         private static void Initialize()
@@ -36,6 +42,25 @@ namespace UnityEditor
             SceneVisibilityState.SetPrefabStageScene(stage == null ? default(Scene) : stage.scene);
         }
 
+        private static void EditorSceneManagerOnSceneOpened(Scene scene, OpenSceneMode mode)
+        {
+            if (mode == OpenSceneMode.Single)
+            {
+                //force out of isolation when loading single
+                SceneVisibilityState.mainStageIsolated = false;
+            }
+            if (mode == OpenSceneMode.Additive)
+            {
+                //make sure added scenes are isolated when opened if main stage is isolated
+                if (!StageNavigationManager.instance.currentItem.isPrefabStage)
+                {
+                    Undo.ClearUndo(SceneVisibilityState.GetInstance());
+                    if (SceneVisibilityState.mainStageIsolated)
+                        SceneVisibilityState.SetSceneIsolation(scene, true);
+                }
+            }
+        }
+
         private static void StageNavigationManagerOnStageChanging(StageNavigationItem oldItem, StageNavigationItem newItem)
         {
             if (!newItem.isMainStage && newItem.prefabStage != null)
@@ -45,6 +70,10 @@ namespace UnityEditor
             else
             {
                 SceneVisibilityState.SetPrefabStageScene(default(Scene));
+            }
+            if (!oldItem.isMainStage)
+            {
+                SceneVisibilityState.prefabStageIsolated = false;
             }
         }
 
@@ -69,11 +98,12 @@ namespace UnityEditor
 
         private static void EditorSceneManagerOnSceneOpening(string path, OpenSceneMode mode)
         {
+            RevertIsolationCurrentStage();
             if (mode == OpenSceneMode.Single)
                 SceneVisibilityState.GeneratePersistentDataForAllLoadedScenes();
         }
 
-        private static void EditorSceneManagerOnSceneClosing(Scene scene , bool removingScene)
+        private static void EditorSceneManagerOnSceneClosing(Scene scene, bool removingScene)
         {
             SceneVisibilityState.GeneratePersistentDataForLoadedScene(scene);
         }
@@ -96,6 +126,12 @@ namespace UnityEditor
         internal static void HideAll()
         {
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Hide All");
+            HideAllNoUndo();
+            HiddenContentChanged();
+        }
+
+        private static void HideAllNoUndo()
+        {
             if (StageNavigationManager.instance.currentItem.isPrefabStage)
             {
                 var scene = StageNavigationManager.instance.GetCurrentPrefabStage().scene;
@@ -109,12 +145,11 @@ namespace UnityEditor
                     HideScene(SceneManager.GetSceneAt(i), false);
                 }
             }
-            HiddenContentChanged();
         }
 
         internal static void SetGameObjectHidden(GameObject gameObject, bool isHidden, bool includeChildren)
         {
-            Undo.RecordObject(SceneVisibilityState.GetInstance(), "SetGameObjectHidden");
+            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Set GameObject Hidden");
             SceneVisibilityState.SetGameObjectHidden(gameObject, isHidden, includeChildren);
             HiddenContentChanged();
         }
@@ -133,7 +168,6 @@ namespace UnityEditor
                     ShowScene(SceneManager.GetSceneAt(i), false);
                 }
             }
-
             HiddenContentChanged();
         }
 
@@ -155,7 +189,7 @@ namespace UnityEditor
             if (!scene.IsValid())
                 return;
 
-            Undo.RecordObject(SceneVisibilityState.GetInstance(), "ShowScene");
+            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Show Scene");
             ShowScene(scene, true);
         }
 
@@ -178,7 +212,7 @@ namespace UnityEditor
             if (!scene.IsValid())
                 return;
 
-            Undo.RecordObject(SceneVisibilityState.GetInstance(), "HideScene");
+            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Hide Scene");
             HideScene(scene, true);
         }
 
@@ -214,12 +248,35 @@ namespace UnityEditor
 
         internal static void SetGameObjectsHidden(GameObject[] gameObjects, bool isHidden, bool includeChildren)
         {
-            Undo.RecordObject(SceneVisibilityState.GetInstance(), "SetGameObjectsHidden");
+            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Set GameObjects Hidden");
             SceneVisibilityState.SetGameObjectsHidden(gameObjects, isHidden, includeChildren);
             HiddenContentChanged();
         }
 
-        internal static void ToggleSelectionVisibility()
+        internal static void IsolateGameObject(GameObject gameObject, bool includeChildren)
+        {
+            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Isolate GameObject");
+
+            IsolateCurrentStage();
+            HideAllNoUndo();
+            SceneVisibilityState.SetGameObjectHidden(gameObject, false, includeChildren);
+            HiddenContentChanged();
+        }
+
+        internal static void IsolateGameObjects(GameObject[] gameObjects, bool includeChildren)
+        {
+            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Isolate GameObjects");
+
+            if (gameObjects.Length > 0)
+            {
+                IsolateCurrentStage();
+                HideAllNoUndo();
+                SceneVisibilityState.SetGameObjectsHidden(gameObjects, false, includeChildren);
+                HiddenContentChanged();
+            }
+        }
+
+        private static void ToggleSelectionVisibility()
         {
             bool allHidden = true;
             foreach (var gameObject in Selection.gameObjects)
@@ -294,7 +351,7 @@ namespace UnityEditor
             }
         }
 
-        [Shortcut("Scene Visibility/Toggle Visibility and children")]
+        [Shortcut("Scene Visibility/Toggle Visibility And Children")]
         internal static void ToggleSelectionHierarchyVisibility()
         {
             if (Selection.gameObjects.Length > 0)
@@ -309,9 +366,143 @@ namespace UnityEditor
 
                     shouldHide = false;
                 }
-                Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Visibility and children");
+                Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Visibility And Children");
                 SceneVisibilityState.SetGameObjectsHidden(Selection.gameObjects, shouldHide, true);
                 HiddenContentChanged();
+            }
+        }
+
+        internal static bool IsCurrentStageIsolated()
+        {
+            return StageNavigationManager.instance.currentItem.isPrefabStage ? SceneVisibilityState.prefabStageIsolated : SceneVisibilityState.mainStageIsolated;
+        }
+
+        private static void IsolateCurrentStage()
+        {
+            if (StageNavigationManager.instance.currentItem.isPrefabStage)
+            {
+                SceneVisibilityState.prefabStageIsolated = true;
+                SceneVisibilityState.SetSceneIsolation(StageNavigationManager.instance.GetCurrentPrefabStage().scene, true);
+            }
+            else
+            {
+                SceneVisibilityState.mainStageIsolated = true;
+                for (int i = 0; i < SceneManager.sceneCount; i++)
+                {
+                    var scene = SceneManager.GetSceneAt(i);
+                    SceneVisibilityState.SetSceneIsolation(scene, true);
+                }
+            }
+
+            currentStageIsolated?.Invoke();
+        }
+
+        internal static void RevertIsolation()
+        {
+            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Revert Isolation");
+            RevertIsolationCurrentStage();
+            HiddenContentChanged();
+        }
+
+        private static void RevertIsolationCurrentStage()
+        {
+            if (StageNavigationManager.instance.currentItem.isPrefabStage)
+            {
+                SceneVisibilityState.prefabStageIsolated = false;
+                SceneVisibilityState.SetSceneIsolation(StageNavigationManager.instance.GetCurrentPrefabStage().scene, false);
+            }
+            else
+            {
+                SceneVisibilityState.mainStageIsolated = false;
+                for (int i = 0; i < SceneManager.sceneCount; i++)
+                {
+                    var scene = SceneManager.GetSceneAt(i);
+                    SceneVisibilityState.SetSceneIsolation(scene, false);
+                }
+            }
+
+            //If no more isolation, ensure that every scenes in DB has it's isolation cleared (including unloaded scenes)
+            if (!SceneVisibilityState.prefabStageIsolated && !SceneVisibilityState.mainStageIsolated)
+            {
+                SceneVisibilityState.ClearIsolation();
+            }
+        }
+
+        [Shortcut("Scene Visibility/Exit Isolation")]
+        internal static void ExitIsolation()
+        {
+            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Exit Isolation");
+
+            if (IsCurrentStageIsolated()) //already isolated
+            {
+                RevertIsolationCurrentStage();
+                HiddenContentChanged();
+            }
+        }
+
+        [Shortcut("Scene Visibility/Isolate Selection And Children")]
+        internal static void SelectionHierarchyIsolation()
+        {
+            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Isolate Selection And Children");
+
+            if (!IsCurrentStageIsolated())
+            {
+                IsolateCurrentStage();
+                HideAllNoUndo();
+
+                if (Selection.gameObjects.Length > 0)
+                {
+                    SceneVisibilityState.SetGameObjectsHidden(Selection.gameObjects, false, true);
+                }
+
+                HiddenContentChanged();
+            }
+            else
+            {
+                if (Selection.gameObjects.Length > 0)
+                {
+                    HideAllNoUndo();
+                    SceneVisibilityState.SetGameObjectsHidden(Selection.gameObjects, false, true);
+                    HiddenContentChanged();
+                }
+                else
+                {
+                    RevertIsolationCurrentStage();
+                    HiddenContentChanged();
+                }
+            }
+        }
+
+        [Shortcut("Scene Visibility/Isolate Selection")]
+        internal static void SelectionGameObjectIsolation()
+        {
+            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Isolate Selection");
+
+            if (!IsCurrentStageIsolated())
+            {
+                IsolateCurrentStage();
+                HideAllNoUndo();
+
+                if (Selection.gameObjects.Length > 0)
+                {
+                    SceneVisibilityState.SetGameObjectsHidden(Selection.gameObjects, false, false);
+                }
+
+                HiddenContentChanged();
+            }
+            else
+            {
+                if (Selection.gameObjects.Length > 0)
+                {
+                    HideAllNoUndo();
+                    SceneVisibilityState.SetGameObjectsHidden(Selection.gameObjects, false, false);
+                    HiddenContentChanged();
+                }
+                else
+                {
+                    RevertIsolationCurrentStage();
+                    HiddenContentChanged();
+                }
             }
         }
     }

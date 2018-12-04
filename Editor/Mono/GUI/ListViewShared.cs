@@ -124,6 +124,9 @@ namespace UnityEditor
                 {
                     if (state.row > 0)
                         state.row--;
+                    // If nothing is selected, upArrow selects the 1st element
+                    else if (state.row == -1)
+                        state.row = 0;
                     break;
                 }
                 case KeyCode.DownArrow:

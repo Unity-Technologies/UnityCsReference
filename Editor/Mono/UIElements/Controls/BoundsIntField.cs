@@ -37,6 +37,9 @@ namespace UnityEditor.UIElements
         private Vector3IntField m_SizeField;
 
         public new static readonly string ussClassName = "unity-bounds-int-field";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
+
         public static readonly string positionUssClassName = ussClassName + "__position-field";
         public static readonly string sizeUssClassName = ussClassName + "__size-field";
 
@@ -46,7 +49,11 @@ namespace UnityEditor.UIElements
         public BoundsIntField(string label)
             : base(label, null)
         {
+            visualInput.focusable = false;
+
             AddToClassList(ussClassName);
+            visualInput.AddToClassList(inputUssClassName);
+            labelElement.AddToClassList(labelUssClassName);
 
             m_PositionField = new Vector3IntField("Position");
             m_PositionField.AddToClassList(positionUssClassName);
@@ -67,17 +74,6 @@ namespace UnityEditor.UIElements
                 value = current;
             });
             visualInput.hierarchy.Add(m_SizeField);
-        }
-
-        protected internal override void ExecuteDefaultAction(EventBase evt)
-        {
-            base.ExecuteDefaultAction(evt);
-
-            // Focus first field if any
-            if (evt?.eventTypeId == FocusEvent.TypeId())
-            {
-                m_PositionField.Focus();
-            }
         }
 
         public override void SetValueWithoutNotify(BoundsInt newValue)

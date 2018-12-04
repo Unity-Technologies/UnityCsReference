@@ -323,8 +323,8 @@ namespace UnityEditor.SceneManagement
                 PrefabStage prefabStage = new PrefabStage();
                 m_PrefabStages.Add(prefabStage);
 
-                prefabStage.OpenStage(newStage.prefabAssetPath);
-                if (prefabStage.prefabContentsRoot == null)
+                var success = prefabStage.OpenStage(newStage.prefabAssetPath);
+                if (!success)
                 {
                     m_PrefabStages.RemoveAt(m_PrefabStages.Count - 1);
                     return false;

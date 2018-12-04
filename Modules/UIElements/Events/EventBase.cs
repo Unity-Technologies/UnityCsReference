@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.ComponentModel;
 
 namespace UnityEngine.UIElements
 {
@@ -44,6 +43,22 @@ namespace UnityEngine.UIElements
 
         internal EventPropagation propagation { get; set; }
 
+        PropagationPaths m_Path;
+        internal PropagationPaths path
+        {
+            get
+            {
+                if (m_Path == null)
+                {
+                    PropagationPaths.Type pathTypesRequested = (tricklesDown ? PropagationPaths.Type.TrickleDown : PropagationPaths.Type.None);
+                    pathTypesRequested |= (bubbles ? PropagationPaths.Type.BubbleUp : PropagationPaths.Type.None);
+                    m_Path = PropagationPaths.Build(leafTarget as VisualElement, pathTypesRequested);
+                }
+
+                return m_Path;
+            }
+        }
+
         LifeCycleStatus lifeCycleStatus { get; set; }
 
         protected internal virtual void PreDispatch() {}
@@ -60,7 +75,22 @@ namespace UnityEngine.UIElements
             get { return (propagation & EventPropagation.TricklesDown) != 0; }
         }
 
-        public IEventHandler target { get; set; }
+        internal IEventHandler leafTarget { get; private set; }
+
+        IEventHandler m_Target;
+
+        public IEventHandler target
+        {
+            get { return m_Target; }
+            set
+            {
+                m_Target = value;
+                if (leafTarget == null)
+                {
+                    leafTarget = value;
+                }
+            }
+        }
 
         internal IEventHandler skipElement { get; set; }
 
@@ -279,6 +309,9 @@ namespace UnityEngine.UIElements
 
             propagation = EventPropagation.None;
 
+            m_Path?.Release();
+            m_Path = null;
+            leafTarget = null;
             target = null;
 
             skipElement = null;

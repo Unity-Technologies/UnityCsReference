@@ -537,7 +537,7 @@ namespace UnityEditor
         internal static extern string GetBuildTargetGroupName(BuildTargetGroup buildTargetGroup);
 
         [FreeFunction]
-        internal static extern bool IsUnityScriptEvalSupported(BuildTarget target);
+        internal static extern bool SupportsReflectionEmit(BuildTarget target);
 
         internal static string[] GetReferencingPlayerAssembliesForDLL(string dllPath)
         {

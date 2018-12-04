@@ -51,7 +51,7 @@ namespace UnityEngine.UIElements
 
         public override string ToString()
         {
-            return $"{texture.ToString()}";
+            return $"{texture?.ToString()}";
         }
     }
 }

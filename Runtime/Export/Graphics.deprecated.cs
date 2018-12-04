@@ -61,6 +61,16 @@ namespace UnityEngine
         static public void DrawMesh(Mesh mesh, Matrix4x4 matrix, int materialIndex) {}
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("Method DrawProcedural has been deprecated. Use Graphics.DrawProceduralNow instead. (UnityUpgradable) -> DrawProceduralNow(*)", true)]
+        [UnityEngine.Internal.ExcludeFromDocs]
+        public static void DrawProcedural(MeshTopology topology, int vertexCount, int instanceCount = 1) { DrawProceduralNow(topology, vertexCount, instanceCount); }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("Method DrawProceduralIndirect has been deprecated. Use Graphics.DrawProceduralIndirectNow instead. (UnityUpgradable) -> DrawProceduralIndirectNow(*)", true)]
+        [UnityEngine.Internal.ExcludeFromDocs]
+        public static void DrawProceduralIndirect(MeshTopology topology, ComputeBuffer bufferWithArgs, int argsOffset = 0) { DrawProceduralIndirectNow(topology, bufferWithArgs, argsOffset); }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Property deviceName has been deprecated. Use SystemInfo.graphicsDeviceName instead (UnityUpgradable) -> UnityEngine.SystemInfo.graphicsDeviceName", true)]
         static public string deviceName { get { return SystemInfo.graphicsDeviceName; } }
 

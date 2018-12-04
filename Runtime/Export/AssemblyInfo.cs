@@ -17,14 +17,14 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.XboxOne.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.PS4.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.Switch.Extensions")]
-[assembly: InternalsVisibleTo("UnityEditor.WSA.Extensions")]
+[assembly: InternalsVisibleTo("UnityEditor.UWP.Extensions")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-firstpass-testable")]
 [assembly: InternalsVisibleTo("UnityEditor.iOS.Extensions.Common")]
 [assembly: InternalsVisibleTo("UnityEditor.Android.Extensions")]
 [assembly: InternalsVisibleTo("Unity.AndroidBuildPipeline")]
 [assembly: InternalsVisibleTo("UnityEditor.OSXStandalone.Extensions")]
-[assembly: InternalsVisibleTo("UnityEditor.Timeline")] // for Driven Properties
+[assembly: InternalsVisibleTo("Unity.Timeline.Editor")] // for Driven Properties
 [assembly: InternalsVisibleTo("Unity.Timeline.EditorTests")]
 [assembly: InternalsVisibleTo("UnityEditor.InteractiveTutorialsFramework")]
 
@@ -38,7 +38,6 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEngine.Analytics")]
 [assembly: InternalsVisibleTo("UnityEngine.Advertisements")]
 [assembly: InternalsVisibleTo("UnityEngine.Purchasing")]
-[assembly: InternalsVisibleTo("UnityEngine.Timeline")]
 [assembly: InternalsVisibleTo("UnityEngine.TestRunner")]
 [assembly: InternalsVisibleTo("Unity.Automation")]
 [assembly: InternalsVisibleTo("Unity.Burst")]
@@ -53,6 +52,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.RuntimeTests.Framework.Tests")]
 [assembly: InternalsVisibleTo("Unity.PerformanceTests.RuntimeTestRunner.Tests")]
 [assembly: InternalsVisibleTo("Unity.RuntimeTests.AllIn1Runner")]
+[assembly: InternalsVisibleTo("Unity.Timeline")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-testable")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-firstpass-testable")]
 [assembly: InternalsVisibleTo("UnityEngine.SpatialTracking")]

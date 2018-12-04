@@ -40,7 +40,7 @@ namespace UnityEditor.UIAutomation
         {
             m_EditorWindow = windowToDrive;
             //TODO: find a way to properly pass this data from the runner here.
-            isAutomationVisible = EditorPrefs.GetBool("UnityEdior.PlaymodeTestsRunnerWindow" + ".visualizeUIAutomationEvents", false);
+            isAutomationVisible = EditorPrefs.GetBool("UnityEditor.PlaymodeTestsRunnerWindow" + ".visualizeUIAutomationEvents", false);
 
             //TODO: at the moment you can only debug one GUIView at a time, and nothing prevents from someone else to change who's being debugged.
             //figure out a way to handle this.

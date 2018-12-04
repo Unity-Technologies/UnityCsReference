@@ -299,8 +299,7 @@ namespace UnityEditor
         private void CreateShaderList(GenericMenu menu)
         {
             var shaders = ShaderUtil.GetAllShaderInfo();
-            var noSubmenuList = new List<string>();
-            var submenuList = new List<string>();
+            var shaderList = new List<string>();
             var legacyList = new List<string>();
             var notSupportedList = new List<string>();
             var failedCompilationList = new List<string>();
@@ -326,22 +325,24 @@ namespace UnityEditor
                     legacyList.Add(shader.name);
                     continue;
                 }
-                if (shader.name.Contains("/"))
-                {
-                    submenuList.Add(shader.name);
-                    continue;
-                }
-                noSubmenuList.Add(shader.name);
+                shaderList.Add(shader.name);
             }
 
-            noSubmenuList.Sort();
-            submenuList.Sort();
+            shaderList.Sort((s1, s2) =>
+            {
+                var order = s2.Count(c => c == '/') - s1.Count(c => c == '/');
+                if (order == 0)
+                {
+                    order = s1.CompareTo(s2);
+                }
+
+                return order;
+            });
             legacyList.Sort();
             notSupportedList.Sort();
             failedCompilationList.Sort();
 
-            noSubmenuList.ForEach(s => AddShaderToMenu("", menu, s));
-            submenuList.ForEach(s => AddShaderToMenu("", menu, s));
+            shaderList.ForEach(s => AddShaderToMenu("", menu, s));
             if (legacyList.Any())
                 menu.AddSeparator("");
             legacyList.ForEach(s => AddShaderToMenu("", menu, s));

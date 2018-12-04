@@ -2,24 +2,29 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Linq;
-using UnityEngine.UIElements;
+using System;
+using UnityEngine;
 
 namespace UnityEditor.Experimental.GraphView
 {
     public static class GraphElementScopeExtensions
     {
+        static readonly PropertyName containingScopePropertyKey = "containingScope";
+
         public static Scope GetContainingScope(this GraphElement element)
         {
             if (element == null)
                 return null;
 
-            GraphView graphView = element.GetFirstAncestorOfType<GraphView>();
+            return element.GetProperty(containingScopePropertyKey) as Scope;
+        }
 
-            if (graphView == null)
-                return null;
+        internal static void SetContainingScope(this GraphElement element, Scope scope)
+        {
+            if (element == null)
+                throw new ArgumentNullException(nameof(element));
 
-            return graphView.Query<Scope>().Where(scope => scope.containedElements.Contains(element)).First();
+            element.SetProperty(containingScopePropertyKey, scope);
         }
     }
 }

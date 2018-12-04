@@ -158,6 +158,7 @@ namespace UnityEditor
         public delegate void OnStartedFunction();
         public delegate void OnCompletedFunction();
         internal delegate void OnStartedRenderingFunction();
+        internal delegate void OnWroteLightingDataAsset();
 
         // How is GI data created: iteratively or on demand by Enlighten
         [StaticAccessor("GetLightmapSettings()")]
@@ -316,6 +317,14 @@ namespace UnityEditor
                 startedRendering();
         }
 
+        internal static event OnWroteLightingDataAsset wroteLightingDataAsset;
+
+        internal static void Internal_CallOnWroteLightingDataAsset()
+        {
+            if (wroteLightingDataAsset != null)
+                wroteLightingDataAsset();
+        }
+
         public static OnCompletedFunction completed;
 
         private static void Internal_CallCompletedFunctions()
@@ -437,5 +446,9 @@ namespace UnityEditor.Experimental
 
         [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
         public static extern bool GetCustomBakeResults([Out] Vector4[] results);
+
+        // If we should write out AO to disk. Only works in On Demand bakes
+        [StaticAccessor("GetLightmapEditorSettings()")]
+        public extern static bool extractAmbientOcclusion { get; set; }
     }
 }

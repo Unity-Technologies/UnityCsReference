@@ -42,6 +42,7 @@ namespace UnityEngine.UIElements
         StyleColor borderColor { get; set; }
         StyleBackground backgroundImage { get; set; }
         StyleEnum<ScaleMode> unityBackgroundScaleMode { get; set; }
+        StyleColor unityBackgroundImageTintColor { get; set;}
         StyleEnum<Align> alignItems { get; set; }
         StyleEnum<Align> alignContent { get; set; }
         StyleEnum<Justify> justifyContent { get; set; }

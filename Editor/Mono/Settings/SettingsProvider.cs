@@ -57,11 +57,19 @@ namespace UnityEditor
         public Action<string, VisualElement> activateHandler { get; set; }
         public Action deactivateHandler { get; set; }
         public Func<string, bool> hasSearchInterestHandler { get; set; }
+        public Action inspectorUpdateHandler { get; set; }
 
         public SettingsProvider(string path, SettingsScope scopes, IEnumerable<string> keywords = null)
         {
-            settingsPath = path;
-            m_Name = L10n.Tr(Path.GetFileName(settingsPath));
+            settingsPath = path.Replace("\n", " ").Replace("\\", "/");
+            var nameIndex = settingsPath.LastIndexOf("/");
+            var name = settingsPath;
+            if (nameIndex != -1)
+            {
+                name = settingsPath.Substring(nameIndex + 1);
+            }
+            m_Name = L10n.Tr(name);
+
             pathTokens = settingsPath.Split('/');
             this.scope = scopes;
             m_Keywords = keywords == null ? new HashSet<string>() : new HashSet<string>(keywords);
@@ -107,6 +115,11 @@ namespace UnityEditor
         public virtual void OnFooterBarGUI()
         {
             footerBarGuiHandler?.Invoke();
+        }
+
+        public virtual void OnInspectorUpdate()
+        {
+            inspectorUpdateHandler?.Invoke();
         }
 
         public void Repaint()

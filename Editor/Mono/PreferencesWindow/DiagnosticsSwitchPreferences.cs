@@ -87,12 +87,11 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
 
             var rowRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.label, GUILayout.ExpandWidth(true));
-            var warningRect = new Rect(rowRect.x, rowRect.y, rowRect.height, rowRect.height);
+            var warningRect = new Rect(rowRect.x, rowRect.y, Styles.smallWarningIcon.width, Styles.smallWarningIcon.height);
             if (m_HasAnyUnappliedSwitches)
             {
-                rowRect.x += warningRect.width;
+                rowRect.x += warningRect.width + 2;
             }
-
             if (hasUnappliedValue && Event.current.type == EventType.Repaint)
                 GUI.DrawTexture(warningRect, Styles.smallWarningIcon);
 

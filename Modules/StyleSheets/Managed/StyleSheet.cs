@@ -256,6 +256,7 @@ namespace UnityEngine.UIElements
             return TryCheckAccess(assets, StyleValueType.AssetReference, handles, index, out value);
         }
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal string ReadFunctionName(StyleValueHandle handle)
         {
             return CheckAccess(strings, StyleValueType.Function, handle);

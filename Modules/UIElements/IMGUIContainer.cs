@@ -62,11 +62,6 @@ namespace UnityEngine.UIElements
 
         public ContextType contextType { get; set; }
 
-        // The following flag indicates that the focus for the actual IMGUIContainer must react like an UIElements and not a IMGUI.
-        // This should be used mainly by the UIElements field that are using an IMGUIContainer to achieve their implementation
-        // Like : ColorField...
-        internal bool useUIElementsFocusStyle;
-
         // The following 2 flags indicate the following :
         // 1) lostFocus : a blur event occured and we need to make sure the actual keyboard focus from IMGUI is really un-focused
         bool lostFocus = false;
@@ -77,20 +72,22 @@ namespace UnityEngine.UIElements
 
         int newKeyboardFocusControlID = 0;
 
-        bool isDockArea => parent.parent == null && name.StartsWith("Dockarea");
+        internal bool focusOnlyIfHasFocusableControls { get; set; } = true;
 
-        public override bool canGrabFocus
-        {
-            get { return base.canGrabFocus && (hasFocusableControls || isDockArea); }
-        }
+        public override bool canGrabFocus => focusOnlyIfHasFocusableControls ? hasFocusableControls && base.canGrabFocus : base.canGrabFocus;
 
         public static readonly string ussClassName = "unity-imgui-container";
 
         public IMGUIContainer()
-            : this(null) {}
+            : this(null)
+        {
+            renderHint = RenderHint.ImmediateMode;
+        }
 
         public IMGUIContainer(Action onGUIHandler)
         {
+            renderHint = RenderHint.ImmediateMode;
+
             AddToClassList(ussClassName);
 
             m_OnGUIHandler = onGUIHandler;
@@ -194,13 +191,8 @@ namespace UnityEngine.UIElements
                     if (focusController != null)
                     {
                         // We dont want to clear the GUIUtility.keyboardControl if another IMGUIContainer
-                        // just set it in the if (receivedFocus) block below. So we only clear it if either
-                        //
-                        // - there is no focused element
-                        // - we are the currently focused element (that would be surprising)
-                        // - the currently focused element is not an IMGUIContainer (in this case,
-                        //   GUIUtility.keyboardControl should be 0).
-                        if (focusController.focusedElement == null || focusController.focusedElement == this || !(focusController.focusedElement is IMGUIContainer) || useUIElementsFocusStyle)
+                        // just set it in the if (receivedFocus) block below. So we only clear it if own it.
+                        if (GUIUtility.OwnsId(GUIUtility.keyboardControl))
                         {
                             GUIUtility.keyboardControl = 0;
                             focusController.imguiKeyboardControl = 0;
@@ -211,31 +203,28 @@ namespace UnityEngine.UIElements
 
                 if (receivedFocus)
                 {
-                    // If we just received the focus and GUIUtility.keyboardControl is not already one of our control,
-                    // set the GUIUtility.keyboardControl to our first or last focusable control.
-                    if (focusChangeDirection != FocusChangeDirection.unspecified && focusChangeDirection != FocusChangeDirection.none)
+                    if (hasFocusableControls)
                     {
-                        // We assume we are using the VisualElementFocusRing.
-                        if (focusChangeDirection == VisualElementFocusChangeDirection.left)
+                        if (focusChangeDirection != FocusChangeDirection.unspecified && focusChangeDirection != FocusChangeDirection.none)
                         {
-                            GUIUtility.SetKeyboardControlToLastControlId();
+                            // We got here by tabbing.
+
+                            // We assume we are using the VisualElementFocusRing.
+                            if (focusChangeDirection == VisualElementFocusChangeDirection.left)
+                            {
+                                GUIUtility.SetKeyboardControlToLastControlId();
+                            }
+                            else if (focusChangeDirection == VisualElementFocusChangeDirection.right)
+                            {
+                                GUIUtility.SetKeyboardControlToFirstControlId();
+                            }
                         }
-                        else if (focusChangeDirection == VisualElementFocusChangeDirection.right)
+                        else if (GUIUtility.keyboardControl == 0)
                         {
+                            // Since GUIUtility.keyboardControl == 0, we got focused in some other way than by clicking inside us
+                            // (for example it could be by clicking in an element that delegates focus to us).
+                            // Give GUIUtility.keyboardControl to our first control.
                             GUIUtility.SetKeyboardControlToFirstControlId();
-                        }
-                    }
-                    else if (useUIElementsFocusStyle)
-                    {
-                        // When the direction is not set, this is because we are coming back to this specific IMGUIContainer
-                        // with a mean other than TAB, we need to make sure to return to the element that was focused before...
-                        if ((focusController == null) || (focusController.imguiKeyboardControl == 0))
-                        {
-                            GUIUtility.SetKeyboardControlToFirstControlId();
-                        }
-                        else
-                        {
-                            GUIUtility.keyboardControl = focusController.imguiKeyboardControl;
                         }
                     }
 
@@ -246,7 +235,7 @@ namespace UnityEngine.UIElements
                         focusController.imguiKeyboardControl = GUIUtility.keyboardControl;
                     }
                 }
-                // We intentionally don't send the NewKeuboardFocus command here since it creates an issue with the AutomatedWindow
+                // We intentionally don't send the NewKeyboardFocus command here since it creates an issue with the AutomatedWindow
                 // newKeyboardFocusControlID = GUIUtility.keyboardControl;
             }
 
@@ -290,7 +279,7 @@ namespace UnityEngine.UIElements
                         {
                             // If CheckForTabEvent returns -1 or -2, we have reach the end/beginning of its control list.
                             // We should switch the focus to the next VisualElement.
-                            Focusable currentFocusedElement = focusController.focusedElement;
+                            Focusable currentFocusedElement = focusController.GetLeafFocusedElement();
                             Focusable nextFocusedElement = null;
                             using (KeyDownEvent e = KeyDownEvent.GetPooled('\t', KeyCode.Tab, result == -1 ? EventModifiers.None : EventModifiers.Shift))
                             {
@@ -334,9 +323,9 @@ namespace UnityEngine.UIElements
                         {
                             // This means the event is not a tab. Synchronize our focus info with IMGUI.
 
-                            if (originalEventType == EventType.MouseDown && isDockArea)
+                            if (originalEventType == EventType.MouseDown && !focusOnlyIfHasFocusableControls)
                             {
-                                focusController.SyncIMGUIFocus(focusController.imguiKeyboardControl, this, true);
+                                focusController.SyncIMGUIFocus(GUIUtility.keyboardControl, this, true);
                             }
                             else if ((currentKeyboardFocus != GUIUtility.keyboardControl) || (originalEventType == EventType.MouseDown))
                             {
@@ -347,7 +336,7 @@ namespace UnityEngine.UIElements
                                 // Here we want to resynchronize our internal state ...
                                 newKeyboardFocusControlID = GUIUtility.keyboardControl;
 
-                                if (focusController.focusedElement == this)
+                                if (focusController.GetLeafFocusedElement() == this)
                                 {
                                     // In this case, the focused element is the right one in the Focus Controller... we are just updating the internal imguiKeyboardControl
                                     focusController.imguiKeyboardControl = GUIUtility.keyboardControl;

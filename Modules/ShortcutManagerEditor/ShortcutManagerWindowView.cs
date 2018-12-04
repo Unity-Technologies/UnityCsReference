@@ -761,7 +761,7 @@ namespace UnityEditor.ShortcutManagement
             root.Add(searchControlContainer);
         }
 
-        void RefreshProfiles()
+        public void RefreshProfiles()
         {
             m_ActiveProfileDropdownButton.text = m_ViewController.activeProfile;
         }

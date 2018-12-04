@@ -332,6 +332,9 @@ namespace UnityEditor.UIElements
         }
 
         public new static readonly string ussClassName = "unity-mask-field";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
+
 
         public MaskField(List<string> choices, int defaultMask, Func<string, string> formatSelectedValueCallback = null, Func<string, string> formatListItemCallback = null)
             : this(null, choices, defaultMask, formatSelectedValueCallback, formatListItemCallback)
@@ -358,6 +361,8 @@ namespace UnityEditor.UIElements
             : base(label)
         {
             AddToClassList(ussClassName);
+            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
         }
 
         // Returns the mask to be used for the item...

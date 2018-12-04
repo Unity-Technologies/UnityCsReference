@@ -72,20 +72,19 @@ namespace UnityEditor
 
         private const int k_VisibilityIconPadding = 4;
         private const int k_IconWidth = 16;
+        private static readonly float k_sceneHeaderOverflow = GameObjectTreeViewGUI.GameObjectStyles.sceneHeaderBg.fixedHeight - EditorGUIUtility.singleLineHeight;
+        private static bool m_PrevItemWasScene;
 
         public const float utilityBarWidth = k_VisibilityIconPadding * 2 + k_IconWidth;
 
         public static void DrawBackground(Rect rect)
         {
-            if (Event.current.type != EventType.Repaint)
-                return;
-
             rect.width = utilityBarWidth;
 
-            Color oldColor = GUI.color;
-            GUI.color = Styles.backgroundColor;
-            GUI.Label(rect, GUIContent.none, GameObjectTreeViewGUI.GameObjectStyles.hoveredItemBackgroundStyle);
-            GUI.color = oldColor;
+            using (new GUI.BackgroundColorScope(GameObjectTreeViewGUI.GameObjectStyles.hoveredBackgroundColor))
+            {
+                GUI.Label(rect, GUIContent.none, GameObjectTreeViewGUI.GameObjectStyles.hoveredItemBackgroundStyle);
+            }
         }
 
         public static void DoItemGUI(Rect rect, GameObjectTreeViewItem goItem, bool isSelected, bool isHovered, bool isFocused)
@@ -101,12 +100,17 @@ namespace UnityEditor
                 GUIView.current.MarkHotRegion(GUIClip.UnclipToWindow(iconRect));
             }
 
-            DrawItemBackground(rect, isSelected, isHovered, isFocused);
-
             GameObject gameObject = goItem.objectPPTR as GameObject;
             if (gameObject)
             {
+                // The scene header overlaps it's next item by some pixels. Displace the background so it doesn't draw on top of the scene header.
+                // Don't displace when selected or hovered (They already show on top of the header)
+                if (m_PrevItemWasScene && !isSelected && !isHovered)
+                    rect.yMin += k_sceneHeaderOverflow;
+
+                DrawItemBackground(rect, isSelected, isHovered, isFocused);
                 DrawGameObjectItem(iconRect, gameObject, isHovered, isIconHovered);
+                m_PrevItemWasScene = false;
             }
             else
             {
@@ -114,6 +118,7 @@ namespace UnityEditor
                 if (scene.IsValid())
                 {
                     DrawSceneItem(iconRect, scene, isHovered, isIconHovered);
+                    m_PrevItemWasScene = true;
                 }
             }
         }
@@ -124,12 +129,9 @@ namespace UnityEditor
             {
                 rect.width = utilityBarWidth;
 
-                if (isSelected || isHovered)
+                using (new GUI.BackgroundColorScope(Styles.GetItemBackgroundColor(isHovered, isSelected, isFocused)))
                 {
-                    using (new GUI.ColorScope(Styles.GetItemBackgroundColor(isHovered, isSelected, isFocused)))
-                    {
-                        GUI.Label(rect, GUIContent.none, GameObjectTreeViewGUI.GameObjectStyles.hoveredItemBackgroundStyle);
-                    }
+                    GUI.Label(rect, GUIContent.none, GameObjectTreeViewGUI.GameObjectStyles.hoveredItemBackgroundStyle);
                 }
             }
         }

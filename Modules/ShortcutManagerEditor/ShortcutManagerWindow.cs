@@ -25,6 +25,7 @@ namespace UnityEditor.ShortcutManagement
         void RefreshKeyboard();
         void RefreshCategoryList();
         void RefreshShortcutList();
+        void RefreshProfiles();
         void UpdateSearchFilterOptions();
 
         RebindResolution HandleRebindWillCreateConflict(ShortcutEntry entry, IList<KeyCombination> newBinding, IList<ShortcutEntry> conflicts);
@@ -178,7 +179,7 @@ namespace UnityEditor.ShortcutManagement
             var contextManager = ShortcutIntegration.instance.contextManager;
             var profileManager = ShortcutIntegration.instance.profileManager;
             var bindingValidator = ShortcutIntegration.instance.bindingValidator;
-            m_ViewController = new ShortcutManagerWindowViewController(m_State, directory, bindingValidator, profileManager, contextManager);
+            m_ViewController = new ShortcutManagerWindowViewController(m_State, directory, bindingValidator, profileManager, contextManager, ShortcutIntegration.instance);
             var view = new ShortcutManagerWindowView(m_ViewController, m_ViewController);
             m_ViewController.SetView(view);
 

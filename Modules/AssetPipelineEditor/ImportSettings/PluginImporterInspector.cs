@@ -216,7 +216,7 @@ namespace UnityEditor
 
                 // Ignore platforms which don't have module extensions loaded, accept standalone targets by default, as they don't have extensions
                 if (ModuleManager.IsPlatformSupported(platform) &&
-                    !ModuleManager.IsPlatformSupportLoaded(ModuleManager.GetTargetStringFromBuildTarget(platform)) &&
+                    !ModuleManager.IsPlatformSupportLoadedByBuildTarget(platform) &&
                     !IsStandaloneTarget(platform))
                     continue;
 

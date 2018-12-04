@@ -135,11 +135,15 @@ namespace UnityEngine.UIElements
 
         internal BaseField(string label)
         {
-            // Make sure to make the element focusable...
+            isCompositeRoot = true;
             focusable = true;
+            tabIndex = 0;
+            excludeFromFocusRing = true;
+            delegatesFocus = true;
+
             AddToClassList(ussClassName);
 
-            labelElement = new Label();
+            labelElement = new Label() { focusable = true, tabIndex = -1 };
             labelElement.AddToClassList(labelUssClassName);
             if (label != null)
             {
@@ -157,32 +161,6 @@ namespace UnityEngine.UIElements
             : this(label)
         {
             this.visualInput = visualInput;
-            focusable = true;
-        }
-        public override bool focusable
-        {
-            get { return base.focusable; }
-            set
-            {
-                base.focusable = value;
-                if (labelElement != null)
-                {
-                    labelElement.focusable = value;
-                }
-            }
-        }
-
-        public override int tabIndex
-        {
-            get { return base.tabIndex; }
-            set
-            {
-                base.tabIndex = value;
-                if (labelElement != null)
-                {
-                    labelElement.tabIndex = value;
-                }
-            }
         }
 
         public virtual void SetValueWithoutNotify(TValueType newValue)
@@ -212,21 +190,6 @@ namespace UnityEngine.UIElements
                         SendEvent(evt);
                     }
                 }
-            }
-        }
-
-        protected internal override void ExecuteDefaultAction(EventBase evt)
-        {
-            base.ExecuteDefaultAction(evt);
-
-            if (evt == null)
-            {
-                return;
-            }
-
-            if (evt.eventTypeId == FocusEvent.TypeId())
-            {
-                m_VisualInput?.Focus();
             }
         }
     }

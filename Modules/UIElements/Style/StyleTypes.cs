@@ -23,7 +23,8 @@ namespace UnityEngine.UIElements
         Undefined, // No keyword defined
         Null, // No inline style value
         Auto,
-        None
+        None,
+        Initial // Default value
     }
 
     internal static class StyleValueExtensions
@@ -43,6 +44,16 @@ namespace UnityEngine.UIElements
             return new StyleEnum<T>(value, styleInt.keyword) {specificity = styleInt.specificity };
         }
 
+        internal static StyleLength ToStyleLength(this StyleValue styleValue)
+        {
+            return new StyleLength(new Length(styleValue.number), styleValue.keyword);
+        }
+
+        internal static StyleFloat ToStyleFloat(this StyleValue styleValue)
+        {
+            return new StyleFloat(styleValue.number, styleValue.keyword);
+        }
+
         internal static string DebugString<T>(this IStyleValue<T> styleValue)
         {
             return styleValue.keyword != StyleKeyword.Undefined ? $"{styleValue.keyword}" : $"{styleValue.value}";
@@ -52,14 +63,6 @@ namespace UnityEngine.UIElements
         {
             if (styleValue.specificity > UndefinedSpecificity)
                 return styleValue.value;
-
-            return defaultValue;
-        }
-
-        internal static T GetSpecifiedValueOrDefault<T, U>(this T styleValue, T defaultValue) where T : IStyleValue<U>
-        {
-            if (styleValue.specificity > UndefinedSpecificity)
-                return styleValue;
 
             return defaultValue;
         }
@@ -74,13 +77,15 @@ namespace UnityEngine.UIElements
 
         internal static YogaValue ToYogaValue(this StyleLength styleValue)
         {
-            if (styleValue.specificity > UndefinedSpecificity)
-            {
-                if (styleValue.keyword == StyleKeyword.Auto)
-                    return YogaValue.Auto();
+            if (styleValue.keyword == StyleKeyword.Auto)
+                return YogaValue.Auto();
 
+            // For max-width and max-height
+            if (styleValue.keyword == StyleKeyword.None)
+                return float.NaN;
+
+            if (styleValue.specificity > UndefinedSpecificity)
                 return styleValue.value.value;
-            }
 
             return float.NaN;
         }

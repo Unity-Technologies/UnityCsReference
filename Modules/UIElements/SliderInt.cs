@@ -34,6 +34,8 @@ namespace UnityEngine.UIElements
         internal const int kDefaultHighValue = 10;
 
         public new static readonly string ussClassName = "unity-slider-int";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
 
         public SliderInt()
             : this(null, 0, kDefaultHighValue) {}
@@ -45,6 +47,8 @@ namespace UnityEngine.UIElements
             : base(label, start, end, direction, pageSize)
         {
             AddToClassList(ussClassName);
+            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
         }
 
         public override float pageSize

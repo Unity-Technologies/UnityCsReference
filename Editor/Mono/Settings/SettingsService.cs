@@ -81,7 +81,14 @@ namespace UnityEditor
 #pragma warning disable CS0618
                     var attributeName = (method.attribute as PreferenceItem).name;
 #pragma warning restore CS0618
-                    return new SettingsProvider("Preferences/" + attributeName, SettingsScope.User) { guiHandler = searchContext => callback() };
+                    try
+                    {
+                        return new SettingsProvider("Preferences/" + attributeName, SettingsScope.User) { guiHandler = searchContext => callback() };
+                    }
+                    catch (Exception)
+                    {
+                        Debug.LogError("Cannot create preference wrapper for: " + attributeName);
+                    }
                 }
 
                 return null;
@@ -93,8 +100,16 @@ namespace UnityEditor
             var methods = AttributeHelper.GetMethodsWithAttribute<SettingsProviderAttribute>();
             return methods.methodsWithAttributes.Select(method =>
             {
-                var callback = Delegate.CreateDelegate(typeof(Func<SettingsProvider>), method.info) as Func<SettingsProvider>;
-                return callback?.Invoke();
+                try
+                {
+                    var callback = Delegate.CreateDelegate(typeof(Func<SettingsProvider>), method.info) as Func<SettingsProvider>;
+                    return callback?.Invoke();
+                }
+                catch (Exception)
+                {
+                    Debug.LogError("Cannot create Settings Provider for: " + method.info.Name);
+                }
+                return null;
             });
         }
 
@@ -103,8 +118,21 @@ namespace UnityEditor
             var methods = AttributeHelper.GetMethodsWithAttribute<SettingsProviderGroupAttribute>();
             return methods.methodsWithAttributes.SelectMany(method =>
             {
-                var callback = Delegate.CreateDelegate(typeof(Func<SettingsProvider[]>), method.info) as Func<SettingsProvider[]>;
-                return callback?.Invoke();
+                try
+                {
+                    var callback = Delegate.CreateDelegate(typeof(Func<SettingsProvider[]>), method.info) as Func<SettingsProvider[]>;
+                    var providers = callback?.Invoke();
+                    if (providers != null)
+                    {
+                        return providers;
+                    }
+                }
+                catch (Exception)
+                {
+                    Debug.LogError("Cannot create Settings Providers for: " + method.info.Name);
+                }
+
+                return new SettingsProvider[0];
             });
         }
     }

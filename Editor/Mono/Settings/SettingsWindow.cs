@@ -126,6 +126,11 @@ namespace UnityEditor
             Undo.undoRedoPerformed -= OnUndoRedoPerformed;
         }
 
+        internal void OnInspectorUpdate()
+        {
+            m_TreeView.currentProvider?.OnInspectorUpdate();
+        }
+
         void OnUndoRedoPerformed()
         {
             Repaint();
@@ -243,7 +248,8 @@ namespace UnityEditor
                 {
                     flexGrow = m_SplitterFlex,
                     flexBasis = 0f
-                }
+                },
+                focusOnlyIfHasFocusableControls = false,
             };
             settingsTree.AddToClassList("settings-tree-imgui-container");
             m_Splitter.Add(settingsTree);

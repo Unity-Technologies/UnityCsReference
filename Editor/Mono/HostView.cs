@@ -314,7 +314,7 @@ namespace UnityEditor
             bool isExitGUIException = false;
             try
             {
-                using (new PerformanceTracker(actualView.GetType().Name + ".OnGUI"))
+                using (new PerformanceTracker(actualView.GetType().Name + ".OnGUI." + Event.current.type))
                 {
                     if (EditorModes.ShouldInvokeOnGUI(m_ActualView))
                     {

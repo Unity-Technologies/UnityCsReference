@@ -40,6 +40,7 @@ namespace UnityEditor
         const float kAddComponentButtonHeight = 45f;
         internal const int kInspectorPaddingLeft = 4 + 10;
         internal const int kInspectorPaddingRight = 4;
+        const float kEditorElementPaddingBottom = 2f;
 
         const float k_MinAreaAbovePreview = 130;
         const float k_InspectorPreviewMinHeight = 130;
@@ -89,15 +90,15 @@ namespace UnityEditor
         IMGUIContainer m_TrackerResetter;
 
         VisualElement m_EditorsElement;
-        VisualElement editorsElement => m_EditorsElement ?? (m_EditorsElement = FindVisualElementInTree("editorsList"));
+        VisualElement editorsElement => m_EditorsElement ?? (m_EditorsElement = FindVisualElementInTreeByName("editorsList"));
 
         VisualElement m_PreviewAndLabelElement;
 
-        VisualElement previewAndLabelElement => m_PreviewAndLabelElement ?? (m_PreviewAndLabelElement = FindVisualElementInTree("footerInfo"));
+        VisualElement previewAndLabelElement => m_PreviewAndLabelElement ?? (m_PreviewAndLabelElement = FindVisualElementInTreeByName("footerInfo"));
 
         VisualElement m_MultiEditLabel;
 
-        VisualElement FindVisualElementInTree(string elementName)
+        VisualElement FindVisualElementInTreeByName(string elementName)
         {
             var element = rootVisualElement.Q<VisualElement>(elementName);
             if (element == null)
@@ -543,6 +544,7 @@ namespace UnityEditor
             m_TrackerResetInserted = false;
             m_FirstInitialize = false;
             m_EditorsWithImportedObjectLabel.Clear();
+            m_LastInitialEditorInstanceID = 0;
 
             FlushAllOptimizedGUIBlocksIfNeeded();
 
@@ -610,15 +612,17 @@ namespace UnityEditor
             if (editors.Any())
             {
                 Profiler.BeginSample("InspectorWindow.RebuildContentsContainers()::previewAndLabelElement");
-                var previewAndLabelsContainer = CreateIMGUIContainer(DrawPreviewAndLabels);
+                var previewAndLabelsContainer = CreateIMGUIContainer(DrawPreviewAndLabels, "preview-container");
 
                 m_PreviewResizer.SetContainer(previewAndLabelsContainer, kBottomToolbarHeight);
 
                 previewAndLabelElement.Add(previewAndLabelsContainer);
                 if (tracker.activeEditors.Length > 0)
                 {
-                    previewAndLabelElement.Add(CreateIMGUIContainer(() => DrawVCSShortInfo(this,
-                        InspectorWindowUtils.GetFirstNonImportInspectorEditor(tracker.activeEditors))));
+                    previewAndLabelElement.Add(CreateIMGUIContainer(
+                        () => DrawVCSShortInfo(this,
+                            InspectorWindowUtils.GetFirstNonImportInspectorEditor(tracker.activeEditors)),
+                        "first-non-import-inspector-container"));
                 }
 
                 Profiler.EndSample();
@@ -1299,7 +1303,7 @@ namespace UnityEditor
                             if (correspondingSource == nextInSource)
                                 break;
 
-                            DisplayRemovedComponent((GameObject)editors[0].target, nextInSource);
+                            AddRemovedPrefabComponentElement(editors, nextInSource, editorContainer);
                         }
 
                         prefabComponentIndex++;
@@ -1407,28 +1411,40 @@ namespace UnityEditor
                             return;
                         }
 
+                        var ed = edits[i];
+
                         contentRect.y = -contentRect.height;
-
-                        // Make sure to display any remaining removed components that come after the last component on the GameObject.
-                        if (m_ComponentsInPrefabSource != null)
-                        {
-                            while (prefabComponentIndex < m_ComponentsInPrefabSource.Length)
-                            {
-                                Component nextInSource = m_ComponentsInPrefabSource[prefabComponentIndex];
-                                DisplayRemovedComponent((GameObject)editors[0].target, nextInSource);
-                                prefabComponentIndex++;
-                            }
-                        }
-
                         editorDragging.HandleDraggingToEditor(edits, i, dragRect, contentRect);
-                        HandleComponentScreenshot(contentRect, edits[i]);
+                        HandleComponentScreenshot(contentRect, ed);
+
+                        var target = ed.target;
+                        var comp = target as Component;
+
+                        if (EditorGUI.ShouldDrawOverrideBackground(ed.targets, Event.current, comp))
+                        {
+                            var rect = GUILayoutUtility.kDummyRect;
+                            bool wasVisible = WasEditorVisible(editors, editor, i, target);
+                            // if the inspector is currently visible then the override background drawn by the footer needs to be slightly larger than if the inspector is collapsed
+                            if (wasVisible)
+                            {
+                                rect.y -= 1;
+                                rect.height += 1;
+                            }
+                            else
+                            {
+                                rect.y += 1;
+                                rect.height -= 1;
+                            }
+
+                            EditorGUI.DrawOverrideBackground(rect, true);
+                        }
                     }, editorTitle + "Footer");
                     footerElement.style.height = 3;
                 }
 
                 editorElement.name = editorTitle;
 
-                editorElement.style.paddingBottom = 3.0f;
+                editorElement.style.paddingBottom = kEditorElementPaddingBottom;
 
                 if (EditorNeedsVerticalOffset(editors, editorIndex, editorTarget))
                 {
@@ -1438,34 +1454,54 @@ namespace UnityEditor
                 }
 
                 editorContainer.Add(editorElement);
+                editorContainer.Add(footerElement);
+            }
 
-                if (footerElement != null)
+            // Make sure to display any remaining removed components that come after the last component on the GameObject.
+            if (m_ComponentsInPrefabSource != null)
+            {
+                while (prefabComponentIndex < m_ComponentsInPrefabSource.Length)
                 {
-                    editorContainer.Add(footerElement);
+                    Component nextInSource = m_ComponentsInPrefabSource[prefabComponentIndex];
+                    AddRemovedPrefabComponentElement(editors, nextInSource, editorContainer);
+
+                    prefabComponentIndex++;
                 }
             }
         }
 
-        private static void DrawImportedObjectLabel(Rect importedObjectBarRect)
+        void AddRemovedPrefabComponentElement(Editor[] editors, Component nextInSource, VisualElement editorContainer)
         {
-            if (importedObjectBarRect.height > 0)
+            var targetGameObject = editors[0].target as GameObject;
+            if (ShouldDisplayRemovedComponent(targetGameObject, nextInSource))
             {
-                // Clip the label to avoid a black border at the bottom
-                GUI.BeginGroup(importedObjectBarRect);
-                GUI.Label(new Rect(0, 0, importedObjectBarRect.width, importedObjectBarRect.height), "Imported Object", "OL Title");
-                GUI.EndGroup();
+                string missingComponentTitle = ObjectNames.GetInspectorTitle(nextInSource);
+                var removedComponentElement =
+                    CreateIMGUIContainer(() => DisplayRemovedComponent(targetGameObject, nextInSource), missingComponentTitle);
+                removedComponentElement.style.paddingBottom = kEditorElementPaddingBottom;
+
+                editorContainer.Add(removedComponentElement);
             }
+        }
+
+        bool ShouldDisplayRemovedComponent(GameObject go, Component comp)
+        {
+            if (m_ComponentsInPrefabSource == null || m_RemovedComponents == null)
+                return false;
+            if (go == null)
+                return false;
+            if (comp == null)
+                return false;
+            if ((comp.hideFlags & HideFlags.HideInInspector) != 0)
+                return false;
+            if (!m_RemovedComponents.Contains(comp))
+                return false;
+
+            return true;
         }
 
         void DisplayRemovedComponent(GameObject go, Component comp)
         {
-            if (comp == null)
-                return;
-            if ((comp.hideFlags & HideFlags.HideInInspector) != 0)
-                return;
-            if (!m_RemovedComponents.Contains(comp))
-                return;
-
             Rect rect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.inspectorTitlebar);
             EditorGUI.RemovedComponentTitlebar(rect, go, comp);
         }
@@ -1766,23 +1802,6 @@ namespace UnityEditor
             Rect position = new Rect(0, y, m_Pos.width + 1, 1);
             Rect uv = new Rect(0, 1f, 1, 1f - 1f / EditorStyles.inspectorTitlebar.normal.background.height);
             GUI.DrawTextureWithTexCoords(position, EditorStyles.inspectorTitlebar.normal.background, uv);
-        }
-
-        private void DrawAddedComponentBackground(Rect position, Object[] targets)
-        {
-            if (Event.current.type == EventType.Repaint && targets.Length == 1)
-            {
-                Component comp = targets[0] as Component;
-                if (comp != null &&
-                    EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None &&
-                    PrefabUtility.GetCorrespondingObjectFromSource(comp.gameObject) != null &&
-                    PrefabUtility.GetCorrespondingObjectFromSource(comp) == null)
-                {
-                    // Ensure colored margin here for component body doesn't overlap colored margin from InspectorTitlebar,
-                    // and extends down to exactly touch the separator line between/after components.
-                    EditorGUI.DrawOverrideBackground(new Rect(position.x, position.y + 3, position.width, position.height - 2));
-                }
-            }
         }
 
         // Invoked from C++

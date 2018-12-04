@@ -424,7 +424,7 @@ With this option, this model will not create any avatar but only import animatio
             EditorGUILayout.BeginHorizontal();
 
             EditorGUI.BeginChangeCheck();
-            EditorGUILayout.PropertyField(m_AvatarSource, GUIContent.Temp("Source"));
+            EditorGUILayout.ObjectField(m_AvatarSource, typeof(Avatar), GUIContent.Temp("Source"), ValidateAvatarSource);
             var sourceAvatar = m_AvatarSource.objectReferenceValue as Avatar;
             if (EditorGUI.EndChangeCheck())
             {
@@ -449,6 +449,22 @@ With this option, this model will not create any avatar but only import animatio
             }
 
             EditorGUILayout.EndHorizontal();
+        }
+
+        Object ValidateAvatarSource(Object[] references, Type objType, SerializedProperty property, EditorGUI.ObjectFieldValidatorOptions options)
+        {
+            if (references.Length == 0)
+                return null;
+
+            string avatarPath = AssetDatabase.GetAssetPath(references[0]);
+            foreach (AssetImporter importer in targets)
+            {
+                if (avatarPath == importer.assetPath)
+                {
+                    return null;
+                }
+            }
+            return references[0];
         }
 
         void ShowUpdateReferenceClip()

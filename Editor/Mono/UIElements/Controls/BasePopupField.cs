@@ -61,7 +61,9 @@ namespace UnityEditor.UIElements
 
         public new static readonly string ussClassName = "unity-base-popup-field";
         public static readonly string textUssClassName = ussClassName + "__text";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
         public new static readonly string inputUssClassName = ussClassName + "__input";
+
 
         internal BasePopupField()
             : this(null) {}
@@ -70,6 +72,7 @@ namespace UnityEditor.UIElements
             : base(label, null)
         {
             AddToClassList(ussClassName);
+            labelElement.AddToClassList(labelUssClassName);
 
             m_TextElement = new TextElement
             {

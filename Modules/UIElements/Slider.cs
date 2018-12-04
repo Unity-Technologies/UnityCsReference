@@ -34,6 +34,8 @@ namespace UnityEngine.UIElements
         internal const float kDefaultHighValue = 10.0f;
 
         public new static readonly string ussClassName = "unity-slider";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
 
         public Slider()
             : this((string)null, 0, kDefaultHighValue) {}
@@ -45,6 +47,8 @@ namespace UnityEngine.UIElements
             : base(label, start, end, direction, pageSize)
         {
             AddToClassList(ussClassName);
+            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
         }
 
         internal override float SliderLerpUnclamped(float a, float b, float interpolant)

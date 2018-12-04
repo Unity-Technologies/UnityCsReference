@@ -163,7 +163,6 @@ namespace UnityEngine
         [Obsolete("Please use Rigidbody.solverVelocityIterations instead. (UnityUpgradable) -> solverVelocityIterations")]
         public int solverVelocityIterationCount { get { return solverVelocityIterations; } set { solverVelocityIterations = value; } }
 
-
         extern public void AddForce(Vector3 force, [DefaultValue("ForceMode.Force")] ForceMode mode);
 
         [ExcludeFromDocs]
@@ -999,7 +998,6 @@ namespace UnityEngine
         extern public static bool GetIgnoreLayerCollision(int layer1, int layer2);
 
         extern public static bool GetIgnoreCollision(Collider collider1, Collider collider2);
-
         static public bool Raycast(Vector3 origin, Vector3 direction, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
             return defaultPhysicsScene.Raycast(origin, direction, maxDistance, layerMask, queryTriggerInteraction);
@@ -1606,6 +1604,8 @@ namespace UnityEngine
 
         [StaticAccessor("GetPhysicsManager()")]
         public extern static bool interCollisionSettingsToggle {[NativeName("GetClothInterCollisionSettingsToggle")] get; [NativeName("SetClothInterCollisionSettingsToggle")] set; }
+
+        extern public static Vector3 clothGravity { [ThreadSafe] get; set; }
 
         public static int OverlapSphereNonAlloc(Vector3 position, float radius, [Out] Collider[] results, [DefaultValue("AllLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {

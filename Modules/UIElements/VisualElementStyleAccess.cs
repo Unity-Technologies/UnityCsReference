@@ -68,6 +68,7 @@ namespace UnityEngine.UIElements
         Color IResolvedStyle.borderColor => computedStyle.borderColor.value;
         Font IResolvedStyle.unityFont => computedStyle.unityFont.value;
         ScaleMode IResolvedStyle.unityBackgroundScaleMode => computedStyle.unityBackgroundScaleMode.value;
+        Color IResolvedStyle.unityBackgroundImageTintColor => computedStyle.unityBackgroundImageTintColor.value;
         Align IResolvedStyle.alignItems => computedStyle.alignItems.value;
         Align IResolvedStyle.alignContent => computedStyle.alignContent.value;
         Justify IResolvedStyle.justifyContent => computedStyle.justifyContent.value;

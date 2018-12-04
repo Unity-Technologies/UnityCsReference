@@ -25,9 +25,17 @@ namespace UnityEditor.UIElements
             m_FileTypeIcon = EditorGUIUtility.FindTexture(typeof(VisualTreeAsset));
         }
 
+        protected void OnDisable()
+        {
+            if (m_Panel != null)
+            {
+                m_Panel.Dispose();
+                m_Panel = null;
+            }
+        }
+
         protected void OnDestroy()
         {
-            m_Panel = null;
             if (m_LastTree != null)
             {
                 UIElementsUtility.RemoveCachedPanel(m_LastTree.GetInstanceID());
@@ -77,7 +85,8 @@ namespace UnityEditor.UIElements
 
             EditorGUI.DrawRect(r, EditorGUIUtility.kViewBackgroundColor);
 
-            m_Panel.visualTree.layout = GUIClip.UnclipToWindow(r);
+            Rect layoutRect = GUIClip.UnclipToWindow(r);
+            m_Panel.visualTree.layout = new Rect(0, 0, layoutRect.width, layoutRect.height); // We will draw relative to a viewport covering the preview area, so draw at 0,0
             m_Panel.visualTree.IncrementVersion(VersionChangeType.Repaint);
 
             var oldState = SavedGUIState.Create();
@@ -88,6 +97,12 @@ namespace UnityEditor.UIElements
                 clips--;
             }
 
+            // Establish preview area viewport
+            {
+                var pixelsPerPoint = GUIUtility.pixelsPerPoint;
+                Rect viewportRect = new Rect(layoutRect.x * pixelsPerPoint, (GUIClip.visibleRect.height - layoutRect.yMax) * pixelsPerPoint, layoutRect.width * pixelsPerPoint, layoutRect.height * pixelsPerPoint);
+                GL.Viewport(viewportRect);
+            }
             m_Panel.Repaint(Event.current);
 
             oldState.ApplyAndForget();

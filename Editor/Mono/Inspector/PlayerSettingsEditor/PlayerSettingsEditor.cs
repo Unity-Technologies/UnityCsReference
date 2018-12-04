@@ -686,13 +686,10 @@ namespace UnityEditor
 
                     bool enabled = GUI.enabled;
 
-                    if (targetGroup == BuildTargetGroup.WebGL)
+                    if (targetGroup == BuildTargetGroup.WebGL || targetGroup == BuildTargetGroup.WSA)
                     {
                         ShowNoSettings();
                         EditorGUILayout.Space();
-                    }
-                    else if (targetGroup == BuildTargetGroup.WSA)
-                    {
                     }
                     else
                     {
@@ -820,7 +817,7 @@ namespace UnityEditor
 
         private static bool TargetSupportsProtectedGraphicsMem(BuildTargetGroup targetGroup)
         {
-            return targetGroup == BuildTargetGroup.Android;
+            return BuildTargetDiscovery.PlatformGroupHasFlag(targetGroup, TargetAttributes.ProtectedGraphicsMem);
         }
 
         public void ResolutionSectionGUI(BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension, int sectionIndex = 0)
@@ -948,8 +945,8 @@ namespace UnityEditor
                         EditorGUILayout.Space();
                     }
 
-                    // mobiles color/depth bits setup
-                    if (BuildTargetDiscovery.PlatformGroupHasFlag(targetGroup, TargetAttributes.IsMobile))
+                    // integrated gpu color/depth bits setup
+                    if (BuildTargetDiscovery.PlatformGroupHasFlag(targetGroup, TargetAttributes.HasIntegratedGPU))
                     {
                         // iOS, while supports 16bit FB through GL interface, use 32bit in hardware, so there is no need in 16bit
                         if (targetGroup != BuildTargetGroup.iOS &&
@@ -1741,7 +1738,7 @@ namespace UnityEditor
                 PlayerSettings.protectGraphicsMemory = EditorGUILayout.Toggle(SettingsContent.protectGraphicsMemory, PlayerSettings.protectGraphicsMemory);
             }
 
-            if (settingsExtension != null && settingsExtension.SupportsFrameTimingStatistics())
+            if (targetGroup == BuildTargetGroup.Standalone || (settingsExtension != null && settingsExtension.SupportsFrameTimingStatistics()))
             {
                 PlayerSettings.enableFrameTimingStats = EditorGUILayout.Toggle(SettingsContent.enableFrameTimingStats, PlayerSettings.enableFrameTimingStats);
             }

@@ -136,21 +136,15 @@ namespace UnityEditor.Experimental.SceneManagement
 
             m_PrefabAssetPath = prefabPath;
 
-            // Tempoary scene used while loading the prefab
-            m_PreviewScene = EditorSceneManager.NewPreviewScene();
+            // Ensure m_PreviewScene is set before calling LoadPrefabIntoPreviewScene() so the user can request the current
+            // the PrefabStage in their OnEnable and other callbacks (if they use ExecuteInEditMode or ExecuteAlways)
+            bool isUIPrefab = PrefabStageUtility.IsUIPrefab(m_PrefabAssetPath);
+            m_PreviewScene = PrefabStageUtility.GetEnvironmentSceneOrEmptyScene(isUIPrefab);
 
-            // The user can have OnEnable and other callbacks called during LoadPrefabIntoPreviewScene (if they use ExecuteInEditMode or ExecuteAlways)
-            // where they might request the current the prefabstage, so we ensure m_PreviewScene have been setup so they can check this stage's scene.
             m_PrefabContentsRoot = PrefabStageUtility.LoadPrefabIntoPreviewScene(prefabAssetPath, m_PreviewScene);
-
             if (m_PrefabContentsRoot != null)
             {
-                Scene environmentScene = PrefabStageUtility.MovePrefabRootToEnvironmentScene(m_PrefabContentsRoot);
-
-                // Close the temporary prefab loading scene and set the environment scene as the scene of the stage
-                EditorSceneManager.ClosePreviewScene(m_PreviewScene);
-                m_PreviewScene = environmentScene;
-
+                PrefabStageUtility.HandleReparentingIfNeeded(m_PrefabContentsRoot, isUIPrefab);
                 m_PrefabFileIcon = DeterminePrefabFileIconFromInstanceRootGameObject();
                 m_InitialSceneDirtyID = m_PreviewScene.dirtyID;
                 UpdateEnvironmentHideFlags();
@@ -164,7 +158,8 @@ namespace UnityEditor.Experimental.SceneManagement
             return initialized;
         }
 
-        internal void OpenStage(string prefabPath)
+        // Returns true if opened successfully
+        internal bool OpenStage(string prefabPath)
         {
             if (LoadStage(prefabPath))
             {
@@ -178,7 +173,9 @@ namespace UnityEditor.Experimental.SceneManagement
                     EnsureParentOfPrefabRootIsUnpacked();
                     UpdateEnvironmentHideFlags();
                 }
+                return true;
             }
+            return false;
         }
 
         internal void CloseStage()
@@ -217,8 +214,8 @@ namespace UnityEditor.Experimental.SceneManagement
                 Debug.Log("RELOADING Prefab at " + m_PrefabAssetPath);
 
             StageNavigationManager.instance.PrefabStageReloading(this);
-            OpenStage(m_PrefabAssetPath);
-            StageNavigationManager.instance.PrefabStageReloaded(this);
+            if (OpenStage(m_PrefabAssetPath))
+                StageNavigationManager.instance.PrefabStageReloaded(this);
 
             if (SceneHierarchy.s_DebugPrefabStage)
                 Debug.Log("RELOADING done");

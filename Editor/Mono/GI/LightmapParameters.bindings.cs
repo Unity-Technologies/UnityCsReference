@@ -37,6 +37,8 @@ namespace UnityEditor
         public extern int antiAliasingSamples { get; set; }
 
         public extern int bakedLightmapTag { get; set; }
+        public extern bool limitLightmapCount { get; set; }
+        public extern int maxLightmapCount { get; set; }
 
         [Obsolete("edgeStitching has been deprecated. Use stitchEdges instead")]
         public float edgeStitching

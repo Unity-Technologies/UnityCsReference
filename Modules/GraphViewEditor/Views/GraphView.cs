@@ -218,6 +218,8 @@ namespace UnityEditor.Experimental.GraphView
         {
             AddToClassList("graphView");
 
+            renderHint = RenderHint.ClipWithScissors;
+
             selection = new List<ISelectable>();
             style.overflow = Overflow.Hidden;
 
@@ -232,7 +234,8 @@ namespace UnityEditor.Experimental.GraphView
             contentViewContainer = new ContentViewContainer
             {
                 name = "contentViewContainer",
-                pickingMode = PickingMode.Ignore
+                pickingMode = PickingMode.Ignore,
+                renderHint = RenderHint.ViewTransform
             };
 
             // make it absolute and 0 sized so it acts as a transform to move children to and fro
@@ -772,8 +775,52 @@ namespace UnityEditor.Experimental.GraphView
             BuildContextualMenu(evt);
         }
 
+        private void OnBeforeUpdaterChange()
+        {
+            UpdateDrawChainRegistration(false);
+        }
+
+        private void OnAfterUpdaterChange()
+        {
+            UpdateDrawChainRegistration(true);
+        }
+
+        private void UpdateDrawChainRegistration(bool register)
+        {
+            var p = panel as BaseVisualElementPanel;
+            if (p != null)
+            {
+                var repaintUpdater = p.GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater;
+                if (repaintUpdater != null)
+                {
+                    if (register)
+                        repaintUpdater.BeforeDrawChain += OnBeforeDrawChain;
+                    else
+                        repaintUpdater.BeforeDrawChain -= OnBeforeDrawChain;
+                }
+            }
+        }
+
+        static Shader graphViewShader = null;
         void OnEnterPanel(AttachToPanelEvent e)
         {
+            var p = panel as BaseVisualElementPanel;
+            if (p != null)
+            {
+                if (graphViewShader == null)
+                    graphViewShader = EditorGUIUtility.LoadRequired("GraphView/GraphViewUIE.shader") as Shader;
+                p.standardShader = graphViewShader;
+                HostView ownerView = p.ownerObject as HostView;
+                if (ownerView != null && ownerView.actualView != null)
+                    ownerView.actualView.antiAliasing = 4;
+
+                // Changing the updaters is assumed not to be a normal use case, except maybe for Unity debugging
+                // purposes. For that reason, we don't track updater changes.
+                Panel.BeforeUpdaterChange += OnBeforeUpdaterChange;
+                Panel.AfterUpdaterChange += OnAfterUpdaterChange;
+                UpdateDrawChainRegistration(true);
+            }
+
             // Force DefaultCommonDark.uss since GraphView only has a dark style at the moment
             UIElementsEditorUtility.ForceDarkStyleSheet(this);
 
@@ -785,6 +832,10 @@ namespace UnityEditor.Experimental.GraphView
         {
             if (isReframable)
                 panel.visualTree.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
+
+            Panel.BeforeUpdaterChange -= OnBeforeUpdaterChange;
+            Panel.AfterUpdaterChange -= OnAfterUpdaterChange;
+            UpdateDrawChainRegistration(false);
         }
 
         void OnKeyDownShortcut(KeyDownEvent evt)
@@ -1454,6 +1505,17 @@ namespace UnityEditor.Experimental.GraphView
             frameScaling = parentScale;
 
             GUI.matrix = m;
+        }
+
+        static readonly int s_EditorPixelsPerPointId = Shader.PropertyToID("_EditorPixelsPerPoint");
+        static readonly int s_GraphViewScaleId = Shader.PropertyToID("_GraphViewScale");
+
+        void OnBeforeDrawChain(UIRRepaintUpdater repaintUpdater)
+        {
+            Material mat = repaintUpdater.renderDevice.GetStandardMaterial();
+            // Set global graph view shader properties (used by UIR)
+            mat.SetFloat(s_EditorPixelsPerPointId, EditorGUIUtility.pixelsPerPoint);
+            mat.SetFloat(s_GraphViewScaleId, scale);
         }
     }
 }

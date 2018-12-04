@@ -118,5 +118,23 @@ namespace UnityEditor
             string message = String.IsNullOrEmpty(obsoleteAttribute.Message) ? "This component has been marked as obsolete." : obsoleteAttribute.Message;
             EditorGUILayout.HelpBox(message, obsoleteAttribute.IsError ? MessageType.Error : MessageType.Warning);
         }
+
+        public static void DrawAddedComponentBackground(Rect position, Object[] targets, float adjust = 0)
+        {
+            if (Event.current.type == EventType.Repaint && targets.Length == 1)
+            {
+                Component comp = targets[0] as Component;
+                if (comp != null &&
+                    EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None &&
+                    PrefabUtility.GetCorrespondingObjectFromSource(comp.gameObject) != null &&
+                    PrefabUtility.GetCorrespondingObjectFromSource(comp) == null)
+                {
+                    // Ensure colored margin here for component body doesn't overlap colored margin from InspectorTitlebar,
+                    // and extends down to exactly touch the separator line between/after components.
+                    EditorGUI.DrawOverrideBackground(new Rect(position.x, position.y + 3 + adjust, position.width,
+                        position.height - 2));
+                }
+            }
+        }
     }
 }

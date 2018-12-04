@@ -11,17 +11,11 @@ namespace UnityEngine.UIElements
     {
         static readonly VisualElementFocusChangeDirection s_Left = new VisualElementFocusChangeDirection(FocusChangeDirection.lastValue + 1);
 
-        public static FocusChangeDirection left
-        {
-            get { return s_Left; }
-        }
+        public static FocusChangeDirection left => s_Left;
 
         static readonly VisualElementFocusChangeDirection s_Right = new VisualElementFocusChangeDirection(FocusChangeDirection.lastValue + 2);
 
-        public static FocusChangeDirection right
-        {
-            get { return s_Right; }
-        }
+        public static FocusChangeDirection right => s_Right;
 
         protected new static VisualElementFocusChangeDirection lastValue { get { return s_Right; } }
 
@@ -50,17 +44,18 @@ namespace UnityEngine.UIElements
 
         public DefaultFocusOrder defaultFocusOrder { get; set; }
 
-        struct FocusRingRecord
+        class FocusRingRecord
         {
             public int m_AutoIndex;
             public Focusable m_Focusable;
+            public bool m_IsSlot;
+            public List<FocusRingRecord> m_ScopeNavigationOrder;
         }
 
         List<FocusRingRecord> m_FocusRing;
 
         int FocusRingAutoIndexSort(FocusRingRecord a, FocusRingRecord b)
         {
-            // FIXME: Write specialized methods for each defaultFocusOrder.
             switch (defaultFocusOrder)
             {
                 case DefaultFocusOrder.ChildOrder:
@@ -166,28 +161,76 @@ namespace UnityEngine.UIElements
             m_FocusRing.Clear();
             if (root != null)
             {
-                int fi = 0;
-                BuildRingRecursive(root, ref fi);
-                m_FocusRing.Sort(FocusRingSort);
+                var rootScopeList = new List<FocusRingRecord>();
+                int autoIndex = 0;
+                BuildRingForScopeRecursive(root, ref autoIndex, rootScopeList);
+                SortAndFlattenScopeLists(rootScopeList);
             }
         }
 
-        void BuildRingRecursive(VisualElement vc, ref int focusIndex)
+        void BuildRingForScopeRecursive(VisualElement ve, ref int scopeIndex, List<FocusRingRecord> scopeList)
         {
-            for (int i = 0; i < vc.hierarchy.childCount; i++)
+            for (int i = 0; i < ve.hierarchy.childCount; i++)
             {
-                var child = vc.hierarchy[i];
+                var child = ve.hierarchy[i];
 
-                if (child.canGrabFocus && child.tabIndex >= 0)
+                bool isSlot = child.parent != null && child == child.parent.contentContainer;
+
+                if (child.isCompositeRoot || isSlot)
                 {
-                    m_FocusRing.Add(new FocusRingRecord
+                    var childRecord = new FocusRingRecord
                     {
-                        m_AutoIndex = focusIndex++,
-                        m_Focusable = child
-                    });
-                }
+                        m_AutoIndex = scopeIndex++,
+                        m_Focusable = child,
+                        m_IsSlot = isSlot,
+                        m_ScopeNavigationOrder = new List<FocusRingRecord>()
+                    };
+                    scopeList.Add(childRecord);
 
-                BuildRingRecursive(child, ref focusIndex);
+                    int autoIndex = 0;
+                    BuildRingForScopeRecursive(child, ref autoIndex, childRecord.m_ScopeNavigationOrder);
+                }
+                else
+                {
+                    if (child.canGrabFocus && child.tabIndex >= 0)
+                    {
+                        scopeList.Add(new FocusRingRecord
+                        {
+                            m_AutoIndex = scopeIndex++,
+                            m_Focusable = child,
+                            m_IsSlot = false,
+                            m_ScopeNavigationOrder = null
+                        });
+                    }
+
+                    BuildRingForScopeRecursive(child, ref scopeIndex, scopeList);
+                }
+            }
+        }
+
+        void SortAndFlattenScopeLists(List<FocusRingRecord> rootScopeList)
+        {
+            if (rootScopeList != null)
+            {
+                rootScopeList.Sort(FocusRingSort);
+                foreach (var record in rootScopeList)
+                {
+                    if (record.m_Focusable.canGrabFocus && record.m_Focusable.tabIndex >= 0)
+                    {
+                        if (!record.m_Focusable.excludeFromFocusRing)
+                        {
+                            m_FocusRing.Add(record);
+                        }
+
+                        SortAndFlattenScopeLists(record.m_ScopeNavigationOrder);
+                    }
+                    else if (record.m_IsSlot)
+                    {
+                        SortAndFlattenScopeLists(record.m_ScopeNavigationOrder);
+                    }
+
+                    record.m_ScopeNavigationOrder = null;
+                }
             }
         }
 
@@ -226,23 +269,21 @@ namespace UnityEngine.UIElements
             if (e.eventTypeId == KeyDownEvent.TypeId())
             {
                 KeyDownEvent kde = e as KeyDownEvent;
-                EventModifiers modifiers = kde.modifiers;
 
-                if (kde.character == '\t')
+                if (currentFocusable == null)
                 {
-                    if (currentFocusable == null)
-                    {
-                        // Dont start going around a focus ring if there is no current focused element.
-                        return FocusChangeDirection.none;
-                    }
-                    else if ((modifiers & EventModifiers.Shift) == 0)
+                    // Dont start going around a focus ring if there is no current focused element.
+                    return FocusChangeDirection.none;
+                }
+
+                if (kde.character == (char)25 || kde.character == '\t')
+                {
+                    if ((kde.modifiers & EventModifiers.Shift) == 0)
                     {
                         return VisualElementFocusChangeDirection.right;
                     }
-                    else
-                    {
-                        return VisualElementFocusChangeDirection.left;
-                    }
+
+                    return VisualElementFocusChangeDirection.left;
                 }
             }
 
@@ -268,22 +309,116 @@ namespace UnityEngine.UIElements
                 if (direction == VisualElementFocusChangeDirection.right)
                 {
                     index = GetFocusableInternalIndex(currentFocusable) + 1;
+
+                    if (index == 0)
+                    {
+                        // currentFocusable was not found in the ring. Use the element tree to find the next focusable.
+                        return GetNextFocusableInTree(currentFocusable as VisualElement);
+                    }
+
                     if (index == m_FocusRing.Count)
                     {
                         index = 0;
+                    }
+
+                    // FIXME: Element could be unrelated to delegator; should we detect this case and return null?
+                    // Spec is not very clear on this.
+                    while (m_FocusRing[index].m_Focusable.delegatesFocus)
+                    {
+                        index++;
+                        if (index == m_FocusRing.Count)
+                        {
+                            return null;
+                        }
                     }
                 }
                 else if (direction == VisualElementFocusChangeDirection.left)
                 {
                     index = GetFocusableInternalIndex(currentFocusable) - 1;
+
+                    if (index == -2)
+                    {
+                        // currentFocusable was not found in the ring. Use the element tree to find the previous focusable.
+                        return GetPreviousFocusableInTree(currentFocusable as VisualElement);
+                    }
+
                     if (index == -1)
                     {
                         index = m_FocusRing.Count - 1;
+                    }
+
+                    while (m_FocusRing[index].m_Focusable.delegatesFocus)
+                    {
+                        index--;
+                        if (index == -1)
+                        {
+                            return null;
+                        }
                     }
                 }
 
                 return m_FocusRing[index].m_Focusable;
             }
+        }
+
+        internal static Focusable GetNextFocusableInTree(VisualElement currentFocusable)
+        {
+            if (currentFocusable == null)
+            {
+                return null;
+            }
+
+            VisualElement ve = currentFocusable.GetNextElementDepthFirst();
+            while (!ve.canGrabFocus || ve.tabIndex < 0 || ve.excludeFromFocusRing)
+            {
+                ve = ve.GetNextElementDepthFirst();
+
+                if (ve == null)
+                {
+                    // continue at the beginning
+                    ve = currentFocusable.GetRoot();
+                }
+
+                if (ve == currentFocusable)
+                {
+                    // We went through the whole tree and did not find anything.
+                    return currentFocusable;
+                }
+            }
+
+            return ve;
+        }
+
+        internal static Focusable GetPreviousFocusableInTree(VisualElement currentFocusable)
+        {
+            if (currentFocusable == null)
+            {
+                return null;
+            }
+
+            VisualElement ve = currentFocusable.GetPreviousElementDepthFirst();
+            while (!ve.canGrabFocus || ve.tabIndex < 0 || ve.excludeFromFocusRing)
+            {
+                ve = ve.GetPreviousElementDepthFirst();
+
+                if (ve == null)
+                {
+                    // continue at the end
+                    ve = currentFocusable.GetRoot();
+                    while (ve.childCount > 0)
+                    {
+                        ve = ve.hierarchy.ElementAt(ve.childCount - 1);
+                    }
+                }
+
+                if (ve == currentFocusable)
+                {
+                    // We went through the whole tree and did not find anything.
+                    return currentFocusable;
+                }
+            }
+
+            return ve;
         }
     }
 }

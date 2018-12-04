@@ -228,6 +228,7 @@ namespace UnityEditor
         };
 
         static ConsoleWindow ms_ConsoleWindow = null;
+        private string m_SearchText;
 
         static void ShowConsoleWindowImmediate()
         {
@@ -290,6 +291,7 @@ namespace UnityEditor
         {
             position = new Rect(200, 200, 800, 400);
             m_ListView = new ListViewState(0, 0);
+            m_SearchText = string.Empty;
             EditorGUI.hyperLinkClicked += EditorGUI_HyperLinkClicked;
         }
 
@@ -586,6 +588,12 @@ namespace UnityEditor
 
             GUILayout.FlexibleSpace();
 
+            // Search bar
+            GUILayout.Space(4f);
+            SearchField(e);
+            GUILayout.Space(4f);
+
+            // Flags
             int errorCount = 0, warningCount = 0, logCount = 0;
             LogEntries.GetCountsByType(ref errorCount, ref warningCount, ref logCount);
             EditorGUI.BeginChangeCheck();
@@ -602,6 +610,7 @@ namespace UnityEditor
 
             GUILayout.EndHorizontal();
 
+            // Console entries
             SplitterGUILayout.BeginVerticalSplit(spl);
             int rowHeight = RowHeight;
             EditorGUIUtility.SetIconSize(new Vector2(rowHeight, rowHeight));
@@ -627,7 +636,8 @@ namespace UnityEditor
                     {
                         int mode = 0;
                         string text = null;
-                        LogEntries.GetLinesAndModeFromEntryInternal(el.row, Constants.LogStyleLineCount, ref mode, ref text);
+                        LogEntries.GetLinesAndModeFromEntryInternal(el.row, Constants.LogStyleLineCount, ref mode,
+                            ref text);
 
                         // Draw the background
                         GUIStyle s = el.row % 2 == 0 ? Constants.OddBackground : Constants.EvenBackground;
@@ -639,13 +649,35 @@ namespace UnityEditor
 
                         // Draw the text
                         tempContent.text = text;
-                        GUIStyle errorModeStyle = GetStyleForErrorMode(mode, false, Constants.LogStyleLineCount == 1);
-                        errorModeStyle.Draw(el.position, tempContent, id, m_ListView.row == el.row);
+                        GUIStyle errorModeStyle =
+                            GetStyleForErrorMode(mode, false, Constants.LogStyleLineCount == 1);
+
+                        if (string.IsNullOrEmpty(m_SearchText))
+                            errorModeStyle.Draw(el.position, tempContent, id, m_ListView.row == el.row);
+                        else
+                        {
+                            //the whole text contains the searchtext, we have to know where it is
+                            int startIndex = text.IndexOf(m_SearchText, StringComparison.OrdinalIgnoreCase);
+                            if (startIndex == -1) // the searchtext is not in the visible text, we don't show the selection
+                                errorModeStyle.Draw(el.position, tempContent, id, m_ListView.row == el.row);
+                            else // the searchtext is visible, we show the selection
+                            {
+                                int endIndex = startIndex + m_SearchText.Length;
+
+                                const bool isActive = false;
+                                const bool hasKeyboardFocus = true; // This ensure we draw the selection text over the label.
+                                const bool drawAsComposition = false;
+                                Color selectionColor = GUI.skin.settings.selectionColor;
+
+                                errorModeStyle.DrawWithTextSelection(el.position, tempContent, isActive, hasKeyboardFocus, startIndex, endIndex, drawAsComposition, selectionColor);
+                            }
+                        }
 
                         if (collapsed)
                         {
                             Rect badgeRect = el.position;
-                            tempContent.text = LogEntries.GetEntryCount(el.row).ToString(CultureInfo.InvariantCulture);
+                            tempContent.text = LogEntries.GetEntryCount(el.row)
+                                .ToString(CultureInfo.InvariantCulture);
                             Vector2 badgeSize = Constants.CountBadge.CalcSize(tempContent);
                             badgeRect.xMin = badgeRect.xMax - badgeSize.x;
                             badgeRect.yMin += ((badgeRect.yMax - badgeRect.yMin) - badgeSize.y) * 0.5f;
@@ -682,7 +714,8 @@ namespace UnityEditor
                 }
 
                 // Open entry using return key
-                if ((GUIUtility.keyboardControl == m_ListView.ID) && (e.type == EventType.KeyDown) && (e.keyCode == KeyCode.Return) && (m_ListView.row != 0))
+                if ((GUIUtility.keyboardControl == m_ListView.ID) && (e.type == EventType.KeyDown) &&
+                    (e.keyCode == KeyCode.Return) && (m_ListView.row != 0))
                 {
                     selectedRow = m_ListView.row;
                     openSelectedItem = true;
@@ -723,6 +756,50 @@ namespace UnityEditor
                 if (e.type == EventType.ExecuteCommand)
                     EditorGUIUtility.systemCopyBuffer = m_ActiveText;
                 e.Use();
+            }
+        }
+
+        private void SearchField(Event e)
+        {
+            string searchBarName = "SearchFilter";
+            if (e.commandName == EventCommandNames.Find)
+            {
+                if (e.type == EventType.ExecuteCommand)
+                {
+                    EditorGUI.FocusTextInControl(searchBarName);
+                }
+
+                if (e.type != EventType.Layout)
+                    e.Use();
+            }
+
+            string searchText = m_SearchText;
+            if (e.type == EventType.KeyDown)
+            {
+                if (e.keyCode == KeyCode.Escape)
+                {
+                    searchText = string.Empty;
+                    GUIUtility.keyboardControl = m_ListView.ID;
+                    Repaint();
+                }
+                else if ((e.keyCode == KeyCode.UpArrow || e.keyCode == KeyCode.DownArrow) &&
+                         GUI.GetNameOfFocusedControl() == searchBarName)
+                {
+                    GUIUtility.keyboardControl = m_ListView.ID;
+                }
+            }
+
+            GUI.SetNextControlName(searchBarName);
+            Rect rect = GUILayoutUtility.GetRect(0, EditorGUILayout.kLabelFloatMaxW * 1.5f, EditorGUI.kSingleLineHeight,
+                EditorGUI.kSingleLineHeight, EditorStyles.toolbarSearchField, GUILayout.MinWidth(100),
+                GUILayout.MaxWidth(300));
+            var filteringText = EditorGUI.ToolbarSearchField(rect, searchText, false);
+            if (m_SearchText != filteringText)
+            {
+                m_SearchText = filteringText;
+                LogEntries.SetFilteringText(filteringText);
+                // Reset the active entry when we change the filtering text
+                SetActiveEntry(null);
             }
         }
 

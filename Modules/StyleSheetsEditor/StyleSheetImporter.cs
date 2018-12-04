@@ -10,7 +10,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.StyleSheets
 {
     // Make sure style sheets importer after allowed dependent assets: textures and fonts
-    [ScriptedImporter(version: 5, ext: "uss", importQueueOffset: 1000)]
+    [ScriptedImporter(version: 6, ext: "uss", importQueueOffset: 1000)]
     class StyleSheetImporter : ScriptedImporter
     {
         public override void OnImportAsset(AssetImportContext ctx)

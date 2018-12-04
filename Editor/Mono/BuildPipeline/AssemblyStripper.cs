@@ -71,13 +71,13 @@ namespace UnityEditorInternal
 
             var args = new List<string>
             {
-                "-out=\"" + outputFolder + "\"",
-                "-x=\"" + GetModuleWhitelist("Core", platformProvider.moduleStrippingInformationFolder) + "\"",
+                $"-out={CommandLineFormatter.PrepareFileName(outputFolder)}",
+                $"-x={CommandLineFormatter.PrepareFileName(GetModuleWhitelist("Core", platformProvider.moduleStrippingInformationFolder))}",
             };
-            args.AddRange(additionalBlacklist.Select(path => "-x \"" + path + "\""));
+            args.AddRange(additionalBlacklist.Select(path => $"-x={CommandLineFormatter.PrepareFileName(path)}"));
 
-            args.AddRange(searchDirs.Select(d => "-d \"" + d + "\""));
-            args.AddRange(assemblies.Select(assembly => "--include-unity-root-assembly=\"" + Path.GetFullPath(assembly) + "\""));
+            args.AddRange(searchDirs.Select(d => $"-d={CommandLineFormatter.PrepareFileName(d)}"));
+            args.AddRange(assemblies.Select(assembly => $"--include-unity-root-assembly={CommandLineFormatter.PrepareFileName(Path.GetFullPath(assembly))}"));
             args.Add($"--dotnetruntime={GetRuntimeArgumentValueForLinker(buildTargetGroup)}");
             args.Add($"--dotnetprofile={GetProfileArgumentValueForLinker(buildTargetGroup)}");
             args.Add("--use-editor-options");
@@ -136,7 +136,7 @@ namespace UnityEditorInternal
 
                 var modulesAssetPath = Path.Combine(platformProvider.moduleStrippingInformationFolder, "../modules.asset");
                 if (File.Exists(modulesAssetPath))
-                    args.Add($"--engine-modules-asset-file=\"{modulesAssetPath}\"");
+                    args.Add($"--engine-modules-asset-file={CommandLineFormatter.PrepareFileName(modulesAssetPath)}");
             }
 
             var additionalArgs = System.Environment.GetEnvironmentVariable("UNITYLINKER_ADDITIONAL_ARGS");

@@ -90,13 +90,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
     struct CustomScriptOptinalUnityAssembly
     {
         public string DisplayName { get; private set; }
+        public string Tooltip { get; private set; }
         public OptionalUnityReferences OptionalUnityReferences { get; private set; }
         public string AdditinalInformationWhenEnabled { get; private set; }
 
-        public CustomScriptOptinalUnityAssembly(string displayName, OptionalUnityReferences optionalUnityReferences, string additinalInformationWhenEnabled = "")
+        public CustomScriptOptinalUnityAssembly(string displayName, OptionalUnityReferences optionalUnityReferences, string tooltip, string additinalInformationWhenEnabled = "")
             : this()
         {
             DisplayName = displayName;
+            Tooltip = tooltip;
             OptionalUnityReferences = optionalUnityReferences;
             AdditinalInformationWhenEnabled = additinalInformationWhenEnabled;
         }
@@ -180,7 +182,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 Platforms[i] = new CustomScriptAssemblyPlatform(
                     BuildTargetDiscovery.GetScriptAssemblyName(buildTargetList[i - 1]),
                     buildTargetList[i - 1].niceName,
-                    buildTargetList[i - 1].buildTgtPlatformVal);
+                    buildTargetList[i - 1].buildTargetPlatformVal);
             }
 
 #pragma warning disable 0618
@@ -196,7 +198,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             OptinalUnityAssemblies = new[]
             {
-                new CustomScriptOptinalUnityAssembly("Test Assemblies", OptionalUnityReferences.TestAssemblies, "Predefined Assemblies (Assembly-CSharp.dll etc) will not reference this assembly.\nThis assembly will only be used for tests and will not be included in player builds."),
+                new CustomScriptOptinalUnityAssembly("Test Assemblies", OptionalUnityReferences.TestAssemblies, "When enabled, this assembly is only used in tests, not in in player builds. Predefined assemblies won’t reference this assembly.", "Predefined Assemblies (Assembly-CSharp.dll etc) will not reference this assembly.\nThis assembly will only be used for tests and will not be included in player builds."),
             };
         }
 

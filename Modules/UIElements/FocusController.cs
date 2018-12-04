@@ -11,78 +11,138 @@ namespace UnityEngine.UIElements
     {
         protected Focusable()
         {
-            m_Focusable = true;
-            m_TabIndex = 0;
+            focusable = true;
+            tabIndex = 0;
         }
 
         public abstract FocusController focusController { get; }
 
-        bool m_Focusable;
-        public virtual bool focusable
-        {
-            get { return m_Focusable;}
-            set { m_Focusable = value; }
-        }
+        public bool focusable { get; set; }
 
-        int m_TabIndex;
         // See http://w3c.github.io/html/editing.html#the-tabindex-attribute
-        public virtual int tabIndex
+        public int tabIndex { get; set; }
+
+        bool m_DelegatesFocus;
+        public bool delegatesFocus
         {
-            get { return m_TabIndex;}
-            set { m_TabIndex = value; }
+            get { return m_DelegatesFocus; }
+            set
+            {
+                if (!((VisualElement)this).isCompositeRoot)
+                {
+                    throw new InvalidOperationException("delegatesFocus should only be set on composite roots.");
+                }
+                m_DelegatesFocus = value;
+            }
         }
 
-        public virtual bool canGrabFocus
+        // Used when we want then children of a composite to appear at
+        // composite root tabIndex position in the focus ring, but
+        // we do not want the root itself to be part of the ring.
+        bool m_ExcludeFromFocusRing;
+        internal bool excludeFromFocusRing
         {
-            get { return focusable; }
+            get { return m_ExcludeFromFocusRing; }
+            set
+            {
+                if (!((VisualElement)this).isCompositeRoot)
+                {
+                    throw new InvalidOperationException("excludeFromFocusRing should only be set on composite roots.");
+                }
+                m_ExcludeFromFocusRing = value;
+            }
         }
+
+        public virtual bool canGrabFocus => focusable;
 
         public virtual void Focus()
         {
             if (focusController != null)
             {
-                focusController.SwitchFocus(canGrabFocus ? this : null);
+                if (canGrabFocus)
+                {
+                    var elementGettingFocused = GetFocusDelegate();
+                    focusController.SwitchFocus(elementGettingFocused);
+                }
+                else
+                {
+                    focusController.SwitchFocus(null);
+                }
             }
         }
 
         public virtual void Blur()
         {
-            if (focusController != null && focusController.focusedElement == this)
+            if (focusController != null)
             {
-                focusController.SwitchFocus(null);
+                if (focusController.IsFocused(this))
+                {
+                    focusController.SwitchFocus(null);
+                }
             }
+        }
+
+        // Use the tree to find the first focusable child.
+        // FIXME: we should use the focus ring; however, it may happens that the
+        // children are focusable but not part of the ring.
+        Focusable GetFocusDelegate()
+        {
+            var f = this;
+
+            while (f != null && f.delegatesFocus)
+            {
+                f = GetFirstFocusableChild(f as VisualElement);
+            }
+
+            return f;
+        }
+
+        static Focusable GetFirstFocusableChild(VisualElement ve)
+        {
+            foreach (var child in ve.hierarchy.Children())
+            {
+                if (child.canGrabFocus)
+                {
+                    return child;
+                }
+
+                bool isSlot = child.hierarchy.parent != null && child == child.hierarchy.parent.contentContainer;
+                if (!child.isCompositeRoot && !isSlot)
+                {
+                    var f = GetFirstFocusableChild(child);
+                    if (f != null)
+                    {
+                        return f;
+                    }
+                }
+            }
+
+            return null;
         }
 
         protected internal override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
 
-            if (evt?.eventTypeId == MouseDownEvent.TypeId())
+            if (evt != null && evt.target == evt.leafTarget)
             {
-                Focus();
-            }
+                if (evt.eventTypeId == MouseDownEvent.TypeId())
+                {
+                    Focus();
+                }
 
-            focusController?.SwitchFocusOnEvent(evt);
+                focusController?.SwitchFocusOnEvent(evt);
+            }
         }
     }
 
     public class FocusChangeDirection
     {
-        static readonly FocusChangeDirection s_Unspecified = new FocusChangeDirection(-1);
+        public static FocusChangeDirection unspecified { get; } = new FocusChangeDirection(-1);
 
-        public static FocusChangeDirection unspecified
-        {
-            get { return s_Unspecified; }
-        }
+        public static FocusChangeDirection none { get; } = new FocusChangeDirection(0);
 
-        static readonly FocusChangeDirection s_None = new FocusChangeDirection(0);
-
-        public static FocusChangeDirection none
-        {
-            get { return s_None; }
-        }
-
-        protected static FocusChangeDirection lastValue { get { return s_None; } }
+        protected static FocusChangeDirection lastValue { get; } = none;
 
         readonly int m_Value;
 
@@ -111,21 +171,86 @@ namespace UnityEngine.UIElements
         public FocusController(IFocusRing focusRing)
         {
             this.focusRing = focusRing;
-            focusedElement = null;
             imguiKeyboardControl = 0;
         }
 
         IFocusRing focusRing { get; }
 
-        public Focusable focusedElement
+        struct FocusedElement
         {
-            get;
-            private set;
+            public VisualElement m_SubTreeRoot;
+            public Focusable m_FocusedElement;
+        }
+
+        List<FocusedElement> m_FocusedElements = new List<FocusedElement>();
+
+        public Focusable focusedElement => GetRetargetedFocusedElement(null);
+
+        internal bool IsFocused(Focusable f)
+        {
+            foreach (var fe in m_FocusedElements)
+            {
+                if (fe.m_FocusedElement == f)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        internal Focusable GetRetargetedFocusedElement(VisualElement retargetAgainst)
+        {
+            var retargetRoot = retargetAgainst?.hierarchy.parent;
+            if (retargetRoot == null)
+            {
+                if (m_FocusedElements.Count > 0)
+                {
+                    return m_FocusedElements[m_FocusedElements.Count - 1].m_FocusedElement;
+                }
+            }
+            else
+            {
+                while (!retargetRoot.isCompositeRoot && retargetRoot.hierarchy.parent != null)
+                {
+                    retargetRoot = retargetRoot.hierarchy.parent;
+                }
+
+                foreach (var fe in m_FocusedElements)
+                {
+                    if (fe.m_SubTreeRoot == retargetRoot)
+                    {
+                        return fe.m_FocusedElement;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        internal Focusable GetLeafFocusedElement()
+        {
+            if (m_FocusedElements.Count > 0)
+            {
+                return m_FocusedElements[0].m_FocusedElement;
+            }
+            return null;
         }
 
         internal void DoFocusChange(Focusable f)
         {
-            focusedElement = f;
+            m_FocusedElements.Clear();
+
+            VisualElement ve = f as VisualElement;
+            while (ve != null)
+            {
+                if (ve.hierarchy.parent == null || ve.isCompositeRoot)
+                {
+                    m_FocusedElements.Add(new FocusedElement { m_SubTreeRoot = ve, m_FocusedElement = f });
+                    f = ve;
+                }
+                ve = ve.hierarchy.parent;
+            }
         }
 
         void AboutToReleaseFocus(Focusable focusable, Focusable willGiveFocusTo, FocusChangeDirection direction)
@@ -167,51 +292,55 @@ namespace UnityEngine.UIElements
 
         void SwitchFocus(Focusable newFocusedElement, FocusChangeDirection direction)
         {
-            if (newFocusedElement == focusedElement)
+            if (GetLeafFocusedElement() == newFocusedElement)
             {
                 return;
             }
 
-            var oldFocusedElement = focusedElement;
+            var oldFocusedElement = GetLeafFocusedElement();
 
             if (newFocusedElement == null || !newFocusedElement.canGrabFocus)
             {
                 if (oldFocusedElement != null)
                 {
-                    AboutToReleaseFocus(oldFocusedElement, newFocusedElement, direction);
-                    ReleaseFocus(oldFocusedElement, newFocusedElement, direction);
+                    AboutToReleaseFocus(oldFocusedElement, null, direction);
+                    ReleaseFocus(oldFocusedElement, null, direction);
                 }
             }
             else if (newFocusedElement != oldFocusedElement)
             {
-                if (oldFocusedElement != null)
-                {
-                    AboutToReleaseFocus(oldFocusedElement, newFocusedElement, direction);
-                }
-
-                AboutToGrabFocus(newFocusedElement, oldFocusedElement, direction);
+                // Retarget event.relatedTarget so it is in the same tree as event.target.
+                var retargetedNewFocusedElement = (newFocusedElement as VisualElement)?.RetargetElement(oldFocusedElement as VisualElement);
+                var retargetedOldFocusedElement = (oldFocusedElement as VisualElement)?.RetargetElement(newFocusedElement as VisualElement);
 
                 if (oldFocusedElement != null)
                 {
-                    ReleaseFocus(oldFocusedElement, newFocusedElement, direction);
+                    AboutToReleaseFocus(oldFocusedElement, retargetedNewFocusedElement, direction);
                 }
 
-                GrabFocus(newFocusedElement, oldFocusedElement, direction);
+                AboutToGrabFocus(newFocusedElement, retargetedOldFocusedElement, direction);
+
+                if (oldFocusedElement != null)
+                {
+                    ReleaseFocus(oldFocusedElement, retargetedNewFocusedElement, direction);
+                }
+
+                GrabFocus(newFocusedElement, retargetedOldFocusedElement, direction);
             }
         }
 
         internal Focusable SwitchFocusOnEvent(EventBase e)
         {
-            FocusChangeDirection direction = focusRing.GetFocusChangeDirection(focusedElement, e);
+            FocusChangeDirection direction = focusRing.GetFocusChangeDirection(GetLeafFocusedElement(), e);
             if (direction != FocusChangeDirection.none)
             {
-                Focusable f = focusRing.GetNextFocusable(focusedElement, direction);
+                Focusable f = focusRing.GetNextFocusable(GetLeafFocusedElement(), direction);
                 SwitchFocus(f, direction);
                 // f does not have the focus yet. It will when the series of focus events will have been handled.
                 return f;
             }
 
-            return focusedElement;
+            return GetLeafFocusedElement();
         }
 
         /// <summary>

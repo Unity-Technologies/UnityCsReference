@@ -80,6 +80,9 @@ namespace UnityEngine
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static extern bool HasFocusableControls();
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static extern bool OwnsId(int id);
+
         public static extern Rect AlignRectToDevice(Rect rect, out int widthInPixels, out int heightInPixels);
 
         // This is used in sensitive alignment-related operations. Avoid calling this method if you can.

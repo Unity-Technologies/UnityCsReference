@@ -13,6 +13,7 @@ namespace UnityEngine.UIElements.StyleSheets
         public static string ReadAsString(this StyleSheet sheet, StyleValueHandle handle)
         {
             string value = string.Empty;
+
             switch (handle.valueType)
             {
                 case StyleValueType.Float:
@@ -33,9 +34,20 @@ namespace UnityEngine.UIElements.StyleSheets
                 case StyleValueType.Keyword:
                     value = sheet.ReadKeyword(handle).ToString();
                     break;
+                case StyleValueType.AssetReference:
+                    value = sheet.ReadAssetReference(handle).ToString();
+                    break;
+                case StyleValueType.Function:
+                    value = sheet.ReadFunctionName(handle);
+                    break;
+                case StyleValueType.FunctionSeparator:
+                    value = "Function Separator";
+                    break;
                 default:
-                    throw new ArgumentException("Unhandled type " + handle.valueType);
+                    value = "Error reading value type (" + handle.valueType + ") at index " + handle.valueIndex;
+                    break;
             }
+
             return value;
         }
 
@@ -61,23 +73,41 @@ namespace UnityEngine.UIElements.StyleSheets
 
         public static StyleLength ReadStyleLength(this StyleSheet sheet, StyleValueHandle handle, int specificity)
         {
-            StyleLength styleLength = new StyleLength() {specificity = specificity};
-            if (handle.valueType == StyleValueType.Float)
+            var keyword = TryReadKeyword(handle);
+
+            StyleLength styleLength = new StyleLength(keyword) {specificity = specificity};
+            if (keyword == StyleKeyword.Undefined)
             {
-                styleLength.value = sheet.ReadFloat(handle);
-            }
-            else if (handle.valueType == StyleValueType.Keyword)
-            {
-                var keyword = (StyleValueKeyword)handle.valueIndex;
-                if (keyword == StyleValueKeyword.Auto)
-                    styleLength.keyword = StyleKeyword.Auto;
-            }
-            else
-            {
-                Debug.LogError($"Unexpected Length value of type {handle.valueType.ToString()}");
+                if (handle.valueType == StyleValueType.Float)
+                {
+                    styleLength.value = sheet.ReadFloat(handle);
+                }
+                else
+                {
+                    Debug.LogError($"Unexpected Length value of type {handle.valueType.ToString()}");
+                }
             }
 
             return styleLength;
+        }
+
+        private static StyleKeyword TryReadKeyword(StyleValueHandle handle)
+        {
+            if (handle.valueType == StyleValueType.Keyword)
+            {
+                var keyword = (StyleValueKeyword)handle.valueIndex;
+                switch (keyword)
+                {
+                    case StyleValueKeyword.Auto:
+                        return StyleKeyword.Auto;
+                    case StyleValueKeyword.None:
+                        return StyleKeyword.None;
+                    case StyleValueKeyword.Initial:
+                        return StyleKeyword.Initial;
+                }
+            }
+
+            return StyleKeyword.Undefined;
         }
     }
 }

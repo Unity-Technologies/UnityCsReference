@@ -10,12 +10,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
     {
         public static bool MinimumVersionInclusive(SemVersion left, SemVersion right, SemVersion version)
         {
-            return left >= version;
+            return version >= left;
         }
 
         public static bool MinimumVersionExclusive(SemVersion left, SemVersion right, SemVersion version)
         {
-            return left > version;
+            return version > left;
         }
 
         public static bool ExactVersionMatch(SemVersion left, SemVersion right, SemVersion version)
@@ -25,12 +25,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public static bool MaximumVersionInclusive(SemVersion left, SemVersion right, SemVersion version)
         {
-            return right <= version;
+            return version <= right;
         }
 
         public static bool MaximumVersionExclusive(SemVersion left, SemVersion right, SemVersion version)
         {
-            return right < version;
+            return version < right;
         }
 
         public static bool ExactRangeInclusive(SemVersion left, SemVersion right, SemVersion version)

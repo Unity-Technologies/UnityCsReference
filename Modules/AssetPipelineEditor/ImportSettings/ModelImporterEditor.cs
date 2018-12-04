@@ -47,6 +47,16 @@ namespace UnityEditor
             return base.GetPreviewTitle();
         }
 
+        protected override void Apply()
+        {
+            base.Apply();
+
+            // This is necessary to enforce redrawing the static preview icons in the project browser,
+            // because some settings may have changed the preview completely.
+            foreach (ProjectBrowser pb in ProjectBrowser.GetAllProjectBrowsers())
+                pb.Repaint();
+        }
+
         // Only show the imported GameObject when the Model tab is active; not when the Animation tab is active
         public override bool showImportedObject { get { return activeTab is ModelImporterModelEditor; } }
 

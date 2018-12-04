@@ -7,8 +7,9 @@ using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 
-namespace UnityEngine.UIR
+namespace UnityEngine.UIElements.UIR
 {
     [StructLayout(LayoutKind.Sequential)]
     internal struct GfxUpdateBufferRange
@@ -65,16 +66,48 @@ namespace UnityEngine.UIR
             DrawRanges(ib.BufferPointer, vb.BufferPointer, vb.ElementStride, new IntPtr(ranges.GetUnsafePtr()), ranges.Length);
         }
 
+        unsafe public static void SetVectorArray<T>(Material mat, int name, NativeSlice<T> vector4s) where T : struct
+        {
+            int vector4Count = (vector4s.Length * vector4s.Stride) / (sizeof(float) * 4);
+            SetVectorArray(mat, name, new IntPtr(vector4s.GetUnsafePtr()), vector4Count);
+        }
+
+        public static event Action<bool> GraphicsResourcesRecreate;
+        public static event Action EngineUpdate;
+        public static event Action FlushPendingResources;
+
+        [RequiredByNativeCode]
+        internal static void RaiseGraphicsResourcesRecreate(bool recreate)
+        {
+            GraphicsResourcesRecreate?.Invoke(recreate);
+        }
+
+        [RequiredByNativeCode]
+        internal static void RaiseEngineUpdate()
+        {
+            EngineUpdate?.Invoke();
+        }
+
+        [RequiredByNativeCode]
+        internal static void RaiseFlushPendingResources()
+        {
+            FlushPendingResources?.Invoke();
+        }
+
         extern static IntPtr AllocateBuffer(int elementCount, int elementStride, bool vertexBuffer);
         extern static void FreeBuffer(IntPtr buffer);
         extern static void UpdateBufferRanges(IntPtr buffer, IntPtr ranges, int rangeCount, int writeRangeStart, int writeRangeEnd);
         extern static void DrawRanges(IntPtr ib, IntPtr vb, int vbElemStride, IntPtr ranges, int rangeCount);
+        extern static void SetVectorArray(Material mat, int name, IntPtr vector4s, int count);
+
         public extern static void SetScissorRect(RectInt scissorRect);
         public extern static void DisableScissor();
         public extern static UInt32 InsertCPUFence();
         public extern static bool CPUFencePassed(UInt32 fence);
+        public extern static void WaitOnCPUFence(UInt32 fence);
         public extern static void SyncRenderThread();
         public extern static void ProfileDrawChainBegin();
         public extern static void ProfileDrawChainEnd();
+        public extern static void NotifyOfUIREvents(bool subscribe);
     }
 }

@@ -57,6 +57,9 @@ namespace UnityEditor.UIElements
         }
 
         public new static readonly string ussClassName = "unity-layer-mask-field";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
+
 
         public LayerMaskField(int defaultMask)
             : this(null, defaultMask) {}
@@ -75,6 +78,9 @@ namespace UnityEditor.UIElements
             : base(label)
         {
             AddToClassList(ussClassName);
+            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
+
             UpdateLayersInfo();
         }
 

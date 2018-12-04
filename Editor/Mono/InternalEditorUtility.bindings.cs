@@ -10,6 +10,7 @@ using System.Reflection;
 using UnityEngine.Bindings;
 using UnityEditor.Scripting.ScriptCompilation;
 using System.Globalization;
+using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 
 namespace UnityEditorInternal
 {
@@ -272,8 +273,10 @@ namespace UnityEditorInternal
         [FreeFunction]
         extern public static bool HasAdvancedLicenseOnBuildTarget(BuildTarget target);
 
-        [FreeFunction]
-        extern public static bool IsMobilePlatform(BuildTarget target);
+        public static bool IsMobilePlatform(BuildTarget target)
+        {
+            return BuildTargetDiscovery.PlatformHasFlag(target, TargetAttributes.HasIntegratedGPU);
+        }
 
         [NativeThrows]
         [FreeFunction("InternalEditorUtilityBindings::GetBoundsOfDesktopAtPoint")]

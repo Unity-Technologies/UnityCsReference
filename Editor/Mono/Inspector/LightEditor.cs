@@ -281,20 +281,9 @@ namespace UnityEditor
                 }
             }
 
-            public void DrawRange(bool showAreaOptions)
+            public void DrawRange(bool showAreaOptions = false)
             {
-                // If the light is an area light, the range is determined by other parameters.
-                // Therefore, disable area light's range for editing, but just update the editor field.
-                if (showAreaOptions)
-                {
-                    GUI.enabled = false;
-                    string areaLightToolTip = "Area light's " + range.displayName + " is computed from the calculated area and Intensity.";
-                    GUIContent areaRangeWithToolTip = new GUIContent(range.displayName, areaLightToolTip);
-                    EditorGUILayout.FloatField(areaRangeWithToolTip, light.range);
-                    GUI.enabled = true;
-                }
-                else
-                    EditorGUILayout.PropertyField(range, Styles.Range);
+                EditorGUILayout.PropertyField(range, Styles.Range);
             }
 
             public void DrawSpotAngle()
@@ -416,6 +405,16 @@ namespace UnityEditor
                     EditorGUILayout.HelpBox(Styles.BakedUnsupportedWarning.text, MessageType.Warning);
                 else if (showBakingWarning)
                     EditorGUILayout.HelpBox(Styles.BakingWarning.text, MessageType.Warning);
+            }
+
+            internal void CheckLightmappingConsistency()
+            {
+                //Built-in render-pipeline only support baked area light, enforce it as this inspector is the built-in one.
+                if (isAreaLightType && lightmapping.intValue != (int)LightmapBakeType.Baked)
+                {
+                    lightmapping.intValue = (int)LightmapBakeType.Baked;
+                    m_SerializedObject.ApplyModifiedProperties();
+                }
             }
 
             public void DrawIntensity()
@@ -695,13 +694,10 @@ namespace UnityEditor
 
             EditorGUILayout.Space();
 
-            // When we are switching between two light types that don't show the range (directional and area lights)
+            // When we are switching between two light types that don't show the range (directional lights don't)
             // we want the fade group to stay hidden.
-            //bool keepRangeHidden = m_ShowDirOptions.isAnimating && m_ShowDirOptions.target;
-            //float fadeRange = keepRangeHidden ? 0.0f : 1.0f - m_ShowDirOptions.faded;
-            // Light Range
             if (EditorGUILayout.BeginFadeGroup(1.0f - m_AnimShowDirOptions.faded))
-                settings.DrawRange(m_AnimShowAreaOptions.target);
+                settings.DrawRange();
             EditorGUILayout.EndFadeGroup();
 
             if (EditorGUILayout.BeginFadeGroup(m_AnimShowSpotOptions.faded))
@@ -718,6 +714,7 @@ namespace UnityEditor
             EditorGUILayout.Space();
 
             // Baking type
+            settings.CheckLightmappingConsistency();
             if (EditorGUILayout.BeginFadeGroup(1.0F - m_AnimShowAreaOptions.faded))
                 settings.DrawLightmapping();
             EditorGUILayout.EndFadeGroup();

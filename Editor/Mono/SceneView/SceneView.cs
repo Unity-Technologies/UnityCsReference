@@ -674,9 +674,10 @@ namespace UnityEditor
             public static GUIContent gizmosContent = EditorGUIUtility.TrTextContent("Gizmos", "Toggle visibility of all Gizmos in the Scene view");
             public static GUIContent gizmosDropDownContent = EditorGUIUtility.TrTextContent("", "Toggle the visibility of different Gizmos in the Scene view.");
             public static GUIContent mode2DContent = EditorGUIUtility.TrTextContent("2D", "When toggled on, the Scene is in 2D view. When toggled off, the Scene is in 3D view.");
+            public static GUIContent isolationModeOverlayContent = EditorGUIUtility.TrTextContent("Isolation View", "");
+            public static GUIContent isolationModeExitButton = EditorGUIUtility.TrTextContent("Exit", "Exit isolation mode");
             public static GUIContent renderDocContent;
-            public static GUIContent sceneVisToolbarButtonContent = EditorGUIUtility.TrIconContent("scenevis_scene_toolbar");
-            public static GUIContent sceneVisOverlayTitle = EditorGUIUtility.TrTextContent("Visibility");
+            public static GUIContent sceneVisToolbarButtonContent = EditorGUIUtility.TrIconContent("scenevis_scene_toolbar", "Number of hidden objects, click to toggle scene visibility");
             public static GUIStyle gizmoButtonStyle;
             public static GUIStyle fxDropDownStyle;
             public static GUIContent sceneViewCameraContent = EditorGUIUtility.TrIconContent("SceneViewCamera", "Settings for the Scene view camera.");
@@ -699,6 +700,10 @@ namespace UnityEditor
         private Shader m_ReplacementShader;
         [SerializeField]
         private string m_ReplacementString;
+        [SerializeField]
+        private bool m_SceneVisActive = true;
+
+        private string m_SceneVisHiddenCount = "0";
 
         public void SetSceneViewShaderReplace(Shader shader, string replaceString)
         {
@@ -854,10 +859,13 @@ namespace UnityEditor
 
             m_SceneViewOverlay = new SceneViewOverlay(this);
 
+            UpdateHiddenObjectCount();
+
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
 
             EditorApplication.modifierKeysChanged += RepaintAll; // Because we show handles on shift
             SceneVisibilityManager.hiddenContentChanged += HiddenContentChanged;
+            SceneVisibilityManager.currentStageIsolated += CurrentStageIsolated;
 
             m_DraggingLockedState = DraggingLockedState.NotDragging;
 
@@ -886,9 +894,22 @@ namespace UnityEditor
             return true;
         }
 
+        private void CurrentStageIsolated()
+        {
+            m_SceneVisActive = true;
+            Repaint();
+        }
+
         private void HiddenContentChanged()
         {
+            UpdateHiddenObjectCount();
             Repaint();
+        }
+
+        private void UpdateHiddenObjectCount()
+        {
+            int hiddenGameObjects = SceneVisibilityState.GetHiddenObjectCount();
+            m_SceneVisHiddenCount = hiddenGameObjects.ToString();
         }
 
         public SceneView()
@@ -947,6 +968,7 @@ namespace UnityEditor
             EditorApplication.modifierKeysChanged -= RepaintAll;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             SceneVisibilityManager.hiddenContentChanged -= HiddenContentChanged;
+            SceneVisibilityManager.currentStageIsolated -= CurrentStageIsolated;
 
             if (m_Camera)
                 DestroyImmediate(m_Camera.gameObject, true);
@@ -1140,36 +1162,21 @@ namespace UnityEditor
 
         private void ToolbarSceneVisibilityGUI()
         {
-            int hiddenGameObjects = SceneVisibilityState.GetHiddenObjectCount();
-
-            using (new EditorGUI.DisabledScope(hiddenGameObjects == 0))
-            {
-                Styles.sceneVisToolbarButtonContent.text = hiddenGameObjects.ToString();
-
-                if (GUILayout.Button(Styles.sceneVisToolbarButtonContent, EditorStyles.toolbarButton))
-                    SceneVisibilityManager.ShowAll();
-            }
+            Styles.sceneVisToolbarButtonContent.text = m_SceneVisHiddenCount;
+            m_SceneVisActive = GUILayout.Toggle(m_SceneVisActive, Styles.sceneVisToolbarButtonContent, EditorStyles.toolbarButton);
         }
 
         private void DoSceneVisibilityOverlay()
         {
-            int hiddenGameObjects = SceneVisibilityState.GetHiddenObjectCount();
-
-            if (hiddenGameObjects > 0)
+            if (SceneVisibilityManager.IsCurrentStageIsolated())
             {
-                SceneViewOverlay.Window(Styles.sceneVisOverlayTitle,
+                SceneViewOverlay.Window(Styles.isolationModeOverlayContent,
                     delegate(Object target, SceneView view)
                     {
-                        int hiddenGameObjectsCount = SceneVisibilityState.GetHiddenObjectCount();
-
-                        GUILayout.BeginHorizontal();
-                        if (GUILayout.Button("Show All", EditorStyles.toolbarButton))
+                        if (GUILayout.Button(Styles.isolationModeExitButton, GUILayout.MinWidth(120)))
                         {
-                            SceneVisibilityManager.ShowAll();
+                            SceneVisibilityManager.RevertIsolation();
                         }
-
-                        GUILayout.Label($"{hiddenGameObjectsCount.ToString()} hidden object{(hiddenGameObjectsCount != 1 ? "s" : "")}");
-                        GUILayout.EndHorizontal();
                     }, (int)SceneViewOverlay.Ordering.ParticleEffect + 100,
                     SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
             }
@@ -2300,6 +2307,15 @@ namespace UnityEditor
 
             Handles.SetCameraFilterMode(Camera.current, UseSceneFiltering() ? Handles.CameraFilterMode.ShowFiltered : Handles.CameraFilterMode.Off);
 
+            // Handle scene view motion when this scene view is active
+            if (s_LastActiveSceneView == this)
+            {
+                // Do not pass the camera transform to the SceneViewMotion calculations.
+                // The camera transform is calculation *output* not *input*.
+                // Avoiding using it as input too avoids errors accumulating.
+                SceneViewMotion.DoViewTool(this);
+            }
+
             // Draw default scene manipulation tools (Move/Rotate/...)
             DefaultHandles();
 
@@ -2324,15 +2340,6 @@ namespace UnityEditor
             }
 
             RepaintGizmosThatAreRenderedOnTopOfSceneView();
-
-            // Handle scene view motion when this scene view is active
-            if (s_LastActiveSceneView == this)
-            {
-                // Do not pass the camera transform to the SceneViewMotion calculations.
-                // The camera transform is calculation *output* not *input*.
-                // Avoiding using it as input too avoids errors accumulating.
-                SceneViewMotion.DoViewTool(this);
-            }
 
             GUI.EndGroup();
             GUI.color = origColor;
@@ -2597,7 +2604,7 @@ namespace UnityEditor
 
             EditorUtility.SetCameraAnimateMaterials(m_Camera, sceneViewState.showMaterialUpdate);
             ParticleSystemEditorUtils.renderInSceneView = m_SceneViewState.showParticleSystems;
-
+            SceneVisibilityManager.active = m_SceneVisActive;
             ResetIfNaN();
 
             m_Camera.transform.rotation = m_Rotation.value;

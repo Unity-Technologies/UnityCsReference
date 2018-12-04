@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Unity.Collections;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
@@ -100,14 +101,11 @@ namespace UnityEngine.UIElements
             DrawText(screenRect, text, font, fontSize, fontStyle, fontColor * m_OpacityColor, anchor, wordWrap, wordWrapWidth, richText, clipping);
         }
 
-        public void DrawMesh(MeshStylePainterParameters painterParams)
+        public void DrawMesh(MeshStylePainterParameters painterParameters, out NativeSlice<UIVertex> vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset)
         {
-            Mesh mesh = painterParams.mesh;
-            Material mat = painterParams.material;
-            int pass = painterParams.pass;
-
-            mat.SetPass(pass);
-            Graphics.DrawMeshNow(mesh, Matrix4x4.identity);
+            vertexData = new NativeSlice<UIVertex>();
+            indexData = new NativeSlice<UInt16>();
+            indexOffset = 0;
         }
 
         public void DrawImmediate(System.Action callback)
@@ -128,9 +126,18 @@ namespace UnityEngine.UIElements
             if (style.backgroundImage.value.texture != null)
             {
                 var painterParams = TextureStylePainterParameters.GetDefault(currentElement);
+                if (style.unityBackgroundImageTintColor != Color.clear)
+                {
+                    painterParams.color = style.unityBackgroundImageTintColor.value;
+                }
                 painterParams.border.SetWidth(0.0f);
                 DrawTexture(painterParams);
             }
+        }
+
+        public void ApplyClipping()
+        {
+            // Unused
         }
 
         public void DrawBorder()
@@ -163,6 +170,21 @@ namespace UnityEngine.UIElements
             {
                 m_OpacityColor.a = value;
             }
+        }
+
+        public uint currentTransformID
+        {
+            get { return 0; }
+        }
+
+        public uint currentClippingRectID
+        {
+            get { return 0; }
+        }
+
+        public Matrix4x4 GetRenderTransform()
+        {
+            return currentElement.worldTransform;
         }
     }
 }

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using UnityEditor.U2D.Interface;
 using UnityEngine;
 using UnityEngine.Assertions;
+using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 
 namespace UnityEditor.U2D.Common
 {
@@ -144,11 +145,7 @@ namespace UnityEditor.U2D.Common
 
             if (!mixedFormat && formatHelper.TextureFormatRequireCompressionQualityInput(allFormat))
             {
-                bool showAsEnum =
-                    buildTarget == BuildTarget.iOS ||
-                    buildTarget == BuildTarget.tvOS ||
-                    buildTarget == BuildTarget.Android
-                ;
+                bool showAsEnum = BuildTargetDiscovery.PlatformHasFlag(buildTarget, TargetAttributes.HasIntegratedGPU);
 
                 if (showAsEnum)
                 {

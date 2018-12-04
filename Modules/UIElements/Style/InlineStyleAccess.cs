@@ -13,7 +13,6 @@ namespace UnityEngine.UIElements
 {
     internal class InlineStyleAccess : IStyle
     {
-        private static StyleValueApplicator s_StyleValueApplicator = new StyleValueApplicator();
         private List<StyleValue> m_InlineStyleValues = new List<StyleValue>();
 
         private VisualElement ve { get; set; }
@@ -134,16 +133,7 @@ namespace UnityEngine.UIElements
                 if (SetInlineStyle(StylePropertyID.FlexBasis, value, ve.sharedStyle.flexBasis))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
-
-                    var fb = ve.computedStyle.flexBasis;
-                    if (fb == StyleKeyword.Auto)
-                    {
-                        ve.yogaNode.FlexBasis = YogaValue.Auto();
-                    }
-                    else
-                    {
-                        ve.yogaNode.FlexBasis = fb.GetSpecifiedValueOrDefault(float.NaN);
-                    }
+                    ve.yogaNode.FlexBasis = ve.computedStyle.flexBasis.ToYogaValue();
                 }
             }
         }
@@ -506,7 +496,7 @@ namespace UnityEngine.UIElements
             }
             set
             {
-                if (SetInlineStyle(StylePropertyID.FontStyleAndWeight, value, ve.sharedStyle.fontStyleAndWeight))
+                if (SetInlineStyle(StylePropertyID.FontStyleAndWeight, value, ve.sharedStyle.unityFontStyleAndWeight))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles |  VersionChangeType.StyleSheet | VersionChangeType.Layout);
                 }
@@ -518,7 +508,7 @@ namespace UnityEngine.UIElements
             get { return GetInlineStyleFont(StylePropertyID.Font); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.Font, value, ve.sharedStyle.font))
+                if (SetInlineStyle(StylePropertyID.Font, value, ve.sharedStyle.unityFont))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout);
                 }
@@ -627,12 +617,25 @@ namespace UnityEngine.UIElements
             }
             set
             {
-                if (SetInlineStyle(StylePropertyID.BackgroundScaleMode, value, ve.sharedStyle.backgroundScaleMode))
+                if (SetInlineStyle(StylePropertyID.BackgroundScaleMode, value, ve.sharedStyle.unityBackgroundScaleMode))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
             }
         }
+
+        StyleColor IStyle.unityBackgroundImageTintColor
+        {
+            get { return GetInlineStyleColor(StylePropertyID.BackgroundImageTintColor); }
+            set
+            {
+                if (SetInlineStyle(StylePropertyID.BackgroundImageTintColor, value, ve.sharedStyle.unityBackgroundImageTintColor))
+                {
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
+                }
+            }
+        }
+
 
         StyleEnum<Align> IStyle.alignItems
         {
@@ -707,7 +710,7 @@ namespace UnityEngine.UIElements
             get { return GetInlineStyleInt(StylePropertyID.SliceLeft); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.SliceLeft, value, ve.sharedStyle.sliceLeft))
+                if (SetInlineStyle(StylePropertyID.SliceLeft, value, ve.sharedStyle.unitySliceLeft))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
@@ -719,7 +722,7 @@ namespace UnityEngine.UIElements
             get { return GetInlineStyleInt(StylePropertyID.SliceTop); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.SliceTop, value, ve.sharedStyle.sliceTop))
+                if (SetInlineStyle(StylePropertyID.SliceTop, value, ve.sharedStyle.unitySliceTop))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
@@ -731,7 +734,7 @@ namespace UnityEngine.UIElements
             get { return GetInlineStyleInt(StylePropertyID.SliceRight); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.SliceRight, value, ve.sharedStyle.sliceRight))
+                if (SetInlineStyle(StylePropertyID.SliceRight, value, ve.sharedStyle.unitySliceRight))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
@@ -743,7 +746,7 @@ namespace UnityEngine.UIElements
             get { return GetInlineStyleInt(StylePropertyID.SliceBottom); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.SliceBottom, value, ve.sharedStyle.sliceBottom))
+                if (SetInlineStyle(StylePropertyID.SliceBottom, value, ve.sharedStyle.unitySliceBottom))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
@@ -1090,15 +1093,13 @@ namespace UnityEngine.UIElements
                 styleCursor.value = sharedValue.value;
             }
 
-            s_StyleValueApplicator.currentCursor = styleCursor;
-            s_StyleValueApplicator.ApplyCursor(null, null, specificity, ref ve.specifiedStyle.cursor);
+            ve.specifiedStyle.ApplyStyleCursor(styleCursor, specificity);
             return true;
         }
 
         private void ApplyStyleValue(StyleValue value, int specificity)
         {
-            s_StyleValueApplicator.currentStyleValue = value;
-            ve.specifiedStyle.ApplyStyleProperty(s_StyleValueApplicator, null, value.id, null, specificity);
+            ve.specifiedStyle.ApplyStyleValue(value.id, value, specificity);
         }
 
         public bool TryGetInlineStyleValue(StylePropertyID id, ref StyleValue value)

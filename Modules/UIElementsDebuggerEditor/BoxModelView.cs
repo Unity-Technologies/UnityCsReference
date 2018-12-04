@@ -95,9 +95,9 @@ namespace UnityEditor.UIElements.Debugger
             m_Layer2.Add(m_TopTextFieldBorderContainer);
             m_Layer2.Add(m_TopTextFieldPaddingContainer);
             m_Layer2.Add(m_ContentSpacer);
-            m_Layer2.Add(m_BottomTextFieldMarginContainer);
-            m_Layer2.Add(m_BottomTextFieldBorderContainer);
             m_Layer2.Add(m_BottomTextFieldPaddingContainer);
+            m_Layer2.Add(m_BottomTextFieldBorderContainer);
+            m_Layer2.Add(m_BottomTextFieldMarginContainer);
 
             m_ContentBox = new ContentBox();
             m_ContentBox.AddToClassList("box-model");

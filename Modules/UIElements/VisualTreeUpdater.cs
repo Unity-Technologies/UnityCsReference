@@ -123,9 +123,9 @@ namespace UnityEngine.UIElements
             SetUpdater<VisualTreeViewDataUpdater>(VisualTreeUpdatePhase.ViewData);
             SetUpdater<VisualTreeBindingsUpdater>(VisualTreeUpdatePhase.Bindings);
             SetUpdater<VisualTreeStyleUpdater>(VisualTreeUpdatePhase.Styles);
-            SetUpdater<VisualTreeLayoutUpdater>(VisualTreeUpdatePhase.Layout);
-            SetUpdater<VisualTreeTransformClipUpdater>(VisualTreeUpdatePhase.TransformClip);
-            SetUpdater<VisualTreeRepaintUpdater>(VisualTreeUpdatePhase.Repaint);
+            SetUpdater<UIRLayoutUpdater>(VisualTreeUpdatePhase.Layout);
+            SetUpdater<UIRTransformClipUpdater>(VisualTreeUpdatePhase.TransformClip);
+            SetUpdater<UIRRepaintUpdater>(VisualTreeUpdatePhase.Repaint);
         }
     }
 
@@ -141,7 +141,19 @@ namespace UnityEngine.UIElements
 
     internal abstract class BaseVisualTreeUpdater : IVisualTreeUpdater
     {
-        public BaseVisualElementPanel panel { get; set; }
+        public event Action<BaseVisualElementPanel> panelChanged;
+
+        private BaseVisualElementPanel m_Panel;
+        public BaseVisualElementPanel panel
+        {
+            get { return m_Panel; }
+            set
+            {
+                m_Panel = value;
+                if (panelChanged != null) panelChanged(value);
+            }
+        }
+
         public VisualElement visualTree { get { return panel.visualTree; } }
 
         public abstract string description { get; }

@@ -38,6 +38,9 @@ namespace UnityEditor.ShortcutManagement
     {
         event Action<IShortcutProfileManager, Identifier, ShortcutBinding, ShortcutBinding> shortcutBindingChanged;
         event Action<IShortcutProfileManager, ShortcutProfile, ShortcutProfile> activeProfileChanged;
+        event Action<IShortcutProfileManager> loadedProfilesChanged;
+
+        void UpdateBaseProfile(IEnumerable<ShortcutEntry> baseProfile);
 
         ShortcutProfile activeProfile { get; set; }
 
@@ -59,7 +62,7 @@ namespace UnityEditor.ShortcutManagement
 
     class ShortcutProfileManager : IShortcutProfileManager
     {
-        readonly List<ShortcutEntry> m_Entries;
+        List<ShortcutEntry> m_Entries;
         IShortcutProfileStore m_ProfileStore;
         IBindingValidator m_BindingValidator;
 
@@ -68,12 +71,20 @@ namespace UnityEditor.ShortcutManagement
 
         public event Action<IShortcutProfileManager, Identifier, ShortcutBinding, ShortcutBinding> shortcutBindingChanged;
         public event Action<IShortcutProfileManager, ShortcutProfile, ShortcutProfile> activeProfileChanged;
+        public event Action<IShortcutProfileManager> loadedProfilesChanged;
 
         public ShortcutProfileManager(IEnumerable<ShortcutEntry> baseProfile, IBindingValidator bindingValidator, IShortcutProfileStore profileStore)
         {
+            UpdateBaseProfile(baseProfile);
             m_ProfileStore = profileStore;
             m_BindingValidator = bindingValidator;
+        }
+
+        public void UpdateBaseProfile(IEnumerable<ShortcutEntry> baseProfile)
+        {
             m_Entries = baseProfile.ToList();
+            if (activeProfile != null)
+                SwitchActiveProfileTo(activeProfile);
         }
 
         public ShortcutProfile activeProfile
@@ -112,6 +123,8 @@ namespace UnityEditor.ShortcutManagement
             // Update active profile from store (it might be changed or deleted)
             if (activeProfile != null)
                 activeProfile = GetProfileById(activeProfile.id);
+
+            loadedProfilesChanged?.Invoke(this);
         }
 
         public IEnumerable<ShortcutProfile> GetProfiles()
@@ -152,6 +165,7 @@ namespace UnityEditor.ShortcutManagement
                     m_LoadedProfiles.Add(profileId, profile);
                     ResolveProfileParentReference(profile);
                     SaveShortcutProfile(profile);
+                    loadedProfilesChanged?.Invoke(this);
                     return profile;
 
                 case CanCreateProfileResult.InvalidProfileId:
@@ -191,6 +205,7 @@ namespace UnityEditor.ShortcutManagement
                         activeProfile = null;
                     m_LoadedProfiles.Remove(profile.id);
                     m_ProfileStore.DeleteShortcutProfile(profile.id);
+                    loadedProfilesChanged?.Invoke(this);
                     break;
 
                 case CanDeleteProfileResult.ProfileNotFound:
@@ -363,7 +378,6 @@ namespace UnityEditor.ShortcutManagement
             }
 
             ApplySingleProfile(shortcutProfile);
-            MigrateUserSpecifiedPrefKeys(EditorAssemblies.GetAllMethodsWithAttribute<FormerlyPrefKeyAsAttribute>(), m_Entries);
         }
 
         static List<ShortcutProfile> GetAncestorProfiles(ShortcutProfile profile)
@@ -376,66 +390,6 @@ namespace UnityEditor.ShortcutManagement
                 profile = profile.parent;
             }
             return ancestors;
-        }
-
-        static bool TryParseUniquePrefKeyString(string prefString, out string name, out Event keyboardEvent, out string shortcut)
-        {
-            int i = prefString.IndexOf(";");
-            if (i < 0)
-            {
-                name = null;
-                keyboardEvent = null;
-                shortcut = null;
-                return false;
-            }
-            name = prefString.Substring(0, i);
-            shortcut = prefString.Substring(i + 1);
-            keyboardEvent = Event.KeyboardEvent(shortcut);
-            return true;
-        }
-
-        void MigrateUserSpecifiedPrefKeys(IEnumerable<MethodInfo> methodsWithFormerlyPrefKeyAs, List<ShortcutEntry> entries)
-        {
-            KeyCombination[] tempKeyCombinations = new KeyCombination[1];
-            foreach (var method in methodsWithFormerlyPrefKeyAs)
-            {
-                var shortcutAttr = Attribute.GetCustomAttribute(method, typeof(ShortcutAttribute), true) as ShortcutAttribute;
-                if (shortcutAttr == null)
-                    continue;
-
-                var entry = entries.Find(e => string.Equals(e.identifier.path, shortcutAttr.identifier));
-                // Ignore former PrefKeys if the shortcut profile has already loaded and applied an override
-                if (entry == null || entry.overridden)
-                    continue;
-
-                // Parse default pref key value from FormerlyPrefKeyAs attribute
-                var prefKeyAttr = (FormerlyPrefKeyAsAttribute)Attribute.GetCustomAttribute(method, typeof(FormerlyPrefKeyAsAttribute));
-                var prefKeyDefaultValue = $"{prefKeyAttr.name};{prefKeyAttr.defaultValue}";
-                string name;
-                Event keyboardEvent;
-                string shortcut;
-                if (!TryParseUniquePrefKeyString(prefKeyDefaultValue, out name, out keyboardEvent, out shortcut))
-                    continue;
-                var prefKeyDefaultKeyCombination = KeyCombination.FromPrefKeyKeyboardEvent(keyboardEvent);
-
-                // Parse current pref key value (falling back on default pref key value)
-                if (!TryParseUniquePrefKeyString(EditorPrefs.GetString(prefKeyAttr.name, prefKeyDefaultValue), out name, out keyboardEvent, out shortcut))
-                    continue;
-                var prefKeyCurrentKeyCombination = KeyCombination.FromPrefKeyKeyboardEvent(keyboardEvent);
-
-                // only migrate pref keys that the user actually overwrote
-                if (!prefKeyCurrentKeyCombination.Equals(prefKeyDefaultKeyCombination))
-                {
-                    string invalidBindingMessage;
-                    tempKeyCombinations[0] = prefKeyCurrentKeyCombination;
-                    if (!m_BindingValidator.IsBindingValid(tempKeyCombinations, out invalidBindingMessage))
-                    {
-                        Debug.LogWarning($"Could not migrate existing binding for shortcut \"{entry.identifier.path}\" with invalid binding.\n{invalidBindingMessage}.");
-                        continue;
-                    }
-                    entry.SetOverride(new List<KeyCombination> { prefKeyCurrentKeyCombination });
-                }
-            }
         }
 
         void ApplySingleProfile(ShortcutProfile shortcutProfile)

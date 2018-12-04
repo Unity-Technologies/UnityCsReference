@@ -139,12 +139,10 @@ namespace UnityEditor.Profiling
 
         internal extern string GetItemTooltip(int id, int column);
 
-        internal string ResolveItemCallstack(int id)
+        public string ResolveItemCallstack(int id)
         {
-            return ResolveItemCallstack(id, 0);
+            return ResolveItemMergedSampleCallstack(id, 0);
         }
-
-        internal extern string ResolveItemCallstack(int id, int sampleIndex);
 
         public extern int GetItemMergedSamplesCount(int id);
 
@@ -152,7 +150,12 @@ namespace UnityEditor.Profiling
         public extern void GetItemMergedSamplesColumnData(int id, int column, List<string> outStrings);
 
         [NativeThrows]
+        public extern void GetItemMergedSamplesColumnDataAsFloats(int id, int column, List<float> outValues);
+
+        [NativeThrows]
         public extern void GetItemMergedSamplesInstanceID(int id, List<int> outInstanceIds);
+
+        public extern string ResolveItemMergedSampleCallstack(int id, int sampleIndex);
 
         public void GetItemMarkerIDPath(int id, List<int> outFullIdPath)
         {

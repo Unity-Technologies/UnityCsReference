@@ -39,6 +39,10 @@ namespace UnityEditor
 
         public static extern void ClearScene(Scene scene);
 
+        public static extern void SetSceneIsolation(Scene scene, bool isolating);
+
+        public static extern void ClearIsolation();
+
         public static extern void OnSceneSaving(Scene scene, string scenePath);
 
         public static extern void GeneratePersistentDataForAllLoadedScenes();
@@ -49,5 +53,8 @@ namespace UnityEditor
 
         public static extern int GetHiddenObjectCount();
         public static extern void SetPrefabStageScene(Scene scene);
+        public static extern bool active { get; set; }
+        public static extern bool prefabStageIsolated { get; set; }
+        public static extern bool mainStageIsolated { get; set; }
     }
 }

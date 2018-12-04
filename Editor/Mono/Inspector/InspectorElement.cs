@@ -257,6 +257,7 @@ namespace UnityEditor.UIElements
                     return;
                 }
 
+                EditorGUIUtility.ResetGUIState();
                 using (new EditorGUI.DisabledScope(!editor.IsEnabled()))
                 {
                     var genericEditor = editor as GenericInspector;
@@ -281,7 +282,6 @@ namespace UnityEditor.UIElements
                     //set the current PropertyHandlerCache to the current editor
                     ScriptAttributeUtility.propertyHandlerCache = editor.propertyHandlerCache;
 
-                    EditorGUIUtility.ResetGUIState();
                     var originalWideMode = EditorGUIUtility.wideMode;
 
                     EditorGUIUtility.hierarchyMode = true;
@@ -322,6 +322,8 @@ namespace UnityEditor.UIElements
                                             return;
                                         }
 
+                                        InspectorWindowUtils.DrawAddedComponentBackground(contentRect, editor.targets);
+
                                         // Draw content
                                         if (visible)
                                         {
@@ -331,6 +333,7 @@ namespace UnityEditor.UIElements
                                     }
                                     else
                                     {
+                                        InspectorWindowUtils.DrawAddedComponentBackground(contentRect, editor.targets);
                                         editor.OnInspectorGUI();
                                     }
                                 }
@@ -353,6 +356,8 @@ namespace UnityEditor.UIElements
                     }
                 }
             });
+
+            inspector.style.overflow = Overflow.Visible;
 
             if (!(editor is GenericInspector))
                 inspector.AddToClassList(customInspectorUssClassName);
@@ -380,7 +385,7 @@ namespace UnityEditor.UIElements
 
             if ((mode & Mode.UIECustom) > 0)
             {
-                inspectorElement = (editor as UnityEditor.Experimental.UIElementsEditor)?.CreateInspectorGUI();
+                inspectorElement = editor.CreateInspectorGUI();
                 if (inspectorElement != null)
                 {
                     AddToClassList(uIECustomVariantUssClassName);

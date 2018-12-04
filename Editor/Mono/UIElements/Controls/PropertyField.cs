@@ -50,6 +50,9 @@ namespace UnityEditor.UIElements
         private PropertyField m_ParentPropertyField;
 
         public static readonly string ussClassName = "unity-property-field";
+        public static readonly string labelUssClassName = ussClassName + "__label";
+        public static readonly string inputUssClassName = ussClassName + "__input";
+
 
         public PropertyField() : this(null, string.Empty) {}
 
@@ -93,7 +96,7 @@ namespace UnityEditor.UIElements
             var handler = ScriptAttributeUtility.GetHandler(m_SerializedProperty);
             if (handler.hasPropertyDrawer)
             {
-                var customPropertyGUI = (handler.propertyDrawer as UIElementsPropertyDrawer)?.CreatePropertyGUI(m_SerializedProperty);
+                var customPropertyGUI = handler.propertyDrawer.CreatePropertyGUI(m_SerializedProperty);
                 if (customPropertyGUI == null)
                 {
                     customPropertyGUI = new IMGUIContainer(() =>
@@ -194,6 +197,9 @@ namespace UnityEditor.UIElements
             field.bindingPath = property.propertyPath;
             field.name = "unity-input-" + property.propertyPath;
             field.label = fieldLabel;
+
+            field.labelElement.AddToClassList(labelUssClassName);
+            field.visualInput.AddToClassList(inputUssClassName);
             return field;
         }
 

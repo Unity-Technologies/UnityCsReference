@@ -338,9 +338,9 @@ namespace UnityEngine.UIElements
                 m_ResolveInheritData.color = specifiedStyle.color;
             }
 
-            if (specifiedStyle.font.specificity > StyleValueExtensions.UndefinedSpecificity)
+            if (specifiedStyle.unityFont.specificity > StyleValueExtensions.UndefinedSpecificity)
             {
-                m_ResolveInheritData.font = specifiedStyle.font;
+                m_ResolveInheritData.font = specifiedStyle.unityFont;
             }
 
             if (specifiedStyle.fontSize.specificity > StyleValueExtensions.UndefinedSpecificity)
@@ -348,9 +348,9 @@ namespace UnityEngine.UIElements
                 m_ResolveInheritData.fontSize = specifiedStyle.fontSize;
             }
 
-            if (specifiedStyle.fontStyleAndWeight.specificity > StyleValueExtensions.UndefinedSpecificity)
+            if (specifiedStyle.unityFontStyleAndWeight.specificity > StyleValueExtensions.UndefinedSpecificity)
             {
-                m_ResolveInheritData.unityFontStyle = specifiedStyle.fontStyleAndWeight;
+                m_ResolveInheritData.unityFontStyle = specifiedStyle.unityFontStyleAndWeight;
             }
 
             if (specifiedStyle.unityTextAlign.specificity > StyleValueExtensions.UndefinedSpecificity)

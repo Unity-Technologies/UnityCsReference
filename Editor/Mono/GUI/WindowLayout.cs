@@ -900,6 +900,7 @@ namespace UnityEditor
                 Toolbar.lastLoadedLayoutName = s_LayoutName;
                 WindowLayout.SaveWindowLayout(path);
                 InternalEditorUtility.ReloadWindowLayoutMenu();
+                ShortcutIntegration.instance.RebuildShortcuts();
                 GUIUtility.ExitGUI();
             }
             else
@@ -964,6 +965,7 @@ namespace UnityEditor
 
                     System.IO.File.Delete(path);
                     InternalEditorUtility.ReloadWindowLayoutMenu();
+                    ShortcutIntegration.instance.RebuildShortcuts();
                     InitializePaths();
                 }
             }

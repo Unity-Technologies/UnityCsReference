@@ -20,7 +20,9 @@ namespace UnityEngine.UIElements.StyleSheets
         public StyleInt whiteSpace;
 
         public InheritedStylesData()
-        {}
+        {
+            color = StyleSheetCache.GetInitialValue(StylePropertyID.Color).color;
+        }
 
         public InheritedStylesData(InheritedStylesData other)
         {

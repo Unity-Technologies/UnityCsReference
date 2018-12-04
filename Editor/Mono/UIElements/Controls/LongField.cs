@@ -30,6 +30,8 @@ namespace UnityEditor.UIElements
         }
 
         public new static readonly string ussClassName = "unity-long-field";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
 
         public LongField()
             : this((string)null) {}
@@ -40,8 +42,9 @@ namespace UnityEditor.UIElements
         public LongField(string label, int maxLength = kMaxLengthNone)
             : base(label, maxLength, new LongInput())
         {
-            // weird: this looks like a mistake
-            AddToClassList(TextField.ussClassName);
+            AddToClassList(ussClassName);
+            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
             AddLabelDragger<long>();
         }
 

@@ -61,9 +61,8 @@ namespace UnityEditor.Experimental.GraphView
             m_TextField = mainContainer.Q<TextField>("textField");
             Assert.IsTrue(m_TextField != null);
 
-            m_TextField.visible = false;
-
             var textinput = m_TextField.Q(TextField.textInputUssName);
+            textinput.visible = false;
             textinput.RegisterCallback<FocusOutEvent>(e => { OnEditTextFinished(); });
             textinput.RegisterCallback<KeyDownEvent>(OnTextFieldKeyPressed);
 
@@ -115,7 +114,7 @@ namespace UnityEditor.Experimental.GraphView
         private void OnEditTextFinished()
         {
             m_ContentItem.visible = true;
-            m_TextField.visible = false;
+            m_TextField.Q(TextField.textInputUssName).visible = false;
 
             if (!m_EditTitleCancelled && (text != m_TextField.text))
             {
@@ -146,9 +145,9 @@ namespace UnityEditor.Experimental.GraphView
         public void OpenTextEditor()
         {
             m_TextField.SetValueWithoutNotify(text);
-            m_TextField.visible = true;
+            m_TextField.Q(TextField.textInputUssName).visible = true;
             m_ContentItem.visible = false;
-            m_TextField.Focus();
+            m_TextField.Q(TextField.textInputUssName).Focus();
             m_TextField.SelectAll();
         }
 

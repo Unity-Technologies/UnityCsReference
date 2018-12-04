@@ -86,6 +86,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"border-color", StylePropertyID.BorderColor},
             {"background-image", StylePropertyID.BackgroundImage},
             {"-unity-background-scale-mode", StylePropertyID.BackgroundScaleMode},
+            {"-unity-background-image-tint-color", StylePropertyID.BackgroundImageTintColor},
             {"align-items", StylePropertyID.AlignItems},
             {"align-content", StylePropertyID.AlignContent},
             {"justify-content", StylePropertyID.JustifyContent},
@@ -112,10 +113,114 @@ namespace UnityEngine.UIElements.StyleSheets
             {"padding", StylePropertyID.Padding}
         };
 
+        // Used by tests
+        internal static string GetPropertyIDUssName(StylePropertyID propertyId)
+        {
+            foreach (var kvp in s_NameToIDCache)
+            {
+                if (propertyId == kvp.Value)
+                    return kvp.Key;
+            }
+
+            return string.Empty;
+        }
+
+        private static StyleValue[] s_InitialStyleValues = new StyleValue[(int)StylePropertyID.Custom];
+
+        static StyleSheetCache()
+        {
+            // Values set to StyleKeyword.Initial require special treatment when applying them.
+            s_InitialStyleValues[(int)StylePropertyID.MarginLeft] = StyleValue.Create(StylePropertyID.MarginLeft, 0f);
+            s_InitialStyleValues[(int)StylePropertyID.MarginTop] = StyleValue.Create(StylePropertyID.MarginTop, 0f);
+            s_InitialStyleValues[(int)StylePropertyID.MarginRight] = StyleValue.Create(StylePropertyID.MarginRight, 0f);
+            s_InitialStyleValues[(int)StylePropertyID.MarginBottom] = StyleValue.Create(StylePropertyID.MarginBottom, 0f);
+            s_InitialStyleValues[(int)StylePropertyID.PaddingLeft] = StyleValue.Create(StylePropertyID.PaddingLeft, 0f);
+            s_InitialStyleValues[(int)StylePropertyID.PaddingTop] = StyleValue.Create(StylePropertyID.PaddingTop, 0f);
+            s_InitialStyleValues[(int)StylePropertyID.PaddingRight] = StyleValue.Create(StylePropertyID.PaddingRight, 0f);
+            s_InitialStyleValues[(int)StylePropertyID.PaddingBottom] = StyleValue.Create(StylePropertyID.PaddingBottom, 0f);
+            s_InitialStyleValues[(int)StylePropertyID.Position] = StyleValue.Create(StylePropertyID.Position, (int)Position.Relative);
+            s_InitialStyleValues[(int)StylePropertyID.PositionLeft] = StyleValue.Create(StylePropertyID.PositionLeft, StyleKeyword.Auto);
+            s_InitialStyleValues[(int)StylePropertyID.PositionTop] = StyleValue.Create(StylePropertyID.PositionTop, StyleKeyword.Auto);
+            s_InitialStyleValues[(int)StylePropertyID.PositionRight] = StyleValue.Create(StylePropertyID.PositionRight, StyleKeyword.Auto);
+            s_InitialStyleValues[(int)StylePropertyID.PositionBottom] = StyleValue.Create(StylePropertyID.PositionBottom, StyleKeyword.Auto);
+            s_InitialStyleValues[(int)StylePropertyID.Width] = StyleValue.Create(StylePropertyID.Width, StyleKeyword.Auto);
+            s_InitialStyleValues[(int)StylePropertyID.Height] = StyleValue.Create(StylePropertyID.Height, StyleKeyword.Auto);
+            s_InitialStyleValues[(int)StylePropertyID.MinWidth] = StyleValue.Create(StylePropertyID.MinWidth, StyleKeyword.Auto);
+            s_InitialStyleValues[(int)StylePropertyID.MinHeight] = StyleValue.Create(StylePropertyID.MinHeight, StyleKeyword.Auto);
+            s_InitialStyleValues[(int)StylePropertyID.MaxWidth] = StyleValue.Create(StylePropertyID.MaxWidth, StyleKeyword.None);
+            s_InitialStyleValues[(int)StylePropertyID.MaxHeight] = StyleValue.Create(StylePropertyID.MaxHeight, StyleKeyword.None);
+            s_InitialStyleValues[(int)StylePropertyID.FlexBasis] = StyleValue.Create(StylePropertyID.FlexBasis, StyleKeyword.Auto);
+            s_InitialStyleValues[(int)StylePropertyID.FlexGrow] = StyleValue.Create(StylePropertyID.FlexGrow, 0f);
+            s_InitialStyleValues[(int)StylePropertyID.FlexShrink] = StyleValue.Create(StylePropertyID.FlexShrink, 1f);
+            s_InitialStyleValues[(int)StylePropertyID.BorderLeftWidth] = StyleValue.Create(StylePropertyID.BorderLeftWidth, 0f);
+            s_InitialStyleValues[(int)StylePropertyID.BorderTopWidth] = StyleValue.Create(StylePropertyID.BorderTopWidth, 0f);
+            s_InitialStyleValues[(int)StylePropertyID.BorderRightWidth] = StyleValue.Create(StylePropertyID.BorderRightWidth, 0f);
+            s_InitialStyleValues[(int)StylePropertyID.BorderBottomWidth] = StyleValue.Create(StylePropertyID.BorderBottomWidth, 0f);
+            s_InitialStyleValues[(int)StylePropertyID.BorderTopLeftRadius] = StyleValue.Create(StylePropertyID.BorderTopLeftRadius, 0f);
+            s_InitialStyleValues[(int)StylePropertyID.BorderTopRightRadius] = StyleValue.Create(StylePropertyID.BorderTopRightRadius, 0f);
+            s_InitialStyleValues[(int)StylePropertyID.BorderBottomLeftRadius] = StyleValue.Create(StylePropertyID.BorderBottomLeftRadius, 0f);
+            s_InitialStyleValues[(int)StylePropertyID.BorderBottomRightRadius] = StyleValue.Create(StylePropertyID.BorderBottomRightRadius, 0f);
+            s_InitialStyleValues[(int)StylePropertyID.FlexDirection] = StyleValue.Create(StylePropertyID.FlexDirection, (int)FlexDirection.Column);
+            s_InitialStyleValues[(int)StylePropertyID.FlexWrap] = StyleValue.Create(StylePropertyID.FlexWrap, (int)Wrap.NoWrap);
+            s_InitialStyleValues[(int)StylePropertyID.JustifyContent] = StyleValue.Create(StylePropertyID.JustifyContent, (int)Justify.FlexStart);
+            s_InitialStyleValues[(int)StylePropertyID.AlignContent] = StyleValue.Create(StylePropertyID.AlignContent, (int)Align.FlexStart);
+            s_InitialStyleValues[(int)StylePropertyID.AlignSelf] = StyleValue.Create(StylePropertyID.AlignSelf, (int)Align.Auto);
+            s_InitialStyleValues[(int)StylePropertyID.AlignItems] = StyleValue.Create(StylePropertyID.AlignItems, (int)Align.Stretch);
+            s_InitialStyleValues[(int)StylePropertyID.UnityTextAlign] = StyleValue.Create(StylePropertyID.UnityTextAlign, (int)TextAnchor.UpperLeft);
+            s_InitialStyleValues[(int)StylePropertyID.WhiteSpace] = StyleValue.Create(StylePropertyID.WhiteSpace, (int)WhiteSpace.Normal);
+            s_InitialStyleValues[(int)StylePropertyID.Font] = StyleValue.Create(StylePropertyID.Font); // null resource
+            s_InitialStyleValues[(int)StylePropertyID.FontSize] = StyleValue.Create(StylePropertyID.FontSize, 0f);
+            s_InitialStyleValues[(int)StylePropertyID.FontStyleAndWeight] = StyleValue.Create(StylePropertyID.FontStyleAndWeight, (int)FontStyle.Normal);
+            s_InitialStyleValues[(int)StylePropertyID.BackgroundScaleMode] = StyleValue.Create(StylePropertyID.BackgroundScaleMode, (int)ScaleMode.StretchToFill);
+            s_InitialStyleValues[(int)StylePropertyID.BackgroundImageTintColor] = StyleValue.Create(StylePropertyID.BackgroundImageTintColor, Color.white);
+            s_InitialStyleValues[(int)StylePropertyID.Visibility] = StyleValue.Create(StylePropertyID.Visibility, (int)Visibility.Visible);
+            s_InitialStyleValues[(int)StylePropertyID.Overflow] = StyleValue.Create(StylePropertyID.Overflow, (int)Overflow.Visible);
+            s_InitialStyleValues[(int)StylePropertyID.Display] = StyleValue.Create(StylePropertyID.Display, (int)DisplayStyle.Flex);
+            s_InitialStyleValues[(int)StylePropertyID.BackgroundImage] = StyleValue.Create(StylePropertyID.BackgroundImage); // null resource
+            s_InitialStyleValues[(int)StylePropertyID.Color] = StyleValue.Create(StylePropertyID.Color, Color.black);
+            s_InitialStyleValues[(int)StylePropertyID.BackgroundColor] = StyleValue.Create(StylePropertyID.BackgroundColor, Color.clear);
+            s_InitialStyleValues[(int)StylePropertyID.BorderColor] = StyleValue.Create(StylePropertyID.BorderColor, Color.clear);
+            s_InitialStyleValues[(int)StylePropertyID.SliceLeft] = StyleValue.Create(StylePropertyID.SliceLeft, 0f);
+            s_InitialStyleValues[(int)StylePropertyID.SliceTop] = StyleValue.Create(StylePropertyID.SliceTop, 0f);
+            s_InitialStyleValues[(int)StylePropertyID.SliceRight] = StyleValue.Create(StylePropertyID.SliceRight, 0f);
+            s_InitialStyleValues[(int)StylePropertyID.SliceBottom] = StyleValue.Create(StylePropertyID.SliceBottom, 0f);
+            s_InitialStyleValues[(int)StylePropertyID.Opacity] = StyleValue.Create(StylePropertyID.Opacity, 1f);
+            // Shorthand value
+            s_InitialStyleValues[(int)StylePropertyID.BorderRadius] = StyleValue.Create(StylePropertyID.BorderRadius, StyleKeyword.Initial);
+            s_InitialStyleValues[(int)StylePropertyID.BorderWidth] = StyleValue.Create(StylePropertyID.BorderWidth, StyleKeyword.Initial);
+            s_InitialStyleValues[(int)StylePropertyID.Flex] = StyleValue.Create(StylePropertyID.Flex, StyleKeyword.Initial);
+            s_InitialStyleValues[(int)StylePropertyID.Margin] = StyleValue.Create(StylePropertyID.Margin, StyleKeyword.Initial);
+            s_InitialStyleValues[(int)StylePropertyID.Padding] = StyleValue.Create(StylePropertyID.Padding, StyleKeyword.Initial);
+            // Complex value
+            s_InitialStyleValues[(int)StylePropertyID.Cursor] = StyleValue.Create(StylePropertyID.Cursor, StyleKeyword.Initial);
+        }
+
         internal static void ClearCaches()
         {
             s_EnumToIntCache.Clear();
             s_RulePropertyIDsCache.Clear();
+        }
+
+        internal static bool TryParseEnum<EnumType>(string enumValueName, out int intValue)
+        {
+            intValue = 0;
+
+            try
+            {
+                enumValueName = enumValueName.Replace("-", string.Empty);
+                object enumValue = Enum.Parse(typeof(EnumType), enumValueName, true);
+                if (enumValue != null)
+                {
+                    intValue = (int)enumValue;
+                    return true;
+                }
+            }
+            catch (Exception)
+            {
+                Debug.LogError("Invalid value for " + typeof(EnumType).Name + ": " + enumValueName);
+            }
+
+            return false;
         }
 
         internal static int GetEnumValue<T>(StyleSheet sheet, StyleValueHandle handle)
@@ -128,29 +233,11 @@ namespace UnityEngine.UIElements.StyleSheets
 
             if (!s_EnumToIntCache.TryGetValue(key, out value))
             {
-                string enumValueName = sheet.ReadEnum(handle).Replace("-", string.Empty);
-
-                object enumValue = null;
-
-                // Until we fully resolve enum values at import
-                // we need to be extra resilient to invalid enum values
-                try
+                if (TryParseEnum<T>(sheet.ReadEnum(handle), out value))
                 {
-                    enumValue = Enum.Parse(typeof(T), enumValueName, true);
+                    s_EnumToIntCache.Add(key, value);
+                    return value;
                 }
-                catch (Exception)
-                {
-                    enumValue = null;
-                    Debug.LogError("Invalid value for " + typeof(T).Name + ": " + enumValueName);
-                }
-                finally
-                {
-                    if (enumValue != null)
-                    {
-                        value = (int)enumValue;
-                    }
-                }
-                s_EnumToIntCache.Add(key, value);
             }
             Debug.Assert(Enum.GetName(typeof(T), value) != null);
             return value;
@@ -172,6 +259,12 @@ namespace UnityEngine.UIElements.StyleSheets
                 s_RulePropertyIDsCache.Add(key, propertyIDs);
             }
             return propertyIDs;
+        }
+
+        internal static StyleValue GetInitialValue(StylePropertyID propertyId)
+        {
+            Debug.Assert(propertyId != StylePropertyID.Unknown && propertyId != StylePropertyID.Custom);
+            return s_InitialStyleValues[(int)propertyId];
         }
 
         static Dictionary<string, string> s_DeprecatedNames = new Dictionary<string, string>()
@@ -204,6 +297,16 @@ namespace UnityEngine.UIElements.StyleSheets
 
 
             return validName ?? name;
+        }
+
+        // Used by tests
+        internal static StylePropertyID GetPropertyIDFromName(string name)
+        {
+            StylePropertyID id;
+            if (s_NameToIDCache.TryGetValue(name, out id))
+                return id;
+
+            return StylePropertyID.Unknown;
         }
 
         static StylePropertyID GetPropertyID(StyleSheet sheet, StyleRule rule, int index)

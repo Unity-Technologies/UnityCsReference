@@ -243,6 +243,7 @@ namespace UnityEditor.UIElements
         private static float GetDoublePropertyValueAsFloat(SerializedProperty p) { return (float)p.doubleValue; }
         private static double GetFloatPropertyValueAsDouble(SerializedProperty p) { return (double)p.floatValue; }
         private static string GetCharacterPropertyValueAsString(SerializedProperty p) { return new string((char)p.intValue, 1); }
+        private static float GetIntPropertyValueAsFloat(SerializedProperty p) { return p.intValue; }
 
         //this one is a bit more tricky
         private static string GetEnumPropertyValueAsString(SerializedProperty p) { return p.enumDisplayNames[p.enumValueIndex]; }
@@ -368,7 +369,15 @@ namespace UnityEditor.UIElements
             switch (prop.propertyType)
             {
                 case SerializedPropertyType.Integer:
-                    DefaultBind(element, objWrapper, prop, GetIntPropertyValue, SetIntPropertyValue, ValueEquals);
+                    if (element is INotifyValueChanged<int>)
+                    {
+                        DefaultBind(element, objWrapper, prop, GetIntPropertyValue, SetIntPropertyValue, ValueEquals);
+                    }
+                    else if (element is INotifyValueChanged<float>)
+                    {
+                        DefaultBind(element, objWrapper, prop, GetIntPropertyValueAsFloat, SetFloatPropertyValue, ValueEquals);
+                    }
+
                     break;
                 case SerializedPropertyType.Boolean:
                     DefaultBind(element, objWrapper, prop, GetBoolPropertyValue, SetBoolPropertyValue, ValueEquals);
@@ -818,6 +827,11 @@ namespace UnityEditor.UIElements
 
             protected override void UpdateLastFieldValue()
             {
+                if (field == null)
+                {
+                    return;
+                }
+
                 lastFieldValue = field.value;
             }
 

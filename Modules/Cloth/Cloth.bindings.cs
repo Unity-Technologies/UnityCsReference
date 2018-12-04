@@ -2,12 +2,61 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
+using System.Collections.Generic;
+using UnityEngine.Internal;
+using System.Runtime.InteropServices;
+using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
+using UsedByNativeCodeAttribute = UnityEngine.Scripting.UsedByNativeCodeAttribute;
+
 namespace UnityEngine
 {
     [NativeHeader("Modules/Cloth/Cloth.h")]
-    public partial class Cloth
+    [UsedByNativeCode]
+    public struct ClothSphereColliderPair
     {
+        public SphereCollider first { get; set; }
+        public SphereCollider second { get; set; }
+
+        public ClothSphereColliderPair(SphereCollider a)
+        {
+            // initialize internal fields so that compiler does not complain about using properties before "this" is ready
+            first = a;
+            second = null;
+        }
+
+        public ClothSphereColliderPair(SphereCollider a, SphereCollider b)
+        {
+            // initialize internal fields so that compiler does not complain about using properties before "this" is ready
+            first = a;
+            second = b;
+        }
+    }
+
+    // The ClothSkinningCoefficient struct is used to set up how a [[Cloth]] component is allowed to move with respect to the [[SkinnedMeshRenderer]] it is attached to.
+    [UsedByNativeCode]
+    public struct ClothSkinningCoefficient
+    {
+        //Distance a vertex is allowed to travel from the skinned mesh vertex position.
+        public float maxDistance;
+
+        //Definition of a sphere a vertex is not allowed to enter. This allows collision against the animated cloth.
+        public float collisionSphereDistance;
+    }
+
+    [RequireComponent(typeof(Transform), typeof(SkinnedMeshRenderer))]
+    [NativeHeader("Modules/Cloth/Cloth.h")]
+    [NativeClass("Unity::Cloth")]
+    public sealed partial class Cloth : UnityEngine.Component
+    {
+        extern public Vector3[] vertices {[NativeName("GetPositions")] get; }
+        extern public Vector3[] normals {[NativeName("GetNormals")] get; }
+        extern public ClothSkinningCoefficient[] coefficients {[NativeName("GetCoefficients")] get; [NativeName("SetCoefficients")] set; }
+        extern public CapsuleCollider[] capsuleColliders {[NativeName("GetCapsuleColliders")] get; [NativeName("SetCapsuleColliders")] set; }
+        extern public ClothSphereColliderPair[] sphereColliders {[NativeName("GetSphereColliders")] get; [NativeName("SetSphereColliders")] set; }
         extern public float sleepThreshold { get; set; }
 
         // Bending stiffness of the cloth.
@@ -51,6 +100,13 @@ namespace UnityEngine
 
         extern public float clothSolverFrequency { get; set; }
 
+        [Obsolete("Parameter solverFrequency is obsolete and no longer supported. Please use clothSolverFrequency instead.")]
+        public bool solverFrequency
+        {
+            get { return clothSolverFrequency > 0.0f ? true : false; }
+            set { clothSolverFrequency = value == true ? 120f : 0.0f; }  // use the default value
+        }
+
         extern public bool useTethers { get; set; }
 
         extern public float stiffnessFrequency { get; set; }
@@ -58,5 +114,65 @@ namespace UnityEngine
         extern public float selfCollisionDistance { get; set; }
 
         extern public float selfCollisionStiffness { get; set; }
+
+        extern public void ClearTransformMotion();
+
+        extern private UInt32[] GetSelfAndInterCollisionIndices();
+
+        internal void Internal_GetSelfAndInterCollisionIndices(List<UInt32> indicesOutList)
+        {
+            UInt32[] indices = GetSelfAndInterCollisionIndices();
+            indicesOutList.Clear();
+            indicesOutList.AddRange(indices);
+        }
+
+        extern private void SetSelfAndInterCollisionIndices(UInt32[] indicesIn);
+
+        internal void Internal_SetSelfAndInterCollisionIndices(List<UInt32> indicesInList)
+        {
+            SetSelfAndInterCollisionIndices(indicesInList.ToArray());
+        }
+
+        extern private UInt32[] GetVirtualParticleIndices();
+        internal void Internal_GetVirtualParticleIndices(List<UInt32> indicesOutList)
+        {
+            UInt32[] indices = GetVirtualParticleIndices();
+            indicesOutList.Clear();
+            indicesOutList.AddRange(indices);
+        }
+
+        extern private void SetVirtualParticleIndices(UInt32[] indicesIn);
+        internal void Internal_SetVirtualParticleIndices(List<UInt32> indicesInList)
+        {
+            SetVirtualParticleIndices(indicesInList.ToArray());
+        }
+
+        extern private Vector3[] GetVirtualParticleWeights();
+        internal void Internal_GetVirtualParticleWeights(List<Vector3> weightsOutList)
+        {
+            Vector3[] weights = GetVirtualParticleWeights();
+            weightsOutList.Clear();
+            weightsOutList.AddRange(weights);
+        }
+
+        extern private void SetVirtualParticleWeights(Vector3[] weightsIn);
+        internal void Internal_SetVirtualParticleWeights(List<Vector3> weightsInList)
+        {
+            SetVirtualParticleWeights(weightsInList.ToArray());
+        }
+
+        [Obsolete("useContinuousCollision is no longer supported, use enableContinuousCollision instead")]
+        public float useContinuousCollision { get; set; }
+
+        [Obsolete("Deprecated.Cloth.selfCollisions is no longer supported since Unity 5.0.", true)]
+        public bool selfCollision { get; }
+
+        extern public void SetEnabledFading(bool enabled, float interpolationTime);
+
+        [ExcludeFromDocs]
+        public void SetEnabledFading(bool enabled)
+        {
+            SetEnabledFading(enabled, 0.5f);
+        }
     }
 }

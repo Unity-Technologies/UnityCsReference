@@ -53,6 +53,9 @@ namespace UnityEditor.UIElements
         }
 
         public new static readonly string ussClassName = "unity-gradient-field";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
+
         public static readonly string borderUssClassName = ussClassName + "__border";
 
         public GradientField()
@@ -62,6 +65,9 @@ namespace UnityEditor.UIElements
             : base(label, null)
         {
             AddToClassList(ussClassName);
+            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
+
             VisualElement borderElement = new VisualElement() { name = "unity-border", pickingMode = PickingMode.Ignore };
             borderElement.AddToClassList(borderUssClassName);
             visualInput.Add(borderElement);

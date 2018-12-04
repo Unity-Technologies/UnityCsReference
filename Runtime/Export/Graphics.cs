@@ -467,10 +467,6 @@ namespace UnityEngine
             Internal_DrawMeshInstancedIndirect(mesh, submeshIndex, material, bounds, bufferWithArgs, argsOffset, properties, castShadows, receiveShadows, layer, camera, lightProbeUsage, lightProbeProxyVolume);
         }
 
-        // TODO - deprecate these and auto-upgrade to DrawProceduralNow/DrawProceduralIndirectNow when case 1098032 is fixed
-        public static void DrawProcedural(MeshTopology topology, int vertexCount, [uei.DefaultValue("1")] int instanceCount) { DrawProceduralNow(topology, vertexCount, instanceCount); }
-        public static void DrawProceduralIndirect(MeshTopology topology, ComputeBuffer bufferWithArgs, [uei.DefaultValue("0")] int argsOffset) { DrawProceduralIndirectNow(topology, bufferWithArgs, argsOffset); }
-
         public static void DrawProceduralNow(MeshTopology topology, int vertexCount, int instanceCount = 1)
         {
             Internal_DrawProceduralNow(topology, vertexCount, instanceCount);
@@ -566,6 +562,11 @@ namespace UnityEngine
         public static void Blit(Texture source, RenderTexture dest, Material mat, [uei.DefaultValue("-1")] int pass)
         {
             Internal_BlitMaterial5(source, dest, mat, pass, true);
+        }
+
+        public static void Blit(Texture source, RenderTexture dest, Material mat, int pass, int destDepthSlice)
+        {
+            Internal_BlitMaterial6(source, dest, mat, pass, true, destDepthSlice);
         }
 
         public static void Blit(Texture source, RenderTexture dest, Material mat)

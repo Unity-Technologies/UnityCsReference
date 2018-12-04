@@ -45,6 +45,8 @@ namespace UnityEditor
             s_ToolIcons[index++] = EditorGUIUtility.IconContent("TransformTool On");
             s_ToolIcons[index] = EditorGUIUtility.TrTextContent("Editor tool");
 
+            s_CustomToolIcon = EditorGUIUtility.TrIconContent("CustomTool", "Available Custom Editor Tools");
+
             index = 0;
 
             s_ToolControlNames = new string[k_ToolCount];
@@ -97,6 +99,7 @@ namespace UnityEditor
         static GUIContent[] s_ViewToolIcons;
         static GUIContent   s_LayerContent;
         static GUIContent[] s_PlayIcons;
+        static GUIContent s_CustomToolIcon;
         private static GUIContent s_AccountContent;
         static GUIContent   s_CloudIcon;
         internal static event Action<Rect> toolSettingsGui;
@@ -335,9 +338,9 @@ namespace UnityEditor
             var lastCustomTool = EditorToolContext.GetLastCustomTool();
 
             if (lastCustomTool != null)
-                s_ShownToolIcons[builtinIconsLength] = lastCustomTool.toolbarIcon ?? GUIContent.none;
+                s_ShownToolIcons[builtinIconsLength] = lastCustomTool.toolbarIcon ?? s_CustomToolIcon;
             else
-                s_ShownToolIcons[builtinIconsLength] = GUIContent.none;
+                s_ShownToolIcons[builtinIconsLength] = s_CustomToolIcon;
 
             s_ShownToolIcons[0] = s_ViewToolIcons[(int)Tools.viewTool + (displayTool == 0 ? s_ShownToolIcons.Length - 1 : 0)];
 

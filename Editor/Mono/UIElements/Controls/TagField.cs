@@ -87,6 +87,9 @@ namespace UnityEditor.UIElements
         }
 
         public new static readonly string ussClassName = "unity-tag-field";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
+
 
         public TagField()
             : this(null) {}
@@ -95,6 +98,8 @@ namespace UnityEditor.UIElements
             : base(label)
         {
             AddToClassList(ussClassName);
+            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
 
             choices = InitializeTags();
             if (defaultValue != null)

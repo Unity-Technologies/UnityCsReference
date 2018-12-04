@@ -2,6 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using Unity.Collections;
+
 namespace UnityEngine.UIElements
 {
     // Empty interface use internally to call the protected DoRepaint with a StylePainter
@@ -11,17 +14,32 @@ namespace UnityEngine.UIElements
     {
     }
 
+    internal struct UIVertex
+    {
+        public Vector3 position;
+        public Color32 tint;
+        public Vector2 uv;
+        public float transformID;   // Allocator gives an int, but we only take floats, so set to ((float)transformID)
+        public float clippingID;    // Similar to transformID, but for clipping rects.
+        public float flags;         // Solid,Textured,Font,SVG with gradients
+        // Winding order of vertices matters. CCW is for clipped meshes.
+    }
+
     internal interface IStylePainterInternal : IStylePainter
     {
         void DrawRect(RectStylePainterParameters painterParams);
         void DrawTexture(TextureStylePainterParameters painterParams);
         void DrawText(TextStylePainterParameters painterParams);
-        void DrawMesh(MeshStylePainterParameters painterParameters);
+        void DrawMesh(MeshStylePainterParameters painterParameters, out NativeSlice<UIVertex> vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset);
+        Matrix4x4 GetRenderTransform();
+        uint currentTransformID { get; }
+        uint currentClippingRectID { get; }
 
         // The DrawImmediate method allow for inserting direct-GL calls at the right spot in the draw chain.
         void DrawImmediate(System.Action callback);
 
         void DrawBackground();
+        void ApplyClipping();
         void DrawBorder();
         void DrawText(string text);
 
@@ -167,7 +185,7 @@ namespace UnityEngine.UIElements
                 font = style.unityFont.value,
                 fontSize = (int)style.fontSize.value.value,
                 fontStyle = style.unityFontStyleAndWeight.value,
-                fontColor = style.color.GetSpecifiedValueOrDefault(Color.black),
+                fontColor = style.color.value,
                 anchor = style.unityTextAlign.value,
                 wordWrap = style.whiteSpace.value == WhiteSpace.Normal,
                 wordWrapWidth = style.whiteSpace.value == WhiteSpace.Normal ? ve.contentRect.width : 0.0f,
@@ -202,18 +220,13 @@ namespace UnityEngine.UIElements
 
     internal struct MeshStylePainterParameters
     {
-        public Mesh mesh;
         public Material material;
-        public int pass;
+        public uint vertexCount;
+        public uint indexCount;
 
-        public static MeshStylePainterParameters GetDefault(Mesh mesh, Material mat)
+        public static MeshStylePainterParameters GetDefault(Material mat, uint vertices, uint indices)
         {
-            var painterParams = new MeshStylePainterParameters()
-            {
-                mesh = mesh,
-                material = mat
-            };
-            return painterParams;
+            return new MeshStylePainterParameters() { material = mat, vertexCount = vertices, indexCount = indices };
         }
     }
 

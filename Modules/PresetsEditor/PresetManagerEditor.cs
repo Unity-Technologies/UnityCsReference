@@ -217,6 +217,14 @@ namespace UnityEditor.Presets
             var provider = AssetSettingsProvider.CreateProviderFromAssetPath(
                 "Project/Preset Manager", "ProjectSettings/PresetManager.asset",
                 SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Content>());
+            provider.inspectorUpdateHandler += () =>
+            {
+                if (provider.settingsEditor != null &&
+                    provider.settingsEditor.serializedObject.UpdateIfRequiredOrScript())
+                {
+                    provider.settingsWindow.Repaint();
+                }
+            };
             return provider;
         }
     }

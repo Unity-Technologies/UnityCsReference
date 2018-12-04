@@ -13,6 +13,7 @@ namespace UnityEditor
         class Styles
         {
             public GUIStyle toggle = "OL Toggle";
+            public GUIStyle toggleMixed = "OL ToggleMixed";
             public GUIStyle listEvenBg = "ObjectPickerResultsOdd";//"ObjectPickerResultsEven";//
             public GUIStyle listOddBg = "ObjectPickerResultsEven";//"ObjectPickerResultsEven";//
             public GUIStyle background = "grey_border";
@@ -22,6 +23,8 @@ namespace UnityEditor
             public GUIStyle listHeaderStyle;
             public GUIStyle texelWorldSizeStyle;
             public GUIStyle columnHeaderStyle;
+            public const float k_ToggleSize = 17f;
+
             public Styles()
             {
                 listTextStyle = new GUIStyle(EditorStyles.label);
@@ -40,6 +43,15 @@ namespace UnityEditor
                 columnHeaderStyle = EditorStyles.miniLabel;
             }
         }
+
+        private enum EnabledState
+        {
+            NotSet = -1,
+            None = 0,
+            All = 1,
+            Mixed = 2
+        };
+
         const float kWindowWidth = 270;
         const float scrollBarWidth = 14;
         const float listElementHeight = 18;
@@ -425,7 +437,7 @@ namespace UnityEditor
                 if (doDraw)
                 {
                     // Header text
-                    DrawListHeader(sectionHeader, new Rect(3, curY, listElementWidth, headerHeight), ref headerDrawn);
+                    DrawListHeader(sectionHeader, listElements, new Rect(3, curY, listElementWidth, headerHeight), ref headerDrawn);
                 }
                 curY += headerHeight;
 
@@ -458,10 +470,55 @@ namespace UnityEditor
             return curY;
         }
 
-        void DrawListHeader(string header, Rect rect, ref bool headerDrawn)
+        void DrawListHeader(string header, List<AInfo> elements, Rect rect, ref bool headerDrawn)
         {
             GUI.Label(rect, GUIContent.Temp(header), m_Styles.listHeaderStyle);
 
+            float toggleSize = Styles.k_ToggleSize;
+            EnabledState enabledState = EnabledState.NotSet;
+
+            for (int i = 0; i < elements.Count; i++)
+            {
+                var element = elements[i];
+
+                if (element.HasGizmo())
+                {
+                    if (enabledState == EnabledState.NotSet)
+                    {
+                        enabledState = element.m_GizmoEnabled ? EnabledState.All : EnabledState.None;
+                    }
+                    else if ((enabledState == EnabledState.All) != element.m_GizmoEnabled)
+                    {
+                        enabledState = EnabledState.Mixed;
+                        break;
+                    }
+                }
+            }
+
+            GUIStyle style = m_Styles.toggle;
+            bool enabled = enabledState > EnabledState.None;
+
+            bool setMixed = enabledState == EnabledState.Mixed;
+            if (setMixed)
+                style = m_Styles.toggleMixed;
+
+            Rect toggleRect = new Rect(rect.width - gizmoRightAlign - 2, rect.y + (rect.height - toggleSize) * 0.5f, toggleSize, toggleSize);
+
+            bool newEnabled = GUI.Toggle(toggleRect, enabled, GUIContent.none, style);
+
+            if (newEnabled != enabled)
+            {
+                for (int i = 0; i < elements.Count; i++)
+                {
+                    var element = elements[i];
+
+                    if (element.m_GizmoEnabled != newEnabled)
+                    {
+                        element.m_GizmoEnabled = newEnabled;
+                        SetGizmoState(element, false);
+                    }
+                }
+            }
 
             if (headerDrawn == false)
             {
@@ -490,7 +547,7 @@ namespace UnityEditor
             }
 
             string tooltip;
-            float togglerSize = 17;
+            float togglerSize = Styles.k_ToggleSize;
             float disabledAlpha = 0.3f;
 
             // We maintain our own gui.changed
@@ -612,9 +669,9 @@ namespace UnityEditor
             SceneView.RepaintAll();
         }
 
-        void SetGizmoState(AInfo ainfo)
+        void SetGizmoState(AInfo ainfo, bool addToMostRecentChanged = true)
         {
-            AnnotationUtility.SetGizmoEnabled(ainfo.m_ClassID, ainfo.m_ScriptClass, ainfo.m_GizmoEnabled ? 1 : 0);
+            AnnotationUtility.SetGizmoEnabled(ainfo.m_ClassID, ainfo.m_ScriptClass, ainfo.m_GizmoEnabled ? 1 : 0, addToMostRecentChanged);
             SceneView.RepaintAll();
         }
     }

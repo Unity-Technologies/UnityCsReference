@@ -905,6 +905,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 var targetAssembly = GetTargetAssembly(script, projectDirectory, customTargetAssemblies);
 
+                // This can happen for scripts in packages that are not included in an .asmdef assembly
+                // and they will therefore not be compiled.
+                if (targetAssembly == null)
+                    continue;
+
                 if (!IsCompatibleWithPlatformAndDefines(targetAssembly, settings))
                     continue;
 

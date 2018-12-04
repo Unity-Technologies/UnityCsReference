@@ -214,35 +214,12 @@ namespace UnityEditor.UIElements
             }
         }
 
-        public override bool focusable
-        {
-            get { return base.focusable; }
-            set
-            {
-                base.focusable = value;
-                if (m_ObjectFieldDisplay != null)
-                {
-                    m_ObjectFieldDisplay.focusable = value;
-                }
-            }
-        }
-
-        public override int tabIndex
-        {
-            get { return base.tabIndex; }
-            set
-            {
-                base.tabIndex = value;
-                if (m_ObjectFieldDisplay != null)
-                {
-                    m_ObjectFieldDisplay.tabIndex = value;
-                }
-            }
-        }
-
         private readonly ObjectFieldDisplay m_ObjectFieldDisplay;
 
         public new static readonly string ussClassName = "unity-object-field";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
+
         public static readonly string objectUssClassName = ussClassName + "__object";
         public static readonly string selectorUssClassName = ussClassName + "__selector";
 
@@ -252,7 +229,11 @@ namespace UnityEditor.UIElements
         public ObjectField(string label)
             : base(label, null)
         {
+            visualInput.focusable = false;
+            labelElement.focusable = false;
+
             AddToClassList(ussClassName);
+            labelElement.AddToClassList(labelUssClassName);
 
             allowSceneObjects = true;
 
@@ -260,21 +241,9 @@ namespace UnityEditor.UIElements
             m_ObjectFieldDisplay.AddToClassList(objectUssClassName);
             var objectSelector = new ObjectFieldSelector(this);
             objectSelector.AddToClassList(selectorUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
             visualInput.Add(m_ObjectFieldDisplay);
             visualInput.Add(objectSelector);
-        }
-
-        protected internal override void ExecuteDefaultAction(EventBase evt)
-        {
-            base.ExecuteDefaultAction(evt);
-
-            if (evt == null)
-            {
-                return;
-            }
-
-            if (evt.eventTypeId == FocusEvent.TypeId())
-                m_ObjectFieldDisplay.Focus();
         }
 
         private void OnObjectChanged(Object obj)

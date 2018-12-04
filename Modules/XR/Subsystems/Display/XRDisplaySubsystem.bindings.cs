@@ -12,7 +12,10 @@ namespace UnityEngine.Experimental.XR
 {
     [NativeType(Header = "Modules/XR/Subsystems/Display/XRDisplaySubsystem.h")]
     [UsedByNativeCode]
+    [NativeHeader("Modules/XR/XRPrefix.h")]
+    [NativeConditional("ENABLE_XR")]
     public class XRDisplaySubsystem : IntegratedSubsystem<XRDisplaySubsystemDescriptor>
     {
+        extern public bool singlePassRenderingDisabled { get; set; }
     }
 }

@@ -22,6 +22,8 @@ namespace UnityEngine.UIElements
         }
 
         public new static readonly string ussClassName = "unity-toggle";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
         public static readonly string noTextVariantUssClassName = ussClassName + "--no-text";
         public static readonly string checkmarkUssClassName = ussClassName + "__checkmark";
         public static readonly string textUssClassName = ussClassName + "__text";
@@ -36,6 +38,9 @@ namespace UnityEngine.UIElements
         {
             AddToClassList(ussClassName);
             AddToClassList(noTextVariantUssClassName);
+
+            visualInput.AddToClassList(inputUssClassName);
+            labelElement.AddToClassList(labelUssClassName);
 
             // Allocate and add the checkmark to the hierarchy
             var checkMark = new VisualElement() { name = "unity-checkmark", pickingMode = PickingMode.Ignore };

@@ -29,6 +29,8 @@ namespace UnityEditor.UIElements
         }
 
         public new static readonly string ussClassName = "unity-float-field";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
 
         public FloatField() : this((string)null) {}
 
@@ -39,6 +41,8 @@ namespace UnityEditor.UIElements
             : base(label, maxLength, new FloatInput())
         {
             AddToClassList(ussClassName);
+            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
             AddLabelDragger<float>();
         }
 

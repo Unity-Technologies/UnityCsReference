@@ -40,6 +40,8 @@ namespace UnityEngine.UIElements
         }
 
         public new static readonly string ussClassName = "unity-text-field";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
 
         public TextField()
             : this(null) {}
@@ -54,6 +56,9 @@ namespace UnityEngine.UIElements
             : base(label, maxLength, maskChar, new TextInput())
         {
             AddToClassList(ussClassName);
+            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
+
             pickingMode = PickingMode.Ignore;
             SetValueWithoutNotify("");
             this.multiline = multiline;

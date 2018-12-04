@@ -172,6 +172,7 @@ namespace UnityEditor
                 {
                     imguiContainer.name = VisualElementUtils.GetUniqueName("Dockarea");
                     imguiContainer.tabIndex = -1;
+                    imguiContainer.focusOnlyIfHasFocusableControls = false;
                 }
             }
         }

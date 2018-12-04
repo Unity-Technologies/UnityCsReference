@@ -34,8 +34,9 @@ namespace UnityEditor
         [HideInInspector]
         internal GUIContent m_TitleContent;
 
+        // We use a 24-bit depth/stencil buffer by default to support the UIRenderer clipping feature
         [HideInInspector]
-        int m_DepthBufferBits = 0;
+        int m_DepthBufferBits = 24;
 
         [HideInInspector]
         int m_AntiAliasing = 1;
@@ -526,16 +527,16 @@ namespace UnityEditor
 
         internal void ShowTooltip()
         {
-            ShowPopupWithMode(ShowMode.Tooltip);
+            ShowPopupWithMode(ShowMode.Tooltip, false);
         }
 
         public void ShowPopup()
         {
-            ShowPopupWithMode(ShowMode.PopupMenu);
+            ShowPopupWithMode(ShowMode.PopupMenu, true);
         }
 
         // Used for popup style windows.
-        internal void ShowPopupWithMode(ShowMode mode)
+        internal void ShowPopupWithMode(ShowMode mode, bool giveFocus)
         {
             if (m_Parent == null)
             {
@@ -550,7 +551,7 @@ namespace UnityEditor
                 cw.position = r;
                 cw.rootView = host;
                 MakeParentsSettingsMatchMe();
-                cw.ShowPopupWithMode(mode);
+                cw.ShowPopupWithMode(mode, giveFocus);
             }
         }
 
@@ -608,7 +609,7 @@ namespace UnityEditor
             // ShowWithMode() always grabs window focus so we use ShowPopup() for popup windows so PopupWindowWithoutFocus
             // will work correctly (no focus when opened).
             if (ContainerWindow.IsPopup(mode))
-                ShowPopupWithMode(mode);
+                ShowPopupWithMode(mode, giveFocus);
             else
                 ShowWithMode(mode);
 

@@ -27,6 +27,31 @@ namespace UnityEngine.UIElements.StyleSheets
         public Color color;
         [FieldOffset(8)]
         public GCHandle resource;
+
+        public static StyleValue Create(StylePropertyID id)
+        {
+            return new StyleValue() { id = id };
+        }
+
+        public static StyleValue Create(StylePropertyID id, StyleKeyword keyword)
+        {
+            return new StyleValue() { id = id, keyword = keyword };
+        }
+
+        public static StyleValue Create(StylePropertyID id, float number)
+        {
+            return new StyleValue() { id = id, number = number };
+        }
+
+        public static StyleValue Create(StylePropertyID id, int number)
+        {
+            return new StyleValue() { id = id, number = number };
+        }
+
+        public static StyleValue Create(StylePropertyID id, Color color)
+        {
+            return new StyleValue() { id = id, color = color };
+        }
     }
 
     internal enum StylePropertyID
@@ -76,8 +101,8 @@ namespace UnityEngine.UIElements.StyleSheets
         FontSize,
         FontStyleAndWeight,
         BackgroundScaleMode,
-        Cursor,
         Visibility,
+        Overflow,
         Display,
         // All string values
         BackgroundImage,
@@ -85,7 +110,7 @@ namespace UnityEngine.UIElements.StyleSheets
         Color,
         BackgroundColor,
         BorderColor,
-        Overflow,
+        BackgroundImageTintColor,
         SliceLeft,
         SliceTop,
         SliceRight,
@@ -97,6 +122,8 @@ namespace UnityEngine.UIElements.StyleSheets
         Flex,
         Margin,
         Padding,
+        // Complex value
+        Cursor,
         // Always leave as last value
         Custom
     }

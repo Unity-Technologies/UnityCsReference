@@ -288,6 +288,19 @@ namespace UnityEngine.UIElements
                 }
 
                 EventDispatchUtilities.ExecuteDefaultAction(evt, panel);
+                if (evt.path != null)
+                {
+                    foreach (var element in evt.path.targetAndBubblePath)
+                    {
+                        if (element.m_IsTarget)
+                        {
+                            evt.target = element.m_VisualElement;
+                            EventDispatchUtilities.ExecuteDefaultAction(evt, panel);
+                        }
+                    }
+
+                    evt.target = evt.leafTarget;
+                }
 
                 m_DebuggerEventDispatchingStrategy.PostDispatch(evt, panel);
 

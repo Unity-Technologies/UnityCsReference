@@ -164,6 +164,8 @@ namespace UnityEditor.Experimental.GraphView
 
             m_ContainedElements.Add(element);
 
+            element.SetContainingScope(this);
+
             // To update the scope geometry whenever the added element's geometry changes
             element.RegisterCallback<GeometryChangedEvent>(OnSubElementGeometryChanged);
             ScheduleUpdateGeometryFromContent();
@@ -203,6 +205,9 @@ namespace UnityEditor.Experimental.GraphView
 
             element.UnregisterCallback<GeometryChangedEvent>(OnSubElementGeometryChanged);
             m_ContainedElements.Remove(element);
+
+            element.SetContainingScope(null);
+
             ScheduleUpdateGeometryFromContent();
         }
 

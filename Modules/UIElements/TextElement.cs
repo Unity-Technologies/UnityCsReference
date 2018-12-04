@@ -50,7 +50,7 @@ namespace UnityEngine.UIElements
                     return;
 
                 m_Text = value;
-                IncrementVersion(VersionChangeType.Layout);
+                IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
 
                 if (!string.IsNullOrEmpty(viewDataKey))
                     SaveViewData();

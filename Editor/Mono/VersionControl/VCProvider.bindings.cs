@@ -141,13 +141,13 @@ namespace UnityEditor.VersionControl
 
         [NativeThrows]
         [FreeFunction("VersionControlBindings::VCProvider::Internal_Checkout")]
-        private static extern Task Internal_Checkout(Asset[] assets, CheckoutMode mode);
+        private static extern Task Internal_Checkout(Asset[] assets, CheckoutMode mode, ChangeSet changeset);
 
         [FreeFunction("VersionControlBindings::VCProvider::Internal_CheckoutStrings")]
         private static extern Task Internal_CheckoutStrings(string[] assets, CheckoutMode mode);
 
         [FreeFunction("VersionControlBindings::VCProvider::Internal_PromptAndCheckoutIfNeeded")]
-        private static extern bool Internal_PromptAndCheckoutIfNeeded(string[] assets, string promptIfCheckoutIsNeeded);
+        private static extern bool Internal_PromptAndCheckoutIfNeeded(string[] assets, string promptIfCheckoutIsNeeded, ChangeSet changeset);
 
         [NativeThrows]
         [FreeFunction("VersionControlBindings::VCProvider::Internal_Delete")]
@@ -287,5 +287,15 @@ namespace UnityEditor.VersionControl
         [NativeMethod("Invalidate")]
         internal static extern void InvalidateCache();
 
+
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_CreateWarningTask")]
+        public static extern Task Internal_WarningTask([NotNull] string message);
+
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_CreateErrorTask")]
+        public static extern Task Internal_ErrorTask([NotNull] string message);
+
+        [NativeThrows]
+        [FreeFunction("VersionControlBindings::VCProvider::Internal_ConsolidateAssetList")]
+        private static extern Asset[] Internal_ConsolidateAssetList(Asset[] assets, CheckoutMode mode);
     }
 }

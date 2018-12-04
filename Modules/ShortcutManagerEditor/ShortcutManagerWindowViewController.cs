@@ -25,6 +25,7 @@ namespace UnityEditor.ShortcutManagement
         IContextManager m_ContextManager;
         IShortcutManagerWindowView m_ShortcutManagerWindowView;
         IBindingValidator m_BindingValidator;
+        IAvailableShortcutsChangedNotifier m_AvailableShortcutsChangedNotifier;
 
         List<ShortcutEntry> m_AllEntries = new List<ShortcutEntry>();
         Dictionary<string, List<ShortcutEntry>> m_CategoryToEntriesList = new Dictionary<string, List<ShortcutEntry>>();
@@ -41,39 +42,63 @@ namespace UnityEditor.ShortcutManagement
         List<ShortcutEntry> m_ShortcutsBoundToSelectedKey = new List<ShortcutEntry>();
 
 
-        public ShortcutManagerWindowViewController(SerializedShortcutManagerWindowState state, IDirectory directory, IBindingValidator bindingValidator, IShortcutProfileManager profileManager, IContextManager contextManager)
+        public ShortcutManagerWindowViewController(SerializedShortcutManagerWindowState state, IDirectory directory, IBindingValidator bindingValidator, IShortcutProfileManager profileManager, IContextManager contextManager, IAvailableShortcutsChangedNotifier availableShortcutsChangedNotifier)
         {
             m_SerializedState = state;
             m_ShortcutProfileManager = profileManager;
             m_Directory = directory;
             m_ContextManager = contextManager;
             m_BindingValidator = bindingValidator;
+            m_AvailableShortcutsChangedNotifier = availableShortcutsChangedNotifier;
 
+            InitializeCategoryList();
+            BuildKeyMapBindingStateData();
+            PopulateShortcutsBoundToSelectedKey();
+        }
+
+        void InitializeCategoryList()
+        {
             BuildCategoryList();
             selectedCategory = m_SerializedState.selectedCategory;
             selectedEntry = m_Directory.FindShortcutEntry(m_SerializedState.selectedEntryIdentifier);
-
-            BuildKeyMapBindingStateData();
-
-            PopulateShortcutsBoundToSelectedKey();
         }
 
         public void OnEnable()
         {
             m_ShortcutProfileManager.activeProfileChanged += OnActiveProfileChanged;
+            m_ShortcutProfileManager.loadedProfilesChanged += OnLoadedProfilesChanged;
+            m_AvailableShortcutsChangedNotifier.availableShortcutsChanged += OnAvailableShortcutsChanged;
         }
 
         public void OnDisable()
         {
             m_ShortcutProfileManager.activeProfileChanged -= OnActiveProfileChanged;
+            m_ShortcutProfileManager.loadedProfilesChanged -= OnLoadedProfilesChanged;
+            m_AvailableShortcutsChangedNotifier.availableShortcutsChanged -= OnAvailableShortcutsChanged;
         }
 
         void OnActiveProfileChanged(IShortcutProfileManager shortcutProfileManager, ShortcutProfile previousActiveProfile, ShortcutProfile currentActiveProfile)
+        {
+            UpdateInternalCache();
+        }
+
+        void OnAvailableShortcutsChanged()
+        {
+            InitializeCategoryList();
+            UpdateInternalCache();
+        }
+
+        void UpdateInternalCache()
         {
             UpdateCommandsWithConflicts();
             BuildKeyMapBindingStateData();
             PopulateShortcutList();
             m_ShortcutManagerWindowView.RefreshAll();
+        }
+
+        void OnLoadedProfilesChanged(IShortcutProfileManager shortcutProfileManager)
+        {
+            m_ShortcutManagerWindowView.RefreshProfiles();
         }
 
         //There is a mutual dependecy between the view and the viewcontroller,
@@ -100,6 +125,8 @@ namespace UnityEditor.ShortcutManagement
             HashSet<string> categories = new HashSet<string>();
 
             var menuItems = new List<ShortcutEntry>();
+
+            m_CategoryToEntriesList.Clear();
 
             foreach (var entry in entries)
             {

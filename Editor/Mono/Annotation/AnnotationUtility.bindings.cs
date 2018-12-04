@@ -28,7 +28,7 @@ namespace UnityEditor
         [StaticAccessor("GetAnnotationManager()", StaticAccessorType.Dot)]
         extern internal static  string GetNameOfCurrentSetup();
 
-        extern internal static  void SetGizmoEnabled(int classID, string scriptClass, int gizmoEnabled);
+        extern internal static  void SetGizmoEnabled(int classID, string scriptClass, int gizmoEnabled, bool addToMostRecentChanged);
 
         extern internal static  void SetIconEnabled(int classID, string scriptClass, int iconEnabled);
 

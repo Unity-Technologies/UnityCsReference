@@ -32,40 +32,11 @@ namespace UnityEditor.UIElements
         public bool showAlpha { get; set; }
         public bool hdr { get; set; }
 
-        private bool m_SetKbControl;
-        private bool m_ResetKbControl;
-
         private IMGUIContainer m_ColorField;
 
-        // Since the ColorField is containing a child in the focus ring,
-        //     it must make sure the child focus follows the tabIndex / focusable
-        public override int tabIndex
-        {
-            get { return base.tabIndex; }
-            set
-            {
-                base.tabIndex = value;
-                if (m_ColorField != null)
-                {
-                    m_ColorField.tabIndex = value;
-                }
-            }
-        }
-
-        public override bool focusable
-        {
-            get { return base.focusable; }
-            set
-            {
-                base.focusable = value;
-                if (m_ColorField != null)
-                {
-                    m_ColorField.focusable = value;
-                }
-            }
-        }
-
         public new static readonly string ussClassName = "unity-color-field";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
 
         public ColorField()
             : this(null) {}
@@ -74,6 +45,7 @@ namespace UnityEditor.UIElements
             : base(label, null)
         {
             AddToClassList(ussClassName);
+            labelElement.AddToClassList(labelUssClassName);
 
             showEyeDropper = true;
             showAlpha = true;
@@ -81,31 +53,11 @@ namespace UnityEditor.UIElements
             // The focus on a color field is implemented like a BaseCompoundField : the ColorField and its inner child
             // are both put in the focus ring. When the ColorField is receiving the Focus, it is "delegating" it to the inner child,
             // which is, in this case, the IMGUIContainer.
-            m_ColorField = new IMGUIContainer(OnGUIHandler) { name = "unity-internal-color-field", useUIElementsFocusStyle = true };
+            m_ColorField = new IMGUIContainer(OnGUIHandler) { name = "unity-internal-color-field", focusOnlyIfHasFocusableControls = false };
             visualInput = m_ColorField;
-        }
+            visualInput.AddToClassList(inputUssClassName);
 
-        protected internal override void ExecuteDefaultAction(EventBase evt)
-        {
-            base.ExecuteDefaultAction(evt);
-
-            if (evt?.eventTypeId == FocusEvent.TypeId())
-            {
-                m_SetKbControl = true;
-            }
-
-            if (evt?.eventTypeId == BlurEvent.TypeId())
-            {
-                m_ResetKbControl = true;
-            }
-        }
-
-        protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
-        {
-            if (evt?.eventTypeId == KeyDownEvent.TypeId())
-            {
-                m_ColorField.HandleEvent(evt);
-            }
+            labelElement.focusable = false;
         }
 
         private void OnGUIHandler()
@@ -118,16 +70,6 @@ namespace UnityEditor.UIElements
 
             Color newColor = EditorGUILayout.ColorField(GUIContent.none, value, showEyeDropper, showAlpha, hdr);
             value = newColor;
-            if (m_SetKbControl)
-            {
-                GUIUtility.SetKeyboardControlToFirstControlId();
-                m_SetKbControl = false;
-            }
-            if (m_ResetKbControl)
-            {
-                GUIUtility.keyboardControl = 0;
-                m_ResetKbControl = false;
-            }
         }
     }
 }

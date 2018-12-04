@@ -83,6 +83,12 @@ namespace UnityEditor.VersionControl
         public extern string path { get; }
 
         [NativeMethod(IsThreadSafe = true)]
+        public extern string metaPath { get; }
+
+        [NativeMethod(IsThreadSafe = true)]
+        public extern string assetPath { get; }
+
+        [NativeMethod(IsThreadSafe = true)]
         public extern bool isFolder
         {
             [NativeName("IsFolder")]

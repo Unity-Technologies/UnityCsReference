@@ -266,8 +266,12 @@ namespace UnityEditor.VisualStudioIntegration
         [RequiredByNativeCode]
         static public bool IsUnityVSEnabled()
         {
+            if (!m_ShouldUnityVSBeActive)
+            {
+                return false;
+            }
             if (!s_IsUnityVSEnabled.HasValue)
-                s_IsUnityVSEnabled = m_ShouldUnityVSBeActive && AppDomain.CurrentDomain.GetAssemblies().Any(a => GetAssemblyLocation(a) == s_UnityVSBridgeToLoad);
+                s_IsUnityVSEnabled = AppDomain.CurrentDomain.GetAssemblies().Any(a => GetAssemblyLocation(a) == s_UnityVSBridgeToLoad);
 
             return s_IsUnityVSEnabled.Value;
         }

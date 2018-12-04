@@ -120,6 +120,8 @@ namespace UnityEngine.Experimental.VFX
         ExtractAspectRatioFromMainCamera,
         ExtractPixelDimensionsFromMainCamera,
 
+        GetBufferFromMainCamera,
+
         // Logical operations
         LogicalAnd,
         LogicalOr,
@@ -219,5 +221,14 @@ namespace UnityEngine.Experimental.VFX
     {
         FixedDeltaTime,
         DeltaTime,
+    }
+
+    [Flags]
+    public enum VFXCameraBufferTypes
+    {
+        None = 0,
+        Depth = 1 << 0,
+        Color = 1 << 1,
+        Normal = 1 << 2,
     }
 }

@@ -30,6 +30,8 @@ namespace UnityEditor.UIElements
         }
 
         public new static readonly string ussClassName = "unity-integer-field";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
 
         public IntegerField()
             : this((string)null) {}
@@ -41,6 +43,8 @@ namespace UnityEditor.UIElements
             : base(label, maxLength, new IntegerInput())
         {
             AddToClassList(ussClassName);
+            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
             AddLabelDragger<int>();
         }
 

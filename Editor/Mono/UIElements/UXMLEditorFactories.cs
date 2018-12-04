@@ -72,6 +72,8 @@ namespace UnityEditor.UIElements
                 new Vector2IntField.UxmlFactory(),
                 new Vector3IntField.UxmlFactory(),
                 new BoundsIntField.UxmlFactory(),
+
+                new ProgressBar.UxmlFactory(),
             };
 
             foreach (IUxmlFactory factory in factories)

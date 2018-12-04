@@ -27,7 +27,6 @@ namespace UnityEditor
 
         SerializedObject m_LightmapSettingsSO;
         Object m_LightmapSettings;
-
         SerializedObject m_RenderSettingsSO;
 
         //realtime GI
@@ -63,6 +62,9 @@ namespace UnityEditor
         SerializedProperty m_PVRFilterTypeDirect;
         SerializedProperty m_PVRFilterTypeIndirect;
         SerializedProperty m_PVRFilterTypeAO;
+        SerializedProperty m_PVRDenoiserTypeDirect;
+        SerializedProperty m_PVRDenoiserTypeIndirect;
+        SerializedProperty m_PVRDenoiserTypeAO;
         SerializedProperty m_PVRFilteringGaussRadiusDirect;
         SerializedProperty m_PVRFilteringGaussRadiusIndirect;
         SerializedProperty m_PVRFilteringGaussRadiusAO;
@@ -122,6 +124,9 @@ namespace UnityEditor
             m_PVRFilterTypeDirect = so.FindProperty("m_LightmapEditorSettings.m_PVRFilterTypeDirect");
             m_PVRFilterTypeIndirect = so.FindProperty("m_LightmapEditorSettings.m_PVRFilterTypeIndirect");
             m_PVRFilterTypeAO = so.FindProperty("m_LightmapEditorSettings.m_PVRFilterTypeAO");
+            m_PVRDenoiserTypeDirect = so.FindProperty("m_LightmapEditorSettings.m_PVRDenoiserTypeDirect");
+            m_PVRDenoiserTypeIndirect = so.FindProperty("m_LightmapEditorSettings.m_PVRDenoiserTypeIndirect");
+            m_PVRDenoiserTypeAO = so.FindProperty("m_LightmapEditorSettings.m_PVRDenoiserTypeAO");
             m_PVRFilteringGaussRadiusDirect = so.FindProperty("m_LightmapEditorSettings.m_PVRFilteringGaussRadiusDirect");
             m_PVRFilteringGaussRadiusIndirect = so.FindProperty("m_LightmapEditorSettings.m_PVRFilteringGaussRadiusIndirect");
             m_PVRFilteringGaussRadiusAO = so.FindProperty("m_LightmapEditorSettings.m_PVRFilteringGaussRadiusAO");
@@ -385,6 +390,63 @@ namespace UnityEditor
             }
         }
 
+        void OnDirectDenoiserSelected(object userData)
+        {
+            m_PVRDenoiserTypeDirect.intValue = (int)userData;
+        }
+
+        void OnIndirectDenoiserSelected(object userData)
+        {
+            m_PVRDenoiserTypeIndirect.intValue = (int)userData;
+        }
+
+        void OnAODenoiserSelected(object userData)
+        {
+            m_PVRDenoiserTypeAO.intValue = (int)userData;
+        }
+
+        public enum DenoiserTarget
+        {
+            Direct = 0,
+            Indirect = 1,
+            AO = 2
+        }
+        void DrawDenoiserTypeDropdown(SerializedProperty prop, GUIContent label, DenoiserTarget target)
+        {
+            bool usingGPULightmapper = LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU;
+            bool optixDenoiserSupported = LightmapEditorSettings.IsOptixDenoiserSupported() && !usingGPULightmapper;
+            var rect = EditorGUILayout.GetControlRect();
+            EditorGUI.BeginProperty(rect, label, prop);
+            rect = EditorGUI.PrefixLabel(rect, label);
+
+            int index = Math.Max(0, Array.IndexOf(Styles.DenoiserTypeValues, prop.intValue));
+
+            if (EditorGUI.DropdownButton(rect, Styles.DenoiserTypeStrings[index], FocusType.Passive))
+            {
+                var menu = new GenericMenu();
+                for (int i = 0; i < Styles.DenoiserTypeValues.Length; i++)
+                {
+                    int value = Styles.DenoiserTypeValues[i];
+                    bool optixDenoiserItem = (value == (int)LightmapEditorSettings.DenoiserType.Optix);
+                    bool selected = (value == prop.intValue);
+
+                    if (!optixDenoiserSupported && optixDenoiserItem)
+                        menu.AddDisabledItem(Styles.DenoiserTypeStrings[i], selected);
+                    else
+                    {
+                        if (target == DenoiserTarget.Direct)
+                            menu.AddItem(Styles.DenoiserTypeStrings[i], selected, OnDirectDenoiserSelected, value);
+                        else if (target == DenoiserTarget.Indirect)
+                            menu.AddItem(Styles.DenoiserTypeStrings[i], selected, OnIndirectDenoiserSelected, value);
+                        else if (target == DenoiserTarget.AO)
+                            menu.AddItem(Styles.DenoiserTypeStrings[i], selected, OnAODenoiserSelected, value);
+                    }
+                }
+                menu.DropDown(rect);
+            }
+            EditorGUI.EndProperty();
+        }
+
         void GeneralLightmapSettingsGUI()
         {
             bool bakedGISupported = SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Baked);
@@ -403,18 +465,10 @@ namespace UnityEditor
                         using (new EditorGUI.DisabledScope(!m_EnabledBakedGI.boolValue))
                         {
                             EditorGUI.BeginChangeCheck();
-
-                            //TODO(RadeonRays): Remove this when GPU lightmapper works on macOS and Linux.
-                            if (Application.platform != RuntimePlatform.WindowsEditor)
-                            {
-                                var backendOptions = new[] { "Enlighten", "Progressive CPU" };
-                                m_BakeBackend.intValue = EditorGUILayout.Popup(Styles.BakeBackend, m_BakeBackend.intValue, backendOptions);
-                            }
-                            else
-                                EditorGUILayout.PropertyField(m_BakeBackend, Styles.BakeBackend);
-
+                            EditorGUILayout.PropertyField(m_BakeBackend, Styles.BakeBackend);
                             if (EditorGUI.EndChangeCheck())
                                 InspectorWindow.RepaintAllInspectors(); // We need to repaint other inspectors that might need to update based on the selected backend.
+
                             if (LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.Enlighten)
                             {
                                 EditorGUI.indentLevel++;
@@ -465,55 +519,77 @@ namespace UnityEditor
 
                                 if (m_PVRFilteringMode.enumValueIndex == (int)LightmapEditorSettings.FilterMode.Advanced)
                                 {
+                                    // Check if the platform doesn't support denoising.
+                                    bool usingGPULightmapper = LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU;
+                                    bool optixDenoiserSupported = LightmapEditorSettings.IsOptixDenoiserSupported() && !usingGPULightmapper;
+
                                     EditorGUI.indentLevel++;
-
-                                    if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU)
-                                        EditorGUILayout.HelpBox(Styles.ProgressiveGPUWarning.text, MessageType.Info);
-
+                                    using (new EditorGUI.DisabledScope(!optixDenoiserSupported))
+                                    {
+                                        DrawDenoiserTypeDropdown(m_PVRDenoiserTypeDirect, optixDenoiserSupported ? Styles.PVRDenoiserTypeDirect : Styles.OptixFilteringWarningDirect, DenoiserTarget.Direct);
+                                    }
                                     ClampFilterType(m_PVRFilterTypeDirect);
                                     if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU)
                                         EditorGUILayout.IntPopup(m_PVRFilterTypeDirect, Styles.GPUFilterOptions, Styles.GPUFilterInts, Styles.PVRFilterTypeDirect);
                                     else
                                         EditorGUILayout.PropertyField(m_PVRFilterTypeDirect, Styles.PVRFilterTypeDirect);
 
+                                    EditorGUI.indentLevel++;
                                     DrawFilterSettingField(m_PVRFilteringGaussRadiusDirect,
                                         m_PVRFilteringAtrousPositionSigmaDirect,
                                         Styles.PVRFilteringGaussRadiusDirect,
                                         Styles.PVRFilteringAtrousPositionSigmaDirect,
                                         LightmapEditorSettings.filterTypeDirect);
+                                    EditorGUI.indentLevel--;
 
                                     EditorGUILayout.Space();
 
+                                    using (new EditorGUI.DisabledScope(!optixDenoiserSupported))
+                                    {
+                                        DrawDenoiserTypeDropdown(m_PVRDenoiserTypeIndirect, optixDenoiserSupported ? Styles.PVRDenoiserTypeIndirect : Styles.OptixFilteringWarningIndirect, DenoiserTarget.Indirect);
+                                    }
                                     if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU)
                                         EditorGUILayout.IntPopup(m_PVRFilterTypeIndirect, Styles.GPUFilterOptions, Styles.GPUFilterInts, Styles.PVRFilterTypeIndirect);
                                     else
                                         EditorGUILayout.PropertyField(m_PVRFilterTypeIndirect, Styles.PVRFilterTypeIndirect);
                                     ClampFilterType(m_PVRFilterTypeIndirect);
+
+                                    EditorGUI.indentLevel++;
                                     DrawFilterSettingField(m_PVRFilteringGaussRadiusIndirect,
                                         m_PVRFilteringAtrousPositionSigmaIndirect,
                                         Styles.PVRFilteringGaussRadiusIndirect,
                                         Styles.PVRFilteringAtrousPositionSigmaIndirect,
                                         LightmapEditorSettings.filterTypeIndirect);
+                                    EditorGUI.indentLevel--;
 
                                     using (new EditorGUI.DisabledScope(!m_AmbientOcclusion.boolValue))
                                     {
                                         EditorGUILayout.Space();
+                                        using (new EditorGUI.DisabledScope(!optixDenoiserSupported))
+                                        {
+                                            DrawDenoiserTypeDropdown(m_PVRDenoiserTypeAO, optixDenoiserSupported ? Styles.PVRDenoiserTypeAO : Styles.OptixFilteringWarningAO, DenoiserTarget.AO);
+                                        }
                                         if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU)
                                             EditorGUILayout.IntPopup(m_PVRFilterTypeAO, Styles.GPUFilterOptions, Styles.GPUFilterInts, Styles.PVRFilterTypeAO);
                                         else
                                             EditorGUILayout.PropertyField(m_PVRFilterTypeAO, Styles.PVRFilterTypeAO);
                                         ClampFilterType(m_PVRFilterTypeAO);
+
+                                        EditorGUI.indentLevel++;
                                         DrawFilterSettingField(m_PVRFilteringGaussRadiusAO,
                                             m_PVRFilteringAtrousPositionSigmaAO,
                                             Styles.PVRFilteringGaussRadiusAO, Styles.PVRFilteringAtrousPositionSigmaAO,
                                             LightmapEditorSettings.filterTypeAO);
+                                        EditorGUI.indentLevel--;
                                     }
+                                    // Show warning if A-Trous filtering is selected and the platform doesn't support it.
+                                    if (usingGPULightmapper && (m_PVRFilterTypeDirect.intValue == (int)LightmapEditorSettings.FilterType.ATrous || m_PVRFilterTypeIndirect.intValue == (int)LightmapEditorSettings.FilterType.ATrous || (m_AmbientOcclusion.boolValue && m_PVRFilterTypeAO.intValue == (int)LightmapEditorSettings.FilterType.ATrous)))
+                                        EditorGUILayout.HelpBox(Styles.ProgressiveGPUWarning.text, MessageType.Warning);
 
                                     EditorGUI.indentLevel--;
                                 }
 
                                 EditorGUI.indentLevel--;
-                                EditorGUILayout.Space();
                             }
                         }
                     }
@@ -547,6 +623,7 @@ namespace UnityEditor
                                     m_AOMaxDistance.floatValue = 0.0f;
                                 EditorGUILayout.Slider(m_CompAOExponent, 0.0f, 10.0f, Styles.AmbientOcclusionContribution);
                                 EditorGUILayout.Slider(m_CompAOExponentDirect, 0.0f, 10.0f, Styles.AmbientOcclusionContributionDirect);
+
                                 EditorGUI.indentLevel--;
                             }
 
@@ -646,6 +723,14 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Shadowmask")
             };
 
+            // must match PVRDenoiserType
+            public static readonly int[] DenoiserTypeValues = { (int)LightmapEditorSettings.DenoiserType.Optix, (int)LightmapEditorSettings.DenoiserType.None };
+            public static readonly GUIContent[] DenoiserTypeStrings =
+            {
+                EditorGUIUtility.TrTextContent("Optix"),
+                EditorGUIUtility.TrTextContent("None")
+            };
+
             public static readonly int[] BouncesValues = { 0, 1, 2, 3, 4 };
             public static readonly GUIContent[] BouncesStrings =
             {
@@ -705,18 +790,22 @@ namespace UnityEditor
             //public static readonly GUIContent PVRSampleCountAdaptive = EditorGUIUtility.TrTextContent("Max Indirect Samples", "Maximum number of samples to use for indirect lighting.");
             public static readonly GUIContent PVRIndirectSampleCount = EditorGUIUtility.TrTextContent("Indirect Samples", "Controls the number of samples the lightmapper will use for indirect lighting calculations. Increasing this value may improve the quality of lightmaps but increases the time required for baking to complete.");
             public static readonly GUIContent PVRBounces = EditorGUIUtility.TrTextContent("Bounces", "Controls the maximum number of bounces the lightmapper will compute for indirect light.");
-            public static readonly GUIContent PVRFilteringMode = EditorGUIUtility.TrTextContent("Filtering", "Specifies the method used to reduce noise in baked lightmaps. Options are None, Automatic, or Advanced.");
-            public static readonly GUIContent PVRFiltering = EditorGUIUtility.TrTextContent("Filtering", "Specifies the filter kernel used to reduce the amount of noise in baked lightmaps.");
-            public static readonly GUIContent PVRFilteringAdvanced = EditorGUIUtility.TrTextContent("Advanced Filter Settings", "Show advanced settings to configure filtering on lightmaps.");
-            public static readonly GUIContent PVRFilterTypeDirect = EditorGUIUtility.TrTextContent("Direct Filter", "Specifies the filter kernel applied to the direct light stored in the lightmap. Gaussian will blur the lightmap with some loss of detail. A-Trous will reduce noise based on a threshold while maintaining edge detail.");
-            public static readonly GUIContent PVRFilterTypeIndirect = EditorGUIUtility.TrTextContent("Indirect Filter", "Specifies the filter kernel applied to the indirect light stored in the lightmap. Gaussian will blur the lightmap with some loss of detail. A-Trous will reduce noise based on a threshold while maintaining edge detail.");
-            public static readonly GUIContent PVRFilterTypeAO = EditorGUIUtility.TrTextContent("Ambient Occlusion Filter", "Specifies the filter kernel applied to the ambient occlusion stored in the lightmap. Gaussian will blur the lightmap with some loss of detail. A-Trous will reduce noise based on a threshold while maintaining edge detail.");
-            public static readonly GUIContent PVRFilteringGaussRadiusDirect = EditorGUIUtility.TrTextContent("Direct Radius", "Controls the radius of the filter for direct light stored in the lightmap. A higher value will increase the strength of the blur, reducing noise from direct light in the lightmap.");
-            public static readonly GUIContent PVRFilteringGaussRadiusIndirect = EditorGUIUtility.TrTextContent("Indirect Radius", "Controls the radius of the filter for indirect light stored in the lightmap. A higher value will increase the strength of the blur, reducing noise from indirect light in the lightmap.");
-            public static readonly GUIContent PVRFilteringGaussRadiusAO = EditorGUIUtility.TrTextContent("Ambient Occlusion Radius", "The radius of the filter for ambient occlusion in the lightmap. A higher radius will increase the blur strength, reducing sampling noise from ambient occlusion in the lightmap.");
-            public static readonly GUIContent PVRFilteringAtrousPositionSigmaDirect = EditorGUIUtility.TrTextContent("Direct Sigma", "Controls the threshold of the filter for direct light stored in the lightmap. A higher value will increase the threshold, reducing noise in the direct layer of the lightmap. Too high of a value can cause a loss of detail in the lightmap.");
-            public static readonly GUIContent PVRFilteringAtrousPositionSigmaIndirect = EditorGUIUtility.TrTextContent("Indirect Sigma", "Controls the threshold of the filter for indirect light stored in the lightmap. A higher value will increase the threshold, reducing noise in the indirect layer of the lightmap. Too high of a value can cause a loss of detail in the lightmap.");
-            public static readonly GUIContent PVRFilteringAtrousPositionSigmaAO = EditorGUIUtility.TrTextContent("Ambient Occlusion Sigma", "Controls the threshold of the filter for ambient occlusion stored in the lightmap. A higher value will increase the threshold, reducing noise in the ambient occlusion layer of the lightmap. Too high of a value can cause a loss of detail in the lightmap.");
+            public static readonly GUIContent OptixFilteringWarningDirect = EditorGUIUtility.TrTextContent("Direct Denoiser", "Your hardware doesn’t support denoising. To see minimum requirements, read the documentation.");
+            public static readonly GUIContent OptixFilteringWarningIndirect = EditorGUIUtility.TrTextContent("Indirect Denoiser", "Your hardware doesn’t support denoising. To see minimum requirements, read the documentation.");
+            public static readonly GUIContent OptixFilteringWarningAO = EditorGUIUtility.TrTextContent("Ambient Occlusion Denoiser", "Your hardware doesn’t support denoising. To see minimum requirements, read the documentation.");
+            public static readonly GUIContent PVRDenoiserTypeDirect = EditorGUIUtility.TrTextContent("Direct Denoiser", "Specifies the type of denoiser used to reduce noise for direct lights.");
+            public static readonly GUIContent PVRDenoiserTypeIndirect = EditorGUIUtility.TrTextContent("Indirect Denoiser", "Specifies the type of denoiser used to reduce noise for indirect lights.");
+            public static readonly GUIContent PVRDenoiserTypeAO = EditorGUIUtility.TrTextContent("Ambient Occlusion Denoiser", "Specifies the type of denoiser used to reduce noise for ambient occlusion.");
+            public static readonly GUIContent PVRFilteringMode = EditorGUIUtility.TrTextContent("Filtering", "Specifies the method to reduce noise in baked lightmaps.");
+            public static readonly GUIContent PVRFilterTypeDirect = EditorGUIUtility.TrTextContent("Direct Filter", "Specifies the filter kernel applied to the direct light stored in the lightmap. Gaussian blurs the lightmap with some loss of detail. A-Trous reduces noise based on a threshold while maintaining edge detail.");
+            public static readonly GUIContent PVRFilterTypeIndirect = EditorGUIUtility.TrTextContent("Indirect Filter", "Specifies the filter kernel applied to the indirect light stored in the lightmap. Gaussian blurs the lightmap with some loss of detail. A-Trous reduces noise based on a threshold while maintaining edge detail.");
+            public static readonly GUIContent PVRFilterTypeAO = EditorGUIUtility.TrTextContent("Ambient Occlusion Filter", "Specifies the filter kernel applied to the ambient occlusion stored in the lightmap. Gaussian blurs the lightmap with some loss of detail. A-Trous reduces noise based on a threshold while maintaining edge detail.");
+            public static readonly GUIContent PVRFilteringGaussRadiusDirect = EditorGUIUtility.TrTextContent("Radius", "Controls the radius of the filter for direct light stored in the lightmap. A higher value gives a stronger blur and less noise.");
+            public static readonly GUIContent PVRFilteringGaussRadiusIndirect = EditorGUIUtility.TrTextContent("Radius", "Controls the radius of the filter for indirect light stored in the lightmap. A higher value gives a stronger blur and less noise.");
+            public static readonly GUIContent PVRFilteringGaussRadiusAO = EditorGUIUtility.TrTextContent("Radius", "Controls the radius of the filter for ambient occlusion stored in the lightmap. A higher value gives a stronger blur and less noise.");
+            public static readonly GUIContent PVRFilteringAtrousPositionSigmaDirect = EditorGUIUtility.TrTextContent("Sigma", "Controls the threshold of the filter for direct light stored in the lightmap. A higher value increases the threshold, which reduces noise in the direct layer of the lightmap. Too high of a value can cause a loss of detail in the lightmap.");
+            public static readonly GUIContent PVRFilteringAtrousPositionSigmaIndirect = EditorGUIUtility.TrTextContent("Sigma", "Controls the threshold of the filter for indirect light stored in the lightmap. A higher value increases the threshold, which reduces noise in the direct layer of the lightmap. Too high of a value can cause a loss of detail in the lightmap.");
+            public static readonly GUIContent PVRFilteringAtrousPositionSigmaAO = EditorGUIUtility.TrTextContent("Sigma", "Controls the threshold of the filter for ambient occlusion stored in the lightmap. A higher value increases the threshold, which reduces noise in the direct layer of the lightmap. Too high of a value can cause a loss of detail in the lightmap.");
             public static readonly GUIContent PVRCulling = EditorGUIUtility.TrTextContent("Prioritize View", "Specifies whether the lightmapper should prioritize baking texels within the scene view. When disabled, objects outside the scene view will have the same priority as those in the scene view.");
             // TODO(RadeonRays): Used for hiding A-trous filtering option until it is implemented.
             public static readonly GUIContent[] GPUFilterOptions = new[] { EditorGUIUtility.TrTextContent("Gaussian"), EditorGUIUtility.TrTextContent("None") };

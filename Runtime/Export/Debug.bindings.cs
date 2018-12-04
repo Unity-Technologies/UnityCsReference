@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using UnityEngine.Internal;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
@@ -225,5 +226,17 @@ namespace UnityEngine
 
         [NativeThrows]
         internal static extern void SetDiagnosticSwitch(string name, object value, bool setPersistent);
+
+        [RequiredByNativeCode]
+        internal static bool CallOverridenDebugHandler(Exception exception, Object obj)
+        {
+            if (s_Logger.logHandler is DebugLogHandler)
+            {
+                return false;
+            }
+
+            s_Logger.LogException(exception, obj);
+            return true;
+        }
     }
 }

@@ -18,6 +18,9 @@ namespace UnityEditor.UIElements
         public new class UxmlTraits : BaseField<AnimationCurve>.UxmlTraits {}
 
         public new static readonly string ussClassName = "unity-curve-field";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
+
         public static readonly string contentUssClassName = ussClassName + "__content";
         public static readonly string borderUssClassName = ussClassName + "__border";
 
@@ -115,6 +118,8 @@ namespace UnityEditor.UIElements
             : base(label, null)
         {
             AddToClassList(ussClassName);
+            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
 
             ranges = Rect.zero;
 
@@ -123,6 +128,8 @@ namespace UnityEditor.UIElements
             VisualElement borderElement = new VisualElement() { name = "unity-border", pickingMode = PickingMode.Ignore };
             borderElement.AddToClassList(borderUssClassName);
             visualInput.Add(borderElement);
+
+            RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
         }
 
         void OnDetach()
@@ -505,30 +512,33 @@ namespace UnityEditor.UIElements
                     if (m_Mat == null)
                     {
                         m_Mat = new Material(EditorGUIUtility.LoadRequired("Shaders/UIElements/AACurveField.shader") as Shader);
-
                         m_Mat.hideFlags = HideFlags.HideAndDontSave;
                     }
-
-                    float scale = worldTransform.MultiplyVector(Vector3.one).x;
-
-                    float realWidth = k_EdgeWidth;
-                    if (realWidth * scale < k_MinEdgeWidth)
-                    {
-                        realWidth = k_MinEdgeWidth / scale;
-                    }
-
-                    // Send the view zoom factor so that the antialias width do not grow when zooming in.
-                    m_Mat.SetFloat("_ZoomFactor", scale * realWidth / k_EdgeWidth * EditorGUIUtility.pixelsPerPoint);
-
-                    // Send the view zoom correction so that the vertex shader can scale the edge triangles when below m_MinWidth.
-                    m_Mat.SetFloat("_ZoomCorrection", realWidth / k_EdgeWidth);
-
-                    m_Mat.SetColor("_Color", (QualitySettings.activeColorSpace == ColorSpace.Linear) ? curveColor.gamma : curveColor);
-
                     var stylePainter = (IStylePainterInternal)painter;
-                    var meshParams = MeshStylePainterParameters.GetDefault(m_Mesh, m_Mat);
-                    stylePainter.DrawMesh(meshParams);
+                    stylePainter.DrawImmediate(DrawMesh);
                 }
+            }
+
+            void DrawMesh()
+            {
+                float scale = worldTransform.MultiplyVector(Vector3.one).x;
+
+                float realWidth = k_EdgeWidth;
+                if (realWidth * scale < k_MinEdgeWidth)
+                {
+                    realWidth = k_MinEdgeWidth / scale;
+                }
+
+                // Send the view zoom factor so that the antialias width do not grow when zooming in.
+                m_Mat.SetFloat("_ZoomFactor", scale * realWidth / CurveField.k_EdgeWidth * EditorGUIUtility.pixelsPerPoint);
+
+                // Send the view zoom correction so that the vertex shader can scale the edge triangles when below m_MinWidth.
+                m_Mat.SetFloat("_ZoomCorrection", realWidth / CurveField.k_EdgeWidth);
+
+                m_Mat.SetColor("_Color", (QualitySettings.activeColorSpace == ColorSpace.Linear) ? curveColor.gamma : curveColor);
+                m_Mat.SetPass(0);
+
+                Graphics.DrawMeshNow(m_Mesh, Matrix4x4.identity);
             }
         }
     }

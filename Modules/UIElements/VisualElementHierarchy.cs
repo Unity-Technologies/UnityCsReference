@@ -681,5 +681,126 @@ namespace UnityEngine.UIElements
 
             return thisSide;
         }
+
+        internal VisualElement GetRoot()
+        {
+            if (panel != null)
+            {
+                return panel.visualTree;
+            }
+
+            VisualElement root = this;
+            while (root.m_PhysicalParent != null)
+            {
+                root = root.m_PhysicalParent;
+            }
+
+            return root;
+        }
+
+        internal VisualElement GetNextElementDepthFirst()
+        {
+            if (m_Children != null && m_Children.Count > 0)
+            {
+                return m_Children[0];
+            }
+
+            var p = m_PhysicalParent;
+            var c = this;
+
+            while (p != null)
+            {
+                if (p.m_Children != null)
+                {
+                    int i;
+                    for (i = 0; i < p.m_Children.Count; i++)
+                    {
+                        if (p.m_Children[i] == c)
+                        {
+                            break;
+                        }
+                    }
+
+                    if (i < p.m_Children.Count - 1)
+                    {
+                        return p.m_Children[i + 1];
+                    }
+                }
+
+                c = p;
+                p = p.m_PhysicalParent;
+            }
+
+            return null;
+        }
+
+        internal VisualElement GetPreviousElementDepthFirst()
+        {
+            if (m_PhysicalParent != null)
+            {
+                int i;
+                for (i = 0; i < m_PhysicalParent.m_Children.Count; i++)
+                {
+                    if (m_PhysicalParent.m_Children[i] == this)
+                    {
+                        break;
+                    }
+                }
+
+                if (i > 0)
+                {
+                    var p = m_PhysicalParent.m_Children[i - 1];
+                    while (p.m_Children != null && p.m_Children.Count > 0)
+                    {
+                        p = p.m_Children[p.m_Children.Count - 1];
+                    }
+
+                    return p;
+                }
+
+                return m_PhysicalParent;
+            }
+
+            return null;
+        }
+
+        internal VisualElement RetargetElement(VisualElement retargetAgainst)
+        {
+            if (retargetAgainst == null)
+            {
+                return this;
+            }
+
+            // If retargetAgainst.isCompositeRoot is true, we want to retarget THIS to the tree that holds
+            // retargetAgainst, not against the tree rooted by retargetAgainst. In this case we start
+            // by setting retargetRoot to retargetAgainst.m_PhysicalParent.
+            // However, if retargetAgainst.m_PhysicalParent == null, we are at the top of the main tree,
+            // so retargetRoot should be retargetAgainst.
+            var retargetRoot = retargetAgainst.m_PhysicalParent ?? retargetAgainst;
+            while (retargetRoot.m_PhysicalParent != null && !retargetRoot.isCompositeRoot)
+            {
+                retargetRoot = retargetRoot.m_PhysicalParent;
+            }
+
+            var retargetCandidate = this;
+            var p = m_PhysicalParent;
+            while (p != null)
+            {
+                p = p.m_PhysicalParent;
+
+                if (p == retargetRoot)
+                {
+                    return retargetCandidate;
+                }
+
+                if (p != null && p.isCompositeRoot)
+                {
+                    retargetCandidate = p;
+                }
+            }
+
+            // THIS is not under retargetRoot
+            return this;
+        }
     }
 }

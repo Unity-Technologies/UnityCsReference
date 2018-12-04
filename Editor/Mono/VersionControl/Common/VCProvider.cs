@@ -2,7 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEngine;
+
 namespace UnityEditor.VersionControl
 {
     [System.Flags]
@@ -92,27 +94,122 @@ namespace UnityEditor.VersionControl
             return Internal_CheckoutIsValid(assets.ToArray(), mode);
         }
 
-        static public Task Checkout(AssetList assets, CheckoutMode mode)
+        //Returns null except where there is an error
+        static private Task CheckAndCreateUserSuppliedChangeSet(string changesetID, string description, ref ChangeSet changeset)
         {
-            return Internal_Checkout(assets.ToArray(), mode);
-        }
-
-        static public Task Checkout(string[] assets, CheckoutMode mode)
-        {
-            return Internal_CheckoutStrings(assets, mode);
-        }
-
-        static public Task Checkout(UnityEngine.Object[] assets, CheckoutMode mode)
-        {
-            AssetList assetList = new AssetList();
-            foreach (Object o in assets)
+            //Options here:
+            // ID is default and description is null - use default
+            // ID is not default and description is null - use an existing changeset if changesets are supported
+            // ID is default but description is not null - create a new changeset if changesets are supported
+            // ID is not default and description is not null - This *should* rename an existing changeset to be consistent, but the current plugin doesn't implement this. Throw back an error
+            if (string.IsNullOrEmpty(description))
             {
-                string path = AssetDatabase.GetAssetPath(o);
-                Asset asset = GetAssetByPath(path);
+                if (changesetID == ChangeSet.defaultID)
+                    //Checkout to default changeset
+                    changeset = null;
+                else
+                {
+                    //Check that the changeset exists
+                    var task = VerifyChangesetID(changesetID);
+                    if (task != null)
+                        return task;
+                    changeset = new ChangeSet(description, changesetID);
+                }
+            }
+            else
+            {
+                if (changesetID == ChangeSet.defaultID)
+                {
+                    //Description is not null but no changeset ID set - create a new changeset unless the VCS provider does not support changesets
+                    if (hasChangelistSupport == false)
+                        return Internal_ErrorTask(
+                            "User-created pre-checkout callback has set a changeset description but the VCS provider does not support changesets");
+
+                    var createChangeSetTask = Internal_Submit(null, null, description, true);
+                    createChangeSetTask.Wait();
+                    if (createChangeSetTask.success == false)
+                        return createChangeSetTask;
+
+                    var changesetsTask = ChangeSets();
+                    changesetsTask.Wait();
+                    if (changesetsTask.success == false)
+                        return changesetsTask;
+
+                    changeset = new ChangeSet();
+                    foreach (var queriedChangeset in changesetsTask.changeSets)
+                    {
+                        //Assuming here that changeset IDs are incremental
+                        if (System.Convert.ToInt64(queriedChangeset.id) > System.Convert.ToInt64(changeset.id))
+                            changeset = new ChangeSet(description, queriedChangeset.id);
+                    }
+                }
+                else
+                    //Description and changeset ID are set - this should rename but this is not currently supported
+                    return Internal_ErrorTask("User-created pre-checkout callback has set both a changeset ID and a changeset Description. This is not currently supported.");
+            }
+            return null;
+        }
+
+        static internal AssetList ConsolidateAssetList(AssetList assets, CheckoutMode mode)
+        {
+            var consolidatedAssetArray = Internal_ConsolidateAssetList(assets.ToArray(), mode);
+            var consolidatedAssetList = new AssetList();
+            consolidatedAssetList.AddRange(consolidatedAssetArray);
+            return consolidatedAssetList;
+        }
+
+        static private Task CheckCallbackAndCheckout(AssetList assets, CheckoutMode mode, ChangeSet changeset)
+        {
+            var consolidatedAssetList = assets;
+            if (preCheckoutCallback != null)
+            {
+                consolidatedAssetList = ConsolidateAssetList(assets, mode);
+                mode = CheckoutMode.Exact;
+                var changesetID = changeset == null ? ChangeSet.defaultID : changeset.id;
+                string changesetDescription = null;
+                try
+                {
+                    if (preCheckoutCallback(consolidatedAssetList, ref changesetID, ref changesetDescription) == false)
+                        return Internal_WarningTask("User-created pre-checkout callback has blocked this checkout.");
+                }
+                catch (System.Exception ex)
+                {
+                    return Internal_ErrorTask("User-created pre-checkout callback has raised an exception and this checkout will be blocked. Exception Message: " + ex.Message);
+                }
+
+                var changesetTask = CheckAndCreateUserSuppliedChangeSet(changesetID, changesetDescription, ref changeset);
+                if (changesetTask != null)
+                    return changesetTask;
+            }
+            return Internal_Checkout(consolidatedAssetList.ToArray(), mode, changeset);
+        }
+
+        static public Task Checkout(AssetList assets, CheckoutMode mode, ChangeSet changeset = null)
+        {
+            return CheckCallbackAndCheckout(assets, mode, changeset);
+        }
+
+        static public Task Checkout(string[] assets, CheckoutMode mode, ChangeSet changeset = null)
+        {
+            var assetList = new AssetList();
+            foreach (var path in assets)
+            {
+                var asset = GetAssetByPath(path);
                 assetList.Add(asset);
             }
 
-            return Internal_Checkout(assetList.ToArray(), mode);
+            return CheckCallbackAndCheckout(assetList, mode, changeset);
+        }
+
+        static public Task Checkout(Object[] assets, CheckoutMode mode, ChangeSet changeset = null)
+        {
+            var assetList = new AssetList();
+            foreach (var o in assets)
+            {
+                assetList.Add(GetAssetByPath(AssetDatabase.GetAssetPath(o)));
+            }
+
+            return CheckCallbackAndCheckout(assetList, mode, changeset);
         }
 
         static public bool CheckoutIsValid(Asset asset)
@@ -125,27 +222,70 @@ namespace UnityEditor.VersionControl
             return Internal_CheckoutIsValid(new Asset[] { asset }, mode);
         }
 
-        static public Task Checkout(Asset asset, CheckoutMode mode)
+        static public Task Checkout(Asset asset, CheckoutMode mode, ChangeSet changeset = null)
         {
-            return Internal_Checkout(new Asset[] { asset }, mode);
+            var assetList = new AssetList();
+            assetList.Add(asset);
+
+            return CheckCallbackAndCheckout(assetList, mode, changeset);
         }
 
-        static public Task Checkout(string asset, CheckoutMode mode)
+        static public Task Checkout(string asset, CheckoutMode mode, ChangeSet changeset = null)
         {
-            return Internal_CheckoutStrings(new string[] { asset }, mode);
+            var assetList = new AssetList();
+            assetList.Add(GetAssetByPath(asset));
+
+            return CheckCallbackAndCheckout(assetList, mode, changeset);
         }
 
-        static public Task Checkout(UnityEngine.Object asset, CheckoutMode mode)
+        static public Task Checkout(UnityEngine.Object asset, CheckoutMode mode, ChangeSet changeset = null)
         {
-            string path = AssetDatabase.GetAssetPath(asset);
-            Asset vcasset = GetAssetByPath(path);
-            return Internal_Checkout(new Asset[] { vcasset }, mode);
+            var path = AssetDatabase.GetAssetPath(asset);
+            var vcasset = GetAssetByPath(path);
+
+            var assetList = new AssetList();
+            assetList.Add(vcasset);
+
+            return CheckCallbackAndCheckout(assetList, mode, changeset);
         }
 
         //*Undocumented
-        static internal bool PromptAndCheckoutIfNeeded(string[] assets, string promptIfCheckoutIsNeeded)
+        static internal bool PromptAndCheckoutIfNeeded(string[] assets, string promptIfCheckoutIsNeeded, ChangeSet changeset = null)
         {
-            return Internal_PromptAndCheckoutIfNeeded(assets, promptIfCheckoutIsNeeded);
+            var assetList = new AssetList();
+            foreach (var path in assets)
+            {
+                var asset = GetAssetByPath(path);
+                assetList.Add(asset);
+            }
+
+            if (preCheckoutCallback != null)
+            {
+                var changesetID = changeset == null ? ChangeSet.defaultID : changeset.id;
+                string changesetDescription = null;
+                if (preCheckoutCallback(assetList, ref changesetID, ref changesetDescription) == true)
+                {
+                    var changesetTask = CheckAndCreateUserSuppliedChangeSet(changesetID, changesetDescription, ref changeset);
+                    if (changesetTask != null)
+                    {
+                        Debug.LogError("Tried to create/rename remote ChangeSet to match the one specified in user-supplied callback but failed with error code: " + changesetTask.resultCode.ToString());
+                        return false;
+                    }
+                    var newAssets = new List<string>();
+                    foreach (var asset in assetList)
+                    {
+                        newAssets.Add(asset.path);
+                    }
+                    assets = newAssets.ToArray();
+                }
+                else
+                {
+                    Debug.LogWarning("User-created pre-checkout callback has blocked this checkout.");
+                    return false;
+                }
+            }
+
+            return Internal_PromptAndCheckoutIfNeeded(assets, promptIfCheckoutIsNeeded, changeset);
         }
 
         static public Task Delete(string assetProjectPath)
@@ -198,15 +338,63 @@ namespace UnityEditor.VersionControl
             return Internal_SubmitIsValid(changeset, assets != null ? assets.ToArray() : null);
         }
 
+        private static Task VerifyChangesetID(string changesetID)
+        {
+            var changesetsTask = ChangeSets();
+            changesetsTask.Wait();
+            if (changesetsTask.success == false)
+            {
+                Debug.LogError(string.Format("Tried to validate user-supplied changeset ID {0} but Provider.ChangeSets task failed. See returned Task for details.", changesetID));
+                return changesetsTask;
+            }
+            var idIsValid = false;
+            foreach (var changesetToCheck in changesetsTask.changeSets)
+            {
+                if (changesetToCheck.id == changesetID)
+                {
+                    idIsValid = true;
+                    break;
+                }
+            }
+            if (idIsValid == false)
+                return Internal_ErrorTask(string.Format("The supplied changeset ID '{0}' did not match any known outgoing changesets. Aborting Task.", changesetID));
+
+            return null;
+        }
+
         static public Task Submit(ChangeSet changeset, AssetList list, string description, bool saveOnly)
         {
+            if (preSubmitCallback != null)
+            {
+                var changesetID = changeset == null ? ChangeSet.defaultID : changeset.id;
+                try
+                {
+                    if (preSubmitCallback(list, ref changesetID, ref description) == false)
+                        return Internal_WarningTask("User-created pre-submit callback has blocked this changeset submission.");
+                }
+                catch (System.Exception ex)
+                {
+                    return Internal_ErrorTask("User-created pre-submit callback has raised an exception and this submission will be blocked. Exception Message: " + ex.Message);
+                }
+
+                if (changesetID == ChangeSet.defaultID)
+                    changeset = null;
+                else
+                {
+                    //Check that the changeset exists
+                    var task = VerifyChangesetID(changesetID);
+                    if (task != null)
+                        return task;
+                    changeset = new ChangeSet(description, changesetID);
+                }
+            }
+
             return Internal_Submit(changeset, list != null ? list.ToArray() : null, description, saveOnly);
         }
 
         static public bool DiffIsValid(AssetList assets)
         {
-            Asset[] a = assets.ToArray();
-            return Internal_DiffIsValid(a);
+            return Internal_DiffIsValid(assets.ToArray());
         }
 
         static public Task DiffHead(AssetList assets, bool includingMetaFiles)
@@ -216,8 +404,7 @@ namespace UnityEditor.VersionControl
 
         static public bool ResolveIsValid(AssetList assets)
         {
-            Asset[] a = assets.ToArray();
-            return Internal_ResolveIsValid(a);
+            return Internal_ResolveIsValid(assets.ToArray());
         }
 
         static public Task Resolve(AssetList assets, ResolveMethod resolveMethod)
@@ -361,14 +548,18 @@ namespace UnityEditor.VersionControl
 
         static public AssetList GetAssetListFromSelection()
         {
-            AssetList list = new AssetList();
-            Asset[] assets = Internal_GetAssetArrayFromSelection();
-            foreach (Asset asset in assets)
+            var list = new AssetList();
+            foreach (var asset in Internal_GetAssetArrayFromSelection())
             {
                 list.Add(asset);
             }
 
             return list;
         }
+
+        public delegate bool PreSubmitCallback(AssetList list, ref string changesetID, ref string changesetDescription);
+        static public PreSubmitCallback preSubmitCallback;
+        public delegate bool PreCheckoutCallback(AssetList list, ref string changesetID, ref string changesetDescription);
+        static public PreCheckoutCallback preCheckoutCallback;
     }
 }

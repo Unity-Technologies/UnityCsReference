@@ -72,7 +72,10 @@ namespace UnityEngine.UIElements
     {
         protected internal override void PreDispatch()
         {
-            focusController.DoFocusChange(relatedTarget);
+            if (relatedTarget == null)
+            {
+                focusController.DoFocusChange(null);
+            }
         }
     }
 

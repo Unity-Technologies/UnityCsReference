@@ -9,6 +9,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System;
+using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 
 namespace UnityEditor.Modules
 {
@@ -225,11 +226,7 @@ namespace UnityEditor.Modules
 
         private int EditCompressionQuality(BuildTarget target, int compression, bool isCrunchedFormat)
         {
-            bool showAsEnum = !isCrunchedFormat && (
-                target == BuildTarget.iOS ||
-                target == BuildTarget.tvOS ||
-                target == BuildTarget.Android
-            );
+            bool showAsEnum = !isCrunchedFormat && (BuildTargetDiscovery.PlatformHasFlag(target, TargetAttributes.HasIntegratedGPU));
 
             if (showAsEnum)
             {

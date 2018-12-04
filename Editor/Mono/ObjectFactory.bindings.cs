@@ -126,13 +126,11 @@ namespace UnityEditor
                     break;
                 case PrimitiveType.Capsule:
                     go.GetComponent<MeshFilter>().sharedMesh = Resources.GetBuiltinResource<Mesh>("New-Capsule.fbx");
-                    var capsule = AddComponent<CapsuleCollider>(go);
-                    capsule.height = 2f;
+                    AddComponent<CapsuleCollider>(go);
                     break;
                 case PrimitiveType.Cylinder:
                     go.GetComponent<MeshFilter>().sharedMesh = Resources.GetBuiltinResource<Mesh>("New-Cylinder.fbx");
-                    var cylinder = AddComponent<CapsuleCollider>(go);
-                    cylinder.height = 2f;
+                    AddComponent<CapsuleCollider>(go);
                     break;
                 case PrimitiveType.Cube:
                     go.GetComponent<MeshFilter>().sharedMesh = Resources.GetBuiltinResource<Mesh>("Cube.fbx");
@@ -150,7 +148,6 @@ namespace UnityEditor
 
             var renderer = go.GetComponent<Renderer>();
             renderer.material = Material.GetDefaultMaterial();
-            //go->GetComponent<Renderer>().SetPreserveUVs(true);
             go.SetActive(true);
             return go;
         }

@@ -34,6 +34,8 @@ namespace UnityEditor.UIElements
         }
 
         public new static readonly string ussClassName = "unity-bounds-field";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
         public static readonly string centerFieldUssClassName = ussClassName + "__center-field";
         public static readonly string extentsFieldUssClassName = ussClassName + "__extents-field";
 
@@ -46,7 +48,11 @@ namespace UnityEditor.UIElements
         public BoundsField(string label)
             : base(label, null)
         {
+            visualInput.focusable = false;
+
             AddToClassList(ussClassName);
+            visualInput.AddToClassList(inputUssClassName);
+            labelElement.AddToClassList(labelUssClassName);
 
             m_CenterField = new Vector3Field("Center");
             m_CenterField.AddToClassList(centerFieldUssClassName);
@@ -68,17 +74,6 @@ namespace UnityEditor.UIElements
                 value = current;
             });
             visualInput.hierarchy.Add(m_ExtentsField);
-        }
-
-        protected internal override void ExecuteDefaultAction(EventBase evt)
-        {
-            base.ExecuteDefaultAction(evt);
-
-            // Focus first field if any
-            if (evt?.eventTypeId == FocusEvent.TypeId())
-            {
-                m_CenterField.Focus();
-            }
         }
 
         public override void SetValueWithoutNotify(Bounds newValue)

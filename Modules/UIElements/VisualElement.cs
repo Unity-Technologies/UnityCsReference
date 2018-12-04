@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine.Yoga;
 using UnityEngine.UIElements.StyleSheets;
+using PropertyBagValue = System.Collections.Generic.KeyValuePair<UnityEngine.PropertyName, object>;
 
 namespace UnityEngine.UIElements
 {
@@ -111,14 +112,19 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal bool isCompositeRoot { get; /*protected*/ set; }
+
         private static uint s_NextId;
 
         private static List<string> s_EmptyClassList = new List<string>(0);
+
+        internal static readonly PropertyName userDataPropertyKey = new PropertyName("--unity-user-data");
 
         string m_Name;
         List<string> m_ClassList;
         string m_TypeName;
         string m_FullTypeName;
+        private List<PropertyBagValue> m_PropertyBag;
 
         // Used for view data persistence (ie. scroll position or tree view expanded states)
         private string m_ViewDataKey;
@@ -146,20 +152,46 @@ namespace UnityEngine.UIElements
         // the VisualTreeViewDataUpdater traverses the visual tree.
         internal bool enableViewDataPersistence { get; private set; }
 
-        public object userData { get; set; }
+        public object userData
+        {
+            get { return GetPropertyInternal(userDataPropertyKey); }
+            set { SetPropertyInternal(userDataPropertyKey, value); }
+        }
 
-        public override bool canGrabFocus { get { return visible && enabledInHierarchy && base.canGrabFocus; } }
+        public override bool canGrabFocus
+        {
+            get
+            {
+                bool focusDisabledOnComposite = false;
+                VisualElement p = hierarchy.parent;
+                while (p != null)
+                {
+                    if (p.isCompositeRoot)
+                    {
+                        focusDisabledOnComposite |= !p.canGrabFocus;
+                        break;
+                    }
+                    p = p.parent;
+                }
+
+                return !focusDisabledOnComposite && visible && (resolvedStyle.display != DisplayStyle.None) && enabledInHierarchy && base.canGrabFocus;
+            }
+        }
 
         public override FocusController focusController
         {
             get { return panel?.focusController; }
         }
 
+        internal RenderHint renderHint { get; set; }
+
         private RenderData m_RenderData;
         internal RenderData renderData
         {
             get { return m_RenderData ?? (m_RenderData = new RenderData()); }
         }
+
+        internal UIRenderData uiRenderData;
 
         Vector3 m_Position = Vector3.zero;
         Quaternion m_Rotation = Quaternion.identity;
@@ -587,6 +619,8 @@ namespace UnityEngine.UIElements
 
             name = string.Empty;
             yogaNode = new YogaNode();
+
+            renderHint = RenderHint.None;
         }
 
         protected internal override void ExecuteDefaultAction(EventBase evt)
@@ -789,8 +823,9 @@ namespace UnityEngine.UIElements
             }
             var stylePainter = (IStylePainterInternal)painter;
             stylePainter.DrawBackground();
-            DoRepaint(stylePainter);
             stylePainter.DrawBorder();
+            stylePainter.ApplyClipping();
+            DoRepaint(stylePainter);
         }
 
         internal virtual void DoRepaint(IStylePainter painter)
@@ -1145,6 +1180,66 @@ namespace UnityEngine.UIElements
             }
 
             return null;
+        }
+
+        internal object GetProperty(PropertyName key)
+        {
+            CheckUserKeyArgument(key);
+            return GetPropertyInternal(key);
+        }
+
+        internal void SetProperty(PropertyName key, object value)
+        {
+            CheckUserKeyArgument(key);
+            SetPropertyInternal(key, value);
+        }
+
+        object GetPropertyInternal(PropertyName key)
+        {
+            if (m_PropertyBag != null)
+            {
+                for (int i = 0; i < m_PropertyBag.Count; ++i)
+                {
+                    if (m_PropertyBag[i].Key == key)
+                    {
+                        return m_PropertyBag[i].Value;
+                    }
+                }
+            }
+            return null;
+        }
+
+        static void CheckUserKeyArgument(PropertyName key)
+        {
+            if (PropertyName.IsNullOrEmpty(key))
+                throw new ArgumentNullException(nameof(key));
+
+            if (key == userDataPropertyKey)
+                throw new InvalidOperationException($"The {userDataPropertyKey} key is reserved by the system");
+        }
+
+        void SetPropertyInternal(PropertyName key, object value)
+        {
+            var kv = new PropertyBagValue(key, value);
+
+            if (m_PropertyBag == null)
+            {
+                m_PropertyBag = new List<PropertyBagValue>(1);
+                m_PropertyBag.Add(kv);
+            }
+            else
+            {
+                for (int i = 0; i < m_PropertyBag.Count; ++i)
+                {
+                    if (m_PropertyBag[i].Key == key)
+                    {
+                        m_PropertyBag[i] = kv;
+                        return;
+                    }
+                }
+                ++m_PropertyBag.Capacity;
+                m_PropertyBag.Add(kv);
+            }
         }
 
         private void UpdateCursorStyle(long eventType)

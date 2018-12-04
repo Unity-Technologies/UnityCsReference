@@ -60,6 +60,15 @@ namespace UnityEngine
         extern public uint updateCount { get; }
         extern public void IncrementUpdateCount();
 
+        [NativeMethod("GetActiveTextureColorSpace")]
+        extern private int Internal_GetActiveTextureColorSpace();
+
+        internal ColorSpace activeTextureColorSpace
+        {
+            [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+            get { return Internal_GetActiveTextureColorSpace() == 0 ? ColorSpace.Linear : ColorSpace.Gamma; }
+        }
+
         extern public Hash128 imageContentsHash { get; set; }
 
         extern public static ulong totalTextureMemory
@@ -287,6 +296,7 @@ namespace UnityEngine
 
         extern public bool alphaIsTransparency { get; set; }
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         extern internal float pixelsPerPoint { get; set; }
     }
 

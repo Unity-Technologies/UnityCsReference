@@ -144,6 +144,9 @@ namespace UnityEngine.UIElements
         internal const float kDefaultHighValue = 10;
 
         public new static readonly string ussClassName = "unity-min-max-slider";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
+
         public static readonly string trackerUssClassName = ussClassName + "__tracker";
         public static readonly string draggerUssClassName = ussClassName + "__dragger";
         public static readonly string minThumbUssClassName = ussClassName + "__min-thumb";
@@ -163,6 +166,9 @@ namespace UnityEngine.UIElements
             this.minValue = minValue;
             this.maxValue = maxValue;
             AddToClassList(ussClassName);
+            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
+
             pickingMode = PickingMode.Ignore;
 
             m_DragState = DragState.NoThumb;

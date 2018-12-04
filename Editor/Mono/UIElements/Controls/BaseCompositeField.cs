@@ -30,38 +30,6 @@ namespace UnityEditor.UIElements
             }
         }
 
-        public override bool focusable
-        {
-            get { return base.focusable; }
-            set
-            {
-                base.focusable = value;
-                if ((m_Fields != null) && (m_Fields.Count > 0))
-                {
-                    foreach (var field in m_Fields)
-                    {
-                        field.focusable = focusable;
-                    }
-                }
-            }
-        }
-
-        public override int tabIndex
-        {
-            get { return base.tabIndex; }
-            set
-            {
-                base.tabIndex = value;
-                if ((m_Fields != null) && (m_Fields.Count > 0))
-                {
-                    foreach (var field in m_Fields)
-                    {
-                        field.tabIndex = value;
-                    }
-                }
-            }
-        }
-
         private VisualElement GetSpacer()
         {
             var spacer = new VisualElement();
@@ -78,6 +46,9 @@ namespace UnityEditor.UIElements
         bool m_ShouldUpdateDisplay;
 
         public new static readonly string ussClassName = "unity-composite-field";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
+
         public static readonly string spacerUssClassName = ussClassName + "__field-spacer";
         public static readonly string multilineVariantUssClassName = ussClassName + "--multi-line";
         public static readonly string fieldGroupUssClassName = ussClassName + "__field-group";
@@ -88,7 +59,12 @@ namespace UnityEditor.UIElements
         protected BaseCompositeField(string label, int fieldsByLine)
             : base(label, null)
         {
+            visualInput.focusable = false;
+
             AddToClassList(ussClassName);
+            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
+
             m_ShouldUpdateDisplay = true;
             m_Fields = new List<TField>();
             FieldDescription[] fieldDescriptions = DescribeFields();
@@ -123,6 +99,7 @@ namespace UnityEditor.UIElements
                     {
                         name = desc.ussName
                     };
+                    field.delegatesFocus = true;
                     field.AddToClassList(fieldUssClassName);
                     if (firstField)
                     {
@@ -209,15 +186,6 @@ namespace UnityEditor.UIElements
             {
                 UpdateDisplay();
             }
-        }
-
-        protected internal override void ExecuteDefaultAction(EventBase evt)
-        {
-            base.ExecuteDefaultAction(evt);
-
-            // Focus first field if any
-            if (evt?.eventTypeId == FocusEvent.TypeId() && m_Fields.Count > 0)
-                m_Fields[0].Focus();
         }
     }
 }

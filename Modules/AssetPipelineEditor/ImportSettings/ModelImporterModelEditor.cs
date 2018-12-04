@@ -197,7 +197,13 @@ namespace UnityEditor
             {
                 using (var propertyField = new EditorGUI.PropertyScope(horizontalScope.rect, Styles.UseFileScale, m_UseFileScale))
                 {
-                    m_UseFileScale.boolValue = EditorGUILayout.Toggle(propertyField.content, m_UseFileScale.boolValue);
+                    EditorGUI.showMixedValue = m_UseFileScale.hasMultipleDifferentValues;
+                    using (var changed = new EditorGUI.ChangeCheckScope())
+                    {
+                        var result = EditorGUILayout.Toggle(propertyField.content, m_UseFileScale.boolValue);
+                        if (changed.changed)
+                            m_UseFileScale.boolValue = result;
+                    }
                     // Put the unit convertion description on a second line if the Inspector is too small.
                     if (!EditorGUIUtility.wideMode)
                     {
@@ -300,19 +306,16 @@ namespace UnityEditor
                 {
                     using (var property = new EditorGUI.PropertyScope(horizontal.rect, Styles.RecalculateNormalsLabel, m_NormalCalculationMode))
                     {
-                        EditorGUI.BeginChangeCheck();
-                        var newValue = (int)(ModelImporterNormalCalculationMode)EditorGUILayout.EnumPopup(property.content, (ModelImporterNormalCalculationMode)m_NormalCalculationMode.intValue);
-                        if (EditorGUI.EndChangeCheck())
-                        {
-                            m_NormalCalculationMode.intValue = newValue;
-                        }
+                        m_NormalCalculationMode.intValue = (int)(ModelImporterNormalCalculationMode)EditorGUILayout.EnumPopup(property.content, (ModelImporterNormalCalculationMode)m_NormalCalculationMode.intValue);
                     }
                 }
 
                 // Normal smoothness
                 if (!m_LegacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes.boolValue)
                 {
-                    m_NormalSmoothingSource.intValue = (int)(ModelImporterNormalSmoothingSource)EditorGUILayout.EnumPopup(Styles.NormalSmoothingSourceLabel, (ModelImporterNormalSmoothingSource)m_NormalSmoothingSource.intValue);
+                    using (var horizontal = new EditorGUILayout.HorizontalScope())
+                    using (var property = new EditorGUI.PropertyScope(horizontal.rect, Styles.NormalSmoothingSourceLabel, m_NormalSmoothingSource))
+                        m_NormalSmoothingSource.intValue = (int)(ModelImporterNormalSmoothingSource)EditorGUILayout.EnumPopup(property.content, (ModelImporterNormalSmoothingSource)m_NormalSmoothingSource.intValue);
                 }
 
                 // Normal split angle

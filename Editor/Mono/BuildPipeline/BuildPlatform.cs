@@ -73,12 +73,12 @@ namespace UnityEditor.Build
             {
                 if (!target.HasFlag(TargetAttributes.IsStandalonePlatform))
                 {
-                    BuildTargetGroup btg = BuildPipeline.GetBuildTargetGroup(target.buildTgtPlatformVal);
+                    BuildTargetGroup btg = BuildPipeline.GetBuildTargetGroup(target.buildTargetPlatformVal);
                     buildPlatformsList.Add(new BuildPlatform(
                         BuildPipeline.GetBuildTargetGroupDisplayName(btg),
                         target.iconName,
                         btg,
-                        target.buildTgtPlatformVal,
+                        target.buildTargetPlatformVal,
                         !target.HasFlag(TargetAttributes.HideInUI)));
                 }
             }

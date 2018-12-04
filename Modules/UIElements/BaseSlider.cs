@@ -121,6 +121,9 @@ namespace UnityEngine.UIElements
         internal const float kDefaultPageSize = 0.0f;
 
         public new static readonly string ussClassName = "unity-base-slider";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
+
         public static readonly string horizontalVariantUssClassName = ussClassName + "--horizontal";
         public static readonly string verticalVariantUssClassName = ussClassName + "--vertical";
         public static readonly string trackerUssClassName = ussClassName + "__tracker";
@@ -130,6 +133,8 @@ namespace UnityEngine.UIElements
             : base(label, null)
         {
             AddToClassList(ussClassName);
+            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
 
             this.direction = direction;
             this.pageSize = pageSize;

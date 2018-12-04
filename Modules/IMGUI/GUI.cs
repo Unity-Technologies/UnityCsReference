@@ -1834,5 +1834,30 @@ namespace UnityEngine
                 GUI.color = m_PreviousColor;
             }
         }
+
+        internal struct BackgroundColorScope : IDisposable
+        {
+            private bool m_Disposed;
+            private Color m_PreviousColor;
+
+            public BackgroundColorScope(Color newColor)
+            {
+                m_Disposed = false;
+                m_PreviousColor = GUI.backgroundColor;
+                GUI.backgroundColor = newColor;
+            }
+
+            public BackgroundColorScope(float r, float g, float b, float a = 1.0f) : this(new Color(r, g, b, a))
+            {
+            }
+
+            public void Dispose()
+            {
+                if (m_Disposed)
+                    return;
+                m_Disposed = true;
+                GUI.backgroundColor = m_PreviousColor;
+            }
+        }
     }
 }

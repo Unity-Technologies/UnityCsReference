@@ -54,6 +54,9 @@ namespace UnityEngine.UIElements
         internal const int kMaxLengthNone = -1;
 
         public new static readonly string ussClassName = "unity-base-text-field";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
+
         public static readonly string textInputUssName = "unity-text-input";
 
         public string text
@@ -62,32 +65,6 @@ namespace UnityEngine.UIElements
             protected set
             {
                 m_TextInputBase.text = value;
-            }
-        }
-
-        public override bool focusable
-        {
-            get { return base.focusable; }
-            set
-            {
-                base.focusable = value;
-                if (textInputBase != null)
-                {
-                    textInputBase.focusable = value;
-                }
-            }
-        }
-
-        public override int tabIndex
-        {
-            get { return base.tabIndex; }
-            set
-            {
-                base.tabIndex = value;
-                if (textInputBase != null)
-                {
-                    textInputBase.tabIndex = value;
-                }
             }
         }
 
@@ -159,6 +136,9 @@ namespace UnityEngine.UIElements
             : base(label, textInputBase)
         {
             AddToClassList(ussClassName);
+            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
+
             m_TextInputBase = textInputBase;
             m_TextInputBase.maxLength = maxLength;
             m_TextInputBase.maskChar = maskChar;
@@ -225,7 +205,7 @@ namespace UnityEngine.UIElements
 
             internal bool hasFocus
             {
-                get { return elementPanel != null && elementPanel.focusController.focusedElement == this; }
+                get { return elementPanel != null && elementPanel.focusController.GetLeafFocusedElement() == this; }
             }
 
             /* internal for VisualTree tests */
@@ -247,12 +227,15 @@ namespace UnityEngine.UIElements
 
                     m_Text = value;
                     editorEngine.text = value;
-                    IncrementVersion(VersionChangeType.Layout);
+                    IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
                 }
             }
 
             internal TextInputBase()
             {
+                focusable = true;
+
+                AddToClassList(inputUssClassName);
                 m_Text = string.Empty;
                 name = TextField.textInputUssName;
 

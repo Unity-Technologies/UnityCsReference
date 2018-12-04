@@ -39,6 +39,8 @@ namespace UnityEditorInternal
 
                 if (animationCurve.keys.Length == 0)
                     animationCurve = null;
+                else
+                    AnimationUtility.UpdateTangentsFromMode(animationCurve);
 
                 AnimationUtility.SetEditorCurve(clip, curve.binding, animationCurve);
             }
@@ -66,6 +68,8 @@ namespace UnityEditorInternal
 
                     if (animationCurve.keys.Length == 0)
                         animationCurve = null;
+                    else
+                        AnimationUtility.UpdateTangentsFromMode(animationCurve);
 
                     AnimationUtility.SetEditorCurveNoSync(clip, curve.binding, animationCurve);
                 }

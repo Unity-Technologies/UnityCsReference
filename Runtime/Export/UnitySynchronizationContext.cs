@@ -4,7 +4,6 @@
 
 using System.Threading;
 using System.Collections.Generic;
-using UnityEngine.Assertions;
 using UnityEngine.Scripting;
 
 namespace UnityEngine
@@ -13,6 +12,7 @@ namespace UnityEngine
     {
         private const int kAwqInitialCapacity = 20;
         private readonly Queue<WorkRequest> m_AsyncWorkQueue;
+        private readonly List<WorkRequest> m_CurrentFrameWork = new List<WorkRequest>(kAwqInitialCapacity);
         private readonly int m_MainThreadID;
 
         private UnitySynchronizationContext(int mainThreadID)
@@ -69,13 +69,14 @@ namespace UnityEngine
         {
             lock (m_AsyncWorkQueue)
             {
-                var workCount = m_AsyncWorkQueue.Count;
-                for (int i = 0; i < workCount; i++)
-                {
-                    var work = m_AsyncWorkQueue.Dequeue();
-                    work.Invoke();
-                }
+                m_CurrentFrameWork.AddRange(m_AsyncWorkQueue);
+                m_AsyncWorkQueue.Clear();
             }
+
+            foreach (var work in m_CurrentFrameWork)
+                work.Invoke();
+
+            m_CurrentFrameWork.Clear();
         }
 
         // SynchronizationContext must be set before any user code is executed. This is done on

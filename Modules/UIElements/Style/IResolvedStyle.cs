@@ -40,6 +40,7 @@ namespace UnityEngine.UIElements
         Color borderColor { get; }
         Font unityFont { get; }
         ScaleMode unityBackgroundScaleMode { get; }
+        Color unityBackgroundImageTintColor { get; }
         Align alignItems { get; }
         Align alignContent { get; }
         Justify justifyContent { get; }

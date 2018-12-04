@@ -21,18 +21,18 @@ namespace UnityEditor
     {
         internal class Styles
         {
-            public static readonly GUIContent name = EditorGUIUtility.TrTextContent("Name");
+            public static readonly GUIContent name = EditorGUIUtility.TrTextContent("Name", "The assembly name is used to generate a <name>.dll file on you disk.");
             public static readonly GUIContent unityReferences = EditorGUIUtility.TrTextContent("Unity References");
-            public static readonly GUIContent defineConstraints = EditorGUIUtility.TrTextContent("Define Constraints");
-            public static readonly GUIContent versionDefines = EditorGUIUtility.TrTextContent("Version Defines");
-            public static readonly GUIContent references = EditorGUIUtility.TrTextContent("Assembly Definition References");
-            public static readonly GUIContent precompiledReferences = EditorGUIUtility.TrTextContent("Assembly References");
+            public static readonly GUIContent defineConstraints = EditorGUIUtility.TrTextContent("Define Constraints", "Specify a constraint in the assembly definition. The assembly definition only builds if this constraint returns True.");
+            public static readonly GUIContent versionDefines = EditorGUIUtility.TrTextContent("Version Defines", "Specify which versions of a packages and modules to include in compilations.");
+            public static readonly GUIContent references = EditorGUIUtility.TrTextContent("Assembly Definition References", "The list of assembly files that this assembly definition should reference.");
+            public static readonly GUIContent precompiledReferences = EditorGUIUtility.TrTextContent("Assembly References", "The list of Precompiled assemblies that this assembly definition should reference.");
             public static readonly GUIContent generalOptions = EditorGUIUtility.TrTextContent("General");
-            public static readonly GUIContent allowUnsafeCode = EditorGUIUtility.TrTextContent("Allow 'unsafe' Code");
-            public static readonly GUIContent overrideReferences = EditorGUIUtility.TrTextContent("Override References");
+            public static readonly GUIContent allowUnsafeCode = EditorGUIUtility.TrTextContent("Allow 'unsafe' Code", "When enabled, the C# compiler for this assembly includes types or members that have the `unsafe` keyword.");
+            public static readonly GUIContent overrideReferences = EditorGUIUtility.TrTextContent("Override References", "When enabled, you can select which specific precompiled assemblies to refer to via a drop-down list that appears. When not enabled, this assembly definition refers to all auto-referenced precompiled assemblies.");
+            public static readonly GUIContent autoReferenced = EditorGUIUtility.TrTextContent("Auto Referenced", "When enabled, this assembly definition is automatically referenced in predefined assemblies.");
             public static readonly GUIContent useGUIDs = EditorGUIUtility.TrTextContent("Use GUIDs", "Use GUIDs instead of assembly names for Assembly Definition References. Allows referenced assemblies to be renamed without having to update references.");
-            public static readonly GUIContent autoReferenced = EditorGUIUtility.TrTextContent("Auto Referenced");
-            public static readonly GUIContent platforms = EditorGUIUtility.TrTextContent("Platforms");
+            public static readonly GUIContent platforms = EditorGUIUtility.TrTextContent("Platforms", "Select which platforms include or exclude in the build that this assembly definition file is for.");
             public static readonly GUIContent anyPlatform = EditorGUIUtility.TrTextContent("Any Platform");
             public static readonly GUIContent includePlatforms = EditorGUIUtility.TrTextContent("Include Platforms");
             public static readonly GUIContent excludePlatforms = EditorGUIUtility.TrTextContent("Exclude Platforms");
@@ -41,6 +41,7 @@ namespace UnityEditor
             public static readonly GUIContent apply = EditorGUIUtility.TrTextContent("Apply");
             public static readonly GUIContent revert = EditorGUIUtility.TrTextContent("Revert");
             public static readonly GUIContent loadError = EditorGUIUtility.TrTextContent("Load error");
+            public static readonly GUIContent expressionOutcome = EditorGUIUtility.TrTextContent("Expression outcome", "Shows the mathematical equation that your Expression represents.");
         }
 
         GUIStyle m_TextStyle;
@@ -214,7 +215,7 @@ namespace UnityEditor
                 EditorGUILayout.BeginVertical(GUI.skin.box);
                 for (int i = 0; i < optionalUnityReferences.Length; ++i)
                 {
-                    m_State.optionalUnityReferences[i] = ToggleWithMixedValue(new GUIContent(optionalUnityReferences[i].DisplayName), m_State.optionalUnityReferences[i]);
+                    m_State.optionalUnityReferences[i] = ToggleWithMixedValue(new GUIContent(optionalUnityReferences[i].DisplayName, optionalUnityReferences[i].Tooltip), m_State.optionalUnityReferences[i]);
 
                     if (m_State.optionalUnityReferences[i] == MixedBool.True)
                     {
@@ -683,14 +684,14 @@ namespace UnityEditor
 
             var elementRect = new Rect(rect);
             elementRect.height = EditorGUIUtility.singleLineHeight;
-            int popupIndex = EditorGUI.Popup(elementRect, "Resource", indexOfSelected, assetPathsMetaData.ToArray());
+            int popupIndex = EditorGUI.Popup(elementRect, GUIContent.Temp("Resource", "Select the package or module that you want to set a define for."), indexOfSelected, assetPathsMetaData.ToArray());
             versionDefine.name = assetPathsMetaData[popupIndex];
 
             elementRect.y += EditorGUIUtility.singleLineHeight;
-            versionDefine.define = EditorGUI.TextField(elementRect, "Define", versionDefine.define);
+            versionDefine.define = EditorGUI.TextField(elementRect,  GUIContent.Temp("Define", "Specify the name you want this define to have. This define is only set if the expression below returns true."), versionDefine.define);
 
             elementRect.y += EditorGUIUtility.singleLineHeight;
-            versionDefine.expression = EditorGUI.TextField(elementRect, "Expression", versionDefine.expression);
+            versionDefine.expression = EditorGUI.TextField(elementRect, GUIContent.Temp("Expression", "Specify the semantic version of your chosen module or package. You must use mathematical interval notation."), versionDefine.expression);
 
             string expressionOutcome = null;
             if (!string.IsNullOrEmpty(versionDefine.expression))
@@ -707,7 +708,7 @@ namespace UnityEditor
             }
 
             elementRect.y += EditorGUIUtility.singleLineHeight;
-            EditorGUI.LabelField(elementRect, "Expression outcome", expressionOutcome);
+            EditorGUI.LabelField(elementRect, Styles.expressionOutcome, GUIContent.Temp(expressionOutcome));
 
             EditorGUI.showMixedValue = false;
 

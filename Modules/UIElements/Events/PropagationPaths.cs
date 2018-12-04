@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
-    class PropagationPaths : IDisposable
+    class PropagationPaths
     {
         static readonly ObjectPool<PropagationPaths> s_Pool = new ObjectPool<PropagationPaths>();
 
@@ -19,20 +19,26 @@ namespace UnityEngine.UIElements
             BubbleUp = 2
         }
 
+        public struct PropagationPathElement
+        {
+            public VisualElement m_VisualElement;
+            public bool m_IsTarget;
+        }
+
         public readonly List<VisualElement> trickleDownPath;
-        public readonly List<VisualElement> bubblePath;
+        public readonly List<PropagationPathElement> targetAndBubblePath;
 
         const int k_DefaultPropagationDepth = 16;
 
         public PropagationPaths()
         {
             trickleDownPath = new List<VisualElement>(k_DefaultPropagationDepth);
-            bubblePath = new List<VisualElement>(k_DefaultPropagationDepth);
+            targetAndBubblePath = new List<PropagationPathElement>(k_DefaultPropagationDepth);
         }
 
-        public static PropagationPaths Build(VisualElement elem, PropagationPaths.Type pathTypesRequested)
+        public static PropagationPaths Build(VisualElement elem, Type pathTypesRequested)
         {
-            if (elem == null || pathTypesRequested == PropagationPaths.Type.None)
+            if (elem == null || pathTypesRequested == Type.None)
                 return null;
 
             PropagationPaths paths = s_Pool.Get();
@@ -41,20 +47,43 @@ namespace UnityEngine.UIElements
             {
                 if (elem.hierarchy.parent.enabledInHierarchy)
                 {
-                    if ((pathTypesRequested & PropagationPaths.Type.TrickleDown) == PropagationPaths.Type.TrickleDown && elem.hierarchy.parent.HasTrickleDownHandlers())
-                        paths.trickleDownPath.Add(elem.hierarchy.parent);
-                    if ((pathTypesRequested & PropagationPaths.Type.BubbleUp) == PropagationPaths.Type.BubbleUp && elem.hierarchy.parent.HasBubbleUpHandlers())
-                        paths.bubblePath.Add(elem.hierarchy.parent);
+                    if (elem.hierarchy.parent.isCompositeRoot)
+                    {
+                        // Callback for elem.hierarchy.parent must be called at the Target phase.
+                        var item = new PropagationPathElement
+                        {
+                            m_VisualElement = elem.hierarchy.parent,
+                            m_IsTarget = true
+                        };
+                        paths.targetAndBubblePath.Add(item);
+                    }
+                    else
+                    {
+                        if ((pathTypesRequested & Type.TrickleDown) == Type.TrickleDown && elem.hierarchy.parent.HasTrickleDownHandlers())
+                        {
+                            paths.trickleDownPath.Add(elem.hierarchy.parent);
+                        }
+
+                        if ((pathTypesRequested & Type.BubbleUp) == Type.BubbleUp && elem.hierarchy.parent.HasBubbleUpHandlers())
+                        {
+                            var item = new PropagationPathElement
+                            {
+                                m_VisualElement = elem.hierarchy.parent,
+                                m_IsTarget = false
+                            };
+                            paths.targetAndBubblePath.Add(item);
+                        }
+                    }
                 }
                 elem = elem.hierarchy.parent;
             }
             return paths;
         }
 
-        public void Dispose()
+        public void Release()
         {
             // Empty paths to avoid leaking VisualElements.
-            bubblePath.Clear();
+            targetAndBubblePath.Clear();
             trickleDownPath.Clear();
 
             s_Pool.Release(this);

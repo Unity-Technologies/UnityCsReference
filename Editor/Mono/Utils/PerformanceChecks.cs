@@ -37,7 +37,7 @@ namespace UnityEditor.Utils
             string shaderName = mat.shader.name;
             int shaderLOD = ShaderUtil.GetLOD(mat.shader);
             bool hasMobileVariant = Array.Exists(kShadersWithMobileVariants, s => s == shaderName);
-            bool isMobileTarget = BuildTargetDiscovery.PlatformHasFlag(buildTarget, TargetAttributes.IsMobile);
+            bool isMobileTarget = BuildTargetDiscovery.PlatformHasFlag(buildTarget, TargetAttributes.HasIntegratedGPU);
 
             // Skip all performance-related checks if shader explicitly indicated that via a PerformanceChecks=False tag.
             bool noPerfChecks = (mat.GetTag("PerformanceChecks", true).ToLower() == "false");

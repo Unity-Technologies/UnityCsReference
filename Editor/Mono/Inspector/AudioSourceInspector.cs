@@ -81,32 +81,31 @@ namespace UnityEditor
 
         private bool m_Expanded3D = false;
 
-        class Styles
+        internal static class Styles
         {
-            public GUIStyle labelStyle = "ProfilerBadge";
-            public GUIContent rolloffLabel =  EditorGUIUtility.TrTextContent("Volume Rolloff", "Which type of rolloff curve to use");
-            public string controlledByCurveLabel = "Controlled by curve";
-            public GUIContent audioClipLabel = EditorGUIUtility.TrTextContent("AudioClip", "The AudioClip asset played by the AudioSource. Can be undefined if the AudioSource is generating a live stream of audio via OnAudioFilterRead.");
-            public GUIContent panStereoLabel = EditorGUIUtility.TrTextContent("Stereo Pan", "Only valid for Mono and Stereo AudioClips. Mono sounds will be panned at constant power left and right. Stereo sounds will Stereo sounds have each left/right value faded up and down according to the specified pan value.");
-            public GUIContent spatialBlendLabel = EditorGUIUtility.TrTextContent("Spatial Blend", "Sets how much this AudioSource is treated as a 3D source. 3D sources are affected by spatial position and spread. If 3D Pan Level is 0, all spatial attenuation is ignored.");
-            public GUIContent reverbZoneMixLabel = EditorGUIUtility.TrTextContent("Reverb Zone Mix", "Sets how much of the signal this AudioSource is mixing into the global reverb associated with the zones. [0, 1] is a linear range (like volume) while [1, 1.1] lets you boost the reverb mix by 10 dB.");
-            public GUIContent dopplerLevelLabel = EditorGUIUtility.TrTextContent("Doppler Level", "Specifies how much the pitch is changed based on the relative velocity between AudioListener and AudioSource.");
-            public GUIContent spreadLabel = EditorGUIUtility.TrTextContent("Spread", "Sets the spread of a 3d sound in speaker space");
-            public GUIContent outputMixerGroupLabel = EditorGUIUtility.TrTextContent("Output", "Set whether the sound should play through an Audio Mixer first or directly to the Audio Listener");
-            public GUIContent volumeLabel = EditorGUIUtility.TrTextContent("Volume", "Sets the overall volume of the sound.");
-            public GUIContent pitchLabel = EditorGUIUtility.TrTextContent("Pitch", "Sets the frequency of the sound. Use this to slow down or speed up the sound.");
-            public GUIContent priorityLabel = EditorGUIUtility.TrTextContent("Priority", "Sets the priority of the source. Note that a sound with a larger priority value will more likely be stolen by sounds with smaller priority values.");
-            public GUIContent spatializeLabel = EditorGUIUtility.TrTextContent("Spatialize", "Enables or disables custom spatialization for the AudioSource.");
-            public GUIContent spatializePostEffectsLabel = EditorGUIUtility.TrTextContent("Spatialize Post Effects", "Determines if the custom spatializer is applied before or after the effect filters attached to the AudioSource. This flag only has an effect if the spatialize flag is enabled on the AudioSource.");
-            public GUIContent priorityLeftLabel = EditorGUIUtility.TrTextContent("High");
-            public GUIContent priorityRightLabel = EditorGUIUtility.TrTextContent("Low");
-            public GUIContent spatialLeftLabel = EditorGUIUtility.TrTextContent("2D");
-            public GUIContent spatialRightLabel = EditorGUIUtility.TrTextContent("3D");
-            public GUIContent panLeftLabel = EditorGUIUtility.TrTextContent("Left");
-            public GUIContent panRightLabel = EditorGUIUtility.TrTextContent("Right");
-            public string xAxisLabel = L10n.Tr("Distance");
+            public static GUIStyle labelStyle = "ProfilerBadge";
+            public static GUIContent rolloffLabel =  EditorGUIUtility.TrTextContent("Volume Rolloff", "Which type of rolloff curve to use");
+            public static string controlledByCurveLabel = "Controlled by curve";
+            public static GUIContent audioClipLabel = EditorGUIUtility.TrTextContent("AudioClip", "The AudioClip asset played by the AudioSource. Can be undefined if the AudioSource is generating a live stream of audio via OnAudioFilterRead.");
+            public static GUIContent panStereoLabel = EditorGUIUtility.TrTextContent("Stereo Pan", "Only valid for Mono and Stereo AudioClips. Mono sounds will be panned at constant power left and right. Stereo sounds will Stereo sounds have each left/right value faded up and down according to the specified pan value.");
+            public static GUIContent spatialBlendLabel = EditorGUIUtility.TrTextContent("Spatial Blend", "Sets how much this AudioSource is treated as a 3D source. 3D sources are affected by spatial position and spread. If 3D Pan Level is 0, all spatial attenuation is ignored.");
+            public static GUIContent reverbZoneMixLabel = EditorGUIUtility.TrTextContent("Reverb Zone Mix", "Sets how much of the signal this AudioSource is mixing into the global reverb associated with the zones. [0, 1] is a linear range (like volume) while [1, 1.1] lets you boost the reverb mix by 10 dB.");
+            public static GUIContent dopplerLevelLabel = EditorGUIUtility.TrTextContent("Doppler Level", "Specifies how much the pitch is changed based on the relative velocity between AudioListener and AudioSource.");
+            public static GUIContent spreadLabel = EditorGUIUtility.TrTextContent("Spread", "Sets the spread of a 3d sound in speaker space");
+            public static GUIContent outputMixerGroupLabel = EditorGUIUtility.TrTextContent("Output", "Set whether the sound should play through an Audio Mixer first or directly to the Audio Listener");
+            public static GUIContent volumeLabel = EditorGUIUtility.TrTextContent("Volume", "Sets the overall volume of the sound.");
+            public static GUIContent pitchLabel = EditorGUIUtility.TrTextContent("Pitch", "Sets the frequency of the sound. Use this to slow down or speed up the sound.");
+            public static GUIContent priorityLabel = EditorGUIUtility.TrTextContent("Priority", "Sets the priority of the source. Note that a sound with a larger priority value will more likely be stolen by sounds with smaller priority values.");
+            public static GUIContent spatializeLabel = EditorGUIUtility.TrTextContent("Spatialize", "Enables or disables custom spatialization for the AudioSource.");
+            public static GUIContent spatializePostEffectsLabel = EditorGUIUtility.TrTextContent("Spatialize Post Effects", "Determines if the custom spatializer is applied before or after the effect filters attached to the AudioSource. This flag only has an effect if the spatialize flag is enabled on the AudioSource.");
+            public static GUIContent priorityLeftLabel = EditorGUIUtility.TrTextContent("High");
+            public static GUIContent priorityRightLabel = EditorGUIUtility.TrTextContent("Low");
+            public static GUIContent spatialLeftLabel = EditorGUIUtility.TrTextContent("2D");
+            public static GUIContent spatialRightLabel = EditorGUIUtility.TrTextContent("3D");
+            public static GUIContent panLeftLabel = EditorGUIUtility.TrTextContent("Left");
+            public static GUIContent panRightLabel = EditorGUIUtility.TrTextContent("Right");
+            public static string xAxisLabel = L10n.Tr("Distance");
         }
-        static Styles ms_Styles;
 
         Vector3 GetSourcePos(Object target)
         {
@@ -253,7 +252,7 @@ namespace UnityEditor
             wrapper.renderer.SetCustomRange(0.0f, 1.0f);
             wrapper.getAxisUiScalarsCallback = GetAxisScalars;
             wrapper.useScalingInKeyEditor = true;
-            wrapper.xAxisLabel = ms_Styles.xAxisLabel;
+            wrapper.xAxisLabel = Styles.xAxisLabel;
             wrapper.yAxisLabel = audioCurve.legend.text;
             return wrapper;
         }
@@ -304,12 +303,6 @@ namespace UnityEditor
             return new AnimationCurve(keys.ToArray());
         }
 
-        static void InitStyles()
-        {
-            if (ms_Styles == null)
-                ms_Styles = new Styles();
-        }
-
         private void Update()
         {
             // listener moved?
@@ -352,8 +345,6 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
-            InitStyles();
-
             //Bug fix: 1018456 Moved the HandleLowPassFilter method before updating the serializedObjects
             HandleLowPassFilter();
 
@@ -365,16 +356,16 @@ namespace UnityEditor
 
             UpdateWrappersAndLegend();
 
-            EditorGUILayout.PropertyField(m_AudioClip, ms_Styles.audioClipLabel);
+            EditorGUILayout.PropertyField(m_AudioClip, Styles.audioClipLabel);
             EditorGUILayout.Space();
-            EditorGUILayout.PropertyField(m_OutputAudioMixerGroup, ms_Styles.outputMixerGroupLabel);
+            EditorGUILayout.PropertyField(m_OutputAudioMixerGroup, Styles.outputMixerGroupLabel);
             EditorGUILayout.PropertyField(m_Mute);
             if (AudioUtil.canUseSpatializerEffect)
             {
-                EditorGUILayout.PropertyField(m_Spatialize, ms_Styles.spatializeLabel);
+                EditorGUILayout.PropertyField(m_Spatialize, Styles.spatializeLabel);
                 using (new EditorGUI.DisabledScope(!m_Spatialize.boolValue))
                 {
-                    EditorGUILayout.PropertyField(m_SpatializePostEffects, ms_Styles.spatializePostEffectsLabel);
+                    EditorGUILayout.PropertyField(m_SpatializePostEffects, Styles.spatializePostEffectsLabel);
                 }
             }
             EditorGUILayout.PropertyField(m_BypassEffects);
@@ -395,29 +386,29 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_Loop);
 
             EditorGUILayout.Space();
-            EditorGUIUtility.sliderLabels.SetLabels(ms_Styles.priorityLeftLabel, ms_Styles.priorityRightLabel);
-            EditorGUILayout.IntSlider(m_Priority, 0, 256, ms_Styles.priorityLabel);
+            EditorGUIUtility.sliderLabels.SetLabels(Styles.priorityLeftLabel, Styles.priorityRightLabel);
+            EditorGUILayout.IntSlider(m_Priority, 0, 256, Styles.priorityLabel);
             EditorGUIUtility.sliderLabels.SetLabels(null, null);
             EditorGUILayout.Space();
-            EditorGUILayout.Slider(m_Volume, 0f, 1.0f, ms_Styles.volumeLabel);
+            EditorGUILayout.Slider(m_Volume, 0f, 1.0f, Styles.volumeLabel);
             EditorGUILayout.Space();
-            EditorGUILayout.Slider(m_Pitch, -3.0f, 3.0f, ms_Styles.pitchLabel);
+            EditorGUILayout.Slider(m_Pitch, -3.0f, 3.0f, Styles.pitchLabel);
 
             EditorGUILayout.Space();
 
-            EditorGUIUtility.sliderLabels.SetLabels(ms_Styles.panLeftLabel, ms_Styles.panRightLabel);
-            EditorGUILayout.Slider(m_Pan2D, -1f, 1f, ms_Styles.panStereoLabel);
-            EditorGUIUtility.sliderLabels.SetLabels(null, null);
-            EditorGUILayout.Space();
-
-            // 3D Level control
-            EditorGUIUtility.sliderLabels.SetLabels(ms_Styles.spatialLeftLabel, ms_Styles.spatialRightLabel);
-            AnimProp(ms_Styles.spatialBlendLabel, m_AudioCurves[kSpatialBlendCurveID].curveProp, 0.0f, 1.0f, false);
+            EditorGUIUtility.sliderLabels.SetLabels(Styles.panLeftLabel, Styles.panRightLabel);
+            EditorGUILayout.Slider(m_Pan2D, -1f, 1f, Styles.panStereoLabel);
             EditorGUIUtility.sliderLabels.SetLabels(null, null);
             EditorGUILayout.Space();
 
             // 3D Level control
-            AnimProp(ms_Styles.reverbZoneMixLabel, m_AudioCurves[kReverbZoneMixCurveID].curveProp, 0.0f, 1.1f, false);
+            EditorGUIUtility.sliderLabels.SetLabels(Styles.spatialLeftLabel, Styles.spatialRightLabel);
+            AnimProp(Styles.spatialBlendLabel, m_AudioCurves[kSpatialBlendCurveID].curveProp, 0.0f, 1.0f, false);
+            EditorGUIUtility.sliderLabels.SetLabels(null, null);
+            EditorGUILayout.Space();
+
+            // 3D Level control
+            AnimProp(Styles.reverbZoneMixLabel, m_AudioCurves[kReverbZoneMixCurveID].curveProp, 0.0f, 1.1f, false);
             EditorGUILayout.Space();
 
             m_Expanded3D = EditorGUILayout.Foldout(m_Expanded3D, "3D Sound Settings", true);
@@ -443,21 +434,21 @@ namespace UnityEditor
 
         private void Audio3DGUI()
         {
-            EditorGUILayout.Slider(m_DopplerLevel, 0.0f, 5.0f, ms_Styles.dopplerLevelLabel);
+            EditorGUILayout.Slider(m_DopplerLevel, 0.0f, 5.0f, Styles.dopplerLevelLabel);
 
             // Spread control
-            AnimProp(ms_Styles.spreadLabel, m_AudioCurves[kSpreadCurveID].curveProp, 0.0f, 360.0f, true);
+            AnimProp(Styles.spreadLabel, m_AudioCurves[kSpreadCurveID].curveProp, 0.0f, 360.0f, true);
 
             // Rolloff mode
             if (m_RolloffMode.hasMultipleDifferentValues ||
                 (m_RolloffMode.enumValueIndex == (int)AudioRolloffMode.Custom && m_AudioCurves[kRolloffCurveID].curveProp.hasMultipleDifferentValues)
             )
             {
-                EditorGUILayout.TargetChoiceField(m_AudioCurves[kRolloffCurveID].curveProp, ms_Styles.rolloffLabel , SetRolloffToTarget);
+                EditorGUILayout.TargetChoiceField(m_AudioCurves[kRolloffCurveID].curveProp, Styles.rolloffLabel , SetRolloffToTarget);
             }
             else
             {
-                EditorGUILayout.PropertyField(m_RolloffMode, ms_Styles.rolloffLabel);
+                EditorGUILayout.PropertyField(m_RolloffMode, Styles.rolloffLabel);
 
                 if ((AudioRolloffMode)m_RolloffMode.enumValueIndex != AudioRolloffMode.Custom)
                 {
@@ -472,7 +463,7 @@ namespace UnityEditor
                 {
                     using (new EditorGUI.DisabledScope(true))
                     {
-                        EditorGUILayout.LabelField(m_MinDistance.displayName, ms_Styles.controlledByCurveLabel);
+                        EditorGUILayout.LabelField(m_MinDistance.displayName, Styles.controlledByCurveLabel);
                     }
                 }
             }
@@ -627,7 +618,7 @@ namespace UnityEditor
 
         void DrawLabel(string label, float value, Rect r)
         {
-            Vector2 size = ms_Styles.labelStyle.CalcSize(new GUIContent(label));
+            Vector2 size = Styles.labelStyle.CalcSize(new GUIContent(label));
             size.x += 2;
             Vector2 posA = m_CurveEditor.DrawingToViewTransformPoint(new Vector2(value / m_MaxDistance.floatValue, 0));
             Vector2 posB = m_CurveEditor.DrawingToViewTransformPoint(new Vector2(value / m_MaxDistance.floatValue, 1));
@@ -637,15 +628,12 @@ namespace UnityEditor
             Handles.DrawLine(new Vector3(posA.x  , posA.y, 0), new Vector3(posB.x  , posB.y, 0));
             Handles.DrawLine(new Vector3(posA.x + 1, posA.y, 0), new Vector3(posB.x + 1, posB.y, 0));
             Handles.color = temp;
-            GUI.Label(new Rect(Mathf.Floor(posB.x - size.x / 2), 2, size.x, 15), label, ms_Styles.labelStyle);
+            GUI.Label(new Rect(Mathf.Floor(posB.x - size.x / 2), 2, size.x, 15), label, Styles.labelStyle);
             GUI.EndGroup();
         }
 
         internal static void AnimProp(GUIContent label, SerializedProperty prop, float min, float max, bool useNormalizedValue)
         {
-            // AnimProp can be called from other classes so styes have not necessarily been inited yet.
-            InitStyles();
-
             if (prop.hasMultipleDifferentValues)
             {
                 EditorGUILayout.TargetChoiceField(prop, label);
@@ -670,7 +658,7 @@ namespace UnityEditor
             {
                 using (new EditorGUI.DisabledScope(true))
                 {
-                    EditorGUI.LabelField(position, label.text, ms_Styles.controlledByCurveLabel);
+                    EditorGUI.LabelField(position, label.text, Styles.controlledByCurveLabel);
                 }
             }
             else

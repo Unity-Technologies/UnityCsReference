@@ -14,6 +14,7 @@ using UnityEditor.SceneManagement;
 using Object = UnityEngine.Object;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UnityEditor.VersionControl;
+using UnityEditorInternal;
 
 namespace UnityEditor
 {
@@ -330,8 +331,6 @@ namespace UnityEditor
 
                 RegisterNewObjects(prefabInstanceRoot, hierarchy, actionName);
             }
-
-            EditorUtility.ForceRebuildInspectors();
         }
 
         public static void ApplyPrefabInstance(GameObject instanceRoot, InteractionMode action)
@@ -767,7 +766,21 @@ namespace UnityEditor
             ThrowExceptionIfInstanceIsPersistent(component);
 
             if (action == InteractionMode.UserAction)
+            {
+                string dependentComponents = string.Join(
+                    ", ",
+                    GetDependentComponents(component).Select(e => ObjectNames.GetInspectorTitle(e)).ToArray());
+                if (!string.IsNullOrEmpty(dependentComponents))
+                {
+                    string error = String.Format(
+                        L10n.Tr("Can't revert added component {0} because {1} depends on it"),
+                        ObjectNames.GetInspectorTitle(component),
+                        dependentComponents);
+                    EditorUtility.DisplayDialog(L10n.Tr("Can't revert added component"), error, L10n.Tr("OK"));
+                    return;
+                }
                 Undo.DestroyObjectImmediate(component);
+            }
             else
                 Object.DestroyImmediate(component);
         }
@@ -1651,8 +1664,10 @@ namespace UnityEditor
             var roots = previewScene.GetRootGameObjects();
             if (roots.Length != 1)
             {
-                throw new ArgumentException(string.Format("Could not load Prefab contents at path {0}.", assetPath));
+                EditorSceneManager.ClosePreviewScene(previewScene);
+                throw new ArgumentException(string.Format("Could not load Prefab contents at path {0}. Prefabs should have exactly 1 root GameObject, {1} was found.", assetPath, roots.Length));
             }
+
             return roots[0];
         }
 
@@ -1788,6 +1803,41 @@ namespace UnityEditor
             }
 
             return applyTargets;
+        }
+
+        static List<Component> GetDependentComponents(Component component)
+        {
+            List<Component> dependencies = new List<Component>();
+            var componentType = component.GetType();
+
+            // Iterate all components on *this* GameObject.
+            // We don't care about other components on the Prefab instance.
+            var allComponents = component.gameObject.GetComponents<Component>();
+            for (int i = 0; i < allComponents.Length; i++)
+            {
+                var comp = allComponents[i];
+
+                // Ignore components that are not added.
+                if (GetCorrespondingObjectFromSource(comp) != null)
+                    continue;
+
+                // Ignore component itself the user is reverting.
+                if (comp == component)
+                    continue;
+
+                var requiredComps = comp.GetType().GetCustomAttributes(typeof(RequireComponent), inherit: true);
+                foreach (RequireComponent reqComp in requiredComps)
+                {
+                    if (reqComp.m_Type0 == componentType || reqComp.m_Type1 == componentType || reqComp.m_Type2 == componentType)
+                    {
+                        // We might get the same component type requirement from multiple sources.
+                        // Make sure we don't add the same component more than once.
+                        if (!dependencies.Contains(comp))
+                            dependencies.Add(comp);
+                    }
+                }
+            }
+            return dependencies;
         }
 
         internal static class Analytics

@@ -18,6 +18,7 @@ namespace UnityEngine.UIElements.StyleSheets
     internal class VisualElementStylesData : ICustomStyle
     {
         private static StyleSheetApplicator s_StyleSheetApplicator = new StyleSheetApplicator();
+        private static StyleValueApplicator s_StyleValueApplicator = new StyleValueApplicator();
         public static readonly VisualElementStylesData none = new VisualElementStylesData(true);
 
         internal readonly bool isShared;
@@ -50,8 +51,8 @@ namespace UnityEngine.UIElements.StyleSheets
         internal StyleInt position;
         internal StyleInt alignSelf;
         internal StyleInt unityTextAlign;
-        internal StyleInt fontStyleAndWeight;
-        internal StyleFont font;
+        internal StyleInt unityFontStyleAndWeight;
+        internal StyleFont unityFont;
         internal StyleLength fontSize;
         internal StyleInt whiteSpace;
         internal StyleColor color;
@@ -59,7 +60,8 @@ namespace UnityEngine.UIElements.StyleSheets
         internal StyleColor backgroundColor;
         internal StyleColor borderColor;
         internal StyleBackground backgroundImage;
-        internal StyleInt backgroundScaleMode;
+        internal StyleInt unityBackgroundScaleMode;
+        internal StyleColor unityBackgroundImageTintColor;
         internal StyleInt alignItems;
         internal StyleInt alignContent;
         internal StyleInt justifyContent;
@@ -72,10 +74,10 @@ namespace UnityEngine.UIElements.StyleSheets
         internal StyleLength borderTopRightRadius;
         internal StyleLength borderBottomRightRadius;
         internal StyleLength borderBottomLeftRadius;
-        internal StyleInt sliceLeft;
-        internal StyleInt sliceTop;
-        internal StyleInt sliceRight;
-        internal StyleInt sliceBottom;
+        internal StyleInt unitySliceLeft;
+        internal StyleInt unitySliceTop;
+        internal StyleInt unitySliceRight;
+        internal StyleInt unitySliceBottom;
         internal StyleFloat opacity;
         internal StyleCursor cursor;
         internal StyleInt visibility;
@@ -89,6 +91,28 @@ namespace UnityEngine.UIElements.StyleSheets
         public VisualElementStylesData(bool isShared)
         {
             this.isShared = isShared;
+
+            // Initialize non trivial properties
+            left = StyleSheetCache.GetInitialValue(StylePropertyID.PositionLeft).ToStyleLength();
+            top = StyleSheetCache.GetInitialValue(StylePropertyID.PositionTop).ToStyleLength();
+            right = StyleSheetCache.GetInitialValue(StylePropertyID.PositionRight).ToStyleLength();
+            bottom = StyleSheetCache.GetInitialValue(StylePropertyID.PositionBottom).ToStyleLength();
+            width = StyleSheetCache.GetInitialValue(StylePropertyID.Width).ToStyleLength();
+            height = StyleSheetCache.GetInitialValue(StylePropertyID.Height).ToStyleLength();
+            minWidth = StyleSheetCache.GetInitialValue(StylePropertyID.MinWidth).ToStyleLength();
+            minHeight = StyleSheetCache.GetInitialValue(StylePropertyID.MinHeight).ToStyleLength();
+            maxWidth = StyleSheetCache.GetInitialValue(StylePropertyID.MaxWidth).ToStyleLength();
+            maxHeight = StyleSheetCache.GetInitialValue(StylePropertyID.MaxHeight).ToStyleLength();
+            alignSelf = (int)StyleSheetCache.GetInitialValue(StylePropertyID.AlignSelf).number;
+            alignItems = (int)StyleSheetCache.GetInitialValue(StylePropertyID.AlignItems).number;
+            alignContent = (int)StyleSheetCache.GetInitialValue(StylePropertyID.AlignContent).number;
+            flexGrow = StyleSheetCache.GetInitialValue(StylePropertyID.FlexGrow).ToStyleFloat();
+            flexShrink = StyleSheetCache.GetInitialValue(StylePropertyID.FlexShrink).ToStyleFloat();
+            flexBasis = StyleSheetCache.GetInitialValue(StylePropertyID.FlexBasis).ToStyleLength();
+            color = StyleSheetCache.GetInitialValue(StylePropertyID.Color).color;
+            borderColor = StyleSheetCache.GetInitialValue(StylePropertyID.BorderColor).color;
+            opacity = StyleSheetCache.GetInitialValue(StylePropertyID.Opacity).number;
+            unityBackgroundImageTintColor = StyleSheetCache.GetInitialValue(StylePropertyID.BackgroundImageTintColor).color;
         }
 
         public void Apply(VisualElementStylesData other, StylePropertyApplyMode mode)
@@ -121,16 +145,17 @@ namespace UnityEngine.UIElements.StyleSheets
             position.Apply(other.position, mode);
             alignSelf.Apply(other.alignSelf, mode);
             unityTextAlign.Apply(other.unityTextAlign, mode);
-            fontStyleAndWeight.Apply(other.fontStyleAndWeight, mode);
+            unityFontStyleAndWeight.Apply(other.unityFontStyleAndWeight, mode);
             fontSize.Apply(other.fontSize, mode);
-            font.Apply(other.font, mode);
+            unityFont.Apply(other.unityFont, mode);
             whiteSpace.Apply(other.whiteSpace, mode);
             color.Apply(other.color, mode);
             flexDirection.Apply(other.flexDirection, mode);
             backgroundColor.Apply(other.backgroundColor, mode);
             borderColor.Apply(other.borderColor, mode);
             backgroundImage.Apply(other.backgroundImage, mode);
-            backgroundScaleMode.Apply(other.backgroundScaleMode, mode);
+            unityBackgroundScaleMode.Apply(other.unityBackgroundScaleMode, mode);
+            unityBackgroundImageTintColor.Apply(other.unityBackgroundImageTintColor, mode);
             alignItems.Apply(other.alignItems, mode);
             alignContent.Apply(other.alignContent, mode);
             justifyContent.Apply(other.justifyContent, mode);
@@ -143,10 +168,10 @@ namespace UnityEngine.UIElements.StyleSheets
             borderTopRightRadius.Apply(other.borderTopRightRadius, mode);
             borderBottomRightRadius.Apply(other.borderBottomRightRadius, mode);
             borderBottomLeftRadius.Apply(other.borderBottomLeftRadius, mode);
-            sliceLeft.Apply(other.sliceLeft, mode);
-            sliceTop.Apply(other.sliceTop, mode);
-            sliceRight.Apply(other.sliceRight, mode);
-            sliceBottom.Apply(other.sliceBottom, mode);
+            unitySliceLeft.Apply(other.unitySliceLeft, mode);
+            unitySliceTop.Apply(other.unitySliceTop, mode);
+            unitySliceRight.Apply(other.unitySliceRight, mode);
+            unitySliceBottom.Apply(other.unitySliceBottom, mode);
             opacity.Apply(other.opacity, mode);
             cursor.Apply(other.cursor, mode);
             visibility.Apply(other.visibility, mode);
@@ -161,31 +186,13 @@ namespace UnityEngine.UIElements.StyleSheets
             SyncWithLayout(yogaNode);
         }
 
-        internal const float k_DefaultFlexGrow = 0f;
-        internal const float k_DefaultFlexShrink = 1f;
-
-        internal const Align k_DefaultAlignContent = Align.FlexStart;
-        internal const Align k_DefaultAlignItems = Align.Stretch;
-
         public void SyncWithLayout(YogaNode targetNode)
         {
             targetNode.Flex = float.NaN;
 
-            var fb = new StyleLength(StyleKeyword.Auto);
-            if (flexBasis.specificity > StyleValueExtensions.UndefinedSpecificity)
-                fb = flexBasis;
-
-            if (fb == StyleKeyword.Auto)
-            {
-                targetNode.FlexBasis = YogaValue.Auto();
-            }
-            else
-            {
-                targetNode.FlexBasis = fb.GetSpecifiedValueOrDefault(float.NaN);
-            }
-
-            targetNode.FlexGrow = flexGrow.GetSpecifiedValueOrDefault(k_DefaultFlexGrow);
-            targetNode.FlexShrink = flexShrink.GetSpecifiedValueOrDefault(k_DefaultFlexShrink);
+            targetNode.FlexGrow = flexGrow.value;
+            targetNode.FlexShrink = flexShrink.value;
+            targetNode.FlexBasis = flexBasis.ToYogaValue();
             targetNode.Left = left.ToYogaValue();
             targetNode.Top = top.ToYogaValue();
             targetNode.Right = right.ToYogaValue();
@@ -214,8 +221,8 @@ namespace UnityEngine.UIElements.StyleSheets
             targetNode.MinHeight = minHeight.ToYogaValue();
 
             targetNode.FlexDirection = (YogaFlexDirection)flexDirection.value;
-            targetNode.AlignContent = (YogaAlign)alignContent.GetSpecifiedValueOrDefault((int)k_DefaultAlignContent);
-            targetNode.AlignItems = (YogaAlign)alignItems.GetSpecifiedValueOrDefault((int)k_DefaultAlignItems);
+            targetNode.AlignContent = (YogaAlign)alignContent.value;
+            targetNode.AlignItems = (YogaAlign)alignItems.value;
             targetNode.JustifyContent = (YogaJustify)justifyContent.value;
             targetNode.Wrap = (YogaWrap)flexWrap.value;
             targetNode.Display = (YogaDisplay)display.value;
@@ -227,6 +234,13 @@ namespace UnityEngine.UIElements.StyleSheets
             {
                 var styleProperty = rule.properties[i];
                 var propertyID = propertyIDs[i];
+                var handles = styleProperty.values;
+
+                if (handles[0].valueType == StyleValueType.Keyword && handles[0].valueIndex == (int)StyleValueKeyword.Initial)
+                {
+                    ApplyInitialStyleValue(propertyID, specificity);
+                    return;
+                }
 
                 switch (propertyID)
                 {
@@ -243,8 +257,123 @@ namespace UnityEngine.UIElements.StyleSheets
                         ApplyShorthandProperty(sheet, propertyID, styleProperty.values, specificity);
                         break;
                     default:
-                        ApplyStyleProperty(s_StyleSheetApplicator, sheet, propertyID, styleProperty.values, specificity);
+                        ApplyStyleProperty(s_StyleSheetApplicator, sheet, propertyID, handles, specificity);
                         break;
+                }
+            }
+        }
+
+        internal void ApplyStyleCursor(StyleCursor styleCursor, int specificity)
+        {
+            s_StyleValueApplicator.currentCursor = styleCursor;
+            s_StyleValueApplicator.ApplyCursor(null, null, specificity, ref cursor);
+        }
+
+        internal void ApplyStyleValue(StylePropertyID propertyID, StyleValue value, int specificity)
+        {
+            if (value.keyword == StyleKeyword.Initial)
+            {
+                ApplyInitialStyleValue(propertyID, specificity);
+            }
+            else
+            {
+                s_StyleValueApplicator.currentStyleValue = value;
+                ApplyStyleProperty(s_StyleValueApplicator, null, propertyID, null, specificity);
+            }
+        }
+
+        private void ApplyInitialStyleValue(StylePropertyID propertyID, int specificity)
+        {
+            switch (propertyID)
+            {
+                case StylePropertyID.Unknown:
+                case StylePropertyID.Custom:
+                {
+                    Debug.LogAssertion($"Unexpected style property ID {propertyID.ToString()}.");
+                    break;
+                }
+                case StylePropertyID.BorderRadius:
+                {
+                    StyleValue sv = StyleSheetCache.GetInitialValue(StylePropertyID.BorderTopLeftRadius);
+                    ApplyStyleValue(sv.id, sv, specificity);
+
+                    sv = StyleSheetCache.GetInitialValue(StylePropertyID.BorderTopRightRadius);
+                    ApplyStyleValue(sv.id, sv, specificity);
+
+                    sv = StyleSheetCache.GetInitialValue(StylePropertyID.BorderBottomLeftRadius);
+                    ApplyStyleValue(sv.id, sv, specificity);
+
+                    sv = StyleSheetCache.GetInitialValue(StylePropertyID.BorderBottomRightRadius);
+                    ApplyStyleValue(sv.id, sv, specificity);
+                    break;
+                }
+                case StylePropertyID.BorderWidth:
+                {
+                    StyleValue sv = StyleSheetCache.GetInitialValue(StylePropertyID.BorderLeftWidth);
+                    ApplyStyleValue(sv.id, sv, specificity);
+
+                    sv = StyleSheetCache.GetInitialValue(StylePropertyID.BorderTopWidth);
+                    ApplyStyleValue(sv.id, sv, specificity);
+
+                    sv = StyleSheetCache.GetInitialValue(StylePropertyID.BorderRightWidth);
+                    ApplyStyleValue(sv.id, sv, specificity);
+
+                    sv = StyleSheetCache.GetInitialValue(StylePropertyID.BorderBottomWidth);
+                    ApplyStyleValue(sv.id, sv, specificity);
+                    break;
+                }
+                case StylePropertyID.Flex:
+                {
+                    StyleValue sv = StyleSheetCache.GetInitialValue(StylePropertyID.FlexGrow);
+                    ApplyStyleValue(sv.id, sv, specificity);
+
+                    sv = StyleSheetCache.GetInitialValue(StylePropertyID.FlexShrink);
+                    ApplyStyleValue(sv.id, sv, specificity);
+
+                    sv = StyleSheetCache.GetInitialValue(StylePropertyID.FlexBasis);
+                    ApplyStyleValue(sv.id, sv, specificity);
+                    break;
+                }
+                case StylePropertyID.Margin:
+                {
+                    StyleValue sv = StyleSheetCache.GetInitialValue(StylePropertyID.MarginLeft);
+                    ApplyStyleValue(sv.id, sv, specificity);
+
+                    sv = StyleSheetCache.GetInitialValue(StylePropertyID.MarginTop);
+                    ApplyStyleValue(sv.id, sv, specificity);
+
+                    sv = StyleSheetCache.GetInitialValue(StylePropertyID.MarginRight);
+                    ApplyStyleValue(sv.id, sv, specificity);
+
+                    sv = StyleSheetCache.GetInitialValue(StylePropertyID.MarginBottom);
+                    ApplyStyleValue(sv.id, sv, specificity);
+                    break;
+                }
+                case StylePropertyID.Padding:
+                {
+                    StyleValue sv = StyleSheetCache.GetInitialValue(StylePropertyID.PaddingLeft);
+                    ApplyStyleValue(sv.id, sv, specificity);
+
+                    sv = StyleSheetCache.GetInitialValue(StylePropertyID.PaddingTop);
+                    ApplyStyleValue(sv.id, sv, specificity);
+
+                    sv = StyleSheetCache.GetInitialValue(StylePropertyID.PaddingRight);
+                    ApplyStyleValue(sv.id, sv, specificity);
+
+                    sv = StyleSheetCache.GetInitialValue(StylePropertyID.PaddingBottom);
+                    ApplyStyleValue(sv.id, sv, specificity);
+                    break;
+                }
+                case StylePropertyID.Cursor:
+                {
+                    ApplyStyleCursor(new StyleCursor(), specificity);
+                    break;
+                }
+                default:
+                {
+                    StyleValue sv = StyleSheetCache.GetInitialValue(propertyID);
+                    ApplyStyleValue(sv.id, sv, specificity);
+                    break;
                 }
             }
         }
@@ -282,7 +411,7 @@ namespace UnityEngine.UIElements.StyleSheets
                     break;
 
                 case StylePropertyID.Font:
-                    applicator.ApplyFont(sheet, handles, specificity, ref font);
+                    applicator.ApplyFont(sheet, handles, specificity, ref unityFont);
                     break;
 
                 case StylePropertyID.FontSize:
@@ -290,7 +419,7 @@ namespace UnityEngine.UIElements.StyleSheets
                     break;
 
                 case StylePropertyID.FontStyleAndWeight:
-                    applicator.ApplyEnum<FontStyle>(sheet, handles, specificity, ref fontStyleAndWeight);
+                    applicator.ApplyEnum<FontStyle>(sheet, handles, specificity, ref unityFontStyleAndWeight);
                     break;
 
                 case StylePropertyID.FlexDirection:
@@ -402,7 +531,11 @@ namespace UnityEngine.UIElements.StyleSheets
                     break;
 
                 case StylePropertyID.BackgroundScaleMode:
-                    applicator.ApplyInt(sheet, handles, specificity, ref backgroundScaleMode);
+                    applicator.ApplyEnum<ScaleMode>(sheet, handles, specificity, ref unityBackgroundScaleMode);
+                    break;
+
+                case StylePropertyID.BackgroundImageTintColor:
+                    applicator.ApplyColor(sheet, handles, specificity, ref unityBackgroundImageTintColor);
                     break;
 
                 case StylePropertyID.BorderColor:
@@ -446,19 +579,19 @@ namespace UnityEngine.UIElements.StyleSheets
                     break;
 
                 case StylePropertyID.SliceLeft:
-                    applicator.ApplyInt(sheet, handles, specificity, ref sliceLeft);
+                    applicator.ApplyInt(sheet, handles, specificity, ref unitySliceLeft);
                     break;
 
                 case StylePropertyID.SliceTop:
-                    applicator.ApplyInt(sheet, handles, specificity, ref sliceTop);
+                    applicator.ApplyInt(sheet, handles, specificity, ref unitySliceTop);
                     break;
 
                 case StylePropertyID.SliceRight:
-                    applicator.ApplyInt(sheet, handles, specificity, ref sliceRight);
+                    applicator.ApplyInt(sheet, handles, specificity, ref unitySliceRight);
                     break;
 
                 case StylePropertyID.SliceBottom:
-                    applicator.ApplyInt(sheet, handles, specificity, ref sliceBottom);
+                    applicator.ApplyInt(sheet, handles, specificity, ref unitySliceBottom);
                     break;
 
                 case StylePropertyID.Opacity:

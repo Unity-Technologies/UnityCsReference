@@ -8,6 +8,11 @@ namespace UnityEngine.UIElements
 {
     public abstract class ImmediateModeElement : VisualElement
     {
+        public ImmediateModeElement()
+        {
+            renderHint = RenderHint.ImmediateMode;
+        }
+
         internal override void DoRepaint(IStylePainter painter)
         {
             var stylePainter = (IStylePainterInternal)painter;

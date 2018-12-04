@@ -33,10 +33,20 @@ namespace UnityEngine.UIElements
         Styles = 1 << 3,
         // transforms are invalid
         Transform = 1 << 2,
-        // clips are invalid
+        // clips (rect position or size) are invalid
         Clip = 1 << 1,
         // pixels in the target have been changed, just repaint, only makes sense on the Panel
         Repaint = 1 << 0,
+    }
+
+    [Flags]
+    internal enum RenderHint
+    {
+        None = 0,
+        ViewTransform = 1 << 0, // Act as a view matrix
+        SkinningTransform = 1 << 1, // Use skinning
+        ImmediateMode = 1 << 2, // Drawn with GL/IMGUI
+        ClipWithScissors = 1 << 3 // Used only for GraphView because the edge shader doesn't use the clipping rect.
     }
 
     internal class RepaintData
@@ -117,10 +127,16 @@ namespace UnityEngine.UIElements
             if (disposed)
                 return;
 
-            panelDebug.DetachAllDebuggers();
-
             if (disposing)
+            {
+                if (panelDebug != null)
+                {
+                    panelDebug.DetachAllDebuggers();
+                    panelDebug = null;
+                }
+
                 UIElementsUtility.RemoveCachedPanel(ownerObject.GetInstanceID());
+            }
             else
                 DisposeHelper.NotifyMissingDispose(this);
 
@@ -174,6 +190,10 @@ namespace UnityEngine.UIElements
         internal abstract IVisualTreeUpdater GetUpdater(VisualTreeUpdatePhase phase);
 
         internal VisualElement topElementUnderMouse { get; private set; }
+        internal abstract Shader standardShader { get; set; }
+
+        internal event Action standardShaderChanged;
+        protected void InvokeStandardShaderChanged() { if (standardShaderChanged != null) standardShaderChanged(); }
 
         internal void SetElementUnderMouse(VisualElement newElementUnderMouse, EventBase triggerEvent)
         {
@@ -258,6 +278,11 @@ namespace UnityEngine.UIElements
         private string m_ProfileBindingsName;
         private uint m_Version = 0;
         private uint m_RepaintVersion = 0;
+
+#pragma warning disable CS0649
+        internal static Action BeforeUpdaterChange;
+        internal static Action AfterUpdaterChange;
+#pragma warning restore CS0649
 
         public override VisualElement visualTree
         {
@@ -363,6 +388,20 @@ namespace UnityEngine.UIElements
         internal override uint repaintVersion
         {
             get { return m_RepaintVersion; }
+        }
+
+        private Shader m_StandardShader;
+        internal override Shader standardShader
+        {
+            get { return m_StandardShader; }
+            set
+            {
+                if (m_StandardShader != value)
+                {
+                    m_StandardShader = value;
+                    InvokeStandardShaderChanged();
+                }
+            }
         }
 
         public Panel(ScriptableObject ownerObject, ContextType contextType, EventDispatcher dispatcher = null)

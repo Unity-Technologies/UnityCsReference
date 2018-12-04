@@ -23,7 +23,7 @@ namespace UnityEditor
         {
             None                            = 0,
             IsDeprecated                    = (1 << 0),
-            IsMobile                        = (1 << 1),
+            HasIntegratedGPU                = (1 << 1),
             IsConsole                       = (1 << 2),
             IsX64                           = (1 << 3),
             IsStandalonePlatform            = (1 << 4),
@@ -35,13 +35,15 @@ namespace UnityEditor
             OSFontsDisabled                 = (1 << 10),
             NoDefaultUnityFonts             = (1 << 11),
             SupportsFacebook                = (1 << 12),
-            WarnForExpensiveQualitySettings = (1 << 13),
-            WarnForMouseEvents              = (1 << 14),
-            HideInUI                        = (1 << 15),
-            GPUSkinningNotSupported         = (1 << 16),
-            StrippingNotSupported           = (1 << 17),
-            Il2CPPRequiresLatestScripting   = (1 << 18),
-            IsMTRenderingDisabledByDefault  = (1 << 19)
+            WarnForMouseEvents              = (1 << 13),
+            HideInUI                        = (1 << 14),
+            GPUSkinningNotSupported         = (1 << 15),
+            StrippingNotSupported           = (1 << 16),
+            Il2CPPRequiresLatestScripting   = (1 << 17),
+            DisableNativeHDRLightmaps       = (1 << 18),
+            UsesNativeHDR                   = (1 << 19),
+            ProtectedGraphicsMem            = (1 << 20),
+            IsMTRenderingDisabledByDefault  = (1 << 21)
         }
 
         [Flags]
@@ -72,14 +74,14 @@ namespace UnityEditor
         public struct DiscoveredTargetInfo
         {
             public string path;
-            public string dllName;
+            public string moduleName;
             public string dirName;
             public string platformDefine;
             public string niceName;
             public string iconName;
             public string assemblyName;
 
-            public BuildTarget buildTgtPlatformVal;
+            public BuildTarget buildTargetPlatformVal;
 
             // Build targets can have many names to identify them
             public string[] nameList;
@@ -106,6 +108,10 @@ namespace UnityEditor
 
         private static extern string GetNiceNameByBuildTarget(BuildTarget platform);
 
+        public static extern string GetModuleNameForBuildTarget(BuildTarget platform);
+
+        public static extern string GetModuleNameForBuildTargetGroup(BuildTargetGroup group);
+
         public static bool BuildTargetSupportsRenderer(BuildPlatform platform, GraphicsDeviceType type)
         {
             BuildTarget buildTarget = platform.defaultTarget;
@@ -124,20 +130,14 @@ namespace UnityEditor
         public static string GetBuildTargetNiceName(BuildTarget platform, BuildTargetGroup buildTargetGroup = BuildTargetGroup.Unknown)
         {
             if (PlatformHasFlag(platform, TargetAttributes.SupportsFacebook) && buildTargetGroup == BuildTargetGroup.Facebook)
-            {
                 return "Facebook";
-            }
 
             return GetNiceNameByBuildTarget(platform);
         }
 
         public static string GetScriptAssemblyName(DiscoveredTargetInfo btInfo)
         {
-            if (!String.IsNullOrEmpty(btInfo.assemblyName))
-                return btInfo.assemblyName;
-
-            // Use shortname if assemblyName isn't set
-            return btInfo.nameList[kShortNameIndex];
+            return !String.IsNullOrEmpty(btInfo.assemblyName) ? btInfo.assemblyName : btInfo.nameList[kShortNameIndex];
         }
     }
 }
