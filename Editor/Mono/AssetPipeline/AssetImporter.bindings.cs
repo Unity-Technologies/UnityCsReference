@@ -131,5 +131,8 @@ namespace UnityEditor
 
         [FreeFunction("AssetImporterBindings::RegisterImporter")]
         extern internal static  void RegisterImporter(Type importer, int importerVersion, int queuePos, string fileExt, bool supportsImportDependencyHinting);
+
+        [FreeFunction("AssetImporterBindings::SupportsRemappedAssetType", HasExplicitThis = true, IsThreadSafe = true)]
+        public extern bool SupportsRemappedAssetType(Type type);
     }
 }

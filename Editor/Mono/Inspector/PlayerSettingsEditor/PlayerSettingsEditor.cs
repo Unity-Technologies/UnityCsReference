@@ -160,6 +160,7 @@ namespace UnityEditor
             public static readonly GUIContent scriptingRuntimeVersionActive = EditorGUIUtility.TrTextContent("Active Scripting Runtime Version*", "The scripting runtime version currently in use by the Editor.");
             public static readonly GUIContent scriptingRuntimeVersionActiveWarning = EditorGUIUtility.TrTextContent("The scripting runtime version currently in use by the Editor does not match the version specified by the project. An Editor restart is required for requested changes to take effect.");
             public static readonly GUIContent scriptingRuntimeVersionDeprecationWarning = EditorGUIUtility.TrTextContent("The .NET 3.5 scripting runtime has been deprecated and will be removed in a future release.");
+            public static readonly GUIContent scriptingBackendDeprecationWarning = EditorGUIUtility.TrTextContent("Support for the Mono scripting backend had been deprecated for this platform and will be removed in a future release.");
             public static readonly GUIContent scriptingRuntimeVersion = EditorGUIUtility.TrTextContent("Scripting Runtime Version*", "The scripting runtime version to be used. Unity uses different scripting backends based on platform, so these options are listed as equivalent expected behavior.");
             public static readonly GUIContent scriptingRuntimeVersionLegacy = EditorGUIUtility.TrTextContent(".NET 3.5 Equivalent (Deprecated)");
             public static readonly GUIContent scriptingRuntimeVersionLatest = EditorGUIUtility.TrTextContent(".NET 4.x Equivalent");
@@ -1993,6 +1994,11 @@ namespace UnityEditor
                     if (targetGroup == BuildTargetGroup.iOS && newBackend == ScriptingImplementation.Mono2x)
                     {
                         EditorGUILayout.HelpBox(SettingsContent.monoNotSupportediOS11WarningGUIContent.text, MessageType.Warning);
+                    }
+
+                    if ((targetGroup == BuildTargetGroup.PS4 || targetGroup == BuildTargetGroup.XboxOne) &&  newBackend == ScriptingImplementation.Mono2x)
+                    {
+                        EditorGUILayout.HelpBox(SettingsContent.scriptingBackendDeprecationWarning.text, MessageType.Warning);
                     }
 
                     if (newBackend != currBackend)

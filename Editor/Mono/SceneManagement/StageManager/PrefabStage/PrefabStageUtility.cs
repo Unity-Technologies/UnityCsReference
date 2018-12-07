@@ -98,6 +98,18 @@ namespace UnityEditor.Experimental.SceneManagement
             return Unsupported.GetFileIDHint(gameObject) == 0;
         }
 
+        static UInt64 GetPersistentPrefabOrVariantFileIdentifier(GameObject gameObject)
+        {
+            if (!EditorUtility.IsPersistent(gameObject))
+                throw new ArgumentException("Input GameObject must be persistent");
+
+            var handle = PrefabUtility.GetPrefabInstanceHandle(gameObject);
+            if (handle != null)
+                return Unsupported.GetLocalFileID(handle.GetInstanceID());
+
+            return Unsupported.GetLocalFileID(gameObject.GetInstanceID());
+        }
+
         static UInt64 GetPrefabOrVariantFileID(GameObject gameObject)
         {
             var handle = PrefabUtility.GetPrefabInstanceHandle(gameObject);
@@ -167,7 +179,7 @@ namespace UnityEditor.Experimental.SceneManagement
                 return repairedRoot;
 
             // Normal use case: Find the prefab root or variant root among the roots of the scene (or as a child)
-            UInt64 prefabAssetRootFileID = GetPrefabOrVariantFileID(assetRoot);
+            UInt64 prefabAssetRootFileID = GetPersistentPrefabOrVariantFileIdentifier(assetRoot);
 
             foreach (var root in rootsAfterLoadingPrefab)
             {

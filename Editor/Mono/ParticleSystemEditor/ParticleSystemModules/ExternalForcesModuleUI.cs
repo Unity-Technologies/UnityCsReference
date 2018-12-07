@@ -25,7 +25,7 @@ namespace UnityEditor
 
             public GUIContent[] influenceFilters = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("LayerMask"),
+                EditorGUIUtility.TrTextContent("Layer Mask"),
                 EditorGUIUtility.TrTextContent("List")
             };
         }

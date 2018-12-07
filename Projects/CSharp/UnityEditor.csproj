@@ -168,6 +168,9 @@
   <Compile Include="..\..\Editor\Mono\BuildTarget.cs">
     <Link>Editor\Mono\BuildTarget.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\BuildTargetConverter.cs">
+    <Link>Editor\Mono\BuildTargetConverter.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\BuildTargetGroup.cs">
     <Link>Editor\Mono\BuildTargetGroup.cs</Link>
   </Compile>

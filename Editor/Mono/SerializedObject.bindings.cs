@@ -167,7 +167,7 @@ namespace UnityEditor
         [FreeFunction("SerializedObjectBindings::CopyFromSerializedPropertyIfDifferentInternal", HasExplicitThis = true)]
         private extern bool CopyFromSerializedPropertyIfDifferentInternal(SerializedProperty prop);
 
-        internal extern bool hasModifiedProperties
+        public extern bool hasModifiedProperties
         {
             [NativeMethod("HasModifiedProperties")]
             get;

@@ -21,16 +21,16 @@ namespace UnityEditor
     {
         internal class Styles
         {
-            public static readonly GUIContent name = EditorGUIUtility.TrTextContent("Name");
+            public static readonly GUIContent name = EditorGUIUtility.TrTextContent("Name", "The assembly name is used to generate a <name>.dll file on you disk.");
             public static readonly GUIContent unityReferences = EditorGUIUtility.TrTextContent("Unity References");
-            public static readonly GUIContent defineConstraints = EditorGUIUtility.TrTextContent("Define Constraints");
-            public static readonly GUIContent references = EditorGUIUtility.TrTextContent("Assembly Definition References");
-            public static readonly GUIContent precompiledReferences = EditorGUIUtility.TrTextContent("Assembly References");
+            public static readonly GUIContent defineConstraints = EditorGUIUtility.TrTextContent("Define Constraints", "Specify a constraint in the assembly definition. The assembly definition only builds if this constraint returns True.");
+            public static readonly GUIContent references = EditorGUIUtility.TrTextContent("Assembly Definition References", "The list of assembly files that this assembly definition should reference.");
+            public static readonly GUIContent precompiledReferences = EditorGUIUtility.TrTextContent("Assembly References", "The list of Precompiled assemblies that this assembly definition should reference.");
             public static readonly GUIContent generalOptions = EditorGUIUtility.TrTextContent("General");
-            public static readonly GUIContent allowUnsafeCode = EditorGUIUtility.TrTextContent("Allow 'unsafe' Code");
-            public static readonly GUIContent overrideReferences = EditorGUIUtility.TrTextContent("Override References");
-            public static readonly GUIContent autoReferenced = EditorGUIUtility.TrTextContent("Auto Referenced");
-            public static readonly GUIContent platforms = EditorGUIUtility.TrTextContent("Platforms");
+            public static readonly GUIContent allowUnsafeCode = EditorGUIUtility.TrTextContent("Allow 'unsafe' Code", "When enabled, the C# compiler for this assembly includes types or members that have the `unsafe` keyword.");
+            public static readonly GUIContent overrideReferences = EditorGUIUtility.TrTextContent("Override References", "When enabled, you can select which specific precompiled assemblies to refer to via a drop-down list that appears. When not enabled, this assembly definition refers to all auto-referenced precompiled assemblies.");
+            public static readonly GUIContent autoReferenced = EditorGUIUtility.TrTextContent("Auto Referenced", "When enabled, this assembly definition is automatically referenced in predefined assemblies.");
+            public static readonly GUIContent platforms = EditorGUIUtility.TrTextContent("Platforms", "Select which platforms include or exclude in the build that this assembly definition file is for.");
             public static readonly GUIContent anyPlatform = EditorGUIUtility.TrTextContent("Any Platform");
             public static readonly GUIContent includePlatforms = EditorGUIUtility.TrTextContent("Include Platforms");
             public static readonly GUIContent excludePlatforms = EditorGUIUtility.TrTextContent("Exclude Platforms");
@@ -173,7 +173,7 @@ namespace UnityEditor
                 EditorGUILayout.BeginVertical(GUI.skin.box);
                 for (int i = 0; i < optionalUnityReferences.Length; ++i)
                 {
-                    m_State.optionalUnityReferences[i] = ToggleWithMixedValue(new GUIContent(optionalUnityReferences[i].DisplayName), m_State.optionalUnityReferences[i]);
+                    m_State.optionalUnityReferences[i] = ToggleWithMixedValue(new GUIContent(optionalUnityReferences[i].DisplayName, optionalUnityReferences[i].Tooltip), m_State.optionalUnityReferences[i]);
 
                     if (m_State.optionalUnityReferences[i] == MixedBool.True)
                     {

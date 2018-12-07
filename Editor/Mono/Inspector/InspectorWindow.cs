@@ -306,7 +306,10 @@ namespace UnityEditor
             DragAndDrop.visualMode = InternalEditorUtility.InspectorWindowDrag(targets, Event.current.type == EventType.DragPerform);
 
             if (Event.current.type == EventType.DragPerform)
+            {
                 DragAndDrop.AcceptDrag();
+                EditorGUIUtility.ExitGUI();
+            }
         }
 
         private static bool Dragging(Rect rect)

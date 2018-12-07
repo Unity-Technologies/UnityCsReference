@@ -1935,6 +1935,12 @@ public sealed partial class ParticleSystem : Component
                     public bool enabled { set { SetEnabled(m_ParticleSystem, value); } get { return GetEnabled(m_ParticleSystem); } }
                     public float multiplier { get { return GetMultiplier(m_ParticleSystem); } set { SetMultiplier(m_ParticleSystem, value); } }
                     public ParticleSystemGameObjectFilter influenceFilter { get { return GetInfluenceFilter(m_ParticleSystem); } set { SetInfluenceFilter(m_ParticleSystem, value); } }
+                    public int influenceCount { get { return GetInfluenceCount(m_ParticleSystem); } }
+        public void AddInfluence(ParticleSystemForceField field) { AddInfluence(m_ParticleSystem, field); }
+        public void RemoveInfluence(int index) { RemoveInfluenceAtIndex(m_ParticleSystem, index); }
+        public void RemoveInfluence(ParticleSystemForceField field) { RemoveInfluence(m_ParticleSystem, field); }
+        public void SetInfluence(int index, ParticleSystemForceField field) { SetInfluence(m_ParticleSystem, index, field); }
+        public ParticleSystemForceField GetInfluence(int index) { return GetInfluence(m_ParticleSystem, index); }
         
         public bool IsAffectedBy(ParticleSystemForceField field)                                                    { return IsAffectedBy_Internal(m_ParticleSystem, field); }
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -1964,6 +1970,30 @@ public sealed partial class ParticleSystem : Component
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  ParticleSystemGameObjectFilter GetInfluenceFilter (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  int GetInfluenceCount (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void AddInfluence (ParticleSystem system, ParticleSystemForceField field) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void RemoveInfluence (ParticleSystem system, ParticleSystemForceField field) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void RemoveInfluenceAtIndex (ParticleSystem system, int index) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetInfluence (ParticleSystem system, int index, ParticleSystemForceField field) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  ParticleSystemForceField GetInfluence (ParticleSystem system, int index) ;
 
     }
 
