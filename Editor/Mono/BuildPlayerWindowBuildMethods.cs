@@ -308,10 +308,11 @@ namespace UnityEditor
                 }
 
 
-                // When exporting Eclipse project, we're saving a folder, not file,
+                // When exporting Gradle or VS project, we're saving a folder, not file,
                 // deal with it separately:
                 if (target == BuildTarget.Android
-                    && EditorUserBuildSettings.exportAsGoogleAndroidProject)
+                    && EditorUserBuildSettings.exportAsGoogleAndroidProject
+                    && EditorUserBuildSettings.androidBuildSystem != AndroidBuildSystem.Internal)
                 {
                     var exportProjectTitle  = "Export Google Android Project";
                     var exportProjectFolder = EditorUtility.SaveFolderPanel(exportProjectTitle, previousPath, "");
@@ -324,6 +325,10 @@ namespace UnityEditor
                 }
 
                 string extension = PostprocessBuildPlayer.GetExtensionForBuildTarget(targetGroup, target, options);
+                // Invalidate default name, if extension mismatches the default file (for ex., when switching between folder type export to file type export, see Android)
+                if (extension != Path.GetExtension(defaultName).Replace(".", ""))
+                    defaultName = string.Empty;
+
                 string title = "Build " + BuildPlatforms.instance.GetBuildTargetDisplayName(targetGroup, target);
                 string path = EditorUtility.SaveBuildPanel(target, title, defaultFolder, defaultName, extension, out updateExistingBuild);
 

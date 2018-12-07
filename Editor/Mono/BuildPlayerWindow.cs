@@ -858,7 +858,8 @@ namespace UnityEditor
 
             GUIContent buildButton = styles.build;
             if (platform.targetGroup == BuildTargetGroup.Android
-                && EditorUserBuildSettings.exportAsGoogleAndroidProject)
+                && EditorUserBuildSettings.exportAsGoogleAndroidProject
+                && EditorUserBuildSettings.androidBuildSystem != AndroidBuildSystem.Internal)
                 buildButton = styles.export;
 
             // Build Button
