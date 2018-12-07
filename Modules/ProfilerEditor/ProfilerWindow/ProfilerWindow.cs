@@ -571,6 +571,7 @@ namespace UnityEditor
                 : ColorBlindCondition.Default;
         }
 
+        // Used by Native method DoBuildPlayer_PostBuild() in BuildPlayer.cpp
         [MenuItem("Window/Analysis/Profiler %7", false, 0)]
         static void ShowProfilerWindow()
         {

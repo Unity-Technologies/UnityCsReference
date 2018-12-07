@@ -12,8 +12,20 @@ namespace UnityEngine
     internal sealed class UnitySynchronizationContext : SynchronizationContext
     {
         private const int kAwqInitialCapacity = 20;
-        private readonly Queue<WorkRequest> m_AsyncWorkQueue = new Queue<WorkRequest>(kAwqInitialCapacity);
-        private readonly int m_MainThreadID = System.Threading.Thread.CurrentThread.ManagedThreadId;
+        private readonly Queue<WorkRequest> m_AsyncWorkQueue;
+        private readonly int m_MainThreadID;
+
+        private UnitySynchronizationContext(int mainThreadID)
+        {
+            m_AsyncWorkQueue = new Queue<WorkRequest>(kAwqInitialCapacity);
+            m_MainThreadID = mainThreadID;
+        }
+
+        private UnitySynchronizationContext(Queue<WorkRequest> queue, int mainThreadID)
+        {
+            m_AsyncWorkQueue = queue;
+            m_MainThreadID = mainThreadID;
+        }
 
         // Send will process the call synchronously. If the call is processed on the main thread, we'll invoke it
         // directly here. If the call is processed on another thread it will be queued up like POST to be executed
@@ -46,6 +58,12 @@ namespace UnityEngine
             }
         }
 
+        // CreateCopy returns a new UnitySynchronizationContext object, but the queue is still shared with the original
+        public override SynchronizationContext CreateCopy()
+        {
+            return new UnitySynchronizationContext(m_AsyncWorkQueue, m_MainThreadID);
+        }
+
         // Exec will execute tasks off the task list
         private void Exec()
         {
@@ -66,7 +84,7 @@ namespace UnityEngine
         private static void InitializeSynchronizationContext()
         {
             if (SynchronizationContext.Current == null)
-                SynchronizationContext.SetSynchronizationContext(new UnitySynchronizationContext());
+                SynchronizationContext.SetSynchronizationContext(new UnitySynchronizationContext(System.Threading.Thread.CurrentThread.ManagedThreadId));
         }
 
         // All requests must be processed on the main thread where the full Unity API is available

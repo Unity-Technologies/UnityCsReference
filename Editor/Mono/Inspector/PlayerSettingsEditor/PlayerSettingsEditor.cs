@@ -1957,17 +1957,8 @@ namespace UnityEditor
 
             if (newScriptingRuntimeVersions != PlayerSettings.scriptingRuntimeVersion)
             {
-                if (EditorUtility.DisplayDialog(
-                        LocalizationDatabase.GetLocalizedString("Restart required"),
-                        LocalizationDatabase.GetLocalizedString("Changing scripting runtime version requires a restart of the Editor to take effect. Do you wish to proceed?"),
-                        LocalizationDatabase.GetLocalizedString("Restart"),
-                        LocalizationDatabase.GetLocalizedString("Cancel")))
-                {
-                    PlayerSettings.scriptingRuntimeVersion = newScriptingRuntimeVersions;
-                    EditorCompilationInterface.Instance.CleanScriptAssemblies();
-                    if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
-                        EditorApplication.OpenProject(Environment.CurrentDirectory);
-                }
+                PlayerSettings.scriptingRuntimeVersion = newScriptingRuntimeVersions;
+                PlayerSettings.RelaunchProjectIfScriptRuntimeVersionHasChanged();
             }
 
             // Scripting back-end

@@ -37,6 +37,9 @@ namespace UnityEditor
         [StaticAccessor("GetPlayerSettings()")]
         public static extern bool GetWsaHolographicRemotingEnabled();
 
+        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+        internal static extern void RelaunchProjectIfScriptRuntimeVersionHasChanged();
+
         [StaticAccessor("GetPlayerSettings()")]
         public static extern void SetWsaHolographicRemotingEnabled(bool enabled);
     }
