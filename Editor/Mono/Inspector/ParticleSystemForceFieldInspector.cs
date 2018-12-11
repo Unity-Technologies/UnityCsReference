@@ -74,10 +74,10 @@ namespace UnityEditor
             public static GUIContent directionY = EditorGUIUtility.TrTextContent("Y", "The force to apply along the Y axis.");
             public static GUIContent directionZ = EditorGUIUtility.TrTextContent("Z", "The force to apply along the Z axis.");
             public static GUIContent gravity = EditorGUIUtility.TrTextContent("Strength", "The strength of the gravity effect.");
-            public static GUIContent gravityFocus = EditorGUIUtility.TrTextContent("Gravity Focus", "Choose a band within the volume that particles will be attracted towards.");
+            public static GUIContent gravityFocus = EditorGUIUtility.TrTextContent("Focus", "Choose a band within the volume that particles will be attracted towards.");
             public static GUIContent rotationSpeed = EditorGUIUtility.TrTextContent("Speed", "The speed at which particles are propelled around the vortex.");
             public static GUIContent rotationAttraction = EditorGUIUtility.TrTextContent("Attraction", "Controls how strongly particles are dragged into the vortex motion.");
-            public static GUIContent rotationRandomness = EditorGUIUtility.TrTextContent("Rotation Randomness", "Propel particles around random axes of the shape.");
+            public static GUIContent rotationRandomness = EditorGUIUtility.TrTextContent("Randomness", "Propel particles around random axes of the shape.");
             public static GUIContent drag = EditorGUIUtility.TrTextContent("Strength", "The strength of the drag effect.");
             public static GUIContent multiplyDragByParticleSize = EditorGUIUtility.TrTextContent("Multiply by Size", "Adjust the drag based on the size of the particles.");
             public static GUIContent multiplyDragByParticleVelocity = EditorGUIUtility.TrTextContent("Multiply by Velocity", "Adjust the drag based on the velocity of the particles.");

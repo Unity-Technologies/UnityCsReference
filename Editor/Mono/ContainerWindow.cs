@@ -66,15 +66,15 @@ namespace UnityEditor
 
         internal void ShowPopup()
         {
-            ShowPopupWithMode(ShowMode.PopupMenu);
+            ShowPopupWithMode(ShowMode.PopupMenu, true);
         }
 
         internal void ShowTooltip()
         {
-            ShowPopupWithMode(ShowMode.Tooltip);
+            ShowPopupWithMode(ShowMode.Tooltip, false);
         }
 
-        internal void ShowPopupWithMode(ShowMode mode)
+        internal void ShowPopupWithMode(ShowMode mode, bool giveFocus)
         {
             m_ShowMode = (int)mode;
             Internal_Show(m_PixelRect, m_ShowMode, m_MinSize, m_MaxSize);
@@ -83,7 +83,7 @@ namespace UnityEditor
             Internal_SetTitle(m_Title);
             Save();
             //  only set focus iff mode is a popupMenu.
-            Internal_BringLiveAfterCreation(false, mode == ShowMode.PopupMenu);
+            Internal_BringLiveAfterCreation(false, giveFocus);
         }
 
         static Color skinBackgroundColor

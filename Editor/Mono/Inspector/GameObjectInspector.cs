@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Experimental.SceneManagement;
-using UnityEditor.VersionControl;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -26,33 +25,23 @@ namespace UnityEditor
         SerializedProperty m_StaticEditorFlags;
         SerializedProperty m_Icon;
 
-        class Styles
+        static class Styles
         {
-            public GUIContent typelessIcon = EditorGUIUtility.IconContent("Prefab Icon");
+            public static GUIContent typelessIcon = EditorGUIUtility.IconContent("Prefab Icon");
+            public static GUIContent overridesContent = EditorGUIUtility.TrTextContent("Overrides");
+            public static GUIContent staticContent = EditorGUIUtility.TrTextContent("Static", "Enable the checkbox to mark this GameObject as static for all systems.\n\nDisable the checkbox to mark this GameObject as not static for all systems.\n\nUse the drop-down menu to mark as this GameObject as static or not static for individual systems.");
+            public static GUIContent layerContent = EditorGUIUtility.TrTextContent("Layer", "The layer that this GameObject is in.\n\nChoose Add Layer... to edit the list of available layers.");
+            public static GUIContent tagContent = EditorGUIUtility.TrTextContent("Tag", "The tag that this GameObject has.\n\nChoose Untagged to remove the current tag.\n\nChoose Add Tag... to edit the list of available tags.");
 
-            public GUIContent overridesContent = EditorGUIUtility.TrTextContent("Overrides");
+            public static float tagFieldWidth;
+            public static float layerFieldWidth;
 
-            public GUIContent staticContent = EditorGUIUtility.TrTextContent("Static", "Enable the checkbox to mark this GameObject as static for all systems.\n\nDisable the checkbox to mark this GameObject as not static for all systems.\n\nUse the drop-down menu to mark as this GameObject as static or not static for individual systems.");
-            public GUIContent layerContent = EditorGUIUtility.TrTextContent("Layer", "The layer that this GameObject is in.\n\nChoose Add Layer... to edit the list of available layers.");
-            public GUIContent tagContent = EditorGUIUtility.TrTextContent("Tag", "The tag that this GameObject has.\n\nChoose Untagged to remove the current tag.\n\nChoose Add Tag... to edit the list of available tags.");
+            public static GUIStyle staticDropdown = "StaticDropdown";
+            public static GUIStyle layerPopup = new GUIStyle(EditorStyles.popup);
+            public static GUIStyle overridesDropdown = new GUIStyle("MiniPullDown");
+            public static GUIStyle prefabButtonsHorizontalLayout = new GUIStyle { fixedHeight = 17, margin = new RectOffset { top = 1, bottom = 1 } };
 
-            public float tagFieldWidth;
-            public float layerFieldWidth;
-
-            public GUIStyle staticDropdown = "StaticDropdown";
-            public GUIStyle layerPopup = new GUIStyle(EditorStyles.popup);
-            public GUIStyle overridesDropdown = new GUIStyle("MiniPullDown");
-            public GUIStyle prefabButtonsHorizontalLayout = new GUIStyle
-            {
-                margin = new RectOffset { top = 1 },
-                padding = new RectOffset { bottom = 1 }
-            };
-
-            public GUIStyle instanceManagementInfo = new GUIStyle(EditorStyles.helpBox);
-            public GUIStyle inspectorBig = new GUIStyle(EditorStyles.inspectorBig);
-
-            public GUIContent goTypeLabelMultiple = EditorGUIUtility.TrTextContent("Multiple");
-
+            public static GUIContent goTypeLabelMultiple = EditorGUIUtility.TrTextContent("Multiple");
             private static GUIContent regularPrefab = EditorGUIUtility.TrTextContent("Prefab");
             private static GUIContent disconnectedPrefab = EditorGUIUtility.TrTextContent("Prefab", "You have broken the prefab connection. Changes to the prefab will not be applied to this object before you Apply or Revert.");
             private static GUIContent modelPrefab = EditorGUIUtility.TrTextContent("Model");
@@ -65,7 +54,7 @@ namespace UnityEditor
             // Columns correspond to PrefabTypeUtility.PrefabAssetType (see comments above rows).
             // Rows correspond to PrefabTypeUtility.PrefabInstanceStatus (None, Connected, Disconnected, Missing).
             // If missing, both enums will be "Missing".
-            public GUIContent[,] goTypeLabel =
+            public static GUIContent[,] goTypeLabel =
             {
                 // None
                 { null, null, null, null },
@@ -79,29 +68,24 @@ namespace UnityEditor
                 { null, null, null, missingPrefabAsset }
             };
 
-            public Styles()
+            static Styles()
             {
                 tagFieldWidth = EditorStyles.boldLabel.CalcSize(tagContent).x;
                 layerFieldWidth = EditorStyles.boldLabel.CalcSize(layerContent).x;
-                GUIStyle miniButtonMid = "MiniButtonMid";
-                instanceManagementInfo.padding = miniButtonMid.padding;
-                instanceManagementInfo.alignment = miniButtonMid.alignment;
 
                 // Seems to be a bug in the way controls with margin internal to layout groups with padding calculate position. We'll work around it here.
                 layerPopup.margin.right = 0;
                 overridesDropdown.margin.right = 0;
             }
         }
-        static Styles s_Styles;
         const float kIconSize = 24;
 
         class PreviewData : IDisposable
         {
             bool m_Disposed;
-            GameObject m_GameObject;
 
             public readonly PreviewRenderUtility renderUtility;
-            public GameObject gameObject { get { return m_GameObject; } }
+            public GameObject gameObject { get; private set; }
 
             public PreviewData(UnityObject targetObject)
             {
@@ -113,7 +97,7 @@ namespace UnityEditor
             public void UpdateGameObject(UnityObject targetObject)
             {
                 UnityObject.DestroyImmediate(gameObject);
-                m_GameObject = EditorUtility.InstantiateForAnimatorPreview(targetObject);
+                gameObject = EditorUtility.InstantiateForAnimatorPreview(targetObject);
                 renderUtility.AddManagedGO(gameObject);
             }
 
@@ -123,7 +107,7 @@ namespace UnityEditor
                     return;
                 renderUtility.Cleanup();
                 UnityObject.DestroyImmediate(gameObject);
-                m_GameObject = null;
+                gameObject = null;
                 m_Disposed = true;
             }
         }
@@ -231,35 +215,21 @@ namespace UnityEditor
             }
 
             //If we have more then one selected... but it is not all the flags
-            //All indictates 'everything' which means it should be a tick!
+            //All indicates 'everything' which means it should be a tick!
             return countedBits > 0 && countedBits != numFlags;
         }
 
         protected override void OnHeaderGUI()
         {
-            if (s_Styles == null)
-                s_Styles = new Styles();
-
             bool enabledTemp = GUI.enabled;
             GUI.enabled = true;
-            EditorGUILayout.BeginVertical(s_Styles.inspectorBig);
+            EditorGUILayout.BeginVertical(EditorStyles.inspectorBig);
             GUI.enabled = enabledTemp;
             DrawInspector();
             EditorGUILayout.EndVertical();
         }
 
         public override void OnInspectorGUI() {}
-
-        static void IterateOverGameObjects(GameObject obj, ref int indent, Action<GameObject, int> action)
-        {
-            action(obj, indent);
-            indent++;
-            foreach (Transform child in obj.transform)
-            {
-                IterateOverGameObjects(child.gameObject, ref indent, action);
-            }
-            indent--;
-        }
 
         internal bool DrawInspector()
         {
@@ -268,7 +238,7 @@ namespace UnityEditor
             GameObject go = target as GameObject;
 
             // Don't let icon be null as it will create null reference exceptions.
-            Texture2D icon = (Texture2D)(s_Styles.typelessIcon.image);
+            Texture2D icon = (Texture2D)(Styles.typelessIcon.image);
 
             // Leave iconContent to be default if multiple objects not the same type.
             if (m_AllOfSamePrefabType)
@@ -277,50 +247,49 @@ namespace UnityEditor
             }
 
             EditorGUILayout.BeginHorizontal();
-            EditorGUI.ObjectIconDropDown(GUILayoutUtility.GetRect(kIconSize, kIconSize, GUILayout.ExpandWidth(false)), targets, true, icon as Texture2D, m_Icon);
+            EditorGUI.ObjectIconDropDown(GUILayoutUtility.GetRect(kIconSize, kIconSize, GUILayout.ExpandWidth(false)), targets, true, icon, m_Icon);
             DrawPostIconContent();
 
             using (new EditorGUI.DisabledScope(m_ImmutableSelf))
             {
                 EditorGUILayout.BeginVertical();
+                {
+                    EditorGUILayout.BeginHorizontal();
+                    {
+                        EditorGUILayout.BeginHorizontal(GUILayout.Width(Styles.tagFieldWidth));
+                        {
+                            GUILayout.FlexibleSpace();
 
-                EditorGUILayout.BeginHorizontal();
+                            // IsActive
+                            EditorGUI.PropertyField(
+                                GUILayoutUtility.GetRect(EditorStyles.toggle.padding.left, EditorGUIUtility.singleLineHeight, EditorStyles.toggle,
+                                    GUILayout.ExpandWidth(false)), m_IsActive, GUIContent.none);
+                        }
+                        EditorGUILayout.EndHorizontal();
 
-                EditorGUILayout.BeginHorizontal(GUILayout.Width(s_Styles.tagFieldWidth));
+                        // Name
+                        EditorGUILayout.DelayedTextField(m_Name, GUIContent.none);
 
-                GUILayout.FlexibleSpace();
+                        // Static flags toggle
+                        DoStaticToggleField(go);
 
-                // IsActive
-                EditorGUI.PropertyField(GUILayoutUtility.GetRect(EditorStyles.toggle.padding.left, EditorGUIUtility.singleLineHeight, EditorStyles.toggle, GUILayout.ExpandWidth(false)), m_IsActive, GUIContent.none);
+                        // Static flags dropdown
+                        DoStaticFlagsDropDown(go);
+                    }
+                    EditorGUILayout.EndHorizontal();
 
-                EditorGUILayout.EndHorizontal();
+                    EditorGUILayout.BeginHorizontal();
+                    {
+                        // Tag
+                        DoTagsField(go);
 
-                // Name
-                EditorGUILayout.DelayedTextField(m_Name, GUIContent.none);
-
-                // Static flags toggle
-                DoStaticToggleField(go);
-
-                // Static flags dropdown
-                DoStaticFlagsDropDown(go);
-
-                EditorGUILayout.EndHorizontal();
-
-                GUILayout.Space(EditorGUIUtility.standardVerticalSpacing);
-
-                EditorGUILayout.BeginHorizontal();
-
-                // Tag
-                DoTagsField(go);
-
-                // Layer
-                DoLayerField(go);
-
-                EditorGUILayout.EndHorizontal();
-
+                        // Layer
+                        DoLayerField(go);
+                    }
+                    EditorGUILayout.EndHorizontal();
+                }
                 EditorGUILayout.EndVertical();
             }
-
             EditorGUILayout.EndHorizontal();
 
             // Prefab Toolbar
@@ -341,7 +310,7 @@ namespace UnityEditor
 
             using (new EditorGUI.DisabledScope(m_PlayModeObjects))
             {
-                EditorGUILayout.BeginHorizontal(s_Styles.prefabButtonsHorizontalLayout);
+                EditorGUILayout.BeginHorizontal(Styles.prefabButtonsHorizontalLayout);
 
                 // Prefab information
                 PrefabAssetType singlePrefabType = PrefabUtility.GetPrefabAssetType(target);
@@ -349,16 +318,16 @@ namespace UnityEditor
                 GUIContent prefixLabel;
                 if (targets.Length > 1)
                 {
-                    prefixLabel = s_Styles.goTypeLabelMultiple;
+                    prefixLabel = Styles.goTypeLabelMultiple;
                 }
                 else
                 {
-                    prefixLabel = s_Styles.goTypeLabel[(int)singlePrefabType, (int)singleInstanceStatus];
+                    prefixLabel = Styles.goTypeLabel[(int)singlePrefabType, (int)singleInstanceStatus];
                 }
 
                 if (prefixLabel != null)
                 {
-                    EditorGUILayout.BeginHorizontal(GUILayout.Width(kIconSize + s_Styles.tagFieldWidth));
+                    EditorGUILayout.BeginHorizontal(GUILayout.Width(kIconSize + Styles.tagFieldWidth));
                     GUILayout.FlexibleSpace();
                     if (m_IsDisconnected || m_IsMissing)
                     {
@@ -378,7 +347,7 @@ namespace UnityEditor
                         if (singlePrefabType == PrefabAssetType.Model)
                         {
                             // Open Model Prefab
-                            if (GUILayout.Button("Open", "MiniButtonLeft"))
+                            if (GUILayout.Button("Open", EditorStyles.miniButtonLeft))
                             {
                                 GameObject asset = PrefabUtility.GetOriginalSourceOrVariantRoot(target);
                                 AssetDatabase.OpenAsset(asset);
@@ -390,7 +359,7 @@ namespace UnityEditor
                             // Open non-Model Prefab
                             using (new EditorGUI.DisabledScope(m_ImmutableSourceAsset))
                             {
-                                if (GUILayout.Button("Open", "MiniButtonLeft"))
+                                if (GUILayout.Button("Open", EditorStyles.miniButtonLeft))
                                 {
                                     GameObject asset = PrefabUtility.GetOriginalSourceOrVariantRoot(target);
                                     PrefabStageUtility.OpenPrefab(AssetDatabase.GetAssetPath(asset), (GameObject)target, StageNavigationManager.Analytics.ChangeType.EnterViaInstanceInspectorOpenButton);
@@ -401,7 +370,7 @@ namespace UnityEditor
                     }
 
                     // Select prefab
-                    if (GUILayout.Button("Select", "MiniButtonRight"))
+                    if (GUILayout.Button("Select", EditorStyles.miniButtonRight))
                     {
                         HashSet<GameObject> selectedAssets = new HashSet<GameObject>();
                         for (int i = 0; i < targets.Length; i++)
@@ -428,13 +397,13 @@ namespace UnityEditor
                     GUILayoutUtility.GetRect(6, 6, GUILayout.ExpandWidth(false));
 
                     // Reserve space regardless of whether the button is there or not to avoid jumps in button sizes.
-                    Rect rect = GUILayoutUtility.GetRect(s_Styles.overridesContent, s_Styles.overridesDropdown);
+                    Rect rect = GUILayoutUtility.GetRect(Styles.overridesContent, Styles.overridesDropdown);
                     if (m_IsPrefabInstanceOutermostRoot)
                     {
-                        if (EditorGUI.DropdownButton(rect, s_Styles.overridesContent, FocusType.Passive))
+                        if (EditorGUI.DropdownButton(rect, Styles.overridesContent, FocusType.Passive))
                         {
                             if (targets.Length > 1)
-                                PopupWindow.Show(rect, new PrefabOverridesWindow(targets.Select(e => (GameObject)e).ToArray<GameObject>()));
+                                PopupWindow.Show(rect, new PrefabOverridesWindow(targets.Select(e => (GameObject)e).ToArray()));
                             else
                                 PopupWindow.Show(rect, new PrefabOverridesWindow((GameObject)target));
                             GUIUtility.ExitGUI();
@@ -447,11 +416,11 @@ namespace UnityEditor
 
         private void DoLayerField(GameObject go)
         {
-            EditorGUIUtility.labelWidth = s_Styles.layerFieldWidth;
-            Rect layerRect = GUILayoutUtility.GetRect(GUIContent.none, s_Styles.layerPopup);
+            EditorGUIUtility.labelWidth = Styles.layerFieldWidth;
+            Rect layerRect = GUILayoutUtility.GetRect(GUIContent.none, Styles.layerPopup);
             EditorGUI.BeginProperty(layerRect, GUIContent.none, m_Layer);
             EditorGUI.BeginChangeCheck();
-            int layer = EditorGUI.LayerField(layerRect, s_Styles.layerContent, go.layer, s_Styles.layerPopup);
+            int layer = EditorGUI.LayerField(layerRect, Styles.layerContent, go.layer, Styles.layerPopup);
             if (EditorGUI.EndChangeCheck())
             {
                 GameObjectUtility.ShouldIncludeChildren includeChildren = GameObjectUtility.DisplayUpdateChildrenDialogIfNeeded(targets.OfType<GameObject>(),
@@ -478,11 +447,11 @@ namespace UnityEditor
             {
                 tagName = "Undefined";
             }
-            EditorGUIUtility.labelWidth = s_Styles.tagFieldWidth;
+            EditorGUIUtility.labelWidth = Styles.tagFieldWidth;
             Rect tagRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.popup);
             EditorGUI.BeginProperty(tagRect, GUIContent.none, m_Tag);
             EditorGUI.BeginChangeCheck();
-            string tag = EditorGUI.TagField(tagRect, s_Styles.tagContent, tagName);
+            string tag = EditorGUI.TagField(tagRect, Styles.tagContent, tagName);
             if (EditorGUI.EndChangeCheck())
             {
                 m_Tag.stringValue = tag;
@@ -500,12 +469,12 @@ namespace UnityEditor
             int changedFlags;
             bool changedToValue;
             EditorGUI.EnumFlagsField(
-                GUILayoutUtility.GetRect(GUIContent.none, s_Styles.staticDropdown, GUILayout.ExpandWidth(false)),
+                GUILayoutUtility.GetRect(GUIContent.none, Styles.staticDropdown, GUILayout.ExpandWidth(false)),
                 GUIContent.none,
                 GameObjectUtility.GetStaticEditorFlags(go),
                 false,
                 out changedFlags, out changedToValue,
-                s_Styles.staticDropdown
+                Styles.staticDropdown
             );
             EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
@@ -520,7 +489,7 @@ namespace UnityEditor
 
         private void DoStaticToggleField(GameObject go)
         {
-            var staticRect = GUILayoutUtility.GetRect(s_Styles.staticContent, EditorStyles.toggle, GUILayout.ExpandWidth(false));
+            var staticRect = GUILayoutUtility.GetRect(Styles.staticContent, EditorStyles.toggle, GUILayout.ExpandWidth(false));
             EditorGUI.BeginProperty(staticRect, GUIContent.none, m_StaticEditorFlags);
             EditorGUI.BeginChangeCheck();
             var toggleRect = staticRect;
@@ -531,7 +500,7 @@ namespace UnityEditor
             bool nonLeftClick = (evt.type == EventType.MouseDown && evt.button != 0);
             if (nonLeftClick)
                 evt.type = EventType.Ignore;
-            var toggled = EditorGUI.ToggleLeft(toggleRect, s_Styles.staticContent, go.isStatic);
+            var toggled = EditorGUI.ToggleLeft(toggleRect, Styles.staticContent, go.isStatic);
             if (nonLeftClick)
                 evt.type = origType;
             EditorGUI.showMixedValue = false;

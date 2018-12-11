@@ -15,4 +15,12 @@ namespace UnityEditor
 
         public static extern void PerformBumpMapCheck(Material material);
     }
+
+    public static class MaterialEditorExtensions
+    {
+        public static void PerformBumpMapCheck(this Material material)
+        {
+            BumpMapSettings.PerformBumpMapCheck(material);
+        }
+    }
 }

@@ -5461,7 +5461,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
             s_PropertyStack.Push(new PropertyGUIData(property, totalPosition, wasBoldDefaultFont, GUI.enabled, GUI.backgroundColor));
 
-            if (GUIDebugger.active)
+            if (GUIDebugger.active && Event.current.type != EventType.Layout)
             {
                 var targetObjectTypeName = property.serializedObject.targetObject != null ?
                     property.serializedObject.targetObject.GetType().AssemblyQualifiedName : null;
@@ -5490,7 +5490,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
         // Ends a Property wrapper started with ::ref::BeginProperty.
         public static void EndProperty()
         {
-            if (GUIDebugger.active)
+            if (GUIDebugger.active && Event.current.type != EventType.Layout)
             {
                 GUIDebugger.LogEndProperty();
             }

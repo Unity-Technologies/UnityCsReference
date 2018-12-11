@@ -1618,8 +1618,10 @@ namespace UnityEditor
             var roots = previewScene.GetRootGameObjects();
             if (roots.Length != 1)
             {
-                throw new ArgumentException(string.Format("Could not load Prefab contents at path {0}.", assetPath));
+                EditorSceneManager.ClosePreviewScene(previewScene);
+                throw new ArgumentException(string.Format("Could not load Prefab contents at path {0}. Prefabs should have exactly 1 root GameObject, {1} was found.", assetPath, roots.Length));
             }
+
             return roots[0];
         }
 
@@ -1876,25 +1878,13 @@ namespace UnityEditor
             }
         }
 
-        static DateTime s_SaveStartTime = DateTime.MinValue;
-
         [RequiredByNativeCode]
-        static void OnPrefabSavingStarted()
+        static void OnPrefabSavingEnded(long ticks)
         {
-            s_SaveStartTime = DateTime.UtcNow;
-        }
+            var duration = new TimeSpan(ticks);
+            var saveStartTime = DateTime.UtcNow.Subtract(duration);
 
-        [RequiredByNativeCode]
-        static void OnPrefabSavingEnded()
-        {
-            if (s_SaveStartTime == DateTime.MinValue)
-            {
-                Debug.LogError("Cannot measure duration of saving a Prefab. OnPrefabSavingStarted() has not been called first.");
-                return;
-            }
-            var duration = DateTime.UtcNow.Subtract(s_SaveStartTime);
-            UsabilityAnalytics.SendEvent("prefabSave", s_SaveStartTime, duration, true, null);
-            s_SaveStartTime = DateTime.MinValue;
+            UsabilityAnalytics.SendEvent("prefabSave", saveStartTime, duration, true, null);
         }
     }
 }

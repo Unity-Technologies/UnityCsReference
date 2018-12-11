@@ -176,6 +176,9 @@ namespace UnityEditor
         [FreeFunction("GetPersistentManager().GetLocalFileID")]
         public static extern int GetLocalIdentifierInFile(int instanceID);
 
+        [FreeFunction("GetPersistentManager().GetLocalFileID")]
+        internal static extern UInt64 GetLocalFileID(int instanceID);
+
         internal static extern UInt64 GetFileIDHint([NotNull] UnityEngine.Object obj);
 
         [NativeThrows]

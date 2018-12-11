@@ -356,7 +356,9 @@ namespace UnityEditor
 
         void Initialize()
         {
-            m_AttachProfilerState = ConnectionUtility.GetAttachToPlayerState(this, (player) => ClearFramesCallback());
+            // When reinitializing (e.g. because Colorblind mode or PlatformModule changed) we don't need a new state
+            if (m_AttachProfilerState == null)
+                m_AttachProfilerState = ConnectionUtility.GetAttachToPlayerState(this, (player) => ClearFramesCallback());
 
             int historySize = ProfilerDriver.maxHistoryLength - 1;
 
@@ -583,6 +585,7 @@ namespace UnityEditor
                 : ColorBlindCondition.Default;
         }
 
+        // Used by Native method DoBuildPlayer_PostBuild() in BuildPlayer.cpp
         [MenuItem("Window/Analysis/Profiler %7", false, 0)]
         static void ShowProfilerWindow()
         {
