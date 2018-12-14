@@ -49,6 +49,7 @@ namespace UnityEditor.UIElements
         public BoundsIntField(string label)
             : base(label, null)
         {
+            delegatesFocus = false;
             visualInput.focusable = false;
 
             AddToClassList(ussClassName);
@@ -56,6 +57,7 @@ namespace UnityEditor.UIElements
             labelElement.AddToClassList(labelUssClassName);
 
             m_PositionField = new Vector3IntField("Position");
+            m_PositionField.delegatesFocus = true;
             m_PositionField.AddToClassList(positionUssClassName);
             m_PositionField.RegisterValueChangedCallback(e =>
             {
@@ -65,7 +67,9 @@ namespace UnityEditor.UIElements
             });
             visualInput.hierarchy.Add(m_PositionField);
 
+
             m_SizeField = new Vector3IntField("Size");
+            m_SizeField.delegatesFocus = true;
             m_SizeField.AddToClassList(sizeUssClassName);
             m_SizeField.RegisterValueChangedCallback(e =>
             {

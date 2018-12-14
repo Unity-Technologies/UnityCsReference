@@ -11,7 +11,8 @@ namespace UnityEngine.Rendering
 {
     [UsedByNativeCode]
     [NativeHeader("Runtime/Export/SphericalHarmonicsL2.bindings.h")]
-    public partial struct SphericalHarmonicsL2 : IEquatable<SphericalHarmonicsL2>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SphericalHarmonicsL2 : IEquatable<SphericalHarmonicsL2>
     {
         private float shr0, shr1, shr2, shr3, shr4, shr5, shr6, shr7, shr8;
         private float shg0, shg1, shg2, shg3, shg4, shg5, shg6, shg7, shg8;

@@ -192,6 +192,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
+        public static void SkipCustomScriptAssemblyGraphValidation(bool skipValidation)
+        {
+            Instance.SkipCustomScriptAssemblyGraphValidation(skipValidation);
+        }
+
+        [RequiredByNativeCode]
         public static void RunScriptUpdaterOnAssembly(string assemblyFilename)
         {
             Instance.RunScriptUpdaterOnAssembly(assemblyFilename);
@@ -225,6 +231,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public static void SetAllCustomScriptAssemblyJsons(string[] allAssemblyJsons, string[] guids)
         {
             EmitExceptionsAsErrors(Instance.SetAllCustomScriptAssemblyJsons(allAssemblyJsons, guids));
+        }
+
+        [RequiredByNativeCode]
+        public static void SetAllCustomScriptAssemblyJsonContents(string[] allAssemblyJsonPaths, string[] allAssemblyJsonContents, string[] guids)
+        {
+            EmitExceptionsAsErrors(Instance.SetAllCustomScriptAssemblyJsonContents(allAssemblyJsonPaths, allAssemblyJsonContents, guids));
         }
 
         [RequiredByNativeCode]

@@ -29,8 +29,9 @@ namespace UnityEngine.UIElements
 
     internal static class StyleValueExtensions
     {
-        internal static readonly int UndefinedSpecificity = 0;
-        internal static readonly int InlineSpecificity = int.MaxValue;
+        internal const int UndefinedSpecificity = 0;
+        internal const int UnitySpecificity = -1;
+        internal const int InlineSpecificity = int.MaxValue;
 
         // Convert StyleLength to StyleFloat for IResolvedStyle
         internal static StyleFloat ToStyleFloat(this StyleLength styleLength)
@@ -61,7 +62,7 @@ namespace UnityEngine.UIElements
 
         internal static U GetSpecifiedValueOrDefault<T, U>(this T styleValue, U defaultValue) where T : IStyleValue<U>
         {
-            if (styleValue.specificity > UndefinedSpecificity)
+            if (styleValue.specificity != UndefinedSpecificity)
                 return styleValue.value;
 
             return defaultValue;
@@ -69,7 +70,7 @@ namespace UnityEngine.UIElements
 
         internal static float GetSpecifiedValueOrDefault(this StyleLength styleValue, float defaultValue)
         {
-            if (styleValue.specificity > UndefinedSpecificity)
+            if (styleValue.specificity != UndefinedSpecificity)
                 return styleValue.value.value;
 
             return defaultValue;
@@ -84,7 +85,7 @@ namespace UnityEngine.UIElements
             if (styleValue.keyword == StyleKeyword.None)
                 return float.NaN;
 
-            if (styleValue.specificity > UndefinedSpecificity)
+            if (styleValue.specificity != UndefinedSpecificity)
                 return styleValue.value.value;
 
             return float.NaN;
@@ -97,7 +98,12 @@ namespace UnityEngine.UIElements
                 case StylePropertyApplyMode.Copy:
                     return true;
                 case StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity:
+                {
+                    if (specificity == UndefinedSpecificity && otherSpecificity == UnitySpecificity)
+                        return true;
+
                     return otherSpecificity >= specificity;
+                }
                 case StylePropertyApplyMode.CopyIfNotInline:
                     return specificity < InlineSpecificity;
                 default:

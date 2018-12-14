@@ -103,7 +103,7 @@ namespace UnityEditor.UIElements
 
             void UpdateValueFromText()
             {
-                var newValue = StringToValue(textValueFieldParent.text);
+                var newValue = StringToValue(text);
                 textValueFieldParent.value = newValue;
             }
 
@@ -144,9 +144,12 @@ namespace UnityEditor.UIElements
                 if (evt.eventTypeId == KeyDownEvent.TypeId())
                 {
                     KeyDownEvent kde = evt as KeyDownEvent;
-                    if (kde.character == '\n')
+
+                    if ((kde?.keyCode == KeyCode.KeypadEnter) ||
+                        (kde?.keyCode == KeyCode.Return))
                     {
-                        UpdateValueFromText();
+                        // Here we should update the value, but it will be done when the blur event will be handled...
+                        parent.Focus();
                     }
                     else
                     {
@@ -190,7 +193,7 @@ namespace UnityEditor.UIElements
 
                 if (evt.eventTypeId == BlurEvent.TypeId())
                 {
-                    if (string.IsNullOrEmpty(textValueFieldParent.text))
+                    if (string.IsNullOrEmpty(text))
                     {
                         // Make sure that empty field gets the default value
                         textValueFieldParent.value = default(TValueType);

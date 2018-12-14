@@ -150,7 +150,6 @@ namespace UnityEngine.Networking
             return true;
         }
 
-
         //Relay ----
         static public void ConnectAsNetworkHost(int hostId, string address, int port, NetworkID network, SourceID source, NodeID node, out byte error)
         {

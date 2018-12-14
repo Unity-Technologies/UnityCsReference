@@ -52,6 +52,12 @@ namespace UnityEditor.UIElements
 
         internal Mode mode { get; private set; }
 
+        internal Editor Editor { get; private set; }
+
+        internal bool OwnsEditor { get; private set; } = false;
+
+        internal SerializedObject BoundObject { get; private set; }
+
         public InspectorElement() : this(null as Object) {}
 
         public InspectorElement(Object obj) : this(obj, Mode.Normal) {}
@@ -98,6 +104,8 @@ namespace UnityEditor.UIElements
 
             this.mode = mode;
 
+            Editor = editor;
+
             if (editor.targets.Length == 0)
             {
                 return;
@@ -115,7 +123,26 @@ namespace UnityEditor.UIElements
             this.Bind(editor.serializedObject);
         }
 
-        private void Reset(SerializedObjectBindEvent evt)
+        void OnDetachFromPanel(DetachFromPanelEvent evt)
+        {
+            if (OwnsEditor && Editor != null)
+            {
+                Object.DestroyImmediate(Editor);
+                Editor = null;
+                OwnsEditor = false;
+                RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            }
+
+            UnregisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+        }
+
+        void OnAttachToPanel(AttachToPanelEvent evt)
+        {
+            Reset(BoundObject);
+            UnregisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+        }
+
+        private void Reset(SerializedObject bindObject)
         {
             Clear();
 
@@ -129,7 +156,6 @@ namespace UnityEditor.UIElements
             RemoveFromClassList(debugVariantUssClassName);
             RemoveFromClassList(debugInternalVariantUssClassName);
 
-            var bindObject = evt.bindObject;
             if (bindObject == null)
                 return;
 
@@ -138,6 +164,8 @@ namespace UnityEditor.UIElements
             {
                 return;
             }
+
+            BoundObject = bindObject;
 
             var customInspector = CreateInspectorElementFromEditor(editor);
             if (customInspector == null)
@@ -157,22 +185,30 @@ namespace UnityEditor.UIElements
             if (bindEvent == null)
                 return;
 
-            Reset(bindEvent);
+            Reset(bindEvent.bindObject);
         }
 
         private Editor GetOrCreateEditor(SerializedObject serializedObject)
         {
-            var target = serializedObject?.targetObject;
-            var activeEditors = ActiveEditorTracker.sharedTracker?.activeEditors;
-            var editor =  activeEditors?.FirstOrDefault((e) => e.target == target || e.serializedObject == serializedObject);
+            if (Editor != null)
+                return Editor;
 
-            if (editor == null)
+            var target = serializedObject?.targetObject;
+
+            foreach (var inspectorWindow in InspectorWindow.GetInspectors())
             {
-                editor = Editor.CreateEditor(target);
-                // TODO - When we create an editor here, we never destroy it. Need to store a reference to the editor and call DestroyImmediate on it when the InspectorElement is being destroyed or unparented.
+                foreach (var trackerEditor in inspectorWindow.tracker.activeEditors)
+                {
+                    if (trackerEditor.target == target || trackerEditor.serializedObject == serializedObject)
+                    {
+                        return Editor = trackerEditor;
+                    }
+                }
             }
 
-            return editor;
+            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+            OwnsEditor = true;
+            return Editor = Editor.CreateEditor(serializedObject?.targetObject);
         }
 
         private VisualElement CreateDefaultInspector(SerializedObject serializedObject)
@@ -283,6 +319,7 @@ namespace UnityEditor.UIElements
                     ScriptAttributeUtility.propertyHandlerCache = editor.propertyHandlerCache;
 
                     var originalWideMode = EditorGUIUtility.wideMode;
+                    var originalHierarchyMode = EditorGUIUtility.hierarchyMode;
 
                     EditorGUIUtility.hierarchyMode = true;
                     var inspectorWidth = inspector.layout.width;
@@ -353,6 +390,7 @@ namespace UnityEditor.UIElements
                     finally
                     {
                         EditorGUIUtility.wideMode = originalWideMode;
+                        EditorGUIUtility.hierarchyMode = originalHierarchyMode;
                     }
                 }
             });

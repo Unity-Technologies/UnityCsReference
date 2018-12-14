@@ -19,6 +19,7 @@ namespace UnityEditor
         ReserializeAssetsAndMetadata = ReserializeAssets | ReserializeMetadata
     }
 
+    [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabase.h")]
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabaseUtility.h")]
     public partial class AssetDatabase
     {
@@ -106,5 +107,8 @@ namespace UnityEditor
 
         [FreeFunction("AssetDatabase::RemoveObjectFromAsset")]
         extern public static void RemoveObjectFromAsset([NotNull] UnityEngine.Object objectToRemove);
+
+        [FreeFunction("AssetDatabase::GUIDFromExistingAssetPath")]
+        extern internal static GUID GUIDFromExistingAssetPath(string path);
     }
 }

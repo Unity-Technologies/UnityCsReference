@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using Unity.Collections.LowLevel.Unsafe;
@@ -535,7 +536,14 @@ namespace UnityEditor.StyleSheets
             {
                 return defaultValue;
             }
-            return EditorResources.Load<UnityEngine.Object>(resourceStr, false) as T;
+
+            var resource = EditorResources.Load<UnityEngine.Object>(resourceStr, false) as T;
+            if (resource == null)
+            {
+                resource = Resources.Load<UnityEngine.Object>(resourceStr) as T;
+            }
+
+            return resource;
         }
 
         public T GetResource<T>(string key, T defaultValue = null) where T : UnityEngine.Object
@@ -816,7 +824,6 @@ namespace UnityEditor.StyleSheets
         private StyleBlock[] m_Blocks;
         private readonly Dictionary<int, string> m_NameCollisionTable = new Dictionary<int, string>();
 
-        public string[] sheetPaths { get; private set; } = {};
         internal StyleBuffers buffers { get; private set; }
 
         public StyleCatalog()
@@ -877,42 +884,35 @@ namespace UnityEditor.StyleSheets
             return GetStyle(selectorKey, states.Concat(new[] {StyleState.normal}).ToArray());
         }
 
-        public bool AddPath(string ussPath)
+        public void Load(params string[] paths)
         {
-            return AddPaths(ussPath);
+            Load((IEnumerable<string>)paths);
         }
 
-        public bool AddPaths(params string[] paths)
+        public void Load(IEnumerable<string> paths)
         {
-            return AddPaths((IEnumerable<string>)paths);
+            var sheets = paths.Select(p => EditorResources.Load<UnityEngine.Object>(p) as StyleSheet)
+                .Where(s => s != null);
+
+            Load(sheets);
         }
 
-        public bool AddPaths(IEnumerable<string> paths)
+        public void Load(IEnumerable<StyleSheet> sheets)
         {
-            var validPaths = paths.Where(p =>
+            try
             {
-                if (sheetPaths.Contains(p))
-                    return false;
-
-                // Check if path can be loaded
-                var loadableStyleSheet = EditorResources.Load<UnityEngine.Object>(p, false) as StyleSheet;
-                if (!loadableStyleSheet)
-                    return false;
-
-                return true;
-            });
-
-            sheetPaths = sheetPaths.Concat(validPaths).ToArray();
-            return true;
+                var resolver = new StyleSheetResolver();
+                resolver.AddStyleSheets(sheets.ToArray());
+                resolver.Resolve();
+                Load(resolver);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("Cannot load Style Catalog, StyleSheet resolving fails: " + ex);
+            }
         }
 
-        public void Load(string ussPath)
-        {
-            if (AddPath(ussPath))
-                Refresh();
-        }
-
-        public void Refresh(params StyleSheet[] sheets)
+        public void Load(StyleSheetResolver resolver)
         {
             var strings = new List<string>();
             var numbers = new List<float>();
@@ -925,18 +925,11 @@ namespace UnityEditor.StyleSheets
             m_NameCollisionTable.Clear();
             try
             {
-                var resolver = new StyleSheetResolver();
-                resolver.AddStyleSheets(sheetPaths);
-                if (sheets != null && sheets.Length > 0)
-                {
-                    resolver.AddStyleSheets(sheets);
-                }
-                resolver.Resolve();
                 Compile(resolver, numbers, colors, strings, rects, groups, functions, blocks);
             }
             catch (Exception ex)
             {
-                Debug.LogWarning("Error while refreshing stylesheet catalog: " + string.Join(", ", sheetPaths) + "\n" + ex);
+                Debug.LogWarning("Cannot compile StyleCatalog: " + ex);
             }
 
             buffers = new StyleBuffers
@@ -1176,11 +1169,20 @@ namespace UnityEditor.StyleSheets
                     else if (value.key == bottomKey) rect.bottom = numbers[value.index];
                     else if (value.key == leftKey) rect.left = numbers[value.index];
 
-                    rectValues.Add(new StyleValue { key = rectKey, state = currentState, type = StyleValue.Type.Rect, index = SetIndex(rects, rect) });
-                    rectValues.Add(new StyleValue { key = topKey, state = currentState, type = StyleValue.Type.Number, index = SetIndex(numbers, rect.top) });
-                    rectValues.Add(new StyleValue { key = rightKey, state = currentState, type = StyleValue.Type.Number, index = SetIndex(numbers, rect.right) });
-                    rectValues.Add(new StyleValue { key = bottomKey, state = currentState, type = StyleValue.Type.Number, index = SetIndex(numbers, rect.bottom) });
-                    rectValues.Add(new StyleValue { key = leftKey, state = currentState, type = StyleValue.Type.Number, index = SetIndex(numbers, rect.left) });
+                    if (rect.left != 0.0 || rect.right != 0.0 || rect.top != 0.0 || rect.bottom != 0.0)
+                        rectValues.Add(new StyleValue { key = rectKey, state = currentState, type = StyleValue.Type.Rect, index = SetIndex(rects, rect) });
+
+                    if (rect.top != 0)
+                        rectValues.Add(new StyleValue { key = topKey, state = currentState, type = StyleValue.Type.Number, index = SetIndex(numbers, rect.top) });
+
+                    if (rect.right != 0)
+                        rectValues.Add(new StyleValue { key = rightKey, state = currentState, type = StyleValue.Type.Number, index = SetIndex(numbers, rect.right) });
+
+                    if (rect.bottom != 0)
+                        rectValues.Add(new StyleValue { key = bottomKey, state = currentState, type = StyleValue.Type.Number, index = SetIndex(numbers, rect.bottom) });
+
+                    if (rect.left != 0)
+                        rectValues.Add(new StyleValue { key = leftKey, state = currentState, type = StyleValue.Type.Number, index = SetIndex(numbers, rect.left) });
                 }
 
                 values = MergeValues(values, rectValues).ToList();

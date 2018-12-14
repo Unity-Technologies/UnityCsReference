@@ -5,11 +5,14 @@
 using UnityEngine;
 using UnityEditor;
 using UnityEngine.Experimental.TerrainAPI;
+using UnityEditor.ShortcutManagement;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
     internal class SmoothHeightTool : TerrainPaintTool<SmoothHeightTool>
     {
+        const string toolName = "Smooth Height";
+
         [SerializeField]
         public float m_direction = 0.0f;     // -1 to 1
 
@@ -29,9 +32,17 @@ namespace UnityEditor.Experimental.TerrainAPI
             return m_styles;
         }
 
+        [FormerlyPrefKeyAs("Terrain/Smooth Height", "f3")]
+        [Shortcut("Terrain/Smooth Height", typeof(TerrainToolShortcutContext))]
+        static void SelectShortcut(ShortcutArguments args)
+        {
+            TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
+            context.SelectPaintTool<SmoothHeightTool>();
+        }
+
         public override string GetName()
         {
-            return "Smooth Height";
+            return toolName;
         }
 
         public override string GetDesc()

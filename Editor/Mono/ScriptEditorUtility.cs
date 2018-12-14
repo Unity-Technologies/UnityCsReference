@@ -49,17 +49,24 @@ namespace UnityEditorInternal
 
             string filename = Path.GetFileName(Paths.UnifyDirectorySeparator(lowerCasePath)).Replace(" ", "");
 
-            // Visual Studio for Mac is based on MonoDevelop
-            if (filename == "visualstudio.app")
-                return ScriptEditor.MonoDevelop;
-
             if (filename == "code.exe" || filename == "visualstudiocode.app" || filename == "vscode.app" || filename == "code.app" || filename == "code")
                 return ScriptEditor.VisualStudioCode;
 
             if (filename.StartsWith("rider"))
                 return ScriptEditor.Rider;
 
+            // Visual Studio for Mac is based on MonoDevelop
+            if (IsVisualStudioForMac(path))
+                return ScriptEditor.MonoDevelop;
+
             return ScriptEditor.Other;
+        }
+
+        internal static bool IsVisualStudioForMac(string path)
+        {
+            var lowerCasePath = path.ToLower();
+            var filename = Path.GetFileName(Paths.UnifyDirectorySeparator(lowerCasePath)).Replace(" ", "");
+            return filename.StartsWith("visualstudio") && !filename.Contains("code") && filename.EndsWith(".app");
         }
 
         public static string GetExternalScriptEditor()
@@ -143,6 +150,7 @@ namespace UnityEditorInternal
             if (platform == RuntimePlatform.OSXEditor)
             {
                 AddIfDirectoryExists("Visual Studio", "/Applications/Visual Studio.app", result);
+                AddIfDirectoryExists("Visual Studio (Preview)", "/Applications/Visual Studio (Preview).app", result);
             }
 
             foreach (var callback in k_PathCallbacks)

@@ -139,8 +139,8 @@ namespace UnityEngine.UIElements
             {
                 if (parentTextField != null)
                 {
-                    editorEngine.multiline = parentTextField.multiline;
-                    editorEngine.isPasswordField = parentTextField.isPasswordField;
+                    editorEngine.multiline = multiline;
+                    editorEngine.isPasswordField = isPasswordField;
                 }
 
                 base.SyncTextEngine();
@@ -149,17 +149,17 @@ namespace UnityEngine.UIElements
             internal override void DoRepaint(IStylePainter painter)
             {
                 var stylePainter = (IStylePainterInternal)painter;
-                if (parentTextField.isPasswordField)
+                if (isPasswordField)
                 {
                     // if we use system keyboard we will have normal text returned (hiding symbols is done inside os)
                     // so before drawing make sure we hide them ourselves
-                    string drawText = "".PadRight(parentTextField.text.Length, parentTextField.maskChar);
+                    string drawText = "".PadRight(text.Length, parentTextField.maskChar);
                     if (!hasFocus)
                     {
                         // We don't have the focus, don't draw the selection and cursor
                         if (!string.IsNullOrEmpty(drawText) && contentRect.width > 0.0f && contentRect.height > 0.0f)
                         {
-                            var textParams = TextStylePainterParameters.GetDefault(this, parentTextField.text);
+                            var textParams = TextStylePainterParameters.GetDefault(this, text);
                             textParams.text = drawText;
                             stylePainter.DrawText(textParams);
                         }
@@ -187,9 +187,23 @@ namespace UnityEngine.UIElements
                 if (evt.eventTypeId == KeyDownEvent.TypeId())
                 {
                     KeyDownEvent kde = evt as KeyDownEvent;
-                    if (!parentTextField.isDelayed || kde.character == '\n')
+
+                    if (!parentTextField.isDelayed || (kde?.keyCode == KeyCode.KeypadEnter) || (kde?.keyCode == KeyCode.Return))
                     {
-                        parentTextField.value = parentTextField.text;
+                        parentTextField.value = text;
+                    }
+
+                    if (multiline)
+                    {
+                        if (((kde?.keyCode == KeyCode.KeypadEnter) && (kde?.shiftKey == true)) ||
+                            ((kde?.keyCode == KeyCode.Return) && (kde?.shiftKey == true)))
+                        {
+                            parent.Focus();
+                        }
+                    }
+                    else if ((kde?.keyCode == KeyCode.KeypadEnter) || (kde?.keyCode == KeyCode.Return))
+                    {
+                        parent.Focus();
                     }
                 }
                 else if (evt.eventTypeId == ExecuteCommandEvent.TypeId())
@@ -198,7 +212,7 @@ namespace UnityEngine.UIElements
                     string cmdName = commandEvt.commandName;
                     if (!parentTextField.isDelayed && (cmdName == EventCommandNames.Paste || cmdName == EventCommandNames.Cut))
                     {
-                        parentTextField.value = parentTextField.text;
+                        parentTextField.value = text;
                     }
                 }
             }
@@ -209,7 +223,7 @@ namespace UnityEngine.UIElements
 
                 if (parentTextField.isDelayed && evt?.eventTypeId == BlurEvent.TypeId())
                 {
-                    parentTextField.value = parentTextField.text;
+                    parentTextField.value = text;
                 }
             }
         }

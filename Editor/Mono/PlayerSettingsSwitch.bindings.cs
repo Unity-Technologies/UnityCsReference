@@ -135,6 +135,10 @@ namespace UnityEditor
             [NativeProperty("switchUseCPUProfiler", TargetType.Field)]
             extern public static bool useSwitchCPUProfiler { get; set; }
 
+            // System Memory (used for virtual memory mapping).
+            [NativeProperty("switchSystemResourceMemory", TargetType.Field)]
+            extern public static int systemResourceMemory { get; set; }
+
             [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
             extern public static int queueCommandMemory
             {
@@ -150,6 +154,34 @@ namespace UnityEditor
                 [NativeMethod("GetSwitchQueueControlMemory")]
                 get;
                 [NativeMethod("SetSwitchQueueControlMemory")]
+                set;
+            }
+
+            // GPU Pool information.
+            [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+            extern public static int NVNShaderPoolsGranularity
+            {
+                [NativeMethod("GetSwitchNVNShaderPoolsGranularity")]
+                get;
+                [NativeMethod("SetSwitchNVNShaderPoolsGranularity")]
+                set;
+            }
+
+            [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+            extern public static int NVNDefaultPoolsGranularity
+            {
+                [NativeMethod("GetSwitchNVNDefaultPoolsGranularity")]
+                get;
+                [NativeMethod("SetSwitchNVNDefaultPoolsGranularity")]
+                set;
+            }
+
+            [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+            extern public static int NVNOtherPoolsGranularity
+            {
+                [NativeMethod("GetSwitchNVNOtherPoolsGranularity")]
+                get;
+                [NativeMethod("SetSwitchNVNOtherPoolsGranularity")]
                 set;
             }
 

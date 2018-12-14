@@ -710,14 +710,18 @@ namespace UnityEditor
 
             for (short msgId = 0; msgId < msgNames.Length; msgId++)
             {
+#pragma warning disable CS0618
                 if (!NetworkDetailStats.m_NetworkOperations.ContainsKey(msgId))
+#pragma warning restore
                     continue;
 
                 msgFoldouts[msgId] = EditorGUILayout.Foldout(msgFoldouts[msgId], msgNames[msgId] + ":");
                 if (msgFoldouts[msgId])
                 {
                     EditorGUILayout.BeginVertical();
+#pragma warning disable CS0618
                     var detail = NetworkDetailStats.m_NetworkOperations[msgId];
+#pragma warning restore
 
                     EditorGUI.indentLevel += 1;
 
@@ -1186,7 +1190,9 @@ namespace UnityEditor
                     // Stop current profiling if data was loaded successfully
                     ProfilerDriver.enabled = m_Recording = false;
                     SessionState.SetBool(kProfilerEnabledSessionKey, m_Recording);
+#pragma warning disable CS0618
                     NetworkDetailStats.m_NetworkOperations.Clear();
+#pragma warning restore
                 }
             }
 
@@ -1305,7 +1311,9 @@ namespace UnityEditor
 
             ProfilerDriver.ClearAllFrames();
 
+#pragma warning disable CS0618
             NetworkDetailStats.m_NetworkOperations.Clear();
+#pragma warning restore
         }
 
         private void FrameNavigationControls()

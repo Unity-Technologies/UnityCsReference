@@ -15,9 +15,9 @@ namespace UnityEditor.ShortcutManagement
         readonly string m_CommandsWithConflicts = L10n.Tr("Binding Conflicts");
         readonly string m_MainMenu = L10n.Tr("Main Menu");
 
-        readonly int m_AllUntiyCommandsIndex = 0;
-        readonly int m_ConflictsIndex = 1;
-        readonly int m_MainMenuIndex = 2;
+        const int k_AllUnityCommandsIndex = 0;
+        const int k_ConflictsIndex = 1;
+        const int k_MainMenuIndex = 2;
 
         SerializedShortcutManagerWindowState m_SerializedState;
         IShortcutProfileManager m_ShortcutProfileManager;
@@ -114,6 +114,43 @@ namespace UnityEditor.ShortcutManagement
             return m_ShortcutManagerWindowView;
         }
 
+        public void ResetToDefault(ShortcutEntry entry)
+        {
+            var newBinding = entry.GetDefaultCombinations();
+            var conflicts = FindConflictsIfRebound(entry, newBinding);
+
+            if (conflicts.Count == 0)
+            {
+                m_ShortcutProfileManager.ResetToDefault(entry);
+            }
+            else
+            {
+                var howToHandle = m_ShortcutManagerWindowView.HandleRebindWillCreateConflict(entry, newBinding, conflicts);
+                switch (howToHandle)
+                {
+                    case RebindResolution.DoNotRebind:
+                        break;
+                    case RebindResolution.CreateConflict:
+                        m_ShortcutProfileManager.ResetToDefault(entry);
+                        break;
+                    case RebindResolution.UnassignExistingAndBind:
+                        foreach (var conflictEntry in conflicts)
+                            RebindEntry(conflictEntry, new List<KeyCombination>());
+                        m_ShortcutProfileManager.ResetToDefault(entry);
+                        break;
+                    default:
+                        throw new Exception("Unhandled enum case");
+                }
+            }
+
+            m_ShortcutManagerWindowView.RefreshShortcutList();
+        }
+
+        public void RemoveBinding(ShortcutEntry entry)
+        {
+            RebindEntry(entry, new List<KeyCombination>());
+        }
+
         void BuildCategoryList()
         {
             const string separator = "/";
@@ -170,9 +207,9 @@ namespace UnityEditor.ShortcutManagement
             m_Categories = categories.ToList();
 
             m_Categories.Sort();
-            m_Categories.Insert(m_AllUntiyCommandsIndex, m_AllUnityCommands);
-            m_Categories.Insert(m_ConflictsIndex, m_CommandsWithConflicts);
-            m_Categories.Insert(m_MainMenuIndex, m_MainMenu);
+            m_Categories.Insert(k_AllUnityCommandsIndex, m_AllUnityCommands);
+            m_Categories.Insert(k_ConflictsIndex, m_CommandsWithConflicts);
+            m_Categories.Insert(k_MainMenuIndex, m_MainMenu);
         }
 
         void UpdateCommandsWithConflicts()
@@ -267,6 +304,8 @@ namespace UnityEditor.ShortcutManagement
             return m_Categories;
         }
 
+        public int categorySeparatorIndex { get; } = k_MainMenuIndex;
+
         public void SetCategorySelected(string category)
         {
             selectedCategory = category;
@@ -274,9 +313,12 @@ namespace UnityEditor.ShortcutManagement
             m_ShortcutManagerWindowView.RefreshShortcutList();
         }
 
-        string  selectedCategory
+        string selectedCategory
         {
-            get { return m_SerializedState.selectedCategory; }
+            get
+            {
+                return m_SerializedState.selectedCategory;
+            }
             set
             {
                 var newCategoryIndex = 0;
@@ -293,8 +335,14 @@ namespace UnityEditor.ShortcutManagement
 
         public SearchOption searchMode
         {
-            get { return m_SerializedState.searchMode; }
-            set { m_SerializedState.searchMode = value; }
+            get
+            {
+                return m_SerializedState.searchMode;
+            }
+            set
+            {
+                m_SerializedState.searchMode = value;
+            }
         }
 
         public void SetSearch(string newSearch)
@@ -328,12 +376,12 @@ namespace UnityEditor.ShortcutManagement
             if (!IsSearching())
                 return false;
 
-            return m_SelectedCategoryIndex != m_AllUntiyCommandsIndex;
+            return m_SelectedCategoryIndex != k_AllUnityCommandsIndex;
         }
 
         public void GetSearchFilters(List<string> filters)
         {
-            if (m_SelectedCategoryIndex != m_AllUntiyCommandsIndex)
+            if (m_SelectedCategoryIndex != k_AllUnityCommandsIndex)
                 filters.Add(m_Categories[m_SelectedCategoryIndex]);
             filters.Add(m_AllUnityCommands);
         }
@@ -366,7 +414,7 @@ namespace UnityEditor.ShortcutManagement
             m_ShortcutManagerWindowView.RefreshShortcutList();
         }
 
-        public int selectedCategoryIndex =>  m_SelectedCategoryIndex;
+        public int selectedCategoryIndex => m_SelectedCategoryIndex;
 
         void PopulateShortcutList()
         {
@@ -419,7 +467,10 @@ namespace UnityEditor.ShortcutManagement
 
         public ShortcutEntry selectedEntry
         {
-            get { return m_SelectedEntry; }
+            get
+            {
+                return m_SelectedEntry;
+            }
             private set
             {
                 m_SelectedEntry = value;
@@ -614,6 +665,11 @@ namespace UnityEditor.ShortcutManagement
             }
 
             return null;
+        }
+
+        public bool IsEntryPartOfConflict(ShortcutEntry shortcutEntry)
+        {
+            return m_CategoryToEntriesList[m_CommandsWithConflicts].Contains(shortcutEntry);
         }
 
         //TODO: find a better place for this logic, Directory maybe?

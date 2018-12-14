@@ -158,19 +158,6 @@ namespace UnityEditor
             return result.ToArray();
         }
 
-        static internal object InvokeMemberIfAvailable(object target, string methodName, object[] args)
-        {
-            MethodInfo method = target.GetType().GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            if (method != null)
-            {
-                return method.Invoke(target, args);
-            }
-            else
-            {
-                return null;
-            }
-        }
-
         internal static bool GameObjectContainsAttribute<T>(GameObject go) where T : Attribute
         {
             var behaviours = go.GetComponents(typeof(Component));

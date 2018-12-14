@@ -6,12 +6,15 @@ using UnityEngine;
 using UnityEditor;
 using System;
 using UnityEngine.Experimental.TerrainAPI;
+using UnityEditor.ShortcutManagement;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
     [FilePathAttribute("Library/TerrainTools/PaintTexture", FilePathAttribute.Location.ProjectFolder)]
     internal class PaintTextureTool : TerrainPaintTool<PaintTextureTool>
     {
+        const string toolName = "Paint Texture";
+
         MaterialEditor m_TemplateMaterialEditor = null;
         [SerializeField]
         bool m_ShowMaterialEditor = false;
@@ -22,9 +25,17 @@ namespace UnityEditor.Experimental.TerrainAPI
         [SerializeField]
         bool m_ShowLayerEditor = false;
 
+        [FormerlyPrefKeyAs("Terrain/Texture Paint", "f4")]
+        [Shortcut("Terrain/Paint Texture", typeof(TerrainToolShortcutContext))]
+        static void SelectShortcut(ShortcutArguments args)
+        {
+            TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
+            context.SelectPaintTool<PaintTextureTool>();
+        }
+
         public override string GetName()
         {
-            return "Paint Texture";
+            return toolName;
         }
 
         public override string GetDesc()

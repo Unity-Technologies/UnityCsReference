@@ -143,10 +143,10 @@ namespace UnityEditor.PackageManager
 
             // We want to have this button enabled even for immutable package
             var previousEnabled = GUI.enabled;
-            GUI.enabled = true;
+            GUI.enabled = packageState != null && packageState.isValidFile;
             if (GUILayout.Button(Styles.viewInPackageManager, EditorStyles.miniButton))
             {
-                if (!EditorApplication.ExecuteMenuItemWithTemporaryContext("Window/Package Manager", new Object[] { packageState }))
+                if (!EditorApplication.ExecuteMenuItemWithTemporaryContext("Window/Package Manager", new[] { packageState }))
                     Debug.LogWarning(s_LocalizedPackageManagerUINotInstalledWarning);
             }
             GUI.enabled = previousEnabled;
@@ -418,6 +418,7 @@ namespace UnityEditor.PackageManager
                 if (packageState.isValidFile)
                 {
                     packageState.info.packageName = info["name"] as string;
+                    packageState.name = packageState.info.packageName;
 
                     if (info.ContainsKey("displayName") && info["displayName"] is string)
                         packageState.info.displayName = (string)info["displayName"];
@@ -432,7 +433,7 @@ namespace UnityEditor.PackageManager
                         var splitVersions = ((string)info["unity"]).Split('.');
                         packageState.info.unity = new PackageUnityVersion
                         {
-                            isEnable = true, major = splitVersions[0], minor = splitVersions[1], release = ""
+                            isEnable = true, major = splitVersions[0], minor = splitVersions.Length > 1 ? splitVersions[1] : "", release = ""
                         };
 
                         if (info.ContainsKey("unityRelease") && info["unityRelease"] is string)
@@ -447,8 +448,13 @@ namespace UnityEditor.PackageManager
                         };
                     }
 
-                    if (info.ContainsKey("dependencies") && info["dependencies"] is IDictionary)
+                    if (info.ContainsKey("dependencies"))
                     {
+                        if (!(info["dependencies"] is IDictionary))
+                        {
+                            packageState.isValidFile = false;
+                            return;
+                        }
                         var dependenciesDictionary = (IDictionary)info["dependencies"];
                         foreach (var packageName in dependenciesDictionary.Keys)
                         {

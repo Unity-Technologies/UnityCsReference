@@ -75,8 +75,6 @@ namespace UnityEditor.Utils
                     Console.WriteLine("{0}: {1}", envVar.Key, envVar.Value);
 
             int responsefileindex = si.Arguments.IndexOf("Temp/UnityTempFile");
-            Console.WriteLine("index: " + responsefileindex);
-
             if (responsefileindex > 0)
             {
                 var responsefile = si.Arguments.Substring(responsefileindex);

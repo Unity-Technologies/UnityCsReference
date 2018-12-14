@@ -373,12 +373,16 @@ namespace UnityEditor
 
                 GUIContent gi = EditorGUIUtility.TrTextContent("GI: " + lc.minGISamples + " / " + lc.maxGISamples + " / " + lc.avgGISamples + "", "min / max / avg samples per texel");
                 GUILayout.Label(gi, EditorStyles.miniLabel);
+
+                GUIContent env = EditorGUIUtility.TrTextContent("Environment: " + lc.minEnvSamples + " / " + lc.maxEnvSamples + " / " + lc.avgEnvSamples + "", "min / max / avg samples per texel");
+                GUILayout.Label(env, EditorStyles.miniLabel);
             }
             else
             {
                 GUILayout.Label("Occupied: N/A", EditorStyles.miniLabel);
                 GUILayout.Label("Direct: N/A", EditorStyles.miniLabel);
                 GUILayout.Label("GI: N/A", EditorStyles.miniLabel);
+                GUILayout.Label("Environment: N/A", EditorStyles.miniLabel);
             }
             float mraysPerSec = Lightmapping.GetLightmapBakePerformance(index);
             if (mraysPerSec >= 0.0)
@@ -386,12 +390,12 @@ namespace UnityEditor
             else
                 GUILayout.Label("N/A mrays/sec", EditorStyles.miniLabel);
 
-            LightmapMemory lightmapMemory = Lightmapping.GetLightmapMemory(index);
-            GUILayout.Label("Lightmap data: " + SizeString(lightmapMemory.lightmapDataSizeCPU), EditorStyles.miniLabel);
-
             GUILayout.EndVertical();
             GUILayout.Space(5);
             GUILayout.BeginVertical();
+
+            LightmapMemory lightmapMemory = Lightmapping.GetLightmapMemory(index);
+            GUILayout.Label("Lightmap data: " + SizeString(lightmapMemory.lightmapDataSizeCPU), EditorStyles.miniLabel);
 
             GUIContent lightmapTexturesSizeContent = null;
             if (lightmapMemory.lightmapTexturesSize > 0.0f)

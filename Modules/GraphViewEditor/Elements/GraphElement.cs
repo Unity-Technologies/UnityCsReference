@@ -94,6 +94,8 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
+        internal ResizeRestriction resizeRestriction { get; set; }
+
         private bool m_Selected;
         public bool selected
         {

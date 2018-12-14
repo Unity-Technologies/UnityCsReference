@@ -101,12 +101,12 @@ namespace UnityEngine.UIElements
             return DoGetOffset(settings, screenRect);
         }
 
-        public static float ComputeTextScaling(Matrix4x4 worldMatrix)
+        public static float ComputeTextScaling(Matrix4x4 worldMatrix, float pixelsPerPoint)
         {
             var axisX = new Vector3(worldMatrix.m00, worldMatrix.m10, worldMatrix.m20);
             var axisY = new Vector3(worldMatrix.m01, worldMatrix.m11, worldMatrix.m21);
             float worldScale = (axisX.magnitude + axisY.magnitude) / 2;
-            return worldScale * GUIUtility.pixelsPerPoint;
+            return worldScale * pixelsPerPoint;
         }
 
         [FreeFunction(Name = "TextNative::ComputeTextWidth")]

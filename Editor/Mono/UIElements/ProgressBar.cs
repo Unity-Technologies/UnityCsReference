@@ -11,7 +11,12 @@ namespace UnityEditor.UIElements
 {
     public class ProgressBar : BindableElement, INotifyValueChanged<float>
     {
-        internal const string UxmlElementPrefix = "unity-progress-bar__";
+        public static readonly string ussClassName = "unity-progress-bar";
+        public static readonly string containerUssClassName = ussClassName + "__container";
+        public static readonly string titleUssClassName = ussClassName + "__title";
+        public static readonly string titleContainerUssClassName = ussClassName + "__title-container";
+        public static readonly string progressUssClassName = ussClassName + "__progress";
+        public static readonly string backgroundUssClassName = ussClassName + "__background";
 
         public new class UxmlFactory : UxmlFactory<ProgressBar, UxmlTraits> {}
 
@@ -40,8 +45,8 @@ namespace UnityEditor.UIElements
 
         public string title
         {
-            get { return this.Q<Label>(null, $"{UxmlElementPrefix}title").text; }
-            set { this.Q<Label>(null, $"{UxmlElementPrefix}title").text = value; }
+            get { return this.Q<Label>(null, titleUssClassName).text; }
+            set { this.Q<Label>(null, titleUssClassName).text = value; }
         }
 
         internal float lowValue { get; private set; }
@@ -50,13 +55,13 @@ namespace UnityEditor.UIElements
         public ProgressBar()
         {
             var tpl = EditorGUIUtility.Load("UXML/ProgressBar.uxml") as VisualTreeAsset;
-
+            AddToClassList(ussClassName);
             var container = tpl.CloneTree();
-            container.AddToClassList($"{UxmlElementPrefix}mainContainer");
+            container.AddToClassList(containerUssClassName);
             hierarchy.Add(container);
 
-            m_Background = container.Q<VisualElement>(null, $"{UxmlElementPrefix}background");
-            m_Progress = container.Q<VisualElement>(null, $"{UxmlElementPrefix}progress");
+            m_Background = container.Q<VisualElement>(null, backgroundUssClassName);
+            m_Progress = container.Q<VisualElement>(null, progressUssClassName);
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         }
 
@@ -123,7 +128,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        const float minVisibleProgress = 1.5f;
+        const float minVisibleProgress = 1.0f;
 
         float CalculateProgressWidth(float width)
         {

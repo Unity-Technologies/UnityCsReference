@@ -88,15 +88,15 @@ namespace UnityEditor
 
         private void ViewUpdateSideCountField()
         {
-            var sidesField = m_PolygonShapeView.Q<PropertyControl<long>>("labelIntegerField");
+            var sidesField = m_PolygonShapeView.Q<IntegerField>("labelIntegerField");
             sidesField.value = polygonSides;
         }
 
         private void SetupPolygonChangeShapeWindowElements(VisualElement moduleView)
         {
-            var sidesField = moduleView.Q<PropertyControl<long>>("labelIntegerField");
+            var sidesField = moduleView.Q<IntegerField>("labelIntegerField");
             sidesField.SetValueWithoutNotify(polygonSides);
-            sidesField.RegisterValueChangedCallback((evt) =>
+            sidesField.RegisterCallback<ChangeEvent<int>>((evt) =>
             {
                 polygonSides = (int)evt.newValue;
                 ShowHideWarningMessage();

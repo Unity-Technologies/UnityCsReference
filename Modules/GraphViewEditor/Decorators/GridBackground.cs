@@ -5,7 +5,6 @@
 using System;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEditor.Experimental.GraphView
 {
@@ -24,34 +23,19 @@ namespace UnityEditor.Experimental.GraphView
         static readonly Color s_DefaultGridBackgroundColor = new Color(0.17f, 0.17f, 0.17f, 1.0f);
 
         float m_Spacing = s_DefaultSpacing;
-        private float spacing
-        {
-            get { return m_Spacing; }
-        }
+        private float spacing => m_Spacing;
 
         int m_ThickLines = s_DefaultThickLines;
-        private int thickLines
-        {
-            get { return m_ThickLines; }
-        }
+        private int thickLines => m_ThickLines;
 
         Color m_LineColor = s_DefaultLineColor;
-        private Color lineColor
-        {
-            get { return m_LineColor; }
-        }
+        private Color lineColor => m_LineColor;
 
         Color m_ThickLineColor = s_DefaultThickLineColor;
-        private Color thickLineColor
-        {
-            get { return m_ThickLineColor; }
-        }
+        private Color thickLineColor => m_ThickLineColor;
 
         Color m_GridBackgroundColor = s_DefaultGridBackgroundColor;
-        private Color gridBackgroundColor
-        {
-            get { return m_GridBackgroundColor; }
-        }
+        private Color gridBackgroundColor => m_GridBackgroundColor;
 
         private VisualElement m_Container;
 
@@ -151,8 +135,6 @@ namespace UnityEditor.Experimental.GraphView
             from.y += (containerPosition.y * containerScale.y);
             to.x += (containerPosition.x * containerScale.x);
             to.y += (containerPosition.y * containerScale.y);
-
-            Handles.DrawWireDisc(from, new Vector3(0.0f, 0.0f, -1.0f), 6f);
 
             float thickGridLineX = from.x;
             float thickGridLineY = from.y;

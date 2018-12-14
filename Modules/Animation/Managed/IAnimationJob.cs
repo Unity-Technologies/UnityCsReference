@@ -3,8 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 
+using Unity.Jobs.LowLevel.Unsafe;
+
 namespace UnityEngine.Experimental.Animations
 {
+    [JobProducerType(typeof(ProcessAnimationJobStruct<>))]
     public interface IAnimationJob
     {
         void ProcessAnimation(AnimationStream stream);

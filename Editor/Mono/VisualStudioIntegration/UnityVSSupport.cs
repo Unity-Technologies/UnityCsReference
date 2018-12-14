@@ -64,7 +64,7 @@ namespace UnityEditor.VisualStudioIntegration
         {
             vsfmVersion = null;
 
-            if (!externalEditor.ToLower().EndsWith("visual studio.app"))
+            if (!ScriptEditorUtility.IsVisualStudioForMac(externalEditor))
                 return false;
 
             // We need to extract the version used by VS for Mac

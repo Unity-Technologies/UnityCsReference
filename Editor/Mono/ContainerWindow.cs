@@ -2,10 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine;
-using System.Collections.Generic;
+using UnityEditor.StyleSheets;
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
+using System;
 
 namespace UnityEditor
 {
@@ -22,22 +23,37 @@ namespace UnityEditor
         [SerializeField] Vector2 m_MaxSize = new Vector2(4000, 4000);
 
         internal bool m_DontSaveToLayout = false;
-
-        const float kBorderSize = 11;
-        const float kTitleHeight = 24;
-
         private int m_ButtonCount;
         private float m_TitleBarWidth;
 
-        const float kButtonWidth = 13, kButtonHeight = 13, kButtonSpacing = 2, kButtonTop = 4;
+        const float kTitleHeight = 24f, kButtonWidth = 16f, kButtonHeight = 16f;
+
+        static internal bool macEditor => Application.platform == RuntimePlatform.OSXEditor;
 
         private static class Styles
         {
             // Title Bar Buttons (Non)
-            public static GUIStyle buttonClose = "WinBtnClose";
-            public static GUIStyle buttonMax = "WinBtnMax";
-            public static GUIStyle buttonRestore = "WinBtnMax";//"WinBtnRestore";
+            public static GUIStyle buttonMin = "WinBtnMinMac";
+            public static GUIStyle buttonInactive = "WinBtnInactiveMac";
+            public static GUIStyle buttonClose = macEditor ? "WinBtnCloseMac" : "WinBtnClose";
+            public static GUIStyle buttonMax = macEditor ? "WinBtnMaxMac" : "WinBtnMax";
+            public static GUIStyle buttonRestore = macEditor ? "WinBtnRestoreMac" : "WinBtnRestore";
+
+            public static float borderSize => macEditor ? osxBorderSize : winBorderSize;
+            public static float buttonMargin => macEditor ? osxBorderMargin : winBorderMargin;
+
+            public static SVC<float> buttonTop = new SVC<float>("--container-window-button-top-margin");
+
+            private static SVC<float> winBorderSize = new SVC<float>("--container-window-buttons-right-margin-win");
+            private static SVC<float> osxBorderSize = new SVC<float>("--container-window-buttons-right-margin-osx");
+            private static SVC<float> winBorderMargin = new SVC<float>("--container-window-button-left-right-margin-win");
+            private static SVC<float> osxBorderMargin = new SVC<float>("--container-window-button-left-right-margin-osx");
         }
+
+        private const float kButtonCountOSX = 3;
+        private const float kButtonCountWin = 2;
+        static internal float buttonHorizontalSpace => (kButtonWidth + Styles.buttonMargin * 2f);
+        static internal float buttonStackWidth => buttonHorizontalSpace * (macEditor ? kButtonCountOSX : kButtonCountWin) + Styles.borderSize;
 
         public ContainerWindow()
         {
@@ -104,7 +120,7 @@ namespace UnityEditor
 
             Internal_Show(m_PixelRect, m_ShowMode, m_MinSize, m_MaxSize);
 
-            // Tell the mainview its now in this window (quick hack to get platform-specific code to move its views to the right window)
+            // Tell the main view its now in this window (quick hack to get platform-specific code to move its views to the right window)
             if (m_RootView)
                 m_RootView.SetWindowRecurse(this);
             Internal_SetTitle(m_Title);
@@ -356,8 +372,12 @@ namespace UnityEditor
             bool hasWindowButtons = Mathf.Abs(windowPosition.xMax - position.width) < 2;
             if (hasWindowButtons)
             {
+                GUIStyle min = Styles.buttonMin;
                 GUIStyle close = Styles.buttonClose;
                 GUIStyle maxOrRestore = maximized ? Styles.buttonRestore : Styles.buttonMax;
+
+                if (macEditor && (GUIView.focusedView == null || GUIView.focusedView.window != this))
+                    close = min = maxOrRestore = Styles.buttonInactive;
 
                 BeginTitleBarButtons(windowPosition);
                 if (TitleBarButton(close))
@@ -365,6 +385,10 @@ namespace UnityEditor
                     Close();
                     GUIUtility.ExitGUI();
                 }
+
+                if (macEditor && TitleBarButton(min))
+                    Minimize();
+
                 if (TitleBarButton(maxOrRestore))
                     ToggleMaximize();
             }
@@ -380,7 +404,7 @@ namespace UnityEditor
 
         private bool TitleBarButton(GUIStyle style)
         {
-            var buttonRect = new Rect(m_TitleBarWidth - kButtonWidth * ++m_ButtonCount - kBorderSize, kButtonTop, kButtonWidth, kButtonHeight);
+            var buttonRect = new Rect(m_TitleBarWidth - Styles.borderSize - (buttonHorizontalSpace * ++m_ButtonCount), Styles.buttonTop, kButtonWidth, kButtonHeight);
             var guiView = rootView as GUIView;
             if (guiView == null)
             {

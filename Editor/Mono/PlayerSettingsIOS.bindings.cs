@@ -611,6 +611,17 @@ namespace UnityEditor
                 set;
             }
 
+
+            [NativeProperty("iOSAutomaticallyDetectAndAddCapabilities")]
+            internal extern static bool automaticallyDetectAndAddCapabilities
+            {
+                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+                get;
+                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+                set;
+            }
+
+
             internal static bool IsTargetVersionEqualOrHigher(Version requiredVersion)
             {
                 Version requestedVersion;

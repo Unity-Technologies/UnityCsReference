@@ -148,7 +148,10 @@ namespace UnityEngine.UIElements
         public void ApplyClipping()
         {
             if (!currentElement.ShouldClip())
+            {
+                UIRUtility.RemoveClippingRect(m_RenderDevice, m_PaintData);
                 return;
+            }
 
             // Don't apply clipping for immediate mode elements to prevent creating clipping
             // buffers that won't be used. Immediate mode elements rely on IMGUI clipping masks instead.
@@ -233,6 +236,7 @@ namespace UnityEngine.UIElements
         internal void BeginText(UIRenderData paintData)
         {
             m_PaintData = paintData;
+            opacity = currentElement.resolvedStyle.opacity;
         }
 
         internal void EndText()
@@ -299,7 +303,7 @@ namespace UnityEngine.UIElements
         public void DrawText(TextStylePainterParameters painterParams, MeshHandle oldMeshHandle)
         {
             // WARNING: Do not use currentWorldTransform!
-            float scaling = TextNative.ComputeTextScaling(currentElement.worldTransform);
+            float scaling = TextNative.ComputeTextScaling(currentElement.worldTransform, GUIUtility.pixelsPerPoint);
             TextNativeSettings textSettings = painterParams.GetTextNativeSettings(scaling);
             textSettings.color *= m_OpacityColor;
 
@@ -387,8 +391,9 @@ namespace UnityEngine.UIElements
             point *= 0.5f;
 
             // Scale to texture size and round.
-            point.x = Mathf.Round(point.x * targetSize.x);
-            point.y = Mathf.Round(point.y * targetSize.y);
+            // It is VERY important to use an uncommon rounding point to prevent jitter.
+            point.x = Mathf.Floor(point.x * targetSize.x + 0.491476f);
+            point.y = Mathf.Floor(point.y * targetSize.y + 0.491476f);
 
             // Bring back to 0..1
             point.x /= targetSize.x;
@@ -510,6 +515,10 @@ namespace UnityEngine.UIElements
             if (style.backgroundImage.value.texture != null)
             {
                 var painterParams = TextureStylePainterParameters.GetDefault(currentElement);
+                if (style.unityBackgroundImageTintColor != Color.clear)
+                {
+                    painterParams.color = style.unityBackgroundImageTintColor.value;
+                }
                 painterParams.border.SetWidth(0.0f);
                 DrawTexture(painterParams);
             }

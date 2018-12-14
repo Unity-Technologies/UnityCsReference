@@ -48,6 +48,7 @@ namespace UnityEditor.UIElements
         public BoundsField(string label)
             : base(label, null)
         {
+            delegatesFocus = false;
             visualInput.focusable = false;
 
             AddToClassList(ussClassName);
@@ -55,6 +56,7 @@ namespace UnityEditor.UIElements
             labelElement.AddToClassList(labelUssClassName);
 
             m_CenterField = new Vector3Field("Center");
+            m_CenterField.delegatesFocus = true;
             m_CenterField.AddToClassList(centerFieldUssClassName);
 
             m_CenterField.RegisterValueChangedCallback(e =>
@@ -66,6 +68,7 @@ namespace UnityEditor.UIElements
             visualInput.hierarchy.Add(m_CenterField);
 
             m_ExtentsField = new Vector3Field("Extents");
+            m_ExtentsField.delegatesFocus = true;
             m_ExtentsField.AddToClassList(extentsFieldUssClassName);
             m_ExtentsField.RegisterValueChangedCallback(e =>
             {

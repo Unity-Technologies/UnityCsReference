@@ -18,4 +18,10 @@ namespace UnityEditor.Experimental.GraphView
         Ascendable = 1 << 6,
         Renamable = 1 << 7,
     }
+
+    internal enum ResizeRestriction
+    {
+        None,
+        FlexDirection
+    }
 }

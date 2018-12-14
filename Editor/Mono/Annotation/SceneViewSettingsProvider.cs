@@ -13,8 +13,8 @@ namespace UnityEditor
         {
             static bool s_Initialized;
 
-            public static GUIContent cameraMovementEasingEnabled = new GUIContent("Camera Easing", "Check this to enable camera movement easing. This makes the Camera ease in when it starts moving, and ease out when it stops.");
-            public static GUIContent cameraMovementEasingDuration = new GUIContent("Duration", "How long it takes for the Camera speed to accelerate to full speed. Measured in seconds.");
+            public static GUIContent cameraMovementEasingEnabled = EditorGUIUtility.TrTextContent("Camera Easing", "Check this to enable camera movement easing. This makes the Camera ease in when it starts moving, and ease out when it stops.");
+            public static GUIContent cameraMovementEasingDuration = EditorGUIUtility.TrTextContent("Duration", "How long it takes for the Camera speed to accelerate to full speed. Measured in seconds.");
 
             public static GUIStyle settings;
 
@@ -53,7 +53,7 @@ namespace UnityEditor
             GUILayout.BeginVertical(Styles.settings, GUILayout.MaxWidth(SettingsWindow.s_DefaultLayoutMaxWidth));
 
             if (!searching)
-                GUILayout.Label("Navigation", EditorStyles.boldLabel);
+                GUILayout.Label(EditorGUIUtility.TrTextContent("Navigation"), EditorStyles.boldLabel);
 
             if (!searching || SearchUtils.MatchSearch(searchContext, Styles.cameraMovementEasingEnabled.text))
                 SceneViewMotion.movementEasingEnabled = EditorGUILayout.Toggle(
@@ -64,7 +64,7 @@ namespace UnityEditor
             {
                 EditorGUI.indentLevel += 1;
                 if (!searching || SearchUtils.MatchSearch(searchContext, Styles.cameraMovementEasingDuration.text))
-                    SceneViewMotion.movementEasingDuration = EditorGUILayout.Slider(Styles.cameraMovementEasingDuration, SceneViewMotion.movementEasingDuration, 0.001f, 3f);
+                    SceneViewMotion.movementEasingDuration = EditorGUILayout.Slider(Styles.cameraMovementEasingDuration, SceneViewMotion.movementEasingDuration, .1f, 3f);
                 EditorGUI.indentLevel -= 1;
             }
 

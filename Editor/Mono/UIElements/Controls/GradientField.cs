@@ -83,8 +83,30 @@ namespace UnityEditor.UIElements
                 return;
             }
 
-            if ((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse || (evt as KeyDownEvent)?.character == '\n')
+            var showGradientPicker = false;
+            KeyDownEvent kde = (evt as KeyDownEvent);
+            if (kde != null)
+            {
+                if ((kde.keyCode == KeyCode.Space) ||
+                    (kde.keyCode == KeyCode.KeypadEnter) ||
+                    (kde.keyCode == KeyCode.Return))
+                {
+                    showGradientPicker = true;
+                }
+            }
+            else if ((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse)
+            {
+                var mde = (MouseDownEvent)evt;
+                if (visualInput.ContainsPoint(visualInput.WorldToLocal(mde.mousePosition)))
+                {
+                    showGradientPicker = true;
+                }
+            }
+
+            if (showGradientPicker)
+            {
                 ShowGradientPicker();
+            }
             else if (evt.eventTypeId == DetachFromPanelEvent.TypeId())
                 OnDetach();
             else if (evt.eventTypeId == AttachToPanelEvent.TypeId())

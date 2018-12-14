@@ -55,11 +55,7 @@ namespace UnityEngine.UIElements
                     uirData.overridesSkinningTransform = false;
                 }
 
-                if (uirData.overridesClippingRect)
-                {
-                    m_RenderDevice.FreeClipping(uirData.clippingRectAlloc);
-                    uirData.overridesClippingRect = false;
-                }
+                UIRUtility.RemoveClippingRect(m_RenderDevice, uirData);
 
                 uirData.Disconnect();
                 uirData.ResetInnerChain(m_RenderDevice);

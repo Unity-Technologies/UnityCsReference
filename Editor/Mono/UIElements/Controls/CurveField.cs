@@ -207,7 +207,27 @@ namespace UnityEditor.UIElements
                 return;
             }
 
-            if ((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse || (evt as KeyDownEvent)?.character == '\n')
+            var showCurveEditor = false;
+            KeyDownEvent kde = (evt as KeyDownEvent);
+            if (kde != null)
+            {
+                if ((kde.keyCode == KeyCode.Space) ||
+                    (kde.keyCode == KeyCode.KeypadEnter) ||
+                    (kde.keyCode == KeyCode.Return))
+                {
+                    showCurveEditor = true;
+                }
+            }
+            else if ((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse)
+            {
+                var mde = (MouseDownEvent)evt;
+                if (visualInput.ContainsPoint(visualInput.WorldToLocal(mde.mousePosition)))
+                {
+                    showCurveEditor = true;
+                }
+            }
+
+            if (showCurveEditor)
                 ShowCurveEditor();
             else if (evt.eventTypeId == DetachFromPanelEvent.TypeId())
                 OnDetach();
@@ -474,7 +494,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        class CurveFieldContent : VisualElement
+        class CurveFieldContent : ImmediateModeElement
         {
             Material m_Mat;
             Mesh m_Mesh;
@@ -505,7 +525,7 @@ namespace UnityEditor.UIElements
                 m_Mat = null;
             }
 
-            internal override void DoRepaint(IStylePainter painter)
+            protected override void ImmediateRepaint()
             {
                 if (m_Mesh != null)
                 {
@@ -514,8 +534,8 @@ namespace UnityEditor.UIElements
                         m_Mat = new Material(EditorGUIUtility.LoadRequired("Shaders/UIElements/AACurveField.shader") as Shader);
                         m_Mat.hideFlags = HideFlags.HideAndDontSave;
                     }
-                    var stylePainter = (IStylePainterInternal)painter;
-                    stylePainter.DrawImmediate(DrawMesh);
+
+                    DrawMesh();
                 }
             }
 

@@ -38,7 +38,21 @@ namespace UnityEngine.UIElements.StyleSheets
 
         public static int Compare(SelectorMatchRecord a, SelectorMatchRecord b)
         {
-            int res = a.styleSheetIndexInStack.CompareTo(b.styleSheetIndexInStack);
+            if (a.sheet.isUnityStyleSheet != b.sheet.isUnityStyleSheet)
+                return a.sheet.isUnityStyleSheet ? -1 : 1;
+
+            int res = 0;
+
+            // Unity style sheet are sorted by specificity because they are applied with a negative specificity
+            if (a.sheet.isUnityStyleSheet)
+            {
+                res = a.complexSelector.specificity.CompareTo(b.complexSelector.specificity);
+            }
+
+            if (res == 0)
+            {
+                res = a.styleSheetIndexInStack.CompareTo(b.styleSheetIndexInStack);
+            }
 
             if (res == 0)
             {

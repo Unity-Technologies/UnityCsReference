@@ -200,6 +200,7 @@ namespace UnityEngine.Analytics
         public static AnalyticsResult RegisterEvent(string eventName, int maxEventPerHour, int maxItems, string vendorKey = "", string prefix = "")
         {
             string n = String.Empty;
+            n = Assembly.GetCallingAssembly().FullName;
             return RegisterEvent(eventName, maxEventPerHour, maxItems, vendorKey, 1, prefix, n);
         }
 
@@ -207,6 +208,7 @@ namespace UnityEngine.Analytics
         public static AnalyticsResult RegisterEvent(string eventName, int maxEventPerHour, int maxItems, string vendorKey, int ver, string prefix = "")
         {
             string n = String.Empty;
+            n = Assembly.GetCallingAssembly().FullName;
             return RegisterEvent(eventName, maxEventPerHour, maxItems, vendorKey, ver, prefix, n);
         }
 

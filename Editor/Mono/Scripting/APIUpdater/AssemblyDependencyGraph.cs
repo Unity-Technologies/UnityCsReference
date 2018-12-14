@@ -24,29 +24,67 @@ namespace UnityEditor.Scripting.APIUpdater
             InternalAddDependencies(root, dependencies);
         }
 
+        public void SetDependencies(string root, params string[] dependencies)
+        {
+            var dep = FindAssembly(root);
+            if (dep == null)
+            {
+                dep = FindInDependents(root);
+            }
+
+            if (dep != null)
+            {
+                dep.Dependencies.Clear();
+            }
+
+            InternalAddDependencies(root, dependencies);
+        }
+
         private DependencyEntry InternalAddDependencies(string root, params string[] dependencies)
         {
-            var existsingDependency = FindRoot(root);
+            var existsingDependency = FindAssembly(root);
             if (existsingDependency == null)
             {
-                existsingDependency = new DependencyEntry(root);
+                existsingDependency =  FindInDependents(root) ?? new DependencyEntry(root);
                 m_Graph.Add(existsingDependency);
             }
 
             foreach (var dependency in dependencies)
             {
-                var dep = FindRoot(dependency)
-                    ?? InternalAddDependencies(dependency);
-
+                var dep = FindAssembly(dependency) ?? InternalAddDependencies(dependency);
                 existsingDependency.m_Dependencies.Add(dep);
             }
 
             return existsingDependency;
         }
 
+        private DependencyEntry FindInDependents(string root)
+        {
+            foreach (var entry in m_Graph)
+            {
+                var found = entry.m_Dependencies.FirstOrDefault(dependency => dependency.m_Name == root);
+                if (found != null)
+                    return found;
+            }
+
+            return null;
+        }
+
+        public IList<string> GetDependentsOf(string source)
+        {
+            var result = new List<string>();
+            foreach (var dependencyEntry in m_Graph)
+            {
+                if (dependencyEntry.m_Dependencies.Any(candidate => candidate.m_Name == source))
+                    result.Add(dependencyEntry.m_Name);
+            }
+
+            return result;
+        }
+
         public IEnumerable<string> DependenciesFor(string dependent)
         {
-            var found = FindRoot(dependent);
+            var found = FindAssembly(dependent);
             if (found != null)
             {
                 return found.m_Dependencies.Select(dep => dep.m_Name);
@@ -60,29 +98,32 @@ namespace UnityEditor.Scripting.APIUpdater
             if (dependencies.Length == 0)
                 return;
 
-            var entry = FindRoot(dependent);
+            var entry = FindAssembly(dependent);
             if (entry == null)
                 return;
 
             entry.m_Dependencies.RemoveAll(candidate => dependencies.Contains(candidate.m_Name));
         }
 
-        public void RemoveRoot(string tbr)
+        public void RemoveRoot(string tbr, bool updateDependents = false)
         {
             var toBeRemoved = m_Graph.Find(e => e.m_Name == tbr);
             if (toBeRemoved == null)
                 return;
 
-            foreach (var entry in m_Graph)
-            {
-                var danglingRereference = entry.m_Dependencies.Find(e => e == toBeRemoved);
-                if (danglingRereference == null)
-                    continue;
-
-                entry.m_Dependencies.Remove(danglingRereference);
-            }
-
             m_Graph.Remove(toBeRemoved);
+
+            if (updateDependents)
+            {
+                foreach (var entry in m_Graph)
+                {
+                    var danglingRereference = entry.m_Dependencies.Find(e => e == toBeRemoved);
+                    if (danglingRereference == null)
+                        continue;
+
+                    entry.m_Dependencies.Remove(danglingRereference);
+                }
+            }
         }
 
         public IEnumerable<string> SortedDependents()
@@ -218,13 +259,13 @@ namespace UnityEditor.Scripting.APIUpdater
             return (AssemblyDependencyGraph)serializer.Deserialize(stream);
         }
 
-        private DependencyEntry FindRoot(string dependent)
+        internal DependencyEntry FindAssembly(string dependent)
         {
             return m_Graph.Find(e => e.m_Name == dependent);
         }
 
         [Serializable]
-        private class DependencyEntry : IComparable<DependencyEntry>
+        internal class DependencyEntry : IComparable<DependencyEntry>
         {
             public string m_Name;
             public List<DependencyEntry> m_Dependencies;
@@ -239,9 +280,18 @@ namespace UnityEditor.Scripting.APIUpdater
                 m_Dependencies = new List<DependencyEntry>();
             }
 
+            public AssemblyStatus Status { get; set; }
+
+            public string Name => m_Name;
+
             public int CompareTo(DependencyEntry other)
             {
                 return string.Compare(m_Name, other.m_Name, StringComparison.Ordinal);
+            }
+
+            public List<DependencyEntry> Dependencies
+            {
+                get { return m_Dependencies; }
             }
 
             public override string ToString()
@@ -251,5 +301,12 @@ namespace UnityEditor.Scripting.APIUpdater
         }
 
         private List<DependencyEntry> m_Graph;
+    }
+
+    [Flags]
+    internal enum AssemblyStatus
+    {
+        None = 0x0,
+        PublishesUpdaterConfigurations = 0x02
     }
 }

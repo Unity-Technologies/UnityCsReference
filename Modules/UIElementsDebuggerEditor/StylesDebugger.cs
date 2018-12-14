@@ -80,7 +80,7 @@ namespace UnityEditor.UIElements.Debugger
         private string m_DetailFilter = string.Empty;
         private VisualElement m_SelectedElement;
 
-        private bool m_ShowDefaults;
+        private bool m_ShowAll;
         private bool m_Sort;
 
         private static readonly PropertyInfo[] k_FieldInfos = typeof(ComputedStyle).GetProperties(BindingFlags.Instance | BindingFlags.Public);
@@ -160,6 +160,7 @@ namespace UnityEditor.UIElements.Debugger
             EditorGUILayout.LabelField(Styles.elementStylesContent, Styles.KInspectorTitle);
 
             m_SelectedElement.name = EditorGUILayout.TextField("Name", m_SelectedElement.name);
+            EditorGUILayout.LabelField("Debug Id", m_SelectedElement.controlid.ToString());
             var textElement = m_SelectedElement as ITextElement;
             if (textElement != null)
             {
@@ -175,6 +176,17 @@ namespace UnityEditor.UIElements.Debugger
 
             m_SelectedElement.pickingMode = (PickingMode)EditorGUILayout.EnumPopup("Picking Mode", m_SelectedElement.pickingMode);
 
+            if (m_SelectedElement.pseudoStates != 0)
+            {
+                EditorGUILayout.LabelField("Pseudo States", m_SelectedElement.pseudoStates.ToString());
+            }
+            else
+            {
+                EditorGUILayout.LabelField("Pseudo States", "None");
+            }
+
+            EditorGUILayout.LabelField("Focusable", m_SelectedElement.focusable.ToString());
+
             EditorGUILayout.LabelField("Layout", m_SelectedElement.layout.ToString());
             EditorGUILayout.LabelField("World Bound", m_SelectedElement.worldBound.ToString());
 
@@ -184,7 +196,7 @@ namespace UnityEditor.UIElements.Debugger
 
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
             m_DetailFilter = EditorGUILayout.ToolbarSearchField(m_DetailFilter);
-            m_ShowDefaults = GUILayout.Toggle(m_ShowDefaults, Styles.showDefaultsContent, EditorStyles.toolbarButton);
+            m_ShowAll = GUILayout.Toggle(m_ShowAll, Styles.showAllContent, EditorStyles.toolbarButton);
             m_Sort = GUILayout.Toggle(m_Sort, Styles.sortContent, EditorStyles.toolbarButton);
             GUILayout.EndHorizontal();
 
@@ -217,7 +229,7 @@ namespace UnityEditor.UIElements.Debugger
                 {
                     StyleFloat style = (StyleFloat)val;
                     specificity = style.specificity;
-                    if (m_ShowDefaults || specificity > 0)
+                    if (m_ShowAll || specificity != StyleValueExtensions.UndefinedSpecificity)
                     {
                         style.specificity = Int32.MaxValue;
                         style.value = EditorGUILayout.FloatField(field.Name, ((StyleFloat)val).value);
@@ -228,7 +240,7 @@ namespace UnityEditor.UIElements.Debugger
                 {
                     StyleInt style = (StyleInt)val;
                     specificity = style.specificity;
-                    if (m_ShowDefaults || specificity > 0)
+                    if (m_ShowAll || specificity != StyleValueExtensions.UndefinedSpecificity)
                     {
                         style.specificity = Int32.MaxValue;
                         style.value = EditorGUILayout.IntField(field.Name, ((StyleInt)val).value);
@@ -239,7 +251,7 @@ namespace UnityEditor.UIElements.Debugger
                 {
                     StyleLength style = (StyleLength)val;
                     specificity = style.specificity;
-                    if (m_ShowDefaults || specificity > 0)
+                    if (m_ShowAll || specificity != StyleValueExtensions.UndefinedSpecificity)
                     {
                         style.specificity = Int32.MaxValue;
                         style.value = EditorGUILayout.FloatField(field.Name, ((StyleLength)val).value.value);
@@ -250,7 +262,7 @@ namespace UnityEditor.UIElements.Debugger
                 {
                     StyleColor style = (StyleColor)val;
                     specificity = style.specificity;
-                    if (m_ShowDefaults || specificity > 0)
+                    if (m_ShowAll || specificity != StyleValueExtensions.UndefinedSpecificity)
                     {
                         style.specificity = Int32.MaxValue;
                         style.value = EditorGUILayout.ColorField(field.Name, ((StyleColor)val).value);
@@ -265,7 +277,7 @@ namespace UnityEditor.UIElements.Debugger
                 {
                     StyleBackground style = (StyleBackground)val;
                     specificity = style.specificity;
-                    if (m_ShowDefaults || specificity > 0)
+                    if (m_ShowAll || specificity != StyleValueExtensions.UndefinedSpecificity)
                     {
                         style.specificity = Int32.MaxValue;
                         Texture2D t = EditorGUILayout.ObjectField(field.Name, style.value.texture, typeof(Texture2D), false) as Texture2D;
@@ -277,7 +289,7 @@ namespace UnityEditor.UIElements.Debugger
                 {
                     StyleCursor style = (StyleCursor)val;
                     specificity = style.specificity;
-                    if (m_ShowDefaults || specificity > 0)
+                    if (m_ShowAll || specificity != StyleValueExtensions.UndefinedSpecificity)
                     {
                         if (style.value.texture != null)
                         {
@@ -313,7 +325,7 @@ namespace UnityEditor.UIElements.Debugger
                     if (type.IsGenericType && type.GetGenericArguments()[0].IsEnum)
                     {
                         specificity = (int)type.GetProperty("specificity", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(val, null);
-                        if (m_ShowDefaults || specificity > 0)
+                        if (m_ShowAll || specificity != StyleValueExtensions.UndefinedSpecificity)
                         {
                             var propInfo = type.GetProperty("value");
                             Enum enumValue = propInfo.GetValue(val, null) as Enum;
@@ -325,7 +337,7 @@ namespace UnityEditor.UIElements.Debugger
                     else
                     {
                         EditorGUILayout.LabelField(field.Name, val == null ? "null" : val.ToString());
-                        specificity = -1;
+                        specificity = StyleValueExtensions.UndefinedSpecificity;
                     }
                 }
 
@@ -337,8 +349,25 @@ namespace UnityEditor.UIElements.Debugger
                     inlineStyle.SetValue(m_SelectedElement.style, val, null);
                 }
 
-                if (specificity > 0)
-                    GUILayout.Label(specificity == StyleValueExtensions.InlineSpecificity ? "inline" : specificity.ToString());
+                if (m_ShowAll || specificity != StyleValueExtensions.UndefinedSpecificity)
+                {
+                    string specificityString = "";
+                    switch (specificity)
+                    {
+                        case StyleValueExtensions.UnitySpecificity:
+                            specificityString = "unity stylesheet";
+                            break;
+                        case StyleValueExtensions.InlineSpecificity:
+                            specificityString = "inline";
+                            break;
+                        case StyleValueExtensions.UndefinedSpecificity:
+                            break;
+                        default:
+                            specificityString = specificity.ToString();
+                            break;
+                    }
+                    GUILayout.Label(specificityString, GUILayout.MinWidth(200), GUILayout.ExpandWidth(false));
+                }
 
                 EditorGUILayout.EndHorizontal();
             }
@@ -379,7 +408,7 @@ namespace UnityEditor.UIElements.Debugger
         {
             IStyleValue<T> style = (IStyleValue<T>)val;
             int specificity = style.specificity;
-            if (m_ShowDefaults || specificity > 0)
+            if (m_ShowAll || specificity != StyleValueExtensions.UndefinedSpecificity)
             {
                 style.specificity = Int32.MaxValue;
                 style.value = EditorGUILayout.ObjectField(field.Name, ((IStyleValue<T>)val).value, typeof(T), false) as T;
@@ -484,7 +513,7 @@ namespace UnityEditor.UIElements.Debugger
             public static GUIStyle KInspectorTitle = "WhiteLargeCenterLabel";
 
             public static readonly GUIContent elementStylesContent = EditorGUIUtility.TrTextContent("Element styles");
-            public static readonly GUIContent showDefaultsContent = EditorGUIUtility.TrTextContent("Show defaults");
+            public static readonly GUIContent showAllContent = EditorGUIUtility.TrTextContent("Show all");
             public static readonly GUIContent sortContent = EditorGUIUtility.TrTextContent("Sort");
             public static readonly GUIContent uxmlContent = EditorGUIUtility.TrTextContent("UXML Dump");
             public static readonly GUIContent stylesheetsContent = EditorGUIUtility.TrTextContent("Stylesheets");

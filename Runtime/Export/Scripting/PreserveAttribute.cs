@@ -6,6 +6,7 @@ using System;
 
 namespace UnityEngine.Scripting
 {
+    [RequiredByNativeCode]
     [System.AttributeUsage(AttributeTargets.Method | AttributeTargets.Class | AttributeTargets.Field | AttributeTargets.Property, Inherited = false)]
     public class PreserveAttribute : System.Attribute
     {

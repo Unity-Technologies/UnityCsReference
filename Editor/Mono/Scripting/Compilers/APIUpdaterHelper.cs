@@ -14,10 +14,9 @@ using ICSharpCode.NRefactory.Visitors;
 using UnityEditor.PackageManager;
 using UnityEditor.Utils;
 using UnityEditor.VersionControl;
-using UnityEditorInternal;
+using UnityEditorInternal.APIUpdating;
 using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
-using FileMode = System.IO.FileMode;
 
 namespace UnityEditor.Scripting.Compilers
 {
@@ -70,9 +69,9 @@ namespace UnityEditor.Scripting.Compilers
                     + CommandLineFormatter.PrepareFileName(MonoInstallationFinder.GetFrameWorksFolder())
                     + " "
                     + tempOutputPath
-                    + " "
+                    + " \"" // Quote the filer (regex) to avoid issues when passing through command line arg.
                     + APIUpdaterManager.ConfigurationSourcesFilter
-                    + " "
+                    + "\" "
                     + pathMappingsFilePath
                     + " "
                     + responseFile,
@@ -134,7 +133,8 @@ namespace UnityEditor.Scripting.Compilers
 
             var files = Directory.GetFiles(tempOutputPath, "*.*", SearchOption.AllDirectories);
 
-            if (Provider.enabled && !ValidateVCSFiles(files, tempOutputPath))
+            var pathsRelativeToTempOutputPath = files.Select(path => path.Replace(tempOutputPath, ""));
+            if (Provider.enabled && !CheckoutAndValidateVCSFiles(pathsRelativeToTempOutputPath))
                 return;
 
             var destRelativeFilePaths = files.Select(sourceFileName => sourceFileName.Substring(tempOutputPath.Length)).ToArray();
@@ -207,7 +207,7 @@ namespace UnityEditor.Scripting.Compilers
             }
         }
 
-        private static bool CheckReadOnlyFiles(string[] destRelativeFilePaths)
+        internal static bool CheckReadOnlyFiles(string[] destRelativeFilePaths)
         {
             // Verify that all the files we need to copy are now writable
             // Problems after API updating during ScriptCompilation if the files are not-writable
@@ -222,18 +222,17 @@ namespace UnityEditor.Scripting.Compilers
             return true;
         }
 
-        private static bool ValidateVCSFiles(IEnumerable<string> files, string tempOutputPath)
+        internal static bool CheckoutAndValidateVCSFiles(IEnumerable<string> files)
         {
             var assetList = new AssetList();
             foreach (string f in files)
-                assetList.Add(Provider.GetAssetByPath(f.Replace(tempOutputPath, "")));
+                assetList.Add(Provider.GetAssetByPath(f));
 
             // Verify that all the files are also in assetList
             // This is required to ensure the copy temp files to destination loop is only working on version controlled files
             // Provider.GetAssetByPath() can fail i.e. the asset database GUID can not be found for the input asset path
-            foreach (var f in files)
+            foreach (var rawAssetPath in files)
             {
-                var rawAssetPath = f.Replace(tempOutputPath, "");
                 // VCS assets path separator is '/' , file path might be '\' or '/'
                 var assetPath = (Path.DirectorySeparatorChar == '\\') ? rawAssetPath.Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) : rawAssetPath;
                 var foundAsset = assetList.Where(asset => (asset.path == assetPath));
@@ -296,7 +295,7 @@ namespace UnityEditor.Scripting.Compilers
 
             try
             {
-                using (var scriptStream = File.Open(script, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (var scriptStream = File.Open(script, System.IO.FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 {
                     var parser = ParserFactory.CreateParser(ICSharpCode.NRefactory.SupportedLanguage.CSharp, new StreamReader(scriptStream));
                     parser.Lexer.EvaluateConditionalCompilation = false;

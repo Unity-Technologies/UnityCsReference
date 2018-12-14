@@ -925,7 +925,7 @@ namespace UnityEditor.Experimental.GraphView
 
                 Vector2 pos = localToView.MultiplyPoint3x4(m_RenderPoints[i]);// this.LocalToWorld(m_RenderPoints[i]);
                 Vector2 uv = new Vector2(dir.y * halfWidth, -dir.x * halfWidth); // Normal scaled by half width
-                Color32 tint = Color.LerpUnclamped(inColor, outColor, currentLength / polyLineLength);
+                Color32 tint = Color.LerpUnclamped(outColor, inColor, currentLength / polyLineLength);
                 int index = i * 2;
 
                 vertices[index] = new UnityEngine.UIElements.UIVertex()

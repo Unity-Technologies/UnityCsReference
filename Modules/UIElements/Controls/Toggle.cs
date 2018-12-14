@@ -47,11 +47,12 @@ namespace UnityEngine.UIElements
             checkMark.AddToClassList(checkmarkUssClassName);
             visualInput.Add(checkMark);
 
+            // The picking mode needs to be Position in order to have the Pseudostate Hover applied...
+            visualInput.pickingMode = PickingMode.Position;
+
             // Set-up the label and text...
             text = null;
-
-            visualInput.AddManipulator(new Clickable(OnClick));
-            this.AddManipulator(new Clickable(OnClick));
+            this.AddManipulator(new Clickable(OnClickEvent));
         }
 
         public string text
@@ -99,6 +100,18 @@ namespace UnityEngine.UIElements
             base.SetValueWithoutNotify(newValue);
         }
 
+        void OnClickEvent(EventBase evt)
+        {
+            if ((evt as MouseUpEvent)?.button == (int)MouseButton.LeftMouse)
+            {
+                var mue = (MouseUpEvent)evt;
+                if (visualInput.ContainsPoint(visualInput.WorldToLocal(mue.mousePosition)))
+                {
+                    OnClick();
+                }
+            }
+        }
+
         void OnClick()
         {
             value = !value;
@@ -113,7 +126,8 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            if (((evt as KeyDownEvent)?.character == '\n') || ((evt as KeyDownEvent)?.character == ' '))
+            if (((evt as KeyDownEvent)?.keyCode == KeyCode.KeypadEnter) ||
+                ((evt as KeyDownEvent)?.keyCode == KeyCode.Return))
             {
                 OnClick();
                 evt.StopPropagation();

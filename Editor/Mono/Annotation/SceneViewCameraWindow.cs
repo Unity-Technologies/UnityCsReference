@@ -33,8 +33,9 @@ namespace UnityEditor
         GUIContent[] m_CameraSpeedMinMax;
         GUIContent m_FieldOfView;
         GUIContent m_DynamicClip;
+        GUIContent m_OcclusionCulling;
 
-        const int k_FieldCount = 9;
+        const int k_FieldCount = 10;
         const int k_WindowWidth = 300;
         const int k_WindowHeight = ((int)EditorGUI.kSingleLineHeight) * k_FieldCount + kFrameWidth * 2;
         const int kFrameWidth = 10;
@@ -60,8 +61,8 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Max", "The maximum speed of the camera in the Scene view. Valid values are between [0.02, 99].")
             };
             m_FieldOfView = EditorGUIUtility.TrTextContent("Field of View", "The height of the Camera's view angle. Measured in degrees vertically, or along the local Y axis.");
-            m_DynamicClip = EditorGUIUtility.TrTextContent("Dynamic Clipping",
-                "Check this to enable camera's near and far clipping planes to be calculated relative to the viewport size of the Scene.");
+            m_DynamicClip = EditorGUIUtility.TrTextContent("Dynamic Clipping", "Check this to enable camera's near and far clipping planes to be calculated relative to the viewport size of the Scene.");
+            m_OcclusionCulling = EditorGUIUtility.TrTextContent("Occlusion Culling", "Check this to enable occlusion culling in the Scene view. Occlusion culling disables rendering of objects when they\'re not currently seen by the Camera because they\'re hidden (occluded) by other objects.");
         }
 
         public override void OnGUI(Rect rect)
@@ -97,7 +98,7 @@ namespace UnityEditor
 
             EditorGUIUtility.labelWidth = k_PrefixLabelWidth;
 
-            GUILayout.Label("Camera", EditorStyles.boldLabel);
+            GUILayout.Label(EditorGUIUtility.TrTextContent("Scene Camera"), EditorStyles.boldLabel);
 
             // fov isn't applicable in orthographic mode, and orthographic size is controlled by the user zoom
             using (new EditorGUI.DisabledScope(m_SceneView.orthographic))
@@ -118,11 +119,12 @@ namespace UnityEditor
                     settings.farClip = settings.nearClip + k_NearClipMin;
             }
 
+            settings.occlusionCulling = EditorGUILayout.Toggle(m_OcclusionCulling, settings.occlusionCulling);
 
             if (EditorGUI.EndChangeCheck())
                 m_SceneView.Repaint();
 
-            GUILayout.Label("Navigation", EditorStyles.boldLabel);
+            GUILayout.Label(EditorGUIUtility.TrTextContent("Navigation"), EditorStyles.boldLabel);
 
             settings.speed = EditorGUILayout.Slider(m_CameraSpeedSliderContent, settings.speed, settings.speedMin, settings.speedMax);
 
@@ -171,7 +173,7 @@ namespace UnityEditor
         void ShowContextMenu()
         {
             var menu = new GenericMenu();
-            menu.AddItem(GUIContent.Temp("Reset"), false, Reset);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Reset"), false, Reset);
             menu.ShowAsContext();
         }
 

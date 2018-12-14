@@ -58,8 +58,10 @@ namespace UnityEditor.ShortcutManagement
         void RenameActiveProfile(string newProfileId);
         bool CanDeleteActiveProfile();
         void DeleteActiveProfile();
-
+        void ResetToDefault(ShortcutEntry entry);
+        void RemoveBinding(ShortcutEntry entry);
         IList<string> GetCategories();
+        int categorySeparatorIndex { get; }
 
         void SetCategorySelected(string category);
         int selectedCategoryIndex
@@ -114,6 +116,7 @@ namespace UnityEditor.ShortcutManagement
         void BindSelectedEntryTo(List<KeyCombination> newbinding);
         IList<ShortcutEntry> GetSelectedEntryConflictsForGivenKeyCombination(List<KeyCombination> temporaryCombination);
         IList<ShortcutEntry> GetShortcutsBoundTo(KeyCode keyCode, EventModifiers modifiers);
+        bool IsEntryPartOfConflict(ShortcutEntry shortcutEntry);
     }
 
     interface IKeyBindingStateProvider
@@ -172,8 +175,8 @@ namespace UnityEditor.ShortcutManagement
             rootElement.StretchToParentSize();
 
             titleContent = new GUIContent("Shortcuts");
-            minSize = new Vector2(740, 700);
-            maxSize = new Vector2(740, 10000);
+            minSize = new Vector2(700, 570);
+            maxSize = new Vector2(700, 10000);
 
             var directory = ShortcutIntegration.instance.directory;
             var contextManager = ShortcutIntegration.instance.contextManager;

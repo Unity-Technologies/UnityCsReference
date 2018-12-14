@@ -50,6 +50,7 @@ namespace UnityEditor
         bool[] m_SelfAndInterCollisionSelection;
 
         Vector3[] m_ClothParticlesInWorldSpace;
+        Vector3[] m_ClothNormalsInWorldSpace;
 
         Vector3 m_BrushPos;
         Vector3 m_BrushNorm;
@@ -379,15 +380,14 @@ namespace UnityEditor
         {
             if (m_LastVertices != null)
             {
-                Vector3[] vertices = cloth.vertices;
                 Transform t = m_SkinnedMeshRenderer.actualRootBone;
-                if (m_LastVertices.Length != vertices.Length)
+                int numLastVertices = m_LastVertices.Length;
+                if (numLastVertices != m_NumVerts)
                     return true;
-                for (int i = 0; i < m_LastVertices.Length; i++)
+                for (int i = 0; i < numLastVertices; i++)
                 {
-                    var v = t.rotation * vertices[i] + t.position;
                     // we use !(==) here instead of !=, since Vector3 != is incorrectly written to return false if one component is NaN.
-                    if (!(m_LastVertices[i] == v))
+                    if (!(m_LastVertices[i] == m_ClothParticlesInWorldSpace[i]))
                         return true;
                 }
             }
@@ -402,59 +402,74 @@ namespace UnityEditor
                 return;
             }
 
-            Vector3[] vertices = cloth.vertices;
-            int length = vertices.Length;
-            m_ParticleSelection = new bool[length];
-            m_ParticleRectSelection = new bool[length];
+            m_ParticleSelection = new bool[m_NumVerts];
+            m_ParticleRectSelection = new bool[m_NumVerts];
 
-            m_LastVertices = new Vector3[length];
+            m_LastVertices = new Vector3[m_NumVerts];
             Transform t = m_SkinnedMeshRenderer.actualRootBone;
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < m_NumVerts; i++)
             {
-                m_LastVertices[i] = t.rotation * vertices[i] + t.position;
+                m_LastVertices[i] = m_ClothParticlesInWorldSpace[i];
             }
         }
 
         void InitSelfAndInterCollisionSelection()
         {
-            int length = cloth.vertices.Length;
-            m_SelfAndInterCollisionSelection = new bool[length];
-            for (int i = 0; i < length; i++)
+            m_SelfAndInterCollisionSelection = new bool[m_NumVerts];
+            for (int i = 0; i < m_NumVerts; i++)
             {
                 m_SelfAndInterCollisionSelection[i] = false;
             }
 
-            List<UInt32> selfAndInterCollisionIndices = new List<UInt32>(length);
+            List<UInt32> selfAndInterCollisionIndices = new List<UInt32>(m_NumVerts);
             selfAndInterCollisionIndices.Clear();
 
             cloth.GetSelfAndInterCollisionIndices(selfAndInterCollisionIndices);
 
-            length = selfAndInterCollisionIndices.Count;
-            for (int i = 0; i < length; i++)
+            int length = selfAndInterCollisionIndices.Count;
+            // if the number of self and inter collision indices are different then don't copy
+            // as this means the underlying meshes have changed so copying these values is meaningless in this situation
+            if (length == m_NumVerts)
             {
-                m_SelfAndInterCollisionSelection[selfAndInterCollisionIndices[i]] = true;
+                for (int i = 0; i < length; i++)
+                {
+                    m_SelfAndInterCollisionSelection[selfAndInterCollisionIndices[i]] = true;
+                }
             }
         }
 
         void InitClothParticlesInWorldSpace()
         {
             Vector3[] vertices = cloth.vertices;
-            int length = vertices.Length;
-            m_ClothParticlesInWorldSpace = new Vector3[length];
+            m_ClothParticlesInWorldSpace = new Vector3[m_NumVerts];
+
+            Transform t = m_SkinnedMeshRenderer.actualRootBone;
+            Quaternion rotation = t.rotation;
+            Vector3 position = t.position;
+            for (int i = 0; i < m_NumVerts; i++)
+            {
+                m_ClothParticlesInWorldSpace[i] = rotation * vertices[i] + position;
+            }
+        }
+
+        void InitClothNormalsInWorldSpace()
+        {
+            Vector3[] normals = cloth.normals;
+            int length = normals.Length;
+            m_ClothNormalsInWorldSpace = new Vector3[length];
 
             Transform t = m_SkinnedMeshRenderer.actualRootBone;
             Quaternion rotation = t.rotation;
             Vector3 position = t.position;
             for (int i = 0; i < length; i++)
             {
-                m_ClothParticlesInWorldSpace[i] = rotation * vertices[i] + position;
+                m_ClothNormalsInWorldSpace[i] = rotation * normals[i] + position;
             }
         }
 
         void DrawSelfAndInterCollisionParticles()
         {
             Transform t = m_SkinnedMeshRenderer.actualRootBone;
-            Vector3[] vertices = cloth.vertices;
 
             int id = GUIUtility.GetControlID(FocusType.Passive);
             float size = state.SelfCollisionDistance;
@@ -471,7 +486,7 @@ namespace UnityEditor
             for (int i = 0; i < length; i++)
             {
                 Vector3 distanceBetween = m_ClothParticlesInWorldSpace[i] - m_BrushPos;
-                bool forwardFacing = Vector3.Dot(t.rotation * cloth.normals[i], Camera.current.transform.forward) <= 0;
+                bool forwardFacing = Vector3.Dot(m_ClothNormalsInWorldSpace[i], Camera.current.transform.forward) <= 0;
                 if (forwardFacing || state.ManipulateBackfaces)
                 {
                     if ((m_SelfAndInterCollisionSelection[i] == true) && !(m_ParticleSelection[i] == true))
@@ -503,11 +518,12 @@ namespace UnityEditor
 
         void InitInspector()
         {
+            m_NumVerts = cloth.vertices.Length;
+
             InitBrushCollider();
             InitSelfAndInterCollisionSelection();
             InitClothParticlesInWorldSpace();
-
-            m_NumVerts = cloth.vertices.Length;
+            InitClothNormalsInWorldSpace();
         }
 
         void OnEnable()
@@ -749,7 +765,8 @@ namespace UnityEditor
             int numSelection = 0;
             bool firstVertex = true;
 
-            for (int i = 0; i < m_ParticleSelection.Length; i++)
+            int numParticleSelection = m_ParticleSelection.Length;
+            for (int i = 0; i < numParticleSelection; i++)
             {
                 if (m_ParticleSelection[i])
                 {
@@ -773,10 +790,11 @@ namespace UnityEditor
                 }
             }
 
+            int numCoefficients = coefficients.Length;
             float maxDistanceNew = CoefficientField(maxDistance, useMaxDistance, numSelection > 0, DrawMode.MaxDistance);
             if (maxDistanceNew != maxDistance)
             {
-                for (int i = 0; i < coefficients.Length; i++)
+                for (int i = 0; i < numCoefficients; i++)
                 {
                     if (m_ParticleSelection[i])
                         coefficients[i].maxDistance = maxDistanceNew;
@@ -788,7 +806,7 @@ namespace UnityEditor
             float collisionSphereDistanceNew = CoefficientField(collisionSphereDistance, useCollisionSphereDistance, numSelection > 0, DrawMode.CollisionSphereDistance);
             if (collisionSphereDistanceNew != collisionSphereDistance)
             {
-                for (int i = 0; i < coefficients.Length; i++)
+                for (int i = 0; i < numCoefficients; i++)
                 {
                     if (m_ParticleSelection[i])
                         coefficients[i].collisionSphereDistance = collisionSphereDistanceNew;
@@ -815,7 +833,7 @@ namespace UnityEditor
 
             if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Backspace)
             {
-                for (int i = 0; i < coefficients.Length; i++)
+                for (int i = 0; i < numCoefficients; i++)
                 {
                     if (m_ParticleSelection[i])
                     {
@@ -945,17 +963,16 @@ namespace UnityEditor
                 return -1;
             }
 
-            Vector3[] normals = cloth.normals;
             ClothSkinningCoefficient[] coefficients = cloth.coefficients;
             Ray mouseRay = HandleUtility.GUIPointToWorldRay(e.mousePosition);
             float minDistance = 1000;
             int found = -1;
             Quaternion rotation = m_SkinnedMeshRenderer.actualRootBone.rotation;
-            for (int i = 0; i < coefficients.Length; i++)
+            for (int i = 0; i < m_NumVerts; i++)
             {
                 Vector3 dir = m_LastVertices[i] - mouseRay.origin;
                 float sqrDistance = Vector3.Cross(dir, mouseRay.direction).sqrMagnitude;
-                bool forwardFacing = Vector3.Dot(rotation * normals[i], Camera.current.transform.forward) <= 0;
+                bool forwardFacing = Vector3.Dot(m_ClothNormalsInWorldSpace[i], Camera.current.transform.forward) <= 0;
                 if ((forwardFacing || state.ManipulateBackfaces) && sqrDistance < minDistance && sqrDistance < 0.05f * 0.05f)
                 {
                     minDistance = sqrDistance;
@@ -990,10 +1007,9 @@ namespace UnityEditor
             m_MaxVisualizedValue[(int)drawMode] = max;
             m_MinVisualizedValue[(int)drawMode] = min;
 
-            Vector3[] normals = cloth.normals;
             for (int i = 0; i < length; i++)
             {
-                bool forwardFacing = Vector3.Dot(t.rotation * normals[i], Camera.current.transform.forward) <= 0;
+                bool forwardFacing = Vector3.Dot(m_ClothNormalsInWorldSpace[i], Camera.current.transform.forward) <= 0;
                 if (forwardFacing || state.ManipulateBackfaces)
                 {
                     float val = GetCoefficient(coefficients[i]);
@@ -1039,7 +1055,6 @@ namespace UnityEditor
 
             bool selectionChanged = false;
 
-            Vector3[] normals = cloth.normals;
             ClothSkinningCoefficient[] coefficients = cloth.coefficients;
 
             float minX = Mathf.Min(m_SelectStartPoint.x, m_SelectMousePoint.x);
@@ -1062,7 +1077,7 @@ namespace UnityEditor
             for (int i = 0; i < length; i++)
             {
                 Vector3 v = m_LastVertices[i];
-                bool forwardFacing = Vector3.Dot(rotation * normals[i], Camera.current.transform.forward) <= 0;
+                bool forwardFacing = Vector3.Dot(m_ClothNormalsInWorldSpace[i], Camera.current.transform.forward) <= 0;
                 bool selected = top.GetSide(v) && bottom.GetSide(v) && left.GetSide(v) && right.GetSide(v);
                 selected = selected && (state.ManipulateBackfaces || forwardFacing);
                 if (m_ParticleRectSelection[i] != selected)
@@ -1138,7 +1153,8 @@ namespace UnityEditor
                             m_ParticleSelection[found] = !m_ParticleSelection[found];
                         else
                         {
-                            for (int i = 0; i < m_ParticleSelection.Length; i++)
+                            int length = m_ParticleSelection.Length;
+                            for (int i = 0; i < length; i++)
                                 m_ParticleSelection[i] = false;
                             m_ParticleSelection[found] = true;
                         }
@@ -1200,7 +1216,8 @@ namespace UnityEditor
                             {
                                 // If nothing was clicked, deselect all
                                 ClothSkinningCoefficient[] coefficients = cloth.coefficients;
-                                for (int i = 0; i < coefficients.Length; i++)
+                                int length = coefficients.Length;
+                                for (int i = 0; i < length; i++)
                                     m_ParticleSelection[i] = false;
                             }
                         }
@@ -1220,15 +1237,12 @@ namespace UnityEditor
                 return;
             }
 
-            Vector3[] vertices = cloth.vertices;
-            Vector3[] normals = cloth.normals;
             ClothSkinningCoefficient[] coefficients = cloth.coefficients;
             Quaternion rotation = m_SkinnedMeshRenderer.actualRootBone.rotation;
-            int length = vertices.Length;
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < m_NumVerts; i++)
             {
                 Vector3 distanceBetween = m_ClothParticlesInWorldSpace[i] - m_BrushPos;
-                bool forwardFacing = Vector3.Dot(rotation * normals[i], Camera.current.transform.forward) <= 0;
+                bool forwardFacing = Vector3.Dot(m_ClothNormalsInWorldSpace[i], Camera.current.transform.forward) <= 0;
                 if ((distanceBetween.magnitude < state.BrushRadius) && (forwardFacing || state.ManipulateBackfaces))
                 {
                     bool changed = false;
@@ -1259,14 +1273,11 @@ namespace UnityEditor
                 return;
             }
 
-            Vector3[] vertices = cloth.vertices;
-            Vector3[] normals = cloth.normals;
             Quaternion rotation = m_SkinnedMeshRenderer.actualRootBone.rotation;
-            int length = vertices.Length;
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < m_NumVerts; i++)
             {
                 Vector3 distanceBetween = m_ClothParticlesInWorldSpace[i] - m_BrushPos;
-                bool forwardFacing = Vector3.Dot(rotation * normals[i], Camera.current.transform.forward) <= 0;
+                bool forwardFacing = Vector3.Dot(m_ClothNormalsInWorldSpace[i], Camera.current.transform.forward) <= 0;
                 if ((distanceBetween.magnitude < state.BrushRadius) && (forwardFacing || state.ManipulateBackfaces))
                 {
                     if (e.button == 0)
@@ -1463,8 +1474,7 @@ namespace UnityEditor
 
                 if (evt.type == EventType.ExecuteCommand)
                 {
-                    int numVertices = cloth.vertices.Length;
-                    for (int i = 0; i < numVertices; i++)
+                    for (int i = 0; i < m_NumVerts; i++)
                         m_ParticleSelection[i] = true;
                     SceneView.RepaintAll();
                     state.ToolMode = ToolMode.Select;

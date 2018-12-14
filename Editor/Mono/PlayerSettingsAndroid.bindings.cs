@@ -282,18 +282,32 @@ namespace UnityEditor
                 set;
             }
 
-            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
             [NativeProperty("androidUseCustomKeystore", TargetType.Function)]
-            public static extern bool useCustomKeystore { get; set; }
+            public static extern bool useCustomKeystore
+            {
+                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+                get;
+                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+                set;
+            }
+
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            internal static extern string ConvertAndroidKeystorePath(string keystoreName);
 
             // Android keystore name
             public static extern string keystoreName
             {
-                [NativeMethod("GetAndroidKeystoreName")]
+                [NativeMethod("GetAndroidKeystorePath")]
                 get;
-                [NativeMethod("SetAndroidKeystoreName")]
+                [NativeMethod("SetAndroidKeystorePath")]
                 set;
             }
+
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            internal static extern string GetAndroidKeystoreFullPath();
+
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            internal static extern string GetAndroidKeystoresDedicatedLocationKey();
 
             // Android keystore password
             public static extern string keystorePass

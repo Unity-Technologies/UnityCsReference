@@ -5,17 +5,27 @@
 using UnityEngine;
 using UnityEditor;
 using UnityEngine.Experimental.TerrainAPI;
+using UnityEditor.ShortcutManagement;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
     [FilePathAttribute("Library/TerrainTools/Stamp", FilePathAttribute.Location.ProjectFolder)]
     internal class StampTool : TerrainPaintTool<StampTool>
     {
+        const string toolName = "Stamp Terrain";
+
         [SerializeField]
         float m_StampHeightTerrainSpace = 0.0f;
 
         [SerializeField]
         float m_MaxBlendAdd = 0.0f;
+
+        [Shortcut("Terrain/Stamp Terrain", typeof(TerrainToolShortcutContext))]
+        static void SelectShortcut(ShortcutArguments args)
+        {
+            TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
+            context.SelectPaintTool<StampTool>();
+        }
 
         class Styles
         {
@@ -37,7 +47,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         public override string GetName()
         {
-            return "Stamp Terrain";
+            return toolName;
         }
 
         public override string GetDesc()

@@ -24,6 +24,8 @@ namespace UnityEditor
     {
         public const int kPackagesFolderInstanceId = int.MaxValue;
 
+        private bool isFolderTreeViewContextClicked = false;
+
         // Alive ProjectBrowsers
         private static List<ProjectBrowser> s_ProjectBrowsers = new List<ProjectBrowser>();
         public static List<ProjectBrowser> GetAllProjectBrowsers()
@@ -1057,17 +1059,7 @@ namespace UnityEditor
                 bool allFolders = numFolders == selectionCount;
                 if (allFolders)
                 {
-                    if (m_ViewMode == ViewMode.TwoColumns)
-                    {
-                        SetFolderSelection(selectedInstanceIDs, false);
-                    }
-                    else if (m_ViewMode == ViewMode.OneColumn)
-                    {
-                        ClearSearch(); // shows tree instead of search
-                        m_AssetTree.Frame(selectedInstanceIDs[0], true, false);
-                    }
-
-                    Repaint();
+                    OpenSelectedFolders();
                     GUIUtility.ExitGUI(); // Exit because if we are mouse clicking to open we are in the middle of iterating list area items..
                 }
                 else
@@ -1118,6 +1110,35 @@ namespace UnityEditor
             m_SelectedPathSplitted.Clear();
         }
 
+        static void OpenSelectedFolders()
+        {
+            ProjectBrowser projectBrowser = s_LastInteractedProjectBrowser;
+
+            if (projectBrowser != null)
+            {
+                int[] selectedInstanceIDs = projectBrowser.m_ListArea.GetSelection();
+                if (projectBrowser.m_ViewMode == ViewMode.TwoColumns)
+                {
+                    projectBrowser.SetFolderSelection(selectedInstanceIDs, false);
+                }
+                else if (projectBrowser.m_ViewMode == ViewMode.OneColumn)
+                {
+                    projectBrowser.ClearSearch(); // shows tree instead of search
+                    projectBrowser.m_AssetTree.Frame(selectedInstanceIDs[0], true, false);
+                }
+
+                projectBrowser.Repaint();
+            }
+        }
+
+        static void OpenSelectedFoldersInInternalExplorer()
+        {
+            if (!IsFolderTreeViewContextClick())
+            {
+                OpenSelectedFolders();
+            }
+        }
+
         // Also called from list when navigating by keys
         void ListAreaItemSelectedCallback(bool doubleClicked)
         {
@@ -1153,6 +1174,7 @@ namespace UnityEditor
 
         void OnLostFocus()
         {
+            isFolderTreeViewContextClicked = false;
             // Added because this window uses RenameOverlay
             EndRenaming();
         }
@@ -2067,6 +2089,7 @@ namespace UnityEditor
 
         void FolderTreeViewContextClick(int clickedItemID)
         {
+            isFolderTreeViewContextClicked = true;
             Event evt = Event.current;
             System.Diagnostics.Debug.Assert(evt.type == EventType.ContextClick);
             if (SavedSearchFilters.IsSavedFilter(clickedItemID))
@@ -2081,6 +2104,25 @@ namespace UnityEditor
                 EditorUtility.DisplayPopupMenu(new Rect(evt.mousePosition.x, evt.mousePosition.y, 0, 0), "Assets/", null);
             }
             evt.Use();
+        }
+
+        static bool IsFolderTreeViewContextClick()
+        {
+            ProjectBrowser projectBrowser = s_LastInteractedProjectBrowser;
+
+            if (projectBrowser == null)
+            {
+                return true; // return true to ignore Context menu's 'Open' option in folder tree in the ProjectBrowser
+            }
+            else if (projectBrowser.isFolderTreeViewContextClicked)
+            {
+                projectBrowser.isFolderTreeViewContextClicked = false;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         void AssetTreeDragEnded(int[] draggedInstanceIds, bool draggedItemsFromOwnTreeView)

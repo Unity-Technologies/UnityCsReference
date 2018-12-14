@@ -555,7 +555,10 @@ namespace UnityEditor.UIElements
 
             public void PreUpdate()
             {
-                boundObject.UpdateIfNecessary();
+                if (boundObject != null)
+                {
+                    boundObject.UpdateIfNecessary();
+                }
             }
 
             public virtual void ResetUpdate()

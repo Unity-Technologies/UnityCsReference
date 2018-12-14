@@ -154,7 +154,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             var flags = AssemblyFlags.None;
 
-            var lowerPath = path.ToLower();
+            var lowerPath = Utility.FastToLower(path);
             if (lowerPath.Contains("/editor/") || lowerPath.Contains(@"\editor\"))
                 flags |= AssemblyFlags.EditorOnly;
 
@@ -174,33 +174,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             };
         }
 
-        internal static bool FastStartsWith(string str, string prefix, string prefixLowercase)
+        public static string[] PredefinedTargetAssemblyNames
         {
-            int strLength = str.Length;
-            int prefixLength = prefix.Length;
-
-            if (prefixLength > strLength)
-                return false;
-
-            int lastPrefixCharIndex = prefixLength - 1;
-
-            // Check last char in prefix is equal. Since we are comparing
-            // file paths against directory paths, the last char will be '/'.
-            if (str[lastPrefixCharIndex] != prefix[lastPrefixCharIndex])
-                return false;
-
-            for (int i = 0; i < prefixLength; ++i)
-            {
-                if (str[i] == prefix[i])
-                    continue;
-
-                char strC = char.ToLower(str[i], CultureInfo.InvariantCulture);
-
-                if (strC != prefixLowercase[i])
-                    return false;
-            }
-
-            return true;
+            get { return predefinedTargetAssemblies.Select(a => AssetPath.GetAssemblyNameWithoutExtension(a.Filename)).ToArray(); }
         }
 
         public static TargetAssembly[] CreateTargetAssemblies(IEnumerable<CustomScriptAssembly> customScriptAssemblies, IEnumerable<PrecompiledAssembly> precompiledAssemblies)
@@ -208,21 +184,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (customScriptAssemblies == null)
                 return null;
 
-            foreach (var customAssembly in customScriptAssemblies)
-            {
-                if (predefinedTargetAssemblies.Any(p => AssetPath.GetAssemblyNameWithoutExtension(p.Filename) == customAssembly.Name))
-                {
-                    throw new Exception(string.Format("Assembly cannot be have reserved name '{0}'. Defined in '{1}'", customAssembly.Name, customAssembly.FilePath));
-                }
-            }
-
             var targetAssemblies = new List<TargetAssembly>();
             var nameToTargetAssembly = new Dictionary<string, TargetAssembly>();
 
             // Create TargetAssemblies
             foreach (var customAssembly in customScriptAssemblies)
             {
-                var lowerPathPrefix = customAssembly.PathPrefix.ToLower(CultureInfo.InvariantCulture);
+                var lowerPathPrefix = Utility.FastToLower(customAssembly.PathPrefix);
 
 
                 var targetAssembly = new TargetAssembly(customAssembly.Name + ".dll",
@@ -230,7 +198,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     customAssembly.AssemblyFlags,
                     TargetAssemblyType.Custom,
                     customAssembly.PathPrefix,
-                    path => FastStartsWith(path, customAssembly.PathPrefix, lowerPathPrefix) ? customAssembly.PathPrefix.Length : -1,
+                    path => Utility.FastStartsWith(path, customAssembly.PathPrefix, lowerPathPrefix) ? customAssembly.PathPrefix.Length : -1,
                     (settings, defines) => customAssembly.IsCompatibleWith(settings.BuildTarget, settings.CompilationOptions, defines),
                     customAssembly.CompilerOptions)
                 {
@@ -690,7 +658,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (buildingForEditor && assemblies.EditorAssemblyReferences != null)
                 references.AddRange(assemblies.EditorAssemblyReferences);
 
-            references.AddRange(MonoLibraryHelpers.GetSystemLibraryReferences(scriptAssembly.ApiCompatibilityLevel, scriptAssembly.BuildTarget, scriptAssembly.Language, buildingForEditor, scriptAssembly));
+            references.AddRange(MonoLibraryHelpers.GetSystemLibraryReferences(scriptAssembly.ApiCompatibilityLevel, scriptAssembly.BuildTarget, scriptAssembly.Language));
 
             scriptAssembly.ScriptAssemblyReferences = scriptAssemblyReferences.ToArray();
             scriptAssembly.References = references.ToArray();
@@ -919,26 +887,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return uniqueTargetAssemblies.ToArray();
         }
 
-        static bool IsAssetsPath(string path)
-        {
-            const string assetsLowerCase = "assets";
-            const string assetsUpperCase = "ASSETS";
-
-            if (path.Length < 7)
-                return false;
-
-            if (path[6] != '/')
-                return false;
-
-            for (int i = 0; i < 6; ++i)
-            {
-                if (path[i] != assetsLowerCase[i] && path[i] != assetsUpperCase[i])
-                    return false;
-            }
-
-            return true;
-        }
-
         internal static TargetAssembly GetTargetAssembly(string scriptPath, string projectDirectory, TargetAssembly[] customTargetAssemblies)
         {
             TargetAssembly resultAssembly = GetCustomTargetAssembly(scriptPath, projectDirectory, customTargetAssemblies);
@@ -947,25 +895,42 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return resultAssembly;
 
             // Do not compile scripts outside the Assets/ folder into predefined assemblies.
-            if (!IsAssetsPath(scriptPath))
+            if (!Utility.IsAssetsPath(scriptPath))
                 return null;
 
             return GetPredefinedTargetAssembly(scriptPath);
+        }
+
+        static string ScriptPathToLowerCase(string scriptPath)
+        {
+            int length = scriptPath.Length;
+
+            var chars = new char[length + 1];
+
+            chars[0] = '/';
+
+            for (int i = 0; i < length; ++i)
+            {
+                char stringChar = scriptPath[i];
+
+                if (stringChar == '\\')
+                    chars[i + 1] = AssetPath.Separator;
+                else
+                    chars[i + 1] = Utility.FastToLower(stringChar);
+            }
+
+            return new string(chars);
         }
 
         internal static TargetAssembly GetPredefinedTargetAssembly(string scriptPath)
         {
             TargetAssembly resultAssembly = null;
 
-            var extension = AssetPath.GetExtension(scriptPath).Substring(1).ToLower();
-            var lowerPath = ("/" + scriptPath.ToLower()).ConvertSeparatorsToUnity();
+            var lowerPath = ScriptPathToLowerCase(scriptPath);
             int highestPathDepth = -1;
 
             foreach (var assembly in predefinedTargetAssemblies)
             {
-                if (extension != assembly.Language.GetExtensionICanCompile())
-                    continue;
-
                 var pathFilter = assembly.PathFilter;
                 int pathDepth = -1;
 
@@ -1053,7 +1018,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         static int FilterAssemblyPathBeginsWith(string pathName, string lowerPrefix)
         {
-            return FastStartsWith(pathName, lowerPrefix, lowerPrefix) ? lowerPrefix.Length : -1;
+            return Utility.FastStartsWith(pathName, lowerPrefix, lowerPrefix) ? lowerPrefix.Length : -1;
         }
     }
 }

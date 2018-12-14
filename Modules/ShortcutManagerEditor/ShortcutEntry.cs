@@ -3,9 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Collections.Generic;
 
 namespace UnityEditor.ShortcutManagement
 {
@@ -88,7 +88,7 @@ namespace UnityEditor.ShortcutManagement
 
         public override string ToString()
         {
-            return $"{string.Join(",", combinations.Select(c=>c.ToString()).ToArray())} [{context?.Name}]";
+            return $"{string.Join(",", combinations.Select(c => c.ToString()).ToArray())} [{context?.Name}]";
         }
 
         List<KeyCombination> activeCombination
@@ -111,13 +111,16 @@ namespace UnityEditor.ShortcutManagement
                 var lastKeyCombination = prefix.Last();
                 lastKeyCombination = new KeyCombination(lastKeyCombination.keyCode, lastKeyCombination.modifiers & ~m_ReservedModifier);
 
+                var lastKeyCombinationActive = activeCombination[prefix.Count - 1];
+                lastKeyCombinationActive = new KeyCombination(lastKeyCombinationActive.keyCode, lastKeyCombinationActive.modifiers & ~m_ReservedModifier);
+
                 for (int i = 0; i < prefix.Count - 1; i++)
                 {
                     if (!prefix[i].Equals(activeCombination[i]))
                         return false;
                 }
 
-                return lastKeyCombination.Equals(activeCombination[prefix.Count - 1]);
+                return lastKeyCombination.Equals(lastKeyCombinationActive);
             }
 
             for (int i = 0; i < prefix.Count; i++)
@@ -147,6 +150,11 @@ namespace UnityEditor.ShortcutManagement
             m_OverriddenCombinations = newKeyCombinations.ToList();
             if (m_Type == ShortcutType.Menu && m_OverriddenCombinations.Any())
                 Menu.SetHotkey(m_Identifier.path.Substring(Discovery.k_MainMenuShortcutPrefix.Length), m_OverriddenCombinations[0].ToMenuShortcutString());
+        }
+
+        internal List<KeyCombination> GetDefaultCombinations()
+        {
+            return m_DefaultCombinations;
         }
 
         internal void ApplyOverride(SerializableShortcutEntry shortcutOverride)

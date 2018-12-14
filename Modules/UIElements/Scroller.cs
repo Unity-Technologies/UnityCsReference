@@ -104,13 +104,13 @@ namespace UnityEngine.UIElements
             slider.AddToClassList(sliderUssClassName);
             slider.RegisterValueChangedCallback(OnSliderValueChange);
 
-            Add(slider);
             lowButton = new RepeatButton(ScrollPageUp, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) { name = "unity-low-button" };
             lowButton.AddToClassList(lowButtonUssClassName);
             Add(lowButton);
             highButton = new RepeatButton(ScrollPageDown, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) { name = "unity-high-button" };
             highButton.AddToClassList(highButtonUssClassName);
             Add(highButton);
+            Add(slider);
         }
 
         public void Adjust(float factor)

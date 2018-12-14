@@ -46,10 +46,11 @@ namespace UnityEditor
         public static float s_DefaultLabelWidth => Styles.window.GetFloat("-unity-label-width");
         public static float s_DefaultLayoutMaxWidth => Styles.window.GetFloat("-unity-max-layout-width");
 
-        public SettingsWindow()
+        public SettingsWindow(SettingsScope scope)
         {
+            m_Scope = scope;
+            titleContent.text = scope == SettingsScope.Project ? "Project Settings" : "Preferences";
             m_SearchFieldGiveFocus = true;
-            m_Scope = SettingsScope.Project;
         }
 
         internal SettingsProvider[] GetProviders()
@@ -95,8 +96,6 @@ namespace UnityEditor
 
         internal void OnEnable()
         {
-            if (String.IsNullOrEmpty(titleContent.text))
-                titleContent.text = "Settings";
             titleContent.image = EditorGUIUtility.IconContent("Settings").image;
 
             Init();
@@ -353,11 +352,10 @@ namespace UnityEditor
 
         private static SettingsWindow Create(SettingsScope scope)
         {
-            var settingsWindow = CreateInstance<SettingsWindow>();
-            settingsWindow.m_Scope = scope;
-            settingsWindow.titleContent.text = scope == SettingsScope.Project ? "Project Settings" : "Preferences";
-            settingsWindow.Init();
-            return settingsWindow;
+            if (scope == SettingsScope.Project)
+                return CreateInstance<ProjectSettingsWindow>();
+
+            return CreateInstance<PreferenceSettingsWindow>();
         }
 
         internal static SettingsWindow Show(SettingsScope scopes, string settingsPath = null)
@@ -402,6 +400,22 @@ namespace UnityEditor
                 GUILayout.EndHorizontal();
                 EditorGUIUtility.labelWidth = m_LabelWidth;
             }
+        }
+    }
+
+    internal class ProjectSettingsWindow : SettingsWindow
+    {
+        public ProjectSettingsWindow()
+            : base(SettingsScope.Project)
+        {
+        }
+    }
+
+    internal class PreferenceSettingsWindow : SettingsWindow
+    {
+        public PreferenceSettingsWindow()
+            : base(SettingsScope.User)
+        {
         }
     }
 }

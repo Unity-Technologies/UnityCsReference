@@ -130,13 +130,6 @@ namespace UnityEngine.UIElements
             styleSheets.Remove(sheetAsset);
         }
 
-        internal void ReplaceStyleSheetPath(string oldSheetPath, string newSheetPath)
-        {
-            StyleSheet old = Panel.loadResourceFunc(oldSheetPath, typeof(StyleSheet)) as StyleSheet;
-            StyleSheet @new = Panel.loadResourceFunc(newSheetPath, typeof(StyleSheet)) as StyleSheet;
-            styleSheets.Swap(old, @new);
-        }
-
         internal void ReloadStyleSheets()
         {
             if (styleSheetList == null)

@@ -6,17 +6,28 @@ using UnityEngine;
 using UnityEditor;
 using System;
 using UnityEngine.Experimental.TerrainAPI;
+using UnityEditor.ShortcutManagement;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
     [FilePathAttribute("Library/TerrainTools/SetHeight", FilePathAttribute.Location.ProjectFolder)]
     internal class SetHeightTool : TerrainPaintTool<SetHeightTool>
     {
+        const string toolName = "Set Height";
+
         [SerializeField]
         float m_HeightWorldSpace;
 
         [SerializeField]
         bool m_FlattenAll;
+
+        [FormerlyPrefKeyAs("Terrain/Set Height", "f2")]
+        [Shortcut("Terrain/Set Height", typeof(TerrainToolShortcutContext))]
+        static void SelectShortcut(ShortcutArguments args)
+        {
+            TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
+            context.SelectPaintTool<SetHeightTool>();
+        }
 
         class Styles
         {
@@ -38,7 +49,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         public override string GetName()
         {
-            return "Set Height";
+            return toolName;
         }
 
         public override string GetDesc()

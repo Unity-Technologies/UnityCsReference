@@ -339,7 +339,7 @@ namespace UnityEditor
             float genericMenuTopOffset = Styles.genericMenuTopOffset;
             if (floatingWindow && isTopRightPane)
             {
-                genericMenuLeftOffset = Styles.genericMenuFloatingLeftOffset;
+                genericMenuLeftOffset = ContainerWindow.buttonStackWidth + Styles.genericMenuFloatingLeftOffset;
                 genericMenuTopOffset = Styles.genericMenuFloatingTopOffset;
             }
             ShowGenericMenu(position.width - genericMenuLeftOffset, tabAreaRect.y + genericMenuTopOffset);
@@ -398,12 +398,12 @@ namespace UnityEditor
             if (m_SelectedTabRect.width == 0)
                 return;
 
-            Rect connecitonLineRect = m_SelectedTabRect;
-            connecitonLineRect.xMax = Mathf.Min(connecitonLineRect.xMax, tabAreaRect.xMax);
-            connecitonLineRect.height = floatingWindow ? Styles.tabConnectionLineHeightFloating : Styles.tabConnectionLineHeight;
-            connecitonLineRect.y = tabAreaRect.yMax - (floatingWindow ? Styles.tabConnectionLineBottomOffsetFloating : Styles.tabConnectionLineBottomOffset);
+            Rect connectionLineRect = m_SelectedTabRect;
+            connectionLineRect.xMax = Mathf.Min(connectionLineRect.xMax, tabAreaRect.xMax);
+            connectionLineRect.height = floatingWindow ? Styles.tabConnectionLineHeightFloating : Styles.tabConnectionLineHeight;
+            connectionLineRect.y = tabAreaRect.yMax - (floatingWindow ? Styles.tabConnectionLineBottomOffsetFloating : Styles.tabConnectionLineBottomOffset);
             using (new GUI.ColorScope(Styles.tabConnectionLineColor * GUI.color))
-                GUI.DrawTexture(connecitonLineRect, EditorGUIUtility.whiteTexture);
+                GUI.DrawTexture(connectionLineRect, EditorGUIUtility.whiteTexture);
         }
 
         private Rect UpdateViewRect(Rect dockAreaRect, bool isBottomTab, bool customBorder, bool floatingWindow)
@@ -488,7 +488,7 @@ namespace UnityEditor
 
         private float GetExtraButtonsWidth()
         {
-            return (HasExtraDockAreaButton() ? 44f : 26f) + (floatingWindow && isTopRightPane ? 36f : 0f);
+            return (HasExtraDockAreaButton() ? 44f : 26f) + (floatingWindow && isTopRightPane ? ContainerWindow.buttonStackWidth : 0f);
         }
 
         private void DrawTabScrollers(Rect tabAreaRect)

@@ -17,6 +17,7 @@ using UnityEditor.Scripting.ScriptCompilation;
 using UnityEditor.Utils;
 using UnityEditorInternal;
 using UnityEditor.Scripting.Compilers;
+using UnityEngine.Profiling;
 
 using UnityEditor.Compilation;
 using UnityEditor.Modules;
@@ -224,27 +225,44 @@ namespace UnityEditor.VisualStudioIntegration
 
         internal void GenerateAndWriteSolutionAndProjects(ScriptEditorUtility.ScriptEditor scriptEditor)
         {
+            Profiler.BeginSample("GenerateAndWriteSolutionAndProjects");
+
+            Profiler.BeginSample("SolutionSynchronizer.GetIslands");
             // Only synchronize islands that have associated source files and ones that we actually want in the project.
             // This also filters out DLLs coming from .asmdef files in packages.
             IEnumerable<MonoIsland> islands = EditorCompilationInterface.Instance.GetAllScriptAssemblies(EditorScriptCompilationOptions.BuildingForEditor | EditorCompilationInterface.GetAdditionalEditorScriptCompilationOptions())
                 .Where(i => 0 < i.Files.Length && i.Files.Any(ShouldFileBePartOfSolution))
                 .Select(x => x.ToMonoIsland(EditorScriptCompilationOptions.BuildingForEditor, string.Empty, _projectDirectory)).ToList();
 
+            Profiler.EndSample();
+
+            Profiler.BeginSample("GenerateAllAssetProjectParts.GetIslands");
             var allAssetProjectParts = GenerateAllAssetProjectParts();
+            Profiler.EndSample();
 
             var monoIslands = islands.ToList();
 
-
+            Profiler.BeginSample("SyncSolution");
             SyncSolution(monoIslands.ToList());
+            Profiler.EndSample();
+
             var allProjectIslands = RelevantIslandsForMode(monoIslands, ModeForCurrentExternalEditor()).ToList();
 
             foreach (MonoIsland island in allProjectIslands)
             {
+                Profiler.BeginSample("SyncProject");
                 SyncProject(island, allAssetProjectParts, ParseResponseFileData(island), allProjectIslands);
+                Profiler.EndSample();
             }
 
             if (scriptEditor == ScriptEditorUtility.ScriptEditor.VisualStudioCode)
+            {
+                Profiler.BeginSample("WriteVSCodeSettingsFiles");
                 WriteVSCodeSettingsFiles();
+                Profiler.EndSample();
+            }
+
+            Profiler.EndSample();
         }
 
         IEnumerable<ScriptCompilerBase.ResponseFileData> ParseResponseFileData(MonoIsland island)

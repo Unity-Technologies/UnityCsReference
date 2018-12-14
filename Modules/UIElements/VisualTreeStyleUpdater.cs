@@ -333,37 +333,37 @@ namespace UnityEngine.UIElements
 
             m_ResolveInheritData.CopyFrom(currentInheritedStyle);
 
-            if (specifiedStyle.color.specificity > StyleValueExtensions.UndefinedSpecificity)
+            if (specifiedStyle.color.specificity != StyleValueExtensions.UndefinedSpecificity)
             {
                 m_ResolveInheritData.color = specifiedStyle.color;
             }
 
-            if (specifiedStyle.unityFont.specificity > StyleValueExtensions.UndefinedSpecificity)
+            if (specifiedStyle.unityFont.specificity != StyleValueExtensions.UndefinedSpecificity)
             {
                 m_ResolveInheritData.font = specifiedStyle.unityFont;
             }
 
-            if (specifiedStyle.fontSize.specificity > StyleValueExtensions.UndefinedSpecificity)
+            if (specifiedStyle.fontSize.specificity != StyleValueExtensions.UndefinedSpecificity)
             {
                 m_ResolveInheritData.fontSize = specifiedStyle.fontSize;
             }
 
-            if (specifiedStyle.unityFontStyleAndWeight.specificity > StyleValueExtensions.UndefinedSpecificity)
+            if (specifiedStyle.unityFontStyleAndWeight.specificity != StyleValueExtensions.UndefinedSpecificity)
             {
                 m_ResolveInheritData.unityFontStyle = specifiedStyle.unityFontStyleAndWeight;
             }
 
-            if (specifiedStyle.unityTextAlign.specificity > StyleValueExtensions.UndefinedSpecificity)
+            if (specifiedStyle.unityTextAlign.specificity != StyleValueExtensions.UndefinedSpecificity)
             {
                 m_ResolveInheritData.unityTextAlign = specifiedStyle.unityTextAlign;
             }
 
-            if (specifiedStyle.visibility.specificity > StyleValueExtensions.UndefinedSpecificity)
+            if (specifiedStyle.visibility.specificity != StyleValueExtensions.UndefinedSpecificity)
             {
                 m_ResolveInheritData.visibility = specifiedStyle.visibility;
             }
 
-            if (specifiedStyle.whiteSpace.specificity > StyleValueExtensions.UndefinedSpecificity)
+            if (specifiedStyle.whiteSpace.specificity != StyleValueExtensions.UndefinedSpecificity)
             {
                 m_ResolveInheritData.whiteSpace = specifiedStyle.whiteSpace;
             }

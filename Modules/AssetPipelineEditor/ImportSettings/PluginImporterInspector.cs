@@ -721,23 +721,5 @@ namespace UnityEditor
             if (m_ReferencesUnityEngineModule != null)
                 EditorGUILayout.HelpBox($"This plugin references at least one UnityEngine module assemblies directly ({m_ReferencesUnityEngineModule}.dll). To assure forward compatibility, only reference UnityEngine.dll, which contains type forwarders for all the module dlls.", MessageType.Warning);
         }
-
-        [OnOpenAsset]
-        private static bool OnDoubleClick(int instanceID, int line)
-        {
-            string assetPath = AssetDatabase.GetAssetPath(instanceID);
-            if (string.IsNullOrEmpty(assetPath))
-            {
-                return false;
-            }
-
-            //The Asset type of PluginImporter is DefaultAsset, so we need to get the importer instead
-            PluginImporter assetImporter = AssetImporter.GetAtPath(assetPath) as PluginImporter;
-            if (assetImporter == null)
-                return false;
-
-            Selection.activeObject = assetImporter;
-            return true;
-        }
     }
 }

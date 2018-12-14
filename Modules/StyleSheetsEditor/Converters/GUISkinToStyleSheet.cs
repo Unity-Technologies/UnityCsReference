@@ -106,7 +106,7 @@ namespace UnityEditor.StyleSheets
             using (helper.builder.BeginComplexSelector(0))
             {
                 // Construct rule according to the GUIStyle -> is it custom? is it bound on a type?
-                helper.builder.AddSimpleSelector(new[] { StyleSelectorPart.CreateType(name) }, StyleSelectorRelationship.None);
+                helper.builder.AddSimpleSelector(new[] { ConverterUtils.CreateSelectorPart(name) }, StyleSelectorRelationship.None);
             }
 
             if (!string.IsNullOrEmpty(extendName))

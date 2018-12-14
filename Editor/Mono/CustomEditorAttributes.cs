@@ -2,11 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
 using System;
-using System.Reflection;
+using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace UnityEditor
@@ -37,10 +35,7 @@ namespace UnityEditor
         {
             if (!s_Initialized)
             {
-                var editorAssemblies = EditorAssemblies.loadedAssemblies;
-                for (int i = editorAssemblies.Length - 1; i >= 0; i--)
-                    Rebuild(editorAssemblies[i]);
-
+                Rebuild();
                 s_Initialized = true;
             }
 
@@ -123,9 +118,11 @@ namespace UnityEditor
                 (parentClass.IsGenericType && parentClass.GetGenericTypeDefinition() == editor.m_InspectedType);
         }
 
-        internal static void Rebuild(Assembly assembly)
+        internal static void Rebuild()
         {
-            Type[] types = AssemblyHelper.GetTypesFromAssembly(assembly);
+            kSCustomEditors.Clear();
+            kSCustomMultiEditors.Clear();
+            var types = EditorAssemblies.GetAllTypesWithAttribute<CustomEditor>();
             foreach (var type in types)
             {
                 object[] attrs = type.GetCustomAttributes(typeof(CustomEditor), false);

@@ -54,6 +54,7 @@ namespace UnityEditor.Experimental.GraphView
 
                 m_Scrollable = value;
 
+                style.position = Position.Absolute;
                 if (m_Scrollable)
                 {
                     if (m_ScrollView == null)
@@ -65,13 +66,13 @@ namespace UnityEditor.Experimental.GraphView
                     m_ContentContainer.RemoveFromHierarchy();
                     m_Root.Add(m_ScrollView);
                     m_ScrollView.Add(m_ContentContainer);
-                    isLayoutManual = true; // As both the width and height can be changed by the user using a resizer
+                    resizeRestriction = ResizeRestriction.None; // As both the width and height can be changed by the user using a resizer
 
                     // If the current the current geometry is invalid then set a default size
-
-                    if (layout.width == 0 || layout.height == 0)
+                    if (float.IsNaN(layout.width) || float.IsNaN(layout.height))
                     {
-                        layout = new Rect(layout.x, layout.y, layout.width == 0 ? k_DefaultWidth : layout.width, layout.height == 0 ? k_DefaultHeight : layout.height);
+                        style.width = float.IsNaN(layout.width) ? k_DefaultWidth : layout.width;
+                        style.height = float.IsNaN(layout.height) ? k_DefaultHeight : layout.height;
                     }
 
                     AddToClassList("scrollable");
@@ -81,7 +82,7 @@ namespace UnityEditor.Experimental.GraphView
                     if (m_ScrollView != null)
                     {
                         // Remove the sections container from the scrollview and add it to the content item
-                        style.position = Position.Absolute; // As the height is automatically computed from the content but the width can be changed by the user using a resizer
+                        resizeRestriction = ResizeRestriction.FlexDirection; // As the height is automatically computed from the content but the width can be changed by the user using a resizer
                         m_ScrollView.RemoveFromHierarchy();
                         m_ContentContainer.RemoveFromHierarchy();
                         m_Root.Add(m_ContentContainer);

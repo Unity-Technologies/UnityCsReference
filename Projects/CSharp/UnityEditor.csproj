@@ -2938,6 +2938,9 @@
     <Compile Include="..\..\Editor\Mono\Scripting\APIUpdater\APIUpdaterManager.bindings.cs">
       <Link>Editor\Mono\Scripting\APIUpdater\APIUpdaterManager.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\APIUpdater\APIUpdaterUtils.cs">
+      <Link>Editor\Mono\Scripting\APIUpdater\APIUpdaterUtils.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\APIUpdater\AssemblyDependencyGraph.cs">
       <Link>Editor\Mono\Scripting\APIUpdater\AssemblyDependencyGraph.cs</Link>
     </Compile>
@@ -3085,14 +3088,14 @@
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\SemVersionRangesFactory.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\SemVersionRangesFactory.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\Utility.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\Utility.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\VersionDefineExpression.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\VersionDefineExpression.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilers.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilers.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\Serialization\Weaver.cs">
-      <Link>Editor\Mono\Scripting\Serialization\Weaver.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\SelectionCommands\SelectionCommands.cs">
       <Link>Editor\Mono\SelectionCommands\SelectionCommands.cs</Link>
@@ -4690,6 +4693,9 @@
     <Compile Include="..\..\Modules\ShortcutManagerEditor\ContextManager.cs">
       <Link>Modules\ShortcutManagerEditor\ContextManager.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ShortcutManagerEditor\DeleteShortcutProfileWindow.cs">
+      <Link>Modules\ShortcutManagerEditor\DeleteShortcutProfileWindow.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ShortcutManagerEditor\Directory.cs">
       <Link>Modules\ShortcutManagerEditor\Directory.cs</Link>
     </Compile>
@@ -4789,6 +4795,9 @@
     <Compile Include="..\..\Modules\StyleSheetsEditor\Converters\Graph.cs">
       <Link>Modules\StyleSheetsEditor\Converters\Graph.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\StyleSheetsEditor\Converters\StyleCatalogToSkin.cs">
+      <Link>Modules\StyleSheetsEditor\Converters\StyleCatalogToSkin.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\StyleSheetsEditor\Converters\StyleSheetBuilderHelper.cs">
       <Link>Modules\StyleSheetsEditor\Converters\StyleSheetBuilderHelper.cs</Link>
     </Compile>
@@ -4800,9 +4809,6 @@
     </Compile>
     <Compile Include="..\..\Modules\StyleSheetsEditor\Converters\StyleSheetSplitter.cs">
       <Link>Modules\StyleSheetsEditor\Converters\StyleSheetSplitter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\StyleSheetsEditor\Converters\StyleSheetToGUISkin.cs">
-      <Link>Modules\StyleSheetsEditor\Converters\StyleSheetToGUISkin.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\StyleSheetsEditor\Converters\StyleSheetToUss.cs">
       <Link>Modules\StyleSheetsEditor\Converters\StyleSheetToUss.cs</Link>
@@ -5243,10 +5249,6 @@
     <ProjectReference Include="..\..\Tools\Unity.CecilTools\Unity.CecilTools.csproj">
       <Project>{35FF4EBD-85F0-4727-8AC0-32AE4F3723D0}</Project>
       <Name>Unity.CecilTools</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Extensions\Networking\Weaver\UNetWeaver.csproj">
-      <Project>{709222FD-15C2-497D-8B31-366ADCC074CD}</Project>
-      <Name>Unity.UNetWeaver</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

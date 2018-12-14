@@ -187,6 +187,21 @@ namespace UnityEditor
         [NativeName("PVRFilteringAtrousPositionSigmaAO")]
         public extern static float filteringAtrousPositionSigmaAO { get; set; }
 
+        // Whether to enable or disable environment multiple importance sampling
+        [StaticAccessor("GetLightmapEditorSettings()")]
+        [NativeName("PVREnvironmentMIS")]
+        internal extern static int environmentMIS { get; set; }
+
+        // How many samples to use for environment sampling
+        [StaticAccessor("GetLightmapEditorSettings()")]
+        [NativeName("PVREnvironmentSampleCount")]
+        internal extern static int environmentSampleCount { get; set; }
+
+        // How many reference points to generate when using MIS
+        [StaticAccessor("GetLightmapEditorSettings()")]
+        [NativeName("PVREnvironmentReferencePointCount")]
+        internal extern static int environmentReferencePointCount { get; set; }
+
         // Reset lightmapping settings
         [StaticAccessor("GetLightmapEditorSettings()")]
         extern internal static void Reset();

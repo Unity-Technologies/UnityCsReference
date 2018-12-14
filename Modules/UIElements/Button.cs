@@ -28,5 +28,16 @@ namespace UnityEngine.UIElements
             clickable = new Clickable(clickEvent);
             this.AddManipulator(clickable);
         }
+
+        protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight,
+            MeasureMode heightMode)
+        {
+            var textToMeasure = text;
+            if (string.IsNullOrEmpty(textToMeasure))
+            {
+                textToMeasure = " ";
+            }
+            return MeasureTextSize(textToMeasure, desiredWidth, widthMode, desiredHeight, heightMode);
+        }
     }
 }

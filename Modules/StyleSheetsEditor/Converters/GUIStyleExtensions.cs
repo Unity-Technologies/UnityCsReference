@@ -10,6 +10,8 @@ namespace UnityEditor.StyleSheets
 {
     internal static class GUIStyleExtensions
     {
+        const string k_ImguiBlockPrefix = "imgui-style-";
+
         internal static void PopulateStyleState(StyleBlock styleBlock, GUIStyleState state, GUIStyleState defaultState)
         {
             var background = styleBlock.GetResource<Texture2D>(StyleCatalogKeyword.backgroundImage);
@@ -35,16 +37,21 @@ namespace UnityEditor.StyleSheets
             var styleBlock = catalog.GetStyle(blockName);
             var rootBlock = catalog.GetStyle(StyleCatalogKeyword.root, StyleState.root);
 
+            style.name = styleBlock.GetText(ConverterUtils.k_Name, style.name);
+            if (string.IsNullOrEmpty(style.name))
+            {
+                style.name = BlockNameToStyleName(blockName);
+            }
             style.fixedWidth = styleBlock.GetFloat(StyleCatalogKeyword.width, style.fixedWidth);
             style.fixedHeight = styleBlock.GetFloat(StyleCatalogKeyword.height, style.fixedHeight);
-            style.margin = GetStyleRectOffset(styleBlock, "margin", style.margin);
-            style.padding = GetStyleRectOffset(styleBlock, "padding", style.padding);
+            GetStyleRectOffset(styleBlock, "margin", style.margin);
+            GetStyleRectOffset(styleBlock, "padding", style.padding);
 
             style.stretchHeight = styleBlock.GetBool("-unity-stretch-height".GetHashCode(), style.stretchHeight);
             style.stretchWidth = styleBlock.GetBool("-unity-stretch-width".GetHashCode(), style.stretchWidth);
 
-            style.border = GetStyleRectOffset(styleBlock, "-unity-slice", style.border);
-            style.overflow = GetStyleRectOffset(styleBlock, "-unity-overflow", style.overflow);
+            GetStyleRectOffset(styleBlock, "-unity-slice", style.border);
+            GetStyleRectOffset(styleBlock, "-unity-overflow", style.overflow);
 
             var contentOffsetKey = "-unity-content-offset".GetHashCode();
             if (styleBlock.HasValue(contentOffsetKey, StyleValue.Type.Rect))
@@ -53,15 +60,23 @@ namespace UnityEditor.StyleSheets
                 style.contentOffset = new Vector2(contentOffsetSize.width, contentOffsetSize.height);
             }
 
-            style.font = styleBlock.GetResource("-unity-font".GetHashCode(), style.font);
-            style.font = styleBlock.GetResource("font".GetHashCode(), style.font);
+            // Support both properties for font:
+            style.font = styleBlock.GetResource<Font>("-unity-font".GetHashCode(), style.font);
+            style.font = styleBlock.GetResource<Font>("font".GetHashCode(), style.font);
 
             if (style.fontSize == 0 || styleBlock.HasValue(StyleCatalogKeyword.fontSize, StyleValue.Type.Number))
             {
                 var defaultFontSize = rootBlock.GetInt("--unity-font-size", style.fontSize);
                 style.fontSize = styleBlock.GetInt(StyleCatalogKeyword.fontSize, useExtensionDefaultValues ? defaultFontSize : style.fontSize);
             }
-            style.fontStyle = ParseEnum(styleBlock, "font-style".GetHashCode(), style.fontStyle);
+
+            var fontStyleStr = styleBlock.GetText(ConverterUtils.k_FontStyle.GetHashCode());
+            var fontWeightStr = styleBlock.GetText(ConverterUtils.k_FontWeight.GetHashCode());
+            FontStyle fontStyle;
+            if (ConverterUtils.TryGetFontStyle(fontStyleStr, fontWeightStr, out fontStyle))
+            {
+                style.fontStyle = fontStyle;
+            }
 
             style.imagePosition = ConverterUtils.ToImagePosition(styleBlock.GetText("-unity-image-position".GetHashCode(), ConverterUtils.ToUssString(style.imagePosition)));
             style.clipping = ConverterUtils.ToTextClipping(styleBlock.GetText("-unity-clipping".GetHashCode(), ConverterUtils.ToUssString(style.clipping)));
@@ -100,16 +115,15 @@ namespace UnityEditor.StyleSheets
             {
                 try
                 {
-                    var importer = new StyleSheetImporterImpl();
-                    var styleSheet = ScriptableObject.CreateInstance<UnityEngine.UIElements.StyleSheet>();
                     if (!ussInPlaceStyleOverride.Contains("{"))
                     {
                         // A bit of sugar syntax in case the user doesn't provide the uss class declaration.
                         ussInPlaceStyleOverride = $".{ConverterUtils.EscapeSelectorName(style.name)} {{\n{ussInPlaceStyleOverride}\n}}";
                     }
-                    importer.Import(styleSheet, ussInPlaceStyleOverride);
+
+                    var styleSheet = ConverterUtils.CompileStyleSheetContent(ussInPlaceStyleOverride);
                     var overrideCatalog = new StyleCatalog();
-                    overrideCatalog.Refresh(styleSheet);
+                    overrideCatalog.Load(new[] {styleSheet});
                     const bool useExtensionDefaultValues = false;
                     PopulateStyle(overrideCatalog, style, blockName, useExtensionDefaultValues);
                 }
@@ -123,9 +137,9 @@ namespace UnityEditor.StyleSheets
         internal static GUIStyle FromUSS(string ussStyleRuleName, string ussInPlaceStyleOverride = null, GUISkin srcSkin = null)
         {
             // Check if the style already exists in skin
-            var blockName = ussStyleRuleName.Replace(".", "");
+            var blockName = RuleNameToBlockName(ussStyleRuleName);
             var styleName = ConverterUtils.ToStyleName(ussStyleRuleName);
-            var inSkin = (srcSkin ?? GUISkin.current).FindStyle(styleName);
+            var inSkin = (srcSkin ? srcSkin : GUISkin.current).FindStyle(styleName);
             var style = new GUIStyle() { name = styleName };
             if (inSkin != null)
             {
@@ -138,20 +152,45 @@ namespace UnityEditor.StyleSheets
 
         internal static GUIStyle ApplyUSS(GUIStyle style, string ussStyleRuleName, string ussInPlaceStyleOverride = null)
         {
-            var blockName = ussStyleRuleName.Replace(".", "");
+            var blockName = RuleNameToBlockName(ussStyleRuleName);
             PopulateFromUSS(EditorResources.styleCatalog, style, blockName, ussInPlaceStyleOverride);
             return style;
         }
 
-        internal static RectOffset GetStyleRectOffset(StyleBlock block, int propertyKey, RectOffset src)
+        internal static string RuleNameToBlockName(string ussStyleRuleName)
         {
-            var rect = block.GetRect(propertyKey, new StyleRect(src));
-            return new RectOffset(Mathf.RoundToInt(rect.left), Mathf.RoundToInt(rect.right), Mathf.RoundToInt(rect.top), Mathf.RoundToInt(rect.bottom));
+            return ussStyleRuleName.Replace(".", "");
         }
 
-        internal static RectOffset GetStyleRectOffset(StyleBlock block, string propertyKey, RectOffset src)
+        internal static string BlockNameToStyleName(string blockName)
         {
-            return GetStyleRectOffset(block, propertyKey.GetHashCode(), src);
+            var lowerSelector = blockName.ToLower();
+            if (ConverterUtils.k_GuiStyleTypeNames.ContainsKey(lowerSelector))
+            {
+                return lowerSelector;
+            }
+
+            return blockName.Replace(k_ImguiBlockPrefix, "").Replace("-", " ").Replace(".", "");
+        }
+
+        internal static string StyleNameToBlockName(string guiStyleName, bool appendImguiPrefix = true)
+        {
+            if (ConverterUtils.k_GuiStyleTypeNames.ContainsKey(guiStyleName))
+            {
+                return ConverterUtils.EscapeSelectorName(ConverterUtils.k_GuiStyleTypeNames[guiStyleName]);
+            }
+
+            var blockName = appendImguiPrefix ? k_ImguiBlockPrefix : "";
+            blockName += ConverterUtils.EscapeSelectorName(guiStyleName);
+            return blockName;
+        }
+
+        internal static void GetStyleRectOffset(StyleBlock block, string propertyKey, RectOffset src)
+        {
+            src.left = block.GetInt(propertyKey + "-left", src.left);
+            src.right = block.GetInt(propertyKey + "-right", src.right);
+            src.top = block.GetInt(propertyKey + "-top", src.top);
+            src.bottom = block.GetInt(propertyKey + "-bottom", src.bottom);
         }
 
         internal static T ParseEnum<T>(StyleBlock block, int key, T defaultValue)

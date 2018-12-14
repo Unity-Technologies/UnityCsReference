@@ -7,8 +7,6 @@ Project("{840379C4-B6F5-7CA3-A826-FA675F01E79C}") = "UnityEngine", "UnityEngine.
 EndProject
 Project("{840379C4-B6F5-7CA3-A826-FA675F01E79C}") = "UnityEditor", "UnityEditor.csproj", "{016C8D73-3641-47FB-8D33-7A015A7EC7DB}"
 EndProject
-Project("{840379C4-B6F5-7CA3-A826-FA675F01E79C}") = "UNetWeaver", "..\..\Extensions\Networking\Weaver\UNetWeaver.csproj", "{709222FD-15C2-497D-8B31-366ADCC074CD}"
-EndProject
 Project("{840379C4-B6F5-7CA3-A826-FA675F01E79C}") = "Unity.DataContract.gen", "..\..\Tools\PackageManager\DataContract\Unity.DataContract.gen.csproj", "{A15E35A9-22E8-4A79-B6CE-C0984062DAC6}"
 EndProject
 Project("{840379C4-B6F5-7CA3-A826-FA675F01E79C}") = "Unity.CecilTools", "..\..\Tools\Unity.CecilTools\Unity.CecilTools.csproj", "{35FF4EBD-85F0-4727-8AC0-32AE4F3723D0}"
@@ -29,10 +27,6 @@ Global
 		{016C8D73-3641-47FB-8D33-7A015A7EC7DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{016C8D73-3641-47FB-8D33-7A015A7EC7DB}.Release|Any CPU.ActiveCfg = Debug|Any CPU
 		{016C8D73-3641-47FB-8D33-7A015A7EC7DB}.Release|Any CPU.Build.0 = Debug|Any CPU
-		{709222FD-15C2-497D-8B31-366ADCC074CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{709222FD-15C2-497D-8B31-366ADCC074CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{709222FD-15C2-497D-8B31-366ADCC074CD}.Release|Any CPU.ActiveCfg = Debug|Any CPU
-		{709222FD-15C2-497D-8B31-366ADCC074CD}.Release|Any CPU.Build.0 = Debug|Any CPU
 		{A15E35A9-22E8-4A79-B6CE-C0984062DAC6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A15E35A9-22E8-4A79-B6CE-C0984062DAC6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A15E35A9-22E8-4A79-B6CE-C0984062DAC6}.Release|Any CPU.ActiveCfg = Debug|Any CPU

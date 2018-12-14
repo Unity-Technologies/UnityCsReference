@@ -97,7 +97,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 return result;
             }
-            return CompareExtension(Build, other.Build);
+
+            return 0;
         }
 
         private static int CompareExtension(string current, string other, bool lower = false)
@@ -161,8 +162,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return Major == other.Major &&
                 Minor == other.Minor &&
                 Patch == other.Patch &&
-                string.Equals(Prerelease, other.Prerelease, StringComparison.Ordinal) &&
-                string.Equals(Build, other.Build, StringComparison.Ordinal);
+                string.Equals(Prerelease, other.Prerelease, StringComparison.Ordinal);
         }
 
         public override string ToString()

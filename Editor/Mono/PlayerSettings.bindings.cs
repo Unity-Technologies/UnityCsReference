@@ -982,11 +982,11 @@ namespace UnityEditor
         // Application (before 5.6 bundle) identifier was shared between iOS, Android and Tizen TV platforms before 5.6.
         public static string applicationIdentifier
         {
-            get { return GetApplicationIdentifier(EditorUserBuildSettings.selectedBuildTargetGroup); }
+            get { return GetApplicationIdentifier(EditorUserBuildSettings.activeBuildTargetGroup); }
             set
             {
                 Debug.LogWarning("PlayerSettings.applicationIdentifier only changes the identifier for the currently active platform. Please use SetApplicationIdentifier to set it for any platform");
-                SetApplicationIdentifier(EditorUserBuildSettings.selectedBuildTargetGroup, value);
+                SetApplicationIdentifier(EditorUserBuildSettings.activeBuildTargetGroup, value);
             }
         }
 

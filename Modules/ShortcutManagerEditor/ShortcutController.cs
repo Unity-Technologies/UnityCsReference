@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Scripting;
 using Attribute = System.Attribute;
 using Event = UnityEngine.Event;
 using UnityObject = UnityEngine.Object;
@@ -93,6 +94,7 @@ namespace UnityEditor.ShortcutManagement
             instance.trigger.invokingAction += OnInvokingAction;
         }
 
+        [RequiredByNativeCode]
         static void RebuildShortcuts()
         {
             instance.RebuildShortcuts();

@@ -74,14 +74,13 @@ namespace UnityEditor.UIElements
             AddToClassList(ussClassName);
             labelElement.AddToClassList(labelUssClassName);
 
-            m_TextElement = new TextElement
+            m_TextElement = new PopupTextElement
             {
                 pickingMode = PickingMode.Ignore
             };
             m_TextElement.AddToClassList(textUssClassName);
             visualInput.AddToClassList(inputUssClassName);
             visualInput.Add(m_TextElement);
-
             choices = new List<TValueChoice>();
         }
 
@@ -94,8 +93,27 @@ namespace UnityEditor.UIElements
                 return;
             }
 
-            if (((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse) ||
-                ((evt.eventTypeId == KeyDownEvent.TypeId()) && ((evt as KeyDownEvent)?.character == '\n') || ((evt as KeyDownEvent)?.character == ' ')))
+            var showPopupMenu = false;
+            KeyDownEvent kde = (evt as KeyDownEvent);
+            if (kde != null)
+            {
+                if ((kde.keyCode == KeyCode.Space) ||
+                    (kde.keyCode == KeyCode.KeypadEnter) ||
+                    (kde.keyCode == KeyCode.Return))
+                {
+                    showPopupMenu = true;
+                }
+            }
+            else if ((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse)
+            {
+                var mde = (MouseDownEvent)evt;
+                if (visualInput.ContainsPoint(visualInput.WorldToLocal(mde.mousePosition)))
+                {
+                    showPopupMenu = true;
+                }
+            }
+
+            if (showPopupMenu)
             {
                 ShowMenu();
                 evt.StopPropagation();
@@ -107,6 +125,20 @@ namespace UnityEditor.UIElements
             var menu = new GenericMenu();
             AddMenuItems(menu);
             menu.DropDown(visualInput.worldBound);
+        }
+
+        private class PopupTextElement : TextElement
+        {
+            protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight,
+                MeasureMode heightMode)
+            {
+                var textToMeasure = text;
+                if (string.IsNullOrEmpty(textToMeasure))
+                {
+                    textToMeasure = " ";
+                }
+                return MeasureTextSize(textToMeasure, desiredWidth, widthMode, desiredHeight, heightMode);
+            }
         }
     }
 }

@@ -30,6 +30,29 @@ namespace UnityEditor
         TerrainToolCount
     }
 
+    namespace Experimental.TerrainAPI
+    {
+        public class TerrainToolShortcutContext : IShortcutToolContext
+        {
+            internal TerrainToolShortcutContext(TerrainInspector editor)
+            {
+                terrainEditor = editor;
+            }
+
+            bool IShortcutToolContext.active
+            {
+                get { return !(TerrainInspector.s_activeTerrainInspector != 0 && TerrainInspector.s_activeTerrainInspector != terrainEditor.GetInstanceID()); }
+            }
+
+            public void SelectPaintTool<T>() where T : TerrainPaintTool<T>
+            {
+                terrainEditor.SelectPaintTool(typeof(T));
+            }
+
+            internal TerrainInspector terrainEditor { get; }
+        }
+    };
+
     [CustomEditor(typeof(Terrain))]
     internal class TerrainInspector : Editor
     {
@@ -85,8 +108,9 @@ namespace UnityEditor
             public readonly GUIContent treeWidth = EditorGUIUtility.TrTextContent("Tree Width", "Width of the planted trees");
             public readonly GUIContent treeWidthRandomLabel = EditorGUIUtility.TrTextContent("Random?", "Enable random variation in tree width (variation)");
             public readonly GUIContent treeWidthRandomToggle = EditorGUIUtility.TrTextContent("", "Enable random variation in tree width (variation)");
-            public readonly GUIContent treeColorVar = EditorGUIUtility.TrTextContent("Color Variation", "Amount of random shading applied to trees");
-            public readonly GUIContent treeRotation = EditorGUIUtility.TrTextContent("Random Tree Rotation", "Enable?");
+            public readonly GUIContent treeColorVar = EditorGUIUtility.TrTextContent("Color Variation", "Amount of random shading applied to trees. This only works if the shader supports _TreeInstanceColor (for example, Speedtree shaders do not use this)");
+            public readonly GUIContent treeRotation = EditorGUIUtility.TrTextContent("Random Tree Rotation", "Randomize tree rotation. This only works when the tree has an LOD group.");
+            public readonly GUIContent treeRotationDisabled = EditorGUIUtility.TrTextContent("The selected tree does not have an LOD group, so it will use the default impostor system and will not support rotation.");
             public readonly GUIContent massPlaceTrees = EditorGUIUtility.TrTextContent("Mass Place Trees", "The Mass Place Trees button is a very useful way to create an overall covering of trees without painting over the whole landscape. Following a mass placement, you can still use painting to add or remove trees to create denser or sparser areas.");
             public readonly GUIContent treeLightmapStatic = EditorGUIUtility.TrTextContent("Tree Lightmap Static", "The state of the Lightmap Static flag for the tree prefab root GameObject. The flag can be changed on the prefab. When disabled, this tree will not be visible to the lightmapper. When enabled, any child GameObjects which also have the static flag enabled, will be present in lightmap calculations. Regardless of the Static flag, each tree instance receives its own light probe and no lightmap texels.");
 
@@ -144,31 +168,18 @@ namespace UnityEditor
 
         private const string kDisplayLightingKey = "TerrainInspector.Lighting.ShowSettings";
 
-        static float PercentSlider(GUIContent content, float valueInPercent, float minVal, float maxVal)
+        static float ScaledSliderWithRounding(GUIContent content, float valueInPercent, float minVal, float maxVal, float scale, float precision)
         {
             EditorGUI.BeginChangeCheck();
-            float v = EditorGUILayout.Slider(content, Mathf.Round(valueInPercent * 100f), minVal * 100f, maxVal * 100f);
+
+            float v = Mathf.Round(valueInPercent * scale / precision) * precision;
+            v = EditorGUILayout.Slider(content, v, minVal * scale, maxVal * scale);
 
             if (EditorGUI.EndChangeCheck())
             {
-                return v / 100f;
+                return v / scale;
             }
             return valueInPercent;
-        }
-
-        class TerrainToolContext : IShortcutToolContext
-        {
-            public TerrainToolContext(TerrainInspector editor)
-            {
-                terrainEditor = editor;
-            }
-
-            public bool active
-            {
-                get { return !(s_activeTerrainInspector != 0 && s_activeTerrainInspector != terrainEditor.GetInstanceID()); }
-            }
-
-            public TerrainInspector terrainEditor { get; }
         }
 
         // Source terrain
@@ -180,13 +191,35 @@ namespace UnityEditor
 
         float m_Strength;
         float m_Size;
+
+        float kMinBrushSize { get { return 0.1f; } }
+
+        float kMaxBrushSize
+        {
+            get
+            {
+                float safetyFactorHack = 0.9375f;
+                return Mathf.Floor(Mathf.Min(m_Terrain.terrainData.size.x, m_Terrain.terrainData.size.z) * safetyFactorHack);
+            }
+        }
+
         float m_SplatAlpha;
+
+        // hot key state
+        float m_GrowBrushTime = 0.0f;
+        float m_ShrinkBrushTime = 0.0f;
+        bool m_GrowShrinkSlow = false;
+
+        float m_IncreaseOpacityTime = 0.0f;
+        float m_DecreaseOpacityTime = 0.0f;
+        bool m_OpacitySlow = false;
 
         int m_CurrentHeightmapResolution = 0;
         int m_CurrentControlTextureResolution = 0;
 
         const float kHeightmapBrushScale = 0.01F;
         const float kMinBrushStrength = (1.1F / ushort.MaxValue) / kHeightmapBrushScale;
+        const float kMaxBrushStrength = 1.0f;
 
         BrushList m_BrushList;
 
@@ -223,7 +256,7 @@ namespace UnityEditor
         // The instance ID of the active inspector.
         // It's defined as the last inspector that had one of its terrain tools selected.
         // If a terrain inspector is the only one when created, it also becomes active.
-        static int s_activeTerrainInspector = 0;
+        static internal int s_activeTerrainInspector = 0;
         static internal TerrainInspector s_activeTerrainInspectorInstance = null;
 
         List<ReflectionProbeBlendInfo> m_BlendInfoList = new List<ReflectionProbeBlendInfo>();
@@ -240,81 +273,259 @@ namespace UnityEditor
 
         static void ChangeTool(ShortcutArguments args, Action<TerrainInspector> action)
         {
-            var context = (TerrainToolContext)args.context;
+            TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
             TerrainInspector editor = context.terrainEditor;
-
             action(editor);
+            EditorApplication.SetSceneRepaintDirty();
             editor.Repaint();
         }
 
-        [FormerlyPrefKeyAs("Terrain/Raise Height", "f1")]
-        [Shortcut("Terrain/Raise Height", typeof(TerrainToolContext), KeyCode.F1)]
-        static void RaiseHeight(ShortcutArguments args)
+        public void SelectPaintTool(Type toolType)
         {
-            ChangeTool(args, editor => editor.selectedTool = TerrainTool.Paint);
+            if (toolType.IsAbstract ||
+                !typeof(ITerrainPaintTool).IsAssignableFrom(toolType))
+            {
+                Debug.LogError("SelectPaintTool: tool must be a subclass of TerrainPaintTool");
+            }
+            else if (toolType == typeof(PaintTreesTool) ||
+                     toolType == typeof(PaintDetailsTool))
+            {
+                Debug.LogError("SelectPaintTool: tool must be a paint tool");
+            }
+            else
+            {
+                var instanceProperty = toolType.GetProperty("instance", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
+                var mi = instanceProperty.GetGetMethod();
+                var tool = (ITerrainPaintTool)mi.Invoke(null, null);
+
+                for (int index = 0; index < m_Tools.Length; index++)
+                {
+                    if (m_Tools[index] == tool)
+                    {
+                        // found it!
+                        SelectPaintTool(index);
+                        return;
+                    }
+                }
+                Debug.LogError("SelectPaintTool: Cannot find tool '" + tool.GetName() + "'");
+            }
         }
 
-        [FormerlyPrefKeyAs("Terrain/Set Height", "f2")]
-        [Shortcut("Terrain/Set Height", typeof(TerrainToolContext), KeyCode.F2)]
-        static void SetHeight(ShortcutArguments args)
+        private void SelectPaintTool(int index)
+        {
+            SetCurrentPaintToolInactive();
+            selectedTool = TerrainTool.Paint;
+            m_ActivePaintToolIndex = index;
+            SetCurrentPaintToolActive();
+            Repaint();
+        }
+
+        [FormerlyPrefKeyAs("Terrain/Tree Brush", "f5")]
+        [Shortcut("Terrain/Tree Brush", typeof(TerrainToolShortcutContext))]
+        static void SelectPlaceTreeTool(ShortcutArguments args)
         {
             ChangeTool(args, editor => editor.selectedTool = TerrainTool.PlaceTree);
         }
 
-        [FormerlyPrefKeyAs("Terrain/Smooth Height", "f3")]
-        [Shortcut("Terrain/Smooth Height", typeof(TerrainToolContext), KeyCode.F3)]
-        static void SmoothHeight(ShortcutArguments args)
+        [FormerlyPrefKeyAs("Terrain/Detail Brush", "f6")]
+        [Shortcut("Terrain/Detail Brush", typeof(TerrainToolShortcutContext))]
+        static void SelectPaintDetailTool(ShortcutArguments args)
         {
             ChangeTool(args, editor => editor.selectedTool = TerrainTool.PaintDetail);
         }
 
-        [FormerlyPrefKeyAs("Terrain/Texture Paint", "f4")]
-        [Shortcut("Terrain/Texture Paint", typeof(TerrainToolContext), KeyCode.F4)]
-        static void TexturePaint(ShortcutArguments args)
-        {
-            ChangeTool(args, editor => editor.selectedTool = TerrainTool.TerrainSettings);
-        }
-
-        [FormerlyPrefKeyAs("Terrain/Tree Brush", "f5")]
-        [Shortcut("Terrain/Tree Brush", typeof(TerrainToolContext), KeyCode.F5)]
-        static void TreeBrush(ShortcutArguments args)
-        {
-            ChangeTool(args, editor => editor.selectedTool = TerrainTool.TerrainToolCount);
-        }
-
-        [FormerlyPrefKeyAs("Terrain/Detail Brush", "f6")]
-        [Shortcut("Terrain/Detail Brush", typeof(TerrainToolContext), KeyCode.F6)]
-        static void DetailBrush(ShortcutArguments args)
-        {
-            ChangeTool(args, editor => editor.selectedTool = (TerrainTool)5);
-        }
-
         [FormerlyPrefKeyAs("Terrain/Previous Brush", ",")]
-        [Shortcut("Terrain/Previous Brush", typeof(TerrainToolContext), KeyCode.Comma)]
+        [Shortcut("Terrain/Previous Brush", typeof(TerrainToolShortcutContext), KeyCode.Comma)]
         static void PreviousBrush(ShortcutArguments args)
         {
             ChangeTool(args, editor => editor.brushList.SelectPrevBrush());
         }
 
         [FormerlyPrefKeyAs("Terrain/Next Brush", ".")]
-        [Shortcut("Terrain/Next Brush", typeof(TerrainToolContext), KeyCode.Period)]
+        [Shortcut("Terrain/Next Brush", typeof(TerrainToolShortcutContext), KeyCode.Period)]
         static void NextBrush(ShortcutArguments args)
         {
             ChangeTool(args, editor => editor.brushList.SelectNextBrush());
         }
 
         [FormerlyPrefKeyAs("Terrain/Previous Detail", "#,")]
-        [Shortcut("Terrain/Previous Detail", typeof(TerrainToolContext), KeyCode.Comma, ShortcutModifiers.Shift)]
+        [Shortcut("Terrain/Previous Detail", typeof(TerrainToolShortcutContext), KeyCode.Comma, ShortcutModifiers.Shift)]
         static void PreviousDetail(ShortcutArguments args)
         {
             ChangeTool(args, editor => editor.DetailDelta(-1));
         }
 
         [FormerlyPrefKeyAs("Terrain/Next Detail", "#.")]
-        [Shortcut("Terrain/Next Detail", typeof(TerrainToolContext), KeyCode.Period, ShortcutModifiers.Shift)]
+        [Shortcut("Terrain/Next Detail", typeof(TerrainToolShortcutContext), KeyCode.Period, ShortcutModifiers.Shift)]
         static void NextDetail(ShortcutArguments args)
         {
             ChangeTool(args, editor => editor.DetailDelta(1));
+        }
+
+        static void ApplyClutchKeys(ShortcutArguments args, TerrainInspector editor, ref float forwardTime, ref float backwardTime, ref bool slow)
+        {
+            if (args.stage == ShortcutStage.Begin)
+            {
+                // if the backward-key is already pressed -- we keeps that direction but slow it
+                if (backwardTime > 0.0f)
+                {
+                    slow = true;
+                }
+                else
+                {
+                    // go forward (start timer), full speed
+                    forwardTime = Mathf.Epsilon;
+                    slow = false;
+
+                    // zero out the last time so we don't get a large first delta hiccup
+                    editor.m_LastHotkeyApplyTime = EditorApplication.timeSinceStartup;
+                }
+            }
+            else
+            {
+                // ShortcutStage.End -- turn off grow
+                forwardTime = 0.0f;
+                // if backwards is still pressed, disable slow, but reset the timer (restart acceleration)
+                if (backwardTime > 0.0f)
+                {
+                    slow = false;
+                    backwardTime = Mathf.Epsilon;
+                }
+            }
+
+            // make sure we repaint when we start or stop
+            EditorApplication.SetSceneRepaintDirty();
+            editor.Repaint();
+        }
+
+        [FormerlyPrefKeyAs("Terrain/Grow Brush Size", "RightBracket")]
+        [ClutchShortcut("Terrain/Grow Brush Size", typeof(TerrainToolShortcutContext), KeyCode.RightBracket)]
+        static void GrowBrushSize(ShortcutArguments args)
+        {
+            TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
+            TerrainInspector editor = context.terrainEditor;
+            ApplyClutchKeys(args, editor, ref editor.m_GrowBrushTime, ref editor.m_ShrinkBrushTime, ref editor.m_GrowShrinkSlow);
+        }
+
+        [FormerlyPrefKeyAs("Terrain/Shrink Brush Size", "LeftBracket")]
+        [ClutchShortcut("Terrain/Shrink Brush Size", typeof(TerrainToolShortcutContext), KeyCode.LeftBracket)]
+        static void ShrinkBrushSize(ShortcutArguments args)
+        {
+            TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
+            TerrainInspector editor = context.terrainEditor;
+            ApplyClutchKeys(args, editor, ref editor.m_ShrinkBrushTime, ref editor.m_GrowBrushTime, ref editor.m_GrowShrinkSlow);
+        }
+
+        [FormerlyPrefKeyAs("Terrain/Increase Brush Opacity", "Plus")]
+        [ClutchShortcut("Terrain/Increase Brush Opacity", typeof(TerrainToolShortcutContext), KeyCode.Equals)]
+        static void IncreaseBrushOpacity(ShortcutArguments args)
+        {
+            TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
+            TerrainInspector editor = context.terrainEditor;
+            ApplyClutchKeys(args, editor, ref editor.m_IncreaseOpacityTime, ref editor.m_DecreaseOpacityTime, ref editor.m_OpacitySlow);
+        }
+
+        [FormerlyPrefKeyAs("Terrain/Decrease Brush Opacity", "Minus")]
+        [ClutchShortcut("Terrain/Decrease Brush Opacity", typeof(TerrainToolShortcutContext), KeyCode.Minus)]
+        static void DecreaseBrushOpacity(ShortcutArguments args)
+        {
+            TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
+            TerrainInspector editor = context.terrainEditor;
+            ApplyClutchKeys(args, editor, ref editor.m_DecreaseOpacityTime, ref editor.m_IncreaseOpacityTime, ref editor.m_OpacitySlow);
+        }
+
+        float SmoothMax(float x, float max)
+        {
+            return (1.0f - 1.0f / (x / max + 1.0f)) * max;
+        }
+
+        float SmoothMaxBlended(float x, float max, float hardness)
+        {
+            // approximates Mathf.Max(x, max) -- see https://www.desmos.com/calculator/zdwwpe7xwu
+            float smoothPoint = max * hardness;
+            return Mathf.Min(x, smoothPoint) + SmoothMax(Mathf.Max(x - smoothPoint, 0.0f), max - smoothPoint);
+        }
+
+        void BrushSizeHotkeyManipulation(ref float hotkeyTime, bool shrink, float deltaTime, float distance, bool slow)
+        {
+            if ((hotkeyTime > 0.0f) && (distance > 0.0f))
+            {
+                const float k_DistanceBias = 5.0f;
+                const float k_AdditivePerSecond = 1.0f;
+                const float k_SlowDistanceScale = 0.02f;
+                const float k_TargetDistanceScale = 2.0f;
+
+                // smooth clamped acceleration
+                float blend = SmoothMaxBlended(hotkeyTime, 1.0f, 0.5f);
+                float distanceScale = Mathf.Lerp(k_SlowDistanceScale, k_TargetDistanceScale, blend);
+                if (slow)
+                    distanceScale = Mathf.Min(distanceScale, k_SlowDistanceScale);
+
+                // Sqrt behaves great at large distances (speeds up adjust speed), but gets super slow close up
+                // so we offset by a small bias to keep it in a usable range
+                float changePercentPerSecond = distanceScale * Mathf.Sqrt(distance + k_DistanceBias);
+
+                // apply both percentage based and additive adjustments
+                // percentage increases adjust speed at larger sizes
+                // additive keeps it from getting too slow at small sizes
+                float changePercent = Mathf.Pow(1.0f + changePercentPerSecond, deltaTime);
+                float changeAdditive = k_AdditivePerSecond * deltaTime * changePercentPerSecond;
+
+                // apply scale and offset, in the desired direction
+                m_Size = shrink ? (m_Size - changeAdditive) / changePercent : m_Size * changePercent + changeAdditive;
+
+                // clamp to range
+                m_Size = Mathf.Clamp(m_Size, kMinBrushSize, kMaxBrushSize);
+
+                hotkeyTime += deltaTime;
+            }
+        }
+
+        void BrushOpacityHotkeyManipulation(ref float hotkeyTime, bool shrink, float deltaTime, bool slow)
+        {
+            if (hotkeyTime > 0.0f)
+            {
+                const float k_SlowOpacitySpeed = 0.05f;
+                const float k_TargetOpacitySpeed = 1.0f;
+
+                // smooth clamped acceleration
+                float blend = SmoothMaxBlended(hotkeyTime, 1.0f, 0.5f);
+                float changeAmount = Mathf.Lerp(k_SlowOpacitySpeed, k_TargetOpacitySpeed, blend);
+                if (slow)
+                    changeAmount = Mathf.Min(changeAmount, k_SlowOpacitySpeed);
+
+                changeAmount *= deltaTime;
+
+                m_Strength = shrink ? m_Strength - changeAmount : m_Strength + changeAmount;
+                m_Strength = Mathf.Clamp(m_Strength, kMinBrushStrength, kMaxBrushStrength);
+
+                hotkeyTime += deltaTime;
+            }
+        }
+
+        void ForceRepaintOnHotkeys()
+        {
+            if ((m_GrowBrushTime > 0.0f) ||
+                (m_ShrinkBrushTime > 0.0f) ||
+                (m_IncreaseOpacityTime > 0.0f) ||
+                (m_DecreaseOpacityTime > 0.0f))
+            {
+                Repaint();
+                EditorApplication.SetSceneRepaintDirty();
+            }
+        }
+
+        double m_LastHotkeyApplyTime = 0.0;
+        void HotkeyApply(float distance)
+        {
+            double currentTime = EditorApplication.timeSinceStartup;
+            float deltaTime = (float)(currentTime - m_LastHotkeyApplyTime);
+            m_LastHotkeyApplyTime = currentTime;
+
+            BrushSizeHotkeyManipulation(ref m_GrowBrushTime, false, deltaTime, distance, m_GrowShrinkSlow);
+            BrushSizeHotkeyManipulation(ref m_ShrinkBrushTime, true, deltaTime, distance, m_GrowShrinkSlow);
+            BrushOpacityHotkeyManipulation(ref m_IncreaseOpacityTime, false, deltaTime, m_OpacitySlow);
+            BrushOpacityHotkeyManipulation(ref m_DecreaseOpacityTime, true, deltaTime, m_OpacitySlow);
         }
 
         void DetailDelta(int delta)
@@ -428,6 +639,7 @@ namespace UnityEditor
             if (s_activeTerrainInspectorInstance == null)
                 s_activeTerrainInspectorInstance = this;
 
+            EditorApplication.update += ForceRepaintOnHotkeys;
             m_ShowBuiltinSpecularSettings.valueChanged.AddListener(Repaint);
             m_ShowCustomMaterialSettings.valueChanged.AddListener(Repaint);
             m_ShowReflectionProbesGUI.valueChanged.AddListener(Repaint);
@@ -452,7 +664,7 @@ namespace UnityEditor
 
             InitializeLightingFields();
 
-            m_TerrainToolContext = new TerrainToolContext(this);
+            m_TerrainToolContext = new TerrainToolShortcutContext(this);
             ShortcutIntegration.instance.contextManager.RegisterToolContext(m_TerrainToolContext);
 
             SceneView.duringSceneGui += OnSceneGUICallback;
@@ -469,6 +681,8 @@ namespace UnityEditor
 
             SaveInspectorSettings();
 
+            EditorApplication.update -= ForceRepaintOnHotkeys;
+
             m_ShowReflectionProbesGUI.valueChanged.RemoveListener(Repaint);
             m_ShowCustomMaterialSettings.valueChanged.RemoveListener(Repaint);
             m_ShowBuiltinSpecularSettings.valueChanged.RemoveListener(Repaint);
@@ -484,7 +698,7 @@ namespace UnityEditor
         }
 
         SavedInt m_SelectedTool = new SavedInt("TerrainSelectedTool", (int)TerrainTool.Paint);
-        TerrainToolContext m_TerrainToolContext;
+        TerrainToolShortcutContext m_TerrainToolContext;
 
         TerrainTool selectedTool
         {
@@ -737,7 +951,7 @@ namespace UnityEditor
             // Placement distance
             PaintTreesTool.instance.brushSize = EditorGUILayout.Slider(styles.brushSize, PaintTreesTool.instance.brushSize, 1, Mathf.Min(m_Terrain.terrainData.size.x, m_Terrain.terrainData.size.z)); // former string formatting: ""
             float oldDens = (3.3f - PaintTreesTool.instance.spacing) / 3f;
-            float newDens = PercentSlider(styles.treeDensity, oldDens, .1f, 1);
+            float newDens = ScaledSliderWithRounding(styles.treeDensity, oldDens, 0.1f, 1.0f, 100.0f, 1.0f);
             // Only set spacing when value actually changes. Otherwise
             // it will lose precision because we're constantly doing math
             // back and forth with it.
@@ -812,10 +1026,16 @@ namespace UnityEditor
 
             GUILayout.Space(5);
 
-            if (TerrainEditorUtility.IsLODTreePrototype(m_Terrain.terrainData.treePrototypes[PaintTreesTool.instance.selectedTree].m_Prefab))
+            bool randomRotationEnabled = TerrainEditorUtility.IsLODTreePrototype(m_Terrain.terrainData.treePrototypes[PaintTreesTool.instance.selectedTree].m_Prefab);
+            using (new EditorGUI.DisabledScope(!randomRotationEnabled))
+            {
                 PaintTreesTool.instance.randomRotation = EditorGUILayout.Toggle(styles.treeRotation, PaintTreesTool.instance.randomRotation);
-            else
-                PaintTreesTool.instance.treeColorAdjustment = EditorGUILayout.Slider(styles.treeColorVar, PaintTreesTool.instance.treeColorAdjustment, 0, 1);
+            }
+            if (!randomRotationEnabled)
+                EditorGUILayout.HelpBox(styles.treeRotationDisabled.text, MessageType.Info);
+
+            // TODO: we should check if the shaders assigned to this 'tree' support _TreeInstanceColor or not..  complicated check though
+            PaintTreesTool.instance.treeColorAdjustment = EditorGUILayout.Slider(styles.treeColorVar, PaintTreesTool.instance.treeColorAdjustment, 0, 1);
 
             GameObject prefab = m_Terrain.terrainData.treePrototypes[PaintTreesTool.instance.selectedTree].m_Prefab;
             if (prefab != null)
@@ -1118,10 +1338,7 @@ namespace UnityEditor
                 int newPaintToolIndex = EditorGUILayout.Popup(m_ActivePaintToolIndex, m_ToolNames);
                 if (EditorGUI.EndChangeCheck() && (newPaintToolIndex != m_ActivePaintToolIndex))
                 {
-                    SetCurrentPaintToolInactive();
-                    m_ActivePaintToolIndex = newPaintToolIndex;
-                    SetCurrentPaintToolActive();
-                    Repaint();
+                    SelectPaintTool(newPaintToolIndex);
                 }
                 ITerrainPaintTool activeTool = GetActiveTool();
 
@@ -1144,12 +1361,11 @@ namespace UnityEditor
 
             if (showBrushSize)
             {
-                float safetyFactorHack = 0.9375f;
-                m_Size = EditorGUILayout.Slider(styles.brushSize, m_Size, 0.1f, Mathf.Round(Mathf.Min(m_Terrain.terrainData.size.x, m_Terrain.terrainData.size.z) * safetyFactorHack));
+                m_Size = ScaledSliderWithRounding(styles.brushSize, m_Size, kMinBrushSize, kMaxBrushSize, 1.0f, 0.01f);
             }
 
             if (showBrushStrength)
-                m_Strength = PercentSlider(styles.opacity, m_Strength, kMinBrushStrength, 1); // former string formatting: "0.0%"
+                m_Strength = ScaledSliderWithRounding(styles.opacity, m_Strength, kMinBrushStrength, kMaxBrushStrength, 100.0f, 0.1f);
 
             if (showBrushEditor)
                 brushList.ShowEditGUI();
@@ -1230,27 +1446,23 @@ namespace UnityEditor
             GUILayout.BeginVertical();
 
             // base texture
+            const int kMinBaseTextureResolution = 16;
+            const int kMaxBaseTextureResolution = 2048;
             GUILayout.BeginHorizontal();
-            EditorGUI.BeginChangeCheck();
-            int baseTextureResolution = EditorGUILayout.DelayedIntField(EditorGUIUtility.TrTextContent("Base Texture Resolution", "Resolution of the composite texture used on the terrain when viewed from a distance greater than the Basemap Distance."), m_Terrain.terrainData.baseMapResolution);
-            if (EditorGUI.EndChangeCheck())
-            {
-                baseTextureResolution = Mathf.Clamp(Mathf.ClosestPowerOfTwo(baseTextureResolution), 16, 2048);
-                if (m_Terrain.terrainData.baseMapResolution != baseTextureResolution)
-                {
-                    Undo.RecordObject(m_Terrain.terrainData, "TerrainData property change");
-                    m_Terrain.terrainData.baseMapResolution = baseTextureResolution;
-                    MarkTerrainDataDirty();
-                }
-            }
+            int baseTextureResolution = EditorGUILayout.DelayedIntField(EditorGUIUtility.TrTextContent("Base Texture Resolution", $"Resolution of the composite texture used on the terrain when viewed from a distance greater than the Basemap Distance. Value range [{kMinBaseTextureResolution}, {kMaxBaseTextureResolution}]"), m_Terrain.terrainData.baseMapResolution);
+            baseTextureResolution = Mathf.Clamp(Mathf.ClosestPowerOfTwo(baseTextureResolution), kMinBaseTextureResolution, kMaxBaseTextureResolution);
+            if (m_Terrain.terrainData.baseMapResolution != baseTextureResolution)
+                m_Terrain.terrainData.baseMapResolution = baseTextureResolution;
             GUILayout.EndHorizontal();
 
             // splatmap control texture
+            const int kMinControlTextureResolution = 16;
+            const int kMaxControlTextureResolution = 2048;
             GUILayout.BeginHorizontal();
             if (m_CurrentControlTextureResolution == 0)
                 m_CurrentControlTextureResolution = m_Terrain.terrainData.alphamapResolution;
-            m_CurrentControlTextureResolution = EditorGUILayout.IntField(EditorGUIUtility.TrTextContent("Control Texture Resolution", "Resolution of the \"splatmap\" that controls the blending of the different terrain textures."), m_CurrentControlTextureResolution);
-            m_CurrentControlTextureResolution = Mathf.Clamp(Mathf.ClosestPowerOfTwo(m_CurrentControlTextureResolution), 16, 2048);
+            m_CurrentControlTextureResolution = EditorGUILayout.IntField(EditorGUIUtility.TrTextContent("Control Texture Resolution", $"Resolution of the \"splatmap\" that controls the blending of the different terrain textures. Value range [{kMinControlTextureResolution}, {kMaxControlTextureResolution}]"), m_CurrentControlTextureResolution);
+            m_CurrentControlTextureResolution = Mathf.Clamp(Mathf.ClosestPowerOfTwo(m_CurrentControlTextureResolution), kMinControlTextureResolution, kMaxControlTextureResolution);
             if (m_CurrentControlTextureResolution != m_Terrain.terrainData.alphamapResolution && GUILayout.Button("Resize", GUILayout.Width(128)))
             {
                 ResizeControlTexture(m_CurrentControlTextureResolution);
@@ -1260,12 +1472,12 @@ namespace UnityEditor
             GUILayout.EndHorizontal();
 
             // heightmap texture
+            const int kMinimumResolution = 33; // 33 is the minimum that GetAdjustedSize will allow
+            const int kMaximumResolution = 4097; // if you want to change the maximum value, also change it in SetResolutionWizard
             GUILayout.BeginHorizontal();
             if (m_CurrentHeightmapResolution == 0)
                 m_CurrentHeightmapResolution = m_Terrain.terrainData.heightmapResolution;
-            m_CurrentHeightmapResolution = EditorGUILayout.IntField(EditorGUIUtility.TrTextContent("Heightmap Resolution", "Pixel resolution of the terrain's heightmap (should be a power of two plus one, eg, 513 = 512 + 1)."), m_CurrentHeightmapResolution);
-            const int kMinimumResolution = 33; // 33 is the minimum that GetAdjustedSize will allow
-            const int kMaximumResolution = 4097; // if you want to change the maximum value, also change it in SetResolutionWizard
+            m_CurrentHeightmapResolution = EditorGUILayout.IntField(EditorGUIUtility.TrTextContent("Heightmap Resolution", $"Pixel resolution of the terrain's heightmap (should be a power of two plus one, eg, 513 = 512 + 1). Value range [{kMinimumResolution}, {kMaximumResolution}]"), m_CurrentHeightmapResolution);
             m_CurrentHeightmapResolution = Mathf.Clamp(m_CurrentHeightmapResolution, kMinimumResolution, kMaximumResolution);
             m_CurrentHeightmapResolution = m_Terrain.terrainData.GetAdjustedSize(m_CurrentHeightmapResolution);
             if (m_CurrentHeightmapResolution != m_Terrain.terrainData.heightmapResolution && GUILayout.Button("Resize", GUILayout.Width(128)))
@@ -1316,23 +1528,27 @@ namespace UnityEditor
 
             const int kMaxTerrainSize = 100000;
             const int kMaxTerrainHeight = 10000;
-            terrainWidth = EditorGUILayout.DelayedFloatField(EditorGUIUtility.TrTextContent("Terrain Width", "Size of the terrain object in its X axis (in world units)."), terrainWidth);
+            terrainWidth = EditorGUILayout.DelayedFloatField(EditorGUIUtility.TrTextContent("Terrain Width", $"Size of the terrain object in its X axis (in world units). Value range [1, {kMaxTerrainSize}]"), terrainWidth);
             if (terrainWidth <= 0) terrainWidth = 1;
             if (terrainWidth > kMaxTerrainSize) terrainWidth = kMaxTerrainSize;
 
-            terrainLength = EditorGUILayout.DelayedFloatField(EditorGUIUtility.TrTextContent("Terrain Length", "Size of the terrain object in its Z axis (in world units)."), terrainLength);
+            terrainLength = EditorGUILayout.DelayedFloatField(EditorGUIUtility.TrTextContent("Terrain Length", $"Size of the terrain object in its Z axis (in world units). Value range [1, {kMaxTerrainSize}]"), terrainLength);
             if (terrainLength <= 0) terrainLength = 1;
             if (terrainLength > kMaxTerrainSize) terrainLength = kMaxTerrainSize;
 
-            terrainHeight = EditorGUILayout.DelayedFloatField(EditorGUIUtility.TrTextContent("Terrain Height", "Difference in Y coordinate between the lowest possible heightmap value and the highest (in world units)."), terrainHeight);
+            terrainHeight = EditorGUILayout.DelayedFloatField(EditorGUIUtility.TrTextContent("Terrain Height", $"Difference in Y coordinate between the lowest possible heightmap value and the highest (in world units). Value range [1, {kMaxTerrainHeight}]"), terrainHeight);
             if (terrainHeight <= 0) terrainHeight = 1;
             if (terrainHeight > kMaxTerrainHeight) terrainHeight = kMaxTerrainHeight;
 
-            detailResolutionPerPatch = EditorGUILayout.DelayedIntField(EditorGUIUtility.TrTextContent("Detail Resolution Per Patch", "The number of cells in a single patch (mesh). This value is squared to form a grid of cells, and must be a divisor of the detail resolution."), detailResolutionPerPatch);
-            detailResolutionPerPatch = Mathf.Clamp(detailResolutionPerPatch, 8, 128);
+            const int kMinDetailResolutionPerPatch = 8;
+            const int kMaxDetailResolutionPerPatch = 128;
+            detailResolutionPerPatch = EditorGUILayout.DelayedIntField(EditorGUIUtility.TrTextContent("Detail Resolution Per Patch", $"The number of cells in a single patch (mesh). This value is squared to form a grid of cells, and must be a divisor of the detail resolution. Value range [{kMinDetailResolutionPerPatch}, {kMaxDetailResolutionPerPatch}]"), detailResolutionPerPatch);
+            detailResolutionPerPatch = Mathf.Clamp(detailResolutionPerPatch, kMinDetailResolutionPerPatch, kMaxDetailResolutionPerPatch);
 
-            detailResolution = EditorGUILayout.DelayedIntField(EditorGUIUtility.TrTextContent("Detail Resolution", "The number of cells available for placing details onto the terrain tile. This value is squared to make a grid of cells."), detailResolution);
-            detailResolution = Mathf.Clamp(detailResolution, 0, 4048);
+            const int kMinDetailResolution = 0;
+            const int kMaxDetailResolution = 4048;
+            detailResolution = EditorGUILayout.DelayedIntField(EditorGUIUtility.TrTextContent("Detail Resolution", $"The number of cells available for placing details onto the terrain tile. This value is squared to make a grid of cells. Value range [{kMinDetailResolution}, {kMaxDetailResolution}]"), detailResolution);
+            detailResolution = Mathf.Clamp(detailResolution, kMinDetailResolution, kMaxDetailResolution);
 
             ShowDetailStats();
 
@@ -1706,6 +1922,10 @@ namespace UnityEditor
             Vector2 uv = raycastHit.textureCoord;
 
             bool hitValidTerrain = (hitTerrain != null && hitTerrain.terrainData != null);
+            if (hitValidTerrain)
+            {
+                HotkeyApply(raycastHit.distance);
+            }
 
             Terrain lastActiveTerrain = hitValidTerrain ? hitTerrain : s_LastActiveTerrain;
             if (lastActiveTerrain)

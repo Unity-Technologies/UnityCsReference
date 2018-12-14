@@ -81,7 +81,7 @@ namespace UnityEditor
         {
             rect.width = utilityBarWidth;
 
-            using (new GUI.BackgroundColorScope(GameObjectTreeViewGUI.GameObjectStyles.hoveredBackgroundColor))
+            using (new GUI.BackgroundColorScope(Styles.backgroundColor))
             {
                 GUI.Label(rect, GUIContent.none, GameObjectTreeViewGUI.GameObjectStyles.hoveredItemBackgroundStyle);
             }

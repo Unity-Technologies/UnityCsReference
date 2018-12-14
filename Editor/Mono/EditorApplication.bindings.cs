@@ -168,9 +168,10 @@ namespace UnityEditor
         }
 
         // Returns the path to the Unity editor application (RO)
+        [ThreadAndSerializationSafe]
         public static extern string applicationPath
         {
-            [FreeFunction("GetApplicationPath")]
+            [FreeFunction("GetApplicationPath", IsThreadSafe = true)]
             get;
         }
 

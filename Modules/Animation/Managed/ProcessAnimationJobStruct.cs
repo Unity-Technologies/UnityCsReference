@@ -9,6 +9,13 @@ using Unity.Jobs.LowLevel.Unsafe;
 
 namespace UnityEngine.Experimental.Animations
 {
+    internal enum JobMethodIndex
+    {
+        ProcessRootMotionMethodIndex = 0,
+        ProcessAnimationMethodIndex,
+        MethodIndexCount
+    }
+
     internal struct ProcessAnimationJobStruct<T>
         where T : struct, IAnimationJob
     {
@@ -21,8 +28,7 @@ namespace UnityEngine.Experimental.Animations
                 jobReflectionData = JobsUtility.CreateJobReflectionData(
                     typeof(T),
                     JobType.Single,
-                    (ExecuteJobFunction)ExecuteProcessRootMotion,
-                    (ExecuteJobFunction)ExecuteProcessAnimation);
+                    (ExecuteJobFunction)Execute);
             }
 
             return jobReflectionData;
@@ -30,18 +36,24 @@ namespace UnityEngine.Experimental.Animations
 
         public delegate void ExecuteJobFunction(ref T data, IntPtr animationStreamPtr, IntPtr unusedPtr, ref JobRanges ranges, int jobIndex);
 
-        public static unsafe void ExecuteProcessAnimation(ref T data, IntPtr animationStreamPtr, IntPtr unusedPtr, ref JobRanges ranges, int jobIndex)
-        {
-            AnimationStream animationStream;
-            UnsafeUtility.CopyPtrToStructure((void*)animationStreamPtr, out animationStream);
-            data.ProcessAnimation(animationStream);
-        }
 
-        public static unsafe void ExecuteProcessRootMotion(ref T data, IntPtr animationStreamPtr, IntPtr unusedPtr, ref JobRanges ranges, int jobIndex)
+        public static unsafe void Execute(ref T data, IntPtr animationStreamPtr, IntPtr methodIndex, ref JobRanges ranges, int jobIndex)
         {
             AnimationStream animationStream;
             UnsafeUtility.CopyPtrToStructure((void*)animationStreamPtr, out animationStream);
-            data.ProcessRootMotion(animationStream);
+
+            JobMethodIndex jobMethodIndex = (JobMethodIndex)methodIndex.ToInt32();
+            switch (jobMethodIndex)
+            {
+                case JobMethodIndex.ProcessRootMotionMethodIndex:
+                    data.ProcessRootMotion(animationStream);
+                    break;
+                case JobMethodIndex.ProcessAnimationMethodIndex:
+                    data.ProcessAnimation(animationStream);
+                    break;
+                default:
+                    throw new NotImplementedException("Invalid Animation jobs method index.");
+            }
         }
     }
 }

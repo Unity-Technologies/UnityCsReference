@@ -121,6 +121,15 @@ namespace UnityEngine.UIElements
             renderData.skinningClippingRect = skinningClippingRect;
         }
 
+        public static void RemoveClippingRect(IUIRenderDevice renderDevice, UIRenderData renderData)
+        {
+            if (renderData.overridesClippingRect)
+            {
+                renderDevice.FreeClipping(renderData.clippingRectAlloc);
+                renderData.overridesClippingRect = false;
+            }
+        }
+
         public static bool IsRoundRect(VisualElement ve)
         {
             var style = ve.resolvedStyle;

@@ -691,10 +691,10 @@ namespace UnityEditor
             float oldFieldWidth = EditorGUIUtility.fieldWidth;
             EditorGUIUtility.labelWidth = availableWidth - Styles.sliderModeFieldWidth;
             EditorGUIUtility.fieldWidth = Styles.sliderModeFieldWidth;
-
             m_SliderMode = (SliderMode)EditorGUILayout.IntPopup(
                 GUIContent.Temp(" "), (int)m_SliderMode, Styles.sliderModeLabels, Styles.sliderModeValues
             );
+
             GUILayout.Space(Styles.extraVerticalSpacing);
 
             EditorGUIUtility.labelWidth = oldLabelWidth;
@@ -917,7 +917,11 @@ namespace UnityEditor
             GUILayout.Space(10);
 
             DoColorSliders(innerContentWidth);
-            DoHexField(innerContentWidth);
+            if (!m_HDR)
+            {
+                DoHexField(innerContentWidth);
+            }
+
             GUILayout.Space(Styles.extraVerticalSpacing);
 
             if (m_HDR)

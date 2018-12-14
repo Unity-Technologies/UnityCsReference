@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
+using UnityEditor.Experimental;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -10,29 +12,31 @@ namespace UnityEditor.ShortcutManagement
 {
     class PromptWindow : EditorWindow
     {
-        static readonly Color k_InvalidColorLightSkin = new Color(1f, 0.69f, 0.73f);
-        static readonly Color k_InvalidColorDarkSkin = new Color(1f, 0.87f, 0.89f);
-
-        TextField m_TextField;
-        Button m_SubmitButton;
-        private TextElement m_Header;
-        private TextElement m_Message;
-        private TextElement m_ValueLabel;
         Predicate<string> m_Validator;
         Action<string> m_Action;
         bool m_IsValid;
+
+        TextElement m_HeaderTextElement;
+        TextElement m_MessageTextElement;
+        TextElement m_LabelTextElement;
+        TextField m_TextField;
+        Button m_SubmitButton;
 
         public static void Show(string title, string headerText, string messageText, string valueLabel, string initialValue, string acceptButtonText, Predicate<string> validator, Action<string> action)
         {
             var promptWindow = GetWindow<PromptWindow>(true, title, true);
 
+            // TODO: Ideally the window size should be fixed according to its contents
+            promptWindow.minSize = new Vector2(354, 157);
+
+            promptWindow.m_HeaderTextElement.text = headerText;
+            promptWindow.m_MessageTextElement.text = messageText;
+            promptWindow.m_LabelTextElement.text = valueLabel;
             promptWindow.m_TextField.value = initialValue;
             promptWindow.m_SubmitButton.text = acceptButtonText;
+
             promptWindow.m_Validator = validator;
             promptWindow.m_Action = action;
-            promptWindow.m_Header.text = headerText;
-            promptWindow.m_Message.text = messageText;
-            promptWindow.m_ValueLabel.text = valueLabel;
 
             promptWindow.m_TextField.SelectAll();
             promptWindow.m_TextField.Focus();
@@ -41,81 +45,55 @@ namespace UnityEditor.ShortcutManagement
             promptWindow.ShowModal();
         }
 
+        static void OnRootVisualContainerGeometryChanged(GeometryChangedEvent evt)
+        {
+            var element = (VisualElement)evt.target;
+            element.UnregisterCallback<GeometryChangedEvent>(OnRootVisualContainerGeometryChanged);
+        }
+
         void OnEnable()
         {
-            var root = new VisualElement();
-            root.style.paddingBottom = root.style.paddingLeft = root.style.paddingRight = root.style.paddingTop = 10;
+            // Load elements
+            var root = new VisualElement { name = "root-container" };
+            var visualTreeAsset = (VisualTreeAsset)EditorResources.Load<UnityEngine.Object>("UXML/ShortcutManager/PromptWindow.uxml");
+            visualTreeAsset.CloneTree(root, null);
+            rootVisualElement.Add(root);
 
-            m_Header = new TextElement();
-            StyleUtility.NormalTextColor(m_Header);
-            m_Header.style.unityFontStyleAndWeight = FontStyle.Bold;
-            m_Header.style.paddingBottom = m_Header.style.paddingTop = 10;
+            // Load styles
+            if (EditorGUIUtility.isProSkin)
+                root.AddToClassList("isProSkin");
+            root.AddStyleSheetPath("StyleSheets/ShortcutManager/Common.uss");
+            root.AddStyleSheetPath("StyleSheets/ShortcutManager/PromptWindow.uss");
 
-            var spacer = new VisualElement();
-            spacer.style.flexGrow = 1;
+            // Find elements
+            m_HeaderTextElement = root.Q<TextElement>("header");
+            m_MessageTextElement = root.Q<TextElement>("message");
+            var labelAndTextField = root.Q<VisualElement>("label-and-text-field");
+            m_LabelTextElement = labelAndTextField.Q<TextElement>();
+            m_TextField = labelAndTextField.Q<TextField>();
+            var buttons = root.Q<VisualElement>("buttons");
+            m_SubmitButton = root.Q<Button>("submit");
+            var cancelButton = root.Q<Button>("cancel");
 
-            m_Message = new TextElement();
-            StyleUtility.NormalTextColor(m_Message);
-            m_Message.style.flexGrow = 1;
+            // Set localized text
+            cancelButton.text = L10n.Tr("Cancel");
 
-            var textContainer = new VisualElement();
-            StyleUtility.StyleRow(textContainer);
-            textContainer.style.paddingBottom = textContainer.style.paddingTop = 30;
-
-            m_ValueLabel = new TextElement();
-            StyleUtility.NormalTextColor(m_ValueLabel);
-
-            m_TextField = new TextField();
-            m_TextField.style.flexGrow = 1;
-            m_TextField.style.height = 16;
+            // Set up event handlers
             m_TextField.RegisterValueChangedCallback(OnTextFieldValueChanged);
             m_TextField.RegisterCallback<KeyDownEvent>(OnTextFieldKeyDown);
+            m_SubmitButton.clickable.clicked += Submit;
+            cancelButton.clickable.clicked += Close;
 
-            textContainer.Add(m_ValueLabel);
-            textContainer.Add(m_TextField);
-
-            var buttonSpacer = new VisualElement();
-            buttonSpacer.style.flexGrow = 1;
-            buttonSpacer.style.height = 20;
-
-            var buttonSpacer2 = new VisualElement();
-            buttonSpacer2.style.flexGrow = 1;
-            buttonSpacer2.style.height = 20;
-
-            var buttons = new VisualElement();
-            StyleUtility.StyleRow(buttons);
-
-            m_SubmitButton = new Button(Submit);
-            m_SubmitButton.style.flexGrow = 1;
-            m_SubmitButton.style.height = 20;
-
-            var cancelButton = new Button(Close) { text = L10n.Tr("Cancel") };
-            cancelButton.style.flexGrow = 1;
-            cancelButton.style.height = 20;
-
-
-            buttons.Add(buttonSpacer);
-            buttons.Add(buttonSpacer2);
+            // Flip submit and cancel buttons on macOS
             if (SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX)
             {
-                buttons.Add(cancelButton);
-                m_SubmitButton.style.marginLeft = 6;
-                buttons.Add(m_SubmitButton);
-            }
-            else
-            {
-                buttons.Add(m_SubmitButton);
-                cancelButton.style.marginLeft = 6;
-                buttons.Add(cancelButton);
+                var parent = m_SubmitButton.parent;
+                parent.Remove(m_SubmitButton);
+                parent.Add(m_SubmitButton);
             }
 
-            root.Add(m_Header);
-            root.Add(spacer);
-            root.Add(m_Message);
-            root.Add(textContainer);
-            root.Add(buttons);
-
-            rootVisualElement.Add(root);
+            // Mark last button with class
+            buttons.Children().Last().AddToClassList("last");
         }
 
         void UpdateValidation()
@@ -124,12 +102,12 @@ namespace UnityEditor.ShortcutManagement
             if (m_IsValid)
             {
                 m_SubmitButton.SetEnabled(true);
-                m_TextField.style.backgroundColor = Color.white;
+                m_TextField.RemoveFromClassList("invalid");
             }
             else
             {
                 m_SubmitButton.SetEnabled(false);
-                m_TextField.style.backgroundColor = EditorGUIUtility.isProSkin ? k_InvalidColorDarkSkin : k_InvalidColorLightSkin;
+                m_TextField.AddToClassList("invalid");
             }
         }
 

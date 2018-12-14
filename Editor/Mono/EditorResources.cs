@@ -21,8 +21,7 @@ namespace UnityEditor.Experimental
         static EditorResources()
         {
             styleCatalog = new StyleCatalog();
-            styleCatalog.AddPaths(GetDefaultStyleCatalogPaths());
-            styleCatalog.Refresh();
+            styleCatalog.Load(GetDefaultStyleCatalogPaths());
         }
 
         private static bool CanEnableExtendedStyles()
@@ -58,24 +57,45 @@ namespace UnityEditor.Experimental
         {
             styleCatalog = new StyleCatalog();
             var paths = GetDefaultStyleCatalogPaths();
-
             foreach (var editorUssPath in AssetDatabase.GetAllAssetPaths().Where(IsEditorStyleSheet))
                 paths.Add(editorUssPath);
 
-            styleCatalog.AddPaths(paths);
-            styleCatalog.Refresh();
-
+            styleCatalog.Load(paths);
             if (CanEnableExtendedStyles())
             {
                 // Update gui skin style layouts
                 var skin = GUIUtility.GetDefaultSkin();
                 if (skin != null)
                 {
-                    skin.ForEachGUIStyleProperty(UpdateGUIStyleProperties);
-                    foreach (var style in skin.customStyles)
-                        UpdateGUIStyleProperties(style.name, style);
+                    UpdateGUIStyleProperties(skin);
                 }
             }
+        }
+
+        internal static void UpdateGUIStyleProperties(GUISkin skin)
+        {
+            skin.ForEachGUIStyleProperty(UpdateGUIStyleProperties);
+            foreach (var style in skin.customStyles)
+                UpdateGUIStyleProperties(style.name, style);
+        }
+
+        internal static List<GUIStyle> GetExtendedStylesFromSkin(GUISkin skin)
+        {
+            var extendedStyles = new List<GUIStyle>();
+            Action<string, GUIStyle> appendExtendedBlock = (name, style) =>
+            {
+                var sname = GUIStyleExtensions.StyleNameToBlockName(style.name, false);
+                if (styleCatalog.GetStyle(sname).IsValid())
+                {
+                    extendedStyles.Add(style);
+                }
+            };
+
+            skin.ForEachGUIStyleProperty(appendExtendedBlock);
+            foreach (var style in skin.customStyles)
+                appendExtendedBlock(style.name, style);
+
+            return extendedStyles;
         }
 
         private static void ResetDeprecatedBackgroundImage(GUIStyleState state)
@@ -87,7 +107,7 @@ namespace UnityEditor.Experimental
 
         private static void UpdateGUIStyleProperties(string name, GUIStyle style)
         {
-            var sname = style.name.Replace(' ', '-');
+            var sname = GUIStyleExtensions.StyleNameToBlockName(style.name, false);
             var block = styleCatalog.GetStyle(sname);
             if (!block.IsValid())
                 return;
@@ -161,9 +181,7 @@ namespace UnityEditor.Experimental
         internal static StyleCatalog LoadCatalog(string[] ussPaths)
         {
             var catalog = new StyleCatalog();
-            foreach (var path in ussPaths)
-                catalog.AddPath(path);
-            catalog.Refresh();
+            catalog.Load(ussPaths);
             return catalog;
         }
     }

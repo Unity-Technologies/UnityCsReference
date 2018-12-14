@@ -11,9 +11,9 @@ namespace UnityEngine.Networking
 {
     public sealed partial class NetworkTransport
     {
-        internal static bool DoesEndPointUsePlatformProtocols(EndPoint endPoint)
+        public static bool DoesEndPointUsePlatformProtocols(EndPoint endPoint)
         {
-            if (endPoint.GetType().FullName == "UnityEngine.PS4.SceEndPoint")
+            if (endPoint.GetType().FullName == "UnityEngine.PS4.SceEndPoint" || endPoint.GetType().FullName == "UnityEngine.XboxOne.XboxOneEndPoint")
             {
                 SocketAddress src = endPoint.Serialize();
 
@@ -43,7 +43,7 @@ namespace UnityEngine.Networking
 
             if (endPoint == null) // We require an XboxOneEndPoint to continue
                 throw new NullReferenceException("Null EndPoint provided");
-            if ((endPoint.GetType().FullName != kXboxOneEndPointClass) && (endPoint.GetType().FullName != "UnityEngine.PS4.SceEndPoint"))
+            if ((endPoint.GetType().FullName != kXboxOneEndPointClass) && (endPoint.GetType().FullName != "UnityEngine.PS4.SceEndPoint") && (endPoint.GetType().FullName != "UnityEngine.PSVita.SceEndPoint"))
                 throw new ArgumentException("Endpoint of type XboxOneEndPoint or SceEndPoint  required");
 
             if (endPoint.GetType().FullName == kXboxOneEndPointClass)
@@ -73,12 +73,19 @@ namespace UnityEngine.Networking
                     dst[i] = src[kSDASocketStorageOffset + i];
                 }
 
-                byte[] SocketAddressFamily = new byte[2]; // short
-                Buffer.BlockCopy(dst, 0, SocketAddressFamily, 0, SocketAddressFamily.Length);
+                // Convert the byte[] pointer to an IntPtr so we can marshal copy info from the underlying native socket object below
+                IntPtr socketPointer = new IntPtr(BitConverter.ToInt64(dst, 0));
+                if (socketPointer == IntPtr.Zero)
+                    throw new ArgumentException("XboxOneEndPoint has an invalid SOCKET_STORAGE pointer");
 
+                // check that the socket pointed to by socketPointer has an address family of type IPv6
+                byte[] SocketAddressFamily = new byte[2]; // short
+                System.Runtime.InteropServices.Marshal.Copy(socketPointer, SocketAddressFamily, 0, SocketAddressFamily.Length); // copy over the first 2 bytes from the object pointed to by socketPointer
                 System.Net.Sockets.AddressFamily a = (System.Net.Sockets.AddressFamily)((((int)SocketAddressFamily[1]) << 8) + (int)SocketAddressFamily[0]);
                 if (a != System.Net.Sockets.AddressFamily.InterNetworkV6)
                     throw new ArgumentException("XboxOneEndPoint has corrupt or invalid SOCKET_STORAGE pointer");
+
+                // everything should be OK so call the internal function to begin the connect handshake to this socket
                 return Internal_ConnectEndPoint(hostId, dst, kSockAddrStorageLength, exceptionConnectionId, out error);
             }
             else

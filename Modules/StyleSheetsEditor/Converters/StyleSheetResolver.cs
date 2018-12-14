@@ -210,7 +210,7 @@ namespace UnityEditor.StyleSheets
         }
 
         public List<StyleSheet> Sheets { get; private set; }
-        public Dictionary<string, Rule> Rules { get; private set; }
+        public Dictionary<string, Rule> Rules { get; internal set; }
         public Dictionary<string, ExtendData> ParentToChildren { get; private set; }
         public Dictionary<string, string> ChildToParent { get; private set; }
         public Dictionary<string, Property> Variables { get; private set; }
@@ -450,7 +450,8 @@ namespace UnityEditor.StyleSheets
 
         public static bool IsVariableValue(StyleSheetResolver.Value value)
         {
-            return value.ValueType == StyleValueType.Enum && value.AsString().StartsWith("--");
+            return (value.ValueType == StyleValueType.Enum && value.AsString().StartsWith("--")) ||
+                (value.ValueType == StyleValueType.Function && value.AsString() == "env");
         }
 
         public static List<Value> ResolveValues(Property property, Dictionary<string, Property> variables, ResolvingOptions options)
@@ -461,19 +462,52 @@ namespace UnityEditor.StyleSheets
                 if (!IsVariableValue(value))
                     continue;
 
-                Property varProperty;
-                if (variables.TryGetValue(value.AsString(), out varProperty))
+                IEnumerable<Value> variableValues = null;
+                Property variableProperty;
+                if (value.ValueType == StyleValueType.Function)
                 {
-                    property.Values[i] = varProperty.Values[0];
-                    for (var varValuesIndex = 1; varValuesIndex < varProperty.Values.Count; ++varValuesIndex)
+                    var functionValue = value as Function;
+                    if (variables.TryGetValue(functionValue.args[0][0].AsString(), out variableProperty))
                     {
-                        property.Values.Insert(++i, varProperty.Values[varValuesIndex]);
+                        variableValues = variableProperty.Values;
+                    }
+                    else if (functionValue.args.Count > 1)
+                    {
+                        // Default Value:
+                        // env(--my-variable, 23 45);
+                        // env(--my-variable, "pow");
+                        variableValues = functionValue.args[1];
+                    }
+                }
+                else
+                {
+                    if (variables.TryGetValue(value.AsString(), out variableProperty))
+                    {
+                        variableValues = variableProperty.Values;
+                    }
+                }
+
+                if (variableValues != null)
+                {
+                    using (var it = variableValues.GetEnumerator())
+                    {
+                        if (it.MoveNext())
+                        {
+                            property.Values[i] = it.Current;
+                            while (it.MoveNext())
+                            {
+                                property.Values.Insert(++i, it.Current);
+                            }
+                        }
+                        else if (options != null && options.ThrowIfCannotResolve)
+                        {
+                            throw new Exception("Cannot resolve variable: " + property.Values[0].AsString());
+                        }
                     }
                 }
                 else if (options != null && options.ThrowIfCannotResolve)
                 {
                     throw new Exception("Cannot resolve variable: " + property.Values[0].AsString());
-                    // Debug.Log("Cannot resolve variable: " + property.Values[0].AsString());
                 }
             }
 
@@ -626,12 +660,10 @@ namespace UnityEditor.StyleSheets
             var funcArgCount = (int)srcSheet.ReadFloat(sourceValues[++handleIndex]);
 
             var func = new Function(funcName);
-
-            handleIndex++;
             var argValues = new List<Value>();
-            for (int a = 0; a < funcArgCount; ++a, ++handleIndex)
+            for (int a = 0; a < funcArgCount; ++a)
             {
-                var argHandle = sourceValues[handleIndex];
+                var argHandle = sourceValues[++handleIndex];
 
                 if (argHandle.valueType == StyleValueType.Function)
                 {
@@ -698,7 +730,7 @@ namespace UnityEditor.StyleSheets
             return value;
         }
 
-        private static void AddValues(StyleSheetBuilderHelper helper, List<Value> values)
+        private static void AddValues(StyleSheetBuilderHelper helper, IEnumerable<Value> values)
         {
             foreach (var value in values)
             {
@@ -719,7 +751,27 @@ namespace UnityEditor.StyleSheets
                         helper.builder.AddValue(value.AsString(), value.ValueType);
                         break;
                     case StyleValueType.Function:
-                        // TODO: convert the function and its parameters to the proper string representation.
+                        // First param: function name
+                        // Second param: number of arguments
+                        // Rest of args: must be saved as values.
+                        var functionValue = value as Function;
+                        helper.builder.AddValue(functionValue.AsString(), StyleValueType.Function);
+                        var nbArgs = functionValue.args.Count - 1;
+                        for (var argIndex = 0; argIndex < functionValue.args.Count; ++argIndex)
+                        {
+                            nbArgs += functionValue.args[argIndex].Length;
+                        }
+                        helper.builder.AddValue(nbArgs);
+
+                        for (var argIndex = 0; argIndex < functionValue.args.Count; ++argIndex)
+                        {
+                            AddValues(helper, functionValue.args[argIndex]);
+                            if (argIndex < functionValue.args.Count - 1)
+                            {
+                                helper.builder.AddValue(value.AsString(), StyleValueType.FunctionSeparator);
+                            }
+                        }
+
                         break;
                     default:
                         throw new Exception("Unhandled value type: " + value.ValueType);

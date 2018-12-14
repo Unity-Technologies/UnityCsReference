@@ -100,8 +100,22 @@ namespace UnityEditor.UIElements
 
                 if ((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse)
                     OnMouseDown(evt as MouseDownEvent);
-                else if ((evt as KeyDownEvent)?.character == '\n')
-                    OnKeyboardEnter();
+                else if (evt.eventTypeId == KeyDownEvent.TypeId())
+                {
+                    var kdEvt = evt as KeyDownEvent;
+
+                    if (((evt as KeyDownEvent)?.keyCode == KeyCode.Space) ||
+                        ((evt as KeyDownEvent)?.keyCode == KeyCode.KeypadEnter) ||
+                        ((evt as KeyDownEvent)?.keyCode == KeyCode.Return))
+                    {
+                        OnKeyboardEnter();
+                    }
+                    else if (kdEvt.keyCode == KeyCode.Delete ||
+                             kdEvt.keyCode == KeyCode.Backspace)
+                    {
+                        OnKeyboardDelete();
+                    }
+                }
                 else if (evt.eventTypeId == DragUpdatedEvent.TypeId())
                     OnDragUpdated(evt);
                 else if (evt.eventTypeId == DragPerformEvent.TypeId())
@@ -152,6 +166,11 @@ namespace UnityEditor.UIElements
             private void OnKeyboardEnter()
             {
                 m_ObjectField.ShowObjectSelector();
+            }
+
+            private void OnKeyboardDelete()
+            {
+                m_ObjectField.value = null;
             }
 
             private Object DNDValidateObject()

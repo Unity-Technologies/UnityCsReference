@@ -164,6 +164,7 @@ namespace UnityEditor
             public static readonly GUIContent scriptingRuntimeVersionActive = EditorGUIUtility.TrTextContent("Active Scripting Runtime Version*", "The scripting runtime version currently in use by the Editor.");
             public static readonly GUIContent scriptingRuntimeVersionActiveWarning = EditorGUIUtility.TrTextContent("The scripting runtime version currently in use by the Editor does not match the version specified by the project. An Editor restart is required for requested changes to take effect.");
             public static readonly GUIContent scriptingRuntimeVersionDeprecationWarning = EditorGUIUtility.TrTextContent("The .NET 3.5 scripting runtime has been deprecated and will be removed in a future release.");
+            public static readonly GUIContent scriptingBackendDeprecationWarning = EditorGUIUtility.TrTextContent("Support for the Mono scripting backend had been deprecated for this platform and will be removed in a future release.");
             public static readonly GUIContent scriptingRuntimeVersion = EditorGUIUtility.TrTextContent("Scripting Runtime Version*", "The scripting runtime version to be used. Unity uses different scripting backends based on platform, so these options are listed as equivalent expected behavior.");
             public static readonly GUIContent scriptingRuntimeVersionLegacy = EditorGUIUtility.TrTextContent(".NET 3.5 Equivalent (Deprecated)");
             public static readonly GUIContent scriptingRuntimeVersionLatest = EditorGUIUtility.TrTextContent(".NET 4.x Equivalent");
@@ -199,6 +200,7 @@ namespace UnityEditor
             public static string undoChangedBatchingString { get { return LocalizationDatabase.GetLocalizedString("Changed Batching Settings"); } }
             public static string undoChangedIconString { get { return LocalizationDatabase.GetLocalizedString("Changed Icon"); } }
             public static string undoChangedGraphicsAPIString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics API Settings"); } }
+            public static string undoChangedScriptingDefineString { get { return LocalizationDatabase.GetLocalizedString("Changed Scripting Define Settings"); } }
         }
 
         // Icon layout constants
@@ -1441,7 +1443,7 @@ namespace UnityEditor
                 OtherSectionVulkanSettingsGUI(targetGroup, settingsExtension);
                 OtherSectionIdentificationGUI(targetGroup, settingsExtension);
                 OtherSectionConfigurationGUI(platform, targetGroup, settingsExtension);
-                OtherSectionOptimizationGUI(targetGroup);
+                OtherSectionOptimizationGUI(platform, targetGroup);
                 OtherSectionLoggingGUI();
                 OtherSectionLegacyGUI();
                 ShowSharedNote();
@@ -1493,7 +1495,12 @@ namespace UnityEditor
                     }
                 }
                 else if ((targetGroup == BuildTargetGroup.WebGL) && !hasMinGraphicsAPI)
-                    EditorGUILayout.HelpBox(SettingsContent.colorSpaceWebGLWarning.text, MessageType.Error);
+                {
+                    // must have OpenGLES3-only
+                    hasMinGraphicsAPI = apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
+                    if (!hasMinGraphicsAPI)
+                        EditorGUILayout.HelpBox(SettingsContent.colorSpaceWebGLWarning.text, MessageType.Error);
+                }
             }
 
             // Graphics APIs
@@ -1936,28 +1943,19 @@ namespace UnityEditor
 
                 // Scripting back-end
                 IScriptingImplementations scripting = ModuleManager.GetScriptingImplementations(targetGroup);
-                bool targetGroupSupportsIl2Cpp = false;
-                bool currentBackendIsIl2Cpp = false;
+                bool allowCompilerConfigurationSelection;
 
                 if (scripting == null)
                 {
+                    allowCompilerConfigurationSelection = true; // All platforms that support only one scripting backend are IL2CPP platforms
                     BuildDisabledEnumPopup(SettingsContent.scriptingDefault, SettingsContent.scriptingBackend);
                 }
                 else
                 {
                     var backends = scripting.Enabled();
 
-                    foreach (var backend in backends)
-                    {
-                        if (backend == ScriptingImplementation.IL2CPP)
-                        {
-                            targetGroupSupportsIl2Cpp = true;
-                            break;
-                        }
-                    }
-
                     ScriptingImplementation currBackend = PlayerSettings.GetScriptingBackend(targetGroup);
-                    currentBackendIsIl2Cpp = currBackend == ScriptingImplementation.IL2CPP;
+                    allowCompilerConfigurationSelection = currBackend == ScriptingImplementation.IL2CPP && scripting.AllowIL2CPPCompilerConfigurationSelection();
                     ScriptingImplementation newBackend;
                     var mono2xDeprecated = targetGroup == BuildTargetGroup.iOS;
 
@@ -1981,6 +1979,11 @@ namespace UnityEditor
                         EditorGUILayout.HelpBox(SettingsContent.monoNotSupportediOS11WarningGUIContent.text, MessageType.Warning);
                     }
 
+                    if ((targetGroup == BuildTargetGroup.PS4 || targetGroup == BuildTargetGroup.XboxOne) &&  newBackend == ScriptingImplementation.Mono2x)
+                    {
+                        EditorGUILayout.HelpBox(SettingsContent.scriptingBackendDeprecationWarning.text, MessageType.Warning);
+                    }
+
                     if (newBackend != currBackend)
                         PlayerSettings.SetScriptingBackend(targetGroup, newBackend);
                 }
@@ -1994,19 +1997,16 @@ namespace UnityEditor
                 if (currentCompatibilityLevel != newCompatibilityLevel)
                     PlayerSettings.SetApiCompatibilityLevel(targetGroup, newCompatibilityLevel);
 
-                if (targetGroupSupportsIl2Cpp)
+                using (new EditorGUI.DisabledScope(!allowCompilerConfigurationSelection))
                 {
-                    using (new EditorGUI.DisabledScope(!currentBackendIsIl2Cpp || !scripting.AllowIL2CPPCompilerConfigurationSelection()))
-                    {
-                        var currentConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(targetGroup);
-                        var configurations = GetIl2CppCompilerConfigurations();
-                        var configurationNames = GetIl2CppCompilerConfigurationNames();
+                    var currentConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(targetGroup);
+                    var configurations = GetIl2CppCompilerConfigurations();
+                    var configurationNames = GetIl2CppCompilerConfigurationNames();
 
-                        var newConfiguration = BuildEnumPopup(SettingsContent.il2cppCompilerConfiguration, currentConfiguration, configurations, configurationNames);
+                    var newConfiguration = BuildEnumPopup(SettingsContent.il2cppCompilerConfiguration, currentConfiguration, configurations, configurationNames);
 
-                        if (currentConfiguration != newConfiguration)
-                            PlayerSettings.SetIl2CppCompilerConfiguration(targetGroup, newConfiguration);
-                    }
+                    if (currentConfiguration != newConfiguration)
+                        PlayerSettings.SetIl2CppCompilerConfiguration(targetGroup, newConfiguration);
                 }
 
                 bool gcIncrementalEnabled = BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", platform.defaultTarget) && PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest;
@@ -2089,7 +2089,10 @@ namespace UnityEditor
                 string scriptDefines = EditorGUILayout.DelayedTextField(PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup), EditorStyles.textField);
                 scriptingDefinesControlID = EditorGUIUtility.s_LastControlID;
                 if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(this.target, SettingsContent.undoChangedScriptingDefineString);
                     PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, scriptDefines);
+                }
             }
 
             {
@@ -2126,7 +2129,7 @@ namespace UnityEditor
             EditorGUILayout.Space();
         }
 
-        private void OtherSectionOptimizationGUI(BuildTargetGroup targetGroup)
+        private void OtherSectionOptimizationGUI(BuildPlatform platform, BuildTargetGroup targetGroup)
         {
             // Optimization
             GUILayout.Label(SettingsContent.optimizationTitle, EditorStyles.boldLabel);
@@ -2153,7 +2156,7 @@ namespace UnityEditor
                 ManagedStrippingLevel currentManagedStrippingLevel = PlayerSettings.GetManagedStrippingLevel(targetGroup);
                 ManagedStrippingLevel newManagedStrippingLevel;
 
-                if (targetGroup == BuildTargetGroup.WebGL || backend == ScriptingImplementation.IL2CPP)
+                if (BuildPipeline.IsFeatureSupported("ENABLE_ENGINE_CODE_STRIPPING", platform.defaultTarget) && backend == ScriptingImplementation.IL2CPP)
                 {
                     EditorGUILayout.PropertyField(m_StripEngineCode, SettingsContent.stripEngineCode);
                 }

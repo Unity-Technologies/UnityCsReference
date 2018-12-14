@@ -37,13 +37,13 @@ namespace UnityEditor.RestService
         {
             if (m_nativeRequestPtr != IntPtr.Zero)
             {
-                Internal_Destroy(m_nativeRequestPtr);
+                Internal_Destroy();
                 m_nativeRequestPtr = IntPtr.Zero;
             }
         }
 
-        [NativeMethod(Name = "RestServiceBindings::Internal_DestroyRequest", IsThreadSafe = true, IsFreeFunction = true)]
-        extern public static void Internal_Destroy(IntPtr ptr);
+        [NativeMethod(Name = "Release", IsThreadSafe = true)]
+        extern public void Internal_Destroy();
 
         public extern string Payload { get; }
         public extern string Url { get; }

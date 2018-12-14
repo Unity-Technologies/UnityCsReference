@@ -675,7 +675,7 @@ namespace UnityEditor
                 GUI.enabled = developmentBuild;
                 if (shouldDrawDebuggingToggle)
                 {
-                    using (new EditorGUI.DisabledScope(buildWindowExtension.ShouldDisableManagedDebuggerCheckboxes()))
+                    using (new EditorGUI.DisabledScope(buildWindowExtension != null ? buildWindowExtension.ShouldDisableManagedDebuggerCheckboxes() : false))
                     {
                         EditorUserBuildSettings.allowDebugging = EditorGUILayout.Toggle(styles.allowDebugging, EditorUserBuildSettings.allowDebugging);
 
@@ -742,7 +742,7 @@ namespace UnityEditor
                     GUI.enabled = developmentBuild;
                 }
 
-                if (enableBuildScriptsOnly)
+                if (buildWindowExtension != null && enableBuildScriptsOnly)
                     buildWindowExtension.DoScriptsOnlyGUI();
 
                 GUI.enabled = true;

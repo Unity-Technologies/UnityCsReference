@@ -58,6 +58,7 @@ namespace UnityEditor.ShortcutManagement
         void ModifyShortcutEntry(Identifier identifier, IEnumerable<KeyCombination> combinationSequence);
         void ClearShortcutOverride(Identifier identifier);
         void ResetToDefault(); // TODO: Remove this when current UI is replaced. Set activeProfile to null instead.
+        void ResetToDefault(ShortcutEntry entry);
     }
 
     class ShortcutProfileManager : IShortcutProfileManager
@@ -230,7 +231,7 @@ namespace UnityEditor.ShortcutManagement
                 return CanRenameProfileResult.InvalidProfileId;
 
             // Profile id must be unique
-            if (newProfileId != profile.id && m_LoadedProfiles.ContainsKey(newProfileId))
+            if (m_LoadedProfiles.ContainsKey(newProfileId))
                 return CanRenameProfileResult.DuplicateProfileId;
 
             return CanRenameProfileResult.Success;
@@ -340,6 +341,16 @@ namespace UnityEditor.ShortcutManagement
             ResetShortcutEntries();
             ResetActiveProfile();
             SaveShortcutProfile(m_ActiveProfile);
+        }
+
+        public void ResetToDefault(ShortcutEntry entry)
+        {
+            var oldBinding = new ShortcutBinding(entry.combinations);
+            entry.ResetToDefault();
+            activeProfile.Remove(entry.identifier);
+            SaveShortcutProfile(activeProfile);
+            var newBinding = new ShortcutBinding(entry.combinations);
+            shortcutBindingChanged?.Invoke(this, entry.identifier, oldBinding, newBinding);
         }
 
         void ResetShortcutEntries()

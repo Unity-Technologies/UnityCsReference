@@ -320,7 +320,6 @@ namespace UnityEngine.UIElements
                     {
                         index = 0;
                     }
-
                     // FIXME: Element could be unrelated to delegator; should we detect this case and return null?
                     // Spec is not very clear on this.
                     while (m_FocusRing[index].m_Focusable.delegatesFocus)

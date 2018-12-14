@@ -103,7 +103,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             var lastChar = expression[end];
-            if (!IsCharDigit(lastChar))
+            if (!IsCharDigit(lastChar) && !IsCharLetter(lastChar))
             {
                 rightSymbol = lastChar;
 

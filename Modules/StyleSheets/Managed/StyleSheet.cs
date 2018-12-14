@@ -70,6 +70,10 @@ namespace UnityEngine.UIElements
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         [NonSerialized]
+        internal bool isUnityStyleSheet;
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        [NonSerialized]
         internal bool hasSelectorsCached;
 
         static bool TryCheckAccess<T>(T[] list, StyleValueType type, StyleValueHandle[] handles, int index, out T value)

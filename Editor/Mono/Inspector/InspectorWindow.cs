@@ -32,6 +32,7 @@ namespace UnityEditor
     internal class InspectorWindow : EditorWindow, IHasCustomMenu
     {
         internal InspectorMode   m_InspectorMode = InspectorMode.Normal;
+        internal bool m_UseUIElementsDefaultInspector = false;
 
         static readonly List<InspectorWindow> m_AllInspectors = new List<InspectorWindow>();
         static bool s_AllOptimizedGUIBlocksNeedsRebuild;
@@ -52,6 +53,7 @@ namespace UnityEditor
         private long s_LastUpdateWhilePlayingAnimation = 0;
 
         bool m_ResetKeyboardControl;
+        public bool m_OpenAddComponentMenu = false;
         protected ActiveEditorTracker m_Tracker;
 
         [SerializeField]
@@ -303,7 +305,10 @@ namespace UnityEditor
             menu.AddItem(EditorGUIUtility.TrTextContent("Normal"), m_InspectorMode == InspectorMode.Normal, SetNormal);
             menu.AddItem(EditorGUIUtility.TrTextContent("Debug"), m_InspectorMode == InspectorMode.Debug, SetDebug);
             if (Unsupported.IsDeveloperMode())
+            {
                 menu.AddItem(EditorGUIUtility.TrTextContent("Debug-Internal"), m_InspectorMode == InspectorMode.DebugInternal, SetDebugInternal);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Use UIElements Default Inspector"), m_UseUIElementsDefaultInspector, SetUseUIEDefaultInspector);
+            }
 
             menu.AddSeparator(String.Empty);
             m_LockTracker.AddItemsToMenu(menu);
@@ -316,6 +321,12 @@ namespace UnityEditor
                 titleContent = EditorGUIUtility.TrTextContentWithIcon("Inspector", iconName);
             else
                 titleContent = EditorGUIUtility.TrTextContentWithIcon("Debug", iconName);
+        }
+
+        void SetUseUIEDefaultInspector()
+        {
+            m_UseUIElementsDefaultInspector = !m_UseUIElementsDefaultInspector;
+            RebuildContentsContainers();
         }
 
         void SetMode(InspectorMode mode)
@@ -1323,7 +1334,11 @@ namespace UnityEditor
                 Object editorTarget = editor.targets[0];
                 string editorTitle = ObjectNames.GetInspectorTitle(editorTarget);
 
-                VisualElement editorElement = new InspectorElement(editor, InspectorElement.Mode.Normal)
+                var inspectorElementMode = InspectorElement.Mode.Normal;
+                if (m_UseUIElementsDefaultInspector)
+                    inspectorElementMode ^= InspectorElement.Mode.IMGUIDefault;
+
+                VisualElement editorElement = new InspectorElement(editor, inspectorElementMode)
                 {
                     focusable = false
                 };
@@ -1364,6 +1379,9 @@ namespace UnityEditor
 
                         GUIUtility.GetControlID(target.GetInstanceID(), FocusType.Passive);
                         EditorGUIUtility.ResetGUIState();
+
+                        if (editor.target is AssetImporter)
+                            m_EditorsWithImportedObjectLabel.Add(i + 1);
 
                         //set the current PropertyHandlerCache to the current editor
                         ScriptAttributeUtility.propertyHandlerCache = editor.propertyHandlerCache;
@@ -1754,24 +1772,10 @@ namespace UnityEditor
                         DrawSplitLine(rect.y);
                     rect.y += 9;
 
-                    Event evt = Event.current;
-                    bool openWindow = false;
-                    switch (evt.type)
-                    {
-                        case EventType.ExecuteCommand:
-                            string commandName = evt.commandName;
-                            if (commandName == AddComponentWindow.OpenAddComponentDropdown)
-                            {
-                                openWindow = true;
-                                evt.Use();
-                            }
-
-                            break;
-                    }
-
                     if (EditorGUI.DropdownButton(rect, content, FocusType.Passive, Styles.addComponentButtonStyle) ||
-                        openWindow)
+                        m_OpenAddComponentMenu && Event.current.type == EventType.Repaint)
                     {
+                        m_OpenAddComponentMenu = false;
                         if (AddComponentWindow.Show(rect, editor.targets.Select(o => (GameObject)o).ToArray()))
                         {
                             GUIUtility.ExitGUI();

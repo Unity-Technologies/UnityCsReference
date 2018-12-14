@@ -85,19 +85,9 @@ namespace UnityEditor.Experimental.GraphView
                 m_Start = this.ChangeCoordinatesTo(parent, e.localMousePosition);
                 m_StartPos = parent.layout;
                 // Warn user if target uses a relative CSS position type
-                if (!parent.isLayoutManual)
+                if (!parent.isLayoutManual && parent.resolvedStyle.position == Position.Relative)
                 {
-                    if (parent.resolvedStyle.position == Position.Absolute)
-                    {
-                        if (!(parent.resolvedStyle.flexDirection == FlexDirection.Column || parent.resolvedStyle.flexDirection == FlexDirection.Row))
-                        {
-                            Debug.LogWarning("Attempting to resize an object with an absolute position but no layout direction (row or column)");
-                        }
-                    }
-                    else
-                    {
-                        Debug.LogWarning("Attempting to resize an object with a non absolute position");
-                    }
+                    Debug.LogWarning("Attempting to resize an object with a non absolute position");
                 }
 
                 m_Active = true;
@@ -139,7 +129,7 @@ namespace UnityEditor.Experimental.GraphView
                 return;
 
             // Then can be resize in all direction
-            if (parent.isLayoutManual)
+            if (ce.resizeRestriction == ResizeRestriction.None)
             {
                 if (ClassListContains("resizeAllDir") == false)
                 {
@@ -148,9 +138,9 @@ namespace UnityEditor.Experimental.GraphView
                     RemoveFromClassList("resizeVerticalDir");
                 }
             }
-            else if (parent.resolvedStyle.position == Position.Absolute)
+            else if (ce.resolvedStyle.position == Position.Absolute)
             {
-                if (parent.resolvedStyle.flexDirection == FlexDirection.Column)
+                if (ce.resolvedStyle.flexDirection == FlexDirection.Column)
                 {
                     if (ClassListContains("resizeHorizontalDir") == false)
                     {
@@ -159,7 +149,7 @@ namespace UnityEditor.Experimental.GraphView
                         RemoveFromClassList("resizeVerticalDir");
                     }
                 }
-                else if (parent.resolvedStyle.flexDirection == FlexDirection.Row)
+                else if (ce.resolvedStyle.flexDirection == FlexDirection.Row)
                 {
                     if (ClassListContains("resizeVerticalDir") == false)
                     {
@@ -188,23 +178,26 @@ namespace UnityEditor.Experimental.GraphView
 
                 if (ce.GetPosition().size != newSize)
                 {
-                    if (parent.isLayoutManual)
+                    if (ce.isLayoutManual)
                     {
                         ce.SetPosition(new Rect(ce.layout.x, ce.layout.y, newSize.x, newSize.y));
                         resized = true;
                     }
-                    else if (parent.resolvedStyle.position == Position.Absolute)
+                    else if (ce.resizeRestriction == ResizeRestriction.None)
                     {
-                        if (parent.resolvedStyle.flexDirection == FlexDirection.Column)
-                        {
-                            ce.style.width = newSize.x;
-                            resized = true;
-                        }
-                        else if (parent.resolvedStyle.flexDirection == FlexDirection.Row)
-                        {
-                            ce.style.height = newSize.y;
-                            resized = true;
-                        }
+                        ce.style.width = newSize.x;
+                        ce.style.height = newSize.y;
+                        resized = true;
+                    }
+                    else if (parent.resolvedStyle.flexDirection == FlexDirection.Column)
+                    {
+                        ce.style.width = newSize.x;
+                        resized = true;
+                    }
+                    else if (parent.resolvedStyle.flexDirection == FlexDirection.Row)
+                    {
+                        ce.style.height = newSize.y;
+                        resized = true;
                     }
                 }
 

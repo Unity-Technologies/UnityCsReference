@@ -230,6 +230,11 @@ namespace UnityEngine.UIElements.StyleSheets
 
         internal void ApplyRule(StyleSheet sheet, int specificity, StyleRule rule, StylePropertyID[] propertyIDs)
         {
+            // Unity styles are sorted by specificity and they are applied with StyleValueExtensions.UnitySpecificity
+            // to allow user styles to have precedence
+            if (sheet.isUnityStyleSheet)
+                specificity = StyleValueExtensions.UnitySpecificity;
+
             for (int i = 0; i < rule.properties.Length; i++)
             {
                 var styleProperty = rule.properties[i];

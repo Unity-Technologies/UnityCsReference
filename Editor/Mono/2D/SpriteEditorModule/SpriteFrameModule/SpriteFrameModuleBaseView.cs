@@ -68,21 +68,21 @@ namespace UnityEditor
         private GizmoMode m_GizmoMode;
 
         private VisualElement m_NameElement;
-        private PropertyControl<string> m_NameField;
+        private TextField m_NameField;
         private VisualElement m_PositionElement;
-        private PropertyControl<long> m_PositionFieldX;
-        private PropertyControl<long> m_PositionFieldY;
-        private PropertyControl<long> m_PositionFieldW;
-        private PropertyControl<long> m_PositionFieldH;
-        private PropertyControl<long> m_BorderFieldL;
-        private PropertyControl<long> m_BorderFieldT;
-        private PropertyControl<long> m_BorderFieldR;
-        private PropertyControl<long> m_BorderFieldB;
+        private IntegerField m_PositionFieldX;
+        private IntegerField m_PositionFieldY;
+        private IntegerField m_PositionFieldW;
+        private IntegerField m_PositionFieldH;
+        private IntegerField m_BorderFieldL;
+        private IntegerField m_BorderFieldT;
+        private IntegerField m_BorderFieldR;
+        private IntegerField m_BorderFieldB;
         private EnumField m_PivotField;
         private EnumField m_PivotUnitModeField;
         private VisualElement m_CustomPivotElement;
-        private PropertyControl<double> m_CustomPivotFieldX;
-        private PropertyControl<double> m_CustomPivotFieldY;
+        private FloatField m_CustomPivotFieldX;
+        private FloatField m_CustomPivotFieldY;
         private VisualElement m_SelectedFrameInspector;
 
         private bool ShouldShowRectScaling()
@@ -110,10 +110,10 @@ namespace UnityEditor
 
         private void UpdatePositionField(Rect rect)
         {
-            m_PositionFieldX.SetValueWithoutNotify((long)selectedSpriteRect.x);
-            m_PositionFieldY.SetValueWithoutNotify((long)selectedSpriteRect.y);
-            m_PositionFieldW.SetValueWithoutNotify((long)selectedSpriteRect.width);
-            m_PositionFieldH.SetValueWithoutNotify((long)selectedSpriteRect.height);
+            m_PositionFieldX.SetValueWithoutNotify((int)selectedSpriteRect.x);
+            m_PositionFieldY.SetValueWithoutNotify((int)selectedSpriteRect.y);
+            m_PositionFieldW.SetValueWithoutNotify((int)selectedSpriteRect.width);
+            m_PositionFieldH.SetValueWithoutNotify((int)selectedSpriteRect.height);
         }
 
         private void AddMainUI(VisualElement mainView)
@@ -122,7 +122,7 @@ namespace UnityEditor
             m_SelectedFrameInspector = visualTree.CloneTree().Q("spriteFrameModuleInspector");
 
             m_NameElement = m_SelectedFrameInspector.Q("name");
-            m_NameField = m_SelectedFrameInspector.Q<PropertyControl<string>>("spriteName");
+            m_NameField = m_SelectedFrameInspector.Q<TextField>("spriteName");
             m_NameField.RegisterValueChangedCallback((evt) =>
             {
                 if (hasSelected)
@@ -141,7 +141,7 @@ namespace UnityEditor
 
 
             m_PositionElement = m_SelectedFrameInspector.Q("position");
-            m_PositionFieldX = m_PositionElement.Q<PropertyControl<long>>("positionX");
+            m_PositionFieldX = m_PositionElement.Q<IntegerField>("positionX");
             m_PositionFieldX.RegisterValueChangedCallback((evt) =>
             {
                 if (hasSelected)
@@ -153,7 +153,7 @@ namespace UnityEditor
                 }
             });
 
-            m_PositionFieldY = m_PositionElement.Q<PropertyControl<long>>("positionY");
+            m_PositionFieldY = m_PositionElement.Q<IntegerField>("positionY");
             m_PositionFieldY.RegisterValueChangedCallback((evt) =>
             {
                 if (hasSelected)
@@ -165,7 +165,7 @@ namespace UnityEditor
                 }
             });
 
-            m_PositionFieldW = m_PositionElement.Q<PropertyControl<long>>("positionW");
+            m_PositionFieldW = m_PositionElement.Q<IntegerField>("positionW");
             m_PositionFieldW.RegisterValueChangedCallback((evt) =>
             {
                 if (hasSelected)
@@ -177,7 +177,7 @@ namespace UnityEditor
                 }
             });
 
-            m_PositionFieldH = m_PositionElement.Q<PropertyControl<long>>("positionH");
+            m_PositionFieldH = m_PositionElement.Q<IntegerField>("positionH");
             m_PositionFieldH.RegisterValueChangedCallback((evt) =>
             {
                 if (hasSelected)
@@ -190,7 +190,7 @@ namespace UnityEditor
             });
 
             var borderElement = m_SelectedFrameInspector.Q("border");
-            m_BorderFieldL = borderElement.Q<PropertyControl<long>>("borderL");
+            m_BorderFieldL = borderElement.Q<IntegerField>("borderL");
             m_BorderFieldL.RegisterValueChangedCallback((evt) =>
             {
                 if (hasSelected)
@@ -198,11 +198,11 @@ namespace UnityEditor
                     var border = selectedSpriteBorder;
                     border.x = evt.newValue;
                     selectedSpriteBorder = border;
-                    m_BorderFieldL.SetValueWithoutNotify((long)selectedSpriteBorder.x);
+                    m_BorderFieldL.SetValueWithoutNotify((int)selectedSpriteBorder.x);
                 }
             });
 
-            m_BorderFieldT = borderElement.Q<PropertyControl<long>>("borderT");
+            m_BorderFieldT = borderElement.Q<IntegerField>("borderT");
             m_BorderFieldT.RegisterValueChangedCallback((evt) =>
             {
                 if (hasSelected)
@@ -210,12 +210,12 @@ namespace UnityEditor
                     var border = selectedSpriteBorder;
                     border.w = evt.newValue;
                     selectedSpriteBorder = border;
-                    m_BorderFieldT.SetValueWithoutNotify((long)selectedSpriteBorder.w);
+                    m_BorderFieldT.SetValueWithoutNotify((int)selectedSpriteBorder.w);
                     evt.StopPropagation();
                 }
             });
 
-            m_BorderFieldR = borderElement.Q<PropertyControl<long>>("borderR");
+            m_BorderFieldR = borderElement.Q<IntegerField>("borderR");
             m_BorderFieldR.RegisterValueChangedCallback((evt) =>
             {
                 if (hasSelected)
@@ -223,11 +223,11 @@ namespace UnityEditor
                     var border = selectedSpriteBorder;
                     border.z = evt.newValue;
                     selectedSpriteBorder = border;
-                    m_BorderFieldR.SetValueWithoutNotify((long)selectedSpriteBorder.z);
+                    m_BorderFieldR.SetValueWithoutNotify((int)selectedSpriteBorder.z);
                 }
             });
 
-            m_BorderFieldB = borderElement.Q<PropertyControl<long>>("borderB");
+            m_BorderFieldB = borderElement.Q<IntegerField>("borderB");
             m_BorderFieldB.RegisterValueChangedCallback((evt) =>
             {
                 if (hasSelected)
@@ -235,12 +235,13 @@ namespace UnityEditor
                     var border = selectedSpriteBorder;
                     border.y = evt.newValue;
                     selectedSpriteBorder = border;
-                    m_BorderFieldB.SetValueWithoutNotify((long)selectedSpriteBorder.y);
+                    m_BorderFieldB.SetValueWithoutNotify((int)selectedSpriteBorder.y);
                 }
             });
 
             m_PivotField = m_SelectedFrameInspector.Q<EnumField>("pivotField");
             m_PivotField.Init(SpriteAlignment.Center);
+            m_PivotField.label = L10n.Tr("Pivot");
             m_PivotField.RegisterValueChangedCallback((evt) =>
             {
                 if (hasSelected)
@@ -257,6 +258,7 @@ namespace UnityEditor
 
             m_PivotUnitModeField = m_SelectedFrameInspector.Q<EnumField>("pivotUnitModeField");
             m_PivotUnitModeField.Init(PivotUnitMode.Normalized);
+            m_PivotUnitModeField.label = L10n.Tr("Pivot Unit Mode");
             m_PivotUnitModeField.RegisterValueChangedCallback((evt) =>
             {
                 if (hasSelected)
@@ -271,7 +273,7 @@ namespace UnityEditor
 
 
             m_CustomPivotElement = m_SelectedFrameInspector.Q("customPivot");
-            m_CustomPivotFieldX = m_CustomPivotElement.Q<PropertyControl<double>>("customPivotX");
+            m_CustomPivotFieldX = m_CustomPivotElement.Q<FloatField>("customPivotX");
             m_CustomPivotFieldX.RegisterValueChangedCallback((evt) =>
             {
                 if (hasSelected)
@@ -287,7 +289,7 @@ namespace UnityEditor
                 }
             });
 
-            m_CustomPivotFieldY = m_CustomPivotElement.Q<PropertyControl<double>>("customPivotY");
+            m_CustomPivotFieldY = m_CustomPivotElement.Q<FloatField>("customPivotY");
             m_CustomPivotFieldY.RegisterValueChangedCallback((evt) =>
             {
                 if (hasSelected)

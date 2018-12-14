@@ -214,9 +214,14 @@ namespace UnityEditor.StyleSheets
             return ImagePosition.ImageAbove;
         }
 
+        public static StyleSelectorPart CreateSelectorPart(string selectorStr)
+        {
+            return selectorStr[0] == '.' ? StyleSelectorPart.CreateClass(selectorStr.Substring(1)) : StyleSelectorPart.CreateType(selectorStr);
+        }
+
         public static StyleSelectorPart[] GetStateRuleSelectorParts(string baseSelectorStr, string id)
         {
-            var baseSelector = baseSelectorStr[0] == '.' ? StyleSelectorPart.CreateClass(baseSelectorStr.Substring(1)) : StyleSelectorPart.CreateType(baseSelectorStr);
+            var baseSelector = CreateSelectorPart(baseSelectorStr);
             switch (id)
             {
                 case "active":
@@ -685,7 +690,7 @@ namespace UnityEditor.StyleSheets
         public static string[] GetSheetPathsFromRootFolders(IEnumerable<string> rootFolders, SkinTarget target, string sheetPostFix = "")
         {
             var skinSheetName = $"{(target == SkinTarget.Light ? "light" : "dark")}{sheetPostFix}.uss";
-            var sheetPaths = rootFolders.Select(folderPath => System.IO.Directory.GetFiles(EditorResources.ExpandPath(folderPath), "*.uss", SearchOption.AllDirectories))
+            var sheetPaths = rootFolders.Select(folderPath => Directory.GetFiles(EditorResources.ExpandPath(folderPath), "*.uss", SearchOption.AllDirectories))
                 .SelectMany(p => p)
                 .Where(p => p.EndsWith("common.uss") || p.EndsWith(skinSheetName))
                 .Select(p => p.Replace("\\", "/"))
@@ -697,9 +702,13 @@ namespace UnityEditor.StyleSheets
         {
             var packageSkin = CreateDefaultGUISkin();
             var bundleSkin = LoadBundleSkin(target);
-
             packageSkin.Assign(bundleSkin);
+            ConvertToPackageAsset(packageSkin, bundleSkin);
+            return packageSkin;
+        }
 
+        public static void ConvertToPackageAsset(GUISkin packageSkin, GUISkin bundleSkin)
+        {
             // Switch all images and font to package resources:
             if (bundleSkin.font != null)
                 packageSkin.font = ConvertToPackageAsset(bundleSkin.font);
@@ -731,8 +740,6 @@ namespace UnityEditor.StyleSheets
                 var bundleStyle = bundleSkin.customStyles[i];
                 ConvertToPackageAsset(packageStyle, bundleStyle);
             }
-
-            return packageSkin;
         }
 
         private static T ConvertToPackageAsset<T>(T bundleAsset) where T : Object
@@ -763,6 +770,50 @@ namespace UnityEditor.StyleSheets
 
             if (src.scaledBackgrounds != null && src.scaledBackgrounds.Length > 0 && src.scaledBackgrounds[0] != null)
                 dst.scaledBackgrounds = new[] { ConvertToPackageAsset(src.scaledBackgrounds[0]) };
+        }
+
+        internal static StyleSheet ResolveSheets(params string[] sheetPaths)
+        {
+            var resolver = new StyleSheetResolver();
+            resolver.AddStyleSheets(sheetPaths);
+            return resolver.ResolvedSheet;
+        }
+
+        internal static StyleSheet ResolveSheets(params StyleSheet[] sheets)
+        {
+            var resolver = new StyleSheetResolver();
+            resolver.AddStyleSheets(sheets);
+            return resolver.ResolvedSheet;
+        }
+
+        internal static StyleSheetResolver ResolveFromSheetsFolder(string folder, SkinTarget target, StyleSheetResolver.ResolvingOptions options = null, string sheetPostFix = "")
+        {
+            return ResolveFromSheetsFolder(new[] { folder }, target, options, sheetPostFix);
+        }
+
+        internal static StyleSheetResolver ResolveFromSheetsFolder(IEnumerable<string> folders, SkinTarget target, StyleSheetResolver.ResolvingOptions options = null, string sheetPostFix = "")
+        {
+            var sheetPaths = ConverterUtils.GetSheetPathsFromRootFolders(folders, target, sheetPostFix);
+            if (sheetPaths.Length == 0)
+            {
+                throw new Exception("Cannot find sheets to generate skin");
+            }
+
+            var resolver = new StyleSheetResolver(options ?? new StyleSheetResolver.ResolvingOptions() { ThrowIfCannotResolve = true });
+            foreach (var sheet in sheetPaths)
+            {
+                resolver.AddStyleSheets(sheet);
+            }
+
+            return resolver;
+        }
+
+        internal static StyleSheet CompileStyleSheetContent(string styleSheetContent)
+        {
+            var importer = new StyleSheetImporterImpl();
+            var styleSheet = ScriptableObject.CreateInstance<StyleSheet>();
+            importer.Import(styleSheet, styleSheetContent);
+            return styleSheet;
         }
     }
 }

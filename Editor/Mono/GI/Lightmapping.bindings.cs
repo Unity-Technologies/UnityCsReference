@@ -22,18 +22,23 @@ namespace UnityEditor
         [NativeName("m_CullingHash")]                      public Hash128 cullingHash;
         [NativeName("m_VisibleConvergedDirectTexelCount")] public int     visibleConvergedDirectTexelCount;
         [NativeName("m_VisibleConvergedGITexelCount")]     public int     visibleConvergedGITexelCount;
+        [NativeName("m_VisibleConvergedEnvTexelCount")]    public int     visibleConvergedEnvTexelCount;
         [NativeName("m_VisibleTexelCount")]                public int     visibleTexelCount;
 
         [NativeName("m_ConvergedDirectTexelCount")]        public int     convergedDirectTexelCount;
         [NativeName("m_ConvergedGITexelCount")]            public int     convergedGITexelCount;
+        [NativeName("m_ConvergedEnvTexelCount")]           public int     convergedEnvTexelCount;
         [NativeName("m_OccupiedTexelCount")]               public int     occupiedTexelCount;
 
         [NativeName("m_MinDirectSamples")]                 public int     minDirectSamples;
         [NativeName("m_MinGISamples")]                     public int     minGISamples;
+        [NativeName("m_MinEnvSamples")]                    public int     minEnvSamples;
         [NativeName("m_MaxDirectSamples")]                 public int     maxDirectSamples;
         [NativeName("m_MaxGISamples")]                     public int     maxGISamples;
+        [NativeName("m_MaxEnvSamples")]                    public int     maxEnvSamples;
         [NativeName("m_AvgDirectSamples")]                 public int     avgDirectSamples;
         [NativeName("m_AvgGISamples")]                     public int     avgGISamples;
+        [NativeName("m_AvgEnvSamples")]                    public int     avgEnvSamples;
 
         [NativeName("m_ForceStop")]                        public bool     avgGIForceStop;
 
@@ -76,6 +81,13 @@ namespace UnityEditor
     {
         public int[] indices;
         public Vector3[] positions;
+    }
+
+    [NativeHeader("Editor/Src/GI/Progressive/BakeContextManager.h")]
+    internal struct EnvironmentSamplesData
+    {
+        public Vector4[] directions;
+        public Vector4[] intensities;
     }
 
     [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
@@ -355,6 +367,18 @@ namespace UnityEditor
         [NativeName("LightProbeUtils::Tetrahedralize")]
         [FreeFunction]
         private static extern TetrahedralizationData TetrahedralizeInternal(Vector3[] positions);
+
+        internal static void GetEnvironmentSamples(out Vector4[] outDirections, out Vector4[] outIntensities)
+        {
+            EnvironmentSamplesData data = GetEnvironmentSamplesInternal();
+            outDirections = data.directions;
+            outIntensities = data.intensities;
+        }
+
+        [NativeHeader("Editor/Src/GI/Progressive/PVRContextManager.h")]
+        [StaticAccessor("PVRContextManager::Get()", StaticAccessorType.Arrow)]
+        [NativeName("GetEnvironmentSamples")]
+        private static extern EnvironmentSamplesData GetEnvironmentSamplesInternal();
 
         [FreeFunction]
         public static extern bool BakeReflectionProbe(ReflectionProbe probe, string path);

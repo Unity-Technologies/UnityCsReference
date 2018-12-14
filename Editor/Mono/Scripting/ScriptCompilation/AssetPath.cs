@@ -45,7 +45,19 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public static string ReplaceSeparators(string path)
         {
-            return path.Replace('\\', Separator);
+            int length = path.Length;
+
+            var chars = new char[length];
+
+            for (int i = 0; i < length; ++i)
+            {
+                if (path[i] == '\\')
+                    chars[i] = Separator;
+                else
+                    chars[i] = path[i];
+            }
+
+            return new string(chars);
         }
 
         public static bool Exists(string path)

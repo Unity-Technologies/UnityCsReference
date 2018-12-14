@@ -77,15 +77,15 @@ namespace UnityEngine.UIElements
         public StyleCursor cursor => stylesData.cursor;
 
         // Inherited properties
-        public StyleColor color => stylesData.color.specificity > StyleValueExtensions.UndefinedSpecificity ? stylesData.color : inheritedStylesData.color;
-        public StyleFont unityFont => stylesData.unityFont.specificity > StyleValueExtensions.UndefinedSpecificity ? stylesData.unityFont : inheritedStylesData.font;
-        public StyleLength fontSize => stylesData.fontSize.specificity > StyleValueExtensions.UndefinedSpecificity ? stylesData.fontSize : inheritedStylesData.fontSize;
+        public StyleColor color => stylesData.color.specificity != StyleValueExtensions.UndefinedSpecificity ? stylesData.color : inheritedStylesData.color;
+        public StyleFont unityFont => stylesData.unityFont.specificity != StyleValueExtensions.UndefinedSpecificity ? stylesData.unityFont : inheritedStylesData.font;
+        public StyleLength fontSize => stylesData.fontSize.specificity != StyleValueExtensions.UndefinedSpecificity ? stylesData.fontSize : inheritedStylesData.fontSize;
 
         public StyleEnum<FontStyle> unityFontStyleAndWeight
         {
             get
             {
-                var styleInt = stylesData.unityFontStyleAndWeight.specificity > StyleValueExtensions.UndefinedSpecificity ? stylesData.unityFontStyleAndWeight : inheritedStylesData.unityFontStyle;
+                var styleInt = stylesData.unityFontStyleAndWeight.specificity != StyleValueExtensions.UndefinedSpecificity ? stylesData.unityFontStyleAndWeight : inheritedStylesData.unityFontStyle;
                 return styleInt.ToStyleEnum((FontStyle)styleInt.value);
             }
         }
@@ -94,7 +94,7 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                var styleInt = stylesData.unityTextAlign.specificity > StyleValueExtensions.UndefinedSpecificity ? stylesData.unityTextAlign : inheritedStylesData.unityTextAlign;
+                var styleInt = stylesData.unityTextAlign.specificity != StyleValueExtensions.UndefinedSpecificity ? stylesData.unityTextAlign : inheritedStylesData.unityTextAlign;
                 return styleInt.ToStyleEnum((TextAnchor)styleInt.value);
             }
         }
@@ -103,7 +103,7 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                var styleInt = stylesData.visibility.specificity > StyleValueExtensions.UndefinedSpecificity ? stylesData.visibility : inheritedStylesData.visibility;
+                var styleInt = stylesData.visibility.specificity != StyleValueExtensions.UndefinedSpecificity ? stylesData.visibility : inheritedStylesData.visibility;
                 return styleInt.ToStyleEnum((Visibility)styleInt.value);
             }
         }
@@ -112,7 +112,7 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                var styleInt = stylesData.whiteSpace.specificity > StyleValueExtensions.UndefinedSpecificity ? stylesData.whiteSpace : inheritedStylesData.whiteSpace;
+                var styleInt = stylesData.whiteSpace.specificity != StyleValueExtensions.UndefinedSpecificity ? stylesData.whiteSpace : inheritedStylesData.whiteSpace;
                 return styleInt.ToStyleEnum((WhiteSpace)styleInt.value);
             }
         }
@@ -120,10 +120,10 @@ namespace UnityEngine.UIElements
         internal static void WriteToGUIStyle(ComputedStyle computedStyle, GUIStyle style)
         {
             style.alignment = computedStyle.unityTextAlign.GetSpecifiedValueOrDefault(style.alignment);
-            style.wordWrap = computedStyle.whiteSpace.specificity > StyleValueExtensions.UndefinedSpecificity
+            style.wordWrap = computedStyle.whiteSpace.specificity != StyleValueExtensions.UndefinedSpecificity
                 ? computedStyle.whiteSpace.value == WhiteSpace.Normal
                 : style.wordWrap;
-            bool overflowVisible = computedStyle.overflow.specificity > StyleValueExtensions.UndefinedSpecificity
+            bool overflowVisible = computedStyle.overflow.specificity != StyleValueExtensions.UndefinedSpecificity
                 ? computedStyle.overflow.value == Overflow.Visible
                 : style.clipping == TextClipping.Overflow;
             style.clipping = overflowVisible ? TextClipping.Overflow : TextClipping.Clip;

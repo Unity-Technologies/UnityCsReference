@@ -9,10 +9,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
     static class GUIDReference
     {
         private static readonly string GUIDReferencePrefix = "GUID:";
+        private static readonly string GUIDReferencePrefixLowerCase = "guid:";
 
         public static bool IsGUIDReference(string reference)
         {
-            return reference.StartsWith(GUIDReferencePrefix, StringComparison.InvariantCultureIgnoreCase);
+            return Utility.FastStartsWith(reference, GUIDReferencePrefix, GUIDReferencePrefixLowerCase);
         }
 
         public static string GUIDReferenceToGUID(string reference)

@@ -239,7 +239,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
         }
 
-        public int GetInsertionIndex(Vector2 worldPosition)
+        public virtual int GetInsertionIndex(Vector2 worldPosition)
         {
             var ve = graphView.currentInsertLocation as VisualElement;
             if (ve == null)

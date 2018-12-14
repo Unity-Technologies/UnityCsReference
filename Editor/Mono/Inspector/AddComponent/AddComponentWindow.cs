@@ -43,7 +43,6 @@ namespace UnityEditor.AddComponent
         internal static bool Show(Rect rect, GameObject[] gos)
         {
             CloseAllOpenWindows<AddComponentWindow>();
-            Event.current.Use();
             var window = CreateInstance<AddComponentWindow>();
             window.dataSource = new AddComponentDataSource(s_State);
             window.gui = new AddComponentGUI(window.dataSource, window.OnCreateNewScript);
@@ -147,7 +146,7 @@ namespace UnityEditor.AddComponent
             if (insp != null)
             {
                 insp.ShowTab();
-                insp.SendEvent(EditorGUIUtility.CommandEvent(OpenAddComponentDropdown));
+                insp.m_OpenAddComponentMenu = true;
             }
         }
 

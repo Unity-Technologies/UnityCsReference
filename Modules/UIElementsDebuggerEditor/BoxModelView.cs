@@ -27,8 +27,6 @@ namespace UnityEditor.UIElements.Debugger
             Top,
             Bottom
         }
-
-        private static int s_SavedValue;
         private HighlightOverlayPainter m_OverlayPainter;
 
         private VisualElement m_Container;
@@ -211,27 +209,6 @@ namespace UnityEditor.UIElements.Debugger
             evt.StopPropagation();
         }
 
-        private static void InitTextField(IntegerField field)
-        {
-            field.RegisterCallback<KeyDownEvent>((e) =>
-            {
-                if (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter)
-                {
-                    field.visualInput.Blur();
-                }
-                else if (e.keyCode == KeyCode.Escape)
-                {
-                    field.value = s_SavedValue;
-                    field.visualInput.Blur();
-                }
-            }, TrickleDown.TrickleDown);
-
-            field.RegisterCallback<FocusInEvent>((e) =>
-            {
-                s_SavedValue = field.value;
-            });
-        }
-
         class BoxModelElement : VisualElement
         {
             private Label m_Title;
@@ -280,17 +257,14 @@ namespace UnityEditor.UIElements.Debugger
                 m_LeftTextField = new IntegerField();
                 m_LeftTextField.AddToClassList("box-model-textfield");
                 m_LeftTextField.RegisterValueChangedCallback(e => OnTextFieldValueChanged(e, SideChanged.Left));
-                InitTextField(m_LeftTextField);
 
                 m_RightTextField = new IntegerField();
                 m_RightTextField.AddToClassList("box-model-textfield");
                 m_RightTextField.RegisterValueChangedCallback(e => OnTextFieldValueChanged(e, SideChanged.Right));
-                InitTextField(m_RightTextField);
 
                 m_TopTextField = new IntegerField();
                 m_TopTextField.AddToClassList("box-model-textfield");
                 m_TopTextField.RegisterValueChangedCallback(e => OnTextFieldValueChanged(e, SideChanged.Top));
-                InitTextField(m_TopTextField);
 
                 m_FakeTopTextField = new IntegerField();
                 m_FakeTopTextField.AddToClassList("box-model-textfield");
@@ -299,7 +273,6 @@ namespace UnityEditor.UIElements.Debugger
                 m_BottomTextField = new IntegerField();
                 m_BottomTextField.AddToClassList("box-model-textfield");
                 m_BottomTextField.RegisterValueChangedCallback(e => OnTextFieldValueChanged(e, SideChanged.Bottom));
-                InitTextField(m_BottomTextField);
 
                 m_FakeBottomTextField = new IntegerField();
                 m_FakeBottomTextField.AddToClassList("box-model-textfield");
@@ -520,11 +493,9 @@ namespace UnityEditor.UIElements.Debugger
 
                 m_WidthTextField = new IntegerField();
                 m_WidthTextField.AddToClassList("box-model-textfield");
-                InitTextField(m_WidthTextField);
 
                 m_HeightTextField = new IntegerField();
                 m_HeightTextField.AddToClassList("box-model-textfield");
-                InitTextField(m_HeightTextField);
 
                 m_XLabel = new Label("x");
 

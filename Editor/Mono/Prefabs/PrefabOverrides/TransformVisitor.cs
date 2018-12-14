@@ -25,6 +25,7 @@ namespace UnityEditor.SceneManagement
                 VisitAllRecursively(transform.GetChild(i), visitorFunc, userData);
         }
 
+        // Let visitorFunc return true for continue visiting, false for early out.
         public void VisitAndAllowEarlyOut(Transform transform, Func<Transform, object, bool> visitorFunc, object userData)
         {
             Assert.IsNotNull(transform, "Please provide a valid transform");
@@ -44,6 +45,24 @@ namespace UnityEditor.SceneManagement
                     return false;
             }
             return true;
+        }
+
+        // Let visitorFunc return true for entering children, false for skipping them.
+        public void VisitAndConditionallyEnterChildren(Transform transform, Func<Transform, object, bool> visitorFunc, object userData)
+        {
+            Assert.IsNotNull(transform, "Please provide a valid transform");
+            Assert.IsNotNull(visitorFunc, "Please provide a valid visitorFunc");
+
+            VisitAndConditionallyEnterChildrenRecursively(transform, visitorFunc, userData);
+        }
+
+        static void VisitAndConditionallyEnterChildrenRecursively(Transform transform, Func<Transform, object, bool> visitorFunc, object userData)
+        {
+            if (!visitorFunc(transform, userData))
+                return;
+
+            for (int i = 0; i < transform.childCount; ++i)
+                VisitAndConditionallyEnterChildrenRecursively(transform.GetChild(i), visitorFunc, userData);
         }
     }
 }

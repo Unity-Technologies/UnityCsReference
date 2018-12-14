@@ -194,18 +194,54 @@ namespace UnityEditor.StyleSheets
                     str = ToUssString(color, options.useColorCode);
                     break;
                 case StyleValueType.ResourcePath:
-                    str = string.Format("resource(\"{0}\")", sheet.ReadResourcePath(handle));
+                    str = $"resource(\"{sheet.ReadResourcePath(handle)}\")";
                     break;
                 case StyleValueType.Enum:
                     str = sheet.ReadEnum(handle);
                     break;
                 case StyleValueType.String:
-                    str = string.Format("\"{0}\"", sheet.ReadString(handle));
+                    str = $"\"{sheet.ReadString(handle)}\"";
                     break;
                 default:
                     throw new ArgumentException("Unhandled type " + handle.valueType);
             }
             return str;
+        }
+
+        public static void ToUssString(StringBuilder sb, StyleSheet sheet, UssExportOptions options, StyleValueHandle[] values, ref int valueIndex, int valueCount = -1)
+        {
+            for (; valueIndex < values.Length && valueCount != 0; --valueCount)
+            {
+                var propertyValue = values[valueIndex++];
+                switch (propertyValue.valueType)
+                {
+                    case StyleValueType.Function:
+                        // First param: function name
+                        sb.Append(sheet.ReadFunctionName(propertyValue));
+                        sb.Append("(");
+
+                        // Second param: number of arguments
+                        var nbParams = (int)sheet.ReadFloat(values[valueIndex++]);
+                        ToUssString(sb, sheet, options, values, ref valueIndex, nbParams);
+                        sb.Append(")");
+
+                        break;
+                    case StyleValueType.FunctionSeparator:
+                        sb.Append(",");
+                        break;
+                    default:
+                    {
+                        var propertyValueStr = ToUssString(sheet, options, propertyValue);
+                        sb.Append(propertyValueStr);
+                        break;
+                    }
+                }
+
+                if (valueIndex < values.Length && values[valueIndex].valueType != StyleValueType.FunctionSeparator && valueCount != 1)
+                {
+                    sb.Append(" ");
+                }
+            }
         }
 
         public static void ToUssString(StyleSheet sheet, UssExportOptions options, StyleRule rule, StringBuilder sb)
@@ -239,12 +275,9 @@ namespace UnityEditor.StyleSheets
                 }
                 else
                 {
-                    foreach (var propertyValue in property.values)
-                    {
-                        var propertyValueStr = ToUssString(sheet, options, propertyValue);
-                        sb.Append(" ");
-                        sb.Append(propertyValueStr);
-                    }
+                    var valueIndex = 0;
+                    sb.Append(" ");
+                    ToUssString(sb, sheet, options, property.values, ref valueIndex);
                 }
 
                 sb.Append(";\n");

@@ -201,6 +201,10 @@ namespace UnityEngine.UIElements
             m_ScrollView.contentContainer.RegisterCallback<MouseDownEvent>(OnClick);
             m_ScrollView.contentContainer.RegisterCallback<KeyDownEvent>(OnKeyDown);
             m_ScrollView.contentContainer.focusable = true;
+
+            focusable = true;
+            isCompositeRoot = true;
+            delegatesFocus = true;
         }
 
         public ListView(IList itemsSource, int itemHeight, Func<VisualElement> makeItem, Action<VisualElement, int> bindItem) : this()
@@ -515,7 +519,9 @@ namespace UnityEngine.UIElements
                     {
                         m_Pool[m_Pool.Count - 1].DetachElement();
                         m_Pool.RemoveAt(m_Pool.Count - 1);
-                        m_ScrollView.RemoveAt(m_ScrollView.childCount - 1);
+
+
+                        RemoveAt(childCount - 1);
                     }
                 }
                 else
@@ -545,7 +551,8 @@ namespace UnityEngine.UIElements
                             item.style.visibility = Visibility.Hidden;
                         }
 
-                        m_ScrollView.Add(item);
+
+                        Add(item);
                     }
                 }
 

@@ -28,7 +28,9 @@ namespace UnityEditor.ShortcutManagement
             return !string.IsNullOrEmpty(id) &&
                 id.Length <= 127 &&
                 id.IndexOfAny(Path.GetInvalidFileNameChars()) == -1 &&
-                id != ShortcutManager.defaultProfileId;
+                id != ShortcutManager.defaultProfileId &&
+                id.IndexOfAny("_%#^".ToCharArray()) == -1 &&
+                id.Trim(" ".ToCharArray()).Length == id.Length;
         }
 
         public bool ProfileExists(string id)

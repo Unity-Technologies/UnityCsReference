@@ -181,14 +181,12 @@ namespace UnityEditor
         static SettingsProvider CreateProjectSettingsProvider()
         {
             var provider = AssetSettingsProvider.CreateProviderFromAssetPath("Project/Graphics", "ProjectSettings/GraphicsSettings.asset");
-            var graphicsEditor = Editor.CreateEditor(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/GraphicsSettings.asset")) as GraphicsSettingsInspector;
             provider.keywords = SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Styles>()
                 .Concat(SettingsProvider.GetSearchKeywordsFromGUIContentProperties<TierSettingsEditor.Styles>())
                 .Concat(SettingsProvider.GetSearchKeywordsFromGUIContentProperties<BuiltinShadersEditor.Styles>())
                 .Concat(SettingsProvider.GetSearchKeywordsFromGUIContentProperties<ShaderStrippingEditor.Styles>())
                 .Concat(SettingsProvider.GetSearchKeywordsFromGUIContentProperties<ShaderPreloadEditor.Styles>())
-                .Concat(SettingsProvider.GetSearchKeywordsFromSerializedObject(graphicsEditor.serializedObject))
-                .Concat(SettingsProvider.GetSearchKeywordsFromSerializedObject(graphicsEditor.alwaysIncludedShadersEditor.serializedObject));
+                .Concat(SettingsProvider.GetSearchKeywordsFromPath("ProjectSettings/GraphicsSettings.asset"));
 
             provider.activateHandler = (searchContext, rootElement) =>
             {

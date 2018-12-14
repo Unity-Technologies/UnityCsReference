@@ -4,62 +4,83 @@
 
 using System;
 using System.IO;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Diagnostics;
+
 using UnityEditor.Utils;
 using UnityEngine;
-using System.Linq;
 
-using System.Diagnostics;
-using System.Text;
-using System.Text.RegularExpressions;
-using Mono.Cecil;
-using UnityEditor.Modules;
 using UnityEditor.Scripting.Compilers;
-using Debug = UnityEngine.Debug;
 
 namespace UnityEditor.Scripting
 {
     internal class APIUpdaterAssemblyHelper
     {
-        public static void Run(string commaSeparatedListOfAssemblies)
+        // See AssemblyUpdater/Program.cs
+        internal const byte Success                       = 0x00;
+        internal const byte ContainsUpdaterConfigurations = (1 << 3) + 2;
+        internal const byte UpdatesApplied                = (1 << 3) + 3;
+
+        internal static int Run(string arguments, string workingDir, out string stdOut, out string stdErr)
         {
-            var assemblies = commaSeparatedListOfAssemblies.Split(new[] {','}, StringSplitOptions.RemoveEmptyEntries);
+            var assemblyUpdaterPath = EditorApplication.applicationContentsPath + "/Tools/ScriptUpdater/AssemblyUpdater.exe";
+            var monodistribution = MonoInstallationFinder.GetMonoInstallation("MonoBleedingEdge");
 
-            APIUpdaterHelper.HandleFilesInPackagesVirtualFolder(assemblies);
-
-            foreach (var assemblyPath in assemblies)
+            var monoexe = Path.Combine(monodistribution, "bin/mono");
+            if (Application.platform == RuntimePlatform.WindowsEditor)
             {
-                if ((File.GetAttributes(assemblyPath) & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
-                {
-                    APIUpdaterLogger.WriteErrorToConsole("Error can't update assembly {0} the file is read-only", assemblyPath);
-                    return;
-                }
+                monoexe = Application.platform == RuntimePlatform.WindowsEditor
+                    ? CommandLineFormatter.EscapeCharsWindows(monoexe + ".exe")
+                    : CommandLineFormatter.EscapeCharsQuote(monoexe + ".exe");
             }
 
-            APIUpdaterLogger.WriteToFile("Started to update {0} assemblie(s)", assemblies.Count());
-
-            var sw = new Stopwatch();
-            sw.Start();
-
-            foreach (var assemblyPath in assemblies)
+            var startInfo = new ProcessStartInfo
             {
-                if (!AssemblyHelper.IsManagedAssembly(assemblyPath))
-                    continue;
+                Arguments = assemblyUpdaterPath + " " + arguments,
+                CreateNoWindow = true,
+                FileName = monoexe,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+                WorkingDirectory = workingDir,
+                UseShellExecute = false
+            };
 
-                string stdOut, stdErr;
-                var assemblyFullPath = ResolveAssemblyPath(assemblyPath);
-                var exitCode = RunUpdatingProgram("AssemblyUpdater.exe", "-u -a " + assemblyFullPath + APIVersionArgument() + AssemblySearchPathArgument() + ConfigurationProviderAssembliesPathArgument(), out stdOut, out stdErr);
-                if (stdOut.Length > 0)
-                    APIUpdaterLogger.WriteToFile("Assembly update output ({0})\r\n{1}", assemblyFullPath, stdOut);
+            var assemblyUpdaterProcess = new Program(startInfo);
+            assemblyUpdaterProcess.LogProcessStartInfo();
+            assemblyUpdaterProcess.Start();
 
-                if (IsError(exitCode))
-                    APIUpdaterLogger.WriteErrorToConsole("Error {0} running AssemblyUpdater. Its output is: `{1}`", exitCode, stdErr);
-            }
+            assemblyUpdaterProcess.WaitForExit();
 
-            APIUpdaterLogger.WriteToFile("Update finished in {0}s", sw.Elapsed.TotalSeconds);
+            stdOut = assemblyUpdaterProcess.GetStandardOutputAsString();
+            stdErr = string.Join("\r\n", assemblyUpdaterProcess.GetErrorOutput());
+
+            return assemblyUpdaterProcess.ExitCode;
         }
 
-        private static bool IsError(int exitCode)
+        internal static string ArgumentsForUpdateAssembly(string assemblyPath, string tempOutputPath, IEnumerable<string> updateConfigSourcePaths)
         {
+            var assemblyFullPath = ResolveAssemblyPath(assemblyPath);
+            return "update -a "
+                + assemblyFullPath
+                + " --output " + CommandLineFormatter.PrepareFileName(tempOutputPath)
+                + APIVersionArgument()
+                + AssemblySearchPathArgument(updateConfigSourcePaths.Select(Path.GetDirectoryName).Distinct())
+                + ConfigurationProviderAssembliesPathArgument(updateConfigSourcePaths);
+        }
+
+        internal static string ArgumentsForCheckingForUpdaterConfigsOn(string assemblyPath)
+        {
+            var assemblyFullPath = ResolveAssemblyPath(assemblyPath);
+            return "checkupdaterconfigs -a " + assemblyFullPath
+                + TimeStampArgument()
+                + AssemblySearchPathArgument();
+        }
+
+        internal static bool IsError(int exitCode)
+        {
+            // See AssemblyUpdater/Program.cs
             return (exitCode & (1 << 7)) != 0;
         }
 
@@ -68,80 +89,30 @@ namespace UnityEditor.Scripting
             return CommandLineFormatter.PrepareFileName(assemblyPath);
         }
 
-        public static bool DoesAssemblyRequireUpgrade(string assemblyFullPath)
-        {
-            if (!File.Exists(assemblyFullPath))
-                return false;
-
-            if (!AssemblyHelper.IsManagedAssembly(assemblyFullPath))
-                return false;
-
-            if (!MayContainUpdatableReferences(assemblyFullPath))
-                return false;
-
-            string stdOut, stdErr;
-            var ret = RunUpdatingProgram("AssemblyUpdater.exe", TimeStampArgument() + APIVersionArgument() + "--check-update-required -a " + CommandLineFormatter.PrepareFileName(assemblyFullPath) + AssemblySearchPathArgument() + ConfigurationProviderAssembliesPathArgument(), out stdOut, out stdErr);
-            {
-                Console.WriteLine("{0}{1}", stdOut, stdErr);
-                switch (ret)
-                {
-                    // See AssemblyUpdater/Program.cs
-                    case 0:
-                    case 1: return false;
-                    case 2: return true;
-
-                    default:
-                        Debug.LogError(stdOut + Environment.NewLine + stdErr);
-                        return false;
-                }
-            }
-        }
-
-        private static string AssemblySearchPathArgument()
+        private static string AssemblySearchPathArgument(IEnumerable<string> configurationSourceDirectories = null)
         {
             var searchPath = Path.Combine(MonoInstallationFinder.GetFrameWorksFolder(), "Managed") + ","
                 + "+" + Path.Combine(EditorApplication.applicationContentsPath, "UnityExtensions/Unity") + ","
                 + "+" + Application.dataPath;
 
+            if (configurationSourceDirectories != null)
+            {
+                var searchPathFromConfigSources = configurationSourceDirectories.Aggregate("", (acc, curr) =>  acc + ",+" + curr);
+                searchPath += searchPathFromConfigSources;
+            }
+
             return " -s \"" + searchPath + "\"";
         }
 
-        private static string ConfigurationProviderAssembliesPathArgument()
+        private static string ConfigurationProviderAssembliesPathArgument(IEnumerable<string> updateConfigSourcePaths)
         {
             var paths = new StringBuilder();
-            foreach (var ext in ModuleManager.packageManager.unityExtensions)
+            foreach (var configSourcePath in updateConfigSourcePaths)
             {
-                foreach (var dllPath in ext.files.Where(f => f.Value.type == Unity.DataContract.PackageFileType.Dll).Select(pi => pi.Key))
-                {
-                    paths.AppendFormat(" {0}", CommandLineFormatter.PrepareFileName(Path.Combine(ext.basePath, dllPath)));
-                }
+                paths.AppendFormat(" {0}", CommandLineFormatter.PrepareFileName(configSourcePath));
             }
 
-            var editorManagedPath = GetUnityEditorManagedPath();
-            paths.AppendFormat(" {0}", CommandLineFormatter.PrepareFileName(Path.Combine(editorManagedPath, "UnityEngine.dll")));
-            paths.AppendFormat(" {0}", CommandLineFormatter.PrepareFileName(Path.Combine(editorManagedPath, "UnityEditor.dll")));
-
             return paths.ToString();
-        }
-
-        private static string GetUnityEditorManagedPath()
-        {
-            return Path.Combine(MonoInstallationFinder.GetFrameWorksFolder(), "Managed");
-        }
-
-        private static int RunUpdatingProgram(string executable, string arguments, out string stdOut, out string stdErr)
-        {
-            var scriptUpdater = EditorApplication.applicationContentsPath + "/Tools/ScriptUpdater/" + executable;
-            var program = new ManagedProgram(MonoInstallationFinder.GetMonoInstallation("MonoBleedingEdge"), null, scriptUpdater, arguments, false, null);
-
-            program.LogProcessStartInfo();
-            program.Start();
-            program.WaitForExit();
-
-            stdOut = program.GetStandardOutputAsString();
-            stdErr = string.Join("\r\n", program.GetErrorOutput());
-
-            return program.ExitCode;
         }
 
         private static string APIVersionArgument()
@@ -152,37 +123,6 @@ namespace UnityEditor.Scripting
         private static string TimeStampArgument()
         {
             return " --timestamp " + DateTime.Now.Ticks + " ";
-        }
-
-        internal static bool MayContainUpdatableReferences(string assemblyPath)
-        {
-            using (var assembly = AssemblyDefinition.ReadAssembly(assemblyPath))
-            {
-                if (assembly.Name.IsWindowsRuntime)
-                    return false;
-
-                if (!IsTargetFrameworkValidOnCurrentOS(assembly))
-                    return false;
-            }
-
-            return true;
-        }
-
-        private static bool IsTargetFrameworkValidOnCurrentOS(AssemblyDefinition assembly)
-        {
-            return Environment.OSVersion.Platform == PlatformID.Win32NT
-                || !(assembly.HasCustomAttributes && assembly.CustomAttributes.Any(attr => TargetsWindowsSpecificFramework(attr)));
-        }
-
-        private static bool TargetsWindowsSpecificFramework(CustomAttribute targetFrameworkAttr)
-        {
-            if (!targetFrameworkAttr.AttributeType.FullName.Contains("System.Runtime.Versioning.TargetFrameworkAttribute"))
-                return false;
-
-            var regex = new Regex("\\.NETCore|\\.NETPortable");
-            var targetsNetCoreOrPCL = targetFrameworkAttr.ConstructorArguments.Any(arg => arg.Type.FullName == typeof(string).FullName && regex.IsMatch((string)arg.Value));
-
-            return targetsNetCoreOrPCL;
         }
     }
 }

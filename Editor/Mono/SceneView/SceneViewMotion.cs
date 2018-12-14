@@ -33,7 +33,8 @@ namespace UnityEditor
             get { return s_EasingDuration.value; }
             set
             {
-                s_EasingDuration.value = Mathf.Clamp(value, 0f, 10f);
+                // Clamp and round to 1 decimal point
+                s_EasingDuration.value = (float)(Math.Round((double)Mathf.Clamp(value, .1f, 3f), 1));
                 s_FlySpeed.speed = 1f / s_EasingDuration.value;
             }
         }
@@ -396,7 +397,7 @@ namespace UnityEditor
 
         private static void HandleScrollWheel(SceneView view, bool zoomTowardsCenter)
         {
-            if (Tools.s_LockedViewTool == ViewTool.FPS)
+            if (Tools.s_LockedViewTool == ViewTool.FPS && s_Moving)
             {
                 float scrollWheelDelta = Event.current.delta.y * s_FPSScrollWheelMultiplier;
                 view.sceneViewCameraSettings.speedNormalized -= scrollWheelDelta;

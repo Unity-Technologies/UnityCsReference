@@ -2,12 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEngine.Networking;
 
 namespace UnityEditor
 {
-    internal class NetworkDetailStats
+    [Obsolete("This profiler helper class is deprecated, it's here to support the high level API package until it no longer depends on it and will then be removed.")]
+    public class NetworkDetailStats
     {
         public enum NetworkDirection
         {

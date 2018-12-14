@@ -21,11 +21,13 @@ namespace UnityEditor
     ///
     /// Very useful for event (re)wiring.
     /// </summary>
+    [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Class)]
     public class InitializeOnLoadAttribute : Attribute
     {
     }
 
+    [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Method)]
     public class InitializeOnLoadMethodAttribute : Attribute
     {
@@ -89,9 +91,6 @@ namespace UnityEditor
             return false;
         }
 
-        static internal List<RuntimeInitializeClassInfo> m_RuntimeInitializeClassInfoList;
-        static internal int m_TotalNumRuntimeInitializeMethods;
-
         [RequiredByNativeCode]
         private static void SetLoadedEditorAssemblies(Assembly[] assemblies)
         {
@@ -101,103 +100,44 @@ namespace UnityEditor
             m_subClasses.Clear();
         }
 
-        [RequiredByNativeCode]
-        private static RuntimeInitializeClassInfo[] GetRuntimeInitializeClassInfos()
-        {
-            if (m_RuntimeInitializeClassInfoList == null)
-                return null;
-            return m_RuntimeInitializeClassInfoList.ToArray();
-        }
-
-        [RequiredByNativeCode]
-        private static int GetTotalNumRuntimeInitializeMethods()
-        {
-            return m_TotalNumRuntimeInitializeMethods;
-        }
-
-        private static void StoreRuntimeInitializeClassInfo(Type type, List<string> methodNames, List<RuntimeInitializeLoadType> loadTypes)
-        {
-            RuntimeInitializeClassInfo classInfo = new RuntimeInitializeClassInfo();
-            classInfo.assemblyName = type.Assembly.GetName().Name.ToString();
-            classInfo.className = (string)type.ToString();
-            classInfo.methodNames = methodNames.ToArray();
-            classInfo.loadTypes = loadTypes.ToArray();
-            m_RuntimeInitializeClassInfoList.Add(classInfo);
-            m_TotalNumRuntimeInitializeMethods += methodNames.Count;
-        }
+        [NonSerialized]
+        static ProfilerMarker s_ProcessInitializeOnLoadAttribute = new ProfilerMarker("ProcessInitializeOnLoadAttribute");
 
         [NonSerialized]
-        static ProfilerMarker s_ProcessEditorInitializeOnLoadMarker = new ProfilerMarker("EditorAssemblies.ProcessEditorInitializeOnLoad");
-
-        private static void ProcessEditorInitializeOnLoad(Type type)
-        {
-            s_ProcessEditorInitializeOnLoadMarker.Begin();
-
-            try
-            {
-                RuntimeHelpers.RunClassConstructor(type.TypeHandle);
-            }
-            catch (TypeInitializationException x)
-            {
-                Debug.LogError(x.InnerException);
-            }
-
-            s_ProcessEditorInitializeOnLoadMarker.End();
-        }
-
-        [NonSerialized]
-        static ProfilerMarker s_ProcessRuntimeInitializeOnLoadMarker = new ProfilerMarker("EditorAssemblies.ProcessRuntimeInitializeOnLoad");
-
-        private static void ProcessRuntimeInitializeOnLoad(MethodInfo method)
-        {
-            s_ProcessRuntimeInitializeOnLoadMarker.Begin();
-
-            RuntimeInitializeLoadType loadType = RuntimeInitializeLoadType.AfterSceneLoad;
-
-            object[] attrs = method.GetCustomAttributes(typeof(RuntimeInitializeOnLoadMethodAttribute), false);
-            if (attrs != null && attrs.Length > 0)
-                loadType = ((RuntimeInitializeOnLoadMethodAttribute)attrs[0]).loadType;
-
-            StoreRuntimeInitializeClassInfo(method.DeclaringType, new List<string>() { method.Name }, new List<RuntimeInitializeLoadType>() { loadType });
-
-            s_ProcessRuntimeInitializeOnLoadMarker.End();
-        }
-
-        [NonSerialized]
-        static ProfilerMarker s_ProcessInitializeOnLoadMethodMarker = new ProfilerMarker("EditorAssemblies.ProcessInitializeOnLoadMethod");
-
-        private static void ProcessInitializeOnLoadMethod(MethodInfo method)
-        {
-            s_ProcessInitializeOnLoadMethodMarker.Begin();
-
-            try
-            {
-                method.Invoke(null, null);
-            }
-            catch (TargetInvocationException x)
-            {
-                Debug.LogError(x.InnerException);
-            }
-
-            s_ProcessInitializeOnLoadMethodMarker.End();
-        }
+        static ProfilerMarker s_ProcessInitializeOnLoadMethodAttribute = new ProfilerMarker("ProcessInitializeOnLoadMethodAttribute");
 
         [RequiredByNativeCode]
-        private static int[] ProcessInitializeOnLoadAttributes()
+        private static void ProcessInitializeOnLoadAttributes(Type[] types, MethodInfo[] methods)
         {
-            const BindingFlags kStaticMethodFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+            foreach (Type type in types)
+            {
+                using (s_ProcessInitializeOnLoadAttribute.Auto())
+                {
+                    try
+                    {
+                        RuntimeHelpers.RunClassConstructor(type.TypeHandle);
+                    }
+                    catch (TypeInitializationException x)
+                    {
+                        Debug.LogError(x.InnerException);
+                    }
+                }
+            }
 
-            m_TotalNumRuntimeInitializeMethods = 0;
-            m_RuntimeInitializeClassInfoList = new List<RuntimeInitializeClassInfo>();
-
-            foreach (Type type in GetAllTypesWithAttribute<InitializeOnLoadAttribute>())
-                ProcessEditorInitializeOnLoad(type);
-            foreach (MethodInfo method in GetAllMethodsWithAttribute<RuntimeInitializeOnLoadMethodAttribute>(kStaticMethodFlags))
-                ProcessRuntimeInitializeOnLoad(method);
-            foreach (MethodInfo method in GetAllMethodsWithAttribute<InitializeOnLoadMethodAttribute>(kStaticMethodFlags))
-                ProcessInitializeOnLoadMethod(method);
-
-            return null;
+            foreach (MethodInfo method in methods)
+            {
+                using (s_ProcessInitializeOnLoadMethodAttribute.Auto())
+                {
+                    try
+                    {
+                        method.Invoke(null, null);
+                    }
+                    catch (TargetInvocationException x)
+                    {
+                        Debug.LogError(x.InnerException);
+                    }
+                }
+            }
         }
     }
 }

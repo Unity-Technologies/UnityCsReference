@@ -5,6 +5,7 @@
 using UnityEngine;
 using UnityEngine.Internal;
 using UnityEngine.Scripting;
+using UnityEngine.Profiling;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -73,16 +74,21 @@ namespace UnityEditor
         // Postprocess on all assets once an automatic import has completed
         static void PostprocessAllAssets(string[] importedAssets, string[] addedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromPathAssets)
         {
+            bool profile = Profiler.enabled;
             object[] args = { importedAssets, deletedAssets, movedAssets, movedFromPathAssets };
             foreach (var assetPostprocessorClass in GetCachedAssetPostprocessorClasses())
             {
                 MethodInfo method = assetPostprocessorClass.GetMethod("OnPostprocessAllAssets", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
                 if (method != null)
-                    method.Invoke(null, args);
+                {
+                    InvokeMethod(method, args);
+                }
             }
 
+            Profiler.BeginSample("SyncVS.PostprocessSyncProject");
             ///@TODO: we need addedAssets for SyncVS. Make this into a proper API and write tests
             SyncVS.PostprocessSyncProject(importedAssets, addedAssets, deletedAssets, movedAssets, movedFromPathAssets);
+            Profiler.EndSample();
         }
 
         [RequiredByNativeCode]
@@ -90,7 +96,7 @@ namespace UnityEditor
         {
             foreach (AssetPostprocessor inst in m_ImportProcessors)
             {
-                AttributeHelper.InvokeMemberIfAvailable(inst, "OnPreprocessAssembly", new[] { pathName });
+                InvokeMethodIfAvailable(inst, "OnPreprocessAssembly", new[] { pathName });
             }
         }
 
@@ -101,7 +107,7 @@ namespace UnityEditor
             object[] args = {};
             foreach (var method in AllPostProcessorMethodsNamed("OnGeneratedCSProjectFiles"))
             {
-                method.Invoke(null, args);
+                InvokeMethod(method, args);
             }
         }
 
@@ -111,7 +117,7 @@ namespace UnityEditor
             foreach (var method in AllPostProcessorMethodsNamed("OnGeneratedSlnSolution"))
             {
                 object[] args = { path, content };
-                object returnValue = method.Invoke(null, args);
+                object returnValue = InvokeMethod(method, args);
 
                 if (method.ReturnType == typeof(string))
                     content = (string)returnValue;
@@ -126,7 +132,7 @@ namespace UnityEditor
             foreach (var method in AllPostProcessorMethodsNamed("OnGeneratedCSProject"))
             {
                 object[] args = { path, content };
-                object returnValue = method.Invoke(null, args);
+                object returnValue = InvokeMethod(method, args);
 
                 if (method.ReturnType == typeof(string))
                     content = (string)returnValue;
@@ -142,7 +148,7 @@ namespace UnityEditor
             bool result = false;
             foreach (var method in AllPostProcessorMethodsNamed("OnPreGeneratingCSProjectFiles"))
             {
-                object returnValue = method.Invoke(null, args);
+                object returnValue = InvokeMethod(method, args);
 
                 if (method.ReturnType == typeof(bool))
                     result = result | (bool)returnValue;
@@ -289,7 +295,7 @@ namespace UnityEditor
         {
             foreach (AssetPostprocessor inst in m_ImportProcessors)
             {
-                AttributeHelper.InvokeMemberIfAvailable(inst, "OnPreprocessAsset", null);
+                InvokeMethodIfAvailable(inst, "OnPreprocessAsset", null);
             }
         }
 
@@ -298,7 +304,7 @@ namespace UnityEditor
         {
             foreach (AssetPostprocessor inst in m_ImportProcessors)
             {
-                AttributeHelper.InvokeMemberIfAvailable(inst, "OnPreprocessModel", null);
+                InvokeMethodIfAvailable(inst, "OnPreprocessModel", null);
             }
         }
 
@@ -307,7 +313,7 @@ namespace UnityEditor
         {
             foreach (AssetPostprocessor inst in m_ImportProcessors)
             {
-                AttributeHelper.InvokeMemberIfAvailable(inst, "OnPreprocessSpeedTree", null);
+                InvokeMethodIfAvailable(inst, "OnPreprocessSpeedTree", null);
             }
         }
 
@@ -316,7 +322,7 @@ namespace UnityEditor
         {
             foreach (AssetPostprocessor inst in m_ImportProcessors)
             {
-                AttributeHelper.InvokeMemberIfAvailable(inst, "OnPreprocessAnimation", null);
+                InvokeMethodIfAvailable(inst, "OnPreprocessAnimation", null);
             }
         }
 
@@ -326,7 +332,7 @@ namespace UnityEditor
             foreach (AssetPostprocessor inst in m_ImportProcessors)
             {
                 object[] args = { root, clip };
-                AttributeHelper.InvokeMemberIfAvailable(inst, "OnPostprocessAnimation", args);
+                InvokeMethodIfAvailable(inst, "OnPostprocessAnimation", args);
             }
         }
 
@@ -336,7 +342,7 @@ namespace UnityEditor
             foreach (AssetPostprocessor inst in m_ImportProcessors)
             {
                 object[] args = { material, renderer };
-                object assignedMaterial = AttributeHelper.InvokeMemberIfAvailable(inst, "OnAssignMaterialModel", args);
+                object assignedMaterial = InvokeMethodIfAvailable(inst, "OnAssignMaterialModel", args);
                 if (assignedMaterial as Material)
                     return assignedMaterial as Material;
             }
@@ -362,7 +368,7 @@ namespace UnityEditor
             foreach (AssetPostprocessor inst in m_ImportProcessors)
             {
                 object[] args = { root };
-                AttributeHelper.InvokeMemberIfAvailable(inst, "OnPostprocessMeshHierarchy", args);
+                InvokeMethodIfAvailable(inst, "OnPostprocessMeshHierarchy", args);
             }
         }
 
@@ -371,7 +377,7 @@ namespace UnityEditor
             foreach (AssetPostprocessor inst in m_ImportProcessors)
             {
                 object[] args = { gameObject };
-                AttributeHelper.InvokeMemberIfAvailable(inst, "OnPostprocessModel", args);
+                InvokeMethodIfAvailable(inst, "OnPostprocessModel", args);
             }
         }
 
@@ -380,7 +386,7 @@ namespace UnityEditor
             foreach (AssetPostprocessor inst in m_ImportProcessors)
             {
                 object[] args = { gameObject };
-                AttributeHelper.InvokeMemberIfAvailable(inst, "OnPostprocessSpeedTree", args);
+                InvokeMethodIfAvailable(inst, "OnPostprocessSpeedTree", args);
             }
         }
 
@@ -390,7 +396,7 @@ namespace UnityEditor
             foreach (AssetPostprocessor inst in m_ImportProcessors)
             {
                 object[] args = { material };
-                AttributeHelper.InvokeMemberIfAvailable(inst, "OnPostprocessMaterial", args);
+                InvokeMethodIfAvailable(inst, "OnPostprocessMaterial", args);
             }
         }
 
@@ -400,7 +406,7 @@ namespace UnityEditor
             foreach (AssetPostprocessor inst in m_ImportProcessors)
             {
                 object[] args = { go, prop_names, prop_values };
-                AttributeHelper.InvokeMemberIfAvailable(inst, "OnPostprocessGameObjectWithUserProperties", args);
+                InvokeMethodIfAvailable(inst, "OnPostprocessGameObjectWithUserProperties", args);
             }
         }
 
@@ -410,7 +416,7 @@ namespace UnityEditor
             foreach (AssetPostprocessor inst in m_ImportProcessors)
             {
                 object[] args = { go, bindings };
-                AttributeHelper.InvokeMemberIfAvailable(inst, "OnPostprocessGameObjectWithAnimatedUserProperties", args);
+                InvokeMethodIfAvailable(inst, "OnPostprocessGameObjectWithAnimatedUserProperties", args);
             }
             return bindings;
         }
@@ -457,7 +463,7 @@ namespace UnityEditor
         {
             foreach (AssetPostprocessor inst in m_ImportProcessors)
             {
-                AttributeHelper.InvokeMemberIfAvailable(inst, "OnPreprocessTexture", null);
+                InvokeMethodIfAvailable(inst, "OnPreprocessTexture", null);
             }
         }
 
@@ -467,7 +473,7 @@ namespace UnityEditor
             foreach (AssetPostprocessor inst in m_ImportProcessors)
             {
                 object[] args = { tex };
-                AttributeHelper.InvokeMemberIfAvailable(inst, "OnPostprocessTexture", args);
+                InvokeMethodIfAvailable(inst, "OnPostprocessTexture", args);
             }
         }
 
@@ -477,7 +483,7 @@ namespace UnityEditor
             foreach (AssetPostprocessor inst in m_ImportProcessors)
             {
                 object[] args = { tex };
-                AttributeHelper.InvokeMemberIfAvailable(inst, "OnPostprocessCubemap", args);
+                InvokeMethodIfAvailable(inst, "OnPostprocessCubemap", args);
             }
         }
 
@@ -487,7 +493,7 @@ namespace UnityEditor
             foreach (AssetPostprocessor inst in m_ImportProcessors)
             {
                 object[] args = { tex, sprites };
-                AttributeHelper.InvokeMemberIfAvailable(inst, "OnPostprocessSprites", args);
+                InvokeMethodIfAvailable(inst, "OnPostprocessSprites", args);
             }
         }
 
@@ -532,7 +538,7 @@ namespace UnityEditor
         {
             foreach (AssetPostprocessor inst in m_ImportProcessors)
             {
-                AttributeHelper.InvokeMemberIfAvailable(inst, "OnPreprocessAudio", null);
+                InvokeMethodIfAvailable(inst, "OnPreprocessAudio", null);
             }
         }
 
@@ -542,7 +548,7 @@ namespace UnityEditor
             foreach (AssetPostprocessor inst in m_ImportProcessors)
             {
                 object[] args = { tex };
-                AttributeHelper.InvokeMemberIfAvailable(inst, "OnPostprocessAudio", args);
+                InvokeMethodIfAvailable(inst, "OnPostprocessAudio", args);
             }
         }
 
@@ -554,7 +560,44 @@ namespace UnityEditor
             foreach (var assetPostprocessorClass in GetCachedAssetPostprocessorClasses())
             {
                 var assetPostprocessor = Activator.CreateInstance(assetPostprocessorClass) as AssetPostprocessor;
-                AttributeHelper.InvokeMemberIfAvailable(assetPostprocessor, "OnPostprocessAssetbundleNameChanged", args);
+                InvokeMethodIfAvailable(assetPostprocessor, "OnPostprocessAssetbundleNameChanged", args);
+            }
+        }
+
+        static object InvokeMethod(MethodInfo method, object[] args)
+        {
+            bool profile = Profiler.enabled;
+            if (profile)
+                Profiler.BeginSample(method.DeclaringType.FullName + "." + method.Name);
+
+            var res = method.Invoke(null, args);
+
+            if (profile)
+                Profiler.EndSample();
+
+            return res;
+        }
+
+        static object InvokeMethodIfAvailable(object target, string methodName, object[] args)
+        {
+            bool profile = Profiler.enabled;
+
+            MethodInfo method = target.GetType().GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            if (method != null)
+            {
+                if (profile)
+                    Profiler.BeginSample(target.GetType().FullName + "." + methodName);
+
+                var res = method.Invoke(target, args);
+
+                if (profile)
+                    Profiler.EndSample();
+
+                return res;
+            }
+            else
+            {
+                return null;
             }
         }
     }

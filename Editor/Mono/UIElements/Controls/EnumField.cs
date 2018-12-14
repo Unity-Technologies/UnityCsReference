@@ -113,8 +113,27 @@ namespace UnityEditor.UIElements
             {
                 return;
             }
+            var showEnumMenu = false;
+            KeyDownEvent kde = (evt as KeyDownEvent);
+            if (kde != null)
+            {
+                if ((kde.keyCode == KeyCode.Space) ||
+                    (kde.keyCode == KeyCode.KeypadEnter) ||
+                    (kde.keyCode == KeyCode.Return))
+                {
+                    showEnumMenu = true;
+                }
+            }
+            else if ((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse)
+            {
+                var mde = (MouseDownEvent)evt;
+                if (visualInput.ContainsPoint(visualInput.WorldToLocal(mde.mousePosition)))
+                {
+                    showEnumMenu = true;
+                }
+            }
 
-            if ((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse || (evt as KeyDownEvent)?.character == '\n')
+            if (showEnumMenu)
             {
                 ShowMenu();
                 evt.StopPropagation();

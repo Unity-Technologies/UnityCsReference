@@ -222,7 +222,6 @@ namespace UnityEngine.XR
         public static InputFeatureUsage<float> middleFinger = new InputFeatureUsage<float>("MiddleFinger");
         public static InputFeatureUsage<float> ringFinger = new InputFeatureUsage<float>("RingFinger");
         public static InputFeatureUsage<float> pinkyFinger = new InputFeatureUsage<float>("PinkyFinger");
-        public static InputFeatureUsage<float> combinedTrigger = new InputFeatureUsage<float>("CombinedTrigger");
 
         public static InputFeatureUsage<Vector2> primary2DAxis = new InputFeatureUsage<Vector2>("Primary2DAxis");
         public static InputFeatureUsage<Vector2> dPad = new InputFeatureUsage<Vector2>("DPad");

@@ -5,11 +5,22 @@
 using UnityEngine;
 using UnityEditor;
 using UnityEngine.Experimental.TerrainAPI;
+using UnityEditor.ShortcutManagement;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
     internal class PaintHeightTool : TerrainPaintTool<PaintHeightTool>
     {
+        const string toolName = "Raise or Lower Terrain";
+
+        [FormerlyPrefKeyAs("Terrain/Raise Height", "f1")]
+        [Shortcut("Terrain/Raise or Lower Terrain", typeof(TerrainToolShortcutContext))]
+        static void SelectShortcut(ShortcutArguments args)
+        {
+            TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
+            context.SelectPaintTool<PaintHeightTool>();
+        }
+
         class Styles
         {
             public readonly GUIContent description = EditorGUIUtility.TrTextContent("Left click to raise.\n\nHold shift and left click to lower.");
@@ -27,7 +38,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         public override string GetName()
         {
-            return "Raise or Lower Terrain";
+            return toolName;
         }
 
         public override string GetDesc()

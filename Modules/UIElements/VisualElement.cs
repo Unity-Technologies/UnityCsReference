@@ -105,8 +105,17 @@ namespace UnityEngine.UIElements
                 }
 
                 // tabIndex and focusable overrides obsolete focusIndex.
-                ve.tabIndex = m_TabIndex.GetValueFromBag(bag, cc);
-                ve.focusable = focusable.GetValueFromBag(bag, cc);
+                if (m_TabIndex.TryGetValueFromBag(bag, cc, ref index))
+                {
+                    ve.tabIndex = index;
+                }
+
+                bool focus = false;
+
+                if (focusable.TryGetValueFromBag(bag, cc, ref focus))
+                {
+                    ve.focusable = focus;
+                }
 
                 ve.tooltip = m_Tooltip.GetValueFromBag(bag, cc);
             }
@@ -244,6 +253,9 @@ namespace UnityEngine.UIElements
                     return;
                 m_Scale = value;
                 IncrementVersion(VersionChangeType.Transform);
+
+                // This will change how we measure text
+                IncrementVersion(VersionChangeType.Layout);
             }
         }
 
@@ -252,17 +264,7 @@ namespace UnityEngine.UIElements
             get { return Matrix4x4.TRS(m_Position, m_Rotation, m_Scale); }
         }
 
-        bool m_IsLayoutManual;
-        internal bool isLayoutManual
-        {
-            get { return m_IsLayoutManual; }
-            set
-            {
-                m_IsLayoutManual = value;
-                if (m_IsLayoutManual)
-                    style.position = Position.Absolute;
-            }
-        }
+        internal bool isLayoutManual { get; private set; }
 
         Rect m_Layout;
 
@@ -299,6 +301,7 @@ namespace UnityEngine.UIElements
 
                 // mark as inline so that they do not get overridden if needed.
                 IStyle styleAccess = style;
+                styleAccess.position = Position.Absolute;
                 styleAccess.marginLeft = 0.0f;
                 styleAccess.marginRight = 0.0f;
                 styleAccess.marginBottom = 0.0f;
@@ -581,8 +584,20 @@ namespace UnityEngine.UIElements
         // Styles that children inherit
         internal InheritedStylesData propagatedStyle = InheritedStylesData.none;
 
+        private InheritedStylesData m_InheritedStylesData = InheritedStylesData.none;
         // Styles inherited from the parent
-        internal InheritedStylesData inheritedStyle = InheritedStylesData.none;
+        internal InheritedStylesData inheritedStyle
+        {
+            get { return m_InheritedStylesData; }
+            set
+            {
+                if (!ReferenceEquals(m_InheritedStylesData, value))
+                {
+                    m_InheritedStylesData = value;
+                    IncrementVersion(VersionChangeType.Repaint | VersionChangeType.Styles | VersionChangeType.Layout);
+                }
+            }
+        }
 
         internal bool hasInlineStyle
         {

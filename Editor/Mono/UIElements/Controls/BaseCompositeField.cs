@@ -59,6 +59,7 @@ namespace UnityEditor.UIElements
         protected BaseCompositeField(string label, int fieldsByLine)
             : base(label, null)
         {
+            delegatesFocus = false;
             visualInput.focusable = false;
 
             AddToClassList(ussClassName);

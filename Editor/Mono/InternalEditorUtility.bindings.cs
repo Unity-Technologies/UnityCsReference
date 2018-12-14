@@ -789,6 +789,9 @@ namespace UnityEditorInternal
         [FreeFunction("InternalEditorUtilityBindings::GetCrashReportFolder")]
         extern public static string GetCrashReportFolder();
 
+        [FreeFunction("InternalEditorUtilityBindings::GetCrashHandlerProcessID")]
+        extern public static UInt32 GetCrashHandlerProcessID();
+
         [FreeFunction("InternalEditorUtilityBindings::DrawSkyboxMaterial")]
         extern internal static void DrawSkyboxMaterial([NotNull] Material mat, [NotNull] Camera cam);
 

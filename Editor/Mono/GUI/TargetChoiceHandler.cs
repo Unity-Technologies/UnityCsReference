@@ -92,14 +92,14 @@ namespace UnityEditor
             if (!PrefabUtility.PromptAndCheckoutPrefabIfNeeded(info.assetPath, PrefabUtility.SaveVerb.Apply))
                 return;
             PrefabUtility.ApplyAddedComponent((Component)info.instanceObject, info.assetPath, InteractionMode.UserAction);
-            EditorUtility.ForceReloadInspectors();
+            EditorUtility.ForceRebuildInspectors();
         }
 
         internal static void RevertPrefabAddedComponent(object userData)
         {
             Component obj = (Component)userData;
             PrefabUtility.RevertAddedComponent(obj, InteractionMode.UserAction);
-            EditorUtility.ForceReloadInspectors();
+            EditorUtility.ForceRebuildInspectors();
         }
 
         internal static void ApplyPrefabRemovedComponent(object userData)
@@ -109,14 +109,14 @@ namespace UnityEditor
             if (!PrefabUtility.PromptAndCheckoutPrefabIfNeeded(path, PrefabUtility.SaveVerb.Apply))
                 return;
             PrefabUtility.ApplyRemovedComponent((GameObject)info.instanceObject, (Component)info.correspondingObjectInSource, InteractionMode.UserAction);
-            EditorUtility.ForceReloadInspectors();
+            EditorUtility.ForceRebuildInspectors();
         }
 
         internal static void RevertPrefabRemovedComponent(object userData)
         {
             ObjectInstanceAndSourceInfo info = (ObjectInstanceAndSourceInfo)userData;
             PrefabUtility.RevertRemovedComponent((GameObject)info.instanceObject, (Component)info.correspondingObjectInSource, InteractionMode.UserAction);
-            EditorUtility.ForceReloadInspectors();
+            EditorUtility.ForceRebuildInspectors();
         }
 
         internal static void ApplyPrefabAddedGameObject(object userData)
@@ -125,14 +125,14 @@ namespace UnityEditor
             if (!PrefabUtility.PromptAndCheckoutPrefabIfNeeded(info.assetPath, PrefabUtility.SaveVerb.Apply))
                 return;
             PrefabUtility.ApplyAddedGameObject((GameObject)info.instanceObject, info.assetPath, InteractionMode.UserAction);
-            EditorUtility.ForceReloadInspectors();
+            EditorUtility.ForceRebuildInspectors();
         }
 
         internal static void RevertPrefabAddedGameObject(object userData)
         {
             GameObject obj = (GameObject)userData;
             PrefabUtility.RevertAddedGameObject(obj, InteractionMode.UserAction);
-            EditorUtility.ForceReloadInspectors();
+            EditorUtility.ForceRebuildInspectors();
         }
 
         internal static void SetToValueOfTarget(SerializedProperty property, Object target)

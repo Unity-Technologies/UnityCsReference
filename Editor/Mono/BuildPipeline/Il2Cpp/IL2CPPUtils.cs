@@ -238,6 +238,8 @@ namespace UnityEditorInternal
                     arguments.Add("--incremental-g-c-time-slice=3");
             }
 
+            arguments.Add("--profiler-report");
+
             return arguments.ToArray();
         }
 
@@ -604,7 +606,7 @@ namespace UnityEditorInternal
 
         public virtual bool supportsEngineStripping
         {
-            get { return false; }
+            get { return BuildPipeline.IsFeatureSupported("ENABLE_ENGINE_CODE_STRIPPING", target); }
         }
 
         public virtual bool supportsManagedDebugging
@@ -672,11 +674,6 @@ namespace UnityEditorInternal
         public virtual string nativeLibraryFileName
         {
             get { return null; }
-        }
-
-        public virtual string staticLibraryExtension
-        {
-            get { return "a"; }
         }
 
         public virtual string moduleStrippingInformationFolder

@@ -118,12 +118,12 @@ namespace UnityEditor
                     return;
 
                 if (m_ShowContextualTools)
-                    onSceneGUIDelegate -= EditorToolGUI.DrawSceneViewTools;
+                    duringSceneGui -= EditorToolGUI.DrawSceneViewTools;
 
                 m_ShowContextualTools = value;
 
                 if (m_ShowContextualTools)
-                    onSceneGUIDelegate += EditorToolGUI.DrawSceneViewTools;
+                    duringSceneGui += EditorToolGUI.DrawSceneViewTools;
             }
         }
 
@@ -189,9 +189,8 @@ namespace UnityEditor
         [SerializeField]
         bool m_SceneIsLit = true;
 
+        [Obsolete("m_SceneLighting has been deprecated. Use sceneLighting instead (UnityUpgradable) -> UnityEditor.SceneView.sceneLighting", true)]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        // todo Mark obsolete once packages in ABV package cocktail have been updated
-        // [Obsolete("m_SceneLighting has been deprecated. Use sceneLighting instead (UnityUpgradable) -> UnityEditor.SceneView.sceneLighting", true)]
         public bool m_SceneLighting = true;
 
         public bool sceneLighting
@@ -320,13 +319,11 @@ namespace UnityEditor
         [SerializeField]
         AnimVector3 m_Position = new AnimVector3(kDefaultPivot);
 
-        // todo - mark obsolete once builtin packages are updated
-        // [Obsolete("OnSceneFunc() has been deprecated. Use System.Action instead.")]
+        [Obsolete("OnSceneFunc() has been deprecated. Use System.Action instead.")]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public delegate void OnSceneFunc(SceneView sceneView);
 
-        // todo - mark obsolete once builtin packages are updated
-        // [Obsolete("onSceneGUIDelegate has been deprecated. Use duringSceneGui instead.")]
+        [Obsolete("onSceneGUIDelegate has been deprecated. Use duringSceneGui instead.")]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static OnSceneFunc onSceneGUIDelegate;
 
@@ -450,6 +447,8 @@ namespace UnityEditor
             float m_FarClip;
             [SerializeField]
             bool m_DynamicClip;
+            [SerializeField]
+            bool m_OcclusionCulling;
 
             public SceneViewCameraSettings()
             {
@@ -459,6 +458,7 @@ namespace UnityEditor
                 m_SpeedMax = 2f;
                 fieldOfView = kPerspectiveFov;
                 m_DynamicClip = true;
+                m_OcclusionCulling = false;
                 m_NearClip = .03f;
                 m_FarClip = 10000f;
             }
@@ -562,6 +562,12 @@ namespace UnityEditor
             {
                 get { return m_DynamicClip; }
                 set { m_DynamicClip = value; }
+            }
+
+            public bool occlusionCulling
+            {
+                get { return m_OcclusionCulling; }
+                set { m_OcclusionCulling = value; }
             }
         }
 
@@ -667,17 +673,17 @@ namespace UnityEditor
 
         internal static class Styles
         {
-            public static GUIContent toolsContent = EditorGUIUtility.TrIconContent("ToolsIcon", "Hide or show the component editor tools popup in the scene.");
+            public static GUIContent toolsContent = EditorGUIUtility.TrIconContent("SceneViewTools", "Hide or show the component editor tools popup in the scene.");
             public static GUIContent lighting = EditorGUIUtility.TrIconContent("SceneviewLighting", "When toggled on, the Scene lighting is used. When toggled off, a light attached to the Scene view camera is used.");
             public static GUIContent fx = EditorGUIUtility.TrIconContent("SceneviewFx", "Toggle skybox, fog, and various other effects.");
             public static GUIContent audioPlayContent = EditorGUIUtility.TrIconContent("SceneviewAudio", "Toggle audio on or off.");
             public static GUIContent gizmosContent = EditorGUIUtility.TrTextContent("Gizmos", "Toggle visibility of all Gizmos in the Scene view");
             public static GUIContent gizmosDropDownContent = EditorGUIUtility.TrTextContent("", "Toggle the visibility of different Gizmos in the Scene view.");
-            public static GUIContent mode2DContent = EditorGUIUtility.TrTextContent("2D", "When toggled on, the Scene is in 2D view. When toggled off, the Scene is in 3D view.");
+            public static GUIContent mode2DContent = EditorGUIUtility.TrIconContent("SceneView2D", "When toggled on, the Scene is in 2D view. When toggled off, the Scene is in 3D view.");
             public static GUIContent isolationModeOverlayContent = EditorGUIUtility.TrTextContent("Isolation View", "");
             public static GUIContent isolationModeExitButton = EditorGUIUtility.TrTextContent("Exit", "Exit isolation mode");
             public static GUIContent renderDocContent;
-            public static GUIContent sceneVisToolbarButtonContent = EditorGUIUtility.TrIconContent("scenevis_scene_toolbar", "Number of hidden objects, click to toggle scene visibility");
+            public static GUIContent sceneVisToolbarButtonContent = EditorGUIUtility.TrIconContent("SceneViewVisibility", "Number of hidden objects, click to toggle scene visibility");
             public static GUIStyle gizmoButtonStyle;
             public static GUIStyle fxDropDownStyle;
             public static GUIContent sceneViewCameraContent = EditorGUIUtility.TrIconContent("SceneViewCamera", "Settings for the Scene view camera.");
@@ -878,7 +884,7 @@ namespace UnityEditor
                 AddCameraMode(m_CameraMode.name, m_CameraMode.section);
 
             if (m_ShowContextualTools)
-                onSceneGUIDelegate += EditorToolGUI.DrawSceneViewTools;
+                duringSceneGui += EditorToolGUI.DrawSceneViewTools;
 
             base.OnEnable();
 
@@ -1067,14 +1073,6 @@ namespace UnityEditor
             var allOn = GUI.Toggle(fxRect, sceneViewState.allEnabled, Styles.fx, Styles.fxDropDownStyle);
             if (allOn != sceneViewState.allEnabled)
                 sceneViewState.SetAllEnabled(allOn);
-
-            Rect sceneCameraRect = GUILayoutUtility.GetRect(Styles.sceneViewCameraContent, EditorStyles.toolbarDropDown);
-            if (EditorGUI.DropdownButton(sceneCameraRect, Styles.sceneViewCameraContent, FocusType.Passive, EditorStyles.toolbarDropDown))
-            {
-                Rect rect = GUILayoutUtility.topLevel.GetLast();
-                PopupWindow.Show(rect, new SceneViewCameraWindow(this));
-                GUIUtility.ExitGUI();
-            }
         }
 
         void ToolbarGizmosDropdownGUI()
@@ -1138,16 +1136,13 @@ namespace UnityEditor
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
             {
                 ToolbarDisplayStateGUI();
-
                 ToolbarSceneVisibilityGUI();
-
-                EditorGUILayout.Space();
-
-                ToolbarSceneToolsGUI();
 
                 GUILayout.FlexibleSpace();
 
                 ToolbarRenderDocGUI();
+                ToolbarSceneToolsGUI();
+                ToolbarSceneCameraGUI();
                 ToolbarGizmosDropdownGUI();
 
                 EditorGUILayout.Space();
@@ -1185,6 +1180,18 @@ namespace UnityEditor
         void ToolbarSceneToolsGUI()
         {
             displayToolModes = GUILayout.Toggle(displayToolModes, Styles.toolsContent, EditorStyles.toolbarButton);
+        }
+
+        void ToolbarSceneCameraGUI()
+        {
+            Rect sceneCameraRect = GUILayoutUtility.GetRect(Styles.sceneViewCameraContent, EditorStyles.toolbarDropDown);
+
+            if (EditorGUI.DropdownButton(sceneCameraRect, Styles.sceneViewCameraContent, FocusType.Passive, EditorStyles.toolbarDropDown))
+            {
+                Rect rect = GUILayoutUtility.topLevel.GetLast();
+                PopupWindow.Show(rect, new SceneViewCameraWindow(this));
+                GUIUtility.ExitGUI();
+            }
         }
 
         // This method should be called after the audio play button has been toggled,
@@ -2642,6 +2649,8 @@ namespace UnityEditor
                 m_Camera.nearClipPlane = m_SceneViewCameraSettings.nearClip;
                 m_Camera.farClipPlane = m_SceneViewCameraSettings.farClip;
             }
+
+            m_Camera.useOcclusionCulling = m_SceneViewCameraSettings.occlusionCulling;
 
             m_Camera.transform.position = m_Position.value + m_Camera.transform.rotation * new Vector3(0, 0, -cameraDistance);
 

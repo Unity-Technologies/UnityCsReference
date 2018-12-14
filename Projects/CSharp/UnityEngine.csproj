@@ -2791,6 +2791,9 @@
     <Compile Include="..\..\Modules\XR\ScriptBindings\XRInput.bindings.cs">
       <Link>Modules\XR\ScriptBindings\XRInput.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\XR\Stats\XRStats.bindings.cs">
+      <Link>Modules\XR\Stats\XRStats.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\XR\Subsystems\Camera\XRCameraSubsystem.bindings.cs">
       <Link>Modules\XR\Subsystems\Camera\XRCameraSubsystem.bindings.cs</Link>
     </Compile>

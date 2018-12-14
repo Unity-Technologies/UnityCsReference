@@ -384,6 +384,7 @@ namespace UnityEditor.Experimental.GraphView
         private void OnGeometryChanged(GeometryChangedEvent evt)
         {
             m_EndPointsDirty = true;
+            MarkDirtyRepaint();
         }
 
         private void UpdateEndPoints()

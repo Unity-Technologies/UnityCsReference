@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Configuration;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
@@ -135,6 +136,9 @@ namespace UnityEngine.UIElements
         protected TextInputBaseField(string label, int maxLength, char maskChar, TextInputBase textInputBase)
             : base(label, textInputBase)
         {
+            tabIndex = 0;
+            delegatesFocus = false;
+
             AddToClassList(ussClassName);
             labelElement.AddToClassList(labelUssClassName);
             visualInput.AddToClassList(inputUssClassName);
@@ -144,8 +148,42 @@ namespace UnityEngine.UIElements
             m_TextInputBase.maskChar = maskChar;
         }
 
+        protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
+        {
+            base.ExecuteDefaultActionAtTarget(evt);
+
+            if (evt == null)
+            {
+                return;
+            }
+
+            if (evt.eventTypeId == KeyDownEvent.TypeId())
+            {
+                KeyDownEvent keyDownEvt = evt as KeyDownEvent;
+
+                if ((keyDownEvt?.keyCode == KeyCode.KeypadEnter) ||
+                    (keyDownEvt?.keyCode == KeyCode.Return))
+                {
+                    visualInput?.Focus();
+                }
+            }
+        }
+
         protected abstract class TextInputBase : VisualElement, ITextInputField
         {
+            string m_OriginalText;
+
+            void SaveValueAndText()
+            {
+                // When getting the FocusIn, we must keep the value in case of Escape...
+                m_OriginalText = text;
+            }
+
+            void RestoreValueAndText()
+            {
+                text = m_OriginalText;
+            }
+
             public void SelectAll()
             {
                 editorEngine?.SelectAll();
@@ -238,6 +276,7 @@ namespace UnityEngine.UIElements
                 AddToClassList(inputUssClassName);
                 m_Text = string.Empty;
                 name = TextField.textInputUssName;
+
 
                 requireMeasureFunction = true;
 
@@ -380,7 +419,7 @@ namespace UnityEngine.UIElements
                 Vector2 scrollOffset = editorEngine.scrollOffset;
 
 
-                float textScaling = TextNative.ComputeTextScaling(worldTransform);
+                float textScaling = TextNative.ComputeTextScaling(worldTransform, GUIUtility.pixelsPerPoint);
 
                 var textParams = TextStylePainterParameters.GetDefault(this, text);
                 textParams.text = " ";
@@ -541,7 +580,13 @@ namespace UnityEngine.UIElements
 
             protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight, MeasureMode heightMode)
             {
-                return TextElement.MeasureVisualElementTextSize(this, m_Text, desiredWidth, widthMode, desiredHeight, heightMode);
+                // If the text is empty, we should make sure it returns at least the height/width of 1 character...
+                var textToUse = m_Text;
+                if (string.IsNullOrEmpty(textToUse))
+                {
+                    textToUse = " ";
+                }
+                return TextElement.MeasureVisualElementTextSize(this, textToUse, desiredWidth, widthMode, desiredHeight, heightMode);
             }
 
             protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
@@ -562,6 +607,20 @@ namespace UnityEngine.UIElements
                     if (count > 0 && e.menu.MenuItems().Count > count)
                     {
                         e.menu.InsertSeparator(null, count);
+                    }
+                }
+                else if (evt.eventTypeId == FocusInEvent.TypeId())
+                {
+                    SaveValueAndText();
+                }
+                else if (evt.eventTypeId == KeyDownEvent.TypeId())
+                {
+                    KeyDownEvent keyDownEvt = evt as KeyDownEvent;
+
+                    if (keyDownEvt?.keyCode == KeyCode.Escape)
+                    {
+                        RestoreValueAndText();
+                        parent.Focus();
                     }
                 }
 

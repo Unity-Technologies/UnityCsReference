@@ -19,6 +19,7 @@ namespace UnityEditor.IMGUI.Controls
         internal AdvancedDropdownWindow m_WindowInstance;
         internal AdvancedDropdownState m_State;
         internal AdvancedDropdownDataSource m_DataSource;
+        internal AdvancedDropdownGUI m_Gui;
 
         public AdvancedDropdown(AdvancedDropdownState state)
         {
@@ -38,11 +39,17 @@ namespace UnityEditor.IMGUI.Controls
                 m_DataSource = new CallbackDataSource(BuildRoot);
             }
 
+            if (m_Gui == null)
+            {
+                m_Gui = new AdvancedDropdownGUI(m_DataSource);
+            }
+
             m_WindowInstance = ScriptableObject.CreateInstance<AdvancedDropdownWindow>();
             if (m_MinimumSize != Vector2.zero)
                 m_WindowInstance.minSize = m_MinimumSize;
             m_WindowInstance.state = m_State;
             m_WindowInstance.dataSource = m_DataSource;
+            m_WindowInstance.gui = m_Gui;
             m_WindowInstance.windowClosed += (w) => ItemSelected(w.GetSelectedItem());
             m_WindowInstance.Init(rect);
         }

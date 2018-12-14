@@ -34,6 +34,7 @@ namespace UnityEditor.ShortcutManagement
             { KeyCode.Insert, "INS" },
             { KeyCode.Delete, "DEL" },
             { KeyCode.End, "END" },
+            { KeyCode.Tab, "TAB" },
 
             { KeyCode.F1, "F1" },
             { KeyCode.F2, "F2" },

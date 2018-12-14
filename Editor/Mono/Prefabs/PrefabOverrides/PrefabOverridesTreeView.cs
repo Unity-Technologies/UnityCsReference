@@ -21,6 +21,7 @@ namespace UnityEditor
         GameObject m_PrefabInstanceRoot { get; set; }
         GameObject m_PrefabAssetRoot { get; set; }
         int m_LastShownPreviewWindowRowID = -1;
+        PrefabOverridesWindow m_Window;
 
         enum ToggleValue { FALSE, TRUE, MIXED };
         enum ItemType { PREFAB_OBJECT, ADDED_OBJECT, REMOVED_OBJECT };
@@ -97,9 +98,10 @@ namespace UnityEditor
 
         public bool hasModifications { get; set; }
 
-        public PrefabOverridesTreeView(GameObject selectedGameObject, TreeViewState state) : base(state)
+        public PrefabOverridesTreeView(GameObject selectedGameObject, TreeViewState state, PrefabOverridesWindow window) : base(state)
         {
             m_SelectedGameObject = selectedGameObject;
+            m_Window = window;
             rowHeight = 18f;
         }
 
@@ -384,9 +386,11 @@ namespace UnityEditor
             base.RowGUI(args);
 
             var item = args.item as PrefabOverridesTreeViewItem;
+            if (item == null)
+                return;
 
             // Draw overlay icon.
-            if (item != null && Event.current.type == EventType.Repaint)
+            if (Event.current.type == EventType.Repaint)
             {
                 if (item.overlayIcon != null)
                 {
@@ -406,6 +410,13 @@ namespace UnityEditor
             {
                 DoPreviewPopup(item, args.rowRect);
             }
+        }
+
+        internal void ReloadOverridesDisplay()
+        {
+            base.Reload();
+            if (m_Window != null)
+                m_Window.RefreshStatus();
         }
 
         void DoPreviewPopup(PrefabOverridesTreeViewItem item, Rect rowRect)
@@ -698,7 +709,7 @@ namespace UnityEditor
                 if (editorWindow != null)
                 {
                     editorWindow.Close();
-                    m_Owner.Reload();
+                    m_Owner.ReloadOverridesDisplay();
                 }
             }
 

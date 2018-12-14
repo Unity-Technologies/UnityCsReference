@@ -177,7 +177,7 @@ namespace TreeEditor
             float s;
 
             s = (float)Math.Sqrt(x * x + y * y);
-            x = y / s;
+            x = x / s;
             y = y / s;
         }
 
@@ -185,7 +185,7 @@ namespace TreeEditor
         {
             float s;
             s = (float)Math.Sqrt(x * x + y * y + z * z);
-            x = y / s;
+            x = x / s;
             y = y / s;
             z = z / s;
         }

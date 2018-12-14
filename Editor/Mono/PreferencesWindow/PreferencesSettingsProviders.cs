@@ -10,7 +10,7 @@ using System;
 using System.IO;
 using System.Linq;
 using UnityEditor.Connect;
-
+using UnityEngine.UIElements;
 using UnityEditor.Collaboration;
 
 namespace UnityEditor
@@ -184,6 +184,11 @@ namespace UnityEditor
         public PreferencesProvider(string path, IEnumerable<string> keywords = null)
             : base(path, SettingsScope.User, keywords)
         {
+        }
+
+        public override void OnActivate(string searchContext, VisualElement rootElement)
+        {
+            base.OnActivate(searchContext, rootElement);
             prefWinExtensions = ModuleManager.GetPreferenceWindowExtensions();
             ReadPreferences();
         }

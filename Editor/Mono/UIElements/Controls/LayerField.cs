@@ -105,6 +105,7 @@ namespace UnityEditor.UIElements
             AddToClassList(ussClassName);
             labelElement.AddToClassList(labelUssClassName);
             visualInput.AddToClassList(inputUssClassName);
+            SetValueWithoutNotify(0);
         }
 
         public LayerField()

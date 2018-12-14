@@ -342,8 +342,18 @@ namespace UnityEngine
             extern public bool enabled { get; set; }
             extern public float multiplier { get; set; }
             extern public ParticleSystemGameObjectFilter influenceFilter { get; set; }
+            extern public int influenceCount { get; }
 
             extern public bool IsAffectedBy(ParticleSystemForceField field);
+
+            extern public void AddInfluence(ParticleSystemForceField field);
+
+            extern private void RemoveInfluenceAtIndex(int index);
+            public void RemoveInfluence(int index) { RemoveInfluenceAtIndex(index); }
+
+            extern public void RemoveInfluence(ParticleSystemForceField field);
+            extern public void SetInfluence(int index, ParticleSystemForceField field);
+            extern public ParticleSystemForceField GetInfluence(int index);
         }
 
         public partial struct NoiseModule

@@ -154,6 +154,11 @@ namespace UnityEditor
                 resultRect = new Rect(dropDownRectBelow.x, buttonRect.yMax, dropDownRectBelow.width, windowHeight);
                 return true;
             }
+            if (dropDownRectBelow.yMax - buttonRect.yMax - k_SpaceFromBottom < 0)
+            {
+                resultRect = new Rect(dropDownRectBelow.x, (dropDownRectBelow.yMax + dropDownRectBelow.yMin) / 2 - dropDownRectBelow.height, dropDownRectBelow.width, dropDownRectBelow.height);
+                return true;
+            }
             resultRect = new Rect(dropDownRectBelow.x, buttonRect.yMax, dropDownRectBelow.width, availableHeightBelow);
             return false;
         }

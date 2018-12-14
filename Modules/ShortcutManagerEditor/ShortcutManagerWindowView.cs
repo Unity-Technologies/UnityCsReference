@@ -16,493 +16,10 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.ShortcutManagement
 {
-    //TODO: migrate those into USS.
-    class StyleUtility
-    {
-        public static void NormalTextElement(VisualElement el)
-        {
-            StyleUtility.NormalTextColor(el);
-            el.style.whiteSpace = WhiteSpace.NoWrap;
-        }
-
-        public static void NormalTextColor(VisualElement el)
-        {
-            if (EditorGUIUtility.isProSkin)
-            {
-                el.style.color = new Color(0.7058824f, 0.7058824f, 0.7058824f);
-            }
-            else
-            {
-                el.style.color = new Color(39f / 255f, 39f / 255f, 39f / 255f);
-            }
-        }
-
-        public static void StyleVisible(VisualElement el)
-        {
-            el.style.visibility = Visibility.Visible;
-            el.style.position = Position.Relative;
-        }
-
-        public static void StyleHidden(VisualElement el)
-        {
-            el.style.visibility = Visibility.Hidden;
-            el.style.position = Position.Absolute;
-        }
-
-        public static void StyleColumnDirection(VisualElement el)
-        {
-            el.style.flexDirection = FlexDirection.Column;
-        }
-
-        public static void StyleRow(VisualElement row)
-        {
-            row.style.flexDirection = FlexDirection.Row;
-        }
-
-        public static void StyleReverseRowDirection(VisualElement el)
-        {
-            el.style.flexDirection = FlexDirection.RowReverse;
-        }
-
-        public static void StyleFlexibleElement(VisualElement el)
-        {
-            el.style.flexGrow = 1;
-            el.style.flexBasis = 0f;
-            el.style.justifyContent = Justify.Center;
-        }
-
-        public static void StyleFlexibleTableCell(VisualElement el)
-        {
-            StyleFlexibleElement(el);
-            el.style.flexBasis = 0f;
-            el.style.overflow = Overflow.Hidden;
-        }
-
-        public static void StyleResizeHandle(VisualElement el)
-        {
-            el.style.width = 10;
-            el.style.position = Position.Absolute;
-            el.style.cursor =
-                new UnityEngine.UIElements.Cursor() { texture = null, hotspot = Vector2.zero, defaultCursorId = (int)MouseCursor.ResizeHorizontal };
-            //UIElementsEditorUtility.CreateDefaultCursorStyle(MouseCursor.ResizeHorizontal);
-            StyleHeaderHeight(el);
-            StyleBorderColor(el);
-
-            var visualElement = new VisualElement();
-            StyleBorderColor(visualElement);
-            visualElement.style.backgroundColor = visualElement.style.borderColor;
-            StyleHeaderHeight(visualElement);
-            visualElement.style.position = Position.Relative;
-            visualElement.style.marginTop = visualElement.style.height.value.value * ((1f / 3) / 2);
-            visualElement.style.marginLeft = el.style.width.value.value / 2;
-            visualElement.style.width = 1;
-            visualElement.style.height = visualElement.style.height.value.value * (2f / 3);
-            visualElement.pickingMode = PickingMode.Ignore;
-            el.Add(visualElement);
-        }
-
-        static void StyleBorderColor(VisualElement el)
-        {
-            if (EditorGUIUtility.isProSkin)
-                el.style.borderColor = new Color(37f / 255f, 37f / 255f, 37f / 255f);
-            else
-                el.style.borderColor = new Color(211f / 255f, 211f / 255f, 211f / 255f);
-        }
-
-        public static void StyleHeaderCell(VisualElement el)
-        {
-            el.style.borderBottomWidth = 1;
-            StyleHeaderHeight(el);
-            StyleBorderColor(el);
-        }
-
-        public static void StyleHeaderHeight(VisualElement el)
-        {
-            el.style.height = 40;
-        }
-
-        public static void StyleHeaderText(VisualElement el)
-        {
-            el.style.unityTextAlign = TextAnchor.MiddleLeft;
-            el.style.unityFontStyleAndWeight = FontStyle.Bold;
-
-            StyleTextRow(el);
-        }
-
-        static void StyleBorderAround(VisualElement el)
-        {
-            StyleBorderWidths(el, 1);
-            StyleBorderColor(el);
-        }
-
-        public static void StyleRootPanelPadding(VisualElement element)
-        {
-            const int padding = 20;
-            element.style.paddingBottom = padding;
-            element.style.paddingTop = padding;
-            element.style.paddingRight = padding;
-            element.style.paddingLeft = padding;
-        }
-
-        private static void StyleBorderRadius(VisualElement element, float radius)
-        {
-            element.style.borderTopLeftRadius = radius;
-            element.style.borderTopRightRadius = radius;
-            element.style.borderBottomLeftRadius = radius;
-            element.style.borderBottomRightRadius = radius;
-        }
-
-        public static void StylePanel(VisualElement element)
-        {
-            StyleBorderAround(element);
-
-            if (EditorGUIUtility.isProSkin)
-                element.style.backgroundColor = new Color(70f / 255f, 70f / 255f, 70f / 255f);
-            else
-                element.style.backgroundColor = new Color(229f / 255f, 229f / 255f, 229f / 255f);
-
-            StyleBorderRadius(element, 5f);
-        }
-
-        public static void StyleTextRowNoPadding(VisualElement el)
-        {
-            NormalTextElement(el);
-            el.style.unityTextAlign = TextAnchor.MiddleLeft;
-        }
-
-        public static void StyleTextRow(VisualElement el)
-        {
-            StyleTextRowNoPadding(el);
-            el.style.paddingRight = 10f;
-            el.style.paddingLeft = 10f;
-        }
-
-        public static void StyleSearchContainer(VisualElement el)
-        {
-            el.style.flexBasis = 1f;
-            el.style.flexGrow = 0.2f;
-            el.style.marginTop = 10;
-            el.style.marginBottom = 10;
-            StyleRow(el);
-        }
-
-        public static void StyleConflictLabel(TextElement el)
-        {
-            el.style.color = new Color(1, 0, 0);
-        }
-
-        public static void StyleHeaderIcon(VisualElement el)
-        {
-            el.style.width = 16;
-            el.style.height = 16;
-        }
-
-        public static void RightMarginBetweenTables(VisualElement el)
-        {
-            el.style.marginRight = 5;
-        }
-
-        #region Styles specific to a single element
-
-        public static void StyleShortcutEntryTable(VisualElement el)
-        {
-            StyleFlexibleElement(el);
-            el.style.flexGrow = 3;
-            RightMarginBetweenTables(el);
-            StylePanel(el);
-        }
-
-        public static void StyleRootPanel(VisualElement el)
-        {
-            StyleColumnDirection(el);
-            StyleFlexibleElement(el);
-            StyleRootPanelPadding(el);
-        }
-
-        public static void StyleShortcutEntriesContainer(VisualElement el)
-        {
-            StyleRow(el);
-            StyleFlexibleElement(el);
-        }
-
-        #endregion
-
-        public static void StyleCategoryContainer(VisualElement el)
-        {
-            StyleColumnDirection(el);
-            StyleFlexibleElement(el);
-            RightMarginBetweenTables(el);
-            StylePanel(el);
-        }
-
-        private static void StyleBorderWidths(VisualElement el, float borderWidth)
-        {
-            el.style.borderLeftWidth = borderWidth;
-            el.style.borderBottomWidth = borderWidth;
-            el.style.borderTopWidth = borderWidth;
-            el.style.borderRightWidth = borderWidth;
-        }
-
-        static void StyleThinBorder(VisualElement el)
-        {
-            StyleBorderWidths(el, 1);
-        }
-
-        internal const int k_KeySize = 34;
-
-        public static void StyleKey(VisualElement el)
-        {
-            el.style.width = k_KeySize;
-
-            StyleThinBorder(el);
-
-            StyleBorderRadius(el, 5);
-
-            el.style.unityTextAlign = TextAnchor.MiddleCenter;
-            el.style.whiteSpace = WhiteSpace.Normal;
-
-            StyleNormal(el);
-        }
-
-        public static void StyleVerticalKeySizing(VisualElement keyElement)
-        {
-            keyElement.style.height = k_KeySize;
-
-            keyElement.style.marginRight = 2;
-            keyElement.style.marginBottom = 1;
-            keyElement.style.marginTop = 1;
-        }
-
-        public static void StyleDefault(VisualElement key)
-        {
-            NormalTextElement(key);
-        }
-
-        public static void StyleNormal(VisualElement keyElement)
-        {
-            if (EditorGUIUtility.isProSkin)
-            {
-                keyElement.style.backgroundColor = new Color(93f / 255f, 93f / 255f, 93f / 255f);
-                keyElement.style.borderColor = new Color(56f / 255f, 56f / 255f, 56f / 255f);
-                keyElement.style.color = Color.white;
-            }
-            else
-            {
-                keyElement.style.backgroundColor = new Color(237f / 255f, 237f / 255f, 237f / 255f);
-                keyElement.style.borderColor = new Color(165f / 255f, 165f / 255f, 165f / 255f);
-            }
-            StyleThinBorder(keyElement);
-        }
-
-        public static void StyleHover(VisualElement keyElement)
-        {
-            keyElement.style.borderColor = new Color(117f / 255f, 184f / 255f, 255f / 255f);
-        }
-
-        public static void StyleSelected(VisualElement keyElement)
-        {
-            keyElement.style.borderColor = new Color(60f / 255f, 153f / 255f, 252f / 255f);
-
-            StyleBorderWidths(keyElement, 2);
-        }
-
-        public static void StyleBoundToContext(VisualElement keyElement)
-        {
-            if (EditorGUIUtility.isProSkin)
-                keyElement.style.backgroundColor = new Color(148f / 255f, 162f / 255f, 178f / 255f);
-            else
-                keyElement.style.backgroundColor = new Color(206f / 255f, 216f / 255f, 221f / 255f);
-        }
-
-        public static void StyleBoundGlobally(VisualElement keyElement)
-        {
-            if (EditorGUIUtility.isProSkin)
-                keyElement.style.backgroundColor = new Color(176f / 255f, 156f / 255f, 147f / 255f);
-            else
-                keyElement.style.backgroundColor = new Color(255f / 255f, 221f / 255f, 209f / 255f);
-        }
-
-        public static void StyleModifierActive(VisualElement keyElement)
-        {
-            if (EditorGUIUtility.isProSkin)
-                keyElement.style.backgroundColor = new Color(109f / 255f, 155f / 255f, 246f / 255f);
-            else
-                keyElement.style.backgroundColor = new Color(187f / 255f, 221f / 255f, 252f / 255f);
-        }
-
-        public static void StyleSystemReserved(VisualElement keyElement)
-        {
-            var backgroundColor = EditorGUIUtility.isProSkin ? new Color(76f / 255f, 76f / 255f, 76f / 255f) : new Color(208f / 255f, 208f / 255f, 208f / 255f);
-            var textColor = EditorGUIUtility.isProSkin ? new Color(90f / 255f, 90f / 255f, 90f / 255f) : new Color(109f / 255f, 109f / 255f, 109f / 255f);
-            keyElement.style.backgroundColor = backgroundColor;
-            keyElement.style.color = textColor;
-        }
-
-        public static void StyleModifier(VisualElement keyElement)
-        {
-            var backgroundColor = EditorGUIUtility.isProSkin ? new Color(74f / 255f, 74f / 255f, 74f / 255f) : new Color(204f / 255f, 204f / 255f, 204f / 255f);
-            keyElement.style.backgroundColor = backgroundColor;
-        }
-
-        public static void StyleKeyFlexibleWidth(VisualElement spacer)
-        {
-            StyleVerticalKeySizing(spacer);
-            spacer.style.flexGrow = 1;
-        }
-
-        public static void StyleSpace(VisualElement keyElement)
-        {
-            keyElement.style.flexGrow = 7;
-        }
-
-        public static void StyleCompactContainer(VisualElement compactContainer)
-        {
-            compactContainer.style.marginRight = 10;
-        }
-
-        public static void StyleKeyboardElement(VisualElement el)
-        {
-            el.style.alignItems = Align.Center;
-        }
-
-        public static void StyleKeyboardFirstRow(VisualElement el)
-        {
-            el.style.marginBottom = 10;
-        }
-
-        public static void StyleSearchEndingCancelButtonVisible(VisualElement el)
-        {
-            if (EditorGUIUtility.isProSkin)
-                el.style.backgroundImage = (Texture2D)EditorGUIUtility.Load(EditorResources.darkSkinSourcePath + "Images/toolbarsearchCancelButton.png");
-            else
-                el.style.backgroundImage = (Texture2D)EditorGUIUtility.Load(EditorResources.lightSkinSourcePath + "Images/toolbarsearchCancelButton.png");
-        }
-
-        public static void StyleSearchEnding(VisualElement el)
-        {
-            if (EditorGUIUtility.isProSkin)
-                el.style.backgroundImage = (Texture2D)EditorGUIUtility.Load(EditorResources.darkSkinSourcePath + "Images/toolbarsearchCancelButtonOff.png");
-            else
-                el.style.backgroundImage = (Texture2D)EditorGUIUtility.Load(EditorResources.lightSkinSourcePath + "Images/toolbarsearchCancelButtonOff.png");
-            el.style.width = 14;
-            el.style.height = 14;
-            el.style.marginTop = 2;
-        }
-
-        public static void StyleSearchTextField(VisualElement el)
-        {
-            var input =  el.Q(TextField.textInputUssName);
-            if (input != null)
-            {
-                input.style.backgroundImage = null;
-                input.style.marginLeft = 0f;
-                input.style.marginRight = 0f;
-                input.style.marginTop = 1;
-                input.style.fontSize = 9;
-                input.style.flexGrow = 1;
-                el.style.flexGrow = 1;
-            }
-        }
-
-        public static void StyleActiveProfileDropdownButton(VisualElement el)
-        {
-            NormalTextColor(el);
-            el.AddToClassList(PopupField<string>.textUssClassName);
-            el.AddToClassList(PopupField<string>.inputUssClassName);
-            FixPopupStyle(el);
-        }
-
-        public static void StyleSearchDropdown(VisualElement el)
-        {
-            if (EditorGUIUtility.isProSkin)
-                el.style.backgroundImage = (Texture2D)EditorGUIUtility.Load(EditorResources.darkSkinSourcePath + "Images/toolbarsearchpopup.png");
-
-            else
-                el.style.backgroundImage = (Texture2D)EditorGUIUtility.Load(EditorResources.lightSkinSourcePath + "Images/toolbarsearchpopup.png");
-            el.style.paddingLeft = 17;
-            el.style.height = 14;
-            el.style.unitySliceLeft = 15;
-            el.style.marginTop = 2;
-            el.style.flexGrow = 1;
-        }
-
-        public static void StyleHeaderLabelColor(VisualElement colorField)
-        {
-            colorField.style.width = 16;
-            colorField.style.height = 16;
-            colorField.style.marginRight = 5;
-            colorField.style.marginLeft = 20;
-        }
-
-        public static void StyleFilterElement(VisualElement el)
-        {
-            StyleBorderAround(el);
-            StyleBorderColor(el);
-            StyleBorderRadius(el, 5);
-            el.style.marginLeft = 10;
-            el.style.paddingRight = 5;
-            el.style.paddingLeft = 5;
-            el.style.paddingTop = 2;
-            el.style.paddingBottom = 2;
-        }
-
-        public static void StyleFilterElementSelected(VisualElement el)
-        {
-            el.style.backgroundColor = new Color(130f / 255f, 130f / 255f, 130f / 255f);
-        }
-
-        public static void StyleSearchFilterRow(VisualElement el)
-        {
-            StyleRow(el);
-            el.style.borderBottomWidth = 1;
-            StyleBorderColor(el);
-        }
-
-        public static void FixPopupStyle(VisualElement el)
-        {
-            el.style.paddingRight = el.resolvedStyle.paddingRight + 12;
-            el.style.minWidth = 115;
-            el.style.paddingBottom = 2;
-        }
-
-        public static void StyleProfileOptionsDropdown(VisualElement profileContextMenu)
-        {
-            profileContextMenu.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
-            if (EditorGUIUtility.isProSkin)
-                profileContextMenu.style.backgroundImage = (Texture2D)EditorGUIUtility.Load(EditorResources.iconsPath + "d__Popup.png");
-            else
-                profileContextMenu.style.backgroundImage = (Texture2D)EditorGUIUtility.Load(EditorResources.iconsPath + "_Popup.png");
-        }
-
-        public static void StyleAsTextField(VisualElement el)
-        {
-            el.style.width = 100;
-            el.style.height = 15;
-            el.style.backgroundImage = (Texture2D)EditorGUIUtility.Load(EditorResources.lightSkinSourcePath + "Images/TextField.png");
-            el.style.unitySliceLeft = 3;
-            el.style.unitySliceRight = 3;
-            el.style.unitySliceTop = 3;
-            el.style.unitySliceBottom = 3;
-            el.style.paddingLeft = 2;
-            el.style.paddingRight = 2;
-            el.style.paddingTop = 2;
-            el.style.top = 2;
-        }
-
-        public static void StyleEntryOverriden(VisualElement el)
-        {
-            el.style.unityFontStyleAndWeight = FontStyle.Bold;
-        }
-
-        public static void StyleEntryNormal(VisualElement el)
-        {
-            el.style.unityFontStyleAndWeight = FontStyle.Normal;
-        }
-    }
-
     class ShortcutManagerWindowView : IShortcutManagerWindowView
     {
         const int k_ListItemHeight = 21;
+        const int k_PixelsPadding = 78;
         VisualElement m_Root;
         IShortcutManagerWindowViewController m_ViewController;
         IKeyBindingStateProvider m_BindingStateProvider;
@@ -582,6 +99,16 @@ namespace UnityEditor.ShortcutManagement
             }
         }
 
+        static void ShowElement(VisualElement el)
+        {
+            el.RemoveFromClassList("hidden");
+        }
+
+        static void HideElement(VisualElement el)
+        {
+            el.AddToClassList("hidden");
+        }
+
         VisualElement MakeItemForShortcutTable()
         {
             //TODO: Read from a uxml
@@ -589,23 +116,27 @@ namespace UnityEditor.ShortcutManagement
             var bindingContainer = new VisualElement();
             var shortcutBinding = new TextElement();
             var rebindControl = new ShortcutTextField();
+            var warningIcon = new VisualElement();
 
+            bindingContainer.AddToClassList("binding-container");
             bindingContainer.Add(shortcutBinding);
             bindingContainer.Add(rebindControl);
-            StyleUtility.StyleRow(bindingContainer);
+            bindingContainer.Add(warningIcon);
 
-            StyleUtility.StyleTextRowNoPadding(shortcutBinding);
-            StyleUtility.StyleAsTextField(rebindControl.input);
-            StyleUtility.StyleHidden(rebindControl);
-
+            HideElement(rebindControl);
             shortcutBinding.style.flexGrow = 1;
 
             rebindControl.input.RegisterCallback<BlurEvent>(OnRebindControlBlurred);
             rebindControl.RegisterCallback<DetachFromPanelEvent>(OnRebindControlDetachedFromPanel);
             rebindControl.OnCancel += RebindControl_OnCancel;
 
+            warningIcon.AddToClassList("warning-icon");
+            HideElement(warningIcon);
 
-            var rowElement = MakeRow(shortcutNameCell, bindingContainer);
+            var rowElement = new VisualElement();
+            rowElement.AddToClassList("shortcut-row");
+            rowElement.Add(shortcutNameCell);
+            rowElement.Add(bindingContainer);
 
             rowElement.RegisterCallback<MouseDownEvent>(OnMouseDownCategoryTable);
             rowElement.RegisterCallback<MouseUpEvent>(OnMouseUpCategoryTable);
@@ -638,6 +169,7 @@ namespace UnityEditor.ShortcutManagement
             var bindingContainer = shortcutElementTemplate[1];
             var bindingTextElement = bindingContainer.Query<TextElement>().First();
             var bindingField = bindingContainer.Query<ShortcutTextField>().First();
+            var warningIcon = shortcutElementTemplate.Query(null, "warning-icon").First();
 
             nameElement.text = m_ViewController.GetShortcutPathList()[index];
             nameElement.tooltip = nameElement.text;
@@ -645,27 +177,34 @@ namespace UnityEditor.ShortcutManagement
             bindingField.SetValueWithoutNotify(shortcutEntry.combinations.ToList());
             bindingField.RegisterValueChangedCallback(EditingShortcutEntryBindingChanged);
 
+            var conflict = m_ViewController.IsEntryPartOfConflict(shortcutEntry);
+
+            if (conflict)
+                ShowElement(warningIcon);
+            else
+                HideElement(warningIcon);
+
             if (shortcutEntry.overridden)
             {
-                StyleUtility.StyleEntryOverriden(nameElement);
-                StyleUtility.StyleEntryOverriden(bindingTextElement);
+                nameElement.AddToClassList("overridden");
+                bindingTextElement.AddToClassList("overridden");
             }
             else
             {
-                StyleUtility.StyleEntryNormal(nameElement);
-                StyleUtility.StyleEntryNormal(bindingTextElement);
+                nameElement.RemoveFromClassList("overridden");
+                bindingTextElement.RemoveFromClassList("overridden");
             }
 
             if (m_EditingBindings == shortcutEntry)
             {
-                StyleUtility.StyleHidden(bindingTextElement);
-                StyleUtility.StyleVisible(bindingField);
+                HideElement(bindingTextElement);
+                ShowElement(bindingField);
                 bindingField.Focus();
             }
             else
             {
-                StyleUtility.StyleVisible(bindingTextElement);
-                StyleUtility.StyleHidden(bindingField);
+                ShowElement(bindingTextElement);
+                HideElement(bindingField);
             }
         }
 
@@ -678,7 +217,7 @@ namespace UnityEditor.ShortcutManagement
         static VisualElement MakeItemForCategoriesTable()
         {
             var element = new TextElement();
-            StyleUtility.StyleTextRow(element);
+            element.AddToClassList("category-row");
             return element;
         }
 
@@ -686,6 +225,9 @@ namespace UnityEditor.ShortcutManagement
         {
             var elementTemplate = (TextElement)categoryElementTemplate;
             elementTemplate.text = m_ViewController.GetCategories()[index];
+
+            if (index == m_ViewController.categorySeparatorIndex)
+                elementTemplate.AddToClassList("first-row-of-section");
         }
 
         static VisualElement CreateVisualElement(string name)
@@ -705,30 +247,13 @@ namespace UnityEditor.ShortcutManagement
                 m_ViewController.SetCategorySelected((string)selection[0]);
         }
 
-        static VisualElement MakeRow(VisualElement label, VisualElement content)
-        {
-            var row = new VisualElement();
-
-            StyleUtility.StyleRow(row);
-
-            StyleUtility.StyleFlexibleTableCell(label);
-            StyleUtility.StyleFlexibleTableCell(content);
-            StyleUtility.StyleTextRow(label);
-            StyleUtility.StyleTextRow(content);
-
-            row.Add(label);
-            row.Add(content);
-            return row;
-        }
-
         void BuildSearchField(VisualElement root)
         {
-            //TODO: Read from a uxml
-            var searchControlContainer = CreateVisualElement("searchControlContainer");
-            var searchOptionsDropDown = CreateVisualElement("searchOptionsDropDown");
-            m_SearchTextField = new TextField();
+            var searchControlContainer = root.Query("searchControlContainer").First();
+            var searchOptionsDropDown = root.Query("searchOptionsDropDown").First();
+            m_SearchTextField = root.Query<TextField>();
+            m_SearchCancelEnding = root.Query("searchCancelEnding");
             m_KeyBindingSearchField = new ShortcutTextField();
-            m_SearchCancelEnding = CreateVisualElement("searchCancelEnding");
 
             ShowAppropriateSearchField();
 
@@ -741,15 +266,6 @@ namespace UnityEditor.ShortcutManagement
 
             m_KeyBindingSearchField.value = m_ViewController.GetBindingSearch();
             m_KeyBindingSearchField.OnWorkingValueChanged += SearchByBindingsChanged;
-
-            StyleUtility.StyleSearchContainer(searchControlContainer);
-
-            StyleUtility.StyleSearchDropdown(searchOptionsDropDown);
-
-            StyleUtility.StyleSearchTextField(m_SearchTextField);
-            StyleUtility.StyleSearchTextField(m_KeyBindingSearchField);
-
-            StyleUtility.StyleSearchEnding(m_SearchCancelEnding);
 
             HandleClearButtonVisibility();
 
@@ -768,15 +284,14 @@ namespace UnityEditor.ShortcutManagement
 
         void BuildProfileManagementRow(VisualElement header)
         {
-            //TODO: Read from a uxml
-            m_ActiveProfileDropdownButton = new TextElement();
-
+            m_ActiveProfileDropdownButton = header.Q<TextElement>("activeProfileDropdownButton");
             m_ActiveProfileDropdownButton.text = m_ViewController.activeProfile;
-            StyleUtility.StyleActiveProfileDropdownButton(m_ActiveProfileDropdownButton);
-
             m_ActiveProfileDropdownButton.RegisterCallback<MouseDownEvent>(OnProfileContextMenuMouseDown);
 
-            header.Add(m_ActiveProfileDropdownButton);
+            // Style active profile dropdown button as a popup field
+            var activeProfileDropdownButton = header.Q("activeProfileDropdownButton");
+            activeProfileDropdownButton.AddToClassList(PopupField<string>.textUssClassName);
+            activeProfileDropdownButton.AddToClassList(BasePopupField<string, string>.inputUssClassName);
         }
 
         void OnCreateProfileClicked()
@@ -805,7 +320,7 @@ namespace UnityEditor.ShortcutManagement
 
         void OnDeleteProfileClicked()
         {
-            m_ViewController.DeleteActiveProfile();
+            DeleteShortcutProfileWindow.Show(m_ViewController.activeProfile, () => m_ViewController.DeleteActiveProfile());
         }
 
         void OnActiveProfileChanged(ChangeEvent<string> evt)
@@ -847,74 +362,47 @@ namespace UnityEditor.ShortcutManagement
 
         void BuildLegendRow(VisualElement root)
         {
-            //TODO: Read from a uxml
-            var container = new VisualElement();
+            var container = root.Query<VisualElement>("legendContainer").First();
 
             var labels = new[] { L10n.Tr("Unassigned Key"), L10n.Tr("Assigned Key"), L10n.Tr("Global Key") };
-            var styles = new Action<VisualElement>[] { StyleUtility.StyleNormal, StyleUtility.StyleBoundToContext, StyleUtility.StyleBoundGlobally };
+            var classes = new[] { "unassigned", "contextuallyBound", "global" };
 
-            StyleUtility.StyleRow(container);
-
-            for (int i = 0; i < labels.Length; i++)
+            for (var i = 0; i < labels.Length; i++)
             {
                 var colorField = new VisualElement();
                 var label = new TextElement() { text = labels[i] };
-                StyleUtility.StyleKey(colorField);
-                styles[i](colorField);
-                StyleUtility.NormalTextElement(label);
-                StyleUtility.StyleHeaderLabelColor(colorField);
+                colorField.AddToClassList("keyLegend");
+                colorField.AddToClassList(classes[i]);
                 container.Add(colorField);
                 container.Add(label);
             }
-
-            root.Add(container);
-        }
-
-        void BuildShortcutTableSearchFilter(VisualElement root)
-        {
-            //TODO: Read from a uxml
-            m_ShortcutsTableSearchFilterContainer = CreateVisualElement("shortcutsTableSearchFilterContainer");
-            var searchLabel = new TextElement() { text = L10n.Tr("Search:") };
-            m_SearchFiltersContainer = CreateVisualElement("searchFiltersContainer");
-
-            StyleUtility.StyleRow(m_SearchFiltersContainer);
-
-            StyleUtility.StyleTextRow(searchLabel);
-
-            StyleUtility.StyleSearchFilterRow(m_ShortcutsTableSearchFilterContainer);
-
-            m_ShortcutsTableSearchFilterContainer.Add(searchLabel);
-            m_ShortcutsTableSearchFilterContainer.Add(m_SearchFiltersContainer);
-
-            root.Add(m_ShortcutsTableSearchFilterContainer);
         }
 
         void UpdateShortcutTableSearchFilter()
         {
             if (!m_ViewController.ShouldShowSearchFilters())
             {
-                StyleUtility.StyleHidden(m_ShortcutsTableSearchFilterContainer);
+                HideElement(m_ShortcutsTableSearchFilterContainer);
                 return;
             }
 
-            StyleUtility.StyleVisible(m_ShortcutsTableSearchFilterContainer);
+            ShowElement(m_ShortcutsTableSearchFilterContainer);
 
             List<string> filters = new List<string>();
             m_ViewController.GetSearchFilters(filters);
 
             var selectedSearchFilter = m_ViewController.GetSelectedSearchFilter();
 
+            //TODO: when I clear elements like this, do I need to unregister any callbacks registered to them?
             m_SearchFiltersContainer.Clear();
             foreach (var filter in filters)
             {
-                var filterElement = new TextElement() { text = filter };
-                StyleUtility.NormalTextElement(filterElement);
-
-                StyleUtility.StyleFilterElement(filterElement);
+                var filterElement = new TextElement() {text = filter};
+                filterElement.AddToClassList("filterElement");
 
                 if (selectedSearchFilter == filter)
                 {
-                    StyleUtility.StyleFilterElementSelected(filterElement);
+                    filterElement.AddToClassList("active");
                 }
                 filterElement.RegisterCallback<MouseDownEvent>(OnFilterElementClicked);
                 m_SearchFiltersContainer.Add(filterElement);
@@ -929,10 +417,17 @@ namespace UnityEditor.ShortcutManagement
 
         void BuildVisualElementHierarchyRoot()
         {
-            //TODO: Read from a uxml
-            m_Root = new VisualElement();
-            var header = new VisualElement();
-            var spacer = new VisualElement();
+            m_Root = new VisualElement(){name = "ShortcutManagerView"};
+            var headerTemplate = EditorResources.Load("UXML/ShortcutManager/ShortcutManagerView.uxml", typeof(UnityEngine.Object)) as VisualTreeAsset;
+            headerTemplate.CloneTree(m_Root, null);
+            var header = m_Root.Query<VisualElement>("header").First();
+            var keyboardContainer = m_Root.Query<VisualElement>("keyboardContainer").First();
+            var searchRowContainer = m_Root.Query<VisualElement>("searchRowContainer").First();
+            var categoryContainer = m_Root.Query<VisualElement>("categoryContainer").First();
+            var shortcutsTableContainer = m_Root.Query<VisualElement>("shortcutsTableContainer").First();
+            m_ShortcutsTableSearchFilterContainer = shortcutsTableContainer.Query("shortcutsTableSearchFilterContainer").First();
+            m_SearchFiltersContainer = shortcutsTableContainer.Query("searchFiltersContainer").First();
+
 
             m_KeyboardElement = new Keyboard(m_BindingStateProvider, m_ViewController.GetSelectedKey(), m_ViewController.GetSelectedEventModifiers());
             m_KeyboardElement.DragPerformed += OnKeyboardKeyDragPerformed;
@@ -942,18 +437,8 @@ namespace UnityEditor.ShortcutManagement
             m_KeyboardElement.ContextMenuProvider += GetContextMenuForKey;
 
 
-            var searchRowContainer = CreateVisualElement("searchRowContainer");
-
-            var shortcutEntriesContainer = CreateVisualElement("shortcutEntriesContainer");
-            var categoryContainer = CreateVisualElement("categoryContainer");
-            var categoryHeader = new TextElement() { name = "shortcutsTableHeaderName", text = L10n.Tr("Category") };
-            m_CategoryTreeView = new ListView((IList)m_ViewController.GetCategories(), k_ListItemHeight, MakeItemForCategoriesTable, BindCategoriesTableItem) { name = "categoryTreeView" };
-            var shortcutsTableContainer = CreateVisualElement("shortcutsTableContainer");
-            var shortcutsTableHeader = CreateVisualElement("shortcutsTableHeader");
-            var shortcutsTableHeaderName = new TextElement() { text = L10n.Tr("Command"), name = "shortcutsTableHeaderName" };
-            var shortcutsTableResizeHandle = CreateVisualElement("shortcutResizeHandle");
-            var shortcutsTableHeaderBindings = new TextElement() { text = L10n.Tr("Shortcuts"), name = "shortcutsTableHeaderBindings" };
-            m_ShortcutsTable = new ListView((IList)m_ViewController.GetShortcutList(), k_ListItemHeight, MakeItemForShortcutTable, BindShortcutEntryItem) { name = "shortcutsTable" };
+            m_CategoryTreeView = new ListView((IList)m_ViewController.GetCategories(), k_ListItemHeight, MakeItemForCategoriesTable, BindCategoriesTableItem) { name = "categoryTreeView"};
+            m_ShortcutsTable = new ListView((IList)m_ViewController.GetShortcutList(), k_ListItemHeight,  MakeItemForShortcutTable, BindShortcutEntryItem) {name = "shortcutsTable"};
 
             m_CategoryTreeView.selectedIndex = m_ViewController.selectedCategoryIndex;
             m_CategoryTreeView.onSelectionChanged += CategorySelectionChanged;
@@ -964,64 +449,36 @@ namespace UnityEditor.ShortcutManagement
             m_ShortcutsTable.RegisterCallback<MouseUpEvent>(ShortcutTableRightClick);
             m_ShortcutsTable.RegisterCallback<GeometryChangedEvent>(ShortcutTableGeometryChanged);
 
-            StyleUtility.NormalTextColor(shortcutsTableHeaderName);
-            StyleUtility.NormalTextColor(shortcutsTableHeaderBindings);
-            StyleUtility.StyleResizeHandle(shortcutsTableResizeHandle);
-            StyleUtility.NormalTextColor(categoryHeader);
+            m_Root.AddToClassList("ShortcutManagerView");
+            if (EditorGUIUtility.isProSkin)
+                m_Root.AddToClassList("isProSkin");
+            m_Root.AddStyleSheetPath("StyleSheets/ShortcutManager/ShortcutManagerView.uss");
 
-            StyleUtility.StyleRootPanel(m_Root);
-            StyleUtility.StyleFlexibleElement(spacer);
-            StyleUtility.StyleRow(header);
-
-            StyleUtility.StyleReverseRowDirection(searchRowContainer);
-
-            StyleUtility.StyleShortcutEntriesContainer(shortcutEntriesContainer);
-
-            StyleUtility.StyleCategoryContainer(categoryContainer);
-            StyleUtility.StyleHeaderCell(categoryHeader);
-            StyleUtility.StyleHeaderText(categoryHeader);
-            StyleUtility.StyleFlexibleElement(m_CategoryTreeView);
-
-            StyleUtility.StyleShortcutEntryTable(shortcutsTableContainer);
-
-            StyleUtility.StyleRow(shortcutsTableHeader);
-            StyleUtility.StyleHeaderCell(shortcutsTableHeader);
-
-            StyleUtility.StyleFlexibleTableCell(shortcutsTableHeaderName);
-            StyleUtility.StyleFlexibleTableCell(shortcutsTableHeaderBindings);
-            StyleUtility.StyleHeaderText(shortcutsTableHeaderName);
-            StyleUtility.StyleHeaderText(shortcutsTableHeaderBindings);
-
-            StyleUtility.StyleFlexibleElement(m_ShortcutsTable);
-
-            m_HorizontalColumnDragger = new HorizontalColumnDragger(75, m_ShortcutsTable);
+            // Set up resize handle manipulator
+            // TODO: replace k_PixelsPadding with width of the text from the left header element after UXML/USS migration.
+            m_HorizontalColumnDragger = new HorizontalColumnDragger(k_PixelsPadding, m_ShortcutsTable);
+            var shortcutsTableResizeHandle = m_Root.Q("shortcutResizeHandle");
             shortcutsTableResizeHandle.AddManipulator(m_HorizontalColumnDragger);
-            shortcutsTableHeaderName.pickingMode = PickingMode.Ignore;
-            shortcutsTableHeaderBindings.pickingMode = PickingMode.Ignore;
 
             BuildProfileManagementRow(header);
-            header.Add(spacer);
             BuildLegendRow(header);
 
             BuildSearchField(searchRowContainer);
 
-            shortcutsTableHeader.Add(shortcutsTableHeaderName);
-            shortcutsTableHeader.Add(shortcutsTableHeaderBindings);
-            shortcutsTableHeader.Add(shortcutsTableResizeHandle);
-
-            shortcutsTableContainer.Add(shortcutsTableHeader);
-            BuildShortcutTableSearchFilter(shortcutsTableContainer);
             shortcutsTableContainer.Add(m_ShortcutsTable);
 
-            categoryContainer.Add(categoryHeader);
             categoryContainer.Add(m_CategoryTreeView);
-            shortcutEntriesContainer.Add(categoryContainer);
-            shortcutEntriesContainer.Add(shortcutsTableContainer);
+            keyboardContainer.Add(m_KeyboardElement);
 
-            m_Root.Add(header);
-            m_Root.Add(m_KeyboardElement);
-            m_Root.Add(searchRowContainer);
-            m_Root.Add(shortcutEntriesContainer);
+            SetLocalizedText();
+        }
+
+        void SetLocalizedText()
+        {
+            m_Root.Q<TextElement>("categoryTableHeaderName").text = L10n.Tr("Category");
+            m_Root.Q<TextElement>("shortcutsTableHeaderName").text = L10n.Tr("Command");
+            m_Root.Q<TextElement>("shortcutsTableHeaderBindings").text = L10n.Tr("Shortcut");
+            m_Root.Q<TextElement>("searchLabel").text = L10n.Tr("Search:");
         }
 
         GenericMenu GetContextMenuForEntries(IEnumerable<ShortcutEntry> entries)
@@ -1036,10 +493,10 @@ namespace UnityEditor.ShortcutManagement
                 // Change / to : here to avoid deep submenu nesting
                 var mangledPath = $"{entry.identifier.path.Replace('/', ':')} ({entry.combinations.FirstOrDefault()})";
                 if (entry.overridden)
-                    menu.AddItem(new GUIContent($"{mangledPath}/{L10n.Tr("Reset to default")}"), false, ResetToDefault, entry);
+                    menu.AddItem(new GUIContent($"{mangledPath}/{L10n.Tr("Reset to default")}"), false, (x) => { m_ViewController.ResetToDefault(entry);}, entry);
                 else
                     menu.AddDisabledItem(new GUIContent($"{mangledPath}/{L10n.Tr("Reset to default")}"));
-                menu.AddItem(new GUIContent($"{mangledPath}/{L10n.Tr("Remove shortcut")}"), false, RemoveShortcut, entry);
+                menu.AddItem(new GUIContent($"{mangledPath}/{L10n.Tr("Remove shortcut")}"), false, (x) => { m_ViewController.RemoveBinding(entry);}, entry);
             }
 
             return menu;
@@ -1048,18 +505,6 @@ namespace UnityEditor.ShortcutManagement
         private GenericMenu GetContextMenuForKey(KeyCode keyCode, EventModifiers modifiers)
         {
             return GetContextMenuForEntries(m_ViewController.GetShortcutsBoundTo(keyCode, modifiers));
-        }
-
-        private void ResetToDefault(object entryObject)
-        {
-            (entryObject as ShortcutEntry)?.ResetToDefault();
-            RefreshShortcutList();
-        }
-
-        private void RemoveShortcut(object entryObject)
-        {
-            (entryObject as ShortcutEntry)?.SetOverride(new List<KeyCombination>());
-            RefreshShortcutList();
         }
 
         string GetToolTipForKey(KeyCode keyCode, EventModifiers modifiers)
@@ -1094,10 +539,17 @@ namespace UnityEditor.ShortcutManagement
             {
                 var bindingInput = row.Query<ShortcutTextField>().First();
                 var textElement = bindingInput.parent.Query<TextElement>().First();
-                StyleUtility.StyleVisible(bindingInput);
-                StyleUtility.StyleHidden(textElement);
-                bindingInput.Focus();
+                ShowElement(bindingInput);
+                HideElement(textElement);
+                bindingInput.RegisterCallback<GeometryChangedEvent>(FocusElementDelayed);
             }
+        }
+
+        static void FocusElementDelayed(GeometryChangedEvent evt)
+        {
+            var element = (VisualElement)evt.target;
+            element.Focus();
+            element.UnregisterCallback<GeometryChangedEvent>(FocusElementDelayed);
         }
 
         void EndRebind(bool refresh = true)
@@ -1109,6 +561,10 @@ namespace UnityEditor.ShortcutManagement
             //TODO: this refresh causes issues when trying to double click another binding, while a binding is being edited.
             if (refresh)
                 m_ShortcutsTable.Refresh();
+
+            // Styles are re-applied after exiting the text field
+            // Update position again to make it match the resize handle
+            m_HorizontalColumnDragger.UpdatePositions();
         }
 
         void OnSearchStringChanged(ChangeEvent<string> evt)
@@ -1136,13 +592,9 @@ namespace UnityEditor.ShortcutManagement
                     break;
             }
             if (shouldShow)
-            {
-                StyleUtility.StyleSearchEndingCancelButtonVisible(m_SearchCancelEnding);
-            }
+                m_SearchCancelEnding.AddToClassList("showCancel");
             else
-            {
-                StyleUtility.StyleSearchEnding(m_SearchCancelEnding);
-            }
+                m_SearchCancelEnding.RemoveFromClassList("showCancel");
         }
 
         void CancelSearchClicked(MouseDownEvent evt)
@@ -1180,12 +632,12 @@ namespace UnityEditor.ShortcutManagement
             switch (m_ViewController.searchMode)
             {
                 case SearchOption.Name:
-                    StyleUtility.StyleVisible(m_SearchTextField);
-                    StyleUtility.StyleHidden(m_KeyBindingSearchField);
+                    ShowElement(m_SearchTextField);
+                    HideElement(m_KeyBindingSearchField);
                     break;
                 case SearchOption.Binding:
-                    StyleUtility.StyleHidden(m_SearchTextField);
-                    StyleUtility.StyleVisible(m_KeyBindingSearchField);
+                    HideElement(m_SearchTextField);
+                    ShowElement(m_KeyBindingSearchField);
                     break;
             }
         }
@@ -1285,7 +737,7 @@ namespace UnityEditor.ShortcutManagement
             name = k.ToString();
             text = displayName;
 
-            StyleUtility.StyleKey(this);
+            //StyleUtility.StyleKey(this);
         }
     }
 
@@ -1308,6 +760,8 @@ namespace UnityEditor.ShortcutManagement
                 displayName = name;
             }
         }
+
+        const int k_KeySize = 34;
 
         EventModifiers m_CurrentModifiers;
         Key m_SelectedKey;
@@ -1471,35 +925,35 @@ namespace UnityEditor.ShortcutManagement
                 new[]
                 {
                     new KeyDef(KeyCode.None),
-                    new KeyDef(KeyCode.UpArrow, "▲"),
+                    new KeyDef(KeyCode.UpArrow, "↑"),
                     new KeyDef(KeyCode.None),
                 },
                 new[]
                 {
-                    new KeyDef(KeyCode.LeftArrow, "◀"),
-                    new KeyDef(KeyCode.DownArrow, "▼"),
-                    new KeyDef(KeyCode.RightArrow, "▶"),
+                    new KeyDef(KeyCode.LeftArrow, "←"),
+                    new KeyDef(KeyCode.DownArrow, "↓"),
+                    new KeyDef(KeyCode.RightArrow, "→"),
                 }
             };
 
-            var dictionaryKeyStyle = new Dictionary<KeyCode, Action<Key>>()
+            var dictionaryKeyStyle = new Dictionary<KeyCode, string>()
             {
-                {KeyCode.Backspace, StyleUtility.StyleKeyFlexibleWidth},
-                {KeyCode.Tab, StyleUtility.StyleKeyFlexibleWidth},
-                {KeyCode.Slash, StyleUtility.StyleKeyFlexibleWidth},
-                {KeyCode.CapsLock, StyleUtility.StyleKeyFlexibleWidth},
-                {KeyCode.Return, StyleUtility.StyleKeyFlexibleWidth},
-                {KeyCode.LeftShift, StyleUtility.StyleKeyFlexibleWidth},
-                {KeyCode.RightShift, StyleUtility.StyleKeyFlexibleWidth},
-                {KeyCode.LeftControl, StyleUtility.StyleKeyFlexibleWidth},
-                {KeyCode.LeftWindows, StyleUtility.StyleKeyFlexibleWidth},
-                {KeyCode.LeftCommand, StyleUtility.StyleKeyFlexibleWidth},
-                {KeyCode.LeftAlt, StyleUtility.StyleKeyFlexibleWidth},
-                {KeyCode.Space, StyleUtility.StyleSpace},
-                {KeyCode.RightAlt, StyleUtility.StyleKeyFlexibleWidth},
-                {KeyCode.RightWindows, StyleUtility.StyleKeyFlexibleWidth},
-                {KeyCode.RightControl, StyleUtility.StyleKeyFlexibleWidth},
-                {KeyCode.RightCommand, StyleUtility.StyleKeyFlexibleWidth},
+                {KeyCode.Backspace, "flexible"},
+                {KeyCode.Tab, "flexible"},
+                {KeyCode.Slash, "flexible"},
+                {KeyCode.CapsLock, "flexible"},
+                {KeyCode.Return, "flexible"},
+                {KeyCode.LeftShift, "flexible"},
+                {KeyCode.RightShift, "flexible"},
+                {KeyCode.LeftControl, "flexible"},
+                {KeyCode.LeftWindows, "flexible"},
+                {KeyCode.LeftCommand, "flexible"},
+                {KeyCode.LeftAlt, "flexible"},
+                {KeyCode.Space, "space"},
+                {KeyCode.RightAlt, "flexible"},
+                {KeyCode.RightWindows, "flexible"},
+                {KeyCode.RightControl, "flexible"},
+                {KeyCode.RightCommand, "flexible"},
             };
 
             var mainContainer = new VisualElement() { name = "fullKeyboardContainer" };
@@ -1511,15 +965,10 @@ namespace UnityEditor.ShortcutManagement
 
             BuildKeyboardVisualTree(cursorControlKeysList, dictionaryKeyStyle, cursorControlContainer);
 
-            compactContainer.style.width = (keysList[0].Length) * StyleUtility.k_KeySize;
-            StyleUtility.StyleCompactContainer(compactContainer);
-
-            StyleUtility.StyleKeyboardElement(this);
+            compactContainer.style.width = (keysList[0].Length) * k_KeySize;
 
             focusable = true;
             tabIndex = 0;
-
-            StyleUtility.StyleRow(mainContainer);
 
             mainContainer.Add(compactContainer);
             mainContainer.Add(cursorControlContainer);
@@ -1535,8 +984,6 @@ namespace UnityEditor.ShortcutManagement
             RegisterCallback<KeyUpEvent>(OnKeyUp);
             RegisterCallback<ExecuteCommandEvent>(HandleModifierKeysCommand);
             RegisterCallback<ValidateCommandEvent>(HandleModifierKeysCommand);
-            //RegisterCallback<MouseOverEvent>(OnMouseOver);
-            //RegisterCallback<MouseOutEvent>(OnMouseOut);
 
             RegisterCallback<DragEnterEvent>(OnDragEnter);
             RegisterCallback<DragUpdatedEvent>(OnDragUpdated);
@@ -1601,7 +1048,7 @@ namespace UnityEditor.ShortcutManagement
                 DragPerformed(keyElement.key, m_CurrentModifiers, shortcutEntry);
         }
 
-        void BuildKeyboardVisualTree(List<KeyDef[]> keysList, Dictionary<KeyCode, Action<Key>> dictionaryKeyStyle, VisualElement container)
+        void BuildKeyboardVisualTree(List<KeyDef[]> keysList, Dictionary<KeyCode, string> dictionaryKeyStyle, VisualElement container)
         {
             foreach (var rowKey in keysList)
             {
@@ -1612,13 +1059,11 @@ namespace UnityEditor.ShortcutManagement
                     if (keyDef.keycode != KeyCode.None)
                     {
                         var keyElement = new Key(keyDef.keycode, keyDef.displayName);
-                        StyleUtility.StyleVerticalKeySizing(keyElement);
-                        StyleUtility.NormalTextColor(keyElement);
 
-                        Action<Key> keyStyler;
-                        if (dictionaryKeyStyle.TryGetValue(keyDef.keycode, out keyStyler))
+                        string klass;
+                        if (dictionaryKeyStyle.TryGetValue(keyDef.keycode, out klass))
                         {
-                            keyStyler(keyElement);
+                            keyElement.AddToClassList(klass);
                         }
 
                         if (m_KeyBindingStateProvider.IsModifier(keyDef.keycode))
@@ -1631,12 +1076,12 @@ namespace UnityEditor.ShortcutManagement
                                 m_ModifierKeys.Add(modifier, keyList);
                             }
                             keyList.Add(keyElement);
-                            StyleUtility.StyleModifier(keyElement);
+                            keyElement.AddToClassList("modifier");
                         }
 
                         if (m_KeyBindingStateProvider.IsReservedKey(keyDef.keycode))
                         {
-                            StyleUtility.StyleSystemReserved(keyElement);
+                            keyElement.AddToClassList("reserved");
                         }
 
                         keyRow.Add(keyElement);
@@ -1645,20 +1090,21 @@ namespace UnityEditor.ShortcutManagement
                     else
                     {
                         var spacer = new VisualElement();
-                        StyleUtility.StyleKeyFlexibleWidth(spacer);
+                        spacer.AddToClassList("flexible");
                         keyRow.Add(spacer);
                     }
                 }
 
+                keyRow.Children().Last().AddToClassList("last");
+
                 container.Add(keyRow);
             }
 
-            StyleUtility.StyleKeyboardFirstRow(container.Children().First());
-
+            container.Children().First().AddToClassList("first");
 
             foreach (var child in container.Children())
             {
-                StyleUtility.StyleRow(child);
+                child.AddToClassList("keyRow");
             }
         }
 
@@ -1677,15 +1123,13 @@ namespace UnityEditor.ShortcutManagement
 
             var bindingState = m_KeyBindingStateProvider.GetBindingStateForKeyWithModifiers(key.key, m_CurrentModifiers);
 
-            StyleUtility.StyleNormal(key);
-
-            if (m_SelectedKey == key)
-                StyleUtility.StyleSelected(key);
+            key.RemoveFromClassList("global");
+            key.RemoveFromClassList("contextuallyBound");
 
             if (bindingState == BindingState.BoundGlobally)
-                StyleUtility.StyleBoundGlobally(key);
+                key.AddToClassList("global");
             else if (bindingState == BindingState.BoundToContext)
-                StyleUtility.StyleBoundToContext(key);
+                key.AddToClassList("contextuallyBound");
         }
 
         void OnKeyDown(KeyDownEvent evt)
@@ -1713,9 +1157,9 @@ namespace UnityEditor.ShortcutManagement
                 foreach (var modifierKey in modifierPair.Value)
                 {
                     if (modifierPressed)
-                        StyleUtility.StyleModifierActive(modifierKey);
+                        modifierKey.AddToClassList("active");
                     else
-                        StyleUtility.StyleModifier(modifierKey);
+                        modifierKey.RemoveFromClassList("active");
                 }
             }
 
@@ -1767,32 +1211,11 @@ namespace UnityEditor.ShortcutManagement
 
             if (prevSelectedKey != null)
             {
-                StyleKey(prevSelectedKey);
+                prevSelectedKey.RemoveFromClassList("selected");
             }
 
             KeySelectedAction(m_SelectedKey.key, m_CurrentModifiers);
-            StyleUtility.StyleSelected(m_SelectedKey);
-        }
-
-        void OnMouseOut(MouseOutEvent evt)
-        {
-            var keyElement = evt.target as Key;
-            if (keyElement == null)
-                return;
-            StyleKey(keyElement);
-        }
-
-        void OnMouseOver(MouseOverEvent evt)
-        {
-            var keyElement = evt.target as Key;
-            if (keyElement == null)
-                return;
-
-            if (m_SelectedKey == keyElement)
-                return;
-
-            if (m_KeyBindingStateProvider.CanBeSelected(keyElement.key))
-                StyleUtility.StyleHover(keyElement);
+            m_SelectedKey.AddToClassList("selected");
         }
 
         public void Refresh()
@@ -1949,6 +1372,7 @@ namespace UnityEditor.ShortcutManagement
         float m_ClampPositionPadding;
         ListView m_Elements;
         float m_TargetPosition;
+        float m_VerticalScrollbarWidth;
 
         public HorizontalColumnDragger(float clampPositionPadding, ListView elements)
         {
@@ -1958,6 +1382,14 @@ namespace UnityEditor.ShortcutManagement
             // TODO: Replace this with the maximum text width of the left and right TextElements
             m_ClampPositionPadding = clampPositionPadding;
             m_Elements = elements;
+
+            m_Elements.Q(className: ScrollView.vScrollerUssClassName).RegisterCallback<GeometryChangedEvent>(ShortcutsTableGeometryChanged);
+        }
+
+        void ShortcutsTableGeometryChanged(GeometryChangedEvent evt)
+        {
+            var element = (VisualElement)evt.target;
+            m_VerticalScrollbarWidth = element.layout.width;
         }
 
         protected override void RegisterCallbacksOnTarget()
@@ -2036,17 +1468,16 @@ namespace UnityEditor.ShortcutManagement
             target.style.left = m_TargetPosition;
             UpdateElement(target.parent, handlePosition, 0);
 
-            float verticalScrollOffset = m_Elements.Q(className: ScrollView.vScrollerUssClassName).layout.width;
             foreach (var el in m_Elements.Children())
             {
-                UpdateElement(el, handlePosition, verticalScrollOffset);
+                UpdateElement(el, handlePosition, m_VerticalScrollbarWidth);
             }
         }
 
         void UpdateElement(VisualElement el, float handlePosition, float offset)
         {
-            float totalPadding = el.ElementAt(0).style.paddingLeft.value.value + el.ElementAt(0).style.paddingRight.value.value + el.ElementAt(1).style.paddingLeft.value.value + el.ElementAt(1).style.paddingRight.value.value;
-            float percentage = (handlePosition + (target.style.width.value.value) / 2 - totalPadding / 2) / (target.parent.layout.width - (totalPadding + offset));
+            var totalPadding = el.ElementAt(0).computedStyle.paddingLeft.value.value + el.ElementAt(0).computedStyle.paddingRight.value.value + el.ElementAt(1).computedStyle.paddingLeft.value.value + el.ElementAt(1).computedStyle.paddingRight.value.value;
+            var percentage = (handlePosition + (target.computedStyle.width.value.value) / 2 - totalPadding / 2) / (target.parent.layout.width - (totalPadding + offset));
 
             el.ElementAt(0).style.flexGrow = percentage;
             el.ElementAt(1).style.flexGrow = 1 - percentage;
