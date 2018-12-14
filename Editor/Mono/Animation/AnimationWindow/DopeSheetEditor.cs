@@ -1211,15 +1211,16 @@ namespace UnityEditorInternal
             state.ClearSelections();
             Object[] objectReferences = GetSortedDragAndDropObjectReferences();
 
-            foreach (var obj in objectReferences)
+            int startFrame = AnimationKeyTime.Time(time, targetCurve.clip.frameRate).frame;
+
+            for (int i = 0; i < objectReferences.Length; ++i)
             {
-                Object value = obj;
+                Object value = objectReferences[i];
 
                 if (value is Texture2D)
-                    value = SpriteUtility.TextureToSprite(obj as Texture2D);
+                    value = SpriteUtility.TextureToSprite(value as Texture2D);
 
-                CreateNewPPtrKeyframe(time, value, targetCurve);
-                time += 1f / targetCurve.clip.frameRate;
+                CreateNewPPtrKeyframe(AnimationKeyTime.Frame(startFrame + i, targetCurve.clip.frameRate).time, value, targetCurve);
             }
 
             state.SaveCurve(targetCurve, undoLabel);

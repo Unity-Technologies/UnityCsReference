@@ -1135,7 +1135,7 @@ namespace UnityEditorInternal
                 if (newKeyframe.curve == null || !newKeyframe.curve.animationIsEditable)
                     continue;
 
-                newKeyframe.time += time.time;
+                newKeyframe.time = AnimationKeyTime.Time(newKeyframe.time + currentTime, newKeyframe.curve.clip.frameRate).timeRound;
 
                 //  Only allow pasting of key frame from numerical curves to numerical curves or from pptr curves to pptr curves.
                 if ((newKeyframe.time >= 0.0f) && (newKeyframe.curve != null) && (newKeyframe.curve.isPPtrCurve == keyframe.curve.isPPtrCurve))
