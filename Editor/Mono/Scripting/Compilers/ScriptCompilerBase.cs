@@ -129,9 +129,9 @@ namespace UnityEditor.Scripting.Compilers
                 Debug.LogError($"{relativeCustomResponseFilePath} Parse Error : {error}");
             }
 
-            arguments.AddRange(responseFileData.Defines.Distinct().Select(define => "/define:" + define));
+            arguments.AddRange(responseFileData.Defines.Distinct().Select(define => "-define:" + define));
             arguments.AddRange(responseFileData.FullPathReferences.Select(reference =>
-                    "/reference:" + PrepareFileName(reference.Assembly)));
+                    "-reference:" + PrepareFileName(reference.Assembly)));
 
             if (responseFileData.Unsafe) arguments.Add("/unsafe");
             arguments.AddRange(responseFileData.OtherArguments);
