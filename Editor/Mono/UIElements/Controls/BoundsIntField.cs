@@ -57,6 +57,7 @@ namespace UnityEditor.UIElements
             labelElement.AddToClassList(labelUssClassName);
 
             m_PositionField = new Vector3IntField("Position");
+            m_PositionField.name = "unity-m_Position-input";
             m_PositionField.delegatesFocus = true;
             m_PositionField.AddToClassList(positionUssClassName);
             m_PositionField.RegisterValueChangedCallback(e =>
@@ -69,6 +70,7 @@ namespace UnityEditor.UIElements
 
 
             m_SizeField = new Vector3IntField("Size");
+            m_SizeField.name = "unity-m_Size-input";
             m_SizeField.delegatesFocus = true;
             m_SizeField.AddToClassList(sizeUssClassName);
             m_SizeField.RegisterValueChangedCallback(e =>

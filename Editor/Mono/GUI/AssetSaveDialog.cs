@@ -77,7 +77,11 @@ namespace UnityEditor
             AssetSaveDialog win = EditorWindow.GetWindowDontShow<AssetSaveDialog>();
             win.titleContent = EditorGUIUtility.TrTextContent("Save Assets");
             win.SetAssets(assets);
-            win.ShowUtility();
+
+            win.minSize = new Vector2(400, 100);
+            win.maxSize = new Vector2(550, 550);
+
+            win.ShowModalUtility();
             win.ShowModal();
 
             assetsThatShouldBeSaved = new string[win.m_AssetsToSave.Count + numMetaFiles];

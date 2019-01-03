@@ -128,6 +128,8 @@ namespace UnityEditorInternal
         private IAnimationWindowPostProcess[] m_PostProcessComponents;
         private PlayableGraph m_Graph;
         private Playable m_GraphRoot;
+        private AnimationClipPlayable m_ClipPlayable;
+        private AnimationClipPlayable m_CandidateClipPlayable;
 
         private static ProfilerMarker s_ResampleAnimationMarker = new ProfilerMarker("AnimationWindowControl.ResampleAnimation");
 
@@ -506,7 +508,7 @@ namespace UnityEditorInternal
                 return;
 
             m_Graph.Destroy();
-            m_GraphRoot.Destroy();
+            m_GraphRoot = Playable.Null;
         }
 
         private void RebuildGraph(Animator animator)
@@ -516,21 +518,21 @@ namespace UnityEditorInternal
             m_Graph = PlayableGraph.Create("PreviewGraph");
             m_Graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
 
-            var clipPlayable = AnimationClipPlayable.Create(m_Graph, state.activeAnimationClip);
-            clipPlayable.SetOverrideLoopTime(true);
-            clipPlayable.SetLoopTime(false);
-            clipPlayable.SetApplyFootIK(false);
+            m_ClipPlayable = AnimationClipPlayable.Create(m_Graph, state.activeAnimationClip);
+            m_ClipPlayable.SetOverrideLoopTime(true);
+            m_ClipPlayable.SetLoopTime(false);
+            m_ClipPlayable.SetApplyFootIK(false);
 
-            m_GraphRoot = (Playable)clipPlayable;
+            m_GraphRoot = (Playable)m_ClipPlayable;
 
             if (m_CandidateClip != null)
             {
                 var mixer = AnimationLayerMixerPlayable.Create(m_Graph, 2);
 
-                var candidateClipPlayable = AnimationClipPlayable.Create(m_Graph, m_CandidateClip);
+                m_CandidateClipPlayable = AnimationClipPlayable.Create(m_Graph, m_CandidateClip);
 
                 m_Graph.Connect(m_GraphRoot, 0, mixer, 0);
-                m_Graph.Connect(candidateClipPlayable, 0, mixer, 1);
+                m_Graph.Connect(m_CandidateClipPlayable, 0, mixer, 1);
 
                 mixer.SetInputWeight(0, 1.0f);
                 mixer.SetInputWeight(1, 1.0f);
@@ -604,6 +606,8 @@ namespace UnityEditorInternal
 
                     if (m_CandidateClip != null)
                         AnimationMode.AddCandidates(state.activeRootGameObject, m_CandidateClip);
+
+                    m_ClipPlayable.SetSampleRate(playing ? -1 : state.activeAnimationClip.frameRate);
 
                     AnimationMode.SamplePlayableGraph(state.activeRootGameObject, m_Graph, 0, time.time);
 

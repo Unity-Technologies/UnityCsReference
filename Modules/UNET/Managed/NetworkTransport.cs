@@ -13,7 +13,7 @@ namespace UnityEngine.Networking
     {
         public static bool DoesEndPointUsePlatformProtocols(EndPoint endPoint)
         {
-            if (endPoint.GetType().FullName == "UnityEngine.PS4.SceEndPoint" || endPoint.GetType().FullName == "UnityEngine.XboxOne.XboxOneEndPoint")
+            if (endPoint.GetType().FullName == "UnityEngine.PS4.SceEndPoint")
             {
                 SocketAddress src = endPoint.Serialize();
 

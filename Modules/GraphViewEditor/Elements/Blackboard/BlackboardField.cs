@@ -14,7 +14,6 @@ namespace UnityEditor.Experimental.GraphView
         private Pill m_Pill;
         private TextField m_TextField;
         private Label m_TypeLabel;
-        private bool m_EditTitleCancelled = false;
 
         public string text
         {
@@ -61,10 +60,10 @@ namespace UnityEditor.Experimental.GraphView
             m_TextField = mainContainer.Q<TextField>("textField");
             Assert.IsTrue(m_TextField != null);
 
+            m_TextField.style.display = DisplayStyle.None;
+
             var textinput = m_TextField.Q(TextField.textInputUssName);
-            textinput.visible = false;
             textinput.RegisterCallback<FocusOutEvent>(e => { OnEditTextFinished(); });
-            textinput.RegisterCallback<KeyDownEvent>(OnTextFieldKeyPressed);
 
             Add(mainContainer);
 
@@ -94,29 +93,12 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
-        private void OnTextFieldKeyPressed(KeyDownEvent e)
-        {
-            switch (e.keyCode)
-            {
-                case KeyCode.Escape:
-                    m_EditTitleCancelled = true;
-                    m_TextField.Q(TextField.textInputUssName).Blur();
-                    break;
-                case KeyCode.Return:
-                case KeyCode.KeypadEnter:
-                    m_TextField.Q(TextField.textInputUssName).Blur();
-                    break;
-                default:
-                    break;
-            }
-        }
-
         private void OnEditTextFinished()
         {
             m_ContentItem.visible = true;
-            m_TextField.Q(TextField.textInputUssName).visible = false;
+            m_TextField.style.display = DisplayStyle.None;
 
-            if (!m_EditTitleCancelled && (text != m_TextField.text))
+            if (text != m_TextField.text)
             {
                 Blackboard blackboard = GetFirstAncestorOfType<Blackboard>();
 
@@ -129,8 +111,6 @@ namespace UnityEditor.Experimental.GraphView
                     text = m_TextField.text;
                 }
             }
-
-            m_EditTitleCancelled = false;
         }
 
         private void OnMouseDownEvent(MouseDownEvent e)
@@ -145,7 +125,7 @@ namespace UnityEditor.Experimental.GraphView
         public void OpenTextEditor()
         {
             m_TextField.SetValueWithoutNotify(text);
-            m_TextField.Q(TextField.textInputUssName).visible = true;
+            m_TextField.style.display = DisplayStyle.Flex;
             m_ContentItem.visible = false;
             m_TextField.Q(TextField.textInputUssName).Focus();
             m_TextField.SelectAll();

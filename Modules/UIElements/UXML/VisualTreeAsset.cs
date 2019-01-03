@@ -12,6 +12,13 @@ namespace UnityEngine.UIElements
     [Serializable]
     public class VisualTreeAsset : ScriptableObject
     {
+        internal int GetNextChildSerialNumber()
+        {
+            int n = m_VisualElementAssets?.Count ?? 0;
+            n += m_TemplateAssets?.Count ?? 0;
+            return n;
+        }
+
         private static readonly Dictionary<string, VisualElement> s_TemporarySlotInsertionPoints = new Dictionary<string, VisualElement>();
 
         [Serializable]
@@ -88,6 +95,7 @@ namespace UnityEngine.UIElements
         }
 
         [SerializeField] private int m_ContentContainerId;
+        [SerializeField] int m_ContentHash;
 
         internal int contentContainerId
         {
@@ -151,6 +159,8 @@ namespace UnityEngine.UIElements
             List<VisualElementAsset> rootAssets;
             if (idToChildren.TryGetValue(0, out rootAssets) && rootAssets != null)
             {
+                rootAssets.Sort(CompareForOrder);
+
                 foreach (VisualElementAsset rootElement in rootAssets)
                 {
                     Assert.IsNotNull(rootElement);
@@ -212,6 +222,8 @@ namespace UnityEngine.UIElements
             List<VisualElementAsset> children;
             if (idToChildren.TryGetValue(root.id, out children))
             {
+                children.Sort(CompareForOrder);
+
                 foreach (VisualElementAsset childVea in children)
                 {
                     // this will fill the slotInsertionPoints mapping
@@ -259,6 +271,8 @@ namespace UnityEngine.UIElements
 
             return ve;
         }
+
+        static int CompareForOrder(VisualElementAsset a, VisualElementAsset b) => a.orderInDocument.CompareTo(b.orderInDocument);
 
         internal bool SlotDefinitionExists(string slotName)
         {
@@ -401,6 +415,17 @@ namespace UnityEngine.UIElements
             }
 
             return res;
+        }
+
+        internal int contentHash
+        {
+            get { return m_ContentHash; }
+            set { m_ContentHash = value; }
+        }
+
+        public override int GetHashCode()
+        {
+            return contentHash;
         }
     }
 

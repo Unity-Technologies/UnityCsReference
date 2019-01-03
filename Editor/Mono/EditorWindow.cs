@@ -13,6 +13,7 @@ using Unity.Experimental.EditorMode;
 using SerializableJsonDictionary = UnityEditor.Experimental.UIElements.SerializableJsonDictionary;
 using ExperimentalVisualElement = UnityEngine.Experimental.UIElements.VisualElement;
 using UnityEngine.UIElements;
+using UnityEditor.UIElements;
 
 namespace UnityEditor
 {
@@ -535,6 +536,11 @@ namespace UnityEditor
             ShowPopupWithMode(ShowMode.PopupMenu, true);
         }
 
+        public void ShowModalUtility()
+        {
+            ShowWithMode(ShowMode.ModalUtility);
+        }
+
         // Used for popup style windows.
         internal void ShowPopupWithMode(ShowMode mode, bool giveFocus)
         {
@@ -688,7 +694,7 @@ namespace UnityEditor
             }
             else if (m_Parent.uieMode == GUIView.UIElementsMode.Experimental)
             {
-                m_Parent.experimentalVisualTree.panel.dispatcher?.PushDispatcherContext();
+                m_Parent.experimentalVisualTree.panel.dispatcher?.PopDispatcherContext();
             }
 
             guiState.ApplyAndForget();
@@ -1103,6 +1109,22 @@ namespace UnityEditor
             }
         }
 
+        private void RefreshStylesAfterExternalEvent()
+        {
+            if (m_Parent.uieMode != GUIView.UIElementsMode.Public)
+                return;
+
+            var panel = m_Parent.visualTree.elementPanel;
+            if (panel == null)
+                return;
+
+            var updater = panel.GetUpdater(VisualTreeUpdatePhase.Bindings) as VisualTreeBindingsUpdater;
+            if (updater == null)
+                return;
+
+            updater.PollElementsWithBindings((e, b) => BindingExtensions.HandleStyleUpdate(e));
+        }
+
         // Sends an Event to a window.
         public bool SendEvent(Event e)
         {
@@ -1123,11 +1145,17 @@ namespace UnityEditor
         private void OnEnableINTERNAL()
         {
             EditorModes.RegisterWindow(this);
+
+            AnimationMode.onAnimationRecordingStart += RefreshStylesAfterExternalEvent;
+            AnimationMode.onAnimationRecordingStop += RefreshStylesAfterExternalEvent;
         }
 
         private void OnDisableINTERNAL()
         {
             EditorModes.UnregisterWindow(this);
+
+            AnimationMode.onAnimationRecordingStart -= RefreshStylesAfterExternalEvent;
+            AnimationMode.onAnimationRecordingStop -= RefreshStylesAfterExternalEvent;
         }
 
         // Internal stuff:

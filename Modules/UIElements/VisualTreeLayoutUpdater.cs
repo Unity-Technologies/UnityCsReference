@@ -38,7 +38,9 @@ namespace UnityEngine.UIElements
                 if (validateLayoutCount > 0)
                     panel.ApplyStyles();
 
+                panel.duringLayoutPhase = true;
                 visualTree.yogaNode.CalculateLayout();
+                panel.duringLayoutPhase = false;
                 using (new EventDispatcherGate(visualTree.panel.dispatcher))
                 {
                     UpdateSubTree(visualTree);

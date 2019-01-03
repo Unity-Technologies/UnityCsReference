@@ -23,7 +23,8 @@ namespace UnityEditor
     internal enum TerrainTool
     {
         None = -1,
-        Paint = 0,
+        CreateNeighbor = 0,
+        Paint = 1,
         PlaceTree,
         PaintDetail,
         TerrainSettings,
@@ -67,6 +68,7 @@ namespace UnityEditor
             // List of tools supported by the editor
             public readonly GUIContent[] toolIcons =
             {
+                EditorGUIUtility.TrIconContent("TerrainInspector.TerrainToolAdd", "Create Neighbor Terrains"),
                 EditorGUIUtility.TrIconContent("TerrainInspector.TerrainToolSplat", "Paint Terrain"),
                 EditorGUIUtility.TrIconContent("TerrainInspector.TerrainToolTrees", "Paint Trees"),
                 EditorGUIUtility.TrIconContent("TerrainInspector.TerrainToolPlants", "Paint Details"),
@@ -75,6 +77,7 @@ namespace UnityEditor
 
             public readonly GUIContent[] toolNames =
             {
+                EditorGUIUtility.TrTextContent("Create Neighbor Terrains", "Click the edges to create neighbor terrains"),
                 EditorGUIUtility.TrTextContent("Paint Terrain", "Select a tool from the drop down list"),
                 EditorGUIUtility.TrTextContent("Paint Trees", "Click to paint trees.\n\nHold shift and click to erase trees.\n\nHold Ctrl and click to erase only trees of the selected type."),
                 EditorGUIUtility.TrTextContent("Paint Details", "Click to paint details.\n\nHold shift and click to erase details.\n\nHold Ctrl and click to erase only details of the selected type."),
@@ -229,6 +232,7 @@ namespace UnityEditor
         internal int m_ActivePaintToolIndex = 0;
         static internal ITerrainPaintTool[] m_Tools = null;
         static internal string[] m_ToolNames = null;
+        static internal ITerrainPaintTool m_CreateTool = null;
 
         static OnPaintContext onPaintEditContext = new OnPaintContext(new RaycastHit(), null, Vector2.zero, 0.0f, 0.0f);
         static OnInspectorGUIContext onInspectorGUIEditContext = new OnInspectorGUIContext();
@@ -243,6 +247,14 @@ namespace UnityEditor
             else if (selectedTool == TerrainTool.PaintDetail)
             {
                 return PaintDetailsTool.instance;
+            }
+            else if (selectedTool == TerrainTool.CreateNeighbor)
+            {
+                if (m_CreateTool == null)
+                {
+                    m_CreateTool = CreateTerrainTool.instance;
+                }
+                return m_CreateTool;
             }
 
             if (m_ActivePaintToolIndex >= m_Tools.Length)
@@ -557,6 +569,7 @@ namespace UnityEditor
         {
             m_Tools = null;
             m_ToolNames = null;
+            m_CreateTool = null;
 
             var arrTools = new List<ITerrainPaintTool>();
             var arrNames = new List<string>();
@@ -570,22 +583,37 @@ namespace UnityEditor
                 var mi = instanceProperty.GetGetMethod();
                 var tool = (ITerrainPaintTool)mi.Invoke(null, null);
                 string toolName = tool.GetName();
-                int existingIndex = arrNames.FindIndex(x => x == toolName);
-                if (existingIndex >= 0)
+                if (toolName.Equals("Create Neighbor Terrains"))
                 {
+                    // create terrain tool
                     // check if existing is builtin.
                     if (klass.Assembly.GetCustomAttributes(typeof(AssemblyIsEditorAssembly), false).Length > 0)
                         continue;
                     else
                     {
-                        arrTools[existingIndex] = tool;
-                        arrNames[existingIndex] = toolName;
+                        m_CreateTool = tool;
                     }
                 }
                 else
                 {
-                    arrTools.Add(tool);
-                    arrNames.Add(tool.GetName());
+                    // paint tool
+                    int existingIndex = arrNames.FindIndex(x => x == toolName);
+                    if (existingIndex >= 0)
+                    {
+                        // check if existing is builtin.
+                        if (klass.Assembly.GetCustomAttributes(typeof(AssemblyIsEditorAssembly), false).Length > 0)
+                            continue;
+                        else
+                        {
+                            arrTools[existingIndex] = tool;
+                            arrNames[existingIndex] = toolName;
+                        }
+                    }
+                    else
+                    {
+                        arrTools.Add(tool);
+                        arrNames.Add(tool.GetName());
+                    }
                 }
             }
 
@@ -652,7 +680,7 @@ namespace UnityEditor
                 m_ShowReflectionProbesGUI.value = terrain.materialType == Terrain.MaterialType.BuiltInStandard || terrain.materialType == Terrain.MaterialType.Custom;
             }
 
-            if (m_Tools == null)
+            if (m_Tools == null || m_CreateTool == null)
             {
                 ResetPaintTools();
             }
@@ -756,6 +784,7 @@ namespace UnityEditor
             {
                 // inactivate previous tool, if necessary
                 if (m_PreviousSelectedTool == TerrainTool.Paint ||
+                    m_PreviousSelectedTool == TerrainTool.CreateNeighbor ||
                     m_PreviousSelectedTool == TerrainTool.PaintDetail ||
                     m_PreviousSelectedTool == TerrainTool.PlaceTree)
                 {
@@ -766,6 +795,7 @@ namespace UnityEditor
 
                 // activate new tool, if necessary
                 if (currentTool == TerrainTool.Paint ||
+                    currentTool == TerrainTool.CreateNeighbor ||
                     currentTool == TerrainTool.PaintDetail ||
                     currentTool == TerrainTool.PlaceTree)
                 {
@@ -1332,7 +1362,7 @@ namespace UnityEditor
 
         public void ShowPaint()
         {
-            if (m_Tools != null && m_Tools.Length > 1 && m_ToolNames != null)
+            if (m_Tools != null && m_Tools.Length >= 1 && m_ToolNames != null)
             {
                 EditorGUI.BeginChangeCheck();
                 int newPaintToolIndex = EditorGUILayout.Popup(m_ActivePaintToolIndex, m_ToolNames);
@@ -1347,6 +1377,15 @@ namespace UnityEditor
                 GUILayout.EndVertical();
 
                 activeTool.OnInspectorGUI(m_Terrain, onInspectorGUIEditContext);
+            }
+        }
+
+        public void ShowCreateNeighborTerrain()
+        {
+            if (m_CreateTool != null)
+            {
+                ITerrainPaintTool createTool = GetActiveTool();
+                createTool.OnInspectorGUI(m_Terrain, onInspectorGUIEditContext);
             }
         }
 
@@ -1726,7 +1765,12 @@ namespace UnityEditor
             if (tool != (int)TerrainTool.Paint)
             {
                 GUILayout.BeginVertical(EditorStyles.helpBox);
-                if (tool >= 0 && tool < styles.toolIcons.Length)
+                if (tool == (int)TerrainTool.CreateNeighbor)
+                {
+                    GUILayout.Label(m_CreateTool.GetName());
+                    GUILayout.Label(m_CreateTool.GetDesc(), EditorStyles.wordWrappedMiniLabel);
+                }
+                else if (tool > (int)TerrainTool.Paint && tool < styles.toolIcons.Length)
                 {
                     GUILayout.Label(styles.toolNames[tool].text);
                     GUILayout.Label(styles.toolNames[tool].tooltip, EditorStyles.wordWrappedMiniLabel);
@@ -1746,6 +1790,9 @@ namespace UnityEditor
             {
                 case TerrainTool.Paint:
                     ShowPaint();
+                    break;
+                case TerrainTool.CreateNeighbor:
+                    ShowCreateNeighborTerrain();
                     break;
                 case TerrainTool.PlaceTree:
                     ShowTrees();

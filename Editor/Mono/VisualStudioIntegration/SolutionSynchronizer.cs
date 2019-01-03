@@ -21,6 +21,7 @@ using UnityEngine.Profiling;
 
 using UnityEditor.Compilation;
 using UnityEditor.Modules;
+using UnityEngine;
 
 namespace UnityEditor.VisualStudioIntegration
 {
@@ -270,7 +271,7 @@ namespace UnityEditor.VisualStudioIntegration
             var systemReferenceDirectories = MonoLibraryHelpers.GetSystemReferenceDirectories(island._api_compatibility_level);
 
             Dictionary<string, ScriptCompilerBase.ResponseFileData> responseFilesData = island._responseFiles.ToDictionary(x => x, x => ScriptCompilerBase.ParseResponseFileFromFile(
-                Path.Combine(_projectDirectory, x),
+                x,
                 _projectDirectory,
                 systemReferenceDirectories
             ));
@@ -543,7 +544,7 @@ namespace UnityEditor.VisualStudioIntegration
                 AppendReference(fullReference, projectBuilder);
             }
 
-            var responseRefs = responseFilesData.SelectMany(x => x.FullPathReferences.Select(r => r.Assembly));
+            var responseRefs = responseFilesData.SelectMany(x => x.FullPathReferences);
             foreach (var reference in responseRefs)
             {
                 AppendReference(reference, projectBuilder);
@@ -603,19 +604,22 @@ namespace UnityEditor.VisualStudioIntegration
             string toolsversion = "4.0";
             string productversion = "10.0.20506";
             string baseDirectory = ".";
+            string cscToolPath = "$(CscToolPath)";
+            string cscToolExe = "$(CscToolExe)";
             ScriptingLanguage language = ScriptingLanguageFor(island);
 
             if (PlayerSettingsEditor.IsLatestApiCompatibility(island._api_compatibility_level))
             {
-                if (ScriptEditorUtility.GetScriptEditorFromPreferences() == ScriptEditorUtility.ScriptEditor.VisualStudioCode)
-                {
-                    targetframeworkversion = "v4.5";
-                }
-                else
-                {
-                    targetframeworkversion = "v4.7.1";
-                }
+                targetframeworkversion = "v4.7.2";
                 targetLanguageVersion = "latest";
+
+                cscToolPath = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "RoslynScripts");
+                if (Application.platform == RuntimePlatform.WindowsEditor)
+                    cscToolExe = "unity_csc.bat";
+                else
+                    cscToolExe = "unity_csc.sh";
+
+                cscToolPath = Paths.UnifyDirectorySeparator(cscToolPath);
             }
             else if (_settings.VisualStudioVersion == 9)
             {
@@ -635,7 +639,9 @@ namespace UnityEditor.VisualStudioIntegration
                 targetframeworkversion,
                 targetLanguageVersion,
                 baseDirectory,
-                island._allowUnsafeCode | responseFilesData.Any(x => x.Unsafe)
+                island._allowUnsafeCode | responseFilesData.Any(x => x.Unsafe),
+                cscToolPath,
+                cscToolExe,
             };
 
             try

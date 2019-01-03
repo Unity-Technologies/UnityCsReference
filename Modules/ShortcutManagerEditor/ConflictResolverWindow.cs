@@ -126,7 +126,7 @@ namespace UnityEditor.ShortcutManagement
                 for (var index = 0; index < m_Entries.Count; index++)
                 {
                     var shortcutEntry = m_Entries[index];
-                    allItems.Add(new TreeViewItem { id = index, depth = 0, displayName = shortcutEntry.identifier.path });
+                    allItems.Add(new TreeViewItem { id = index, depth = 0, displayName = shortcutEntry.displayName });
                 }
 
                 SetupParentsAndChildrenFromDepths(root, allItems);
@@ -150,7 +150,7 @@ namespace UnityEditor.ShortcutManagement
                 {
                     case MyColumns.Name:
                     {
-                        GUI.Label(getCellRect, item.identifier.path);
+                        GUI.Label(getCellRect, item.displayName);
                         break;
                     }
                     case MyColumns.Type:

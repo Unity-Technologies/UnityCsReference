@@ -658,7 +658,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (buildingForEditor && assemblies.EditorAssemblyReferences != null)
                 references.AddRange(assemblies.EditorAssemblyReferences);
 
-            references.AddRange(MonoLibraryHelpers.GetSystemLibraryReferences(scriptAssembly.ApiCompatibilityLevel, scriptAssembly.BuildTarget, scriptAssembly.Language));
+            references.AddRange(MonoLibraryHelpers.GetSystemLibraryReferences(scriptAssembly.ApiCompatibilityLevel, scriptAssembly.Language));
 
             scriptAssembly.ScriptAssemblyReferences = scriptAssemblyReferences.ToArray();
             scriptAssembly.References = references.ToArray();

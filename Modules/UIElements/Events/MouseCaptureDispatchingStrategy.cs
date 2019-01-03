@@ -39,7 +39,6 @@ namespace UnityEngine.UIElements
             VisualElement captureVE = MouseCaptureController.mouseCapture as VisualElement;
             if (evt.eventTypeId != MouseCaptureOutEvent.TypeId() && captureVE != null && captureVE.panel == null)
             {
-                Debug.Log(String.Format("MouseCaptureController.mouseCapture ({0}) is not in a panel. Releasing the mouseCapture.", MouseCaptureController.mouseCapture));
                 MouseCaptureController.ReleaseMouse();
                 return;
             }

@@ -69,5 +69,18 @@ namespace Unity.Collections.LowLevel.Unsafe
         {
             throw new NotImplementedException("Patching this method failed");
         }
+
+        // converts generic enum to int without boxing
+        public static int EnumToInt<T>(T enumValue) where T : struct, IConvertible
+        {
+            var value = 0;
+            InternalEnumToInt(ref enumValue, ref value);
+            return value;
+        }
+
+        static void InternalEnumToInt<T>(ref T enumValue, ref int intValue)
+        {
+            throw new NotImplementedException("Patching this method failed");
+        }
     }
 }

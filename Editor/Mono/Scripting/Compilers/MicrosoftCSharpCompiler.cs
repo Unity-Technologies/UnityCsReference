@@ -65,36 +65,24 @@ namespace UnityEditor.Scripting.Compilers
             foreach (var source in m_Island._files)
             {
                 var f = PrepareFileName(source);
-                if (Application.platform == RuntimePlatform.WindowsEditor)
-                    f = f.Replace('/', '\\');
-                else
-                    f = f.Replace('\\', '/');
-
+                f = Paths.UnifyDirectorySeparator(f);
                 arguments.Add(f);
 
                 if (f != source)
                     filePathMappings.Add(f + " => " + source);
             }
 
-            var useNetCore = true;
-            var csc = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "Roslyn", "csc.exe");
+            var csc = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "RoslynScripts", "unity_csc");
             if (Application.platform == RuntimePlatform.WindowsEditor)
             {
-                csc = csc.Replace('/', '\\');
+                csc += ".bat";
             }
             else
             {
-                if (UseNetCoreCompiler())
-                {
-                    csc = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "Roslyn", "csc").Replace('\\', '/');
-                }
-                else
-                {
-                    useNetCore = false;
-                    csc = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "RoslynNet46", "csc.exe").Replace('\\', '/');
-                }
+                csc += ".sh";
             }
 
+            csc = Paths.UnifyDirectorySeparator(csc);
 
             if (!File.Exists(csc))
                 ThrowCompilerNotFoundException(csc);
@@ -117,46 +105,11 @@ namespace UnityEditor.Scripting.Compilers
 
             RunAPIUpdaterIfRequired(responseFile, filePathMappings);
 
-            if (useNetCore)
-            {
-                var psi = new ProcessStartInfo() { Arguments = argsPrefix + " /shared " + "@" + responseFile, FileName = csc, CreateNoWindow = true };
-                var program = new Program(psi);
-                program.Start();
-                return program;
-            }
-            else
-            {
-                var program = new ManagedProgram(
-                    MonoInstallationFinder.GetMonoBleedingEdgeInstallation(),
-                    "not needed",
-                    csc,
-                    argsPrefix + "@" + responseFile,
-                    false,
-                    null);
-                program.Start();
-                return program;
-            }
-        }
+            var psi = new ProcessStartInfo() { Arguments = argsPrefix + "@" + responseFile, FileName = csc, CreateNoWindow = true };
+            var program = new Program(psi);
+            program.Start();
 
-        static bool UseNetCoreCompiler()
-        {
-            bool shouldUse = false;
-            if (Application.platform == RuntimePlatform.OSXEditor)
-            {
-                if (SystemInfo.operatingSystem.StartsWith("Mac OS X 10."))
-                {
-                    var versionText = SystemInfo.operatingSystem.Substring(9);
-                    var version = new Version(versionText);
-
-                    if (version >= new Version(10, 12))
-                        shouldUse = true;
-                }
-                else
-                {
-                    shouldUse = true;
-                }
-            }
-            return shouldUse;
+            return program;
         }
 
         protected override Program StartCompiler()

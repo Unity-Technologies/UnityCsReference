@@ -24,6 +24,7 @@ namespace UnityEditor.ShortcutManagement
         internal string identifier { get; }
         internal Type context { get; }
         internal ShortcutBinding defaultBinding { get; }
+        public string displayName { get; set; }
         Action m_NoArgumentsAction;
 
         ShortcutAttribute(string id, Type context, ShortcutBinding defaultBinding)
@@ -31,6 +32,7 @@ namespace UnityEditor.ShortcutManagement
             this.identifier = id;
             this.context = context;
             this.defaultBinding = defaultBinding;
+            displayName = identifier;
         }
 
         public ShortcutAttribute(string id, [DefaultValue("null")] Type context = null)
@@ -76,7 +78,7 @@ namespace UnityEditor.ShortcutManagement
                 action = NoArgumentShortcutMethodProxy;
             }
 
-            return new ShortcutEntry(identifier, defaultCombination, action, context, type);
+            return new ShortcutEntry(identifier, defaultCombination, action, context, type, displayName);
         }
     }
 

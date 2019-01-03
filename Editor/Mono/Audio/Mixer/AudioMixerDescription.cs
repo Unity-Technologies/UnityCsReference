@@ -61,7 +61,9 @@ namespace UnityEditor.Audio
             ClearDefinitions();
 
             RegisterAudioMixerEffect("Attenuation", new MixerParameterDefinition[0]);
+
             RegisterAudioMixerEffect("Send", new MixerParameterDefinition[0]);
+
             RegisterAudioMixerEffect("Receive", new MixerParameterDefinition[0]);
 
             var duckVolDef = new MixerParameterDefinition[7];

@@ -198,6 +198,12 @@ namespace UnityEditor.Experimental.GraphView
             edgeControl.inputOrientation = m_InputPort?.orientation ?? (m_OutputPort?.orientation ?? Orientation.Horizontal);
         }
 
+        internal bool ForceUpdateEdgeControl()
+        {
+            m_EndPointsDirty = true;
+            return UpdateEdgeControl();
+        }
+
         public bool UpdateEdgeControl()
         {
             if (m_OutputPort == null && m_InputPort == null)
@@ -302,28 +308,33 @@ namespace UnityEditor.Experimental.GraphView
             return pos;
         }
 
-        void OnTrackOnAttach(AttachToPanelEvent e)
-        {
-            Port port = (Port)e.target;
-            port.UnregisterCallback<AttachToPanelEvent>(OnTrackOnAttach);
-            DoTrackGraphElement(port);
-        }
-
         void TrackGraphElement(Port port)
         {
             if (port.panel != null) // if the panel is null therefore the port is not yet attached to its hierarchy, so postpone the register
             {
                 DoTrackGraphElement(port);
             }
-            else
-            {
-                port.RegisterCallback<AttachToPanelEvent>(OnTrackOnAttach);
-            }
+
+            port.RegisterCallback<AttachToPanelEvent>(OnPortAttach);
+            port.RegisterCallback<DetachFromPanelEvent>(OnPortDetach);
+        }
+
+        void OnPortDetach(DetachFromPanelEvent e)
+        {
+            Port port = (Port)e.target;
+            DoUntrackGraphElement(port);
+        }
+
+        void OnPortAttach(AttachToPanelEvent e)
+        {
+            Port port = (Port)e.target;
+            DoTrackGraphElement(port);
         }
 
         void UntrackGraphElement(Port port)
         {
-            port.UnregisterCallback<AttachToPanelEvent>(OnTrackOnAttach);
+            port.UnregisterCallback<AttachToPanelEvent>(OnPortAttach);
+            port.UnregisterCallback<DetachFromPanelEvent>(OnPortDetach);
             DoUntrackGraphElement(port);
         }
 
@@ -334,11 +345,14 @@ namespace UnityEditor.Experimental.GraphView
             VisualElement current = port.hierarchy.parent;
             while (current != null)
             {
-                if (current is Node || current is GraphView.Layer)
+                if (current is GraphView.Layer)
                 {
                     break;
                 }
-                current.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+                if (current != port.node) // if we encounter our node ignore it but continue in the case there are nodes inside nodes
+                {
+                    current.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+                }
 
                 current = current.hierarchy.parent;
             }
@@ -353,11 +367,14 @@ namespace UnityEditor.Experimental.GraphView
             VisualElement current = port.hierarchy.parent;
             while (current != null)
             {
-                if (current is Node || current is GraphView.Layer)
+                if (current is GraphView.Layer)
                 {
                     break;
                 }
-                port.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+                if (current != port.node) // if we encounter our node ignore it but continue in the case there are nodes inside nodes
+                {
+                    port.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+                }
 
                 current = current.hierarchy.parent;
             }
@@ -384,6 +401,8 @@ namespace UnityEditor.Experimental.GraphView
         private void OnGeometryChanged(GeometryChangedEvent evt)
         {
             m_EndPointsDirty = true;
+
+            //We make sure UpdateEdgeControl will be called
             MarkDirtyRepaint();
         }
 

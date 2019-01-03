@@ -153,6 +153,8 @@ namespace UnityEngine.UIElements
 
         internal float currentPixelsPerPoint { get; set; } = 1.0f;
 
+        internal bool duringLayoutPhase {get; set;}
+
         internal bool isDirty
         {
             get { return version != repaintVersion; }

@@ -89,6 +89,20 @@ namespace UnityEngine.XR
         LegacyController
     };
 
+    [Flags]
+    public enum TrackingState : UInt32
+    {
+        None = 0,
+        Position = 1 << 0,
+        Rotation = 1 << 1,
+        Velocity = 1 << 2,
+        AngularVelocity = 1 << 3,
+        Acceleration = 1 << 4,
+        AngularAcceleration = 1 << 5,
+
+        All = (1 << 6) - 1 // Keep this as the last entry, if you add an entry, bump this shift up by 1 as well
+    };
+
     [RequiredByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     [NativeConditional("ENABLE_VR")]
@@ -212,9 +226,11 @@ namespace UnityEngine.XR
         public static InputFeatureUsage<bool> primary2DAxisClick = new InputFeatureUsage<bool>("Primary2DAxisClick");
         public static InputFeatureUsage<bool> primary2DAxisTouch = new InputFeatureUsage<bool>("Primary2DAxisTouch");
         public static InputFeatureUsage<bool> thumbrest = new InputFeatureUsage<bool>("Thumbrest");
-        public static InputFeatureUsage<bool> indexTouch = new InputFeatureUsage<bool>("IndexTouch");
-        public static InputFeatureUsage<bool> thumbTouch = new InputFeatureUsage<bool>("ThumbTouch");
 
+        public static InputFeatureUsage<TrackingState> trackingState = new InputFeatureUsage<TrackingState>("TrackingState");
+
+        public static InputFeatureUsage<float> indexTouch = new InputFeatureUsage<float>("IndexTouch");
+        public static InputFeatureUsage<float> thumbTouch = new InputFeatureUsage<float>("ThumbTouch");
         public static InputFeatureUsage<float> batteryLevel = new InputFeatureUsage<float>("BatteryLevel");
         public static InputFeatureUsage<float> trigger = new InputFeatureUsage<float>("Trigger");
         public static InputFeatureUsage<float> grip = new InputFeatureUsage<float>("Grip");
@@ -297,6 +313,18 @@ namespace UnityEngine.XR
         public bool TryGetFeatureValue(InputFeatureUsage<Hand> usage, out Hand value)              { return InputDevices.TryGetFeatureValue_XRHand(m_DeviceId, usage.name, out value); }
         public bool TryGetFeatureValue(InputFeatureUsage<Bone> usage, out Bone value)              { return InputDevices.TryGetFeatureValue_XRBone(m_DeviceId, usage.name, out value); }
         public bool TryGetFeatureValue(InputFeatureUsage<Eyes> usage, out Eyes value)              { return InputDevices.TryGetFeatureValue_XREyes(m_DeviceId, usage.name, out value); }
+
+        public bool TryGetFeatureValue(InputFeatureUsage<TrackingState> usage, out TrackingState value)
+        {
+            uint intValue = 0;
+            if (InputDevices.TryGetFeatureValue_UInt32(m_DeviceId, usage.name, out intValue))
+            {
+                value = (TrackingState)intValue;
+                return true;
+            }
+            value = TrackingState.None;
+            return false;
+        }
 
         public override bool Equals(object obj)
         {

@@ -45,6 +45,10 @@ namespace UnityEditor.Audio
             {
                 return "Pitch" + GetBasePath(group.GetDisplayString(), null);
             }
+            else if (group.GetGUIDForSend() == parameter)
+            {
+                return "Send" + GetBasePath(group.GetDisplayString(), null);
+            }
             else
             {
                 return "Error finding Parameter path.";
@@ -218,7 +222,8 @@ namespace UnityEditor.Audio
             foreach (AudioMixerGroupController group in groups)
             {
                 if (group.GetGUIDForVolume()             == parameter ||
-                    group.GetGUIDForPitch()              == parameter)
+                    group.GetGUIDForPitch()              == parameter ||
+                    group.GetGUIDForSend()               == parameter)
                 {
                     AudioGroupParameterPath newPath = new AudioGroupParameterPath(group, parameter);
                     exposedParamCache[parameter] = newPath;
@@ -362,7 +367,7 @@ namespace UnityEditor.Audio
             var exposedParams = exposedParameters;
             foreach (var param in exposedParams)
             {
-                if (group.GetGUIDForVolume() == param.guid || group.GetGUIDForPitch() == param.guid)
+                if (group.GetGUIDForVolume() == param.guid || group.GetGUIDForPitch() == param.guid || group.GetGUIDForSend() == param.guid)
                     RemoveExposedParameter(param.guid);
             }
         }
@@ -595,6 +600,8 @@ namespace UnityEditor.Audio
                     s.SetValue(targetGroup.GetGUIDForVolume(), value);
                 if (s.GetValue(sourceGroup.GetGUIDForPitch(), out value))
                     s.SetValue(targetGroup.GetGUIDForPitch(), value);
+                if (s.GetValue(sourceGroup.GetGUIDForSend(), out value))
+                    s.SetValue(targetGroup.GetGUIDForSend(), value);
             }
 
             AssetDatabase.AddObjectToAsset(targetGroup, this);

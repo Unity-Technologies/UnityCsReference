@@ -395,6 +395,9 @@ namespace UnityEngine.XR.WSA
 
         void Update()
         {
+            if (!IsWindowsMixedRealityCurrentTarget())
+                return;
+
             switch (m_Mode)
             {
                 case EmulationMode.None:

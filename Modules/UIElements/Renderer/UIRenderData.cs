@@ -58,6 +58,7 @@ namespace UnityEngine.UIElements
         // Misc data.
         public bool usesTextures;
         public readonly EmptyRenderer emptyRenderer = new EmptyRenderer();
+        public RenderHint effectiveRenderHint;
 
         public void ResetInnerChain(IUIRenderDevice renderDevice)
         {

@@ -154,7 +154,7 @@ namespace UnityEditor
         }
 
         [MenuItem("Window/Rendering/Lighting Settings", false, 1)]
-        static void CreateLightingWindow()
+        internal static void CreateLightingWindow()
         {
             LightingWindow window = EditorWindow.GetWindow<LightingWindow>();
             window.minSize = new Vector2(390, 390);

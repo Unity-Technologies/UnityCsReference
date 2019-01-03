@@ -52,7 +52,7 @@ namespace UnityEngine.UIElements
         public static void UpdateSkinningTransform(IUIRenderDevice renderDevice, UIRenderData transformData)
         {
             var transform = transformData.visualElement.worldTransform;
-            var viewTransformElement = transformData.effectiveViewTransformData.visualElement;
+            var viewTransformElement = transformData.effectiveViewTransformData?.visualElement;
             if (viewTransformElement != null)
             {
                 Matrix4x4 inverseViewTransform = viewTransformElement.worldTransform.inverse;
@@ -176,6 +176,38 @@ namespace UnityEngine.UIElements
             }
 
             return targetSize;
+        }
+
+        public static bool IsSkinnedTransformWithoutNesting(VisualElement ve)
+        {
+            if (ve == null || (ve.renderHint & RenderHint.SkinningTransform) == 0)
+                return false;
+
+            ve = ve.hierarchy.parent;
+            while (ve != null)
+            {
+                if ((ve.renderHint & RenderHint.SkinningTransform) != 0)
+                    return false;
+                ve = ve.hierarchy.parent;
+            }
+
+            return true;
+        }
+
+        public static bool IsViewTransformWithoutNesting(VisualElement ve)
+        {
+            if (ve == null || (ve.renderHint & RenderHint.ViewTransform) == 0)
+                return false;
+
+            ve = ve.hierarchy.parent;
+            while (ve != null)
+            {
+                if ((ve.renderHint & RenderHint.ViewTransform) != 0)
+                    return false;
+                ve = ve.hierarchy.parent;
+            }
+
+            return true;
         }
 
         public static readonly Rect s_InfiniteRect = new Rect(-1000000, -1000000, 2000000, 2000000);

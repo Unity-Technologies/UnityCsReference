@@ -17,6 +17,10 @@ namespace UnityEditor.SceneManagement
 
     public sealed partial class EditorSceneManager : SceneManager
     {
+        internal static UnityAction<Scene, NewSceneMode> sceneWasCreated;
+        internal static UnityAction<Scene, OpenSceneMode> sceneWasOpened;
+        public static event UnityAction<Scene, Scene> activeSceneChangedInEditMode;
+
         internal static bool CreateSceneAsset(string scenePath, bool createDefaultGameObjects)
         {
             if (!Utils.Paths.CheckValidAssetPathAndThatDirectoryExists(scenePath, ".unity"))
@@ -65,9 +69,6 @@ namespace UnityEditor.SceneManagement
             return SaveSceneInternal(scene, dstScenePath, saveAsCopy);
         }
 
-        internal static UnityAction<Scene, NewSceneMode> sceneWasCreated;
-        internal static UnityAction<Scene, OpenSceneMode> sceneWasOpened;
-
         private static void Internal_NewSceneWasCreated(Scene scene, NewSceneMode mode)
         {
             if (sceneWasCreated != null)
@@ -79,8 +80,6 @@ namespace UnityEditor.SceneManagement
             if (sceneWasOpened != null)
                 sceneWasOpened(scene, mode);
         }
-
-        public static event UnityAction<Scene, Scene> activeSceneChangedInEditMode;
 
         [RequiredByNativeCode]
         private static void Internal_ActiveSceneChangedInEditor(Scene previousActiveScene, Scene newActiveScene)

@@ -56,6 +56,7 @@ namespace UnityEditor.UIElements
             labelElement.AddToClassList(labelUssClassName);
 
             m_CenterField = new Vector3Field("Center");
+            m_CenterField.name = "unity-m_Center-input";
             m_CenterField.delegatesFocus = true;
             m_CenterField.AddToClassList(centerFieldUssClassName);
 
@@ -68,6 +69,7 @@ namespace UnityEditor.UIElements
             visualInput.hierarchy.Add(m_CenterField);
 
             m_ExtentsField = new Vector3Field("Extents");
+            m_ExtentsField.name = "unity-m_Extent-input";
             m_ExtentsField.delegatesFocus = true;
             m_ExtentsField.AddToClassList(extentsFieldUssClassName);
             m_ExtentsField.RegisterValueChangedCallback(e =>

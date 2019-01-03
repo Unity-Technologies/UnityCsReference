@@ -151,7 +151,7 @@ namespace UnityEngine.UIElements
             if (!m_Started)
                 return;
 
-            if (((versionChangeType & VersionChangeType.Transform) == VersionChangeType.Transform) && ((ve.renderHint & RenderHint.SkinningTransform) == RenderHint.SkinningTransform))
+            if (((versionChangeType & VersionChangeType.Transform) == VersionChangeType.Transform) && UIRUtility.IsSkinnedTransformWithoutNesting(ve))
             {
                 var renderData = ve.uiRenderData;
                 if (renderData != null)

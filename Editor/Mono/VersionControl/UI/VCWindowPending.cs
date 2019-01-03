@@ -540,7 +540,7 @@ namespace UnityEditor.VersionControl
                 Repaint();
         }
 
-        [Shortcut("VersionControl/RefreshWindow", typeof(WindowPending), KeyCode.F5)]
+        [Shortcut("VersionControl/RefreshWindow", typeof(WindowPending), KeyCode.F5, displayName = "Version Control/Refresh Window")]
         static void RefreshWindow(ShortcutArguments args)
         {
             if (GUIUtility.keyboardControl != 0)

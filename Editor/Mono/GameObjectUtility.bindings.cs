@@ -60,7 +60,7 @@ namespace UnityEditor
 
             return
                 (ShouldIncludeChildren)
-                EditorUtility.DisplayDialogComplex(title, message, "Yes, change children", "No, this object only", "Cancel");
+                EditorUtility.DisplayDialogComplex(title, message, L10n.Tr("Yes, change children"), L10n.Tr("No, this object only"), L10n.Tr("Cancel"));
         }
 
         public static void SetParentAndAlign(GameObject child, GameObject parent)

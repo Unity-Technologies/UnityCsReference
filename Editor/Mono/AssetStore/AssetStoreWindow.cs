@@ -193,6 +193,19 @@ namespace UnityEditor
             webView.Show();
         }
 
+        public void OnAddedAsTab()
+        {
+            // Make sure the parent window is set correctly for CEF if this instance is being moved from a different DockArea.
+            SetFocus(true);
+        }
+
+        public void OnBeforeRemovedAsTab()
+        {
+            // Set the CEF parent window as if the tab were becoming invisible prior to tab removal. This will keep CEF from cleaning up the AssetStoreWindow browser
+            // window if the AssetStoreWindow is being dragged to a new DockArea and was the last tab in it's old DockArea.
+            OnBecameInvisible();
+        }
+
         protected virtual void OnGotFocus()
         {
             m_GotFocus = true;

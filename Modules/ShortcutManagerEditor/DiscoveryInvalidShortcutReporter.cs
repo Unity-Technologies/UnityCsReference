@@ -10,7 +10,9 @@ namespace UnityEditor.ShortcutManagement
     interface IDiscoveryInvalidShortcutReporter
     {
         void ReportReservedIdentifierPrefixConflict(IShortcutEntryDiscoveryInfo discoveryInfoWithConflictingIdentifierPrefix, string reservedPrefix);
+        void ReportReservedDisplayNamePrefixConflict(IShortcutEntryDiscoveryInfo discoveryInfoWithConflictingDisplayNamePrefix, string reservedPrefix);
         void ReportIdentifierConflict(IShortcutEntryDiscoveryInfo discoveryInfoWithConflictingIdentifier);
+        void ReportDisplayNameConflict(IShortcutEntryDiscoveryInfo discoveryInfoWithConflictingDisplayName);
         void ReportInvalidContext(IShortcutEntryDiscoveryInfo discoveryInfoWithInvalidContext);
         void ReportInvalidBinding(IShortcutEntryDiscoveryInfo discoveryInfoWithInvalidBinding, string invalidBindingMessage);
     }
@@ -26,26 +28,46 @@ namespace UnityEditor.ShortcutManagement
                 Debug.LogWarning($"{filePath}({discoveryInfo.GetLineNumber()}): {summary}\n{detail}");
         }
 
+        private void ReportReservedPrefixConflict(IShortcutEntryDiscoveryInfo conflictingInfo, string conflictType, string conflictingText, string reservedPrefix)
+        {
+            var fullMemberName = conflictingInfo.GetFullMemberName();
+            var summary = $"Ignoring shortcut attribute with {conflictType} using reserved prefix \"{conflictingText}\".";
+            var detail = $"Shortcut attribute on {fullMemberName} is using {conflictType} \"{conflictingText}\" with reserved prefix \"{reservedPrefix}\".";
+
+            LogWarning(conflictingInfo, summary, detail);
+        }
+
         public void ReportReservedIdentifierPrefixConflict(IShortcutEntryDiscoveryInfo discoveryInfoWithConflictingIdentifierPrefix, string reservedPrefix)
         {
             var shortcutEntry = discoveryInfoWithConflictingIdentifierPrefix.GetShortcutEntry();
+            ReportReservedPrefixConflict(discoveryInfoWithConflictingIdentifierPrefix, "identifier", shortcutEntry.identifier.path, reservedPrefix);
+        }
 
-            var fullMemberName = discoveryInfoWithConflictingIdentifierPrefix.GetFullMemberName();
-            var summary = $"Ignoring shortcut attribute with identifier using reserved prefix \"{shortcutEntry.identifier.path}\".";
-            var detail = $"Shortcut attribute on {fullMemberName} is using identifier \"{shortcutEntry.identifier.path}\" with reserved prefix \"{reservedPrefix}\".";
+        public void ReportReservedDisplayNamePrefixConflict(IShortcutEntryDiscoveryInfo discoveryInfoWithConflictingDisplayNamePrefix, string reservedPrefix)
+        {
+            var shortcutEntry = discoveryInfoWithConflictingDisplayNamePrefix.GetShortcutEntry();
+            ReportReservedPrefixConflict(discoveryInfoWithConflictingDisplayNamePrefix, "display name", shortcutEntry.displayName, reservedPrefix);
+        }
 
-            LogWarning(discoveryInfoWithConflictingIdentifierPrefix, summary, detail);
+        private void ReportConflict(IShortcutEntryDiscoveryInfo conflictingInfo, string conflictType, string conflictingText)
+        {
+            var fullMemberName = conflictingInfo.GetFullMemberName();
+            var summary = $"Ignoring shortcut attribute with duplicate {conflictType} \"{conflictingText}\".";
+            var detail = $"Shortcut attribute on {fullMemberName} is using {conflictType} \"{conflictingText}\" which is already in use by another shortcut attribute.";
+
+            LogWarning(conflictingInfo, summary, detail);
         }
 
         public void ReportIdentifierConflict(IShortcutEntryDiscoveryInfo discoveryInfoWithConflictingIdentifier)
         {
             var shortcutEntry = discoveryInfoWithConflictingIdentifier.GetShortcutEntry();
+            ReportConflict(discoveryInfoWithConflictingIdentifier, "identifier", shortcutEntry.identifier.path);
+        }
 
-            var fullMemberName = discoveryInfoWithConflictingIdentifier.GetFullMemberName();
-            var summary = $"Ignoring shortcut attribute with duplicate identifier \"{shortcutEntry.identifier.path}\".";
-            var detail = $"Shortcut attribute on {fullMemberName} is using identifier \"{shortcutEntry.identifier.path}\" which is already in use by another shortcut attribute.";
-
-            LogWarning(discoveryInfoWithConflictingIdentifier, summary, detail);
+        public void ReportDisplayNameConflict(IShortcutEntryDiscoveryInfo discoveryInfoWithConflictingDisplayName)
+        {
+            var shortcutEntry = discoveryInfoWithConflictingDisplayName.GetShortcutEntry();
+            ReportConflict(discoveryInfoWithConflictingDisplayName, "display name", shortcutEntry.displayName);
         }
 
         public void ReportInvalidContext(IShortcutEntryDiscoveryInfo discoveryInfoWithInvalidContext)

@@ -219,6 +219,17 @@ namespace UnityEditor
 
         public void BeginPreview(Rect r, GUIStyle previewBackground)
         {
+            Texture defaultEnvTexture = ReflectionProbe.defaultTexture;
+
+            if (Unsupported.SetOverrideRenderSettings(previewScene.scene))
+            {
+                RenderSettings.ambientMode = AmbientMode.Flat;
+                RenderSettings.ambientLight = ambientColor;
+
+                RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Custom;
+                RenderSettings.customReflection = defaultEnvTexture as Cubemap;
+            }
+
             InitPreview(r);
 
             if (previewBackground == null || previewBackground == GUIStyle.none)
@@ -233,13 +244,6 @@ namespace UnityEditor
                 new Color(.5f, .5f, .5f, 0.5f),
                 null
             );
-
-
-            if (Unsupported.SetOverrideRenderSettings(previewScene.scene))
-            {
-                RenderSettings.ambientMode = AmbientMode.Flat;
-                RenderSettings.ambientLight = ambientColor;
-            }
         }
 
         public void BeginStaticPreview(Rect r)
@@ -251,6 +255,19 @@ namespace UnityEditor
             darkGreyBackground.Apply();
             Graphics.DrawTexture(new Rect(0, 0, m_RenderTexture.width, m_RenderTexture.height), darkGreyBackground);
             Object.DestroyImmediate(darkGreyBackground);
+
+            if (!EditorApplication.isUpdating)
+            {
+                var oldProbe = RenderSettings.ambientProbe;
+                Texture defaultEnvTexture = ReflectionProbe.defaultTexture;
+                if (Unsupported.SetOverrideRenderSettings(previewScene.scene))
+                {
+                    // Most preview windows just want the light probe from the main scene so by default we copy it here. It can then be overridden if user wants.
+                    RenderSettings.ambientProbe = oldProbe;
+                    RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Custom;
+                    RenderSettings.customReflection = defaultEnvTexture as Cubemap;
+                }
+            }
         }
 
         private void InitPreview(Rect r)
@@ -295,11 +312,6 @@ namespace UnityEditor
 
             foreach (var light in lights)
                 light.enabled = true;
-
-            var oldProbe = RenderSettings.ambientProbe;
-            Unsupported.SetOverrideRenderSettings(previewScene.scene);
-            // Most preview windows just want the light probe from the main scene so by default we copy it here. It can then be overridden if user wants.
-            RenderSettings.ambientProbe = oldProbe;
         }
 
         public float GetScaleFactor(float width, float height)
@@ -353,7 +365,8 @@ namespace UnityEditor
 
         public Texture2D EndStaticPreview()
         {
-            Unsupported.RestoreOverrideRenderSettings();
+            if (!EditorApplication.isUpdating)
+                Unsupported.RestoreOverrideRenderSettings();
 
             var tmp = RenderTexture.GetTemporary((int)m_TargetRect.width, (int)m_TargetRect.height, 0, GraphicsFormat.R8G8B8A8_UNorm);
 

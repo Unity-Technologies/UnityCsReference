@@ -245,6 +245,16 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
+        void MarkChildrenDirtyRepaint(VisualElement parent)
+        {
+            parent.MarkDirtyRepaint();
+
+            for (int i = 0; i < parent.hierarchy.childCount; ++i)
+            {
+                MarkChildrenDirtyRepaint(parent.hierarchy[i]);
+            }
+        }
+
         public void UpdateGeometryFromContent()
         {
             hasPendingGeometryUpdate = false;
@@ -268,6 +278,11 @@ namespace UnityEditor.Experimental.GraphView
                 this.yogaNode.CalculateLayout();
 
                 MarkYogaNodeSeen(yogaNode);
+
+                // Need to mark actual children as dirty repaint so they properly move with the changes in size/position of the scope.
+                // The number of actual children should be low given the Scope (and Group) nodes do not parent their child nodes.
+                // This is mostly to fix things like the title element in the Group node.
+                MarkChildrenDirtyRepaint(this);
 
                 if (m_ContainedElements.Count > 0)
                 {

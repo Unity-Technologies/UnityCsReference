@@ -175,5 +175,32 @@ namespace UnityEngine.UIElements
             updatedBindings.Clear();
             Profiler.EndSample();
         }
+
+        internal void PollElementsWithBindings(Action<VisualElement, IBinding> callback)
+        {
+            Profiler.BeginSample("Binding.PollElementsWithBindings");
+
+            PerformTrackingOperations();
+
+            if (m_ElementsWithBindings.Count > 0)
+            {
+                foreach (VisualElement element in m_ElementsWithBindings)
+                {
+                    var updater = GetUpdaterFromElement(element);
+
+                    if (updater == null || element.elementPanel != panel)
+                    {
+                        updater?.Release();
+                        StopTracking(element);
+                    }
+                    else
+                    {
+                        callback(element, updater);
+                    }
+                }
+            }
+
+            Profiler.EndSample();
+        }
     }
 }

@@ -195,6 +195,29 @@ namespace UnityEditor.UIElements
             return foldout;
         }
 
+        private void RightClickMenuEvent(MouseUpEvent evt)
+        {
+            if (evt.button != (int)MouseButton.RightMouse)
+                return;
+
+            var label = evt.target as Label;
+            if (label == null)
+                return;
+
+            var property = label.userData as SerializedProperty;
+            if (property == null)
+                return;
+
+            var menu = EditorGUI.FillPropertyContextMenu(property);
+            var menuPosition = new Vector2(label.layout.xMin, label.layout.height);
+            menuPosition = label.LocalToWorld(menuPosition);
+            var menuRect = new Rect(menuPosition, Vector2.zero);
+            menu.DropDown(menuRect);
+
+            evt.PreventDefault();
+            evt.StopPropagation();
+        }
+
         private VisualElement ConfigureField<TField, TValue>(TField field, SerializedProperty property)
             where TField : BaseField<TValue>
         {
@@ -202,6 +225,13 @@ namespace UnityEditor.UIElements
             field.bindingPath = property.propertyPath;
             field.name = "unity-input-" + property.propertyPath;
             field.label = fieldLabel;
+
+            var fieldLabelElement = field.Q<Label>(className: BaseField<TValue>.labelUssClassName);
+            if (fieldLabelElement != null)
+            {
+                fieldLabelElement.userData = property.Copy();
+                fieldLabelElement.RegisterCallback<MouseUpEvent>(RightClickMenuEvent);
+            }
 
             field.labelElement.AddToClassList(labelUssClassName);
             field.visualInput.AddToClassList(inputUssClassName);

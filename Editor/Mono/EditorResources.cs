@@ -37,7 +37,7 @@ namespace UnityEditor.Experimental
         private static bool IsEditorStyleSheet(string path)
         {
             var pathLowerCased = path.ToLower();
-            return pathLowerCased.Contains("/editor/") && (pathLowerCased.EndsWith("common.uss") ||
+            return pathLowerCased.Contains("/stylesheets/extensions/") && (pathLowerCased.EndsWith("common.uss") ||
                 pathLowerCased.EndsWith(EditorGUIUtility.isProSkin ? "dark.uss" : "light.uss"));
         }
 

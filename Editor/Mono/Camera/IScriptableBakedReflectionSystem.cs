@@ -10,7 +10,7 @@ namespace UnityEditor.Experimental.Rendering
     public interface IScriptableBakedReflectionSystem : IDisposable
     {
         int stageCount { get; }
-        Hash128 stateHash { get; }
+        Hash128[] stateHashes { get; }
 
         void Tick(SceneStateHash sceneStateHash, IScriptableBakedReflectionSystemStageNotifier handle);
         void SynchronizeReflectionProbes();

@@ -660,7 +660,7 @@ namespace UnityEditor
                 Matrix4x4 combinedMatrix = transformMatrix * emitterMatrix;
                 Handles.matrix = combinedMatrix;
 
-                Color gizmoEditingColor = new Color(1.0f, 1.0f, 1.0f, allowGizmoEditing ? 1.0f : 0.0f);
+                Color gizmoEditingColor = new Color(1.0f, 1.0f, 1.0f, allowGizmoEditing && !Event.current.alt ? 1.0f : 0.0f);
 
                 if (type == ParticleSystemShapeType.Sphere)
                 {

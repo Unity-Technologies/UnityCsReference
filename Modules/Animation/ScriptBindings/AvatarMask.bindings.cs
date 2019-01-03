@@ -11,7 +11,7 @@ using UnityEngine.Internal;
 
 namespace UnityEngine
 {
-    [MovedFrom("UnityEditor.Animations", true)]
+    [MovedFrom(true, "UnityEditor.Animations", "UnityEditor")]
     public enum AvatarMaskBodyPart
     {
         Root = 0,
@@ -30,7 +30,7 @@ namespace UnityEngine
         LastBodyPart = 13
     }
 
-    [MovedFrom("UnityEditor.Animations", true)]
+    [MovedFrom(true, "UnityEditor.Animations", "UnityEditor")]
     [NativeHeader("Modules/Animation/AvatarMask.h")]
     [NativeHeader("Modules/Animation/ScriptBindings/Animation.bindings.h")]
     [UsedByNativeCode]

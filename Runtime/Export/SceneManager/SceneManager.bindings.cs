@@ -53,11 +53,11 @@ namespace UnityEngine.SceneManagement
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
-        extern private static bool UnloadSceneInternal(Scene scene);
+        extern private static bool UnloadSceneInternal(Scene scene, UnloadSceneOptions options);
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
-        extern private static AsyncOperation UnloadSceneAsyncInternal(Scene scene);
+        extern private static AsyncOperation UnloadSceneAsyncInternal(Scene scene, UnloadSceneOptions options);
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
@@ -65,7 +65,7 @@ namespace UnityEngine.SceneManagement
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
-        extern private static AsyncOperation UnloadSceneNameIndexInternal(string sceneName, int sceneBuildIndex, bool immediately, out bool outSuccess);
+        extern private static AsyncOperation UnloadSceneNameIndexInternal(string sceneName, int sceneBuildIndex, bool immediately, UnloadSceneOptions options, out bool outSuccess);
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]

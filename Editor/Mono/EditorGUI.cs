@@ -2357,7 +2357,7 @@ namespace UnityEditor
             return f < 0.0f ? -result : result;
         }
 
-        internal static void DoPropertyContextMenu(SerializedProperty property, SerializedProperty linkedProperty = null, GenericMenu menu = null)
+        internal static GenericMenu FillPropertyContextMenu(SerializedProperty property, SerializedProperty linkedProperty = null, GenericMenu menu = null)
         {
             if (linkedProperty != null && linkedProperty.serializedObject != property.serializedObject)
                 linkedProperty = null;
@@ -2461,6 +2461,13 @@ namespace UnityEditor
                 }
                 EditorApplication.contextualPropertyMenu(pm, property);
             }
+
+            return pm;
+        }
+
+        internal static void DoPropertyContextMenu(SerializedProperty property, SerializedProperty linkedProperty = null, GenericMenu menu = null)
+        {
+            GenericMenu pm = FillPropertyContextMenu(property, linkedProperty, menu);
 
             if (pm.GetItemCount() == 0)
             {

@@ -146,7 +146,7 @@ namespace UnityEditor.AnimatedValues
 
         public T value
         {
-            get { return GetValue(); }
+            get { return lerpPosition >= 1f ? target : GetValue(); }
             set { StopAnim(value); }
         }
 

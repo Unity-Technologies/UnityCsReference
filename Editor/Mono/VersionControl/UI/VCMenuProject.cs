@@ -3,7 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor;
-
+using UnityEditor.ShortcutManagement;
+using UnityEngine;
 using UnityEditor.VersionControl;
 
 namespace UnityEditorInternal.VersionControl
@@ -39,6 +40,12 @@ namespace UnityEditorInternal.VersionControl
             WindowChange.Open(selected, true);
         }
 
+        [Shortcut("Version Control/Submit Changeset")]
+        static void Submit(ShortcutArguments args)
+        {
+            Submit(null);
+        }
+
         // Called from native class VCSAssetMenuHandler as "Assets/Version Control/Check Out" menu handler
         static bool CheckOutTest(MenuCommand cmd)
         {
@@ -53,6 +60,12 @@ namespace UnityEditorInternal.VersionControl
             // TODO: Retrieve CheckoutMode from settings (depends on asset type; native vs. imported)
             AssetList list = Provider.GetAssetListFromSelection();
             Provider.Checkout(list, CheckoutMode.Both);
+        }
+
+        [Shortcut("Version Control/Check Out")]
+        static void CheckOut(ShortcutArguments args)
+        {
+            CheckOut(null);
         }
 
         // Called from native class VCSAssetMenuHandler as "Assets/Version Control/Check Out (Other)/Only asset file" menu handler
@@ -111,6 +124,12 @@ namespace UnityEditorInternal.VersionControl
             Provider.Add(list, true).SetCompletionAction(CompletionAction.UpdatePendingWindow);
         }
 
+        [Shortcut("Version Control/Mark Add")]
+        static void MarkAdd(ShortcutArguments args)
+        {
+            MarkAdd(null);
+        }
+
         /// Called from native class VCSAssetMenuHandler as "Assets/Version Control/Revert..." menu handler
         static bool RevertTest(MenuCommand cmd)
         {
@@ -123,6 +142,12 @@ namespace UnityEditorInternal.VersionControl
         {
             AssetList selected = Provider.GetAssetListFromSelection();
             WindowRevert.Open(selected);
+        }
+
+        [Shortcut("Version Control/Revert...")]
+        static void Revert(ShortcutArguments args)
+        {
+            Revert(null);
         }
 
         // Called from native class VCSAssetMenuHandler as "Assets/Version Control/Revert Unchanged" menu handler
@@ -168,6 +193,12 @@ namespace UnityEditorInternal.VersionControl
             Provider.Lock(list, true).SetCompletionAction(CompletionAction.UpdatePendingWindow);
         }
 
+        [Shortcut("Version Control/Lock")]
+        static void Lock(ShortcutArguments args)
+        {
+            Lock(null);
+        }
+
         // Called from native class VCSAssetMenuHandler as "Assets/Version Control/Unlock" menu handler
         static bool UnlockTest(MenuCommand cmd)
         {
@@ -182,6 +213,12 @@ namespace UnityEditorInternal.VersionControl
             Provider.Lock(list, false).SetCompletionAction(CompletionAction.UpdatePendingWindow);
         }
 
+        [Shortcut("Version Control/Unlock")]
+        static void Unlock(ShortcutArguments args)
+        {
+            Unlock(null);
+        }
+
         // Called from native class VCSAssetMenuHandler as "Assets/Version Control/Diff/Against Head..." menu handler
         static bool DiffHeadTest(MenuCommand cmd)
         {
@@ -194,6 +231,12 @@ namespace UnityEditorInternal.VersionControl
         {
             AssetList selected = Provider.GetAssetListFromSelection();
             Provider.DiffHead(selected, false);
+        }
+
+        [Shortcut("Version Control/Diff Against Head...")]
+        static void DiffHead(ShortcutArguments args)
+        {
+            DiffHead(null);
         }
 
         // Called from native class VCSAssetMenuHandler as "Assets/Version Control/Diff/Against Head with .meta..." menu handler

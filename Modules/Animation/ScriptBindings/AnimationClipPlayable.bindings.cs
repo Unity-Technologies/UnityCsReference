@@ -118,6 +118,16 @@ namespace UnityEngine.Animations
             SetLoopTimeInternal(ref m_Handle, value);
         }
 
+        internal float GetSampleRate()
+        {
+            return GetSampleRateInternal(ref m_Handle);
+        }
+
+        internal void SetSampleRate(float value)
+        {
+            SetSampleRateInternal(ref m_Handle, value);
+        }
+
         [NativeThrows]
         extern private static bool CreateHandleInternal(PlayableGraph graph, AnimationClip clip, ref PlayableHandle handle);
 
@@ -153,5 +163,11 @@ namespace UnityEngine.Animations
 
         [NativeThrows]
         extern private static void SetLoopTimeInternal(ref PlayableHandle handle, bool value);
+
+        [NativeThrows]
+        extern private static float GetSampleRateInternal(ref PlayableHandle handle);
+
+        [NativeThrows]
+        extern private static void SetSampleRateInternal(ref PlayableHandle handle, float value);
     }
 }

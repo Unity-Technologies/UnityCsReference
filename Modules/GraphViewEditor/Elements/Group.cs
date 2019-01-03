@@ -10,13 +10,12 @@ using UnityEditor.UIElements;
 
 namespace UnityEditor.Experimental.GraphView
 {
-    public partial class Group : Scope
+    public class Group : Scope
     {
         private Label m_TitleItem;
         private TextField m_TitleEditor;
         private GroupDropArea m_DropArea;
         private bool m_EditTitleCancelled = false;
-        private const int k_TitleEditorFocusDelay = 300;
 
         public override string title
         {
@@ -55,7 +54,7 @@ namespace UnityEditor.Experimental.GraphView
             m_TitleItem = titleContainer.Q<Label>(name: "titleLabel");
 
             m_TitleEditor = titleContainer.Q(name: "titleField") as TextField;
-            m_TitleEditor.Q(TextField.textInputUssName).visible = false;
+            m_TitleEditor.style.display = DisplayStyle.None;
 
             m_TitleEditor.Q(TextField.textInputUssName).RegisterCallback<FocusOutEvent>(e => { OnEditTitleFinished(); });
             m_TitleEditor.Q(TextField.textInputUssName).RegisterCallback<KeyDownEvent>(TitleEditorOnKeyDown);
@@ -127,7 +126,7 @@ namespace UnityEditor.Experimental.GraphView
         private void OnEditTitleFinished()
         {
             m_TitleItem.visible = true;
-            m_TitleEditor.Q(TextField.textInputUssName).visible = false;
+            m_TitleEditor.style.display = DisplayStyle.None;
 
             if (!m_EditTitleCancelled)
             {
@@ -146,17 +145,12 @@ namespace UnityEditor.Experimental.GraphView
                 if (HitTest(e.localMousePosition))
                 {
                     m_TitleEditor.value = title;
-                    m_TitleEditor.Q(TextField.textInputUssName).visible = true;
+                    m_TitleEditor.style.display = DisplayStyle.Flex;
                     m_TitleItem.visible = false;
-                    this.schedule.Execute(GiveFocusToTitleEditor).StartingIn(k_TitleEditorFocusDelay);
+                    m_TitleEditor.SelectAll();
+                    m_TitleEditor.Q(TextField.textInputUssName).Focus();
                 }
             }
-        }
-
-        private void GiveFocusToTitleEditor()
-        {
-            m_TitleEditor.SelectAll();
-            m_TitleEditor.Q(TextField.textInputUssName).Focus();
         }
 
         protected virtual void OnGroupRenamed(string oldName, string newName)

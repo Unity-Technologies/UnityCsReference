@@ -138,6 +138,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
+        public static string[] GetChangedAssemblies()
+        {
+            return Instance.GetChangedAssemblies();
+        }
+
+        [RequiredByNativeCode]
         public static void DirtyPredefinedAssemblyScripts(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform)
         {
             EmitExceptionAsError(() => Instance.DirtyPredefinedAssemblyScripts(options, platformGroup, platform));

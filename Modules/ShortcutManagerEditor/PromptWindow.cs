@@ -45,12 +45,6 @@ namespace UnityEditor.ShortcutManagement
             promptWindow.ShowModal();
         }
 
-        static void OnRootVisualContainerGeometryChanged(GeometryChangedEvent evt)
-        {
-            var element = (VisualElement)evt.target;
-            element.UnregisterCallback<GeometryChangedEvent>(OnRootVisualContainerGeometryChanged);
-        }
-
         void OnEnable()
         {
             // Load elements

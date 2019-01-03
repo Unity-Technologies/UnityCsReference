@@ -168,16 +168,32 @@ namespace UnityEditor
         [FreeFunction("ResolveRedirectedPath")]
         public static extern string ResolveRedirectedPath(string path);
 
-        [FreeFunction("AssetDatabase::SetApplicationSettingCompressAssetsOnImport")]
+        [FreeFunction("AssetDatabaseDeprecated::SetApplicationSettingCompressAssetsOnImport")]
         public static extern void SetApplicationSettingCompressAssetsOnImport(bool value);
 
-        [StaticAccessor("AssetDatabase", StaticAccessorType.DoubleColon)]
+        [StaticAccessor("AssetDatabaseDeprecated", StaticAccessorType.DoubleColon)]
         public static extern bool GetApplicationSettingCompressAssetsOnImport();
 
         // This function has always wrongly returned int but we have test data
         // that relies on this returning int, specifically the model importer test
+
+        [Obsolete("GetLocalIdentifierInFile() is deprecated. Use GetLocalIdentifierInFileForPersistentObject() instead.", false)]
         [FreeFunction("GetPersistentManager().GetLocalFileID")]
         public static extern int GetLocalIdentifierInFile(int instanceID);
+
+        [FreeFunction("GetPersistentManager().GetLocalFileID")]
+        static extern UInt64 GetLocalIdentifierInFileForPersistentObjectInternal(int instanceID);
+
+        public static UInt64 GetLocalIdentifierInFileForPersistentObject(UnityEngine.Object obj)
+        {
+            if (obj == null)
+                throw new ArgumentNullException(nameof(obj));
+
+            if (!EditorUtility.IsPersistent(obj))
+                throw new ArgumentException("Input object must be persistent");
+
+            return GetLocalIdentifierInFileForPersistentObjectInternal(obj.GetInstanceID());
+        }
 
         internal static extern UInt64 GetFileIDHint([NotNull] UnityEngine.Object obj);
 

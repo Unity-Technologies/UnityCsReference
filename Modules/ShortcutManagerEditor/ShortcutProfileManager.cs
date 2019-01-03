@@ -413,7 +413,10 @@ namespace UnityEditor.ShortcutManagement
                     string invalidBindingMessage;
                     if (!m_BindingValidator.IsBindingValid(shortcutOverride.combinations, out invalidBindingMessage))
                     {
-                        Debug.LogWarning($"Ignoring shortcut \"{entry.identifier.path}\" in profile \"{shortcutProfile.id}\" with invalid binding.\n{invalidBindingMessage}.");
+                        var nameSnippet = entry.displayName == entry.identifier.path
+                            ? $"\"{entry.displayName}\""
+                            : $"with ID \"{entry.identifier.path}\" and name \"{entry.displayName}\"";
+                        Debug.LogWarning($"Ignoring shortcut {nameSnippet} in profile \"{shortcutProfile.id}\" with invalid binding.\n{invalidBindingMessage}.");
                         continue;
                     }
 

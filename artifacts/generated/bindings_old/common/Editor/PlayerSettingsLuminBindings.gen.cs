@@ -77,14 +77,6 @@ public sealed partial class PlayerSettings : UnityEngine.Object
             set;
         }
 
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern public static  bool GetPrivilege (string privilege) ;
-
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern public static  void SetPrivilege (string privilege, bool value) ;
-
     }
 
 }

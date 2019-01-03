@@ -27,7 +27,7 @@ namespace UnityEditor
             AudioSourceInspector.AnimProp(
                 EditorGUIUtility.TrTextContent("Cutoff Frequency"),
                 m_LowpassLevelCustomCurve,
-                0.0f, AudioSourceInspector.kMaxCutoffFrequency, true);
+                10.0f, AudioSourceInspector.kMaxCutoffFrequency, true);
 
             EditorGUILayout.PropertyField(m_LowpassResonanceQ);
 

@@ -3,11 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
-using UnityEngine;
+using System.Runtime.CompilerServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
-using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.Profiling.Memory.Experimental
 {
@@ -34,6 +32,14 @@ namespace UnityEngine.Profiling.Memory.Experimental
         private static event Action<string, bool> snapshotFinished;
         public static event Action<MetaData>     createMetaData;
 
+        static bool isCompiling = false;
+        internal static void StartedCompilationCallback(object msg)
+        {
+            // No need to set this flag to false as we will reload the domain, and it's value will also be reloaded
+            isCompiling = true;
+        }
+
+
         [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
         [NativeMethod("TakeMemorySnapshot")]
         [NativeConditional("ENABLE_PLAYERCONNECTION")]
@@ -41,9 +47,15 @@ namespace UnityEngine.Profiling.Memory.Experimental
 
         public static void TakeSnapshot(string path, Action<string, bool> finishCallback, CaptureFlags captureFlags = CaptureFlags.NativeObjects | CaptureFlags.ManagedObjects)
         {
+            if (isCompiling)
+            {
+                Debug.LogError("Canceling snapshot, there is a compilation in progress.");
+                return;
+            }
+
             if (snapshotFinished != null)
             {
-                Debug.LogWarning("Canceling taking the snapshot. There is already ongoing capture.");
+                Debug.LogWarning("Canceling snapshot, there is another snapshot in progress.");
                 finishCallback(path, false);
             }
             else

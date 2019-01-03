@@ -23,7 +23,9 @@ namespace UnityEditor
         // Aux windows. The ones that close the moment you move the mouse out of them.
         AuxWindow = 5,
         // Like PopupMenu, but without keyboard focus
-        Tooltip = 6
+        Tooltip = 6,
+        // Modal Utility window
+        ModalUtility = 7
     }
 
     //[StaticAccessor("ContainerWindowBindings", StaticAccessorType.DoubleColon)]

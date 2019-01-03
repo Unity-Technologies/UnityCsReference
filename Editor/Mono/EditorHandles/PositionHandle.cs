@@ -364,7 +364,7 @@ namespace UnityEditor
             var updateOpacityFillColor = false;
             if (GUIUtility.hotControl == id)
                 color = selectedColor;
-            else if (HandleUtility.nearestControl == id)
+            else if (HandleUtility.nearestControl == id && !Event.current.alt)
                 color = preselectionColor;
             else
                 updateOpacityFillColor = true;

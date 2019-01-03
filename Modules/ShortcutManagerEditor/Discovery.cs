@@ -28,6 +28,7 @@ namespace UnityEditor.ShortcutManagement
         {
             var availableShortcuts = new List<ShortcutEntry>();
             var identifier2ShortcutEntry = new HashSet<Identifier>();
+            var displayName2ShortcutEntry = new HashSet<string>();
 
             foreach (var discoveryModule in m_ShortcutProviders)
             {
@@ -42,9 +43,21 @@ namespace UnityEditor.ShortcutManagement
                         continue;
                     }
 
+                    if (shortcutEntry.displayName != null && shortcutEntry.type != ShortcutType.Menu && shortcutEntry.displayName.StartsWith(k_MainMenuShortcutPrefix))
+                    {
+                        m_InvalidShortcutReporter?.ReportReservedDisplayNamePrefixConflict(discoveredEntry, k_MainMenuShortcutPrefix);
+                        continue;
+                    }
+
                     if (identifier2ShortcutEntry.Contains(shortcutEntry.identifier))
                     {
                         m_InvalidShortcutReporter?.ReportIdentifierConflict(discoveredEntry);
+                        continue;
+                    }
+
+                    if (displayName2ShortcutEntry.Contains(shortcutEntry.displayName))
+                    {
+                        m_InvalidShortcutReporter?.ReportDisplayNameConflict(discoveredEntry);
                         continue;
                     }
 
@@ -66,6 +79,7 @@ namespace UnityEditor.ShortcutManagement
                     }
 
                     identifier2ShortcutEntry.Add(shortcutEntry.identifier);
+                    displayName2ShortcutEntry.Add(shortcutEntry.displayName);
                     availableShortcuts.Add(shortcutEntry);
                 }
             }

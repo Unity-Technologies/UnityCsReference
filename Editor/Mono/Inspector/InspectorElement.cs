@@ -58,6 +58,8 @@ namespace UnityEditor.UIElements
 
         internal SerializedObject BoundObject { get; private set; }
 
+        internal VisualElement prefabOverrideBlueBarsContainer { get; private set; }
+
         public InspectorElement() : this(null as Object) {}
 
         public InspectorElement(Object obj) : this(obj, Mode.Normal) {}
@@ -145,6 +147,11 @@ namespace UnityEditor.UIElements
         private void Reset(SerializedObject bindObject)
         {
             Clear();
+
+            prefabOverrideBlueBarsContainer = new VisualElement();
+            prefabOverrideBlueBarsContainer.name = BindingExtensions.prefabOverrideBarContainerName;
+            prefabOverrideBlueBarsContainer.style.position = Position.Absolute;
+            Add(prefabOverrideBlueBarsContainer);
 
             RemoveFromClassList(iMGUIInspectorVariantUssClassName);
             RemoveFromClassList(uIEInspectorVariantUssClassName);

@@ -173,15 +173,19 @@ namespace UnityEditor
         [NonSerialized]
         static readonly Quaternion kDefaultRotation = Quaternion.LookRotation(new Vector3(-1, -.7f, -1));
 
-        private const float kDefaultViewSize = 10f;
-
-        private const CameraEvent kCommandBufferCameraEvent = CameraEvent.AfterImageEffectsOpaque;
+        const float kDefaultViewSize = 10f;
+        const CameraEvent kCommandBufferCameraEvent = CameraEvent.AfterImageEffectsOpaque;
 
         [NonSerialized]
         static readonly Vector3 kDefaultPivot = Vector3.zero;
 
         const float kOrthoThresholdAngle = 3f;
         const float kOneOverSqrt2 = 0.707106781f;
+        // stop short of float.MaxValue to prevent rendering assertions
+        internal const float k_MaxSceneViewSize = 3.2e38f;
+        // Limit the max draw distance to Sqrt(float.MaxValue) because transparent sorting function uses dist^2, and
+        // Asserts that values are finite.
+        const float k_MaxCameraFarClip = 1.844674E+19f;
 
         [NonSerialized]
         ActiveEditorTracker m_Tracker;
@@ -414,9 +418,10 @@ namespace UnityEditor
         [SerializeField]
         internal AnimQuaternion m_Rotation = new AnimQuaternion(kDefaultRotation);
 
-        // How large an area the scene view covers (measured diagonally). Modify this for immediate effect, or use LookAt to animate it nicely.
+        // How large an area the scene view covers (measured diagonally). Use `size` to immediately affect the scene,
+        // or `targetSize` to lerp the effect
         [SerializeField]
-        internal AnimFloat m_Size = new AnimFloat(kDefaultViewSize);
+        AnimFloat m_Size = new AnimFloat(kDefaultViewSize);
 
         [SerializeField]
         internal AnimBool m_Ortho = new AnimBool();
@@ -634,9 +639,8 @@ namespace UnityEditor
                 float fov = m_Ortho.Fade(kPerspectiveFov, 0);
 
                 if (!camera.orthographic)
-                {
                     return size / Mathf.Tan(fov * 0.5f * Mathf.Deg2Rad);
-                }
+
                 return size * 2f;
             }
         }
@@ -1640,7 +1644,7 @@ namespace UnityEditor
             if (!m_Camera.gameObject.activeInHierarchy)
                 return;
 
-            DrawGridParameters gridParam = grid.PrepareGridRender(camera, pivot, m_Rotation.target, m_Size.value, m_Ortho.target, drawGlobalGrid);
+            DrawGridParameters gridParam = grid.PrepareGridRender(camera, pivot, m_Rotation.target, size, m_Ortho.target, drawGlobalGrid);
 
             Event evt = Event.current;
             if (UseSceneFiltering())
@@ -2244,9 +2248,9 @@ namespace UnityEditor
             DoSceneVisibilityOverlay();
 
             CleanupCustomSceneLighting();
+
             if (restoreOverrideRenderSettings)
                 Unsupported.RestoreOverrideRenderSettings();
-
 
             //Ensure that the target texture is clamped [0-1]
             //This is needed because otherwise gizmo rendering gets all
@@ -2454,15 +2458,27 @@ namespace UnityEditor
         // The direction of the scene view.
         public Quaternion rotation { get { return m_Rotation.value; } set { m_Rotation.value = value; } }
 
+        static float ValidateSceneSize(float value)
+        {
+            if (value == 0f)
+                return float.Epsilon;
+            if (value > k_MaxSceneViewSize)
+                return k_MaxSceneViewSize;
+            if (value < -k_MaxSceneViewSize)
+                return -k_MaxSceneViewSize;
+            return value;
+        }
+
         public float size
         {
             get { return m_Size.value; }
-            set
-            {
-                if (value > 40000f)
-                    value = 40000;
-                m_Size.value = value;
-            }
+            set { m_Size.value = ValidateSceneSize(value); }
+        }
+
+        internal float targetSize
+        {
+            get { return m_Size.target; }
+            set { m_Size.SetTarget(ValidateSceneSize(value), 1f / SceneViewMotion.movementEasingDuration); }
         }
 
         float perspectiveFov
@@ -2473,7 +2489,6 @@ namespace UnityEditor
             }
         }
 
-        /// Is the scene view ortho.
         public bool orthographic
         {
             get { return m_Ortho.value; }
@@ -2486,6 +2501,9 @@ namespace UnityEditor
 
         public void FixNegativeSize()
         {
+            if (size == 0f)
+                size = float.Epsilon;
+
             float fov = perspectiveFov;
 
             if (size < 0)
@@ -2640,7 +2658,7 @@ namespace UnityEditor
 
             if (m_SceneViewCameraSettings.dynamicClip)
             {
-                float farClip = Mathf.Max(1000f, 2000f * size);
+                float farClip = Mathf.Min(Mathf.Max(1000f, 2000f * size), k_MaxCameraFarClip);
                 m_Camera.nearClipPlane = farClip * 0.000005f;
                 m_Camera.farClipPlane = farClip;
             }
@@ -2791,7 +2809,7 @@ namespace UnityEditor
             FixNegativeSize();
             m_Position.value = point;
             m_Rotation.value = direction;
-            m_Size.value = Mathf.Abs(newSize);
+            size = Mathf.Abs(newSize);
             // Update name in the top-right handle
             svRot.UpdateGizmoLabel(this, direction * Vector3.forward, m_Ortho.target);
         }
@@ -2812,7 +2830,7 @@ namespace UnityEditor
             {
                 m_Position.value = point;
                 m_Rotation.value = direction;
-                m_Size.value = Mathf.Abs(newSize);
+                size = Mathf.Abs(newSize);
                 m_Ortho.value = ortho;
                 draggingLocked = DraggingLockedState.NotDragging;
             }
@@ -2823,6 +2841,7 @@ namespace UnityEditor
                 m_Size.target = Mathf.Abs(newSize);
                 m_Ortho.target = ortho;
             }
+
             // Update name in the top-right handle
             svRot.UpdateGizmoLabel(this, direction * Vector3.forward, m_Ortho.target);
         }
@@ -3310,7 +3329,7 @@ namespace UnityEditor
                     m_2DMode = true;
                     m_Rotation.value = Quaternion.identity;
                     m_Position.value = kDefaultPivot;
-                    m_Size.value = kDefaultViewSize;
+                    size = kDefaultViewSize;
                     m_Ortho.value = true;
 
                     m_LastSceneViewRotation = kDefaultRotation;
@@ -3322,7 +3341,7 @@ namespace UnityEditor
                     m_2DMode = false;
                     m_Rotation.value = kDefaultRotation;
                     m_Position.value = kDefaultPivot;
-                    m_Size.value = kDefaultViewSize;
+                    size = kDefaultViewSize;
                     m_Ortho.value = false;
                     break;
             }

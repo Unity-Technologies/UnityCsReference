@@ -409,6 +409,12 @@ namespace UnityEditor
                 {
                     hasMinGraphicsAPI = !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
                 }
+                else if (platform.targetGroup == BuildTargetGroup.WebGL)
+                {
+                    // must have OpenGLES3-only
+                    hasMinGraphicsAPI = apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
+                }
+
                 return hasMinGraphicsAPI && hasMinOSVersion;
             }
             else
@@ -459,7 +465,7 @@ namespace UnityEditor
             { "WindowsStandalone", "Windows" },
             { "LinuxStandalone", "Linux" },
             { "Facebook", "Facebook-Games"},
-            { "Metro", "Universal-Windows-Platform"}
+            { "UWP", "Universal-Windows-Platform"}
         };
         static public string GetPlaybackEngineDownloadURL(string moduleName)
         {

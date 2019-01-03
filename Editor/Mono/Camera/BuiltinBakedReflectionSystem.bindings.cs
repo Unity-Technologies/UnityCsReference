@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using System.Collections.Generic;
 
 namespace UnityEditor.Experimental.Rendering
 {
@@ -21,9 +22,12 @@ namespace UnityEditor.Experimental.Rendering
         IScriptableBakedReflectionSystemStageNotifier m_Handle;
 
         public int stageCount { get { return 3; } }
-        [NativeProperty("StateHash")]
-        extern Hash128 _stateHash { get; }
-        public Hash128 stateHash { get { return _stateHash; } }
+
+        [NativeName("StateHashes")]
+        extern public Hash128[] stateHashes
+        {
+            get;
+        }
 
         bool disposed { get { return m_Ptr == IntPtr.Zero; } }
 

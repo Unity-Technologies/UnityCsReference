@@ -4,8 +4,7 @@
 
 using UnityEngine;
 using UnityEditorInternal.VersionControl;
-using UnityEditor.VersionControl;
-using UnityEditor;
+using UnityEditor.ShortcutManagement;
 
 namespace UnityEditor.VersionControl
 {
@@ -444,6 +443,14 @@ namespace UnityEditor.VersionControl
             submitResultCode = kSubmitRunningResultCode;
             submitErrorMessage = null;
             taskSubmit.SetCompletionAction(CompletionAction.OnSubmittedChangeWindow); // TODO: make it CompletionAction.OnChangeSetsPendingWindow
+        }
+
+        [Shortcut("Version Control/Submit Changeset (from Changeset Window)", typeof(WindowChange), KeyCode.S, ShortcutModifiers.Alt | ShortcutModifiers.Action)]
+        static void SubmitChangeset(ShortcutArguments args)
+        {
+            var window = args.context as WindowChange;
+            if (window != null)
+                window.Save(true);
         }
     }
 }

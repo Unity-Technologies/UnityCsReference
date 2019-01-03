@@ -23,6 +23,15 @@ namespace UnityEngine.UIElements
         }
 
         [SerializeField]
+        private int m_OrderInDocument;
+
+        public int orderInDocument
+        {
+            get { return m_OrderInDocument; }
+            set { m_OrderInDocument = value; }
+        }
+
+        [SerializeField]
         private int m_ParentId;
 
         public int parentId

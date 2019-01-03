@@ -33,7 +33,7 @@ namespace UnityEditorInternal
                     break;
                 case EventType.MouseDown:
                     // am I closest to the thingy?
-                    if (HandleUtility.nearestControl == id && evt.button == 0)
+                    if (HandleUtility.nearestControl == id && evt.button == 0 && !evt.alt)
                     {
                         GUIUtility.hotControl = id; // Grab mouse focus
                         Tools.LockHandlePosition();
@@ -104,7 +104,7 @@ namespace UnityEditorInternal
                 case EventType.Repaint:
                     Color temp = Color.white;
                     var isHot = id == GUIUtility.hotControl;
-                    var isPreselected = id == HandleUtility.nearestControl && GUIUtility.hotControl == 0;
+                    var isPreselected = id == HandleUtility.nearestControl && GUIUtility.hotControl == 0 && !evt.alt;
 
                     if (isHot)
                     {

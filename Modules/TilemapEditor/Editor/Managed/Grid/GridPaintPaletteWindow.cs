@@ -128,7 +128,7 @@ namespace UnityEditor
             }
         }
 
-        class TilePaletteProperties
+        internal class TilePaletteProperties
         {
             public enum PrefabEditModeSettings
             {
@@ -307,20 +307,7 @@ namespace UnityEditor
                 ChangeBrushZ(-1);
         }
 
-        [SettingsProvider]
-        internal static SettingsProvider CreateSettingsProvider()
-        {
-            var settingsProvider = new SettingsProvider("Preferences/2D/Tile Palette", SettingsScope.User, SettingsProvider.GetSearchKeywordsFromGUIContentProperties<TilePaletteProperties>())
-            {
-                guiHandler = searchContext =>
-                {
-                    PreferencesGUI();
-                }
-            };
-            return settingsProvider;
-        }
-
-        private static void PreferencesGUI()
+        internal static void PreferencesGUI()
         {
             using (new SettingsWindow.GUIScope())
             {
@@ -783,6 +770,9 @@ namespace UnityEditor
 
         public void OnDisable()
         {
+            DisableFocus();
+            TilemapEditorUserSettings.focusMode = TilemapEditorUserSettings.FocusMode.None;
+
             CallOnToolDeactivated();
             instances.Remove(this);
             if (instances.Count <= 1)

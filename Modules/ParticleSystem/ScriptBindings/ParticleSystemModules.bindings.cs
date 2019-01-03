@@ -346,13 +346,13 @@ namespace UnityEngine
 
             extern public bool IsAffectedBy(ParticleSystemForceField field);
 
-            extern public void AddInfluence(ParticleSystemForceField field);
+            extern public void AddInfluence([NotNull] ParticleSystemForceField field);
 
             extern private void RemoveInfluenceAtIndex(int index);
             public void RemoveInfluence(int index) { RemoveInfluenceAtIndex(index); }
 
-            extern public void RemoveInfluence(ParticleSystemForceField field);
-            extern public void SetInfluence(int index, ParticleSystemForceField field);
+            extern public void RemoveInfluence([NotNull] ParticleSystemForceField field);
+            extern public void SetInfluence(int index, [NotNull] ParticleSystemForceField field);
             extern public ParticleSystemForceField GetInfluence(int index);
         }
 

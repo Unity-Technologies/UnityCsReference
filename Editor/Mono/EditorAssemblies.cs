@@ -100,42 +100,18 @@ namespace UnityEditor
             m_subClasses.Clear();
         }
 
-        [NonSerialized]
-        static ProfilerMarker s_ProcessInitializeOnLoadAttribute = new ProfilerMarker("ProcessInitializeOnLoadAttribute");
-
-        [NonSerialized]
-        static ProfilerMarker s_ProcessInitializeOnLoadMethodAttribute = new ProfilerMarker("ProcessInitializeOnLoadMethodAttribute");
-
         [RequiredByNativeCode]
-        private static void ProcessInitializeOnLoadAttributes(Type[] types, MethodInfo[] methods)
+        private static void ProcessInitializeOnLoadAttributes(Type[] types)
         {
             foreach (Type type in types)
             {
-                using (s_ProcessInitializeOnLoadAttribute.Auto())
+                try
                 {
-                    try
-                    {
-                        RuntimeHelpers.RunClassConstructor(type.TypeHandle);
-                    }
-                    catch (TypeInitializationException x)
-                    {
-                        Debug.LogError(x.InnerException);
-                    }
+                    RuntimeHelpers.RunClassConstructor(type.TypeHandle);
                 }
-            }
-
-            foreach (MethodInfo method in methods)
-            {
-                using (s_ProcessInitializeOnLoadMethodAttribute.Auto())
+                catch (TypeInitializationException x)
                 {
-                    try
-                    {
-                        method.Invoke(null, null);
-                    }
-                    catch (TargetInvocationException x)
-                    {
-                        Debug.LogError(x.InnerException);
-                    }
+                    Debug.LogError(x.InnerException);
                 }
             }
         }

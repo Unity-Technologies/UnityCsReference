@@ -18,11 +18,7 @@ namespace UnityEngine.Rendering
         LightData = (1 << 4),
         MotionVectors = (1 << 5),
         LightIndices = (1 << 6),
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        LightIndices8 = (1 << 6),
         ReflectionProbeData = (1 << 7),
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        ReflectionProbeIndices = (1 << 7),
         OcclusionProbe = (1 << 8),
         OcclusionProbeProxyVolume = (1 << 9),
         ShadowMask = (1 << 10),

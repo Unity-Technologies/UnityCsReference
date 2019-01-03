@@ -27,7 +27,8 @@ namespace UnityEditor
         static SavedFloat s_EasingDuration = new SavedFloat("SceneViewMotion.easeDuration", k_DefaultFpsEaseDuration);
         static SavedBool s_MovementEasing = new SavedBool("SceneViewMotion.movementEasing", true);
 
-        // how many seconds should the camera take to go from stand-still to full speed.
+        // how many seconds should the camera take to go from stand-still to full speed. when setting an animated value
+        // speed, use `1 / duration`.
         internal static float movementEasingDuration
         {
             get { return s_EasingDuration.value; }
@@ -37,11 +38,6 @@ namespace UnityEditor
                 s_EasingDuration.value = (float)(Math.Round((double)Mathf.Clamp(value, .1f, 3f), 1));
                 s_FlySpeed.speed = 1f / s_EasingDuration.value;
             }
-        }
-
-        static float movementEasingSpeed
-        {
-            get { return 1f / s_EasingDuration.value; }
         }
 
         internal static bool movementEasingEnabled
@@ -412,12 +408,8 @@ namespace UnityEditor
             }
             else
             {
-                var initialDistance = view.cameraDistance;
-                var mouseRay = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
-                var mousePivot = mouseRay.origin + mouseRay.direction * view.cameraDistance;
-                var pivotVector = mousePivot - view.pivot;
-
                 float zoomDelta = Event.current.delta.y;
+                float targetSize;
 
                 if (!view.orthographic)
                 {
@@ -428,23 +420,36 @@ namespace UnityEditor
                     else if (relativeDelta < 0 && relativeDelta > -deltaCutoff)
                         relativeDelta = -deltaCutoff;
 
-                    if (movementEasingEnabled)
-                        view.m_Size.SetTarget(view.m_Size.target + relativeDelta, movementEasingSpeed);
-                    else
-                        view.m_Size.value += relativeDelta;
+                    targetSize = movementEasingEnabled
+                        ? view.targetSize + relativeDelta
+                        : view.size + relativeDelta;
                 }
                 else
                 {
-                    if (movementEasingEnabled)
-                        view.m_Size.SetTarget(Mathf.Abs(view.m_Size.target) * (zoomDelta * .015f + 1.0f), movementEasingSpeed);
-                    else
-                        view.m_Size.value = Mathf.Abs(view.size) * (zoomDelta * .015f + 1.0f);
+                    targetSize = Mathf.Abs(movementEasingEnabled ? view.targetSize : view.size) * (zoomDelta * .015f + 1.0f);
                 }
 
-                var percentage = 1f - (view.cameraDistance / initialDistance);
+                var initialDistance = view.cameraDistance;
 
-                if (!zoomTowardsCenter)
+                if (!(float.IsNaN(targetSize) || float.IsInfinity(targetSize)))
+                {
+                    targetSize = Mathf.Min(SceneView.k_MaxSceneViewSize, targetSize);
+
+                    if (movementEasingEnabled)
+                        view.targetSize = targetSize;
+                    else
+                        view.size = targetSize;
+                }
+
+                if (!zoomTowardsCenter && Mathf.Abs(view.cameraDistance) < 1.0e7f)
+                {
+                    var percentage = 1f - (view.cameraDistance / initialDistance);
+                    var mouseRay = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
+                    var mousePivot = mouseRay.origin + mouseRay.direction * view.cameraDistance;
+                    var pivotVector = mousePivot - view.pivot;
+
                     view.pivot += pivotVector * percentage;
+                }
             }
 
             Event.current.Use();

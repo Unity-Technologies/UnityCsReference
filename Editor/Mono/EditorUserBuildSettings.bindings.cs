@@ -162,10 +162,9 @@ namespace UnityEditor
     [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
     public enum WSAUWPBuildType
     {
-        // *undocumented*
         XAML = 0,
-        // *undocumented*
         D3D = 1,
+        ExecutableOnly = 2,
     }
 
     // *undocumented*
@@ -554,9 +553,6 @@ namespace UnityEditor
 
         // Start the player with a connection to the profiler.
         public static extern bool connectProfiler { get; set; }
-
-        // Start the player with Emulation mode enabled and set to RemoteDevice
-        public static extern bool wsaHolographicRemoting { get; set; }
 
         // Enable source-level debuggers to connect.
         public static extern bool allowDebugging { get; set; }

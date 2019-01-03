@@ -13,7 +13,14 @@ namespace UnityEditor
         static AppStatusBar s_AppStatusBar;
         static GUIContent[] s_StatusWheel;
         static GUIContent s_AssemblyLock;
-        string m_LastMiniMemoryOverview = "";
+
+        string m_MiniMemoryOverview = "";
+        string m_BakeModeString = "";
+
+        private bool showBakeMode
+        {
+            get { return Lightmapping.bakedGI || Lightmapping.realtimeGI; }
+        }
 
         protected override void OnEnable()
         {
@@ -35,9 +42,13 @@ namespace UnityEditor
         void OnInspectorUpdate()
         {
             string miniOverview = UnityEditorInternal.ProfilerDriver.miniMemoryOverview;
-            if (Unsupported.IsDeveloperMode() && m_LastMiniMemoryOverview != miniOverview)
+            string bakeModeString = GetBakeModeString();
+
+            if ((Unsupported.IsDeveloperMode() && m_MiniMemoryOverview != miniOverview) || (m_BakeModeString != bakeModeString))
             {
-                m_LastMiniMemoryOverview = miniOverview;
+                m_MiniMemoryOverview = miniOverview;
+                m_BakeModeString = bakeModeString;
+
                 Repaint();
             }
         }
@@ -46,7 +57,14 @@ namespace UnityEditor
 
         protected override void OldOnGUI()
         {
+            const int statusWheelWidth = 24;
+            const int progressBarStatusWheelSpacing = 3;
+            const int progressBarWidth = 185;
+            const int lightingBakeModeBarWidth = 80;
+            const int barHeight = 19;
+
             ConsoleWindow.LoadIcons();
+
             if (background == null)
                 background = "AppToolbar";
 
@@ -56,11 +74,24 @@ namespace UnityEditor
             if (Event.current.type == EventType.Repaint)
                 background.Draw(new Rect(0, 0, position.width, position.height), false, false, false, false);
 
-            var compiling = EditorApplication.isCompiling;
-            var assembliesLocked = !EditorApplication.CanReloadAssemblies();
+            bool compiling = EditorApplication.isCompiling;
+            bool assembliesLocked = !EditorApplication.CanReloadAssemblies();
 
             GUILayout.BeginHorizontal();
             GUILayout.Space(2);
+
+            int statusBarItemsWidth = statusWheelWidth + (AsyncProgressBar.isShowing ? (progressBarWidth + progressBarStatusWheelSpacing) : 0) + (showBakeMode ? lightingBakeModeBarWidth : 0);
+
+            if (Event.current.type == EventType.MouseDown)
+            {
+                Rect rect = new Rect(position.width - statusBarItemsWidth, 0, lightingBakeModeBarWidth, barHeight);
+
+                if (rect.Contains(Event.current.mousePosition))
+                {
+                    Event.current.Use();
+                    LightingWindow.CreateLightingWindow();
+                }
+            }
 
             string statusText = LogEntries.GetStatusText();
             if (statusText != null)
@@ -69,16 +100,15 @@ namespace UnityEditor
                 int mask = LogEntries.GetStatusMask();
                 GUIStyle errorStyle = ConsoleWindow.GetStatusStyleForErrorMode(mask);
 
-                GUILayout.Label(ConsoleWindow.GetIconForErrorMode(mask, false), errorStyle);
+                Texture2D icon = ConsoleWindow.GetIconForErrorMode(mask, false);
+                GUILayout.Label(icon, errorStyle);
 
                 GUILayout.Space(2);
                 GUILayout.BeginVertical();
                 GUILayout.Space(2);
 
-                if (compiling) //leave space for indicator
-                    GUILayout.Label(statusText, errorStyle, GUILayout.MaxWidth(GUIView.current.position.width - 52));
-                else
-                    GUILayout.Label(statusText, errorStyle);
+                GUILayout.Label(statusText, errorStyle, GUILayout.MaxWidth(GUIView.current.position.width - statusBarItemsWidth - (icon != null ? icon.width : 0)));
+
                 GUILayout.FlexibleSpace();
 
                 GUILayout.EndVertical();
@@ -96,15 +126,18 @@ namespace UnityEditor
 
             if (Event.current.type == EventType.Repaint)
             {
-                const float statusWheelWidth = 24;
-                const float progressBarStatusWheelSpacing = 3;
-
                 float progressBarHorizontalPosition = position.width - statusWheelWidth;
+
                 if (AsyncProgressBar.isShowing)
                 {
-                    const int progressBarWidth = 185;
                     progressBarHorizontalPosition -= progressBarWidth + progressBarStatusWheelSpacing;
-                    EditorGUI.ProgressBar(new Rect(progressBarHorizontalPosition, 0, progressBarWidth, 19), AsyncProgressBar.progress, AsyncProgressBar.progressInfo);
+                    EditorGUI.ProgressBar(new Rect(progressBarHorizontalPosition, 0, progressBarWidth, barHeight), AsyncProgressBar.progress, AsyncProgressBar.progressInfo);
+                }
+
+                if (showBakeMode)
+                {
+                    GUI.Label(new Rect(progressBarHorizontalPosition - lightingBakeModeBarWidth, 0, lightingBakeModeBarWidth, barHeight), m_BakeModeString, EditorStyles.progressBarText);
+                    progressBarHorizontalPosition -= lightingBakeModeBarWidth;
                 }
 
                 if (compiling)
@@ -124,19 +157,27 @@ namespace UnityEditor
                 {
                     var backup = GUI.color;
                     GUI.color = Color.yellow;
-                    GUI.Label(new Rect(progressBarHorizontalPosition - 310, 0, 310, 19), "THIS IS AN UNTESTED BLEEDINGEDGE UNITY BUILD");
+                    GUI.Label(new Rect(progressBarHorizontalPosition - 310, 0, 310, barHeight), "THIS IS AN UNTESTED BLEEDINGEDGE UNITY BUILD");
                     GUI.color = backup;
                 }
                 else if (Unsupported.IsDeveloperMode())
                 {
-                    GUI.Label(new Rect(progressBarHorizontalPosition - 200, 0, 200, 19), m_LastMiniMemoryOverview, EditorStyles.progressBarText);
-                    EditorGUIUtility.CleanCache(m_LastMiniMemoryOverview);
+                    GUI.Label(new Rect(progressBarHorizontalPosition - 200, 0, 200, barHeight), m_MiniMemoryOverview, EditorStyles.progressBarText);
+                    EditorGUIUtility.CleanCache(m_MiniMemoryOverview);
                 }
             }
 
             DoWindowDecorationEnd();
 
             EditorGUI.ShowRepaints();
+        }
+
+        private string GetBakeModeString()
+        {
+            if (!showBakeMode)
+                return "";
+
+            return "Auto Bake " + (Lightmapping.giWorkflowMode == Lightmapping.GIWorkflowMode.Iterative ? "On" : "Off");
         }
     }
 } //namespace

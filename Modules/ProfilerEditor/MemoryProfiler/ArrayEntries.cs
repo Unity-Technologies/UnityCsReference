@@ -12,8 +12,8 @@ namespace UnityEditor.Profiling.Memory.Experimental
 {
     public class ArrayEntries<T>
     {
-        MemorySnapshotFileReader m_Reader;
-        EntryType m_EntryType;
+        internal MemorySnapshotFileReader m_Reader;
+        internal EntryType m_EntryType;
         GetItem<T> m_GetItemFunc;
 
         internal ArrayEntries(MemorySnapshotFileReader reader, EntryType entryType,
@@ -29,9 +29,22 @@ namespace UnityEditor.Profiling.Memory.Experimental
             return m_Reader.GetNumEntries(m_EntryType);
         }
 
-        public void GetEntries(uint indexStart, uint numEntries, ref T[] dataOut)
+        public virtual void GetEntries(uint indexStart, uint numEntries, ref T[] dataOut)
         {
             m_Reader.GetDataArray(m_EntryType, indexStart, numEntries, ref dataOut, m_GetItemFunc);
+        }
+    }
+
+    internal class ByteArrayEntries : ArrayEntries<byte[]>
+    {
+        public ByteArrayEntries(MemorySnapshotFileReader reader, EntryType entryType)
+            : base(reader, entryType, null)
+        {
+        }
+
+        public override void GetEntries(uint indexStart, uint numEntries, ref byte[][] dataOut)
+        {
+            m_Reader.GetDataByteArray(m_EntryType, indexStart, numEntries, ref dataOut);
         }
     }
 
@@ -75,7 +88,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
         internal ManagedMemorySectionEntries(MemorySnapshotFileReader reader, EntryType entryTypeBase)
         {
             startAddress = new ArrayEntries<ulong>(reader, (EntryType)(entryTypeBase + 0), ConversionFunctions.ToUInt64);
-            bytes = new ArrayEntries<byte[]>(reader, (EntryType)(entryTypeBase + 1), ConversionFunctions.ToByteArray);
+            bytes = new ByteArrayEntries(reader, (EntryType)(entryTypeBase + 1));
         }
 
         public uint GetNumEntries()
@@ -148,7 +161,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
             typeDescriptionName = new ArrayEntries<string>(reader, EntryType.TypeDescriptions_Name, ConversionFunctions.ToString);
             assembly = new ArrayEntries<string>(reader, EntryType.TypeDescriptions_Assembly, ConversionFunctions.ToString);
             fieldIndices = new ArrayEntries<int[]>(reader, EntryType.TypeDescriptions_FieldIndices, ConversionFunctions.ToInt32Array);
-            staticFieldBytes = new ArrayEntries<byte[]>(reader, EntryType.TypeDescriptions_StaticFieldBytes, ConversionFunctions.ToByteArray);
+            staticFieldBytes = new ByteArrayEntries(reader, EntryType.TypeDescriptions_StaticFieldBytes);
             baseOrElementTypeIndex = new ArrayEntries<int>(reader, EntryType.TypeDescriptions_BaseOrElementTypeIndex, ConversionFunctions.ToInt32);
             size = new ArrayEntries<int>(reader, EntryType.TypeDescriptions_Size, ConversionFunctions.ToInt32);
             typeInfoAddress = new ArrayEntries<ulong>(reader, EntryType.TypeDescriptions_TypeInfoAddress, ConversionFunctions.ToUInt64);

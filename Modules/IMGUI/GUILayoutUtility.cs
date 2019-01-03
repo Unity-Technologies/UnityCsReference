@@ -411,6 +411,9 @@ namespace UnityEngine
                         }
 
                         Vector2 size = style.CalcSizeWithConstraints(content, sizeConstraints);
+                        // This is needed on non-integer scale ratios to avoid errors to accumulate in further layout calculations
+                        size.x = Mathf.Ceil(size.x);
+                        size.y = Mathf.Ceil(size.y);
                         current.topLevel.Add(new GUILayoutEntry(size.x, size.x, size.y, size.y, style, options));
                     }
                     return kDummyRect;

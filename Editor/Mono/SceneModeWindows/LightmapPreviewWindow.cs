@@ -97,6 +97,7 @@ namespace UnityEditor
             public static readonly GUIContent TextureNotAvailableBakedShadowmask = EditorGUIUtility.TrTextContent("The texture is not available at the moment.\nPlease make sure that Mixed Lights affect this GameObject and that it is set to Lightmap Static.");
             public static readonly GUIContent TextureNotAvailableBakedAlbedoEmissive = EditorGUIUtility.TrTextContent("The texture is not an index based texture and is not available when using Progressive.\nPlease go to the instance you wish to debug, and select the lightmap on the Mesh Renderer.");
             public static readonly GUIContent TextureLoading = EditorGUIUtility.TrTextContent("Loading...");
+            public static readonly GUIContent UVOverlayIcon = EditorGUIUtility.TrIconContent("ToggleUVOverlay", "Toggles the UV Overlay for all the objects in the lightmap. The currently selected object will be highlighted. ");
             public static readonly GUIContent ExposureIcon = EditorGUIUtility.TrIconContent("SceneViewLighting", "Controls the number of stops to over or under expose the lightmap.");
         }
 
@@ -247,7 +248,7 @@ namespace UnityEditor
                 EditorGUIUtility.labelWidth = labelWidth;
             }
 
-            m_ShowUVOverlay = GUILayout.Toggle(m_ShowUVOverlay, new GUIContent("W"), "preButton");
+            m_ShowUVOverlay = GUILayout.Toggle(m_ShowUVOverlay, Styles.UVOverlayIcon, "preButton");
 
             Rect dropRect = GUILayoutUtility.GetRect(14, 160, EditorGUI.kWindowToolbarHeight, EditorGUI.kWindowToolbarHeight);
             GUIContent[] options = isRealtimeLightmap ? Styles.RealtimePreviewTextureOptions : Styles.BakedPreviewTextureOptions;
@@ -460,15 +461,17 @@ namespace UnityEditor
                     }
                 }
             }
-            else
+            else // instance based
             {
                 if (isRealtimeLightmap)
                 {
                     Hash128 systemHash;
 
                     if (!LightmapEditorSettings.GetInputSystemHash(m_InstanceID, out systemHash))
+                    {
+                        m_CachedTexture.textureAvailability = GITextureAvailability.GITextureNotAvailable;
                         return;
-
+                    }
                     m_RealtimeTextureHash = systemHash;
                 }
                 else
@@ -476,7 +479,10 @@ namespace UnityEditor
                     int lightmapIndex;
 
                     if (!LightmapEditorSettings.GetLightmapIndex(m_InstanceID, out lightmapIndex))
+                    {
+                        m_CachedTexture.textureAvailability = GITextureAvailability.GITextureNotAvailable;
                         return;
+                    }
 
                     m_LightmapIndex = lightmapIndex;
                 }

@@ -109,7 +109,7 @@ namespace UnityEditor
             if (showMode == ShowMode.AuxWindow)
                 showMode = ShowMode.Utility;
 
-            if (showMode == ShowMode.Utility || IsPopup(showMode))
+            if (showMode == ShowMode.Utility || showMode == ShowMode.ModalUtility || IsPopup(showMode))
                 m_DontSaveToLayout = true;
 
             m_ShowMode = (int)showMode;

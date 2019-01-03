@@ -15,7 +15,7 @@ namespace UnityEditor.PackageManager
     class NativeClient
     {
         [StaticAccessor("PackageManager::Api::GetInstance()", StaticAccessorType.Arrow)]
-        extern public static NativeStatusCode List([Out] out long operationId, bool offlineMode);
+        extern public static NativeStatusCode List([Out] out long operationId, bool offlineMode, bool includeIndirectDependencies);
 
         [StaticAccessor("PackageManager::Api::GetInstance()", StaticAccessorType.Arrow)]
         extern public static NativeStatusCode Add([Out] out long operationId, string packageId);
@@ -24,10 +24,10 @@ namespace UnityEditor.PackageManager
         extern public static NativeStatusCode Remove([Out] out long operationId, string packageId);
 
         [StaticAccessor("PackageManager::Api::GetInstance()", StaticAccessorType.Arrow)]
-        extern public static NativeStatusCode Search([Out] out long operationId, string packageId);
+        extern public static NativeStatusCode Search([Out] out long operationId, string packageId, bool offlineMode);
 
         [StaticAccessor("PackageManager::Api::GetInstance()", StaticAccessorType.Arrow)]
-        extern public static NativeStatusCode SearchAll([Out] out long operationId);
+        extern public static NativeStatusCode SearchAll([Out] out long operationId, bool offlineMode);
 
         [StaticAccessor("PackageManager::Api::GetInstance()", StaticAccessorType.Arrow)]
         extern public static NativeStatusCode ResetToEditorDefaults([Out] out long operationId);

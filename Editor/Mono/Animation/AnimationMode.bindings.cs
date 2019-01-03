@@ -37,6 +37,9 @@ namespace UnityEditor
         static private bool s_InAnimationPlaybackMode = false;
         static private bool s_InAnimationRecordMode = false;
 
+        static internal event Action onAnimationRecordingStart;
+        static internal event Action onAnimationRecordingStop;
+
         static private PrefColor s_AnimatedPropertyColor = new PrefColor("Animation/Property Animated", 0.82f, 0.97f, 1.00f, 1.00f, 0.54f, 0.85f, 1.00f, 1.00f);
         static private PrefColor s_RecordedPropertyColor = new PrefColor("Animation/Property Recorded", 1.00f, 0.60f, 0.60f, 1.00f, 1.00f, 0.50f, 0.50f, 1.00f);
         static private PrefColor s_CandidatePropertyColor = new PrefColor("Animation/Property Candidate", 1.00f, 0.70f, 0.60f, 1.00f, 1.00f, 0.67f, 0.43f, 1.00f);
@@ -110,6 +113,8 @@ namespace UnityEditor
         internal static void StopAnimationRecording()
         {
             s_InAnimationRecordMode = false;
+
+            onAnimationRecordingStop?.Invoke();
         }
 
         internal static bool InAnimationRecording()
@@ -120,6 +125,8 @@ namespace UnityEditor
         internal static void StartAnimationRecording()
         {
             s_InAnimationRecordMode = true;
+
+            onAnimationRecordingStart?.Invoke();
         }
 
         [NativeThrows]

@@ -259,6 +259,20 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal Vector3 ComputeGlobalScale()
+        {
+            Vector3 result = m_Scale;
+
+            var ve = this.hierarchy.parent;
+
+            while (ve != null)
+            {
+                result.Scale(ve.m_Scale);
+                ve = ve.hierarchy.parent;
+            }
+            return result;
+        }
+
         Matrix4x4 ITransform.matrix
         {
             get { return Matrix4x4.TRS(m_Position, m_Rotation, m_Scale); }
@@ -413,6 +427,11 @@ namespace UnityEngine.UIElements
 
         private void UpdateWorldTransform()
         {
+            if (elementPanel != null && elementPanel.duringLayoutPhase)
+            {
+                throw new Exception("Can't access worldTransform while measuring Layout!");
+            }
+
             var offset = Matrix4x4.Translate(new Vector3(layout.x, layout.y, 0));
             if (hierarchy.parent != null)
             {
@@ -648,6 +667,7 @@ namespace UnityEngine.UIElements
 
             if (evt.eventTypeId == MouseOverEvent.TypeId() || evt.eventTypeId == MouseOutEvent.TypeId())
             {
+                // Updating cursor has to happen on MouseOver/Out because exiting a children do not send a mouse enter to the parent.
                 UpdateCursorStyle(evt.eventTypeId);
             }
             else if (evt.eventTypeId == MouseEnterEvent.TypeId())
@@ -1261,11 +1281,11 @@ namespace UnityEngine.UIElements
         {
             if (elementPanel != null)
             {
-                if (eventType == MouseOverEvent.TypeId())
+                if (eventType == MouseOverEvent.TypeId() && elementPanel.topElementUnderMouse == this)
                 {
                     elementPanel.cursorManager.SetCursor(computedStyle.cursor.value);
                 }
-                else
+                else if (eventType == MouseOutEvent.TypeId())
                 {
                     elementPanel.cursorManager.ResetCursor();
                 }

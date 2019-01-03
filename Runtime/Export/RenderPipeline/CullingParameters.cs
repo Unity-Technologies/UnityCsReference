@@ -303,8 +303,8 @@ namespace UnityEngine.Rendering
 
         ReflectionProbeSortingCriteria m_ReflectionProbeSortingCriteria;
 
-        private float m_AccurateOcclusionThreshold;
         CameraProperties m_CameraProperties;
+        private float m_AccurateOcclusionThreshold;
         private int m_MaximumPortalCullingJobs;
         const int k_CullingJobCountLowerLimit = 1;
 

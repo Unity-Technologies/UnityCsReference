@@ -19,7 +19,7 @@ namespace UnityEditor
         /// </summary>
         public static PackageManager.PackageInfo[] GetAllVisiblePackages()
         {
-            return Packages.GetAll().Where(info => info.isRootDependency && info.type != "module").
+            return Packages.GetAll().Where(info => info.type != "module").
                 OrderBy(info => string.IsNullOrEmpty(info.displayName) ? info.name : info.displayName,
                     StringComparer.InvariantCultureIgnoreCase).ToArray();
         }

@@ -139,6 +139,7 @@ namespace UnityEditor
         public static extern void OpenWithDefaultApp(string fileName);
 
         [NativeThrows] internal static extern bool WSACreateTestCertificate(string path, string publisher, string password, bool overwrite);
+        internal static extern bool WSAGetCertificateExpirationDate(string path, string password, out long expirationDate);
 
         internal static extern bool IsWindows10OrGreater();
 

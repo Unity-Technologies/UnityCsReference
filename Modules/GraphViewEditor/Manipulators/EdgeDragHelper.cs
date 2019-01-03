@@ -255,6 +255,7 @@ namespace UnityEditor.Experimental.GraphView
         private void Pan(TimerState ts)
         {
             m_GraphView.viewTransform.position -= m_PanDiff;
+            edgeCandidate.ForceUpdateEdgeControl();
             m_WasPanned = true;
         }
 

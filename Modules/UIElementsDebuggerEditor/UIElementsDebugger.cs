@@ -203,8 +203,19 @@ namespace UnityEditor.UIElements.Debugger
 
             if (!m_PickElement)
             {
+                var selectedElement =   m_DebuggerSelection.element;
                 m_TreeViewContainer.RebuildTree(panelDebug);
                 m_TreeViewContainer.DrawOverlay();
+
+                //we should not lose the selection when the tree has changed.
+                if (selectedElement != m_DebuggerSelection.element)
+                {
+                    if (m_DebuggerSelection.element == null && selectedElement.panel == panelDebug.panel)
+                    {
+                        SelectElement(selectedElement);
+                    }
+                }
+
                 m_StylesDebuggerContainer.Refresh();
 
                 Repaint();

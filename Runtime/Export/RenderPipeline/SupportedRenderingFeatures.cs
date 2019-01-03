@@ -60,6 +60,7 @@ namespace UnityEngine.Rendering
         public bool overridesEnvironmentLighting { get; set; } = false;
         public bool overridesFog { get; set; } = false;
         public bool overridesOtherLightingSettings { get; set; } = false;
+        public bool editableMaterialRenderQueue { get; set; } = true;
 
         internal static unsafe MixedLightingMode FallbackMixedLightingMode()
         {

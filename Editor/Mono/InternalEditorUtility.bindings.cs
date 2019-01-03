@@ -833,6 +833,9 @@ namespace UnityEditorInternal
         [FreeFunction("InternalEditorUtilityBindings::SaveCursorToFile")]
         extern public static bool SaveCursorToFile(string path, Texture2D image, Vector2 hotSpot);
 
+        [FreeFunction("InternalEditorUtilityBindings::SaveCursorToInMemoryResource")]
+        extern internal static bool SaveCursorToInMemoryResource(Texture2D image, Vector2 hotSpot, ushort cursorDataResourceId, IntPtr cursorDirectoryBuffer, uint cursorDirectoryBufferSize, IntPtr cursorDataBuffer, uint cursorDataBufferSize);
+
         [FreeFunction("GetScriptCompilationDefines")]
         extern internal static string[] GetCompilationDefines(EditorScriptCompilationOptions options, BuildTargetGroup targetGroup, BuildTarget target, ApiCompatibilityLevel apiCompatibilityLevel);
 

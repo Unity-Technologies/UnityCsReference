@@ -10,7 +10,8 @@ namespace UnityEditor.Experimental.Rendering
     public abstract class ScriptableBakedReflectionSystem : IScriptableBakedReflectionSystem
     {
         public int stageCount { get; }
-        public Hash128 stateHash { get; protected set; }
+
+        public Hash128[] stateHashes { get; protected set; }
 
         protected ScriptableBakedReflectionSystem(int stageCount)
         {

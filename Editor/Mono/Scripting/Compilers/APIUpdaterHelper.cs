@@ -156,6 +156,14 @@ namespace UnityEditor.Scripting.Compilers
                 File.Copy(sourceFileName,  relativeDestFilePath, true);
             }
 
+            if (destRelativeFilePaths.Length > 0)
+            {
+                Console.WriteLine("[API Updater] Updated Files:");
+                foreach (var path in destRelativeFilePaths)
+                    Console.WriteLine(path);
+
+                Console.WriteLine();
+            }
             APIUpdaterManager.ReportUpdatedFiles(destRelativeFilePaths);
 
             FileUtil.DeleteFileOrDirectory(tempOutputPath);
@@ -345,7 +353,7 @@ namespace UnityEditor.Scripting.Compilers
                 return true;
 
             var from = (MovedFromAttribute)attrs[0];
-            return from.Namespace == namespaceName;
+            return from.data.nameSpace == namespaceName;
         }
 
         private static Type FindTypeInLoadedAssemblies(Func<Type, bool> predicate)

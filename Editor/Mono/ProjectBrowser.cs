@@ -1091,18 +1091,7 @@ namespace UnityEditor
         void RefreshSelectedPath()
         {
             if (Selection.activeObject != null)
-            {
                 m_SelectedPath = AssetDatabase.GetAssetPath(Selection.activeObject);
-                if (!string.IsNullOrEmpty(m_SelectedPath))
-                {
-                    var packageInfo = Packages.GetForAssetPath(m_SelectedPath);
-                    if (packageInfo != null && !packageInfo.isRootDependency)
-                    {
-                        m_SelectedPath = string.Empty;
-                        Selection.activeObject = null;
-                    }
-                }
-            }
             else
                 m_SelectedPath = "";
 

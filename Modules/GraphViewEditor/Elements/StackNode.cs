@@ -194,10 +194,6 @@ namespace UnityEditor.Experimental.GraphView
 
         private void OnChildAdded(GraphElement element)
         {
-            var node = element as Node;
-            if (node != null)
-                node.renderHint &= ~RenderHint.SkinningTransform; // Nested skinning transforms aren't supported yet
-
             element.AddToClassList("stack-child-element");
             element.ResetPositionProperties();
             element.RegisterCallback<DetachFromPanelEvent>(OnChildDetachedFromPanel);
@@ -206,10 +202,6 @@ namespace UnityEditor.Experimental.GraphView
 
         private void OnChildRemoved(GraphElement element)
         {
-            var node = element as Node;
-            if (node != null)
-                node.renderHint |= RenderHint.SkinningTransform;
-
             element.RemoveFromClassList("stack-child-element");
             element.UnregisterCallback<DetachFromPanelEvent>(OnChildDetachedFromPanel);
 

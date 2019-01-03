@@ -73,7 +73,7 @@ namespace UnityEditor.ShortcutManagement
         public void RefreshShortcutList()
         {
             m_ShortcutsTable.Refresh();
-            m_HorizontalColumnDragger.UpdatePositions();
+            m_HorizontalColumnDragger.RequestUpdatePositions();
         }
 
         public void UpdateSearchFilterOptions()
@@ -84,7 +84,7 @@ namespace UnityEditor.ShortcutManagement
         public RebindResolution HandleRebindWillCreateConflict(ShortcutEntry entry, IList<KeyCombination> newBinding, IList<ShortcutEntry> conflicts)
         {
             var title = L10n.Tr("Binding conflict");
-            var message = string.Format(L10n.Tr("The key {0} is already assigned to the \"{1}\" shortcut.\nDo you want to reassign this key?"), KeyCombination.SequenceToString(newBinding), conflicts[0].identifier.path);
+            var message = string.Format(L10n.Tr("The key {0} is already assigned to the \"{1}\" shortcut.\nDo you want to reassign this key?"), KeyCombination.SequenceToString(newBinding), conflicts[0].displayName);
             var result = EditorUtility.DisplayDialogComplex(title, message, L10n.Tr("Reassign"), L10n.Tr("Cancel"), L10n.Tr("Create conflict"));
             switch (result)
             {
@@ -101,12 +101,12 @@ namespace UnityEditor.ShortcutManagement
 
         static void ShowElement(VisualElement el)
         {
-            el.RemoveFromClassList("hidden");
+            el.style.display = DisplayStyle.Flex;
         }
 
         static void HideElement(VisualElement el)
         {
-            el.AddToClassList("hidden");
+            el.style.display = DisplayStyle.None;
         }
 
         VisualElement MakeItemForShortcutTable()
@@ -140,8 +140,14 @@ namespace UnityEditor.ShortcutManagement
 
             rowElement.RegisterCallback<MouseDownEvent>(OnMouseDownCategoryTable);
             rowElement.RegisterCallback<MouseUpEvent>(OnMouseUpCategoryTable);
+            rowElement.RegisterCallback<GeometryChangedEvent>(OnGeometryChangedShortcutRow);
 
             return rowElement;
+        }
+
+        void OnGeometryChangedShortcutRow(GeometryChangedEvent evt)
+        {
+            m_HorizontalColumnDragger.UpdatePositionsIfRequested();
         }
 
         void RebindControl_OnCancel()
@@ -491,12 +497,15 @@ namespace UnityEditor.ShortcutManagement
             foreach (var entry in entries)
             {
                 // Change / to : here to avoid deep submenu nesting
-                var mangledPath = $"{entry.identifier.path.Replace('/', ':')} ({entry.combinations.FirstOrDefault()})";
+                var mangledPath = entry.displayName.Replace('/', ':');
+                // Replace "/" with "Slash" in binding name to avoid submenu nesting
+                var mangledBinding = entry.combinations.FirstOrDefault().ToString().Replace("/", "Slash");
+                var rootItemLabel = $"{mangledPath} ({mangledBinding})";
                 if (entry.overridden)
-                    menu.AddItem(new GUIContent($"{mangledPath}/{L10n.Tr("Reset to default")}"), false, (x) => { m_ViewController.ResetToDefault(entry);}, entry);
+                    menu.AddItem(new GUIContent($"{rootItemLabel}/{L10n.Tr("Reset to default")}"), false, (x) => { m_ViewController.ResetToDefault(entry);}, entry);
                 else
-                    menu.AddDisabledItem(new GUIContent($"{mangledPath}/{L10n.Tr("Reset to default")}"));
-                menu.AddItem(new GUIContent($"{mangledPath}/{L10n.Tr("Remove shortcut")}"), false, (x) => { m_ViewController.RemoveBinding(entry);}, entry);
+                    menu.AddDisabledItem(new GUIContent($"{rootItemLabel}/{L10n.Tr("Reset to default")}"));
+                menu.AddItem(new GUIContent($"{rootItemLabel}/{L10n.Tr("Remove shortcut")}"), false, (x) => { m_ViewController.RemoveBinding(entry);}, entry);
             }
 
             return menu;
@@ -516,7 +525,7 @@ namespace UnityEditor.ShortcutManagement
             var builder = new StringBuilder();
             foreach (var entry in entries)
             {
-                builder.AppendLine(entry.identifier.path);
+                builder.AppendLine(entry.displayName);
             }
 
             builder.TrimLastLine();
@@ -537,10 +546,13 @@ namespace UnityEditor.ShortcutManagement
 
             if (row != null)
             {
-                var bindingInput = row.Query<ShortcutTextField>().First();
-                var textElement = bindingInput.parent.Query<TextElement>().First();
+                var bindingContainer = row.Q(className: "binding-container");
+                var textElement = bindingContainer.Q<TextElement>();
+                var bindingInput = bindingContainer.Q<ShortcutTextField>();
+                var warningIcon = bindingContainer.Q(className: "warning-icon");
                 ShowElement(bindingInput);
                 HideElement(textElement);
+                HideElement(warningIcon);
                 bindingInput.RegisterCallback<GeometryChangedEvent>(FocusElementDelayed);
             }
         }
@@ -562,9 +574,9 @@ namespace UnityEditor.ShortcutManagement
             if (refresh)
                 m_ShortcutsTable.Refresh();
 
-            // Styles are re-applied after exiting the text field
-            // Update position again to make it match the resize handle
-            m_HorizontalColumnDragger.UpdatePositions();
+            // Rows are recreated when exiting the text field
+            // Request update of positions to ensure rows match the column headers
+            m_HorizontalColumnDragger.RequestUpdatePositions();
         }
 
         void OnSearchStringChanged(ChangeEvent<string> evt)
@@ -1373,6 +1385,7 @@ namespace UnityEditor.ShortcutManagement
         ListView m_Elements;
         float m_TargetPosition;
         float m_VerticalScrollbarWidth;
+        bool m_UpdatePositionsRequested;
 
         public HorizontalColumnDragger(float clampPositionPadding, ListView elements)
         {
@@ -1435,6 +1448,18 @@ namespace UnityEditor.ShortcutManagement
                 m_TargetPosition = EditorPrefs.GetFloat(k_ShortcutmanagerColumnposition, target.parent.layout.width / 2);
             }
             UpdateElements(m_TargetPosition);
+            m_UpdatePositionsRequested = false;
+        }
+
+        public void RequestUpdatePositions()
+        {
+            m_UpdatePositionsRequested = true;
+        }
+
+        public void UpdatePositionsIfRequested()
+        {
+            if (m_UpdatePositionsRequested)
+                UpdatePositions();
         }
 
         void OnMouseMove(MouseMoveEvent e)

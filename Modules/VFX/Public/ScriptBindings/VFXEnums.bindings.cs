@@ -49,6 +49,10 @@ namespace UnityEngine.Experimental.VFX
         ATan,
         Abs,
         Sign,
+        Saturate,
+        Ceil,
+        Round,
+        Frac,
         Floor,
         Log2,
         // binary
@@ -64,6 +68,8 @@ namespace UnityEngine.Experimental.VFX
         // matrix operations
         TRSToMatrix,
         InverseMatrix,
+        InverseTRSMatrix,
+        TransposeMatrix,
         ExtractPositionFromMatrix,
         ExtractAnglesFromMatrix,
         ExtractScaleFromMatrix,
@@ -147,9 +153,6 @@ namespace UnityEngine.Experimental.VFX
         CellularCurlNoise3D,
 
         VoroNoise2D,
-
-        // This allows backward compatibility
-        InverseTRS = InverseMatrix,
     }
 
     internal enum VFXValueType

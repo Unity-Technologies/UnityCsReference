@@ -14,7 +14,6 @@ namespace UnityEngine.UIElements
     {
         private UIRStylePainter m_StylePainter;
 
-        bool m_WarnedNestedSkinningTransforms;
         bool m_ScaleHasChanged;
 
         private List<UIRenderData> m_TextRenderData = new List<UIRenderData>(1024);
@@ -53,6 +52,7 @@ namespace UnityEngine.UIElements
 
             // Assign inherited data.
             uirData.SetParent(parentData);
+            uirData.effectiveRenderHint = ve.renderHint;
 
             if (ve.resolvedStyle.visibility == Visibility.Hidden || ve.resolvedStyle.opacity < Mathf.Epsilon || ve.resolvedStyle.display == DisplayStyle.None)
                 return previousData;
@@ -62,28 +62,30 @@ namespace UnityEngine.UIElements
 
             if (isSkinningTransform)
             {
-                if (uirData.inheritedSkinningTransformData != null)
-                {
-                    if (!m_WarnedNestedSkinningTransforms)
-                    {
-                        Debug.LogWarning("A nested skinning transform has been detected.");
-                        m_WarnedNestedSkinningTransforms = true;
-                    }
-                }
-                else if (!uirData.overridesSkinningTransform)
+                // Ignore nested skinned transforms
+                if (uirData.inheritedSkinningTransformData == null && !uirData.overridesSkinningTransform)
                     CreateSkinningTransform(uirData);
             }
 
 
             if (isViewTransform)
             {
-                // The access to the worldTransform is gated because dirty transforms are very slow to compute. This
-                // can increase processing time by 300%.
-                float scale = ve.worldTransform.m00;
-                if (scale != uirData.scale)
+                if (uirData.inheritedViewTransformData != null)
                 {
-                    uirData.scale = scale;
-                    m_ScaleHasChanged = true;
+                    // Nested view transforms aren't supported
+                    uirData.effectiveRenderHint &= ~RenderHint.ViewTransform;
+                    isViewTransform = false;
+                }
+                else
+                {
+                    // The access to the worldTransform is gated because dirty transforms are very slow to compute. This
+                    // can increase processing time by 300%.
+                    float scale = ve.worldTransform.m00;
+                    if (scale != uirData.scale)
+                    {
+                        uirData.scale = scale;
+                        m_ScaleHasChanged = true;
+                    }
                 }
             }
 

@@ -193,14 +193,18 @@ namespace UnityEditor
             if (sp)
                 sp.Reflow();
 
+            Invoke("OnAddedAsTab", pane);
             Repaint();
         }
 
         public void RemoveTab(EditorWindow pane) { RemoveTab(pane, killIfEmpty: true); }
         public void RemoveTab(EditorWindow pane, bool killIfEmpty, bool sendEvents = true)
         {
+            Invoke("OnBeforeRemovedAsTab", pane);
+
             if (actualView == pane)
                 DeregisterSelectedPane(clearActualView: true, sendEvents: sendEvents);
+
             int idx = m_Panes.IndexOf(pane);
             if (idx == -1)
                 return; // Pane is not in the window

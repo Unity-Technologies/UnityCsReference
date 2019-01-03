@@ -8,7 +8,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
-    [NativeHeader("Runtime/Export/LineUtility.bindings.h")]
+    [NativeHeader("Runtime/Export/Graphics/LineUtility.bindings.h")]
     public sealed partial class LineUtility
     {
         [FreeFunction("LineUtility_Bindings::GeneratePointsToKeep3D", IsThreadSafe = true)]

@@ -53,6 +53,7 @@ namespace UnityEditor.ShortcutManagement
     class ShortcutEntry
     {
         readonly Identifier m_Identifier;
+        readonly string m_DisplayName;
 
         readonly List<KeyCombination> m_DefaultCombinations = new List<KeyCombination>();
         List<KeyCombination> m_OverriddenCombinations;
@@ -62,6 +63,7 @@ namespace UnityEditor.ShortcutManagement
         readonly ShortcutType m_Type;
 
         public Identifier identifier => m_Identifier;
+        public string displayName => m_DisplayName;
 
         public IList<KeyCombination> combinations => activeCombination;
 
@@ -73,13 +75,14 @@ namespace UnityEditor.ShortcutManagement
 
         ShortcutModifiers m_ReservedModifier;
 
-        internal ShortcutEntry(Identifier id, IEnumerable<KeyCombination> defaultCombination, Action<ShortcutArguments> action, Type context, ShortcutType type)
+        internal ShortcutEntry(Identifier id, IEnumerable<KeyCombination> defaultCombination, Action<ShortcutArguments> action, Type context, ShortcutType type, string displayName = null)
         {
             m_Identifier = id;
             m_DefaultCombinations = defaultCombination.ToList();
             m_Context = context ?? ContextManager.globalContextType;
             m_Action = action;
             m_Type = type;
+            m_DisplayName = displayName ?? id.path;
 
             if (typeof(IShortcutToolContext).IsAssignableFrom(m_Context))
                 foreach (var attribute in m_Context.GetCustomAttributes(typeof(ReserveModifiersAttribute), true))

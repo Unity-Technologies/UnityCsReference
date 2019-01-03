@@ -11,6 +11,9 @@ namespace UnityEditor
     {
         internal static float DoSimpleEdgeHandle(Quaternion rotation, Vector3 position, float radius, bool editable = true)
         {
+            if (Event.current.alt)
+                editable = false;
+
             Vector3 right = rotation * Vector3.right;
 
             if (editable)
@@ -32,6 +35,9 @@ namespace UnityEditor
 
         internal static float DoSimpleRadiusHandle(Quaternion rotation, Vector3 position, float radius, bool hemisphere, float arc = 360.0f, bool editable = true)
         {
+            if (Event.current.alt)
+                editable = false;
+
             Vector3 forward = rotation * Vector3.forward;
             Vector3 up = rotation * Vector3.up;
             Vector3 right = rotation * Vector3.right;

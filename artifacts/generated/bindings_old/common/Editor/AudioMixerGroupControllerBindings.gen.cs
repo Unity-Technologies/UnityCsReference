@@ -85,6 +85,18 @@ internal sealed partial class AudioMixerGroupController : AudioMixerGroup
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public GUID GetGUIDForSend () ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public float GetValueForSend (AudioMixerController controller, AudioMixerSnapshotController snapshot) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public void SetValueForSend (AudioMixerController controller, AudioMixerSnapshotController snapshot, float value) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public bool HasDependentMixers () ;
 
     public extern  AudioMixerGroupController[] children

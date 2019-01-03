@@ -20,7 +20,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\artifacts\Bee.CSharpSupport\UnityEngine\Debug</OutputPath>
-    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_HUB;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_DIRECTOR;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_DUCK_TYPING;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_GRID;ENABLE_HOLOLENS_MODULE_API;ENABLE_LOCALIZATION;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_TEXTURE_STREAMING;ENABLE_TILEMAP;ENABLE_TIMELINE;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;INCLUDE_GI;INCLUDE_PUBNUB;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IOS_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS4_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
+    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_HUB;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_DIRECTOR;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_DUCK_TYPING;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_GRID;ENABLE_HOLOLENS_MODULE_API;ENABLE_LOCALIZATION;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_TEXTURE_STREAMING;ENABLE_TILEMAP;ENABLE_TIMELINE;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;INCLUDE_GI;INCLUDE_PUBNUB;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IOS_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS4_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -49,35 +49,41 @@
     <Compile Include="..\..\Runtime\2D\SpriteAtlas\ScriptBindings\SpriteAtlas.bindings.cs">
       <Link>Runtime\2D\SpriteAtlas\ScriptBindings\SpriteAtlas.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\AndroidInput.bindings.cs">
-      <Link>Runtime\Export\AndroidInput.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\AndroidJNI.bindings.cs">
-      <Link>Runtime\Export\AndroidJNI.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\AndroidJNISafe.cs">
-      <Link>Runtime\Export\AndroidJNISafe.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\AndroidJava.bindings.cs">
-      <Link>Runtime\Export\AndroidJava.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\AndroidJavaImpl.cs">
-      <Link>Runtime\Export\AndroidJavaImpl.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\AndroidPermissions.bindings.cs">
-      <Link>Runtime\Export\AndroidPermissions.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\2D\SortingLayer.bindings.cs">
+      <Link>Runtime\Export\2D\SortingLayer.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Android\AndroidDevice.bindings.cs">
       <Link>Runtime\Export\Android\AndroidDevice.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\AnimationCurve.bindings.cs">
-      <Link>Runtime\Export\AnimationCurve.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Android\AndroidInput.bindings.cs">
+      <Link>Runtime\Export\Android\AndroidInput.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Application.bindings.cs">
-      <Link>Runtime\Export\Application.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Android\AndroidJNI.bindings.cs">
+      <Link>Runtime\Export\Android\AndroidJNI.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Application.cs">
-      <Link>Runtime\Export\Application.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Android\AndroidJNISafe.cs">
+      <Link>Runtime\Export\Android\AndroidJNISafe.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Android\AndroidJava.bindings.cs">
+      <Link>Runtime\Export\Android\AndroidJava.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Android\AndroidJavaImpl.cs">
+      <Link>Runtime\Export\Android\AndroidJavaImpl.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Android\AndroidPermissions.bindings.cs">
+      <Link>Runtime\Export\Android\AndroidPermissions.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Animation\AnimationCurve.bindings.cs">
+      <Link>Runtime\Export\Animation\AnimationCurve.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Annotations\JetBrains.Annotations.cs">
+      <Link>Runtime\Export\Annotations\JetBrains.Annotations.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Application\Application.bindings.cs">
+      <Link>Runtime\Export\Application\Application.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Application\Application.cs">
+      <Link>Runtime\Export\Application\Application.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\AssemblyInfo.cs">
       <Link>Runtime\Export\AssemblyInfo.cs</Link>
@@ -121,50 +127,14 @@
     <Compile Include="..\..\Runtime\Export\Assertions\Must\MustNull.cs">
       <Link>Runtime\Export\Assertions\Must\MustNull.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\AsyncGPUReadback.bindings.cs">
-      <Link>Runtime\Export\AsyncGPUReadback.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\AsyncOperation.bindings.cs">
-      <Link>Runtime\Export\AsyncOperation.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\AsyncOperation.cs">
-      <Link>Runtime\Export\AsyncOperation.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\AsyncReadManager.bindings.cs">
-      <Link>Runtime\Export\AsyncReadManager.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\AtomicSafetyHandle.bindings.cs">
-      <Link>Runtime\Export\AtomicSafetyHandle.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\AttributeHelperEngine.cs">
-      <Link>Runtime\Export\AttributeHelperEngine.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Attributes.cs">
-      <Link>Runtime\Export\Attributes.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\AudioType.cs">
-      <Link>Runtime\Export\AudioType.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Audio\AudioType.cs">
+      <Link>Runtime\Export\Audio\AudioType.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\BaseClass.cs">
       <Link>Runtime\Export\BaseClass.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\BeforeRenderHelper.cs">
-      <Link>Runtime\Export\BeforeRenderHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Behaviour.bindings.cs">
-      <Link>Runtime\Export\Behaviour.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\BillboardRenderer.bindings.cs">
-      <Link>Runtime\Export\BillboardRenderer.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\BootConfig.bindings.cs">
-      <Link>Runtime\Export\BootConfig.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Bounds.cs">
-      <Link>Runtime\Export\Bounds.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\BoundsInt.cs">
-      <Link>Runtime\Export\BoundsInt.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Bootstrap\BootConfig.bindings.cs">
+      <Link>Runtime\Export\Bootstrap\BootConfig.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Burst\BurstCompilerService.bindings.cs">
       <Link>Runtime\Export\Burst\BurstCompilerService.bindings.cs</Link>
@@ -175,26 +145,35 @@
     <Compile Include="..\..\Runtime\Export\Burst\BurstDiscardAttribute.cs">
       <Link>Runtime\Export\Burst\BurstDiscardAttribute.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Cache.bindings.cs">
-      <Link>Runtime\Export\Cache.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Caching\Cache.bindings.cs">
+      <Link>Runtime\Export\Caching\Cache.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Caching.bindings.cs">
-      <Link>Runtime\Export\Caching.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Caching\Caching.bindings.cs">
+      <Link>Runtime\Export\Caching\Caching.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Caching.deprecated.cs">
-      <Link>Runtime\Export\Caching.deprecated.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Camera.bindings.cs">
-      <Link>Runtime\Export\Camera.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Camera.deprecated.cs">
-      <Link>Runtime\Export\Camera.deprecated.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Caching\Caching.deprecated.cs">
+      <Link>Runtime\Export\Caching\Caching.deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Camera\BuiltinRuntimeReflectionSystem.bindings.cs">
       <Link>Runtime\Export\Camera\BuiltinRuntimeReflectionSystem.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Camera\Camera.bindings.cs">
+      <Link>Runtime\Export\Camera\Camera.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Camera\Camera.deprecated.cs">
+      <Link>Runtime\Export\Camera\Camera.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Camera\CullingGroup.bindings.cs">
+      <Link>Runtime\Export\Camera\CullingGroup.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Camera\FlareLayer.bindings.cs">
+      <Link>Runtime\Export\Camera\FlareLayer.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Camera\IScriptableRuntimeReflectionSystem.cs">
       <Link>Runtime\Export\Camera\IScriptableRuntimeReflectionSystem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Camera\ReflectionProbe.bindings.cs">
+      <Link>Runtime\Export\Camera\ReflectionProbe.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Camera\ScriptableRuntimeReflectionSystem.cs">
       <Link>Runtime\Export\Camera\ScriptableRuntimeReflectionSystem.cs</Link>
@@ -205,68 +184,23 @@
     <Compile Include="..\..\Runtime\Export\Camera\ScriptableRuntimeReflectionSystemWrapper.cs">
       <Link>Runtime\Export\Camera\ScriptableRuntimeReflectionSystemWrapper.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\CastHelper.cs">
-      <Link>Runtime\Export\CastHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\ClassLibraryInitializer.cs">
-      <Link>Runtime\Export\ClassLibraryInitializer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\ClassStubsForStripping.cs">
-      <Link>Runtime\Export\ClassStubsForStripping.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Collections\NativeCollectionAccessPolicies.cs">
       <Link>Runtime\Export\Collections\NativeCollectionAccessPolicies.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Collections\NativeCollectionEnums.bindings.cs">
       <Link>Runtime\Export\Collections\NativeCollectionEnums.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Color.cs">
-      <Link>Runtime\Export\Color.cs</Link>
+    <Compile Include="..\..\Runtime\Export\CrashReport\CrashReport.bindings.cs">
+      <Link>Runtime\Export\CrashReport\CrashReport.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Color32.cs">
-      <Link>Runtime\Export\Color32.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Debug\Debug.bindings.cs">
+      <Link>Runtime\Export\Debug\Debug.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\ColorUtility.bindings.cs">
-      <Link>Runtime\Export\ColorUtility.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Debug\Debug.deprecated.cs">
+      <Link>Runtime\Export\Debug\Debug.deprecated.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\ColorUtility.cs">
-      <Link>Runtime\Export\ColorUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Component.bindings.cs">
-      <Link>Runtime\Export\Component.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Component.deprecated.cs">
-      <Link>Runtime\Export\Component.deprecated.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\ComputeShader.bindings.cs">
-      <Link>Runtime\Export\ComputeShader.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Coroutine.bindings.cs">
-      <Link>Runtime\Export\Coroutine.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Coroutines.cs">
-      <Link>Runtime\Export\Coroutines.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\CrashReport.bindings.cs">
-      <Link>Runtime\Export\CrashReport.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\CullingGroup.bindings.cs">
-      <Link>Runtime\Export\CullingGroup.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Cursor.bindings.cs">
-      <Link>Runtime\Export\Cursor.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\CustomYieldInstruction.cs">
-      <Link>Runtime\Export\CustomYieldInstruction.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Debug.bindings.cs">
-      <Link>Runtime\Export\Debug.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Debug.deprecated.cs">
-      <Link>Runtime\Export\Debug.deprecated.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\DiagnosticSwitch.cs">
-      <Link>Runtime\Export\DiagnosticSwitch.cs</Link>
+    <Compile Include="..\..\Runtime\Export\DiagnosticSwitch\DiagnosticSwitch.cs">
+      <Link>Runtime\Export\DiagnosticSwitch\DiagnosticSwitch.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Diagnostics\DiagnosticsUtils.bindings.cs">
       <Link>Runtime\Export\Diagnostics\DiagnosticsUtils.bindings.cs</Link>
@@ -274,8 +208,17 @@
     <Compile Include="..\..\Runtime\Export\Director\CameraPlayable.bindings.cs">
       <Link>Runtime\Export\Director\CameraPlayable.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Director\ExposedPropertyTable.bindings.cs">
+      <Link>Runtime\Export\Director\ExposedPropertyTable.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Director\ExposedReference.cs">
+      <Link>Runtime\Export\Director\ExposedReference.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Director\FrameData.cs">
       <Link>Runtime\Export\Director\FrameData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Director\IExposedPropertyTable.cs">
+      <Link>Runtime\Export\Director\IExposedPropertyTable.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Director\INotification.cs">
       <Link>Runtime\Export\Director\INotification.cs</Link>
@@ -352,32 +295,11 @@
     <Compile Include="..\..\Runtime\Export\Director\TexturePlayableOutput.bindings.cs">
       <Link>Runtime\Export\Director\TexturePlayableOutput.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Display.bindings.cs">
-      <Link>Runtime\Export\Display.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\ETW\EventProvider.bindings.cs">
+      <Link>Runtime\Export\ETW\EventProvider.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\DrivenPropertyManager.bindings.cs">
-      <Link>Runtime\Export\DrivenPropertyManager.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\EnumInfo.cs">
-      <Link>Runtime\Export\EnumInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\EventProvider.bindings.cs">
-      <Link>Runtime\Export\EventProvider.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\ExcludeFromObjectFactoryAttribute.cs">
-      <Link>Runtime\Export\ExcludeFromObjectFactoryAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\ExposedPropertyTable.bindings.cs">
-      <Link>Runtime\Export\ExposedPropertyTable.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\ExposedReference.cs">
-      <Link>Runtime\Export\ExposedReference.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\FailedToLoadScriptObject.cs">
-      <Link>Runtime\Export\FailedToLoadScriptObject.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\FlareLayer.bindings.cs">
-      <Link>Runtime\Export\FlareLayer.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\File\AsyncReadManager.bindings.cs">
+      <Link>Runtime\Export\File\AsyncReadManager.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\FriendAttributes.cs">
       <Link>Runtime\Export\FriendAttributes.cs</Link>
@@ -391,80 +313,164 @@
     <Compile Include="..\..\Runtime\Export\GI\Lightmapping.cs">
       <Link>Runtime\Export\GI\Lightmapping.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\GPUFence.deprecated.cs">
-      <Link>Runtime\Export\GPUFence.deprecated.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Geometry\Bounds.cs">
+      <Link>Runtime\Export\Geometry\Bounds.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\GUIElement.bindings.cs">
-      <Link>Runtime\Export\GUIElement.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Geometry\BoundsInt.cs">
+      <Link>Runtime\Export\Geometry\BoundsInt.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\GameObject.bindings.cs">
-      <Link>Runtime\Export\GameObject.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Geometry\GeometryUtility.cs">
+      <Link>Runtime\Export\Geometry\GeometryUtility.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\GameObject.deprecated.cs">
-      <Link>Runtime\Export\GameObject.deprecated.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Geometry\Plane.cs">
+      <Link>Runtime\Export\Geometry\Plane.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\GeometryUtility.cs">
-      <Link>Runtime\Export\GeometryUtility.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Geometry\Ray.cs">
+      <Link>Runtime\Export\Geometry\Ray.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Gizmos.bindings.cs">
-      <Link>Runtime\Export\Gizmos.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Geometry\Ray2D.cs">
+      <Link>Runtime\Export\Geometry\Ray2D.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Gizmos.cs">
-      <Link>Runtime\Export\Gizmos.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Geometry\Rect.cs">
+      <Link>Runtime\Export\Geometry\Rect.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Gradient.bindings.cs">
-      <Link>Runtime\Export\Gradient.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Geometry\RectInt.cs">
+      <Link>Runtime\Export\Geometry\RectInt.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Graphics.bindings.cs">
-      <Link>Runtime\Export\Graphics.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Geometry\RectOffset.cs">
+      <Link>Runtime\Export\Geometry\RectOffset.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Graphics.cs">
-      <Link>Runtime\Export\Graphics.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Gizmos\Gizmos.bindings.cs">
+      <Link>Runtime\Export\Gizmos\Gizmos.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Graphics.deprecated.cs">
-      <Link>Runtime\Export\Graphics.deprecated.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Gizmos\Gizmos.cs">
+      <Link>Runtime\Export\Gizmos\Gizmos.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\GraphicsBuffer.bindings.cs">
-      <Link>Runtime\Export\GraphicsBuffer.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Graphics\AsyncGPUReadback.bindings.cs">
+      <Link>Runtime\Export\Graphics\AsyncGPUReadback.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\GraphicsComponents.bindings.cs">
-      <Link>Runtime\Export\GraphicsComponents.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Graphics\BeforeRenderHelper.cs">
+      <Link>Runtime\Export\Graphics\BeforeRenderHelper.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\GraphicsEnums.cs">
-      <Link>Runtime\Export\GraphicsEnums.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Graphics\BillboardRenderer.bindings.cs">
+      <Link>Runtime\Export\Graphics\BillboardRenderer.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\GraphicsFence.bindings.cs">
-      <Link>Runtime\Export\GraphicsFence.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Graphics\Display.bindings.cs">
+      <Link>Runtime\Export\Graphics\Display.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\GraphicsFormatUtility.bindings.cs">
-      <Link>Runtime\Export\GraphicsFormatUtility.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Graphics\GPUFence.deprecated.cs">
+      <Link>Runtime\Export\Graphics\GPUFence.deprecated.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\GraphicsManagers.bindings.cs">
-      <Link>Runtime\Export\GraphicsManagers.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Graphics\Graphics.bindings.cs">
+      <Link>Runtime\Export\Graphics\Graphics.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\GraphicsRenderers.bindings.cs">
-      <Link>Runtime\Export\GraphicsRenderers.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Graphics\Graphics.cs">
+      <Link>Runtime\Export\Graphics\Graphics.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\GraphicsSettings.bindings.cs">
-      <Link>Runtime\Export\GraphicsSettings.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Graphics\Graphics.deprecated.cs">
+      <Link>Runtime\Export\Graphics\Graphics.deprecated.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Graphics_BindingsOverloads.cs">
-      <Link>Runtime\Export\Graphics_BindingsOverloads.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Graphics\GraphicsBuffer.bindings.cs">
+      <Link>Runtime\Export\Graphics\GraphicsBuffer.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Handheld.bindings.cs">
-      <Link>Runtime\Export\Handheld.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Graphics\GraphicsComponents.bindings.cs">
+      <Link>Runtime\Export\Graphics\GraphicsComponents.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Hash128.bindings.cs">
-      <Link>Runtime\Export\Hash128.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Graphics\GraphicsEnums.cs">
+      <Link>Runtime\Export\Graphics\GraphicsEnums.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\HashUtilities.cs">
-      <Link>Runtime\Export\HashUtilities.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Graphics\GraphicsFence.bindings.cs">
+      <Link>Runtime\Export\Graphics\GraphicsFence.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\IExposedPropertyTable.cs">
-      <Link>Runtime\Export\IExposedPropertyTable.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Graphics\GraphicsFormatUtility.bindings.cs">
+      <Link>Runtime\Export\Graphics\GraphicsFormatUtility.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Input.bindings.cs">
-      <Link>Runtime\Export\Input.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Graphics\GraphicsManagers.bindings.cs">
+      <Link>Runtime\Export\Graphics\GraphicsManagers.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\GraphicsRenderers.bindings.cs">
+      <Link>Runtime\Export\Graphics\GraphicsRenderers.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\GraphicsSettings.bindings.cs">
+      <Link>Runtime\Export\Graphics\GraphicsSettings.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\Graphics_BindingsOverloads.cs">
+      <Link>Runtime\Export\Graphics\Graphics_BindingsOverloads.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\LOD.bindings.cs">
+      <Link>Runtime\Export\Graphics\LOD.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\Light.bindings.cs">
+      <Link>Runtime\Export\Graphics\Light.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\Light.deprecated.cs">
+      <Link>Runtime\Export\Graphics\Light.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\LightProbeGroup.bindings.cs">
+      <Link>Runtime\Export\Graphics\LightProbeGroup.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\LightProbeProxyVolume.bindings.cs">
+      <Link>Runtime\Export\Graphics\LightProbeProxyVolume.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\LineUtility.cs">
+      <Link>Runtime\Export\Graphics\LineUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\Mesh.bindings.cs">
+      <Link>Runtime\Export\Graphics\Mesh.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\Mesh.cs">
+      <Link>Runtime\Export\Graphics\Mesh.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\RenderingCommandBuffer.bindings.cs">
+      <Link>Runtime\Export\Graphics\RenderingCommandBuffer.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\RenderingCommandBuffer.cs">
+      <Link>Runtime\Export\Graphics\RenderingCommandBuffer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\RenderingCommandBuffer.deprecated.cs">
+      <Link>Runtime\Export\Graphics\RenderingCommandBuffer.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\SplashScreen.bindings.cs">
+      <Link>Runtime\Export\Graphics\SplashScreen.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\Texture.bindings.cs">
+      <Link>Runtime\Export\Graphics\Texture.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\Texture.cs">
+      <Link>Runtime\Export\Graphics\Texture.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\Texture.deprecated.cs">
+      <Link>Runtime\Export\Graphics\Texture.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Handheld\Handheld.bindings.cs">
+      <Link>Runtime\Export\Handheld\Handheld.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Hashing\Hash128.bindings.cs">
+      <Link>Runtime\Export\Hashing\Hash128.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Hashing\HashUtilities.cs">
+      <Link>Runtime\Export\Hashing\HashUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Hashing\SpookyHash.cs">
+      <Link>Runtime\Export\Hashing\SpookyHash.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\IMGUI\GUIElement.bindings.cs">
+      <Link>Runtime\Export\IMGUI\GUIElement.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\IMGUI\ScrollWaitDefinitions.cs">
+      <Link>Runtime\Export\IMGUI\ScrollWaitDefinitions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Input\Cursor.bindings.cs">
+      <Link>Runtime\Export\Input\Cursor.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Input\Input.bindings.cs">
+      <Link>Runtime\Export\Input\Input.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Input\KeyCode.cs">
+      <Link>Runtime\Export\Input\KeyCode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Input\MouseEvents.cs">
+      <Link>Runtime\Export\Input\MouseEvents.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Internal\DefaultValueAttribute.cs">
       <Link>Runtime\Export\Internal\DefaultValueAttribute.cs</Link>
@@ -475,68 +481,74 @@
     <Compile Include="..\..\Runtime\Export\Internal\InternalInterfaces.cs">
       <Link>Runtime\Export\Internal\InternalInterfaces.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\JetBrains.Annotations.cs">
-      <Link>Runtime\Export\JetBrains.Annotations.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Jobs\AtomicSafetyHandle.bindings.cs">
+      <Link>Runtime\Export\Jobs\AtomicSafetyHandle.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\KeyCode.cs">
-      <Link>Runtime\Export\KeyCode.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Logging\DebugLogHandler.cs">
+      <Link>Runtime\Export\Logging\DebugLogHandler.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\LOD.bindings.cs">
-      <Link>Runtime\Export\LOD.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Logging\ILogHandler.cs">
+      <Link>Runtime\Export\Logging\ILogHandler.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\LayerMask.bindings.cs">
-      <Link>Runtime\Export\LayerMask.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Logging\ILogger.cs">
+      <Link>Runtime\Export\Logging\ILogger.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Light.bindings.cs">
-      <Link>Runtime\Export\Light.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Logging\Logger.cs">
+      <Link>Runtime\Export\Logging\Logger.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Light.deprecated.cs">
-      <Link>Runtime\Export\Light.deprecated.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Logging\UnityLogWriter.bindings.cs">
+      <Link>Runtime\Export\Logging\UnityLogWriter.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\LightProbeGroup.bindings.cs">
-      <Link>Runtime\Export\LightProbeGroup.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Lumin\UsesLuminPlatformLevel.cs">
+      <Link>Runtime\Export\Lumin\UsesLuminPlatformLevel.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\LightProbeProxyVolume.bindings.cs">
-      <Link>Runtime\Export\LightProbeProxyVolume.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Lumin\UsesLuminPrivilege.cs">
+      <Link>Runtime\Export\Lumin\UsesLuminPrivilege.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\LineUtility.cs">
-      <Link>Runtime\Export\LineUtility.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Math\Color.cs">
+      <Link>Runtime\Export\Math\Color.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Logger\DebugLogHandler.cs">
-      <Link>Runtime\Export\Logger\DebugLogHandler.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Math\Color32.cs">
+      <Link>Runtime\Export\Math\Color32.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Logger\ILogHandler.cs">
-      <Link>Runtime\Export\Logger\ILogHandler.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Math\ColorUtility.bindings.cs">
+      <Link>Runtime\Export\Math\ColorUtility.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Logger\ILogger.cs">
-      <Link>Runtime\Export\Logger\ILogger.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Math\ColorUtility.cs">
+      <Link>Runtime\Export\Math\ColorUtility.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Logger\Logger.cs">
-      <Link>Runtime\Export\Logger\Logger.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Math\Gradient.bindings.cs">
+      <Link>Runtime\Export\Math\Gradient.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\ManagedStreamHelpers.cs">
-      <Link>Runtime\Export\ManagedStreamHelpers.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Math\Math.bindings.cs">
+      <Link>Runtime\Export\Math\Math.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Math.bindings.cs">
-      <Link>Runtime\Export\Math.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Math\Mathf.cs">
+      <Link>Runtime\Export\Math\Mathf.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Mathf.cs">
-      <Link>Runtime\Export\Mathf.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Math\Matrix4x4.cs">
+      <Link>Runtime\Export\Math\Matrix4x4.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Matrix4x4.cs">
-      <Link>Runtime\Export\Matrix4x4.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Math\Quaternion.cs">
+      <Link>Runtime\Export\Math\Quaternion.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Mesh.bindings.cs">
-      <Link>Runtime\Export\Mesh.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Math\SphericalHarmonicsL2.bindings.cs">
+      <Link>Runtime\Export\Math\SphericalHarmonicsL2.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Mesh.cs">
-      <Link>Runtime\Export\Mesh.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Math\Vector2.cs">
+      <Link>Runtime\Export\Math\Vector2.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\MonoBehaviour.bindings.cs">
-      <Link>Runtime\Export\MonoBehaviour.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Math\Vector2Int.cs">
+      <Link>Runtime\Export\Math\Vector2Int.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\MouseEvents.cs">
-      <Link>Runtime\Export\MouseEvents.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Math\Vector3.cs">
+      <Link>Runtime\Export\Math\Vector3.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Math\Vector3Int.cs">
+      <Link>Runtime\Export\Math\Vector3Int.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Math\Vector4.cs">
+      <Link>Runtime\Export\Math\Vector4.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\NativeArray\DisposeSentinel.cs">
       <Link>Runtime\Export\NativeArray\DisposeSentinel.cs</Link>
@@ -547,8 +559,11 @@
     <Compile Include="..\..\Runtime\Export\NativeArray\NativeSlice.cs">
       <Link>Runtime\Export\NativeArray\NativeSlice.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Networking.deprecated.cs">
-      <Link>Runtime\Export\Networking.deprecated.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Networking\Networking.deprecated.cs">
+      <Link>Runtime\Export\Networking\Networking.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Networking\Ping.bindings.cs">
+      <Link>Runtime\Export\Networking\Ping.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Networking\PlayerConnection\ConnectionApi.cs">
       <Link>Runtime\Export\Networking\PlayerConnection\ConnectionApi.cs</Link>
@@ -559,71 +574,35 @@
     <Compile Include="..\..\Runtime\Export\Networking\PlayerConnection\PlayerEditorConnectionEvents.cs">
       <Link>Runtime\Export\Networking\PlayerConnection\PlayerEditorConnectionEvents.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\NoAllocHelpers.bindings.cs">
-      <Link>Runtime\Export\NoAllocHelpers.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\PlayerConnection\PlayerConnection.cs">
+      <Link>Runtime\Export\PlayerConnection\PlayerConnection.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Ping.bindings.cs">
-      <Link>Runtime\Export\Ping.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\PlayerConnection\PlayerConnectionInternal.bindings.cs">
+      <Link>Runtime\Export\PlayerConnection\PlayerConnectionInternal.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Plane.cs">
-      <Link>Runtime\Export\Plane.cs</Link>
+    <Compile Include="..\..\Runtime\Export\PlayerLoop\PlayerLoop.bindings.cs">
+      <Link>Runtime\Export\PlayerLoop\PlayerLoop.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\PlatformKeywordSet.cs">
-      <Link>Runtime\Export\PlatformKeywordSet.cs</Link>
+    <Compile Include="..\..\Runtime\Export\PlayerPrefs\PlayerPrefs.bindings.cs">
+      <Link>Runtime\Export\PlayerPrefs\PlayerPrefs.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\PlayerConnection.cs">
-      <Link>Runtime\Export\PlayerConnection.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Properties\DrivenPropertyManager.bindings.cs">
+      <Link>Runtime\Export\Properties\DrivenPropertyManager.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\PlayerConnectionInternal.bindings.cs">
-      <Link>Runtime\Export\PlayerConnectionInternal.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\PropertyDrawer\PropertyAttribute.cs">
+      <Link>Runtime\Export\PropertyDrawer\PropertyAttribute.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\PlayerLoop.bindings.cs">
-      <Link>Runtime\Export\PlayerLoop.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\PropertyName\PropertyName.bindings.cs">
+      <Link>Runtime\Export\PropertyName\PropertyName.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\PlayerPrefs.bindings.cs">
-      <Link>Runtime\Export\PlayerPrefs.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\PropertyName\PropertyName.cs">
+      <Link>Runtime\Export\PropertyName\PropertyName.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Pose.cs">
-      <Link>Runtime\Export\Pose.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Random\Random.bindings.cs">
+      <Link>Runtime\Export\Random\Random.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\PropertyAttribute.cs">
-      <Link>Runtime\Export\PropertyAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\PropertyName.bindings.cs">
-      <Link>Runtime\Export\PropertyName.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\PropertyName.cs">
-      <Link>Runtime\Export\PropertyName.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Quaternion.cs">
-      <Link>Runtime\Export\Quaternion.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Random.bindings.cs">
-      <Link>Runtime\Export\Random.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Random.cs">
-      <Link>Runtime\Export\Random.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\RangeInt.cs">
-      <Link>Runtime\Export\RangeInt.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Ray.cs">
-      <Link>Runtime\Export\Ray.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Ray2D.cs">
-      <Link>Runtime\Export\Ray2D.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Rect.cs">
-      <Link>Runtime\Export\Rect.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\RectInt.cs">
-      <Link>Runtime\Export\RectInt.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\RectOffset.cs">
-      <Link>Runtime\Export\RectOffset.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\ReflectionProbe.bindings.cs">
-      <Link>Runtime\Export\ReflectionProbe.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Random\Random.cs">
+      <Link>Runtime\Export\Random\Random.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\RenderPipeline\AttachmentDescriptor.cs">
       <Link>Runtime\Export\RenderPipeline\AttachmentDescriptor.cs</Link>
@@ -730,26 +709,14 @@
     <Compile Include="..\..\Runtime\Export\RenderPipeline\VisibleReflectionProbe.cs">
       <Link>Runtime\Export\RenderPipeline\VisibleReflectionProbe.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\RenderingCommandBuffer.bindings.cs">
-      <Link>Runtime\Export\RenderingCommandBuffer.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Rendering\BatchRendererGroup.bindings.cs">
+      <Link>Runtime\Export\Rendering\BatchRendererGroup.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\RenderingCommandBuffer.cs">
-      <Link>Runtime\Export\RenderingCommandBuffer.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Resources\Resources.bindings.cs">
+      <Link>Runtime\Export\Resources\Resources.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\RenderingCommandBuffer.deprecated.cs">
-      <Link>Runtime\Export\RenderingCommandBuffer.deprecated.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Resources.bindings.cs">
-      <Link>Runtime\Export\Resources.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Resources.deprecated.cs">
-      <Link>Runtime\Export\Resources.deprecated.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\RuntimeInitializeOnLoadAttribute.cs">
-      <Link>Runtime\Export\RuntimeInitializeOnLoadAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\RuntimeUndo.bindings.cs">
-      <Link>Runtime\Export\RuntimeUndo.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Resources\Resources.deprecated.cs">
+      <Link>Runtime\Export\Resources\Resources.deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\SceneManager\LineUtility.bindings.cs">
       <Link>Runtime\Export\SceneManager\LineUtility.bindings.cs</Link>
@@ -769,23 +736,92 @@
     <Compile Include="..\..\Runtime\Export\SceneManager\SceneUtility.bindings.cs">
       <Link>Runtime\Export\SceneManager\SceneUtility.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\ScriptableObject.bindings.cs">
-      <Link>Runtime\Export\ScriptableObject.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\APIUpdating\UpdatedFromAttribute.cs">
       <Link>Runtime\Export\Scripting\APIUpdating\UpdatedFromAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\AlwaysLinkAssemblyAttribute.cs">
       <Link>Runtime\Export\Scripting\AlwaysLinkAssemblyAttribute.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\AsyncOperation.bindings.cs">
+      <Link>Runtime\Export\Scripting\AsyncOperation.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\AsyncOperation.cs">
+      <Link>Runtime\Export\Scripting\AsyncOperation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\AttributeHelperEngine.cs">
+      <Link>Runtime\Export\Scripting\AttributeHelperEngine.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\Attributes.cs">
+      <Link>Runtime\Export\Scripting\Attributes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\Behaviour.bindings.cs">
+      <Link>Runtime\Export\Scripting\Behaviour.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\CastHelper.cs">
+      <Link>Runtime\Export\Scripting\CastHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\ClassLibraryInitializer.cs">
+      <Link>Runtime\Export\Scripting\ClassLibraryInitializer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\Component.bindings.cs">
+      <Link>Runtime\Export\Scripting\Component.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\Component.deprecated.cs">
+      <Link>Runtime\Export\Scripting\Component.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\Coroutine.bindings.cs">
+      <Link>Runtime\Export\Scripting\Coroutine.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\Coroutines.cs">
+      <Link>Runtime\Export\Scripting\Coroutines.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\CustomYieldInstruction.cs">
+      <Link>Runtime\Export\Scripting\CustomYieldInstruction.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\EnumInfo.cs">
+      <Link>Runtime\Export\Scripting\EnumInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\ExcludeFromObjectFactoryAttribute.cs">
+      <Link>Runtime\Export\Scripting\ExcludeFromObjectFactoryAttribute.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\ExtensionOfNativeClassAttribute.cs">
       <Link>Runtime\Export\Scripting\ExtensionOfNativeClassAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\FailedToLoadScriptObject.cs">
+      <Link>Runtime\Export\Scripting\FailedToLoadScriptObject.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\GameObject.bindings.cs">
+      <Link>Runtime\Export\Scripting\GameObject.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\GameObject.deprecated.cs">
+      <Link>Runtime\Export\Scripting\GameObject.deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\GarbageCollector.bindings.cs">
       <Link>Runtime\Export\Scripting\GarbageCollector.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\LayerMask.bindings.cs">
+      <Link>Runtime\Export\Scripting\LayerMask.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\ManagedStreamHelpers.cs">
+      <Link>Runtime\Export\Scripting\ManagedStreamHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\MonoBehaviour.bindings.cs">
+      <Link>Runtime\Export\Scripting\MonoBehaviour.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\NoAllocHelpers.bindings.cs">
+      <Link>Runtime\Export\Scripting\NoAllocHelpers.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\PreserveAttribute.cs">
       <Link>Runtime\Export\Scripting\PreserveAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\RangeInt.cs">
+      <Link>Runtime\Export\Scripting\RangeInt.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\RuntimeInitializeOnLoadAttribute.cs">
+      <Link>Runtime\Export\Scripting\RuntimeInitializeOnLoadAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\ScriptableObject.bindings.cs">
+      <Link>Runtime\Export\Scripting\ScriptableObject.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\ScriptingRuntime.bindings.cs">
       <Link>Runtime\Export\Scripting\ScriptingRuntime.bindings.cs</Link>
@@ -793,56 +829,86 @@
     <Compile Include="..\..\Runtime\Export\Scripting\ScriptingUtility.cs">
       <Link>Runtime\Export\Scripting\ScriptingUtility.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\ScrollWaitDefinitions.cs">
-      <Link>Runtime\Export\ScrollWaitDefinitions.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Scripting\SelectionBaseAttribute.cs">
+      <Link>Runtime\Export\Scripting\SelectionBaseAttribute.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Security.cs">
-      <Link>Runtime\Export\Security.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Scripting\StackTrace.cs">
+      <Link>Runtime\Export\Scripting\StackTrace.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\SecurityPublic.cs">
-      <Link>Runtime\Export\SecurityPublic.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Scripting\TextAsset.bindings.cs">
+      <Link>Runtime\Export\Scripting\TextAsset.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\SelectionBaseAttribute.cs">
-      <Link>Runtime\Export\SelectionBaseAttribute.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Scripting\TrackedReference.cs">
+      <Link>Runtime\Export\Scripting\TrackedReference.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Serialization.cs">
-      <Link>Runtime\Export\Serialization.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Scripting\UnhandledExceptionHandler.bindings.cs">
+      <Link>Runtime\Export\Scripting\UnhandledExceptionHandler.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\UnityAPICompatibilityVersionAttribute.cs">
+      <Link>Runtime\Export\Scripting\UnityAPICompatibilityVersionAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\UnityEngineObject.bindings.cs">
+      <Link>Runtime\Export\Scripting\UnityEngineObject.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\UnitySynchronizationContext.cs">
+      <Link>Runtime\Export\Scripting\UnitySynchronizationContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\WaitForEndOfFrame.cs">
+      <Link>Runtime\Export\Scripting\WaitForEndOfFrame.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\WaitForFixedUpdate.cs">
+      <Link>Runtime\Export\Scripting\WaitForFixedUpdate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\WaitForSeconds.cs">
+      <Link>Runtime\Export\Scripting\WaitForSeconds.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\WaitForSecondsRealtime.cs">
+      <Link>Runtime\Export\Scripting\WaitForSecondsRealtime.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\WaitUntil.cs">
+      <Link>Runtime\Export\Scripting\WaitUntil.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\WaitWhile.cs">
+      <Link>Runtime\Export\Scripting\WaitWhile.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\YieldOperation.cs">
+      <Link>Runtime\Export\Scripting\YieldOperation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Security\Security.cs">
+      <Link>Runtime\Export\Security\Security.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Security\SecurityPublic.cs">
+      <Link>Runtime\Export\Security\SecurityPublic.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Serialization\FormerlySerializedAsAttribute.cs">
       <Link>Runtime\Export\Serialization\FormerlySerializedAsAttribute.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Serialization\Serialization.cs">
+      <Link>Runtime\Export\Serialization\Serialization.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Serialization\UnitySurrogateSelector.cs">
       <Link>Runtime\Export\Serialization\UnitySurrogateSelector.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Shader.bindings.cs">
-      <Link>Runtime\Export\Shader.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Shaders\ComputeShader.bindings.cs">
+      <Link>Runtime\Export\Shaders\ComputeShader.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Shader.cs">
-      <Link>Runtime\Export\Shader.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Shaders\PlatformKeywordSet.cs">
+      <Link>Runtime\Export\Shaders\PlatformKeywordSet.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\ShaderKeyword.bindings.cs">
-      <Link>Runtime\Export\ShaderKeyword.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Shaders\Shader.bindings.cs">
+      <Link>Runtime\Export\Shaders\Shader.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\ShaderKeyword.deprecated.cs">
-      <Link>Runtime\Export\ShaderKeyword.deprecated.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Shaders\Shader.cs">
+      <Link>Runtime\Export\Shaders\Shader.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\ShaderKeywordSet.bindings.cs">
-      <Link>Runtime\Export\ShaderKeywordSet.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Shaders\ShaderKeyword.bindings.cs">
+      <Link>Runtime\Export\Shaders\ShaderKeyword.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\SortingLayer.bindings.cs">
-      <Link>Runtime\Export\SortingLayer.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Shaders\ShaderKeyword.deprecated.cs">
+      <Link>Runtime\Export\Shaders\ShaderKeyword.deprecated.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\SphericalHarmonicsL2.bindings.cs">
-      <Link>Runtime\Export\SphericalHarmonicsL2.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\SplashScreen.bindings.cs">
-      <Link>Runtime\Export\SplashScreen.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\SpookyHash.cs">
-      <Link>Runtime\Export\SpookyHash.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\StackTrace.cs">
-      <Link>Runtime\Export\StackTrace.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Shaders\ShaderKeywordSet.bindings.cs">
+      <Link>Runtime\Export\Shaders\ShaderKeywordSet.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\StaticBatching\CombineForStaticBatching.cs">
       <Link>Runtime\Export\StaticBatching\CombineForStaticBatching.cs</Link>
@@ -850,44 +916,29 @@
     <Compile Include="..\..\Runtime\Export\StaticBatching\MeshSubsetCombineUtility.cs">
       <Link>Runtime\Export\StaticBatching\MeshSubsetCombineUtility.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\SystemClock.cs">
-      <Link>Runtime\Export\SystemClock.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Stripping\ClassStubsForStripping.cs">
+      <Link>Runtime\Export\Stripping\ClassStubsForStripping.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\SystemInfo.bindings.cs">
-      <Link>Runtime\Export\SystemInfo.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\SystemInfo\SystemInfo.bindings.cs">
+      <Link>Runtime\Export\SystemInfo\SystemInfo.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\SystemInfo.deprecated.cs">
-      <Link>Runtime\Export\SystemInfo.deprecated.cs</Link>
+    <Compile Include="..\..\Runtime\Export\SystemInfo\SystemInfo.deprecated.cs">
+      <Link>Runtime\Export\SystemInfo\SystemInfo.deprecated.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\TextAsset.bindings.cs">
-      <Link>Runtime\Export\TextAsset.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Time\SystemClock.cs">
+      <Link>Runtime\Export\Time\SystemClock.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Texture.bindings.cs">
-      <Link>Runtime\Export\Texture.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Time\Time.bindings.cs">
+      <Link>Runtime\Export\Time\Time.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Texture.cs">
-      <Link>Runtime\Export\Texture.cs</Link>
+    <Compile Include="..\..\Runtime\Export\TouchScreenKeyboard\TouchScreenKeyboard.bindings.cs">
+      <Link>Runtime\Export\TouchScreenKeyboard\TouchScreenKeyboard.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Texture.deprecated.cs">
-      <Link>Runtime\Export\Texture.deprecated.cs</Link>
+    <Compile Include="..\..\Runtime\Export\TouchScreenKeyboard\TouchScreenKeyboardType.cs">
+      <Link>Runtime\Export\TouchScreenKeyboard\TouchScreenKeyboardType.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Time.bindings.cs">
-      <Link>Runtime\Export\Time.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\TouchScreenKeyboard.bindings.cs">
-      <Link>Runtime\Export\TouchScreenKeyboard.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\TouchScreenKeyboardType.cs">
-      <Link>Runtime\Export\TouchScreenKeyboardType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\TrackedReference.cs">
-      <Link>Runtime\Export\TrackedReference.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\UnhandledExceptionHandler.bindings.cs">
-      <Link>Runtime\Export\UnhandledExceptionHandler.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\UnityAPICompatibilityVersionAttribute.cs">
-      <Link>Runtime\Export\UnityAPICompatibilityVersionAttribute.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Undo\RuntimeUndo.bindings.cs">
+      <Link>Runtime\Export\Undo\RuntimeUndo.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\UnityEngineInternal\APIUpdaterRuntimeServices.cs">
       <Link>Runtime\Export\UnityEngineInternal\APIUpdaterRuntimeServices.cs</Link>
@@ -898,35 +949,26 @@
     <Compile Include="..\..\Runtime\Export\UnityEngineInternal\WrappedTypes.cs">
       <Link>Runtime\Export\UnityEngineInternal\WrappedTypes.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\UnityEngineObject.bindings.cs">
-      <Link>Runtime\Export\UnityEngineObject.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\UnityEvent\UnityEvent.cs">
+      <Link>Runtime\Export\UnityEvent\UnityEvent.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\UnityEvent.cs">
-      <Link>Runtime\Export\UnityEvent.cs</Link>
+    <Compile Include="..\..\Runtime\Export\UnityEvent\UnityEventQueueSystem.bindings.cs">
+      <Link>Runtime\Export\UnityEvent\UnityEventQueueSystem.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\UnityEventQueueSystem.bindings.cs">
-      <Link>Runtime\Export\UnityEventQueueSystem.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\UnityEvent\UnityEvent\UnityEvent_0.cs">
+      <Link>Runtime\Export\UnityEvent\UnityEvent\UnityEvent_0.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\UnityEvent_0.cs">
-      <Link>Runtime\Export\UnityEvent_0.cs</Link>
+    <Compile Include="..\..\Runtime\Export\UnityEvent\UnityEvent\UnityEvent_1.cs">
+      <Link>Runtime\Export\UnityEvent\UnityEvent\UnityEvent_1.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\UnityEvent_1.cs">
-      <Link>Runtime\Export\UnityEvent_1.cs</Link>
+    <Compile Include="..\..\Runtime\Export\UnityEvent\UnityEvent\UnityEvent_2.cs">
+      <Link>Runtime\Export\UnityEvent\UnityEvent\UnityEvent_2.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\UnityEvent_2.cs">
-      <Link>Runtime\Export\UnityEvent_2.cs</Link>
+    <Compile Include="..\..\Runtime\Export\UnityEvent\UnityEvent\UnityEvent_3.cs">
+      <Link>Runtime\Export\UnityEvent\UnityEvent\UnityEvent_3.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\UnityEvent_3.cs">
-      <Link>Runtime\Export\UnityEvent_3.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\UnityEvent_4.cs">
-      <Link>Runtime\Export\UnityEvent_4.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\UnityLogWriter.bindings.cs">
-      <Link>Runtime\Export\UnityLogWriter.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\UnitySynchronizationContext.cs">
-      <Link>Runtime\Export\UnitySynchronizationContext.cs</Link>
+    <Compile Include="..\..\Runtime\Export\UnityEvent\UnityEvent\UnityEvent_4.cs">
+      <Link>Runtime\Export\UnityEvent\UnityEvent\UnityEvent_4.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Unsafe\UnsafeUtility.bindings.cs">
       <Link>Runtime\Export\Unsafe\UnsafeUtility.bindings.cs</Link>
@@ -936,21 +978,6 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Unsafe\UnsafeUtilityPatched.cs">
       <Link>Runtime\Export\Unsafe\UnsafeUtilityPatched.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Vector2.cs">
-      <Link>Runtime\Export\Vector2.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Vector2Int.cs">
-      <Link>Runtime\Export\Vector2Int.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Vector3.cs">
-      <Link>Runtime\Export\Vector3.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Vector3Int.cs">
-      <Link>Runtime\Export\Vector3Int.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Vector4.cs">
-      <Link>Runtime\Export\Vector4.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\WSA\WSAApplication.bindings.cs">
       <Link>Runtime\Export\WSA\WSAApplication.bindings.cs</Link>
@@ -963,24 +990,6 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\WSA\WSATiles.bindings.cs">
       <Link>Runtime\Export\WSA\WSATiles.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\WaitForEndOfFrame.cs">
-      <Link>Runtime\Export\WaitForEndOfFrame.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\WaitForFixedUpdate.cs">
-      <Link>Runtime\Export\WaitForFixedUpdate.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\WaitForSeconds.cs">
-      <Link>Runtime\Export\WaitForSeconds.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\WaitForSecondsRealtime.cs">
-      <Link>Runtime\Export\WaitForSecondsRealtime.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\WaitUntil.cs">
-      <Link>Runtime\Export\WaitUntil.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\WaitWhile.cs">
-      <Link>Runtime\Export\WaitWhile.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Windows\AppTrial.bindings.cs">
       <Link>Runtime\Export\Windows\AppTrial.bindings.cs</Link>
@@ -1003,11 +1012,8 @@
     <Compile Include="..\..\Runtime\Export\Windows\WindowsFile.bindings.cs">
       <Link>Runtime\Export\Windows\WindowsFile.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\YieldOperation.cs">
-      <Link>Runtime\Export\YieldOperation.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\iOSSystemGestureDeferMode.cs">
-      <Link>Runtime\Export\iOSSystemGestureDeferMode.cs</Link>
+    <Compile Include="..\..\Runtime\Export\XR\Pose.cs">
+      <Link>Runtime\Export\XR\Pose.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\iOS\OnDemandResources.bindings.cs">
       <Link>Runtime\Export\iOS\OnDemandResources.bindings.cs</Link>
@@ -1023,6 +1029,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\iOS\iOSReplayKit.bindings.cs">
       <Link>Runtime\Export\iOS\iOSReplayKit.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\iOS\iOSSystemGestureDeferMode.cs">
+      <Link>Runtime\Export\iOS\iOSSystemGestureDeferMode.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\iOS\tvOS.bindings.cs">
       <Link>Runtime\Export\iOS\tvOS.bindings.cs</Link>
@@ -1065,6 +1074,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Profiler\ScriptBindings\Sampler.bindings.cs">
       <Link>Runtime\Profiler\ScriptBindings\Sampler.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Scripting\APIUpdating\APIUpdaterRuntimeHelpers.cs">
+      <Link>Runtime\Scripting\APIUpdating\APIUpdaterRuntimeHelpers.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Transform\ScriptBindings\RectTransform.bindings.cs">
       <Link>Runtime\Transform\ScriptBindings\RectTransform.bindings.cs</Link>
@@ -1366,6 +1378,9 @@
     <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\Audio.bindings.cs">
       <Link>Modules\Audio\Public\ScriptBindings\Audio.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioClipExtensions.bindings.cs">
+      <Link>Modules\Audio\Public\ScriptBindings\AudioClipExtensions.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioClipPlayable.bindings.cs">
       <Link>Modules\Audio\Public\ScriptBindings\AudioClipPlayable.bindings.cs</Link>
     </Compile>
@@ -1387,8 +1402,59 @@
     <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioSampleProvider.bindings.cs">
       <Link>Modules\Audio\Public\ScriptBindings\AudioSampleProvider.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\DSPGraph.bindings.cs">
-      <Link>Modules\Audio\Public\ScriptBindings\DSPGraph.bindings.cs</Link>
+    <Compile Include="..\..\Modules\Audio\Public\csas\Managed\AudioJobUpdateExtensions.cs">
+      <Link>Modules\Audio\Public\csas\Managed\AudioJobUpdateExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\csas\Managed\AudioJobsExtensions.cs">
+      <Link>Modules\Audio\Public\csas\Managed\AudioJobsExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\csas\Managed\DSPCommandBlock.cs">
+      <Link>Modules\Audio\Public\csas\Managed\DSPCommandBlock.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\csas\Managed\DSPGraph.cs">
+      <Link>Modules\Audio\Public\csas\Managed\DSPGraph.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\csas\Managed\DSPNodeUpdateRequest.cs">
+      <Link>Modules\Audio\Public\csas\Managed\DSPNodeUpdateRequest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\csas\Managed\ExecuteContext.cs">
+      <Link>Modules\Audio\Public\csas\Managed\ExecuteContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\csas\Managed\IAudioJob.cs">
+      <Link>Modules\Audio\Public\csas\Managed\IAudioJob.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\csas\Managed\IAudioJobUpdate.cs">
+      <Link>Modules\Audio\Public\csas\Managed\IAudioJobUpdate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\csas\Managed\ParameterData.cs">
+      <Link>Modules\Audio\Public\csas\Managed\ParameterData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\csas\Managed\ResourceContext.cs">
+      <Link>Modules\Audio\Public\csas\Managed\ResourceContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\csas\Managed\SampleBufferArray.cs">
+      <Link>Modules\Audio\Public\csas\Managed\SampleBufferArray.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\csas\Managed\SampleProviderContainer.cs">
+      <Link>Modules\Audio\Public\csas\Managed\SampleProviderContainer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\csas\ScriptBindings\DSPCommandBlock.bindings.cs">
+      <Link>Modules\Audio\Public\csas\ScriptBindings\DSPCommandBlock.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\csas\ScriptBindings\DSPGraph.bindings.cs">
+      <Link>Modules\Audio\Public\csas\ScriptBindings\DSPGraph.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\csas\ScriptBindings\DSPNodeUpdateRequest.bindings.cs">
+      <Link>Modules\Audio\Public\csas\ScriptBindings\DSPNodeUpdateRequest.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\csas\ScriptBindings\DSPSampleProvider.bindings.cs">
+      <Link>Modules\Audio\Public\csas\ScriptBindings\DSPSampleProvider.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\csas\ScriptBindings\ExecuteContext.bindings.cs">
+      <Link>Modules\Audio\Public\csas\ScriptBindings\ExecuteContext.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\csas\ScriptBindings\ResourceContext.bindings.cs">
+      <Link>Modules\Audio\Public\csas\ScriptBindings\ResourceContext.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Cloth\Cloth.bindings.cs">
       <Link>Modules\Cloth\Cloth.bindings.cs</Link>

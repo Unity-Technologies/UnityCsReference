@@ -30,10 +30,10 @@ namespace UnityEditor.Experimental.Rendering
             Dispose(false);
         }
 
-        Hash128 Internal_ScriptableBakedReflectionSystemWrapper_stateHash
+        Hash128[] Internal_ScriptableBakedReflectionSystemWrapper_stateHashes
         {
             [RequiredByNativeCode]
-            get { return implementation != null ? implementation.stateHash : new Hash128(); }
+            get { return implementation != null ? implementation.stateHashes : null; }
         }
 
         int Internal_ScriptableBakedReflectionSystemWrapper_stageCount

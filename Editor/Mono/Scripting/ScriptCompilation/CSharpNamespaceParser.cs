@@ -19,6 +19,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
     }
 
+    internal class UnsupportedDefineExpression : Exception
+    {
+        public UnsupportedDefineExpression(string message) : base(message) {}
+    }
+
     internal static class CSharpNamespaceParser
     {
         static readonly Regex k_ReDefineExpr = new Regex(@"r'\s+|([=!]=)\s*(true|false)|([_a-zA-Z][_a-zA-Z0-9]*)|([()!]|&&|\|\|)", RegexOptions.Compiled);
@@ -28,7 +33,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         static readonly Regex k_VerbatimStrings = new Regex(@"@(""[^""]*"")+", RegexOptions.Compiled);
         static readonly Regex k_NewlineRegex = new Regex("\r\n?", RegexOptions.Compiled);
         static readonly Regex k_SingleQuote = new Regex(@"((?<![\\])['])(?:.(?!(?<![\\])\1))*.?\1", RegexOptions.Compiled);
-        static readonly Regex k_ConditionalCompilation = new Regex(@"[\t ]*#[\t ]*(if|else|elif|endif|define|undef)([\t ]+[^/\n]*)?", RegexOptions.Compiled);
+        static readonly Regex k_ConditionalCompilation = new Regex(@"[\t ]*#[\t ]*(if|else|elif|endif|define|undef)([\t !(]+[^/\n]*)?", RegexOptions.Compiled);
         static string s_ClassName;
 
         public static string GetNamespace(string sourceCode, string className, params string[] defines)
@@ -43,7 +48,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             sourceCode = k_SingleQuote.Replace(sourceCode, "");
             try
             {
-                sourceCode = RemoveIfDefs(sourceCode, defines);
+                sourceCode = RemoveUnusedDefines(sourceCode, defines.ToList());
 
                 return FindNamespaceForMono(className, sourceCode);
             }
@@ -58,7 +63,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             source = FixBraces(source);
             var split = source.Split(new[] { ' ', '\t', '\n' }, StringSplitOptions.RemoveEmptyEntries).ToList();
             var parent = new Node { Name = "-1" };
-            var builder = new StringBuilder();
+            var builder = new StringBuilder(source.Length);
             var buildingNode = false;
             var buildingClass = false;
             var currentNode = parent;
@@ -120,7 +125,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         static string FixBraces(string sourceCode)
         {
-            var stringBuilder = new StringBuilder();
+            var stringBuilder = new StringBuilder(sourceCode.Length * 2);
             var lastChar = '-';
             foreach (var c in sourceCode.ToCharArray())
             {
@@ -158,28 +163,58 @@ namespace UnityEditor.Scripting.ScriptCompilation
             public Node Parent;
         }
 
-        static string RemoveIfDefs(string source, IEnumerable<string> defines)
-        {
-            return RemoveUnusedDefines(source, defines.ToList());
-        }
-
         static string RemoveUnusedDefines(string source, List<string> defines)
         {
             var stack = new Stack<Tuple<bool, bool>>();
-            var stringBuilder = new StringBuilder();
-            var split = source.Split(new[] { "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+            var split = source.Split(new[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
+            var longest = split.Aggregate("", (max, cur) => max.Length > cur.Length ? max : cur);
+            var stringBuilder = new StringBuilder(split.Length * longest.Length);
             foreach (var s in split)
             {
+                if (s.IndexOf("#", StringComparison.Ordinal) < 0)
+                {
+                    if (stack.Count == 0 || stack.Peek().Item1)
+                    {
+                        stringBuilder.Append(s).Append("\n");
+                    }
+
+                    continue;
+                }
+
                 var match = k_ConditionalCompilation.Match(s);
                 var directive = match.Groups[1].Value;
-                var arg = match.Groups[2].Value;
+                if (directive == "else")
+                {
+                    var elseEmitting = stack.Peek().Item2;
+                    stack.Pop();
+                    stack.Push(new Tuple<bool, bool>(elseEmitting, false));
+                    continue;
+                }
+                if (directive == "endif")
+                {
+                    stack.Pop();
+                    continue;
+                }
+
+                var arg = match.Groups[2].Value.Trim();
+                if (directive.Length > 0 && arg.Length == 0)
+                {
+                    throw new UnsupportedDefineExpression(s);
+                }
+
                 if (directive == "define")
                 {
-                    if (stack.Count == 0 || stack.Peek().Item1) defines.Add(arg.Trim());
+                    if (!defines.Contains(arg) && (stack.Count == 0 || stack.Peek().Item1))
+                    {
+                        defines.Add(arg);
+                    }
                 }
                 else if (directive == "undefine")
                 {
-                    if (stack.Count == 0 || stack.Peek().Item1) defines.Add(arg.Trim());
+                    if (stack.Count == 0 || stack.Peek().Item1)
+                    {
+                        defines.Remove(arg);
+                    }
                 }
                 else if (directive == "if")
                 {
@@ -191,20 +226,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 {
                     var evalResult = EvaluateDefine(arg, defines);
                     var elseEmitting = stack.Peek().Item2;
-                    stack.Pop(); stack.Push(new Tuple<bool, bool>(elseEmitting && evalResult, elseEmitting && !evalResult));
-                }
-                else if (directive == "else")
-                {
-                    var elseEmitting = stack.Peek().Item2;
-                    stack.Pop(); stack.Push(new Tuple<bool, bool>(elseEmitting, false));
-                }
-                else if (directive == "endif")
-                {
                     stack.Pop();
-                }
-                else
-                {
-                    if (stack.Count == 0 || stack.Peek().Item1) stringBuilder.Append(s).Append("\n");
+                    stack.Push(new Tuple<bool, bool>(elseEmitting && evalResult, elseEmitting && !evalResult));
                 }
             }
 
@@ -242,7 +265,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     res.Add(match.Groups[4].Value);
             }
 
-            return EvaluateBooleanExpression(string.Join(" ", res.ToArray()));
+            try
+            {
+                return EvaluateBooleanExpression(string.Join(" ", res.ToArray()));
+            }
+            catch (InvalidOperationException)
+            {
+                throw new UnsupportedDefineExpression($"{expr}: caused an error in CSharpNamespaceParser");
+            }
         }
 
         static bool EvaluateBooleanExpression(string expression)

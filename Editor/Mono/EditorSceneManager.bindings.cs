@@ -187,5 +187,16 @@ namespace UnityEditor.SceneManagement
 
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         private extern static AsyncOperation LoadSceneInPlayModeInternal(string path, LoadSceneParameters parameters, bool isSynchronous);
+
+        [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
+        extern public static ulong GetSceneCullingMask(Scene scene);
+
+        [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
+        extern public static void SetSceneCullingMask(Scene scene, ulong sceneCullingMask);
+
+        [StaticAccessor("GetSceneManager()", StaticAccessorType.Dot)]
+        extern public static ulong CalculateAvailableSceneCullingMask();
+
+        public const ulong DefaultSceneCullingMask = 1UL << 63;
     }
 }

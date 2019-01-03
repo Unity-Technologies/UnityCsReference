@@ -23,7 +23,7 @@ namespace UnityEngine.UIElements
             if ((versionChangeType & VersionChangeType.Transform) == VersionChangeType.Transform && (!ve.isWorldTransformDirty || !ve.isWorldClipDirty))
             {
                 bool dirtyRepaint = true;
-                if ((ve.renderHint & (RenderHint.ViewTransform | RenderHint.SkinningTransform)) != 0)
+                if (UIRUtility.IsViewTransformWithoutNesting(ve) || UIRUtility.IsSkinnedTransformWithoutNesting(ve))
                 {
                     // The element has the ViewTransform/SkinningTransform hint do not dirty repaint its children
                     dirtyRepaint = false;

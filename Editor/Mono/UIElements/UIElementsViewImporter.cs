@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Xml;
 using System.Xml.Linq;
 using ExCSS;
@@ -21,7 +22,7 @@ using VisualElementAsset = UnityEngine.UIElements.VisualElementAsset;
 namespace UnityEditor.Experimental.UIElements
 {
     // Make sure UXML is imported after assets than can be addressed in USS
-    [ScriptedImporter(version: 5, ext: "uxml", importQueueOffset: 1000)]
+    [ScriptedImporter(version: 6, ext: "uxml", importQueueOffset: 1000)]
     internal class UIElementsViewImporter : ScriptedImporter
     {
         public override void OnImportAsset(AssetImportContext args)
@@ -247,6 +248,25 @@ namespace UnityEditor.Experimental.UIElements
             vta.visualElementAssets = new List<VisualElementAsset>();
             vta.templateAssets = new List<TemplateAsset>();
 
+            var h = new Hash128();
+            using (var stream = File.OpenRead(xmlPath))
+            {
+                int readCount = 0;
+                byte[] b = new byte[1024 * 16];
+                while ((readCount = stream.Read(b, 0, b.Length)) > 0)
+                {
+                    for (int i = readCount; i < b.Length; i++)
+                    {
+                        b[i] = 0;
+                    }
+                    Hash128 blockHash = new Hash128();
+                    HashUtilities.ComputeHash128(b, ref blockHash);
+                    HashUtilities.AppendHash(ref blockHash, ref h);
+                }
+            }
+
+            vta.contentHash = h.GetHashCode();
+
             XDocument doc;
 
             try
@@ -272,6 +292,11 @@ namespace UnityEditor.Experimental.UIElements
             vta = ScriptableObject.CreateInstance<VisualTreeAsset>();
             vta.visualElementAssets = new List<VisualElementAsset>();
             vta.templateAssets = new List<TemplateAsset>();
+
+            var h = new Hash128();
+            byte[] b = Encoding.UTF8.GetBytes(xml);
+            HashUtilities.ComputeHash128(b, ref h);
+            vta.contentHash = h.GetHashCode();
 
             XDocument doc;
 
@@ -306,6 +331,8 @@ namespace UnityEditor.Experimental.UIElements
                 return;
             }
 
+            int orderInDocument = -1;
+
             foreach (var child in elt.Elements())
             {
                 switch (child.Name.LocalName)
@@ -314,7 +341,8 @@ namespace UnityEditor.Experimental.UIElements
                         LoadTemplateNode(vta, elt, child);
                         break;
                     default:
-                        LoadXml(child, null, vta);
+                        ++orderInDocument;
+                        LoadXml(child, null, vta, orderInDocument);
                         continue;
                 }
             }
@@ -384,7 +412,7 @@ namespace UnityEditor.Experimental.UIElements
             vta.RegisterTemplate(name, path);
         }
 
-        void LoadXml(XElement elt, VisualElementAsset parent, VisualTreeAsset vta)
+        void LoadXml(XElement elt, VisualElementAsset parent, VisualTreeAsset vta, int orderInDocument)
         {
             VisualElementAsset vea = ResolveType(elt, vta);
             if (vea == null)
@@ -392,12 +420,21 @@ namespace UnityEditor.Experimental.UIElements
                 return;
             }
 
-            var parentId = (parent == null ? 0 : parent.id);
+            int parentHash;
+            if (parent == null)
+            {
+                vea.parentId = 0;
+                parentHash = vta.GetHashCode();
+            }
+            else
+            {
+                vea.parentId = parent.id;
+                parentHash = parent.id;
+            }
 
             // id includes the parent id, meaning it's dependent on the whole direct hierarchy
-            int id = (parentId << 1) ^ vea.GetHashCode();
-            vea.parentId = parentId;
-            vea.id = id;
+            vea.id = (vta.GetNextChildSerialNumber() + 585386304) * -1521134295 + parentHash;
+            vea.orderInDocument = orderInDocument;
 
             bool startedRule = ParseAttributes(elt, vea, vta, parent);
 
@@ -417,7 +454,10 @@ namespace UnityEditor.Experimental.UIElements
                     if (child.Name.LocalName == k_StyleReferenceNode)
                         LoadStyleReferenceNode(vea, child);
                     else
-                        LoadXml(child, vea, vta);
+                    {
+                        ++orderInDocument;
+                        LoadXml(child, vea, vta, orderInDocument);
+                    }
                 }
             }
         }

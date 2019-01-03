@@ -91,6 +91,14 @@ namespace UnityEditor.PackageManager
         [NativeName("author")]
         private AuthorInfo m_Author = new AuthorInfo();
 
+        [SerializeField]
+        [NativeName("hasRegistry")]
+        private bool m_HasRegistry;
+
+        [SerializeField]
+        [NativeName("registry")]
+        private RegistryInfo m_Registry = new RegistryInfo();
+
         internal PackageInfo() {}
 
         public string packageId { get { return m_PackageId;  } }
@@ -111,5 +119,13 @@ namespace UnityEditor.PackageManager
         public DependencyInfo[] resolvedDependencies { get { return m_ResolvedDependencies; } }
         public string[] keywords { get { return m_Keywords;  } }
         public AuthorInfo author { get { return m_Author;  } }
+
+        public RegistryInfo registry
+        {
+            get
+            {
+                return m_HasRegistry ? m_Registry : null;
+            }
+        }
     }
 }

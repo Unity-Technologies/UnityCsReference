@@ -173,7 +173,7 @@ namespace UnityEditorInternal
 
                 case EventType.MouseDown:
                     // am I closest to the thingy?
-                    if (HandleUtility.nearestControl == id && evt.button == 0 && GUIUtility.hotControl == 0)
+                    if (HandleUtility.nearestControl == id && evt.button == 0 && GUIUtility.hotControl == 0 && !evt.alt)
                     {
                         Plane plane = new Plane(Handles.matrix.MultiplyVector(handleDir), Handles.matrix.MultiplyPoint(handlePos));
                         Ray mouseRay = HandleUtility.GUIPointToWorldRay(evt.mousePosition);
@@ -252,7 +252,7 @@ namespace UnityEditorInternal
                         temp = Handles.color;
                         Handles.color = Handles.selectedColor;
                     }
-                    else if (id == HandleUtility.nearestControl && GUIUtility.hotControl == 0)
+                    else if (id == HandleUtility.nearestControl && GUIUtility.hotControl == 0 && !evt.alt)
                     {
                         temp = Handles.color;
                         Handles.color = Handles.preselectionColor;
@@ -314,7 +314,7 @@ namespace UnityEditorInternal
                     break;
                 case EventType.MouseDown:
                     // am I closest to the thingy?
-                    if (HandleUtility.nearestControl == id && evt.button == 0 && GUIUtility.hotControl == 0)
+                    if (HandleUtility.nearestControl == id && evt.button == 0 && GUIUtility.hotControl == 0 && !evt.alt)
                     {
                         s_CurrentMousePosition = evt.mousePosition;
                         bool success = true;
@@ -379,7 +379,7 @@ namespace UnityEditorInternal
                         temp = Handles.color;
                         Handles.color = Handles.selectedColor;
                     }
-                    else if (id == HandleUtility.nearestControl && GUIUtility.hotControl == 0)
+                    else if (id == HandleUtility.nearestControl && GUIUtility.hotControl == 0 && !evt.alt)
                     {
                         temp = Handles.color;
                         Handles.color = Handles.preselectionColor;

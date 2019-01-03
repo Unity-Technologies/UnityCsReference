@@ -96,6 +96,8 @@ namespace UnityEditor.VisualStudioIntegration
                 @"<Project ToolsVersion=""{0}"" DefaultTargets=""Build"" xmlns=""{6}"">",
                 @"  <PropertyGroup>",
                 @"    <LangVersion>{10}</LangVersion>",
+                @"    <CscToolPath>{13}</CscToolPath>",
+                @"    <CscToolExe>{14}</CscToolExe>",
                 @"  </PropertyGroup>",
                 @"  <PropertyGroup>",
                 @"    <Configuration Condition="" '$(Configuration)' == '' "">Debug</Configuration>",

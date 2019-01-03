@@ -85,7 +85,13 @@ namespace UnityEditor.UIElements
     public static class BindingExtensions
     {
         // visual element style changes wrt its property state
-        public static readonly string prefabOverrideUssClassName = "unity-prefab-override";
+        public static readonly string prefabOverrideUssClassName = "unity-binding--prefab-override";
+        internal static readonly string prefabOverrideBarName = "unity-binding-prefab-override-bar";
+        internal static readonly string prefabOverrideBarContainerName = "unity-prefab-override-bars-container";
+        internal static readonly string prefabOverrideBarUssClassName = "unity-binding__prefab-override-bar";
+        internal static readonly string animationAnimatedUssClassName = "unity-binding--animation-animated";
+        internal static readonly string animationRecordedUssClassName = "unity-binding--animation-recorded";
+        internal static readonly string animationCandidateUssClassName = "unity-binding--animation-candidate";
 
         public static void Bind(this VisualElement element, SerializedObject obj)
         {
@@ -203,15 +209,15 @@ namespace UnityEditor.UIElements
 
         private static void RemoveBinding(VisualElement element)
         {
-            IBindable field = element as IBindable;
-            if (element == null || !field.IsBound())
+            var bindable = element as IBindable;
+            if (element == null || !bindable.IsBound())
             {
                 return;
             }
-            if (field != null)
+            if (bindable != null)
             {
-                field.binding?.Release();
-                field.binding = null;
+                bindable.binding?.Release();
+                bindable.binding = null;
             }
         }
 
@@ -352,7 +358,17 @@ namespace UnityEditor.UIElements
             SerializedEnumBinding.CreateBind(popup, objWrapper, prop);
         }
 
-        private static void CreateBindingObjectForProperty(VisualElement element,  SerializedObjectUpdateWrapper objWrapper, SerializedProperty prop)
+        internal static void HandleStyleUpdate(VisualElement element)
+        {
+            var bindable = element as IBindable;
+            var binding = bindable?.binding as SerializedObjectBindingBase;
+            if (binding == null || binding.boundProperty == null)
+                return;
+
+            SerializedObjectBindingBase.UpdateElementStyle(element, binding.boundProperty);
+        }
+
+        private static void CreateBindingObjectForProperty(VisualElement element, SerializedObjectUpdateWrapper objWrapper, SerializedProperty prop)
         {
             if (element is Foldout)
             {
@@ -569,12 +585,168 @@ namespace UnityEditor.UIElements
                 }
             }
 
-            protected static void UpdateElementStyle(VisualElement element, SerializedProperty prop)
+            private static InspectorElement FindPrefabOverrideBarCompatibleParent(VisualElement field)
             {
+                // For now we only support these blue prefab override bars within an InspectorElement.
+                return field.GetFirstAncestorOfType<InspectorElement>();
+            }
+
+            private static void UpdatePrefabOverrideBarStyle(VisualElement blueBar)
+            {
+                var element = blueBar.userData as VisualElement;
+
+                var container = FindPrefabOverrideBarCompatibleParent(element);
+                if (container == null)
+                    return;
+
+                // Move the bar to where the control is in the container.
+                var top = element.worldBound.y - container.worldBound.y;
+                if (float.IsNaN(top)) // If this is run before the container has been layed out.
+                    return;
+
+                var elementHeight = element.resolvedStyle.height;
+
+                // This is needed so if you have 2 overridden fields their blue
+                // bars touch (and it looks like one long bar). They normally wouldn't
+                // because most fields have a small margin.
+                var bottomOffset = element.resolvedStyle.marginBottom;
+
+                blueBar.style.top = top;
+                blueBar.style.height = elementHeight + bottomOffset;
+                blueBar.style.left = 0.0f;
+            }
+
+            private static void UpdatePrefabOverrideBarStyleEvent(GeometryChangedEvent evt)
+            {
+                var container = evt.target as InspectorElement;
+                if (container == null)
+                    return;
+
+                var barContainer = container.Q(prefabOverrideBarContainerName);
+                if (barContainer == null)
+                    return;
+
+                foreach (var bar in barContainer.Children())
+                    UpdatePrefabOverrideBarStyle(bar);
+            }
+
+            internal static void UpdateElementStyle(VisualElement element, SerializedProperty prop)
+            {
+                if (element is Foldout)
+                {
+                    // We only want to apply override styles onto the Foldout header, not the entire contents.
+                    element = element.Q(className: Foldout.toggleUssClassName);
+                }
+                else if (element.ClassListContains(BaseCompositeField<int, IntegerField, int>.ussClassName)
+                         || element is BoundsField || element is BoundsIntField)
+                {
+                    // The problem with compound fields is that they are bound at the parent level using
+                    // their parent value data type. For example, a Vector3Field is bound to the parent
+                    // SerializedProperty which uses the Vector3 data type. However, animation overrides
+                    // are not stored on the parent SerializedProperty but on the component child
+                    // SerializedProperties. So even though we're bound to the parent property, we still
+                    // have to dive inside and example the child SerializedProperties (ie. x, y, z, height)
+                    // and override the animation styles individually.
+
+                    var compositeField = element;
+
+                    // The element we style in the main pass is going to be just the label.
+                    element = element.Q(className: BaseField<int>.labelUssClassName);
+
+                    // Go through the inputs and find any that match the names of the child PropertyFields.
+                    var propCopy = prop.Copy();
+                    var endProperty = propCopy.GetEndProperty();
+                    propCopy.NextVisible(true); // Expand the first child.
+                    do
+                    {
+                        if (SerializedProperty.EqualContents(propCopy, endProperty))
+                            break;
+
+                        var subInputName = "unity-" + propCopy.name + "-input";
+                        var subInput = compositeField.Q(subInputName);
+                        if (subInput == null)
+                            continue;
+
+                        UpdateElementStyle(subInput, propCopy);
+                    }
+                    while (propCopy.NextVisible(false)); // Never expand children.
+                }
+
+                // It's possible for there to be no label in a compound field, for example. So, nothing to style.
+                if (element == null)
+                    return;
+
+                // Handle prefab state.
                 if (prop.serializedObject.targetObjects.Length == 1 && prop.isInstantiatedPrefab && prop.prefabOverride)
-                    element.AddToClassList(BindingExtensions.prefabOverrideUssClassName);
-                else
-                    element.RemoveFromClassList(BindingExtensions.prefabOverrideUssClassName);
+                {
+                    if (!element.ClassListContains(prefabOverrideUssClassName))
+                    {
+                        var container = FindPrefabOverrideBarCompatibleParent(element);
+                        var barContainer = container?.prefabOverrideBlueBarsContainer;
+
+                        element.AddToClassList(prefabOverrideUssClassName);
+
+                        if (container != null && barContainer != null)
+                        {
+                            // Ideally, this blue bar would be a child of the field and just move
+                            // outside the field in absolute offsets to hug the side of the field's
+                            // container. However, right now we need to have overflow:hidden on
+                            // fields because of case 1105567 (the inputs can grow beyond the field).
+                            // Therefore, we have to add the blue bars as children of the container
+                            // and move them down beside their respective field.
+
+                            var prefabOverrideBar = new VisualElement();
+                            prefabOverrideBar.name = prefabOverrideBarName;
+                            prefabOverrideBar.userData = element;
+                            prefabOverrideBar.AddToClassList(prefabOverrideBarUssClassName);
+                            barContainer.Add(prefabOverrideBar);
+
+                            element.SetProperty(prefabOverrideBarName, prefabOverrideBar);
+
+                            // We need to try and set the bar style right away, even if the container
+                            // didn't compute its layout yet. This is for when the override is done after
+                            // everything has been layed out.
+                            UpdatePrefabOverrideBarStyle(prefabOverrideBar);
+
+                            // We intentionally re-register this event on the container per element and
+                            // never unregister.
+                            container.RegisterCallback<GeometryChangedEvent>(UpdatePrefabOverrideBarStyleEvent);
+                        }
+                    }
+                }
+                else if (element.ClassListContains(prefabOverrideUssClassName))
+                {
+                    element.RemoveFromClassList(prefabOverrideUssClassName);
+
+                    var container = FindPrefabOverrideBarCompatibleParent(element);
+                    var barContainer = container?.prefabOverrideBlueBarsContainer;
+
+                    if (container != null && barContainer != null)
+                    {
+                        var prefabOverrideBar = element.GetProperty(prefabOverrideBarName) as VisualElement;
+                        if (prefabOverrideBar != null)
+                            prefabOverrideBar.RemoveFromHierarchy();
+                    }
+                }
+
+                // Handle animated state.
+
+                // Since we handle compound fields above, the element here will always be a single field
+                // (or not a field at all). This means we can perform a faster query and search for
+                // a single element.
+                var inputElement = element.Q(className: BaseField<int>.inputUssClassName);
+                if (inputElement == null)
+                {
+                    return;
+                }
+
+                bool animated = AnimationMode.IsPropertyAnimated(prop.serializedObject.targetObject, prop.propertyPath);
+                bool candidate = AnimationMode.IsPropertyCandidate(prop.serializedObject.targetObject, prop.propertyPath);
+                bool recording = AnimationMode.InAnimationRecording();
+
+                inputElement.EnableInClassList(animationRecordedUssClassName, animated && recording);
+                inputElement.EnableInClassList(animationCandidateUssClassName, animated && !recording && candidate);
+                inputElement.EnableInClassList(animationAnimatedUssClassName, animated && !recording && !candidate);
             }
 
             protected bool IsPropertyValid()
@@ -709,6 +881,7 @@ namespace UnityEditor.UIElements
 
                         lastUpdatedRevision = boundObject.LastRevision;
                         SyncPropertyToField(field, boundProperty);
+                        UpdateElementStyle(field as VisualElement, boundProperty);
                         return;
                     }
                 }

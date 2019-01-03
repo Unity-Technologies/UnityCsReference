@@ -495,11 +495,14 @@ namespace UnityEditor
 
         internal static bool IsFavoritesItem(int instanceID)
         {
-            return instanceID >= k_FavoritesStartInstanceID;
+            return instanceID >= k_FavoritesStartInstanceID && instanceID != ProjectBrowser.kPackagesFolderInstanceId;
         }
 
         internal static void StartDrag(int draggedInstanceID, List<int> selectedInstanceIDs)
         {
+            if (draggedInstanceID == ProjectBrowser.kPackagesFolderInstanceId)
+                return;
+
             DragAndDrop.PrepareStartDrag();
 
             string title = "";

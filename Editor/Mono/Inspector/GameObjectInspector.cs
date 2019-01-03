@@ -49,6 +49,8 @@ namespace UnityEditor
             private static GUIContent variantPrefab = EditorGUIUtility.TrTextContent("Variant");
             private static GUIContent disconnectedVariantPrefab = EditorGUIUtility.TrTextContent("Variant", "You have broken the prefab connection. Changes to the prefab will not be applied to this object before you Apply or Revert.");
             private static GUIContent missingPrefabAsset = EditorGUIUtility.TrTextContent("Missing", "The source Prefab or Model has been deleted.");
+            public static string openString = L10n.Tr("Open");
+            public static string selectString = L10n.Tr("Select");
 
             // Matrix based on two enums:
             // Columns correspond to PrefabTypeUtility.PrefabAssetType (see comments above rows).
@@ -347,7 +349,7 @@ namespace UnityEditor
                         if (singlePrefabType == PrefabAssetType.Model)
                         {
                             // Open Model Prefab
-                            if (GUILayout.Button("Open", EditorStyles.miniButtonLeft))
+                            if (GUILayout.Button(Styles.openString, EditorStyles.miniButtonLeft))
                             {
                                 GameObject asset = PrefabUtility.GetOriginalSourceOrVariantRoot(target);
                                 AssetDatabase.OpenAsset(asset);
@@ -359,7 +361,7 @@ namespace UnityEditor
                             // Open non-Model Prefab
                             using (new EditorGUI.DisabledScope(m_ImmutableSourceAsset))
                             {
-                                if (GUILayout.Button("Open", EditorStyles.miniButtonLeft))
+                                if (GUILayout.Button(Styles.openString, EditorStyles.miniButtonLeft))
                                 {
                                     GameObject asset = PrefabUtility.GetOriginalSourceOrVariantRoot(target);
                                     PrefabStageUtility.OpenPrefab(AssetDatabase.GetAssetPath(asset), (GameObject)target, StageNavigationManager.Analytics.ChangeType.EnterViaInstanceInspectorOpenButton);
@@ -370,7 +372,7 @@ namespace UnityEditor
                     }
 
                     // Select prefab
-                    if (GUILayout.Button("Select", EditorStyles.miniButtonRight))
+                    if (GUILayout.Button(Styles.selectString, EditorStyles.miniButtonRight))
                     {
                         HashSet<GameObject> selectedAssets = new HashSet<GameObject>();
                         for (int i = 0; i < targets.Length; i++)
@@ -424,7 +426,7 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck())
             {
                 GameObjectUtility.ShouldIncludeChildren includeChildren = GameObjectUtility.DisplayUpdateChildrenDialogIfNeeded(targets.OfType<GameObject>(),
-                    "Change Layer", string.Format("Do you want to set layer to {0} for all child objects as well?", InternalEditorUtility.GetLayerName(layer)));
+                    L10n.Tr("Change Layer"), string.Format(L10n.Tr("Do you want to set layer to {0} for all child objects as well?"), InternalEditorUtility.GetLayerName(layer)));
                 if (includeChildren != GameObjectUtility.ShouldIncludeChildren.Cancel)
                 {
                     m_Layer.intValue = layer;

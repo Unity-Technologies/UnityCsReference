@@ -74,11 +74,14 @@ namespace UnityEngine.UIElements
             float measuredWidth = float.NaN;
             float measuredHeight = float.NaN;
 
-            float scaling = TextNative.ComputeTextScaling(ve.worldTransform, ve.elementPanel.currentPixelsPerPoint);
-
             Font usedFont = ve.computedStyle.unityFont.value;
             if (textToMeasure == null || usedFont == null)
                 return new Vector2(measuredWidth, measuredHeight);
+
+            var elementScaling = ve.ComputeGlobalScale();
+
+            float pixelsPerPoint = (ve.elementPanel != null) ? ve.elementPanel.currentPixelsPerPoint : GUIUtility.pixelsPerPoint;
+            float scaling = (elementScaling.x + elementScaling.y) * 0.5f * pixelsPerPoint;
 
             if (widthMode == MeasureMode.Exactly)
             {

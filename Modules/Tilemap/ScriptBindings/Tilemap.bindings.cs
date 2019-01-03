@@ -407,5 +407,10 @@ namespace UnityEngine.Tilemaps
     [NativeType(Header = "Modules/Tilemap/Public/TilemapCollider2D.h")]
     public sealed partial class TilemapCollider2D : Collider2D
     {
+        public extern uint maximumTileChangeCount
+        {
+            get;
+            set;
+        }
     }
 }

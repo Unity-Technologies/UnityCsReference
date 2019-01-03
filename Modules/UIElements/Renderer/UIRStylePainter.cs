@@ -70,7 +70,7 @@ namespace UnityEngine.UIElements
 
         private RenderHint currentRenderHint
         {
-            get { return currentElement.renderHint; }
+            get { return currentElement.uiRenderData != null ? currentElement.uiRenderData.effectiveRenderHint : currentElement.renderHint; }
         }
 
         public bool isFontDirty { get; set; }
@@ -316,6 +316,9 @@ namespace UnityEngine.UIElements
 
             using (NativeArray<TextVertex> vertices = TextNative.GetVertices(textSettings))
             {
+                if (vertices.Length == 0)
+                    return;
+
                 if (oldMeshHandle == null)
                 {
                     var meshNode = new MeshNode

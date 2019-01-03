@@ -17,8 +17,8 @@ namespace UnityEditor.UIElements
             {
                 new FieldDescription("X", "unity-x-input", r => r.x, (ref Rect r, float v) => r.x = v),
                 new FieldDescription("Y", "unity-y-input", r => r.y, (ref Rect r, float v) => r.y = v),
-                new FieldDescription("W", "unity-w-input", r => r.width, (ref Rect r, float v) => r.width = v),
-                new FieldDescription("H", "unity-h-input", r => r.height, (ref Rect r, float v) => r.height = v),
+                new FieldDescription("W", "unity-width-input", r => r.width, (ref Rect r, float v) => r.width = v),
+                new FieldDescription("H", "unity-height-input", r => r.height, (ref Rect r, float v) => r.height = v),
             };
         }
 
@@ -65,8 +65,8 @@ namespace UnityEditor.UIElements
             {
                 new FieldDescription("X", "unity-x-input", r => r.x, (ref RectInt r, int v) => r.x = v),
                 new FieldDescription("Y", "unity-y-input", r => r.y, (ref RectInt r, int v) => r.y = v),
-                new FieldDescription("W", "unity-w-input", r => r.width, (ref RectInt r, int v) => r.width = v),
-                new FieldDescription("H", "unity-h-input", r => r.height, (ref RectInt r, int v) => r.height = v),
+                new FieldDescription("W", "unity-width-input", r => r.width, (ref RectInt r, int v) => r.width = v),
+                new FieldDescription("H", "unity-height-input", r => r.height, (ref RectInt r, int v) => r.height = v),
             };
         }
 

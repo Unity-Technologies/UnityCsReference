@@ -111,6 +111,14 @@ namespace UnityEngine.Networking
         protected virtual bool ReceiveData(byte[] data, int dataLength) { return true; }
 
         [UsedByNativeCode]
+        protected virtual void ReceiveContentLengthHeader(ulong contentLength)
+        {
+            #pragma warning disable 618
+            ReceiveContentLength((int)contentLength);
+            #pragma warning restore 0618
+        }
+
+        [Obsolete("Use ReceiveContentLengthHeader")]
         protected virtual void ReceiveContentLength(int contentLength) {}
 
         [UsedByNativeCode]

@@ -11,6 +11,8 @@ using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Scripting;
 
 [assembly: InternalsVisibleTo("UnityEngine.VideoModule")]
+[assembly: InternalsVisibleTo("Unity.UNode.Audio.Tests")]
+[assembly: InternalsVisibleTo("Unity.Audio.Tests")]
 
 namespace UnityEngine.Experimental.Audio
 {
@@ -27,6 +29,14 @@ namespace UnityEngine.Experimental.Audio
                 return provider;
 
             return new AudioSampleProvider(providerId, ownerObj, trackIndex);
+        }
+
+        static internal AudioSampleProvider Create(ushort channelCount, uint sampleRate)
+        {
+            var providerId = InternalCreateSampleProvider(channelCount, sampleRate);
+            if (!InternalIsValid(providerId))
+                return null;
+            return new AudioSampleProvider(providerId, null, 0);
         }
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -54,6 +64,8 @@ namespace UnityEngine.Experimental.Audio
 
         ~AudioSampleProvider()
         {
+            // Nullify owner so Dispose() won't also destroy the native provider.
+            owner = null;
             Dispose();
         }
 
@@ -62,6 +74,8 @@ namespace UnityEngine.Experimental.Audio
             if (id != 0)
             {
                 InternalSetScriptingPtr(id, null);
+                if (owner == null)
+                    InternalRemove(id);
                 id = 0;
             }
             GC.SuppressFinalize(this);
@@ -125,6 +139,14 @@ namespace UnityEngine.Experimental.Audio
             }
         }
 
+        unsafe internal uint QueueSampleFrames(NativeArray<float> sampleFrames)
+        {
+            if (channelCount == 0)
+                return 0;
+            return InternalQueueSampleFrames(
+                id, (IntPtr)sampleFrames.GetUnsafeReadOnlyPtr(), (uint)(sampleFrames.Length / channelCount));
+        }
+
         public delegate void SampleFramesHandler(
             AudioSampleProvider provider, uint sampleFrameCount);
 
@@ -171,6 +193,13 @@ namespace UnityEngine.Experimental.Audio
                 sampleFramesOverflow(this, (uint)droppedSampleFrameCount);
         }
 
+        [NativeMethod(IsThreadSafe = true)]
+        private static extern uint InternalCreateSampleProvider(ushort channelCount, uint sampleRate);
+
+        [NativeMethod(IsThreadSafe = true)]
+        private static extern void InternalRemove(uint providerId);
+
+        [NativeMethod(IsThreadSafe = true)]
         private static extern void InternalGetFormatInfo(
             uint providerId, out ushort chCount, out uint sRate);
 
@@ -227,5 +256,9 @@ namespace UnityEngine.Experimental.Audio
 
         [NativeMethod(IsThreadSafe = true)]
         private static extern IntPtr InternalGetConsumeSampleFramesNativeFunctionPtr();
+
+        [NativeMethod(IsThreadSafe = true)]
+        private static extern UInt32 InternalQueueSampleFrames(
+            uint id, IntPtr interleavedSampleFrames, uint sampleFrameCount);
     }
 }

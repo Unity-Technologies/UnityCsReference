@@ -25,6 +25,9 @@ namespace UnityEditor
         // 'range' is height of conefrustrum
         internal static Vector3 DoConeFrustrumHandle(Quaternion rotation, Vector3 position, Vector3 radiusAngleRange, ConeHandles showHandles)
         {
+            if (Event.current.alt)
+                showHandles = 0;
+
             Vector3 forward = rotation * Vector3.forward;
             Vector3 up = rotation * Vector3.up;
             Vector3 right = rotation * Vector3.right;

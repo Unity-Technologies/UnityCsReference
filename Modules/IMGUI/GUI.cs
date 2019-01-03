@@ -1484,7 +1484,11 @@ namespace UnityEngine
             s_ScrollViewStates.Pop();
 
             // This is the mac way of handling things: if the mouse is over a scrollview, the scrollview gets the event.
-            if (handleScrollWheel && Event.current.type == EventType.ScrollWheel && state.position.Contains(Event.current.mousePosition))
+            if (handleScrollWheel && Event.current.type == EventType.ScrollWheel && state.position.Contains(Event.current.mousePosition)
+                // avoid eating scroll events if a scroll view is not necessary
+                && ((state.viewRect.width > state.visibleRect.width && !Mathf.Approximately(0f, Event.current.delta.x))
+                    || (state.viewRect.height > state.visibleRect.height && !Mathf.Approximately(0f, Event.current.delta.y)))
+            )
             {
                 state.scrollPosition.x = Mathf.Clamp(state.scrollPosition.x + (Event.current.delta.x * 20f), 0f, state.viewRect.width - state.visibleRect.width);
                 state.scrollPosition.y = Mathf.Clamp(state.scrollPosition.y + (Event.current.delta.y * 20f), 0f, state.viewRect.height - state.visibleRect.height);

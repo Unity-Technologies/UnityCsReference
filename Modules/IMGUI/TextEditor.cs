@@ -576,7 +576,7 @@ namespace UnityEngine
                         else
                             cursorIndex = 0;
 
-                        selectIndex = text.LastIndexOf('\n', m_DblClickInitPos);
+                        selectIndex = text.LastIndexOf('\n', Mathf.Min(text.Length - 1, m_DblClickInitPos));
                     }
                     else
                     {

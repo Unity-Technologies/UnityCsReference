@@ -37,7 +37,7 @@ namespace UnityEditorInternal
                     break;
                 case EventType.MouseDown:
                     // am I closest to the thingy?
-                    if (HandleUtility.nearestControl == id && evt.button == 0)
+                    if (HandleUtility.nearestControl == id && evt.button == 0 && !evt.alt)
                     {
                         GUIUtility.hotControl = id;    // Grab mouse focus
                         s_CurrentMousePosition = s_StartMousePosition = evt.mousePosition;
@@ -76,7 +76,7 @@ namespace UnityEditorInternal
                         temp = Handles.color;
                         Handles.color = Handles.selectedColor;
                     }
-                    else if (id == HandleUtility.nearestControl && GUIUtility.hotControl == 0)
+                    else if (id == HandleUtility.nearestControl && GUIUtility.hotControl == 0 && !evt.alt)
                     {
                         temp = Handles.color;
                         Handles.color = Handles.preselectionColor;
@@ -182,7 +182,7 @@ namespace UnityEditorInternal
                     break;
                 case EventType.MouseDown:
                     // am I closest to the thingy?
-                    if (HandleUtility.nearestControl == id && evt.button == 0)
+                    if (HandleUtility.nearestControl == id && evt.button == 0 && !evt.alt)
                     {
                         GUIUtility.hotControl = id;     // Grab mouse focus
                         Tools.LockHandlePosition();
@@ -234,7 +234,7 @@ namespace UnityEditorInternal
                         temp = Handles.color;
                         Handles.color = Handles.selectedColor;
                     }
-                    else if (id == HandleUtility.nearestControl && GUIUtility.hotControl == 0)
+                    else if (id == HandleUtility.nearestControl && GUIUtility.hotControl == 0 && !evt.alt)
                     {
                         temp = Handles.color;
                         Handles.color = Handles.preselectionColor;

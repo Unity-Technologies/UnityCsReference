@@ -17,7 +17,9 @@ namespace UnityEngine.Experimental
 {
     public interface ISubsystemDescriptor
     {
+        string id { get; }
         bool disablesLegacyVr { get; }
+        ISubsystem Create();
     }
 
     internal interface ISubsystemDescriptorImpl : ISubsystemDescriptor
@@ -27,7 +29,7 @@ namespace UnityEngine.Experimental
 
     [UsedByNativeCode("XRSubsystemDescriptorBase")]
     [StructLayout(LayoutKind.Sequential)]
-    public class IntegratedSubsystemDescriptor : ISubsystemDescriptorImpl
+    public abstract class IntegratedSubsystemDescriptor : ISubsystemDescriptorImpl
     {
         internal IntPtr m_Ptr;
 
@@ -42,13 +44,28 @@ namespace UnityEngine.Experimental
         }
 
         IntPtr ISubsystemDescriptorImpl.ptr { get { return m_Ptr; } set { m_Ptr = value; } }
+
+        ISubsystem ISubsystemDescriptor.Create()
+        {
+            return CreateImpl();
+        }
+
+        internal abstract ISubsystem CreateImpl();
     }
 
     public abstract class SubsystemDescriptor : ISubsystemDescriptor
     {
         public string id { get; set; }
         public bool disablesLegacyVr { get; set; }
+
         public System.Type subsystemImplementationType { get; set; }
+
+        ISubsystem ISubsystemDescriptor.Create()
+        {
+            return CreateImpl();
+        }
+
+        internal abstract ISubsystem CreateImpl();
     }
 
     [NativeType(Header = "Modules/XR/XRSubsystemDescriptor.h")]
@@ -57,6 +74,11 @@ namespace UnityEngine.Experimental
     public class IntegratedSubsystemDescriptor<TSubsystem> : IntegratedSubsystemDescriptor
         where TSubsystem : IntegratedSubsystem
     {
+        internal override ISubsystem CreateImpl()
+        {
+            return this.Create();
+        }
+
         public TSubsystem Create()
         {
             IntPtr ptr = Internal_SubsystemDescriptors.Create(m_Ptr);
@@ -72,6 +94,11 @@ namespace UnityEngine.Experimental
     public class SubsystemDescriptor<TSubsystem> : SubsystemDescriptor
         where TSubsystem : Subsystem
     {
+        internal override ISubsystem CreateImpl()
+        {
+            return this.Create();
+        }
+
         public TSubsystem Create()
         {
             TSubsystem susbsystemImpl = Activator.CreateInstance(subsystemImplementationType) as TSubsystem;

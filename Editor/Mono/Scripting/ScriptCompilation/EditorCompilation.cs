@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
@@ -175,6 +176,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         CompilationSetupErrorFlags setupErrorFlags = CompilationSetupErrorFlags.none;
         bool skipCustomScriptAssemblyGraphValidation = false;
         List<AssemblyBuilder> assemblyBuilders = new List<Compilation.AssemblyBuilder>();
+        HashSet<string> changedAssemblies = new HashSet<string>();
 
         static readonly string EditorTempPath = "Temp";
 
@@ -250,6 +252,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
+        public string[] GetChangedAssemblies()
+        {
+            return changedAssemblies.ToArray();
+        }
+
         public void DirtyAllScripts()
         {
             areAllScriptsDirty = true;
@@ -298,6 +305,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public void DirtyPrecompiledAssembly(string path)
         {
+            var filename = AssetPath.GetFileName(path);
+
+            changedAssemblies.Add(filename);
+
             var precompiledAssembly = GetPrecompiledAssemblyFromPath(path);
 
             if (!precompiledAssembly.HasValue)
@@ -703,7 +714,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public void SkipCustomScriptAssemblyGraphValidation(bool skipChecks)
         {
-            skipCustomScriptAssemblyGraphValidation = true;
+            skipCustomScriptAssemblyGraphValidation = skipChecks;
         }
 
         public Exception[] SetAllCustomScriptAssemblyJsons(string[] paths, string[] guids)
@@ -749,7 +760,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     if (!skipCustomScriptAssemblyGraphValidation)
                     {
                         if (predefinedAssemblyNames == null)
+                        {
                             predefinedAssemblyNames = new HashSet<string>(EditorBuildRules.PredefinedTargetAssemblyNames);
+                            var net46 = MonoLibraryHelpers.GetSystemLibraryReferences(ApiCompatibilityLevel.NET_4_6, ScriptCompilers.CSharpSupportedLanguage).Select(Path.GetFileNameWithoutExtension);
+                            var netstandard20 = MonoLibraryHelpers.GetSystemLibraryReferences(ApiCompatibilityLevel.NET_Standard_2_0, ScriptCompilers.CSharpSupportedLanguage).Select(Path.GetFileNameWithoutExtension);
+                            predefinedAssemblyNames.UnionWith(net46);
+                            predefinedAssemblyNames.UnionWith(netstandard20);
+                        }
 
                         if (predefinedAssemblyNames.Contains(loadedCustomScriptAssembly.Name))
                         {
@@ -892,17 +909,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
             string timestampPath = GetAssemblyTimestampPath(GetCompileScriptsOutputDirectory());
             deleteFiles.Remove(AssetPath.Combine(projectDirectory, timestampPath));
 
-            var scriptAssemblies = GetAllScriptAssemblies(EditorScriptCompilationOptions.BuildingForEditor);
+            var targetAssemblies = GetTargetAssembliesWithScripts(EditorScriptCompilationOptions.BuildingForEditor);
 
-            foreach (var assembly in scriptAssemblies)
+            foreach (var assembly in targetAssemblies)
             {
-                if (assembly.Files.Length > 0)
-                {
-                    string path = AssetPath.Combine(fullEditorAssemblyPath, assembly.Filename);
-                    deleteFiles.Remove(path);
-                    deleteFiles.Remove(MDBPath(path));
-                    deleteFiles.Remove(PDBPath(path));
-                }
+                string path = AssetPath.Combine(fullEditorAssemblyPath, assembly.Name);
+                deleteFiles.Remove(path);
+                deleteFiles.Remove(MDBPath(path));
+                deleteFiles.Remove(PDBPath(path));
             }
 
             foreach (var path in deleteFiles)
@@ -1192,6 +1206,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         internal bool CompileCustomScriptAssemblies(ScriptAssemblySettings scriptAssemblySettings, string tempBuildDirectory, EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform)
         {
+            DeleteUnusedAssemblies();
             var scriptAssemblies = GetAllScriptAssembliesOfType(scriptAssemblySettings, EditorBuildRules.TargetAssemblyType.Custom);
             return CompileScriptAssemblies(scriptAssemblies, scriptAssemblySettings, tempBuildDirectory, options, CompilationTaskOptions.None, CompileScriptAssembliesOptions.skipSetupChecks);
         }
@@ -1218,8 +1233,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 CheckCyclicAssemblyReferences();
             }
-
-            DeleteUnusedAssemblies();
 
             if (!Directory.Exists(scriptAssemblySettings.OutputDirectory))
                 Directory.CreateDirectory(scriptAssemblySettings.OutputDirectory);
@@ -1251,6 +1264,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 var assemblyOutputPath = AssetPath.Combine(scriptAssemblySettings.OutputDirectory, assembly.Filename);
                 Console.WriteLine("- Finished compile {0}", assemblyOutputPath);
+
+                changedAssemblies.Add(assembly.Filename);
 
                 if (runScriptUpdaterAssemblies.Contains(assembly.Filename))
                     runScriptUpdaterAssemblies.Remove(assembly.Filename);
@@ -1517,7 +1532,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             // If we are not currently compiling and there are dirty scripts, start compilation.
             if (!IsCompilationTaskCompiling() && IsCompilationPending())
             {
+                Profiler.BeginSample("CompilationPipeline.CompileScripts");
                 CompileStatus compileStatus = CompileScripts(options, platformGroup, platform);
+                Profiler.EndSample();
                 return compileStatus;
             }
 
@@ -1873,7 +1890,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var customReferences = EditorBuildRules.GetCompiledCustomAssembliesReferences(scriptAssembly, customTargetAssemblies, GetCompileScriptsOutputDirectory());
             var precompiledReferences = EditorBuildRules.GetPrecompiledReferences(scriptAssembly, EditorBuildRules.TargetAssemblyType.Custom, options, EditorBuildRules.EditorCompatibility.CompatibleWithEditor, precompiledAssemblies);
-            var additionalReferences = MonoLibraryHelpers.GetSystemLibraryReferences(scriptAssembly.ApiCompatibilityLevel, scriptAssembly.BuildTarget, scriptAssembly.Language);
+            var additionalReferences = MonoLibraryHelpers.GetSystemLibraryReferences(scriptAssembly.ApiCompatibilityLevel, scriptAssembly.Language);
             string[] editorReferences = buildingForEditor ? ModuleUtils.GetAdditionalReferencesForUserScripts() : new string[0];
 
             var references = new List<string>();

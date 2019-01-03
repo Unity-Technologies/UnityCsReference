@@ -147,35 +147,100 @@ namespace UnityEditorInternal.Profiling.Memory.Experimental
             Open(m_AbsoluteFilePath);
         }
 
+        internal void GetDataByteArray(FileFormat.EntryType entryType, uint entryIndex, uint numEntries, ref byte[][] dataOut)
+        {
+            Chapter chapter = GetChapter(entryType);
+
+            if (entryIndex + numEntries > chapter.GetNumEntries())
+            {
+                throw new IOException("Invalid entry index or number of entries.");
+            }
+
+            if (numEntries > dataOut.Length)
+            {
+                throw new IOException("Not enough space in dataOut array.");
+            }
+
+            uint  blockIndex = chapter.GetBlockIndex();
+            ulong startBlockOffset = chapter.GetBlockOffsetForEntryIndex(entryIndex);
+            ulong offset = startBlockOffset;
+
+            for (uint i = 0; i < numEntries; ++i)
+            {
+                uint entrySize = chapter.GetSizeForEntryIndex(entryIndex + i);
+
+                dataOut[i] = new byte[entrySize];
+                m_Blocks[blockIndex].GetData(offset, entrySize, ref dataOut[i], m_Reader);
+
+                offset += entrySize;
+            }
+        }
+
         public void GetDataArray<T>(FileFormat.EntryType entryType, uint entryIndex, uint numEntries, ref T[] dataOut, GetItem<T> getItemFunc)
         {
             Chapter chapter = GetChapter(entryType);
 
             if (entryIndex + numEntries > chapter.GetNumEntries())
             {
-                throw new IOException("Invalid entry indices");
+                throw new IOException("Invalid entry index or number of entries.");
             }
 
             if (numEntries > dataOut.Length)
             {
-                throw new IOException("Not enough space in dataOut array");
+                throw new IOException("Not enough space in dataOut array.");
             }
 
             uint  blockIndex = chapter.GetBlockIndex();
             ulong startBlockOffset = chapter.GetBlockOffsetForEntryIndex(entryIndex);
-            ulong endBlockOffset = chapter.GetBlockOffsetForEntryIndex(entryIndex + numEntries);
-            uint  dataSize = (uint)(endBlockOffset - startBlockOffset);
 
-            byte[] data = GetDataCache(dataSize);
+            byte[] data = GetDataCache(m_CacheDataCapacity);
 
-            m_Blocks[blockIndex].GetData(startBlockOffset, dataSize, ref data, m_Reader);
+            uint i = 0;
+            ulong offset = startBlockOffset;
 
-            uint dataIndex = 0;
-            for (uint i = 0; i < numEntries; i++)
+            while (i < numEntries)
             {
-                uint entrySize = chapter.GetSizeForEntryIndex(entryIndex + i);
-                dataOut[i] = getItemFunc(data, dataIndex, entrySize);
-                dataIndex += entrySize;
+                uint cacheMemory = 0;
+
+                uint element = i;
+
+                while (element < numEntries)
+                {
+                    uint entrySize = chapter.GetSizeForEntryIndex(entryIndex + element);
+
+                    if (entrySize > m_CacheDataCapacity)
+                    {
+                        if (cacheMemory > 0)
+                        {
+                            break; // first process what is in the cache
+                        }
+
+                        // When the cache is empty process big entry
+                        data = GetDataCache(entrySize);
+                    }
+
+                    if (cacheMemory + entrySize > m_CacheDataCapacity)
+                    {
+                        break;
+                    }
+
+                    cacheMemory += entrySize;
+                    element++;
+                }
+
+                m_Blocks[blockIndex].GetData(offset, cacheMemory, ref data, m_Reader);
+
+                uint dataOffset = 0;
+
+                while (i < element)
+                {
+                    uint entrySize = chapter.GetSizeForEntryIndex(entryIndex + i);
+                    dataOut[i] = getItemFunc(data, dataOffset, entrySize);
+                    dataOffset += entrySize;
+                    i++;
+                }
+
+                offset += cacheMemory;
             }
         }
 
@@ -307,15 +372,18 @@ namespace UnityEditorInternal.Profiling.Memory.Experimental
             return chapter;
         }
 
-        internal uint dataCapacity = 0;
-        internal byte[] data = null;
+        const UInt32 kCachePage = 4 * 1024;
+        const UInt32 kCacheInitialSize = 4 * 1024 * 1024;
+
+        internal uint m_CacheDataCapacity = kCacheInitialSize;
+        internal byte[] data = new byte[kCacheInitialSize];
 
         internal byte[] GetDataCache(UInt32 dataSize)
         {
-            if (dataCapacity < dataSize)
+            if (m_CacheDataCapacity < dataSize)
             {
-                dataCapacity = dataSize;
-                data = new byte[dataSize];
+                m_CacheDataCapacity = (dataSize + kCachePage - 1) & (~(kCachePage - 1));
+                data = new byte[m_CacheDataCapacity];
             }
 
             return data;

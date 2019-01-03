@@ -60,6 +60,22 @@ namespace UnityEngine.UIElements
             }
         }
 
+        private float layoutMeasuredWidth
+        {
+            get
+            {
+                return Mathf.Ceil(cache.topLevel.maxWidth);
+            }
+        }
+
+        private float layoutMeasuredHeight
+        {
+            get
+            {
+                return Mathf.Ceil(cache.topLevel.maxHeight);
+            }
+        }
+
         public ContextType contextType { get; set; }
 
         // The following 2 flags indicate the following :
@@ -172,8 +188,8 @@ namespace UnityEngine.UIElements
             SaveGlobals();
 
             // Save a copy of the container size.
-            var previousMeasuredWidth = cache.topLevel.minWidth;
-            var previousMeasuredHeight = cache.topLevel.minHeight;
+            var previousMeasuredWidth = layoutMeasuredWidth;
+            var previousMeasuredHeight = layoutMeasuredHeight;
 
             UIElementsUtility.BeginContainerGUI(cache, evt, this);
 
@@ -361,7 +377,7 @@ namespace UnityEngine.UIElements
             // See if the container size has changed. This is to make absolutely sure the VisualElement resizes
             // if the IMGUI content resizes.
             if (evt.type == EventType.Layout &&
-                (!Mathf.Approximately(previousMeasuredWidth, cache.topLevel.minWidth) || !Mathf.Approximately(previousMeasuredHeight, cache.topLevel.minHeight)))
+                (!Mathf.Approximately(previousMeasuredWidth, layoutMeasuredWidth) || !Mathf.Approximately(previousMeasuredHeight, layoutMeasuredHeight)))
             {
                 IncrementVersion(VersionChangeType.Layout);
             }
@@ -551,8 +567,8 @@ namespace UnityEngine.UIElements
                 // set the transform in an invalid state.
                 // Since DoOnGUI doesn't use the worldTransform and clipping rect we can pass anything.
                 DoOnGUI(evt, Matrix4x4.identity, Rect.zero, true);
-                measuredWidth = cache.topLevel.minWidth;
-                measuredHeight = cache.topLevel.minHeight;
+                measuredWidth = layoutMeasuredWidth;
+                measuredHeight = layoutMeasuredHeight;
             }
 
             switch (widthMode)

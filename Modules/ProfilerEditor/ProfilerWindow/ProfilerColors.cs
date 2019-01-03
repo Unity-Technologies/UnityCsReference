@@ -22,10 +22,10 @@ namespace UnityEditorInternal
                 HierarchyFrameDataView.GetMarkerCategoryColor(1),                   // "Scripts"
                 HierarchyFrameDataView.GetMarkerCategoryColor(5),                   // "Physics"
                 HierarchyFrameDataView.GetMarkerCategoryColor(6),                   // "Animation"
-                HierarchyFrameDataView.GetMarkerCategoryColor(15),                  // "GarbageCollector"
-                HierarchyFrameDataView.GetMarkerCategoryColor(16),                  // "VSync"
-                HierarchyFrameDataView.GetMarkerCategoryColor(11),                  // "Global Illumination"
-                HierarchyFrameDataView.GetMarkerCategoryColor(24),                  // "UI"
+                HierarchyFrameDataView.GetMarkerCategoryColor(17),                  // "GarbageCollector"
+                HierarchyFrameDataView.GetMarkerCategoryColor(18),                  // "VSync"
+                HierarchyFrameDataView.GetMarkerCategoryColor(13),                  // "Global Illumination"
+                HierarchyFrameDataView.GetMarkerCategoryColor(26),                  // "UI"
                 new Color(122.0f / 255.0f, 123.0f / 255.0f,  30.0f / 255.0f, 1.0f), // "Others"
 
                 new Color(240.0f / 255.0f, 128.0f / 255.0f, 128.0f / 255.0f, 1.0f),  // light-coral

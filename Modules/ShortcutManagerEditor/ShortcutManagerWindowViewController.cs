@@ -167,7 +167,7 @@ namespace UnityEditor.ShortcutManagement
 
             foreach (var entry in entries)
             {
-                var identifier = entry.identifier.path;
+                var identifier = entry.displayName;
                 m_AllEntries.Add(entry);
 
                 if (entry.type == ShortcutType.Menu)
@@ -434,7 +434,7 @@ namespace UnityEditor.ShortcutManagement
                 if (BelongsToSearch(entry))
                 {
                     m_SelectedCategoryShortcutList.Add(entry);
-                    m_SelectedCategoryShortcutPathList.Add(entry.identifier.path.StartsWith(category) ? entry.identifier.path.Substring(category.Length + 1) : entry.identifier.path);
+                    m_SelectedCategoryShortcutPathList.Add(entry.displayName.StartsWith(category) ? entry.displayName.Substring(category.Length + 1) : entry.displayName);
                 }
             }
         }
@@ -447,7 +447,7 @@ namespace UnityEditor.ShortcutManagement
             switch (searchMode)
             {
                 case SearchOption.Name:
-                    return entry.identifier.path.IndexOf(m_SerializedState.search, StringComparison.InvariantCultureIgnoreCase) >= 0;
+                    return entry.displayName.IndexOf(m_SerializedState.search, StringComparison.InvariantCultureIgnoreCase) >= 0;
                 case SearchOption.Binding:
                     return entry.StartsWith(m_SerializedState.bindingsSearch);
             }
@@ -869,7 +869,7 @@ namespace UnityEditor.ShortcutManagement
     {
         public int Compare(ShortcutEntry x, ShortcutEntry y)
         {
-            return string.Compare(x?.identifier.path, y?.identifier.path);
+            return string.Compare(x?.displayName, y?.displayName);
         }
     }
 }

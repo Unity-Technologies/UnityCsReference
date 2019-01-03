@@ -892,7 +892,7 @@ namespace UnityEditor.StyleSheets
         public void Load(IEnumerable<string> paths)
         {
             var sheets = paths.Select(p => EditorResources.Load<UnityEngine.Object>(p) as StyleSheet)
-                .Where(s => s != null);
+                .Where(s => s != null).Distinct();
 
             Load(sheets);
         }
@@ -1071,7 +1071,8 @@ namespace UnityEditor.StyleSheets
                 foreach (var property in rule.Properties.Values)
                 {
                     var newValue = CompileValue(property, stateFlags, numbers, colors, strings, rects, groups, functions);
-                    values.Add(newValue);
+                    if (newValue.IsValid())
+                        values.Add(newValue);
                 }
 
                 values = ExpandValues(values, numbers, colors, strings, rects, groups);
@@ -1122,9 +1123,9 @@ namespace UnityEditor.StyleSheets
                         var color = StyleBlock.GetItemValue(2, Color.red, value.index, groups, strings, numbers, colors, rects);
                         line = new StyleLine(width, style, color);
                     }
-                    else if (value.key == borderWidthKey) line.width = numbers[value.index];
-                    else if (value.key == borderStyleKey) line.style = strings[value.index];
-                    else if (value.key == borderColorKey) line.color = colors[value.index];
+                    else if (value.key == borderWidthKey && value.type == StyleValue.Type.Number) line.width = numbers[value.index];
+                    else if (value.key == borderStyleKey && value.type == StyleValue.Type.Text) line.style = strings[value.index];
+                    else if (value.key == borderColorKey && value.type == StyleValue.Type.Color) line.color = colors[value.index];
 
                     StyleValueGroup vg = new StyleValueGroup(borderKey, 3)
                     {
@@ -1160,14 +1161,14 @@ namespace UnityEditor.StyleSheets
                 for (int i = 0; i < values.Count; ++i)
                 {
                     var value = values[i];
-                    if (value.state != currentState)
+                    if (!value.IsValid() || value.state != currentState)
                         continue;
 
-                    if (value.key == rectKey) rect = rects[value.index];
-                    else if (value.key == topKey) rect.top = numbers[value.index];
-                    else if (value.key == rightKey) rect.right = numbers[value.index];
-                    else if (value.key == bottomKey) rect.bottom = numbers[value.index];
-                    else if (value.key == leftKey) rect.left = numbers[value.index];
+                    if (value.key == rectKey && value.type == StyleValue.Type.Rect) rect = rects[value.index];
+                    else if (value.key == topKey && value.type == StyleValue.Type.Number) rect.top = numbers[value.index];
+                    else if (value.key == rightKey && value.type == StyleValue.Type.Number) rect.right = numbers[value.index];
+                    else if (value.key == bottomKey && value.type == StyleValue.Type.Number) rect.bottom = numbers[value.index];
+                    else if (value.key == leftKey && value.type == StyleValue.Type.Number) rect.left = numbers[value.index];
 
                     if (rect.left != 0.0 || rect.right != 0.0 || rect.top != 0.0 || rect.bottom != 0.0)
                         rectValues.Add(new StyleValue { key = rectKey, state = currentState, type = StyleValue.Type.Rect, index = SetIndex(rects, rect) });

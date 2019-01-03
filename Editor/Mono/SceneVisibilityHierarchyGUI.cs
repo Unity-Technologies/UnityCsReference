@@ -139,18 +139,19 @@ namespace UnityEditor
         private static void DrawGameObjectItem(Rect rect, GameObject gameObject, bool isItemHovered, bool isIconHovered)
         {
             var isHidden = SceneVisibilityManager.IsGameObjectHidden(gameObject);
-            bool hasHiddenChildren = !SceneVisibilityManager.AreAllChildrenVisible(gameObject);
-            bool shouldDisplayIcon = isItemHovered || isHidden || hasHiddenChildren;
+            bool shouldDisplayIcon = isItemHovered || isHidden;
             Styles.IconState iconState = isIconHovered ? Styles.iconHovered : Styles.iconNormal;
 
             GUIContent icon;
             if (isHidden)
             {
-                icon = SceneVisibilityManager.AreAllChildrenHidden(gameObject) ? iconState.hiddenAll : iconState.hiddenMixed;
+                icon = gameObject.transform.childCount == 0 || SceneVisibilityManager.AreAllChildrenHidden(gameObject)
+                    ? iconState.hiddenAll : iconState.hiddenMixed;
             }
-            else if (hasHiddenChildren)
+            else if (!SceneVisibilityManager.AreAllChildrenVisible(gameObject))
             {
                 icon = iconState.visibleMixed;
+                shouldDisplayIcon = true;
             }
             else
             {

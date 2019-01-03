@@ -31,8 +31,8 @@ namespace UnityEditor
             {
                 var path = AssetDatabase.GetAssetPath(draggedItemID);
                 bool rootFolder, readOnly;
-                bool validPath = AssetDatabase.GetAssetFolderInfo(path, out rootFolder, out readOnly);
-                if (validPath && rootFolder && readOnly)
+                var validPath = AssetDatabase.GetAssetFolderInfo(path, out rootFolder, out readOnly);
+                if (!validPath || rootFolder || readOnly)
                     return false;
             }
             return true;
