@@ -111,18 +111,21 @@ namespace UnityEditor
 
             foreach (var i in newHierarchy)
             {
-                var found = false;
-                foreach (var j in hierarchy)
+                if (i != null)
                 {
-                    if (j.GetInstanceID() == i.GetInstanceID())
+                    var found = false;
+                    foreach (var j in hierarchy)
                     {
-                        found = true;
-                        break;
+                        if (j != null && j.GetInstanceID() == i.GetInstanceID())
+                        {
+                            found = true;
+                            break;
+                        }
                     }
-                }
-                if (!found)
-                {
-                    danglingObjects.Add(i);
+                    if (!found)
+                    {
+                        danglingObjects.Add(i);
+                    }
                 }
             }
 
