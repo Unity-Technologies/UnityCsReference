@@ -383,7 +383,7 @@ namespace UnityEditor
             Object prefabInstanceObject = instanceProperty.serializedObject.targetObject;
             CheckInstanceIsNotPersistent(prefabInstanceObject);
 
-            ApplyPropertyOverrides(prefabInstanceObject, instanceProperty, assetPath, action);
+            ApplyPropertyOverrides(prefabInstanceObject, instanceProperty, assetPath, true, action);
 
             Analytics.SendApplyEvent(
                 Analytics.ApplyScope.PropertyOverride,
@@ -409,7 +409,7 @@ namespace UnityEditor
         // We also can't swap the inner and outer loop, iterating the chain of corresponding objects in the outer loop
         // and the SerializedProperties in the inner loop, since we only process overridden properties, so it would
         // again require storing information about that for each property in some kind of list, which we want to avoid.
-        static void ApplyPropertyOverrides(Object prefabInstanceObject, SerializedProperty optionalSingleInstanceProperty, string assetPath, InteractionMode action)
+        static void ApplyPropertyOverrides(Object prefabInstanceObject, SerializedProperty optionalSingleInstanceProperty, string assetPath, bool allowApplyDefaultOverride, InteractionMode action)
         {
             Object prefabSourceObject = GetCorrespondingObjectFromSourceAtPath(prefabInstanceObject, assetPath);
             if (prefabSourceObject == null)
@@ -454,7 +454,7 @@ namespace UnityEditor
             if (!property.hasVisibleChildren)
             {
                 if (property.prefabOverride)
-                    ApplySingleProperty(property, prefabSourceSerializedObject, assetPath, isObjectOnRootInAsset, true, serializedObjects, action);
+                    ApplySingleProperty(property, prefabSourceSerializedObject, assetPath, isObjectOnRootInAsset, true, allowApplyDefaultOverride, serializedObjects, action);
             }
             else
             {
@@ -471,7 +471,7 @@ namespace UnityEditor
                     // Applying all leaf properties applies exactly all data there is to apply only once and ensures
                     // that when an object reference is applied, it's via its own property and not a parent property.
                     if (property.prefabOverride && !property.hasVisibleChildren)
-                        ApplySingleProperty(property, prefabSourceSerializedObject, assetPath, isObjectOnRootInAsset, false, serializedObjects, action);
+                        ApplySingleProperty(property, prefabSourceSerializedObject, assetPath, isObjectOnRootInAsset, false, allowApplyDefaultOverride, serializedObjects, action);
                 }
             }
 
@@ -563,10 +563,11 @@ namespace UnityEditor
             string assetPath,
             bool isObjectOnRootInAsset,
             bool singlePropertyOnly,
+            bool allowApplyDefaultOverride,
             List<SerializedObject> serializedObjects,
             InteractionMode action)
         {
-            if (isObjectOnRootInAsset && IsPropertyOverrideDefaultOverrideComparedToAnySource(instanceProperty))
+            if (!allowApplyDefaultOverride && isObjectOnRootInAsset && IsPropertyOverrideDefaultOverrideComparedToAnySource(instanceProperty))
             {
                 if (singlePropertyOnly)
                 {
@@ -660,7 +661,7 @@ namespace UnityEditor
 
             CheckInstanceIsNotPersistent(instanceComponentOrGameObject);
 
-            ApplyPropertyOverrides(instanceComponentOrGameObject, null, assetPath, action);
+            ApplyPropertyOverrides(instanceComponentOrGameObject, null, assetPath, false, action);
 
             Analytics.SendApplyEvent(
                 Analytics.ApplyScope.ObjectOverride,

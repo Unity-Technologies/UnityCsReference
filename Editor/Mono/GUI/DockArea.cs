@@ -21,9 +21,7 @@ namespace UnityEditor
     {
         private static class Styles
         {
-            public static readonly GUIContent closeIcon = new GUIContent(EditorGUIUtility.IconContent("LookDevClose"));
             public static readonly StyleBlock tabHighlight = EditorResources.GetStyle("tab-highlight");
-            public static readonly StyleBlock tabCloseButton = EditorResources.GetStyle("tab-close-button");
 
             private static readonly StyleBlock tab = EditorResources.GetStyle("tab");
             public static readonly float tabMinWidth = tab.GetFloat(StyleKeyword.minWidth, 50.0f);
@@ -915,10 +913,7 @@ namespace UnityEditor
                             }
                             ResetDragVars();
                         }
-                        else
-                        {
-                            HandleTabCloseButton(tabStyle, tabAreaRect, Event.current.mousePosition, scrollOffset);
-                        }
+
                         GUIUtility.hotControl = 0;
                         evt.Use();
                     }
@@ -1000,38 +995,8 @@ namespace UnityEditor
             hotTabContentRect.xMin += 2f;
             hotTabContentRect.xMax -= 2f;
             MarkHotRegion(GUIClip.UnclipToWindow(hotTabContentRect));
-            DrawCloseButton(tabContentRect);
 
             return tabWidth;
-        }
-
-        private void HandleTabCloseButton(GUIStyle tabStyle, Rect dockAreaRect, Vector2 mousePos, float scrollOffset)
-        {
-            Rect tabRect = Rect.zero;
-            int tabIndex = GetTabAtMousePos(tabStyle, mousePos, dockAreaRect, scrollOffset, ref tabRect);
-            if (tabIndex == -1)
-                return;
-
-            if (GetTabCloseButtonRect(tabRect).Contains(mousePos))
-                Close(m_Panes[tabIndex]);
-        }
-
-        private Rect GetTabCloseButtonRect(Rect tabContentRect)
-        {
-            float buttonSize = Styles.tabCloseButton.GetFloat(StyleKeyword.width);
-            float buttonRightMargin = Styles.tabCloseButton.GetFloat(StyleKeyword.marginRight);
-            float buttonBottomMargin = Styles.tabCloseButton.GetFloat(StyleKeyword.marginBottom);
-            float buttonTop = tabContentRect.yMax - buttonBottomMargin - buttonSize;
-            float buttonLeft = tabContentRect.xMax - buttonSize - buttonRightMargin;
-            return new Rect(buttonLeft, buttonTop, buttonSize, buttonSize);
-        }
-
-        private void DrawCloseButton(Rect tabContentRect)
-        {
-            if (s_DragMode != 0 || !tabContentRect.Contains(Event.current.mousePosition))
-                return;
-            var closeButtonRect = GetTabCloseButtonRect(tabContentRect);
-            GUI.DrawTexture(closeButtonRect, Styles.closeIcon.image, ScaleMode.ScaleToFit);
         }
 
         private void DrawTabHighlight(Rect tabHighlightRect)

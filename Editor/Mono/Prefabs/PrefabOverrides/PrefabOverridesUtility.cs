@@ -2,8 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
-using Boo.Lang.Compiler.TypeSystem;
 using UnityEngine;
 
 namespace UnityEditor.SceneManagement
@@ -13,8 +13,19 @@ namespace UnityEditor.SceneManagement
         static List<Component> s_ComponentList = new List<Component>();
         static List<Component> s_AssetComponentList = new List<Component>();
 
+        static void ThrowExceptionIfNullOrNotPartOfPrefabInstance(GameObject prefabInstance)
+        {
+            if (prefabInstance == null)
+                throw new ArgumentNullException(nameof(prefabInstance));
+
+            if (!PrefabUtility.IsPartOfPrefabInstance(prefabInstance))
+                throw new ArgumentException("Provided GameObject is not a Prefab instance");
+        }
+
         public static List<ObjectOverride> GetObjectOverrides(GameObject prefabInstance, bool includeDefaultOverrides = false)
         {
+            ThrowExceptionIfNullOrNotPartOfPrefabInstance(prefabInstance);
+
             var prefabInstanceRoot = PrefabUtility.GetOutermostPrefabInstanceRoot(prefabInstance);
 
             // From root of instance traverse all child go and detect any GameObjects or components
@@ -63,6 +74,8 @@ namespace UnityEditor.SceneManagement
 
         public static List<AddedComponent> GetAddedComponents(GameObject prefabInstance)
         {
+            ThrowExceptionIfNullOrNotPartOfPrefabInstance(prefabInstance);
+
             var prefabInstanceRoot = PrefabUtility.GetOutermostPrefabInstanceRoot(prefabInstance);
 
             // From root of instance traverse all child go and detect any components that are not part of that source prefab objects component list (these must be added)
@@ -97,6 +110,8 @@ namespace UnityEditor.SceneManagement
 
         public static List<RemovedComponent> GetRemovedComponents(GameObject prefabInstance)
         {
+            ThrowExceptionIfNullOrNotPartOfPrefabInstance(prefabInstance);
+
             var prefabInstanceRoot = PrefabUtility.GetOutermostPrefabInstanceRoot(prefabInstance);
 
             // From root of asset traverse all children and detect any Components that are not present on the instance object (these must be deleted)
@@ -153,26 +168,30 @@ namespace UnityEditor.SceneManagement
 
         public static List<AddedGameObject> GetAddedGameObjects(GameObject prefabInstance)
         {
+            ThrowExceptionIfNullOrNotPartOfPrefabInstance(prefabInstance);
+
             var prefabInstanceRoot = PrefabUtility.GetOutermostPrefabInstanceRoot(prefabInstance);
 
             // From root instance traverse all children and detect any GameObjects that are not a prefab gameobject (these must be added)
             TransformVisitor transformVisitor = new TransformVisitor();
             var addedGameObjects = new List<AddedGameObject>();
-            transformVisitor.VisitAll(
+            transformVisitor.VisitAndConditionallyEnterChildren(
                 prefabInstanceRoot.transform,
-                CheckForAddedGameObject,
+                CheckForAddedGameObjectAndIfSoAddItAndReturnFalse,
                 new AddedGameObjectUserData() { addedGameObjects = addedGameObjects, contextGameObject = prefabInstanceRoot });
             return addedGameObjects;
         }
 
-        static void CheckForAddedGameObject(Transform transform, object userData)
+        static bool CheckForAddedGameObjectAndIfSoAddItAndReturnFalse(Transform transform, object userData)
         {
             var addedGameObjectUserData = (AddedGameObjectUserData)userData;
             if (IsAddedGameObject(addedGameObjectUserData.contextGameObject, transform.gameObject))
             {
                 var addedGameObjects = addedGameObjectUserData.addedGameObjects;
                 addedGameObjects.Add(new AddedGameObject() { instanceGameObject = transform.gameObject, siblingIndex = transform.GetSiblingIndex() });
+                return false;
             }
+            return true;
         }
 
         internal static bool IsAddedGameObject(GameObject contextGameObject, GameObject gameObject)
@@ -181,7 +200,15 @@ namespace UnityEditor.SceneManagement
             if (gameObject == contextGameObject)
                 return false;
 
-            return PrefabUtility.IsAddedGameObjectOverride(gameObject);
+            if (!PrefabUtility.IsAddedGameObjectOverride(gameObject))
+                return false;
+
+            // We now know that the GameObject is added to *some* Prefab,
+            // but is it added to the Prefab in question?
+            // It is if its parent belong to the same Prefab as the context GameObject.
+            return (
+                PrefabUtility.GetCorrespondingObjectFromSource(gameObject.transform.parent).root ==
+                PrefabUtility.GetCorrespondingObjectFromSource(contextGameObject.transform).root);
         }
 
         internal static void CheckForInvalidComponent(Transform transform, object userData)

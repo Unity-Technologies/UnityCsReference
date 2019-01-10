@@ -668,7 +668,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             List<PrecompiledAssembly> precompiledReferences = new List<PrecompiledAssembly>();
-            if ((targetAssembly.Flags & AssemblyFlags.ExplicitlyReferenced) == AssemblyFlags.ExplicitlyReferenced)
+            if ((targetAssembly.Flags & AssemblyFlags.ExplicitReferences) == AssemblyFlags.ExplicitReferences)
             {
                 var precompiledAssemblies = allPrecompiledAssemblies.Where(x => (x.Flags & AssemblyFlags.UserAssembly) != AssemblyFlags.UserAssembly).ToList();
                 precompiledAssemblies.AddRange(targetAssembly.PrecompiledReferences ?? Enumerable.Empty<PrecompiledAssembly>());
@@ -899,6 +899,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             foreach (var script in allScripts)
             {
                 var targetAssembly = GetTargetAssembly(script, projectDirectory, customTargetAssemblies);
+
+                // This can happen for scripts in packages that are not included in an .asmdef assembly
+                // and they will therefore not be compiled.
+                if (targetAssembly == null)
+                    continue;
 
                 if (!IsCompatibleWithPlatformAndDefines(targetAssembly, settings))
                     continue;

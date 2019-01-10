@@ -219,6 +219,9 @@ namespace UnityEditor
             if (targetObjs.Length == 0 || (targetObjs.Length == 1 && targetObjs[0].GetType() == typeof(System.Object)))
                 return rectangle;
 
+            if (comparisonViewMode != ComparisonViewMode.None)
+                return rectangle;
+
             if (s_EditorHeaderItemsMethods == null)
             {
                 List<Type> targetObjTypes = new List<Type>();

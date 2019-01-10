@@ -2296,7 +2296,7 @@ namespace UnityEditor
                 TargetChoiceHandler.AddSetToValueOfTargetMenuItems(pm, propertyWithPath, TargetChoiceHandler.SetToValueOfTarget);
             }
 
-            if (property.serializedObject.targetObjectsCount == 1 && property.isInstantiatedPrefab && property.prefabOverride && !property.isDefaultOverride)
+            if (property.serializedObject.targetObjectsCount == 1 && property.isInstantiatedPrefab && property.prefabOverride)
             {
                 Object targetObject = property.serializedObject.targetObject;
 
@@ -2305,9 +2305,6 @@ namespace UnityEditor
                     properties = new SerializedProperty[] { propertyWithPath };
                 else
                     properties = new SerializedProperty[] { propertyWithPath, linkedPropertyWithPath };
-
-                bool defaultOverride =
-                    PrefabUtility.IsPropertyOverrideDefaultOverrideComparedToAnySource(property);
 
                 PrefabUtility.HandleApplyRevertMenuItems(
                     null,
@@ -2329,7 +2326,7 @@ namespace UnityEditor
                         // Add revert menu item.
                         pm.AddItem(menuItemContent, false, TargetChoiceHandler.RevertPrefabPropertyOverride, properties);
                     },
-                    defaultOverride
+                    false
                 );
             }
 
@@ -4823,7 +4820,7 @@ namespace UnityEditor
             switch (evt.type)
             {
                 case EventType.MouseDown:
-                    if (settingsRect.Contains(evt.mousePosition))
+                    if (EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None && settingsRect.Contains(evt.mousePosition))
                     {
                         EditorUtility.DisplayObjectContextMenu(settingsRect, targetObjs, 0);
                         evt.Use();
@@ -4833,7 +4830,7 @@ namespace UnityEditor
                     baseStyle.Draw(position, GUIContent.none, id, foldout);
                     position = baseStyle.padding.Remove(position);
                     textStyle.Draw(textRect, EditorGUIUtility.TempContent(ObjectNames.GetInspectorTitle(targetObjs[0])), id, foldout);
-                    using (new EditorGUI.DisabledScope(EditorGUIUtility.comparisonViewMode != EditorGUIUtility.ComparisonViewMode.None))
+                    if (EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None)
                     {
                         iconButtonStyle.Draw(settingsRect, GUIContents.titleSettingsIcon, id, foldout);
                     }
@@ -5442,8 +5439,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
             bool wasBoldDefaultFont = EditorGUIUtility.GetBoldDefaultFont();
             if (property.serializedObject.targetObjectsCount == 1 &&
                 property.isInstantiatedPrefab &&
-                EditorGUIUtility.comparisonViewMode != EditorGUIUtility.ComparisonViewMode.Original &&
-                !property.isDefaultOverride)
+                EditorGUIUtility.comparisonViewMode != EditorGUIUtility.ComparisonViewMode.Original)
             {
                 PropertyGUIData parentData = s_PropertyStack.Count > 0 ? s_PropertyStack.Peek() : new PropertyGUIData();
                 bool linkedProperties = parentData.totalPosition == totalPosition;
@@ -5451,7 +5447,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
                 var hasPrefabOverride = property.prefabOverride;
                 if (!linkedProperties || hasPrefabOverride)
                     EditorGUIUtility.SetBoldDefaultFont(hasPrefabOverride);
-                if (hasPrefabOverride)
+                if (hasPrefabOverride && !property.isDefaultOverride)
                 {
                     Rect highlightRect = totalPosition;
                     highlightRect.xMin += EditorGUI.indent;
