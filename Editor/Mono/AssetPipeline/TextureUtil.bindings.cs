@@ -108,7 +108,7 @@ namespace UnityEditor
         public static extern void CopyCubemapFaceIntoTexture(Cubemap cubemapRef, CubemapFace face, Texture2D textureRef);
 
         [FreeFunction]
-        public static extern bool ReformatCubemap(ref Cubemap cubemap, int width, int height, TextureFormat textureFormat, bool useMipmap, bool linear);
+        public static extern bool ReformatCubemap(Cubemap cubemap, int width, int height, TextureFormat textureFormat, bool useMipmap, bool linear);
 
         [FreeFunction]
         public static extern bool ReformatTexture(ref Texture2D texture, int width, int height, TextureFormat textureFormat, bool useMipmap, bool linear);

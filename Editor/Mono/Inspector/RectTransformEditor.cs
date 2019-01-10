@@ -459,7 +459,11 @@ namespace UnityEditor
             anchorRect.height = EditorGUIUtility.singleLineHeight;
 
             EditorGUI.BeginChangeCheck();
+            EditorGUI.BeginProperty(anchorRect, null, m_AnchorMin);
+            EditorGUI.BeginProperty(anchorRect, null, m_AnchorMax);
             m_ShowLayoutOptions = EditorGUI.Foldout(anchorRect, m_ShowLayoutOptions, styles.anchorsContent);
+            EditorGUI.EndProperty();
+            EditorGUI.EndProperty();
             if (EditorGUI.EndChangeCheck())
                 EditorPrefs.SetBool(kShowAnchorPropsPrefName, m_ShowLayoutOptions);
 

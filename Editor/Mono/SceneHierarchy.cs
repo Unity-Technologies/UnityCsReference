@@ -951,12 +951,11 @@ namespace UnityEditor
 
                     if (!string.IsNullOrEmpty(assetPath))
                     {
-                        if (PrefabUtility.IsPartOfModelPrefab(go))
+                        if (PrefabUtility.IsPartOfModelPrefab(prefabAsset))
                         {
                             menu.AddItem(EditorGUIUtility.TrTextContent("Open Model"), false, () =>
                             {
-                                GameObject asset = PrefabUtility.GetOriginalSourceOrVariantRoot(go);
-                                AssetDatabase.OpenAsset(asset);
+                                AssetDatabase.OpenAsset(prefabAsset);
                             });
                         }
                         else
