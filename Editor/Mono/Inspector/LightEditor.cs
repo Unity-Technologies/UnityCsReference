@@ -205,7 +205,9 @@ namespace UnityEditor
 
             static Texture2D CreateKelvinGradientTexture(string name, int width, int height, float minKelvin, float maxKelvin)
             {
-                var texture = new Texture2D(width, height, TextureFormat.ARGB32, false)
+                // The texture is draw with a simple internal-GUITexture shader that don't perform any gamma correction
+                // so we need to provide value for color temperature texture in gamma space and use a linear format for the texture
+                var texture = new Texture2D(width, height, TextureFormat.ARGB32, false, true)
                 {
                     name = name,
                     hideFlags = HideFlags.HideAndDontSave

@@ -16,6 +16,7 @@ using UnityEditor.IMGUI.Controls;
 using UnityEngine.Experimental.Networking.PlayerConnection;
 using ConnectionUtility = UnityEditor.Experimental.Networking.PlayerConnection.EditorGUIUtility;
 using ConnectionGUILayout = UnityEditor.Experimental.Networking.PlayerConnection.EditorGUILayout;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditorInternal
 {
@@ -785,7 +786,7 @@ namespace UnityEditor
             if (cur.rtWidth <= 0 || cur.rtHeight <= 0)
                 return;
 
-            var isDepthOnlyRT = (cur.rtFormat == (int)RenderTextureFormat.Depth || cur.rtFormat == (int)RenderTextureFormat.Shadowmap);
+            var isDepthOnlyRT = GraphicsFormatUtility.IsDepthFormat((GraphicsFormat)cur.rtFormat);
             var hasShowableDepth = (cur.rtHasDepthTexture != 0);
             var showableRTCount = cur.rtCount;
             if (hasShowableDepth)
@@ -853,7 +854,7 @@ namespace UnityEditor
             GUILayout.Label(string.Format("{0}x{1} {2}",
                 cur.rtWidth,
                 cur.rtHeight,
-                (RenderTextureFormat)cur.rtFormat));
+                (GraphicsFormat)cur.rtFormat));
             if (cur.rtDim == (int)UnityEngine.Rendering.TextureDimension.Cube)
                 GUILayout.Label("Rendering into cubemap");
         }

@@ -124,8 +124,8 @@ namespace UnityEngine.UIElements
             var t = contentContainer.transform.position;
 
             var offset = scrollOffset;
-            t.x = -offset.x;
-            t.y = -offset.y;
+            t.x = GUIUtility.RoundToPixelGrid(-offset.x);
+            t.y = GUIUtility.RoundToPixelGrid(-offset.y);
             contentContainer.transform.position = t;
 
             this.IncrementVersion(VersionChangeType.Repaint);

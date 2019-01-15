@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UObject = UnityEngine.Object;
+using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor.EditorTools
 {
@@ -28,9 +28,13 @@ namespace UnityEditor.EditorTools
     {
         [HideInInspector]
         [SerializeField]
-        internal UObject[] m_Targets;
+        internal UnityObject[] m_Targets;
 
-        public IEnumerable<UObject> targets
+        [HideInInspector]
+        [SerializeField]
+        internal UnityObject m_Target;
+
+        public IEnumerable<UnityObject> targets
         {
             get
             {
@@ -43,6 +47,11 @@ namespace UnityEditor.EditorTools
 
                 return Selection.objects;
             }
+        }
+
+        public UnityObject target
+        {
+            get { return m_Target == null ? Selection.activeObject : m_Target; }
         }
 
         public abstract GUIContent toolbarIcon { get; }

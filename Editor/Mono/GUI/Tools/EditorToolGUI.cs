@@ -23,9 +23,7 @@ namespace UnityEditor
             if (target == null)
                 throw new ArgumentNullException("target");
 
-            var targetType = target.GetType();
-            s_CustomEditorTools.Clear();
-            EditorToolContext.GetCustomEditorTools(targetType, s_CustomEditorTools);
+            EditorToolContext.GetCustomEditorToolsForTarget(target, s_CustomEditorTools, true);
             EditorToolbar<EditorTool>(s_CustomEditorTools);
         }
 
@@ -75,13 +73,15 @@ namespace UnityEditor
 
     static class EditorToolGUI
     {
+        const int k_MaxToolHistory = 6;
+
         static class Styles
         {
             public static GUIContent selectionToolsWindowTitle = EditorGUIUtility.TrTextContent("Tools");
             public static GUIContent recentTools = EditorGUIUtility.TrTextContent("Recent");
             public static GUIContent selectionTools = EditorGUIUtility.TrTextContent("Selection");
             public static GUIContent availableTools = EditorGUIUtility.TrTextContent("Available");
-            public static GUIContent noToolsAvailable = EditorGUIUtility.TrTextContent("No tools for selected components.");
+            public static GUIContent noToolsAvailable = EditorGUIUtility.TrTextContent("No custom tools available");
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -158,23 +158,22 @@ namespace UnityEditor
 
         public static void DrawSceneViewTools(SceneView sceneView)
         {
-            SceneViewOverlay.Window(Styles.selectionToolsWindowTitle, DoContextualToolbarOverlay, int.MaxValue,
-                SceneViewOverlay.WindowDisplayOption.OneWindowPerTitle);
+            SceneViewOverlay.Window(Styles.selectionToolsWindowTitle, DoContextualToolbarOverlay, int.MaxValue, null,
+                SceneViewOverlay.WindowDisplayOption.MultipleWindowsPerTarget, sceneView);
         }
 
         static void DoContextualToolbarOverlay(UnityEngine.Object target, SceneView sceneView)
         {
             GUILayout.BeginHorizontal(GUIStyle.none, GUILayout.MinWidth(210), GUILayout.Height(30));
 
-            s_EditorToolModes.Clear();
-            EditorToolContext.GetCustomEditorTools(s_EditorToolModes);
+            EditorToolContext.GetCustomEditorTools(s_EditorToolModes, false);
 
             if (s_EditorToolModes.Count > 0)
             {
                 EditorGUI.BeginChangeCheck();
                 EditorGUILayout.EditorToolbar(s_EditorToolModes);
                 if (EditorGUI.EndChangeCheck())
-                    foreach (var editor in sceneView.GetActiveEditors())
+                    foreach (var editor in sceneView.activeEditors)
                         editor.Repaint();
             }
             else
@@ -187,42 +186,49 @@ namespace UnityEditor
             GUILayout.EndHorizontal();
         }
 
-        internal static void DoToolHistoryContextMenu()
+        internal static void DoToolContextMenu()
         {
             var toolHistoryMenu = new GenericMenu()
             {
                 allowDuplicateNames = true
             };
 
+            var foundTool = false;
+
             s_ToolList.Clear();
+
             EditorToolContext.GetToolHistory(s_ToolList, true);
 
             // recent history
-            if (EditorToolContext.GetLastTool() != null)
+            if (EditorToolContext.GetLastCustomTool() != null)
             {
+                foundTool = true;
                 toolHistoryMenu.AddDisabledItem(Styles.recentTools);
 
-                for (var i = 0; i < s_ToolList.Count; i++)
+                for (var i = 0; i < Math.Min(k_MaxToolHistory, s_ToolList.Count); i++)
                 {
                     var tool = s_ToolList[i];
 
                     if (EditorToolUtility.IsCustomEditorTool(tool.GetType()))
                         continue;
 
-                    toolHistoryMenu.AddItem(
-                        new GUIContent(EditorToolUtility.GetToolName(tool)),
-                        false,
-                        () => { EditorToolContext.activeTool = tool; });
+                    if (tool.IsAvailable())
+                        toolHistoryMenu.AddItem(
+                            new GUIContent(EditorToolUtility.GetToolName(tool)),
+                            false,
+                            () => { EditorToolContext.activeTool = tool; });
+                    else
+                        toolHistoryMenu.AddDisabledItem(new GUIContent(EditorToolUtility.GetToolName(tool)));
                 }
 
                 toolHistoryMenu.AddSeparator("");
             }
 
-            s_ToolList.Clear();
-            EditorToolContext.GetCustomEditorTools(s_ToolList);
+            EditorToolContext.GetCustomEditorTools(s_ToolList, false);
 
             if (s_ToolList.Any())
             {
+                foundTool = true;
                 toolHistoryMenu.AddDisabledItem(Styles.selectionTools);
 
                 for (var i = 0; i < s_ToolList.Count; i++)
@@ -232,23 +238,37 @@ namespace UnityEditor
                     if (!EditorToolUtility.IsCustomEditorTool(tool.GetType()))
                         continue;
 
-                    toolHistoryMenu.AddItem(
-                        new GUIContent(EditorToolUtility.GetToolName(tool)),
-                        false,
-                        () => { EditorToolContext.activeTool = tool; });
+                    if (tool.IsAvailable())
+                        toolHistoryMenu.AddItem(
+                            new GUIContent(EditorToolUtility.GetToolName(tool)),
+                            false,
+                            () => { EditorToolContext.activeTool = tool; });
+                    else
+                        toolHistoryMenu.AddDisabledItem(new GUIContent(EditorToolUtility.GetToolName(tool)));
                 }
 
                 toolHistoryMenu.AddSeparator("");
             }
 
-            toolHistoryMenu.AddDisabledItem(Styles.availableTools);
+            var global = EditorToolUtility.GetCustomEditorToolsForType(null);
 
-            foreach (var toolType in EditorToolUtility.GetCustomEditorToolsForType(null))
+            if (global.Any())
             {
-                toolHistoryMenu.AddItem(
-                    new GUIContent(EditorToolUtility.GetToolName(toolType)),
-                    false,
-                    () => { EditorTools.EditorTools.SetActiveTool(toolType); });
+                foundTool = true;
+                toolHistoryMenu.AddDisabledItem(Styles.availableTools);
+
+                foreach (var toolType in global)
+                {
+                    toolHistoryMenu.AddItem(
+                        new GUIContent(EditorToolUtility.GetToolName(toolType)),
+                        false,
+                        () => { EditorTools.EditorTools.SetActiveTool(toolType); });
+                }
+            }
+
+            if (!foundTool)
+            {
+                toolHistoryMenu.AddDisabledItem(Styles.noToolsAvailable);
             }
 
             toolHistoryMenu.ShowAsContext();

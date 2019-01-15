@@ -1525,6 +1525,9 @@
     <Compile Include="..\..\Editor\Mono\GUI\DragRect.cs">
       <Link>Editor\Mono\GUI\DragRect.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\GUI\EditModeTools\EditModeTool.cs">
+      <Link>Editor\Mono\GUI\EditModeTools\EditModeTool.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\EditorApplicationLayout.cs">
       <Link>Editor\Mono\GUI\EditorApplicationLayout.cs</Link>
     </Compile>

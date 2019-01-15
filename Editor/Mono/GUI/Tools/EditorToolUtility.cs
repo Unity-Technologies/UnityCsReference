@@ -5,11 +5,22 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 using UObject = UnityEngine.Object;
 
 namespace UnityEditor.EditorTools
 {
+    struct CustomEditorTool
+    {
+        public Editor owner;
+        public Type editorToolType;
+
+        public CustomEditorTool(Editor owner, Type tool)
+        {
+            this.owner = owner;
+            this.editorToolType = tool;
+        }
+    }
+
     static class EditorToolUtility
     {
         struct CustomEditorToolAssociation
@@ -123,33 +134,25 @@ namespace UnityEditor.EditorTools
             return attr.targetType;
         }
 
-        internal static Dictionary<Type, List<Component>> FindActiveCustomEditorTools()
+        internal static void GetEditorToolsForTracker(ActiveEditorTracker tracker, List<CustomEditorTool> tools)
         {
-            var selection = Selection.transforms;
-            var tools = new Dictionary<Type, List<Component>>();
+            var editors = tracker.activeEditors;
 
-            for (int i = 0, c = selection.Length; i < c; i++)
+            for (int i = 0, c = editors.Length; i < c; i++)
             {
-                foreach (var component in selection[i].GetComponents<Component>())
+                var editor = editors[i];
+
+                if (editor == null || editor.target == null)
+                    continue;
+
+                var targetType = editor.target.GetType();
+                var eligibleToolTypes = GetCustomEditorToolsForType(targetType);
+
+                foreach (var type in eligibleToolTypes)
                 {
-                    if (component != null)
-                    {
-                        var eligibleToolTypes = GetCustomEditorToolsForType(component.GetType());
-
-                        foreach (var type in eligibleToolTypes)
-                        {
-                            List<Component> targets;
-
-                            if (tools.TryGetValue(type, out targets))
-                                tools[type].Add(component);
-                            else
-                                tools.Add(type, new List<Component>() { component });
-                        }
-                    }
+                    tools.Add(new CustomEditorTool(editor, type));
                 }
             }
-
-            return tools;
         }
 
         internal static EditorTool GetEditorToolWithEnum(Tool type)

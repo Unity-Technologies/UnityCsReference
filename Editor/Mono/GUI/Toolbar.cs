@@ -357,7 +357,7 @@ namespace UnityEditor
                         || (evt.button == 0 && evt.modifiers == EventModifiers.Alt))
                 )
                 {
-                    EditorToolGUI.DoToolHistoryContextMenu();
+                    EditorToolGUI.DoToolContextMenu();
                 }
                 else
                 {

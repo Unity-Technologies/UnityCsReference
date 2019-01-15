@@ -125,5 +125,9 @@ namespace UnityEditor
             [NativeMethod("GetSelectedAssetGUIDStrings")]
             get;
         }
+
+        [StaticAccessor("Selection", StaticAccessorType.DoubleColon)]
+        [NativeName("SelectionCount")]
+        internal extern static int count { get; }
     }
 }

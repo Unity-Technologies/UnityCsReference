@@ -88,6 +88,7 @@ namespace UnityEngine
         internal float  m_ArmStretch;
         internal float  m_LegStretch;
         internal float  m_FeetSpacing;
+        internal float  m_GlobalScale;
 
         internal string  m_RootMotionBoneName;
 

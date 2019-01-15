@@ -251,6 +251,9 @@ namespace UnityEditor
         extern internal static int  GetCurrentShaderVariantCollectionVariantCount();
         extern internal static bool AddNewShaderToCollection(Shader shader, ShaderVariantCollection collection);
 
+        extern internal static string[] GetAllGlobalKeywords();
+        extern internal static string[] GetShaderGlobalKeywords([NotNull] Shader shader);
+        extern internal static string[] GetShaderLocalKeywords([NotNull] Shader shader);
 
         [FreeFunction] public static extern ShaderInfo[] GetAllShaderInfo();
 

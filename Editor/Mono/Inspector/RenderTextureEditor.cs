@@ -4,7 +4,7 @@
 
 using UnityEngine;
 using System;
-
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor
 {
@@ -19,6 +19,7 @@ namespace UnityEditor
             public readonly GUIContent antiAliasing = EditorGUIUtility.TrTextContent("Anti-Aliasing", "Number of anti-aliasing samples.");
             public readonly GUIContent colorFormat = EditorGUIUtility.TrTextContent("Color Format", "Format of the color buffer.");
             public readonly GUIContent depthBuffer = EditorGUIUtility.TrTextContent("Depth Buffer", "Format of the depth buffer.");
+            public readonly GUIContent enableCompatibleFormat = EditorGUIUtility.TrTextContent("Enable Compatible Color Format", "Lets the color format be changed to compatible and supported formats for the target platform automatically, if the target platform doesn't support the input format.");
             public readonly GUIContent dimension = EditorGUIUtility.TrTextContent("Dimension", "Is the texture 2D, Cube or 3D?");
             public readonly GUIContent enableMipmaps = EditorGUIUtility.TrTextContent("Enable Mip Maps", "This render texture will have Mip Maps.");
             public readonly GUIContent bindMS = EditorGUIUtility.TrTextContent("Bind multisampled", "If enabled, the texture will not go through an AA resolve if bound to a shader.");
@@ -58,6 +59,7 @@ namespace UnityEditor
         SerializedProperty m_Depth;
         SerializedProperty m_ColorFormat;
         SerializedProperty m_DepthFormat;
+        SerializedProperty m_EnableCompatibleFormat;
         SerializedProperty m_AntiAliasing;
         SerializedProperty m_EnableMipmaps;
         SerializedProperty m_AutoGeneratesMipmaps;
@@ -74,22 +76,12 @@ namespace UnityEditor
             m_AntiAliasing = serializedObject.FindProperty("m_AntiAliasing");
             m_ColorFormat = serializedObject.FindProperty("m_ColorFormat");
             m_DepthFormat = serializedObject.FindProperty("m_DepthFormat");
+            m_EnableCompatibleFormat = serializedObject.FindProperty("m_EnableCompatibleFormat");
             m_EnableMipmaps = serializedObject.FindProperty("m_MipMap");
             m_AutoGeneratesMipmaps = serializedObject.FindProperty("m_GenerateMips");
             m_Dimension = serializedObject.FindProperty("m_Dimension");
             m_sRGB = serializedObject.FindProperty("m_SRGB");
             m_UseDynamicScale = serializedObject.FindProperty("m_UseDynamicScale");
-        }
-
-        public static bool IsHDRFormat(RenderTextureFormat format)
-        {
-            return format == RenderTextureFormat.ARGBHalf ||
-                format == RenderTextureFormat.RGB111110Float ||
-                format == RenderTextureFormat.RGFloat ||
-                format == RenderTextureFormat.ARGBFloat ||
-                format == RenderTextureFormat.RFloat ||
-                format == RenderTextureFormat.RGHalf ||
-                format == RenderTextureFormat.RHalf;
         }
 
         protected void OnRenderTextureGUI(GUIElements guiElements)
@@ -115,15 +107,12 @@ namespace UnityEditor
 
             if ((guiElements & GUIElements.RenderTargetAAGUI) != 0)
                 EditorGUILayout.IntPopup(m_AntiAliasing, styles.renderTextureAntiAliasing, styles.renderTextureAntiAliasingValues, styles.antiAliasing);
+            EditorGUILayout.PropertyField(m_EnableCompatibleFormat, styles.enableCompatibleFormat);
             EditorGUILayout.PropertyField(m_ColorFormat, styles.colorFormat);
             if ((guiElements & GUIElements.RenderTargetDepthGUI) != 0)
                 EditorGUILayout.PropertyField(m_DepthFormat, styles.depthBuffer);
 
-            bool isHDRRenderTexture = IsHDRFormat((RenderTextureFormat)m_ColorFormat.intValue);
-            using (new EditorGUI.DisabledScope(isHDRRenderTexture))
-            {
-                EditorGUILayout.PropertyField(m_sRGB, styles.sRGBTexture);
-            }
+            m_sRGB.boolValue = GraphicsFormatUtility.IsSRGBFormat((GraphicsFormat)m_ColorFormat.intValue);
 
             using (new EditorGUI.DisabledScope(isTexture3D))
             {
@@ -178,7 +167,7 @@ namespace UnityEditor
 
         private bool RenderTextureHasDepth()
         {
-            if (TextureUtil.IsDepthRTFormat((RenderTextureFormat)m_ColorFormat.enumValueIndex))
+            if (GraphicsFormatUtility.IsDepthFormat((GraphicsFormat)m_ColorFormat.enumValueIndex))
                 return true;
 
             return m_DepthFormat.enumValueIndex != 0;
@@ -197,12 +186,12 @@ namespace UnityEditor
 
             if (QualitySettings.desiredColorSpace == ColorSpace.Linear)
             {
-                bool formatIsHDR = IsHDRFormat(t.format);
+                bool formatIsHDR = GraphicsFormatUtility.IsIEEE754Format(t.graphicsFormat);
                 bool sRGB = t.sRGB && !formatIsHDR;
                 info += " " + (sRGB ? "sRGB" : "Linear");
             }
 
-            info += "  " + t.format;
+            info += "  " + t.graphicsFormat;
             info += "  " + EditorUtility.FormatBytes(TextureUtil.GetRuntimeMemorySizeLong(t));
 
             return info;

@@ -7,6 +7,7 @@ using UnityEditorInternal;
 using System.Collections.Generic;
 using System.IO;
 using AnimatedBool = UnityEditor.AnimatedValues.AnimBool;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor
 {
@@ -433,8 +434,8 @@ namespace UnityEditor
             int depth = texture.volumeDepth;
 
             // This has its TextureFormat helper equivalent in C++ but since we are going to try to refactor TextureFormat/RenderTextureFormat into a single type so let's not bloat Scripting APIs with stuff that will get useless soon(tm).
-            bool isFormatHDR = IsHDRFormat(texture.format);
-            bool isFloatFormat = (texture.format == RenderTextureFormat.ARGBFloat || texture.format == RenderTextureFormat.RFloat);
+            bool isFormatHDR = GraphicsFormatUtility.IsIEEE754Format(texture.graphicsFormat);
+            bool isFloatFormat = GraphicsFormatUtility.IsFloatFormat(texture.graphicsFormat);
 
             TextureFormat format = isFormatHDR ? TextureFormat.RGBAFloat : TextureFormat.RGBA32;
             int finalWidth = width;
