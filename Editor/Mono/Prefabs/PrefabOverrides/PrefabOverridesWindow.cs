@@ -74,26 +74,43 @@ namespace UnityEditor
         {
             m_SelectedGameObjects = new GameObject[] { selectedGameObject };
             m_TreeViewState = new TreeViewState();
-            m_TreeView = new PrefabOverridesTreeView(selectedGameObject, m_TreeViewState);
+            m_TreeView = new PrefabOverridesTreeView(selectedGameObject, m_TreeViewState, this);
 
             GameObject prefabAssetRoot = PrefabUtility.GetCorrespondingObjectFromSource(selectedGameObject);
 
             m_TreeView.SetApplyTarget(selectedGameObject, prefabAssetRoot, AssetDatabase.GetAssetPath(prefabAssetRoot));
 
-            UpdateTextSingle(prefabAssetRoot);
-            UpdateStatusChecks(selectedGameObject);
+            RefreshStatus();
         }
 
         internal PrefabOverridesWindow(GameObject[] selectedGameObjects)
         {
             m_SelectedGameObjects = selectedGameObjects;
-            UpdateTextMultiple();
+            RefreshStatus();
+        }
+
+        internal void RefreshStatus()
+        {
+            if (m_SelectedGameObjects.Length == 1)
+                UpdateTextSingle(PrefabUtility.GetCorrespondingObjectFromSource(m_SelectedGameObjects[0]));
+            else
+                UpdateTextMultiple();
+
+            m_AnyOverrides = false;
+            m_Disconnected = false;
+            m_InvalidComponentOnInstance = false;
+            m_ModelPrefab = false;
+            m_Immutable = false;
+            m_InvalidComponentOnAsset = false;
+
             for (int i = 0; i < m_SelectedGameObjects.Length; i++)
                 UpdateStatusChecks(m_SelectedGameObjects[i]);
         }
 
         void UpdateStatusChecks(GameObject prefabInstanceRoot)
         {
+            // Can't reset values inside this method, since it's called consecutively for each target.
+
             if (PrefabUtility.HasPrefabInstanceAnyOverrides(prefabInstanceRoot, false))
                 m_AnyOverrides = true;
             if (PrefabUtility.IsDisconnectedFromPrefabAsset(prefabInstanceRoot))

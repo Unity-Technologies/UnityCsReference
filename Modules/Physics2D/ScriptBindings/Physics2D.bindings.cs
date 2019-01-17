@@ -207,12 +207,12 @@ namespace UnityEngine
         public RaycastHit2D CapsuleCast(Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction, float distance, [DefaultValue("Physics2D.DefaultRaycastLayers")] int layerMask = Physics2D.DefaultRaycastLayers)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
-            return CapsuleCast_Internal(this, origin, size, capsuleDirection, angle, direction, Mathf.Infinity, contactFilter);
+            return CapsuleCast_Internal(this, origin, size, capsuleDirection, angle, direction, distance, contactFilter);
         }
 
         public RaycastHit2D CapsuleCast(Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter)
         {
-            return CapsuleCast_Internal(this, origin, size, capsuleDirection, angle, direction, Mathf.Infinity, contactFilter);
+            return CapsuleCast_Internal(this, origin, size, capsuleDirection, angle, direction, distance, contactFilter);
         }
 
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
@@ -222,12 +222,12 @@ namespace UnityEngine
         public int CapsuleCast(Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction, float distance, RaycastHit2D[] results, [DefaultValue("Physics2D.DefaultRaycastLayers")] int layerMask = Physics2D.DefaultRaycastLayers)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
-            return CapsuleCastNonAlloc_Internal(this, origin, size, capsuleDirection, angle, direction, Mathf.Infinity, contactFilter, results);
+            return CapsuleCastNonAlloc_Internal(this, origin, size, capsuleDirection, angle, direction, distance, contactFilter, results);
         }
 
         public int CapsuleCast(Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter, RaycastHit2D[] results)
         {
-            return CapsuleCastNonAlloc_Internal(this, origin, size, capsuleDirection, angle, direction, Mathf.Infinity, contactFilter, results);
+            return CapsuleCastNonAlloc_Internal(this, origin, size, capsuleDirection, angle, direction, distance, contactFilter, results);
         }
 
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]

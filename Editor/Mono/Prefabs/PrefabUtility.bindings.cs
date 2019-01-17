@@ -188,6 +188,12 @@ namespace UnityEditor
 
             string directory = Path.GetDirectoryName(path);
 
+            bool isRootFolder = false;
+            bool isImmutableFolder = false;
+            bool isValidAssetFolder = AssetDatabase.GetAssetFolderInfo(directory, out isRootFolder, out isImmutableFolder);
+            if (isValidAssetFolder && isImmutableFolder)
+                throw new ArgumentException("Saving Prefab to immutable folder is not allowed: '" + path + "'");
+
             if (directory.Length > 0 && !Directory.Exists(directory))
                 throw new ArgumentException("Given path does not exist: '" + path + "'");
 
