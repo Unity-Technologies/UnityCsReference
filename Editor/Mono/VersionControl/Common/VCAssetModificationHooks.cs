@@ -102,7 +102,7 @@ namespace UnityEditorInternal.VersionControl
         {
             message = "";
 
-            if (!Provider.enabled)
+            if (!Provider.enabled || EditorUserSettings.WorkOffline)
                 return true;
 
             if (string.IsNullOrEmpty(assetPath))

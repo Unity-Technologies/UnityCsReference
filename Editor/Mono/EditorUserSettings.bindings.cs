@@ -59,5 +59,7 @@ namespace UnityEditor
         internal static extern bool DebugCom { get; set; }
 
         public static extern SemanticMergeMode semanticMergeMode { get; set; }
+
+        internal static extern void SoftReset();
     }
 }
