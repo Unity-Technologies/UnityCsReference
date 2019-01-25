@@ -67,6 +67,10 @@ namespace UnityEditor
         {
             HandleMouseEnterLeave(sceneView);
 
+            // Case 1093801: Handle only the currently active scene view
+            if (sceneView != activeSceneView)
+                return;
+
             // Case 1077400: SceneView camera transform changes may update the mouse grid position even though the mouse position has not changed
             var currentSceneViewTransformHash = sceneView.camera.transform.localToWorldMatrix.GetHashCode();
             UpdateMouseGridPosition(currentSceneViewTransformHash == sceneViewTransformHash);
