@@ -189,8 +189,7 @@ namespace UnityEngine
         internal extern void ReleaseSafeLock();
         internal extern IntPtr GetSafeTopMap();
         internal extern static IntPtr GetSafeMap(IntPtr m, string key);
-        internal extern static int GetSafeInt(IntPtr m, string key, int defaultValue);
-        internal extern static long GetSafeLong(IntPtr m, string key, long defaultValue);
+        internal extern static long GetSafeNumber(IntPtr m, string key, long defaultValue);
         internal extern static float GetSafeFloat(IntPtr m, string key, float defaultValue);
         internal extern static bool GetSafeBool(IntPtr m, string key, bool defaultValue);
         internal extern static string GetSafeStringValue(IntPtr m, string key, string defaultValue);

@@ -77,6 +77,27 @@ namespace UnityEditor
             serializedObject.ApplyModifiedProperties();
         }
 
+        private bool HasFrameBounds()
+        {
+            return true;
+        }
+
+        private Bounds OnGetFrameBounds()
+        {
+            Bounds localBounds = tilemap.localFrameBounds;
+            Bounds bounds = new Bounds(tilemap.transform.TransformPoint(localBounds.center), Vector3.zero);
+            for (int i = 0; i < 8; ++i)
+            {
+                Vector3 extent = localBounds.extents;
+                extent.x = (i & 1) == 0 ? -extent.x : extent.x;
+                extent.y = (i & 2) == 0 ? -extent.y : extent.y;
+                extent.z = (i & 4) == 0 ? -extent.z : extent.z;
+                var worldPoint = tilemap.transform.TransformPoint(localBounds.center + extent);
+                bounds.Encapsulate(worldPoint);
+            }
+            return bounds;
+        }
+
         [MenuItem("GameObject/2D Object/Tilemap")]
         internal static void CreateRectangularTilemap()
         {

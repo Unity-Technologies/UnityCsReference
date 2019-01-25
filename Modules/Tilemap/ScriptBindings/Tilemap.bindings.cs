@@ -63,6 +63,12 @@ namespace UnityEngine.Tilemaps
             get;
         }
 
+        [NativeProperty("TilemapFrameBoundsScripting")]
+        internal extern Bounds localFrameBounds
+        {
+            get;
+        }
+
         public extern float animationFrameRate
         {
             get;
