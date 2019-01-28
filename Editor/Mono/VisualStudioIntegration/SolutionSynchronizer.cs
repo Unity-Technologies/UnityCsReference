@@ -60,6 +60,7 @@ namespace UnityEditor.VisualStudioIntegration
             {"hlsl", ScriptingLanguage.None},
             {"glslinc", ScriptingLanguage.None},
             {"template", ScriptingLanguage.None},
+            {"raytrace", ScriptingLanguage.None},
         };
 
         private static readonly string[] reimportSyncExtensions = new[] { ".dll", ".asmdef" };

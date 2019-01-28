@@ -300,6 +300,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             else
             {
                 dirtyTargetAssemblies.Add(targetAssembly);
+
+                // Add to changedAssemblies in case we delete the last script of an assembly and then do not get OnCompilationFinished callback
+                changedAssemblies.Add(targetAssembly.Filename);
             }
         }
 
@@ -1837,6 +1840,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return assemblyFlags;
         }
 
+        static EditorBuildRules.UnityReferencesOptions ToUnityReferencesOptions(ReferencesOptions options)
+        {
+            var result = EditorBuildRules.UnityReferencesOptions.ExcludeModules;
+
+            if ((options & ReferencesOptions.UseEngineModules) == ReferencesOptions.UseEngineModules)
+            {
+                result = EditorBuildRules.UnityReferencesOptions.None;
+            }
+
+            return result;
+        }
+
         ScriptAssembly InitializeScriptAssemblyWithoutReferencesAndDefines(Compilation.AssemblyBuilder assemblyBuilder)
         {
             var scriptFiles = assemblyBuilder.scriptPaths.Select(p => AssetPath.Combine(projectDirectory, p)).ToArray();
@@ -1861,8 +1876,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var scriptAssembly = InitializeScriptAssemblyWithoutReferencesAndDefines(assemblyBuilder);
 
             var options = ToEditorScriptCompilationOptions(assemblyBuilder.flags);
+            var referencesOptions = ToUnityReferencesOptions(assemblyBuilder.referencesOptions);
 
-            var references = GetAssemblyBuilderDefaultReferences(scriptAssembly, options);
+            var references = GetAssemblyBuilderDefaultReferences(scriptAssembly, options, referencesOptions);
 
             if (assemblyBuilder.additionalReferences != null && assemblyBuilder.additionalReferences.Length > 0)
                 references = references.Concat(assemblyBuilder.additionalReferences).ToArray();
@@ -1881,12 +1897,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return scriptAssembly;
         }
 
-        string[] GetAssemblyBuilderDefaultReferences(ScriptAssembly scriptAssembly, EditorScriptCompilationOptions options)
+        string[] GetAssemblyBuilderDefaultReferences(ScriptAssembly scriptAssembly, EditorScriptCompilationOptions options, EditorBuildRules.UnityReferencesOptions unityReferencesOptions)
         {
             bool buildingForEditor = (scriptAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
 
             var monolithicEngineAssemblyPath = InternalEditorUtility.GetMonolithicEngineAssemblyPath();
-            var unityReferences = EditorBuildRules.GetUnityReferences(scriptAssembly, unityAssemblies, options, EditorBuildRules.UnityReferencesOptions.ExcludeModules);
+
+            var unityReferences = EditorBuildRules.GetUnityReferences(scriptAssembly, unityAssemblies, options, unityReferencesOptions);
 
             var customReferences = EditorBuildRules.GetCompiledCustomAssembliesReferences(scriptAssembly, customTargetAssemblies, GetCompileScriptsOutputDirectory());
             var precompiledReferences = EditorBuildRules.GetPrecompiledReferences(scriptAssembly, EditorBuildRules.TargetAssemblyType.Custom, options, EditorBuildRules.EditorCompatibility.CompatibleWithEditor, precompiledAssemblies);
@@ -1894,7 +1911,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
             string[] editorReferences = buildingForEditor ? ModuleUtils.GetAdditionalReferencesForUserScripts() : new string[0];
 
             var references = new List<string>();
-            references.Add(monolithicEngineAssemblyPath);
+
+            if (unityReferencesOptions == EditorBuildRules.UnityReferencesOptions.ExcludeModules)
+                references.Add(monolithicEngineAssemblyPath);
+
             references.AddRange(unityReferences.Concat(customReferences).Concat(precompiledReferences).Concat(editorReferences).Concat(additionalReferences));
 
             return references.ToArray();
@@ -1904,8 +1924,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             var scriptAssembly = InitializeScriptAssemblyWithoutReferencesAndDefines(assemblyBuilder);
             var options = ToEditorScriptCompilationOptions(assemblyBuilder.flags);
+            var referencesOptions = ToUnityReferencesOptions(assemblyBuilder.referencesOptions);
 
-            var references = GetAssemblyBuilderDefaultReferences(scriptAssembly, options);
+
+            var references = GetAssemblyBuilderDefaultReferences(scriptAssembly, options, referencesOptions);
 
             return references;
         }

@@ -41,7 +41,6 @@ namespace UnityEditor.ShortcutManagement
             // Load styles
             if (EditorGUIUtility.isProSkin)
                 root.AddToClassList("isProSkin");
-            root.AddStyleSheetPath("StyleSheets/ShortcutManager/Common.uss");
             root.AddStyleSheetPath("StyleSheets/ShortcutManager/PromptWindow.uss");
 
             // Find elements

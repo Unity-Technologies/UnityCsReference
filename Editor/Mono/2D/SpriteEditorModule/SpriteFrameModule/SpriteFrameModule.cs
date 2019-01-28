@@ -268,8 +268,6 @@ namespace UnityEditor
                 return readableTexture;
             // we want to slice based on the original texture slice. Upscale the imported texture
             var texture = UnityEditor.SpriteUtility.CreateTemporaryDuplicate(readableTexture, width, height);
-            if (texture != null)
-                texture.filterMode = texture.filterMode;
             return texture;
         }
 
@@ -303,7 +301,7 @@ namespace UnityEditor
 
         public void TrimAlpha()
         {
-            var texture = m_TextureDataProvider.GetReadableTexture2D();
+            var texture = GetTextureToSlice();
             if (texture == null)
                 return;
 
@@ -346,6 +344,7 @@ namespace UnityEditor
                     spriteEditor.SetDataModified();
 
                 selected.rect = rect;
+                PopulateSpriteFrameInspectorField();
             }
         }
 

@@ -14,8 +14,11 @@ namespace UnityEngine.UIElements
         // This property to alleviate the fact we have to cast all the time
         TextInput textInput => (TextInput)textInputBase;
 
+        // This is to save the value of the tabindex of the visual input to achieve the IMGUI behaviour of tabbing on multiline TextField.
+        int m_VisualInputTabIndex;
+
         public new class UxmlFactory : UxmlFactory<TextField, UxmlTraits> {}
-        public new class UxmlTraits : BaseFieldTraits<string, UxmlStringAttributeDescription>
+        public new class UxmlTraits : TextInputBaseField<string>.UxmlTraits
         {
             UxmlBoolAttributeDescription m_Multiline = new UxmlBoolAttributeDescription { name = "multiline" };
 
@@ -50,7 +53,7 @@ namespace UnityEngine.UIElements
             : this(null, maxLength, multiline, isPasswordField, maskChar) {}
 
         public TextField(string label)
-            : this(label, kMaxLengthNone, false, false, char.MinValue) {}
+            : this(label, kMaxLengthNone, false, false, kMaskCharDefault) {}
 
         public TextField(string label, int maxLength, bool multiline, bool isPasswordField, char maskChar)
             : base(label, maxLength, maskChar, new TextInput())
@@ -91,6 +94,32 @@ namespace UnityEngine.UIElements
 
             // Here we must make sure the value is restored on screen from the saved value !
             text = rawValue;
+        }
+
+        protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
+        {
+            base.ExecuteDefaultActionAtTarget(evt);
+
+            // The following code is to help achieve the following behaviour:
+            // On IMGUI, a TextArea "in edit mode" is accepting TAB, doing a Shift+Return will get out of the Edit mode
+            //     and a TAB will allow the user to get to the next control...
+            // To mimic that behaviour in UIE, when in focused-non-edit-mode, we have to make sure the input is not "tabbable".
+            //     So, each time, either the main TextField or the Label is receiving the focus, we remove the tabIndex on
+            //     the input, and we put it back when the BlurEvent is received.
+            if (multiline)
+            {
+                if ((evt?.eventTypeId == FocusInEvent.TypeId() && evt?.leafTarget == this) ||
+                    (evt?.eventTypeId == FocusInEvent.TypeId() && evt?.leafTarget == labelElement))
+                {
+                    m_VisualInputTabIndex = visualInput.tabIndex;
+                    visualInput.tabIndex = -1;
+                }
+                else if ((evt?.eventTypeId == BlurEvent.TypeId() && evt?.leafTarget == this) ||
+                         (evt?.eventTypeId == BlurEvent.TypeId() && evt?.leafTarget == labelElement))
+                {
+                    visualInput.tabIndex = m_VisualInputTabIndex;
+                }
+            }
         }
 
         class TextInput : TextInputBase
@@ -178,7 +207,6 @@ namespace UnityEngine.UIElements
             protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
             {
                 base.ExecuteDefaultActionAtTarget(evt);
-
                 if (evt == null)
                 {
                     return;
@@ -188,20 +216,26 @@ namespace UnityEngine.UIElements
                 {
                     KeyDownEvent kde = evt as KeyDownEvent;
 
-                    if (!parentTextField.isDelayed || (kde?.keyCode == KeyCode.KeypadEnter) || (kde?.keyCode == KeyCode.Return))
+                    if (!parentTextField.isDelayed || (!multiline && ((kde?.keyCode == KeyCode.KeypadEnter) || (kde?.keyCode == KeyCode.Return))))
                     {
                         parentTextField.value = text;
                     }
 
                     if (multiline)
                     {
-                        if (((kde?.keyCode == KeyCode.KeypadEnter) && (kde?.shiftKey == true)) ||
-                            ((kde?.keyCode == KeyCode.Return) && (kde?.shiftKey == true)))
+                        if (kde?.character == '\t')
+                        {
+                            kde?.StopPropagation();
+                            kde?.PreventDefault();
+                        }
+                        else if (((kde?.character == 3) && (kde?.shiftKey == true)) || // KeyCode.KeypadEnter
+                                 ((kde?.character == '\n') && (kde?.shiftKey == true))) // KeyCode.Return
                         {
                             parent.Focus();
                         }
                     }
-                    else if ((kde?.keyCode == KeyCode.KeypadEnter) || (kde?.keyCode == KeyCode.Return))
+                    else if ((kde?.character == 3) ||    // KeyCode.KeypadEnter
+                             (kde?.character == '\n'))   // KeyCode.Return
                     {
                         parent.Focus();
                     }

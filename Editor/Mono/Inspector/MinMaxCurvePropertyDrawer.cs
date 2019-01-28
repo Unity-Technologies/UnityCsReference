@@ -22,6 +22,7 @@ namespace UnityEditorInternal
         }
 
         internal bool isNativeProperty { get; set; }
+        internal string xAxisLabel { get; set; } = "time";
 
         // Its possible that the PropertyDrawer may be used to draw more than one MinMaxCurve property(arrays, lists)
         Dictionary<string, PropertyData> m_PropertyDataPerPropertyPath = new Dictionary<string, PropertyData>();
@@ -125,11 +126,11 @@ namespace UnityEditorInternal
                     break;
 
                 case MinMaxCurveState.k_Curve:
-                    DoMinMaxCurvesField(fieldRect, m_Property.curveMax.GetHashCode(), m_Property.curveMax, null, m_Property.curveMultiplier, s_Styles.curveColor, s_Styles.curveBackgroundColor);
+                    DoMinMaxCurvesField(fieldRect, m_Property.curveMax.GetHashCode(), m_Property.curveMax, null, m_Property.curveMultiplier, s_Styles.curveColor, s_Styles.curveBackgroundColor, xAxisLabel);
                     break;
 
                 case MinMaxCurveState.k_TwoCurves:
-                    DoMinMaxCurvesField(fieldRect, m_Property.curveMin.GetHashCode(), m_Property.curveMax, m_Property.curveMin, m_Property.curveMultiplier, s_Styles.curveColor, s_Styles.curveBackgroundColor);
+                    DoMinMaxCurvesField(fieldRect, m_Property.curveMin.GetHashCode(), m_Property.curveMax, m_Property.curveMin, m_Property.curveMultiplier, s_Styles.curveColor, s_Styles.curveBackgroundColor, xAxisLabel);
                     break;
 
                 case MinMaxCurveState.k_TwoScalars:
@@ -148,7 +149,7 @@ namespace UnityEditorInternal
             }
         }
 
-        static void DoMinMaxCurvesField(Rect position, int id, SerializedProperty propertyMax, SerializedProperty propertyMin, SerializedProperty scalar, Color color, Color backgroundColor)
+        static void DoMinMaxCurvesField(Rect position, int id, SerializedProperty propertyMax, SerializedProperty propertyMin, SerializedProperty scalar, Color color, Color backgroundColor, string xLabel)
         {
             var evt = Event.current;
 
@@ -159,6 +160,7 @@ namespace UnityEditorInternal
                     s_CurveId = id;
                     if (MinMaxCurveEditorWindow.visible)
                     {
+                        MinMaxCurveEditorWindow.xAxisLabel = xLabel;
                         MinMaxCurveEditorWindow.SetCurves(propertyMax, propertyMin, scalar, color);
                         MinMaxCurveEditorWindow.ShowPopup(GUIView.current);
                     }
@@ -167,6 +169,7 @@ namespace UnityEditorInternal
                 {
                     if (MinMaxCurveEditorWindow.visible && Event.current.type == EventType.Repaint)
                     {
+                        MinMaxCurveEditorWindow.xAxisLabel = xLabel;
                         MinMaxCurveEditorWindow.SetCurves(propertyMax, propertyMin, scalar, color);
                         MinMaxCurveEditorWindow.instance.Repaint();
                     }
@@ -180,6 +183,7 @@ namespace UnityEditorInternal
                     {
                         s_CurveId = id;
                         GUIUtility.keyboardControl = id;
+                        MinMaxCurveEditorWindow.xAxisLabel = xLabel;
                         MinMaxCurveEditorWindow.SetCurves(propertyMax, propertyMin, scalar, color);
                         MinMaxCurveEditorWindow.ShowPopup(GUIView.current);
                         evt.Use();
@@ -217,6 +221,7 @@ namespace UnityEditorInternal
                     if (evt.MainActionKeyForControl(id))
                     {
                         s_CurveId = id;
+                        MinMaxCurveEditorWindow.xAxisLabel = xLabel;
                         MinMaxCurveEditorWindow.SetCurves(propertyMax, propertyMin, scalar, color);
                         MinMaxCurveEditorWindow.ShowPopup(GUIView.current);
                         evt.Use();

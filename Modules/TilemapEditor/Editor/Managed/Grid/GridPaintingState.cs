@@ -138,7 +138,7 @@ namespace UnityEditor
 
         private void OnSelectionChange()
         {
-            if (hasInterestedPainters && validTargets == null && ValidatePaintTarget(Selection.activeGameObject))
+            if (hasInterestedPainters && ValidatePaintTarget(Selection.activeGameObject))
             {
                 scenePaintTarget = Selection.activeGameObject;
             }
@@ -149,8 +149,18 @@ namespace UnityEditor
             if (hasInterestedPainters)
             {
                 m_FlushPaintTargetCache = true;
-                if (validTargets == null || !validTargets.Contains(scenePaintTarget))
-                    AutoSelectPaintTarget();
+                if (validTargets == null || validTargets.Length == 0 || !validTargets.Contains(scenePaintTarget))
+                {
+                    // case 1102618: Try to use current Selection as scene paint target if possible
+                    if (Selection.activeGameObject != null && hasInterestedPainters && ValidatePaintTarget(Selection.activeGameObject))
+                    {
+                        scenePaintTarget = Selection.activeGameObject;
+                    }
+                    else
+                    {
+                        AutoSelectPaintTarget();
+                    }
+                }
             }
         }
 
@@ -280,7 +290,7 @@ namespace UnityEditor
             if (candidate == null || candidate.GetComponentInParent<Grid>() == null && candidate.GetComponent<Grid>() == null)
                 return false;
 
-            if (validTargets != null && !validTargets.Contains(candidate))
+            if (validTargets != null && validTargets.Length > 0 && !validTargets.Contains(candidate))
                 return false;
 
             return true;

@@ -247,6 +247,8 @@ namespace UnityEditor.ShortcutManagement
         {
             Assert.AreEqual(1, selection.Count);
 
+            m_ShortcutsTable.selectedIndex = -1;
+
             if (selection.Count == 0)
                 m_ViewController.SetCategorySelected(null);
             else
@@ -290,14 +292,14 @@ namespace UnityEditor.ShortcutManagement
 
         void BuildProfileManagementRow(VisualElement header)
         {
-            m_ActiveProfileDropdownButton = header.Q<TextElement>("activeProfileDropdownButton");
+            m_ActiveProfileDropdownButton = header.Q<TextElement>("activeProfileDropdownButtonText");
             m_ActiveProfileDropdownButton.text = m_ViewController.activeProfile;
-            m_ActiveProfileDropdownButton.RegisterCallback<MouseDownEvent>(OnProfileContextMenuMouseDown);
+            m_ActiveProfileDropdownButton.AddToClassList(PopupField<string>.textUssClassName);
 
             // Style active profile dropdown button as a popup field
             var activeProfileDropdownButton = header.Q("activeProfileDropdownButton");
-            activeProfileDropdownButton.AddToClassList(PopupField<string>.textUssClassName);
             activeProfileDropdownButton.AddToClassList(BasePopupField<string, string>.inputUssClassName);
+            activeProfileDropdownButton.RegisterCallback<MouseDownEvent>(OnProfileContextMenuMouseDown);
         }
 
         void OnCreateProfileClicked()
@@ -452,7 +454,8 @@ namespace UnityEditor.ShortcutManagement
             m_ShortcutsTable.Q<ScrollView>().showVertical = true;
             m_ShortcutsTable.onSelectionChanged += ShortcutSelectionChanged;
             m_ShortcutsTable.onItemChosen += ShortcutTableEntryChosen;
-            m_ShortcutsTable.RegisterCallback<MouseUpEvent>(ShortcutTableRightClick);
+            m_ShortcutsTable.RegisterCallback<MouseDownEvent>(ShortcutTableRightClickDown);
+            m_ShortcutsTable.RegisterCallback<MouseUpEvent>(ShortcutTableRightClickUp);
             m_ShortcutsTable.RegisterCallback<GeometryChangedEvent>(ShortcutTableGeometryChanged);
 
             m_Root.AddToClassList("ShortcutManagerView");
@@ -560,7 +563,7 @@ namespace UnityEditor.ShortcutManagement
         static void FocusElementDelayed(GeometryChangedEvent evt)
         {
             var element = (VisualElement)evt.target;
-            element.Focus();
+            element.Q("unity-text-input").Focus();
             element.UnregisterCallback<GeometryChangedEvent>(FocusElementDelayed);
         }
 
@@ -667,7 +670,21 @@ namespace UnityEditor.ShortcutManagement
             }
         }
 
-        void ShortcutTableRightClick(MouseUpEvent evt)
+        void ShortcutTableRightClickDown(MouseDownEvent evt)
+        {
+            var slider = m_ShortcutsTable.Q<Scroller>(className: Scroller.verticalVariantUssClassName);
+            var clickedIndex = (int)((evt.localMousePosition.y + slider.value) / m_ShortcutsTable.itemHeight);
+
+            if (evt.button != (int)MouseButton.RightMouse)
+                return;
+
+            if (clickedIndex > m_ShortcutsTable.itemsSource.Count - 1)
+                return;
+
+            m_ShortcutsTable.selectedIndex = clickedIndex;
+        }
+
+        void ShortcutTableRightClickUp(MouseUpEvent evt)
         {
             if (evt.button != 1 || m_ViewController.selectedEntry == null)
                 return;
@@ -696,7 +713,6 @@ namespace UnityEditor.ShortcutManagement
             m_MouseDownStartPos = evt.localMousePosition;
             m_StartedDrag = false;
             var visualElement = ((VisualElement)evt.currentTarget);
-
 
             visualElement.RegisterCallback<MouseMoveEvent>(OnMouseMoveCategoryTable);
             visualElement.RegisterCallback<MouseLeaveEvent>(OnMouseLeaveWhileButtonDownCategoryTable);

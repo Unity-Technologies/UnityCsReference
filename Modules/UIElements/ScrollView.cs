@@ -35,7 +35,7 @@ namespace UnityEngine.UIElements
     // This type is more tricky, it requires the content-viewport and content-container to have a different flex-direction.
     // "flex-grow:1" is to make elements stretch horizontally.
     // "align-self:flex-start" prevent the content-container from shrinking below the content size vertically.
-    // "overflow:scroll" on the content-viewport is to not restrict measured elements horizontally.
+    // "overflow:scroll" on the content-viewport and content-container is to not restrict measured elements in any direction.
     public enum ScrollViewMode
     {
         Vertical,

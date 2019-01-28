@@ -7,6 +7,7 @@ using System;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using UnityEngine.Experimental.Audio;
 
 using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("VideoTesting")]
@@ -77,6 +78,37 @@ namespace UnityEngineInternal.Video
         extern public void SetPlaybackSpeed(float value);
         extern public bool GetLoop();
         extern public void SetLoop(bool value);
+
+        [NativeHeader("Modules/Audio/Public/AudioSource.h")]
+        extern public UInt16 GetAudioTrackCount();
+        extern public UInt16 GetAudioChannelCount(UInt16 trackIdx);
+        extern public UInt32 GetAudioSampleRate(UInt16 trackIdx);
+        extern public void SetAudioTarget(UInt16 trackIdx, bool enabled, bool softwareOutput, AudioSource audioSource);
+        extern private UInt32 GetAudioSampleProviderId(UInt16 trackIndex);
+        public AudioSampleProvider GetAudioSampleProvider(ushort trackIndex)
+        {
+            if (trackIndex >= GetAudioTrackCount())
+                throw new ArgumentOutOfRangeException(
+                    "trackIndex", trackIndex,
+                    "VideoPlayback has " + GetAudioTrackCount() + " tracks.");
+
+            var provider = AudioSampleProvider.Lookup(GetAudioSampleProviderId(trackIndex), null, trackIndex);
+
+            if (provider == null)
+                throw new InvalidOperationException(
+                    "VideoPlayback.GetAudioSampleProvider got null provider.");
+
+            if (provider.owner != null)
+                throw new InvalidOperationException(
+                    "Internal error: VideoPlayback.GetAudioSampleProvider got unexpected non-null provider owner.");
+
+            if (provider.trackIndex != trackIndex)
+                throw new InvalidOperationException(
+                    "Internal error: VideoPlayback.GetAudioSampleProvider got provider for track " +
+                    provider.trackIndex + " instead of " + trackIndex);
+
+            return provider;
+        }
 
         extern static internal bool PlatformSupportsH265();
     }

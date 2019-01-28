@@ -657,9 +657,9 @@ namespace UnityEditor
             get
             {
                 return new Rect(
-                    rootVisualElement.rect.x,
-                    rootVisualElement.rect.y + editorsElement.rect.height,
-                    rootVisualElement.rect.width,
+                    editorsElement.rect.x,
+                    editorsElement.rect.y + editorsElement.rect.height,
+                    editorsElement.rect.width,
                     rootVisualElement.rect.height - editorsElement.rect.height);
             }
         }
@@ -696,7 +696,7 @@ namespace UnityEditor
                 return;
             }
 
-            editorDragging.HandleDragPerformInBottomArea(tracker.activeEditors, lastChild.layout);
+            editorDragging.HandleDragPerformInBottomArea(tracker.activeEditors, DropRectangle, lastChild.layout);
         }
 
         protected bool m_FirstInitialize;
@@ -1692,10 +1692,6 @@ namespace UnityEditor
 
             Object currentTarget = editors[editorIndex].target;
 
-            // Objects that should always be hidden
-            if (currentTarget is ParticleSystemRenderer)
-                return true;
-
             // Hide regular AssetImporters (but not inherited types)
             if (currentTarget != null && currentTarget.GetType() == typeof(AssetImporter))
                 return true;
@@ -1741,19 +1737,6 @@ namespace UnityEditor
             }
 
             EditorGUIUtility.SetIconSize(oldSize);
-        }
-
-        void HandleLastInteractedEditor(Rect componentRect, Editor editor)
-        {
-            if (editor != m_LastInteractedEditor &&
-                Event.current.type == EventType.MouseDown && componentRect.Contains(Event.current.mousePosition))
-            {
-                // Don't use the event because the editor might want to use it.
-                // But don't move the check down below the editor either,
-                // because we want to set the last interacted editor simultaneously.
-                m_LastInteractedEditor = editor;
-                Repaint();
-            }
         }
 
         private void AddComponentButton(Editor[] editors)

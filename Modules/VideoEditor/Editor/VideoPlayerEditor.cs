@@ -98,7 +98,6 @@ namespace UnityEditor
                 "Audio controls not editable when using muliple selection.";
             public readonly string enableDecodingTooltip =
                 "Enable decoding for this track.  Only effective when not playing.  When playing from a URL, track details are shown only while playing back.";
-            public readonly string vulkanSupportHelp = "The Unity VideoPlayer does not support the Vulkan Graphics API.\nPlease go to PlayerSettings and remove 'Vulkan' from the list of Graphics APIs.";
             public static readonly int ObjectFieldControlID = "VideoPlayerAudioSourceObjectFieldHash".GetHashCode();
         }
 
@@ -255,12 +254,6 @@ namespace UnityEditor
             HandleAudio();
 
             serializedObject.ApplyModifiedProperties();
-
-            if (EditorUserBuildSettings.selectedBuildTargetGroup == BuildTargetGroup.Android &&
-                PlayerSettings.GetGraphicsAPIs(BuildTarget.Android).Contains(UnityEngine.Rendering.GraphicsDeviceType.Vulkan))
-            {
-                EditorGUILayout.HelpBox(s_Styles.vulkanSupportHelp, MessageType.Warning);
-            }
         }
 
         private void HandleDataSourceField()

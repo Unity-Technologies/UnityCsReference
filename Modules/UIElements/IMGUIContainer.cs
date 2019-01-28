@@ -26,7 +26,20 @@ namespace UnityEngine.UIElements
         }
 
         // Set this delegate to have your IMGUI code execute inside the container
-        private readonly Action m_OnGUIHandler;
+        private Action m_OnGUIHandler;
+        public Action onGUIHandler
+        {
+            get { return m_OnGUIHandler; }
+            set
+            {
+                if (m_OnGUIHandler != value)
+                {
+                    m_OnGUIHandler = value;
+                    IncrementVersion(VersionChangeType.Layout);
+                    IncrementVersion(VersionChangeType.Repaint);
+                }
+            }
+        }
 
         // If needed, an IMGUIContainer will allocate native state via this utility object to store control IDs
         ObjectGUIState m_ObjectGUIState;
@@ -106,7 +119,7 @@ namespace UnityEngine.UIElements
 
             AddToClassList(ussClassName);
 
-            m_OnGUIHandler = onGUIHandler;
+            this.onGUIHandler = onGUIHandler;
             contextType = ContextType.Editor;
             focusable = true;
 
@@ -176,7 +189,7 @@ namespace UnityEngine.UIElements
 
             // Extra checks are needed here because client code might have changed the IMGUIContainer
             // since we enter HandleIMGUIEvent()
-            if (m_OnGUIHandler == null
+            if (onGUIHandler == null
                 || panel == null)
             {
                 return;
@@ -263,7 +276,7 @@ namespace UnityEngine.UIElements
             {
                 using (new GUIClip.ParentClipScope(parentTransform, clippingRect))
                 {
-                    m_OnGUIHandler();
+                    onGUIHandler();
                 }
             }
             catch (Exception exception)
@@ -454,7 +467,7 @@ namespace UnityEngine.UIElements
 
         internal bool HandleIMGUIEvent(Event e, Matrix4x4 worldTransform, Rect clippingRect)
         {
-            if (e == null || m_OnGUIHandler == null || elementPanel == null || elementPanel.IMGUIEventInterests.WantsEvent(e.type) == false)
+            if (e == null || onGUIHandler == null || elementPanel == null || elementPanel.IMGUIEventInterests.WantsEvent(e.type) == false)
             {
                 return false;
             }

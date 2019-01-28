@@ -60,7 +60,7 @@ namespace UnityEditor
             const int statusWheelWidth = 24;
             const int progressBarStatusWheelSpacing = 3;
             const int progressBarWidth = 185;
-            const int lightingBakeModeBarWidth = 80;
+            const int lightingBakeModeBarWidth = 140;
             const int barHeight = 19;
 
             ConsoleWindow.LoadIcons();
@@ -177,7 +177,7 @@ namespace UnityEditor
             if (!showBakeMode)
                 return "";
 
-            return "Auto Bake " + (Lightmapping.giWorkflowMode == Lightmapping.GIWorkflowMode.Iterative ? "On" : "Off");
+            return "Auto Generate Lighting " + (Lightmapping.giWorkflowMode == Lightmapping.GIWorkflowMode.Iterative ? "On" : "Off");
         }
     }
 } //namespace

@@ -807,7 +807,7 @@ namespace UnityEditor
         {
             StringBuilder textWithHyperlinks = new StringBuilder();
             var lines = stacktraceText.Split(new string[] {"\n"}, StringSplitOptions.None);
-            for (int i = 0; i < lines[i].Length; ++i)
+            for (int i = 0; i < lines.Length; ++i)
             {
                 string textBeforeFilePath = ") (at ";
                 int filePathIndex = lines[i].IndexOf(textBeforeFilePath, StringComparison.Ordinal);

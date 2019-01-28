@@ -135,13 +135,13 @@ namespace UnityEngine
         // Emission
         [RequiredByNativeCode]
         public void Emit(int count) { Emit_Internal(count); }
-        [NativeName(Name = "SyncJobs()->Emit")]
+        [NativeName("SyncJobs()->Emit")]
         extern private void Emit_Internal(int count);
 
-        [NativeName(Name = "SyncJobs()->EmitParticlesExternal")]
+        [NativeName("SyncJobs()->EmitParticlesExternal")]
         extern public void Emit(EmitParams emitParams, int count);
 
-        [NativeName(Name = "SyncJobs()->EmitParticleExternal")]
+        [NativeName("SyncJobs()->EmitParticleExternal")]
         extern private void EmitOld_Internal(ref ParticleSystem.Particle particle);
 
         // Fire a sub-emitter

@@ -264,18 +264,18 @@ namespace UnityEngine
             public void ResetStartLifetime() { m_StartLifetimeSet = false; }
             public void ResetMeshIndex() { m_MeshIndexSet = false; }
 
-            [NativeName(Name = "particle")] private Particle m_Particle;
-            [NativeName(Name = "positionSet")] private bool m_PositionSet;
-            [NativeName(Name = "velocitySet")] private bool m_VelocitySet;
-            [NativeName(Name = "axisOfRotationSet")] private bool m_AxisOfRotationSet;
-            [NativeName(Name = "rotationSet")] private bool m_RotationSet;
-            [NativeName(Name = "rotationalSpeedSet")] private bool m_AngularVelocitySet;
-            [NativeName(Name = "startSizeSet")] private bool m_StartSizeSet;
-            [NativeName(Name = "startColorSet")] private bool m_StartColorSet;
-            [NativeName(Name = "randomSeedSet")] private bool m_RandomSeedSet;
-            [NativeName(Name = "startLifetimeSet")] private bool m_StartLifetimeSet;
-            [NativeName(Name = "meshIndexSet")] private bool m_MeshIndexSet;
-            [NativeName(Name = "applyShapeToPosition")] private bool m_ApplyShapeToPosition;
+            [NativeName("particle")] private Particle m_Particle;
+            [NativeName("positionSet")] private bool m_PositionSet;
+            [NativeName("velocitySet")] private bool m_VelocitySet;
+            [NativeName("axisOfRotationSet")] private bool m_AxisOfRotationSet;
+            [NativeName("rotationSet")] private bool m_RotationSet;
+            [NativeName("rotationalSpeedSet")] private bool m_AngularVelocitySet;
+            [NativeName("startSizeSet")] private bool m_StartSizeSet;
+            [NativeName("startColorSet")] private bool m_StartColorSet;
+            [NativeName("randomSeedSet")] private bool m_RandomSeedSet;
+            [NativeName("startLifetimeSet")] private bool m_StartLifetimeSet;
+            [NativeName("meshIndexSet")] private bool m_MeshIndexSet;
+            [NativeName("applyShapeToPosition")] private bool m_ApplyShapeToPosition;
         }
     }
 

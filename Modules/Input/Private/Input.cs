@@ -11,8 +11,9 @@ using UnityEngine.Scripting;
 namespace UnityEngineInternal.Input
 {
     using NativeBeforeUpdateCallback = System.Action<NativeInputUpdateType>;
-    using NativeUpdateCallback = System.Action<NativeInputUpdateType, int, IntPtr>;
     using NativeDeviceDiscoveredCallback = System.Action<int, string>;
+
+    public unsafe delegate void NativeUpdateCallback(NativeInputUpdateType updateType, NativeInputEventBuffer* buffer);
 
     // C# doesn't support multi-character literals, so we do it by hand here...
     public enum NativeInputEventType
@@ -24,8 +25,19 @@ namespace UnityEngineInternal.Input
         State = 0x53544154,
         Delta = 0x444C5441,
     }
+    // We pass this as a struct to make it less painful to change the OnUpdate() API if need be.
+    [StructLayout(LayoutKind.Explicit, Size = 20, Pack = 1)]
+    public unsafe struct NativeInputEventBuffer
+    {
+        // NOTE: Keep this as the first field in the struct. This avoids alignment/packing issues
 
-    [StructLayout(LayoutKind.Explicit, Size = 20)]
+        //       on the C++ side due to the compiler wanting to align the 64bit pointer.
+        [FieldOffset(0)] public void* eventBuffer;
+        [FieldOffset(8)] public int eventCount;
+        [FieldOffset(12)] public int sizeInBytes;
+        [FieldOffset(16)] public int capacityInBytes;
+    }
+    [StructLayout(LayoutKind.Explicit, Size = 20, Pack = 1)]
     public struct NativeInputEvent
     {
         [FieldOffset(0)] public NativeInputEventType type;
@@ -55,7 +67,6 @@ namespace UnityEngineInternal.Input
     }
 
 
-    ////REVIEW: have a notification where a device can tell the HLAPI that its configuration has changed? (like e.g. the surface of a pointer has changed dimensions)
     public partial class NativeInputSystem
     {
         public static NativeUpdateCallback onUpdate;
@@ -88,11 +99,21 @@ namespace UnityEngineInternal.Input
         }
 
         [RequiredByNativeCode]
-        internal static void NotifyUpdate(NativeInputUpdateType updateType, int eventCount, IntPtr eventData)
+        internal static unsafe void NotifyUpdate(NativeInputUpdateType updateType, IntPtr eventBuffer)
         {
             NativeUpdateCallback callback = onUpdate;
-            if (callback != null)
-                callback(updateType, eventCount, eventData);
+
+            var eventBufferPtr = (NativeInputEventBuffer*)eventBuffer.ToPointer();
+            if (callback == null)
+            {
+                eventBufferPtr->eventCount = 0;
+
+                eventBufferPtr->sizeInBytes = 0;
+            }
+            else
+            {
+                callback(updateType, eventBufferPtr);
+            }
         }
 
         [RequiredByNativeCode]

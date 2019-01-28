@@ -27,7 +27,7 @@ namespace UnityEditor.ShortcutManagement
             var promptWindow = GetWindow<PromptWindow>(true, title, true);
 
             // TODO: Ideally the window size should be fixed according to its contents
-            promptWindow.minSize = new Vector2(354, 157);
+            promptWindow.minSize = new Vector2(360, 180);
 
             promptWindow.m_HeaderTextElement.text = headerText;
             promptWindow.m_MessageTextElement.text = messageText;
@@ -56,7 +56,6 @@ namespace UnityEditor.ShortcutManagement
             // Load styles
             if (EditorGUIUtility.isProSkin)
                 root.AddToClassList("isProSkin");
-            root.AddStyleSheetPath("StyleSheets/ShortcutManager/Common.uss");
             root.AddStyleSheetPath("StyleSheets/ShortcutManager/PromptWindow.uss");
 
             // Find elements

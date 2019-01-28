@@ -26,12 +26,13 @@ namespace UnityEngine.UIElements
         static CustomStyleProperty<Color> s_SelectionColorProperty = new CustomStyleProperty<Color>("--unity-selection-color");
         static CustomStyleProperty<Color> s_CursorColorProperty = new CustomStyleProperty<Color>("--unity-cursor-color");
 
-        public new class UxmlTraits : BaseField<TValueType>.UxmlTraits
+        public new class UxmlTraits : BaseFieldTraits<string, UxmlStringAttributeDescription>
         {
             UxmlIntAttributeDescription m_MaxLength = new UxmlIntAttributeDescription { name = "max-length", obsoleteNames = new[] { "maxLength" }, defaultValue = kMaxLengthNone };
             UxmlBoolAttributeDescription m_Password = new UxmlBoolAttributeDescription { name = "password" };
-            UxmlStringAttributeDescription m_MaskCharacter = new UxmlStringAttributeDescription { name = "mask-character", obsoleteNames = new[] { "maskCharacter" }, defaultValue = "*" };
+            UxmlStringAttributeDescription m_MaskCharacter = new UxmlStringAttributeDescription { name = "mask-character", obsoleteNames = new[] { "maskCharacter" }, defaultValue = kMaskCharDefault.ToString()};
             UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
+            UxmlBoolAttributeDescription m_IsReadOnly = new UxmlBoolAttributeDescription { name = "readonly" };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
@@ -40,12 +41,13 @@ namespace UnityEngine.UIElements
                 var field = ((TextInputBaseField<TValueType>)ve);
                 field.maxLength = m_MaxLength.GetValueFromBag(bag, cc);
                 field.isPasswordField = m_Password.GetValueFromBag(bag, cc);
+                field.isReadOnly = m_IsReadOnly.GetValueFromBag(bag, cc);
                 string maskCharacter = m_MaskCharacter.GetValueFromBag(bag, cc);
                 if (maskCharacter != null && maskCharacter.Length > 0)
                 {
                     field.maskChar = maskCharacter[0];
                 }
-                ((ITextElement)field).text = m_Text.GetValueFromBag(bag, cc);
+                field.text = m_Text.GetValueFromBag(bag, cc);
             }
         }
 
@@ -53,6 +55,7 @@ namespace UnityEngine.UIElements
         protected TextInputBase textInputBase => m_TextInputBase;
 
         internal const int kMaxLengthNone = -1;
+        internal const char kMaskCharDefault = '*';
 
         public new static readonly string ussClassName = "unity-base-text-field";
         public new static readonly string labelUssClassName = ussClassName + "__label";
@@ -67,6 +70,12 @@ namespace UnityEngine.UIElements
             {
                 m_TextInputBase.text = value;
             }
+        }
+
+        public bool isReadOnly
+        {
+            get { return m_TextInputBase.isReadOnly; }
+            set { m_TextInputBase.isReadOnly = value; }
         }
 
         // Password field (indirectly lossy behaviour when activated via multiline)
@@ -161,8 +170,10 @@ namespace UnityEngine.UIElements
             {
                 KeyDownEvent keyDownEvt = evt as KeyDownEvent;
 
-                if ((keyDownEvt?.keyCode == KeyCode.KeypadEnter) ||
-                    (keyDownEvt?.keyCode == KeyCode.Return))
+                // We must handle the ETX (char 3) or the \n instead of the KeypadEnter or Return because the focus will
+                //     have the drawback of having the second event to be handled by the focused field.
+                if ((keyDownEvt?.character == 3) ||     // KeyCode.KeypadEnter
+                    (keyDownEvt?.character == '\n'))    // KeyCode.Return
                 {
                     visualInput?.Focus();
                 }
@@ -218,6 +229,7 @@ namespace UnityEngine.UIElements
                 get { return editorEngine.selectIndex; }
             }
 
+            public bool isReadOnly { get; set; }
             public int maxLength { get; set; }
             public char maskChar { get; set; }
 
@@ -271,6 +283,7 @@ namespace UnityEngine.UIElements
 
             internal TextInputBase()
             {
+                isReadOnly = false;
                 focusable = true;
 
                 AddToClassList(inputUssClassName);
@@ -416,8 +429,7 @@ namespace UnityEngine.UIElements
                 int cursorIndex = editorEngine.cursorIndex;
                 int selectIndex = editorEngine.selectIndex;
                 Rect localPosition = editorEngine.localPosition;
-                Vector2 scrollOffset = editorEngine.scrollOffset;
-
+                var scrollOffset = editorEngine.scrollOffset;
 
                 float textScaling = TextNative.ComputeTextScaling(worldTransform, GUIUtility.pixelsPerPoint);
 
@@ -428,9 +440,17 @@ namespace UnityEngine.UIElements
 
                 var textNativeSettings = textParams.GetTextNativeSettings(textScaling);
                 float lineHeight = TextNative.ComputeTextHeight(textNativeSettings);
-                float wordWrapWidth = editorEngine.multiline
-                    ? contentRect.width
-                    : 0.0f;
+
+                float wordWrapWidth = 0.0f;
+
+                // Make sure to take into account the word wrap style...
+                if (editorEngine.multiline && (resolvedStyle.whiteSpace == WhiteSpace.Normal))
+                {
+                    wordWrapWidth = contentRect.width;
+                    // Since the wrapping is enabled, there is no need to offset the text... It will always fit the space on screen !
+                    scrollOffset = Vector2.zero;
+                }
+
                 Input.compositionCursorPos = editorEngine.graphicalCursorPos - scrollOffset +
                     new Vector2(localPosition.x, localPosition.y + lineHeight);
 
@@ -480,14 +500,14 @@ namespace UnityEngine.UIElements
                         if (inbetweenHeight > 0f)
                         {
                             // Draw all lines in-between
-                            painterParams.rect = new Rect(contentRect.x, minPos.y + lineHeight, wordWrapWidth, inbetweenHeight);
+                            painterParams.rect = new Rect(contentRect.xMin, minPos.y + lineHeight, contentRect.width, inbetweenHeight);
                             painter.DrawRect(painterParams);
                         }
 
                         // Draw last line if not empty
                         if (maxPos.x != contentRect.x)
                         {
-                            painterParams.rect = new Rect(contentRect.x, maxPos.y, maxPos.x, lineHeight);
+                            painterParams.rect = new Rect(contentRect.xMin, maxPos.y, maxPos.x, lineHeight);
                             painter.DrawRect(painterParams);
                         }
                     }
@@ -499,11 +519,12 @@ namespace UnityEngine.UIElements
                     textParams = TextStylePainterParameters.GetDefault(this, text);
                     textParams.rect = new Rect(contentRect.x - scrollOffset.x, contentRect.y - scrollOffset.y, contentRect.width + scrollOffset.x, contentRect.height + scrollOffset.y);
                     textParams.text = editorEngine.text;
+
                     painter.DrawText(textParams);
                 }
 
                 // Draw the cursor
-                if (!isDragging)
+                if (!isReadOnly && !isDragging)
                 {
                     if (cursorIndex == selectionEndIndex && computedStyle.unityFont.value != null)
                     {
@@ -549,7 +570,8 @@ namespace UnityEngine.UIElements
 
             internal virtual bool AcceptCharacter(char c)
             {
-                return true;
+                // when readonly, we do not accept any character
+                return !isReadOnly;
             }
 
             protected virtual void BuildContextualMenu(ContextualMenuPopulateEvent evt)

@@ -1637,6 +1637,9 @@ namespace UnityEditor
             if (!m_Camera.gameObject.activeInHierarchy)
                 return;
 
+            bool oldAsync = ShaderUtil.allowAsyncCompilation;
+            ShaderUtil.allowAsyncCompilation = true;
+
             DrawGridParameters gridParam = grid.PrepareGridRender(camera, pivot, m_Rotation.target, size, m_Ortho.target, drawGlobalGrid);
 
             Event evt = Event.current;
@@ -1668,6 +1671,7 @@ namespace UnityEditor
                 Handles.DrawCameraStep1(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode, gridParam, drawGizmos);
                 DrawRenderModeOverlay(groupSpaceCameraRect);
             }
+            ShaderUtil.allowAsyncCompilation = oldAsync;
         }
 
         void RenderFilteredScene(Rect groupSpaceCameraRect)

@@ -426,7 +426,7 @@ namespace UnityEditor.Scripting.Compilers
                 ).ToArray();
         }
 
-        protected bool CompilationHadFailure()
+        internal bool CompilationHadFailure()
         {
             return (process.ExitCode != 0);
         }

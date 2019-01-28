@@ -315,12 +315,12 @@ namespace UnityEditor
                         {
                             GUIPopup(s_Texts.space, m_RenderAlignment, s_Texts.spaces);
                         }
-
-                        if (renderMode == RenderMode.Billboard)
-                            GUIVector3Field(s_Texts.flip, m_Flip);
-                        else
-                            GUIVector3Field(s_Texts.flipMeshes, m_Flip);
                     }
+
+                    if (renderMode == RenderMode.Mesh)
+                        GUIVector3Field(s_Texts.flipMeshes, m_Flip);
+                    else
+                        GUIVector3Field(s_Texts.flip, m_Flip);
 
                     if (renderMode == RenderMode.Billboard)
                         GUIToggle(s_Texts.allowRoll, m_AllowRoll);

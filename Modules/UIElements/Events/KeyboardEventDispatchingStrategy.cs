@@ -21,8 +21,8 @@ namespace UnityEngine.UIElements
 
                     if (imguiContainer != null)
                     {
-                        // THINK ABOUT THIS PF: shoudln't we allow for the trickleDown dispatch phase?
-                        if (imguiContainer != evt.skipElement && imguiContainer.HandleIMGUIEvent(evt.imguiEvent))
+                        // THINK ABOUT THIS PF: shouldn't we allow for the trickleDown dispatch phase?
+                        if (!evt.Skip(imguiContainer) && imguiContainer.HandleIMGUIEvent(evt.imguiEvent))
                         {
                             evt.StopPropagation();
                             evt.PreventDefault();

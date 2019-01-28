@@ -11,6 +11,8 @@ namespace UnityEditor.AnimatedValues
     public abstract class BaseAnimValue<T>
     {
         T m_Start;
+
+        [SerializeField]
         T m_Target;
 
         double m_LastTime;

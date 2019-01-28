@@ -69,9 +69,6 @@ namespace UnityEngine.UIElements
                 captureBehavior = EventBehavior.None;
             }
 
-            // FIXME ugly
-            evt.skipElement = null;
-
             if ((captureBehavior & EventBehavior.IsCapturable) == EventBehavior.IsCapturable)
             {
                 BaseVisualElementPanel basePanel = panel as BaseVisualElementPanel;
@@ -103,7 +100,7 @@ namespace UnityEngine.UIElements
                 evt.dispatch = false;
 
                 // Do not call HandleEvent again for this element.
-                evt.skipElement = originalCaptureElement;
+                evt.skipElements.Add(originalCaptureElement);
 
                 evt.stopDispatch = (captureBehavior & EventBehavior.IsSentExclusivelyToCapturingElement) == EventBehavior.IsSentExclusivelyToCapturingElement;
                 evt.propagateToIMGUI = false;

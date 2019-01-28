@@ -23,6 +23,13 @@ namespace UnityEditor.Compilation
         DevelopmentBuild = 2,
     };
 
+    [Flags]
+    public enum ReferencesOptions
+    {
+        None = 0,
+        UseEngineModules = 1
+    }
+
     public class AssemblyBuilder
     {
         public event Action<string> buildStarted;
@@ -34,6 +41,7 @@ namespace UnityEditor.Compilation
         public string[] additionalReferences { get; set; }
         public string[] excludeReferences { get; set; }
         public ScriptCompilerOptions compilerOptions { get; set; }
+        public ReferencesOptions referencesOptions { get; set; }
 
         public AssemblyBuilderFlags flags { get; set; }
         public BuildTargetGroup buildTargetGroup { get; set; }
@@ -71,6 +79,7 @@ namespace UnityEditor.Compilation
 
             compilerOptions = new ScriptCompilerOptions();
             flags = AssemblyBuilderFlags.None;
+            referencesOptions = ReferencesOptions.None;
             buildTargetGroup = EditorUserBuildSettings.activeBuildTargetGroup;
             buildTarget = EditorUserBuildSettings.activeBuildTarget;
         }

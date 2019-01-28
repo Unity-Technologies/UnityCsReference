@@ -47,7 +47,6 @@ namespace UnityEditor
         private const float k_WarningMessageHeight = 40f;
         private const float k_ModuleListWidth = 90f;
 
-        public static SpriteEditorWindow s_Instance;
         public bool m_ResetOnNextRepaint;
 
         private List<SpriteRect> m_RectsCache;
@@ -236,7 +235,6 @@ namespace UnityEditor
         {
             minSize = new Vector2(360, 200);
             titleContent = SpriteEditorWindowStyles.spriteEditorWindowTitle;
-            s_Instance = this;
 
             m_UndoSystem.RegisterUndoCallback(UndoRedoPerformed);
             EditorApplication.modifierKeysChanged += ModifierKeysChanged;
@@ -318,7 +316,6 @@ namespace UnityEditor
             EditorApplication.modifierKeysChanged -= ModifierKeysChanged;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             EditorApplication.quitting -= OnEditorApplicationQuit;
-            s_Instance = null;
 
             if (m_OutlineTexture != null)
             {
@@ -706,9 +703,6 @@ namespace UnityEditor
 
         internal void SetupModule(int newModuleIndex)
         {
-            if (s_Instance == null)
-                return;
-
             m_ModuleViewElement.Clear();
             if (m_RegisteredModules.Count > newModuleIndex)
             {
@@ -975,10 +969,12 @@ namespace UnityEditor
 
         static internal void OnTextureReimport(string path)
         {
-            if (s_Instance != null && s_Instance.m_SelectedAssetPath == path)
+            UnityEngine.Object[] wins = Resources.FindObjectsOfTypeAll(typeof(SpriteEditorWindow));
+            SpriteEditorWindow win = wins.Length > 0 ? (EditorWindow)(wins[0]) as SpriteEditorWindow : null;
+            if (win != null && win.m_SelectedAssetPath == path)
             {
-                s_Instance.m_ResetOnNextRepaint = true;
-                s_Instance.Repaint();
+                win.m_ResetOnNextRepaint = true;
+                win.Repaint();
             }
         }
 

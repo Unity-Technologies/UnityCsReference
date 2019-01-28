@@ -4312,6 +4312,8 @@ namespace UnityEditor
             return DoColorField(PrefixLabel(position, id, label), id, value, showEyedropper, showAlpha, hdr);
         }
 
+        const float kEyedropperSize = 20f;
+
         private static Color DoColorField(Rect position, int id, Color value, bool showEyedropper, bool showAlpha, bool hdr)
         {
             Event evt = Event.current;
@@ -4319,13 +4321,14 @@ namespace UnityEditor
             Color origColor = value;
             value = showMixedValue ? Color.white : value;
             bool hovered = position.Contains(evt.mousePosition);
+            bool hoveredEyedropper = new Rect(position.x + position.width - kEyedropperSize, position.y, kEyedropperSize, position.height).Contains(evt.mousePosition);
 
             switch (evt.GetTypeForControl(id))
             {
                 case EventType.MouseDown:
                     if (showEyedropper)
                     {
-                        position.width -= 20;
+                        hovered ^= hoveredEyedropper;
                     }
 
                     if (hovered)
@@ -4374,8 +4377,7 @@ namespace UnityEditor
 
                     if (showEyedropper)
                     {
-                        position.width += 20;
-                        if (hovered)
+                        if (hoveredEyedropper)
                         {
                             GUIUtility.keyboardControl = id;
                             EyeDropper.Start(GUIView.current);

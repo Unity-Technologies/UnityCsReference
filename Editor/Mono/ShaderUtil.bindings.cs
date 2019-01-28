@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 using ShaderPlatform = UnityEngine.Rendering.GraphicsDeviceType;
 using TextureDimension = UnityEngine.Rendering.TextureDimension;
@@ -92,6 +93,7 @@ namespace UnityEditor
     [NativeHeader("Editor/Mono/ShaderUtil.bindings.h")]
     [NativeHeader("Editor/Src/ShaderData.h")]
     [NativeHeader("Editor/Src/ShaderMenu.h")]
+    [NativeHeader("Runtime/Shaders/GpuPrograms/GpuProgramManager.h")]
     public partial class ShaderUtil
     {
         public enum ShaderPropertyType
@@ -263,6 +265,13 @@ namespace UnityEditor
         [FreeFunction] extern internal static int GetShaderActiveSubshaderIndex([NotNull] Shader shader);
         [FreeFunction] extern internal static int GetShaderSubshaderCount([NotNull] Shader shader);
         [FreeFunction] extern internal static int GetShaderTotalPassCount([NotNull] Shader shader, int subShaderIndex);
+
+        extern public static bool anythingCompiling { get; }
+        extern public static bool allowAsyncCompilation { get; set; }
+        extern public static void SetAsyncCompilation([NotNull] CommandBuffer cmd, bool allow);
+        extern public static void RestoreAsyncCompilation([NotNull] CommandBuffer cmd);
+        extern public static bool IsPassCompiled([NotNull] Material material, int pass);
+        extern public static void CompilePass([NotNull] Material material, int pass, bool forceSync = false);
     }
 }
 
