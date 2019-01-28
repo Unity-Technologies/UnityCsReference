@@ -336,6 +336,9 @@ namespace UnityEditor
             mat.SetColor("_Color", color);
             Handles.color = color;
 
+            // Previous camera may still be active when calling DrawMeshNow.
+            Camera.SetupCurrent(null);
+
             mat.SetPass(0);
             Graphics.DrawMeshNow(mesh, Handles.matrix * transform);
 

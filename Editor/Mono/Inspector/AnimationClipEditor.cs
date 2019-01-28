@@ -209,6 +209,7 @@ namespace UnityEditor
         const int kPosition = 3;
         Vector2[][][] m_QualityCurves = new Vector2[4][][];
         bool m_DirtyQualityCurves = false;
+        bool m_FirstInitialization = true;
 
         private void InitController()
         {
@@ -261,7 +262,12 @@ namespace UnityEditor
                 {
                     m_AvatarPreview.Animator.Play(0, 0, 0);
                     m_AvatarPreview.Animator.Update(0);
-                    m_AvatarPreview.ResetPreviewFocus();
+
+                    if (m_FirstInitialization)
+                    {
+                        m_AvatarPreview.ResetPreviewFocus();
+                        m_FirstInitialization = false;
+                    }
                 }
             }
         }

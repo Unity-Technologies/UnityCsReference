@@ -381,7 +381,8 @@ namespace UnityEditorInternal
 
             Rect dopelinesRect = new Rect(position.xMin, position.yMin, position.width, linePosition.yMax - position.yMin);
 
-            m_PointRenderer.Render();
+            if (Event.current.type == EventType.Repaint)
+                m_PointRenderer.Render();
 
             GUI.color = oldColor;
 

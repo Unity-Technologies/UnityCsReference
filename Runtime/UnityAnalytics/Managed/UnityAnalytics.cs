@@ -8,6 +8,7 @@ using UnityEngine;
 
 
 using UnityEngine.Connect;
+using uei = UnityEngine.Internal;
 
 namespace UnityEngine.Analytics
 {
@@ -39,6 +40,19 @@ namespace UnityEngine.Analytics
             if (s_UnityAnalyticsHandler == null)
                 s_UnityAnalyticsHandler = new UnityAnalyticsHandler();
             return s_UnityAnalyticsHandler;
+        }
+
+        [uei.ExcludeFromDocs]
+        public static bool initializeOnStartup
+        {
+            get
+            {
+                return UnityAnalyticsHandler.initializeOnStartup;
+            }
+            set
+            {
+                UnityAnalyticsHandler.initializeOnStartup = value;
+            }
         }
 
         public static bool limitUserTracking
@@ -80,6 +94,16 @@ namespace UnityEngine.Analytics
                 if (unityAnalyticsHandler != null)
                     unityAnalyticsHandler.enabled = value;
             }
+        }
+
+        [uei.ExcludeFromDocs]
+        public static AnalyticsResult ResumeInitialization()
+        {
+            UnityAnalyticsHandler unityAnalyticsHandler = GetUnityAnalyticsHandler();
+            if (unityAnalyticsHandler == null)
+                return AnalyticsResult.NotInitialized;
+
+            return (AnalyticsResult)unityAnalyticsHandler.ResumeInitialization();
         }
 
         public static AnalyticsResult FlushEvents()
