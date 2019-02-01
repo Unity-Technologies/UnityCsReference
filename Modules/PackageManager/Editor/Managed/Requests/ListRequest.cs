@@ -26,7 +26,9 @@ namespace UnityEditor.PackageManager.Requests
         protected override PackageCollection GetResult()
         {
             var operationStatus = NativeClient.GetListOperationData(Id);
-            var packageList = operationStatus.packageList.Select(p => (PackageInfo)p);
+            var packageList = operationStatus.packageList
+                .Select(p => (PackageInfo)p)
+                .Where(p => p.type != ShimPackageType);
             return new PackageCollection(packageList, operationStatus.error);
         }
     }

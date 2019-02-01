@@ -4605,6 +4605,9 @@
   <Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridPaintPaletteWindow.cs">
     <Link>Modules\TilemapEditor\Editor\Managed\Grid\GridPaintPaletteWindow.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridPaintPaletteWindowPreferences.cs">
+    <Link>Modules\TilemapEditor\Editor\Managed\Grid\GridPaintPaletteWindowPreferences.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridPaintTargetsDropdown.cs">
     <Link>Modules\TilemapEditor\Editor\Managed\Grid\GridPaintTargetsDropdown.cs</Link>
   </Compile>

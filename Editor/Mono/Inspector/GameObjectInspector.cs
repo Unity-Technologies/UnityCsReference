@@ -194,6 +194,12 @@ namespace UnityEditor
             m_PreviewCache = null;
         }
 
+        internal override void OnForceReloadInspector()
+        {
+            base.OnForceReloadInspector();
+            CalculatePrefabStatus();
+        }
+
         void ClearPreviewCache()
         {
             foreach (var texture in m_PreviewCache.Values)
