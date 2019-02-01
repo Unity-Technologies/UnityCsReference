@@ -7,7 +7,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 
-using UnityEngine.Analytics;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -132,13 +131,6 @@ namespace UnityEngine.Experimental
     // Handle subsystem descriptor lifetime (on managed side)
     internal static class Internal_SubsystemDescriptors
     {
-        private static bool analyticsEventRegistered = false;
-        [Serializable]
-        private struct SubsystemInfo
-        {
-            internal string id;
-        };
-
         internal static List<ISubsystemDescriptorImpl> s_IntegratedSubsystemDescriptors = new List<ISubsystemDescriptorImpl>();
         internal static List<ISubsystemDescriptor> s_StandaloneSubsystemDescriptors = new List<ISubsystemDescriptor>();
 
@@ -151,16 +143,7 @@ namespace UnityEngine.Experimental
                     return false;
             }
             s_StandaloneSubsystemDescriptors.Add(descriptor);
-
-            if (!analyticsEventRegistered)
-            {
-                Analytics.Analytics.RegisterEvent("xrSubsystemInfo", 100, 100, "", "unity.");
-                analyticsEventRegistered = true;
-            }
-
-            SubsystemInfo analyticsInfo = new SubsystemInfo();
-            analyticsInfo.id = descriptor.id;
-            Analytics.Analytics.SendEvent("xrSubsystemInfo", analyticsInfo, 1, String.Empty);
+            SubsystemManager.ReportSingleSubsystemAnalytics(descriptor.id);
             return true;
         }
 
@@ -196,6 +179,9 @@ namespace UnityEngine.Experimental
         {
             StaticConstructScriptingClassMap();
         }
+
+        [NativeConditional("ENABLE_XR")]
+        internal static extern void ReportSingleSubsystemAnalytics(string id);
 
         public static void GetSubsystemDescriptors<T>(List<T> descriptors)
             where T : ISubsystemDescriptor

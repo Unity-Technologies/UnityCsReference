@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -12,6 +13,100 @@ namespace UnityEditor
 {
     internal class GridPaintingState : ScriptableSingleton<GridPaintingState>, IToolModeOwner
     {
+        internal class GridPaintTargetsSorting
+        {
+            public static readonly string targetSortingModeEditorPref = "TilePalette.ActiveTargetsSortingMode";
+            public static readonly string targetSortingModeLookup = "Tile Palette Active Targets Sorting Mode";
+
+            public static readonly string defaultSortingMode = L10n.Tr("None");
+            public static readonly string noValidUserSortingComparer = L10n.Tr("There is no valid user comparer method for sorting Tile Palette Active Targets.");
+            public static readonly GUIContent targetSortingModeLabel = EditorGUIUtility.TrTextContent(targetSortingModeLookup, "Controls the sorting of the Active Targets in the Tile Palette");
+
+            private static string[] s_SortingNames;
+            private static int s_SortingSelectionIndex;
+
+            private static bool CompareSortingMethodName(string[] sortingMethodNames, MethodInfo sortingMethod)
+            {
+                return sortingMethodNames.Length == 2 && sortingMethodNames[0] == sortingMethod.ReflectedType.Name && sortingMethodNames[1] == sortingMethod.Name;
+            }
+
+            private static bool CompareSortingTypeName(string sortingTypeFullName, Type sortingType)
+            {
+                return sortingTypeFullName == sortingType.FullName;
+            }
+
+            internal static void PreferencesGUI()
+            {
+                using (new SettingsWindow.GUIScope())
+                {
+                    if (s_SortingNames == null)
+                    {
+                        var sortingTypeFullName = EditorPrefs.GetString(targetSortingModeEditorPref, defaultSortingMode);
+                        var sortingMethodNames = sortingTypeFullName.Split('.');
+                        s_SortingNames = new string[1 + GridPaintSortingAttribute.sortingMethods.Count + GridPaintSortingAttribute.sortingTypes.Count];
+                        int count = 0;
+                        s_SortingNames[count++] = defaultSortingMode;
+                        foreach (var sortingMethod in GridPaintSortingAttribute.sortingMethods)
+                        {
+                            if (CompareSortingMethodName(sortingMethodNames, sortingMethod))
+                                s_SortingSelectionIndex = count;
+                            s_SortingNames[count++] = sortingMethod.Name;
+                        }
+                        foreach (var sortingType in GridPaintSortingAttribute.sortingTypes)
+                        {
+                            if (CompareSortingTypeName(sortingTypeFullName, sortingType))
+                                s_SortingSelectionIndex = count;
+                            s_SortingNames[count++] = sortingType.Name;
+                        }
+                    }
+
+                    EditorGUI.BeginChangeCheck();
+                    var val = EditorGUILayout.Popup(targetSortingModeLabel, s_SortingSelectionIndex, s_SortingNames);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        s_SortingSelectionIndex = val;
+                        var sortingTypeFullName = defaultSortingMode;
+                        if (s_SortingSelectionIndex > 0 && s_SortingSelectionIndex <= GridPaintSortingAttribute.sortingMethods.Count)
+                        {
+                            var sortingMethod = GridPaintSortingAttribute.sortingMethods[s_SortingSelectionIndex - 1];
+                            sortingTypeFullName = String.Format("{0}.{1}", sortingMethod.ReflectedType.Name, sortingMethod.Name);
+                        }
+                        else
+                        {
+                            var idx = s_SortingSelectionIndex - GridPaintSortingAttribute.sortingMethods.Count - 1;
+                            if (idx >= 0 && idx < GridPaintSortingAttribute.sortingTypes.Count)
+                            {
+                                var sortingType = GridPaintSortingAttribute.sortingTypes[idx];
+                                sortingTypeFullName = sortingType.FullName;
+                            }
+                        }
+                        EditorPrefs.SetString(targetSortingModeEditorPref, sortingTypeFullName);
+                        GridPaintingState.FlushCache();
+                    }
+                }
+            }
+
+            public static IComparer<GameObject> GetTargetComparer()
+            {
+                var sortingTypeFullName = EditorPrefs.GetString(targetSortingModeEditorPref, defaultSortingMode);
+                if (!sortingTypeFullName.Equals(defaultSortingMode))
+                {
+                    var sortingMethodNames = sortingTypeFullName.Split('.');
+                    foreach (var sortingMethod in GridPaintSortingAttribute.sortingMethods)
+                    {
+                        if (CompareSortingMethodName(sortingMethodNames, sortingMethod))
+                            return sortingMethod.Invoke(null, null) as IComparer<GameObject>;
+                    }
+                    foreach (var sortingType in GridPaintSortingAttribute.sortingTypes)
+                    {
+                        if (CompareSortingTypeName(sortingTypeFullName, sortingType))
+                            return Activator.CreateInstance(sortingType) as IComparer<GameObject>;
+                    }
+                }
+                return null;
+            }
+        }
+
         [SerializeField] private GameObject m_ScenePaintTarget; // Which GameObject in scene is considered as painting target
         [SerializeField] private GridBrushBase m_Brush; // Which brush will handle painting callbacks
         [SerializeField] private PaintableGrid m_ActiveGrid; // Grid that has painting focus (can be palette, too)
@@ -43,7 +138,7 @@ namespace UnityEditor
 
         private void OnSelectionChange()
         {
-            if (hasInterestedPainters && validTargets == null && ValidatePaintTarget(Selection.activeGameObject))
+            if (hasInterestedPainters && ValidatePaintTarget(Selection.activeGameObject))
             {
                 scenePaintTarget = Selection.activeGameObject;
             }
@@ -54,8 +149,18 @@ namespace UnityEditor
             if (hasInterestedPainters)
             {
                 m_FlushPaintTargetCache = true;
-                if (validTargets == null || !validTargets.Contains(scenePaintTarget))
-                    AutoSelectPaintTarget();
+                if (validTargets == null || validTargets.Length == 0 || !validTargets.Contains(scenePaintTarget))
+                {
+                    // case 1102618: Try to use current Selection as scene paint target if possible
+                    if (Selection.activeGameObject != null && hasInterestedPainters && ValidatePaintTarget(Selection.activeGameObject))
+                    {
+                        scenePaintTarget = Selection.activeGameObject;
+                    }
+                    else
+                    {
+                        AutoSelectPaintTarget();
+                    }
+                }
             }
         }
 
@@ -68,6 +173,13 @@ namespace UnityEditor
                     m_CachedPaintTargets = activeBrushEditor.validTargets;
                 if (m_CachedPaintTargets == null || m_CachedPaintTargets.Length == 0)
                     scenePaintTarget = null;
+                else
+                {
+                    var comparer = GridPaintTargetsSorting.GetTargetComparer();
+                    if (comparer != null)
+                        Array.Sort(m_CachedPaintTargets, comparer);
+                }
+
                 m_FlushPaintTargetCache = false;
             }
             return m_CachedPaintTargets;
@@ -178,7 +290,7 @@ namespace UnityEditor
             if (candidate == null || candidate.GetComponentInParent<Grid>() == null && candidate.GetComponent<Grid>() == null)
                 return false;
 
-            if (validTargets != null && !validTargets.Contains(candidate))
+            if (validTargets != null && validTargets.Length > 0 && !validTargets.Contains(candidate))
                 return false;
 
             return true;
@@ -230,6 +342,72 @@ namespace UnityEditor
         public bool ModeSurvivesSelectionChange(int toolMode)
         {
             return true;
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
+    public class GridPaintSortingAttribute : Attribute
+    {
+        private static List<MethodInfo> m_SortingMethods;
+        private static List<Type> m_SortingTypes;
+
+        internal static List<MethodInfo> sortingMethods
+        {
+            get
+            {
+                if (m_SortingMethods == null)
+                    GetUserSortingComparers();
+                return m_SortingMethods;
+            }
+        }
+
+        internal static List<Type> sortingTypes
+        {
+            get
+            {
+                if (m_SortingTypes == null)
+                    GetUserSortingComparers();
+                return m_SortingTypes;
+            }
+        }
+
+        private static void GetUserSortingComparers()
+        {
+            m_SortingMethods = new List<MethodInfo>();
+            foreach (var sortingMethod in EditorAssemblies.GetAllMethodsWithAttribute<GridPaintSortingAttribute>())
+            {
+                if (!sortingMethod.ReturnType.IsAssignableFrom(typeof(IComparer<GameObject>)))
+                    continue;
+                if (sortingMethod.GetGenericArguments().Length > 0)
+                    continue;
+                m_SortingMethods.Add(sortingMethod);
+            }
+
+            m_SortingTypes = new List<Type>();
+            foreach (var sortingType in EditorAssemblies.GetAllTypesWithAttribute<GridPaintSortingAttribute>())
+            {
+                if (sortingType.IsAbstract)
+                    continue;
+                m_SortingTypes.Add(sortingType);
+            }
+        }
+
+        [GridPaintSorting]
+        internal class Alphabetical : IComparer<GameObject>
+        {
+            public int Compare(GameObject go1, GameObject go2)
+            {
+                return String.Compare(go1.name, go2.name);
+            }
+        }
+
+        [GridPaintSorting]
+        internal class ReverseAlphabetical : IComparer<GameObject>
+        {
+            public int Compare(GameObject go1, GameObject go2)
+            {
+                return -String.Compare(go1.name, go2.name);
+            }
         }
     }
 }

@@ -319,23 +319,10 @@ namespace UnityEditor
             if (sprites.Count == 1)
                 return Vector2Int.FloorToInt(sprites[0].rect.size);
 
-            Vector2 min1 = GetMin(sprites, new Vector2(float.MinValue, float.MinValue));
-            Vector2 min2 = GetMin(sprites, min1);
-
-            Vector2Int result = Vector2Int.FloorToInt(min2 - min1);
-            result.x = Math.Max(Mathf.FloorToInt(sprites[0].rect.width), result.x);
-            result.y = Math.Max(Mathf.FloorToInt(sprites[0].rect.height), result.y);
-
-            return result;
-        }
-
-        static Vector2 GetMin(List<Sprite> sprites, Vector2 biggerThan)
-        {
-            var xSprites = sprites.FindAll(sprite => sprite.rect.xMin > biggerThan.x);
-            var ySprites = sprites.FindAll(sprite => sprite.texture.height - sprite.rect.yMax > biggerThan.y);
-            var xMin = xSprites.Count > 0 ? xSprites.Min(s => s.rect.xMin) : 0f;
-            var yMin = ySprites.Count > 0 ? ySprites.Min(s => s.texture.height - s.rect.yMax) : 0f;
-            return new Vector2(xMin, yMin);
+            return new Vector2Int(
+                Mathf.FloorToInt(sprites.Min(s => s.rect.width)),
+                Mathf.FloorToInt(sprites.Min(s => s.rect.height))
+            );
         }
 
         // Turn texture pixel position into integer grid position based on cell size

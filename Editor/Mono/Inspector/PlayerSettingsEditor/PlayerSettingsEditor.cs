@@ -1951,28 +1951,19 @@ namespace UnityEditor
 
                 // Scripting back-end
                 IScriptingImplementations scripting = ModuleManager.GetScriptingImplementations(targetGroup);
-                bool targetGroupSupportsIl2Cpp = false;
-                bool currentBackendIsIl2Cpp = false;
+                bool allowCompilerConfigurationSelection;
 
                 if (scripting == null)
                 {
+                    allowCompilerConfigurationSelection = true; // All platforms that support only one scripting backend are IL2CPP platforms
                     BuildDisabledEnumPopup(SettingsContent.scriptingDefault, SettingsContent.scriptingBackend);
                 }
                 else
                 {
                     var backends = scripting.Enabled();
 
-                    foreach (var backend in backends)
-                    {
-                        if (backend == ScriptingImplementation.IL2CPP)
-                        {
-                            targetGroupSupportsIl2Cpp = true;
-                            break;
-                        }
-                    }
-
                     ScriptingImplementation currBackend = PlayerSettings.GetScriptingBackend(targetGroup);
-                    currentBackendIsIl2Cpp = currBackend == ScriptingImplementation.IL2CPP;
+                    allowCompilerConfigurationSelection = currBackend == ScriptingImplementation.IL2CPP && scripting.AllowIL2CPPCompilerConfigurationSelection();
                     ScriptingImplementation newBackend;
                     var mono2xDeprecated = targetGroup == BuildTargetGroup.iOS;
 
@@ -2014,19 +2005,16 @@ namespace UnityEditor
                 if (currentCompatibilityLevel != newCompatibilityLevel)
                     PlayerSettings.SetApiCompatibilityLevel(targetGroup, newCompatibilityLevel);
 
-                if (targetGroupSupportsIl2Cpp)
+                using (new EditorGUI.DisabledScope(!allowCompilerConfigurationSelection))
                 {
-                    using (new EditorGUI.DisabledScope(!currentBackendIsIl2Cpp || !scripting.AllowIL2CPPCompilerConfigurationSelection()))
-                    {
-                        var currentConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(targetGroup);
-                        var configurations = GetIl2CppCompilerConfigurations();
-                        var configurationNames = GetIl2CppCompilerConfigurationNames();
+                    var currentConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(targetGroup);
+                    var configurations = GetIl2CppCompilerConfigurations();
+                    var configurationNames = GetIl2CppCompilerConfigurationNames();
 
-                        var newConfiguration = BuildEnumPopup(SettingsContent.il2cppCompilerConfiguration, currentConfiguration, configurations, configurationNames);
+                    var newConfiguration = BuildEnumPopup(SettingsContent.il2cppCompilerConfiguration, currentConfiguration, configurations, configurationNames);
 
-                        if (currentConfiguration != newConfiguration)
-                            PlayerSettings.SetIl2CppCompilerConfiguration(targetGroup, newConfiguration);
-                    }
+                    if (currentConfiguration != newConfiguration)
+                        PlayerSettings.SetIl2CppCompilerConfiguration(targetGroup, newConfiguration);
                 }
             }
 

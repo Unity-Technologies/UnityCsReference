@@ -12,6 +12,8 @@ namespace UnityEditor.PackageManager.Requests
     /// </summary>
     public abstract class Request : ISerializationCallbackReceiver
     {
+        internal const string ShimPackageType = "shim";
+
         /// <summary>
         /// Note: This property is there to workaround the serializer
         /// that does not know how to handle null values
