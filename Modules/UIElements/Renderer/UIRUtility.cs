@@ -3,7 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using UnityEngine.Rendering;
+using UnityEngine.Assertions;
 using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
@@ -211,5 +213,23 @@ namespace UnityEngine.UIElements
         }
 
         public static readonly Rect s_InfiniteRect = new Rect(-1000000, -1000000, 2000000, 2000000);
+
+        // to be moved to UIR Utility
+        public static bool GetOpenGLCoreVersion(out int major, out int minor)
+        {
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLCore)
+            {
+                var version = SystemInfo.graphicsDeviceVersion;
+                var rx = new Regex(@"OpenGL( *)[0-9].[0-9]");
+                var matches = rx.Matches(version);
+                Assert.IsTrue(matches.Count == 1);
+                var match = matches[0].Value;
+                major = match[match.Length - 3] - '0';
+                minor = match[match.Length - 1] - '0';
+                return true;
+            }
+            major = minor = -1;
+            return false;
+        }
     }
 }

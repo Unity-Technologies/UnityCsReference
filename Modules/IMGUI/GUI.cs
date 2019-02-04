@@ -1112,21 +1112,14 @@ namespace UnityEngine
                 else
                     retval[i] = currentStyle.margin.Add(new Rect(xPos, yPos, w, elemHeight));
 
-                // Correct way to get the rounded width:
-                retval[i].width = Mathf.Round(retval[i].xMax) - Mathf.Round(retval[i].x);
-                // Round the position *after* the width has been rounded:
-                retval[i].x = Mathf.Round(retval[i].x);
-
-                // Don't round xPos here. If rounded, the right edge of this rect may
-                // not line up correctly with the left edge of the next,
-                // plus it can cause cumulative rounding errors.
-                // (See case 366967)
+                //we round the values to the dpi-aware pixel grid
+                retval[i] = GUIUtility.AlignRectToDevice(retval[i]);
 
                 GUIStyle nextStyle = midStyle;
                 if (i == count - 2 || i == xCount - 2)
                     nextStyle = lastStyle;
 
-                xPos += w + Mathf.Max(currentStyle.margin.right, nextStyle.margin.left);
+                xPos = retval[i].xMax + Mathf.Max(currentStyle.margin.right, nextStyle.margin.left);
 
                 x++;
                 if (x >= xCount)

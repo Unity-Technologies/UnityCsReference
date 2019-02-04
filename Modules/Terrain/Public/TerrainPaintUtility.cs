@@ -126,9 +126,9 @@ namespace UnityEngine.Experimental.TerrainAPI
             }
         }
 
-        static PaintContext InitializePaintContext(Terrain terrain, Texture target, RenderTextureFormat pcFormat, Rect boundsInTerrainSpace, int extraBorderPixels = 0)
+        internal static PaintContext InitializePaintContext(Terrain terrain, int targetWidth, int targetHeight, RenderTextureFormat pcFormat, Rect boundsInTerrainSpace, int extraBorderPixels = 0)
         {
-            PaintContext ctx = PaintContext.CreateFromBounds(terrain, boundsInTerrainSpace, target.width, target.height, extraBorderPixels);
+            PaintContext ctx = PaintContext.CreateFromBounds(terrain, boundsInTerrainSpace, targetWidth, targetHeight, extraBorderPixels);
             ctx.CreateRenderTargets(pcFormat);
             return ctx;
         }
@@ -140,8 +140,8 @@ namespace UnityEngine.Experimental.TerrainAPI
 
         public static PaintContext BeginPaintHeightmap(Terrain terrain, Rect boundsInTerrainSpace, int extraBorderPixels = 0)
         {
-            RenderTexture rt = terrain.terrainData.heightmapTexture;
-            PaintContext ctx = InitializePaintContext(terrain, rt, rt.format, boundsInTerrainSpace, extraBorderPixels);
+            int heightmapResolution = terrain.terrainData.heightmapResolution;
+            PaintContext ctx = InitializePaintContext(terrain, heightmapResolution, heightmapResolution, Terrain.heightmapRenderTextureFormat, boundsInTerrainSpace, extraBorderPixels);
             ctx.GatherHeightmap();
             return ctx;
         }
@@ -154,8 +154,8 @@ namespace UnityEngine.Experimental.TerrainAPI
 
         public static PaintContext CollectNormals(Terrain terrain, Rect boundsInTerrainSpace, int extraBorderPixels = 0)
         {
-            RenderTexture rt = terrain.normalmapTexture;
-            PaintContext ctx = InitializePaintContext(terrain, rt, rt.format, boundsInTerrainSpace, extraBorderPixels);
+            int heightmapResolution = terrain.terrainData.heightmapResolution;
+            PaintContext ctx = InitializePaintContext(terrain, heightmapResolution, heightmapResolution, Terrain.normalmapRenderTextureFormat, boundsInTerrainSpace, extraBorderPixels);
             ctx.GatherNormals();
             return ctx;
         }
@@ -165,14 +165,9 @@ namespace UnityEngine.Experimental.TerrainAPI
             if (inputLayer == null)
                 return null;
 
-            int terrainLayerIndex = FindTerrainLayerIndex(terrain, inputLayer);
-            if (terrainLayerIndex == -1)
-                terrainLayerIndex = AddTerrainLayer(terrain, inputLayer);
-
-            Texture2D inputTexture = GetTerrainAlphaMapChecked(terrain, terrainLayerIndex >> 2);
-
-            PaintContext ctx = InitializePaintContext(terrain, inputTexture, RenderTextureFormat.R8, boundsInTerrainSpace, extraBorderPixels);
-            ctx.GatherAlphamap(inputLayer);
+            int resolution = terrain.terrainData.alphamapResolution;
+            PaintContext ctx = InitializePaintContext(terrain, resolution, resolution, RenderTextureFormat.R8, boundsInTerrainSpace, extraBorderPixels);
+            ctx.GatherAlphamap(inputLayer, true);
             return ctx;
         }
 
@@ -185,18 +180,18 @@ namespace UnityEngine.Experimental.TerrainAPI
         // materials
         public static Material GetBlitMaterial()
         {
-            if (!m_BlitMaterial)
-                m_BlitMaterial = new Material(Shader.Find("Hidden/BlitCopy"));
+            if (!s_BlitMaterial)
+                s_BlitMaterial = new Material(Shader.Find("Hidden/BlitCopy"));
 
-            return m_BlitMaterial;
+            return s_BlitMaterial;
         }
 
         public static Material GetCopyTerrainLayerMaterial()
         {
-            if (!m_CopyTerrainLayerMaterial)
-                m_CopyTerrainLayerMaterial = new Material(Shader.Find("Hidden/TerrainEngine/TerrainLayerUtils"));
+            if (!s_CopyTerrainLayerMaterial)
+                s_CopyTerrainLayerMaterial = new Material(Shader.Find("Hidden/TerrainEngine/TerrainLayerUtils"));
 
-            return m_CopyTerrainLayerMaterial;
+            return s_CopyTerrainLayerMaterial;
         }
 
         internal static void DrawQuad(RectInt destinationPixels, RectInt sourcePixels, Texture sourceTexture)
@@ -240,14 +235,15 @@ namespace UnityEngine.Experimental.TerrainAPI
             if (mapIndex >= terrain.terrainData.alphamapTextureCount)
                 throw new System.ArgumentException("Trying to access out-of-bounds terrain alphamap information.");
 
-            return terrain.terrainData.alphamapTextures[mapIndex];
+            return terrain.terrainData.GetAlphamapTexture(mapIndex);
         }
 
         static public int FindTerrainLayerIndex(Terrain terrain, TerrainLayer inputLayer)
         {
-            for (int i = 0; i < terrain.terrainData.terrainLayers.Length; i++)
+            var terrainLayers = terrain.terrainData.terrainLayers;
+            for (int i = 0; i < terrainLayers.Length; i++)
             {
-                if (terrain.terrainData.terrainLayers[i] == inputLayer)
+                if (terrainLayers[i] == inputLayer)
                     return i;
             }
             return -1;
@@ -255,17 +251,18 @@ namespace UnityEngine.Experimental.TerrainAPI
 
         internal static int AddTerrainLayer(Terrain terrain, TerrainLayer inputLayer)
         {
-            int newIndex = terrain.terrainData.terrainLayers.Length;
-            var newarray = new TerrainLayer[newIndex + 1];
-            System.Array.Copy(terrain.terrainData.terrainLayers, 0, newarray, 0, newIndex);
-            newarray[newIndex] = inputLayer;
-            terrain.terrainData.terrainLayers = newarray;
+            var oldArray = terrain.terrainData.terrainLayers;
+            int newIndex = oldArray.Length;
+            var newArray = new TerrainLayer[newIndex + 1];
+            Array.Copy(oldArray, 0, newArray, 0, newIndex);
+            newArray[newIndex] = inputLayer;
+            terrain.terrainData.terrainLayers = newArray;
             return newIndex;
         }
 
         //--
 
-        static Material m_BlitMaterial = null;
-        static Material m_CopyTerrainLayerMaterial = null;
+        static Material s_BlitMaterial = null;
+        static Material s_CopyTerrainLayerMaterial = null;
     }
 }

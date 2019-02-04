@@ -106,6 +106,16 @@ namespace UnityEditor
         [SerializeField]
         bool m_ShowContextualTools;
 
+        static void OnSelectedObjectWasDestroyed(int unused)
+        {
+            s_ActiveEditors = null;
+        }
+
+        static void OnEditorTrackerRebuilt()
+        {
+            s_ActiveEditors = null;
+        }
+
         static Editor[] s_ActiveEditors;
 
         internal bool displayToolModes
@@ -871,7 +881,8 @@ namespace UnityEditor
             EditorApplication.modifierKeysChanged += RepaintAll; // Because we show handles on shift
             SceneVisibilityManager.hiddenContentChanged += HiddenContentChanged;
             SceneVisibilityManager.currentStageIsolated += CurrentStageIsolated;
-            ActiveEditorTracker.editorTrackerRebuilt += () => { s_ActiveEditors = null; };
+            ActiveEditorTracker.editorTrackerRebuilt += OnEditorTrackerRebuilt;
+            Selection.selectedObjectWasDestroyed += OnSelectedObjectWasDestroyed;
 
             m_DraggingLockedState = DraggingLockedState.NotDragging;
 
@@ -972,6 +983,8 @@ namespace UnityEditor
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             SceneVisibilityManager.hiddenContentChanged -= HiddenContentChanged;
             SceneVisibilityManager.currentStageIsolated -= CurrentStageIsolated;
+            ActiveEditorTracker.editorTrackerRebuilt -= OnEditorTrackerRebuilt;
+            Selection.selectedObjectWasDestroyed -= OnSelectedObjectWasDestroyed;
 
             if (m_Camera)
                 DestroyImmediate(m_Camera.gameObject, true);

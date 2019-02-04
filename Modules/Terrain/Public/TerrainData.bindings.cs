@@ -218,6 +218,14 @@ namespace UnityEngine
         public float max { get { return m_max; } set { m_max = value; } }
     }
 
+    // Must Match Heightmap::SyncControl
+    public enum TerrainHeightmapSyncControl
+    {
+        None = 0,
+        HeightOnly,
+        HeightAndLod
+    }
+
     [NativeHeader("TerrainScriptingClasses.h")]
     [NativeHeader("Modules/Terrain/Public/TerrainDataScriptingInterface.h")]
     [UsedByNativeCode]
@@ -263,8 +271,11 @@ namespace UnityEngine
         [FreeFunction(k_ScriptingInterfacePrefix + "Create")]
         extern private static void Internal_Create([Writable] TerrainData terrainData);
 
-        extern public void UpdateDirtyRegion(int x, int y, int width, int height, bool syncHeightmapTextureImmediately);
-
+        [Obsolete("Please use DirtyHeightmapRegion instead.", false)]
+        public void UpdateDirtyRegion(int x, int y, int width, int height, bool syncHeightmapTextureImmediately)
+        {
+            DirtyHeightmapRegion(new RectInt(x, y, width, height), syncHeightmapTextureImmediately ? TerrainHeightmapSyncControl.HeightOnly : TerrainHeightmapSyncControl.None);
+        }
 
         extern public int heightmapWidth
         {
@@ -546,7 +557,7 @@ namespace UnityEngine
 
             set
             {
-                Internal_SetTreeInstances(value);
+                SetTreeInstances(value, false);
             }
         }
 
@@ -554,7 +565,7 @@ namespace UnityEngine
         extern private TreeInstance[] Internal_GetTreeInstances();
 
         [FreeFunction(k_ScriptingInterfacePrefix + "SetTreeInstances", HasExplicitThis = true)]
-        extern private void Internal_SetTreeInstances([NotNull] TreeInstance[] instances);
+        extern public void SetTreeInstances([NotNull] TreeInstance[] instances, bool snapToHeightmap);
 
         public TreeInstance GetTreeInstance(int index)
         {
@@ -588,9 +599,6 @@ namespace UnityEngine
 
         [NativeName(k_TreeDatabasePrefix + "RemoveTreePrototype")]
         extern internal void RemoveTreePrototype(int index);
-
-        [NativeName(k_TreeDatabasePrefix + "RecalculateTreePositions")]
-        extern internal void RecalculateTreePositions();
 
         [NativeName(k_DetailDatabasePrefix + "RemoveDetailPrototype")]
         extern internal void RemoveDetailPrototype(int index);
@@ -739,5 +747,28 @@ namespace UnityEngine
 
         [NativeName(k_TreeDatabasePrefix + "RemoveTrees")]
         extern internal int RemoveTrees(Vector2 position, float radius, int prototypeIndex);
+
+        [NativeName(k_HeightmapPrefix + "CopyFromActiveRenderTexture")]
+        private extern void Internal_CopyActiveRenderTextureToHeightmap(RectInt rect, int destX, int destY, TerrainHeightmapSyncControl syncControl);
+
+        [NativeName(k_HeightmapPrefix + "DirtyRegion")]
+        private extern void Internal_DirtyHeightmapRegion(int x, int y, int width, int height, TerrainHeightmapSyncControl syncControl);
+
+        [NativeName(k_HeightmapPrefix + "SyncGPUModifications")]
+        public extern void SyncHeightmap();
+
+        [NativeName(k_SplatDatabasePrefix + "MarkDirtyRegion")]
+        private extern void Internal_MarkAlphamapDirtyRegion(int alphamapIndex, int x, int y, int width, int height);
+
+        [NativeName(k_SplatDatabasePrefix + "ClearDirtyRegion")]
+        private extern void Internal_ClearAlphamapDirtyRegion(int alphamapIndex);
+
+        [NativeName(k_SplatDatabasePrefix + "SyncGPUModifications")]
+        private extern void Internal_SyncAlphamaps();
+
+        internal extern Terrain[] users
+        {
+            get;
+        }
     }
 }

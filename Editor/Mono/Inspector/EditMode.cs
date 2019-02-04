@@ -16,6 +16,8 @@ namespace UnityEditorInternal
     [InitializeOnLoad]
     public class EditMode
     {
+        internal const int k_OwnerIdNone = 0;
+
         private static class Styles
         {
             public static readonly GUIStyle multiButtonStyle = "Command";
@@ -30,18 +32,22 @@ namespace UnityEditorInternal
             ownerID = SessionState.GetInt(kOwnerStringKey, ownerID);
             s_EditMode = (SceneViewEditMode)SessionState.GetInt(kEditModeStringKey, (int)s_EditMode);
             Selection.selectionChanged += OnSelectionChange;
+            EditorToolContext.toolChanged += ToolChanged;
         }
 
         private const float k_EditColliderbuttonWidth = 33;
         private const float k_EditColliderbuttonHeight = 23;
         private const float k_SpaceBetweenLabelAndButton = 5;
 
+        // todo Obsolete, use editModeEnded
         public static OnEditModeStopFunc onEditModeEndDelegate;
         public delegate void OnEditModeStopFunc(Editor editor);
-        internal static event Action<IToolModeOwner> editModeEnded;
 
+        // todo Obsolete, use editModeStarted
         public static OnEditModeStartFunc onEditModeStartDelegate;
         public delegate void OnEditModeStartFunc(Editor editor, SceneViewEditMode mode);
+
+        internal static event Action<IToolModeOwner> editModeEnded;
         internal static event Action<IToolModeOwner, SceneViewEditMode> editModeStarted;
 
         private static int s_OwnerID;
@@ -127,11 +133,6 @@ namespace UnityEditorInternal
             }
         }
 
-        internal static void EndSceneViewEditing()
-        {
-            ChangeEditMode(SceneViewEditMode.None, new Bounds(Vector3.zero, Vector3.positiveInfinity), null);
-        }
-
         public static void OnSelectionChange()
         {
             IToolModeOwner owner = InternalEditorUtility.GetObjectFromInstanceID(ownerID) as IToolModeOwner;
@@ -140,9 +141,18 @@ namespace UnityEditorInternal
             QuitEditMode();
         }
 
+        static void ToolChanged(EditorTool previous, EditorTool active)
+        {
+            var previousToolType = EditorToolUtility.GetEnumWithEditorTool(previous);
+
+            if (previousToolType == Tool.None && ownerID != k_OwnerIdNone)
+                ChangeEditModeFromToolContext(null, SceneViewEditMode.None);
+        }
+
         public static void QuitEditMode()
         {
-            EndSceneViewEditing();
+            if (ownerID != k_OwnerIdNone)
+                ChangeEditMode(SceneViewEditMode.None, new Bounds(Vector3.zero, Vector3.positiveInfinity), null);
         }
 
         internal static void ChangeEditModeFromToolContext(IToolModeOwner owner, SceneViewEditMode mode)
@@ -159,18 +169,22 @@ namespace UnityEditorInternal
 
             editMode = mode;
 
-            ownerID = mode != SceneViewEditMode.None ? owner.GetInstanceID() : 0;
+            if (oldOwner != null)
+            {
+                if (onEditModeEndDelegate != null && oldOwner is Editor)
+                    onEditModeEndDelegate(oldOwner as Editor);
 
-            if (onEditModeEndDelegate != null && oldOwner is Editor)
-                onEditModeEndDelegate(oldOwner as Editor);
+                if (editModeEnded != null)
+                    editModeEnded(oldOwner);
+            }
 
-            if (editModeEnded != null)
-                editModeEnded(oldOwner);
+            ownerID = mode != SceneViewEditMode.None ? owner.GetInstanceID() : k_OwnerIdNone;
 
             if (editMode != SceneViewEditMode.None)
             {
                 if (onEditModeStartDelegate != null && owner is Editor)
                     onEditModeStartDelegate(owner as Editor, editMode);
+
                 if (editModeStarted != null)
                     editModeStarted(owner, editMode);
             }

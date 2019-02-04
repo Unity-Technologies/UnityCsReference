@@ -328,7 +328,25 @@ namespace UnityEditor
 
         internal SerializedObject m_SerializedObject = null;
         internal SerializedProperty m_EnabledProperty = null;
-        internal InspectorMode m_InspectorMode = InspectorMode.Normal;
+        private InspectorMode m_InspectorMode = InspectorMode.Normal;
+        internal InspectorMode inspectorMode
+        {
+            get
+            {
+                return m_InspectorMode;
+            }
+            set
+            {
+                if (m_InspectorMode != value)
+                {
+                    m_InspectorMode = value;
+                    m_SerializedObject = null;
+                    m_EnabledProperty = null;
+                }
+            }
+        }
+
+
         internal const float kLineHeight = 16;
 
         internal bool hideInspector = false;
@@ -529,7 +547,7 @@ namespace UnityEditor
             if (m_SerializedObject == null)
             {
                 m_SerializedObject = new SerializedObject(targets, m_Context);
-                m_SerializedObject.inspectorMode = m_InspectorMode;
+                m_SerializedObject.inspectorMode = inspectorMode;
                 m_EnabledProperty = m_SerializedObject.FindProperty("m_Enabled");
             }
 
@@ -969,7 +987,7 @@ namespace UnityEditor
                 m_SerializedObject = new SerializedObject(targets, m_Context);
             else
                 m_SerializedObject.Update();
-            m_SerializedObject.inspectorMode = m_InspectorMode;
+            m_SerializedObject.inspectorMode = inspectorMode;
 
             SerializedProperty property = m_SerializedObject.GetIterator();
 

@@ -2194,6 +2194,9 @@
     <Compile Include="..\..\Editor\Mono\Inspector\EditorDragging.cs">
       <Link>Editor\Mono\Inspector\EditorDragging.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\EditorElement.cs">
+      <Link>Editor\Mono\Inspector\EditorElement.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\EditorSettingsInspector.cs">
       <Link>Editor\Mono\Inspector\EditorSettingsInspector.cs</Link>
     </Compile>

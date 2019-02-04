@@ -53,16 +53,16 @@ namespace UnityEditor
 
             // Update serialized object representation
             if (m_SerializedObject == null)
-                m_SerializedObject = new SerializedObject(targets, m_Context) {inspectorMode = m_InspectorMode};
+                m_SerializedObject = new SerializedObject(targets, m_Context) {inspectorMode = inspectorMode};
             else
             {
                 m_SerializedObject.Update();
-                m_SerializedObject.inspectorMode = m_InspectorMode;
+                m_SerializedObject.inspectorMode = inspectorMode;
             }
 
             height = 0;
             SerializedProperty property = m_SerializedObject.GetIterator();
-            var isInspectorModeNormal = m_InspectorMode == InspectorMode.Normal;
+            var isInspectorModeNormal = inspectorMode == InspectorMode.Normal;
             var isAssetBased = behaviour != null && generatorAsset != null;
             while (property.NextVisible(height <= 0))
             {
@@ -99,7 +99,7 @@ namespace UnityEditor
             contentRect.y += EditorGUI.kControlVerticalSpacing;
 
             var property = m_SerializedObject.GetIterator();
-            var isInspectorModeNormal = m_InspectorMode == InspectorMode.Normal;
+            var isInspectorModeNormal = inspectorMode == InspectorMode.Normal;
             var behaviour = target as MonoBehaviour;
             var generatorAsset = ScriptGeneratorAsset.FromMonoBehaviour(behaviour);
             var isAssetBased = behaviour != null && generatorAsset != null;

@@ -1490,7 +1490,6 @@ namespace UnityEditor
                 return g.m_Grid.GetMaxVisibleItems(m_TotalRect.height);
             }
 
-            Assert.IsTrue(false, "Unhandled group");
             return 0;
         }
 

@@ -260,8 +260,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                 instances = allTrees;
             }
 
-            terrainData.treeInstances = instances;
-            terrainData.RecalculateTreePositions();
+            terrainData.SetTreeInstances(instances, true);
         }
 
         public override bool OnPaint(Terrain terrain, IOnPaint editContext)

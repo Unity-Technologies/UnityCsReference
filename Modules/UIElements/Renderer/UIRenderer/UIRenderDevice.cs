@@ -152,7 +152,9 @@ namespace UnityEngine.UIElements.UIR
         bool m_TransformBufferNeedsUpdate;
         ComputeBuffer[] m_TransformBuffers;
 
-        public bool supportsFragmentClipping { get; } = SystemInfo.supportsComputeShaders;
+        // We need to make sure we're using version 4.5+ with OpenGL as this is the condition used by the shader
+        // to determine whether StructuredBuffers are used or not
+        public bool supportsFragmentClipping { get; } = SystemInfo.supportsComputeShaders && !OpenGLCoreBelow45();
         BlockAllocator m_ClippingAllocator;
         List<NativeArray<ClippingData>> m_ClippingPages;
         uint m_ClippingBufferToUse;
@@ -222,7 +224,7 @@ namespace UnityEngine.UIElements.UIR
             // Initialize Skinning-Transform Data
             {
                 var initialTransformCapacity = m_LazyCreationInitialTransformCapacity;
-                bool unlimitedTransformCount = SystemInfo.supportsComputeShaders;
+                bool unlimitedTransformCount = SystemInfo.supportsComputeShaders && !OpenGLCoreBelow45();
                 if (!unlimitedTransformCount)
                     initialTransformCapacity = 200; // Math.Min(200, initialTransformCapacity); // Default UIR shader can hold up to 200 matrices as constants
                 initialTransformCapacity = Math.Max(1, initialTransformCapacity); // Reserve one entry for "unskinned" meshes
@@ -622,6 +624,18 @@ namespace UnityEngine.UIElements.UIR
             }
 
             return m_DefaultMaterial;
+        }
+
+        static bool OpenGLCoreBelow45()
+        {
+            int maj, min;
+            if (UIRUtility.GetOpenGLCoreVersion(out maj, out min))
+            {
+                if (maj == 4)
+                    return min < 5;
+                return maj < 4;
+            }
+            else return false;
         }
 
         static void SetupStandardMaterial(Material material, DrawingModes mode)

@@ -1723,6 +1723,12 @@
     <Compile Include="..\..\Modules\Terrain\Public\Terrain.bindings.cs">
       <Link>Modules\Terrain\Public\Terrain.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Terrain\Public\TerrainCallbacks.cs">
+      <Link>Modules\Terrain\Public\TerrainCallbacks.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Terrain\Public\TerrainData.GPUCopy.cs">
+      <Link>Modules\Terrain\Public\TerrainData.GPUCopy.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Terrain\Public\TerrainData.bindings.cs">
       <Link>Modules\Terrain\Public\TerrainData.bindings.cs</Link>
     </Compile>

@@ -1434,14 +1434,12 @@ namespace UnityEditor
             for (int i = 0; i < oldAlphaMaps.Length; i++)
             {
                 RenderTexture.active = oldAlphaMaps[i];
-                td.alphamapTextures[i].ReadPixels(new Rect(0, 0, newResolution, newResolution), 0, 0);
-                td.alphamapTextures[i].Apply();
+                td.CopyActiveRenderTextureToTexture(TerrainData.AlphamapTextureName, i, new RectInt(0, 0, newResolution, newResolution), Vector2Int.zero, false);
             }
+            td.SetBaseMapDirty();
             RenderTexture.active = oldRT;
             for (int i = 0; i < oldAlphaMaps.Length; i++)
                 RenderTexture.ReleaseTemporary(oldAlphaMaps[i]);
-
-            td.SetBaseMapDirty();
             Repaint();
         }
 
@@ -1464,9 +1462,7 @@ namespace UnityEditor
 
             RenderTexture.active = oldRT;
 
-            m_Terrain.terrainData.UpdateDirtyRegion(0, 0, m_Terrain.terrainData.heightmapTexture.width, m_Terrain.terrainData.heightmapTexture.height, !m_Terrain.drawInstanced);
-            m_Terrain.Flush();
-            m_Terrain.ApplyDelayedHeightmapModification();
+            m_Terrain.terrainData.DirtyHeightmapRegion(new RectInt(0, 0, m_Terrain.terrainData.heightmapTexture.width, m_Terrain.terrainData.heightmapTexture.height), TerrainHeightmapSyncControl.HeightAndLod);
 
             Repaint();
         }

@@ -22,7 +22,6 @@ using UnityEngine.Profiling;
 
 using Object = UnityEngine.Object;
 using Overflow = UnityEngine.UIElements.Overflow;
-using Visibility = UnityEngine.UIElements.Visibility;
 
 using AssetImporterEditor = UnityEditor.Experimental.AssetImporters.AssetImporterEditor;
 
@@ -41,7 +40,7 @@ namespace UnityEditor
         const float kAddComponentButtonHeight = 45f;
         internal const int kInspectorPaddingLeft = 4 + 10;
         internal const int kInspectorPaddingRight = 4;
-        const float kEditorElementPaddingBottom = 2f;
+        internal const float kEditorElementPaddingBottom = 2f;
 
         const float k_MinAreaAbovePreview = 130;
         const float k_InspectorPreviewMinHeight = 130;
@@ -65,7 +64,7 @@ namespace UnityEditor
         [SerializeField]
         EditorGUIUtility.EditorLockTrackerWithActiveEditorTracker m_LockTracker = new EditorGUIUtility.EditorLockTrackerWithActiveEditorTracker();
 
-        Editor m_LastInteractedEditor;
+        internal Editor lastInteractedEditor { get; set; }
         int m_LastInitialEditorInstanceID;
         Component[] m_ComponentsInPrefabSource;
         HashSet<Component> m_RemovedComponents;
@@ -85,14 +84,15 @@ namespace UnityEditor
         private Dictionary<Type, List<Type>> m_PreviewableTypes;
         private IPreviewable m_SelectedPreview;
 
-        readonly HashSet<int> m_EditorsWithImportedObjectLabel = new HashSet<int>();
+        internal HashSet<int> editorsWithImportedObjectLabel { get; } = new HashSet<int>();
 
-        private EditorDragging editorDragging;
+        internal EditorDragging editorDragging { get; }
 
         IMGUIContainer m_TrackerResetter;
 
         VisualElement m_EditorsElement;
         VisualElement editorsElement => m_EditorsElement ?? (m_EditorsElement = FindVisualElementInTreeByName("editorsList"));
+        VisualElement m_RemovedPrefabComponentsElement;
 
         VisualElement m_PreviewAndLabelElement;
 
@@ -273,16 +273,15 @@ namespace UnityEditor
         }
 
         [UsedByNativeCode]
-        static private void RedrawFromNative()
+        private static void RedrawFromNative()
         {
             foreach (var inspector in m_AllInspectors)
             {
-                inspector.tracker.ForceRebuild();
                 inspector.RebuildContentsContainers();
             }
         }
 
-        static internal InspectorWindow[] GetAllInspectorWindows()
+        internal static InspectorWindow[] GetAllInspectorWindows()
         {
             return m_AllInspectors.ToArray();
         }
@@ -520,7 +519,7 @@ namespace UnityEditor
 
         private bool m_TrackerResetInserted;
 
-        IMGUIContainer CreateIMGUIContainer(Action onGUIHandler, string name = null)
+        internal IMGUIContainer CreateIMGUIContainer(Action onGUIHandler, string name = null)
         {
             IMGUIContainer result = null;
             if (m_TrackerResetInserted)
@@ -552,10 +551,15 @@ namespace UnityEditor
             m_Previews = null;
             m_SelectedPreview = null;
             m_TypeSelectionList = null;
-            m_TrackerResetInserted = false;
             m_FirstInitialize = false;
-            m_EditorsWithImportedObjectLabel.Clear();
+            editorsWithImportedObjectLabel.Clear();
             m_LastInitialEditorInstanceID = 0;
+
+            if (m_RemovedPrefabComponentsElement != null)
+            {
+                m_RemovedPrefabComponentsElement.RemoveFromHierarchy();
+                m_RemovedPrefabComponentsElement = null;
+            }
 
             FlushAllOptimizedGUIBlocksIfNeeded();
 
@@ -568,8 +572,9 @@ namespace UnityEditor
 
             if (m_TrackerResetter == null)
             {
+                m_TrackerResetInserted = false;
                 m_TrackerResetter = CreateIMGUIContainer(() => {}, "activeEditorTrackerResetter");
-                rootVisualElement.Add(m_TrackerResetter);
+                rootVisualElement.Insert(0, m_TrackerResetter);
             }
 
             Editor[] editors = tracker.activeEditors;
@@ -641,8 +646,6 @@ namespace UnityEditor
 
             rootVisualElement.MarkDirtyRepaint();
 
-            if (m_Parent != null) // parent may be null in some situations (case 970700, 851988)
-                m_Parent.ClearKeyboardControl();
             ScriptAttributeUtility.ClearGlobalCache();
 
             rootVisualElement.RegisterCallback<DragUpdatedEvent>(DragOverBottomArea);
@@ -710,7 +713,7 @@ namespace UnityEditor
 
         internal virtual Editor GetLastInteractedEditor()
         {
-            return m_LastInteractedEditor;
+            return lastInteractedEditor;
         }
 
         internal IPreviewable GetEditorThatControlsPreview(IPreviewable[] editors)
@@ -1248,73 +1251,58 @@ namespace UnityEditor
             EditorGUI.LabelField(textRect, content, Styles.preToolbar2);
         }
 
-        private void SetElementVisible(VisualElement ve, bool visible)
+        HashSet<int> m_DrawnSelection = new HashSet<int>();
+        void DrawEditors(Editor[] editors)
         {
-            if (visible)
+            Dictionary<int, EditorElement> mapping = null;
+
+            var selection = new HashSet<int>(Selection.instanceIDs);
+            if (m_DrawnSelection.SetEquals(selection))
             {
-                ve.style.position = Position.Relative;
-                ve.style.visibility = Visibility.Visible;
-                SetInspectorElementChildIMGUIContainerFocusable(ve, true);
+                if (editorsElement.childCount > 0 && m_DrawnSelection.Any()) // do we already have a hierarchy
+                {
+                    mapping = ProcessEditorElementsToRebuild(editors);
+                }
             }
             else
             {
-                ve.style.position = Position.Absolute;
-                ve.style.visibility = Visibility.Hidden;
-                SetInspectorElementChildIMGUIContainerFocusable(ve, false);
+                m_DrawnSelection.Clear();
+                m_DrawnSelection = selection;
             }
-        }
 
-        private void SetInspectorElementChildIMGUIContainerFocusable(VisualElement ve, bool focusable)
-        {
-            var inspectorElement = ve as InspectorElement;
-            if (inspectorElement != null)
+            if (mapping == null)
             {
-                foreach (var child in inspectorElement.Children())
-                {
-                    var imguiContainer = child as IMGUIContainer;
-                    if (imguiContainer != null)
-                    {
-                        imguiContainer.focusable = focusable;
-                    }
-                }
+                editorsElement.Clear();
             }
-        }
-
-        private void DrawEditors(Editor[] editors)
-        {
-            editorsElement.Clear();
 
             if (editors.Length == 0)
+            {
                 return;
-
-            // We need to force optimized GUI to dirty when object becomes open for edit
-            // e.g. after checkout in version control. If this is not done the optimized
-            // GUI will need an extra repaint before it gets ungrayed out.
+            }
 
             Editor.m_AllowMultiObjectAccess = true;
-
-            VisualElement editorContainer = editorsElement;
 
             if (editors.Length > 0 && editors[0].GetInstanceID() != m_LastInitialEditorInstanceID)
                 OnTrackerRebuilt();
             int prefabComponentIndex = -1;
+
             for (int editorIndex = 0; editorIndex < editors.Length; editorIndex++)
             {
+                VisualElement prefabsComponentElement = new VisualElement() { name = "PrefabComponentElement" };
                 if (m_ComponentsInPrefabSource != null && editorIndex != 0)
                 {
                     while (prefabComponentIndex < m_ComponentsInPrefabSource.Length)
                     {
                         Object target = editors[editorIndex].target;
-
                         // This is possible if there's a component with a missing script.
                         if (target != null)
                         {
                             Object correspondingSource = PrefabUtility.GetCorrespondingObjectFromSource(target);
                             Component nextInSource = m_ComponentsInPrefabSource[prefabComponentIndex];
+
                             if (correspondingSource == nextInSource)
                                 break;
-
-                            AddRemovedPrefabComponentElement(editors, nextInSource, editorContainer);
+                            AddRemovedPrefabComponentElement(editors, nextInSource, prefabsComponentElement);
                         }
 
                         prefabComponentIndex++;
@@ -1330,165 +1318,46 @@ namespace UnityEditor
                 }
 
                 var editor = editors[editorIndex];
-
                 Object editorTarget = editor.targets[0];
                 string editorTitle = ObjectNames.GetInspectorTitle(editorTarget);
+                EditorElement editorContainer;
 
-                var inspectorElementMode = InspectorElement.Mode.Normal;
-                if (m_UseUIElementsDefaultInspector)
-                    inspectorElementMode ^= InspectorElement.Mode.IMGUIDefault;
-
-                VisualElement editorElement = new InspectorElement(editor, inspectorElementMode)
+                if (mapping == null || !mapping.TryGetValue(editors[editorIndex].target.GetInstanceID(), out editorContainer))
                 {
-                    focusable = false
-                };
-                VisualElement footerElement = null;
-                {
-                    var i = editorIndex;
-                    Rect dragRect = new Rect();
-                    Rect contentRect = new Rect();
-
-                    //Create and IMGUIcontainer to enclose the header
-                    // This also needs to validate the state of the editor tracker (stuff that was already done in the original DrawEditors
-                    var headerElement = CreateIMGUIContainer(() =>    // Dragging handle used for editor reordering
-                    {
-                        var edits = tracker.activeEditors;
-
-                        if (edits.Length <= i)
-                        {
-                            SetElementVisible(editorElement, false);
-                            return;
-                        }
-
-                        var thisEditor = edits[i];
-
-                        var target = thisEditor?.target;
-
-                        // Avoid drawing editor if native target object is not alive, unless it's a MonoBehaviour/ScriptableObject
-                        // We want to draw the generic editor with a warning about missing/invalid script
-                        // Case 891450:
-                        // - ActiveEditorTracker will automatically create editors for materials of components on tracked game objects
-                        // - UnityEngine.UI.Mask will destroy this material in OnDisable (e.g. disabling it with the checkbox) causing problems when drawing the material editor
-                        if (target == null && !NativeClassExtensionUtilities.ExtendsANativeType(target))
-                        {
-                            SetElementVisible(editorElement, false);
-                            return;
-                        }
-
-                        bool wasVisible =  WasEditorVisible(editors, editor, i, target);
-
-                        GUIUtility.GetControlID(target.GetInstanceID(), FocusType.Passive);
-                        EditorGUIUtility.ResetGUIState();
-
-                        if (editor.target is AssetImporter)
-                            m_EditorsWithImportedObjectLabel.Add(i + 1);
-
-                        //set the current PropertyHandlerCache to the current editor
-                        ScriptAttributeUtility.propertyHandlerCache = editor.propertyHandlerCache;
-                        using (new InspectorWindowUtils.LayoutGroupChecker())
-                        {
-                            dragRect = DrawEditorHeader(edits, i, thisEditor, target, ref wasVisible);
-                        }
-
-                        if (wasVisible != editorElement.visible)
-                        {
-                            SetElementVisible(editorElement, wasVisible);
-                        }
-
-                        var multiEditingSupported = IsMultiEditingSupported(editor, target);
-
-                        if (!multiEditingSupported && wasVisible)
-                        {
-                            GUILayout.Label("Multi-object editing not supported.", EditorStyles.helpBox);
-                            return;
-                        }
-
-                        InspectorWindowUtils.DisplayDeprecationMessageIfNecessary(editor);
-
-                        // Reset dirtiness when repainting
-                        if (Event.current.type == EventType.Repaint)
-                        {
-                            thisEditor.isInspectorDirty = false;
-                        }
-
-                        bool excludedClass = InspectorWindowUtils.IsExcludedClass(target);
-                        if (excludedClass)
-                            EditorGUILayout.HelpBox("The module which implements this component type has been force excluded in player settings. This object will be removed in play mode and from any builds you make.", MessageType.Warning);
-
-                        contentRect = editorElement.layout;
-                    }, editorTitle + "Header");
-
-                    editorContainer.Add(headerElement);
-
-                    footerElement = CreateIMGUIContainer(() =>
-                    {
-                        var edits = tracker.activeEditors;
-
-                        if (edits.Length <= i)
-                        {
-                            return;
-                        }
-
-                        var ed = edits[i];
-
-                        contentRect.y = -contentRect.height;
-                        editorDragging.HandleDraggingToEditor(edits, i, dragRect, contentRect);
-                        HandleComponentScreenshot(contentRect, ed);
-
-                        var target = ed.target;
-                        var comp = target as Component;
-
-                        if (EditorGUI.ShouldDrawOverrideBackground(ed.targets, Event.current, comp))
-                        {
-                            var rect = GUILayoutUtility.kDummyRect;
-                            bool wasVisible = WasEditorVisible(editors, editor, i, target);
-                            // if the inspector is currently visible then the override background drawn by the footer needs to be slightly larger than if the inspector is collapsed
-                            if (wasVisible)
-                            {
-                                rect.y -= 1;
-                                rect.height += 1;
-                            }
-                            else
-                            {
-                                rect.y += 1;
-                                rect.height -= 1;
-                            }
-
-                            EditorGUI.DrawOverrideBackground(rect, true);
-                        }
-                    }, editorTitle + "Footer");
-                    footerElement.style.height = 3;
+                    editorContainer = new EditorElement(editorIndex, this) { name = editorTitle };
+                    editorsElement.Add(editorContainer);
                 }
 
-                editorElement.name = editorTitle;
-
-                editorElement.style.paddingBottom = kEditorElementPaddingBottom;
-
-                if (EditorNeedsVerticalOffset(editors, editorIndex, editorTarget))
+                if (prefabsComponentElement.childCount > 0)
                 {
-                    // This is madness
-                    editorElement.cacheAsBitmap = false;
-                    editorElement.style.overflow = Overflow.Hidden;
+                    editorContainer.AddPrefabComponent(prefabsComponentElement);
                 }
-
-                editorContainer.Add(editorElement);
-                editorContainer.Add(footerElement);
+                else
+                {
+                    editorContainer.AddPrefabComponent(null);
+                }
             }
 
             // Make sure to display any remaining removed components that come after the last component on the GameObject.
             if (m_ComponentsInPrefabSource != null)
             {
+                VisualElement prefabsComponentElement = new VisualElement() { name = "RemainingPrefabComponentElement" };
                 while (prefabComponentIndex < m_ComponentsInPrefabSource.Length)
                 {
                     Component nextInSource = m_ComponentsInPrefabSource[prefabComponentIndex];
-                    AddRemovedPrefabComponentElement(editors, nextInSource, editorContainer);
-
+                    AddRemovedPrefabComponentElement(editors, nextInSource, prefabsComponentElement);
                     prefabComponentIndex++;
+                }
+
+                if (prefabsComponentElement.childCount > 0)
+                {
+                    editorsElement.Add(prefabsComponentElement);
+                    m_RemovedPrefabComponentsElement = prefabsComponentElement;
                 }
             }
         }
 
-        void AddRemovedPrefabComponentElement(Editor[] editors, Component nextInSource, VisualElement editorContainer)
+        void AddRemovedPrefabComponentElement(Editor[] editors, Component nextInSource, VisualElement element)
         {
             var targetGameObject = editors[0].target as GameObject;
             if (ShouldDisplayRemovedComponent(targetGameObject, nextInSource))
@@ -1498,7 +1367,7 @@ namespace UnityEditor
                     CreateIMGUIContainer(() => DisplayRemovedComponent(targetGameObject, nextInSource), missingComponentTitle);
                 removedComponentElement.style.paddingBottom = kEditorElementPaddingBottom;
 
-                editorContainer.Add(removedComponentElement);
+                element.Add(removedComponentElement);
             }
         }
 
@@ -1518,13 +1387,13 @@ namespace UnityEditor
             return true;
         }
 
-        void DisplayRemovedComponent(GameObject go, Component comp)
+        static void DisplayRemovedComponent(GameObject go, Component comp)
         {
             Rect rect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.inspectorTitlebar);
             EditorGUI.RemovedComponentTitlebar(rect, go, comp);
         }
 
-        private bool WasEditorVisible(Editor[] editors, Editor editor, int editorIndex, Object target)
+        internal bool WasEditorVisible(Editor[] editors, int editorIndex, Object target)
         {
             int wasVisibleState = tracker.GetVisible(editorIndex);
             bool wasVisible;
@@ -1534,7 +1403,7 @@ namespace UnityEditor
                 // Some inspectors (MaterialEditor) needs to be told when they are the main visible asset.
                 if (editorIndex == 0 || (editorIndex == 1 && ShouldCullEditor(editors, 0)))
                 {
-                    editor.firstInspectedEditor = true;
+                    editors[editorIndex].firstInspectedEditor = true;
                 }
 
                 // Init our state with last state
@@ -1551,89 +1420,7 @@ namespace UnityEditor
             return wasVisible;
         }
 
-        Rect DrawEditorHeader(Editor[] editors, int editorIndex, Editor editor, Object target, ref bool wasVisible)
-        {
-            var largeHeader = DrawEditorLargeHeader(editors, editorIndex, editor, ref wasVisible);
-
-            // Dragging handle used for editor reordering
-            var dragRect = largeHeader ? new Rect() : DrawEditorSmallHeader(editors, editorIndex, target, editor, wasVisible);
-            return dragRect;
-        }
-
-        bool DrawEditorLargeHeader(Editor[] editors, int editorIndex, Editor editor, ref bool wasVisible)
-        {
-            bool largeHeader = EditorHasLargeHeader(editorIndex, editors);
-
-            // Draw large headers before we do the culling of unsupported editors below,
-            // so the large header is always shown even when the editor can't be.
-            if (largeHeader)
-            {
-                String message = String.Empty;
-                bool IsOpenForEdit = editor.IsOpenForEdit(out message);
-                wasVisible = true;
-
-                if (m_EditorsWithImportedObjectLabel.Contains(editorIndex))
-                {
-                    var importedObjectBarRect = GUILayoutUtility.GetRect(16, 16);
-                    importedObjectBarRect.height = 17;
-
-                    // Clip the label to avoid a black border at the bottom
-                    GUI.BeginGroup(importedObjectBarRect);
-                    GUI.Label(new Rect(0, 0, importedObjectBarRect.width, importedObjectBarRect.height), "Imported Object", "OL Title");
-                    GUI.EndGroup();
-                }
-
-                // Header
-                using (new EditorGUI.DisabledScope(!IsOpenForEdit)) // Only disable the entire header if the asset is locked by VCS
-                {
-                    editor.DrawHeader();
-                }
-            }
-
-            return largeHeader;
-        }
-
-        private bool EditorNeedsVerticalOffset(Editor[] editors, int editorIndex, Object target)
-        {
-            return editorIndex > 0 && editors[editorIndex - 1].target is GameObject && target is Component;
-        }
-
-        // Draw small headers (the header above each component) after the culling above
-        // so we don't draw a component header for all the components that can't be shown.
-        Rect DrawEditorSmallHeader(Editor[] editors, int editorIndex, Object target, Editor editor, bool wasVisible)
-        {
-            // ensure first component's title bar is flush with the header
-            if (EditorNeedsVerticalOffset(editors, editorIndex, target))
-            {
-                // TODO: Check if we can fix this in the GameObjectInspector instead
-                GUILayout.Space(
-                    -1f // move back up so line overlaps
-                    - EditorStyles.inspectorBig.margin.bottom - EditorStyles.inspectorTitlebar.margin.top // move back up margins
-                );
-            }
-
-            using (new EditorGUI.DisabledScope(!editor.IsEnabled()))
-            {
-                bool isVisible = EditorGUILayout.InspectorTitlebar(wasVisible, editor);
-                if (wasVisible != isVisible)
-                {
-                    tracker.SetVisible(editorIndex, isVisible ? 1 : 0);
-                    InternalEditorUtility.SetIsInspectorExpanded(target, isVisible);
-                    if (isVisible)
-                    {
-                        m_LastInteractedEditor = editor;
-                    }
-                    else if (m_LastInteractedEditor == editor)
-                    {
-                        m_LastInteractedEditor = null;
-                    }
-                }
-            }
-
-            return GUILayoutUtility.GetLastRect();
-        }
-
-        bool IsMultiEditingSupported(Editor editor, Object target)
+        internal bool IsMultiEditingSupported(Editor editor, Object target)
         {
             // Culling of editors that can't be properly shown.
             // If the current editor is a GenericInspector even though a custom editor for it exists,
@@ -1666,23 +1453,9 @@ namespace UnityEditor
             return multiEditingSupported;
         }
 
-        internal bool EditorHasLargeHeader(int editorIndex, Editor[] trackerActiveEditors)
+        internal static bool EditorHasLargeHeader(int editorIndex, Editor[] trackerActiveEditors)
         {
             return trackerActiveEditors[editorIndex].firstInspectedEditor || trackerActiveEditors[editorIndex].HasLargeHeader();
-        }
-
-        private void HandleComponentScreenshot(Rect contentRect, Editor editor)
-        {
-            if (ScreenShots.s_TakeComponentScreenshot)
-            {
-                contentRect.yMin -= 16;
-                if (contentRect.Contains(Event.current.mousePosition))
-                {
-                    Rect globalComponentRect = GUIClip.Unclip(contentRect);
-                    globalComponentRect.position = globalComponentRect.position + m_Parent.screenPosition.position;
-                    ScreenShots.ScreenShotComponent(globalComponentRect, editor.target);
-                }
-            }
         }
 
         internal bool ShouldCullEditor(Editor[] editors, int editorIndex)
@@ -1737,6 +1510,19 @@ namespace UnityEditor
             }
 
             EditorGUIUtility.SetIconSize(oldSize);
+        }
+
+        void HandleLastInteractedEditor(Rect componentRect, Editor editor)
+        {
+            if (editor != lastInteractedEditor &&
+                Event.current.type == EventType.MouseDown && componentRect.Contains(Event.current.mousePosition))
+            {
+                // Don't use the event because the editor might want to use it.
+                // But don't move the check down below the editor either,
+                // because we want to set the last interacted editor simultaneously.
+                lastInteractedEditor = editor;
+                Repaint();
+            }
         }
 
         private void AddComponentButton(Editor[] editors)
@@ -1924,6 +1710,63 @@ namespace UnityEditor
         internal static void RemoveInspectorWindow(InspectorWindow window)
         {
             m_AllInspectors.Remove(window);
+        }
+
+        /*
+         * ProcessEditorElementsToRebuild is required as there are times when the ActiveEditorTracker
+         * is rebuilt even though the selection does not change and there are IMGUI controls outside
+         * the InspectorWindow that depend on currently valid control IDs
+         * An example is the Object Selector
+         *
+         * When a rebuild of the InspectorWindow is requested, we attempt to match up existing Editor references to current ones.
+         * We can't rely on the Editor instance ids those will have been recreated and our previously drawn ones will now be invalid
+         * Instead we can find matching Editor instances by comparing the target InstanceIDs.
+         */
+        Dictionary<int, EditorElement> ProcessEditorElementsToRebuild(Editor[] editors)
+        {
+            Dictionary<int, EditorElement> editorToElementMap = new Dictionary<int, EditorElement>();
+            var currentElements = editorsElement.Children().OfType<EditorElement>().ToList();
+            if (editors.Length == 0)
+            {
+                return null;
+            }
+
+            if (rootVisualElement.panel == null)
+            {
+                return null;
+            }
+
+            var newEditorsIndex = 0;
+            var previousEditorsIndex = 0;
+            while (newEditorsIndex < editors.Length && previousEditorsIndex < currentElements.Count)
+            {
+                var ed = editors[newEditorsIndex];
+                var currentEd = currentElements[previousEditorsIndex];
+                if (ed.GetType() != currentEd.editor.GetType())
+                {
+                    // We won't have an EditorElement for editors that are normally culled so we should skip this
+                    if (ShouldCullEditor(editors, newEditorsIndex))
+                    {
+                        ++newEditorsIndex;
+                        continue;
+                    }
+
+                    return null;
+                }
+
+                currentEd.Reinit(newEditorsIndex);
+                editorToElementMap[ed.target.GetInstanceID()] =  currentEd;
+                ++newEditorsIndex;
+                ++previousEditorsIndex;
+            }
+
+            // Remove any elements at the end of the InspectorWindow that don't have matching Editors
+            for (int j = previousEditorsIndex; j < currentElements.Count; ++j)
+            {
+                currentElements[j].RemoveFromHierarchy();
+            }
+
+            return editorToElementMap;
         }
     }
 }
