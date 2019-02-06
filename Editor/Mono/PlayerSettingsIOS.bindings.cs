@@ -588,10 +588,12 @@ namespace UnityEditor
             }
 
             [NativeProperty("iOSURLSchemes", false, TargetType.Field)]
-            private extern static string[] iOSURLSchemes
+            public extern static string[] iOSUrlSchemes
             {
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
                 get;
+                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+                set;
             }
 
             [NativeProperty("iOSRequireARKit")]
@@ -638,7 +640,7 @@ namespace UnityEditor
 
             internal static string[] GetURLSchemes()
             {
-                return iOSURLSchemes;
+                return iOSUrlSchemes;
             }
         }
     }

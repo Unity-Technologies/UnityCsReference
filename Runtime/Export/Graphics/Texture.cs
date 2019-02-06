@@ -39,7 +39,7 @@ namespace UnityEngine
         public RenderTextureFormat colorFormat
         {
             get { return GraphicsFormatUtility.GetRenderTextureFormat(graphicsFormat); }
-            set { graphicsFormat = GraphicsFormatUtility.GetGraphicsFormat(value, sRGB); }
+            set { graphicsFormat = SystemInfo.GetCompatibleFormat(GraphicsFormatUtility.GetGraphicsFormat(value, sRGB), FormatUsage.Render); }
         }
 
         private int _depthBufferBits;
@@ -66,7 +66,7 @@ namespace UnityEngine
         public RenderTextureMemoryless memoryless { get; set; }
         public RenderTextureDescriptor(int width, int height) : this(width, height, SystemInfo.GetGraphicsFormat(DefaultFormat.LDR), 0) {}
         public RenderTextureDescriptor(int width, int height, RenderTextureFormat colorFormat) : this(width, height, colorFormat, 0) {}
-        public RenderTextureDescriptor(int width, int height, RenderTextureFormat colorFormat, int depthBufferBits) : this(width, height, GraphicsFormatUtility.GetGraphicsFormat(colorFormat, false), depthBufferBits) {}
+        public RenderTextureDescriptor(int width, int height, RenderTextureFormat colorFormat, int depthBufferBits) : this(width, height, SystemInfo.GetCompatibleFormat(GraphicsFormatUtility.GetGraphicsFormat(colorFormat, false), FormatUsage.Render), depthBufferBits) {}
         public RenderTextureDescriptor(int width, int height, GraphicsFormat colorFormat, int depthBufferBits) : this()
         {
             this.width = width;
@@ -138,7 +138,7 @@ namespace UnityEngine
             set { SetOrClearRenderTextureCreationFlag(value, RenderTextureCreationFlags.CreatedFromScript); }
         }
 
-        internal bool useDynamicScale
+        public bool useDynamicScale
         {
             get { return (_flags & RenderTextureCreationFlags.DynamicallyScalable) != 0; }
             set { SetOrClearRenderTextureCreationFlag(value, RenderTextureCreationFlags.DynamicallyScalable); }
@@ -211,6 +211,8 @@ namespace UnityEngine
 
         private static void ValidateRenderTextureDesc(RenderTextureDescriptor desc)
         {
+            if (!SystemInfo.IsFormatSupported(desc.graphicsFormat, FormatUsage.Render))
+                throw new ArgumentException("RenderTextureDesc graphicsFormat must be a supported GraphicsFormat. " + desc.graphicsFormat + " is not supported.", "desc.graphicsFormat");
             if (desc.width <= 0)
                 throw new ArgumentException("RenderTextureDesc width must be greater than zero.", "desc.width");
             if (desc.height <= 0)
@@ -226,6 +228,22 @@ namespace UnityEngine
 
     public partial class RenderTexture : Texture
     {
+        internal static GraphicsFormat GetCompatibleFormat(RenderTextureFormat renderTextureFormat, RenderTextureReadWrite readWrite)
+        {
+            GraphicsFormat requestedFormat = GraphicsFormatUtility.GetGraphicsFormat(renderTextureFormat, readWrite);
+            GraphicsFormat compatibleFormat = SystemInfo.GetCompatibleFormat(requestedFormat, FormatUsage.Render);
+
+            if (requestedFormat == compatibleFormat)
+            {
+                return requestedFormat;
+            }
+            else
+            {
+                Debug.LogWarning(String.Format("'{0}' is not supported. RenderTexture::GetTemporary fallbacks to {1} format on this platform. Use 'SystemInfo.IsFormatSupported' C# API to check format support.", requestedFormat.ToString(), compatibleFormat.ToString()));
+                return compatibleFormat;
+            }
+        }
+
         public static RenderTexture GetTemporary(RenderTextureDescriptor desc)
         {
             ValidateRenderTextureDesc(desc); desc.createdFromScript = true;
@@ -300,43 +318,43 @@ namespace UnityEngine
         [uei.ExcludeFromDocs]
         public static RenderTexture GetTemporary(int width, int height, int depthBuffer, RenderTextureFormat format, RenderTextureReadWrite readWrite, int antiAliasing, RenderTextureMemoryless memorylessMode, VRTextureUsage vrUsage)
         {
-            return GetTemporaryImpl(width, height, depthBuffer, GraphicsFormatUtility.GetGraphicsFormat(format, readWrite), antiAliasing, memorylessMode, vrUsage);
+            return GetTemporaryImpl(width, height, depthBuffer, GetCompatibleFormat(format, readWrite), antiAliasing, memorylessMode, vrUsage);
         }
 
         [uei.ExcludeFromDocs]
         public static RenderTexture GetTemporary(int width, int height, int depthBuffer, RenderTextureFormat format, RenderTextureReadWrite readWrite, int antiAliasing, RenderTextureMemoryless memorylessMode)
         {
-            return GetTemporaryImpl(width, height, depthBuffer, GraphicsFormatUtility.GetGraphicsFormat(format, readWrite), antiAliasing, memorylessMode);
+            return GetTemporaryImpl(width, height, depthBuffer, GetCompatibleFormat(format, readWrite), antiAliasing, memorylessMode);
         }
 
         [uei.ExcludeFromDocs]
         public static RenderTexture GetTemporary(int width, int height, int depthBuffer, RenderTextureFormat format, RenderTextureReadWrite readWrite, int antiAliasing)
         {
-            return GetTemporaryImpl(width, height, depthBuffer, GraphicsFormatUtility.GetGraphicsFormat(format, readWrite), antiAliasing);
+            return GetTemporaryImpl(width, height, depthBuffer, GetCompatibleFormat(format, readWrite), antiAliasing);
         }
 
         [uei.ExcludeFromDocs]
         public static RenderTexture GetTemporary(int width, int height, int depthBuffer, RenderTextureFormat format, RenderTextureReadWrite readWrite)
         {
-            return GetTemporaryImpl(width, height, depthBuffer, GraphicsFormatUtility.GetGraphicsFormat(format, readWrite));
+            return GetTemporaryImpl(width, height, depthBuffer, GetCompatibleFormat(format, readWrite));
         }
 
         [uei.ExcludeFromDocs]
         public static RenderTexture GetTemporary(int width, int height, int depthBuffer, RenderTextureFormat format)
         {
-            return GetTemporaryImpl(width, height, depthBuffer, GraphicsFormatUtility.GetGraphicsFormat(format, RenderTextureReadWrite.Default));
+            return GetTemporaryImpl(width, height, depthBuffer, GetCompatibleFormat(format, RenderTextureReadWrite.Default));
         }
 
         [uei.ExcludeFromDocs]
         public static RenderTexture GetTemporary(int width, int height, int depthBuffer)
         {
-            return GetTemporaryImpl(width, height, depthBuffer, GraphicsFormatUtility.GetGraphicsFormat(RenderTextureFormat.Default, RenderTextureReadWrite.Default));
+            return GetTemporaryImpl(width, height, depthBuffer, GetCompatibleFormat(RenderTextureFormat.Default, RenderTextureReadWrite.Default));
         }
 
         [uei.ExcludeFromDocs]
         public static RenderTexture GetTemporary(int width, int height)
         {
-            return GetTemporaryImpl(width, height, 0, GraphicsFormatUtility.GetGraphicsFormat(RenderTextureFormat.Default, RenderTextureReadWrite.Default));
+            return GetTemporaryImpl(width, height, 0, GetCompatibleFormat(RenderTextureFormat.Default, RenderTextureReadWrite.Default));
         }
     }
 
@@ -344,12 +362,12 @@ namespace UnityEngine
     {
         // Be careful. We can't call base constructor here because it would create the native object twice.
         public CustomRenderTexture(int width, int height, RenderTextureFormat format, RenderTextureReadWrite readWrite)
-            : this(width, height, GraphicsFormatUtility.GetGraphicsFormat(format, readWrite))
+            : this(width, height, GetCompatibleFormat(format, readWrite))
         {
         }
 
         public CustomRenderTexture(int width, int height, RenderTextureFormat format)
-            : this(width, height, GraphicsFormatUtility.GetGraphicsFormat(format, RenderTextureReadWrite.Default))
+            : this(width, height, GetCompatibleFormat(format, RenderTextureReadWrite.Default))
         {
         }
 
@@ -395,6 +413,24 @@ namespace UnityEngine
 
     public partial class Texture : Object
     {
+/*
+        internal static GraphicsFormat GetCompatibleFormat(TextureFormat format, bool isSRGB)
+        {
+            GraphicsFormat requestedFormat = GraphicsFormatUtility.GetGraphicsFormat(format, isSRGB);
+            GraphicsFormat compatibleFormat = SystemInfo.GetCompatibleFormat(requestedFormat, FormatUsage.Sample);
+
+            if (requestedFormat == compatibleFormat)
+            {
+                return requestedFormat;
+            }
+            else
+            {
+                Debug.LogWarning(String.Format("'{0}' is not supported. Texture fallbacks to {1} format on this platform. Use 'SystemInfo.IsFormatSupported' C# API to check format support.", requestedFormat.ToString(), compatibleFormat.ToString()));
+                return compatibleFormat;
+            }
+        }
+*/
+
         internal bool ValidateFormat(RenderTextureFormat format)
         {
             if (SystemInfo.SupportsRenderTextureFormat(format))
@@ -715,6 +751,7 @@ namespace UnityEngine
                 flags |= TextureCreationFlags.MipChain;
             if (GraphicsFormatUtility.IsCrunchFormat(textureFormat))
                 flags |= TextureCreationFlags.Crunch;
+
             Internal_Create(this, width, format, flags, nativeTex);
         }
 

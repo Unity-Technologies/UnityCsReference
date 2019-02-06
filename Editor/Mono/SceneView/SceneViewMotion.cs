@@ -17,6 +17,8 @@ namespace UnityEditor
         static SceneView s_SceneView;
         static Vector3 s_Motion;
         static float k_FlySpeed = 9f;
+        static float s_FlySpeedTarget = 0f;
+        const float k_FlySpeedAcceleration = 1.8f;
         const float k_DefaultFpsEaseDuration = .4f;
         static float s_StartZoom = 0f, s_ZoomSpeed = 0f;
         static float s_TotalMotion = 0f;
@@ -91,6 +93,9 @@ namespace UnityEditor
                 if (inputSamplingScope.currentlyMoving)
                     view.viewIsLockedToObject = false;
 
+                if (inputSamplingScope.inputVectorChanged)
+                    s_FlySpeedTarget = 0f;
+
                 s_Motion = inputSamplingScope.currentInputVector;
             }
 
@@ -125,25 +130,23 @@ namespace UnityEditor
         static Vector3 GetMovementDirection()
         {
             s_Moving = s_Motion.sqrMagnitude > 0f;
-
+            var deltaTime = CameraFlyModeContext.deltaTime;
             var speedModifier = s_SceneView.sceneViewCameraSettings.speed;
 
             if (Event.current.shift)
                 speedModifier *= 5f;
 
-            if (movementEasingEnabled)
-            {
-                s_FlySpeed.target = s_Moving ? s_Motion.normalized * k_FlySpeed * speedModifier : Vector3.zero;
-            }
+            if (s_Moving)
+                s_FlySpeedTarget = s_FlySpeedTarget < Mathf.Epsilon ? k_FlySpeed : s_FlySpeedTarget * Mathf.Pow(k_FlySpeedAcceleration, deltaTime);
             else
-            {
-                if (!s_Moving)
-                    return s_FlySpeed.value = Vector3.zero;
+                s_FlySpeedTarget = 0f;
 
-                s_FlySpeed.value = s_Motion.normalized * speedModifier * k_FlySpeed;
-            }
+            if (movementEasingEnabled)
+                s_FlySpeed.target = s_Motion.normalized * s_FlySpeedTarget * speedModifier;
+            else
+                s_FlySpeed.value = s_Motion.normalized * speedModifier * s_FlySpeedTarget;
 
-            return s_FlySpeed.value * CameraFlyModeContext.deltaTime;
+            return s_FlySpeed.value * deltaTime;
         }
 
         private static void HandleMouseDown(SceneView view, int id, int button)
@@ -420,13 +423,11 @@ namespace UnityEditor
                     else if (relativeDelta < 0 && relativeDelta > -deltaCutoff)
                         relativeDelta = -deltaCutoff;
 
-                    targetSize = movementEasingEnabled
-                        ? view.targetSize + relativeDelta
-                        : view.size + relativeDelta;
+                    targetSize = view.size + relativeDelta;
                 }
                 else
                 {
-                    targetSize = Mathf.Abs(movementEasingEnabled ? view.targetSize : view.size) * (zoomDelta * .015f + 1.0f);
+                    targetSize = Mathf.Abs(view.size) * (zoomDelta * .015f + 1.0f);
                 }
 
                 var initialDistance = view.cameraDistance;
@@ -434,11 +435,7 @@ namespace UnityEditor
                 if (!(float.IsNaN(targetSize) || float.IsInfinity(targetSize)))
                 {
                     targetSize = Mathf.Min(SceneView.k_MaxSceneViewSize, targetSize);
-
-                    if (movementEasingEnabled)
-                        view.targetSize = targetSize;
-                    else
-                        view.size = targetSize;
+                    view.size = targetSize;
                 }
 
                 if (!zoomTowardsCenter && Mathf.Abs(view.cameraDistance) < 1.0e7f)

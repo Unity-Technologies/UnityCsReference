@@ -425,7 +425,7 @@ namespace UnityEditor.UIElements.Debugger
                 foreach (string sheet in s_MatchedRulesExtractor.selectedElementStylesheets)
                 {
                     if (GUILayout.Button(sheet))
-                        InternalEditorUtility.OpenFileAtLineExternal(sheet, 0);
+                        InternalEditorUtility.OpenFileAtLineExternal(sheet, 0, 0);
                 }
             }
 
@@ -475,7 +475,7 @@ namespace UnityEditor.UIElements.Debugger
                     EditorGUILayout.BeginHorizontal();
                     bool foldout = EditorGUILayout.Foldout(m_CurFoldout.Contains(i), new GUIContent(builder.ToString()), true);
                     if (rule.displayPath != null && GUILayout.Button(rule.displayPath, EditorStyles.miniButton, GUILayout.MaxWidth(150)))
-                        InternalEditorUtility.OpenFileAtLineExternal(rule.fullPath, rule.lineNumber);
+                        InternalEditorUtility.OpenFileAtLineExternal(rule.fullPath, rule.lineNumber, -1);
                     EditorGUILayout.EndHorizontal();
 
                     if (expanded && !foldout)

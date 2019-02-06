@@ -116,6 +116,8 @@ namespace UnityEditor.IMGUI.Controls
         {
             m_GUIView = editorWindow ? editorWindow.m_Parent : GUIView.current;
             state = treeViewState;
+            if (HasSelection())
+                GrabKeyboardFocus();
         }
 
         public void Init(Rect rect, ITreeViewDataSource data, ITreeViewGUI gui, ITreeViewDragging dragging)

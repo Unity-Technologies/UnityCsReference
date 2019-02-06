@@ -12,8 +12,11 @@ namespace UnityEditor.Purchasing
     [StaticAccessor("GetUnityPurchasingSettings()", StaticAccessorType.Dot)]
     public static partial class PurchasingSettings
     {
-        [ThreadAndSerializationSafe()]
-        public static extern bool enabled { get; set; }
+        public static extern bool enabled
+        {
+            [ThreadSafe] get;
+            [ThreadSafe] set;
+        }
 
         internal static extern bool enabledForPlatform { get; }
 

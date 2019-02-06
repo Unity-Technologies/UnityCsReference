@@ -87,6 +87,8 @@ namespace UnityEditor
             public static GUIContent streamTangentText = EditorGUIUtility.TrTextContent("Tangent (TANGENT.xyzw)");
 
             public static GUIContent streamApplyToAllSystemsText = EditorGUIUtility.TrTextContent("Apply to Systems", "Apply the vertex stream layout to all Particle Systems using this material");
+
+            public static string undoApplyCustomVertexStreams = L10n.Tr("Apply custom vertex streams from material");
         }
 
         MaterialProperty blendMode = null;
@@ -477,7 +479,7 @@ namespace UnityEditor
             // Display list of streams required to make this shader work
             bool useLighting = (material.GetFloat("_LightingEnabled") > 0.0f);
             bool useFlipbookBlending = (material.GetFloat("_FlipbookMode") > 0.0f);
-            bool useTangents = material.GetTexture("_BumpMap") && useLighting;
+            bool useTangents = useLighting && material.GetTexture("_BumpMap");
 
             bool useGPUInstancing = ShaderUtil.HasProceduralInstancing(material.shader);
             if (useGPUInstancing && m_RenderersUsingThisMaterial.Count > 0)
@@ -535,6 +537,8 @@ namespace UnityEditor
             // Set the streams on all systems using this material
             if (GUILayout.Button(Styles.streamApplyToAllSystemsText, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
             {
+                Undo.RecordObjects(m_RenderersUsingThisMaterial.Where(r => r != null).ToArray(), Styles.undoApplyCustomVertexStreams);
+
                 foreach (ParticleSystemRenderer renderer in m_RenderersUsingThisMaterial)
                 {
                     if (renderer != null)
@@ -717,7 +721,7 @@ namespace UnityEditor
             // (MaterialProperty value might come from renderer material property block)
             bool useDistortion = !hasZWrite && (material.GetFloat("_DistortionEnabled") > 0.0f);
             SetKeyword(material, "_NORMALMAP", (useLighting || useDistortion) && material.GetTexture("_BumpMap"));
-            SetKeyword(material, "_METALLICGLOSSMAP", useLighting && (material.GetTexture("_MetallicGlossMap") != null));
+            SetKeyword(material, "_METALLICGLOSSMAP", useLighting && material.GetTexture("_MetallicGlossMap"));
 
             material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
             SetKeyword(material, "_EMISSION", material.GetFloat("_EmissionEnabled") > 0.0f);

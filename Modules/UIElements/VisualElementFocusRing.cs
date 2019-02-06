@@ -270,12 +270,6 @@ namespace UnityEngine.UIElements
             {
                 KeyDownEvent kde = e as KeyDownEvent;
 
-                if (currentFocusable == null)
-                {
-                    // Dont start going around a focus ring if there is no current focused element.
-                    return FocusChangeDirection.none;
-                }
-
                 if (kde.character == (char)25 || kde.character == '\t')
                 {
                     if ((kde.modifiers & EventModifiers.Shift) == 0)
@@ -310,7 +304,7 @@ namespace UnityEngine.UIElements
                 {
                     index = GetFocusableInternalIndex(currentFocusable) + 1;
 
-                    if (index == 0)
+                    if (currentFocusable != null && index == 0)
                     {
                         // currentFocusable was not found in the ring. Use the element tree to find the next focusable.
                         return GetNextFocusableInTree(currentFocusable as VisualElement);
@@ -335,13 +329,13 @@ namespace UnityEngine.UIElements
                 {
                     index = GetFocusableInternalIndex(currentFocusable) - 1;
 
-                    if (index == -2)
+                    if (currentFocusable != null && index == -2)
                     {
                         // currentFocusable was not found in the ring. Use the element tree to find the previous focusable.
                         return GetPreviousFocusableInTree(currentFocusable as VisualElement);
                     }
 
-                    if (index == -1)
+                    if (index < 0)
                     {
                         index = m_FocusRing.Count - 1;
                     }

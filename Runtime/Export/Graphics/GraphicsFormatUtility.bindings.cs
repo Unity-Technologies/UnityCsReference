@@ -53,6 +53,9 @@ namespace UnityEngine
                 extern public static bool IsSRGBFormat(GraphicsFormat format);
 
                 [FreeFunction]
+                extern public static bool IsSwizzleFormat(GraphicsFormat format);
+
+                [FreeFunction]
                 extern public static GraphicsFormat GetSRGBFormat(GraphicsFormat format);
 
                 [FreeFunction]
@@ -90,6 +93,9 @@ namespace UnityEngine
 
                 [FreeFunction]
                 extern public static bool IsAlphaOnlyFormat(GraphicsFormat format);
+
+                [FreeFunction]
+                extern public static bool IsAlphaTestFormat(GraphicsFormat format);
 
                 [FreeFunction]
                 extern public static bool HasAlphaChannel(GraphicsFormat format);

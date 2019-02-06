@@ -16,7 +16,6 @@ namespace UnityEngine.Analytics
     [StaticAccessor("GetPerformanceReportingManager()", StaticAccessorType.Dot)]
     public static class PerformanceReporting
     {
-        [ThreadAndSerializationSafe()]
         public extern static bool enabled { get; set; }
 
         public extern static long graphicsInitializationFinishTime

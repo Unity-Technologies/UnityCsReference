@@ -62,21 +62,7 @@ namespace UnityEngine.UIElements
         {
             // When a style sheet is re-imported, we must make sure to purge internal caches that are depending on it
             StyleCache.ClearStyleCache();
-            PropagateDirtyStyleSheets(visualTree);
             visualTree.IncrementVersion(VersionChangeType.StyleSheet); // dirty all styles
-        }
-
-        private static void PropagateDirtyStyleSheets(VisualElement element)
-        {
-            if (element != null)
-            {
-                element.ReloadStyleSheets();
-
-                foreach (var child in element.hierarchy.Children())
-                {
-                    PropagateDirtyStyleSheets(child);
-                }
-            }
         }
 
 

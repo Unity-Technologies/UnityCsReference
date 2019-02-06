@@ -206,7 +206,7 @@ namespace UnityEditor
             if (InternalEditorUtility.inBatchMode)
                 return;
 
-            InternalEditorUtility.OpenFileAtLineExternal("", -1);
+            InternalEditorUtility.OpenFileAtLineExternal("", -1, -1);
         }
 
         /// <summary>

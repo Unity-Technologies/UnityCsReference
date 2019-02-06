@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-
 namespace UnityEngine.UIElements
 {
     // determines in which event phase an event handler wants to handle events
@@ -51,7 +49,7 @@ namespace UnityEngine.UIElements
                     if (evt.isPropagationStopped)
                         break;
 
-                    if (evt.path.trickleDownPath[i] == evt.skipElement)
+                    if (evt.Skip(evt.path.trickleDownPath[i]))
                     {
                         continue;
                     }
@@ -63,7 +61,7 @@ namespace UnityEngine.UIElements
 
             // Phase 2: Target
             // Call HandleEvent() even if propagation is stopped, for the default actions at target.
-            if (evt.target != null && evt.target != evt.skipElement)
+            if (evt.target != null && !evt.Skip(evt.target))
             {
                 evt.propagationPhase = PropagationPhase.AtTarget;
                 evt.currentTarget = evt.target;
@@ -76,7 +74,7 @@ namespace UnityEngine.UIElements
             {
                 foreach (var element in evt.path.targetAndBubblePath)
                 {
-                    if (element.m_VisualElement == evt.skipElement)
+                    if (evt.Skip(element.m_VisualElement))
                     {
                         continue;
                     }
@@ -115,8 +113,13 @@ namespace UnityEngine.UIElements
             // If e.type != EventType.Used, avoid resending the event to the capture as it already had the chance to handle it.
 
             var imContainer = root as IMGUIContainer;
-            if (imContainer != null && (evt.imguiEvent.type == EventType.Used || root != evt.skipElement))
+            if (imContainer != null && (evt.imguiEvent.type == EventType.Used || !evt.Skip(root)))
             {
+                if (evt.Skip(imContainer))
+                {
+                    return;
+                }
+
                 if (imContainer.HandleIMGUIEvent(evt.imguiEvent))
                 {
                     evt.StopPropagation();

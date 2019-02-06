@@ -232,7 +232,7 @@ namespace UnityEditor
             List<FilterResult> list = new List<FilterResult>();
             List<string> baseFolders = new List<string>();
             baseFolders.AddRange(ProjectWindowUtil.GetBaseFolders(m_SearchFilter.folders));
-            if (baseFolders.Remove(PackageManager.Folders.GetPackagesMountPoint()))
+            if (baseFolders.Remove(PackageManager.Folders.GetPackagesPath()))
             {
                 var packages = PackageManagerUtilityInternal.GetAllVisiblePackages();
                 foreach (var package in packages)
@@ -270,7 +270,7 @@ namespace UnityEditor
             HierarchyProperty property;
             foreach (string folderPath in m_SearchFilter.folders)
             {
-                if (folderPath == PackageManager.Folders.GetPackagesMountPoint())
+                if (folderPath == PackageManager.Folders.GetPackagesPath())
                 {
                     var packages = PackageManagerUtilityInternal.GetAllVisiblePackages();
                     foreach (var package in packages)

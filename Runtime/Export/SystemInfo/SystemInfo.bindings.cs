@@ -656,6 +656,9 @@ namespace UnityEngine
         [FreeFunction("ScriptingGraphicsCaps::IsFormatSupported")]
         extern public static bool IsFormatSupported(GraphicsFormat format, FormatUsage usage);
 
+        [FreeFunction("ScriptingGraphicsCaps::GetCompatibleFormat")]
+        extern public static GraphicsFormat GetCompatibleFormat(GraphicsFormat format, FormatUsage usage);
+
         [FreeFunction("ScriptingGraphicsCaps::GetGraphicsFormat")]
         extern public static GraphicsFormat GetGraphicsFormat(DefaultFormat format);
     }

@@ -47,6 +47,8 @@ namespace UnityEngine
     {
         protected void DebugPrint(string msg) {}
         protected void DebugPrint(string call, string methodName, string signature, object[] args) {}
+        private void _AndroidJavaObject(string className, params object[] args) {}
+        internal AndroidJavaObject() {}
         ~AndroidJavaObject() {}
         protected virtual void Dispose(bool disposing) {}
         protected void _Dispose() {}
@@ -64,4 +66,8 @@ namespace UnityEngine
         protected static AndroidJavaClass JavaLangClass { get { return null; } }
     }
 
+    public partial class AndroidJavaClass
+    {
+        private void _AndroidJavaClass(string className) {}
+    }
 }

@@ -10,6 +10,31 @@ using LightmapType = UnityEngineInternal.LightmapType;
 
 namespace UnityEditor
 {
+    [NativeHeader("Editor/Src/GI/Enlighten/Visualisers/VisualisationManager.h")]
+    internal enum GITextureAvailability
+    {
+        GITextureUnknown = 0,
+        GITextureNotAvailable = 1,
+        GITextureLoading = 2,
+        GITextureAvailable = 3,
+        GITextureAvailabilityCount = 4
+    }
+
+    [NativeHeader("Editor/Src/GI/Enlighten/Visualisers/VisualisationManager.h")]
+    internal struct VisualisationGITexture
+    {
+        [NativeName("m_Type")]
+        public GITextureType type;
+        [NativeName("m_Availability")]
+        public GITextureAvailability textureAvailability;
+        [NativeName("m_Texture")]
+        public Texture2D texture;
+        [NativeName("m_Hash")]
+        public Hash128 hash;
+        [NativeName("m_ContentsHash")]
+        public Hash128 contentHash;
+    }
+
     internal sealed partial class LightmapVisualization
     {
         [NativeHeader("Editor/Src/LightmapEditorSettings.h")]

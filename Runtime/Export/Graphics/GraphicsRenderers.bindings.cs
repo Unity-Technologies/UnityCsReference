@@ -309,6 +309,7 @@ namespace UnityEngine
 
         extern public Mesh additionalVertexStreams { get; set; }
         extern public int subMeshStartIndex {[NativeName("GetSubMeshStartIndex")] get; }
+        extern public ReceiveGI receiveGI { get; set; }
     }
 
     [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]

@@ -73,17 +73,12 @@ namespace UnityEditor
 
         internal static void CopyDirectoryRecursive(string source, string target)
         {
-            CopyDirectoryRecursive(source, target, false, false);
-        }
-
-        internal static void CopyDirectoryRecursiveIgnoreMeta(string source, string target)
-        {
-            CopyDirectoryRecursive(source, target, false, true);
+            CopyDirectoryRecursive(source, target, overwrite: false, ignoreMeta: false);
         }
 
         internal static void CopyDirectoryRecursive(string source, string target, bool overwrite)
         {
-            CopyDirectoryRecursive(source, target, overwrite, false);
+            CopyDirectoryRecursive(source, target, overwrite, ignoreMeta: false);
         }
 
         internal static void CopyDirectory(string source, string target, bool overwrite)

@@ -18,6 +18,8 @@ namespace UnityEditor
 {
     internal partial class AssemblyHelper
     {
+        static Dictionary<string, bool> managedToDllType = new Dictionary<string, bool>();
+
         // Check if assmebly internal name doesn't match file name, and show the warning.
         static public void CheckForAssemblyFileNameMismatch(string assemblyPath)
         {
@@ -501,8 +503,14 @@ namespace UnityEditor
 
         public static bool IsManagedAssembly(string file)
         {
-            UnityEditorInternal.DllType type = UnityEditorInternal.InternalEditorUtility.DetectDotNetDll(file);
-            return type != UnityEditorInternal.DllType.Unknown && type != UnityEditorInternal.DllType.Native;
+            bool isManagedDll;
+            if (managedToDllType.TryGetValue(file, out isManagedDll))
+            {
+                return isManagedDll;
+            }
+            var res = InternalEditorUtility.IsDotNetDll(file);
+            managedToDllType[file] = res;
+            return res;
         }
 
         public static bool IsInternalAssembly(string file)

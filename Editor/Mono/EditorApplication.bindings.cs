@@ -160,7 +160,6 @@ namespace UnityEditor
         internal static extern  bool ExecuteMenuItemWithTemporaryContext(string menuItemPath, Object[] objects);
 
         // Path to the Unity editor contents folder (RO)
-        [ThreadAndSerializationSafe]
         public static extern string applicationContentsPath
         {
             [FreeFunction("GetApplicationContentsPath", IsThreadSafe = true)]
@@ -168,7 +167,6 @@ namespace UnityEditor
         }
 
         // Returns the path to the Unity editor application (RO)
-        [ThreadAndSerializationSafe]
         public static extern string applicationPath
         {
             [FreeFunction("GetApplicationPath", IsThreadSafe = true)]

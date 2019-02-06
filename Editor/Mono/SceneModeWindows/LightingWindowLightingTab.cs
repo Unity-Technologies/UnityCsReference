@@ -37,6 +37,8 @@ namespace UnityEditor
                 "Bake Reflection Probes",
                 "Clear Baked Data"
             };
+
+            public static readonly float ButtonWidth = 90;
         }
 
         enum BakeMode
@@ -305,11 +307,11 @@ namespace UnityEditor
                         // Only show Force Stop when using the PathTracer backend
                         if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU &&
                             m_EnabledBakedGI.boolValue &&
-                            GUILayout.Button("Force Stop", GUILayout.Width(LightingWindow.kButtonWidth)))
+                            GUILayout.Button("Force Stop", GUILayout.Width(Styles.ButtonWidth)))
                         {
                             Lightmapping.ForceStop();
                         }
-                        if (GUILayout.Button("Cancel", GUILayout.Width(LightingWindow.kButtonWidth)))
+                        if (GUILayout.Button("Cancel", GUILayout.Width(Styles.ButtonWidth)))
                         {
                             Lightmapping.Cancel();
                         }

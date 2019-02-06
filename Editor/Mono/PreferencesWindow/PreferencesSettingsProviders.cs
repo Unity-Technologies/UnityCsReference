@@ -284,7 +284,6 @@ namespace UnityEditor
             return null;
         }
 
-
         [SettingsProvider]
         internal static SettingsProvider CreateUnityServicesProvider()
         {
@@ -722,7 +721,6 @@ namespace UnityEditor
 
             ApplyChangesToPrefs();
         }
-
 
         private void WriteRecentAppsList(string[] paths, string path, string prefsKey)
         {

@@ -52,11 +52,23 @@ namespace UnityEditor.UIElements
 
         internal Mode mode { get; private set; }
 
-        internal Editor Editor { get; private set; }
+        internal Editor editor
+        {
+            get { return m_Editor; }
+            set
+            {
+                if (m_Editor != value)
+                {
+                    DestroyOwnedEditor();
+                    m_Editor = value;
+                    PartialReset();
+                }
+            }
+        }
 
-        internal bool OwnsEditor { get; private set; } = false;
+        internal bool ownsEditor { get; private set; } = false;
 
-        internal SerializedObject BoundObject { get; private set; }
+        internal SerializedObject boundObject { get; private set; }
 
         internal VisualElement prefabOverrideBlueBarsContainer { get; private set; }
 
@@ -106,7 +118,7 @@ namespace UnityEditor.UIElements
 
             this.mode = mode;
 
-            Editor = editor;
+            this.editor = editor;
 
             if (editor.targets.Length == 0)
             {
@@ -127,11 +139,16 @@ namespace UnityEditor.UIElements
 
         void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
-            if (OwnsEditor && Editor != null)
+            DestroyOwnedEditor();
+        }
+
+        void DestroyOwnedEditor()
+        {
+            if (ownsEditor && editor != null)
             {
-                Object.DestroyImmediate(Editor);
-                Editor = null;
-                OwnsEditor = false;
+                Object.DestroyImmediate(editor);
+                editor = null;
+                ownsEditor = false;
                 RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             }
 
@@ -140,8 +157,21 @@ namespace UnityEditor.UIElements
 
         void OnAttachToPanel(AttachToPanelEvent evt)
         {
-            Reset(BoundObject);
+            Reset(boundObject);
             UnregisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+        }
+
+        internal static Mode GetModeFromInspectorMode(InspectorMode mode)
+        {
+            switch (mode)
+            {
+                case InspectorMode.Debug:
+                    return Mode.Debug;
+                case InspectorMode.DebugInternal:
+                    return Mode.DebugInternal;
+                default:
+                    return Mode.Normal;
+            }
         }
 
         private void Reset(SerializedObject bindObject)
@@ -172,7 +202,7 @@ namespace UnityEditor.UIElements
                 return;
             }
 
-            BoundObject = bindObject;
+            boundObject = bindObject;
 
             var customInspector = CreateInspectorElementFromEditor(editor);
             if (customInspector == null)
@@ -180,6 +210,25 @@ namespace UnityEditor.UIElements
                 customInspector = CreateDefaultInspector(bindObject);
             }
 
+            if (customInspector != null && customInspector != this)
+                hierarchy.Add(customInspector);
+        }
+
+        private void PartialReset()
+        {
+            if (boundObject == null)
+            {
+                Reset(null);
+                return;
+            }
+
+            var customInspector = CreateInspectorElementFromEditor(editor, true);
+            if (customInspector == null)
+            {
+                customInspector = CreateDefaultInspector(boundObject);
+            }
+
+            Clear();
             if (customInspector != null && customInspector != this)
                 hierarchy.Add(customInspector);
         }
@@ -197,8 +246,8 @@ namespace UnityEditor.UIElements
 
         private Editor GetOrCreateEditor(SerializedObject serializedObject)
         {
-            if (Editor != null)
-                return Editor;
+            if (editor != null)
+                return editor;
 
             var target = serializedObject?.targetObject;
 
@@ -208,14 +257,14 @@ namespace UnityEditor.UIElements
                 {
                     if (trackerEditor.target == target || trackerEditor.serializedObject == serializedObject)
                     {
-                        return Editor = trackerEditor;
+                        return editor = trackerEditor;
                     }
                 }
             }
 
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-            OwnsEditor = true;
-            return Editor = Editor.CreateEditor(serializedObject?.targetObject);
+            ownsEditor = true;
+            return editor = Editor.CreateEditor(serializedObject?.targetObject);
         }
 
         private VisualElement CreateDefaultInspector(SerializedObject serializedObject)
@@ -258,7 +307,10 @@ namespace UnityEditor.UIElements
             return false;
         }
 
-        private VisualElement CreateIMGUIInspectorFromEditor(SerializedObject serializedObject, Editor editor)
+        IMGUIContainer m_IMGUIContainer;
+
+        private VisualElement CreateIMGUIInspectorFromEditor(SerializedObject serializedObject, Editor editor,
+            bool reuseIMGUIContainer)
         {
             if ((mode & (Mode.IMGUICustom | Mode.IMGUIDefault)) == 0)
                 return null;
@@ -279,12 +331,12 @@ namespace UnityEditor.UIElements
                 if ((mode & Mode.DebugMod) > 0)
                 {
                     AddToClassList(debugVariantUssClassName);
-                    editor.m_InspectorMode = InspectorMode.Debug;
+                    editor.inspectorMode = InspectorMode.Debug;
                 }
                 else if ((mode & Mode.DebugInternalMod) > 0)
                 {
                     AddToClassList(debugInternalVariantUssClassName);
-                    editor.m_InspectorMode = InspectorMode.DebugInternal;
+                    editor.inspectorMode = InspectorMode.DebugInternal;
                 }
             }
             else
@@ -292,8 +344,17 @@ namespace UnityEditor.UIElements
                 AddToClassList(iMGUICustomVariantUssClassName);
             }
 
-            IMGUIContainer inspector = null;
-            inspector = new IMGUIContainer(() =>
+            IMGUIContainer inspector;
+            // Reusing the existing IMGUIContainer allows us to re-use the existing gui state, when we are drawing the same inspector this will let us keep the same control ids
+            if (reuseIMGUIContainer && m_IMGUIContainer != null)
+            {
+                inspector = m_IMGUIContainer;
+            }
+            else
+            {
+                inspector = new IMGUIContainer();
+            }
+            inspector.onGUIHandler = () =>
             {
                 if (!editor.serializedObject.isValid)
                 {
@@ -309,13 +370,13 @@ namespace UnityEditor.UIElements
                         switch (mode)
                         {
                             case Mode.Normal:
-                                genericEditor.m_InspectorMode = InspectorMode.Normal;
+                                genericEditor.inspectorMode = InspectorMode.Normal;
                                 break;
                             case Mode.Default:
-                                genericEditor.m_InspectorMode = InspectorMode.Debug;
+                                genericEditor.inspectorMode = InspectorMode.Debug;
                                 break;
                             case Mode.Custom:
-                                genericEditor.m_InspectorMode = InspectorMode.DebugInternal;
+                                genericEditor.inspectorMode = InspectorMode.DebugInternal;
                                 break;
                             case Mode.IMGUI:
                                 break;
@@ -341,7 +402,9 @@ namespace UnityEditor.UIElements
                         EditorGUIUtility.wideMode = true;
                     }
 
-                    GUIStyle editorWrapper = (editor.UseDefaultMargins() ? EditorStyles.inspectorDefaultMargins : GUIStyle.none);
+                    GUIStyle editorWrapper = (editor.UseDefaultMargins()
+                        ? EditorStyles.inspectorDefaultMargins
+                        : GUIStyle.none);
                     try
                     {
                         GUI.changed = false;
@@ -400,9 +463,10 @@ namespace UnityEditor.UIElements
                         EditorGUIUtility.hierarchyMode = originalHierarchyMode;
                     }
                 }
-            });
+            };
 
             inspector.style.overflow = Overflow.Visible;
+            m_IMGUIContainer = inspector;
 
             if (!(editor is GenericInspector))
                 inspector.AddToClassList(customInspectorUssClassName);
@@ -414,7 +478,7 @@ namespace UnityEditor.UIElements
             return inspector;
         }
 
-        private VisualElement CreateInspectorElementFromEditor(Editor editor)
+        private VisualElement CreateInspectorElementFromEditor(Editor editor, bool reuseIMGUIContainer = false)
         {
             var serializedObject = editor.serializedObject;
             var target = editor.targets[0];
@@ -440,7 +504,7 @@ namespace UnityEditor.UIElements
             }
 
             if (inspectorElement == null)
-                inspectorElement = CreateIMGUIInspectorFromEditor(serializedObject, editor);
+                inspectorElement = CreateIMGUIInspectorFromEditor(serializedObject, editor, reuseIMGUIContainer);
 
             if (inspectorElement == null && (mode & Mode.UIEDefault) > 0)
                 inspectorElement = CreateDefaultInspector(serializedObject);
@@ -457,6 +521,7 @@ namespace UnityEditor.UIElements
 
         bool m_IsOpenForEdit;
         bool m_InvalidateGUIBlockCache = true;
+        Editor m_Editor;
 
         private bool GetRebuildOptimizedGUIBlocks(Object inspectedObject)
         {

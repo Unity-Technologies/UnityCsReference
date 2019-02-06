@@ -130,7 +130,6 @@ namespace UnityEditor.UIElements.Debugger
             if (state == null)
                 return;
 
-            EditorGUILayout.LabelField("Key", "0x" + state.key.ToString("X"));
             EditorGUILayout.ObjectField("Material", state.material, typeof(Material), false);
 
             var atlasName = state.custom != null ? state.custom.name : "";

@@ -406,6 +406,12 @@ namespace UnityEditor.StyleSheets
             ResolveValues(property, Variables, Options);
         }
 
+        public void ResolveTo(StyleSheet dest)
+        {
+            Resolve();
+            PopulateSheet(dest, Rules.Values, Options);
+        }
+
         public static void ResolveVariables(IEnumerable<Rule> rules, Dictionary<string, Property> variables, ResolvingOptions options)
         {
             foreach (var rule in rules)
@@ -417,7 +423,7 @@ namespace UnityEditor.StyleSheets
             }
         }
 
-        public static StyleSheet ConvertToStyleSheet(IEnumerable<Rule> rules, ResolvingOptions options = null)
+        public static void PopulateSheet(StyleSheet sheet, IEnumerable<Rule> rules, ResolvingOptions options = null)
         {
             options = options ?? new ResolvingOptions();
             var helper = new StyleSheetBuilderHelper();
@@ -439,8 +445,14 @@ namespace UnityEditor.StyleSheets
                 }
                 helper.EndRule();
             }
-            helper.PopulateSheet();
-            return helper.sheet;
+            helper.PopulateSheet(sheet);
+        }
+
+        public static StyleSheet ConvertToStyleSheet(IEnumerable<Rule> rules, ResolvingOptions options = null)
+        {
+            var sheet = ScriptableObject.CreateInstance<StyleSheet>();
+            PopulateSheet(sheet, rules, options);
+            return sheet;
         }
 
         public static bool IsVariableProperty(Property property)

@@ -19,10 +19,16 @@ namespace UnityEngine.UIElements
 
                 if (imguiContainer != null)
                 {
-                    if (imguiContainer != evt.skipElement && imguiContainer.HandleIMGUIEvent(evt.imguiEvent))
+                    if (!evt.Skip(imguiContainer) && imguiContainer.HandleIMGUIEvent(evt.imguiEvent))
                     {
                         evt.StopPropagation();
                         evt.PreventDefault();
+                    }
+
+                    if (!evt.isPropagationStopped && evt.propagateToIMGUI)
+                    {
+                        evt.skipElements.Add(imguiContainer);
+                        EventDispatchUtilities.PropagateToIMGUIContainer(panel.visualTree, evt);
                     }
                 }
                 else if (panel.focusController.GetLeafFocusedElement() != null)

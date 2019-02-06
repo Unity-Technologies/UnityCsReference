@@ -76,24 +76,12 @@ namespace UnityEngine.UIElements.UIR
             CopyFrom(other);
         }
 
-        public UInt64 key { get; private set; }
-        public void UpdateKey()
-        {
-            if (material != null)
-                key += (UInt64)material.GetHashCode();
-            if (custom != null)
-                key += (UInt64)custom.GetHashCode();
-            if (font != null)
-                key += (UInt64)font.GetHashCode();
-        }
-
         public void CopyFrom(State other)
         {
             Assert.IsNotNull(other);
             material = other.material;
             custom = other.custom;
             font = other.font;
-            key = other.key;
         }
 
         /// <returns>The fields that have been overridden.</returns>
@@ -121,9 +109,6 @@ namespace UnityEngine.UIElements.UIR
                 font = other.font;
                 overrides |= StateFields.Font;
             }
-
-            if (overrides != StateFields.None)
-                UpdateKey();
 
             return overrides;
         }

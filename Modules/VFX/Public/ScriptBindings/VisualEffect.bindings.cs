@@ -43,20 +43,46 @@ namespace UnityEngine.Experimental.VFX
             return vfxEventAttribute;
         }
 
-        extern public void Play(VFXEventAttribute eventAttribute);
+        private void CheckValidVFXEventAttribute(VFXEventAttribute eventAttribute)
+        {
+            if (eventAttribute != null && eventAttribute.vfxAsset != visualEffectAsset)
+            {
+                throw new InvalidOperationException("Invalid VFXEventAttribute provided to VisualEffect, has been created with another VisualEffectAsset");
+            }
+        }
+
+        extern internal void SendPlay(VFXEventAttribute eventAttribute);
+        public void Play(VFXEventAttribute eventAttribute)
+        {
+            CheckValidVFXEventAttribute(eventAttribute);
+            SendPlay(eventAttribute);
+        }
 
         public void Play()
         {
-            Play(null);
+            SendPlay(null);
         }
 
-        extern public void Stop(VFXEventAttribute eventAttribute);
+        extern internal void SendStop(VFXEventAttribute eventAttribute);
+        public void Stop(VFXEventAttribute eventAttribute)
+        {
+            CheckValidVFXEventAttribute(eventAttribute);
+            SendStop(eventAttribute);
+        }
+
         public void Stop()
         {
-            Stop(null);
+            SendStop(null);
         }
 
-        extern public void SendEvent(int eventNameID, VFXEventAttribute eventAttribute);
+        extern private void Internal_SendEvent(int eventNameID, VFXEventAttribute eventAttribute);
+
+        public void SendEvent(int eventNameID, VFXEventAttribute eventAttribute)
+        {
+            CheckValidVFXEventAttribute(eventAttribute);
+            Internal_SendEvent(eventNameID, eventAttribute);
+        }
+
         public void SendEvent(string eventName)
         {
             SendEvent(Shader.PropertyToID(eventName), null);

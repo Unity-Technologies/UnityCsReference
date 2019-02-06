@@ -104,6 +104,7 @@ namespace UnityEngine
         extern public static FullScreenMode fullScreenMode {[NativeName("GetFullscreenMode")] get; [NativeName("RequestSetFullscreenModeFromScript")] set; }
 
         extern public static Rect safeArea { get; }
+        extern public static Rect[] cutouts {[FreeFunction("ScreenScripting::GetCutouts")] get; }
 
         [NativeName("RequestResolution")]
         extern public static void SetResolution(int width, int height, FullScreenMode fullscreenMode, [uei.DefaultValue("0")] int preferredRefreshRate);

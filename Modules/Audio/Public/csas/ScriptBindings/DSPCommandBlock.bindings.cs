@@ -44,10 +44,10 @@ namespace Unity.Experimental.Audio
         static extern void Internal_DisconnectByHandle(ref DSPCommandBlock block, ref DSPConnection connection);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern void Internal_SetAttenuation(ref DSPCommandBlock block, ref DSPConnection connection, float value, uint interpolationLength);
+        static extern unsafe void Internal_SetAttenuation(ref DSPCommandBlock block, ref DSPConnection connection, void* value, byte dimension, uint interpolationLength);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern void Internal_AddAttenuationKey(ref DSPCommandBlock block, ref DSPConnection connection, ulong dspClock, float value);
+        static extern unsafe void Internal_AddAttenuationKey(ref DSPCommandBlock block, ref DSPConnection connection, ulong dspClock, void* value, byte dimension);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
         static extern void Internal_SustainAttenuation(ref DSPCommandBlock block, ref DSPConnection connection, ulong dspClock);

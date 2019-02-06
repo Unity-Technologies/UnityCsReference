@@ -185,6 +185,9 @@ namespace UnityEditor.Experimental.GraphView
             if (float.IsInfinity(validateFloat) || float.IsNaN(validateFloat))
                 return;
 
+            newPosition.x = GUIUtility.RoundToPixelGrid(newPosition.x);
+            newPosition.y = GUIUtility.RoundToPixelGrid(newPosition.y);
+
             contentViewContainer.transform.position = newPosition;
             contentViewContainer.transform.scale = newScale;
 

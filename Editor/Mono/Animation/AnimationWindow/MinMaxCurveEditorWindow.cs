@@ -49,6 +49,8 @@ namespace UnityEditor
         public AnimationCurve minCurve { get { return m_MinCurve; } }
         public AnimationCurve maxCurve { get { return m_MaxCurve; } }
 
+        public static string xAxisLabel { get; set; } = "time";
+
         public static bool visible
         {
             get { return s_SharedMinMaxCurveEditor != null; }
@@ -68,6 +70,7 @@ namespace UnityEditor
             m_CurveEditor.settings.rectangleToolFlags = CurveEditorSettings.RectangleToolFlags.MiniRectangleTool;
             m_CurveEditor.settings.undoRedoSelection = true;
             m_CurveEditor.settings.showWrapperPopups = true;
+            m_CurveEditor.settings.xAxisLabel = xAxisLabel;
             UpdateRegionDomain();
 
             // For each of horizontal and vertical axis, if we have a finite range for that axis, use that range,

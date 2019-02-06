@@ -93,8 +93,8 @@ namespace UnityEditor
             public static readonly GUIStyle PreviewLabel = new GUIStyle(EditorStyles.whiteLabel);
 
             public static readonly GUIContent TextureNotAvailableRealtime = EditorGUIUtility.TrTextContent("The texture is not available at the moment.");
-            public static readonly GUIContent TextureNotAvailableBaked = EditorGUIUtility.TrTextContent("The texture is not available at the moment.\nPlease try to rebake the current scene or turn on Auto, and make sure that this object is set to Lightmap Static if it's meant to be baked.");
-            public static readonly GUIContent TextureNotAvailableBakedShadowmask = EditorGUIUtility.TrTextContent("The texture is not available at the moment.\nPlease make sure that Mixed Lights affect this GameObject and that it is set to Lightmap Static.");
+            public static readonly GUIContent TextureNotAvailableBaked = EditorGUIUtility.TrTextContent("The texture is not available at the moment.\nPlease try to rebake the current scene or turn on Auto, and make sure that this object is set to 'Contribute Global Illumination' if it's meant to be baked.");
+            public static readonly GUIContent TextureNotAvailableBakedShadowmask = EditorGUIUtility.TrTextContent("The texture is not available at the moment.\nPlease make sure that Mixed Lights affect this GameObject and that it is set to 'Contribute Global Illumination'.");
             public static readonly GUIContent TextureNotAvailableBakedAlbedoEmissive = EditorGUIUtility.TrTextContent("The texture is not an index based texture and is not available when using Progressive.\nPlease go to the instance you wish to debug, and select the lightmap on the Mesh Renderer.");
             public static readonly GUIContent TextureLoading = EditorGUIUtility.TrTextContent("Loading...");
             public static readonly GUIContent UVOverlayIcon = EditorGUIUtility.TrIconContent("ToggleUVOverlay", "Toggles the UV Overlay for all the objects in the lightmap. The currently selected object will be highlighted. ");
@@ -160,6 +160,12 @@ namespace UnityEditor
         void OnEnable()
         {
             titleContent = GetLocalizedTitleContent();
+            Lightmapping.lightingDataUpdated += Repaint;
+        }
+
+        void OnDisable()
+        {
+            Lightmapping.lightingDataUpdated -= Repaint;
         }
 
         void OnBecameVisible()

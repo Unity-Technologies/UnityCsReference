@@ -90,58 +90,6 @@ namespace UnityEditor
         public Vector4[] intensities;
     }
 
-    [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-    internal struct LightingStats
-    {
-        public uint realtimeLightsCount;
-        public uint dynamicMeshesCount;
-        public uint mixedLightsCount;
-        public uint bakedLightsCount;
-        public uint staticMeshesCount;
-        public uint staticMeshesRealtimeEmissive;
-        public uint staticMeshesBakedEmissive;
-        public uint lightProbeGroupsCount;
-        public uint reflectionProbesCount;
-
-        internal void Reset()
-        {
-            realtimeLightsCount = 0;
-            dynamicMeshesCount = 0;
-            mixedLightsCount = 0;
-            bakedLightsCount = 0;
-            staticMeshesCount = 0;
-            staticMeshesRealtimeEmissive = 0;
-            staticMeshesBakedEmissive = 0;
-            lightProbeGroupsCount = 0;
-            reflectionProbesCount = 0;
-        }
-    }
-
-    [NativeHeader("Editor/Src/GI/Enlighten/Visualisers/VisualisationManager.h")]
-    internal enum GITextureAvailability
-    {
-        GITextureUnknown = 0,
-        GITextureNotAvailable = 1,
-        GITextureLoading = 2,
-        GITextureAvailable = 3,
-        GITextureAvailabilityCount = 4
-    }
-
-    [NativeHeader("Editor/Src/GI/Enlighten/Visualisers/VisualisationManager.h")]
-    internal struct VisualisationGITexture
-    {
-        [NativeName("m_Type")]
-        public GITextureType type;
-        [NativeName("m_Availability")]
-        public GITextureAvailability textureAvailability;
-        [NativeName("m_Texture")]
-        public Texture2D texture;
-        [NativeName("m_Hash")]
-        public Hash128 hash;
-        [NativeName("m_ContentsHash")]
-        public Hash128 contentHash;
-    }
-
     [NativeHeader("Editor/Mono/GI/Lightmapping.bindings.h")]
     public static partial class Lightmapping
     {
@@ -167,10 +115,9 @@ namespace UnityEditor
             Legacy = 2
         }
 
+        // Obsolete, please use Actions instead
         public delegate void OnStartedFunction();
         public delegate void OnCompletedFunction();
-        internal delegate void OnStartedRenderingFunction();
-        internal delegate void OnWroteLightingDataAsset();
 
         // How is GI data created: iteratively or on demand by Enlighten
         [StaticAccessor("GetLightmapSettings()")]
@@ -313,15 +260,23 @@ namespace UnityEditor
         // Returns true when the bake job is running, false otherwise (RO).
         public static extern bool isRunning {[FreeFunction("IsRunningLightmapping")] get; }
 
+        [System.Obsolete("OnStartedFunction.started is obsolete, please use bakeStarted instead. ", false)]
         public static event OnStartedFunction started;
 
-        private static void Internal_CallStartedFunctions()
+        public static event Action bakeStarted;
+
+        private static void Internal_CallBakeStartedFunctions()
         {
+            if (bakeStarted != null)
+                bakeStarted();
+
+#pragma warning disable 0618
             if (started != null)
                 started();
+#pragma warning restore 0618
         }
 
-        internal static event OnStartedRenderingFunction startedRendering;
+        internal static event Action startedRendering;
 
         internal static void Internal_CallStartedRenderingFunctions()
         {
@@ -329,7 +284,15 @@ namespace UnityEditor
                 startedRendering();
         }
 
-        internal static event OnWroteLightingDataAsset wroteLightingDataAsset;
+        internal static event Action lightingDataUpdated;
+
+        internal static void Internal_CallLightingDataUpdatedFunctions()
+        {
+            if (lightingDataUpdated != null)
+                lightingDataUpdated();
+        }
+
+        internal static event Action wroteLightingDataAsset;
 
         internal static void Internal_CallOnWroteLightingDataAsset()
         {
@@ -337,12 +300,20 @@ namespace UnityEditor
                 wroteLightingDataAsset();
         }
 
+        [System.Obsolete("OnCompletedFunction.completed is obsolete, please use event bakeCompleted instead. ", false)]
         public static OnCompletedFunction completed;
 
-        private static void Internal_CallCompletedFunctions()
+        public static event Action bakeCompleted;
+
+        private static void Internal_CallBakeCompletedFunctions()
         {
+            if (bakeCompleted != null)
+                bakeCompleted();
+
+#pragma warning disable 0618
             if (completed != null)
                 completed();
+#pragma warning restore 0618
         }
 
         // Returns the progress of a build when the bake job is running, returns 0 when no bake job is running.
@@ -428,13 +399,13 @@ namespace UnityEditor
             var sceneSetup = EditorSceneManager.GetSceneManagerSetup();
 
             // Restore old scene setup once the bake finishes
-            Lightmapping.OnCompletedFunction OnBakeFinish = null;
+            Action OnBakeFinish = null;
             OnBakeFinish = () =>
             {
                 EditorSceneManager.SaveOpenScenes();
                 if (sceneSetup.Length > 0)
                     EditorSceneManager.RestoreSceneManagerSetup(sceneSetup);
-                Lightmapping.completed -= OnBakeFinish;
+                Lightmapping.bakeCompleted -= OnBakeFinish;
             };
 
             // Call BakeAsync when all scenes are loaded and attach cleanup delegate
@@ -444,7 +415,7 @@ namespace UnityEditor
                 if (EditorSceneManager.loadedSceneCount == paths.Length)
                 {
                     BakeAsync();
-                    Lightmapping.completed += OnBakeFinish;
+                    Lightmapping.bakeCompleted += OnBakeFinish;
                     EditorSceneManager.sceneOpened -= BakeOnAllOpen;
                 }
             };

@@ -681,10 +681,26 @@ namespace UnityEditor.StyleSheets
             return editorAssetBundle.LoadAsset<GUISkin>(GetSkinPath(target, true).ToLower());
         }
 
-        public static string GetSkinPath(SkinTarget target, bool bundle = false)
+        public static void ResetSkinToPristine(GUISkin skin, SkinTarget target)
         {
-            var skinName = target == SkinTarget.Dark ? "darkskin.guiskin" : "lightskin.guiskin";
-            return String.Format("{0}/{1}", bundle ? k_BundleSkinPath : k_GeneratedSkinPath, skinName);
+            var pristinePath = GetSkinPath(target, true, true);
+            var pristineSkin = LoadResource<GUISkin>(pristinePath);
+            if (pristineSkin != null)
+            {
+                var originalName = skin.name;
+                skin.Assign(pristineSkin);
+                skin.name = originalName;
+            }
+        }
+
+        public static string GetSkinPath(SkinTarget target, bool bundle = false, bool pristine = false)
+        {
+            var skinName = target == SkinTarget.Dark ? "DarkSkin" : "LightSkin";
+            if (pristine)
+            {
+                skinName += "_Pristine";
+            }
+            return $"{(bundle ? k_BundleSkinPath : k_GeneratedSkinPath)}/{skinName}.guiskin";
         }
 
         public static string[] GetSheetPathsFromRootFolders(IEnumerable<string> rootFolders, SkinTarget target, string sheetPostFix = "")

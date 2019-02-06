@@ -108,7 +108,14 @@ namespace Unity.Experimental.Audio
 
         public unsafe uint AddNodeEventHandler<TNodeEvent>(Action<DSPNode, TNodeEvent> handler) where TNodeEvent : struct
         {
-            return Internal_AddNodeEventHandler(ref this, GetTypeHashCode<TNodeEvent>(), handler);
+            return AddNodeEventHandler(GetTypeHashCode<TNodeEvent>(), handler);
+        }
+
+        // FIXME: Temporarily exposed until BurstRuntime.GetHashCode64<T> has a Unity-core
+        // equivalent, or DSPGraph's C# code is moved to a package.
+        public unsafe uint AddNodeEventHandler<TNodeEvent>(long eventTypeHash, Action<DSPNode, TNodeEvent> handler) where TNodeEvent : struct
+        {
+            return Internal_AddNodeEventHandler(ref this, eventTypeHash, handler);
         }
 
         public unsafe bool RemoveNodeEventHandler(uint handlerId)

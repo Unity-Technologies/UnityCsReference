@@ -6,6 +6,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using uei = UnityEngine.Internal;
@@ -90,6 +91,45 @@ namespace UnityEngine
         public extern static int GetCount();
 
         public extern static string[] GetKeys();
+
+        public static T GetObject<T>(string key = "") { return (T)GetObject(typeof(T), key); }
+
+        public static object GetObject(Type type, string key = "")
+        {
+            if (type == null)
+                throw new ArgumentNullException("type");
+
+            if (type.IsAbstract || type.IsSubclassOf(typeof(UnityEngine.Object)))
+                throw new ArgumentException("Cannot deserialize to new instances of type '" + type.Name + ".'");
+
+            return GetAsScriptingObject(type, null, key);
+        }
+
+        public static object GetObject(string key, object defaultValue)
+        {
+            if (defaultValue == null)
+                throw new ArgumentNullException("defaultValue");
+
+            Type type = defaultValue.GetType();
+            if (type.IsAbstract || type.IsSubclassOf(typeof(UnityEngine.Object)))
+                throw new ArgumentException("Cannot deserialize to new instances of type '" + type.Name + ".'");
+
+            return GetAsScriptingObject(type, defaultValue, key);
+        }
+
+        internal static extern object GetAsScriptingObject(Type t, object defaultValue, string key);
+
+        public static IDictionary<string, object> GetDictionary(string key = "")
+        {
+            UseSafeLock();
+            IDictionary<string, object> dict = RemoteConfigSettingsHelper.GetDictionary(GetSafeTopMap(), key);
+            ReleaseSafeLock();
+            return dict;
+        }
+
+        internal extern static void UseSafeLock();
+        internal extern static void ReleaseSafeLock();
+        internal extern static IntPtr GetSafeTopMap();
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -185,15 +225,184 @@ namespace UnityEngine
 
         public extern string[] GetKeys();
 
+        public T GetObject<T>(string key = "") { return (T)GetObject(typeof(T), key); }
+
+        public object GetObject(Type type, string key = "")
+        {
+            if (type == null)
+                throw new ArgumentNullException("type");
+
+            if (type.IsAbstract || type.IsSubclassOf(typeof(UnityEngine.Object)))
+                throw new ArgumentException("Cannot deserialize to new instances of type '" + type.Name + ".'");
+
+            return GetAsScriptingObject(type, null, key);
+        }
+
+        public object GetObject(string key, object defaultValue)
+        {
+            if (defaultValue == null)
+                throw new ArgumentNullException("defaultValue");
+
+            Type type = defaultValue.GetType();
+            if (type.IsAbstract || type.IsSubclassOf(typeof(UnityEngine.Object)))
+                throw new ArgumentException("Cannot deserialize to new instances of type '" + type.Name + ".'");
+
+            return GetAsScriptingObject(type, defaultValue, key);
+        }
+
+        internal extern object GetAsScriptingObject(Type t, object defaultValue, string key);
+
+        public IDictionary<string, object> GetDictionary(string key = "")
+        {
+            UseSafeLock();
+            IDictionary<string, object> dict = RemoteConfigSettingsHelper.GetDictionary(GetSafeTopMap(), key);
+            ReleaseSafeLock();
+            return dict;
+        }
+
         internal extern void UseSafeLock();
         internal extern void ReleaseSafeLock();
         internal extern IntPtr GetSafeTopMap();
+    }
+
+    internal static class RemoteConfigSettingsHelper
+    {
+        [RequiredByNativeCode]
+        internal enum Tag
+        {
+            kUnknown,
+            kIntVal,
+            kInt64Val,
+            kUInt64Val,
+            kDoubleVal,
+            kBoolVal,
+            kStringVal,
+            kArrayVal,
+            kMixedArrayVal,
+            kMapVal,
+            kMaxTags
+        };
+
         internal extern static IntPtr GetSafeMap(IntPtr m, string key);
-        internal extern static int GetSafeInt(IntPtr m, string key, int defaultValue);
-        internal extern static long GetSafeLong(IntPtr m, string key, long defaultValue);
+        internal extern static string[] GetSafeMapKeys(IntPtr m);
+        internal extern static Tag[] GetSafeMapTypes(IntPtr m);
+
+        internal extern static long GetSafeNumber(IntPtr m, string key, long defaultValue);
         internal extern static float GetSafeFloat(IntPtr m, string key, float defaultValue);
         internal extern static bool GetSafeBool(IntPtr m, string key, bool defaultValue);
         internal extern static string GetSafeStringValue(IntPtr m, string key, string defaultValue);
+
+        internal extern static IntPtr GetSafeArray(IntPtr m, string key);
+        internal extern static long GetSafeArraySize(IntPtr a);
+
+        internal extern static IntPtr GetSafeArrayArray(IntPtr a, long i);
+        internal extern static IntPtr GetSafeArrayMap(IntPtr a, long i);
+        internal extern static Tag GetSafeArrayType(IntPtr a, long i);
+        internal extern static long GetSafeNumberArray(IntPtr a, long i);
+        internal extern static float GetSafeArrayFloat(IntPtr a, long i);
+        internal extern static bool GetSafeArrayBool(IntPtr a, long i);
+        internal extern static string GetSafeArrayStringValue(IntPtr a, long i);
+
+        public static IDictionary<string, object> GetDictionary(IntPtr m, string key)
+        {
+            if (m == IntPtr.Zero)
+                return null;
+            if (!String.IsNullOrEmpty(key))
+            {
+                m = GetSafeMap(m, key);
+                if (m == IntPtr.Zero)
+                    return null;
+            }
+            return RemoteConfigSettingsHelper.GetDictionary(m);
+        }
+
+        internal static IDictionary<string, object> GetDictionary(IntPtr m)
+        {
+            if (m == IntPtr.Zero)
+                return null;
+            IDictionary<string, object> dict = new Dictionary<string, object>();
+            Tag[] tags = GetSafeMapTypes(m);
+            string[] keys = GetSafeMapKeys(m);
+            for (int i = 0; i < keys.Length; i++)
+                SetDictKeyType(m, dict, keys[i], tags[i]);
+            return dict;
+        }
+
+        internal static object GetArrayArrayEntries(IntPtr a, long i)
+        {
+            return GetArrayEntries(GetSafeArrayArray(a, i));
+        }
+
+        internal static IDictionary<string, object> GetArrayMapEntries(IntPtr a, long i)
+        {
+            return GetDictionary(GetSafeArrayMap(a, i));
+        }
+
+        internal static T[] GetArrayEntriesType<T>(IntPtr a, long size, Func<IntPtr, long, T> f)
+        {
+            T[] r = new T[size];
+            for (long i = 0; i < size; i++)
+                r[i] = f(a, i);
+            return r;
+        }
+
+        internal static object GetArrayEntries(IntPtr a)
+        {
+            long size = GetSafeArraySize(a);
+            if (size == 0)
+                return null;
+
+            switch (GetSafeArrayType(a, 0))
+            {
+                case Tag.kIntVal:
+                case Tag.kInt64Val: return GetArrayEntriesType<long>(a, size, GetSafeNumberArray);
+                case Tag.kDoubleVal: return GetArrayEntriesType<float>(a, size, GetSafeArrayFloat);
+                case Tag.kBoolVal: return GetArrayEntriesType<bool>(a, size, GetSafeArrayBool);
+                case Tag.kStringVal: return GetArrayEntriesType<string>(a, size, GetSafeArrayStringValue);
+                case Tag.kArrayVal: return GetArrayEntriesType<object>(a, size, GetArrayArrayEntries);
+                case Tag.kMapVal: return GetArrayEntriesType<IDictionary<string, object>>(a, size, GetArrayMapEntries);
+            }
+            return null;
+        }
+
+        internal static object GetMixedArrayEntries(IntPtr a)
+        {
+            long size = GetSafeArraySize(a);
+            if (size == 0)
+                return null;
+
+            object[] r = new object[size];
+            for (long i = 0; i < size; i++)
+            {
+                Tag tag = GetSafeArrayType(a, i);
+                switch (tag)
+                {
+                    case Tag.kIntVal:
+                    case Tag.kInt64Val: r[i] = GetSafeNumberArray(a, i); break;
+                    case Tag.kDoubleVal: r[i] = GetSafeArrayFloat(a, i); break;
+                    case Tag.kBoolVal: r[i] = GetSafeArrayBool(a, i); break;
+                    case Tag.kStringVal: r[i] = GetSafeArrayStringValue(a, i); break;
+                    case Tag.kArrayVal: r[i] = GetArrayArrayEntries(a, i); break;
+                    case Tag.kMapVal: r[i] = GetArrayMapEntries(a, i); break;
+                }
+            }
+            return r;
+        }
+
+        internal static void SetDictKeyType(IntPtr m, IDictionary<string, object> dict, string key, Tag tag)
+        {
+            switch (tag)
+            {
+                case Tag.kIntVal:
+                case Tag.kInt64Val: dict[key] = GetSafeNumber(m, key, 0); break;
+                case Tag.kDoubleVal: dict[key] = GetSafeFloat(m, key, 0); break;
+                case Tag.kBoolVal: dict[key] = GetSafeBool(m, key, false); break;
+                case Tag.kStringVal: dict[key] = GetSafeStringValue(m, key, ""); break;
+                case Tag.kArrayVal: dict[key] = GetArrayEntries(GetSafeArray(m, key)); break;
+                case Tag.kMixedArrayVal: dict[key] = GetMixedArrayEntries(GetSafeArray(m, key)); break;
+                case Tag.kMapVal: dict[key] = GetDictionary(GetSafeMap(m, key)); break;
+            }
+        }
     }
 }
 

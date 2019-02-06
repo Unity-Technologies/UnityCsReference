@@ -369,7 +369,7 @@ namespace UnityEditor
             if (HasMode(mode, Mode.Fatal | Mode.Assert |
                 Mode.Error | Mode.ScriptingError |
                 Mode.AssetImportError | Mode.ScriptCompileError |
-                Mode.GraphCompileError | Mode.ScriptingAssertion))
+                Mode.GraphCompileError | Mode.ScriptingAssertion | Mode.ScriptingException))
             {
                 if (isIcon)
                 {
@@ -452,12 +452,6 @@ namespace UnityEditor
             context.Append(" at line: ");
             context.Append(entry.line);
 
-            if (entry.errorNum != 0)
-            {
-                context.Append(" and errorNum: ");
-                context.Append(entry.errorNum);
-            }
-
             return context.ToString();
         }
 
@@ -484,7 +478,7 @@ namespace UnityEditor
         {
             if (entry != null)
             {
-                m_ActiveText = entry.condition;
+                m_ActiveText = entry.message;
                 // ping object referred by the log entry
                 if (m_ActiveInstanceID != entry.instanceID)
                 {
@@ -707,7 +701,7 @@ namespace UnityEditor
 
                     // see if selected entry changed. if so - clear additional info
                     LogEntries.GetEntryInternal(m_ListView.row, entry);
-                    if (m_ListView.selectionChanged || !m_ActiveText.Equals(entry.condition))
+                    if (m_ListView.selectionChanged || !m_ActiveText.Equals(entry.message))
                     {
                         SetActiveEntry(entry);
                     }
@@ -807,7 +801,7 @@ namespace UnityEditor
         {
             StringBuilder textWithHyperlinks = new StringBuilder();
             var lines = stacktraceText.Split(new string[] {"\n"}, StringSplitOptions.None);
-            for (int i = 0; i < lines[i].Length; ++i)
+            for (int i = 0; i < lines.Length; ++i)
             {
                 string textBeforeFilePath = ") (at ";
                 int filePathIndex = lines[i].IndexOf(textBeforeFilePath, StringComparison.Ordinal);
@@ -848,7 +842,10 @@ namespace UnityEditor
         {
             EditorGUILayout.HyperLinkClickedEventArgs args = (EditorGUILayout.HyperLinkClickedEventArgs)e;
 
-            LogEntries.OpenFileOnSpecificLine(args.hyperlinkInfos["href"], Int32.Parse(args.hyperlinkInfos["line"]));
+            int line = Int32.Parse(args.hyperlinkInfos["line"]);
+            int column = -1;
+
+            LogEntries.OpenFileOnSpecificLineAndColumn(args.hyperlinkInfos["href"], line, column);
         }
 
         public static bool GetConsoleErrorPause()
@@ -953,9 +950,9 @@ namespace UnityEditor
         }
 
         // This method is used by the Visual Scripting project. Please do not delete. Contact @husseink for more information.
-        internal void AddMessageWithDoubleClickCallback(string condition, string file, int mode, int instanceID)
+        internal void AddMessageWithDoubleClickCallback(string message, string file, int mode, int instanceID)
         {
-            var outputEntry = new LogEntry {condition = condition, file = file, mode = mode, instanceID = instanceID};
+            var outputEntry = new LogEntry {message = message, file = file, mode = mode, instanceID = instanceID};
             LogEntries.AddMessageWithDoubleClickCallback(outputEntry);
         }
     }

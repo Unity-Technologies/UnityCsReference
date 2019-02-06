@@ -203,7 +203,7 @@ namespace UnityEditor.UIElements.Debugger
 
             if (!m_PickElement)
             {
-                var selectedElement =   m_DebuggerSelection.element;
+                var selectedElement = m_DebuggerSelection.element;
                 m_TreeViewContainer.RebuildTree(panelDebug);
                 m_TreeViewContainer.DrawOverlay();
 

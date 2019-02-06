@@ -120,9 +120,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static void SetAllScripts(string[] allScripts)
+        public static void SetAllScripts(string[] allScripts, string[] assemblyFilenames)
         {
-            Instance.SetAllScripts(allScripts);
+            Instance.SetAllScripts(allScripts, assemblyFilenames);
         }
 
         [RequiredByNativeCode]
@@ -156,9 +156,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static void DirtyScript(string path)
+        public static void DirtyScript(string path, string assemblyFilename)
         {
-            Instance.DirtyScript(path);
+            Instance.DirtyScript(path, assemblyFilename);
         }
 
         [RequiredByNativeCode]

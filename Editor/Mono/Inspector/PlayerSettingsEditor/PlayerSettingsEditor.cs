@@ -80,7 +80,7 @@ namespace UnityEditor
             public static readonly GUIContent macAppStoreTitle = EditorGUIUtility.TrTextContent("Mac App Store Options");
             public static readonly GUIContent configurationTitle = EditorGUIUtility.TrTextContent("Configuration");
             public static readonly GUIContent optimizationTitle = EditorGUIUtility.TrTextContent("Optimization");
-            public static readonly GUIContent loggingTitle = EditorGUIUtility.TrTextContent("Logging*");
+            public static readonly GUIContent loggingTitle = EditorGUIUtility.TrTextContent("Stack Trace*");
             public static readonly GUIContent legacyTitle = EditorGUIUtility.TrTextContent("Legacy");
             public static readonly GUIContent publishingSettingsTitle = EditorGUIUtility.TrTextContent("Publishing Settings");
 
@@ -1115,7 +1115,7 @@ namespace UnityEditor
         {
             return
                 Application.platform == RuntimePlatform.WindowsEditor && targetPlatform == BuildTarget.StandaloneWindows ||
-                Application.platform == RuntimePlatform.LinuxEditor && targetPlatform == BuildTarget.StandaloneLinux ||
+                Application.platform == RuntimePlatform.LinuxEditor && targetPlatform == BuildTarget.StandaloneLinux64 ||
                 Application.platform == RuntimePlatform.OSXEditor && targetPlatform == BuildTarget.StandaloneOSX;
         }
 
@@ -1209,7 +1209,7 @@ namespace UnityEditor
             {
                 GraphicsAPIsGUIOnePlatform(targetGroup, BuildTarget.StandaloneWindows, " for Windows");
                 GraphicsAPIsGUIOnePlatform(targetGroup, BuildTarget.StandaloneOSX, " for Mac");
-                GraphicsAPIsGUIOnePlatform(targetGroup, BuildTarget.StandaloneLinuxUniversal, " for Linux");
+                GraphicsAPIsGUIOnePlatform(targetGroup, BuildTarget.StandaloneLinux64, " for Linux");
             }
             else
             {

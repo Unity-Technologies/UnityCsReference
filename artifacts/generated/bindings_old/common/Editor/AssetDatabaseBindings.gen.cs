@@ -310,15 +310,22 @@ public static void RefreshDelayed() {}
         Refresh ( options );
     }
 
+    [uei.ExcludeFromDocs]
+public static bool OpenAsset (int instanceID) {
+    int lineNumber = -1;
+    return OpenAsset ( instanceID, lineNumber );
+}
+
+public static bool OpenAsset(int instanceID, [uei.DefaultValue("-1")]  int lineNumber )
+        {
+            return OpenAsset(instanceID, lineNumber, -1);
+        }
+
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  bool OpenAsset (int instanceID, [uei.DefaultValue("-1")]  int lineNumber ) ;
-
-    [uei.ExcludeFromDocs]
-    public static bool OpenAsset (int instanceID) {
-        int lineNumber = -1;
-        return OpenAsset ( instanceID, lineNumber );
-    }
+    extern public static  bool OpenAsset (int instanceID, int lineNumber, int columnNumber) ;
 
     [uei.ExcludeFromDocs]
 public static bool OpenAsset (Object target) {
@@ -328,12 +335,18 @@ public static bool OpenAsset (Object target) {
 
 public static bool OpenAsset(Object target, [uei.DefaultValue("-1")]  int lineNumber )
         {
+            return OpenAsset(target, lineNumber, -1);
+        }
+
+    
+    
+    static public bool OpenAsset(Object target, int lineNumber, int columnNumber)
+        {
             if (target)
-                return OpenAsset(target.GetInstanceID(), lineNumber);
+                return OpenAsset(target.GetInstanceID(), lineNumber, columnNumber);
             else
                 return false;
         }
-
     
     
     static public bool OpenAsset(Object[] objects)
@@ -682,6 +695,71 @@ public static bool IsMetaFileOpenForEdit(UnityEngine.Object assetObject, out str
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  string[] GetGuidOfPathLocationImportDependencies (string path) ;
 
+}
+
+}
+
+
+namespace UnityEditor.Experimental
+{
+public sealed partial class AssetDatabaseExperimental
+{
+    private static Hash128 GetArtifactHash_Internal_Guid_SelectImporter (string guid) {
+        Hash128 result;
+        INTERNAL_CALL_GetArtifactHash_Internal_Guid_SelectImporter ( guid, out result );
+        return result;
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_GetArtifactHash_Internal_Guid_SelectImporter (string guid, out Hash128 value);
+    private static Hash128 GetArtifactHash_Internal_Guid (string guid, Type importerType) {
+        Hash128 result;
+        INTERNAL_CALL_GetArtifactHash_Internal_Guid ( guid, importerType, out result );
+        return result;
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_GetArtifactHash_Internal_Guid (string guid, Type importerType, out Hash128 value);
+    [uei.ExcludeFromDocs]
+public static Hash128 GetArtifactHash (string guid) {
+    Type importerType = null;
+    return GetArtifactHash ( guid, importerType );
+}
+
+public static Hash128 GetArtifactHash(string guid, [uei.DefaultValue("null")]  Type importerType )
+        {
+            if (importerType == null)
+                return GetArtifactHash_Internal_Guid_SelectImporter(guid);
+            else
+                return GetArtifactHash_Internal_Guid(guid, importerType);
+        }
+
+    
+    
+    private static Hash128 GetArtifactHash_Internal_Hash (Hash128 hash, Type importerType) {
+        Hash128 result;
+        INTERNAL_CALL_GetArtifactHash_Internal_Hash ( ref hash, importerType, out result );
+        return result;
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_GetArtifactHash_Internal_Hash (ref Hash128 hash, Type importerType, out Hash128 value);
+    public static Hash128 GetArtifactHash(Hash128 hash, Type importerType)
+        {
+            return GetArtifactHash_Internal_Hash(hash, importerType);
+        }
+    
+    
+    public static bool GetArtifactPaths (Hash128 hash, out string[] paths) {
+        return INTERNAL_CALL_GetArtifactPaths ( ref hash, out paths );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static bool INTERNAL_CALL_GetArtifactPaths (ref Hash128 hash, out string[] paths);
 }
 
 }

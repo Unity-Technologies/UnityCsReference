@@ -526,6 +526,10 @@ namespace UnityEditor
         int m_TextureCompression = (int)TextureImporterCompression.Compressed;
         [SerializeField]
         int m_CompressionQuality = (int)TextureCompressionQuality.Normal;
+
+        [SerializeField]
+        internal int m_ForceMaximumCompressionQuality_BC6H_BC7 = 0;
+
         [SerializeField]
         int m_CrunchedCompression = 0;
         [SerializeField]
@@ -572,6 +576,12 @@ namespace UnityEditor
         {
             get { return m_CompressionQuality; }
             set { m_CompressionQuality = value; }
+        }
+
+        internal int forceMaximumCompressionQuality_BC6H_BC7
+        {
+            get { return m_ForceMaximumCompressionQuality_BC6H_BC7; }
+            set { m_ForceMaximumCompressionQuality_BC6H_BC7 = value; }
         }
 
         public bool crunchedCompression

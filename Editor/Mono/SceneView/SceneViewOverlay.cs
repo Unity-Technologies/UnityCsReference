@@ -42,6 +42,7 @@ namespace UnityEditor
             public int m_PrimaryOrder;      // lower order is below high order
             public int m_SecondaryOrder;    // used for primary order that are equal (should be unique)
             public Object m_Target;
+            public EditorWindow m_EditorWindow;
 
             public int CompareTo(OverlayWindow other)
             {
@@ -67,9 +68,6 @@ namespace UnityEditor
 
         public void Begin()
         {
-            if (!m_SceneView.m_ShowSceneViewWindows)
-                return;
-
             if (Event.current.type == EventType.Layout)
                 m_Windows.Clear();
 
@@ -83,9 +81,6 @@ namespace UnityEditor
 
         public void End()
         {
-            if (!m_SceneView.m_ShowSceneViewWindows)
-                return;
-
             m_Windows.Sort();
 
             if (m_Windows.Count > 0)
@@ -108,6 +103,9 @@ namespace UnityEditor
             float paddingOffset = -k_WindowPadding;
             foreach (OverlayWindow win in m_Windows)
             {
+                if (!m_SceneView.m_ShowSceneViewWindows && win.m_EditorWindow != m_SceneView)
+                    continue;
+
                 GUILayout.Space(k_WindowPadding + paddingOffset);
                 paddingOffset = 0f;
                 EditorGUIUtility.ResetGUIState();
@@ -162,7 +160,8 @@ namespace UnityEditor
             Window(title, sceneViewFunc, order, null, option);
         }
 
-        public static void Window(GUIContent title, WindowFunction sceneViewFunc, int order, Object target, WindowDisplayOption option)
+        // pass window parameter to render in sceneviews that are not the active view.
+        public static void Window(GUIContent title, WindowFunction sceneViewFunc, int order, Object target, WindowDisplayOption option, EditorWindow window = null)
         {
             if (Event.current.type != EventType.Layout)
                 return;
@@ -182,6 +181,7 @@ namespace UnityEditor
             newWindow.m_PrimaryOrder = order;
             newWindow.m_SecondaryOrder = m_Windows.Count; // just use a value that is unique across overlays
             newWindow.m_Target = target;
+            newWindow.m_EditorWindow = window;
 
             m_Windows.Add(newWindow);
         }

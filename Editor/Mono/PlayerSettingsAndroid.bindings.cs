@@ -425,6 +425,12 @@ namespace UnityEditor
                 [NativeMethod("SetAndroidRenderOutsideSafeArea")]
                 set;
             }
+
+            // Validate release App Bundle size after build
+            internal static extern bool validateAppBundleSize { get; set; }
+
+            // App Bundle size which should cause warning message appear
+            internal static extern int appBundleSizeToValidate { get; set; }
         }
     }
 }

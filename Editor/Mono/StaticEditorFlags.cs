@@ -11,7 +11,8 @@ namespace UnityEditor
     public enum StaticEditorFlags
     {
         // Considered static for lightmapping.
-        LightmapStatic        = 1,
+        [System.ComponentModel.Description("Contribute Global Illumination")]
+        ContributeGI          = 1,
         // Considered static for occlusion.
         OccluderStatic       = 2,
         // Considered static for occlusion.
@@ -22,6 +23,9 @@ namespace UnityEditor
         NavigationStatic      = 8,
         // Auto-generate OffMeshLink.
         OffMeshLinkGeneration = 32,
-        ReflectionProbeStatic = 64
+        ReflectionProbeStatic = 64,
+
+        [Obsolete("Enum member StaticEditorFlags.LightmapStatic has been deprecated. Use StaticEditorFlags.ContributeGI instead. (UnityUpgradable) -> ContributeGI", false)]
+        LightmapStatic         = 1,
     }
 }

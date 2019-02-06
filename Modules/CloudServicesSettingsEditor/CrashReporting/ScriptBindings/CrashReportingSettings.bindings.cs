@@ -13,8 +13,11 @@ namespace UnityEditor.CrashReporting
     [StaticAccessor("GetCrashReportingSettings()")]
     public static partial class CrashReportingSettings
     {
-        [ThreadAndSerializationSafe()]
-        public static extern bool enabled { get; set; }
+        public static extern bool enabled
+        {
+            [ThreadSafe] get;
+            [ThreadSafe] set;
+        }
 
         public static extern bool captureEditorExceptions { get; set; }
 

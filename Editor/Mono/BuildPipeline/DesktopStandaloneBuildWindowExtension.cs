@@ -42,9 +42,9 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
             standaloneSubtargetsList.Add(BuildTarget.StandaloneOSX);
             standaloneSubtargetStringsList.Add(EditorGUIUtility.TrTextContent("Mac OS X"));
         }
-        if (ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneLinux))
+        if (ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneLinux64))
         {
-            standaloneSubtargetsList.Add(BuildTarget.StandaloneLinux);
+            standaloneSubtargetsList.Add(BuildTarget.StandaloneLinux64);
             standaloneSubtargetStringsList.Add(EditorGUIUtility.TrTextContent("Linux"));
         }
 
@@ -62,8 +62,8 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
             return BuildTarget.StandaloneOSX;
         if (ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneOSX))
             return BuildTarget.StandaloneOSX;
-        if (ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneLinux))
-            return BuildTarget.StandaloneLinux;
+        if (ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneLinux64))
+            return BuildTarget.StandaloneLinux64;
         return BuildTarget.StandaloneWindows;
     }
 
@@ -78,14 +78,10 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
                     { EditorGUIUtility.TrTextContent("x86"), BuildTarget.StandaloneWindows },
                     { EditorGUIUtility.TrTextContent("x86_64"), BuildTarget.StandaloneWindows64 },
                 };
-            case BuildTarget.StandaloneLinux:
             case BuildTarget.StandaloneLinux64:
-            case BuildTarget.StandaloneLinuxUniversal:
                 return new Dictionary<GUIContent, BuildTarget>()
                 {
-                    { EditorGUIUtility.TrTextContent("x86"), BuildTarget.StandaloneLinux },
                     { EditorGUIUtility.TrTextContent("x86_64"), BuildTarget.StandaloneLinux64 },
-                    { EditorGUIUtility.TrTextContent("x86 + x86_64 (Universal)"), BuildTarget.StandaloneLinuxUniversal },
                 };
             default:
                 return null;
@@ -99,10 +95,13 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
             case BuildTarget.StandaloneWindows:
             case BuildTarget.StandaloneWindows64:
                 return BuildTarget.StandaloneWindows;
+                // Deprecated
+#pragma warning disable 612, 618
             case BuildTarget.StandaloneLinux:
-            case BuildTarget.StandaloneLinux64:
             case BuildTarget.StandaloneLinuxUniversal:
-                return BuildTarget.StandaloneLinux;
+#pragma warning restore 612, 618
+            case BuildTarget.StandaloneLinux64:
+                return BuildTarget.StandaloneLinux64;
             case BuildTarget.StandaloneOSX:
                 // Deprecated
 #pragma warning disable 612, 618
@@ -122,9 +121,12 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
             case BuildTarget.StandaloneWindows:
             case BuildTarget.StandaloneWindows64:
                 return BuildTarget.StandaloneWindows64;
+                // Deprecated
+#pragma warning disable 612, 618
             case BuildTarget.StandaloneLinux:
-            case BuildTarget.StandaloneLinux64:
             case BuildTarget.StandaloneLinuxUniversal:
+#pragma warning restore 612, 618
+            case BuildTarget.StandaloneLinux64:
                 return BuildTarget.StandaloneLinux64;
             case BuildTarget.StandaloneOSX:
                 // Deprecated

@@ -15,7 +15,7 @@ namespace UnityEditor.UIElements
         {
             //mouseX,mouseY are screen relative.
             GUIView view = GUIView.mouseOverView;
-            if (view != null && view.uieMode != GUIView.UIElementsMode.Experimental && view.visualTree != null && view.visualTree.panel != null)
+            if (view != null && view.visualTree != null && view.visualTree.panel != null)
             {
                 var panel = view.visualTree.panel;
 
@@ -40,9 +40,6 @@ namespace UnityEditor.UIElements
                     }
                 }
             }
-
-            //temporary for backwards compatibility
-            UnityEditor.Experimental.UIElements.Tooltip.SetTooltip(mouseX, mouseY);
         }
     }
 }

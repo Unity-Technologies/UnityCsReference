@@ -99,7 +99,12 @@ namespace UnityEditor.StyleSheets
 
         public void PopulateSheet()
         {
-            sheet = ScriptableObject.CreateInstance<StyleSheet>();
+            PopulateSheet(ScriptableObject.CreateInstance<StyleSheet>());
+        }
+
+        public void PopulateSheet(StyleSheet dest)
+        {
+            sheet = dest;
             builder.BuildTo(sheet);
         }
 

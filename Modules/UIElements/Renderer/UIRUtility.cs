@@ -3,7 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using UnityEngine.Rendering;
+using UnityEngine.Assertions;
 using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
@@ -51,6 +53,8 @@ namespace UnityEngine.UIElements
 
         public static void UpdateSkinningTransform(IUIRenderDevice renderDevice, UIRenderData transformData)
         {
+            if (transformData.skinningAlloc.size == 0)
+                return;
             var transform = transformData.visualElement.worldTransform;
             var viewTransformElement = transformData.effectiveViewTransformData?.visualElement;
             if (viewTransformElement != null)
@@ -180,13 +184,17 @@ namespace UnityEngine.UIElements
 
         public static bool IsSkinnedTransformWithoutNesting(VisualElement ve)
         {
-            if (ve == null || (ve.renderHint & RenderHint.SkinningTransform) == 0)
+            // We should not rely on the RenderHint.SkinningTransform flag here, since element
+            // transforms may not be skinned even with this flag in the case where compute buffers
+            // aren't available and the constant buffer is full.  Looking for a valid skinning allocation
+            // is more accurate.
+            if (ve == null || ve.uiRenderData == null || ve.uiRenderData.skinningAlloc.size == 0)
                 return false;
 
             ve = ve.hierarchy.parent;
             while (ve != null)
             {
-                if ((ve.renderHint & RenderHint.SkinningTransform) != 0)
+                if (ve.uiRenderData != null && ve.uiRenderData.skinningAlloc.size > 0)
                     return false;
                 ve = ve.hierarchy.parent;
             }
@@ -211,5 +219,21 @@ namespace UnityEngine.UIElements
         }
 
         public static readonly Rect s_InfiniteRect = new Rect(-1000000, -1000000, 2000000, 2000000);
+
+        public static bool GetOpenGLCoreVersion(out int major, out int minor)
+        {
+            var version = SystemInfo.graphicsDeviceVersion;
+            var rx = new Regex(@"OpenGL( *)[0-9].[0-9]");
+            var matches = rx.Matches(version);
+            if (matches.Count == 0)
+            {
+                major = minor = -1;
+                return false;
+            }
+            var match = matches[0].Value;
+            major = match[match.Length - 3] - '0';
+            minor = match[match.Length - 1] - '0';
+            return true;
+        }
     }
 }

@@ -8,8 +8,6 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
-using VisualTreeAsset = UnityEngine.Experimental.UIElements.VisualTreeAsset;
-
 namespace UnityEditor.UIElements
 {
     [CustomEditor(typeof(VisualTreeAsset))]

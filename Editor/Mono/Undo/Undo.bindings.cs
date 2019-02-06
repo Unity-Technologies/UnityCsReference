@@ -212,14 +212,6 @@ namespace UnityEditor
         [NativeMethod("ClearUndoSceneHandle")]
         internal static extern void ClearUndoSceneHandle(UnityEngine.SceneManagement.Scene scene);
 
-        [NativeConditional("ENABLE_SAVE_PLAYMODE_CHANGES_FEATURE")]
-        [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
-        internal static extern UndoPropertyModification[] playModeModifications { get; }
-
-        [NativeConditional("ENABLE_SAVE_PLAYMODE_CHANGES_FEATURE")]
-        [StaticAccessor("GetObjectSnapshotManager()", StaticAccessorType.Dot)]
-        internal static extern void SaveCurrentStateOfObject(Object obj);
-
         [Obsolete("Use Undo.RecordObject instead")]
         public static void SetSnapshotTarget(Object objectToUndo, string name) {}
 

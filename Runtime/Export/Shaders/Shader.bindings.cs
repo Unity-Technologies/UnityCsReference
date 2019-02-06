@@ -152,7 +152,7 @@ namespace UnityEngine
         public string GetTag(string tag, bool searchFallbacks, string defaultValue) { return GetTagImpl(tag, !searchFallbacks, defaultValue); }
         public string GetTag(string tag, bool searchFallbacks) { return GetTagImpl(tag, !searchFallbacks, ""); }
 
-        [FreeFunction("MaterialScripting::Lerp", HasExplicitThis = true)] extern public void Lerp(Material start, Material end, float t);
+        [FreeFunction("MaterialScripting::Lerp", HasExplicitThis = true)] extern public void Lerp([NotNull] Material start, [NotNull] Material end, float t);
         [FreeFunction("MaterialScripting::SetPass", HasExplicitThis = true)] extern public bool SetPass(int pass);
         [FreeFunction("MaterialScripting::CopyPropertiesFrom", HasExplicitThis = true)] extern public void CopyPropertiesFromMaterial(Material mat);
 

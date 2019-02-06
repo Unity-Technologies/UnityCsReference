@@ -24,7 +24,6 @@ namespace UnityEngine
 
     [NativeType(Header = "Runtime/Math/Matrix4x4.h")]
     [NativeHeader("Runtime/Math/MathScripting.h")]
-    [ThreadAndSerializationSafe]
     public partial struct Matrix4x4
     {
         [ThreadSafe] extern private Quaternion    GetRotation();
@@ -46,6 +45,7 @@ namespace UnityEngine
         [FreeFunction("MatrixScripting::TRS", IsThreadSafe = true)] extern public static Matrix4x4 TRS(Vector3 pos, Quaternion q, Vector3 s);
         public void SetTRS(Vector3 pos, Quaternion q, Vector3 s) { this = Matrix4x4.TRS(pos, q, s); }
 
+        [FreeFunction("MatrixScripting::Inverse3DAffine", IsThreadSafe = true)] extern public static bool Inverse3DAffine(Matrix4x4 input, ref Matrix4x4 result);
         [FreeFunction("MatrixScripting::Inverse", IsThreadSafe = true)] extern public static Matrix4x4 Inverse(Matrix4x4 m);
         public Matrix4x4 inverse { get { return Matrix4x4.Inverse(this); } }
 
@@ -62,7 +62,6 @@ namespace UnityEngine
 
     [NativeType(Header = "Runtime/Math/Vector3.h")]
     [NativeHeader("Runtime/Math/MathScripting.h")]
-    [ThreadAndSerializationSafe]
     public partial struct Vector3
     {
         [FreeFunction("VectorScripting::Slerp", IsThreadSafe = true)] extern public static Vector3 Slerp(Vector3 a, Vector3 b, float t);
@@ -78,7 +77,6 @@ namespace UnityEngine
 
     [NativeType(Header = "Runtime/Math/Quaternion.h")]
     [NativeHeader("Runtime/Math/MathScripting.h")]
-    [ThreadAndSerializationSafe]
     [UsedByNativeCode]
     public partial struct Quaternion
     {
@@ -103,7 +101,6 @@ namespace UnityEngine
     [NativeHeader("Runtime/Math/MathScripting.h")]
     [NativeHeader("Runtime/Geometry/Ray.h")]
     [NativeHeader("Runtime/Geometry/Intersection.h")]
-    [ThreadAndSerializationSafe]
     public partial struct Bounds
     {
         [NativeMethod("IsInside", IsThreadSafe = true)] extern public bool Contains(Vector3 point);
@@ -112,7 +109,6 @@ namespace UnityEngine
         [FreeFunction("BoundsScripting::ClosestPoint", HasExplicitThis = true, IsThreadSafe = true)] extern public Vector3 ClosestPoint(Vector3 point);
     }
 
-    [ThreadAndSerializationSafe]
     [NativeHeader("Runtime/Utilities/BitUtility.h")]
     [NativeHeader("Runtime/Math/ColorSpaceConversion.h")]
     [NativeHeader("Runtime/Math/FloatConversion.h")]

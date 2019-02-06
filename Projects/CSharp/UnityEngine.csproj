@@ -20,7 +20,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\artifacts\Bee.CSharpSupport\UnityEngine\Debug</OutputPath>
-    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_HUB;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_DIRECTOR;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_DUCK_TYPING;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_GRID;ENABLE_HOLOLENS_MODULE_API;ENABLE_LOCALIZATION;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_TEXTURE_STREAMING;ENABLE_TILEMAP;ENABLE_TIMELINE;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;INCLUDE_GI;INCLUDE_PUBNUB;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IOS_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS4_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
+    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_HUB_LICENSE;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IOS_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS4_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -1189,14 +1189,23 @@
     <Compile Include="..\..\Modules\AI\Builder\NavMeshBuilder.bindings.cs">
       <Link>Modules\AI\Builder\NavMeshBuilder.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\AI\Components\NavMeshAgent.bindings.cs">
+      <Link>Modules\AI\Components\NavMeshAgent.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AI\Components\NavMeshObstacle.bindings.cs">
+      <Link>Modules\AI\Components\NavMeshObstacle.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AI\Components\OffMeshLink.bindings.cs">
+      <Link>Modules\AI\Components\OffMeshLink.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\AI\NavMeshExperimental.bindings.cs">
       <Link>Modules\AI\NavMeshExperimental.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\AI\NavMeshPath.bindings.cs">
+      <Link>Modules\AI\NavMeshPath.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\AI\NavMesh\NavMesh.bindings.cs">
       <Link>Modules\AI\NavMesh\NavMesh.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\AI\NavMesh\NavMesh.cs">
-      <Link>Modules\AI\NavMesh\NavMesh.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\AI\Public\NavMeshBindingTypes.bindings.cs">
       <Link>Modules\AI\Public\NavMeshBindingTypes.bindings.cs</Link>
@@ -1669,42 +1678,6 @@
     <Compile Include="..\..\Modules\Streaming\ScriptBindings\StreamingController.bindings.cs">
       <Link>Modules\Streaming\ScriptBindings\StreamingController.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\StyleSheets\Managed\FriendAttributes.cs">
-      <Link>Modules\StyleSheets\Managed\FriendAttributes.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\StyleSheets\Managed\StyleComplexSelector.cs">
-      <Link>Modules\StyleSheets\Managed\StyleComplexSelector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\StyleSheets\Managed\StyleProperty.cs">
-      <Link>Modules\StyleSheets\Managed\StyleProperty.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\StyleSheets\Managed\StyleRule.cs">
-      <Link>Modules\StyleSheets\Managed\StyleRule.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\StyleSheets\Managed\StyleSelector.cs">
-      <Link>Modules\StyleSheets\Managed\StyleSelector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\StyleSheets\Managed\StyleSelectorPart.cs">
-      <Link>Modules\StyleSheets\Managed\StyleSelectorPart.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\StyleSheets\Managed\StyleSelectorRelationship.cs">
-      <Link>Modules\StyleSheets\Managed\StyleSelectorRelationship.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\StyleSheets\Managed\StyleSelectorType.cs">
-      <Link>Modules\StyleSheets\Managed\StyleSelectorType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\StyleSheets\Managed\StyleSheet.cs">
-      <Link>Modules\StyleSheets\Managed\StyleSheet.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\StyleSheets\Managed\StyleValueHandle.cs">
-      <Link>Modules\StyleSheets\Managed\StyleValueHandle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\StyleSheets\Managed\StyleValueKeyword.cs">
-      <Link>Modules\StyleSheets\Managed\StyleValueKeyword.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\StyleSheets\Managed\StyleValueType.cs">
-      <Link>Modules\StyleSheets\Managed\StyleValueType.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\Substance\SubstanceUtility.bindings.cs">
       <Link>Modules\Substance\SubstanceUtility.bindings.cs</Link>
     </Compile>
@@ -1723,6 +1696,12 @@
     <Compile Include="..\..\Modules\Terrain\Public\Terrain.bindings.cs">
       <Link>Modules\Terrain\Public\Terrain.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Terrain\Public\TerrainCallbacks.cs">
+      <Link>Modules\Terrain\Public\TerrainCallbacks.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Terrain\Public\TerrainData.GPUCopy.cs">
+      <Link>Modules\Terrain\Public\TerrainData.GPUCopy.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Terrain\Public\TerrainData.bindings.cs">
       <Link>Modules\Terrain\Public\TerrainData.bindings.cs</Link>
     </Compile>
@@ -1738,14 +1717,98 @@
     <Compile Include="..\..\Modules\TextCore\Managed\AssemblyInfo.cs">
       <Link>Modules\TextCore\Managed\AssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\Character.cs">
+      <Link>Modules\TextCore\Managed\Character.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\ColorUtilities.cs">
+      <Link>Modules\TextCore\Managed\ColorUtilities.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\TextCore\Managed\FaceInfo.cs">
       <Link>Modules\TextCore\Managed\FaceInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\FontAsset.cs">
+      <Link>Modules\TextCore\Managed\FontAsset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\FontUtilities.cs">
+      <Link>Modules\TextCore\Managed\FontUtilities.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextCore\Managed\Glyph.cs">
       <Link>Modules\TextCore\Managed\Glyph.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\KerningTable.cs">
+      <Link>Modules\TextCore\Managed\KerningTable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\LineInfo.cs">
+      <Link>Modules\TextCore\Managed\LineInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\LinkInfo.cs">
+      <Link>Modules\TextCore\Managed\LinkInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\MaterialManager.cs">
+      <Link>Modules\TextCore\Managed\MaterialManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\MaterialReference.cs">
+      <Link>Modules\TextCore\Managed\MaterialReference.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\MaterialReferenceManager.cs">
+      <Link>Modules\TextCore\Managed\MaterialReferenceManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\MeshInfo.cs">
+      <Link>Modules\TextCore\Managed\MeshInfo.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\TextCore\Managed\OpenTypeCommon.cs">
       <Link>Modules\TextCore\Managed\OpenTypeCommon.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\RichTextTagDefinitions.cs">
+      <Link>Modules\TextCore\Managed\RichTextTagDefinitions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\ShaderUtilities.cs">
+      <Link>Modules\TextCore\Managed\ShaderUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\SpriteCharacter.cs">
+      <Link>Modules\TextCore\Managed\SpriteCharacter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\SpriteGlyph.cs">
+      <Link>Modules\TextCore\Managed\SpriteGlyph.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\TextElement.cs">
+      <Link>Modules\TextCore\Managed\TextElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\TextElementInfo.cs">
+      <Link>Modules\TextCore\Managed\TextElementInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\TextGenerator.cs">
+      <Link>Modules\TextCore\Managed\TextGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\TextGeneratorCommon.cs">
+      <Link>Modules\TextCore\Managed\TextGeneratorCommon.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\TextGeneratorUtilities.cs">
+      <Link>Modules\TextCore\Managed\TextGeneratorUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\TextGradientPreset.cs">
+      <Link>Modules\TextCore\Managed\TextGradientPreset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\TextInfo.cs">
+      <Link>Modules\TextCore\Managed\TextInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\TextSettings.cs">
+      <Link>Modules\TextCore\Managed\TextSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\TextSpriteAsset.cs">
+      <Link>Modules\TextCore\Managed\TextSpriteAsset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\TextStyle.cs">
+      <Link>Modules\TextCore\Managed\TextStyle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\TextStyleSheet.cs">
+      <Link>Modules\TextCore\Managed\TextStyleSheet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\TextTagStack.cs">
+      <Link>Modules\TextCore\Managed\TextTagStack.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCore\Managed\TextUtilities.cs">
+      <Link>Modules\TextCore\Managed\TextUtilities.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextCore\ScriptBindings\FontEngine.bindings.cs">
       <Link>Modules\TextCore\ScriptBindings\FontEngine.bindings.cs</Link>
@@ -1933,366 +1996,6 @@
     <Compile Include="..\..\Modules\UIElements\Events\UIEvent.cs">
       <Link>Modules\UIElements\Events\UIEvent.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\BaseField.cs">
-      <Link>Modules\UIElements\Experimental\BaseField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\BaseSlider.cs">
-      <Link>Modules\UIElements\Experimental\BaseSlider.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\BindableElement.cs">
-      <Link>Modules\UIElements\Experimental\BindableElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Box.cs">
-      <Link>Modules\UIElements\Experimental\Box.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Button.cs">
-      <Link>Modules\UIElements\Experimental\Button.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\ClampedDragger.cs">
-      <Link>Modules\UIElements\Experimental\ClampedDragger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Clickable.cs">
-      <Link>Modules\UIElements\Experimental\Clickable.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\ContextualMenu.Deprecated.cs">
-      <Link>Modules\UIElements\Experimental\ContextualMenu.Deprecated.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\ContextualMenuManager.cs">
-      <Link>Modules\UIElements\Experimental\ContextualMenuManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\ContextualMenuManipulator.cs">
-      <Link>Modules\UIElements\Experimental\ContextualMenuManipulator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Controls\Binding.cs">
-      <Link>Modules\UIElements\Experimental\Controls\Binding.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Controls\INotifyValueChanged.cs">
-      <Link>Modules\UIElements\Experimental\Controls\INotifyValueChanged.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Controls\KeyboardTextEditor.cs">
-      <Link>Modules\UIElements\Experimental\Controls\KeyboardTextEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Controls\TextEditor.cs">
-      <Link>Modules\UIElements\Experimental\Controls\TextEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Controls\TextEditorEngine.cs">
-      <Link>Modules\UIElements\Experimental\Controls\TextEditorEngine.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Controls\TextField.cs">
-      <Link>Modules\UIElements\Experimental\Controls\TextField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Controls\TextInputFieldBase.cs">
-      <Link>Modules\UIElements\Experimental\Controls\TextInputFieldBase.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Controls\Toggle.cs">
-      <Link>Modules\UIElements\Experimental\Controls\Toggle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Controls\TouchScreenTextEditor.cs">
-      <Link>Modules\UIElements\Experimental\Controls\TouchScreenTextEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Controls\VisualTreeBindingsUpdater.cs">
-      <Link>Modules\UIElements\Experimental\Controls\VisualTreeBindingsUpdater.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Cursor.cs">
-      <Link>Modules\UIElements\Experimental\Cursor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\DisposeHelper.cs">
-      <Link>Modules\UIElements\Experimental\DisposeHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\DropdownMenu.cs">
-      <Link>Modules\UIElements\Experimental\DropdownMenu.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\EventDispatcher.cs">
-      <Link>Modules\UIElements\Experimental\EventDispatcher.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Events\CaptureEvents.cs">
-      <Link>Modules\UIElements\Experimental\Events\CaptureEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Events\ChangeEvent.cs">
-      <Link>Modules\UIElements\Experimental\Events\ChangeEvent.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Events\CommandEventDispatchingStrategy.cs">
-      <Link>Modules\UIElements\Experimental\Events\CommandEventDispatchingStrategy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Events\CommandEvents.cs">
-      <Link>Modules\UIElements\Experimental\Events\CommandEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Events\DebuggerEventDispatchingStrategy.cs">
-      <Link>Modules\UIElements\Experimental\Events\DebuggerEventDispatchingStrategy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Events\DefaultDispatchingStrategy.cs">
-      <Link>Modules\UIElements\Experimental\Events\DefaultDispatchingStrategy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Events\DragAndDropEvents.cs">
-      <Link>Modules\UIElements\Experimental\Events\DragAndDropEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Events\EventBase.cs">
-      <Link>Modules\UIElements\Experimental\Events\EventBase.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Events\EventCallback.cs">
-      <Link>Modules\UIElements\Experimental\Events\EventCallback.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Events\EventCallbackRegistry.cs">
-      <Link>Modules\UIElements\Experimental\Events\EventCallbackRegistry.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Events\EventHandler.cs">
-      <Link>Modules\UIElements\Experimental\Events\EventHandler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Events\EventPool.cs">
-      <Link>Modules\UIElements\Experimental\Events\EventPool.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Events\FocusEvents.cs">
-      <Link>Modules\UIElements\Experimental\Events\FocusEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Events\IEventDispatchingStrategy.cs">
-      <Link>Modules\UIElements\Experimental\Events\IEventDispatchingStrategy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Events\IMGUIEventDispatchingStrategy.cs">
-      <Link>Modules\UIElements\Experimental\Events\IMGUIEventDispatchingStrategy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Events\InputEvents.cs">
-      <Link>Modules\UIElements\Experimental\Events\InputEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Events\KeyboardEventDispatchingStrategy.cs">
-      <Link>Modules\UIElements\Experimental\Events\KeyboardEventDispatchingStrategy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Events\KeyboardEvents.cs">
-      <Link>Modules\UIElements\Experimental\Events\KeyboardEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Events\LayoutEvents.cs">
-      <Link>Modules\UIElements\Experimental\Events\LayoutEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Events\MouseCaptureDispatchingStrategy.cs">
-      <Link>Modules\UIElements\Experimental\Events\MouseCaptureDispatchingStrategy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Events\MouseEventDispatchingStrategy.cs">
-      <Link>Modules\UIElements\Experimental\Events\MouseEventDispatchingStrategy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Events\MouseEvents.cs">
-      <Link>Modules\UIElements\Experimental\Events\MouseEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Events\MouseEventsHelper.cs">
-      <Link>Modules\UIElements\Experimental\Events\MouseEventsHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Events\PanelEvents.cs">
-      <Link>Modules\UIElements\Experimental\Events\PanelEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Events\PropagationPaths.cs">
-      <Link>Modules\UIElements\Experimental\Events\PropagationPaths.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Events\TooltipEvent.cs">
-      <Link>Modules\UIElements\Experimental\Events\TooltipEvent.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Events\UIEvent.cs">
-      <Link>Modules\UIElements\Experimental\Events\UIEvent.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\FocusController.cs">
-      <Link>Modules\UIElements\Experimental\FocusController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Foldout.cs">
-      <Link>Modules\UIElements\Experimental\Foldout.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\HierarchyTraversal.cs">
-      <Link>Modules\UIElements\Experimental\HierarchyTraversal.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\IMGUIContainer.cs">
-      <Link>Modules\UIElements\Experimental\IMGUIContainer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\IStyle.cs">
-      <Link>Modules\UIElements\Experimental\IStyle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\ITransform.cs">
-      <Link>Modules\UIElements\Experimental\ITransform.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Image.cs">
-      <Link>Modules\UIElements\Experimental\Image.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\ImmediateStylePainter.cs">
-      <Link>Modules\UIElements\Experimental\ImmediateStylePainter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\InteractionEnums.cs">
-      <Link>Modules\UIElements\Experimental\InteractionEnums.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Label.cs">
-      <Link>Modules\UIElements\Experimental\Label.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\ListView.cs">
-      <Link>Modules\UIElements\Experimental\ListView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\ManipulatorActivationFilter.cs">
-      <Link>Modules\UIElements\Experimental\ManipulatorActivationFilter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Manipulators.cs">
-      <Link>Modules\UIElements\Experimental\Manipulators.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\MinMaxSlider.cs">
-      <Link>Modules\UIElements\Experimental\MinMaxSlider.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\MouseButton.cs">
-      <Link>Modules\UIElements\Experimental\MouseButton.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\MouseCaptureController.cs">
-      <Link>Modules\UIElements\Experimental\MouseCaptureController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\MouseManipulator.cs">
-      <Link>Modules\UIElements\Experimental\MouseManipulator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\ObjectPool.cs">
-      <Link>Modules\UIElements\Experimental\ObjectPool.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Panel.cs">
-      <Link>Modules\UIElements\Experimental\Panel.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\PanelWrapper.cs">
-      <Link>Modules\UIElements\Experimental\PanelWrapper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\PopupWindow.cs">
-      <Link>Modules\UIElements\Experimental\PopupWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\RepeatButton.cs">
-      <Link>Modules\UIElements\Experimental\RepeatButton.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Scheduler.cs">
-      <Link>Modules\UIElements\Experimental\Scheduler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\ScrollView.cs">
-      <Link>Modules\UIElements\Experimental\ScrollView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Scroller.cs">
-      <Link>Modules\UIElements\Experimental\Scroller.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Slider.cs">
-      <Link>Modules\UIElements\Experimental\Slider.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\SliderInt.cs">
-      <Link>Modules\UIElements\Experimental\SliderInt.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\Spacing.cs">
-      <Link>Modules\UIElements\Experimental\Spacing.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\StyleEnums.cs">
-      <Link>Modules\UIElements\Experimental\StyleEnums.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\StylePainter.cs">
-      <Link>Modules\UIElements\Experimental\StylePainter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\StyleSheets\StyleComplexSelectorExtensions.cs">
-      <Link>Modules\UIElements\Experimental\StyleSheets\StyleComplexSelectorExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\StyleSheets\StyleSelectorHelper.cs">
-      <Link>Modules\UIElements\Experimental\StyleSheets\StyleSelectorHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\StyleSheets\StyleSheetApplicator.cs">
-      <Link>Modules\UIElements\Experimental\StyleSheets\StyleSheetApplicator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\StyleSheets\StyleSheetCache.cs">
-      <Link>Modules\UIElements\Experimental\StyleSheets\StyleSheetCache.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\StyleSheets\StyleSheetExtensions.cs">
-      <Link>Modules\UIElements\Experimental\StyleSheets\StyleSheetExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\StyleSheets\StyleValue.cs">
-      <Link>Modules\UIElements\Experimental\StyleSheets\StyleValue.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\StyleSheets\VisualElementStylesData.cs">
-      <Link>Modules\UIElements\Experimental\StyleSheets\VisualElementStylesData.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\TemplateContainer.cs">
-      <Link>Modules\UIElements\Experimental\TemplateContainer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\TextElement.cs">
-      <Link>Modules\UIElements\Experimental\TextElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\TreeView.cs">
-      <Link>Modules\UIElements\Experimental\TreeView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\TreeViewItem.cs">
-      <Link>Modules\UIElements\Experimental\TreeViewItem.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\UIElementsUtility.cs">
-      <Link>Modules\UIElements\Experimental\UIElementsUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\UQuery.cs">
-      <Link>Modules\UIElements\Experimental\UQuery.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\UXML\IUxmlAttributes.cs">
-      <Link>Modules\UIElements\Experimental\UXML\IUxmlAttributes.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\UXML\TemplateAsset.cs">
-      <Link>Modules\UIElements\Experimental\UXML\TemplateAsset.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\UXML\UxmlAttributeDescription.cs">
-      <Link>Modules\UIElements\Experimental\UXML\UxmlAttributeDescription.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\UXML\UxmlChildElementDescription.cs">
-      <Link>Modules\UIElements\Experimental\UXML\UxmlChildElementDescription.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\UXML\UxmlFactory.cs">
-      <Link>Modules\UIElements\Experimental\UXML\UxmlFactory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\UXML\UxmlRootElement.cs">
-      <Link>Modules\UIElements\Experimental\UXML\UxmlRootElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\UXML\UxmlTypeRestriction.cs">
-      <Link>Modules\UIElements\Experimental\UXML\UxmlTypeRestriction.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\UXML\VisualElementAsset.cs">
-      <Link>Modules\UIElements\Experimental\UXML\VisualElementAsset.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\UXML\VisualElementFactoryRegistry.cs">
-      <Link>Modules\UIElements\Experimental\UXML\VisualElementFactoryRegistry.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\UXML\VisualTreeAsset.cs">
-      <Link>Modules\UIElements\Experimental\UXML\VisualTreeAsset.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\VisualContainer.cs">
-      <Link>Modules\UIElements\Experimental\VisualContainer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\VisualElement.cs">
-      <Link>Modules\UIElements\Experimental\VisualElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\VisualElementDataWatch.cs">
-      <Link>Modules\UIElements\Experimental\VisualElementDataWatch.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\VisualElementFocusRing.cs">
-      <Link>Modules\UIElements\Experimental\VisualElementFocusRing.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\VisualElementHierarchy.cs">
-      <Link>Modules\UIElements\Experimental\VisualElementHierarchy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\VisualElementScheduler.cs">
-      <Link>Modules\UIElements\Experimental\VisualElementScheduler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\VisualElementStyleAccess.cs">
-      <Link>Modules\UIElements\Experimental\VisualElementStyleAccess.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\VisualElementTooltip.cs">
-      <Link>Modules\UIElements\Experimental\VisualElementTooltip.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\VisualElementUtils.cs">
-      <Link>Modules\UIElements\Experimental\VisualElementUtils.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\VisualTreeHierarchyTracker.cs">
-      <Link>Modules\UIElements\Experimental\VisualTreeHierarchyTracker.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\VisualTreeLayoutUpdater.cs">
-      <Link>Modules\UIElements\Experimental\VisualTreeLayoutUpdater.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\VisualTreePersistentDataUpdater.cs">
-      <Link>Modules\UIElements\Experimental\VisualTreePersistentDataUpdater.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\VisualTreeRepaintUpdater.cs">
-      <Link>Modules\UIElements\Experimental\VisualTreeRepaintUpdater.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\VisualTreeStyleUpdater.cs">
-      <Link>Modules\UIElements\Experimental\VisualTreeStyleUpdater.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\VisualTreeTransformClipUpdater.cs">
-      <Link>Modules\UIElements\Experimental\VisualTreeTransformClipUpdater.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Experimental\VisualTreeUpdater.cs">
-      <Link>Modules\UIElements\Experimental\VisualTreeUpdater.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIElements\FocusController.cs">
       <Link>Modules\UIElements\FocusController.cs</Link>
     </Compile>
@@ -2449,11 +2152,32 @@
     <Compile Include="..\..\Modules\UIElements\StyleSheets\InheritedStylesData.cs">
       <Link>Modules\UIElements\StyleSheets\InheritedStylesData.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleComplexSelectorExtensions.cs">
-      <Link>Modules\UIElements\StyleSheets\StyleComplexSelectorExtensions.cs</Link>
+    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleComplexSelector.cs">
+      <Link>Modules\UIElements\StyleSheets\StyleComplexSelector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleProperty.cs">
+      <Link>Modules\UIElements\StyleSheets\StyleProperty.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleRule.cs">
+      <Link>Modules\UIElements\StyleSheets\StyleRule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleSelector.cs">
+      <Link>Modules\UIElements\StyleSheets\StyleSelector.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleSelectorHelper.cs">
       <Link>Modules\UIElements\StyleSheets\StyleSelectorHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleSelectorPart.cs">
+      <Link>Modules\UIElements\StyleSheets\StyleSelectorPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleSelectorRelationship.cs">
+      <Link>Modules\UIElements\StyleSheets\StyleSelectorRelationship.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleSelectorType.cs">
+      <Link>Modules\UIElements\StyleSheets\StyleSelectorType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleSheet.cs">
+      <Link>Modules\UIElements\StyleSheets\StyleSheet.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleSheetApplicator.cs">
       <Link>Modules\UIElements\StyleSheets\StyleSheetApplicator.cs</Link>
@@ -2466,6 +2190,15 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleValue.cs">
       <Link>Modules\UIElements\StyleSheets\StyleValue.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleValueHandle.cs">
+      <Link>Modules\UIElements\StyleSheets\StyleValueHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleValueKeyword.cs">
+      <Link>Modules\UIElements\StyleSheets\StyleValueKeyword.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleValueType.cs">
+      <Link>Modules\UIElements\StyleSheets\StyleValueType.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\StyleSheets\VisualElementStylesData.cs">
       <Link>Modules\UIElements\StyleSheets\VisualElementStylesData.cs</Link>
@@ -2884,6 +2617,12 @@
     <Compile Include="..\..\Modules\XR\Subsystems\Example\XRExampleSubsystemDescriptor.bindings.cs">
       <Link>Modules\XR\Subsystems\Example\XRExampleSubsystemDescriptor.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\XR\Subsystems\Experience\XRExperienceSubsystem.bindings.cs">
+      <Link>Modules\XR\Subsystems\Experience\XRExperienceSubsystem.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\XR\Subsystems\Experience\XRExperienceSubsystemDescriptor.bindings.cs">
+      <Link>Modules\XR\Subsystems\Experience\XRExperienceSubsystemDescriptor.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\XR\Subsystems\Input\XRInputSubsystem.bindings.cs">
       <Link>Modules\XR\Subsystems\Input\XRInputSubsystem.bindings.cs</Link>
     </Compile>
@@ -2928,21 +2667,6 @@
     </Compile>
     <Compile Include="..\..\Runtime\Video\ScriptBindings\UnityEngineWebCamTexture.bindings.cs">
       <Link>Runtime\Video\ScriptBindings\UnityEngineWebCamTexture.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\artifacts\generated\bindings_old\common\AI\NavMeshAgentBindings.gen.cs">
-      <Link>artifacts\generated\bindings_old\common\AI\NavMeshAgentBindings.gen.cs</Link>
-    </Compile>
-    <Compile Include="..\..\artifacts\generated\bindings_old\common\AI\NavMeshBindings.gen.cs">
-      <Link>artifacts\generated\bindings_old\common\AI\NavMeshBindings.gen.cs</Link>
-    </Compile>
-    <Compile Include="..\..\artifacts\generated\bindings_old\common\AI\NavMeshObstacleBindings.gen.cs">
-      <Link>artifacts\generated\bindings_old\common\AI\NavMeshObstacleBindings.gen.cs</Link>
-    </Compile>
-    <Compile Include="..\..\artifacts\generated\bindings_old\common\AI\NavMeshPathBindings.gen.cs">
-      <Link>artifacts\generated\bindings_old\common\AI\NavMeshPathBindings.gen.cs</Link>
-    </Compile>
-    <Compile Include="..\..\artifacts\generated\bindings_old\common\AI\OffMeshLinkBindings.gen.cs">
-      <Link>artifacts\generated\bindings_old\common\AI\OffMeshLinkBindings.gen.cs</Link>
     </Compile>
     <Compile Include="..\..\artifacts\generated\bindings_old\common\Animation\AnimationsBindings.gen.cs">
       <Link>artifacts\generated\bindings_old\common\Animation\AnimationsBindings.gen.cs</Link>

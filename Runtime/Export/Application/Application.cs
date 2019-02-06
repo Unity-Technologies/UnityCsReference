@@ -278,6 +278,8 @@ namespace UnityEngine
 
         public static event Action<bool> focusChanged;
 
+        public static event Action<string> deepLinkActivated;
+
         public static event Func<bool> wantsToQuit;
 
         public static event Action quitting;
@@ -321,6 +323,13 @@ namespace UnityEngine
         {
             if (focusChanged != null)
                 focusChanged.Invoke(focus);
+        }
+
+        [RequiredByNativeCode]
+        internal static void InvokeDeepLinkActivated(string url)
+        {
+            if (deepLinkActivated != null)
+                deepLinkActivated.Invoke(url);
         }
 
         [System.Obsolete("Application.RegisterLogCallback is deprecated. Use Application.logMessageReceived instead.")]

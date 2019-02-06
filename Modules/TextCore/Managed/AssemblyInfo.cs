@@ -9,5 +9,12 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.TextCore.Editor")]
 [assembly: InternalsVisibleTo("Unity.TextMeshPro")]
 [assembly: InternalsVisibleTo("Unity.TextMeshPro.Editor")]
+
+// Make internal visible to UIElements module.
+//[assembly: InternalsVisibleTo("UnityEngine.UIElementsModule")]
+
+// Make internal visible to various tests.
 [assembly: InternalsVisibleTo("Unity.FontEngine.Tests")]
 [assembly: InternalsVisibleTo("Unity.FontEngine.Editor.Tests")]
+[assembly: InternalsVisibleTo("Unity.TextCore.Tests")]
+[assembly: InternalsVisibleTo("Unity.TextCore.Editor.Tests")]

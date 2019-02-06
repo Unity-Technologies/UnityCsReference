@@ -16,13 +16,15 @@ namespace UnityEngine.Experimental.VFX
     {
         private IntPtr m_Ptr;
         private bool m_Owner;
-        private VFXEventAttribute(IntPtr ptr, bool owner)
+        private VisualEffectAsset m_VfxAsset;
+        private VFXEventAttribute(IntPtr ptr, bool owner, VisualEffectAsset vfxAsset)
         {
             m_Ptr = ptr;
             m_Owner = owner;
+            m_VfxAsset = vfxAsset;
         }
 
-        private VFXEventAttribute() : this(IntPtr.Zero, false)
+        private VFXEventAttribute() : this(IntPtr.Zero, false, null)
         {
         }
 
@@ -31,6 +33,7 @@ namespace UnityEngine.Experimental.VFX
             if (original == null)
                 throw new ArgumentNullException("VFXEventAttribute expect a non null attribute");
             m_Ptr = Internal_Create();
+            m_VfxAsset = original.m_VfxAsset;
             Internal_InitFromEventAttribute(original);
         }
 
@@ -38,13 +41,15 @@ namespace UnityEngine.Experimental.VFX
 
         static internal VFXEventAttribute Internal_InstanciateVFXEventAttribute(VisualEffectAsset vfxAsset)
         {
-            var eventAttribute = new VFXEventAttribute(Internal_Create(), true);
+            var eventAttribute = new VFXEventAttribute(Internal_Create(), true, vfxAsset);
             eventAttribute.Internal_InitFromAsset(vfxAsset);
             return eventAttribute;
         }
 
         extern internal void Internal_InitFromAsset(VisualEffectAsset vfxAsset);
         extern internal void Internal_InitFromEventAttribute(VFXEventAttribute vfxEventAttribute);
+
+        internal VisualEffectAsset vfxAsset { get { return m_VfxAsset; } }
 
         private void Release()
         {
@@ -53,6 +58,7 @@ namespace UnityEngine.Experimental.VFX
                 Internal_Destroy(m_Ptr);
             }
             m_Ptr = IntPtr.Zero;
+            m_VfxAsset = null;
         }
 
         ~VFXEventAttribute()

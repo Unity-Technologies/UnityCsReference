@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine.Experimental.UIElements;
 
 namespace UnityEngine.UIElements
 {
@@ -32,7 +31,6 @@ namespace UnityEngine.UIElements
             }
 
             m_Element.styleSheetList.Add(styleSheet);
-            m_Element.OnNewStyleSheet(styleSheet);
             m_Element.IncrementVersion(VersionChangeType.StyleSheet);
         }
 
@@ -79,7 +77,6 @@ namespace UnityEngine.UIElements
             if (index >= 0)
             {
                 m_Element.IncrementVersion(VersionChangeType.StyleSheet);
-                m_Element.OnNewStyleSheet(@new);
                 m_Element.styleSheetList[index] = @new;
             }
         }

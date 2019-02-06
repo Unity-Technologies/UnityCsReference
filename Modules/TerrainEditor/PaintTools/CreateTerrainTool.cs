@@ -109,7 +109,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             if (null != GameObject.Find(uniqueName))
             {
                 Debug.LogWarning("Already have a neighbor on that side");
-                return (Terrain)null;
+                return null;
             }
 
             TerrainData terrainData = new TerrainData();
@@ -125,7 +125,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             terrainData.SetDetailResolution(parent.terrainData.detailResolution, parent.terrainData.detailResolutionPerPatch);
             terrainData.name = Guid.NewGuid().ToString();
             terrainData.size = parent.terrainData.size;
-            GameObject terrainGO = (GameObject)Terrain.CreateTerrainGameObject(terrainData);
+            GameObject terrainGO = Terrain.CreateTerrainGameObject(terrainData);
 
             terrainGO.name = uniqueName;
             terrainGO.transform.position = position;
@@ -199,8 +199,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             Graphics.Blit(null, heightmap, crossBlendMat);
 
-            terrain.terrainData.UpdateDirtyRegion(0, 0, heightmap.width, heightmap.height, true);
-            terrain.ApplyDelayedHeightmapModification();
+            terrain.terrainData.DirtyHeightmapRegion(new RectInt(0, 0, heightmap.width, heightmap.height), TerrainHeightmapSyncControl.HeightAndLod);
         }
 
         private bool RaycastTerrain(Terrain terrain, Ray mouseRay, out RaycastHit hit, out Terrain hitTerrain)

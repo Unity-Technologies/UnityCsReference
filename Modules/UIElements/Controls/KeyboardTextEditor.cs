@@ -217,7 +217,7 @@ namespace UnityEngine.UIElements
             else
             {
                 // Ignore tab & shift-tab in text fields
-                if (evt.keyCode == KeyCode.Tab || evt.character == '\t')
+                if (!editorEngine.multiline && (evt.keyCode == KeyCode.Tab || evt.character == '\t'))
                     return;
 
                 evt.StopPropagation();
@@ -229,6 +229,13 @@ namespace UnityEngine.UIElements
                     return;
                 }
 
+                // When the newline character is sent, we have to check if the shift key is down also...
+                // In the multiline case, this is like a return on a single line
+                if (c == '\n' && editorEngine.multiline && evt.shiftKey)
+                {
+                    return;
+                }
+
                 if (!textInputField.AcceptCharacter(c))
                 {
                     return;
@@ -236,7 +243,7 @@ namespace UnityEngine.UIElements
 
                 // Simplest test: only allow the character if the display font supports it.
                 Font font = editorEngine.style.font;
-                if (font != null && font.HasCharacter(c) || c == '\n')
+                if (font != null && font.HasCharacter(c) || c == '\n' || c == '\t')
                 {
                     // Input event
                     editorEngine.Insert(c);

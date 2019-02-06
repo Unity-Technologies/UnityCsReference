@@ -362,9 +362,11 @@ namespace UnityEditor
         }
 
 
-        public static extern string xboxOneUsername { get; set; }
+        [Obsolete("xboxOneUsername is deprecated, it is unnecessary and non-functional.")]
+        public static  string xboxOneUsername { get; set; }
 
-        public static extern string xboxOneNetworkSharePath { get; set; }
+        [Obsolete("xboxOneNetworkSharePath is deprecated, it is unnecessary and non-functional.")]
+        public static  string xboxOneNetworkSharePath { get; set; }
 
 
         // Transitive property used when adding debug ports to the

@@ -70,9 +70,7 @@ namespace UnityEngine.UIElements
                 return DoDispatch(panel);
             }
 
-            // Experimental: revert this when we remove the Experimental namespace
-            return UnityEngine.Experimental.UIElements.UIElementsUtility.ProcessEvent(instanceID, nativeEventPtr);
-            //return false;
+            return false;
         }
 
         public static void RemoveCachedPanel(int instanceID)
@@ -100,9 +98,7 @@ namespace UnityEngine.UIElements
                 s_ContainerStack.Pop();
             }
 
-            //Experimental: re-enable this when we remove the Experimental namespace
-            return UnityEngine.Experimental.UIElements.UIElementsUtility.EndContainerGUIFromException(exception);
-            //return GUIUtility.ShouldRethrowException(exception);
+            return GUIUtility.ShouldRethrowException(exception);
         }
 
         internal static void BeginContainerGUI(GUILayoutUtility.LayoutCache cache, Event evt, IMGUIContainer container)

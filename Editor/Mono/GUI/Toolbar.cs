@@ -175,7 +175,6 @@ namespace UnityEditor
             Repaint();
         }
 
-
         protected void OnUnityConnectStateChanged(ConnectInfo state)
         {
             RepaintToolbar();
@@ -259,7 +258,6 @@ namespace UnityEditor
             {
                 ShowUserMenu(EditorToolGUI.GetThinArea(pos));
             }
-
 
             ReserveWidthLeft(space, ref pos);
 
@@ -357,7 +355,7 @@ namespace UnityEditor
                         || (evt.button == 0 && evt.modifiers == EventModifiers.Alt))
                 )
                 {
-                    EditorToolGUI.DoToolHistoryContextMenu();
+                    EditorToolGUI.DoToolContextMenu();
                 }
                 else
                 {
@@ -418,7 +416,6 @@ namespace UnityEditor
                 EditorApplication.Step();
                 GUIUtility.ExitGUI();
             }
-
         }
 
         void DoLayersDropDown(Rect rect)

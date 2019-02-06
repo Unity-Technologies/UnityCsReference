@@ -65,7 +65,7 @@ namespace UnityEditor.Build
             if (Application.platform == RuntimePlatform.OSXEditor)
                 standaloneTarget = BuildTarget.StandaloneOSX;
             else if (Application.platform == RuntimePlatform.LinuxEditor)
-                standaloneTarget = BuildTarget.StandaloneLinux;
+                standaloneTarget = BuildTarget.StandaloneLinux64;
 
             buildPlatformsList.Add(new BuildPlatform(BuildPipeline.GetBuildTargetGroupDisplayName(BuildTargetGroup.Standalone), "BuildSettings.Standalone", BuildTargetGroup.Standalone, standaloneTarget, true));
 
@@ -116,9 +116,12 @@ namespace UnityEditor.Build
                 case BuildTarget.StandaloneOSXIntel64:
 #pragma warning restore 612, 618
                     return "Mac OS X";
+                    // Deprecated
+#pragma warning disable 612, 618
                 case BuildTarget.StandaloneLinux:
-                case BuildTarget.StandaloneLinux64:
                 case BuildTarget.StandaloneLinuxUniversal:
+#pragma warning restore 612, 618
+                case BuildTarget.StandaloneLinux64:
                     return "Linux";
             }
 

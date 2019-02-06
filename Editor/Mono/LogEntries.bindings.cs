@@ -15,17 +15,13 @@ namespace UnityEditor
     [StructLayout(LayoutKind.Sequential)]
     internal partial class LogEntry
     {
-        public string condition;
-        public int errorNum;
+        public string message;
         public string file;
         public int line;
+        public int column;
         public int mode;
         public int instanceID;
         public int identifier;
-        [Ignore]
-        public int isWorldPlaying;
-
-
         internal static extern void RemoveLogEntriesByMode(int mode);
     }
 
@@ -36,7 +32,7 @@ namespace UnityEditor
     internal sealed class LogEntries
     {
         public static extern void RowGotDoubleClicked(int index);
-        public static extern void OpenFileOnSpecificLine(string filePath, int line);
+        public static extern void OpenFileOnSpecificLineAndColumn(string filePath, int line, int column);
 
         [FreeFunction]
         public static extern string GetStatusText();

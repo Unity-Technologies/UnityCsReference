@@ -233,6 +233,7 @@ namespace UnityEditor
     // Player Settings is where you define various parameters for the final game that you will build in Unity. Some of these values are used in the Resolution Dialog that launches when you open a standalone game.
     [NativeClass(null)]
     [NativeHeader("Editor/Mono/PlayerSettings.bindings.h")]
+    [NativeHeader("Runtime/Misc/BuildSettings.h")]
     [NativeHeader("Runtime/Misc/PlayerSettings.h")]
     [NativeHeader("Runtime/Misc/PlayerSettingsSplashScreen.h")]
     [StaticAccessor("GetPlayerSettings()")]

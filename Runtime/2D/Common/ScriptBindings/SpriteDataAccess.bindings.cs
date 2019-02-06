@@ -17,6 +17,7 @@ using Unity.Jobs;
 namespace UnityEngine.Experimental.U2D
 {
     [NativeHeader("Runtime/2D/Common/SpriteDataAccess.h")]
+    [NativeHeader("Runtime/2D/Common/SpriteDataMarshalling.h")]
     [RequiredByNativeCode]
     [NativeType(CodegenOptions.Custom, "ScriptingSpriteBone")]
     [StructLayout(LayoutKind.Sequential)]

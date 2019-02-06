@@ -129,6 +129,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string Name { get; set; }
         public string GUID { get; set; }
         public string[] References { get; set; }
+        public string[] AdditionalPrefixes { get; set; }
         public OptionalUnityReferences OptionalUnityReferences { get; set; }
         public CustomScriptAssemblyPlatform[] IncludePlatforms { get; set;  }
         public CustomScriptAssemblyPlatform[] ExcludePlatforms { get; set;  }

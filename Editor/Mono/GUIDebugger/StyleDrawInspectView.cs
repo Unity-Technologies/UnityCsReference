@@ -256,7 +256,7 @@ namespace UnityEditor
             int frameIndex = GetInterestingFrameIndex(frames);
             StackFrame frame = frames[frameIndex];
 
-            InternalEditorUtility.OpenFileAtLineExternal(frame.sourceFile, (int)frame.lineNumber);
+            InternalEditorUtility.OpenFileAtLineExternal(frame.sourceFile, (int)frame.lineNumber, -1);
         }
     }
 }

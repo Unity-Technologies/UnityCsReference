@@ -20,7 +20,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\artifacts\Bee.CSharpSupport\UnityEditor\Debug</OutputPath>
-    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_HUB;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_DIRECTOR;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_DUCK_TYPING;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_GRID;ENABLE_HOLOLENS_MODULE_API;ENABLE_LOCALIZATION;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_TEXTURE_STREAMING;ENABLE_TILEMAP;ENABLE_TIMELINE;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;INCLUDE_GI;INCLUDE_PUBNUB;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IOS_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS4_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
+    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_HUB_LICENSE;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IOS_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS4_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -67,8 +67,20 @@
     <Compile Include="..\..\Editor\Mono\AssetPreviewUpdater.cs">
       <Link>Editor\Mono\AssetPreviewUpdater.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\AssetStore.bindings.cs">
+      <Link>Editor\Mono\AssetStore.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\AssetStoreContext.bindings.cs">
+      <Link>Editor\Mono\AssetStoreContext.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\AssetStoreToolUtils.bindings.cs">
+      <Link>Editor\Mono\AssetStoreToolUtils.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\AssetStoreToolUtils.cs">
       <Link>Editor\Mono\AssetStoreToolUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\AssetStoreUtils.bindings.cs">
+      <Link>Editor\Mono\AssetStoreUtils.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\AssetsMenuUtility.bindings.cs">
       <Link>Editor\Mono\AssetsMenuUtility.bindings.cs</Link>
@@ -429,6 +441,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\PlayerSettingsIOS.bindings.cs">
       <Link>Editor\Mono\PlayerSettingsIOS.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\PlayerSettingsLumin.bindings.cs">
+      <Link>Editor\Mono\PlayerSettingsLumin.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\PlayerSettingsMacOS.bindings.cs">
       <Link>Editor\Mono\PlayerSettingsMacOS.bindings.cs</Link>
@@ -1021,17 +1036,8 @@
     <Compile Include="..\..\Editor\Mono\AssetStore\Json.cs">
       <Link>Editor\Mono\AssetStore\Json.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Audio\StreamedAudioClipPreview.cs">
-      <Link>Editor\Mono\Audio\StreamedAudioClipPreview.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Audio\WaveformPreview.cs">
-      <Link>Editor\Mono\Audio\WaveformPreview.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Audio\WaveformPreviewFactory.cs">
-      <Link>Editor\Mono\Audio\WaveformPreviewFactory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Audio\WaveformStreamer.bindings.cs">
-      <Link>Editor\Mono\Audio\WaveformStreamer.bindings.cs</Link>
+    <Compile Include="..\..\Editor\Mono\Audio\Bindings\AudioUtil.bindings.cs">
+      <Link>Editor\Mono\Audio\Bindings\AudioUtil.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Audio\Effects\AudioCurveRendering.cs">
       <Link>Editor\Mono\Audio\Effects\AudioCurveRendering.cs</Link>
@@ -1056,6 +1062,18 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Audio\Mixer\AudioMixerDescription.cs">
       <Link>Editor\Mono\Audio\Mixer\AudioMixerDescription.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Audio\StreamedAudioClipPreview.cs">
+      <Link>Editor\Mono\Audio\StreamedAudioClipPreview.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Audio\WaveformPreview.cs">
+      <Link>Editor\Mono\Audio\WaveformPreview.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Audio\WaveformPreviewFactory.cs">
+      <Link>Editor\Mono\Audio\WaveformPreviewFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Audio\WaveformStreamer.bindings.cs">
+      <Link>Editor\Mono\Audio\WaveformStreamer.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Audio\Mixer\Bindings\AudioMixerController.cs">
       <Link>Editor\Mono\Audio\Mixer\Bindings\AudioMixerController.cs</Link>
@@ -1524,6 +1542,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\DragRect.cs">
       <Link>Editor\Mono\GUI\DragRect.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\GUI\EditModeTools\EditModeTool.cs">
+      <Link>Editor\Mono\GUI\EditModeTools\EditModeTool.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\EditorApplicationLayout.cs">
       <Link>Editor\Mono\GUI\EditorApplicationLayout.cs</Link>
@@ -2190,6 +2211,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\EditorDragging.cs">
       <Link>Editor\Mono\Inspector\EditorDragging.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\EditorElement.cs">
+      <Link>Editor\Mono\Inspector\EditorElement.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\EditorSettingsInspector.cs">
       <Link>Editor\Mono\Inspector\EditorSettingsInspector.cs</Link>
@@ -3037,6 +3061,9 @@
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\CustomScriptAssembly.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\CustomScriptAssembly.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\CustomScriptAssemblyReference.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\CustomScriptAssemblyReference.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\DefineConstraintsHelper.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\DefineConstraintsHelper.cs</Link>
     </Compile>
@@ -3282,135 +3309,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\EditorWindowPersistentViewData.cs">
       <Link>Editor\Mono\UIElements\EditorWindowPersistentViewData.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Controls\BaseCompositeField.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Controls\BaseCompositeField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Controls\BasePopupField.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Controls\BasePopupField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Controls\BindingExtensions.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Controls\BindingExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Controls\BoundsField.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Controls\BoundsField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Controls\BoundsIntField.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Controls\BoundsIntField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Controls\ColorField.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Controls\ColorField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Controls\CompoundFields.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Controls\CompoundFields.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Controls\CurveField.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Controls\CurveField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Controls\DoubleField.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Controls\DoubleField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Controls\EnumField.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Controls\EnumField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Controls\FloatField.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Controls\FloatField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Controls\GradientField.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Controls\GradientField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Controls\IntegerField.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Controls\IntegerField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Controls\LayerField.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Controls\LayerField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Controls\LayerMaskField.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Controls\LayerMaskField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Controls\LongField.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Controls\LongField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Controls\MaskField.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Controls\MaskField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Controls\ObjectField.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Controls\ObjectField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Controls\PopupField.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Controls\PopupField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Controls\PropertyControl.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Controls\PropertyControl.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Controls\TagField.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Controls\TagField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Controls\TextValueField.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Controls\TextValueField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\EditorContextualMenuManager.cs">
-      <Link>Editor\Mono\UIElements\Experimental\EditorContextualMenuManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\EditorCursor.cs">
-      <Link>Editor\Mono\UIElements\Experimental\EditorCursor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\EditorMenuExtensions.cs">
-      <Link>Editor\Mono\UIElements\Experimental\EditorMenuExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\EditorWindowPersistentViewData.cs">
-      <Link>Editor\Mono\UIElements\Experimental\EditorWindowPersistentViewData.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\FieldMouseDragger.cs">
-      <Link>Editor\Mono\UIElements\Experimental\FieldMouseDragger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\PanelDebug.cs">
-      <Link>Editor\Mono\UIElements\Experimental\PanelDebug.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\SerializableJsonDictionary.cs">
-      <Link>Editor\Mono\UIElements\Experimental\SerializableJsonDictionary.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Toolbar\IToolbarMenuElement.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Toolbar\IToolbarMenuElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Toolbar\Toolbar.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Toolbar\Toolbar.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Toolbar\ToolbarButton.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Toolbar\ToolbarButton.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Toolbar\ToolbarMenu.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Toolbar\ToolbarMenu.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Toolbar\ToolbarPopupSearchField.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Toolbar\ToolbarPopupSearchField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Toolbar\ToolbarSearchField.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Toolbar\ToolbarSearchField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Toolbar\ToolbarSpacer.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Toolbar\ToolbarSpacer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Toolbar\ToolbarToggle.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Toolbar\ToolbarToggle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\Tooltip.cs">
-      <Link>Editor\Mono\UIElements\Experimental\Tooltip.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\UIElementsEditorUtility.cs">
-      <Link>Editor\Mono\UIElements\Experimental\UIElementsEditorUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\UXMLEditorFactories.cs">
-      <Link>Editor\Mono\UIElements\Experimental\UXMLEditorFactories.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\UXMLSchemaGenerator.cs">
-      <Link>Editor\Mono\UIElements\Experimental\UXMLSchemaGenerator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\VisualSplitter.cs">
-      <Link>Editor\Mono\UIElements\Experimental\VisualSplitter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Experimental\VisualTreeAssetEditor.cs">
-      <Link>Editor\Mono\UIElements\Experimental\VisualTreeAssetEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\FieldMouseDragger.cs">
       <Link>Editor\Mono\UIElements\FieldMouseDragger.cs</Link>
@@ -3739,18 +3637,6 @@
     <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\AssetModificationProcessorBindings.gen.cs">
       <Link>artifacts\generated\bindings_old\common\Editor\AssetModificationProcessorBindings.gen.cs</Link>
     </Compile>
-    <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\AssetStoreBindings.gen.cs">
-      <Link>artifacts\generated\bindings_old\common\Editor\AssetStoreBindings.gen.cs</Link>
-    </Compile>
-    <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\AssetStoreContextBindings.gen.cs">
-      <Link>artifacts\generated\bindings_old\common\Editor\AssetStoreContextBindings.gen.cs</Link>
-    </Compile>
-    <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\AssetStoreToolUtilsBindings.gen.cs">
-      <Link>artifacts\generated\bindings_old\common\Editor\AssetStoreToolUtilsBindings.gen.cs</Link>
-    </Compile>
-    <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\AssetStoreUtilsBindings.gen.cs">
-      <Link>artifacts\generated\bindings_old\common\Editor\AssetStoreUtilsBindings.gen.cs</Link>
-    </Compile>
     <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\AudioMixerControllerBindings.gen.cs">
       <Link>artifacts\generated\bindings_old\common\Editor\AudioMixerControllerBindings.gen.cs</Link>
     </Compile>
@@ -3765,9 +3651,6 @@
     </Compile>
     <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\AudioMixerSnapshotControllerBindings.gen.cs">
       <Link>artifacts\generated\bindings_old\common\Editor\AudioMixerSnapshotControllerBindings.gen.cs</Link>
-    </Compile>
-    <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\AudioUtilBindings.gen.cs">
-      <Link>artifacts\generated\bindings_old\common\Editor\AudioUtilBindings.gen.cs</Link>
     </Compile>
     <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\EditorConnectionInternalBindings.gen.cs">
       <Link>artifacts\generated\bindings_old\common\Editor\EditorConnectionInternalBindings.gen.cs</Link>
@@ -3786,9 +3669,6 @@
     </Compile>
     <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\ModuleMetadataBindings.gen.cs">
       <Link>artifacts\generated\bindings_old\common\Editor\ModuleMetadataBindings.gen.cs</Link>
-    </Compile>
-    <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\PlayerSettingsLuminBindings.gen.cs">
-      <Link>artifacts\generated\bindings_old\common\Editor\PlayerSettingsLuminBindings.gen.cs</Link>
     </Compile>
     <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\PlayerSettingsVRGoogleBindings.gen.cs">
       <Link>artifacts\generated\bindings_old\common\Editor\PlayerSettingsVRGoogleBindings.gen.cs</Link>
@@ -3816,6 +3696,12 @@
     </Compile>
     <Compile Include="..\..\Modules\AIEditor\Builder\NavMeshBuilderEditor.bindings.cs">
       <Link>Modules\AIEditor\Builder\NavMeshBuilderEditor.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AIEditor\Visualization\NavMeshVisualizationSettings.bindings.cs">
+      <Link>Modules\AIEditor\Visualization\NavMeshVisualizationSettings.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AssetDatabase\Editor\V2\MultiArtifactTestImporter.bindings.cs">
+      <Link>Modules\AssetDatabase\Editor\V2\MultiArtifactTestImporter.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\AssetPipelineEditor\AssetPostprocessors\ModelImporterPostProcessor.cs">
       <Link>Modules\AssetPipelineEditor\AssetPostprocessors\ModelImporterPostProcessor.cs</Link>
@@ -3927,6 +3813,9 @@
     </Compile>
     <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\WriteCommand.cs">
       <Link>Modules\BuildPipeline\Editor\Managed\WriteCommand.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildPipeline\Editor\Shared\ReferencesArtifactGenerator.bindings.cs">
+      <Link>Modules\BuildPipeline\Editor\Shared\ReferencesArtifactGenerator.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildReportingEditor\Managed\BuildFile.cs">
       <Link>Modules\BuildReportingEditor\Managed\BuildFile.cs</Link>
@@ -4057,155 +3946,8 @@
     <Compile Include="..\..\Modules\GraphViewEditor\Elements\TokenNode.cs">
       <Link>Modules\GraphViewEditor\Elements\TokenNode.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Capabilities.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Capabilities.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Decorators\GridBackground.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Decorators\GridBackground.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Direction.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Direction.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\EdgeControl.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\EdgeControl.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Elements\Blackboard\Blackboard.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Elements\Blackboard\Blackboard.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Elements\Blackboard\BlackboardField.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Elements\Blackboard\BlackboardField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Elements\Blackboard\BlackboardRow.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Elements\Blackboard\BlackboardRow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Elements\Blackboard\BlackboardSection.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Elements\Blackboard\BlackboardSection.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Elements\Edge.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Elements\Edge.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Elements\GraphElement.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Elements\GraphElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Elements\GraphElementScopeExtensions.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Elements\GraphElementScopeExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Elements\Group.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Elements\Group.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Elements\GroupDropArea.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Elements\GroupDropArea.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Elements\MiniMap.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Elements\MiniMap.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Elements\Node.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Elements\Node.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Elements\Pill.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Elements\Pill.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Elements\Port.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Elements\Port.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Elements\Scope.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Elements\Scope.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Elements\ScopeContentContainer.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Elements\ScopeContentContainer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Elements\StackNode.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Elements\StackNode.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Elements\StackNodeDropTarget.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Elements\StackNodeDropTarget.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Elements\StackNodeSeparator.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Elements\StackNodeSeparator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Elements\TokenNode.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Elements\TokenNode.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\IDroppable.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\IDroppable.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\IInsertLocation.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\IInsertLocation.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\ISelectable.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\ISelectable.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\ISelection.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\ISelection.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\IconBadge.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\IconBadge.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\ClickSelector.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\ClickSelector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\ContentDragger.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\ContentDragger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\Dragger.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\Dragger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\EdgeConnector.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\EdgeConnector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\EdgeDragHelper.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\EdgeDragHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\EdgeManipulator.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\EdgeManipulator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\FreehandSelector.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\FreehandSelector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\Inserter.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\Inserter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\RectangleSelector.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\RectangleSelector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\Resizer.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\Resizer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\SelectionDragger.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\SelectionDragger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\SelectionDropper.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\SelectionDropper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\ShortcutHandler.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\ShortcutHandler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\Zoomer.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Manipulators\Zoomer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\NodeAdapter.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\NodeAdapter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\NodeSearch\SearchTree.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\NodeSearch\SearchTree.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\NodeSearch\SearchWindow.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\NodeSearch\SearchWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Orientation.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Orientation.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Utils\RectUtils.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Utils\RectUtils.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Utils\VisualElementAttacher.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Utils\VisualElementAttacher.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\ValueAnimation.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\ValueAnimation.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalUIElements\Views\GraphView.cs">
-      <Link>Modules\GraphViewEditor\ExperimentalUIElements\Views\GraphView.cs</Link>
+    <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalNamespaceRelic.cs">
+      <Link>Modules\GraphViewEditor\ExperimentalNamespaceRelic.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphViewEditor\IDroppable.cs">
       <Link>Modules\GraphViewEditor\IDroppable.cs</Link>
@@ -4909,6 +4651,33 @@
     <Compile Include="..\..\Modules\TerrainEditor\Utilities\TerrainPaintUtilityEditor.cs">
       <Link>Modules\TerrainEditor\Utilities\TerrainPaintUtilityEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\TextCoreEditor\Managed\CharacterPropertyDrawer.cs">
+      <Link>Modules\TextCoreEditor\Managed\CharacterPropertyDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreEditor\Managed\FontAssetCreationMenu.cs">
+      <Link>Modules\TextCoreEditor\Managed\FontAssetCreationMenu.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreEditor\Managed\FontAssetEditor.cs">
+      <Link>Modules\TextCoreEditor\Managed\FontAssetEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreEditor\Managed\GlyphMetricsPropertyDrawer.cs">
+      <Link>Modules\TextCoreEditor\Managed\GlyphMetricsPropertyDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreEditor\Managed\GlyphPropertyDrawer.cs">
+      <Link>Modules\TextCoreEditor\Managed\GlyphPropertyDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreEditor\Managed\GlyphRectPropertyDrawer.cs">
+      <Link>Modules\TextCoreEditor\Managed\GlyphRectPropertyDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreEditor\Managed\SpriteAssetCreationMenu.cs">
+      <Link>Modules\TextCoreEditor\Managed\SpriteAssetCreationMenu.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreEditor\Managed\TextCoreEditorStyles.cs">
+      <Link>Modules\TextCoreEditor\Managed\TextCoreEditorStyles.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreEditor\Managed\TextSettingsCreationMenu.cs">
+      <Link>Modules\TextCoreEditor\Managed\TextSettingsCreationMenu.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\TextRenderingEditor\TextRenderingCommands.cs">
       <Link>Modules\TextRenderingEditor\TextRenderingCommands.cs</Link>
     </Compile>
@@ -5086,21 +4855,6 @@
     <Compile Include="..\..\Modules\UIElementsDebuggerEditor\DebuggerTreeView.cs">
       <Link>Modules\UIElementsDebuggerEditor\DebuggerTreeView.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\Experimental\PanelPickerWindow.cs">
-      <Link>Modules\UIElementsDebuggerEditor\Experimental\PanelPickerWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\Experimental\PickingData.cs">
-      <Link>Modules\UIElementsDebuggerEditor\Experimental\PickingData.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\Experimental\UIElementsDebugger.cs">
-      <Link>Modules\UIElementsDebuggerEditor\Experimental\UIElementsDebugger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\Experimental\UxmlExporter.cs">
-      <Link>Modules\UIElementsDebuggerEditor\Experimental\UxmlExporter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\Experimental\VisualTreeTreeView.cs">
-      <Link>Modules\UIElementsDebuggerEditor\Experimental\VisualTreeTreeView.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIElementsDebuggerEditor\OverlayPainter.cs">
       <Link>Modules\UIElementsDebuggerEditor\OverlayPainter.cs</Link>
     </Compile>
@@ -5206,12 +4960,6 @@
     <Compile Include="..\..\Modules\XREditor\Transition\VRDeviceTransition.cs">
       <Link>Modules\XREditor\Transition\VRDeviceTransition.cs</Link>
     </Compile>
-    <Compile Include="..\..\artifacts\generated\bindings_old\common\AIEditor\NavMeshBuilderBindings.gen.cs">
-      <Link>artifacts\generated\bindings_old\common\AIEditor\NavMeshBuilderBindings.gen.cs</Link>
-    </Compile>
-    <Compile Include="..\..\artifacts\generated\bindings_old\common\AIEditor\NavMeshVisualizationSettingsBindings.gen.cs">
-      <Link>artifacts\generated\bindings_old\common\AIEditor\NavMeshVisualizationSettingsBindings.gen.cs</Link>
-    </Compile>
     <Compile Include="..\..\artifacts\generated\bindings_old\common\ProfilerEditor\ProfilerAPIBindings.gen.cs">
       <Link>artifacts\generated\bindings_old\common\ProfilerEditor\ProfilerAPIBindings.gen.cs</Link>
     </Compile>
@@ -5251,11 +4999,11 @@
       <Project>{A15E35A9-22E8-4A79-B6CE-C0984062DAC6}</Project>
       <Name>Unity.DataContract</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\Tools\Unity.SerializationLogic\Unity.SerializationLogic.csproj">
+    <ProjectReference Include="..\..\Tools\Unity.SerializationLogic\Unity.SerializationLogic.gen.csproj">
       <Project>{A6749DFF-E369-4FE6-9019-6B7C555E80EA}</Project>
       <Name>Unity.SerializationLogic</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\Tools\Unity.CecilTools\Unity.CecilTools.csproj">
+    <ProjectReference Include="..\..\Tools\Unity.CecilTools\Unity.CecilTools.gen.csproj">
       <Project>{35FF4EBD-85F0-4727-8AC0-32AE4F3723D0}</Project>
       <Name>Unity.CecilTools</Name>
     </ProjectReference>

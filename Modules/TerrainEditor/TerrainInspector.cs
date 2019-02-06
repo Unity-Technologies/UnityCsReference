@@ -115,7 +115,7 @@ namespace UnityEditor
             public readonly GUIContent treeRotation = EditorGUIUtility.TrTextContent("Random Tree Rotation", "Randomize tree rotation. This only works when the tree has an LOD group.");
             public readonly GUIContent treeRotationDisabled = EditorGUIUtility.TrTextContent("The selected tree does not have an LOD group, so it will use the default impostor system and will not support rotation.");
             public readonly GUIContent massPlaceTrees = EditorGUIUtility.TrTextContent("Mass Place Trees", "The Mass Place Trees button is a very useful way to create an overall covering of trees without painting over the whole landscape. Following a mass placement, you can still use painting to add or remove trees to create denser or sparser areas.");
-            public readonly GUIContent treeLightmapStatic = EditorGUIUtility.TrTextContent("Tree Lightmap Static", "The state of the Lightmap Static flag for the tree prefab root GameObject. The flag can be changed on the prefab. When disabled, this tree will not be visible to the lightmapper. When enabled, any child GameObjects which also have the static flag enabled, will be present in lightmap calculations. Regardless of the Static flag, each tree instance receives its own light probe and no lightmap texels.");
+            public readonly GUIContent treeContributeGI = EditorGUIUtility.TrTextContent("Tree Contribute Global Illumination", "The state of the Contribute GI flag for the tree prefab root GameObject. The flag can be changed on the prefab. When disabled, this tree will not be visible to the lightmapper. When enabled, any child GameObjects which also have the static flag enabled, will be present in lightmap calculations. Regardless of the value of the flag, each tree instance receives its own light probe and no lightmap texels.");
 
             // Details
             public readonly GUIContent details = EditorGUIUtility.TrTextContent("Details");
@@ -166,10 +166,10 @@ namespace UnityEditor
             public readonly GUIContent wavingGrassTint = EditorGUIUtility.TrTextContent("Grass Tint", "Overall color tint applied to grass objects.");
             public readonly GUIContent meshResolution = EditorGUIUtility.TrTextContent("Mesh Resolution (On Terrain Data)");
             public readonly GUIContent detailResolutionWarning = EditorGUIUtility.TrTextContent("You may reduce CPU draw call overhead by setting the detail resolution per patch as high as possible, relative to detail resolution.");
+            public readonly GUIContent terrainMaterialWarning = EditorGUIUtility.TrTextContent("Built in or default materials are not supported in scriptable rendering pipeline. Please use custom terrain material.");
+            public readonly GUIContent fixTerrainMaterial = EditorGUIUtility.TrTextContent("Fix material");
         }
         static Styles styles;
-
-        private const string kDisplayLightingKey = "TerrainInspector.Lighting.ShowSettings";
 
         static float ScaledSliderWithRounding(GUIContent content, float valueInPercent, float minVal, float maxVal, float scale, float precision)
         {
@@ -687,15 +687,20 @@ namespace UnityEditor
 
             LoadInspectorSettings();
 
-            // now that tool selection has been loaded from inspector, activate the selected tool
             CheckToolActivation();
 
-            InitializeLightingFields();
+            m_Lighting = new LightingSettingsInspector(serializedObject);
+            m_Lighting.showLightingSettings = new SavedBool($"{target.GetType()}.ShowLightingSettings", true);
+            m_Lighting.showLightmapSettings = new SavedBool($"{target.GetType()}.ShowLightmapSettings", true);
+            m_Lighting.showBakedLightmap = new SavedBool($"{target.GetType()}.ShowBakedLightmapSettings", false);
+            m_Lighting.showRealtimeLightmap = new SavedBool($"{target.GetType()}.ShowRealtimeLightmapSettings", false);
 
             m_TerrainToolContext = new TerrainToolShortcutContext(this);
             ShortcutIntegration.instance.contextManager.RegisterToolContext(m_TerrainToolContext);
 
             SceneView.duringSceneGui += OnSceneGUICallback;
+            Lightmapping.lightingDataUpdated += LightingDataUpdatedRepaint;
+
             s_LastActiveTerrain = terrain;
         }
 
@@ -704,6 +709,7 @@ namespace UnityEditor
             ShortcutIntegration.instance.contextManager.DeregisterToolContext(m_TerrainToolContext);
             PaintContext.ApplyDelayedActions();
             SceneView.duringSceneGui -= OnSceneGUICallback;
+            Lightmapping.lightingDataUpdated -= LightingDataUpdatedRepaint;
 
             SetCurrentPaintToolInactive();
 
@@ -1071,9 +1077,9 @@ namespace UnityEditor
             if (prefab != null)
             {
                 StaticEditorFlags staticEditorFlags = GameObjectUtility.GetStaticEditorFlags(prefab);
-                bool lightmapStatic = (staticEditorFlags & StaticEditorFlags.LightmapStatic) != 0;
+                bool contributeGI = (staticEditorFlags & StaticEditorFlags.ContributeGI) != 0;
                 using (new EditorGUI.DisabledScope(true))   // Always disabled, because we don't want to edit the prefab.
-                    lightmapStatic = EditorGUILayout.Toggle(styles.treeLightmapStatic, lightmapStatic);
+                    contributeGI = EditorGUILayout.Toggle(styles.treeContributeGI, contributeGI);
             }
         }
 
@@ -1213,6 +1219,22 @@ namespace UnityEditor
                     EditorGUI.indentLevel--;
                 }
                 EditorGUILayout.EndFadeGroup();
+
+                bool usingSRP = GraphicsSettings.renderPipelineAsset != null;
+                if (usingSRP)
+                {
+                    if (materialType != Terrain.MaterialType.Custom || materialTemplate == null)
+                    {
+                        EditorGUILayout.BeginHorizontal();
+                        EditorGUILayout.HelpBox(styles.terrainMaterialWarning.text, MessageType.Warning);
+                        if (GUILayout.Button(styles.fixTerrainMaterial))
+                        {
+                            materialType = Terrain.MaterialType.Custom;
+                            materialTemplate = GraphicsSettings.renderPipelineAsset.defaultTerrainMaterial;
+                        }
+                        EditorGUILayout.EndHorizontal();
+                    }
+                }
 
                 var reflectionProbeUsage = m_Terrain.reflectionProbeUsage;
                 if (EditorGUILayout.BeginFadeGroup(m_ShowReflectionProbesGUI.faded))
@@ -1434,14 +1456,12 @@ namespace UnityEditor
             for (int i = 0; i < oldAlphaMaps.Length; i++)
             {
                 RenderTexture.active = oldAlphaMaps[i];
-                td.alphamapTextures[i].ReadPixels(new Rect(0, 0, newResolution, newResolution), 0, 0);
-                td.alphamapTextures[i].Apply();
+                td.CopyActiveRenderTextureToTexture(TerrainData.AlphamapTextureName, i, new RectInt(0, 0, newResolution, newResolution), Vector2Int.zero, false);
             }
+            td.SetBaseMapDirty();
             RenderTexture.active = oldRT;
             for (int i = 0; i < oldAlphaMaps.Length; i++)
                 RenderTexture.ReleaseTemporary(oldAlphaMaps[i]);
-
-            td.SetBaseMapDirty();
             Repaint();
         }
 
@@ -1464,9 +1484,7 @@ namespace UnityEditor
 
             RenderTexture.active = oldRT;
 
-            m_Terrain.terrainData.UpdateDirtyRegion(0, 0, m_Terrain.terrainData.heightmapTexture.width, m_Terrain.terrainData.heightmapTexture.height, !m_Terrain.drawInstanced);
-            m_Terrain.Flush();
-            m_Terrain.ApplyDelayedHeightmapModification();
+            m_Terrain.terrainData.DirtyHeightmapRegion(new RectInt(0, 0, m_Terrain.terrainData.heightmapTexture.width, m_Terrain.terrainData.heightmapTexture.height), TerrainHeightmapSyncControl.HeightAndLod);
 
             Repaint();
         }
@@ -1670,9 +1688,12 @@ namespace UnityEditor
             }
         }
 
-        public void InitializeLightingFields()
+        private void LightingDataUpdatedRepaint()
         {
-            m_Lighting = new LightingSettingsInspector(serializedObject);
+            if (m_Lighting.showLightmapSettings)
+            {
+                Repaint();
+            }
         }
 
         public void RenderLightingFields()
@@ -1804,6 +1825,8 @@ namespace UnityEditor
                     ShowSettings();
                     break;
             }
+
+            serializedObject.ApplyModifiedProperties();
         }
 
         public bool Raycast(out Vector2 uv, out Vector3 pos)

@@ -14,7 +14,7 @@ namespace UnityEditor.UIElements
             UxmlSchemaGenerator.UpdateSchemaFiles();
 
             string[] pathComponents = folder.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-            Boo.Lang.List<string> backDots = new Boo.Lang.List<string>();
+            List<string> backDots = new List<string>();
             foreach (var s in pathComponents)
             {
                 if (s == ".")
@@ -61,7 +61,7 @@ xsi:schemaLocation=""
 {3}""
 >
     <engine:Label text=""Hello World! From UXML"" />
-</engine:{0}>", UnityEditor.Experimental.UIElements.UXMLImporterImpl.k_RootNode, xmlnsList, schemaDirectory, schemaLocationList);
+</engine:{0}>", UnityEditor.UIElements.UXMLImporterImpl.k_RootNode, xmlnsList, schemaDirectory, schemaLocationList);
 
             return uxmlTemplate;
         }

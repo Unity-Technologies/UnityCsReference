@@ -65,7 +65,7 @@ namespace UnityEditor.PackageManager
                 if (string.IsNullOrEmpty(relativePath) || relativePath.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase))
                     return null;
 
-                if (relativePath.StartsWith(Folders.GetPackagesMountPoint() + "/", StringComparison.OrdinalIgnoreCase))
+                if (relativePath.StartsWith(Folders.GetPackagesPath() + "/", StringComparison.OrdinalIgnoreCase))
                     return relativePath;
             }
             return String.Empty;

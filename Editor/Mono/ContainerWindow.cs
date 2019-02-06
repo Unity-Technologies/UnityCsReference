@@ -97,7 +97,7 @@ namespace UnityEditor
 
             // Fit window to screen - needs to be done after bringing the window live
             position = FitWindowRectToScreen(m_PixelRect, true, false);
-            rootView.position = new Rect(0, 0, m_PixelRect.width, m_PixelRect.height);
+            rootView.position = new Rect(0, 0, Mathf.Ceil(m_PixelRect.width), Mathf.Ceil(m_PixelRect.height));
             rootView.Reflow();
         }
 
@@ -135,7 +135,8 @@ namespace UnityEditor
 
             // Fit window to screen - needs to be done after bringing the window live
             position = FitWindowRectToScreen(m_PixelRect, true, false);
-            rootView.position = new Rect(0, 0, m_PixelRect.width, m_PixelRect.height);
+            rootView.position = new Rect(0, 0, Mathf.Ceil(m_PixelRect.width), Mathf.Ceil(m_PixelRect.height));
+
             rootView.Reflow();
 
             // save position right away
@@ -261,7 +262,7 @@ namespace UnityEditor
         {
             if (rootView == null)
                 return;
-            rootView.position = new Rect(0, 0, position.width, position.height);
+            rootView.position = new Rect(0, 0, Mathf.Ceil(position.width), Mathf.Ceil(position.height));
 
             // save position
             Save();
@@ -305,7 +306,7 @@ namespace UnityEditor
             {
                 m_RootView = value;
                 m_RootView.SetWindowRecurse(this);
-                m_RootView.position = new Rect(0, 0, position.width, position.height);
+                m_RootView.position = new Rect(0, 0, Mathf.Ceil(position.width), Mathf.Ceil(position.height));
                 m_MinSize = value.minSize;
                 m_MaxSize = value.maxSize;
             }

@@ -20,7 +20,7 @@ namespace UnityEngine.UIElements
             if ((versionChangeType & (VersionChangeType.Transform | VersionChangeType.Clip)) == 0)
                 return;
 
-            if ((versionChangeType & VersionChangeType.Transform) == VersionChangeType.Transform && (!ve.isWorldTransformDirty || !ve.isWorldClipDirty))
+            if ((versionChangeType & VersionChangeType.Transform) == VersionChangeType.Transform)
             {
                 bool dirtyRepaint = true;
                 if (UIRUtility.IsViewTransformWithoutNesting(ve) || UIRUtility.IsSkinnedTransformWithoutNesting(ve))
@@ -29,7 +29,8 @@ namespace UnityEngine.UIElements
                     dirtyRepaint = false;
                     ve.IncrementVersion(VersionChangeType.Repaint);
                 }
-                DirtyTransformClipHierarchy(ve, dirtyRepaint); // Dirty both transform and clip when the transform changes
+                if (!ve.isWorldTransformDirty || !ve.isWorldClipDirty || dirtyRepaint)
+                    DirtyTransformClipHierarchy(ve, dirtyRepaint); // Dirty both transform and clip when the transform changes
             }
             else if ((versionChangeType & VersionChangeType.Clip) == VersionChangeType.Clip && !ve.isWorldClipDirty)
                 DirtyClipHierarchy(ve);

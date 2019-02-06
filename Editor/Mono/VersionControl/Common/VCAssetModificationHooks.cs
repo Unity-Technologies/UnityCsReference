@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 
@@ -94,8 +95,12 @@ namespace UnityEditorInternal.VersionControl
             task.SetCompletionAction(CompletionAction.UpdatePendingWindow);
             task.Wait();
 
-            // Using DidNotDelete on success to force unity to clean up local files
-            return task.success ? AssetDeleteResult.DidNotDelete : AssetDeleteResult.FailedDelete;
+            if (task.success)
+            {
+                // We need to check if the provider deleted the file itself or not.
+                return File.Exists(assetPath) ? AssetDeleteResult.DidNotDelete : AssetDeleteResult.DidDelete;
+            }
+            return AssetDeleteResult.FailedDelete;
         }
 
         public static bool IsOpenForEdit(string assetPath, out string message, StatusQueryOptions statusOptions)

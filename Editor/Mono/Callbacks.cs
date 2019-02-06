@@ -84,7 +84,10 @@ namespace UnityEditor
             public OnOpenAssetAttribute(int callbackOrder) { m_CallbackOrder = callbackOrder; }
 
             [RequiredSignature]
-            extern static bool Signature(int instanceID, int line);
+            extern static bool SignatureLine(int instanceID, int line);
+
+            [RequiredSignature]
+            extern static bool SignatureLineColumn(int instanceID, int line, int column);
         }
     }
 }

@@ -328,7 +328,25 @@ namespace UnityEditor
 
         internal SerializedObject m_SerializedObject = null;
         internal SerializedProperty m_EnabledProperty = null;
-        internal InspectorMode m_InspectorMode = InspectorMode.Normal;
+        private InspectorMode m_InspectorMode = InspectorMode.Normal;
+        internal InspectorMode inspectorMode
+        {
+            get
+            {
+                return m_InspectorMode;
+            }
+            set
+            {
+                if (m_InspectorMode != value)
+                {
+                    m_InspectorMode = value;
+                    m_SerializedObject = null;
+                    m_EnabledProperty = null;
+                }
+            }
+        }
+
+
         internal const float kLineHeight = 16;
 
         internal bool hideInspector = false;
@@ -529,7 +547,7 @@ namespace UnityEditor
             if (m_SerializedObject == null)
             {
                 m_SerializedObject = new SerializedObject(targets, m_Context);
-                m_SerializedObject.inspectorMode = m_InspectorMode;
+                m_SerializedObject.inspectorMode = inspectorMode;
                 m_EnabledProperty = m_SerializedObject.FindProperty("m_Enabled");
             }
 
@@ -581,7 +599,8 @@ namespace UnityEditor
                 // Need to make sure internal target list PPtr have been updated from a native memory
                 // When assets are reloaded they are destroyed and recreated and the managed list does not get updated
                 // The m_SerializedObject is a native object thus its targetObjects is a native memory PPtr list which have the new PPtr ids.
-                InternalSetTargets(m_SerializedObject.targetObjects);
+                if (m_SerializedObject.targetObjects != null && m_SerializedObject.targetObjects[0] != null)
+                    InternalSetTargets(m_SerializedObject.targetObjects);
             }
         }
 
@@ -968,7 +987,7 @@ namespace UnityEditor
                 m_SerializedObject = new SerializedObject(targets, m_Context);
             else
                 m_SerializedObject.Update();
-            m_SerializedObject.inspectorMode = m_InspectorMode;
+            m_SerializedObject.inspectorMode = inspectorMode;
 
             SerializedProperty property = m_SerializedObject.GetIterator();
 

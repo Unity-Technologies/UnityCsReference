@@ -35,8 +35,12 @@ namespace UnityEngine.Profiling.Memory.Experimental
         static bool isCompiling = false;
         internal static void StartedCompilationCallback(object msg)
         {
-            // No need to set this flag to false as we will reload the domain, and it's value will also be reloaded
             isCompiling = true;
+        }
+
+        internal static void FinishedCompilationCallback(object msg)
+        {
+            isCompiling = false;
         }
 
 

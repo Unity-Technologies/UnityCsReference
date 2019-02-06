@@ -55,7 +55,6 @@ namespace UnityEditor.VisualStudioIntegration
                     @"    GlobalSection(SolutionProperties) = preSolution",
                     @"        HideSolutionNode = FALSE",
                     @"    EndGlobalSection",
-                    @"{4}",
                     @"EndGlobal",
                     @""
                 }).Replace("    ", "\t");
@@ -196,7 +195,6 @@ namespace UnityEditor.VisualStudioIntegration
                 @"  <Target Name=""AfterBuild"">",
                 @"  </Target>",
                 @"  -->",
-                @"  {0}",
                 @"</Project>",
                 @""
             });

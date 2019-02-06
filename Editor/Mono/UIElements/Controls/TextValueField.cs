@@ -109,7 +109,7 @@ namespace UnityEditor.UIElements
 
             internal override bool AcceptCharacter(char c)
             {
-                return c != 0 && allowedCharacters.IndexOf(c) != -1;
+                return base.AcceptCharacter(c) && c != 0 && allowedCharacters.IndexOf(c) != -1;
             }
 
             protected abstract string allowedCharacters { get; }
@@ -145,8 +145,8 @@ namespace UnityEditor.UIElements
                 {
                     KeyDownEvent kde = evt as KeyDownEvent;
 
-                    if ((kde?.keyCode == KeyCode.KeypadEnter) ||
-                        (kde?.keyCode == KeyCode.Return))
+                    if ((kde?.character == 3) ||     // KeyCode.KeypadEnter
+                        (kde?.character == '\n'))    // KeyCode.Return
                     {
                         // Here we should update the value, but it will be done when the blur event will be handled...
                         parent.Focus();

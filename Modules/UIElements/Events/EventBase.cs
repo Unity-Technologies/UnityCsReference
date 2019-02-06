@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
@@ -92,7 +93,12 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal IEventHandler skipElement { get; set; }
+        internal List<IEventHandler> skipElements { get; } = new List<IEventHandler>();
+
+        internal bool Skip(IEventHandler h)
+        {
+            return skipElements.Contains(h);
+        }
 
         public bool isPropagationStopped
         {
@@ -314,7 +320,7 @@ namespace UnityEngine.UIElements
             leafTarget = null;
             target = null;
 
-            skipElement = null;
+            skipElements.Clear();
 
             isPropagationStopped = false;
             isImmediatePropagationStopped = false;

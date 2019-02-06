@@ -1153,7 +1153,7 @@ namespace UnityEditor.StyleSheets
             {
                 var currentState = states[stateIndex];
                 var rectValues = new List<StyleValue>();
-                var rect = new StyleRect { top = 0, right = 0, bottom = 0, left = 0 };
+                var rect = new StyleRect { top = float.MaxValue, right = float.MaxValue, bottom = float.MaxValue, left = float.MaxValue };
 
                 if (!ExpandHasMembers(values, rectKey, topKey, rightKey, bottomKey, leftKey))
                     continue;
@@ -1170,19 +1170,28 @@ namespace UnityEditor.StyleSheets
                     else if (value.key == bottomKey && value.type == StyleValue.Type.Number) rect.bottom = numbers[value.index];
                     else if (value.key == leftKey && value.type == StyleValue.Type.Number) rect.left = numbers[value.index];
 
-                    if (rect.left != 0.0 || rect.right != 0.0 || rect.top != 0.0 || rect.bottom != 0.0)
-                        rectValues.Add(new StyleValue { key = rectKey, state = currentState, type = StyleValue.Type.Rect, index = SetIndex(rects, rect) });
+                    if (rect.left != float.MaxValue || rect.right != float.MaxValue || rect.top != float.MaxValue || rect.bottom != float.MaxValue)
+                    {
+                        var validRect = new StyleRect
+                        {
+                            top = rect.top == float.MaxValue ? 0 : rect.top,
+                            right = rect.right == float.MaxValue ? 0 : rect.right,
+                            bottom = rect.bottom == float.MaxValue ? 0 : rect.bottom,
+                            left = rect.left == float.MaxValue ? 0 : rect.left
+                        };
+                        rectValues.Add(new StyleValue { key = rectKey, state = currentState, type = StyleValue.Type.Rect, index = SetIndex(rects, validRect) });
+                    }
 
-                    if (rect.top != 0)
+                    if (rect.top != float.MaxValue)
                         rectValues.Add(new StyleValue { key = topKey, state = currentState, type = StyleValue.Type.Number, index = SetIndex(numbers, rect.top) });
 
-                    if (rect.right != 0)
+                    if (rect.right != float.MaxValue)
                         rectValues.Add(new StyleValue { key = rightKey, state = currentState, type = StyleValue.Type.Number, index = SetIndex(numbers, rect.right) });
 
-                    if (rect.bottom != 0)
+                    if (rect.bottom != float.MaxValue)
                         rectValues.Add(new StyleValue { key = bottomKey, state = currentState, type = StyleValue.Type.Number, index = SetIndex(numbers, rect.bottom) });
 
-                    if (rect.left != 0)
+                    if (rect.left != float.MaxValue)
                         rectValues.Add(new StyleValue { key = leftKey, state = currentState, type = StyleValue.Type.Number, index = SetIndex(numbers, rect.left) });
                 }
 

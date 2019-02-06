@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using System.Linq;
+using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
@@ -13,15 +14,21 @@ namespace UnityEditor
     {
         class Styles
         {
-            public static readonly string MaterialWarning = "This renderer has more materials than the Mesh has submeshes. Multiple materials will be applied to the same submesh, which costs performance. Consider using multiple shader passes.";
-            public static readonly string StaticBatchingWarning = "This renderer is statically batched and uses an instanced shader at the same time. Instancing will be disabled in such a case. Consider disabling static batching if you want it to be instanced.";
+            public static readonly GUIContent MaterialWarning = EditorGUIUtility.TrTextContent("This renderer has more materials than the Mesh has submeshes. Multiple materials will be applied to the same submesh, which costs performance. Consider using multiple shader passes.");
+            public static readonly GUIContent StaticBatchingWarning = EditorGUIUtility.TrTextContent("This renderer is statically batched and uses an instanced shader at the same time. Instancing will be disabled in such a case. Consider disabling static batching if you want it to be instanced.");
+
+            public static readonly GUIContent ProbeSettings = EditorGUIUtility.TrTextContent("Probes");
+            public static readonly GUIContent OtherSettings = EditorGUIUtility.TrTextContent("Additional Settings");
+
+            public static readonly GUIContent MotionVectors = EditorGUIUtility.TrTextContent("Motion Vectors", "Specifies whether the Mesh Renders 'Per Object Motion', 'Camera Motion', or 'No Motion' vectors to the Camera Motion Vector Texture.");
         }
 
         private SerializedProperty m_Materials;
+        private SerializedProperty m_MotionVectors;
         private LightingSettingsInspector m_Lighting;
 
-        private const string kDisplayLightmapKey = "MeshRendererEditor.Lighting.ShowLightmapSettings";
-        private const string kDisplayChartingKey = "MeshRendererEditor.Lighting.ShowChartingSettings";
+        private SavedBool m_ShowProbeSettings;
+        private SavedBool m_ShowOtherSettings;
 
         private SerializedObject m_GameObjectsSerializedObject;
         private SerializedProperty m_GameObjectStaticFlags;
@@ -35,34 +42,71 @@ namespace UnityEditor
             base.OnEnable();
 
             m_Materials = serializedObject.FindProperty("m_Materials");
+            m_MotionVectors = serializedObject.FindProperty("m_MotionVectors");
 
             m_GameObjectsSerializedObject = new SerializedObject(targets.Select(t => ((MeshRenderer)t).gameObject).ToArray());
             m_GameObjectStaticFlags = m_GameObjectsSerializedObject.FindProperty("m_StaticEditorFlags");
 
+            m_ShowProbeSettings = new SavedBool($"{target.GetType()}.ShowProbeSettings", true);
+            m_ShowOtherSettings = new SavedBool($"{target.GetType()}.ShowOtherSettings", true);
+
+            m_Lighting = new LightingSettingsInspector(serializedObject);
+            m_Lighting.showLightingSettings = new SavedBool($"{target.GetType()}.ShowLightingSettings", true);
+            m_Lighting.showLightmapSettings = new SavedBool($"{target.GetType()}.ShowLightmapSettings", true);
+            m_Lighting.showBakedLightmap = new SavedBool($"{target.GetType()}.ShowBakedLightmapSettings", false);
+            m_Lighting.showRealtimeLightmap = new SavedBool($"{target.GetType()}.ShowRealtimeLightmapSettings", false);
+
             InitializeProbeFields();
-            InitializeLightingFields();
+
+            Lightmapping.lightingDataUpdated += LightingDataUpdatedRepaint;
         }
 
-        private void InitializeLightingFields()
+        public void OnDisable()
         {
-            m_Lighting = new LightingSettingsInspector(serializedObject);
-
-            m_Lighting.showChartingSettings = SessionState.GetBool(kDisplayChartingKey, true);
-            m_Lighting.showLightmapSettings = SessionState.GetBool(kDisplayLightmapKey, true);
+            Lightmapping.lightingDataUpdated -= LightingDataUpdatedRepaint;
         }
 
         private void LightingFieldsGUI()
         {
-            bool oldShowCharting = m_Lighting.showChartingSettings;
-            bool oldShowLightmap = m_Lighting.showLightmapSettings;
-
-            RenderProbeFields();
             m_Lighting.RenderMeshSettings(true);
 
-            if (m_Lighting.showChartingSettings != oldShowCharting)
-                SessionState.SetBool(kDisplayChartingKey, m_Lighting.showChartingSettings);
-            if (m_Lighting.showLightmapSettings != oldShowLightmap)
-                SessionState.SetBool(kDisplayLightmapKey, m_Lighting.showLightmapSettings);
+            m_ShowProbeSettings.value = EditorGUILayout.Foldout(m_ShowProbeSettings.value, Styles.ProbeSettings, true);
+
+            if (m_ShowProbeSettings.value)
+            {
+                EditorGUI.indentLevel += 1;
+                RenderProbeFields();
+                EditorGUI.indentLevel -= 1;
+            }
+        }
+
+        private void LightingDataUpdatedRepaint()
+        {
+            if (m_Lighting.showLightmapSettings)
+            {
+                Repaint();
+            }
+        }
+
+        private void OtherSettingsGUI()
+        {
+            m_ShowOtherSettings.value = EditorGUILayout.Foldout(m_ShowOtherSettings.value, Styles.OtherSettings, true);
+
+            if (m_ShowOtherSettings.value)
+            {
+                EditorGUI.indentLevel++;
+
+                if (SupportedRenderingFeatures.active.motionVectors)
+                    EditorGUILayout.PropertyField(m_MotionVectors, Styles.MotionVectors, true);
+
+                RenderRenderingLayer();
+
+                RenderRendererPriority();
+
+                CullDynamicFieldGUI();
+
+                EditorGUI.indentLevel--;
+            }
         }
 
         public override void OnInspectorGUI()
@@ -82,7 +126,7 @@ namespace UnityEditor
 
             if (!m_Materials.hasMultipleDifferentValues && displayMaterialWarning)
             {
-                EditorGUILayout.HelpBox(Styles.MaterialWarning, MessageType.Warning, true);
+                EditorGUILayout.HelpBox(Styles.MaterialWarning.text, MessageType.Warning, true);
             }
 
             if (ShaderUtil.MaterialsUseInstancingShader(m_Materials))
@@ -91,17 +135,13 @@ namespace UnityEditor
 
                 if (!m_GameObjectStaticFlags.hasMultipleDifferentValues && ((StaticEditorFlags)m_GameObjectStaticFlags.intValue & StaticEditorFlags.BatchingStatic) != 0)
                 {
-                    EditorGUILayout.HelpBox(Styles.StaticBatchingWarning, MessageType.Warning, true);
+                    EditorGUILayout.HelpBox(Styles.StaticBatchingWarning.text, MessageType.Warning, true);
                 }
             }
 
             LightingFieldsGUI();
 
-            RenderRenderingLayer();
-
-            RenderRendererPriority();
-
-            CullDynamicFieldGUI();
+            OtherSettingsGUI();
 
             serializedObject.ApplyModifiedProperties();
         }

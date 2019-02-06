@@ -19,6 +19,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/File/ApplicationSpecificPersistentDataPath.h")]
     [NativeHeader("Runtime/Input/GetInput.h")]
     [NativeHeader("Runtime/Input/InputManager.h")]
+    [NativeHeader("Runtime/Input/TargetFrameRate.h")]
     [NativeHeader("Runtime/Logging/LogSystem.h")]
     [NativeHeader("Runtime/Misc/BuildSettings.h")]
     [NativeHeader("Runtime/Misc/Player.h")]

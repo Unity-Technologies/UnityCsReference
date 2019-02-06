@@ -73,7 +73,7 @@ namespace UnityEditor.EditorTools
             if (m_Editor != null)
                 DestroyImmediate(m_Editor);
             m_Editor = Editor.CreateEditor(to);
-            titleContent = new GUIContent(EditorToolUtility.GetToolName(to));
+            titleContent = new GUIContent(EditorToolUtility.GetToolName(to.GetType()));
             Repaint();
         }
 

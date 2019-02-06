@@ -95,6 +95,7 @@ namespace UnityEngine
                     case RuntimePlatform.tvOS:
                     case RuntimePlatform.Android:
                     case RuntimePlatform.Switch:
+                    case RuntimePlatform.PS4:
 
                     // The OnScreen keyboard is ALWAYS supported in UWP
                     // Whether or not it can be used is determined automatically by the OS at runtime

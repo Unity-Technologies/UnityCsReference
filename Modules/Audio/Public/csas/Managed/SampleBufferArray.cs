@@ -22,6 +22,7 @@ namespace Unity.Experimental.Audio
         public uint m_Channels;
         public SoundFormat m_Format;
         public float* m_Buffer;
+        private bool m_Initialized;
     }
 
     internal enum SoundFormat

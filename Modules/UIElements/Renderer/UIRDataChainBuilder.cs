@@ -162,8 +162,9 @@ namespace UnityEngine.UIElements
         {
             var device = m_StylePainter.renderDevice;
             uirData.skinningAlloc = device.AllocateTransform();
-            uirData.overridesSkinningTransform = true;
-            UIRUtility.UpdateSkinningTransform(device, uirData);
+            uirData.overridesSkinningTransform = uirData.skinningAlloc.size > 0;
+            if (uirData.overridesSkinningTransform)
+                UIRUtility.UpdateSkinningTransform(device, uirData);
         }
     }
 }

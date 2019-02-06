@@ -143,7 +143,6 @@ namespace UnityEngine
     [NativeHeader("Runtime/Math/AnimationCurve.bindings.h")]
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode]
-    [ThreadAndSerializationSafe]
     public class AnimationCurve : IEquatable<AnimationCurve>
     {
         internal IntPtr m_Ptr;
@@ -154,7 +153,7 @@ namespace UnityEngine
         [FreeFunction("AnimationCurveBindings::Internal_Create", IsThreadSafe = true)]
         extern static private IntPtr Internal_Create(Keyframe[] keys);
 
-        [FreeFunction("AnimationCurveBindings::Internal_Equals", HasExplicitThis = true)]
+        [FreeFunction("AnimationCurveBindings::Internal_Equals", HasExplicitThis = true, IsThreadSafe = true)]
         extern private bool Internal_Equals(IntPtr other);
 
         ~AnimationCurve()

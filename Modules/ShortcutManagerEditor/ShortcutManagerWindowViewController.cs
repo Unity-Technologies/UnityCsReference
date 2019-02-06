@@ -543,6 +543,11 @@ namespace UnityEditor.ShortcutManagement
 
         public bool CanEntryBeAssignedToKey(KeyCode keyCode, EventModifiers eventModifier, ShortcutEntry entry)
         {
+            if (!m_BindingValidator.IsBindingValid(keyCode))
+            {
+                return false;
+            }
+
             var keycombination = KeyCombination.FromKeyboardInput(keyCode, eventModifier);
             List<ShortcutEntry> entries;
             if (m_KeyBindingRootToBoundEntries.TryGetValue(keycombination, out entries))
@@ -743,17 +748,17 @@ namespace UnityEditor.ShortcutManagement
 
         bool IKeyBindingStateProvider.IsModifier(KeyCode code)
         {
-            return ShortcutManagerWindowViewController.IsModifier(code);
+            return IsModifier(code);
         }
 
         public bool IsReservedKey(KeyCode code)
         {
-            return !m_BindingValidator.IsBindingValid(code);
+            return !IsModifier(code) && !m_BindingValidator.IsBindingValid(code);
         }
 
         EventModifiers IKeyBindingStateProvider.ModifierFromKeyCode(KeyCode k)
         {
-            return ShortcutManagerWindowViewController.ModifierFromKeyCode(k);
+            return ModifierFromKeyCode(k);
         }
 
         public static EventModifiers ModifierFromKeyCode(KeyCode k)

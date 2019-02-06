@@ -21,6 +21,14 @@ namespace UnityEditor.ShortcutManagement
             KeyCode.Escape,
             KeyCode.Return,
             KeyCode.CapsLock,
+            KeyCode.RightShift,
+            KeyCode.LeftShift,
+            KeyCode.RightAlt,
+            KeyCode.LeftAlt,
+            KeyCode.RightControl,
+            KeyCode.LeftControl,
+            KeyCode.RightCommand,
+            KeyCode.LeftCommand,
         };
 
         public bool IsBindingValid(IEnumerable<KeyCombination> keyCombinations, out string invalidBindingMessage)

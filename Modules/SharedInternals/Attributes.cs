@@ -81,6 +81,7 @@ namespace UnityEngine
     }
 
     [VisibleToOtherModules]
+    [System.AttributeUsage(System.AttributeTargets.Method)]
     internal class ThreadAndSerializationSafeAttribute : System.Attribute
     {
         public ThreadAndSerializationSafeAttribute()

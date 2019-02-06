@@ -5,13 +5,28 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
+using System.Text.RegularExpressions;
 using UObject = UnityEngine.Object;
 
 namespace UnityEditor.EditorTools
 {
+    struct CustomEditorTool
+    {
+        public Editor owner;
+        public Type editorToolType;
+
+        public CustomEditorTool(Editor owner, Type tool)
+        {
+            this.owner = owner;
+            this.editorToolType = tool;
+        }
+    }
+
     static class EditorToolUtility
     {
+        static readonly Regex k_NewLine = new Regex(@"\r|\n", RegexOptions.Compiled | RegexOptions.Multiline);
+        static readonly Regex k_TrailingForwardSlashOrWhiteSpace = new Regex(@"[/|\s]*\Z", RegexOptions.Compiled);
+
         struct CustomEditorToolAssociation
         {
             public Type targetBehaviour;
@@ -82,22 +97,47 @@ namespace UnityEditor.EditorTools
 
         internal static string GetToolName(Type tool)
         {
+            var path = GetToolMenuPath(tool);
+            return GetNameFromToolPath(path);
+        }
+
+        internal static string GetNameFromToolPath(string path)
+        {
+            var index = path.LastIndexOf("/", StringComparison.Ordinal);
+            if (index < 0)
+                return path;
+            return path.Substring(index + 1, path.Length - (index + 1));
+        }
+
+        internal static string SanitizeToolPath(string path)
+        {
+            path = k_TrailingForwardSlashOrWhiteSpace.Replace(path, string.Empty);
+            return k_NewLine.Replace(path, " ").Trim();
+        }
+
+        internal static string GetToolMenuPath(Type tool)
+        {
             var attributes = tool.GetCustomAttributes(typeof(EditorToolAttribute), false);
 
             foreach (var attrib in attributes)
             {
                 var menuAttrib = attrib as EditorToolAttribute;
 
-                if (menuAttrib != null)
-                    return menuAttrib.displayName;
+                if (menuAttrib != null && !string.IsNullOrEmpty(menuAttrib.displayName))
+                {
+                    var path = SanitizeToolPath(menuAttrib.displayName);
+
+                    if (!string.IsNullOrEmpty(path))
+                        return L10n.Tr(path);
+                }
             }
 
-            return ObjectNames.NicifyVariableName(tool.Name);
+            return L10n.Tr(ObjectNames.NicifyVariableName(tool.Name));
         }
 
-        internal static string GetToolName(EditorTool tool)
+        internal static string GetToolMenuPath(EditorTool tool)
         {
-            return GetToolName(tool != null ? tool.GetType() : typeof(EditorTool));
+            return GetToolMenuPath(tool != null ? tool.GetType() : typeof(EditorTool));
         }
 
         static EditorToolAttribute GetEditorToolAttribute(EditorTool tool)
@@ -123,33 +163,25 @@ namespace UnityEditor.EditorTools
             return attr.targetType;
         }
 
-        internal static Dictionary<Type, List<Component>> FindActiveCustomEditorTools()
+        internal static void GetEditorToolsForTracker(ActiveEditorTracker tracker, List<CustomEditorTool> tools)
         {
-            var selection = Selection.transforms;
-            var tools = new Dictionary<Type, List<Component>>();
+            var editors = tracker.activeEditors;
 
-            for (int i = 0, c = selection.Length; i < c; i++)
+            for (int i = 0, c = editors.Length; i < c; i++)
             {
-                foreach (var component in selection[i].GetComponents<Component>())
+                var editor = editors[i];
+
+                if (editor == null || editor.target == null)
+                    continue;
+
+                var targetType = editor.target.GetType();
+                var eligibleToolTypes = GetCustomEditorToolsForType(targetType);
+
+                foreach (var type in eligibleToolTypes)
                 {
-                    if (component != null)
-                    {
-                        var eligibleToolTypes = GetCustomEditorToolsForType(component.GetType());
-
-                        foreach (var type in eligibleToolTypes)
-                        {
-                            List<Component> targets;
-
-                            if (tools.TryGetValue(type, out targets))
-                                tools[type].Add(component);
-                            else
-                                tools.Add(type, new List<Component>() { component });
-                        }
-                    }
+                    tools.Add(new CustomEditorTool(editor, type));
                 }
             }
-
-            return tools;
         }
 
         internal static EditorTool GetEditorToolWithEnum(Tool type)

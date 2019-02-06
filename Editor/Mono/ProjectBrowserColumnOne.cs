@@ -272,7 +272,7 @@ namespace UnityEditor
             TreeViewItem assetRootItem = new TreeViewItem(assetsFolderInstanceID, depth, m_RootItem, displayName);
             ReadAssetDatabase("Assets", assetRootItem, depth + 1);
 
-            var packagesMountPoint = PackageManager.Folders.GetPackagesMountPoint();
+            var packagesMountPoint = PackageManager.Folders.GetPackagesPath();
             TreeViewItem packagesRootItem = new TreeViewItem(ProjectBrowser.kPackagesFolderInstanceId, depth, m_RootItem, packagesMountPoint);
             depth++;
 

@@ -148,6 +148,12 @@ namespace UnityEditor
                 set;
             }
 
+            [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
+            extern public static int defaultSwitchQueueCommandMemory { get; }
+
+            [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
+            extern public static int minimumSwitchQueueCommandMemory { get; }
+
             [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
             extern public static int queueControlMemory
             {
@@ -156,6 +162,24 @@ namespace UnityEditor
                 [NativeMethod("SetSwitchQueueControlMemory")]
                 set;
             }
+
+            [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
+            extern public static int defaultSwitchQueueControlMemory { get; }
+
+            [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
+            extern public static int minimumSwitchQueueControlMemory { get; }
+
+            [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+            extern public static int queueComputeMemory
+            {
+                [NativeMethod("GetSwitchQueueComputeMemory")]
+                get;
+                [NativeMethod("SetSwitchQueueComputeMemory")]
+                set;
+            }
+
+            [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
+            extern public static int defaultSwitchQueueComputeMemory { get; }
 
             // GPU Pool information.
             [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]

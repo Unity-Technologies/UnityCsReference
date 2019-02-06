@@ -30,7 +30,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                     s_CurrentOperationUndoStack.Clear();
                 }
 
-                if (tile == null || string.IsNullOrEmpty(editorUndoName))
+                if (string.IsNullOrEmpty(editorUndoName))
                     return;
 
                 if (!s_CurrentOperationUndoStack.Contains(tile.terrain))

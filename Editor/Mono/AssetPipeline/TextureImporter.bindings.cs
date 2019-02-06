@@ -53,6 +53,8 @@ namespace UnityEditor
         public extern TextureImporterCompression textureCompression { get; set; }
         public extern TextureImporterAlphaSource alphaSource { get; set; }
 
+        internal extern bool forceMaximumCompressionQuality_BC6H_BC7 { get; set; }
+
         // Generate alpha channel from intensity?
         [Obsolete("Use UnityEditor.TextureImporter.alphaSource instead.")]
         public bool grayscaleToAlpha

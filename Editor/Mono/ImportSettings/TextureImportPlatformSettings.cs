@@ -140,7 +140,16 @@ namespace UnityEditor
                 "Attempting to set texture compression quality for all platforms even though settings are not overridden for all platforms.");
             m_PlatformSettings.compressionQuality = quality;
             m_CompressionQualityIsDifferent = false;
+
+            m_PlatformSettings.forceMaximumCompressionQuality_BC6H_BC7 = 0;
+
             SetChanged();
+        }
+
+        internal bool forceMaximumCompressionQuality_BC6H_BC7
+        {
+            get { return m_PlatformSettings.forceMaximumCompressionQuality_BC6H_BC7 != 0; }
+            set { m_PlatformSettings.forceMaximumCompressionQuality_BC6H_BC7 = value ? 1 : 0; }
         }
 
         // Crunched compression
@@ -398,6 +407,8 @@ namespace UnityEditor
                     platformSettings.allowsAlphaSplitting = m_PlatformSettings.allowsAlphaSplitting;
                 if (!m_AndroidETC2FallbackOverrideIsDifferent)
                     platformSettings.androidETC2FallbackOverride = m_PlatformSettings.androidETC2FallbackOverride;
+
+                platformSettings.forceMaximumCompressionQuality_BC6H_BC7 = m_PlatformSettings.forceMaximumCompressionQuality_BC6H_BC7;
 
                 imp.SetPlatformTextureSettings(platformSettings);
             }

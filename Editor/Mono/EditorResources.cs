@@ -67,6 +67,7 @@ namespace UnityEditor.Experimental
                 var skin = GUIUtility.GetDefaultSkin();
                 if (skin != null)
                 {
+                    ConverterUtils.ResetSkinToPristine(skin, EditorGUIUtility.isProSkin ? SkinTarget.Dark : SkinTarget.Light);
                     UpdateGUIStyleProperties(skin);
                 }
             }

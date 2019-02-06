@@ -271,10 +271,6 @@ namespace UnityEditor
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
         extern static internal bool GetGeometryHash(Renderer renderer, out Hash128 geometryHash);
 
-        [FreeFunction]
-        [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal void AnalyzeLighting(out LightingStats enabled, out LightingStats active, out LightingStats inactive);
-
         // The maximum size of an individual lightmap texture.
         [StaticAccessor("GetLightmapEditorSettings()")]
         [NativeName("AtlasSize")]
@@ -319,6 +315,12 @@ namespace UnityEditor
         // Texel separation between shapes.
         [StaticAccessor("GetLightmapEditorSettings()")]
         public extern static int padding { get; set; }
+
+        [StaticAccessor("GetLightmapEditorSettings()")]
+        public extern static bool exportTrainingData { get; set; }
+
+        [StaticAccessor("GetLightmapEditorSettings()")]
+        public extern static string trainingDataDestination { get; set; }
 
         [FreeFunction]
         [NativeHeader("Runtime/Graphics/LightmapSettings.h")]

@@ -387,7 +387,7 @@ namespace UnityEditor
 
         static bool IsAnyStandaloneModuleLoaded()
         {
-            return ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneLinux) ||
+            return ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneLinux64) ||
                 ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneOSX) ||
                 ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneWindows);
         }

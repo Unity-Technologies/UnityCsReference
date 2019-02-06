@@ -78,6 +78,7 @@ namespace UnityEditor
 
         SerializedProperty m_BounceScale;
         SerializedProperty m_ExportTrainingData;
+        SerializedProperty m_TrainingDataDestination;
 
         static bool PlayerHasSM20Support()
         {
@@ -144,6 +145,7 @@ namespace UnityEditor
             //dev debug properties
             m_BounceScale = so.FindProperty("m_GISettings.m_BounceScale");
             m_ExportTrainingData = so.FindProperty("m_LightmapEditorSettings.m_ExportTrainingData");
+            m_TrainingDataDestination = so.FindProperty("m_LightmapEditorSettings.m_TrainingDataDestination");
         }
 
         public void OnEnable()
@@ -364,6 +366,13 @@ namespace UnityEditor
             if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU)
             {
                 EditorGUILayout.PropertyField(m_ExportTrainingData, Styles.ExportTrainingData);
+
+                if (m_ExportTrainingData.boolValue)
+                {
+                    EditorGUI.indentLevel++;
+                    EditorGUILayout.PropertyField(m_TrainingDataDestination, Styles.TrainingDataDestination);
+                    EditorGUI.indentLevel--;
+                }
             }
 
             Lightmapping.filterMode = (FilterMode)EditorGUILayout.EnumPopup(EditorGUIUtility.TempContent("Filter Mode"), Lightmapping.filterMode);
@@ -394,21 +403,21 @@ namespace UnityEditor
 
             EditorGUILayout.Slider(m_BounceScale, 0.0f, 10.0f, Styles.BounceScale);
 
-            if (GUILayout.Button("Clear disk cache", GUILayout.Width(LightingWindow.kButtonWidth)))
+            if (GUILayout.Button("Clear disk cache", GUILayout.Width(Styles.ButtonWidth)))
             {
                 Lightmapping.Clear();
                 Lightmapping.ClearDiskCache();
             }
 
-            if (GUILayout.Button("Print state to console", GUILayout.Width(LightingWindow.kButtonWidth)))
+            if (GUILayout.Button("Print state to console", GUILayout.Width(Styles.ButtonWidth)))
             {
                 Lightmapping.PrintStateToConsole();
             }
 
-            if (GUILayout.Button("Reset albedo/emissive", GUILayout.Width(LightingWindow.kButtonWidth)))
+            if (GUILayout.Button("Reset albedo/emissive", GUILayout.Width(Styles.ButtonWidth)))
                 GIDebugVisualisation.ResetRuntimeInputTextures();
 
-            if (GUILayout.Button("Reset environment", GUILayout.Width(LightingWindow.kButtonWidth)))
+            if (GUILayout.Button("Reset environment", GUILayout.Width(Styles.ButtonWidth)))
                 DynamicGI.UpdateEnvironment();
         }
 
@@ -445,8 +454,7 @@ namespace UnityEditor
         }
         void DrawDenoiserTypeDropdown(SerializedProperty prop, GUIContent label, DenoiserTarget target)
         {
-            bool usingGPULightmapper = LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU;
-            bool optixDenoiserSupported = LightmapEditorSettings.IsOptixDenoiserSupported() && !usingGPULightmapper;
+            bool optixDenoiserSupported = LightmapEditorSettings.IsOptixDenoiserSupported();
             var rect = EditorGUILayout.GetControlRect();
             EditorGUI.BeginProperty(rect, label, prop);
             rect = EditorGUI.PrefixLabel(rect, label);
@@ -482,8 +490,9 @@ namespace UnityEditor
         void GeneralLightmapSettingsGUI()
         {
             bool bakedGISupported = SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Baked);
+            bool realtimeGISupported = SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Realtime);
 
-            if (!bakedGISupported && !SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Realtime))
+            if (!bakedGISupported && !realtimeGISupported)
                 return;
 
             m_ShowGeneralLightmapSettings = EditorGUILayout.FoldoutTitlebar(m_ShowGeneralLightmapSettings, Styles.GeneralLightmapLabel, true);
@@ -573,7 +582,7 @@ namespace UnityEditor
                                 {
                                     // Check if the platform doesn't support denoising.
                                     bool usingGPULightmapper = LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU;
-                                    bool optixDenoiserSupported = LightmapEditorSettings.IsOptixDenoiserSupported() && !usingGPULightmapper;
+                                    bool optixDenoiserSupported = LightmapEditorSettings.IsOptixDenoiserSupported();
 
                                     EditorGUI.indentLevel++;
                                     using (new EditorGUI.DisabledScope(!optixDenoiserSupported))
@@ -646,9 +655,13 @@ namespace UnityEditor
                         }
                     }
 
-                    using (new EditorGUI.DisabledScope((LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.Enlighten) && !m_EnableRealtimeGI.boolValue))
+                    // We only want to show the Indirect Resolution in a disabled state if the user is using PLM and has the ability to turn on Realtime GI.
+                    if (realtimeGISupported || (bakedGISupported && (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.Enlighten)))
                     {
-                        DrawResolutionField(m_Resolution, Styles.IndirectResolution);
+                        using (new EditorGUI.DisabledScope((LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.Enlighten) && !m_EnableRealtimeGI.boolValue))
+                        {
+                            DrawResolutionField(m_Resolution, Styles.IndirectResolution);
+                        }
                     }
 
                     if (bakedGISupported)
@@ -818,6 +831,7 @@ namespace UnityEditor
             public static readonly GUIContent ForceWhiteAlbedo = EditorGUIUtility.TrTextContent("Force White Albedo", "Force white albedo during lighting calculations.");
             public static readonly GUIContent ForceUpdates = EditorGUIUtility.TrTextContent("Force Updates", "Force continuous updates of runtime indirect lighting calculations.");
             public static readonly GUIContent ExportTrainingData = EditorGUIUtility.TrTextContent("Export Training Data", "Exports unfiltered textures, normals, positions.");
+            public static readonly GUIContent TrainingDataDestination = EditorGUIUtility.TrTextContent("Destination", "Destination for the training data, for example 'mysetup/30samples'. Will still be located at the first level in the project folder. ");
             public static readonly GUIStyle   LabelStyle = EditorStyles.wordWrappedMiniLabel;
             public static readonly GUIContent IndirectResolution = EditorGUIUtility.TrTextContent("Indirect Resolution", "Sets the resolution in texels that are used per unit for objects being lit by indirect lighting. The larger the value, the more significant the impact will be on the time it takes to bake the lighting.");
             public static readonly GUIContent LightmapResolution = EditorGUIUtility.TrTextContent("Lightmap Resolution", "Sets the resolution in texels that are used per unit for objects being lit by baked global illumination. Larger values will result in increased time to calculate the baked lighting.");
@@ -868,6 +882,8 @@ namespace UnityEditor
             public static readonly GUIContent[] GPUFilterOptions = new[] { EditorGUIUtility.TrTextContent("Gaussian"), EditorGUIUtility.TrTextContent("None") };
             public static readonly int[] GPUFilterInts = new[] { (int)LightmapEditorSettings.FilterType.Gaussian, (int)LightmapEditorSettings.FilterType.None };
             public static readonly GUIContent ProgressiveGPUWarning = EditorGUIUtility.TrTextContent("A-Trous filtering is not implemented in the Progressive GPU lightmapper yet. Use the CPU lightmapper instead if you need this functionality.");
+
+            public static readonly float ButtonWidth = 160;
         }
     }
 } // namespace

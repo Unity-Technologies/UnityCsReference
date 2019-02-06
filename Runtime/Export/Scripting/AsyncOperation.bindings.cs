@@ -11,7 +11,6 @@ namespace UnityEngine
 {
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode]
-    [ThreadAndSerializationSafe]
     [NativeHeader("Runtime/Export/Scripting/AsyncOperation.bindings.h")]
     [NativeHeader("Runtime/Misc/AsyncOperation.h")]
     public partial class AsyncOperation : YieldInstruction

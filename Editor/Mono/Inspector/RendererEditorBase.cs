@@ -14,7 +14,7 @@ namespace UnityEditor
 {
     internal class RendererEditorBase : Editor
     {
-        private GUIContent m_DynamicOccludeeLabel = EditorGUIUtility.TrTextContent("Dynamic Occluded", "Controls if dynamic occlusion culling should be performed for this renderer.");
+        private GUIContent m_DynamicOccludeeLabel = EditorGUIUtility.TrTextContent("Dynamic Occlusion", "Controls if dynamic occlusion culling should be performed for this renderer.");
 
 
         internal class Probes
@@ -25,7 +25,7 @@ namespace UnityEditor
             private SerializedProperty m_ProbeAnchor;
             private SerializedProperty m_ReceiveShadows;
 
-            private GUIContent m_LightProbeUsageStyle = EditorGUIUtility.TrTextContent("Light Probes", "Specifies how Light Probes will handle the interpolation of lighting and occlusion. Disabled if the object is set to Lightmap Static.");
+            private GUIContent m_LightProbeUsageStyle = EditorGUIUtility.TrTextContent("Light Probes", "Specifies how Light Probes will handle the interpolation of lighting and occlusion. Disabled if the object is set to receive Global Illumination from lightmaps.");
             private GUIContent m_LightProbeVolumeOverrideStyle = EditorGUIUtility.TrTextContent("Proxy Volume Override", "If set, the Renderer will use the Light Probe Proxy Volume component from another GameObject.");
             private GUIContent m_ReflectionProbeUsageStyle = EditorGUIUtility.TrTextContent("Reflection Probes", "Specifies if or how the object is affected by reflections in the Scene.  This property cannot be disabled in deferred rendering modes.");
             private GUIContent m_ProbeAnchorStyle = EditorGUIUtility.TrTextContent("Anchor Override", "Specifies the Transform position that will be used for sampling the light probes and reflection probes.");
@@ -305,7 +305,7 @@ namespace UnityEditor
         }
 
         private static string[] m_DefaultRenderingLayerNames;
-        private static string[] defaultRenderingLayerNames
+        internal static string[] defaultRenderingLayerNames
         {
             get
             {
@@ -328,7 +328,7 @@ namespace UnityEditor
         private SerializedProperty m_RendererPriority;
 
         static GUIContent m_RenderingLayerMaskStyle = EditorGUIUtility.TrTextContent("Rendering Layer Mask", "Mask that can be used with SRP DrawRenderers command to filter renderers outside of the normal layering system.");
-        static GUIContent m_RendererPriorityStyle = EditorGUIUtility.TrTextContent("Transparency Priority", "Priority used for sorting objects on top of material render queue.");
+        static GUIContent m_RendererPriorityStyle = EditorGUIUtility.TrTextContent("Renderer Priority", "Sets the priority value that Unity uses to sort objects on top of the Material render queue.");
 
         protected Probes m_Probes;
 

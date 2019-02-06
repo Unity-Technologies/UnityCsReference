@@ -62,7 +62,6 @@ namespace UnityEditor
         private DesktopSingleCPUProperty m_WindowsX86;
         private DesktopSingleCPUProperty m_WindowsX86_X64;
 
-        private DesktopSingleCPUProperty m_LinuxX86;
         private DesktopSingleCPUProperty m_LinuxX86_X64;
 
         private DesktopSingleCPUProperty m_OSX_X64;
@@ -80,7 +79,6 @@ namespace UnityEditor
             m_WindowsX86 = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("x86"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneWindows));
             m_WindowsX86_X64 = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("x86_x64"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneWindows64));
 
-            m_LinuxX86 = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("x86"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneLinux), DesktopPluginCPUArchitecture.x86);
             m_LinuxX86_X64 = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("x86_x64"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneLinux64), DesktopPluginCPUArchitecture.x86_64);
 
             m_OSX_X64 = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("x64"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneOSX));
@@ -88,7 +86,6 @@ namespace UnityEditor
             properties.Add(m_WindowsX86);
             properties.Add(m_WindowsX86_X64);
 
-            properties.Add(m_LinuxX86);
             properties.Add(m_LinuxX86_X64);
 
             properties.Add(m_OSX_X64);
@@ -146,7 +143,6 @@ namespace UnityEditor
             if (IsUsableOnLinux(imp))
             {
                 EditorGUILayout.LabelField(EditorGUIUtility.TrTextContent("Linux"), EditorStyles.boldLabel);
-                m_LinuxX86.OnGUI(inspector);
                 m_LinuxX86_X64.OnGUI(inspector);
                 EditorGUILayout.Space();
             }
@@ -170,7 +166,6 @@ namespace UnityEditor
             {
                 m_WindowsX86,
                 m_WindowsX86_X64,
-                m_LinuxX86,
                 m_LinuxX86_X64,
                 m_OSX_X64
             };
@@ -189,13 +184,12 @@ namespace UnityEditor
 
         private void ValidateUniversalTargets(PluginImporterInspector inspector)
         {
-            bool linuxX86Enabled = m_LinuxX86.IsTargetEnabled(inspector);
             bool linuxX86_X64Enabled = m_LinuxX86_X64.IsTargetEnabled(inspector);
 
-            DesktopPluginCPUArchitecture linuxUniversal = CalculateMultiCPUArchitecture(linuxX86Enabled, linuxX86_X64Enabled);
+            DesktopPluginCPUArchitecture linuxUniversal = CalculateMultiCPUArchitecture(true, linuxX86_X64Enabled);
             foreach (var importer in inspector.importers)
-                importer.SetPlatformData(BuildTarget.StandaloneLinuxUniversal, "CPU", linuxUniversal.ToString());
-            inspector.SetPlatformCompatibility(BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneLinuxUniversal), linuxX86Enabled || linuxX86_X64Enabled);
+                importer.SetPlatformData(BuildTarget.StandaloneLinux64, "CPU", linuxUniversal.ToString());
+            inspector.SetPlatformCompatibility(BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneLinux64), linuxX86_X64Enabled);
 
             bool osxX64Enabled = m_OSX_X64.IsTargetEnabled(inspector);
 
@@ -211,8 +205,8 @@ namespace UnityEditor
             bool pluginForWindows = target == BuildTarget.StandaloneWindows || target == BuildTarget.StandaloneWindows64;
 #pragma warning disable 612, 618
             bool pluginForOSX = target == BuildTarget.StandaloneOSXIntel || target == BuildTarget.StandaloneOSXIntel64 || target == BuildTarget.StandaloneOSX;
-#pragma warning restore 612, 618
             bool pluginForLinux = target == BuildTarget.StandaloneLinux || target == BuildTarget.StandaloneLinux64 || target == BuildTarget.StandaloneLinuxUniversal;
+#pragma warning restore 612, 618
 
             if (!pluginForLinux && !pluginForOSX && !pluginForWindows)
                 throw new Exception(string.Format("Failed to resolve standalone platform, platform string '{0}', resolved target '{1}'",

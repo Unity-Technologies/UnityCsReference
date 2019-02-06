@@ -18,9 +18,9 @@ namespace UnityEditor
 {
     public partial class BuildPlayerWindow : EditorWindow
     {
-        static Func<BuildPlayerOptions, BuildPlayerOptions> getBuildPlayerOptionsHandler;
-        static Action<BuildPlayerOptions> buildPlayerHandler;
-        static bool m_Building = false;
+        private static Func<BuildPlayerOptions, BuildPlayerOptions> getBuildPlayerOptionsHandler;
+        private static Action<BuildPlayerOptions> buildPlayerHandler;
+        private static bool m_Building = false;
         internal static Action<BuildReport> buildCompletionHandler;
 
         /// <summary>
@@ -311,7 +311,7 @@ namespace UnityEditor
                 return options;
             }
 
-            static bool PickBuildLocation(BuildTargetGroup targetGroup, BuildTarget target, BuildOptions options, out bool updateExistingBuild)
+            private static bool PickBuildLocation(BuildTargetGroup targetGroup, BuildTarget target, BuildOptions options, out bool updateExistingBuild)
             {
                 updateExistingBuild = false;
                 var previousPath = EditorUserBuildSettings.GetBuildLocation(target);
@@ -367,7 +367,7 @@ namespace UnityEditor
                     path += '.' + extension;
 
                 // A path may not be empty initially, but it could contain, e.g., a drive letter (as in Windows),
-                // so even appending an extention will work fine, but in reality the name will be, for example,
+                // so even appending an extension will work fine, but in reality the name will be, for example,
                 // G:/
                 //Debug.Log(path);
 
@@ -430,13 +430,13 @@ namespace UnityEditor
                 return true;
             }
 
-            static void DeleteBuildFolderIfEmpty(string path)
+            private static void DeleteBuildFolderIfEmpty(string path)
             {
                 if (Directory.Exists(path) && FolderIsEmpty(path))
                     Directory.Delete(path);
             }
 
-            static bool FolderIsEmpty(string path)
+            private static bool FolderIsEmpty(string path)
             {
                 if (!Directory.Exists(path))
                     return true;
@@ -445,14 +445,14 @@ namespace UnityEditor
                     && (Directory.GetFiles(path).Length == 0);
             }
 
-            static bool UserWantsToDeleteFiles(string path)
+            private static bool UserWantsToDeleteFiles(string path)
             {
                 string text =
                     "WARNING: all files and folders located in target folder: '" + path + "' will be deleted by build process.";
                 return EditorUtility.DisplayDialog("Deleting existing files", text, "OK", "Cancel");
             }
 
-            static bool IsMetroPlayer(BuildTarget target)
+            private static bool IsMetroPlayer(BuildTarget target)
             {
                 return target == BuildTarget.WSAPlayer;
             }

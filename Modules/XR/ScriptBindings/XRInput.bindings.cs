@@ -90,7 +90,7 @@ namespace UnityEngine.XR
     };
 
     [Flags]
-    public enum TrackingState : UInt32
+    public enum InputTrackingState : UInt32
     {
         None = 0,
         Position = 1 << 0,
@@ -227,7 +227,7 @@ namespace UnityEngine.XR
         public static InputFeatureUsage<bool> primary2DAxisTouch = new InputFeatureUsage<bool>("Primary2DAxisTouch");
         public static InputFeatureUsage<bool> thumbrest = new InputFeatureUsage<bool>("Thumbrest");
 
-        public static InputFeatureUsage<TrackingState> trackingState = new InputFeatureUsage<TrackingState>("TrackingState");
+        public static InputFeatureUsage<InputTrackingState> trackingState = new InputFeatureUsage<InputTrackingState>("TrackingState");
 
         public static InputFeatureUsage<float> indexTouch = new InputFeatureUsage<float>("IndexTouch");
         public static InputFeatureUsage<float> thumbTouch = new InputFeatureUsage<float>("ThumbTouch");
@@ -314,15 +314,15 @@ namespace UnityEngine.XR
         public bool TryGetFeatureValue(InputFeatureUsage<Bone> usage, out Bone value)              { return InputDevices.TryGetFeatureValue_XRBone(m_DeviceId, usage.name, out value); }
         public bool TryGetFeatureValue(InputFeatureUsage<Eyes> usage, out Eyes value)              { return InputDevices.TryGetFeatureValue_XREyes(m_DeviceId, usage.name, out value); }
 
-        public bool TryGetFeatureValue(InputFeatureUsage<TrackingState> usage, out TrackingState value)
+        public bool TryGetFeatureValue(InputFeatureUsage<InputTrackingState> usage, out InputTrackingState value)
         {
             uint intValue = 0;
             if (InputDevices.TryGetFeatureValue_UInt32(m_DeviceId, usage.name, out intValue))
             {
-                value = (TrackingState)intValue;
+                value = (InputTrackingState)intValue;
                 return true;
             }
-            value = TrackingState.None;
+            value = InputTrackingState.None;
             return false;
         }
 
@@ -658,9 +658,11 @@ namespace UnityEngine.XR
     public partial class InputTracking
     {
         [NativeConditional("ENABLE_VR", "Vector3f::zero")]
+        [Obsolete("This API has been marked as obsolete in code, and is no longer in use. Please use InputTracking.GetNodeStates and look for the XRNodeState with the corresponding XRNode type instead.")]
         extern public static Vector3 GetLocalPosition(XRNode node);
 
         [NativeConditional("ENABLE_VR", "Quaternionf::identity()")]
+        [Obsolete("This API has been marked as obsolete in code, and is no longer in use. Please use InputTracking.GetNodeStates and look for the XRNodeState with the corresponding XRNode type instead.")]
         extern public static Quaternion GetLocalRotation(XRNode node);
 
         [NativeConditional("ENABLE_VR")]

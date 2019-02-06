@@ -40,6 +40,7 @@ namespace UnityEngine
     [NativeHeader("AssetBundleScriptingClasses.h")]
     [NativeHeader("Modules/AssetBundle/Public/AssetBundleSaveAndLoadHelper.h")]
     [NativeHeader("Modules/AssetBundle/Public/AssetBundleUtility.h")]
+    [NativeHeader("Modules/AssetBundle/Public/AssetBundleLoadAssetUtility.h")]
     [ExcludeFromPreset]
     public partial class AssetBundle : Object
     {

@@ -264,6 +264,14 @@ namespace UnityEngine
                 throw new ArgumentException("You can only call GUI functions from inside OnGUI.");
         }
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static float RoundToPixelGrid(float v)
+        {
+            // Using same rounding constant as GUITexture::AlignPointToDevice
+            const float kNearestRoundingOffset = 0.48f;
+            return Mathf.Floor((v * GUIUtility.pixelsPerPoint) + kNearestRoundingOffset) / GUIUtility.pixelsPerPoint;
+        }
+
         // Convert a point from GUI position to screen space.
         public static Vector2 GUIToScreenPoint(Vector2 guiPoint)
         {

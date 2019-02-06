@@ -53,18 +53,18 @@ namespace UnityEngine.AI
         public Object sourceObject { get { return InternalGetObject(m_InstanceID); } set { m_InstanceID = value != null ? value.GetInstanceID() : 0; } }
         public Component component { get { return InternalGetComponent(m_ComponentID); } set { m_ComponentID = value != null ? value.GetInstanceID() : 0; } }
 
-        private Matrix4x4 m_Transform;
-        private Vector3 m_Size;
-        private NavMeshBuildSourceShape m_Shape;
-        private int m_Area;
-        private int m_InstanceID;
-        private int m_ComponentID;
+        Matrix4x4 m_Transform;
+        Vector3 m_Size;
+        NavMeshBuildSourceShape m_Shape;
+        int m_Area;
+        int m_InstanceID;
+        int m_ComponentID;
 
         [StaticAccessor("NavMeshBuildSource", StaticAccessorType.DoubleColon)]
-        private static extern Component InternalGetComponent(int instanceID);
+        static extern Component InternalGetComponent(int instanceID);
 
         [StaticAccessor("NavMeshBuildSource", StaticAccessorType.DoubleColon)]
-        private static extern Object InternalGetObject(int instanceID);
+        static extern Object InternalGetObject(int instanceID);
     }
 
     // Struct containing source geometry data and annotation for runtime navmesh building
@@ -76,12 +76,12 @@ namespace UnityEngine.AI
         public bool ignoreFromBuild { get { return m_IgnoreFromBuild != 0; } set { m_IgnoreFromBuild = value ? 1 : 0; } }
         public Transform root { get { return InternalGetRootGO(m_InstanceID); } set { m_InstanceID = value != null ? value.GetInstanceID() : 0; } }
 
-        private int m_OverrideArea;
-        private int m_Area;
-        private int m_IgnoreFromBuild;
-        private int m_InstanceID;
+        int m_OverrideArea;
+        int m_Area;
+        int m_IgnoreFromBuild;
+        int m_InstanceID;
 
         [StaticAccessor("NavMeshBuildMarkup", StaticAccessorType.DoubleColon)]
-        private static extern Transform InternalGetRootGO(int instanceID);
+        static extern Transform InternalGetRootGO(int instanceID);
     }
 }

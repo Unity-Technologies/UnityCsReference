@@ -92,13 +92,51 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public static string ReadTextAsset(string path)
         {
-            var textAsset = AssetDatabase.LoadAssetAtPath<UnityEngine.TextAsset>(path);
+            if (IsAssetsPath(path))
+            {
+                var textAsset = AssetDatabase.LoadAssetAtPath<UnityEngine.TextAsset>(path);
 
-            if (textAsset != null)
-                return textAsset.text;
+                if (textAsset != null)
+                    return textAsset.text;
+            }
 
             // Support out of project reading of files for tests.
             return System.IO.File.ReadAllText(path);
+        }
+
+        public static string FileNameWithoutExtension(string path)
+        {
+            var indexOfDot = -1;
+            var indexOfSlash = -1;
+            for (var i = path.Length - 1; i >= 0; i--)
+            {
+                if (indexOfDot == -1 && path[i] == '.')
+                {
+                    indexOfDot = i;
+                }
+
+                if (indexOfSlash == -1 && path[i] == '/' || path[i] == '\\')
+                {
+                    indexOfSlash = i + 1;
+                }
+
+                if (indexOfDot != -1 && indexOfSlash != -1)
+                {
+                    break;
+                }
+            }
+
+            if (indexOfDot == -1)
+            {
+                indexOfDot = path.Length - 1;
+            }
+
+            if (indexOfSlash == -1)
+            {
+                indexOfSlash = 0;
+            }
+
+            return path.Substring(indexOfSlash, indexOfDot - indexOfSlash);
         }
     }
 }

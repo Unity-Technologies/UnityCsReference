@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using UnityEngine;
-using UObject = UnityEngine.Object;
+using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor.EditorTools
 {
@@ -19,7 +19,16 @@ namespace UnityEditor.EditorTools
         [SerializeField]
         EditorTool m_ActiveTool;
 
+        static ActiveEditorTracker m_Tracker;
+        [SerializeField]
+        List<EditorTool> m_ToolHistory = new List<EditorTool>();
         static bool s_ChangingActiveTool;
+
+        // EditorTools that are created as custom editor tools. This list represents only the shared tracker.
+        List<EditorTool> m_CustomEditorTools = new List<EditorTool>();
+        // This list represents any custom editor tools created by locked inspectors. They are not shown in the scene
+        // or context menu.
+        List<EditorTool> m_LockedCustomEditorTools = new List<EditorTool>();
 
         internal static EditorTool activeTool
         {
@@ -31,7 +40,11 @@ namespace UnityEditor.EditorTools
             set
             {
                 if (s_ChangingActiveTool)
+                {
+                    // pop the changing state so that we don't lock the active tool after an exception is thrown.
+                    s_ChangingActiveTool = false;
                     throw new InvalidOperationException("Attempting to set the active tool from EditorTool.OnActivate or EditorTool.OnDeactivate. This is not allowed.");
+                }
 
                 var tool = value;
 
@@ -54,6 +67,7 @@ namespace UnityEditor.EditorTools
                     instance.m_ActiveTool.OnDeactivate();
 
                 var previous = instance.m_ActiveTool;
+
                 instance.m_ActiveTool = tool;
 
                 tool.OnActivate();
@@ -67,11 +81,15 @@ namespace UnityEditor.EditorTools
             }
         }
 
-        [SerializeField]
-        List<EditorTool> m_ToolHistory = new List<EditorTool>();
-
-        // The currently available CustomEditor EditorTools.
-        HashSet<EditorTool> m_CustomEditorTools = new HashSet<EditorTool>();
+        static ActiveEditorTracker tracker
+        {
+            get
+            {
+                if (m_Tracker == null)
+                    m_Tracker = new ActiveEditorTracker();
+                return m_Tracker;
+            }
+        }
 
         [Serializable]
         struct CustomEditorToolContext : ISerializationCallbackReceiver
@@ -84,7 +102,9 @@ namespace UnityEditor.EditorTools
 
             public Type editorToolType;
 
-            public UObject[] targetObjects;
+            public UnityObject targetObject;
+
+            public UnityObject[] targetObjects;
 
             public string editorToolState
             {
@@ -98,12 +118,14 @@ namespace UnityEditor.EditorTools
                 if (tool != null)
                 {
                     editorToolType = tool.GetType();
+                    targetObject = tool.target;
                     targetObjects = tool.targets.ToArray();
                     m_EditorToolState = EditorJsonUtility.ToJson(tool);
                 }
                 else
                 {
                     editorToolType = null;
+                    targetObject = null;
                     targetObjects = null;
                     m_EditorToolState = null;
                 }
@@ -203,7 +225,7 @@ namespace UnityEditor.EditorTools
             }
 
             // TrackerRebuilt is called during the ExitingEditMode phase, but the selection might not be valid yet.
-            if (m_PlayModeState == PlayModeStateChange.EnteredPlayMode)
+            if (m_PlayModeState == PlayModeStateChange.EnteredPlayMode || m_PlayModeState == PlayModeStateChange.EnteredEditMode)
                 RebuildAvailableCustomEditorTools();
         }
 
@@ -225,7 +247,7 @@ namespace UnityEditor.EditorTools
 
         void SelectedObjectWasDestroyed(int id)
         {
-            if (m_CustomEditorTools.Contains(m_ActiveTool) &&
+            if (m_CustomEditorTools.Any(x => x == m_ActiveTool) &&
                 m_ActiveTool.m_Targets.Any(x => x == null || x.GetInstanceID() == id))
             {
                 m_PreviousCustomEditorToolContext = new CustomEditorToolContext(m_ActiveTool);
@@ -242,6 +264,12 @@ namespace UnityEditor.EditorTools
         {
             var restored = m_CustomEditorTools.FirstOrDefault(m_PreviousCustomEditorToolContext.IsEqual);
 
+            // Check for existence in locked inspectors too, but only if the locked inspector target is being inspected
+            if (restored == null
+                && m_PreviousCustomEditorToolContext.targetObject != null
+                && Selection.objects.Any(x => x.Equals(m_PreviousCustomEditorToolContext.targetObject)))
+                restored = m_LockedCustomEditorTools.FirstOrDefault(m_PreviousCustomEditorToolContext.IsEqual);
+
             if (restored != null)
             {
                 var targets = restored.targets.ToArray();
@@ -253,16 +281,22 @@ namespace UnityEditor.EditorTools
             m_PreviousCustomEditorToolContext = CustomEditorToolContext.Empty;
         }
 
+        // destroy invalid custom editor tools
         void ClearCustomEditorTools()
         {
-            foreach (var tool in m_CustomEditorTools)
+            foreach (var customEditorTool in m_CustomEditorTools)
             {
-                if (tool != null && tool != m_ActiveTool)
-                {
-                    DestroyImmediate(tool);
-                }
+                if (customEditorTool != null && customEditorTool != m_ActiveTool)
+                    DestroyImmediate(customEditorTool);
             }
 
+            foreach (var customEditorTool in m_LockedCustomEditorTools)
+            {
+                if (customEditorTool != null && customEditorTool != m_ActiveTool)
+                    DestroyImmediate(customEditorTool);
+            }
+
+            m_LockedCustomEditorTools.Clear();
             m_CustomEditorTools.Clear();
         }
 
@@ -355,12 +389,12 @@ namespace UnityEditor.EditorTools
             }
         }
 
-        bool IsCustomEditorTool(EditorTool tool)
+        static bool IsCustomEditorTool(EditorTool tool)
         {
-            return tool != null
-                && tool.m_Targets != null
-                && tool.m_Targets.Length > 0;
+            return EditorToolUtility.IsCustomEditorTool(tool != null ? tool.GetType() : null);
         }
+
+        static List<CustomEditorTool> s_CustomEditorTools = new List<CustomEditorTool>();
 
         void RebuildAvailableCustomEditorTools()
         {
@@ -369,64 +403,189 @@ namespace UnityEditor.EditorTools
                 m_PlayModeState == PlayModeStateChange.ExitingPlayMode)
                 return;
 
-            var isCustomEditorTool = IsCustomEditorTool(m_ActiveTool);
+            var preservedActiveTool = false;
 
             ClearCustomEditorTools();
 
-            foreach (var kvp in EditorToolUtility.FindActiveCustomEditorTools())
-            {
-                var toolType = kvp.Key;
-                var toolInfo = kvp.Value.ToArray();
+            var inspectors = InspectorWindow.GetInspectors();
+            var collectedUnlockedInspector = false;
 
-                if (isCustomEditorTool && m_ActiveTool.GetType() == toolType)
+            foreach (var inspector in inspectors)
+            {
+                if (inspector.isLocked)
+                    preservedActiveTool |= CollectCustomEditorToolsFromTracker(inspector.tracker, m_LockedCustomEditorTools);
+                else if (!collectedUnlockedInspector)
                 {
-                    m_ActiveTool.m_Targets = toolInfo;
-                    m_CustomEditorTools.Add(m_ActiveTool);
-                }
-                else
-                {
-                    var toolInstance = (EditorTool)CreateInstance(toolType, x => { ((EditorTool)x).m_Targets = toolInfo; });
-                    toolInstance.hideFlags = HideFlags.DontSave;
-                    m_CustomEditorTools.Add(toolInstance);
+                    preservedActiveTool |= CollectCustomEditorToolsFromTracker(inspector.tracker, m_CustomEditorTools);
+                    collectedUnlockedInspector = true;
                 }
             }
 
-            if (isCustomEditorTool && !m_CustomEditorTools.Contains(m_ActiveTool))
+            if (!collectedUnlockedInspector)
             {
+                var shared = ActiveEditorTracker.sharedTracker;
+                preservedActiveTool |= CollectCustomEditorToolsFromTracker(shared.isLocked ? tracker : shared, m_CustomEditorTools);
+            }
+
+            if (IsCustomEditorTool(m_ActiveTool) && !preservedActiveTool)
+            {
+                m_ActiveTool.OnDeactivate();
                 m_PreviousCustomEditorToolContext = new CustomEditorToolContext(m_ActiveTool);
                 DestroyImmediate(m_ActiveTool);
                 RestorePreviousTool();
             }
         }
 
-        internal static EditorTool GetCustomEditorToolOfType(Type type)
+        bool CollectCustomEditorToolsFromTracker(ActiveEditorTracker tracker, List<EditorTool> list)
         {
-            foreach (var tool in instance.m_CustomEditorTools)
-                if (tool != null && tool.GetType() == type)
-                    return tool;
+            var activeIsCustomEditorTool = IsCustomEditorTool(m_ActiveTool);
+            var preservedActiveTool = false;
+            s_CustomEditorTools.Clear();
+
+            EditorToolUtility.GetEditorToolsForTracker(tracker, s_CustomEditorTools);
+
+            foreach (var customEditorTool in s_CustomEditorTools)
+            {
+                var toolType = customEditorTool.editorToolType;
+                var toolOwner = customEditorTool.owner;
+
+                EditorTool customEditorToolInstance;
+
+                // The only case where a custom editor tool is serialized is when it is the active tool. All other
+                // instances are discarded and rebuilt on any tracker rebuild.
+                if (activeIsCustomEditorTool && CustomEditorToolIsMatch(toolOwner, toolType, m_ActiveTool))
+                {
+                    preservedActiveTool = true;
+
+                    m_ActiveTool.m_Targets = toolOwner.targets;
+                    m_ActiveTool.m_Target = toolOwner.target;
+
+                    // domain reload - the owning editor was destroyed and therefore we need to reset the EditMode active
+                    if (m_ActiveTool is EditModeTool && toolOwner.GetInstanceID() != UnityEditorInternal.EditMode.ownerID)
+                        UnityEditorInternal.EditMode.ChangeEditModeFromToolContext(toolOwner, ((EditModeTool)m_ActiveTool).editMode);
+
+                    customEditorToolInstance = m_ActiveTool;
+                }
+                else
+                {
+                    customEditorToolInstance = (EditorTool)CreateInstance(toolType, x =>
+                    {
+                        ((EditorTool)x).m_Targets = toolOwner.targets;
+                        ((EditorTool)x).m_Target = toolOwner.target;
+                    });
+
+                    customEditorToolInstance.hideFlags = HideFlags.DontSave;
+                }
+
+                list.Add(customEditorToolInstance);
+
+                var editModeTool = customEditorToolInstance as EditModeTool;
+
+                if (editModeTool != null)
+                    editModeTool.owner = toolOwner;
+            }
+
+            return preservedActiveTool;
+        }
+
+        static bool CustomEditorToolIsMatch(Editor editor, Type toolType, EditorTool tool)
+        {
+            if (editor == null || toolType != tool.GetType())
+                return false;
+
+            // if it's an EditModeTool we need to be stricter about ownership for backwards compatibility.
+            var editModeTool = tool as EditModeTool;
+
+            if (editModeTool != null)
+                return editModeTool.owner == (IToolModeOwner)editor || editModeTool.target == editor.target;
+
+            // otherwise just check if it's a valid type
+            return true;
+        }
+
+        internal static EditorTool GetCustomEditorToolOfType(Type type, bool searchLockedInspectors = true)
+        {
+            foreach (var customEditorTool in instance.m_CustomEditorTools)
+                if (customEditorTool != null && customEditorTool.GetType() == type)
+                    return customEditorTool;
+
+            if (searchLockedInspectors)
+            {
+                foreach (var customEditorTool in instance.m_LockedCustomEditorTools)
+                    if (customEditorTool != null && customEditorTool.GetType() == type)
+                        return customEditorTool;
+            }
+
             return null;
         }
 
-        internal static void GetCustomEditorTools(List<EditorTool> list)
+        internal static EditorTool GetCustomEditorToolsForType(Type targetType, List<EditorTool> list, bool searchLockedInspectors)
+        {
+            foreach (var customEditorTool in instance.m_CustomEditorTools)
+                if (customEditorTool != null &&
+                    EditorToolUtility.GetCustomEditorToolTargetType(customEditorTool) == targetType)
+                    list.Add(customEditorTool);
+
+
+            if (searchLockedInspectors)
+            {
+                foreach (var customEditorTool in instance.m_LockedCustomEditorTools)
+                    if (customEditorTool != null && EditorToolUtility.GetCustomEditorToolTargetType(customEditorTool) == targetType)
+                        list.Add(customEditorTool);
+            }
+
+            return null;
+        }
+
+        internal static void GetCustomEditorTools(List<EditorTool> list, bool includeLockedInspectorTools)
         {
             list.Clear();
 
             foreach (var customEditorTool in instance.m_CustomEditorTools)
                 list.Add(customEditorTool);
-        }
 
-        internal static void GetCustomEditorTools(Type type, List<EditorTool> list)
-        {
-            if (type == null)
-                return;
-
-            list.Clear();
-
-            foreach (var customEditorTool in instance.m_CustomEditorTools)
+            if (includeLockedInspectorTools)
             {
-                if (EditorToolUtility.GetCustomEditorToolTargetType(customEditorTool) == type)
+                foreach (var customEditorTool in instance.m_LockedCustomEditorTools)
                     list.Add(customEditorTool);
             }
+        }
+
+        internal static void GetCustomEditorToolsForTarget(UnityObject target, List<EditorTool> list, bool searchLockedInspectors)
+        {
+            s_CustomEditorTools.Clear();
+
+            if (target == null)
+                return;
+
+            foreach (var tool in instance.m_CustomEditorTools)
+            {
+                if (tool.target == target)
+                    list.Add(tool);
+            }
+
+            if (searchLockedInspectors)
+            {
+                foreach (var tool in instance.m_LockedCustomEditorTools)
+                {
+                    if (tool.target == target)
+                        list.Add(tool);
+                }
+            }
+        }
+
+        internal static EditorTool GetCustomEditorTool(Func<EditorTool, bool> predicate, bool searchLockedInspectors)
+        {
+            foreach (var tool in instance.m_CustomEditorTools)
+                if (predicate(tool))
+                    return tool;
+
+            if (searchLockedInspectors)
+                foreach (var tool in instance.m_LockedCustomEditorTools)
+                    if (predicate(tool))
+                        return tool;
+
+            return null;
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]

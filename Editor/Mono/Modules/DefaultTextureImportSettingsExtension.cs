@@ -197,8 +197,15 @@ namespace UnityEditor.Modules
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = platformSettings.overriddenIsDifferent ||
                     platformSettings.compressionQualityIsDifferent;
-                int compressionQuality = EditCompressionQuality(platformSettings.m_Target,
-                    platformSettings.compressionQuality, isCrunchedFormat);
+
+                // Prior to exposing compression quality for BC6H/BC7 formats they were always compressed at maximum quality even though the setting was
+                // defaulted to 'Normal'.  Now BC6H/BC7 quality is exposed to the user as Fast/Normal/Best 'Normal' maps to one setting down from maximum in the
+                // ISPC compressor but to maintain the behaviour of existing projects we need to force their quality up to 'Best'.  The 'forceMaximumCompressionQuality_BC6H_BC7'
+                // flag is set when loading existing texture platform settings to do this and cleared when the compression quality level is manually set (by UI or API)
+                bool forceBestQuality = platformSettings.forceMaximumCompressionQuality_BC6H_BC7 && (((TextureImporterFormat)formatForAll == TextureImporterFormat.BC6H) || ((TextureImporterFormat)formatForAll == TextureImporterFormat.BC7));
+                int compressionQuality = forceBestQuality ? (int)TextureCompressionQuality.Best : platformSettings.compressionQuality;
+
+                compressionQuality = EditCompressionQuality(platformSettings.m_Target, compressionQuality, isCrunchedFormat, (TextureImporterFormat)formatForAll);
                 EditorGUI.showMixedValue = false;
                 if (EditorGUI.EndChangeCheck())
                 {
@@ -224,9 +231,9 @@ namespace UnityEditor.Modules
             }
         }
 
-        private int EditCompressionQuality(BuildTarget target, int compression, bool isCrunchedFormat)
+        private int EditCompressionQuality(BuildTarget target, int compression, bool isCrunchedFormat, TextureImporterFormat textureFormat)
         {
-            bool showAsEnum = !isCrunchedFormat && (BuildTargetDiscovery.PlatformHasFlag(target, TargetAttributes.HasIntegratedGPU));
+            bool showAsEnum = !isCrunchedFormat && (BuildTargetDiscovery.PlatformHasFlag(target, TargetAttributes.HasIntegratedGPU) || (textureFormat == TextureImporterFormat.BC6H) || (textureFormat == TextureImporterFormat.BC7));
 
             if (showAsEnum)
             {

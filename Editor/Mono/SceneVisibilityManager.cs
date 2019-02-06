@@ -229,7 +229,7 @@ namespace UnityEditor
             scene.GetRootGameObjects(m_RootBuffer);
             foreach (GameObject root in m_RootBuffer)
             {
-                if (!IsGameObjectHidden(root) || !AreAllChildrenHidden(root))
+                if (!IsGameObjectHidden(root) || root.transform.childCount > 0 && !AreAllChildrenHidden(root))
                     return false;
             }
 

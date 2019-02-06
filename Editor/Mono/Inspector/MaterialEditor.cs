@@ -1360,9 +1360,7 @@ namespace UnityEditor
             // Show popup
             EditorGUI.showMixedValue = isMixed;
             EditorGUI.indentLevel += indent;
-            int[] shortvals = { Styles.lightmapEmissiveValues[0], Styles.lightmapEmissiveValues[1] };
-            GUIContent[] shortstrings = { Styles.lightmapEmissiveStrings[0], Styles.lightmapEmissiveStrings[1] };
-            giFlags = (MaterialGlobalIlluminationFlags)EditorGUILayout.IntPopup(Styles.lightmapEmissiveLabel, (int)giFlags, shortstrings, shortvals);
+            giFlags = (MaterialGlobalIlluminationFlags)EditorGUILayout.IntPopup(Styles.lightmapEmissiveLabel, (int)giFlags, Styles.lightmapEmissiveStrings, Styles.lightmapEmissiveValues);
             EditorGUI.indentLevel -= indent;
             EditorGUI.showMixedValue = false;
 

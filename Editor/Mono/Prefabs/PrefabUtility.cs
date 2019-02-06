@@ -324,12 +324,11 @@ namespace UnityEditor
 
             if (action == InteractionMode.UserAction)
             {
+                RegisterNewObjects(prefabInstanceRoot, hierarchy, actionName);
                 if (isDisconnected)
                 {
                     Undo.RegisterCreatedObjectUndo(GetPrefabInstanceHandle(prefabInstanceRoot), actionName);
                 }
-
-                RegisterNewObjects(prefabInstanceRoot, hierarchy, actionName);
             }
         }
 
@@ -340,6 +339,7 @@ namespace UnityEditor
             ThrowExceptionIfNotValidNonPersistentPrefabInstanceObject(instanceRoot);
 
             GameObject prefabInstanceRoot = GetOutermostPrefabInstanceRoot(instanceRoot);
+            var isDisconnected = GetPrefabInstanceHandle(prefabInstanceRoot) == null;
 
             var actionName = "Apply instance to prefab";
             Object correspondingSourceObject = GetCorrespondingObjectFromSource(prefabInstanceRoot);
@@ -359,6 +359,12 @@ namespace UnityEditor
             if (action == InteractionMode.UserAction)
             {
                 RegisterNewObjects(correspondingSourceObject as GameObject, prefabHierarchy, actionName); // handles created objects
+                if (isDisconnected)
+                {
+                    var prefabInstanceHandle = GetPrefabInstanceHandle(prefabInstanceRoot);
+                    Assert.IsNotNull(prefabInstanceHandle);
+                    Undo.RegisterCreatedObjectUndo(prefabInstanceHandle, actionName);
+                }
             }
 
             Analytics.SendApplyEvent(

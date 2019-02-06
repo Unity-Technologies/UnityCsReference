@@ -203,7 +203,7 @@ namespace UnityEditor
         protected virtual UnityEngine.Object[] GetEmissives()
         {
             return Object.FindObjectsOfType<MeshRenderer>().Where((MeshRenderer mr) => {
-                return (GameObjectUtility.AreStaticEditorFlagsSet(mr.gameObject, StaticEditorFlags.LightmapStatic));
+                return (GameObjectUtility.AreStaticEditorFlagsSet(mr.gameObject, StaticEditorFlags.ContributeGI));
             }).SelectMany(meshRenderer => meshRenderer.sharedMaterials).Where((Material m) => {
                     return m != null && ((m.globalIlluminationFlags & MaterialGlobalIlluminationFlags.AnyEmissive) != 0) && m.HasProperty("_EmissionColor");
                 }).Distinct().ToArray();

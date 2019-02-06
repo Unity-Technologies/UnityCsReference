@@ -606,7 +606,7 @@ namespace UnityEditor
             RenderTexture rt = t as RenderTexture;
             if (rt != null)
             {
-                if (!SystemInfo.SupportsRenderTextureFormat(rt.format))
+                if (!SystemInfo.IsFormatSupported(rt.graphicsFormat, FormatUsage.Render))
                     return; // can't do this RT format
                 rt.Create();
             }
@@ -799,7 +799,7 @@ namespace UnityEditor
             bool isNormalmap = IsNormalMap(t);
             bool stillNeedsCompression = TextureUtil.DoesTextureStillNeedToBeCompressed(AssetDatabase.GetAssetPath(t));
             bool isNPOT = t2 != null && TextureUtil.IsNonPowerOfTwo(t2);
-            TextureFormat format = TextureUtil.GetTextureFormat(t);
+            GraphicsFormat format = t.graphicsFormat;
 
             showSize = !stillNeedsCompression;
             if (isNPOT)
@@ -812,18 +812,22 @@ namespace UnityEditor
                 {
                     switch (format)
                     {
-                        case TextureFormat.DXT5:
+                        case GraphicsFormat.RGBA_DXT5_SRGB:
+                        case GraphicsFormat.RGBA_DXT5_UNorm:
                             info += "  DXTnm";
                             break;
-                        case TextureFormat.RGBA32:
-                        case TextureFormat.ARGB32:
+                        case GraphicsFormat.R8G8B8A8_SRGB:
+                        case GraphicsFormat.R8G8B8A8_UNorm:
+                        case GraphicsFormat.B8G8R8A8_SRGB:
+                        case GraphicsFormat.B8G8R8A8_UNorm:
                             info += "  Nm 32 bit";
                             break;
-                        case TextureFormat.ARGB4444:
+                        case GraphicsFormat.R4G4B4A4_UNormPack16:
+                        case GraphicsFormat.B4G4R4A4_UNormPack16:
                             info += "  Nm 16 bit";
                             break;
                         default:
-                            info += "  " + TextureUtil.GetTextureFormatString(format);
+                            info += "  " + GraphicsFormatUtility.GetFormatString(format);
                             break;
                     }
                 }
@@ -834,10 +838,10 @@ namespace UnityEditor
                     int dummyComressionQuality;
                     textureImporter.ReadTextureImportInstructions(EditorUserBuildSettings.activeBuildTarget, out desiredFormat, out dummyColorSpace, out dummyComressionQuality);
 
-                    info += "\n " + TextureUtil.GetTextureFormatString(format) + "(Original) " + TextureUtil.GetTextureFormatString(desiredFormat) + "(Atlas)";
+                    info += "\n " + GraphicsFormatUtility.GetFormatString(format) + "(Original) " + TextureUtil.GetTextureFormatString(desiredFormat) + "(Atlas)";
                 }
                 else
-                    info += "  " + TextureUtil.GetTextureFormatString(format);
+                    info += "  " + GraphicsFormatUtility.GetFormatString(format);
             }
 
             if (showSize)

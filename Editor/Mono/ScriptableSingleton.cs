@@ -18,7 +18,30 @@ namespace UnityEditor
     internal class FilePathAttribute : Attribute
     {
         public enum Location { PreferencesFolder, ProjectFolder }
-        public string filepath {get; set; }
+
+        private string filePath;
+        private string relativePath;
+        private Location location;
+
+        public string filepath
+        {
+            get
+            {
+                if (filePath == null && relativePath != null)
+                {
+                    filePath = GetFilePath(relativePath, location);
+                    relativePath = null;
+                }
+
+                return filePath;
+            }
+
+            set
+            {
+                filePath = value;
+            }
+        }
+
         public FilePathAttribute(string relativePath, Location location)
         {
             if (string.IsNullOrEmpty(relativePath))
@@ -27,17 +50,22 @@ namespace UnityEditor
                 return;
             }
 
+            this.relativePath = relativePath;
+            this.location = location;
+        }
+
+        static string GetFilePath(string relativePath, Location location)
+        {
             // We do not want a slash as first char
             if (relativePath[0] == '/')
                 relativePath = relativePath.Substring(1);
 
             if (location == Location.PreferencesFolder)
-                filepath = InternalEditorUtility.unityPreferencesFolder + "/" + relativePath;
+                return InternalEditorUtility.unityPreferencesFolder + "/" + relativePath;
             else //location == Location.ProjectFolder
-                filepath = relativePath;
+                return relativePath;
         }
     }
-
 
     public class ScriptableSingleton<T> : ScriptableObject where T : ScriptableObject
     {

@@ -21,9 +21,18 @@ namespace Unity.Experimental.Audio
         public ulong DSPClock { get { return m_DSPClock; } }
         public uint DSPBufferSize { get { return m_DSPBufferSize; } }
         public uint SampleRate { get { return m_SampleRate; } }
-        public void PostEvent<T>(T eventMsg) where T : struct
+        public void PostEvent<TNodeEvent>(TNodeEvent eventMsg) where TNodeEvent : struct
         {
-            ExecuteContextInternal.Internal_PostEvent(m_DSPNodePtr, DSPGraph.GetTypeHashCode<T>(), UnsafeUtility.AddressOf(ref eventMsg), UnsafeUtility.SizeOf<T>());
+            PostEvent(DSPGraph.GetTypeHashCode<TNodeEvent>(), eventMsg);
+        }
+
+        // FIXME: Temporarily exposed until BurstRuntime.GetHashCode64<T> has a Unity-core
+        // equivalent, or DSPGraph's C# code is moved to a package.
+        public void PostEvent<TNodeEvent>(long eventTypeHash, TNodeEvent eventMsg) where TNodeEvent : struct
+        {
+            ExecuteContextInternal.Internal_PostEvent(
+                m_DSPNodePtr, eventTypeHash, UnsafeUtility.AddressOf(ref eventMsg),
+                UnsafeUtility.SizeOf<TNodeEvent>());
         }
 
         internal ulong m_DSPClock;

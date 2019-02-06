@@ -426,7 +426,7 @@ namespace UnityEditor.Scripting.Compilers
                 ).ToArray();
         }
 
-        protected bool CompilationHadFailure()
+        internal bool CompilationHadFailure()
         {
             return (process.ExitCode != 0);
         }
@@ -492,10 +492,10 @@ namespace UnityEditor.Scripting.Compilers
     {
         NotNormalized = 0,
 
-        /// Maps to C# CS0117 and Boo BCE0019.
+        /// Maps to C# CS0117
         MemberNotFound = 1, // details syntax: TypeNamespaceQualifiedName:MemberName
 
-        // Maps to C# CS0246/CS0234 and Boo XXXX
+        // Maps to C# CS0246/CS0234
         UnknownTypeOrNamespace  // details syntax: typename or namespace.typename
     }
 

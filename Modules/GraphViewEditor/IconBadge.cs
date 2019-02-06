@@ -17,8 +17,8 @@ namespace UnityEditor.Experimental.GraphView
         private VisualElement m_IconElement;
         private Label m_TextElement;
 
-        protected SpriteAlignment alignment { get;  set; }
-        protected VisualElement target { get;  set; }
+        protected SpriteAlignment alignment { get; set; }
+        protected VisualElement target { get; set; }
 
         public string badgeText
         {
@@ -31,6 +31,37 @@ namespace UnityEditor.Experimental.GraphView
                 if (m_TextElement != null)
                 {
                     m_TextElement.text = value;
+                }
+            }
+        }
+
+        public string visualStyle
+        {
+            get
+            {
+                return m_BadgeType;
+            }
+            set
+            {
+                if (m_BadgeType != value)
+                {
+                    string modifier = "--" + m_BadgeType;
+
+                    RemoveFromClassList(ussClassName + modifier);
+
+                    m_TipElement?.RemoveFromClassList(tipUssClassName + modifier);
+                    m_IconElement?.RemoveFromClassList(iconUssClassName + modifier);
+                    m_TextElement?.RemoveFromClassList(textUssClassName + modifier);
+
+                    m_BadgeType = value;
+
+                    modifier = "--" + m_BadgeType;
+
+                    AddToClassList(ussClassName + modifier);
+
+                    m_TipElement?.AddToClassList(tipUssClassName + modifier);
+                    m_IconElement?.AddToClassList(iconUssClassName + modifier);
+                    m_TextElement?.AddToClassList(textUssClassName + modifier);
                 }
             }
         }
@@ -59,6 +90,10 @@ namespace UnityEditor.Experimental.GraphView
         private Attacher m_Attacher = null;
         private bool m_IsAttached;
         private VisualElement m_originalParent;
+
+        private Attacher m_TextAttacher = null;
+        private string m_BadgeType;
+
         public IconBadge()
         {
             m_IsAttached = false;
@@ -68,61 +103,73 @@ namespace UnityEditor.Experimental.GraphView
             LoadTemplate(tpl);
 
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
+            visualStyle = "error";
         }
 
         public IconBadge(VisualTreeAsset template)
         {
+            m_IsAttached = false;
+            m_Distance = kDefaultDistanceValue;
             LoadTemplate(template);
+            RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
+            visualStyle = "error";
         }
+
+        internal static readonly string ussClassName = "icon-badge";
+        internal static readonly string iconUssClassName = ussClassName + "__icon";
+        internal static readonly string tipUssClassName = ussClassName + "__tip";
+        internal static readonly string textUssClassName = ussClassName + "__text";
+
+        private static readonly string defaultStylePath = "GraphView/Badge/IconBadge.uss";
 
         private void LoadTemplate(VisualTreeAsset tpl)
         {
             tpl.CloneTree(this, new Dictionary<string, VisualElement>());
 
-            m_IconElement = this.Q<Image>("icon");
-            m_TipElement = this.Q<Image>("tip");
-            m_TextElement = this.Q<Label>("text");
-
-            if (m_IconElement == null)
-            {
-                Debug.Log("IconBadge: Couldn't load icon element from template");
-            }
-
-            if (m_TipElement == null)
-            {
-                Debug.Log("IconBadge: Couldn't load tip element from template");
-            }
-
-            if (m_TextElement == null)
-            {
-                Debug.Log("IconBadge: Couldn't load text element from template");
-            }
+            InitBadgeComponent("tip", tipUssClassName, ref m_TipElement);
+            InitBadgeComponent("icon", iconUssClassName, ref m_IconElement);
+            InitBadgeComponent("text", textUssClassName, ref m_TextElement);
 
             if (m_TipElement != null)
             {
                 ////we make sure the tip is in the back
-                VisualElement tipParent = m_TipElement.hierarchy.parent;
-                m_TipElement.RemoveFromHierarchy();
-                tipParent.hierarchy.Insert(0, m_TipElement);
+                m_TipElement.SendToBack();
             }
 
             name = "IconBadge";
-            AddToClassList("iconBadge");
+            AddToClassList(ussClassName);
 
-            AddStyleSheetPath("GraphView/Badge/IconBadge.uss");
+            AddStyleSheetPath(defaultStylePath);
 
             if (m_TextElement != null)
             {
                 m_TextElement.RemoveFromHierarchy();
+                //we need to add the style sheet to the Text element as well since it will be parented elsewhere
+                m_TextElement.AddStyleSheetPath(defaultStylePath);
                 m_TextElement.style.whiteSpace = WhiteSpace.Normal;
                 m_TextElement.RegisterCallback<GeometryChangedEvent>((evt) => ComputeTextSize());
+                m_TextElement.pickingMode = PickingMode.Ignore;
+            }
+        }
+
+        private void InitBadgeComponent<ElementType>(string name, string ussClassName, ref ElementType outElement) where ElementType : VisualElement
+        {
+            outElement = this.Q<ElementType>(name);
+
+            if (outElement == null)
+            {
+                Debug.Log($"IconBadge: Couldn't load {name} element from template");
+            }
+            else
+            {
+                outElement.AddToClassList(ussClassName);
             }
         }
 
         public static IconBadge CreateError(string message)
         {
             var result = new IconBadge();
-            result.AddToClassList("error");
+            result.visualStyle = "error";
             result.badgeText = message;
             return result;
         }
@@ -130,7 +177,7 @@ namespace UnityEditor.Experimental.GraphView
         public static IconBadge CreateComment(string message)
         {
             var result = new IconBadge();
-            result.AddToClassList("comment");
+            result.visualStyle = "comment";
             result.badgeText = message;
             return result;
         }
@@ -218,13 +265,22 @@ namespace UnityEditor.Experimental.GraphView
                     m_TextElement.resolvedStyle.borderRightWidth +
                     m_TextElement.resolvedStyle.paddingLeft +
                     m_TextElement.resolvedStyle.paddingRight;
-                m_TextElement.style.height = newSize.y +
+
+                float height = newSize.y +
                     m_TextElement.resolvedStyle.marginTop +
                     m_TextElement.resolvedStyle.marginBottom +
                     m_TextElement.resolvedStyle.borderTopWidth +
                     m_TextElement.resolvedStyle.borderBottomWidth +
                     m_TextElement.resolvedStyle.paddingTop +
                     m_TextElement.resolvedStyle.paddingBottom;
+
+                m_TextElement.style.height = height;
+
+                if (m_TextAttacher != null)
+                {
+                    m_TextAttacher.offset = new Vector2(0, height);
+                }
+
                 PerformTipLayout();
             }
         }
@@ -233,8 +289,30 @@ namespace UnityEditor.Experimental.GraphView
         {
             if (m_TextElement != null && m_TextElement.hierarchy.parent == null)
             {
-                Add(m_TextElement);
+                VisualElement textParent = this;
+
+                GraphView gv = GetFirstAncestorOfType<GraphView>();
+                if (gv != null)
+                {
+                    textParent = gv;
+                }
+
+                textParent.Add(m_TextElement);
+
+                if (textParent != this)
+                {
+                    if (m_TextAttacher == null)
+                    {
+                        m_TextAttacher = new Attacher(m_TextElement, m_IconElement, SpriteAlignment.TopRight);
+                    }
+                    else
+                    {
+                        m_TextAttacher.Reattach();
+                    }
+                }
+                m_TextAttacher.distance = 0;
                 m_TextElement.ResetPositionProperties();
+
                 ComputeTextSize();
             }
         }
@@ -243,6 +321,7 @@ namespace UnityEditor.Experimental.GraphView
         {
             if (m_TextElement != null && m_TextElement.hierarchy.parent != null)
             {
+                m_TextAttacher?.Detach();
                 m_TextElement.RemoveFromHierarchy();
             }
         }
@@ -261,6 +340,8 @@ namespace UnityEditor.Experimental.GraphView
                     m_Attacher.Detach();
                     m_Attacher = null;
                 }
+
+                HideText();
             }
             else if (evt.eventTypeId == MouseEnterEvent.TypeId())
             {
@@ -300,7 +381,7 @@ namespace UnityEditor.Experimental.GraphView
             Rect tipRect = new Rect(0, 0, arrowWidth, arrowLength);
 
             int tipAngle = 0;
-            Vector2 tipTranslate =  Vector2.zero;
+            Vector2 tipTranslate = Vector2.zero;
             bool tipVisible = true;
 
             switch (alignment)
@@ -365,9 +446,12 @@ namespace UnityEditor.Experimental.GraphView
 
             if (m_TextElement != null)
             {
-                m_TextElement.style.position = Position.Absolute;
-                m_TextElement.style.left = iconRect.xMax;
-                m_TextElement.style.top = iconRect.y;
+                if (m_TextElement.parent == this)
+                {
+                    m_TextElement.style.position = Position.Absolute;
+                    m_TextElement.style.left = iconRect.xMax;
+                    m_TextElement.style.top = iconRect.y;
+                }
             }
         }
 

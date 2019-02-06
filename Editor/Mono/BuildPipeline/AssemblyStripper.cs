@@ -185,10 +185,6 @@ namespace UnityEditorInternal
                     platform = "Android";
                     architecture = "";
                     break;
-                case BuildTarget.StandaloneLinux:
-                    platform = "Linux";
-                    architecture = "x86";
-                    break;
                 case BuildTarget.StandaloneLinux64:
                     platform = "Linux";
                     architecture = "x64";

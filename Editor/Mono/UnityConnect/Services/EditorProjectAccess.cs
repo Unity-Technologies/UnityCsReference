@@ -74,7 +74,6 @@ namespace UnityEditor.Web
             return UnityConnect.instance.projectInfo.projectGUID;
         }
 
-
         public string GetProjectPath()
         {
             return Directory.GetCurrentDirectory();
@@ -90,7 +89,6 @@ namespace UnityEditor.Web
         {
             return UnityConnect.instance.projectInfo.organizationId;
         }
-
 
         public string GetBuildTarget()
         {

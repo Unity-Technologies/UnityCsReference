@@ -6,8 +6,8 @@ using System;
 
 namespace UnityEngine.UIElements
 {
-    // nasty trick.
-    public interface IUxmlAttributes : UnityEngine.Experimental.UIElements.IUxmlAttributes
+    public interface IUxmlAttributes
     {
+        bool TryGetAttributeValue(string attributeName, out string value);
     }
 }

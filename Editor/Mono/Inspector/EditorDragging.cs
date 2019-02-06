@@ -51,29 +51,60 @@ namespace UnityEditor
             HandleEditorDragging(editors, editorIndex, targetRect, markerY, false);
         }
 
+        int m_BottomAreaDropIndex = -1;
+        Rect m_BottomArea;
+
         public void HandleDraggingInBottomArea(Editor[] editors, Rect bottomRect, Rect contentRect)
         {
+            HandleNativeDragDropInBottomArea(editors, bottomRect);
+
             if (m_LastIndex >= 0 && m_LastIndex < editors.Length)
             {
                 m_BottomArea = bottomRect;
+                m_BottomAreaDropIndex = m_LastIndex;
                 HandleEditorDragging(editors, m_LastIndex, bottomRect, contentRect.yMax, true);
             }
             else
             {
+                m_BottomAreaDropIndex = -1;
                 m_BottomArea = Rect.zero;
             }
         }
 
-        Rect m_BottomArea;
-
-        internal void HandleDragPerformInBottomArea(Editor[] editors, Rect targetRect)
+        internal void HandleDragPerformInBottomArea(Editor[] editors, Rect bottomRect, Rect targetRect)
         {
+            HandleNativeDragDropInBottomArea(editors, bottomRect);
+
             if (m_LastIndex >= 0 && m_LastIndex  < editors.Length)
             {
                 HandleEditorDragging(editors, m_LastIndex, GetTargetRect(targetRect), targetRect.yMax, true);
             }
 
+            m_BottomAreaDropIndex = -1;
             m_BottomArea = Rect.zero;
+        }
+
+        void HandleNativeDragDropInBottomArea(Editor[] editors, Rect rect)
+        {
+            if (!DraggingOverRect(rect))
+            {
+                return;
+            }
+
+            Editor editor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(editors);
+            if (editor == null)
+            {
+                return;
+            }
+
+            DragAndDrop.visualMode = InternalEditorUtility.InspectorWindowDrag(editor.targets, Event.current.type == EventType.DragPerform);
+
+            if (Event.current.type == EventType.DragPerform)
+            {
+                DragAndDrop.AcceptDrag();
+                m_TargetIndex = -1;
+                GUIUtility.ExitGUI();
+            }
         }
 
         void HandleEditorDragging(Editor[] editors, int editorIndex, Rect targetRect, float markerY, bool bottomTarget)
@@ -102,6 +133,7 @@ namespace UnityEditor
                             DragAndDrop.SetGenericData(k_DraggingModeKey, draggingMode);
                         }
 
+
                         if (draggingMode.Value != DraggingMode.NotApplicable)
                         {
                             if (bottomTarget)
@@ -128,7 +160,7 @@ namespace UnityEditor
                                 }
                             }
 
-                            if (m_TargetAbove && m_InspectorWindow.EditorHasLargeHeader(m_TargetIndex, editors))
+                            if (m_TargetAbove && InspectorWindow.EditorHasLargeHeader(m_TargetIndex, editors))
                             {
                                 m_TargetIndex--;
                                 while (m_TargetIndex >= 0 && m_InspectorWindow.ShouldCullEditor(editors, m_TargetIndex))
@@ -187,15 +219,20 @@ namespace UnityEditor
                     break;
 
                 case EventType.Repaint:
-                    if (m_TargetIndex != -1 &&
+                    if (m_TargetIndex != -1 && editorIndex == m_TargetIndex &&
                         (targetRect.Contains(evt.mousePosition) ||
                          m_BottomArea.Contains(GUIClip.UnclipToWindow(evt.mousePosition)) &&
-                         editorIndex == editors.Length - 1))
+                         m_BottomAreaDropIndex == editors.Length - 1))
                     {
                         Styles.insertionMarker.Draw(GetMarkerRect(targetRect, markerY, m_TargetAbove), false, false, false, false);
                     }
                     break;
             }
+        }
+
+        static bool DraggingOverRect(Rect rect)
+        {
+            return (Event.current.type == EventType.DragUpdated || Event.current.type == EventType.DragPerform) && rect.Contains(Event.current.mousePosition);
         }
 
         void HandleDragPerformEvent(Editor[] editors, Event evt, ref int targetIndex)

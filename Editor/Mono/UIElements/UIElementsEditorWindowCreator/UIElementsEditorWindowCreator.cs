@@ -358,17 +358,17 @@ namespace UnityEditor.UIElements
         {
             if (m_IsCSharpEnable)
             {
-                InternalEditorUtility.OpenFileAtLineExternal(Path.Combine(m_Folder, m_CSharpName + ".cs"), -1);
+                InternalEditorUtility.OpenFileAtLineExternal(Path.Combine(m_Folder, m_CSharpName + ".cs"), -1, -1);
             }
 
             if (m_IsUxmlEnable)
             {
-                InternalEditorUtility.OpenFileAtLineExternal(Path.Combine(m_Folder, m_UxmlName + ".uxml"), -1);
+                InternalEditorUtility.OpenFileAtLineExternal(Path.Combine(m_Folder, m_UxmlName + ".uxml"), -1, -1);
             }
 
             if (m_IsUssEnable)
             {
-                InternalEditorUtility.OpenFileAtLineExternal(Path.Combine(m_Folder, m_UssName + ".uss"), -1);
+                InternalEditorUtility.OpenFileAtLineExternal(Path.Combine(m_Folder, m_UssName + ".uss"), -1, -1);
             }
         }
     }

@@ -21,6 +21,7 @@ namespace UnityEngine
         DelayedHeightmapUpdate = 4,
         FlushEverythingImmediately = 8,
         RemoveDirtyDetailsImmediately = 16,
+        HeightmapResolution = 32,
         WillBeDestroyed = 256,
     }
 
@@ -137,7 +138,11 @@ namespace UnityEngine
 
         extern public float SampleHeight(Vector3 worldPosition);
 
-        extern public void ApplyDelayedHeightmapModification();
+        [Obsolete("Use TerrainData.SyncHeightmap to notify all Terrain instances using the TerrainData.", false)]
+        public void ApplyDelayedHeightmapModification()
+        {
+            terrainData?.SyncHeightmap();
+        }
 
         extern public void AddTreeInstance(TreeInstance instance);
 
@@ -186,6 +191,19 @@ namespace UnityEngine
         static public RenderTextureFormat heightmapRenderTextureFormat
         {
             get { return GraphicsFormatUtility.GetRenderTextureFormat(heightmapFormat); }
+        }
+
+        [StaticAccessor("Terrain", StaticAccessorType.DoubleColon)]
+        extern static public GraphicsFormat normalmapFormat { get; }
+
+        static public TextureFormat normalmapTextureFormat
+        {
+            get { return GraphicsFormatUtility.GetTextureFormat(normalmapFormat); }
+        }
+
+        static public RenderTextureFormat normalmapRenderTextureFormat
+        {
+            get { return GraphicsFormatUtility.GetRenderTextureFormat(normalmapFormat); }
         }
 
         extern public static Terrain activeTerrain { get; }

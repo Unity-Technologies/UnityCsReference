@@ -129,34 +129,5 @@ namespace UnityEngine.UIElements
             }
             styleSheets.Remove(sheetAsset);
         }
-
-        internal void ReloadStyleSheets()
-        {
-            if (styleSheetList == null)
-                return;
-
-            for (int i = 0; i < styleSheetList.Count; i++)
-            {
-                OnNewStyleSheet(styleSheetList[i]);
-                // NOTE: no need to increment version here, this is done implicitely on the root
-            }
-        }
-
-
-        // Moving knowledge of PseudoStates to the StyleSheet modules would make this much easier
-        internal void OnNewStyleSheet(StyleSheet styleSheet)
-        {
-            if (styleSheet.hasSelectorsCached)
-                return;
-
-            // Every time we load a new style sheet, we cache some data on them
-            // This is done at this level because this uses UIElements specific data
-            for (int i = 0, count = styleSheet.complexSelectors.Length; i < count; i++)
-            {
-                styleSheet.complexSelectors[i].CachePseudoStateMasks();
-            }
-
-            styleSheet.hasSelectorsCached = true;
-        }
     }
 }

@@ -11,28 +11,28 @@ using UnityEngine;
 namespace UnityEditor.PackageManager
 {
     [NativeHeader("Modules/PackageManager/Editor/PackageManagerNativeClientImpl.h")]
-    [NativeHeader("Modules/PackageManager/Editor/Public/PackageManagerApi.h")]
+    [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
     class NativeClient
     {
-        [StaticAccessor("PackageManager::Api::GetInstance()", StaticAccessorType.Arrow)]
+        [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
         extern public static NativeStatusCode List([Out] out long operationId, bool offlineMode, bool includeIndirectDependencies);
 
-        [StaticAccessor("PackageManager::Api::GetInstance()", StaticAccessorType.Arrow)]
+        [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
         extern public static NativeStatusCode Add([Out] out long operationId, string packageId);
 
-        [StaticAccessor("PackageManager::Api::GetInstance()", StaticAccessorType.Arrow)]
+        [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
         extern public static NativeStatusCode Remove([Out] out long operationId, string packageId);
 
-        [StaticAccessor("PackageManager::Api::GetInstance()", StaticAccessorType.Arrow)]
+        [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
         extern public static NativeStatusCode Search([Out] out long operationId, string packageId, bool offlineMode);
 
-        [StaticAccessor("PackageManager::Api::GetInstance()", StaticAccessorType.Arrow)]
+        [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
         extern public static NativeStatusCode SearchAll([Out] out long operationId, bool offlineMode);
 
-        [StaticAccessor("PackageManager::Api::GetInstance()", StaticAccessorType.Arrow)]
+        [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
         extern public static NativeStatusCode ResetToEditorDefaults([Out] out long operationId);
 
-        [StaticAccessor("PackageManager::Api::GetInstance()", StaticAccessorType.Arrow)]
+        [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
         extern public static NativeStatusCode GetOperationStatus(long operationId);
 
         [ThreadAndSerializationSafe]
@@ -49,24 +49,23 @@ namespace UnityEditor.PackageManager
         extern public static PackageInfo[] GetSearchOperationData(long operationId);
     }
 
+    [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
     [NativeHeader("Modules/PackageManager/Editor/PackageManagerFolders.h")]
     [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
     class Folders
     {
-        extern public static string GetPackagesMountPoint();
+        extern public static string GetPackagesPath();
         extern public static bool IsPackagedAssetPath(string path);
         extern public static string[] GetPackagesPaths();
-        extern internal static bool RegisterPackageFolder(string name, string assetPath, bool readOnly);
-        extern internal static bool UnregisterPackageFolder(string name, string assetPath);
     }
 
-    [NativeHeader("Modules/PackageManager/Editor/PackageManagerPackages.h")]
+    [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
+    [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
     internal partial class Packages
     {
-        [StaticAccessor("PackageManager::Packages::GetInstance()", StaticAccessorType.Arrow)]
+        [NativeName("GetAllPackages")]
         extern public static PackageInfo[] GetAll();
 
-        [StaticAccessor("PackageManager::Packages::GetInstance()", StaticAccessorType.Arrow)]
         extern private static bool GetPackageByAssetPath(string assetPath, [Out][NotNull] PackageInfo packageInfo);
     }
 }

@@ -114,6 +114,14 @@ namespace UnityEngine
         Subtractive = 1
     };
 
+    // Must match ReceiveGIEnum::ReceiveGI on the C++ side
+    public enum ReceiveGI
+    {
+        // Off = 0,
+        Lightmaps = 1,
+        LightProbes = 2
+    };
+
     [Obsolete("See QualitySettings.names, QualitySettings.SetQualityLevel, and QualitySettings.GetQualityLevel")]
     public enum QualityLevel
     {
@@ -464,7 +472,8 @@ namespace UnityEngine
     {
         None,
         OneEye,
-        TwoEyes
+        TwoEyes,
+        DeviceSpecific
     }
 
     // keep this in sync with the RenderTextureFlags enum in RenderTexture.h

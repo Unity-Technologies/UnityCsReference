@@ -4,8 +4,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
@@ -17,11 +19,6 @@ using UnityEngine;
 internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocessor
 {
     readonly bool m_HasIl2CppPlayers;
-
-    protected DesktopStandalonePostProcessor()
-    {
-        m_HasIl2CppPlayers = false;
-    }
 
     protected DesktopStandalonePostProcessor(bool hasIl2CppPlayers)
     {
@@ -52,7 +49,10 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
             if (EditorUtility.DisplayCancelableProgressBar("Building Player", "Copying files to final destination", 0.1f))
                 throw new OperationCanceledException();
 
-            CopyStagingAreaIntoDestination(args, filesToNotOverwrite);
+            if (GetInstallingIntoBuildsFolder(args))
+                CopyStagingAreaIntoBuildsFolder(args);
+            else
+                CopyStagingAreaIntoDestination(args, filesToNotOverwrite);
 
             ProcessSymbolFiles(args);
         }
@@ -148,8 +148,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
                 case "x86_64":
                     if (t != BuildTarget.StandaloneOSX &&
                         t != BuildTarget.StandaloneWindows64 &&
-                        t != BuildTarget.StandaloneLinux64 &&
-                        t != BuildTarget.StandaloneLinuxUniversal)
+                        t != BuildTarget.StandaloneLinux64)
                     {
                         continue;
                     }
@@ -219,8 +218,6 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
     private void SetupStagingArea(BuildPostProcessArgs args, HashSet<string> filesToNotOverwrite)
     {
-        Directory.CreateDirectory(args.stagingAreaData);
-
         List<string> cppPlugins;
         CopyNativePlugins(args, out cppPlugins);
 
@@ -307,9 +304,9 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         throw new NotSupportedException("CreateSolution is not supported on " + BuildPipeline.GetBuildTargetName(args.target));
     }
 
-    static void StripAssembliesToLeaveOnlyMetadata(BuildTarget target, string stagingAreaDataManaged)
+    private static void StripAssembliesToLeaveOnlyMetadata(BuildTarget target, string stagingAreaDataManaged)
     {
-        AssemblyReferenceChecker checker = new AssemblyReferenceChecker();
+        var checker = new AssemblyReferenceChecker();
         checker.CollectReferences(stagingAreaDataManaged, true, 0.0f, false);
 
         EditorUtility.DisplayProgressBar("Removing bytecode from assemblies", "Stripping assemblies so that only metadata remains", 0.95F);
@@ -319,7 +316,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
     // Creates app.info which is used by Standalone player (when run in Low Integrity mode) when creating log file path at program start.
     // Log file path is created very early in the program execution, when none of the Unity managers are even created, that's why we can't get it from PlayerSettings
     // Note: In low integrity mode, we can only write to %USER PROFILE%\AppData\LocalLow on Windows
-    protected void CreateApplicationData(BuildPostProcessArgs args)
+    private static void CreateApplicationData(BuildPostProcessArgs args)
     {
         File.WriteAllText(Path.Combine(args.stagingAreaData, "app.info"),
             string.Join("\n", new[]
@@ -330,10 +327,32 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         args.report.RecordFileAdded(Path.Combine(args.stagingAreaData, "app.info"), CommonRoles.appInfo);
     }
 
-    protected virtual bool CopyPlayerFilter(string path, BuildPostProcessArgs args)
+    protected bool CopyPlayerFilter(string path, BuildPostProcessArgs args)
     {
         // Don't copy UnityEngine mdb files
         return Path.GetExtension(path) != ".mdb" || !Path.GetFileName(path).StartsWith("UnityEngine.");
+    }
+
+    private static uint StringToFourCC(string literal)
+    {
+        if (literal.Length > 4)
+            throw new NotSupportedException("FourCC can consist of maximum 4 characters");
+
+        uint result = 0;
+        foreach (var c in literal)
+            result = (result << 8) + (byte)c;
+
+        return result;
+    }
+
+    protected static void CopyResolutionDialogBanner(string destinationFolder)
+    {
+        var bannerTexture = PlayerSettings.resolutionDialogBanner;
+        if (bannerTexture != null)
+        {
+            var path = Path.Combine(destinationFolder, "ScreenSelector.png");
+            IconUtility.SaveTextureToFile(path, bannerTexture, StringToFourCC("PNGf"));
+        }
     }
 
     protected virtual void CopyPlayerSolutionIntoStagingArea(BuildPostProcessArgs args, HashSet<string> filesToNotOverwrite)
@@ -341,13 +360,10 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         throw new NotSupportedException("CreateSolution is not supported on " + BuildPipeline.GetBuildTargetName(args.target));
     }
 
-    protected virtual void CopyVariationFolderIntoStagingArea(BuildPostProcessArgs args)
-    {
-        var playerFolder = args.playerPackage + "/Variations/" + GetVariationName(args);
-        FileUtil.CopyDirectoryFiltered(playerFolder, args.stagingArea, true, f => CopyPlayerFilter(f, args), recursive: true);
+    protected string GetVariationFolder(BuildPostProcessArgs args) =>
+        Paths.Combine(args.playerPackage, "Variations", GetVariationName(args));
 
-        RecordCommonFiles(args, playerFolder, args.stagingAreaData);
-    }
+    protected abstract void CopyVariationFolderIntoStagingArea(BuildPostProcessArgs args);
 
     protected static void RecordCommonFiles(BuildPostProcessArgs args, string variationSourceFolder, string monoFolderRoot)
     {
@@ -380,30 +396,28 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         }
     }
 
-    private void CopyStagingAreaIntoDestination(BuildPostProcessArgs args, HashSet<string> filesToNotOverwrite)
+    private void CopyStagingAreaIntoBuildsFolder(BuildPostProcessArgs args)
     {
-        if (GetInstallingIntoBuildsFolder(args))
+        var dst = GetDestinationFolderForInstallingIntoBuildsFolder(args);
+
+        if (!Directory.Exists(Path.GetDirectoryName(dst)))
         {
-            string dst = Unsupported.GetBaseUnityDeveloperFolder() + "/" + GetDestinationFolderForInstallingIntoBuildsFolder(args);
-
-            if (!Directory.Exists(Path.GetDirectoryName(dst)))
-            {
-                throw new Exception("Installing in builds folder failed because the player has not been built (You most likely want to enable 'Development build').");
-            }
-
-            FileUtil.CopyDirectoryFiltered(args.stagingAreaData, dst, true, f => true, recursive: true);
+            throw new Exception("Installing in builds folder failed because the player has not been built (You most likely want to enable 'Development build').");
         }
-        else
-        {
-            DeleteDestination(args);
 
-            // Copy entire stagingarea over
-            CopyFilesToDestination(args.stagingArea, GetDestinationFolder(args), filesToNotOverwrite);
-            args.report.RecordFilesMoved(args.stagingArea, GetDestinationFolder(args));
-        }
+        FileUtil.CopyDirectoryRecursive(args.stagingAreaData, dst, overwrite: true);
     }
 
-    private void CopyFilesToDestination(string source, string target, HashSet<string> filesToNotOverwrite)
+    private void CopyStagingAreaIntoDestination(BuildPostProcessArgs args, HashSet<string> filesToNotOverwrite)
+    {
+        DeleteDestination(args);
+
+        // Copy entire stagingarea over
+        CopyFilesToDestination(args.stagingArea, GetDestinationFolder(args), filesToNotOverwrite);
+        args.report.RecordFilesMoved(args.stagingArea, GetDestinationFolder(args));
+    }
+
+    private static void CopyFilesToDestination(string source, string target, HashSet<string> filesToNotOverwrite)
     {
         bool createDirectory = !Directory.Exists(target);
         foreach (string sourceFile in Directory.GetFiles(source))
@@ -414,7 +428,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
                 createDirectory = false;
             }
 
-            string targetFile = Path.Combine(target, Path.GetFileName(sourceFile));
+            var targetFile = Path.Combine(target, Path.GetFileName(sourceFile));
 
             if (File.Exists(targetFile))
             {
@@ -427,7 +441,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
             FileUtil.MoveFileOrDirectory(sourceFile, targetFile);
         }
 
-        foreach (string directory in Directory.GetDirectories(source))
+        foreach (var directory in Directory.GetDirectories(source))
             CopyFilesToDestination(directory, Path.Combine(target, Path.GetFileName(directory)), filesToNotOverwrite);
     }
 
@@ -448,10 +462,12 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         }
     }
 
-    protected void DeleteUnusedMono(string dataFolder, BuildReport report)
+    protected static bool UseMono => !UseIl2Cpp || IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildTargetGroup.Standalone);
+
+    protected static void DeleteUnusedMono(string dataFolder, BuildReport report)
     {
         // Mono is built by the il2cpp builder, so we dont need the libs copied
-        bool deleteBoth = UseIl2Cpp && !IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildTargetGroup.Standalone);
+        bool deleteBoth = !UseMono;
 
         if (deleteBoth || EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
         {
@@ -471,18 +487,12 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
     protected abstract void CopyDataForBuildsFolder(BuildPostProcessArgs args);
 
-    protected bool GetInstallingIntoBuildsFolder(BuildPostProcessArgs args)
+    protected static bool GetInstallingIntoBuildsFolder(BuildPostProcessArgs args)
     {
         return (args.options & BuildOptions.InstallInBuildFolder) != 0;
     }
 
-    protected static bool UseIl2Cpp
-    {
-        get
-        {
-            return PlayerSettings.GetScriptingBackend(BuildTargetGroup.Standalone) == ScriptingImplementation.IL2CPP;
-        }
-    }
+    protected static bool UseIl2Cpp => PlayerSettings.GetScriptingBackend(BuildTargetGroup.Standalone) == ScriptingImplementation.IL2CPP;
 
     protected virtual bool GetCreateSolution(BuildPostProcessArgs args) { return false; }
 
@@ -491,12 +501,12 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         return FileUtil.UnityGetDirectoryName(args.installPath);
     }
 
-    protected bool GetDevelopment(BuildPostProcessArgs args)
+    protected static bool GetDevelopment(BuildPostProcessArgs args)
     {
         return ((args.options & BuildOptions.Development) != 0);
     }
 
-    protected bool IsHeadlessMode(BuildPostProcessArgs args)
+    protected static bool IsHeadlessMode(BuildPostProcessArgs args)
     {
         return ((args.options & BuildOptions.EnableHeadlessMode) != 0);
     }
@@ -506,6 +516,23 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         return string.Format("{0}_{1}",
             PlatformStringFor(args.target),
             (GetDevelopment(args) ? "development" : "nondevelopment"));
+    }
+
+    protected static string GetPathSafeProductName(BuildPostProcessArgs args)
+    {
+        var invalidChars = Path.GetInvalidFileNameChars();
+        var normalizedProductName = args.productName.Trim().Normalize(NormalizationForm.FormD);
+        var sb = new StringBuilder();
+        foreach (var c in normalizedProductName)
+        {
+            if (invalidChars.Contains(c))
+                continue;
+            var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
+            if (unicodeCategory != UnicodeCategory.NonSpacingMark)
+                sb.Append(c);
+        }
+
+        return sb.ToString().Normalize(NormalizationForm.FormC);
     }
 
     protected abstract string PlatformStringFor(BuildTarget target);
@@ -522,7 +549,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
     {
     }
 
-    protected string GetIl2CppDataBackupFolderName(BuildPostProcessArgs args)
+    protected static string GetIl2CppDataBackupFolderName(BuildPostProcessArgs args)
     {
         return Path.GetFileNameWithoutExtension(args.installPath) + "_BackUpThisFolder_ButDontShipItWithYourGame";
     }

@@ -14,9 +14,12 @@ namespace UnityEngine.Advertisements
     [NativeHeader("Modules/UnityConnect/UnityAds/UnityAdsSettings.h")]
     static internal class UnityAdsSettings
     {
-        [ThreadAndSerializationSafe()]
         [StaticAccessor("GetUnityAdsSettings()", StaticAccessorType.Dot)]
-        public extern static bool enabled { get; set; }
+        public extern static bool enabled
+        {
+            [ThreadSafe] get;
+            [ThreadSafe] set;
+        }
 
         [Obsolete("warning No longer supported and will always return true")]
         public static bool IsPlatformEnabled(RuntimePlatform platform)

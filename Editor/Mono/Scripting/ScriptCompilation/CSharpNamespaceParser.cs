@@ -41,11 +41,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             s_ClassName = className;
 
             sourceCode = k_NewlineRegex.Replace(sourceCode, "\n");
+            sourceCode = k_SingleQuote.Replace(sourceCode, "");
             sourceCode = k_Strings.Replace(sourceCode, "");
             sourceCode = k_BlockComments.Replace(sourceCode, "");
             sourceCode = k_LineComments.Replace(sourceCode, "\n");
             sourceCode = k_VerbatimStrings.Replace(sourceCode, "");
-            sourceCode = k_SingleQuote.Replace(sourceCode, "");
             try
             {
                 sourceCode = RemoveUnusedDefines(sourceCode, defines.ToList());

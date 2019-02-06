@@ -54,7 +54,7 @@ namespace UnityEditor
         {
             var folders = new List<string>();
             folders.AddRange(searchFilter.folders);
-            if (folders.Remove(PackageManager.Folders.GetPackagesMountPoint()))
+            if (folders.Remove(PackageManager.Folders.GetPackagesPath()))
             {
                 var packages = PackageManagerUtilityInternal.GetAllVisiblePackages();
                 foreach (var package in packages)

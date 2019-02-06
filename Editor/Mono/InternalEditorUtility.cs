@@ -42,7 +42,7 @@ namespace UnityEditorInternal
                 case "anim": return EditorGUIUtility.FindTexture(typeof(Animation));
                 case "meta": return EditorGUIUtility.FindTexture("MetaFile Icon");
                 case "mixer": return EditorGUIUtility.FindTexture(typeof(UnityEditor.Audio.AudioMixerController));
-                case "uxml": return EditorGUIUtility.FindTexture(typeof(UnityEngine.Experimental.UIElements.VisualTreeAsset));
+                case "uxml": return EditorGUIUtility.FindTexture(typeof(UnityEngine.UIElements.VisualTreeAsset));
                 case "uss": return EditorGUIUtility.FindTexture(typeof(StyleSheet));
 
                 case "ttf": case "otf": case "fon": case "fnt":

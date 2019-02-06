@@ -249,6 +249,16 @@ namespace UnityEditor.Experimental.GraphView
                 m_GhostColor = ghostColorValue;
         }
 
+        public override void OnSelected()
+        {
+            MarkDirtyRepaint();
+        }
+
+        public override void OnUnselected()
+        {
+            MarkDirtyRepaint();
+        }
+
         protected virtual void DrawEdge()
         {
             if (!UpdateEdgeControl())

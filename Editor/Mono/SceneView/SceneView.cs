@@ -106,25 +106,22 @@ namespace UnityEditor
         [SerializeField]
         bool m_ShowContextualTools;
 
-        bool displayToolModes
+        static void OnSelectedObjectWasDestroyed(int unused)
         {
-            get
-            {
-                return m_ShowContextualTools;
-            }
-            set
-            {
-                if (m_ShowContextualTools == value)
-                    return;
+            s_ActiveEditors = null;
+        }
 
-                if (m_ShowContextualTools)
-                    duringSceneGui -= EditorToolGUI.DrawSceneViewTools;
+        static void OnEditorTrackerRebuilt()
+        {
+            s_ActiveEditors = null;
+        }
 
-                m_ShowContextualTools = value;
+        static Editor[] s_ActiveEditors;
 
-                if (m_ShowContextualTools)
-                    duringSceneGui += EditorToolGUI.DrawSceneViewTools;
-            }
+        internal bool displayToolModes
+        {
+            get { return m_ShowContextualTools; }
+            set { m_ShowContextualTools = value; }
         }
 
         [SerializeField]
@@ -773,11 +770,19 @@ namespace UnityEditor
             return lastActiveSceneView.SendEvent(EditorGUIUtility.CommandEvent(EventCommandNames.FrameSelectedWithLock));
         }
 
-        internal Editor[] GetActiveEditors()
+        internal IEnumerable<Editor> activeEditors
         {
-            if (m_Tracker == null)
-                m_Tracker = ActiveEditorTracker.sharedTracker;
-            return m_Tracker.activeEditors;
+            get
+            {
+                if (s_ActiveEditors == null)
+                {
+                    if (m_Tracker == null)
+                        m_Tracker = ActiveEditorTracker.sharedTracker;
+                    s_ActiveEditors = m_Tracker.activeEditors;
+                }
+
+                return s_ActiveEditors;
+            }
         }
 
         private static List<Camera> GetAllSceneCamerasAsList()
@@ -876,6 +881,9 @@ namespace UnityEditor
             EditorApplication.modifierKeysChanged += RepaintAll; // Because we show handles on shift
             SceneVisibilityManager.hiddenContentChanged += HiddenContentChanged;
             SceneVisibilityManager.currentStageIsolated += CurrentStageIsolated;
+            ActiveEditorTracker.editorTrackerRebuilt += OnEditorTrackerRebuilt;
+            Selection.selectedObjectWasDestroyed += OnSelectedObjectWasDestroyed;
+            Lightmapping.lightingDataUpdated += RepaintAll;
 
             m_DraggingLockedState = DraggingLockedState.NotDragging;
 
@@ -886,9 +894,6 @@ namespace UnityEditor
 
             if (m_CameraMode.drawMode == DrawCameraMode.UserDefined && !s_UserDefinedModes.Contains(m_CameraMode))
                 AddCameraMode(m_CameraMode.name, m_CameraMode.section);
-
-            if (m_ShowContextualTools)
-                duringSceneGui += EditorToolGUI.DrawSceneViewTools;
 
             base.OnEnable();
 
@@ -979,6 +984,9 @@ namespace UnityEditor
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             SceneVisibilityManager.hiddenContentChanged -= HiddenContentChanged;
             SceneVisibilityManager.currentStageIsolated -= CurrentStageIsolated;
+            Lightmapping.lightingDataUpdated -= RepaintAll;
+            ActiveEditorTracker.editorTrackerRebuilt -= OnEditorTrackerRebuilt;
+            Selection.selectedObjectWasDestroyed -= OnSelectedObjectWasDestroyed;
 
             if (m_Camera)
                 DestroyImmediate(m_Camera.gameObject, true);
@@ -1644,6 +1652,9 @@ namespace UnityEditor
             if (!m_Camera.gameObject.activeInHierarchy)
                 return;
 
+            bool oldAsync = ShaderUtil.allowAsyncCompilation;
+            ShaderUtil.allowAsyncCompilation = true;
+
             DrawGridParameters gridParam = grid.PrepareGridRender(camera, pivot, m_Rotation.target, size, m_Ortho.target, drawGlobalGrid);
 
             Event evt = Event.current;
@@ -1675,6 +1686,7 @@ namespace UnityEditor
                 Handles.DrawCameraStep1(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode, gridParam, drawGizmos);
                 DrawRenderModeOverlay(groupSpaceCameraRect);
             }
+            ShaderUtil.allowAsyncCompilation = oldAsync;
         }
 
         void RenderFilteredScene(Rect groupSpaceCameraRect)
@@ -2179,6 +2191,7 @@ namespace UnityEditor
             s_CurrentDrawingSceneView = this;
 
             Event evt = Event.current;
+
             if (evt.type == EventType.Repaint)
             {
                 s_MouseRects.Clear();
@@ -2255,7 +2268,7 @@ namespace UnityEditor
             //Ensure that the target texture is clamped [0-1]
             //This is needed because otherwise gizmo rendering gets all
             //messed up (think HDR target with value of 50 + alpha blend gizmo... gonna be white!)
-            if (!UseSceneFiltering() && evt.type == EventType.Repaint && RenderTextureEditor.IsHDRFormat(m_SceneTargetTexture.format))
+            if (!UseSceneFiltering() && evt.type == EventType.Repaint && GraphicsFormatUtility.IsIEEE754Format(m_SceneTargetTexture.graphicsFormat))
             {
                 var currentDepthBuffer = Graphics.activeDepthBuffer;
                 var rtDesc = m_SceneTargetTexture.descriptor;
@@ -2279,7 +2292,6 @@ namespace UnityEditor
             RestoreFogAndShadowDistance(oldFog, oldShadowDistance);
 
             m_Camera.renderingPath = oldRenderingPath;
-
 
             if (!UseSceneFiltering())
             {
@@ -2308,6 +2320,9 @@ namespace UnityEditor
                 Graphics.SetRenderTarget(m_SceneTargetTexture);
                 GL.Clear(false, true, new Color(0, 0, 0, 0)); // Only clear color. Keep depth intact.
             }
+
+            if (displayToolModes)
+                EditorToolGUI.DrawSceneViewTools(this);
 
             // Calling OnSceneGUI before DefaultHandles, so users can use events before the Default Handles
             HandleSelectionAndOnSceneGUI();
@@ -3102,7 +3117,7 @@ namespace UnityEditor
             Bounds bounds = InternalEditorUtility.CalculateSelectionBounds(false, Tools.pivotMode == PivotMode.Pivot);
 
             // Check active editor for OnGetFrameBounds
-            foreach (Editor editor in GetActiveEditors())
+            foreach (Editor editor in activeEditors)
             {
                 MethodInfo hasBoundsMethod = editor.GetType().GetMethod("HasFrameBounds", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
 
@@ -3183,7 +3198,7 @@ namespace UnityEditor
 
         void CallOnSceneGUI()
         {
-            foreach (Editor editor in GetActiveEditors())
+            foreach (Editor editor in activeEditors)
             {
                 if (!EditorGUIUtility.IsGizmosAllowedForObject(editor.target))
                     continue;
@@ -3239,7 +3254,7 @@ namespace UnityEditor
 
         void CallOnPreSceneGUI()
         {
-            foreach (Editor editor in GetActiveEditors())
+            foreach (Editor editor in activeEditors)
             {
                 // reset the handles matrix, OnPreSceneGUI calls may change it.
                 Handles.ClearHandles();

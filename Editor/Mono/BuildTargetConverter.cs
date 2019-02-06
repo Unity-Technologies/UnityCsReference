@@ -15,11 +15,7 @@ namespace UnityEditor
                     return RuntimePlatform.Android;
                 case BuildTarget.PS4:
                     return RuntimePlatform.PS4;
-                case BuildTarget.StandaloneLinux:
-                    return RuntimePlatform.LinuxPlayer;
                 case BuildTarget.StandaloneLinux64:
-                    return RuntimePlatform.LinuxPlayer;
-                case BuildTarget.StandaloneLinuxUniversal:
                     return RuntimePlatform.LinuxPlayer;
                 case BuildTarget.StandaloneOSX:
                     return RuntimePlatform.OSXPlayer;

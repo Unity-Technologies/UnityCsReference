@@ -319,7 +319,7 @@ namespace UnityEditor
             HashSet<string> validFolders = new HashSet<string>();
             foreach (string folder in m_SearchFilter.folders)
             {
-                if (folder == PackageManager.Folders.GetPackagesMountPoint())
+                if (folder == PackageManager.Folders.GetPackagesPath())
                 {
                     validFolders.Add(folder);
                     continue;
@@ -612,13 +612,13 @@ namespace UnityEditor
                     var baseFolder = baseFolders[i];
                     var packageInfo = PackageManager.Packages.GetForAssetPath(baseFolder);
                     if (packageInfo != null && !string.IsNullOrEmpty(packageInfo.displayName))
-                        baseFolder = Regex.Replace(baseFolder, @"^" + packageInfo.assetPath, PackageManager.Folders.GetPackagesMountPoint() + "/" + packageInfo.displayName);
+                        baseFolder = Regex.Replace(baseFolder, @"^" + packageInfo.assetPath, PackageManager.Folders.GetPackagesPath() + "/" + packageInfo.displayName);
                     if (i > 0)
                         folderText += ", ";
                     string folderName = Path.GetFileName(baseFolder);
                     folderText += "'" + folderName + "'";
 
-                    if (i == 0 && folderName != "Assets" && folderName != PackageManager.Folders.GetPackagesMountPoint())
+                    if (i == 0 && folderName != "Assets" && folderName != PackageManager.Folders.GetPackagesPath())
                         toolTip = baseFolder;
                 }
                 if (baseFolders.Length > maxShow)
@@ -688,7 +688,7 @@ namespace UnityEditor
 
             var assetsFolderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets");
             var roots = new List<AssetsTreeViewDataSource.RootItem>();
-            var packagesMountPoint = PackageManager.Folders.GetPackagesMountPoint();
+            var packagesMountPoint = PackageManager.Folders.GetPackagesPath();
 
             roots.Add(new AssetsTreeViewDataSource.RootItem(assetsFolderInstanceID, null, null));
             roots.Add(new AssetsTreeViewDataSource.RootItem(kPackagesFolderInstanceId, packagesMountPoint, packagesMountPoint, true));
@@ -952,7 +952,7 @@ namespace UnityEditor
 
             string folderPath = AssetDatabase.GetAssetPath(folderInstanceID);
             if (folderInstanceID == kPackagesFolderInstanceId)
-                folderPath = PackageManager.Folders.GetPackagesMountPoint();
+                folderPath = PackageManager.Folders.GetPackagesPath();
             m_SearchFilter.ClearSearch();
             m_SearchFilter.folders = new[] {folderPath};
             m_FolderTree.SetSelection(new[] {folderInstanceID}, revealAndFrameInFolderTree);
@@ -1321,7 +1321,7 @@ namespace UnityEditor
             {
                 if (instanceID == kPackagesFolderInstanceId)
                 {
-                    folders.Add(PackageManager.Folders.GetPackagesMountPoint());
+                    folders.Add(PackageManager.Folders.GetPackagesPath());
                     continue;
                 }
 
@@ -2394,7 +2394,7 @@ namespace UnityEditor
 
         internal static int GetFolderInstanceID(string folderPath)
         {
-            return folderPath == PackageManager.Folders.GetPackagesMountPoint()
+            return folderPath == PackageManager.Folders.GetPackagesPath()
                 ? kPackagesFolderInstanceId
                 : AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(folderPath);
         }
@@ -2417,7 +2417,7 @@ namespace UnityEditor
             {
                 if (instanceID == kPackagesFolderInstanceId)
                 {
-                    paths.Add(PackageManager.Folders.GetPackagesMountPoint());
+                    paths.Add(PackageManager.Folders.GetPackagesPath());
                     continue;
                 }
                 string path = AssetDatabase.GetAssetPath(instanceID);
@@ -2520,7 +2520,7 @@ namespace UnityEditor
 
                 var folderNames = new List<string>();
                 var folderDisplayNames = new List<string>();
-                var packagesMountPoint = PackageManager.Folders.GetPackagesMountPoint();
+                var packagesMountPoint = PackageManager.Folders.GetPackagesPath();
                 var packageInfo = PackageManager.Packages.GetForAssetPath(path);
                 if (packageInfo != null)
                 {
@@ -2817,10 +2817,11 @@ namespace UnityEditor
             if (instanceIDs.Count == 0)
                 return;
 
-            ProjectWindowUtil.DeleteAssets(instanceIDs, askIfSure);
-
-            // Ensure selection is cleared since StopAssetEditing() will restore selection from a backup saved in StartAssetEditing.
-            Selection.instanceIDs = new int[0];
+            if (ProjectWindowUtil.DeleteAssets(instanceIDs, askIfSure))
+            {
+                // Ensure selection is cleared since StopAssetEditing() will restore selection from a backup saved in StartAssetEditing.
+                Selection.instanceIDs = new int[0];
+            }
         }
 
         [UsedByNativeCode]
@@ -2935,7 +2936,7 @@ namespace UnityEditor
                 // List of sub folders
                 var subFolders = new List<string>();
                 var subFolderDisplayNames = new List<string>();
-                if (folder == Folders.GetPackagesMountPoint())
+                if (folder == Folders.GetPackagesPath())
                 {
                     foreach (var package in PackageManagerUtilityInternal.GetAllVisiblePackages())
                     {

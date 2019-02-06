@@ -11,11 +11,6 @@ using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.Scripting;
 
-//temporary until everyone is out of experimental
-using ExperimentalUI = UnityEngine.Experimental.UIElements;
-using EditorExperimentalUI = UnityEditor.Experimental.UIElements;
-
-
 namespace UnityEditor
 {
     // This is what we (not users) derive from to create various views. (Main Toolbar, etc.)
@@ -27,10 +22,6 @@ namespace UnityEditor
         Panel m_Panel = null;
         readonly EditorCursorManager m_CursorManager = new EditorCursorManager();
         static EditorContextualMenuManager s_ContextualMenuManager = new EditorContextualMenuManager();
-
-        internal ExperimentalUI.Panel m_ExperimentalPanel = null;
-        readonly EditorExperimentalUI.EditorCursorManager m_ExperimentalCursorManager = new EditorExperimentalUI.EditorCursorManager();
-        static EditorExperimentalUI.EditorContextualMenuManager s_ExperimentalContextualMenuManager = new EditorExperimentalUI.EditorContextualMenuManager();
 
         static Shader s_EditorShader = null;
 
@@ -53,11 +44,6 @@ namespace UnityEditor
             {
                 if (m_Panel == null)
                 {
-                    if (m_ExperimentalPanel != null)
-                    {
-                        throw new InvalidOperationException("UIElements can't run in Experimental and Public mode at the same time. Please update your code to use the UnityEngine.UIElements namespace. Use SwitchUIElementMode() to change namespaces");
-                    }
-                    uieMode = GUIView.UIElementsMode.Public;
                     m_Panel = UIElementsUtility.FindOrCreatePanel(this, ContextType.Editor);
                     m_Panel.name = GetType().Name;
                     m_Panel.cursorManager = m_CursorManager;
@@ -75,84 +61,8 @@ namespace UnityEditor
             }
         }
 
-        protected ExperimentalUI.Panel experimentalPanel
-        {
-            get
-            {
-                if (m_ExperimentalPanel == null)
-                {
-                    if (m_Panel != null)
-                    {
-                        throw new InvalidOperationException("UIElements can't run in Experimental and Public mode at the same time. Please update your code to use the UnityEngine.UIElements namespace. Use SwitchUIElementMode() to change namespaces");
-                    }
-                    uieMode = UIElementsMode.Experimental;
-                    EditorExperimentalUI.UXMLEditorFactories.RegisterAll();
-                    m_ExperimentalPanel = ExperimentalUI.UIElementsUtility.FindOrCreatePanel(this, ExperimentalUI.ContextType.Editor, DataWatchService.sharedInstance);
-                    m_ExperimentalPanel.cursorManager = m_ExperimentalCursorManager;
-                    m_ExperimentalPanel.contextualMenuManager = s_ExperimentalContextualMenuManager;
-                    m_ExperimentalPanel.panelDebug = new EditorExperimentalUI.PanelDebug(m_ExperimentalPanel);
-
-                    if (experimentalImguiContainer != null)
-                        m_ExperimentalPanel.visualTree.Insert(0, experimentalImguiContainer);
-
-                    m_ExperimentalPanel.visualTree.SetSize(windowPosition.size);
-                }
-
-                return m_ExperimentalPanel;
-            }
-        }
-
-        //Remove this once we remove the Experimental namespace
-        internal enum UIElementsMode
-        {
-            Unset,
-            Experimental,
-            Public,
-        }
-
-        internal UIElementsMode m_UIElementsMode = UIElementsMode.Unset;
-        public UnityEditor.GUIView.UIElementsMode uieMode
-        {
-            get { return m_UIElementsMode; }
-            set { m_UIElementsMode = value; }
-        }
-
-        internal void SwitchUIElementsMode(UIElementsMode mode)
-        {
-            if (mode == UIElementsMode.Experimental)
-            {
-                if (m_Panel != null)
-                {
-                    imguiContainer.RemoveFromHierarchy();
-                    m_Panel.Dispose();
-                    m_Panel = null;
-                }
-
-                if (m_ExperimentalPanel == null)
-                {
-                    var p = experimentalPanel;
-                }
-            }
-            else
-            {
-                if (m_ExperimentalPanel != null)
-                {
-                    experimentalImguiContainer.RemoveFromHierarchy();
-                    m_ExperimentalPanel.Dispose();
-                    m_ExperimentalPanel = null;
-                }
-                if (m_Panel == null)
-                {
-                    var p = panel;
-                }
-            }
-        }
-
         public VisualElement visualTree => panel.visualTree;
-        public ExperimentalUI.VisualElement experimentalVisualTree => experimentalPanel.visualTree;
-
         protected IMGUIContainer imguiContainer { get; private set; }
-        protected ExperimentalUI.IMGUIContainer experimentalImguiContainer { get; private set; }
 
         int m_DepthBufferBits = 0;
         int m_AntiAliasing = 1;
@@ -186,15 +96,7 @@ namespace UnityEditor
             Internal_SetWantsMouseMove(m_EventInterests.wantsMouseMove);
             Internal_SetWantsMouseEnterLeaveWindow(m_EventInterests.wantsMouseMove);
 
-            if (m_ExperimentalPanel != null)
-            {
-                m_ExperimentalPanel.visualTree.SetSize(windowPosition.size);
-            }
-            else
-            {
-                panel.visualTree.SetSize(windowPosition.size);
-            }
-
+            panel.visualTree.SetSize(windowPosition.size);
 
             m_BackgroundValid = false;
         }
@@ -211,15 +113,7 @@ namespace UnityEditor
             set
             {
                 m_EventInterests = value;
-
-                if (m_ExperimentalPanel != null)
-                {
-                    m_ExperimentalPanel.IMGUIEventInterests = m_EventInterests;
-                }
-                else
-                {
-                    panel.IMGUIEventInterests = m_EventInterests;
-                }
+                panel.IMGUIEventInterests = m_EventInterests;
 
                 Internal_SetWantsMouseMove(wantsMouseMove);
                 Internal_SetWantsMouseEnterLeaveWindow(wantsMouseEnterLeaveWindow);
@@ -232,15 +126,7 @@ namespace UnityEditor
             set
             {
                 m_EventInterests.wantsMouseMove = value;
-
-                if (m_ExperimentalPanel != null)
-                {
-                    m_ExperimentalPanel.IMGUIEventInterests = m_EventInterests;
-                }
-                else
-                {
-                    panel.IMGUIEventInterests = m_EventInterests;
-                }
+                panel.IMGUIEventInterests = m_EventInterests;
 
                 Internal_SetWantsMouseMove(wantsMouseMove);
             }
@@ -252,15 +138,7 @@ namespace UnityEditor
             set
             {
                 m_EventInterests.wantsMouseEnterLeaveWindow = value;
-
-                if (m_ExperimentalPanel != null)
-                {
-                    m_ExperimentalPanel.IMGUIEventInterests = m_EventInterests;
-                }
-                else
-                {
-                    panel.IMGUIEventInterests = m_EventInterests;
-                }
+                panel.IMGUIEventInterests = m_EventInterests;
 
                 Internal_SetWantsMouseEnterLeaveWindow(wantsMouseEnterLeaveWindow);
             }
@@ -300,14 +178,6 @@ namespace UnityEditor
         protected virtual void OnEnable()
         {
             {
-                experimentalImguiContainer = new ExperimentalUI.IMGUIContainer(OldOnGUI) { useOwnerObjectGUIState = true };
-                ExperimentalUI.VisualElementExtensions.StretchToParentSize(experimentalImguiContainer);
-                experimentalImguiContainer.persistenceKey = "Dockarea";
-
-                if (m_ExperimentalPanel != null)
-                    m_ExperimentalPanel.visualTree.Insert(0, experimentalImguiContainer);
-            }
-            {
                 imguiContainer = new IMGUIContainer(OldOnGUI) { useOwnerObjectGUIState = true };
                 imguiContainer.StretchToParentSize();
                 imguiContainer.viewDataKey = "Dockarea";
@@ -322,32 +192,16 @@ namespace UnityEditor
 
         protected virtual void OnDisable()
         {
-            if (uieMode == UIElementsMode.Experimental)
-            {
-                if (ExperimentalUI.MouseCaptureController.HasMouseCapture(experimentalImguiContainer))
-                    MouseCaptureController.ReleaseMouse();
-                experimentalImguiContainer.RemoveFromHierarchy();
-                experimentalImguiContainer = null;
+            if (imguiContainer.HasMouseCapture())
+                MouseCaptureController.ReleaseMouse();
+            imguiContainer.RemoveFromHierarchy();
+            imguiContainer = null;
 
-                if (m_ExperimentalPanel != null)
-                {
-                    m_ExperimentalPanel.Dispose();
-                    /// We don't set <c>m_Panel</c> to null to prevent it from being re-created from <c>panel</c>.
-                }
-            }
-            else
+            if (m_Panel != null)
             {
-                if (imguiContainer.HasMouseCapture())
-                    MouseCaptureController.ReleaseMouse();
-                imguiContainer.RemoveFromHierarchy();
-                imguiContainer = null;
-
-                if (m_Panel != null)
-                {
-                    UpdateDrawChainRegistration(false);
-                    m_Panel.Dispose();
-                    /// We don't set <c>m_Panel</c> to null to prevent it from being re-created from <c>panel</c>.
-                }
+                UpdateDrawChainRegistration(false);
+                m_Panel.Dispose();
+                /// We don't set <c>m_Panel</c> to null to prevent it from being re-created from <c>panel</c>.
             }
 
             Panel.BeforeUpdaterChange -= OnBeforeUpdaterChange;
@@ -409,14 +263,7 @@ namespace UnityEditor
 
             m_BackgroundValid = false;
 
-            if (m_ExperimentalPanel != null)
-            {
-                m_ExperimentalPanel.visualTree.SetSize(windowPosition.size);
-            }
-            else
-            {
-                panel.visualTree.SetSize(windowPosition.size);
-            }
+            panel.visualTree.SetSize(windowPosition.size);
 
             positionChanged?.Invoke(this);
 

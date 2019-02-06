@@ -1161,7 +1161,13 @@ namespace UnityEngine.UIElements
                 {
                     return;
                 }
-                m_ClassList.Capacity += 1;
+
+                // Avoid list size doubling when list is full.
+                if (m_ClassList.Capacity == m_ClassList.Count)
+                {
+                    m_ClassList.Capacity += 1;
+                }
+
                 m_ClassList.Add(className);
             }
 
@@ -1272,7 +1278,12 @@ namespace UnityEngine.UIElements
                         return;
                     }
                 }
-                ++m_PropertyBag.Capacity;
+
+                if (m_PropertyBag.Capacity == m_PropertyBag.Count)
+                {
+                    m_PropertyBag.Capacity += 1;
+                }
+
                 m_PropertyBag.Add(kv);
             }
         }

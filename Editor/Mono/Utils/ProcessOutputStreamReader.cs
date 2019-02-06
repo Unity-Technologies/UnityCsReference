@@ -33,7 +33,6 @@ namespace UnityEditor.Utils
 
         private void ThreadFunc()
         {
-            if (hostProcessExited()) return;
             try
             {
                 while (true)

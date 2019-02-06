@@ -36,6 +36,9 @@ namespace UnityEditor
 
         private const float kSpace = 5f;
 
+        const float kValueFieldWidth = 200.0f;
+        const float kArrayValuePopupBtnWidth = 25.0f;
+
         internal class Styles
         {
             public static Texture2D errorIcon = EditorGUIUtility.LoadIcon("console.erroricon.sml");
@@ -50,6 +53,8 @@ namespace UnityEditor
 
             public static GUIContent no = EditorGUIUtility.TrTextContent("no");
             public static GUIContent builtinShader = EditorGUIUtility.TrTextContent("Built-in shader");
+
+            public static readonly GUIContent arrayValuePopupButton = EditorGUIUtility.TrTextContent("...");
         }
         static readonly int kErrorViewHash = "ShaderErrorView".GetHashCode();
 
@@ -106,6 +111,7 @@ namespace UnityEditor
                         break;
                 }
                 EditorGUILayout.LabelField("Disable batching", disableBatchingString);
+                ShowKeywords(s);
 
                 // If any SRP is active, then display the SRP Batcher compatibility status
                 if (RenderPipelineManager.currentPipeline != null)
@@ -123,6 +129,27 @@ namespace UnityEditor
                 }
                 ShowShaderProperties(s);
             }
+        }
+
+        private void ShowKeywords(Shader s)
+        {
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.PrefixLabel("Keywords", EditorStyles.miniButton);
+
+            Rect buttonRect = GUILayoutUtility.GetRect(Styles.arrayValuePopupButton, GUI.skin.button, GUILayout.MinWidth(kValueFieldWidth));
+            buttonRect.width = kArrayValuePopupBtnWidth;
+            if (GUI.Button(buttonRect, Styles.arrayValuePopupButton, EditorStyles.miniButton))
+            {
+                var globalKeywords = ShaderUtil.GetShaderGlobalKeywords(s);
+                var localKeywords = ShaderUtil.GetShaderLocalKeywords(s);
+
+                PopupWindowWithoutFocus.Show(
+                    buttonRect,
+                    new KeywordsPopup(globalKeywords, localKeywords, 150.0f),
+                    new[] { PopupLocation.Left, PopupLocation.Below, PopupLocation.Right });
+            }
+
+            EditorGUILayout.EndHorizontal();
         }
 
         private void ShowShaderCodeArea(Shader s)
@@ -385,6 +412,60 @@ namespace UnityEditor
         }
     }
 
+    internal class KeywordsPopup : PopupWindowContent
+    {
+        private Vector2 m_ScrollPos = Vector2.zero;
+        private string[] m_GlobalKeywords;
+        private string[] m_LocalKeywords;
+        private bool m_GlobalKeywordsExpended;
+        private bool m_LocalKeywordsExpended;
+        private float m_WindowWidth;
+
+        private static readonly GUIStyle m_Style = EditorStyles.miniLabel;
+
+        public KeywordsPopup(string[] globalKeywords, string[] localKeywords, float windowWidth)
+        {
+            m_GlobalKeywords = globalKeywords;
+            m_LocalKeywords = localKeywords;
+            m_GlobalKeywordsExpended = true;
+            m_LocalKeywordsExpended = true;
+            m_WindowWidth = windowWidth;
+        }
+
+        public override Vector2 GetWindowSize()
+        {
+            var numValues = m_GlobalKeywords.Length + m_LocalKeywords.Length + 2;
+            var lineHeight = m_Style.lineHeight + m_Style.padding.vertical + m_Style.margin.top;
+            return new Vector2(m_WindowWidth, Math.Min(lineHeight * numValues, 250.0f));
+        }
+
+        public override void OnGUI(Rect rect)
+        {
+            m_ScrollPos = EditorGUILayout.BeginScrollView(m_ScrollPos);
+
+            m_GlobalKeywordsExpended = KeywordsFoldout(m_GlobalKeywordsExpended, "Global Keywords", m_GlobalKeywords);
+            m_LocalKeywordsExpended = KeywordsFoldout(m_LocalKeywordsExpended, "Local Keywords", m_LocalKeywords);
+
+            EditorGUILayout.EndScrollView();
+        }
+
+        private bool KeywordsFoldout(bool expended, string name, string[] values)
+        {
+            expended = EditorGUILayout.Foldout(expended, name, true, m_Style);
+
+            if (expended)
+            {
+                EditorGUI.indentLevel++;
+                for (int i = 0; i < values.Length; ++i)
+                {
+                    EditorGUILayout.LabelField(values[i], m_Style);
+                }
+                EditorGUI.indentLevel--;
+            }
+
+            return expended;
+        }
+    }
 
     // Popup window to select which platforms to compile a shader for.
     internal class ShaderInspectorPlatformsPopup : PopupWindowContent

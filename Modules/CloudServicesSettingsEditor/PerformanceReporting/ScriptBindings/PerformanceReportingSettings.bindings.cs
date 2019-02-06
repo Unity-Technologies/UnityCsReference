@@ -12,8 +12,11 @@ namespace UnityEditor.Analytics
     [StaticAccessor("GetPerformanceReportingSettings()", StaticAccessorType.Dot)]
     public static partial class PerformanceReportingSettings
     {
-        [ThreadAndSerializationSafe()]
-        public static extern bool enabled { get; set; }
+        public static extern bool enabled
+        {
+            [ThreadSafe] get;
+            [ThreadSafe] set;
+        }
     }
 
 }

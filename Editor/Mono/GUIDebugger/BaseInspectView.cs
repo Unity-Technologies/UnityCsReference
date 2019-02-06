@@ -147,7 +147,10 @@ namespace UnityEditor
         {
             EditorGUILayout.HyperLinkClickedEventArgs args = (EditorGUILayout.HyperLinkClickedEventArgs)e;
 
-            LogEntries.OpenFileOnSpecificLine(args.hyperlinkInfos["href"], Int32.Parse(args.hyperlinkInfos["line"]));
+            int line = Int32.Parse(args.hyperlinkInfos["line"]);
+            int column = -1;
+
+            LogEntries.OpenFileOnSpecificLineAndColumn(args.hyperlinkInfos["href"], line, column);
         }
 
         protected void DrawInspectedRect(Rect instructionRect)

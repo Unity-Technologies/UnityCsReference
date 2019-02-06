@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using UnityEditor.Audio;
 using UnityEditor.ProjectWindowCallback;
@@ -713,8 +714,7 @@ namespace UnityEditor
             bool foundAssetsFolder = instanceIDs.IndexOf(AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets")) >= 0;
             if (foundAssetsFolder)
             {
-                string title = "Cannot Delete";
-                EditorUtility.DisplayDialog(title, "Deleting the 'Assets' folder is not allowed", "Ok");
+                EditorUtility.DisplayDialog(L10n.Tr("Cannot Delete"), L10n.Tr("Deleting the 'Assets' folder is not allowed"), L10n.Tr("Ok"));
                 return false;
             }
 
@@ -725,19 +725,20 @@ namespace UnityEditor
 
             if (askIfSure)
             {
-                string title = "Delete selected asset";
+                string title;
                 if (paths.Count > 1)
-                    title = title + "s";
-                title = title + "?";
+                    title = L10n.Tr("Delete selected assets ?");
+                else
+                    title = L10n.Tr("Delete selected asset ?");
 
                 int maxCount = 3;
-                string infotext = "";
+                var infotext = new StringBuilder();
                 for (int i = 0; i < paths.Count && i < maxCount; ++i)
-                    infotext += "   " + paths[i] + "\n";
+                    infotext.AppendLine("   " + paths[i]);
                 if (paths.Count > maxCount)
-                    infotext += "   ...\n";
-                infotext += "\nYou cannot undo this action.";
-                if (!EditorUtility.DisplayDialog(title, infotext, "Delete", "Cancel"))
+                    infotext.AppendLine("   ...");
+                infotext.AppendLine(L10n.Tr("You cannot undo this action."));
+                if (!EditorUtility.DisplayDialog(title, infotext.ToString(), L10n.Tr("Delete"), L10n.Tr("Cancel")))
                 {
                     return false;
                 }
@@ -752,7 +753,10 @@ namespace UnityEditor
                     success = false;
             }
             AssetDatabase.StopAssetEditing();
-
+            if (!success)
+            {
+                EditorUtility.DisplayDialog(L10n.Tr("Cannot Delete"), L10n.Tr("Some assets could not be deleted.\nMake sure nothing is keeping a hook on them, like a loaded DLL for example."), L10n.Tr("Ok"));
+            }
             return success;
         }
 

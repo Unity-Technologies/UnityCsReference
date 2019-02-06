@@ -25,20 +25,20 @@ namespace UnityEngine.AI
         public int tileSize { get { return m_TileSize; } set { m_TileSize = value; } }
         public NavMeshBuildDebugSettings debug { get { return m_Debug; } set { m_Debug = value; } }
 
-        private int m_AgentTypeID;
-        private float m_AgentRadius;
-        private float m_AgentHeight;
-        private float m_AgentSlope;
-        private float m_AgentClimb;
-        private float m_LedgeDropHeight;        // Not exposed
-        private float m_MaxJumpAcrossDistance;  // Not exposed
-        private float m_MinRegionArea;
-        private int m_OverrideVoxelSize;
-        private float m_VoxelSize;
-        private int m_OverrideTileSize;
-        private int m_TileSize;
-        private int m_AccuratePlacement;        // Not exposed
-        private NavMeshBuildDebugSettings m_Debug;
+        int m_AgentTypeID;
+        float m_AgentRadius;
+        float m_AgentHeight;
+        float m_AgentSlope;
+        float m_AgentClimb;
+        float m_LedgeDropHeight;        // Not exposed
+        float m_MaxJumpAcrossDistance;  // Not exposed
+        float m_MinRegionArea;
+        int m_OverrideVoxelSize;
+        float m_VoxelSize;
+        int m_OverrideTileSize;
+        int m_TileSize;
+        int m_AccuratePlacement;        // Not exposed
+        NavMeshBuildDebugSettings m_Debug;
 
         public String[] ValidationReport(Bounds buildBounds)
         {
@@ -47,7 +47,7 @@ namespace UnityEngine.AI
 
         [FreeFunction]
         [NativeHeader("Modules/AI/Public/NavMeshBuildSettings.h")]
-        private static extern String[] InternalValidationReport(NavMeshBuildSettings buildSettings, Bounds buildBounds);
+        static extern String[] InternalValidationReport(NavMeshBuildSettings buildSettings, Bounds buildBounds);
 
         // Consider exposing a "Validate" method to modify the BuildSettings in-place
     }
@@ -58,6 +58,6 @@ namespace UnityEngine.AI
     {
         public NavMeshBuildDebugFlags flags { get { return (NavMeshBuildDebugFlags)m_Flags; } set { m_Flags = (byte)value; } }
 
-        private byte m_Flags;
+        byte m_Flags;
     }
 }

@@ -245,6 +245,7 @@ namespace UnityEditor.Connect
     // Keep internal and undocumented until we expose more functionality
     //*undocumented
     [NativeHeader("Editor/Src/UnityConnect/UnityConnect.h")]
+    [NativeHeader("Editor/Src/UnityConnect/UnityConnectMarshalling.h")]
     [StaticAccessor("UnityConnect::Get()", StaticAccessorType.Dot)]
     [InitializeOnLoad]
     internal partial class UnityConnect
@@ -294,7 +295,6 @@ namespace UnityEditor.Connect
         {
             UnityEditor.Connect.UnityConnectServiceCollection.instance.ShowService(UnityEditor.Web.HubAccess.kServiceName, page, true, "goto_hub_method");
         }
-
 
         public void UnbindProject()
         {

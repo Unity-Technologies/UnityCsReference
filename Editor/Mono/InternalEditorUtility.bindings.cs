@@ -316,7 +316,12 @@ namespace UnityEditorInternal
         extern private static int ConcatenatedLayersMaskToLayerMaskInternal(int concatenatedLayersMask);
 
         [FreeFunction("TryOpenErrorFileFromConsole")]
-        public extern static bool TryOpenErrorFileFromConsole(string path, int line);
+        public extern static bool TryOpenErrorFileFromConsole(string path, int line, int column);
+
+        public static bool TryOpenErrorFileFromConsole(string path, int line)
+        {
+            return TryOpenErrorFileFromConsole(path, line, 0);
+        }
 
         public static int LayerMaskToConcatenatedLayersMask(LayerMask mask)
         {
@@ -712,13 +717,21 @@ namespace UnityEditorInternal
         extern public static void OnGameViewFocus(bool focus);
 
         [FreeFunction("OpenScriptFile")]
-        extern public static bool OpenFileAtLineExternal(string filename, int line);
+        extern public static bool OpenFileAtLineExternal(string filename, int line, int column);
+
+        public static bool OpenFileAtLineExternal(string filename, int line)
+        {
+            return OpenFileAtLineExternal(filename, line, 0);
+        }
 
         [FreeFunction("AssetDatabaseDeprecated::CanConnectToCacheServer")]
         extern public static bool CanConnectToCacheServer();
 
         [FreeFunction]
         extern public static DllType DetectDotNetDll(string path);
+
+        [FreeFunction]
+        internal static extern bool IsDotNetDll(string path);
 
         public static bool IsDotNet4Dll(string path)
         {

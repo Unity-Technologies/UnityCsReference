@@ -5,14 +5,11 @@
 // Do not add "using System.IO", use AssetPath methods instead
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using UnityEditor.Compilation;
 using UnityEditor.Scripting.Compilers;
-using UnityEditor.VersionControl;
-using UnityEditor.Utils;
-using UnityEditorInternal;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -46,6 +43,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             public SupportedLanguage Language { get; set; }
             public AssemblyFlags Flags { get; private set; }
             public string PathPrefix { get; private set; }
+            public string[] AdditionalPrefixes { get; set; }
             public Func<string, int> PathFilter { get; private set; }
             public Func<ScriptAssemblySettings, string[], bool> IsCompatibleFunc { get; private set; }
             public List<TargetAssembly> References { get; private set; }
@@ -55,6 +53,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             public OptionalUnityReferences OptionalUnityReferences { get; set; }
             public ScriptCompilerOptions CompilerOptions { get; set; }
             public List<VersionDefine> VersionDefines { get; set; }
+            public int MaxPathLength { get; private set; }
 
             public TargetAssembly()
             {
@@ -67,6 +66,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                                   AssemblyFlags flags,
                                   TargetAssemblyType type,
                                   string pathPrefix,
+                                  string[] additionalPrefixes,
                                   Func<string, int> pathFilter,
                                   Func<ScriptAssemblySettings, string[], bool> compatFunc,
                                   ScriptCompilerOptions compilerOptions) : this()
@@ -75,12 +75,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 Filename = name;
                 Flags = flags;
                 PathPrefix = pathPrefix;
+                AdditionalPrefixes = additionalPrefixes;
                 PathFilter = pathFilter;
                 IsCompatibleFunc = compatFunc;
                 Type = type;
                 CompilerOptions = compilerOptions;
                 PrecompiledReferences = new List<PrecompiledAssembly>();
                 VersionDefines = new List<VersionDefine>();
+
+                if (PathPrefix != null)
+                    MaxPathLength = PathPrefix.Length;
+                if (AdditionalPrefixes != null)
+                    MaxPathLength = UnityEngine.Mathf.Max(MaxPathLength, AdditionalPrefixes.Max(am => am.Length));
             }
 
             public string FullPath(string outputDirectory)
@@ -111,15 +117,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             public PrecompiledAssembly[] UnityAssemblies { get; set; }
             public PrecompiledAssembly[] PrecompiledAssemblies { get; set; }
-            public TargetAssembly[] CustomTargetAssemblies { get; set; }
+            public Dictionary<string, TargetAssembly> CustomTargetAssemblies { get; set; }
             public TargetAssembly[] PredefinedAssembliesCustomTargetReferences { get; set; }
             public string[] EditorAssemblyReferences { get; set; }
         }
 
         public class GenerateChangedScriptAssembliesArgs
         {
-            public IEnumerable<string> AllSourceFiles { get; set; }
-            public IEnumerable<string> DirtySourceFiles { get; set; }
+            public Dictionary<string, string> AllSourceFiles { get; set; }
+            public Dictionary<string, string> DirtySourceFiles { get; set; }
             public IEnumerable<TargetAssembly> DirtyTargetAssemblies { get; set; }
             public IEnumerable<PrecompiledAssembly> DirtyPrecompiledAssemblies { get; set; }
             public string ProjectDirectory { get; set; }
@@ -179,7 +185,30 @@ namespace UnityEditor.Scripting.ScriptCompilation
             get { return predefinedTargetAssemblies.Select(a => AssetPath.GetAssemblyNameWithoutExtension(a.Filename)).ToArray(); }
         }
 
-        public static TargetAssembly[] CreateTargetAssemblies(IEnumerable<CustomScriptAssembly> customScriptAssemblies, IEnumerable<PrecompiledAssembly> precompiledAssemblies)
+        /// <summary>
+        /// Checks the scriptPath against the pathPrefix and additionalPathPrefixes.
+        /// Returns the depth from the scriptPath where -1 indicates no match.
+        /// </summary>
+        internal static int PathFilter(string scriptPath, string pathPrefix, string lowerPathPrefix, string[] additionalPathPrefixes, string[] lowerAdditionalPathPrefixes)
+        {
+            // Find the path that is closest to the script path
+            int depth = Utility.FastStartsWith(scriptPath, pathPrefix, lowerPathPrefix) ? pathPrefix.Length : -1;
+
+            if (additionalPathPrefixes != null)
+            {
+                for (int i = 0; i < additionalPathPrefixes.Length; ++i)
+                {
+                    if (Utility.FastStartsWith(scriptPath, additionalPathPrefixes[i], lowerAdditionalPathPrefixes[i]) && additionalPathPrefixes[i].Length > depth)
+                    {
+                        depth = additionalPathPrefixes[i].Length;
+                    }
+                }
+            }
+
+            return depth;
+        }
+
+        public static Dictionary<string, TargetAssembly> CreateTargetAssemblies(IEnumerable<CustomScriptAssembly> customScriptAssemblies, IEnumerable<PrecompiledAssembly> precompiledAssemblies)
         {
             if (customScriptAssemblies == null)
                 return null;
@@ -191,14 +220,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
             foreach (var customAssembly in customScriptAssemblies)
             {
                 var lowerPathPrefix = Utility.FastToLower(customAssembly.PathPrefix);
-
+                var lowerAdditionalPathPrefixes = customAssembly.AdditionalPrefixes?.Select(Utility.FastToLower).ToArray();
 
                 var targetAssembly = new TargetAssembly(customAssembly.Name + ".dll",
                     null,
                     customAssembly.AssemblyFlags,
                     TargetAssemblyType.Custom,
                     customAssembly.PathPrefix,
-                    path => Utility.FastStartsWith(path, customAssembly.PathPrefix, lowerPathPrefix) ? customAssembly.PathPrefix.Length : -1,
+                    customAssembly.AdditionalPrefixes,
+                    path => PathFilter(path, customAssembly.PathPrefix, lowerPathPrefix, customAssembly.AdditionalPrefixes, lowerAdditionalPathPrefixes),
                     (settings, defines) => customAssembly.IsCompatibleWith(settings.BuildTarget, settings.CompilationOptions, defines),
                     customAssembly.CompilerOptions)
                 {
@@ -266,10 +296,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     }
                 }
             }
-            return targetAssemblies.ToArray();
+
+            var customTargetAssembliesDict = new Dictionary<string, TargetAssembly>();
+
+            foreach (var targetAssembly in targetAssemblies)
+            {
+                customTargetAssembliesDict[targetAssembly.Filename] = targetAssembly;
+            }
+
+            return customTargetAssembliesDict;
         }
 
-        public static ScriptAssembly[] GetAllScriptAssemblies(IEnumerable<String> allSourceFiles,
+        public static ScriptAssembly[] GetAllScriptAssemblies(Dictionary<string, string> allSourceFiles,
             String projectDirectory, ScriptAssemblySettings settings, CompilationAssemblies assemblies,
             HashSet<String> runUpdaterAssemblies, TargetAssemblyType onlyIncludeType = TargetAssemblyType.Undefined)
         {
@@ -278,9 +316,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var targetAssemblyFiles = new Dictionary<TargetAssembly, HashSet<string>>();
 
-            foreach (var scriptFile in allSourceFiles)
+            foreach (var entry in allSourceFiles)
             {
-                var targetAssembly = GetTargetAssembly(scriptFile, projectDirectory, assemblies.CustomTargetAssemblies);
+                var scriptFile = entry.Key;
+                var assemblyName = entry.Value;
+                var targetAssembly = GetTargetAssembly(scriptFile, assemblyName, projectDirectory, assemblies.CustomTargetAssemblies);
 
                 if (targetAssembly == null)
                     continue;
@@ -326,10 +366,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 foreach (var dirtyPrecompiledAssembly in args.DirtyPrecompiledAssemblies)
                 {
-                    var customTargetAssembliesWithExplictReferences = args.Assemblies.CustomTargetAssemblies.Where(a => (a.Flags & AssemblyFlags.ExplicitReferences) == AssemblyFlags.ExplicitReferences);
+                    var customTargetAssembliesWithExplictReferences = args.Assemblies.CustomTargetAssemblies.Where(a => (a.Value.Flags & AssemblyFlags.ExplicitReferences) == AssemblyFlags.ExplicitReferences);
 
-                    foreach (var customTargetAssembly in customTargetAssembliesWithExplictReferences)
+                    foreach (var entry in customTargetAssembliesWithExplictReferences)
                     {
+                        var customTargetAssembly = entry.Value;
                         if (customTargetAssembly.PrecompiledReferences.Contains(dirtyPrecompiledAssembly))
                         {
                             dirtyTargetAssemblies[customTargetAssembly] = new HashSet<string>();
@@ -341,7 +382,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var allTargetAssemblies = args.Assemblies.CustomTargetAssemblies == null ?
                 predefinedTargetAssemblies :
-                predefinedTargetAssemblies.Concat(args.Assemblies.CustomTargetAssemblies).ToArray();
+                predefinedTargetAssemblies.Concat(args.Assemblies.CustomTargetAssemblies.Values).ToArray();
 
             // Mark all assemblies that the script updater must be run on as dirty.
             if (args.RunUpdaterAssemblies != null)
@@ -352,9 +393,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 }
 
             // Collect all dirty TargetAssemblies
-            foreach (var dirtySourceFile in args.DirtySourceFiles)
+            foreach (var entry in args.DirtySourceFiles)
             {
-                var targetAssembly = GetTargetAssembly(dirtySourceFile, args.ProjectDirectory, args.Assemblies.CustomTargetAssemblies);
+                var dirtySourceFile = entry.Key;
+                var assemblyName = entry.Value;
+                var targetAssembly = GetTargetAssembly(dirtySourceFile, assemblyName, args.ProjectDirectory, args.Assemblies.CustomTargetAssemblies);
 
                 if (targetAssembly == null)
                 {
@@ -392,6 +435,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 }
 
                 assemblySourceFiles.Add(AssetPath.Combine(args.ProjectDirectory, dirtySourceFile));
+
+                if (targetAssembly.Language == null && targetAssembly.Type == TargetAssemblyType.Custom)
+                    targetAssembly.Language = scriptLanguage;
 
                 // If there are mixed languages in a custom script folder, mark the assembly to not be compiled.
                 if (scriptLanguage != targetAssembly.Language)
@@ -446,9 +492,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             while (dirtyAssemblyCount > 0);
 
             // Add any non-dirty source files that belong to dirty TargetAssemblies
-            foreach (var sourceFile in args.AllSourceFiles)
+            foreach (var entry in args.AllSourceFiles)
             {
-                var targetAssembly = GetTargetAssembly(sourceFile, args.ProjectDirectory, args.Assemblies.CustomTargetAssemblies);
+                var sourceFile = entry.Key;
+                var assemblyName = entry.Value;
+                var targetAssembly = GetTargetAssembly(sourceFile, assemblyName, args.ProjectDirectory, args.Assemblies.CustomTargetAssemblies);
 
                 if (targetAssembly == null)
                 {
@@ -731,14 +779,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return references;
         }
 
-        public static List<string> GetCompiledCustomAssembliesReferences(ScriptAssembly scriptAssembly, TargetAssembly[] customTargetAssemblies, string outputDirectory)
+        public static List<string> GetCompiledCustomAssembliesReferences(ScriptAssembly scriptAssembly, IDictionary<string, TargetAssembly> customTargetAssemblies, string outputDirectory)
         {
             var references = new List<string>();
 
             if (customTargetAssemblies != null)
             {
-                foreach (var customTargetAssembly in customTargetAssemblies)
+                foreach (var entry in customTargetAssemblies)
                 {
+                    var customTargetAssembly = entry.Value;
                     var customTargetAssemblyPath = customTargetAssembly.FullPath(outputDirectory);
 
                     // File might not exist if there are no scripts in the custom target assembly folder.
@@ -793,6 +842,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     AssemblyFlags.FirstPass,
                     TargetAssemblyType.Predefined,
                     null,
+                    null,
                     FilterAssemblyInFirstpassFolder,
                     null,
                     scriptCompilerOptions);
@@ -804,12 +854,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     null,
                     null,
                     null,
+                    null,
                     scriptCompilerOptions);
 
                 var editorFirstPass = new TargetAssembly("Assembly-" + languageName + "-Editor-firstpass" + ".dll",
                     language,
                     AssemblyFlags.EditorOnly | AssemblyFlags.FirstPass,
                     TargetAssemblyType.Predefined,
+                    null,
                     null,
                     FilterAssemblyInFirstpassEditorFolder,
                     (settings, defines) => IsCompatibleWithEditor(settings),
@@ -822,6 +874,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     language,
                     AssemblyFlags.EditorOnly,
                     TargetAssemblyType.Predefined,
+                    null,
                     null,
                     FilterAssemblyInEditorFolder,
                     (settings, defines) => IsCompatibleWithEditor(settings),
@@ -862,16 +915,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return assemblies.ToArray();
         }
 
-        internal static TargetAssembly[] GetTargetAssembliesWithScripts(IEnumerable<string> allScripts,
+        internal static TargetAssembly[] GetTargetAssembliesWithScripts(Dictionary<string, string> allScripts,
             string projectDirectory,
-            TargetAssembly[] customTargetAssemblies,
+            IDictionary<string, TargetAssembly> customTargetAssemblies,
             ScriptAssemblySettings settings)
         {
             var uniqueTargetAssemblies = new HashSet<TargetAssembly>();
 
-            foreach (var script in allScripts)
+            foreach (var entry in allScripts)
             {
-                var targetAssembly = GetTargetAssembly(script, projectDirectory, customTargetAssemblies);
+                var script = entry.Key;
+                var assemblyName = entry.Value;
+                var targetAssembly = GetTargetAssembly(script, assemblyName, projectDirectory, customTargetAssemblies);
 
                 // This can happen for scripts in packages that are not included in an .asmdef assembly
                 // and they will therefore not be compiled.
@@ -887,7 +942,25 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return uniqueTargetAssemblies.ToArray();
         }
 
-        internal static TargetAssembly GetTargetAssembly(string scriptPath, string projectDirectory, TargetAssembly[] customTargetAssemblies)
+        internal static TargetAssembly GetTargetAssembly(string scriptPath, string assemblyName, string projectDirectory, IDictionary<string, TargetAssembly> customTargetAssemblies)
+        {
+            TargetAssembly resultAssembly;
+
+            if (customTargetAssemblies != null &&
+                customTargetAssemblies.Count > 0 &&
+                customTargetAssemblies.TryGetValue(assemblyName, out resultAssembly))
+            {
+                return resultAssembly;
+            }
+
+            // Do not compile scripts outside the Assets/ folder into predefined assemblies.
+            if (!Utility.IsAssetsPath(scriptPath))
+                return null;
+
+            return GetPredefinedTargetAssembly(scriptPath);
+        }
+
+        internal static TargetAssembly GetTargetAssemblyLinearSearch(string scriptPath, string projectDirectory, IDictionary<string, TargetAssembly> customTargetAssemblies)
         {
             TargetAssembly resultAssembly = GetCustomTargetAssembly(scriptPath, projectDirectory, customTargetAssemblies);
 
@@ -949,7 +1022,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return resultAssembly;
         }
 
-        internal static TargetAssembly GetCustomTargetAssembly(string scriptPath, string projectDirectory, TargetAssembly[] customTargetAssemblies)
+        internal static TargetAssembly GetCustomTargetAssembly(string scriptPath, string projectDirectory, IDictionary<string, TargetAssembly> customTargetAssemblies)
         {
             if (customTargetAssemblies == null)
                 return null;
@@ -961,11 +1034,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             bool isPathAbsolute = AssetPath.IsPathRooted(scriptPath);
             var fullPath = isPathAbsolute ? AssetPath.GetFullPath(scriptPath) : AssetPath.Combine(projectDirectory, scriptPath);
 
-            foreach (var assembly in customTargetAssemblies)
+            foreach (var entry in customTargetAssemblies)
             {
-                int maxPathDepth = assembly.PathPrefix.Length;
+                var assembly = entry.Value;
 
-                if (maxPathDepth <= highestPathDepth)
+                if (assembly.MaxPathLength <= highestPathDepth)
                     continue;
 
                 int pathDepth = assembly.PathFilter(fullPath);

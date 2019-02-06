@@ -20,11 +20,8 @@ namespace UnityEditor
             // Create the storage for the terrain in the project
             // (So we can reuse it in multiple scenes)
             TerrainData terrainData = new TerrainData();
-            const int size = 1025;
-            terrainData.heightmapResolution = size;
+            terrainData.heightmapResolution = 513;
             terrainData.size = new Vector3(1000, 600, 1000);
-
-            terrainData.heightmapResolution = 512;
             terrainData.baseMapResolution = 1024;
             terrainData.SetDetailResolution(1024, terrainData.detailResolutionPerPatch);
 
