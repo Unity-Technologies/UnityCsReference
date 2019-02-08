@@ -419,6 +419,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 assemblySourceFiles.Add(AssetPath.Combine(args.ProjectDirectory, dirtySourceFile));
 
+                if (targetAssembly.Language == null && targetAssembly.Type == TargetAssemblyType.Custom)
+                    targetAssembly.Language = scriptLanguage;
+
                 // If there are mixed languages in a custom script folder, mark the assembly to not be compiled.
                 if (scriptLanguage != targetAssembly.Language)
                     args.NotCompiledTargetAssemblies.Add(targetAssembly);

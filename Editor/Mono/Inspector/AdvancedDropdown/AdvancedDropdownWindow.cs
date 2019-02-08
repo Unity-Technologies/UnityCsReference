@@ -336,7 +336,14 @@ namespace UnityEditor.AdvancedDropdown
             for (var i = 0; i < item.children.Count; i++)
             {
                 var child = item.children[i];
+
+                // Select the first item when searching
+                if (hasSearch && !item.selectionExists && item.selectedItem < 0)
+                {
+                    item.selectedItem = 0;
+                }
                 bool selected = item.selectionExists && i == item.selectedItem;
+
                 gui.DrawItem(child, selected, hasSearch);
                 var r = GUILayoutUtility.GetLastRect();
                 if (selected)

@@ -268,7 +268,7 @@ namespace UnityEngine.Experimental.UIElements
 
             IStyle style = this.style;
 
-            float textScaling = TextNative.ComputeTextScaling(worldTransform);
+            float textScaling = TextNative.ComputeTextScaling(worldTransform, GUIUtility.pixelsPerPoint);
 
             var textParams = TextStylePainterParameters.GetDefault(this, text);
             textParams.text = " ";

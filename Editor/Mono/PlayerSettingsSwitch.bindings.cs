@@ -135,12 +135,77 @@ namespace UnityEditor
             [NativeProperty("switchUseCPUProfiler", TargetType.Field)]
             extern public static bool useSwitchCPUProfiler { get; set; }
 
+            // System Memory (used for virtual memory mapping).
+            [NativeProperty("switchSystemResourceMemory", TargetType.Field)]
+            extern public static int systemResourceMemory { get; set; }
+
             [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
             extern public static int queueCommandMemory
             {
                 [NativeMethod("GetSwitchQueueCommandMemory")]
                 get;
                 [NativeMethod("SetSwitchQueueCommandMemory")]
+                set;
+            }
+
+            [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
+            extern public static int defaultSwitchQueueCommandMemory { get; }
+
+            [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
+            extern public static int minimumSwitchQueueCommandMemory { get; }
+
+            [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+            extern public static int queueControlMemory
+            {
+                [NativeMethod("GetSwitchQueueControlMemory")]
+                get;
+                [NativeMethod("SetSwitchQueueControlMemory")]
+                set;
+            }
+
+            [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
+            extern public static int defaultSwitchQueueControlMemory { get; }
+
+            [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
+            extern public static int minimumSwitchQueueControlMemory { get; }
+
+            [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+            extern public static int queueComputeMemory
+            {
+                [NativeMethod("GetSwitchQueueComputeMemory")]
+                get;
+                [NativeMethod("SetSwitchQueueComputeMemory")]
+                set;
+            }
+
+            [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
+            extern public static int defaultSwitchQueueComputeMemory { get; }
+
+            // GPU Pool information.
+            [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+            extern public static int NVNShaderPoolsGranularity
+            {
+                [NativeMethod("GetSwitchNVNShaderPoolsGranularity")]
+                get;
+                [NativeMethod("SetSwitchNVNShaderPoolsGranularity")]
+                set;
+            }
+
+            [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+            extern public static int NVNDefaultPoolsGranularity
+            {
+                [NativeMethod("GetSwitchNVNDefaultPoolsGranularity")]
+                get;
+                [NativeMethod("SetSwitchNVNDefaultPoolsGranularity")]
+                set;
+            }
+
+            [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+            extern public static int NVNOtherPoolsGranularity
+            {
+                [NativeMethod("GetSwitchNVNOtherPoolsGranularity")]
+                get;
+                [NativeMethod("SetSwitchNVNOtherPoolsGranularity")]
                 set;
             }
 
