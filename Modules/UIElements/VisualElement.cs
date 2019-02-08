@@ -194,7 +194,24 @@ namespace UnityEngine.Experimental.UIElements
                     return;
                 m_Scale = value;
                 IncrementVersion(VersionChangeType.Transform);
+
+                // This will change how we measure text
+                IncrementVersion(VersionChangeType.Layout);
             }
+        }
+
+        internal Vector3 ComputeGlobalScale()
+        {
+            Vector3 result = m_Scale;
+
+            var ve = this.shadow.parent;
+
+            while (ve != null)
+            {
+                result.Scale(ve.m_Scale);
+                ve = ve.shadow.parent;
+            }
+            return result;
         }
 
         Matrix4x4 ITransform.matrix

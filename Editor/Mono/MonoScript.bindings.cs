@@ -63,6 +63,10 @@ namespace UnityEditor
         private static extern void Init(MonoScript self, string scriptContents, string className, string nameSpace, string assemblyName, bool isEditorScript);
 
         // *undocumented*
+        [NativeName("GetAssemblyName")]
+        internal extern string GetAssemblyName();
+
+        // *undocumented*
         [NativeName("GetNameSpace")]
         internal extern string GetNamespace();
     }
