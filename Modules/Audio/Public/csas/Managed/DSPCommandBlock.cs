@@ -7,6 +7,7 @@ using System;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Experimental.Audio;
+using UnityEngine;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.UNode.Audio")]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.UNode.Audio.Tests")]
@@ -161,12 +162,100 @@ namespace Unity.Experimental.Audio
 
         public void SetAttenuation(DSPConnection connection, float value, uint interpolationLength = 0)
         {
-            Internal_SetAttenuation(ref this, ref connection, value, interpolationLength);
+            unsafe
+            {
+                Internal_SetAttenuation(ref this, ref connection, (void*)&value, 1, interpolationLength);
+            }
+        }
+
+        public void SetAttenuation(DSPConnection connection, float value1, float value2, uint interpolationLength = 0)
+        {
+            unsafe
+            {
+                float* buffer = stackalloc float[2];
+                buffer[0] = value1;
+                buffer[1] = value2;
+                Internal_SetAttenuation(ref this, ref connection, buffer, 2, interpolationLength);
+            }
+        }
+
+        public void SetAttenuation(DSPConnection connection, float value1, float value2, float value3, uint interpolationLength = 0)
+        {
+            unsafe
+            {
+                float* buffer = stackalloc float[3];
+                buffer[0] = value1;
+                buffer[1] = value2;
+                buffer[2] = value3;
+                Internal_SetAttenuation(ref this, ref connection, buffer, 3, interpolationLength);
+            }
+        }
+
+        public void SetAttenuation(DSPConnection connection, float value1, float value2, float value3, float value4, uint interpolationLength = 0)
+        {
+            unsafe
+            {
+                float* buffer = stackalloc float[4];
+                buffer[0] = value1;
+                buffer[1] = value2;
+                buffer[2] = value3;
+                buffer[3] = value4;
+                Internal_SetAttenuation(ref this, ref connection, buffer, 4, interpolationLength);
+            }
+        }
+
+        public unsafe void SetAttenuation(DSPConnection connection, float* value, byte dimension, uint interpolationLength = 0)
+        {
+            Internal_SetAttenuation(ref this, ref connection, value, dimension, interpolationLength);
         }
 
         public void AddAttenuationKey(DSPConnection connection, ulong dspClock, float value)
         {
-            Internal_AddAttenuationKey(ref this, ref connection, dspClock, value);
+            unsafe
+            {
+                Internal_AddAttenuationKey(ref this, ref connection, dspClock, &value, 1);
+            }
+        }
+
+        public void AddAttenuationKey(DSPConnection connection, ulong dspClock, float value1, float value2)
+        {
+            unsafe
+            {
+                float* buffer = stackalloc float[2];
+                buffer[0] = value1;
+                buffer[1] = value2;
+                Internal_AddAttenuationKey(ref this, ref connection, dspClock, buffer, 2);
+            }
+        }
+
+        public void AddAttenuationKey(DSPConnection connection, ulong dspClock, float value1, float value2, float value3)
+        {
+            unsafe
+            {
+                float* buffer = stackalloc float[3];
+                buffer[0] = value1;
+                buffer[1] = value2;
+                buffer[2] = value3;
+                Internal_AddAttenuationKey(ref this, ref connection, dspClock, buffer, 3);
+            }
+        }
+
+        public void AddAttenuationKey(DSPConnection connection, ulong dspClock, float value1, float value2, float value3, float value4)
+        {
+            unsafe
+            {
+                float* buffer = stackalloc float[4];
+                buffer[0] = value1;
+                buffer[1] = value2;
+                buffer[2] = value3;
+                buffer[3] = value4;
+                Internal_AddAttenuationKey(ref this, ref connection, dspClock, buffer, 4);
+            }
+        }
+
+        public unsafe void AddAttenuationKey(DSPConnection connection, ulong dspClock, float* value, byte dimension)
+        {
+            Internal_AddAttenuationKey(ref this, ref connection, dspClock, value, dimension);
         }
 
         public void SustainAttenuation(DSPConnection connection, ulong dspClock)

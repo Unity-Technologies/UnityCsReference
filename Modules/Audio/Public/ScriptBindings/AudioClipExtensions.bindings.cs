@@ -21,16 +21,17 @@ namespace UnityEngine.Experimental.Audio
     {
         public static AudioSampleProvider CreateAudioSampleProvider(
             this AudioClip audioClip, ulong startSampleFrameIndex = 0,
-            long endSampleFrameIndex = 0, bool loop = false)
+            long endSampleFrameIndex = 0, bool loop = false, bool allowDrop = false)
         {
             return AudioSampleProvider.Lookup(
                 Internal_CreateAudioClipSampleProvider(
-                    audioClip, startSampleFrameIndex, endSampleFrameIndex, loop), null, 0);
+                    audioClip, startSampleFrameIndex, endSampleFrameIndex, loop, allowDrop),
+                null, 0);
         }
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
         extern private static uint Internal_CreateAudioClipSampleProvider(
-            AudioClip audioClip, ulong start, long end, bool loop);
+            AudioClip audioClip, ulong start, long end, bool loop, bool allowDrop);
     }
 }
 

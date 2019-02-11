@@ -78,9 +78,9 @@ namespace UnityEngine.UIElements
             set { m_VisualElementAssets = value; }
         }
 
-        [SerializeField] private List<UnityEngine.Experimental.UIElements.TemplateAsset> m_TemplateAssets;
+        [SerializeField] private List<TemplateAsset> m_TemplateAssets;
 
-        internal List<UnityEngine.Experimental.UIElements.TemplateAsset> templateAssets
+        internal List<TemplateAsset> templateAssets
         {
             get { return m_TemplateAssets; }
             set { m_TemplateAssets = value; }

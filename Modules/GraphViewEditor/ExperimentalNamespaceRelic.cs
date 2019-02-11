@@ -4,9 +4,7 @@
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    public enum Direction
-    {
-        Input = 0,
-        Output = 1
-    }
+    // We cannot delete the whole namespace just yet as there are left-over using statement in some packages
+    // However expect this using statement no visible types exist anymore
+    internal class Empty {}
 }

@@ -226,11 +226,12 @@ namespace UnityEngine.UIElements.UIR
                 var initialTransformCapacity = m_LazyCreationInitialTransformCapacity;
                 bool unlimitedTransformCount = SystemInfo.supportsComputeShaders && !OpenGLCoreBelow45();
                 if (!unlimitedTransformCount)
-                    initialTransformCapacity = 200; // Math.Min(200, initialTransformCapacity); // Default UIR shader can hold up to 200 matrices as constants
+                    // This should be in sync with the fallback value of UIE_SKIN_ELEMS_COUNT_MAX_CONSTANTS in UnityUIE.cginc (minus one for the identity matrix)
+                    initialTransformCapacity = 19;
                 initialTransformCapacity = Math.Max(1, initialTransformCapacity); // Reserve one entry for "unskinned" meshes
                 m_TransformAllocator = new BlockAllocator(unlimitedTransformCount ? uint.MaxValue : initialTransformCapacity);
                 m_TransformPages = new List<NativeArray<Transform3x4>>(1);
-                var firstTransformPage = new NativeArray<Transform3x4>((int)initialTransformCapacity, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+                var firstTransformPage = new NativeArray<Transform3x4>((int)initialTransformCapacity + 1, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
                 firstTransformPage[0] = new Transform3x4() { v0 = new Vector4(1, 0, 0, 0), v1 = new Vector4(0, 1, 0, 0), v2 = new Vector4(0, 0, 1, 0) };
                 m_TransformPages.Add(firstTransformPage);
                 if (unlimitedTransformCount)

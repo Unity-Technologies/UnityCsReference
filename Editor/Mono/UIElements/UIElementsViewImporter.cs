@@ -14,12 +14,11 @@ using UnityEditor.Experimental.AssetImporters;
 using UnityEditor.StyleSheets;
 using UnityEngine;
 
-using StyleSheet = UnityEngine.UIElements.StyleSheet;
-using VisualTreeAsset = UnityEngine.Experimental.UIElements.VisualTreeAsset;
-using TemplateAsset = UnityEngine.Experimental.UIElements.TemplateAsset;
-using VisualElementAsset = UnityEngine.UIElements.VisualElementAsset;
+using UnityEngine.UIElements;
 
-namespace UnityEditor.Experimental.UIElements
+using StyleSheet = UnityEngine.UIElements.StyleSheet;
+
+namespace UnityEditor.UIElements
 {
     // Make sure UXML is imported after assets than can be addressed in USS
     [ScriptedImporter(version: 6, ext: "uxml", importQueueOffset: 1000)]
@@ -51,7 +50,7 @@ namespace UnityEditor.Experimental.UIElements
         }
     }
 
-    class UXMLImporterImpl : StyleValueImporter
+    internal class UXMLImporterImpl : StyleValueImporter
     {
         internal struct Error
         {

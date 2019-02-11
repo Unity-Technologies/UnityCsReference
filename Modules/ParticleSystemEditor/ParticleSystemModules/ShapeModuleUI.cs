@@ -659,17 +659,9 @@ namespace UnityEditor
 
                 Matrix4x4 transformMatrix = new Matrix4x4();
                 if (mainModule.scalingMode == ParticleSystemScalingMode.Local)
-                {
                     transformMatrix.SetTRS(ps.transform.position, ps.transform.rotation, ps.transform.localScale);
-                }
-                else if (mainModule.scalingMode == ParticleSystemScalingMode.Hierarchy)
-                {
-                    transformMatrix = ps.transform.localToWorldMatrix;
-                }
                 else
-                {
-                    transformMatrix.SetTRS(ps.transform.position, ps.transform.rotation, ps.transform.lossyScale);
-                }
+                    transformMatrix = ps.transform.localToWorldMatrix;
 
                 bool isBox = (type == ParticleSystemShapeType.Box || type == ParticleSystemShapeType.BoxShell || type == ParticleSystemShapeType.BoxEdge || type == ParticleSystemShapeType.Rectangle);
 

@@ -24,6 +24,8 @@ namespace Unity.Experimental.Audio
             var memory = Internal_AllocateArray(m_DSPNodePtr, size);
             var nBuffer = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(memory, length, Allocator.Invalid);
 
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle<T>(ref nBuffer, AtomicSafetyHandle.Create());
+
             return nBuffer;
         }
 

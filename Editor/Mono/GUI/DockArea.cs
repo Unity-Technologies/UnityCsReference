@@ -161,19 +161,11 @@ namespace UnityEditor
 
             base.OnEnable();
 
-            if (uieMode == UIElementsMode.Experimental)
+            if (imguiContainer != null)
             {
-                if (experimentalImguiContainer != null)
-                    experimentalImguiContainer.name = VisualElementUtils.GetUniqueName("Dockarea");
-            }
-            else
-            {
-                if (imguiContainer != null)
-                {
-                    imguiContainer.name = VisualElementUtils.GetUniqueName("Dockarea");
-                    imguiContainer.tabIndex = -1;
-                    imguiContainer.focusOnlyIfHasFocusableControls = false;
-                }
+                imguiContainer.name = VisualElementUtils.GetUniqueName("Dockarea");
+                imguiContainer.tabIndex = -1;
+                imguiContainer.focusOnlyIfHasFocusableControls = false;
             }
         }
 

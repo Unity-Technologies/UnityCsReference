@@ -53,6 +53,8 @@ namespace UnityEngine.UIElements
 
         public static void UpdateSkinningTransform(IUIRenderDevice renderDevice, UIRenderData transformData)
         {
+            if (transformData.skinningAlloc.size == 0)
+                return;
             var transform = transformData.visualElement.worldTransform;
             var viewTransformElement = transformData.effectiveViewTransformData?.visualElement;
             if (viewTransformElement != null)
@@ -182,13 +184,17 @@ namespace UnityEngine.UIElements
 
         public static bool IsSkinnedTransformWithoutNesting(VisualElement ve)
         {
-            if (ve == null || (ve.renderHint & RenderHint.SkinningTransform) == 0)
+            // We should not rely on the RenderHint.SkinningTransform flag here, since element
+            // transforms may not be skinned even with this flag in the case where compute buffers
+            // aren't available and the constant buffer is full.  Looking for a valid skinning allocation
+            // is more accurate.
+            if (ve == null || ve.uiRenderData == null || ve.uiRenderData.skinningAlloc.size == 0)
                 return false;
 
             ve = ve.hierarchy.parent;
             while (ve != null)
             {
-                if ((ve.renderHint & RenderHint.SkinningTransform) != 0)
+                if (ve.uiRenderData != null && ve.uiRenderData.skinningAlloc.size > 0)
                     return false;
                 ve = ve.hierarchy.parent;
             }

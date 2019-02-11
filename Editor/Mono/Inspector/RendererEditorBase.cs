@@ -305,7 +305,7 @@ namespace UnityEditor
         }
 
         private static string[] m_DefaultRenderingLayerNames;
-        private static string[] defaultRenderingLayerNames
+        internal static string[] defaultRenderingLayerNames
         {
             get
             {

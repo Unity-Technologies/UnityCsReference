@@ -23,8 +23,8 @@ namespace UnityEngine.Rendering
     [StructLayout(LayoutKind.Sequential)]
     public struct BatchVisibility
     {
-        public int offset;
-        public int instancesCount;
+        readonly public int offset;
+        readonly public int instancesCount;
         public int visibleCount;
     }
 
@@ -33,10 +33,18 @@ namespace UnityEngine.Rendering
     [UsedByNativeCode]
     unsafe public struct BatchCullingContext
     {
-        public NativeArray<Plane> cullingPlanes;
+        public BatchCullingContext(NativeArray<Plane> inCullingPlanes, NativeArray<BatchVisibility> inOutBatchVisibility, NativeArray<int> outVisibleIndices, LODParameters inLodParameters)
+        {
+            cullingPlanes = inCullingPlanes;
+            batchVisibility = inOutBatchVisibility;
+            visibleIndices = outVisibleIndices;
+            lodParameters = inLodParameters;
+        }
+
+        readonly public NativeArray<Plane> cullingPlanes;
         public NativeArray<BatchVisibility> batchVisibility;
         public NativeArray<int> visibleIndices;
-        public LODParameters lodParameters;
+        readonly public LODParameters lodParameters;
     };
 
     [StructLayout(LayoutKind.Sequential)]
@@ -104,28 +112,26 @@ namespace UnityEngine.Rendering
         [RequiredByNativeCode]
         unsafe static void InvokeOnPerformCulling(BatchRendererGroup group, ref BatchRendererCullingOutput context, ref LODParameters lodParameters)
         {
-            BatchCullingContext ctx;
+            NativeArray<Plane> cullingPlanes = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Plane>(context.cullingPlanes, context.cullingPlanesCount, Allocator.Invalid);
+            NativeArray<BatchVisibility> batchVisibility = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<BatchVisibility>(context.batchVisibility, context.batchVisibilityCount, Allocator.Invalid);
+            NativeArray<int> visibleIndices = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(context.visibleIndices, context.visibleIndicesCount, Allocator.Invalid);
 
-            ctx.cullingPlanes = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Plane>(context.cullingPlanes, context.cullingPlanesCount, Allocator.Invalid);
-            ctx.batchVisibility = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<BatchVisibility>(context.batchVisibility, context.batchVisibilityCount, Allocator.Invalid);
-            ctx.visibleIndices = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(context.visibleIndices, context.visibleIndicesCount, Allocator.Invalid);
-            ctx.lodParameters = lodParameters;
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref cullingPlanes, AtomicSafetyHandle.Create());
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref batchVisibility, AtomicSafetyHandle.Create());
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref visibleIndices, AtomicSafetyHandle.Create());
 
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref ctx.cullingPlanes, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref ctx.batchVisibility, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref ctx.visibleIndices, AtomicSafetyHandle.Create());
             try
             {
-                context.cullingJobsFence = group.m_PerformCulling(group, ctx);
+                context.cullingJobsFence = group.m_PerformCulling(group, new BatchCullingContext(cullingPlanes, batchVisibility, visibleIndices, lodParameters));
             }
             finally
             {
                 JobHandle.ScheduleBatchedJobs();
 
                 //@TODO: Check that the no jobs using the buffers have been scheduled that are not returned here...
-                AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(ctx.cullingPlanes));
-                AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(ctx.batchVisibility));
-                AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(ctx.visibleIndices));
+                AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(cullingPlanes));
+                AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(batchVisibility));
+                AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(visibleIndices));
             }
         }
     }

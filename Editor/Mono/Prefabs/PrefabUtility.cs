@@ -1342,13 +1342,18 @@ namespace UnityEditor
         // Instantiates the given prefab.
         public static Object InstantiatePrefab(Object assetComponentOrGameObject)
         {
-            return InstantiatePrefab_internal(assetComponentOrGameObject, EditorSceneManager.GetTargetSceneForNewGameObjects());
+            return InstantiatePrefab_internal(assetComponentOrGameObject, EditorSceneManager.GetTargetSceneForNewGameObjects(), null);
         }
 
         // Instantiates the given prefab in a given scene
         public static Object InstantiatePrefab(Object assetComponentOrGameObject, Scene destinationScene)
         {
-            return InstantiatePrefab_internal(assetComponentOrGameObject, destinationScene);
+            return InstantiatePrefab_internal(assetComponentOrGameObject, destinationScene, null);
+        }
+
+        public static Object InstantiatePrefab(Object assetComponentOrGameObject, Transform parent)
+        {
+            return InstantiatePrefab_internal(assetComponentOrGameObject, EditorSceneManager.GetTargetSceneForNewGameObjects(), parent);
         }
 
         [Obsolete("Use SaveAsPrefabAsset with a path instead.")]

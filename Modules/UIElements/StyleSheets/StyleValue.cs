@@ -5,7 +5,6 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using UnityEngine.Experimental.UIElements.StyleEnums;
 
 namespace UnityEngine.UIElements.StyleSheets
 {

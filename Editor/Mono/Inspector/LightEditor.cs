@@ -40,6 +40,7 @@ namespace UnityEditor
             public SerializedProperty flare { get; private set; }
             public SerializedProperty renderMode { get; private set; }
             public SerializedProperty cullingMask { get; private set; }
+            public SerializedProperty renderingLayerMask { get; private set; }
             public SerializedProperty lightmapping { get; private set; }
             public SerializedProperty areaSizeX { get; private set; }
             public SerializedProperty areaSizeY { get; private set; }
@@ -97,6 +98,7 @@ namespace UnityEditor
                 public static readonly GUIContent Flare = EditorGUIUtility.TrTextContent("Flare", "Specifies the flare object to be used by the light to render lens flares in the scene.");
                 public static readonly GUIContent RenderMode = EditorGUIUtility.TrTextContent("Render Mode", "Specifies the importance of the light which impacts lighting fidelity and performance. Options are Auto, Important, and Not Important. This only affects Forward Rendering.");
                 public static readonly GUIContent CullingMask = EditorGUIUtility.TrTextContent("Culling Mask", "Specifies which layers will be affected or excluded from the light's effect on objects in the scene.");
+                public static readonly GUIContent RenderingLayerMask = EditorGUIUtility.TrTextContent("Rendering Layer Mask", "Mask that can be used with SRP when drawing shadows to filter renderers outside of the normal layering system.");
 
                 public static readonly GUIContent AreaWidth = EditorGUIUtility.TrTextContent("Width", "Controls the width in units of the area light.");
                 public static readonly GUIContent AreaHeight = EditorGUIUtility.TrTextContent("Height", "Controls the height in units of the area light.");
@@ -187,6 +189,7 @@ namespace UnityEditor
                 flare = m_SerializedObject.FindProperty("m_Flare");
                 renderMode = m_SerializedObject.FindProperty("m_RenderMode");
                 cullingMask = m_SerializedObject.FindProperty("m_CullingMask");
+                renderingLayerMask = m_SerializedObject.FindProperty("m_RenderingLayerMask");
                 lightmapping = m_SerializedObject.FindProperty("m_Lightmapping");
                 areaSizeX = m_SerializedObject.FindProperty("m_AreaSize.x");
                 areaSizeY = m_SerializedObject.FindProperty("m_AreaSize.y");
@@ -470,6 +473,27 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(cullingMask, Styles.CullingMask);
             }
 
+            public void DrawRenderingLayerMask()
+            {
+                RenderPipelineAsset srpAsset = GraphicsSettings.renderPipelineAsset;
+                bool usingSRP = srpAsset != null;
+                if (!usingSRP)
+                    return;
+
+                EditorGUI.showMixedValue = renderingLayerMask.hasMultipleDifferentValues;
+
+                var mask = renderingLayerMask.intValue;
+                var layerNames = srpAsset.renderingLayerMaskNames;
+                if (layerNames == null)
+                    layerNames = RendererEditorBase.defaultRenderingLayerNames;
+
+                var rect = EditorGUILayout.GetControlRect();
+                EditorGUI.BeginProperty(rect, Styles.RenderingLayerMask, renderingLayerMask);
+                EditorGUI.MaskField(rect, Styles.RenderingLayerMask, mask, layerNames);
+                EditorGUI.EndProperty();
+                EditorGUI.showMixedValue = false;
+            }
+
             public void ApplyModifiedProperties()
             {
                 m_SerializedObject.ApplyModifiedProperties();
@@ -742,6 +766,7 @@ namespace UnityEditor
             settings.DrawFlare();
             settings.DrawRenderMode();
             settings.DrawCullingMask();
+            settings.DrawRenderingLayerMask();
 
             EditorGUILayout.Space();
             if (SceneView.lastActiveSceneView != null && SceneView.lastActiveSceneView.sceneLighting == false)

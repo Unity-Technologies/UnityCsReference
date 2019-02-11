@@ -504,7 +504,7 @@ namespace UnityEngine.UIElements
 
         public void DrawBackground()
         {
-            if (currentElement.layout.width < 0f || currentElement.layout.height < 0f)
+            if (currentElement.layout.width <= Mathf.Epsilon || currentElement.layout.height <= Mathf.Epsilon)
                 return;
 
             var style = currentElement.computedStyle;
@@ -529,7 +529,7 @@ namespace UnityEngine.UIElements
 
         public void DrawBorder()
         {
-            if (currentElement.layout.width < 0f || currentElement.layout.height < 0f)
+            if (currentElement.layout.width <= Mathf.Epsilon || currentElement.layout.height <= Mathf.Epsilon)
                 return;
 
             var style = currentElement.computedStyle;

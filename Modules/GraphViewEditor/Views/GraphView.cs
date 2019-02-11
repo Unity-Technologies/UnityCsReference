@@ -185,6 +185,9 @@ namespace UnityEditor.Experimental.GraphView
             if (float.IsInfinity(validateFloat) || float.IsNaN(validateFloat))
                 return;
 
+            newPosition.x = GUIUtility.RoundToPixelGrid(newPosition.x);
+            newPosition.y = GUIUtility.RoundToPixelGrid(newPosition.y);
+
             contentViewContainer.transform.position = newPosition;
             contentViewContainer.transform.scale = newScale;
 
@@ -824,7 +827,7 @@ namespace UnityEditor.Experimental.GraphView
             // Force DefaultCommonDark.uss since GraphView only has a dark style at the moment
             UIElementsEditorUtility.ForceDarkStyleSheet(this);
 
-            if (isReframable)
+            if (isReframable && panel != null)
                 panel.visualTree.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);
         }
 

@@ -19,34 +19,11 @@ namespace UnityEditor
         static float k_FlySpeed = 9f;
         static float s_FlySpeedTarget = 0f;
         const float k_FlySpeedAcceleration = 1.8f;
-        const float k_DefaultFpsEaseDuration = .4f;
         static float s_StartZoom = 0f, s_ZoomSpeed = 0f;
         static float s_TotalMotion = 0f;
         static float s_FPSScrollWheelMultiplier = .01f;
         static bool s_Moving;
-        static AnimVector3 s_FlySpeed = new AnimVector3(Vector3.zero) { speed = 1f / k_DefaultFpsEaseDuration };
-
-        static SavedFloat s_EasingDuration = new SavedFloat("SceneViewMotion.easeDuration", k_DefaultFpsEaseDuration);
-        static SavedBool s_MovementEasing = new SavedBool("SceneViewMotion.movementEasing", true);
-
-        // how many seconds should the camera take to go from stand-still to full speed. when setting an animated value
-        // speed, use `1 / duration`.
-        internal static float movementEasingDuration
-        {
-            get { return s_EasingDuration.value; }
-            set
-            {
-                // Clamp and round to 1 decimal point
-                s_EasingDuration.value = (float)(Math.Round((double)Mathf.Clamp(value, .1f, 3f), 1));
-                s_FlySpeed.speed = 1f / s_EasingDuration.value;
-            }
-        }
-
-        internal static bool movementEasingEnabled
-        {
-            get { return s_MovementEasing.value; }
-            set { s_MovementEasing.value = value; }
-        }
+        static AnimVector3 s_FlySpeed = new AnimVector3(Vector3.zero);
 
         enum MotionState
         {
@@ -66,7 +43,6 @@ namespace UnityEditor
             if (s_Initialized)
                 return;
             s_Initialized = true;
-            movementEasingDuration = movementEasingDuration;
         }
 
         public static void DoViewTool(SceneView view)
@@ -131,7 +107,7 @@ namespace UnityEditor
         {
             s_Moving = s_Motion.sqrMagnitude > 0f;
             var deltaTime = CameraFlyModeContext.deltaTime;
-            var speedModifier = s_SceneView.sceneViewCameraSettings.speed;
+            var speedModifier = s_SceneView.cameraSettings.speed;
 
             if (Event.current.shift)
                 speedModifier *= 5f;
@@ -141,10 +117,15 @@ namespace UnityEditor
             else
                 s_FlySpeedTarget = 0f;
 
-            if (movementEasingEnabled)
+            if (s_SceneView.cameraSettings.easingEnabled)
+            {
+                s_FlySpeed.speed = 1f / s_SceneView.cameraSettings.easingDuration;
                 s_FlySpeed.target = s_Motion.normalized * s_FlySpeedTarget * speedModifier;
+            }
             else
-                s_FlySpeed.value = s_Motion.normalized * speedModifier * s_FlySpeedTarget;
+            {
+                s_FlySpeed.value = s_Motion.normalized * s_FlySpeedTarget * speedModifier;
+            }
 
             return s_FlySpeed.value * deltaTime;
         }
@@ -399,9 +380,9 @@ namespace UnityEditor
             if (Tools.s_LockedViewTool == ViewTool.FPS && s_Moving)
             {
                 float scrollWheelDelta = Event.current.delta.y * s_FPSScrollWheelMultiplier;
-                view.sceneViewCameraSettings.speedNormalized -= scrollWheelDelta;
+                view.cameraSettings.speedNormalized -= scrollWheelDelta;
 
-                float cameraSpeed = view.sceneViewCameraSettings.speed;
+                float cameraSpeed = view.cameraSettings.speed;
                 string cameraSpeedDisplayValue = cameraSpeed.ToString(cameraSpeed < 0.1f ? "F2" : cameraSpeed < 10f ? "F1" : "F0");
                 if (cameraSpeed < 0.1f)
                     cameraSpeedDisplayValue = cameraSpeedDisplayValue.TrimStart(new Char[] {'0'});

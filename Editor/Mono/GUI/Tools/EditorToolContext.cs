@@ -275,6 +275,7 @@ namespace UnityEditor.EditorTools
                 var targets = restored.targets.ToArray();
                 EditorJsonUtility.FromJsonOverwrite(m_PreviousCustomEditorToolContext.editorToolState, restored);
                 restored.m_Targets = targets;
+                restored.m_Target = targets.Last();
                 activeTool = restored;
             }
 
@@ -438,9 +439,9 @@ namespace UnityEditor.EditorTools
 
         bool CollectCustomEditorToolsFromTracker(ActiveEditorTracker tracker, List<EditorTool> list)
         {
+            list.Clear();
             var activeIsCustomEditorTool = IsCustomEditorTool(m_ActiveTool);
             var preservedActiveTool = false;
-            s_CustomEditorTools.Clear();
 
             EditorToolUtility.GetEditorToolsForTracker(tracker, s_CustomEditorTools);
 
@@ -553,7 +554,7 @@ namespace UnityEditor.EditorTools
 
         internal static void GetCustomEditorToolsForTarget(UnityObject target, List<EditorTool> list, bool searchLockedInspectors)
         {
-            s_CustomEditorTools.Clear();
+            list.Clear();
 
             if (target == null)
                 return;

@@ -124,7 +124,8 @@ namespace UnityEditor.UIElements
 
         void OnAttach()
         {
-            UpdateGradientTexture();
+            if (panel != null)
+                UpdateGradientTexture();
         }
 
         void ShowGradientPicker()

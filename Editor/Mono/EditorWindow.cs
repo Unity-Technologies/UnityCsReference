@@ -10,8 +10,7 @@ using UnityEngine.Scripting;
 using UnityEngine.Internal;
 using Unity.Experimental.EditorMode;
 
-using SerializableJsonDictionary = UnityEditor.Experimental.UIElements.SerializableJsonDictionary;
-using ExperimentalVisualElement = UnityEngine.Experimental.UIElements.VisualElement;
+using SerializableJsonDictionary = UnityEditor.UIElements.SerializableJsonDictionary;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 
@@ -47,26 +46,6 @@ namespace UnityEditor
         internal Rect m_Pos = new Rect(0, 0, 320, 550);
 
         private readonly Dictionary<Type, VisualElement> m_RootElementPerEditorMode = new Dictionary<Type, VisualElement>();
-
-        //temporary for backward compatibility
-        internal ExperimentalVisualElement m_RootVisualContainer;
-        internal ExperimentalVisualElement rootVisualContainer
-        {
-            get
-            {
-                if (m_RootVisualContainer == null)
-                {
-                    m_RootVisualContainer =  new ExperimentalVisualElement()
-                    {
-                        name = VisualElementUtils.GetUniqueName("rootVisualContainer"),
-                        pickingMode = UnityEngine.Experimental.UIElements.PickingMode.Ignore,     // do not eat events so IMGUI gets them
-                        persistenceKey = name
-                    };
-                    UnityEditor.Experimental.UIElements.UIElementsEditorUtility.AddDefaultEditorStyleSheets(m_RootVisualContainer);
-                }
-                return m_RootVisualContainer;
-            }
-        }
 
         public VisualElement rootVisualElement
         {
@@ -678,24 +657,10 @@ namespace UnityEditor
             ShowWithMode(ShowMode.AuxWindow);
             SavedGUIState guiState = SavedGUIState.Create();
 
-            if (m_Parent.uieMode == GUIView.UIElementsMode.Public)
-            {
-                m_Parent.visualTree.panel.dispatcher?.PushDispatcherContext();
-            }
-            else if (m_Parent.uieMode == GUIView.UIElementsMode.Experimental)
-            {
-                m_Parent.experimentalVisualTree.panel.dispatcher?.PushDispatcherContext();
-            }
+            m_Parent.visualTree.panel.dispatcher?.PushDispatcherContext();
             MakeModal(m_Parent.window);
 
-            if (m_Parent.uieMode == GUIView.UIElementsMode.Public)
-            {
-                m_Parent.visualTree.panel.dispatcher?.PopDispatcherContext();
-            }
-            else if (m_Parent.uieMode == GUIView.UIElementsMode.Experimental)
-            {
-                m_Parent.experimentalVisualTree.panel.dispatcher?.PopDispatcherContext();
-            }
+            m_Parent.visualTree.panel.dispatcher?.PopDispatcherContext();
 
             guiState.ApplyAndForget();
         }
@@ -1111,9 +1076,6 @@ namespace UnityEditor
 
         private void RefreshStylesAfterExternalEvent()
         {
-            if (m_Parent.uieMode != GUIView.UIElementsMode.Public)
-                return;
-
             var panel = m_Parent.visualTree.elementPanel;
             if (panel == null)
                 return;
@@ -1193,35 +1155,6 @@ namespace UnityEditor
         public bool useTypeNameAsIconName { get; set; }
     }
 
-    // makes UIElements opt-in while it's experimental, as a using statement is necessary to call this method
-    namespace Experimental.UIElements
-    {
-        public static class UIElementsEntryPoint
-        {
-            public static ExperimentalVisualElement GetRootVisualContainer(this EditorWindow window)
-            {
-                var result = window.rootVisualContainer;
-
-                //this nasty code is temporary, thank god!
-                if (result.panel == null && window.m_Parent != null && window.m_Parent.actualView == window)
-                {
-                    window.m_Parent.RegisterExperimentalUIElementWindow();
-                }
-
-                return result;
-            }
-
-            public static void SetAntiAliasing(this EditorWindow window, int aa)
-            {
-                window.antiAliasing = aa;
-            }
-
-            public static int GetAntiAliasing(this EditorWindow window)
-            {
-                return window.antiAliasing;
-            }
-        }
-    }
     namespace UIElements
     {
         public static class UIElementsEntryPoint

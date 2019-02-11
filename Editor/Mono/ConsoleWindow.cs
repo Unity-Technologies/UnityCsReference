@@ -369,7 +369,7 @@ namespace UnityEditor
             if (HasMode(mode, Mode.Fatal | Mode.Assert |
                 Mode.Error | Mode.ScriptingError |
                 Mode.AssetImportError | Mode.ScriptCompileError |
-                Mode.GraphCompileError | Mode.ScriptingAssertion))
+                Mode.GraphCompileError | Mode.ScriptingAssertion | Mode.ScriptingException))
             {
                 if (isIcon)
                 {

@@ -7,7 +7,6 @@ using System.Globalization;
 using System.Linq;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
 using UnityEngine.Rendering;
 
 // The ParticleEffectUI displays one or more ParticleSystemUIs.

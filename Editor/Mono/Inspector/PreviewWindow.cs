@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -14,7 +14,7 @@ namespace UnityEditor
 
         VisualElement m_previewElement;
 
-        VisualElement previewElement => m_previewElement ?? (m_previewElement = rootVisualContainer.Q<VisualElement>("preview"));
+        VisualElement previewElement => m_previewElement ?? (m_previewElement = rootVisualElement.Q<VisualElement>("preview"));
 
         public void SetParentInspector(InspectorWindow inspector)
         {
@@ -31,11 +31,11 @@ namespace UnityEditor
 
             AddInspectorWindow(this);
             var tpl = EditorGUIUtility.Load("UXML/InspectorWindow/PreviewWindow.uxml") as VisualTreeAsset;
-            var container = tpl.CloneTree(null);
+            var container = tpl.CloneTree();
             container.AddToClassList("mainContainer");
-            rootVisualContainer.shadow.Add(container);
+            rootVisualElement.hierarchy.Add(container);
 
-            rootVisualContainer.AddStyleSheetPath("StyleSheets/InspectorWindow/PreviewWindow.uss");
+            rootVisualElement.AddStyleSheetPath("StyleSheets/InspectorWindow/PreviewWindow.uss");
 
             RebuildContentsContainers();
         }

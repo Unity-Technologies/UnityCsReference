@@ -134,6 +134,7 @@ namespace UnityEditor
             if (!m_Instances.Contains(this))
                 m_Instances.Add(this);
 
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
 

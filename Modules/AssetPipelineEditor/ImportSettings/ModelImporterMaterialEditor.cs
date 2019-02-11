@@ -190,6 +190,10 @@ namespace UnityEditor
 
         private void BuildMaterialsCache()
         {
+            // do not set if multiple selection.
+            if (m_Materials.hasMultipleDifferentValues)
+                return;
+
             m_MaterialsCache.Clear();
             for (int materialIdx = 0; materialIdx < m_Materials.arraySize; ++materialIdx)
             {
@@ -204,6 +208,10 @@ namespace UnityEditor
 
         private void BuildExternalObjectsCache()
         {
+            // do not set if multiple selection.
+            if (m_ExternalObjects.hasMultipleDifferentValues)
+                return;
+
             m_ExternalObjectsCache.Clear();
             for (int externalObjectIdx = 0, count = m_ExternalObjects.arraySize; externalObjectIdx < count; ++externalObjectIdx)
             {
@@ -483,7 +491,7 @@ namespace UnityEditor
             }
 
             // hidden for multi-selection
-            if (m_ImportMaterials.boolValue && targets.Length == 1 && m_Materials.arraySize > 0 && m_MaterialLocation.intValue != 0 && !m_MaterialLocation.hasMultipleDifferentValues)
+            if (m_ImportMaterials.boolValue && targets.Length == 1 && m_Materials.arraySize > 0 && m_MaterialLocation.intValue != 0 && !m_MaterialLocation.hasMultipleDifferentValues && !m_Materials.hasMultipleDifferentValues && !m_ExternalObjects.hasMultipleDifferentValues)
             {
                 GUILayout.Label(Styles.ExternalMaterialMappings, EditorStyles.boldLabel);
 

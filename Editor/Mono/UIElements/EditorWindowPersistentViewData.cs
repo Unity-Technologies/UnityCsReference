@@ -7,9 +7,9 @@ namespace UnityEditor.UIElements
     [LibraryFolderPath("UIElements/EditorWindows")]
     internal class EditorWindowViewData : ScriptableSingletonDictionary<
         EditorWindowViewData,
-        UnityEditor.Experimental.UIElements.SerializableJsonDictionary>
+        UnityEditor.UIElements.SerializableJsonDictionary>
     {
-        public static UnityEditor.Experimental.UIElements.SerializableJsonDictionary GetEditorData(EditorWindow window)
+        public static UnityEditor.UIElements.SerializableJsonDictionary GetEditorData(EditorWindow window)
         {
             string editorPrefFileName = window.GetType().ToString();
             return instance[editorPrefFileName];

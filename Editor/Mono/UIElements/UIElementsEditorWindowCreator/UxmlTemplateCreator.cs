@@ -61,7 +61,7 @@ xsi:schemaLocation=""
 {3}""
 >
     <engine:Label text=""Hello World! From UXML"" />
-</engine:{0}>", UnityEditor.Experimental.UIElements.UXMLImporterImpl.k_RootNode, xmlnsList, schemaDirectory, schemaLocationList);
+</engine:{0}>", UnityEditor.UIElements.UXMLImporterImpl.k_RootNode, xmlnsList, schemaDirectory, schemaLocationList);
 
             return uxmlTemplate;
         }

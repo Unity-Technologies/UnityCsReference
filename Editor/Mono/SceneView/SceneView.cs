@@ -427,10 +427,12 @@ namespace UnityEditor
         Camera m_Camera;
 
         [Serializable]
-        public class SceneViewCameraSettings
+        public class CameraSettings
         {
             const float kAbsoluteSpeedMin = .01f;
             const float kAbsoluteSpeedMax = 99f;
+            const float kAbsoluteEasingDurationMin = .1f;
+            const float kAbsoluteEasingDurationMax = 2f;
 
             [SerializeField]
             float m_Speed;
@@ -440,6 +442,10 @@ namespace UnityEditor
             float m_SpeedMin;
             [SerializeField]
             float m_SpeedMax;
+            [SerializeField]
+            bool m_EasingEnabled;
+            [SerializeField]
+            float m_EasingDuration;
 
             [SerializeField]
             float m_FieldOfView;
@@ -452,12 +458,14 @@ namespace UnityEditor
             [SerializeField]
             bool m_OcclusionCulling;
 
-            public SceneViewCameraSettings()
+            public CameraSettings()
             {
                 m_Speed = 1f;
                 m_SpeedNormalized = .5f;
                 m_SpeedMin = .01f;
                 m_SpeedMax = 2f;
+                m_EasingEnabled = true;
+                m_EasingDuration = .4f;
                 fieldOfView = kPerspectiveFov;
                 m_DynamicClip = true;
                 m_OcclusionCulling = false;
@@ -519,6 +527,27 @@ namespace UnityEditor
                 }
             }
 
+            public bool easingEnabled
+            {
+                get { return m_EasingEnabled; }
+                set { m_EasingEnabled = value; }
+            }
+
+            // How many seconds should the camera take to go from stand-still to initial full speed. When setting an animated value
+            // speed, use `1 / duration`.
+            public float easingDuration
+            {
+                get
+                {
+                    return m_EasingDuration;
+                }
+                set
+                {
+                    // Clamp and round to 1 decimal point
+                    m_EasingDuration = (float)(Math.Round((double)Mathf.Clamp(value, kAbsoluteEasingDurationMin, kAbsoluteEasingDurationMax), 1));
+                }
+            }
+
             internal void SetSpeedMinMax(float[] floatValues)
             {
                 // Round to nearest decimal: 2 decimal points when between [0.01, 0.1]; 1 decimal point when between [0.1, 10]; integral between [10, 99]
@@ -574,17 +603,17 @@ namespace UnityEditor
         }
 
         [SerializeField]
-        private SceneViewCameraSettings m_SceneViewCameraSettings;
+        private CameraSettings m_CameraSettings;
 
-        public SceneViewCameraSettings sceneViewCameraSettings
+        public CameraSettings cameraSettings
         {
-            get { return m_SceneViewCameraSettings; }
-            set { m_SceneViewCameraSettings = value; }
+            get { return m_CameraSettings; }
+            set { m_CameraSettings = value; }
         }
 
-        public void ResetSceneViewCameraSettings()
+        public void ResetCameraSettings()
         {
-            m_SceneViewCameraSettings = new SceneViewCameraSettings();
+            m_CameraSettings = new CameraSettings();
         }
 
         [SerializeField]
@@ -942,8 +971,8 @@ namespace UnityEditor
             if (sceneViewState == null)
                 m_SceneViewState = new SceneViewState();
 
-            if (m_SceneViewCameraSettings == null)
-                m_SceneViewCameraSettings = new SceneViewCameraSettings();
+            if (m_CameraSettings == null)
+                m_CameraSettings = new CameraSettings();
 
             if (m_2DMode || EditorSettings.defaultBehaviorMode == EditorBehaviorMode.Mode2D)
             {
@@ -1777,7 +1806,7 @@ namespace UnityEditor
             // Clear (color/skybox)
             // We do funky FOV interpolation when switching between ortho and perspective. However,
             // for the skybox we always want to use the same FOV.
-            float skyboxFOV = GetVerticalFOV(m_SceneViewCameraSettings.fieldOfView);
+            float skyboxFOV = GetVerticalFOV(m_CameraSettings.fieldOfView);
             float realFOV = m_Camera.fieldOfView;
 
             var clearFlags = m_Camera.clearFlags;
@@ -2491,14 +2520,14 @@ namespace UnityEditor
         internal float targetSize
         {
             get { return m_Size.target; }
-            set { m_Size.SetTarget(ValidateSceneSize(value), 1f / SceneViewMotion.movementEasingDuration); }
+            set { m_Size.target = ValidateSceneSize(value); }
         }
 
         float perspectiveFov
         {
             get
             {
-                return m_SceneViewCameraSettings.fieldOfView;
+                return m_CameraSettings.fieldOfView;
             }
         }
 
@@ -2669,7 +2698,7 @@ namespace UnityEditor
                 m_Camera.orthographicSize = GetVerticalOrthoSize();
             }
 
-            if (m_SceneViewCameraSettings.dynamicClip)
+            if (m_CameraSettings.dynamicClip)
             {
                 float farClip = Mathf.Min(Mathf.Max(1000f, 2000f * size), k_MaxCameraFarClip);
                 m_Camera.nearClipPlane = farClip * 0.000005f;
@@ -2677,11 +2706,11 @@ namespace UnityEditor
             }
             else
             {
-                m_Camera.nearClipPlane = m_SceneViewCameraSettings.nearClip;
-                m_Camera.farClipPlane = m_SceneViewCameraSettings.farClip;
+                m_Camera.nearClipPlane = m_CameraSettings.nearClip;
+                m_Camera.farClipPlane = m_CameraSettings.farClip;
             }
 
-            m_Camera.useOcclusionCulling = m_SceneViewCameraSettings.occlusionCulling;
+            m_Camera.useOcclusionCulling = m_CameraSettings.occlusionCulling;
 
             m_Camera.transform.position = m_Position.value + m_Camera.transform.rotation * new Vector3(0, 0, -cameraDistance);
 
