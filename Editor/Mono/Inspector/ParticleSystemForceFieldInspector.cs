@@ -35,6 +35,8 @@ namespace UnityEditor
         private static PropertyInfo s_GravityFocusProperty = typeof(ParticleSystemForceField).GetProperty("gravityFocus");
         private static PropertyInfo s_LengthProperty = typeof(ParticleSystemForceField).GetProperty("length");
 
+        private static readonly string s_UndoString = L10n.Tr("Modify {0}");
+
         private SerializedProperty m_Shape;
         private SerializedProperty m_StartRange;
         private SerializedProperty m_EndRange;
@@ -273,7 +275,7 @@ namespace UnityEditor
             s_SphereBoundsHandle.DrawHandle();
             if (EditorGUI.EndChangeCheck())
             {
-                Undo.RecordObject(target, string.Format("Modify {0}", ObjectNames.NicifyVariableName(target.GetType().Name)));
+                Undo.RecordObject(target, string.Format(s_UndoString, ObjectNames.NicifyVariableName(target.GetType().Name)));
                 radiusProp.SetValue(target, s_SphereBoundsHandle.radius / multiplyByRadius, null);
             }
         }
@@ -286,7 +288,7 @@ namespace UnityEditor
             float newRadius = Handles.DoSimpleRadiusHandle(Quaternion.Euler(-90, 0, 0), Vector3.zero, oldRadius, true);
             if (EditorGUI.EndChangeCheck())
             {
-                Undo.RecordObject(target, string.Format("Modify {0}", ObjectNames.NicifyVariableName(target.GetType().Name)));
+                Undo.RecordObject(target, string.Format(s_UndoString, ObjectNames.NicifyVariableName(target.GetType().Name)));
                 radiusProp.SetValue(target, newRadius / multiplyByRadius, null);
             }
         }
@@ -306,7 +308,7 @@ namespace UnityEditor
                 s_SphereBoundsHandle.DrawHandle();
                 if (EditorGUI.EndChangeCheck())
                 {
-                    Undo.RecordObject(target, string.Format("Modify {0}", ObjectNames.NicifyVariableName(target.GetType().Name)));
+                    Undo.RecordObject(target, string.Format(s_UndoString, ObjectNames.NicifyVariableName(target.GetType().Name)));
                     radiusProp.SetValue(target, s_SphereBoundsHandle.radius / multiplyByRadius,  null);
                 }
             }
@@ -317,7 +319,7 @@ namespace UnityEditor
             lengthHalf = Handles.SizeSlider(Vector3.zero, -Vector3.up, lengthHalf);
             if (EditorGUI.EndChangeCheck())
             {
-                Undo.RecordObject(target, string.Format("Modify {0}", ObjectNames.NicifyVariableName(target.GetType().Name)));
+                Undo.RecordObject(target, string.Format(s_UndoString, ObjectNames.NicifyVariableName(target.GetType().Name)));
                 lengthProp.SetValue(target, Mathf.Max(0.0f, lengthHalf * 2.0f), null);
             }
 
@@ -339,7 +341,7 @@ namespace UnityEditor
             s_BoxBoundsHandle.DrawHandle();
             if (EditorGUI.EndChangeCheck())
             {
-                Undo.RecordObject(target, string.Format("Modify {0}", ObjectNames.NicifyVariableName(target.GetType().Name)));
+                Undo.RecordObject(target, string.Format(s_UndoString, ObjectNames.NicifyVariableName(target.GetType().Name)));
                 extentProp.SetValue(target, s_BoxBoundsHandle.radius / multiplyByRadius, null);
             }
         }

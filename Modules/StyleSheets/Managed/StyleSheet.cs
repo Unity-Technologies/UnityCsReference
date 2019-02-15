@@ -67,6 +67,10 @@ namespace UnityEngine.StyleSheets
         [NonSerialized]
         internal TableType orderedClassSelectors;
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        [NonSerialized]
+        internal bool hasSelectorsCached;
+
         static bool TryCheckAccess<T>(T[] list, StyleValueType type, StyleValueHandle[] handles, int index, out T value)
         {
             bool result = false;
@@ -107,6 +111,7 @@ namespace UnityEngine.StyleSheets
 
         void OnEnable()
         {
+            hasSelectorsCached = false;
             SetupReferences();
         }
 

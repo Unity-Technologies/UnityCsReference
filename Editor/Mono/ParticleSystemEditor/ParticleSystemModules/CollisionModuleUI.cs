@@ -46,6 +46,8 @@ namespace UnityEditor
         static Transform s_SelectedTransform; // static so to ensure only one selected Transform across multiple particle systems
         internal static PrefColor s_CollisionBoundsColor = new PrefColor("Particle System/Collision Bounds", 0.0f, 1.0f, 0.0f, 1.0f);
 
+        static readonly string s_UndoCollisionPlaneString = L10n.Tr("Modified Collision Plane Transform");
+
         class Texts
         {
             public GUIContent lifetimeLoss = EditorGUIUtility.TrTextContent("Lifetime Loss", "When particle collides, it will lose this fraction of its Start Lifetime");
@@ -494,7 +496,7 @@ namespace UnityEditor
                         }
                         if (EditorGUI.EndChangeCheck())
                         {
-                            Undo.RecordObject(transform, "Modified Collision Plane Transform");
+                            Undo.RecordObject(transform, s_UndoCollisionPlaneString);
                             transform.position = newPosition;
                             transform.rotation = newRotation;
                             ParticleSystemEditorUtils.PerformCompleteResimulation();
