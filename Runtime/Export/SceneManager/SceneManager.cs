@@ -78,6 +78,13 @@ namespace UnityEngine.SceneManagement
         }
     }
 
+    [Flags]
+    public enum UnloadSceneOptions
+    {
+        None = 0,
+        UnloadAllEmbeddedSceneObjects = 1
+    }
+
     public partial class SceneManager
     {
         public static event UnityAction<Scene, LoadSceneMode> sceneLoaded;
@@ -180,14 +187,14 @@ namespace UnityEngine.SceneManagement
         [Obsolete("Use SceneManager.UnloadSceneAsync. This function is not safe to use during triggers and under other circumstances. See Scripting reference for more details.")]
         public static bool UnloadScene(Scene scene)
         {
-            return UnloadSceneInternal(scene);
+            return UnloadSceneInternal(scene, UnloadSceneOptions.None);
         }
 
         [Obsolete("Use SceneManager.UnloadSceneAsync. This function is not safe to use during triggers and under other circumstances. See Scripting reference for more details.")]
         static public bool UnloadScene(int sceneBuildIndex)
         {
             bool success;
-            UnloadSceneNameIndexInternal("", sceneBuildIndex, true, out success);
+            UnloadSceneNameIndexInternal("", sceneBuildIndex, true, UnloadSceneOptions.None, out success);
             return success;
         }
 
@@ -195,25 +202,42 @@ namespace UnityEngine.SceneManagement
         static public bool UnloadScene(string sceneName)
         {
             bool success;
-            UnloadSceneNameIndexInternal(sceneName, -1, true, out success);
+            UnloadSceneNameIndexInternal(sceneName, -1, true, UnloadSceneOptions.None, out success);
             return success;
         }
 
         static public AsyncOperation UnloadSceneAsync(int sceneBuildIndex)
         {
             bool success;
-            return UnloadSceneNameIndexInternal("", sceneBuildIndex, false, out success);
+            return UnloadSceneNameIndexInternal("", sceneBuildIndex, false, UnloadSceneOptions.None, out success);
         }
 
         static public AsyncOperation UnloadSceneAsync(string sceneName)
         {
             bool success;
-            return UnloadSceneNameIndexInternal(sceneName, -1, false, out success);
+            return UnloadSceneNameIndexInternal(sceneName, -1, false, UnloadSceneOptions.None, out success);
         }
 
         static public AsyncOperation UnloadSceneAsync(Scene scene)
         {
-            return UnloadSceneAsyncInternal(scene);
+            return UnloadSceneAsyncInternal(scene, UnloadSceneOptions.None);
+        }
+
+        static public AsyncOperation UnloadSceneAsync(int sceneBuildIndex, UnloadSceneOptions options)
+        {
+            bool success;
+            return UnloadSceneNameIndexInternal("", sceneBuildIndex, false, options, out success);
+        }
+
+        static public AsyncOperation UnloadSceneAsync(string sceneName, UnloadSceneOptions options)
+        {
+            bool success;
+            return UnloadSceneNameIndexInternal(sceneName, -1, false, options, out success);
+        }
+
+        static public AsyncOperation UnloadSceneAsync(Scene scene, UnloadSceneOptions options)
+        {
+            return UnloadSceneAsyncInternal(scene, options);
         }
 
         [RequiredByNativeCode]

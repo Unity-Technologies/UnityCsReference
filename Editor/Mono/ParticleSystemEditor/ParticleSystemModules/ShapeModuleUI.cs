@@ -157,6 +157,24 @@ namespace UnityEditor
             public GUIContent rotation = EditorGUIUtility.TrTextContent("Rotation", "Rotate the emission shape.");
             public GUIContent scale = EditorGUIUtility.TrTextContent("Scale", "Scale the emission shape.");
 
+            public readonly string undoSphereThickness = L10n.Tr("Sphere Thickness Handle Change");
+            public readonly string undoSphere = L10n.Tr("Sphere Handle Change");
+            public readonly string undoCircleThickness = L10n.Tr("Circle Thickness Handle Change");
+            public readonly string undoCircle = L10n.Tr("Circle Handle Change");
+            public readonly string undoHemisphereThickness = L10n.Tr("Hemisphere Thickness Handle Change");
+            public readonly string undoHemisphere = L10n.Tr("Hemisphere Handle Change");
+            public readonly string undoConeThickness = L10n.Tr("Cone Thickness Handle Change");
+            public readonly string undoCone = L10n.Tr("Cone Handle Change");
+            public readonly string undoConeVolumeThickness = L10n.Tr("Cone Volume Thickness Handle Change");
+            public readonly string undoConeVolume = L10n.Tr("Cone Volume Handle Change");
+            public readonly string undoBox = L10n.Tr("Box Handle Change");
+            public readonly string undoDonut = L10n.Tr("Donut Handle Change");
+            public readonly string undoDonutRadiusThickness = L10n.Tr("Donut Radius Thickness Handle Change");
+            public readonly string undoDonutRadius = L10n.Tr("Donut Radius Handle Change");
+            public readonly string undoEdge = L10n.Tr("Edge Handle Change");
+            public readonly string undoRectangle = L10n.Tr("Rectangle Handle Change");
+            public readonly string undoTransform = L10n.Tr("Shape Transform Change");
+
             public GUIContent[] shapeTypes = new GUIContent[]
             {
                 EditorGUIUtility.TrTextContent("Sphere"),
@@ -579,17 +597,9 @@ namespace UnityEditor
 
                 Matrix4x4 transformMatrix = new Matrix4x4();
                 if (mainModule.scalingMode == ParticleSystemScalingMode.Local)
-                {
                     transformMatrix.SetTRS(ps.transform.position, ps.transform.rotation, ps.transform.localScale);
-                }
-                else if (mainModule.scalingMode == ParticleSystemScalingMode.Hierarchy)
-                {
-                    transformMatrix = ps.transform.localToWorldMatrix;
-                }
                 else
-                {
-                    transformMatrix.SetTRS(ps.transform.position, ps.transform.rotation, ps.transform.lossyScale);
-                }
+                    transformMatrix = ps.transform.localToWorldMatrix;
 
                 bool isBox = (type == ParticleSystemShapeType.Box || type == ParticleSystemShapeType.BoxShell || type == ParticleSystemShapeType.BoxEdge || type == ParticleSystemShapeType.Rectangle);
 
@@ -606,7 +616,7 @@ namespace UnityEditor
                     float radiusThickness = Handles.DoSimpleRadiusHandle(Quaternion.identity, Vector3.zero, shapeModule.radius * (1.0f - shapeModule.radiusThickness), false, shapeModule.arc);
                     if (EditorGUI.EndChangeCheck())
                     {
-                        Undo.RecordObject(ps, "Sphere Thickness Handle Change");
+                        Undo.RecordObject(ps, s_Texts.undoSphereThickness);
                         shapeModule.radiusThickness = 1.0f - (radiusThickness / shapeModule.radius);
                     }
 
@@ -616,7 +626,7 @@ namespace UnityEditor
                     float radius = Handles.DoSimpleRadiusHandle(Quaternion.identity, Vector3.zero, shapeModule.radius, false, shapeModule.arc);
                     if (EditorGUI.EndChangeCheck())
                     {
-                        Undo.RecordObject(ps, "Sphere Handle Change");
+                        Undo.RecordObject(ps, s_Texts.undoSphere);
                         shapeModule.radius = radius;
                     }
 
@@ -639,7 +649,7 @@ namespace UnityEditor
 
                     if (EditorGUI.EndChangeCheck())
                     {
-                        Undo.RecordObject(ps, "Circle Thickness Handle Change");
+                        Undo.RecordObject(ps, s_Texts.undoCircleThickness);
                         shapeModule.radiusThickness = 1.0f - (m_ArcHandle.radius / shapeModule.radius);
                     }
 
@@ -654,7 +664,7 @@ namespace UnityEditor
 
                     if (EditorGUI.EndChangeCheck())
                     {
-                        Undo.RecordObject(ps, "Circle Handle Change");
+                        Undo.RecordObject(ps, s_Texts.undoCircle);
                         shapeModule.radius = m_ArcHandle.radius;
                         shapeModule.arc = m_ArcHandle.angle;
                     }
@@ -671,7 +681,7 @@ namespace UnityEditor
                     float radiusThickness = Handles.DoSimpleRadiusHandle(Quaternion.identity, Vector3.zero, shapeModule.radius * (1.0f - shapeModule.radiusThickness), true, shapeModule.arc);
                     if (EditorGUI.EndChangeCheck())
                     {
-                        Undo.RecordObject(ps, "Hemisphere Thickness Handle Change");
+                        Undo.RecordObject(ps, s_Texts.undoHemisphereThickness);
                         shapeModule.radiusThickness = 1.0f - (radiusThickness / shapeModule.radius);
                     }
 
@@ -681,7 +691,7 @@ namespace UnityEditor
                     float radius = Handles.DoSimpleRadiusHandle(Quaternion.identity, Vector3.zero, shapeModule.radius, true, shapeModule.arc);
                     if (EditorGUI.EndChangeCheck())
                     {
-                        Undo.RecordObject(ps, "Hemisphere Handle Change");
+                        Undo.RecordObject(ps, s_Texts.undoHemisphere);
                         shapeModule.radius = radius;
                     }
 
@@ -699,7 +709,7 @@ namespace UnityEditor
                     radiusThicknessAngleRange = Handles.ConeFrustrumHandle(Quaternion.identity, Vector3.zero, radiusThicknessAngleRange, Handles.ConeHandles.Radius);
                     if (EditorGUI.EndChangeCheck())
                     {
-                        Undo.RecordObject(ps, "Cone Thickness Handle Change");
+                        Undo.RecordObject(ps, s_Texts.undoConeThickness);
                         shapeModule.radiusThickness = 1.0f - (radiusThicknessAngleRange.x / shapeModule.radius);
                     }
 
@@ -710,7 +720,7 @@ namespace UnityEditor
                     radiusAngleRange = Handles.ConeFrustrumHandle(Quaternion.identity, Vector3.zero, radiusAngleRange);
                     if (EditorGUI.EndChangeCheck())
                     {
-                        Undo.RecordObject(ps, "Cone Handle Change");
+                        Undo.RecordObject(ps, s_Texts.undoCone);
                         shapeModule.radius = radiusAngleRange.x;
                         shapeModule.angle = radiusAngleRange.y;
                         mainModule.startSpeedMultiplier = radiusAngleRange.z;
@@ -730,7 +740,7 @@ namespace UnityEditor
                     radiusThicknessAngleLength = Handles.ConeFrustrumHandle(Quaternion.identity, Vector3.zero, radiusThicknessAngleLength, Handles.ConeHandles.Radius);
                     if (EditorGUI.EndChangeCheck())
                     {
-                        Undo.RecordObject(ps, "Cone Volume Thickness Handle Change");
+                        Undo.RecordObject(ps, s_Texts.undoConeVolumeThickness);
                         shapeModule.radiusThickness = 1.0f - (radiusThicknessAngleLength.x / shapeModule.radius);
                     }
 
@@ -741,7 +751,7 @@ namespace UnityEditor
                     radiusAngleLength = Handles.ConeFrustrumHandle(Quaternion.identity, Vector3.zero, radiusAngleLength);
                     if (EditorGUI.EndChangeCheck())
                     {
-                        Undo.RecordObject(ps, "Cone Volume Handle Change");
+                        Undo.RecordObject(ps, s_Texts.undoConeVolume);
                         shapeModule.radius = radiusAngleLength.x;
                         shapeModule.angle = radiusAngleLength.y;
                         shapeModule.length = radiusAngleLength.z;
@@ -761,7 +771,7 @@ namespace UnityEditor
 
                     if (EditorGUI.EndChangeCheck())
                     {
-                        Undo.RecordObject(ps, "Box Handle Change");
+                        Undo.RecordObject(ps, s_Texts.undoBox);
                         shapeModule.scale = m_BoxBoundsHandle.size;
                     }
 
@@ -783,7 +793,7 @@ namespace UnityEditor
 
                     if (EditorGUI.EndChangeCheck())
                     {
-                        Undo.RecordObject(ps, "Donut Handle Change");
+                        Undo.RecordObject(ps, s_Texts.undoDonut);
                         shapeModule.radius = m_ArcHandle.radius;
                         shapeModule.arc = m_ArcHandle.angle;
                     }
@@ -824,7 +834,7 @@ namespace UnityEditor
                             m_SphereBoundsHandle.DrawHandle();
                         if (EditorGUI.EndChangeCheck())
                         {
-                            Undo.RecordObject(ps, "Donut Radius Thickness Handle Change");
+                            Undo.RecordObject(ps, s_Texts.undoDonutRadiusThickness);
                             shapeModule.radiusThickness = 1.0f - (m_SphereBoundsHandle.radius / shapeModule.donutRadius);
                         }
                     }
@@ -840,7 +850,7 @@ namespace UnityEditor
                             m_SphereBoundsHandle.DrawHandle();
                         if (EditorGUI.EndChangeCheck())
                         {
-                            Undo.RecordObject(ps, "Donut Radius Handle Change");
+                            Undo.RecordObject(ps, s_Texts.undoDonutRadius);
                             shapeModule.donutRadius = m_SphereBoundsHandle.radius;
                         }
                     }
@@ -855,7 +865,7 @@ namespace UnityEditor
                     float radius = Handles.DoSimpleEdgeHandle(Quaternion.identity, Vector3.zero, shapeModule.radius);
                     if (EditorGUI.EndChangeCheck())
                     {
-                        Undo.RecordObject(ps, "Edge Handle Change");
+                        Undo.RecordObject(ps, s_Texts.undoEdge);
                         shapeModule.radius = radius;
                     }
                 }
@@ -883,7 +893,7 @@ namespace UnityEditor
 
                     if (EditorGUI.EndChangeCheck())
                     {
-                        Undo.RecordObject(ps, "Rectangle Handle Change");
+                        Undo.RecordObject(ps, s_Texts.undoRectangle);
                         shapeModule.scale = new Vector3(m_BoxBoundsHandle.size.x, m_BoxBoundsHandle.size.y, 0.0f);
                     }
 

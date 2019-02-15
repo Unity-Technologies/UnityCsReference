@@ -278,10 +278,10 @@ namespace UnityEngine
         // Emission
         [RequiredByNativeCode]
         public void Emit(int count) { Emit_Internal(count); }
-        [NativeName(Name = "SyncJobs()->Emit")]
+        [NativeName("SyncJobs()->Emit")]
         extern private void Emit_Internal(int count);
 
-        [NativeName(Name = "SyncJobs()->EmitParticlesExternal")]
+        [NativeName("SyncJobs()->EmitParticlesExternal")]
         extern public void Emit(ParticleSystem.EmitParams emitParams, int count);
 
         [FreeFunction(Name = "ParticleSystemGeometryJob::ResetPreMappedBufferMemory")]

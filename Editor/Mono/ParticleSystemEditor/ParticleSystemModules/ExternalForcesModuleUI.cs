@@ -26,7 +26,8 @@ namespace UnityEditor
             public GUIContent[] influenceFilters = new GUIContent[]
             {
                 EditorGUIUtility.TrTextContent("Layer Mask"),
-                EditorGUIUtility.TrTextContent("List")
+                EditorGUIUtility.TrTextContent("List"),
+                EditorGUIUtility.TrTextContent("Layer Mask and List")
             };
         }
         static Texts s_Texts;
@@ -67,9 +68,9 @@ namespace UnityEditor
             }
             else
             {
-                if (filter == ParticleSystemGameObjectFilter.LayerMask)
+                if (filter != ParticleSystemGameObjectFilter.List)
                     GUILayerMask(s_Texts.influenceMask, m_InfluenceMask);
-                else
+                if (filter != ParticleSystemGameObjectFilter.LayerMask)
                     m_InfluenceListView.DoLayoutList();
             }
         }

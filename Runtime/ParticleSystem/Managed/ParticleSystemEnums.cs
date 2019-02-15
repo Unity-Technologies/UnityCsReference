@@ -354,7 +354,8 @@ namespace UnityEngine
     public enum ParticleSystemGameObjectFilter
     {
         LayerMask = 0,
-        List = 1
+        List = 1,
+        LayerMaskAndList = 2
     }
 
     // Supported force field types
