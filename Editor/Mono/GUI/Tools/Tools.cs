@@ -58,18 +58,22 @@ namespace UnityEditor
         }
 
         static Tools s_Get;
+
+#pragma warning disable 618
+        [System.Obsolete("Use EditorTools.activeToolDidChange or EditorTools.activeToolWillChange")]
         internal delegate void OnToolChangedFunc(Tool from, Tool to);
+        [System.Obsolete("Use EditorTools.activeToolDidChange or EditorTools.activeToolWillChange")]
         internal static OnToolChangedFunc onToolChanged;
+#pragma warning restore 618
 
         public static Tool current
         {
-            get { return get.currentTool; }
+            get { return EditorToolUtility.GetEnumWithEditorTool(EditorToolContext.GetActiveTool()); }
             set { EditorToolContext.activeTool = EditorToolUtility.GetEditorToolWithEnum(value); }
         }
 
         internal static void SyncToolEnum()
         {
-            get.currentTool = EditorToolUtility.GetEnumWithEditorTool(EditorToolContext.GetActiveTool());
             RepaintAllToolViews();
         }
 
@@ -386,10 +390,15 @@ namespace UnityEditor
             pivotRotation = (PivotRotation)EditorPrefs.GetInt("PivotRotation", 0);
             visibleLayers = EditorPrefs.GetInt("VisibleLayers", -1);
             lockedLayers = EditorPrefs.GetInt("LockedLayers", 0);
-            EditorToolContext.toolChanged += (from, to) =>
+
+            EditorToolContext.activeToolChanged += (previous, active) =>
             {
+#pragma warning disable 618
                 if (onToolChanged != null)
-                    onToolChanged(EditorToolUtility.GetEnumWithEditorTool(from), EditorToolUtility.GetEnumWithEditorTool(to));
+                    onToolChanged(
+                        EditorToolUtility.GetEnumWithEditorTool(previous),
+                        EditorToolUtility.GetEnumWithEditorTool(active));
+#pragma warning restore 618
             };
         }
 
@@ -405,7 +414,6 @@ namespace UnityEditor
         }
 
         internal Quaternion m_GlobalHandleRotation = Quaternion.identity;
-        Tool currentTool = Tool.Move;
         ViewTool m_ViewTool = ViewTool.Pan;
 
         static void SetToolMode(Tool toolMode)

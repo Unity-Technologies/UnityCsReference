@@ -309,19 +309,20 @@ namespace UnityEditor.Experimental.GraphView
             if (m_FromCap != null)
             {
                 Vector2 size = m_FromCap.layout.size;
-                m_FromCap.layout = new Rect(parent.ChangeCoordinatesTo(this, m_From) - (size / 2), size);
+                if ((size.x > 0) && (size.y > 0))
+                    m_FromCap.layout = new Rect(parent.ChangeCoordinatesTo(this, m_From) - (size / 2), size);
             }
             if (m_ToCap != null)
             {
                 Vector2 size = m_ToCap.layout.size;
-                m_ToCap.layout = new Rect(parent.ChangeCoordinatesTo(this, m_To) - (size / 2), size);
+                if ((size.x > 0) && (size.y > 0))
+                    m_ToCap.layout = new Rect(parent.ChangeCoordinatesTo(this, m_To) - (size / 2), size);
             }
         }
 
         internal override void DoRepaint(IStylePainter painter)
         {
             UnityEngine.Profiling.Profiler.BeginSample("DrawEdge");
-            UpdateEdgeCaps();
             // Edges do NOT call base.DoRepaint. It would create a visual artifact.
             DrawEdge(painter);
 
@@ -415,12 +416,13 @@ namespace UnityEditor.Experimental.GraphView
         public virtual void UpdateLayout()
         {
             if (parent == null) return;
-            if (m_ControlPointsDirty == false) return;
-
-
-            ComputeControlPoints(); // Computes the control points in parent ( graph ) coordinates
-            ComputeLayout(); // Update the element layout based on the control points.
-            m_ControlPointsDirty = false;
+            if (m_ControlPointsDirty)
+            {
+                ComputeControlPoints(); // Computes the control points in parent ( graph ) coordinates
+                ComputeLayout(); // Update the element layout based on the control points.
+                m_ControlPointsDirty = false;
+            }
+            UpdateEdgeCaps();
         }
 
         private List<Vector2> lastLocalControlPoints = new List<Vector2>();

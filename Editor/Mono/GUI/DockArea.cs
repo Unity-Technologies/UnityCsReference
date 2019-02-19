@@ -316,8 +316,8 @@ namespace UnityEditor
             dockAreaRect.x = background.margin.left;
             Rect wPos = windowPosition;
             Rect containerWindowPosition = window.position;
-            containerWindowPosition.width = Mathf.FloorToInt(containerWindowPosition.width);
-            containerWindowPosition.height = Mathf.FloorToInt(containerWindowPosition.height);
+            containerWindowPosition.width = Mathf.Ceil(containerWindowPosition.width);
+            containerWindowPosition.height = Mathf.Ceil(containerWindowPosition.height);
 
             bool customBorder = floatingWindow && windowPosition.y == 0;
             bool isBottomTab = wPos.yMax == containerWindowPosition.height;
@@ -406,11 +406,9 @@ namespace UnityEditor
         {
             const float viewMarginLeftOffset = 2f;
             float viewMarginTopOffset = customBorder ? 1f : 2f;
-            var viewRect = new Rect(
-                dockAreaRect.x + viewMarginLeftOffset,
-                dockAreaRect.y + kTabHeight - viewMarginTopOffset - 1f,
-                dockAreaRect.width - viewMarginLeftOffset * 2f,
-                dockAreaRect.height - kTabHeight + viewMarginTopOffset - (customBorder ? -1f : 1f) + (floatingWindow && isBottomTab ? 1f : 0f));
+            float x = dockAreaRect.x + viewMarginLeftOffset;
+            float y = dockAreaRect.y + kTabHeight - viewMarginTopOffset - 1f;
+            var viewRect = new Rect(x, y, position.width - x, position.height - y);
 
             if (selected >= 0 && selected < m_Panes.Count)
                 m_Panes[selected].m_Pos = new Rect(GUIUtility.GUIToScreenPoint(Vector2.zero), viewRect.size);

@@ -324,25 +324,28 @@ namespace UnityEngine.UIElements
                 return (editorEngine.CanPaste() ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
             }
 
+            void ProcessMenuCommand(string command)
+            {
+                using (ExecuteCommandEvent evt = ExecuteCommandEvent.GetPooled(command))
+                {
+                    evt.target = this;
+                    SendEvent(evt);
+                }
+            }
+
             void Cut(DropdownMenuAction a)
             {
-                editorEngine.Cut();
-
-                editorEngine.text = CullString(editorEngine.text);
-                UpdateText(editorEngine.text);
+                ProcessMenuCommand(EventCommandNames.Cut);
             }
 
             void Copy(DropdownMenuAction a)
             {
-                editorEngine.Copy();
+                ProcessMenuCommand(EventCommandNames.Copy);
             }
 
             void Paste(DropdownMenuAction a)
             {
-                editorEngine.Paste();
-
-                editorEngine.text = CullString(editorEngine.text);
-                UpdateText(editorEngine.text);
+                ProcessMenuCommand(EventCommandNames.Paste);
             }
 
             private void OnCustomStyleResolved(CustomStyleResolvedEvent e)

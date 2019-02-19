@@ -36,7 +36,7 @@ namespace UnityEditor
         int m_RowCount;
         List<TreeViewItem> m_ListOfRows; // We need the generic List type in this class for Add/RemoveRange and Sorting (m_Rows is IList)
         List<GameObjectTreeViewItem> m_StickySceneHeaderItems = new List<GameObjectTreeViewItem>();
-
+        internal event System.Action beforeReloading;
         public HierarchySorting sortingState = new TransformSorting();
 
         public List<GameObjectTreeViewItem> sceneHeaderItems { get { return m_StickySceneHeaderItems; } }
@@ -202,6 +202,9 @@ namespace UnityEditor
             HierarchyProperty property = new HierarchyProperty(k_HierarchyType);
             property.alphaSorted = IsUsingAlphaSort();
             property.showSceneHeaders = PrefabStageUtility.GetCurrentPrefabStage() == null;
+            if (SceneHierarchyHooks.provideSubScenes != null)
+                property.SetSubScenes(SceneHierarchyHooks.provideSubScenes());
+
             if (AreScenesValid(scenes))
                 property.SetCustomScenes(scenes);
             return property;
@@ -231,6 +234,8 @@ namespace UnityEditor
 
         public override void FetchData()
         {
+            beforeReloading?.Invoke();
+
             Profiler.BeginSample("SceneHierarchyWindow.FetchData");
             m_RowsPartiallyInitialized = false;
             double fetchStartTime = EditorApplication.timeSinceStartup;
@@ -349,7 +354,7 @@ namespace UnityEditor
             property.Reset();
 
             if (SceneHierarchy.s_Debug)
-                Log("Init minimal (" + m_RowCount + ")");
+                Log("Init minimal (" + m_RowCount + ") num scenes " + SceneManager.sceneCount);
 
             int firstRow, lastRow;
             m_TreeView.gui.GetFirstAndLastRowVisible(out firstRow, out lastRow);
@@ -525,7 +530,6 @@ namespace UnityEditor
 
             item.colorCode = colorCode;
             item.objectPPTR = pptrObject;
-            item.shouldDisplay = true;
             item.isSceneHeader = isSceneHeader;
             item.scene = scene;
 
@@ -586,18 +590,70 @@ namespace UnityEditor
             Debug.Log(text);
         }
 
+        static int FindTransformDepth(Transform transform)
+        {
+            var trans = transform.parent;
+            int depth = 0;
+            while (trans != null)
+            {
+                depth++;
+                trans = trans.parent;
+            }
+            return depth;
+        }
+
+        override public bool IsRenamingItemAllowed(TreeViewItem item)
+        {
+            GameObjectTreeViewItem goItem = item as GameObjectTreeViewItem;
+            if (goItem.isSceneHeader)
+                return false;
+
+            if (SubSceneGUI.IsUsingSubScenes() && SubSceneGUI.IsSubSceneHeader((GameObject)goItem.objectPPTR))
+                return false;
+
+            return true;
+        }
+
         void CreateSceneHeaderItems()
         {
             m_StickySceneHeaderItems.Clear();
+
             int numScenesInHierarchy = EditorSceneManager.sceneCount;
-            for (int i = 0; i < numScenesInHierarchy; ++i)
+
+            if (SubSceneGUI.IsUsingSubScenes())
             {
-                Scene scene = SceneManager.GetSceneAt(i);
+                for (int i = 0; i < numScenesInHierarchy; ++i)
+                {
+                    Scene scene = SceneManager.GetSceneAt(i);
 
-                var item = new GameObjectTreeViewItem(0, 0, null, null);
-                InitTreeViewItem(item, scene.handle, scene, true, 0, null, false, 0);
+                    var subSceneInfo = SubSceneGUI.GetSubSceneInfo(scene);
+                    if (subSceneInfo.isValid)
+                    {
+                        var item = new GameObjectTreeViewItem(0, 0, null, null);
+                        var transform = subSceneInfo.transform;
+                        GameObject gameObject = transform.gameObject;
+                        int depth = SubSceneGUI.CalculateHierarchyDepthOfSubScene(subSceneInfo);
+                        InitTreeViewItem(item, gameObject.GetInstanceID(), subSceneInfo.scene, false, 0, gameObject, false, depth);
+                        m_StickySceneHeaderItems.Add(item);
+                    }
+                    else
+                    {
+                        var item = new GameObjectTreeViewItem(0, 0, null, null);
+                        InitTreeViewItem(item, scene.handle, scene, true, 0, null, false, 0);
+                        m_StickySceneHeaderItems.Add(item);
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < numScenesInHierarchy; ++i)
+                {
+                    Scene scene = SceneManager.GetSceneAt(i);
 
-                m_StickySceneHeaderItems.Add(item);
+                    var item = new GameObjectTreeViewItem(0, 0, null, null);
+                    InitTreeViewItem(item, scene.handle, scene, true, 0, null, false, 0);
+                    m_StickySceneHeaderItems.Add(item);
+                }
             }
         }
 
@@ -606,12 +662,12 @@ namespace UnityEditor
             if (scenes != null)
             {
                 for (int i = scenes.Length - 1; i >= 0; i--)
-                    if (scenes[i].isLoaded)
+                    if (scenes[i].isLoaded && !scenes[i].isSubScene)
                         return scenes[i];
             }
 
             for (int i = SceneManager.sceneCount - 1; i >= 0; i--)
-                if (SceneManager.GetSceneAt(i).isLoaded)
+                if (SceneManager.GetSceneAt(i).isLoaded && !SceneManager.GetSceneAt(i).isSubScene)
                     return SceneManager.GetSceneAt(i);
 
             Assert.IsTrue(false, "No loaded scene could be found");

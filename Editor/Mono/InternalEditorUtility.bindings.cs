@@ -246,6 +246,9 @@ namespace UnityEditorInternal
         [FreeFunction("InternalEditorUtilityBindings::HierarchyWindowDrag")]
         extern public static DragAndDropVisualMode HierarchyWindowDrag(HierarchyProperty property, HierarchyDropMode dropMode, Transform parentForDraggedObjects, bool perform);
 
+        [FreeFunction("InternalEditorUtilityBindings::HierarchyWindowDragByID")]
+        extern public static DragAndDropVisualMode HierarchyWindowDragByID(int hierarchyItemInstanceID, HierarchyDropMode dropMode, Transform parentForDraggedObjects, bool perform);
+
         [FreeFunction("InternalEditorUtilityBindings::InspectorWindowDrag")]
         extern internal static DragAndDropVisualMode InspectorWindowDrag(Object[] targets, bool perform);
 
@@ -719,6 +722,9 @@ namespace UnityEditorInternal
 
         [FreeFunction]
         extern public static DllType DetectDotNetDll(string path);
+
+        [FreeFunction]
+        internal static extern bool IsDotNetDll(string path);
 
         public static bool IsDotNet4Dll(string path)
         {

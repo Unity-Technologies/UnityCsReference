@@ -84,7 +84,8 @@ namespace UnityEngine.Rendering
             m_GroupHandle = IntPtr.Zero;
         }
 
-        public extern int AddBatch(Mesh mesh, int subMeshIndex, Material material, int layer, ShadowCastingMode castShadows, bool receiveShadows, bool invertCulling, Bounds bounds, int instanceCount, MaterialPropertyBlock customProps, GameObject associatedSceneObject);
+        // sceneCullingMask default is native kDefaultSceneCullingMask
+        public extern int AddBatch(Mesh mesh, int subMeshIndex, Material material, int layer, ShadowCastingMode castShadows, bool receiveShadows, bool invertCulling, Bounds bounds, int instanceCount, MaterialPropertyBlock customProps, GameObject associatedSceneObject, UInt64 sceneCullingMask = 1UL << 63);
 
         public extern void SetInstancingData(int batchIndex, int instanceCount, MaterialPropertyBlock customProps);
 

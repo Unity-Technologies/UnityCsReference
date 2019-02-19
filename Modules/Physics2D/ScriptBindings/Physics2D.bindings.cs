@@ -2572,7 +2572,7 @@ namespace UnityEngine
     }
 
     // Describes a collision.
-    [UsedByNativeCode]
+    [RequiredByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     public partial class Collision2D
     {
@@ -2664,7 +2664,7 @@ namespace UnityEngine
     };
 
     // Describes a contact point where the collision occurs.
-    [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
+    [RequiredByNativeCode(Optional = false, GenerateProxy = true)]
     [StructLayout(LayoutKind.Sequential)]
     [NativeClass("ScriptingContactPoint2D", "struct ScriptingContactPoint2D;")]
     [NativeHeader("Modules/Physics2D/Public/PhysicsScripting2D.h")]

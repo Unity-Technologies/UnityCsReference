@@ -92,7 +92,7 @@ namespace UnityEditor
             if (children.Length == 0)
                 return;
 
-            int cursor = 0;
+            float cursor = 0;
 
             int total = 0;
             foreach (int size in splitState.realSizes)
@@ -108,15 +108,7 @@ namespace UnityEditor
             SavedGUIState state = SavedGUIState.Create();
 
             for (int i = 0; i < children.Length; i++)
-            {
-                int size = (int)Mathf.Round(splitState.realSizes[i] * scale);
-                if (vertical)
-                    children[i].position = new Rect(0, cursor, position.width, size);
-                else
-                    children[i].position = new Rect(cursor, 0, size, position.height);
-
-                cursor += size;
-            }
+                cursor += PlaceView(i, cursor, Mathf.Round(splitState.realSizes[i] * scale));
 
             state.ApplyAndForget();
         }
@@ -165,17 +157,32 @@ namespace UnityEditor
 
             for (int k = 0; k < children.Length - 1; k++)
                 splitState.DoSplitter(k, k + 1, 0);
-            splitState.RelativeToRealSizes(vertical ? (int)position.height : (int)position.width);
+            splitState.RelativeToRealSizes(vertical ? Mathf.RoundToInt(position.height) : Mathf.RoundToInt(position.width));
             SetupRectsFromSplitter();
         }
 
-        void PlaceView(int i, float pos, float size)
+        float PlaceView(int i, float pos, float size)
         {
+            float width = position.width;
+            float height = position.height;
             float roundPos = Mathf.Round(pos);
+            float roundSize = Mathf.Round(size);
+            Rect newRect;
             if (vertical)
-                children[i].position = new Rect(0, roundPos, position.width, Mathf.Round(pos + size) - roundPos);
+            {
+                newRect = new Rect(0, roundPos, width, roundSize);
+                if (i == children.Length - 1)
+                    newRect.height = height - roundPos;
+            }
             else
-                children[i].position = new Rect(roundPos, 0, Mathf.Round(pos + size) - roundPos, position.height);
+            {
+                newRect = new Rect(roundPos, 0, roundSize, height);
+                if (i == children.Length - 1)
+                    newRect.width = width - roundPos;
+            }
+
+            children[i].position = newRect;
+            return vertical ? newRect.height : newRect.width;
         }
 
         public override void AddChild(View child, int idx)
@@ -470,14 +477,8 @@ namespace UnityEditor
                 sources[i] = children[i].position;
 
             CalcRoomForRect(sources, r);
-            //      string s = "Making room for " + r +" \nchildren {\n";
             for (int i = 0; i < sources.Length; i++)
-            {
-                //          s += "    " + sources[i] + " \n";
                 children[i].position = sources[i];
-            }
-            //      s+= "}";
-            //      Debug.Log (s);
         }
 
         void CalcRoomForRect(Rect[] sources, Rect r)

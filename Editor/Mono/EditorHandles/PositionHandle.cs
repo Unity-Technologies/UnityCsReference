@@ -100,13 +100,15 @@ namespace UnityEditor
             [Flags]
             public enum Handle
             {
+                None = 0,
                 X = 1 << 0,
                 Y = 1 << 1,
                 Z = 1 << 2,
                 XY = 1 << 3,
                 YZ = 1 << 4,
                 XZ = 1 << 5,
-                XYZ = 1 << 6
+                XYZ = 1 << 6,
+                All = ~None
             }
 
             public enum Orientation

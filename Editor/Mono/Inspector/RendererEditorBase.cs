@@ -328,7 +328,7 @@ namespace UnityEditor
         private SerializedProperty m_RendererPriority;
 
         static GUIContent m_RenderingLayerMaskStyle = EditorGUIUtility.TrTextContent("Rendering Layer Mask", "Mask that can be used with SRP DrawRenderers command to filter renderers outside of the normal layering system.");
-        static GUIContent m_RendererPriorityStyle = EditorGUIUtility.TrTextContent("Renderer Priority", "Sets the priority value that Unity uses to sort objects on top of the Material render queue.");
+        static GUIContent m_RendererPriorityStyle = EditorGUIUtility.TrTextContent("Priority", "Sets the priority value that the render pipeline uses to calculate the rendering order.");
 
         protected Probes m_Probes;
 

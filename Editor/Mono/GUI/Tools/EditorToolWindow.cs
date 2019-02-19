@@ -57,23 +57,26 @@ namespace UnityEditor.EditorTools
 
         void OnEnable()
         {
-            EditorToolContext.toolChanged += ToolChanged;
-            ToolChanged(null, EditorToolContext.GetActiveTool());
+            EditorTools.activeToolChanged += ToolChanged;
+
+            ToolChanged();
         }
 
         void OnDisable()
         {
-            EditorToolContext.toolChanged -= ToolChanged;
+            EditorTools.activeToolChanged -= ToolChanged;
+
             if (m_Editor != null)
                 DestroyImmediate(m_Editor);
         }
 
-        void ToolChanged(EditorTool from, EditorTool to)
+        void ToolChanged()
         {
             if (m_Editor != null)
                 DestroyImmediate(m_Editor);
-            m_Editor = Editor.CreateEditor(to);
-            titleContent = new GUIContent(EditorToolUtility.GetToolName(to));
+            var activeTool = EditorToolContext.activeTool;
+            m_Editor = Editor.CreateEditor(activeTool);
+            titleContent = new GUIContent(EditorToolUtility.GetToolName(activeTool.GetType()));
             Repaint();
         }
 

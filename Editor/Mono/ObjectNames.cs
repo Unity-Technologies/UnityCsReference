@@ -28,12 +28,10 @@ namespace UnityEditor
                 var behaviour = o as MonoBehaviour;
                 if (behaviour)
                 {
-                    var generatorAsset = ScriptGeneratorAsset.FromMonoBehaviour(behaviour);
-                    var sourceType = (generatorAsset == null) ? " (Script)" : " (" + generatorAsset.label + ")";
                     var scriptClassName = behaviour.GetScriptClassName();
                     if (scriptClassName == "InvalidStateMachineBehaviour")
-                        return behaviour.name + sourceType;
-                    return scriptClassName + sourceType;
+                        return behaviour.name + " (Script)";
+                    return scriptClassName + " (Script)";
                 }
 
                 var meshfilter = o as MeshFilter;

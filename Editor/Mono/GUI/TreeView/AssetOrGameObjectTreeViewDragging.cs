@@ -160,20 +160,22 @@ namespace UnityEditor
 
         public override DragAndDropVisualMode DoDrag(TreeViewItem parentItem, TreeViewItem targetItem, bool perform, DropPosition dropPos)
         {
+            var hierarchyTargetItem = targetItem as GameObjectTreeViewItem;
+
             // Allow client to handle drag
             if (m_CustomDragHandling != null)
             {
-                DragAndDropVisualMode dragResult = m_CustomDragHandling(parentItem as GameObjectTreeViewItem, targetItem as GameObjectTreeViewItem, dropPos, perform);
+                DragAndDropVisualMode dragResult = m_CustomDragHandling(parentItem as GameObjectTreeViewItem, hierarchyTargetItem, dropPos, perform);
                 if (dragResult != DragAndDropVisualMode.None)
                     return dragResult;
             }
 
             // Scene dragging logic
-            DragAndDropVisualMode dragSceneResult = DoDragScenes(parentItem as GameObjectTreeViewItem, targetItem as GameObjectTreeViewItem, perform, dropPos);
+            DragAndDropVisualMode dragSceneResult = DoDragScenes(parentItem as GameObjectTreeViewItem, hierarchyTargetItem, perform, dropPos);
             if (dragSceneResult != DragAndDropVisualMode.None)
                 return dragSceneResult;
 
-            if (targetItem != null && !IsDropTargetUserModifiable(targetItem as GameObjectTreeViewItem, dropPos))
+            if (targetItem != null && !IsDropTargetUserModifiable(hierarchyTargetItem, dropPos))
                 return DragAndDropVisualMode.Rejected;
 
             var option = InternalEditorUtility.HierarchyDropMode.kHierarchyDragNormal;
@@ -194,23 +196,11 @@ namespace UnityEditor
                     // Simulate drag upon the last loaded scene in the hierarchy (adds as last root sibling of the last scene)
                     Scene lastScene = dataSource.GetLastScene();
                     option |= InternalEditorUtility.HierarchyDropMode.kHierarchyDropUpon;
-
-                    var prop = dataSource.CreateHierarchyProperty();
-                    if (prop.Find(lastScene.handle, null))
-                    {
-                        return InternalEditorUtility.HierarchyWindowDrag(prop, option, null, perform);
-                    }
-
-                    Assert.IsFalse(true, "Could not find scene with handle: " + lastScene.handle);
+                    return InternalEditorUtility.HierarchyWindowDragByID(lastScene.handle, option, null, perform);
                 }
             }
 
             // Here we are hovering over items
-            var hierarchyProperty = dataSource.CreateHierarchyProperty();
-            if (!hierarchyProperty.Find(targetItem.id, null))
-            {
-                hierarchyProperty = null;
-            }
 
             var draggingUpon = dropPos == TreeViewDragging.DropPosition.Upon;
 
@@ -241,7 +231,31 @@ namespace UnityEditor
                 option |= InternalEditorUtility.HierarchyDropMode.kHierarchyDropAfterParent;
             }
 
-            return InternalEditorUtility.HierarchyWindowDrag(hierarchyProperty, option, null, perform);
+            int gameObjectOrSceneInstanceID = GetDropTargetInstanceID(hierarchyTargetItem);
+            if (gameObjectOrSceneInstanceID == 0)
+                return DragAndDropVisualMode.Rejected;
+
+            return InternalEditorUtility.HierarchyWindowDragByID(gameObjectOrSceneInstanceID, option, null, perform);
+        }
+
+        int GetDropTargetInstanceID(GameObjectTreeViewItem hierarchyTargetItem)
+        {
+            if (SubSceneGUI.IsUsingSubScenes())
+            {
+                var gameObjectDropTarget = hierarchyTargetItem.objectPPTR as GameObject;
+                if (gameObjectDropTarget != null)
+                {
+                    if (SubSceneGUI.IsSubSceneHeader(gameObjectDropTarget))
+                    {
+                        Scene subScene = SubSceneGUI.GetSubScene(gameObjectDropTarget);
+                        if (subScene.IsValid())
+                            return subScene.handle;
+                        else
+                            return 0;
+                    }
+                }
+            }
+            return hierarchyTargetItem.id;
         }
 
         static bool IsDropTargetUserModifiable(GameObjectTreeViewItem targetItem, DropPosition dropPos)
@@ -324,12 +338,20 @@ namespace UnityEditor
                 if (insertNewScenes)
                 {
                     List<Scene> insertedScenes = new List<Scene>();
-                    foreach (var sceneAsset in DragAndDrop.objectReferences)
+                    foreach (var sceneAssetObj in DragAndDrop.objectReferences)
                     {
-                        string scenePath = AssetDatabase.GetAssetPath(sceneAsset);
+                        SceneAsset sceneAsset = sceneAssetObj as SceneAsset;
+                        string scenePath = AssetDatabase.GetAssetPath(sceneAssetObj);
                         Scene scene = SceneManager.GetSceneByPath(scenePath);
                         if (SceneHierarchy.IsSceneHeaderInHierarchyWindow(scene))
+                        {
                             m_TreeView.Frame(scene.handle, true, true);
+                        }
+                        else if (SubSceneGUI.IsUsingSubScenes() && SubSceneGUI.GetSubSceneInfo(sceneAsset).isValid)
+                        {
+                            var subSceneInfo = SubSceneGUI.GetSubSceneInfo(sceneAsset);
+                            m_TreeView.Frame(subSceneInfo.transform.gameObject.GetInstanceID(), true, true);
+                        }
                         else
                         {
                             bool unloaded = Event.current.alt;

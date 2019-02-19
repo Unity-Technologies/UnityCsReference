@@ -14,17 +14,29 @@ namespace UnityEngine.Rendering
 
         public static RenderPipeline currentPipeline { get; private set; }
 
-        public static event Action<Camera[]> beginFrameRendering;
-        public static event Action<Camera> beginCameraRendering;
+        public static event Action<ScriptableRenderContext, Camera[]> beginFrameRendering;
+        public static event Action<ScriptableRenderContext, Camera> beginCameraRendering;
+        public static event Action<ScriptableRenderContext, Camera[]> endFrameRendering;
+        public static event Action<ScriptableRenderContext, Camera> endCameraRendering;
 
-        internal static void BeginFrameRendering(Camera[] cameras)
+        internal static void BeginFrameRendering(ScriptableRenderContext context, Camera[] cameras)
         {
-            beginFrameRendering?.Invoke(cameras);
+            beginFrameRendering?.Invoke(context, cameras);
         }
 
-        internal static void BeginCameraRendering(Camera camera)
+        internal static void BeginCameraRendering(ScriptableRenderContext context, Camera camera)
         {
-            beginCameraRendering?.Invoke(camera);
+            beginCameraRendering?.Invoke(context, camera);
+        }
+
+        internal static void EndFrameRendering(ScriptableRenderContext context, Camera[] cameras)
+        {
+            endFrameRendering?.Invoke(context, cameras);
+        }
+
+        internal static void EndCameraRendering(ScriptableRenderContext context, Camera camera)
+        {
+            endCameraRendering?.Invoke(context, camera);
         }
 
         [RequiredByNativeCode]

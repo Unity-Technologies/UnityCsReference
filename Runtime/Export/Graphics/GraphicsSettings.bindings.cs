@@ -19,7 +19,7 @@ namespace UnityEngine.Rendering
 
         extern public static TransparencySortMode   transparencySortMode { get; set; }
         extern public static Vector3                transparencySortAxis { get; set; }
-
+        extern public static bool realtimeDirectRectangularAreaLights { get; set; }
         extern public static bool lightsUseLinearIntensity   { get; set; }
         extern public static bool lightsUseColorTemperature  { get; set; }
         extern public static bool useScriptableRenderPipelineBatching { get; set; }

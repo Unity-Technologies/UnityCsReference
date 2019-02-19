@@ -55,8 +55,11 @@ namespace UnityEditor.UIElements
         public new static readonly string ussClassName = "unity-gradient-field";
         public new static readonly string labelUssClassName = ussClassName + "__label";
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        public static readonly string contentUssClassName = ussClassName + "__content";
 
         public static readonly string borderUssClassName = ussClassName + "__border";
+
+        VisualElement m_GradientTextureImage;
 
         public GradientField()
             : this(null) {}
@@ -67,6 +70,11 @@ namespace UnityEditor.UIElements
             AddToClassList(ussClassName);
             labelElement.AddToClassList(labelUssClassName);
             visualInput.AddToClassList(inputUssClassName);
+
+            m_GradientTextureImage = new VisualElement() { pickingMode = PickingMode.Ignore };
+            m_GradientTextureImage.AddToClassList(contentUssClassName);
+            visualInput.Add(m_GradientTextureImage);
+
 
             VisualElement borderElement = new VisualElement() { name = "unity-border", pickingMode = PickingMode.Ignore };
             borderElement.AddToClassList(borderUssClassName);
@@ -148,8 +156,7 @@ namespace UnityEditor.UIElements
             else
             {
                 Texture2D gradientTexture = UnityEditorInternal.GradientPreviewCache.GenerateGradientPreview(value, computedStyle.backgroundImage.value.texture);
-
-                visualInput.style.backgroundImage = gradientTexture;
+                m_GradientTextureImage.style.backgroundImage = gradientTexture;
 
                 IncrementVersion(VersionChangeType.Repaint); // since the Texture2D object can be reused, force dirty because the backgroundImage change will only trigger the Dirty if the Texture2D objects are different.
             }

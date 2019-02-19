@@ -106,22 +106,58 @@ namespace UnityEditor
         [SerializeField]
         bool m_ShowContextualTools;
 
-        static void OnSelectedObjectWasDestroyed(int unused)
-        {
-            s_ActiveEditors = null;
-        }
-
-        static void OnEditorTrackerRebuilt()
-        {
-            s_ActiveEditors = null;
-        }
-
-        static Editor[] s_ActiveEditors;
-
         internal bool displayToolModes
         {
             get { return m_ShowContextualTools; }
             set { m_ShowContextualTools = value; }
+        }
+
+        static void OnSelectedObjectWasDestroyed(int unused)
+        {
+            s_ActiveEditorsDirty = true;
+        }
+
+        static void OnEditorTrackerRebuilt()
+        {
+            s_ActiveEditorsDirty = true;
+        }
+
+        static List<Editor> s_ActiveEditors = new List<Editor>();
+
+        static bool s_ActiveEditorsDirty;
+
+        internal static IEnumerable<Editor> activeEditors
+        {
+            get
+            {
+                CollectActiveEditors();
+                return s_ActiveEditors;
+            }
+        }
+
+        static void CollectActiveEditors()
+        {
+            if (!s_ActiveEditorsDirty)
+                return;
+
+            s_ActiveEditorsDirty = false;
+
+            s_ActiveEditors.Clear();
+
+            if (s_SharedTracker == null)
+                s_SharedTracker = ActiveEditorTracker.sharedTracker;
+
+            foreach (var editor in s_SharedTracker.activeEditors)
+                s_ActiveEditors.Add(editor);
+
+            foreach (var inspector in InspectorWindow.GetInspectors())
+            {
+                if (inspector.isLocked)
+                {
+                    foreach (var editor in inspector.tracker.activeEditors)
+                        s_ActiveEditors.Add(editor);
+                }
+            }
         }
 
         [SerializeField]
@@ -185,7 +221,7 @@ namespace UnityEditor
         const float k_MaxCameraFarClip = 1.844674E+19f;
 
         [NonSerialized]
-        ActiveEditorTracker m_Tracker;
+        static ActiveEditorTracker s_SharedTracker;
 
         [SerializeField]
         bool m_SceneIsLit = true;
@@ -799,21 +835,6 @@ namespace UnityEditor
             return lastActiveSceneView.SendEvent(EditorGUIUtility.CommandEvent(EventCommandNames.FrameSelectedWithLock));
         }
 
-        internal IEnumerable<Editor> activeEditors
-        {
-            get
-            {
-                if (s_ActiveEditors == null)
-                {
-                    if (m_Tracker == null)
-                        m_Tracker = ActiveEditorTracker.sharedTracker;
-                    s_ActiveEditors = m_Tracker.activeEditors;
-                }
-
-                return s_ActiveEditors;
-            }
-        }
-
         private static List<Camera> GetAllSceneCamerasAsList()
         {
             s_AllSceneCameraList.Clear();
@@ -930,6 +951,8 @@ namespace UnityEditor
                 m_StageHandling = new SceneViewStageHandling(this);
                 m_StageHandling.OnEnable();
             }
+
+            s_ActiveEditorsDirty = true;
         }
 
         protected virtual bool SupportsStageHandling()

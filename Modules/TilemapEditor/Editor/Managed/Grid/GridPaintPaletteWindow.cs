@@ -721,7 +721,7 @@ namespace UnityEditor
                 palette = TilemapEditorUserSettings.lastUsedPalette;
             }
 
-            Tools.onToolChanged += ToolChanged;
+            EditorTools.EditorTools.activeToolChanged += ActiveToolChanged;
 
             ShortcutIntegration.instance.contextManager.RegisterToolContext(m_ShortcutContext);
         }
@@ -760,9 +760,9 @@ namespace UnityEditor
             Repaint();
         }
 
-        private void ToolChanged(Tool from, Tool to)
+        private void ActiveToolChanged()
         {
-            if (to != Tool.None && PaintableGrid.InGridEditMode())
+            if (Tools.current != Tool.None && PaintableGrid.InGridEditMode())
                 EditMode.QuitEditMode();
 
             Repaint();
@@ -791,7 +791,7 @@ namespace UnityEditor
             EditMode.editModeStarted -= OnEditModeStart;
             EditMode.editModeEnded -= OnEditModeEnd;
             ShortcutIntegration.instance.profileManager.shortcutBindingChanged -= UpdateTooltips;
-            Tools.onToolChanged -= ToolChanged;
+            EditorTools.EditorTools.activeToolChanged -= ActiveToolChanged;
             GridSelection.gridSelectionChanged -= OnGridSelectionChanged;
             SceneView.duringSceneGui -= OnSceneViewGUI;
             GridPaintingState.scenePaintTargetChanged -= OnScenePaintTargetChanged;

@@ -511,6 +511,9 @@
     <Compile Include="..\..\Editor\Mono\SceneHierarchy.cs">
       <Link>Editor\Mono\SceneHierarchy.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\SceneHierarchyHooks.cs">
+      <Link>Editor\Mono\SceneHierarchyHooks.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\SceneHierarchySortingWindow.cs">
       <Link>Editor\Mono\SceneHierarchySortingWindow.cs</Link>
     </Compile>
@@ -528,9 +531,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\ScriptEditorUtility.cs">
       <Link>Editor\Mono\ScriptEditorUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\ScriptGeneratorAsset.bindings.cs">
-      <Link>Editor\Mono\ScriptGeneratorAsset.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\ScriptReloadProperties.cs">
       <Link>Editor\Mono\ScriptReloadProperties.cs</Link>
@@ -1761,6 +1761,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\TreeView\MultiColumnHeaderState.cs">
       <Link>Editor\Mono\GUI\TreeView\MultiColumnHeaderState.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\GUI\TreeView\SubSceneGUI.cs">
+      <Link>Editor\Mono\GUI\TreeView\SubSceneGUI.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\TreeView\ToggleTreeView.cs">
       <Link>Editor\Mono\GUI\TreeView\ToggleTreeView.cs</Link>

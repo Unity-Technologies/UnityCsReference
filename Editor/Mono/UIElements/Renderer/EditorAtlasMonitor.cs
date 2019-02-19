@@ -15,6 +15,11 @@ namespace UnityEditor.UIElements
         static EditorAtlasMonitor()
         {
             s_Monitors = new Dictionary<UIRAtlasManager, EditorAtlasMonitor>();
+            var createdAtlasManagerInstances = UIRAtlasManager.Instances();
+            for (int i = 0; i != createdAtlasManagerInstances.Count; ++i)
+            {
+                OnAtlasManagerCreated(createdAtlasManagerInstances[i]);
+            }
             UIRAtlasManager.atlasManagerCreated += OnAtlasManagerCreated;
             UIRAtlasManager.atlasManagerDisposed += OnAtlasManagerDisposed;
         }

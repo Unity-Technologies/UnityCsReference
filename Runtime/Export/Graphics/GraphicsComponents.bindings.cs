@@ -87,10 +87,15 @@ namespace UnityEngine
         extern public float intensity        { get; set; }
         extern public float bounceIntensity  { get; set; }
 
+        extern public bool useBoundingSphereOverride { get; set; }
+        extern public Vector4 boundingSphereOverride { get; set; }
+
         extern public int   shadowCustomResolution { get; set; }
         extern public float shadowBias             { get; set; }
         extern public float shadowNormalBias       { get; set; }
         extern public float shadowNearPlane        { get; set; }
+        extern public bool useShadowMatrixOverride { get; set; }
+        extern public Matrix4x4 shadowMatrixOverride { get; set; }
 
         extern public float range { get; set; }
         extern public Flare flare { get; set; }

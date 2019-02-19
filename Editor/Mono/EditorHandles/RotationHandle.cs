@@ -82,11 +82,13 @@ namespace UnityEditor
             [Flags]
             public enum Handle
             {
+                None = 0,
                 X = 1 << 0,
                 Y = 1 << 1,
                 Z = 1 << 2,
                 CameraAxis = 1 << 3,
-                XYZ = 1 << 4
+                XYZ = 1 << 4,
+                All = ~None
             }
 
             static RotationHandleParam s_Default = new RotationHandleParam((Handle)(-1), Vector3.one, 1f, 1.1f, true, false);
