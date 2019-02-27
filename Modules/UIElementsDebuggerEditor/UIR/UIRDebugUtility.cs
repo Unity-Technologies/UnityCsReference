@@ -30,14 +30,12 @@ namespace UnityEditor.UIElements
                 {
                     p.SetUpdater(new UIRRepaintUpdater(), VisualTreeUpdatePhase.Repaint);
                     p.SetUpdater(new UIRLayoutUpdater(), VisualTreeUpdatePhase.Layout);
-                    p.SetUpdater(new UIRTransformClipUpdater(), VisualTreeUpdatePhase.TransformClip);
                 }
                 else
                 {
                     // Put back the standard updater
                     p.SetUpdater(new VisualTreeRepaintUpdater(), VisualTreeUpdatePhase.Repaint);
                     p.SetUpdater(new VisualTreeLayoutUpdater(), VisualTreeUpdatePhase.Layout);
-                    p.SetUpdater(new VisualTreeTransformClipUpdater(), VisualTreeUpdatePhase.TransformClip);
                 }
 
                 if (previousUpdater != null)
@@ -50,19 +48,7 @@ namespace UnityEditor.UIElements
         public static UIRenderDevice GetUIRenderDevice(IPanel panel)
         {
             UIRRepaintUpdater updater = GetUIRRepaintUpdater(panel);
-            return (UIRenderDevice)updater?.renderDevice;
-        }
-
-        public static RendererBase GetUIRendererChain(IPanel panel)
-        {
-            UIRRepaintUpdater updater = GetUIRRepaintUpdater(panel);
-            return updater?.rendererChain;
-        }
-
-        public static UIRenderData GetRootUirData(IPanel panel)
-        {
-            UIRRepaintUpdater updater = GetUIRRepaintUpdater(panel);
-            return updater?.uirDataChain;
+            return updater?.DebugGetRenderChain()?.device as UIRenderDevice;
         }
 
         public static RepaintMode GetPanelRepaintMode(IPanel panel)

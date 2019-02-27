@@ -3,8 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Profiling;
+using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {
@@ -17,6 +19,42 @@ namespace UnityEngine.UIElements
     {
         public static event Action<UIRAtlasManager> atlasManagerCreated;
         public static event Action<UIRAtlasManager> atlasManagerDisposed;
+
+        // This utility can be moved outside this class once we got more use cases
+        public struct ReadOnlyList<T> : IEnumerable<T>
+        {
+            List<T> m_List;
+
+            public ReadOnlyList(List<T> list)
+            {
+                m_List = list;
+            }
+
+            public IEnumerator<T> GetEnumerator()
+            {
+                return m_List.GetEnumerator();
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return m_List.GetEnumerator();
+            }
+
+            public int Count => m_List.Count;
+
+            public T this[int i] => m_List[i];
+        }
+
+        // A component interested in registering callbacks to our static creation event,
+        // may be initialized after some UIRAtlasManager instances have already been created,
+        // We therefore need to provide access to all current instances of UIRAtlasManager
+        private static List<UIRAtlasManager> s_Instances = new List<UIRAtlasManager>();
+        private static ReadOnlyList<UIRAtlasManager> s_InstancesreadOnly = new ReadOnlyList<UIRAtlasManager>(s_Instances);
+
+        public static ReadOnlyList<UIRAtlasManager> Instances()
+        {
+            return s_InstancesreadOnly;
+        }
 
         private struct BlitInfo
         {
@@ -38,6 +76,10 @@ namespace UnityEngine.UIElements
         private bool m_ForceReblitAll;
         private ColorSpace m_ColorSpace;
         private bool m_RequiresReset;
+        private RectInt m_Viewport;
+
+        static CustomSampler s_ResetSampler = CustomSampler.Create("UIR.AtlasManager.Reset");
+        static CustomSampler s_CommitSampler = CustomSampler.Create("UIR.AtlasManager.Commit");
 
         public int maxImageSize { get; }
 
@@ -60,6 +102,7 @@ namespace UnityEngine.UIElements
             m_PendingBlits = new List<BlitInfo>(64);
             Reset();
 
+            s_Instances.Add(this);
             if (atlasManagerCreated != null)
                 atlasManagerCreated(this);
         }
@@ -77,6 +120,8 @@ namespace UnityEngine.UIElements
 
         protected virtual void Dispose(bool disposing)
         {
+            s_Instances.Remove(this);
+
             if (disposed)
                 return;
 
@@ -156,6 +201,8 @@ namespace UnityEngine.UIElements
                 return;
             }
 
+            s_ResetSampler.Begin();
+
             m_PendingBlits.Clear();
             m_UVs.Clear();
             m_Allocator = new UIRAtlasAllocator(64, 4096);
@@ -167,6 +214,8 @@ namespace UnityEngine.UIElements
 
             if (ResetPerformed != null)
                 ResetPerformed(this, EventArgs.Empty);
+
+            s_ResetSampler.End();
         }
 
         public event EventHandler ResetPerformed;
@@ -352,12 +401,12 @@ namespace UnityEngine.UIElements
 
         private void Commit()
         {
-            Profiler.BeginSample("UIRAtlasManager.Commit");
+            s_CommitSampler.Begin();
             BeginBlit(atlas);
             for (int i = 0; i < m_PendingBlits.Count; i += k_TextureSlotCount)
                 DoBlit(m_PendingBlits, i);
             EndBlit();
-            Profiler.EndSample();
+            s_CommitSampler.End();
 
             m_PendingBlits.Clear();
         }
@@ -416,7 +465,8 @@ namespace UnityEngine.UIElements
                 var blitShader = Shader.Find("Hidden/Internal-UIRAtlasBlitCopy");
                 m_BlitMaterial = new Material(blitShader);
             }
-
+            // store viewport as we'll have to restore it once the AtlasManager is done rendering
+            m_Viewport = Utility.GetActiveViewport();
             GL.LoadPixelMatrix(0, dst.width, 0, dst.height);
             Graphics.SetRenderTarget(dst);
         }
@@ -480,6 +530,8 @@ namespace UnityEngine.UIElements
         private void EndBlit()
         {
             Graphics.SetRenderTarget(null);
+            // restore viewport (which has been implicitely modified as we used a rendertarget)
+            GL.Viewport(new Rect(m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height));
         }
     }
 }

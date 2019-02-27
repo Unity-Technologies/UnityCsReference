@@ -470,6 +470,9 @@ namespace UnityEngine.Rendering
         [FreeFunction("RenderingCommandBuffer_Bindings::SetGlobalConstantBuffer", HasExplicitThis = true)]
         extern public void SetGlobalConstantBuffer(ComputeBuffer buffer, int nameID, int offset, int size);
 
+        [FreeFunction("RenderingCommandBuffer_Bindings::IncrementUpdateCount", HasExplicitThis = true)]
+        extern public void IncrementUpdateCount(UnityEngine.Rendering.RenderTargetIdentifier dest);
+
         public void SetRenderTarget(RenderTargetIdentifier rt)
         {
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);

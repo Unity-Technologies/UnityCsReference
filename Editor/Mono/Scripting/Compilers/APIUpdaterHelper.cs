@@ -27,9 +27,7 @@ namespace UnityEditor.Scripting.Compilers
             try
             {
                 var lines = normalizedErrorMessage.Split('\n');
-                var simpleOrQualifiedName = GetValueFromNormalizedMessage(lines, "EntityName=");
-
-                var found = FindExactTypeMatchingMovedType(simpleOrQualifiedName) ?? FindTypeMatchingMovedTypeBasedOnNamespaceFromError(lines);
+                var found = FindTypeMatchingMovedTypeBasedOnNamespaceFromError(lines);
                 return found != null;
             }
             catch (ReflectionTypeLoadException ex)
@@ -77,7 +75,9 @@ namespace UnityEditor.Scripting.Compilers
                     + responseFile,
                     tempOutputPath);
             }
+#pragma warning disable CS0618 // Type or member is obsolete
             catch (Exception ex) when (!(ex is StackOverflowException) && !(ex is ExecutionEngineException))
+#pragma warning restore CS0618 // Type or member is obsolete
             {
                 Debug.LogError("[API Updater] ScriptUpdater threw an exception. Check the following message in the log.");
                 Debug.LogException(ex);
@@ -174,7 +174,7 @@ namespace UnityEditor.Scripting.Compilers
             var filesFromReadOnlyPackages = new List<string>();
             foreach (var path in destRelativeFilePaths.Select(path => path.Replace("\\", "/"))) // package manager paths are always separated by /
             {
-                var packageInfo = Packages.GetForAssetPath(path);
+                var packageInfo = PackageManager.PackageInfo.FindForAssetPath(path);
                 if (packageInfo == null)
                 {
                     if (filesFromReadOnlyPackages.Count > 0)
@@ -271,16 +271,30 @@ namespace UnityEditor.Scripting.Compilers
             return true;
         }
 
-        private static Type FindExactTypeMatchingMovedType(string simpleOrQualifiedName)
+        private struct Identifier : IEquatable<Identifier>
         {
-            var match = Regex.Match(simpleOrQualifiedName, @"^(?:(?<namespace>.*)(?=\.)\.)?(?<typename>[a-zA-Z_0-9]+)$");
-            if (!match.Success)
-                return null;
+            public string @namespace;
+            public string name;
 
-            var typename = match.Groups["typename"].Value;
-            var namespaceName = match.Groups["namespace"].Value;
+            public bool Equals(Identifier other)
+            {
+                return (String.IsNullOrEmpty(@namespace) && String.IsNullOrEmpty(other.@namespace) || string.Equals(@namespace, other.@namespace)) &&
+                    string.Equals(name, other.name);
+            }
 
-            return FindTypeInLoadedAssemblies(t => t.Name == typename && NamespaceHasChanged(t, namespaceName));
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) return false;
+                return obj is Identifier && Equals((Identifier)obj);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    return ((@namespace != null ? @namespace.GetHashCode() : 0) * 397) ^ (name != null ? name.GetHashCode() : 0);
+                }
+            }
         }
 
         // C# compiler does not emmit the full qualified type name when it fails to resolve a 'theorically', fully qualified type reference
@@ -303,23 +317,52 @@ namespace UnityEditor.Scripting.Compilers
 
             try
             {
-                using (var scriptStream = File.Open(script, System.IO.FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (var scriptStream = File.Open(script, System.IO.FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
                 {
                     var parser = ParserFactory.CreateParser(ICSharpCode.NRefactory.SupportedLanguage.CSharp, new StreamReader(scriptStream));
                     parser.Lexer.EvaluateConditionalCompilation = false;
                     parser.Parse();
 
-                    var typeNotFound = InvalidTypeOrNamespaceErrorTypeMapper.IsTypeMovedToNamespaceError(parser.CompilationUnit, line, column);
-                    if (typeNotFound == null)
+                    var self = new InvalidTypeOrNamespaceErrorTypeMapper(line, column);
+                    parser.CompilationUnit.AcceptVisitor(self, null);
+
+                    if (self.identifierParts.Count == 0)
                         return null;
 
-                    return FindExactTypeMatchingMovedType(typeNotFound);
+                    List<string> candidateNamespaces = new List<string>(self.usings.Where(u => !u.IsAlias).Select(u => u.Name));
+                    List<Identifier> candidateFullyQualifiedNames =
+                        candidateNamespaces.Select(ns => new Identifier {@namespace = ns, name = self.identifierParts[0] }).ToList();
+
+                    string @namespace = string.Empty;
+                    foreach (var identifier in self.identifierParts)
+                    {
+                        candidateFullyQualifiedNames.Add(new Identifier { name = identifier, @namespace = @namespace });
+                        if (@namespace != string.Empty)
+                            @namespace += ".";
+
+                        @namespace += identifier;
+                    }
+
+                    //If the usage + any of the candidate namespaces matches a real type, this usage is valid and does not need to be updated
+                    if (FindTypeInLoadedAssemblies(t => candidateFullyQualifiedNames.Contains(new Identifier {name = t.Name, @namespace = t.Namespace})) != null)
+                        return null;
+
+                    return FindTypeInLoadedAssemblies(t =>
+                        candidateFullyQualifiedNames.Any(id => id.name == t.Name && NamespaceHasChanged(t, id.@namespace)));
                 }
             }
             catch (FileNotFoundException)
             {
                 return null;
             }
+        }
+
+        private static string Name(string identifier, int genericArgumentCount)
+        {
+            if (genericArgumentCount > 0)
+                return identifier + '`' + genericArgumentCount;
+
+            return identifier;
         }
 
         private static string GetValueFromNormalizedMessage(IEnumerable<string> lines, string marker)
@@ -392,31 +435,88 @@ namespace UnityEditor.Scripting.Compilers
 
     internal class InvalidTypeOrNamespaceErrorTypeMapper : AbstractAstVisitor
     {
-        public static string IsTypeMovedToNamespaceError(CompilationUnit cu, int line, int column)
-        {
-            var self = new InvalidTypeOrNamespaceErrorTypeMapper(line, column);
-            cu.AcceptVisitor(self, null);
+        public List<Using> usings = new List<Using>();
+        public List<string> identifierParts = new List<string>();
 
-            return self.Found;
-        }
-
-        public string Found { get; private set; }
+        private Expression lastMatchedExpression = null;
 
         private readonly int _line;
         private readonly int _column;
 
         public override object VisitTypeReference(TypeReference typeReference, object data)
         {
-            var withinRange = _column >= typeReference.StartLocation.Column && _column < typeReference.StartLocation.Column + typeReference.Type.Length;
-            if (typeReference.StartLocation.Line == _line && withinRange)
+            var identifier = typeReference.Type;
+            if (MatchesPosition(typeReference.StartLocation, identifier.Length))
             {
-                Found = typeReference.Type;
-                return true;
+                var identifiers = Identifiers(typeReference.GenericTypes.Count, identifier).ToList();
+
+                if (!identifiers.Any())
+                    return null;
+
+                var alias = usings.FirstOrDefault(u => u.IsAlias && u.Name == identifiers[0]);
+                if (alias != null)
+                {
+                    identifiers.RemoveAt(0);
+                    identifierParts.AddRange(Identifiers(0, alias.Alias.Type));
+                }
+
+                identifierParts.AddRange(identifiers);
             }
-            return base.VisitTypeReference(typeReference, data);
+
+            return null;
         }
 
-        private InvalidTypeOrNamespaceErrorTypeMapper(int line, int column)
+        private static string[] Identifiers(int genericArgumentCount, string identifier)
+        {
+            var identifiers = identifier.Split('.').ToArray();
+            if (genericArgumentCount > 0)
+                identifiers[identifiers.Length - 1] = identifiers[identifiers.Length - 1] + '`' + genericArgumentCount;
+
+            return identifiers;
+        }
+
+        public override object VisitIdentifierExpression(IdentifierExpression identifierExpression, object data)
+        {
+            var identifier = identifierExpression.Identifier;
+            if (MatchesPosition(identifierExpression.StartLocation, identifier.Length))
+            {
+                var alias = usings.FirstOrDefault(u => u.IsAlias && u.Name == identifier);
+                if (alias != null)
+                    identifier = alias.Alias.Type;
+
+                var identifiers = Identifiers(identifierExpression.TypeArguments.Count, identifier);
+                identifierParts.AddRange(identifiers);
+                lastMatchedExpression = identifierExpression;
+            }
+
+            return null;
+        }
+
+        //For cases like "UnityEngine.Object", "UnityEngine" is an IdentifierExpression that will be matched in the call to base.
+        //Here we expand the Found value with the "member name" (".Object" in this example)
+        public override object VisitMemberReferenceExpression(MemberReferenceExpression memberReferenceExpression, object data)
+        {
+            base.VisitMemberReferenceExpression(memberReferenceExpression, data);
+            if (lastMatchedExpression == memberReferenceExpression.TargetObject)
+            {
+                lastMatchedExpression = memberReferenceExpression;
+                identifierParts.Add(memberReferenceExpression.MemberName);
+            }
+            return null;
+        }
+
+        public override object VisitUsing(Using @using, object data)
+        {
+            usings.Add(@using);
+            return base.VisitUsing(@using, data);
+        }
+
+        private bool MatchesPosition(Location startLocation, int length)
+        {
+            return _column >= startLocation.Column && _column < startLocation.Column + length && startLocation.Line == _line;
+        }
+
+        public InvalidTypeOrNamespaceErrorTypeMapper(int line, int column)
         {
             _line = line;
             _column = column;

@@ -25,13 +25,15 @@ namespace UnityEditor
             public string displayName { get; }
             public string path { get; }
             public bool skipValidation { get; }
+            public bool skipHidden { get; }
 
-            public RootItem(int instanceID, string displayName, string path, bool skipValidation = false)
+            public RootItem(int instanceID, string displayName, string path, bool skipValidation = false, bool skipHidden = false)
             {
                 this.instanceID = instanceID;
                 this.displayName = displayName;
                 this.path = path;
                 this.skipValidation = skipValidation;
+                this.skipHidden = skipHidden;
             }
         }
 
@@ -144,6 +146,9 @@ namespace UnityEditor
                 }
 
                 m_RootsTreeViewItem[rootPath] = rootItem;
+
+                if (!root.skipHidden)
+                    property.SetSearchFilter(new SearchFilter {skipHidden = false});
 
                 var expandIDs = GetExpandedIDs();
                 var rows = new List<TreeViewItem>();

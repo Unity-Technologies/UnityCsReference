@@ -146,14 +146,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     if (index != -1)
                         message.message = message.message.Substring(0, index);
                     var moduleName = match.Groups[1].Value;
-                    var excludingModuleName = ModuleMetadata.GetExcludingModule(moduleName);
                     moduleName = GetNiceDisplayNameForModule(moduleName);
-                    excludingModuleName = GetNiceDisplayNameForModule(excludingModuleName);
-
-                    if (moduleName == excludingModuleName)
-                        message.message += string.Format("Enable the built in package '{0}' in the Package Manager window to fix this error.", moduleName);
-                    else
-                        message.message += string.Format("Enable the built in package '{0}', which is required by package '{1}', in the Package Manager window to fix this error.", excludingModuleName, moduleName);
+                    message.message += string.Format("Enable the built in package '{0}' in the Package Manager window to fix this error.", moduleName);
                 }
             }
         }
@@ -422,6 +416,20 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return this.precompiledAssemblies;
         }
 
+        public void GetAssemblyDefinitionReferencesWithMissingAssemblies(out List<CustomScriptAssemblyReference> referencesWithMissingAssemblies)
+        {
+            var nameLookup = customScriptAssemblies.ToDictionary(x => x.Name);
+            referencesWithMissingAssemblies = new List<CustomScriptAssemblyReference>();
+
+            foreach (var asmref in customScriptAssemblyReferences)
+            {
+                if (!nameLookup.ContainsKey(asmref.Reference))
+                {
+                    referencesWithMissingAssemblies.Add(asmref);
+                }
+            }
+        }
+
         public TargetAssemblyInfo[] GetAllCompiledAndResolvedCustomTargetAssemblies(EditorScriptCompilationOptions options, BuildTarget buildTarget, out CustomScriptAssemblyAndReference[] assembliesWithMissingReference)
         {
             if (customTargetAssemblies == null)
@@ -644,49 +652,54 @@ namespace UnityEditor.Scripting.ScriptCompilation
             List<CustomScriptAssemblyReference> customScriptAssemblyReferences,
             AssetPathMetaData[] assetPathsMetaData)
         {
-            if (assetPathsMetaData == null)
-                return new Exception[0];
-
             var asmrefLookup = customScriptAssemblyReferences.ToLookup(x => x.Reference);
-
             var exceptions = new List<Exception>();
 
-            var assetMetaDataPaths = new string[assetPathsMetaData.Length];
-            var lowerAssetMetaDataPaths = new string[assetPathsMetaData.Length];
-
-            for (int i = 0; i < assetPathsMetaData.Length; ++i)
-            {
-                var assetPathMetaData = assetPathsMetaData[i];
-                assetMetaDataPaths[i] =  AssetPath.ReplaceSeparators(assetPathMetaData.DirectoryPath + AssetPath.Separator);
-                lowerAssetMetaDataPaths[i] = Utility.FastToLower(assetMetaDataPaths[i]);
-            }
-
+            // Add AdditionalPrefixes
             foreach (var assembly in customScriptAssemblies)
             {
-                try
-                {
-                    if (assembly.AssetPathMetaData == null)
-                    {
-                        for (int i = 0; i < assetMetaDataPaths.Length; ++i)
-                        {
-                            var path = assetMetaDataPaths[i];
-                            var lowerPath = lowerAssetMetaDataPaths[i];
+                var foundAsmRefs = asmrefLookup[assembly.Name];
 
-                            if (Utility.FastStartsWith(assembly.PathPrefix, path, lowerPath))
+                // Assign the found references or null. We need to assign null so as not to hold onto references that may have been removed/changed.
+                assembly.AdditionalPrefixes = foundAsmRefs.Any() ? foundAsmRefs.Select(ar => ar.PathPrefix).ToArray() : null;
+            }
+
+            // Add AssetPathMetaData
+            if (assetPathsMetaData != null)
+            {
+                var assetMetaDataPaths = new string[assetPathsMetaData.Length];
+                var lowerAssetMetaDataPaths = new string[assetPathsMetaData.Length];
+
+                for (int i = 0; i < assetPathsMetaData.Length; ++i)
+                {
+                    var assetPathMetaData = assetPathsMetaData[i];
+                    assetMetaDataPaths[i] = AssetPath.ReplaceSeparators(assetPathMetaData.DirectoryPath + AssetPath.Separator);
+                    lowerAssetMetaDataPaths[i] = Utility.FastToLower(assetMetaDataPaths[i]);
+                }
+
+                foreach (var assembly in customScriptAssemblies)
+                {
+                    try
+                    {
+                        if (assembly.AssetPathMetaData == null)
+                        {
+                            for (int i = 0; i < assetMetaDataPaths.Length; ++i)
                             {
-                                assembly.AssetPathMetaData = assetPathsMetaData[i];
-                                break;
+                                var path = assetMetaDataPaths[i];
+                                var lowerPath = lowerAssetMetaDataPaths[i];
+
+                                if (Utility.FastStartsWith(assembly.PathPrefix, path, lowerPath))
+                                {
+                                    assembly.AssetPathMetaData = assetPathsMetaData[i];
+                                    break;
+                                }
                             }
                         }
                     }
-
-                    var foundAsmRefs = asmrefLookup[assembly.Name];
-                    if (foundAsmRefs.Any())
-                        assembly.AdditionalPrefixes = foundAsmRefs.Select(ar => ar.PathPrefix).ToArray();
-                }
-                catch (Exception e)
-                {
-                    exceptions.Add(e);
+                    catch (Exception e)
+                    {
+                        exceptions.Add(e);
+                    }
                 }
             }
 
@@ -770,6 +783,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             // We only construct this lookup if it is required, which is when we are using guids instead of assembly names.
             Dictionary<string, CustomScriptAssembly> guidsToAssemblies = null;
 
+            // To check if a path prefix is already being used we use a Dictionary where the key is the prefix and the value is the file path.
+            var prefixToFilePathLookup = skipCustomScriptAssemblyGraphValidation ? null : customScriptAssemblies.ToDictionary(x => x.PathPrefix, x => new List<string>() { x.FilePath }, StringComparer.OrdinalIgnoreCase);
+
             for (var i = 0; i < paths.Length; ++i)
             {
                 var path = paths[i];
@@ -792,22 +808,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                     if (!skipCustomScriptAssemblyGraphValidation)
                     {
-                        var samePrefixesReferences = assemblyRefs.Where(a => string.Equals(a.PathPrefix,
-                            loadedCustomScriptAssemblyReference.PathPrefix, StringComparison.OrdinalIgnoreCase));
-                        var samePrefixesAssemblies = customScriptAssemblies.Where(a => string.Equals(a.PathPrefix,
-                            loadedCustomScriptAssemblyReference.PathPrefix, StringComparison.OrdinalIgnoreCase));
-                        if (samePrefixesReferences.Any() || samePrefixesAssemblies.Any())
+                        // Check both asmdef and asmref files.
+                        List<string> duplicateFilePaths;
+                        if (prefixToFilePathLookup.TryGetValue(loadedCustomScriptAssemblyReference.PathPrefix, out duplicateFilePaths))
                         {
                             var filePaths = new List<string>();
                             filePaths.Add(loadedCustomScriptAssemblyReference.FilePath);
-                            filePaths.AddRange(samePrefixesReferences.Select(a => a.FilePath));
-                            filePaths.AddRange(samePrefixesAssemblies.Select(a => a.FilePath));
-                            var errorMsg = string.Empty;
-                            if (samePrefixesReferences.Any() && samePrefixesAssemblies.Any())
-                                errorMsg = "contains multiple mixed assembly definition and assembly definition reference files";
-                            else
-                                errorMsg = "contains multiple assembly definition " + (samePrefixesReferences.Any() ? "reference files" : "files");
-                            throw new AssemblyDefinitionException(string.Format("Folder '{0}' {1}", loadedCustomScriptAssemblyReference.PathPrefix, errorMsg), filePaths.ToArray());
+                            filePaths.AddRange(duplicateFilePaths);
+
+                            throw new Compilation.AssemblyDefinitionException(string.Format("Folder '{0}' contains multiple assembly definition files", loadedCustomScriptAssemblyReference.PathPrefix), filePaths.ToArray());
                         }
                     }
 
@@ -833,7 +842,21 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 }
 
                 if (loadedCustomScriptAssemblyReference != null)
+                {
                     assemblyRefs.Add(loadedCustomScriptAssemblyReference);
+
+                    if (!skipCustomScriptAssemblyGraphValidation)
+                    {
+                        List<string> duplicateFilePaths;
+                        if (!prefixToFilePathLookup.TryGetValue(loadedCustomScriptAssemblyReference.PathPrefix, out duplicateFilePaths))
+                        {
+                            duplicateFilePaths = new List<string>();
+                            prefixToFilePathLookup[loadedCustomScriptAssemblyReference.PathPrefix] = duplicateFilePaths;
+                        }
+
+                        duplicateFilePaths.Add(loadedCustomScriptAssemblyReference.FilePath);
+                    }
+                }
             }
 
             customScriptAssemblyReferences = assemblyRefs;
@@ -850,10 +873,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public Exception[] SetAllCustomScriptAssemblyJsonContents(string[] paths, string[] contents, string[] guids)
         {
             var assemblies = new List<CustomScriptAssembly>();
+            var assemblyLowercaseNamesLookup = new Dictionary<string, CustomScriptAssembly>();
             var exceptions = new List<Exception>();
             var guidsToAssemblies = new Dictionary<string, CustomScriptAssembly>();
-            var assemblyNames = new HashSet<string>();
             HashSet<string> predefinedAssemblyNames = null;
+
+            // To check if a path prefix is already being used we use a Dictionary where the key is the prefix and the value is the file path.
+            var prefixToFilePathLookup = customScriptAssemblyReferences.ToDictionary(x => x.PathPrefix, x => new List<string>(){ x.FilePath }, StringComparer.OrdinalIgnoreCase);
 
             ClearCompilationSetupErrorFlags(CompilationSetupErrorFlags.loadError);
 
@@ -865,6 +891,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 var guid = guids[i];
 
                 CustomScriptAssembly loadedCustomScriptAssembly = null;
+                string lowerCaseName = null;
 
                 try
                 {
@@ -880,6 +907,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         loadedCustomScriptAssembly = LoadCustomScriptAssemblyFromJsonPath(fullPath, guid);
                     }
 
+                    lowerCaseName = Utility.FastToLower(loadedCustomScriptAssembly.Name);
                     guidsToAssemblies[Utility.FastToLower(guid)] = loadedCustomScriptAssembly;
 
                     if (!skipCustomScriptAssemblyGraphValidation)
@@ -900,30 +928,27 @@ namespace UnityEditor.Scripting.ScriptCompilation
                                 loadedCustomScriptAssembly.FilePath);
                         }
 
-                        var duplicates = assemblies.Where(a => string.Equals(a.Name, loadedCustomScriptAssembly.Name,
-                            System.StringComparison.OrdinalIgnoreCase));
-
-                        if (duplicates.Any())
+                        CustomScriptAssembly duplicate;
+                        if (assemblyLowercaseNamesLookup.TryGetValue(lowerCaseName, out duplicate))
                         {
-                            var filePaths = new List<string>();
-                            filePaths.Add(loadedCustomScriptAssembly.FilePath);
-                            filePaths.AddRange(duplicates.Select(a => a.FilePath));
-                            throw new Compilation.AssemblyDefinitionException(
-                                string.Format("Assembly with name '{0}' already exists",
-                                    loadedCustomScriptAssembly.Name), filePaths.ToArray());
+                            var filePaths = new string[]
+                            {
+                                loadedCustomScriptAssembly.FilePath,
+                                duplicate.FilePath
+                            };
+                            var errorMsg = string.Format("Assembly with name '{0}' already exists", loadedCustomScriptAssembly.Name);
+                            loadedCustomScriptAssembly = null; // Set to null to prevent it being added.
+                            throw new Compilation.AssemblyDefinitionException(errorMsg, filePaths);
                         }
 
                         // Check both asmdef and asmref files.
-                        var samePrefixesReferences = customScriptAssemblyReferences.Where(a => string.Equals(a.PathPrefix,
-                            loadedCustomScriptAssembly.PathPrefix, StringComparison.OrdinalIgnoreCase));
-                        var samePrefixesAssemblies = assemblies.Where(a => string.Equals(a.PathPrefix,
-                            loadedCustomScriptAssembly.PathPrefix, StringComparison.OrdinalIgnoreCase));
-                        if (samePrefixesReferences.Any() || samePrefixesAssemblies.Any())
+                        List<string> duplicateFilePaths;
+                        if (prefixToFilePathLookup.TryGetValue(loadedCustomScriptAssembly.PathPrefix, out duplicateFilePaths))
                         {
                             var filePaths = new List<string>();
                             filePaths.Add(loadedCustomScriptAssembly.FilePath);
-                            filePaths.AddRange(samePrefixesReferences.Select(a => a.FilePath));
-                            filePaths.AddRange(samePrefixesAssemblies.Select(a => a.FilePath));
+                            filePaths.AddRange(duplicateFilePaths);
+
                             throw new Compilation.AssemblyDefinitionException(
                                 string.Format("Folder '{0}' contains multiple assembly definition files",
                                     loadedCustomScriptAssembly.PathPrefix), filePaths.ToArray());
@@ -941,12 +966,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 if (loadedCustomScriptAssembly != null)
                 {
-                    var lowerCaseName = Utility.FastToLower(loadedCustomScriptAssembly.Name);
-
-                    if (!assemblyNames.Contains(lowerCaseName))
+                    if (!skipCustomScriptAssemblyGraphValidation || !assemblyLowercaseNamesLookup.ContainsKey(lowerCaseName))
                     {
-                        assemblyNames.Add(lowerCaseName);
+                        assemblyLowercaseNamesLookup[lowerCaseName] = loadedCustomScriptAssembly;
                         assemblies.Add(loadedCustomScriptAssembly);
+
+                        List<string> duplicateFilePaths;
+                        if (!prefixToFilePathLookup.TryGetValue(loadedCustomScriptAssembly.PathPrefix, out duplicateFilePaths))
+                        {
+                            duplicateFilePaths = new List<string>();
+                            prefixToFilePathLookup[loadedCustomScriptAssembly.PathPrefix] = duplicateFilePaths;
+                        }
+                        duplicateFilePaths.Add(loadedCustomScriptAssembly.FilePath);
                     }
                 }
             }

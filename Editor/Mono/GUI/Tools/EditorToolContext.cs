@@ -20,12 +20,19 @@ namespace UnityEditor.EditorTools
         EditorTool m_ActiveTool;
 
         static ActiveEditorTracker m_Tracker;
+
         [SerializeField]
         List<EditorTool> m_ToolHistory = new List<EditorTool>();
+
         static bool s_ChangingActiveTool;
+
+        // Mimic behavior of Tools.toolChanged for backwards compatibility until existing tools are converted to the new
+        // apis.
+        internal static event Action<EditorTool, EditorTool> activeToolChanged;
 
         // EditorTools that are created as custom editor tools. This list represents only the shared tracker.
         List<EditorTool> m_CustomEditorTools = new List<EditorTool>();
+
         // This list represents any custom editor tools created by locked inspectors. They are not shown in the scene
         // or context menu.
         List<EditorTool> m_LockedCustomEditorTools = new List<EditorTool>();
@@ -63,21 +70,20 @@ namespace UnityEditor.EditorTools
 
                 instance.m_ToolHistory.Add(tool);
 
-                if (instance.m_ActiveTool != null)
-                    instance.m_ActiveTool.OnDeactivate();
+                EditorTools.ActiveToolWillChange();
 
                 var previous = instance.m_ActiveTool;
 
                 instance.m_ActiveTool = tool;
 
-                tool.OnActivate();
+                EditorTools.ActiveToolDidChange();
+
+                if (activeToolChanged != null)
+                    activeToolChanged(previous, instance.m_ActiveTool);
 
                 Tools.SyncToolEnum();
 
                 s_ChangingActiveTool = false;
-
-                if (toolChanged != null)
-                    toolChanged(previous, tool);
             }
         }
 
@@ -167,8 +173,6 @@ namespace UnityEditor.EditorTools
         [SerializeField]
         CustomEditorToolContext m_PreviousCustomEditorToolContext;
 
-        public static event Action<EditorTool, EditorTool> toolChanged;
-
         // EditorApplication.isPlayingOrWillEnterPlayMode doesn't handle exiting.
         [SerializeField]
         PlayModeStateChange m_PlayModeState;
@@ -183,9 +187,6 @@ namespace UnityEditor.EditorTools
             Undo.undoRedoPerformed += UndoRedoPerformed;
             ActiveEditorTracker.editorTrackerRebuilt += TrackerRebuilt;
             Selection.selectedObjectWasDestroyed += SelectedObjectWasDestroyed;
-
-            if (m_ActiveTool != null)
-                m_ActiveTool.OnActivate();
         }
 
         void OnDisable()
@@ -196,9 +197,6 @@ namespace UnityEditor.EditorTools
             ActiveEditorTracker.editorTrackerRebuilt -= TrackerRebuilt;
 
             ClearCustomEditorTools();
-
-            if (m_ActiveTool != null)
-                m_ActiveTool.OnDeactivate();
         }
 
         void PlayModeStateChanged(PlayModeStateChange state)
@@ -218,6 +216,7 @@ namespace UnityEditor.EditorTools
                     break;
 
                 case PlayModeStateChange.ExitingPlayMode:
+
                     // ExitPlayMode tests invoke this callback twice
                     if (EditorApplication.isPlaying)
                         m_PlayModeState = PlayModeStateChange.ExitingPlayMode;
@@ -275,6 +274,7 @@ namespace UnityEditor.EditorTools
                 var targets = restored.targets.ToArray();
                 EditorJsonUtility.FromJsonOverwrite(m_PreviousCustomEditorToolContext.editorToolState, restored);
                 restored.m_Targets = targets;
+                restored.m_Target = targets.Last();
                 activeTool = restored;
             }
 
@@ -408,39 +408,32 @@ namespace UnityEditor.EditorTools
             ClearCustomEditorTools();
 
             var inspectors = InspectorWindow.GetInspectors();
-            var collectedUnlockedInspector = false;
+
+            // If the shared tracker is locked, use our own tracker instance so that the current selection is always
+            // represented. Addresses case where a single locked inspector is open.
+            var shared = ActiveEditorTracker.sharedTracker;
+            preservedActiveTool |= CollectCustomEditorToolsFromTracker(shared.isLocked ? tracker : shared, m_CustomEditorTools);
 
             foreach (var inspector in inspectors)
             {
                 if (inspector.isLocked)
                     preservedActiveTool |= CollectCustomEditorToolsFromTracker(inspector.tracker, m_LockedCustomEditorTools);
-                else if (!collectedUnlockedInspector)
-                {
-                    preservedActiveTool |= CollectCustomEditorToolsFromTracker(inspector.tracker, m_CustomEditorTools);
-                    collectedUnlockedInspector = true;
-                }
-            }
-
-            if (!collectedUnlockedInspector)
-            {
-                var shared = ActiveEditorTracker.sharedTracker;
-                preservedActiveTool |= CollectCustomEditorToolsFromTracker(shared.isLocked ? tracker : shared, m_CustomEditorTools);
             }
 
             if (IsCustomEditorTool(m_ActiveTool) && !preservedActiveTool)
             {
-                m_ActiveTool.OnDeactivate();
+                var previous = m_ActiveTool;
                 m_PreviousCustomEditorToolContext = new CustomEditorToolContext(m_ActiveTool);
-                DestroyImmediate(m_ActiveTool);
                 RestorePreviousTool();
+                DestroyImmediate(previous);
             }
         }
 
         bool CollectCustomEditorToolsFromTracker(ActiveEditorTracker tracker, List<EditorTool> list)
         {
+            list.Clear();
             var activeIsCustomEditorTool = IsCustomEditorTool(m_ActiveTool);
             var preservedActiveTool = false;
-            s_CustomEditorTools.Clear();
 
             EditorToolUtility.GetEditorToolsForTracker(tracker, s_CustomEditorTools);
 
@@ -526,7 +519,6 @@ namespace UnityEditor.EditorTools
                     EditorToolUtility.GetCustomEditorToolTargetType(customEditorTool) == targetType)
                     list.Add(customEditorTool);
 
-
             if (searchLockedInspectors)
             {
                 foreach (var customEditorTool in instance.m_LockedCustomEditorTools)
@@ -553,7 +545,7 @@ namespace UnityEditor.EditorTools
 
         internal static void GetCustomEditorToolsForTarget(UnityObject target, List<EditorTool> list, bool searchLockedInspectors)
         {
-            s_CustomEditorTools.Clear();
+            list.Clear();
 
             if (target == null)
                 return;

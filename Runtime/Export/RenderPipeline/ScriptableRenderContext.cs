@@ -137,20 +137,40 @@ namespace UnityEngine.Rendering
 
         public void SetupCameraProperties(Camera camera, bool stereoSetup = false)
         {
+            SetupCameraProperties(camera, stereoSetup, 0);
+        }
+
+        public void SetupCameraProperties(Camera camera, bool stereoSetup, int eye)
+        {
             Validate();
-            SetupCameraProperties_Internal(camera, stereoSetup);
+            SetupCameraProperties_Internal(camera, stereoSetup, eye);
         }
 
         public void StereoEndRender(Camera camera)
         {
+            StereoEndRender(camera, 0, true);
+        }
+
+        public void StereoEndRender(Camera camera, int eye)
+        {
+            StereoEndRender(camera, eye, true);
+        }
+
+        public void StereoEndRender(Camera camera, int eye, bool isFinalPass)
+        {
             Validate();
-            StereoEndRender_Internal(camera);
+            StereoEndRender_Internal(camera, eye, isFinalPass);
         }
 
         public void StartMultiEye(Camera camera)
         {
+            StartMultiEye(camera, 0);
+        }
+
+        public void StartMultiEye(Camera camera, int eye)
+        {
             Validate();
-            StartMultiEye_Internal(camera);
+            StartMultiEye_Internal(camera, eye);
         }
 
         public void StopMultiEye(Camera camera)

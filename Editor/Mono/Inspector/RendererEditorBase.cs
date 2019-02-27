@@ -14,9 +14,6 @@ namespace UnityEditor
 {
     internal class RendererEditorBase : Editor
     {
-        private GUIContent m_DynamicOccludeeLabel = EditorGUIUtility.TrTextContent("Dynamic Occlusion", "Controls if dynamic occlusion culling should be performed for this renderer.");
-
-
         internal class Probes
         {
             private SerializedProperty m_LightProbeUsage;
@@ -326,11 +323,30 @@ namespace UnityEditor
         private SerializedProperty m_DynamicOccludee;
         private SerializedProperty m_RenderingLayerMask;
         private SerializedProperty m_RendererPriority;
+        private SerializedProperty m_SkinnedMotionVectors;
+        private SerializedProperty m_MotionVectors;
+        protected SerializedProperty m_Materials;
+        private SerializedProperty m_MaterialsSize;
 
-        static GUIContent m_RenderingLayerMaskStyle = EditorGUIUtility.TrTextContent("Rendering Layer Mask", "Mask that can be used with SRP DrawRenderers command to filter renderers outside of the normal layering system.");
-        static GUIContent m_RendererPriorityStyle = EditorGUIUtility.TrTextContent("Renderer Priority", "Sets the priority value that Unity uses to sort objects on top of the Material render queue.");
+        class Styles
+        {
+            public static readonly GUIContent materials = EditorGUIUtility.TrTextContent("Materials");
+            public static readonly GUIContent probeSettings = EditorGUIUtility.TrTextContent("Probes");
+            public static readonly GUIContent otherSettings = EditorGUIUtility.TrTextContent("Additional Settings");
+
+            public static readonly GUIContent dynamicOcclusion = EditorGUIUtility.TrTextContent("Dynamic Occlusion", "Controls if dynamic occlusion culling should be performed for this renderer.");
+            public static readonly GUIContent motionVectors = EditorGUIUtility.TrTextContent("Motion Vectors", "Specifies whether the Mesh Renders 'Per Object Motion', 'Camera Motion', or 'No Motion' vectors to the Camera Motion Vector Texture.");
+            public static readonly GUIContent skinnedMotionVectors = EditorGUIUtility.TrTextContent("Skinned Motion Vectors", "Enabling skinned motion vectors will use double precision motion vectors for the skinned mesh. This increases accuracy of motion vectors at the cost of additional memory usage.");
+            public static readonly GUIContent renderingLayerMask = EditorGUIUtility.TrTextContent("Rendering Layer Mask", "Mask that can be used with SRP DrawRenderers command to filter renderers outside of the normal layering system.");
+            public static readonly GUIContent rendererPriority = EditorGUIUtility.TrTextContent("Priority", "Sets the priority value that the render pipeline uses to calculate the rendering order.");
+        }
 
         protected Probes m_Probes;
+        protected LightingSettingsInspector m_Lighting;
+
+        protected SavedBool m_ShowMaterials;
+        protected SavedBool m_ShowProbeSettings;
+        protected SavedBool m_ShowOtherSettings;
 
         public virtual void OnEnable()
         {
@@ -339,36 +355,117 @@ namespace UnityEditor
             m_DynamicOccludee = serializedObject.FindProperty("m_DynamicOccludee");
             m_RenderingLayerMask = serializedObject.FindProperty("m_RenderingLayerMask");
             m_RendererPriority = serializedObject.FindProperty("m_RendererPriority");
-        }
+            m_MotionVectors = serializedObject.FindProperty("m_MotionVectors");
+            m_SkinnedMotionVectors = serializedObject.FindProperty("m_SkinnedMotionVectors");
+            m_Materials = serializedObject.FindProperty("m_Materials");
+            m_MaterialsSize = serializedObject.FindProperty("m_Materials.Array.size");
 
-        protected void RenderSortingLayerFields()
-        {
-            EditorGUILayout.Space();
-            SortingLayerEditorUtility.RenderSortingLayerFields(m_SortingOrder, m_SortingLayerID);
-        }
+            m_ShowMaterials = new SavedBool($"{target.GetType()}.ShowMaterials", true);
+            m_ShowProbeSettings = new SavedBool($"{target.GetType()}.ShowProbeSettings", true);
+            m_ShowOtherSettings = new SavedBool($"{target.GetType()}.ShowOtherSettings", true);
 
-        protected void InitializeProbeFields()
-        {
+            m_Lighting = new LightingSettingsInspector(serializedObject);
+            m_Lighting.showLightingSettings = new SavedBool($"{target.GetType()}.ShowLightingSettings", true);
+            m_Lighting.showLightmapSettings = new SavedBool($"{target.GetType()}.ShowLightmapSettings", true);
+            m_Lighting.showBakedLightmap = new SavedBool($"{target.GetType()}.ShowBakedLightmapSettings", false);
+            m_Lighting.showRealtimeLightmap = new SavedBool($"{target.GetType()}.ShowRealtimeLightmapSettings", false);
+
             m_Probes = new Probes();
             m_Probes.Initialize(serializedObject);
         }
 
-        protected void RenderProbeFields()
+        protected void LightingSettingsGUI(bool showLightmappSettings, bool showShadowBias = false)
         {
-            m_Probes.OnGUI(targets, (Renderer)target, false);
+            m_Lighting.RenderSettings(showLightmappSettings, showShadowBias);
+
+            m_ShowProbeSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowProbeSettings.value, Styles.probeSettings);
+
+            if (m_ShowProbeSettings.value)
+            {
+                EditorGUI.indentLevel += 1;
+                m_Probes.OnGUI(targets, (Renderer)target, false);
+                EditorGUI.indentLevel -= 1;
+            }
+
+            EditorGUILayout.EndFoldoutHeaderGroup();
         }
 
-        protected void CullDynamicFieldGUI()
+        protected void Other2DSettingsGUI()
         {
-            EditorGUILayout.PropertyField(m_DynamicOccludee, m_DynamicOccludeeLabel);
+            m_ShowOtherSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowOtherSettings.value, Styles.otherSettings);
+
+            if (m_ShowOtherSettings.value)
+            {
+                EditorGUI.indentLevel++;
+
+                SortingLayerEditorUtility.RenderSortingLayerFields(m_SortingOrder, m_SortingLayerID);
+
+                DrawRenderingLayer();
+
+                EditorGUI.indentLevel--;
+            }
+
+            EditorGUILayout.EndFoldoutHeaderGroup();
         }
 
-        protected void RenderRenderingLayer()
+        protected void OtherSettingsGUI(bool showMotionVectors, bool showSkinnedMotionVectors = false, bool showSortingLayerFields = false)
         {
-            RenderRenderingLayer(m_RenderingLayerMask, target as Renderer, targets.ToArray());
+            m_ShowOtherSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowOtherSettings.value, Styles.otherSettings);
+
+            if (m_ShowOtherSettings.value)
+            {
+                EditorGUI.indentLevel++;
+
+                if (SupportedRenderingFeatures.active.motionVectors)
+                {
+                    if (showMotionVectors)
+                        EditorGUILayout.PropertyField(m_MotionVectors, Styles.motionVectors, true);
+                    else if (showSkinnedMotionVectors)
+                        EditorGUILayout.PropertyField(m_SkinnedMotionVectors, Styles.skinnedMotionVectors, true);
+                }
+
+                EditorGUILayout.PropertyField(m_DynamicOccludee, Styles.dynamicOcclusion);
+
+
+                if (showSortingLayerFields)
+                    SortingLayerEditorUtility.RenderSortingLayerFields(m_SortingOrder, m_SortingLayerID);
+
+                DrawRenderingLayer();
+                DrawRendererPriority(m_RendererPriority);
+
+                EditorGUI.indentLevel--;
+            }
+
+            EditorGUILayout.EndFoldoutHeaderGroup();
         }
 
-        internal static void RenderRenderingLayer(SerializedProperty layerMask, Renderer target, Object[] targets, bool useMiniStyle = false)
+        protected void DrawMaterials()
+        {
+            m_ShowMaterials.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowMaterials.value, Styles.materials);
+
+            if (m_ShowMaterials.value)
+            {
+                EditorGUI.indentLevel++;
+
+                EditorGUILayout.PropertyField(m_MaterialsSize);
+
+                for (int i = 0; i < m_MaterialsSize.intValue; i++)
+                {
+                    EditorGUILayout.PropertyField(m_Materials.GetArrayElementAtIndex(i));
+                }
+
+                EditorGUI.indentLevel--;
+            }
+
+            EditorGUILayout.EndFoldoutHeaderGroup();
+        }
+
+        protected void DrawRenderingLayer()
+        {
+            DrawRenderingLayer(m_RenderingLayerMask, target as Renderer, targets.ToArray());
+        }
+
+        internal static void DrawRenderingLayer(SerializedProperty layerMask, Renderer target, Object[] targets, bool useMiniStyle = false)
         {
             RenderPipelineAsset srpAsset = GraphicsSettings.renderPipelineAsset;
             bool usingSRP = srpAsset != null;
@@ -386,15 +483,15 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
 
             var rect = EditorGUILayout.GetControlRect();
-            EditorGUI.BeginProperty(rect, m_RenderingLayerMaskStyle, layerMask);
+            EditorGUI.BeginProperty(rect, Styles.renderingLayerMask, layerMask);
             if (useMiniStyle)
             {
-                rect = ModuleUI.PrefixLabel(rect, m_RenderingLayerMaskStyle);
+                rect = ModuleUI.PrefixLabel(rect, Styles.renderingLayerMask);
                 mask = EditorGUI.MaskField(rect, GUIContent.none, mask, layerNames,
                     ParticleSystemStyles.Get().popup);
             }
             else
-                mask = EditorGUI.MaskField(rect, m_RenderingLayerMaskStyle, mask, layerNames);
+                mask = EditorGUI.MaskField(rect, Styles.renderingLayerMask, mask, layerNames);
             EditorGUI.EndProperty();
 
             if (EditorGUI.EndChangeCheck())
@@ -413,23 +510,18 @@ namespace UnityEditor
             EditorGUI.showMixedValue = false;
         }
 
-        protected void RenderRendererPriority()
-        {
-            RenderRendererPriority(m_RendererPriority);
-        }
-
-        internal static void RenderRendererPriority(SerializedProperty rendererPrority, bool useMiniStyle = false)
+        internal static void DrawRendererPriority(SerializedProperty rendererPrority, bool useMiniStyle = false)
         {
             if (!SupportedRenderingFeatures.active.rendererPriority)
                 return;
 
             if (!useMiniStyle)
             {
-                EditorGUILayout.PropertyField(rendererPrority, m_RendererPriorityStyle);
+                EditorGUILayout.PropertyField(rendererPrority, Styles.rendererPriority);
             }
             else
             {
-                ModuleUI.GUIInt(m_RendererPriorityStyle, rendererPrority);
+                ModuleUI.GUIInt(Styles.rendererPriority, rendererPrority);
             }
         }
 

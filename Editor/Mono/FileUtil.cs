@@ -309,5 +309,28 @@ namespace UnityEditor
             }
             return filesSize;
         }
+
+        internal static bool IsReadOnly(UnityEngine.Object asset)
+        {
+            if (!AssetDatabase.IsOpenForEdit(asset, StatusQueryOptions.UseCachedIfPossible))
+            {
+                return false;
+            }
+
+            string assetPath = AssetDatabase.GetAssetPath(asset);
+            if (!string.IsNullOrEmpty(assetPath))
+            {
+                return (File.GetAttributes(assetPath) & FileAttributes.ReadOnly) != 0;
+            }
+            return false;
+        }
+
+        internal static bool HasReadOnly(IEnumerable<UnityEngine.Object> assets)
+        {
+            foreach (UnityEngine.Object asset in assets)
+                if (IsReadOnly(asset))
+                    return true;
+            return false;
+        }
     }
 }

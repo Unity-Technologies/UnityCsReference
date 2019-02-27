@@ -238,7 +238,7 @@ namespace UnityEditor.Experimental.GraphView
             {
                 name = "contentViewContainer",
                 pickingMode = PickingMode.Ignore,
-                renderHint = RenderHint.ViewTransform
+                renderHint = RenderHint.GroupTransform
             };
 
             // make it absolute and 0 sized so it acts as a transform to move children to and fro
@@ -603,7 +603,7 @@ namespace UnityEditor.Experimental.GraphView
             // To ensure that the selected GraphElement gets unselected if it is removed from the GraphView.
             graphElement.RegisterCallback<DetachFromPanelEvent>(OnSelectedElementDetachedFromPanel);
 
-            contentViewContainer.MarkDirtyRepaint();
+            graphElement.MarkDirtyRepaint();
         }
 
         private void RemoveFromSelectionNoUndoRecord(ISelectable selectable)
@@ -616,7 +616,7 @@ namespace UnityEditor.Experimental.GraphView
             selection.Remove(selectable);
             graphElement.OnUnselected();
             graphElement.UnregisterCallback<DetachFromPanelEvent>(OnSelectedElementDetachedFromPanel);
-            contentViewContainer.MarkDirtyRepaint();
+            graphElement.MarkDirtyRepaint();
         }
 
         public virtual void RemoveFromSelection(ISelectable selectable)
@@ -647,11 +647,11 @@ namespace UnityEditor.Experimental.GraphView
 
                 graphElement.OnUnselected();
                 graphElement.UnregisterCallback<DetachFromPanelEvent>(OnSelectedElementDetachedFromPanel);
+                graphElement.MarkDirtyRepaint();
             }
 
             bool selectionWasNotEmpty = selection.Any();
             selection.Clear();
-            contentViewContainer.MarkDirtyRepaint();
 
             return selectionWasNotEmpty;
         }
@@ -793,13 +793,12 @@ namespace UnityEditor.Experimental.GraphView
             var p = panel as BaseVisualElementPanel;
             if (p != null)
             {
-                var repaintUpdater = p.GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater;
-                if (repaintUpdater != null)
+                var updater = p.GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater;
+                if (updater != null)
                 {
                     if (register)
-                        repaintUpdater.BeforeDrawChain += OnBeforeDrawChain;
-                    else
-                        repaintUpdater.BeforeDrawChain -= OnBeforeDrawChain;
+                        updater.BeforeDrawChain += OnBeforeDrawChain;
+                    else updater.BeforeDrawChain -= OnBeforeDrawChain;
                 }
             }
         }
@@ -827,7 +826,7 @@ namespace UnityEditor.Experimental.GraphView
             // Force DefaultCommonDark.uss since GraphView only has a dark style at the moment
             UIElementsEditorUtility.ForceDarkStyleSheet(this);
 
-            if (isReframable)
+            if (isReframable && panel != null)
                 panel.visualTree.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);
         }
 
@@ -1513,9 +1512,9 @@ namespace UnityEditor.Experimental.GraphView
         static readonly int s_EditorPixelsPerPointId = Shader.PropertyToID("_EditorPixelsPerPoint");
         static readonly int s_GraphViewScaleId = Shader.PropertyToID("_GraphViewScale");
 
-        void OnBeforeDrawChain(UIRRepaintUpdater repaintUpdater)
+        void OnBeforeDrawChain(UnityEngine.UIElements.UIR.UIRenderDevice device)
         {
-            Material mat = repaintUpdater.renderDevice.GetStandardMaterial();
+            Material mat = device.GetStandardMaterial();
             // Set global graph view shader properties (used by UIR)
             mat.SetFloat(s_EditorPixelsPerPointId, EditorGUIUtility.pixelsPerPoint);
             mat.SetFloat(s_GraphViewScaleId, scale);

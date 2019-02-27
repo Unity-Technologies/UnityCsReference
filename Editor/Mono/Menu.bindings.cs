@@ -24,5 +24,20 @@ namespace UnityEditor
 
         [FreeFunction("MenuController::ExtractSubmenus")]
         internal static extern string[] ExtractSubmenus(string menuPath);
+
+        [FreeFunction("MenuController::ResetMenus")]
+        internal static extern void ResetMenus(bool resetToDefault);
+
+        [FreeFunction("MenuController::AddMenuItem")]
+        internal static extern void AddExistingMenuItem(string name, string existingMenuItemId, int priority);
+
+        [FreeFunction("MenuController::AddMenuItem")]
+        internal static extern void AddMenuItem(string name, string shortcut, bool @checked, int priority, System.Action execute, System.Func<bool> validate);
+
+        [FreeFunction("MenuController::RemoveMenuItem")]
+        internal static extern void RemoveMenuItem(string name);
+
+        [FreeFunction("MenuController::AddSeparator")]
+        internal static extern void AddSeparator(string name, int priority);
     }
 }

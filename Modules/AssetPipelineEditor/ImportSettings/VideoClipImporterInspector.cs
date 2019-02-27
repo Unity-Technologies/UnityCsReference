@@ -185,6 +185,7 @@ namespace UnityEditor
         SerializedProperty m_FlipVertical;
         SerializedProperty m_FlipHorizontal;
         SerializedProperty m_ImportAudio;
+        SerializedProperty m_ColorSpace;
 
         // An array of settings for each platform, for every target.
         InspectorTargetSettings[,] m_TargetSettings;
@@ -242,6 +243,8 @@ namespace UnityEditor
                 "Transcode was skipped. Current clip does not match import settings. Reimport to resolve.");
             public GUIContent multipleTranscodeSkippedWarning = EditorGUIUtility.TextContent(
                 "Transcode was skipped for some clips and they don't match import settings. Reimport to resolve.");
+            public GUIContent sRGBTextureContent = EditorGUIUtility.TrTextContent(
+                "sRGB (Color Texture)", "Texture content is stored in gamma space.");
         };
 
         static Styles s_Styles;
@@ -318,6 +321,8 @@ namespace UnityEditor
 
         public override void OnEnable()
         {
+            base.OnEnable();
+
             if (s_Styles == null)
                 s_Styles = new Styles();
 
@@ -329,7 +334,13 @@ namespace UnityEditor
             m_FlipVertical = serializedObject.FindProperty("m_FlipVertical");
             m_FlipHorizontal = serializedObject.FindProperty("m_FlipHorizontal");
             m_ImportAudio = serializedObject.FindProperty("m_ImportAudio");
+            m_ColorSpace = serializedObject.FindProperty("m_ColorSpace");
 
+            ResetBackendValues();
+        }
+
+        void ResetBackendValues()
+        {
             ResetSettingsFromBackend();
 
             // We need to do this so we can calculate the correct fade state
@@ -443,8 +454,16 @@ namespace UnityEditor
                 sourcesHaveAudio &= (importer.sourceAudioTrackCount > 0);
             }
 
+            EditorGUI.BeginChangeCheck();
+            var sRGB = EditorGUILayout.Toggle(s_Styles.sRGBTextureContent,
+                m_ColorSpace.enumValueIndex == (int)VideoColorSpace.sRGB);
+            if (EditorGUI.EndChangeCheck())
+                m_ColorSpace.enumValueIndex = (int)(sRGB ? VideoColorSpace.sRGB : VideoColorSpace.Linear);
+
             if (sourcesHaveAlpha)
                 EditorGUILayout.PropertyField(m_EncodeAlpha, s_Styles.keepAlphaContent);
+
+            EditorGUILayout.Space();
 
             EditorGUILayout.PropertyField(m_Deinterlace, s_Styles.deinterlaceContent);
             EditorGUILayout.Space();
@@ -726,6 +745,8 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck())
                 m_UseLegacyImporter.boolValue = selectionIndex == 1;
 
+            serializedObject.ApplyModifiedProperties();
+
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("Open", EditorStyles.miniButton))
             {
@@ -736,7 +757,7 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
-            serializedObject.UpdateIfRequiredOrScript();
+            serializedObject.Update();
 
             if (m_UseLegacyImporter.boolValue)
             {
@@ -769,6 +790,8 @@ namespace UnityEditor
                     break;
                 }
             }
+
+            serializedObject.ApplyModifiedProperties();
 
             ApplyRevertGUI();
         }
@@ -824,7 +847,7 @@ namespace UnityEditor
         protected override void ResetValues()
         {
             base.ResetValues();
-            OnEnable();
+            ResetBackendValues();
         }
 
         public override void OnPreviewSettings()

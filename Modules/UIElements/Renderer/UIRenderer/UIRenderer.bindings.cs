@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
+using UnityEngine.Profiling;
 using UnityEngine.Scripting;
 
 namespace UnityEngine.UIElements.UIR
@@ -62,7 +63,7 @@ namespace UnityEngine.UIElements.UIR
 
         unsafe public static void DrawRanges<I, T>(GPUBuffer<I> ib, GPUBuffer<T> vb, NativeSlice<DrawBufferRange> ranges) where T : struct where I : struct
         {
-            System.Diagnostics.Debug.Assert(ib.ElementStride == 2);
+            Debug.Assert(ib.ElementStride == 2);
             DrawRanges(ib.BufferPointer, vb.BufferPointer, vb.ElementStride, new IntPtr(ranges.GetUnsafePtr()), ranges.Length);
         }
 
@@ -82,10 +83,17 @@ namespace UnityEngine.UIElements.UIR
             GraphicsResourcesRecreate?.Invoke(recreate);
         }
 
+        static CustomSampler s_RaiseEngineUpdateSampler = CustomSampler.Create("UIR.RaiseEngineUpdate");
+
         [RequiredByNativeCode]
         internal static void RaiseEngineUpdate()
         {
-            EngineUpdate?.Invoke();
+            if (EngineUpdate != null)
+            {
+                s_RaiseEngineUpdateSampler.Begin();
+                EngineUpdate.Invoke();
+                s_RaiseEngineUpdateSampler.End();
+            }
         }
 
         [RequiredByNativeCode]
@@ -104,10 +112,13 @@ namespace UnityEngine.UIElements.UIR
         public extern static void DisableScissor();
         public extern static UInt32 InsertCPUFence();
         public extern static bool CPUFencePassed(UInt32 fence);
-        public extern static void WaitOnCPUFence(UInt32 fence);
+        public extern static void WaitForCPUFencePassed(UInt32 fence);
         public extern static void SyncRenderThread();
+        public extern static RectInt GetActiveViewport();
         public extern static void ProfileDrawChainBegin();
         public extern static void ProfileDrawChainEnd();
+        public extern static void ProfileImmediateRendererBegin();
+        public extern static void ProfileImmediateRendererEnd();
         public extern static void NotifyOfUIREvents(bool subscribe);
     }
 }

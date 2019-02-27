@@ -154,13 +154,15 @@ namespace UnityEditor.StyleSheets
             public StyleComplexSelector Selector { get; private set; }
             public Dictionary<string, Property> Properties { get; private set; }
             public List<string> PseudoStateRules { get; private set; }
+            public readonly int LineNumber;
 
-            public Rule(string selectorName, StyleComplexSelector selector)
+            public Rule(string selectorName, StyleComplexSelector selector, int lineNumber)
             {
                 SelectorName = selectorName;
                 Selector = selector;
                 Properties = new Dictionary<string, Property>();
                 PseudoStateRules = new List<string>();
+                LineNumber = lineNumber;
             }
 
             public List<Rule> ResolveExtendedRules(StyleSheetResolver resolver)
@@ -177,7 +179,7 @@ namespace UnityEditor.StyleSheets
 
             public Rule Clone()
             {
-                return new Rule(SelectorName, Selector)
+                return new Rule(SelectorName, Selector, LineNumber)
                 {
                     Properties = new Dictionary<string, Property>(Properties),
                     PseudoStateRules = new List<string>(PseudoStateRules)
@@ -379,7 +381,7 @@ namespace UnityEditor.StyleSheets
                             if (!Rules.TryGetValue(childrenReplacementName, out pseudoChildrenRule))
                             {
                                 var childrenSelector = ConverterUtils.CreateSelectorFromSource(replacementRule.Selector, childrenRule.SelectorName);
-                                pseudoChildrenRule = new Rule(childrenReplacementName, childrenSelector);
+                                pseudoChildrenRule = new Rule(childrenReplacementName, childrenSelector, -1);
                                 Rules.Add(childrenReplacementName, pseudoChildrenRule);
                                 RecordIfPseudoStateRule(pseudoChildrenRule);
                             }
@@ -431,7 +433,7 @@ namespace UnityEditor.StyleSheets
                 rules = rules.OrderBy(rule => rule.SelectorName);
             foreach (var rule in rules)
             {
-                helper.BeginRule();
+                helper.BeginRule(string.Empty, rule.LineNumber);
                 StyleSheetBuilderHelper.BuildSelector(rule.Selector, helper);
 
                 var propertyValues = rule.Properties.Values.ToList();
@@ -602,7 +604,7 @@ namespace UnityEditor.StyleSheets
                 Rule aggregateRule;
                 if (!Rules.TryGetValue(selectorName, out aggregateRule))
                 {
-                    aggregateRule = new Rule(selectorName, complexSelector);
+                    aggregateRule = new Rule(selectorName, complexSelector, complexSelector.rule.line);
                     Rules.Add(selectorName, aggregateRule);
                 }
 

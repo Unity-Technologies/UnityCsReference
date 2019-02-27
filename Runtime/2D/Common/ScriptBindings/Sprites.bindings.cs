@@ -111,6 +111,12 @@ namespace UnityEngine
             get;
         }
 
+        public extern float spriteAtlasTextureScale
+        {
+            [NativeMethod("GetSpriteAtlasTextureScale")]
+            get;
+        }
+
         public extern Texture2D associatedAlphaSplitTexture
         {
             [NativeMethod("GetAlphaTexture")]

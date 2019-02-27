@@ -16,50 +16,49 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal class LineRendererInspector : RendererEditorBase
     {
-        private class Styles
+        class Styles
         {
-            public readonly GUIContent alignment = EditorGUIUtility.TrTextContent("Alignment", "Lines can rotate to face their transform component or the camera. When using Local mode, lines face the XY plane of the Transform.");
-            public readonly GUIContent colorGradient = EditorGUIUtility.TrTextContent("Color", "The gradient describing the color along the line.");
-            public readonly string disabledEditMessage = L10n.Tr("Editing is only available when editing a single LineRenderer");
-            public readonly GUIContent inputMode = EditorGUIUtility.TrTextContent("Input", "Use mouse position or physics raycast to determine where to create points.");
-            public readonly GUIContent layerMask = EditorGUIUtility.TrTextContent("Layer Mask", "The layer mask to use when performing raycasts.");
-            public readonly GUIContent normalOffset = EditorGUIUtility.TrTextContent("Offset", "The offset applied to created points either from the scene camera or raycast normal, when using physics.");
-            public readonly GUIContent numCapVertices = EditorGUIUtility.TrTextContent("End Cap Vertices", "How many vertices to add at each end.");
-            public readonly GUIContent numCornerVertices = EditorGUIUtility.TrTextContent("Corner Vertices", "How many vertices to add for each corner.");
-            public readonly GUIContent pointSeparation = EditorGUIUtility.TrTextContent("Min Vertex Distance", "When dragging the mouse a new point will be created after the distance has been exceeded.");
-            public readonly GUIContent positions = EditorGUIUtility.TrTextContent("Positions");
-            public readonly GUIContent propertyMenuContent = EditorGUIUtility.TrTextContent("Delete Selected Array Elements");
-            public readonly GUIContent showWireframe = EditorGUIUtility.TrTextContent("Show Wireframe", "Show the wireframe visualizing the line.");
-            public readonly GUIContent simplify = EditorGUIUtility.TrTextContent("Simplify", "Generates a simplified version of the original line by removing points that fall within the specified tolerance.");
-            public readonly GUIContent simplifyPreview = EditorGUIUtility.TrTextContent("Simplify Preview", "Show a preview of the simplified version of the line.");
-            public readonly GUIContent subdivide = EditorGUIUtility.TrTextContent("Subdivide Selected" , "Inserts a new point in between selected adjacent points.");
-            public readonly GUIContent textureMode = EditorGUIUtility.TrTextContent("Texture Mode", "Should the U coordinate be stretched or tiled?");
-            public readonly GUIContent tolerance = EditorGUIUtility.TrTextContent("Tolerance", "Used to evaluate which points should be removed from the line. A higher value results in a simpler line (fewer points). A value of 0 results in the exact same line with little to no reduction.");
-            public readonly GUIStyle richTextMiniLabel = new GUIStyle(EditorStyles.miniLabel) { richText = true };
-            public readonly GUIContent shadowBias = EditorGUIUtility.TrTextContent("Shadow Bias", "Apply a shadow bias to prevent self-shadowing artifacts. The specified value is the proportion of the line width at each segment.");
-            public readonly GUIContent generateLightingData = EditorGUIUtility.TrTextContent("Generate Lighting Data", "Toggle generation of normal and tangent data, for use in lit shaders.");
-            public readonly GUIContent[] toolContents =
+            public static readonly GUIContent alignment = EditorGUIUtility.TrTextContent("Alignment", "Lines can rotate to face their transform component or the camera. When using Local mode, lines face the XY plane of the Transform.");
+            public static readonly GUIContent colorGradient = EditorGUIUtility.TrTextContent("Color", "The gradient describing the color along the line.");
+            public static readonly string disabledEditMessage = L10n.Tr("Editing is only available when editing a single LineRenderer");
+            public static readonly GUIContent inputMode = EditorGUIUtility.TrTextContent("Input", "Use mouse position or physics raycast to determine where to create points.");
+            public static readonly GUIContent layerMask = EditorGUIUtility.TrTextContent("Layer Mask", "The layer mask to use when performing raycasts.");
+            public static readonly GUIContent normalOffset = EditorGUIUtility.TrTextContent("Offset", "The offset applied to created points either from the scene camera or raycast normal, when using physics.");
+            public static readonly GUIContent numCapVertices = EditorGUIUtility.TrTextContent("End Cap Vertices", "How many vertices to add at each end.");
+            public static readonly GUIContent numCornerVertices = EditorGUIUtility.TrTextContent("Corner Vertices", "How many vertices to add for each corner.");
+            public static readonly GUIContent pointSeparation = EditorGUIUtility.TrTextContent("Min Vertex Distance", "When dragging the mouse a new point will be created after the distance has been exceeded.");
+            public static readonly GUIContent positions = EditorGUIUtility.TrTextContent("Positions");
+            public static readonly GUIContent propertyMenuContent = EditorGUIUtility.TrTextContent("Delete Selected Array Elements");
+            public static readonly GUIContent showWireframe = EditorGUIUtility.TrTextContent("Show Wireframe", "Show the wireframe visualizing the line.");
+            public static readonly GUIContent simplify = EditorGUIUtility.TrTextContent("Simplify", "Generates a simplified version of the original line by removing points that fall within the specified tolerance.");
+            public static readonly GUIContent simplifyPreview = EditorGUIUtility.TrTextContent("Simplify Preview", "Show a preview of the simplified version of the line.");
+            public static readonly GUIContent subdivide = EditorGUIUtility.TrTextContent("Subdivide Selected" , "Inserts a new point in between selected adjacent points.");
+            public static readonly GUIContent textureMode = EditorGUIUtility.TrTextContent("Texture Mode", "Should the U coordinate be stretched or tiled?");
+            public static readonly GUIContent tolerance = EditorGUIUtility.TrTextContent("Tolerance", "Used to evaluate which points should be removed from the line. A higher value results in a simpler line (fewer points). A value of 0 results in the exact same line with little to no reduction.");
+            public static readonly GUIStyle richTextMiniLabel = new GUIStyle(EditorStyles.miniLabel) { richText = true };
+            public static readonly GUIContent shadowBias = EditorGUIUtility.TrTextContent("Shadow Bias", "Apply a shadow bias to prevent self-shadowing artifacts. The specified value is the proportion of the line width at each segment.");
+            public static readonly GUIContent generateLightingData = EditorGUIUtility.TrTextContent("Generate Lighting Data", "Toggle generation of normal and tangent data, for use in lit shaders.");
+
+            public static readonly GUIContent[] toolContents =
             {
                 EditorGUIUtility.IconContent("EditCollider", "|Edit Points in Scene View"),
                 EditorGUIUtility.IconContent("Toolbar Plus", "|Create Points in Scene View.")
             };
 
-            public readonly EditMode.SceneViewEditMode[] sceneViewEditModes = new[]
+            public static readonly EditMode.SceneViewEditMode[] sceneViewEditModes = new[]
             {
                 EditMode.SceneViewEditMode.LineRendererEdit,
                 EditMode.SceneViewEditMode.LineRendererCreate
             };
 
-            public const string baseSceneEditingToolText = "<color=grey>Line Renderer Scene Editing Mode:</color> ";
-            public readonly GUIContent[] toolNames =
+            public static readonly string baseSceneEditingToolText = "<color=grey>Line Renderer Scene Editing Mode:</color> ";
+            public static readonly GUIContent[] ToolNames =
             {
                 new GUIContent(L10n.Tr(baseSceneEditingToolText + "Edit Points"), ""),
                 new GUIContent(L10n.Tr(baseSceneEditingToolText + "Create Points"), "")
             };
         }
-        static Styles s_Styles;
 
-        private string[] m_ExcludedProperties;
         private bool m_EditingPositions;
 
         public static float simplifyTolerance
@@ -78,6 +77,7 @@ namespace UnityEditor
 
         private LineRendererCurveEditor m_CurveEditor = new LineRendererCurveEditor();
         private LineRendererEditor m_PointEditor;
+
         private SerializedProperty m_Alignment;
         private SerializedProperty m_ColorGradient;
         private SerializedProperty m_ShadowBias;
@@ -88,6 +88,7 @@ namespace UnityEditor
         private SerializedProperty m_Positions;
         private SerializedProperty m_PositionsSize;
         private SerializedProperty m_TextureMode;
+        private SerializedProperty m_UseWorldSpace;
 
         private LineRendererPositionsView m_PositionsView;
 
@@ -117,20 +118,8 @@ namespace UnityEditor
             Undo.undoRedoPerformed += UndoRedoPerformed;
             EditMode.onEditModeStartDelegate += EditModeStarted;
             EditMode.onEditModeEndDelegate += EditModeEnded;
-
-            List<string> excludedProperties = new List<string>();
-            excludedProperties.Add("m_Loop");
-            excludedProperties.Add("m_Parameters");
-            excludedProperties.Add("m_Positions");
-            excludedProperties.AddRange(Probes.GetFieldsStringArray());
-            if (!SupportedRenderingFeatures.active.motionVectors)
-                excludedProperties.Add("m_MotionVectors");
-            if (!SupportedRenderingFeatures.active.receiveShadows)
-                excludedProperties.Add("m_ReceiveShadows");
-            excludedProperties.Add("m_RenderingLayerMask");
-            m_ExcludedProperties = excludedProperties.ToArray();
-
             m_CurveEditor.OnEnable(serializedObject);
+
             m_Loop = serializedObject.FindProperty("m_Loop");
             m_Positions = serializedObject.FindProperty("m_Positions");
             m_PositionsSize = serializedObject.FindProperty("m_Positions.Array.size");
@@ -141,6 +130,7 @@ namespace UnityEditor
             m_TextureMode = serializedObject.FindProperty("m_Parameters.textureMode");
             m_GenerateLightingData = serializedObject.FindProperty("m_Parameters.generateLightingData");
             m_ShadowBias = serializedObject.FindProperty("m_Parameters.shadowBias");
+            m_UseWorldSpace = serializedObject.FindProperty("m_UseWorldSpace");
 
             m_PositionsView = new LineRendererPositionsView(m_Positions);
             m_PositionsView.selectionChangedCallback += PositionsViewSelectionChanged;
@@ -150,8 +140,6 @@ namespace UnityEditor
 
             // We cannot access isEditingMultipleObjects when drawing the SceneView so we need to cache it here for later use.
             m_IsMultiEditing = serializedObject.isEditingMultipleObjects;
-
-            InitializeProbeFields();
         }
 
         void OnPropertyContextMenu(GenericMenu menu, SerializedProperty property)
@@ -161,7 +149,7 @@ namespace UnityEditor
 
             if (property.propertyPath.Contains("m_Positions") && m_PositionsView.GetSelection().Count > 1)
             {
-                menu.AddItem(s_Styles.propertyMenuContent, false, () =>
+                menu.AddItem(Styles.propertyMenuContent, false, () =>
                 {
                     var selection = m_PositionsView.GetSelection().ToList();
                     var query = selection.OrderByDescending(c => c);
@@ -218,14 +206,14 @@ namespace UnityEditor
 
         private void DrawEditPointTools()
         {
-            LineRendererEditor.showWireframe = GUILayout.Toggle(LineRendererEditor.showWireframe, s_Styles.showWireframe);
+            LineRendererEditor.showWireframe = GUILayout.Toggle(LineRendererEditor.showWireframe, Styles.showWireframe);
 
             bool adjacentPointsSelected = HasAdjacentPointsSelected();
             using (new EditorGUI.DisabledGroupScope(!adjacentPointsSelected))
             {
                 GUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
-                if (GUILayout.Button(s_Styles.subdivide, GUILayout.Width(150)))
+                if (GUILayout.Button(Styles.subdivide, GUILayout.Width(150)))
                 {
                     SubdivideSelected();
                 }
@@ -235,14 +223,14 @@ namespace UnityEditor
 
         private static void CreatePointTools()
         {
-            LineRendererEditor.inputMode = (LineRendererEditor.InputMode)EditorGUILayout.EnumPopup(s_Styles.inputMode, LineRendererEditor.inputMode);
+            LineRendererEditor.inputMode = (LineRendererEditor.InputMode)EditorGUILayout.EnumPopup(Styles.inputMode, LineRendererEditor.inputMode);
             if (LineRendererEditor.inputMode == LineRendererEditor.InputMode.PhysicsRaycast)
             {
-                LineRendererEditor.raycastMask = EditorGUILayout.LayerMaskField(LineRendererEditor.raycastMask, s_Styles.layerMask);
+                LineRendererEditor.raycastMask = EditorGUILayout.LayerMaskField(LineRendererEditor.raycastMask, Styles.layerMask);
             }
 
-            LineRendererEditor.createPointSeparation = EditorGUILayout.FloatField(s_Styles.pointSeparation, LineRendererEditor.createPointSeparation);
-            LineRendererEditor.creationOffset = EditorGUILayout.FloatField(s_Styles.normalOffset, LineRendererEditor.creationOffset);
+            LineRendererEditor.createPointSeparation = EditorGUILayout.FloatField(Styles.pointSeparation, LineRendererEditor.createPointSeparation);
+            LineRendererEditor.creationOffset = EditorGUILayout.FloatField(Styles.normalOffset, LineRendererEditor.creationOffset);
         }
 
         Bounds GetBounds()
@@ -255,14 +243,14 @@ namespace UnityEditor
         {
             if (m_IsMultiEditing)
             {
-                EditorGUILayout.HelpBox(s_Styles.disabledEditMessage, MessageType.Info);
+                EditorGUILayout.HelpBox(Styles.disabledEditMessage, MessageType.Info);
             }
 
             EditorGUI.BeginDisabled(m_IsMultiEditing);
             EditorGUILayout.Space();
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
-            EditMode.DoInspectorToolbar(s_Styles.sceneViewEditModes, s_Styles.toolContents, GetBounds, this);
+            EditMode.DoInspectorToolbar(Styles.sceneViewEditModes, Styles.toolContents, GetBounds, this);
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
 
@@ -271,12 +259,12 @@ namespace UnityEditor
             string helpText = Styles.baseSceneEditingToolText;
             if (sceneViewEditing)
             {
-                int index = ArrayUtility.IndexOf(s_Styles.sceneViewEditModes, EditMode.editMode);
+                int index = ArrayUtility.IndexOf(Styles.sceneViewEditModes, EditMode.editMode);
                 if (index >= 0)
-                    helpText = s_Styles.toolNames[index].text;
+                    helpText = Styles.ToolNames[index].text;
             }
 
-            GUILayout.Label(helpText, s_Styles.richTextMiniLabel);
+            GUILayout.Label(helpText, Styles.richTextMiniLabel);
             GUILayout.EndVertical();
 
             // Editing mode toolbar
@@ -295,10 +283,10 @@ namespace UnityEditor
             if (!sceneViewEditing)
             {
                 EditorGUI.BeginChangeCheck();
-                showSimplifyPreview = EditorGUILayout.Toggle(s_Styles.simplifyPreview, showSimplifyPreview);
+                showSimplifyPreview = EditorGUILayout.Toggle(Styles.simplifyPreview, showSimplifyPreview);
                 EditorGUILayout.BeginHorizontal();
-                simplifyTolerance = Mathf.Max(0, EditorGUILayout.FloatField(s_Styles.tolerance, simplifyTolerance));
-                if (GUILayout.Button(s_Styles.simplify, EditorStyles.miniButton))
+                simplifyTolerance = Mathf.Max(0, EditorGUILayout.FloatField(Styles.tolerance, simplifyTolerance));
+                if (GUILayout.Button(Styles.simplify, EditorStyles.miniButton))
                 {
                     SimplifyPoints();
                 }
@@ -308,9 +296,7 @@ namespace UnityEditor
                 }
 
                 EditorGUILayout.EndHorizontal();
-                EditorGUILayout.Space();
             }
-            EditorGUILayout.Space();
             EditorGUI.EndDisabled();
         }
 
@@ -400,19 +386,16 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
-            if (s_Styles == null)
-                s_Styles = new Styles();
-
             serializedObject.Update();
-            DrawPropertiesExcluding(m_SerializedObject, m_ExcludedProperties);
+
+            DrawToolbar();
+
             EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(m_Loop);
             if (EditorGUI.EndChangeCheck())
                 ResetSimplifyPreview();
 
-            DrawToolbar();
-
-            m_ShowPositionsAnimation.target = m_Positions.isExpanded = EditorGUILayout.Foldout(m_Positions.isExpanded, s_Styles.positions, true);
+            m_ShowPositionsAnimation.target = m_Positions.isExpanded = EditorGUILayout.Foldout(m_Positions.isExpanded, Styles.positions, true);
             if (m_ShowPositionsAnimation.faded > 0)
             {
                 EditorGUILayout.PropertyField(m_PositionsSize);
@@ -432,21 +415,18 @@ namespace UnityEditor
             m_CurveEditor.OnInspectorGUI();
             EditorGUILayout.Space();
 
-            EditorGUILayout.PropertyField(m_ColorGradient, s_Styles.colorGradient);
-            EditorGUILayout.PropertyField(m_NumCornerVertices, s_Styles.numCornerVertices);
-            EditorGUILayout.PropertyField(m_NumCapVertices, s_Styles.numCapVertices);
-            EditorGUILayout.PropertyField(m_Alignment, s_Styles.alignment);
-            EditorGUILayout.PropertyField(m_TextureMode, s_Styles.textureMode);
-            EditorGUILayout.PropertyField(m_ShadowBias, s_Styles.shadowBias);
-            EditorGUILayout.PropertyField(m_GenerateLightingData, s_Styles.generateLightingData);
+            EditorGUILayout.PropertyField(m_ColorGradient, Styles.colorGradient);
+            EditorGUILayout.PropertyField(m_NumCornerVertices, Styles.numCornerVertices);
+            EditorGUILayout.PropertyField(m_NumCapVertices, Styles.numCapVertices);
+            EditorGUILayout.PropertyField(m_Alignment, Styles.alignment);
+            EditorGUILayout.PropertyField(m_TextureMode, Styles.textureMode);
+            EditorGUILayout.PropertyField(m_ShadowBias, Styles.shadowBias);
+            EditorGUILayout.PropertyField(m_GenerateLightingData, Styles.generateLightingData);
+            EditorGUILayout.PropertyField(m_UseWorldSpace);
 
-            EditorGUILayout.Space();
-
-            RenderSortingLayerFields();
-
-            m_Probes.OnGUI(targets, (Renderer)target, false);
-
-            RenderRenderingLayer();
+            DrawMaterials();
+            LightingSettingsGUI(false);
+            OtherSettingsGUI(true, false, true);
 
             serializedObject.ApplyModifiedProperties();
         }

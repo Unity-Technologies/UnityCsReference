@@ -127,7 +127,7 @@ namespace UnityEditor
                     var rootPath = "Assets";
 
                     var path = AssetDatabase.GetAssetPath(instanceIDs[i]);
-                    var packageInfo = PackageManager.Packages.GetForAssetPath(path);
+                    var packageInfo = PackageManager.PackageInfo.FindForAssetPath(path);
                     // Find the right rootPath if folderPath is part of a package
                     if (packageInfo != null)
                         rootPath = packageInfo.assetPath;
@@ -234,7 +234,7 @@ namespace UnityEditor
             baseFolders.AddRange(ProjectWindowUtil.GetBaseFolders(m_SearchFilter.folders));
             if (baseFolders.Remove(PackageManager.Folders.GetPackagesPath()))
             {
-                var packages = PackageManagerUtilityInternal.GetAllVisiblePackages();
+                var packages = PackageManagerUtilityInternal.GetAllVisiblePackages(m_SearchFilter.skipHidden);
                 foreach (var package in packages)
                 {
                     if (!baseFolders.Contains(package.assetPath))
@@ -272,7 +272,7 @@ namespace UnityEditor
             {
                 if (folderPath == PackageManager.Folders.GetPackagesPath())
                 {
-                    var packages = PackageManagerUtilityInternal.GetAllVisiblePackages();
+                    var packages = PackageManagerUtilityInternal.GetAllVisiblePackages(m_SearchFilter.skipHidden);
                     foreach (var package in packages)
                     {
                         var packageFolderInstanceId = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(package.assetPath);
@@ -287,6 +287,9 @@ namespace UnityEditor
                     }
                     continue;
                 }
+
+                if (m_SearchFilter.skipHidden && !PackageManagerUtilityInternal.IsPathInVisiblePackage(folderPath))
+                    continue;
 
                 int folderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(folderPath);
                 property = new HierarchyProperty(folderPath);

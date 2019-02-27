@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.IO;
 using UnityEditor.StyleSheets;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -23,10 +24,13 @@ namespace UnityEditor.UIElements
             s_DefaultCommonDarkStyleSheet = ScriptableObject.CreateInstance<StyleSheet>();
             s_DefaultCommonDarkStyleSheet.hideFlags = HideFlags.HideAndDontSave;
             s_DefaultCommonDarkStyleSheet.isUnityStyleSheet = true;
+            s_DefaultCommonDarkStyleSheet.name = Path.GetFileName(s_DefaultCommonStyleSheetPath);
+
 
             s_DefaultCommonLightStyleSheet = ScriptableObject.CreateInstance<StyleSheet>();
             s_DefaultCommonLightStyleSheet.hideFlags = HideFlags.HideAndDontSave;
             s_DefaultCommonLightStyleSheet.isUnityStyleSheet = true;
+            s_DefaultCommonLightStyleSheet.name = Path.GetFileName(s_DefaultCommonStyleSheetPath);
 
             ReloadDefaultEditorStyleSheets();
         }

@@ -9,20 +9,14 @@ using Unity.Collections;
 using UnityEngine.Rendering;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using UnityEngine.Profiling;
 
 namespace UnityEngine.UIElements.UIR
 {
     [StructLayout(LayoutKind.Sequential)]
     struct Transform3x4
     {
-        public Vector4 v0, v1, v2;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    struct ClippingData
-    {
-        public const int k_Size = 3 * 4 * sizeof(float);
-        public Vector4 WorldClip, ViewClip, TransformClip;
+        public Vector4 v0, v1, v2, clipRect;
     }
 
     // The values stored here could be updated behind the back of the holder of this
@@ -37,29 +31,7 @@ namespace UnityEngine.UIElements.UIR
         internal uint updateAllocID; // If not 0, the alloc here points to a temporary location managed by an update record with the said ID
     }
 
-    interface IUIRenderDevice : IDisposable
-    {
-        MeshHandle Allocate(uint vertexCount, uint indexCount, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset);
-        Alloc AllocateTransform();
-        Alloc AllocateClipping();
-
-        void Update(MeshHandle mesh, uint vertexCount, out NativeSlice<Vertex> vertexData);
-        void Update(MeshHandle mesh, uint vertexCount, uint indexCount, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset);
-        void UpdateTransform(Alloc alloc, Matrix4x4 newTransform);
-        void UpdateClipping(Alloc alloc, Rect worldRect, Rect viewRect, Rect transformRect);
-
-        void Free(MeshHandle mesh);
-        void FreeTransform(Alloc alloc);
-        void FreeClipping(Alloc alloc);
-
-        bool supportsFragmentClipping { get; }
-        Shader standardShader { get; set; }
-        Material GetStandardMaterial();
-        void DrawChain(RendererBase head, Rect viewport, Matrix4x4 projection, Texture atlas);
-        void AdvanceFrame();
-    }
-
-    internal class UIRenderDevice : IUIRenderDevice
+    internal class UIRenderDevice : IDisposable
     {
         struct AllocToUpdate
         {
@@ -85,8 +57,6 @@ namespace UnityEngine.UIElements.UIR
             public NativeArray<DrawBufferRange> drawRanges;
             public List<NativeArray<Transform3x4>> transformPages;
             public ComputeBuffer[] transformBuffers;
-            public List<NativeArray<ClippingData>> clippingPages;
-            public ComputeBuffer[] clippingBuffers;
 
             public void Dispose()
             {
@@ -96,7 +66,6 @@ namespace UnityEngine.UIElements.UIR
                     page = page.next;
                     pageToDispose.Dispose();
                 }
-
                 if (transformPages != null)
                 {
                     foreach (var transformPage in transformPages)
@@ -110,20 +79,6 @@ namespace UnityEngine.UIElements.UIR
                             transformBuffer.Dispose();
                     }
                 }
-                if (clippingPages != null)
-                {
-                    foreach (var clippingPage in clippingPages)
-                        clippingPage.Dispose();
-                }
-                if (clippingBuffers != null)
-                {
-                    foreach (var clippingBuffer in clippingBuffers)
-                    {
-                        if (clippingBuffer != null)
-                            clippingBuffer.Dispose();
-                    }
-                }
-
                 if (drawRanges.IsCreated)
                     drawRanges.Dispose();
             }
@@ -131,11 +86,10 @@ namespace UnityEngine.UIElements.UIR
 
         private const uint k_MaxQueuedFrameCount = 4; // Support drivers queuing up to 4 frames
 
-        public bool verbose = false;
+        private readonly bool m_MockDevice; // Don't access GfxDevice resources nor submit commands of any sort, used for tests
 
         // Those fields below are just for lazy creation
         private uint m_LazyCreationInitialTransformCapacity;
-        private uint m_LazyCreationInitialClippingCapacity;
         private int m_LazyCreationDrawRangeRingSize;
 
         private Shader m_DefaultMaterialShader;
@@ -145,24 +99,8 @@ namespace UnityEngine.UIElements.UIR
         private uint m_NextPageVertexCount;
         private uint m_LargeMeshVertexCount;
         private float m_IndexToVertexCountRatio;
-
-        BlockAllocator m_TransformAllocator;
-        List<NativeArray<Transform3x4>> m_TransformPages;
-        uint m_TransformBufferToUse;
-        bool m_TransformBufferNeedsUpdate;
-        ComputeBuffer[] m_TransformBuffers;
-
-        // We need to make sure we're using version 4.5+ with OpenGL as this is the condition used by the shader
-        // to determine whether StructuredBuffers are used or not
-        public bool supportsFragmentClipping { get; } = SystemInfo.supportsComputeShaders && !OpenGLCoreBelow45();
-
-        BlockAllocator m_ClippingAllocator;
-        List<NativeArray<ClippingData>> m_ClippingPages;
-        uint m_ClippingBufferToUse;
-        bool m_ClippingBufferNeedsUpdate;
-        ComputeBuffer[] m_ClippingBuffers;
-        static readonly Vector4 s_InfiniteRect = new Vector4(-1000000, -1000000, 1000000, 1000000);
-
+        private BlockAllocator m_TransformAllocator;
+        private List<NativeArray<Transform3x4>> m_TransformPages;
         private List<List<AllocToFree>> m_DeferredFrees;
         private List<List<AllocToUpdate>> m_Updates;
         private UInt32[] m_Fences;
@@ -171,10 +109,28 @@ namespace UnityEngine.UIElements.UIR
         private uint m_FrameIndex;
         private bool m_FrameIndexIncremented;
         private uint m_NextUpdateID = 1; // For the current frame only, 0 is not an accepted value here
+        private uint m_TransformBufferToUse;
+        private bool m_TransformBufferNeedsUpdate;
+        private ComputeBuffer[] m_TransformBuffers;
+        private DrawStatistics m_DrawStats;
+        private bool m_UsesStraightYCoordinateSystem;
         private static LinkedList<DeviceToFree> m_DeviceFreeQueue = new LinkedList<DeviceToFree>();   // Not thread safe for now
         private static int m_ActiveDeviceCount = 0; // Not thread safe for now
         private static bool m_SubscribedToNotifications; // Not thread safe for now
         private static bool m_SynchronousFree; // This is set on domain unload or app quit, so it is irreversible
+
+        static readonly int s_FontTexPropID = Shader.PropertyToID("_FontTex");
+        static readonly int s_CustomTexPropID = Shader.PropertyToID("_CustomTex");
+        static readonly int s_1PixelClipViewPropID = Shader.PropertyToID("_1PixelClipView");
+        static readonly int s_PixelClipRectPropID = Shader.PropertyToID("_PixelClipRect");
+        static readonly int s_TransformsPropID = Shader.PropertyToID("_Transforms");
+        static readonly int s_TransformsBufferPropID = Shader.PropertyToID("_TransformsBuffer");
+
+        static CustomSampler s_AllocateSampler = CustomSampler.Create("UIR.Allocate");
+        static CustomSampler s_FreeSampler = CustomSampler.Create("UIR.Free");
+        static CustomSampler s_AdvanceFrameSampler = CustomSampler.Create("UIR.AdvanceFrame");
+        static CustomSampler s_FenceSampler = CustomSampler.Create("UIR.WaitOnFence");
+        static CustomSampler s_BeforeDrawSampler = CustomSampler.Create("UIR.BeforeDraw");
 
 
         static UIRenderDevice()
@@ -185,12 +141,24 @@ namespace UnityEngine.UIElements.UIR
 
         public enum DrawingModes { FlipY, StraightY, DisableClipping };
 
-        public UIRenderDevice(Shader defaultMaterialShader, uint initialVertexCapacity = 0, uint initialIndexCapacity = 0, uint initialTransformCapacity = 1024, uint initialClippingCapacity = 128, DrawingModes drawingMode = DrawingModes.FlipY, int drawRangeRingSize = 1024)
+        public UIRenderDevice(Shader defaultMaterialShader, uint initialVertexCapacity = 0, uint initialIndexCapacity = 0, uint initialTransformCapacity = 1024, DrawingModes drawingMode = DrawingModes.FlipY, int drawRangeRingSize = 1024) :
+            this(defaultMaterialShader, initialVertexCapacity, initialIndexCapacity, initialTransformCapacity, drawingMode, drawRangeRingSize, false)
         {
+        }
+
+        // This protected constructor creates a "mock" render device
+        protected UIRenderDevice(uint initialVertexCapacity = 0, uint initialIndexCapacity = 0, uint initialTransformCapacity = 1024, DrawingModes drawingMode = DrawingModes.FlipY, int drawRangeRingSize = 1024) :
+            this(null, initialVertexCapacity, initialIndexCapacity, initialTransformCapacity, drawingMode, drawRangeRingSize, true)
+        {
+        }
+
+        private UIRenderDevice(Shader defaultMaterialShader, uint initialVertexCapacity, uint initialIndexCapacity, uint initialTransformCapacity, DrawingModes drawingMode, int drawRangeRingSize, bool mockDevice)
+        {
+            m_MockDevice = mockDevice;
             Debug.Assert(!m_SynchronousFree); // Shouldn't create render devices when the app is quitting or domain-unloading
             if (m_ActiveDeviceCount++ == 0)
             {
-                if (!m_SubscribedToNotifications)
+                if (!m_SubscribedToNotifications && !m_MockDevice)
                 {
                     Utility.NotifyOfUIREvents(true);
                     m_SubscribedToNotifications = true;
@@ -205,7 +173,6 @@ namespace UnityEngine.UIElements.UIR
             m_IndexToVertexCountRatio = (float)initialIndexCapacity / (float)initialVertexCapacity;
             m_IndexToVertexCountRatio = Mathf.Max(m_IndexToVertexCountRatio, 2);
             m_LazyCreationInitialTransformCapacity = initialTransformCapacity;
-            m_LazyCreationInitialClippingCapacity = initialClippingCapacity;
             m_LazyCreationDrawRangeRingSize = Mathf.IsPowerOfTwo(drawRangeRingSize) ? drawRangeRingSize : Mathf.NextPowerOfTwo(drawRangeRingSize);
 
             m_DeferredFrees = new List<List<AllocToFree>>((int)k_MaxQueuedFrameCount);
@@ -215,6 +182,11 @@ namespace UnityEngine.UIElements.UIR
                 m_DeferredFrees.Add(new List<AllocToFree>());
                 m_Updates.Add(new List<AllocToUpdate>());
             }
+
+            m_UsesStraightYCoordinateSystem =
+                SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLCore ||
+                SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLES2  ||
+                SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLES3;
         }
 
         void CompleteCreation()
@@ -222,45 +194,32 @@ namespace UnityEngine.UIElements.UIR
             if (m_DrawRanges.IsCreated)
                 return;
 
-            // Initialize Skinning-Transform Data
+            var initialTransformCapacity = m_LazyCreationInitialTransformCapacity;
+            bool unlimitedTransformCount = SystemInfo.supportsComputeShaders && !OpenGLCoreBelow45();
+            if (!unlimitedTransformCount)
+                // This should be in sync with the fallback value of UIE_SKIN_ELEMS_COUNT_MAX_CONSTANTS in UnityUIE.cginc (minus one for the identity matrix)
+                initialTransformCapacity = 19;
+            initialTransformCapacity = Math.Max(1, initialTransformCapacity); // Reserve one entry for "unskinned" meshes
+            m_TransformAllocator = new BlockAllocator(unlimitedTransformCount ? uint.MaxValue : initialTransformCapacity);
+            m_TransformPages = new List<NativeArray<Transform3x4>>(1);
+            var firstTransformPage = new NativeArray<Transform3x4>((int)initialTransformCapacity + 1, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            firstTransformPage[0] = new Transform3x4() { v0 = new Vector4(1, 0, 0, 0), v1 = new Vector4(0, 1, 0, 0), v2 = new Vector4(0, 0, 1, 0), clipRect = UIRUtility.k_InfiniteClipRect };
+            m_TransformPages.Add(firstTransformPage);
+            if (unlimitedTransformCount)
             {
-                var initialTransformCapacity = m_LazyCreationInitialTransformCapacity;
-                bool unlimitedTransformCount = SystemInfo.supportsComputeShaders;
-                if (!unlimitedTransformCount)
-                    // This should be in sync with the fallback value of UIE_SKIN_ELEMS_COUNT_MAX_CONSTANTS in UnityUIE.cginc (minus one for the identity matrix)
-                    initialTransformCapacity = 19;
-                initialTransformCapacity = Math.Max(1, initialTransformCapacity); // Reserve one entry for "unskinned" meshes
-                m_TransformAllocator = new BlockAllocator(unlimitedTransformCount ? uint.MaxValue : initialTransformCapacity);
-                m_TransformPages = new List<NativeArray<Transform3x4>>(1);
-                var firstTransformPage = new NativeArray<Transform3x4>((int)initialTransformCapacity + 1, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-                firstTransformPage[0] = new Transform3x4() { v0 = new Vector4(1, 0, 0, 0), v1 = new Vector4(0, 1, 0, 0), v2 = new Vector4(0, 0, 1, 0) };
-                m_TransformPages.Add(firstTransformPage);
-                if (unlimitedTransformCount)
+                m_TransformBuffers = new ComputeBuffer[k_MaxQueuedFrameCount];
+                if (!m_MockDevice)
                 {
-                    m_TransformBuffers = new ComputeBuffer[k_MaxQueuedFrameCount];
-                    m_TransformBuffers[0] = new ComputeBuffer((int)initialTransformCapacity, sizeof(float) * 12, ComputeBufferType.Default);
+                    m_TransformBuffers[0] = new ComputeBuffer((int)initialTransformCapacity, sizeof(float) * 16, ComputeBufferType.Default);
                     m_TransformBuffers[0].SetData(firstTransformPage, 0, 0, 1);
                 }
             }
 
-            // Initialize Clipping Data
-            if (supportsFragmentClipping)
-            {
-                var initialClippingCapacity = m_LazyCreationInitialClippingCapacity;
-                m_ClippingAllocator = new BlockAllocator(uint.MaxValue);
-                m_ClippingPages = new List<NativeArray<ClippingData>>(1);
-                var firstClippingPage = new NativeArray<ClippingData>((int)initialClippingCapacity, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-                firstClippingPage[0] = new ClippingData { WorldClip = s_InfiniteRect, ViewClip = s_InfiniteRect, TransformClip = s_InfiniteRect };
-                m_ClippingPages.Add(firstClippingPage);
-                m_ClippingBuffers = new ComputeBuffer[k_MaxQueuedFrameCount];
-                m_ClippingBuffers[0] = new ComputeBuffer((int)initialClippingCapacity, ClippingData.k_Size, ComputeBufferType.Default);
-                m_ClippingBuffers[0].SetData(firstClippingPage, 0, 0, 1);
-            }
-
             m_DrawRanges = new NativeArray<DrawBufferRange>(m_LazyCreationDrawRangeRingSize, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-            m_Fences = new uint[(int)k_MaxQueuedFrameCount];
+            m_Fences = m_MockDevice ? null : new uint[(int)k_MaxQueuedFrameCount];
 
-            UIR.Utility.EngineUpdate += OnEngineUpdate;
+            if (!m_MockDevice)
+                UIR.Utility.EngineUpdate += OnEngineUpdate;
         }
 
         #region Dispose Pattern
@@ -292,21 +251,18 @@ namespace UnityEngine.UIElements.UIR
 
             if (disposing)
             {
-                if (m_DrawRanges.IsCreated)
+                if (m_DrawRanges.IsCreated && !m_MockDevice)
                     UIR.Utility.EngineUpdate -= OnEngineUpdate;
 
-                UIRUtility.Destroy(m_DefaultMaterial);
-
-                DeviceToFree free = new DeviceToFree
+                if (m_DefaultMaterial != null)
                 {
-                    handle = Utility.InsertCPUFence(),
-                    page = m_FirstPage,
-                    drawRanges = m_DrawRanges,
-                    transformPages = m_TransformPages,
-                    transformBuffers = m_TransformBuffers,
-                    clippingPages = m_ClippingPages,
-                    clippingBuffers = m_ClippingBuffers
-                };
+                    if (Application.isPlaying)
+                        Object.Destroy(m_DefaultMaterial);
+                    else
+                        Object.DestroyImmediate(m_DefaultMaterial);
+                }
+                DeviceToFree free = new DeviceToFree()
+                { handle = m_MockDevice ? 0 : Utility.InsertCPUFence(), page = m_FirstPage, drawRanges = m_DrawRanges, transformPages = m_TransformPages, transformBuffers = m_TransformBuffers };
                 if (free.handle == 0)
                     free.Dispose();
                 else
@@ -390,7 +346,7 @@ namespace UnityEngine.UIElements.UIR
 
         void Allocate(MeshHandle meshHandle, uint vertexCount, uint indexCount, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData, bool shortLived)
         {
-            UnityEngine.Profiling.Profiler.BeginSample("UIR.Allocate");
+            s_AllocateSampler.Begin();
 
             Page page = null;
             Alloc va = new Alloc(), ia = new Alloc();
@@ -418,7 +374,7 @@ namespace UnityEngine.UIElements.UIR
                     uint newPageIndexCount = (uint)(m_NextPageVertexCount * m_IndexToVertexCountRatio + 0.5f);
                     newPageIndexCount = Math.Max(newPageIndexCount, (uint)(indexCount * 2));
                     Debug.Assert(page?.next == null); // page MUST be the last page in the list, but can be null
-                    page = new Page(m_NextPageVertexCount, newPageIndexCount, k_MaxQueuedFrameCount);
+                    page = new Page(m_NextPageVertexCount, newPageIndexCount, k_MaxQueuedFrameCount, m_MockDevice);
                     // Link this new page to the head of the list so next allocations have more chance of succeeding rather than scanning through all pages to land in this page
                     page.next = m_FirstPage;
                     m_FirstPage = page;
@@ -438,7 +394,7 @@ namespace UnityEngine.UIElements.UIR
                 while (lastPage != null && lastPage.next != null)
                     lastPage = lastPage.next;
 
-                Page dedicatedPage = new Page((uint)vertexCount, (uint)indexCount, k_MaxQueuedFrameCount);
+                Page dedicatedPage = new Page((uint)vertexCount, (uint)indexCount, k_MaxQueuedFrameCount, m_MockDevice);
                 if (lastPage != null)
                     lastPage.next = dedicatedPage;
                 else m_FirstPage = dedicatedPage;
@@ -458,7 +414,7 @@ namespace UnityEngine.UIElements.UIR
             meshHandle.allocIndices = ia;
             meshHandle.allocTime = m_FrameIndex;
 
-            UnityEngine.Profiling.Profiler.EndSample();
+            s_AllocateSampler.End();
         }
 
         void UpdateAfterGPUUsedData(MeshHandle mesh, uint vertexCount, uint indexCount, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset, out AllocToUpdate allocToUpdate, bool copyBackIndices)
@@ -481,6 +437,7 @@ namespace UnityEngine.UIElements.UIR
                 var oldUpdate = updates[activeUpdateIndex];
                 Debug.Assert(oldUpdate.id == mesh.updateAllocID);
 
+                allocToUpdate.copyBackIndices |= oldUpdate.copyBackIndices;
                 allocToUpdate.permAllocVerts = oldUpdate.permAllocVerts;
                 allocToUpdate.permAllocIndices = oldUpdate.permAllocIndices;
                 allocToUpdate.permPage = oldUpdate.permPage;
@@ -511,63 +468,30 @@ namespace UnityEngine.UIElements.UIR
             indexOffset = (UInt16)mesh.allocVerts.start;
         }
 
-        static void UpdateHostBuffer<T>(Alloc alloc, T newValue, List<NativeArray<T>> pages) where T : struct
-        {
-            int itemIndex = (int)alloc.start;
-            int pageLen = pages[0].Length;
-            int pageIndex = itemIndex / pageLen;
-            itemIndex -= pageIndex * pageLen;
-            while (pages.Count <= pageIndex)
-                pages.Add(new NativeArray<T>(pages[0].Length, Allocator.Persistent, NativeArrayOptions.UninitializedMemory));
-            var page = pages[pageIndex];
-            page[itemIndex] = newValue;
-        }
-
         public Alloc AllocateTransform()
         {
             CompleteCreation();
             return m_TransformAllocator.Allocate();
         }
 
-        public Alloc AllocateClipping()
+        public void UpdateTransform(Alloc transformID, Matrix4x4 newTransform, Vector4 clipRect)
         {
-            Debug.Assert(supportsFragmentClipping);
-            CompleteCreation();
-            return m_ClippingAllocator.Allocate();
-        }
+            m_TransformBufferNeedsUpdate = m_TransformBuffers != null;
 
-        public void UpdateTransform(Alloc alloc, Matrix4x4 newTransform)
-        {
-            if (m_TransformBuffers != null)
-                m_TransformBufferNeedsUpdate = true;
-
-            UpdateHostBuffer(alloc, new Transform3x4 { v0 = newTransform.GetRow(0), v1 = newTransform.GetRow(1), v2 = newTransform.GetRow(2) }, m_TransformPages);
-        }
-
-        public void UpdateClipping(Alloc alloc, Rect worldRect, Rect viewRect, Rect transformRect)
-        {
-            Debug.Assert(supportsFragmentClipping);
-            m_ClippingBufferNeedsUpdate = true;
-
-            var clippingData = new ClippingData
+            int transformIndex = (int)transformID.start;
+            int pageLen = m_TransformPages[0].Length;
+            int transformPage = transformIndex / pageLen;
+            transformIndex -= transformPage * pageLen;
+            while (m_TransformPages.Count <= transformPage)
+                m_TransformPages.Add(new NativeArray<Transform3x4>(m_TransformPages[0].Length, Allocator.Persistent, NativeArrayOptions.UninitializedMemory));
+            var page = m_TransformPages[transformPage];
+            page[transformIndex] = new Transform3x4()
             {
-                WorldClip = new Vector4(worldRect.xMin, worldRect.yMin, worldRect.xMax, worldRect.yMax),
-                ViewClip = new Vector4(viewRect.xMin, viewRect.yMin, viewRect.xMax, viewRect.yMax),
-                TransformClip = new Vector4(transformRect.xMin, transformRect.yMin, transformRect.xMax, transformRect.yMax)
+                v0 = newTransform.GetRow(0),
+                v1 = newTransform.GetRow(1),
+                v2 = newTransform.GetRow(2),
+                clipRect = clipRect
             };
-
-            UpdateHostBuffer(alloc, clippingData, m_ClippingPages);
-        }
-
-        public void FreeTransform(Alloc alloc)
-        {
-            m_TransformAllocator.Free(alloc);
-        }
-
-        public void FreeClipping(Alloc alloc)
-        {
-            Debug.Assert(supportsFragmentClipping);
-            m_ClippingAllocator.Free(alloc);
         }
 
         public void Free(MeshHandle mesh)
@@ -601,6 +525,16 @@ namespace UnityEngine.UIElements.UIR
                 mesh.allocPage.indices.allocator.Free(mesh.allocIndices);
             }
 
+            mesh.allocVerts = new Alloc();
+            mesh.allocIndices = new Alloc();
+            mesh.allocPage = null;
+            mesh.updateAllocID = 0;
+
+        }
+
+        public void Free(Alloc transformID)
+        {
+            m_TransformAllocator.Free(transformID);
         }
 
         public Shader standardShader
@@ -690,25 +624,28 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        static void UpdateComputeBuffer<T>(List<NativeArray<T>> pages, ComputeBuffer[] buffers, ref uint bufferToUse, int stride) where T : struct
+        void SetTransformsOnMaterial(ComputeBuffer transformsAsStructBuffer, Material mat)
         {
-            int pageLength = pages[0].Length;
-            bufferToUse = (bufferToUse + 1) % (uint)buffers.Length;
-            int itemCount = pages.Count * pageLength;
-            ComputeBuffer buffer = buffers[bufferToUse];
-            if (buffer != null && buffer.count < itemCount)
-            {
-                buffer.Dispose();
-                buffer = null;
-            }
-            if (buffer == null)
-            {
-                buffer = new ComputeBuffer(itemCount, stride, ComputeBufferType.Default);
-                buffers[bufferToUse] = buffer;
-            }
+            if (transformsAsStructBuffer != null)
+                mat.SetBuffer(s_TransformsBufferPropID, transformsAsStructBuffer);
+            else if (m_TransformPages != null)
+                UIR.Utility.SetVectorArray<Transform3x4>(mat, s_TransformsPropID, m_TransformPages[0]);
+        }
 
-            for (int i = 0; i < pages.Count; i++)
-                buffer.SetData(pages[i], 0, i * pageLength, pageLength);
+        static void Set1PixelSizeOnMaterial(DrawParams drawParams, Material mat)
+        {
+            Vector4 _1PixelClipGroup = new Vector4();
+
+            RectInt viewport = Utility.GetActiveViewport();
+            _1PixelClipGroup.x = 2.0f / viewport.width;
+            _1PixelClipGroup.y = 2.0f / viewport.height;
+
+            Matrix4x4 matVPInv = (drawParams.projection * drawParams.view.Peek().transform).inverse;
+            Vector3 v = matVPInv.MultiplyVector(new Vector3(_1PixelClipGroup.x, _1PixelClipGroup.y));
+            _1PixelClipGroup.z = Mathf.Abs(v.x);
+            _1PixelClipGroup.w = Mathf.Abs(v.y);
+
+            mat.SetVector(s_1PixelClipViewPropID, _1PixelClipGroup);
         }
 
         void BeforeDraw()
@@ -716,6 +653,12 @@ namespace UnityEngine.UIElements.UIR
             if (!m_FrameIndexIncremented)
                 AdvanceFrame();
             m_FrameIndexIncremented = false;
+            m_DrawStats = new DrawStatistics();
+            m_DrawStats.currentFrameIndex = (int)m_FrameIndex;
+            m_DrawStats.currentDrawRangeStart = m_DrawRangeStart;
+
+
+            s_BeforeDrawSampler.Begin();
 
             // Send changes
             Page page = m_FirstPage;
@@ -725,30 +668,225 @@ namespace UnityEngine.UIElements.UIR
                 page.indices.SendUpdates();
                 page = page.next;
             }
-
             if (m_TransformBufferNeedsUpdate)
             {
                 m_TransformBufferNeedsUpdate = false;
-                UpdateComputeBuffer(m_TransformPages, m_TransformBuffers, ref m_TransformBufferToUse, 12 * sizeof(float));
+                int transformPageLength = m_TransformPages[0].Length;
+                m_TransformBufferToUse = (m_TransformBufferToUse + 1) % (uint)m_TransformBuffers.Length;
+                int transformCount = m_TransformPages.Count * transformPageLength;
+                ComputeBuffer buffer = m_TransformBuffers[m_TransformBufferToUse];
+                if (buffer != null && buffer.count < transformCount)
+                {
+                    buffer.Dispose();
+                    buffer = null;
+                }
+                if (buffer == null)
+                {
+                    buffer = !m_MockDevice ? new ComputeBuffer(transformCount, sizeof(float) * 16, ComputeBufferType.Default) : null;
+                    m_TransformBuffers[m_TransformBufferToUse] = buffer;
+                }
+
+                if (!m_MockDevice)
+                {
+                    for (int i = 0; i < m_TransformPages.Count; i++)
+                        buffer.SetData(m_TransformPages[i], 0, i * transformPageLength, transformPageLength);
+                }
+            }
+            s_BeforeDrawSampler.End();
+        }
+
+        void EvaluateChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, Texture atlas)
+        {
+            var drawParams = new DrawParams(viewport, projection);
+            ComputeBuffer transformsAsStructBuffer = m_TransformBuffers != null ? m_TransformBuffers[m_TransformBufferToUse] : null;
+
+            Material standardMaterial = null;
+            if (!m_MockDevice)
+            {
+                standardMaterial = GetStandardMaterial();
+                standardMaterial.mainTexture = atlas;
+                SetTransformsOnMaterial(transformsAsStructBuffer, standardMaterial);
+                Set1PixelSizeOnMaterial(drawParams, standardMaterial);
+                standardMaterial.SetVector(s_PixelClipRectPropID, drawParams.view.Peek().clipRect);
+                GL.LoadProjectionMatrix(drawParams.projection);
             }
 
-            if (m_ClippingBufferNeedsUpdate)
+            NativeArray<DrawBufferRange> ranges = m_DrawRanges;
+            int rangesCount = ranges.Length;
+            int rangesCountMinus1 = ranges.Length - 1;
+            int rangesStart = m_DrawRangeStart;
+            int rangesReady = 0;
+            DrawBufferRange curDrawRange = new DrawBufferRange();
+            Page curPage = null;
+            State curState = new State() { material = m_DefaultMaterial };
+            int curDrawIndex = -1;
+            int maxVertexReferenced = 0;
+
+            while (head != null)
             {
-                m_ClippingBufferNeedsUpdate = false;
-                UpdateComputeBuffer(m_ClippingPages, m_ClippingBuffers, ref m_ClippingBufferToUse, ClippingData.k_Size);
+                m_DrawStats.commandCount++;
+                m_DrawStats.drawCommandCount += (head.type == CommandType.Draw ? 1u : 0u);
+
+                bool kickRanges = (head.type != CommandType.Draw) || (head.next == null);
+                bool stashRange = true;
+                bool materialChanges = false;
+                if (!kickRanges)
+                {
+                    materialChanges = (head.state.material != curState.material);
+                    curState.material = head.state.material;
+                    if (head.state.custom != null)
+                    {
+                        materialChanges |= head.state.custom != curState.custom;
+                        curState.custom = head.state.custom;
+                    }
+                    if (head.state.font != null)
+                    {
+                        materialChanges |= head.state.font != curState.font;
+                        curState.font = head.state.font;
+                    }
+                    kickRanges = materialChanges || (head.mesh.allocPage != curPage);
+                    if (!kickRanges)
+                        stashRange = curDrawIndex != (head.mesh.allocIndices.start + head.indexOffset); // Should we stash at least?
+                }
+
+                if (stashRange)
+                {
+                    // Stash the current draw range
+                    if (curDrawRange.indexCount > 0)
+                    {
+                        int wrapAroundIndex = (rangesStart + rangesReady++) & rangesCountMinus1;
+                        ranges[wrapAroundIndex] = curDrawRange; // Close the active range
+
+                        // TODO: This check only works since ranges are serialized and will break once the ranges are
+                        //       truly processed in a multi-threaded fashion without copies. When this happens, a new
+                        //       mechanism will need to be implemented to handle the "ranges-buffer-full" condition. For
+                        //       the time being, calling KickRanges will make the whole buffer available.
+                        if (rangesReady == rangesCount)
+                            KickRanges(ranges, ref rangesReady, ref rangesStart, rangesCount, curPage);
+
+                        curDrawRange = new DrawBufferRange();
+                        m_DrawStats.drawRangeCount++;
+                    }
+                    if (head.type == CommandType.Draw)
+                    {
+                        curDrawRange.firstIndex = (int)head.mesh.allocIndices.start + head.indexOffset;
+                        curDrawRange.indexCount = head.indexCount;
+                        curDrawRange.vertsReferenced = (int)(head.mesh.allocVerts.start + head.mesh.allocVerts.size);
+                        curDrawRange.minIndexVal = (int)head.mesh.allocVerts.start;
+                        curDrawIndex = curDrawRange.firstIndex + head.indexCount;
+                        maxVertexReferenced = curDrawRange.vertsReferenced + curDrawRange.minIndexVal;
+                        m_DrawStats.totalIndices += (uint)head.indexCount;
+                    }
+                }
+                else
+                {
+                    // We can chain
+                    if (curDrawRange.indexCount == 0)
+                        curDrawIndex = curDrawRange.firstIndex = (int)head.mesh.allocIndices.start + head.indexOffset; // A first draw after a stash
+                    maxVertexReferenced = Math.Max(maxVertexReferenced, (int)(head.mesh.allocVerts.size + head.mesh.allocVerts.start));
+                    curDrawRange.indexCount += head.indexCount;
+                    curDrawRange.minIndexVal = Math.Min(curDrawRange.minIndexVal, (int)head.mesh.allocVerts.start);
+                    curDrawRange.vertsReferenced = maxVertexReferenced - curDrawRange.minIndexVal;
+                    curDrawIndex += head.indexCount;
+                    m_DrawStats.totalIndices += (uint)head.indexCount;
+                    head = head.next;
+                    continue;
+                }
+
+                if (kickRanges)
+                {
+                    KickRanges(ranges, ref rangesReady, ref rangesStart, rangesCount, curPage);
+
+                    if (head.type != CommandType.Draw)
+                    {
+                        if (!m_MockDevice)
+                            head.ExecuteNonDrawMesh(drawParams, m_UsesStraightYCoordinateSystem);
+                        if (head.type == CommandType.Immediate)
+                            curState.material = m_DefaultMaterial; // A value that is considered unique and not null to force material reset on next draw command
+                    }
+                    else
+                    {
+                        curPage = head.mesh.allocPage;
+                    }
+                    if (materialChanges)
+                    {
+                        if (!m_MockDevice)
+                        {
+                            var mat = curState.material != null ? curState.material : standardMaterial;
+                            if (mat != standardMaterial)
+                            {
+                                SetTransformsOnMaterial(transformsAsStructBuffer, mat);
+                                Set1PixelSizeOnMaterial(drawParams, mat);
+                                mat.SetVector(s_PixelClipRectPropID, drawParams.view.Peek().clipRect);
+                            }
+                            else if (head.type == CommandType.PushView || head.type == CommandType.PopView)
+                            {
+                                Set1PixelSizeOnMaterial(drawParams, mat);
+                                mat.SetVector(s_PixelClipRectPropID, drawParams.view.Peek().clipRect);
+                            }
+
+                            mat.SetTexture(s_CustomTexPropID, curState.custom);
+                            mat.SetTexture(s_FontTexPropID, curState.font);
+                            mat.SetPass(0); // No multipass support, should it be even considered?
+                        }
+                        m_DrawStats.materialSetCount++;
+                    }
+                    else if (head.type == CommandType.PushView || head.type == CommandType.PopView)
+                    {
+                        var mat = curState.material != null ? curState.material : standardMaterial;
+                        if (!m_MockDevice)
+                        {
+                            Set1PixelSizeOnMaterial(drawParams, mat);
+                            mat.SetVector(s_PixelClipRectPropID, drawParams.view.Peek().clipRect);
+                            mat.SetPass(0);
+                        }
+                        m_DrawStats.materialSetCount++;
+                    }
+                }
+
+                head = head.next;
+            }
+            m_DrawRangeStart = rangesStart;
+        }
+
+        void KickRanges(NativeArray<DrawBufferRange> ranges, ref int rangesReady, ref int rangesStart, int rangesCount, Page curPage)
+        {
+            if (rangesReady > 0)
+            {
+                if (rangesStart + rangesReady <= rangesCount)
+                {
+                    if (!m_MockDevice)
+                        Utility.DrawRanges(curPage.indices.gpuData, curPage.vertices.gpuData, new NativeSlice<DrawBufferRange>(ranges, rangesStart, rangesReady));
+                    m_DrawStats.drawRangeCallCount++;
+                }
+                else
+                {
+                    // Less common situation, the numbers straddles the end of the ranges buffer
+                    int firstRangeCount = ranges.Length - rangesStart;
+                    int secondRangeCount = rangesReady - firstRangeCount;
+                    if (!m_MockDevice)
+                    {
+                        Utility.DrawRanges(curPage.indices.gpuData, curPage.vertices.gpuData, new NativeSlice<DrawBufferRange>(ranges, rangesStart, firstRangeCount));
+                        Utility.DrawRanges(curPage.indices.gpuData, curPage.vertices.gpuData, new NativeSlice<DrawBufferRange>(ranges, 0, secondRangeCount));
+                    }
+
+                    m_DrawStats.drawRangeCallCount += 2;
+                }
+
+                rangesStart = (rangesStart + rangesReady) & (rangesCount - 1);
+                rangesReady = 0;
             }
         }
 
         // Called every frame to draw one entire UI window
-        public void DrawChain(RendererBase head, Rect viewport, Matrix4x4 projection, Texture atlas)
+        public void DrawChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, Texture atlas)
         {
+            if (head == null)
+                return;
+
             BeforeDraw();
             Utility.ProfileDrawChainBegin();
-            var dcs = new DrawChainState(m_DrawRangeStart, m_DrawRanges, viewport, projection, atlas, GetStandardMaterial(), m_TransformPages,
-                m_TransformBuffers != null ? m_TransformBuffers[m_TransformBufferToUse] : null,
-                m_ClippingBuffers != null ? m_ClippingBuffers[m_ClippingBufferToUse] : null);
-            ContinueChain(head, dcs, false);
-            m_DrawRangeStart = dcs.CloseAndReturnRangesNewStart();
+            EvaluateChain(head, viewport, projection, atlas);
             Utility.ProfileDrawChainEnd();
 
             if (m_Fences != null)
@@ -756,21 +894,14 @@ namespace UnityEngine.UIElements.UIR
 
         }
 
-        internal static void ContinueChain(RendererBase head, DrawChainState dcs, bool outerChainsWithMeshRenderer)
-        {
-            while (head != null)
-            {
-                dcs.nextInChainIsMeshRenderer = (head.next != null) ? head.next.chainsWithMeshRenderer : outerChainsWithMeshRenderer;
-                head.Draw(dcs);
-                head = head.next;
-            }
-        }
-
         public void AdvanceFrame()
         {
+            s_AdvanceFrameSampler.Begin();
+
             m_FrameIndex++;
             m_FrameIndexIncremented = true;
-            m_NextUpdateID = 1; // Reset
+
+            m_DrawStats.currentFrameIndex = (int)m_FrameIndex;
 
             if (m_Fences != null)
             {
@@ -778,13 +909,14 @@ namespace UnityEngine.UIElements.UIR
                 uint fence = m_Fences[fenceIndex];
                 if (fence != 0 && !Utility.CPUFencePassed(fence))
                 {
-                    if (verbose)
-                        Debug.LogWarning("Waiting for render thread synchronization.");
-                    Utility.WaitOnCPUFence(fence);
+                    s_FenceSampler.Begin();
+                    Utility.WaitForCPUFencePassed(fence);
+                    s_FenceSampler.End();
                 }
                 m_Fences[fenceIndex] = 0;
             }
 
+            m_NextUpdateID = 1; // Reset
             var queueToFree = m_DeferredFrees[(int)(m_FrameIndex % (uint)m_DeferredFrees.Count)];
             foreach (var alloc in queueToFree)
             {
@@ -828,6 +960,8 @@ namespace UnityEngine.UIElements.UIR
                 }
             }
             queueToUpdate.Clear();
+
+            s_AdvanceFrameSampler.End();
         }
 
         internal static void PrepareForGfxDeviceRecreate()
@@ -842,24 +976,30 @@ namespace UnityEngine.UIElements.UIR
             ProcessDeviceFreeQueue();
         }
 
-        public struct Statistics
+        internal struct AllocationStatistics
         {
-            public struct PageStatistics { public HeapStatistics vertices, indices; }
+            public struct PageStatistics { internal HeapStatistics vertices, indices; }
             public PageStatistics[] pages;
             public int[] freesDeferred;
-            public int currentFrameIndex;
-            public int currentDrawRangeStart;
+            public int transformPages;
+            public int transformsAllocated, transformsAvailable;
             public bool completeInit;
         }
-        public Statistics GatherStatistics()
+        internal AllocationStatistics GatherAllocationStatistics()
         {
-            Statistics stats = new Statistics();
-            stats.currentFrameIndex = (int)m_FrameIndex;
-            stats.currentDrawRangeStart = m_DrawRangeStart;
+            AllocationStatistics stats = new AllocationStatistics();
             stats.completeInit = m_DrawRanges.IsCreated;
             stats.freesDeferred = new int[m_DeferredFrees.Count];
             for (int i = 0; i < m_DeferredFrees.Count; i++)
                 stats.freesDeferred[i] = m_DeferredFrees[i].Count;
+            stats.transformPages = m_TransformPages != null ? m_TransformPages.Count : 0;
+            if (m_TransformAllocator != null)
+            {
+                stats.transformsAllocated = (int)m_TransformAllocator.AllocatedBlocks;
+                if (m_TransformAllocator.TotalBlocks == uint.MaxValue)
+                    stats.transformsAvailable = -1;
+                else stats.transformsAvailable = (int)m_TransformAllocator.FreeBlocks;
+            }
             int pageCount = 0;
             Page page = m_FirstPage;
             while (page != null)
@@ -867,7 +1007,7 @@ namespace UnityEngine.UIElements.UIR
                 pageCount++;
                 page = page.next;
             }
-            stats.pages = new Statistics.PageStatistics[pageCount];
+            stats.pages = new AllocationStatistics.PageStatistics[pageCount];
             pageCount = 0;
             page = m_FirstPage;
             while (page != null)
@@ -880,6 +1020,20 @@ namespace UnityEngine.UIElements.UIR
             return stats;
         }
 
+        internal struct DrawStatistics
+        {
+            public int currentFrameIndex;
+            public int currentDrawRangeStart;
+            public uint totalIndices;
+            public uint commandCount;
+            public uint drawCommandCount;
+            public uint materialSetCount;
+            public uint drawRangeCount;
+            public uint drawRangeCallCount;
+        }
+        internal DrawStatistics GatherDrawStatistics() { return m_DrawStats; }
+
+
         #region Internals
         private void OnEngineUpdate()
         {
@@ -888,6 +1042,8 @@ namespace UnityEngine.UIElements.UIR
 
         private static void ProcessDeviceFreeQueue()
         {
+            s_FreeSampler.Begin();
+
             if (m_SynchronousFree)
                 Utility.SyncRenderThread();
 
@@ -909,6 +1065,8 @@ namespace UnityEngine.UIElements.UIR
                 Utility.NotifyOfUIREvents(false);
                 m_SubscribedToNotifications = false;
             }
+
+            s_FreeSampler.End();
         }
 
         private static void OnEngineUpdateGlobal()
@@ -923,188 +1081,5 @@ namespace UnityEngine.UIElements.UIR
         }
 
         #endregion // Internals
-    }
-
-    internal class DrawChainState
-    {
-        internal DrawChainState(
-            int rangesStart,
-            NativeArray<DrawBufferRange> ranges,
-            Rect viewport,
-            Matrix4x4 proj,
-            Texture atlas,
-            Material defaultMat,
-            List<NativeArray<Transform3x4>> transforms,
-            ComputeBuffer transformsBuffer,
-            ComputeBuffer clippingBuffer)
-        {
-            m_RangesStart = rangesStart;
-            m_Ranges = ranges;
-            this.viewport = viewport;
-            this.view = Matrix4x4.identity;
-            projection = proj;
-            this.atlas = atlas;
-            m_DefaultMaterial = defaultMat;
-            m_TransformsForConstants = transforms;
-            m_TransformsAsStructBuffer = transformsBuffer;
-            m_ClippingBuffer = clippingBuffer;
-            if (m_DefaultMaterial != null)
-            {
-                if (m_TransformsAsStructBuffer != null)
-                    m_DefaultMaterial.SetBuffer(s_TransformsBufferPropID, m_TransformsAsStructBuffer);
-                else if (m_TransformsForConstants != null)
-                    UIR.Utility.SetVectorArray<Transform3x4>(m_DefaultMaterial, s_TransformsPropID, m_TransformsForConstants[0]);
-                if (m_ClippingBuffer != null)
-                    m_DefaultMaterial.SetBuffer(s_ClippingBufferPropID, m_ClippingBuffer);
-            }
-        }
-
-        internal State state { get; private set; }
-        internal object pageObj;
-        internal DrawBufferRange currentDrawRange;
-        internal bool nextInChainIsMeshRenderer;
-        internal Rect viewport { get; private set; }
-        internal Matrix4x4 view { get; set; }
-        internal Matrix4x4 projection { get; private set; }
-        internal Rect scissorRect { get; set; }
-        internal int scissorCount { get; set; }
-        internal Texture atlas { get; set; }
-        internal Matrix4x4 GetTransform(uint transformID)
-        {
-            if (m_TransformsForConstants == null)
-            {
-                System.Diagnostics.Debug.Assert(transformID == 0);
-                return Matrix4x4.identity;
-            }
-            int pageLen = m_TransformsForConstants[0].Length;
-            int page = (int)transformID / pageLen;
-            Transform3x4 transform = m_TransformsForConstants[page][(int)transformID - page * pageLen];
-            Matrix4x4 mat = new Matrix4x4();
-            mat.SetRow(0, transform.v0);
-            mat.SetRow(1, transform.v1);
-            mat.SetRow(2, transform.v2);
-            mat.SetRow(3, new Vector4(0, 0, 0, 1));
-            return mat;
-        }
-
-
-        NativeArray<DrawBufferRange> m_Ranges;
-        int m_RangesStart;
-        int m_RangesReady;
-        Material m_DefaultMaterial;
-        List<NativeArray<Transform3x4>> m_TransformsForConstants;
-        ComputeBuffer m_TransformsAsStructBuffer;
-        ComputeBuffer m_ClippingBuffer;
-
-        internal void StashCurrentAndOpenNewDrawRange()
-        {
-            if (currentDrawRange.indexCount > 0)
-            {
-                int wrapAroundIndex = (m_RangesStart + m_RangesReady++) & (m_Ranges.Length - 1);
-                m_Ranges[wrapAroundIndex] = currentDrawRange; // Close the active range
-            }
-            currentDrawRange = new DrawBufferRange();
-        }
-
-        internal void InvalidateState()
-        {
-            state = null;
-        }
-
-        /// <summary>
-        /// Performs the draw calls for the ranges.
-        /// </summary>
-        internal void KickRanges()
-        {
-            StashCurrentAndOpenNewDrawRange();
-            if (m_RangesReady == 0)
-                return;
-
-            Page page = (Page)pageObj;
-            if (m_RangesStart + m_RangesReady <= m_Ranges.Length)
-                Utility.DrawRanges(page.indices.gpuData, page.vertices.gpuData, new NativeSlice<DrawBufferRange>(m_Ranges, m_RangesStart, m_RangesReady));
-            else
-            {
-                // Less common situation, the numbers straddles the end of the ranges buffer
-                int firstRangeCount = m_Ranges.Length - m_RangesStart;
-                int secondRangeCount = m_RangesReady - firstRangeCount;
-                Utility.DrawRanges(page.indices.gpuData, page.vertices.gpuData, new NativeSlice<DrawBufferRange>(m_Ranges, m_RangesStart, firstRangeCount));
-                Utility.DrawRanges(page.indices.gpuData, page.vertices.gpuData, new NativeSlice<DrawBufferRange>(m_Ranges, 0, secondRangeCount));
-            }
-            m_RangesStart = (m_RangesStart + m_RangesReady) & (m_Ranges.Length - 1);
-            m_RangesReady = 0;
-        }
-
-        internal int CloseAndReturnRangesNewStart() { return m_RangesStart; }
-
-        static readonly int s_FontTexPropID = Shader.PropertyToID("_FontTex");
-        static readonly int s_CustomTexPropID = Shader.PropertyToID("_CustomTex");
-        static readonly int s_1PixelClipWorldPropID = Shader.PropertyToID("_1PixelClipWorld");
-        static readonly int s_TransformsPropID = Shader.PropertyToID("_Transforms");
-        static readonly int s_TransformsBufferPropID = Shader.PropertyToID("_TransformsBuffer");
-        static readonly int s_ClippingBufferPropID = Shader.PropertyToID("_ClippingBuffer");
-        internal void SetState(State newState)
-        {
-            Debug.Assert(newState != null);
-
-            bool firstState = false;
-            if (state == null)
-            {
-                state = new State();
-                firstState = true;
-            }
-
-            StateFields overrides = state.OverrideWith(newState);
-            if (!firstState)
-            {
-                if (overrides == StateFields.None)
-                    return;
-
-                // Kick any pending ranges before the overrides are applied.
-                KickRanges();
-            }
-
-            Material mat = state.material != null ? state.material : m_DefaultMaterial;
-            mat.mainTexture = atlas;
-            if (state.custom != null)
-                mat.SetTexture(s_CustomTexPropID, state.custom);
-            if (state.font != null)
-                mat.SetTexture(s_FontTexPropID, state.font);
-            if (mat != m_DefaultMaterial)
-            {
-                if (m_TransformsAsStructBuffer != null)
-                    mat.SetBuffer(s_TransformsBufferPropID, m_TransformsAsStructBuffer);
-                else if (m_TransformsForConstants != null)
-                    UIR.Utility.SetVectorArray<Transform3x4>(mat, s_TransformsPropID, m_TransformsForConstants[0]);
-                if (m_ClippingBuffer != null)
-                    mat.SetBuffer(s_ClippingBufferPropID, m_ClippingBuffer);
-            }
-
-            Vector4 _1PixelClipWorld;
-            Vector2 renderTargetSize = UIRUtility.GetRenderTargetSize();
-            _1PixelClipWorld.x = 2.0f / renderTargetSize.x;
-            _1PixelClipWorld.y = 2.0f / renderTargetSize.y;
-            {
-                Matrix4x4 matVPInv = (projection * view).inverse;
-                Vector3 v1 = matVPInv.MultiplyPoint(new Vector3(0, 0, 0));
-                Vector3 v2 = matVPInv.MultiplyPoint(new Vector3(_1PixelClipWorld.x, _1PixelClipWorld.y, 0));
-                _1PixelClipWorld.z = Mathf.Abs(v1.x - v2.x);
-                _1PixelClipWorld.w = Mathf.Abs(v1.y - v2.y);
-            }
-            mat.SetVector(s_1PixelClipWorldPropID, _1PixelClipWorld);
-
-            mat.SetPass(0);
-            GL.modelview = view;
-            GL.LoadProjectionMatrix(projection);
-        }
-
-        internal void SetProjection(Matrix4x4 newProjection)
-        {
-            if (state != null)
-                KickRanges();
-
-            projection = newProjection;
-            GL.LoadProjectionMatrix(projection);
-        }
     }
 }

@@ -48,11 +48,11 @@ namespace UnityEngine.Rendering
 
         extern private void ExecuteCommandBufferAsync_Internal(CommandBuffer commandBuffer, ComputeQueueType queueType);
 
-        extern private void SetupCameraProperties_Internal(Camera camera, bool stereoSetup);
+        extern private void SetupCameraProperties_Internal(Camera camera, bool stereoSetup, int eye);
 
-        extern private void StereoEndRender_Internal(Camera camera);
+        extern private void StereoEndRender_Internal(Camera camera, int eye, bool isFinalPass);
 
-        extern private void StartMultiEye_Internal(Camera camera);
+        extern private void StartMultiEye_Internal(Camera camera, int eye);
 
         extern private void StopMultiEye_Internal(Camera camera);
 

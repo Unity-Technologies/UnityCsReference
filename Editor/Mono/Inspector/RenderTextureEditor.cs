@@ -107,12 +107,32 @@ namespace UnityEditor
 
             if ((guiElements & GUIElements.RenderTargetAAGUI) != 0)
                 EditorGUILayout.IntPopup(m_AntiAliasing, styles.renderTextureAntiAliasing, styles.renderTextureAntiAliasingValues, styles.antiAliasing);
-            EditorGUILayout.PropertyField(m_EnableCompatibleFormat, styles.enableCompatibleFormat);
+
+            GraphicsFormat format = (GraphicsFormat)m_ColorFormat.intValue;
+            GraphicsFormat compatibleFormat = SystemInfo.GetCompatibleFormat(format, FormatUsage.Render);
+
+            using (new EditorGUI.DisabledScope(compatibleFormat == GraphicsFormat.None))
+                EditorGUILayout.PropertyField(m_EnableCompatibleFormat, styles.enableCompatibleFormat);
+
             EditorGUILayout.PropertyField(m_ColorFormat, styles.colorFormat);
+
+            if (compatibleFormat != format)
+            {
+                string text = string.Format("Format {0} is not supported on this platform. ", format.ToString());
+                if (compatibleFormat != GraphicsFormat.None)
+                {
+                    if (m_EnableCompatibleFormat.boolValue)
+                        text += string.Format("Using {0} as a compatible format.", compatibleFormat.ToString());
+                    else
+                        text += string.Format("You may enable Compatible Color Format to fallback automatically to a platform specific comptible format, {0} on this device.", compatibleFormat.ToString());
+                }
+                EditorGUILayout.HelpBox(text, m_EnableCompatibleFormat.boolValue && compatibleFormat != GraphicsFormat.None ? MessageType.Warning : MessageType.Error);
+            }
+
             if ((guiElements & GUIElements.RenderTargetDepthGUI) != 0)
                 EditorGUILayout.PropertyField(m_DepthFormat, styles.depthBuffer);
 
-            m_sRGB.boolValue = GraphicsFormatUtility.IsSRGBFormat((GraphicsFormat)m_ColorFormat.intValue);
+            m_sRGB.boolValue = GraphicsFormatUtility.IsSRGBFormat(format);
 
             using (new EditorGUI.DisabledScope(isTexture3D))
             {

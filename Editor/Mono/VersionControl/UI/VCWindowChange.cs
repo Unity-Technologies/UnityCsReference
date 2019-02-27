@@ -254,7 +254,10 @@ namespace UnityEditor.VersionControl
             GUILayout.BeginArea(r1);
             GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
             GUILayout.EndArea();
-            submitList.OnGUI(new Rect(r1.x + 2, r1.y + 2, r1.width - 4, r1.height - 4), true);
+            bool repaint = submitList.OnGUI(new Rect(r1.x + 2, r1.y + 2, r1.width - 4, r1.height - 4), true);
+
+            if (repaint)
+                Repaint();
 
             GUILayout.FlexibleSpace();
             GUILayout.BeginHorizontal();

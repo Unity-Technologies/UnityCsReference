@@ -238,5 +238,8 @@ namespace UnityEngine
             s_Logger.LogException(exception, obj);
             return true;
         }
+
+        internal static extern void LogSticky(int identifier, LogType logType, LogOption logOptions, string message, Object context = null);
+        internal static extern void RemoveLogEntriesByIdentifier(int identifier);
     }
 }

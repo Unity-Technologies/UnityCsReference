@@ -379,8 +379,8 @@ namespace UnityEditor
             var renderersArray = renderers.ToArray();
             m_Probes.OnGUI(renderersArray, renderers.FirstOrDefault(), true);
 
-            RendererEditorBase.RenderRenderingLayer(m_RenderingLayerMask, serializedObject.targetObject as Renderer, renderersArray, true);
-            RendererEditorBase.RenderRendererPriority(m_RendererPriority, true);
+            RendererEditorBase.DrawRenderingLayer(m_RenderingLayerMask, serializedObject.targetObject as Renderer, renderersArray, true);
+            RendererEditorBase.DrawRendererPriority(m_RendererPriority, true);
         }
 
         private void DoListOfMeshesGUI()

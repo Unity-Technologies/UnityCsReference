@@ -10,17 +10,23 @@ namespace UnityEngine.Experimental.Rendering
     // TODO: Obsolete/remove this when TMP updates to use new API.
     public static class RenderPipeline
     {
-        public static event Action<Camera[]> beginFrameRendering
+        static RenderPipeline()
         {
-            add { RenderPipelineManager.beginFrameRendering += value; }
-            remove { RenderPipelineManager.beginFrameRendering -= value; }
+            RenderPipelineManager.beginFrameRendering += (context, cameras) =>
+            {
+                if (beginFrameRendering != null)
+                    beginFrameRendering(cameras);
+            };
+
+            RenderPipelineManager.beginCameraRendering += (context, camera) =>
+            {
+                if (beginCameraRendering != null)
+                    beginCameraRendering(camera);
+            };
         }
 
-        public static event Action<Camera> beginCameraRendering
-        {
-            add { RenderPipelineManager.beginCameraRendering += value; }
-            remove { RenderPipelineManager.beginCameraRendering -= value; }
-        }
+        public static event Action<Camera[]> beginFrameRendering;
+        public static event Action<Camera> beginCameraRendering;
     }
 }
 
@@ -28,16 +34,39 @@ namespace UnityEngine.Rendering
 {
     public abstract class RenderPipeline
     {
-        protected abstract void Render(ScriptableRenderContext context, Camera[] cameras);
-
+        // Obsolete: Remove this when TMP, HDRP and LWRP will have updated their
         protected static void BeginFrameRendering(Camera[] cameras)
         {
-            RenderPipelineManager.BeginFrameRendering(cameras);
+            RenderPipelineManager.BeginFrameRendering(default(ScriptableRenderContext), cameras);
         }
 
         protected static void BeginCameraRendering(Camera camera)
         {
-            RenderPipelineManager.BeginCameraRendering(camera);
+            RenderPipelineManager.BeginCameraRendering(default(ScriptableRenderContext), camera);
+        }
+
+        // End Obsolete code
+
+        protected abstract void Render(ScriptableRenderContext context, Camera[] cameras);
+
+        protected static void BeginFrameRendering(ScriptableRenderContext context, Camera[] cameras)
+        {
+            RenderPipelineManager.BeginFrameRendering(context, cameras);
+        }
+
+        protected static void BeginCameraRendering(ScriptableRenderContext context, Camera camera)
+        {
+            RenderPipelineManager.BeginCameraRendering(context, camera);
+        }
+
+        protected static void EndFrameRendering(ScriptableRenderContext context, Camera[] cameras)
+        {
+            RenderPipelineManager.EndFrameRendering(context, cameras);
+        }
+
+        protected static void EndCameraRendering(ScriptableRenderContext context, Camera camera)
+        {
+            RenderPipelineManager.EndCameraRendering(context, camera);
         }
 
         internal void InternalRender(ScriptableRenderContext context, Camera[] cameras)

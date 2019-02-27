@@ -124,6 +124,8 @@ namespace UnityEditor.UIElements
                         return "'{0}' attribute name is deprecated";
                     case ImportErrorCode.ReplaceByAttributeName:
                         return "Please use '{0}' instead";
+                    case ImportErrorCode.AttributeOverridesMissingElementNameAttr:
+                        return "AttributeOverrides node missing 'element-name' attribute.";
                     default:
                         throw new ArgumentOutOfRangeException("Unhandled error code " + errorCode);
                 }
@@ -222,6 +224,8 @@ namespace UnityEditor.UIElements
         const string k_StylePathAttr = "path";
         const string k_SlotDefinitionAttr = "slot-name";
         const string k_SlotUsageAttr = "slot";
+        const string k_AttributeOverridesNode = "AttributeOverrides";
+        const string k_AttributeOverridesElementNameAttr = "element-name";
 
         internal UXMLImporterImpl()
         {
@@ -441,8 +445,9 @@ namespace UnityEditor.UIElements
             // they don't have selectors and are directly referenced by index
             // it's then applied during tree cloning
             vea.ruleIndex = startedRule ? m_Builder.EndRule() : -1;
-            if (vea is TemplateAsset)
-                vta.templateAssets.Add((TemplateAsset)vea);
+            var templateAsset = vea as TemplateAsset;
+            if (templateAsset != null)
+                vta.templateAssets.Add(templateAsset);
             else
                 vta.visualElementAssets.Add(vea);
 
@@ -452,6 +457,8 @@ namespace UnityEditor.UIElements
                 {
                     if (child.Name.LocalName == k_StyleReferenceNode)
                         LoadStyleReferenceNode(vea, child);
+                    else if (templateAsset != null && child.Name.LocalName == k_AttributeOverridesNode)
+                        LoadAttributeOverridesNode(templateAsset, child);
                     else
                     {
                         ++orderInDocument;
@@ -470,6 +477,31 @@ namespace UnityEditor.UIElements
                 return;
             }
             vea.stylesheets.Add(pathAttr.Value);
+        }
+
+        void LoadAttributeOverridesNode(TemplateAsset templateAsset, XElement attributeOverridesElt)
+        {
+            var elementNameAttr = attributeOverridesElt.Attribute(k_AttributeOverridesElementNameAttr);
+            if (elementNameAttr == null || String.IsNullOrEmpty(elementNameAttr.Value))
+            {
+                logger.LogError(ImportErrorType.Semantic, ImportErrorCode.AttributeOverridesMissingElementNameAttr, null, Error.Level.Warning, attributeOverridesElt);
+                return;
+            }
+
+            foreach (var attribute in attributeOverridesElt.Attributes())
+            {
+                if (attribute.Name.LocalName == k_AttributeOverridesElementNameAttr)
+                    continue;
+
+                var attributeOverride = new TemplateAsset.AttributeOverride()
+                {
+                    m_ElementName = elementNameAttr.Value,
+                    m_AttributeName = attribute.Name.LocalName,
+                    m_Value = attribute.Value
+                };
+
+                templateAsset.attributeOverrides.Add(attributeOverride);
+            }
         }
 
         VisualElementAsset ResolveType(XElement elt, VisualTreeAsset visualTreeAsset)
@@ -623,7 +655,8 @@ namespace UnityEditor.UIElements
         SlotUsageHasEmptyName,
         DuplicateContentContainer,
         DeprecatedAttributeName,
-        ReplaceByAttributeName
+        ReplaceByAttributeName,
+        AttributeOverridesMissingElementNameAttr
     }
 
     internal enum ImportErrorType

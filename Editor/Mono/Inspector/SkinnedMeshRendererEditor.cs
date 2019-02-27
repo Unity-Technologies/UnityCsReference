@@ -16,100 +16,65 @@ namespace UnityEditor
     {
         class Styles
         {
-            public static readonly GUIContent GeneralSettings = EditorGUIUtility.TrTextContent("General");
-            public static readonly GUIContent ProbeSettings = EditorGUIUtility.TrTextContent("Probes");
-            public static readonly GUIContent OtherSettings = EditorGUIUtility.TrTextContent("Additional Settings");
-
-            public static readonly GUIContent LegacyClampBlendShapeWeightsInfo = EditorGUIUtility.TrTextContent("Note that BlendShape weight range is clamped. This can be disabled in Player Settings.");
+            public static readonly GUIContent legacyClampBlendShapeWeightsInfo = EditorGUIUtility.TrTextContent("Note that BlendShape weight range is clamped. This can be disabled in Player Settings.");
+            public static readonly GUIContent bounds = EditorGUIUtility.TrTextContent("Bounds");
+            public static readonly GUIContent quality = EditorGUIUtility.TrTextContent("Quality", "Number of bones to use per vertex during skinning.");
+            public static readonly GUIContent updateWhenOffscreen = EditorGUIUtility.TrTextContent("Update When Offscreen", "If an accurate bounding volume representation should be calculated every frame. ");
+            public static readonly GUIContent mesh = EditorGUIUtility.TrTextContent("Mesh");
+            public static readonly GUIContent rootBone = EditorGUIUtility.TrTextContent("Root Bone");
         }
 
-        private SerializedProperty m_Materials;
         private SerializedProperty m_AABB;
         private SerializedProperty m_DirtyAABB;
         private SerializedProperty m_BlendShapeWeights;
-        private SerializedProperty m_SkinnedMotionVectors;
-
-        private LightingSettingsInspector m_Lighting;
+        private SerializedProperty m_Quality;
+        private SerializedProperty m_UpdateWhenOffscreen;
+        private SerializedProperty m_Mesh;
+        private SerializedProperty m_RootBone;
 
         private BoxBoundsHandle m_BoundsHandle = new BoxBoundsHandle();
-        private string[] m_ExcludedProperties;
-
-        private SavedBool m_ShowGeneralSettings;
-        private SavedBool m_ShowProbeSettings;
-        private SavedBool m_ShowOtherSettings;
 
         public override void OnEnable()
         {
             base.OnEnable();
 
-            m_Materials = serializedObject.FindProperty("m_Materials");
-            m_BlendShapeWeights = serializedObject.FindProperty("m_BlendShapeWeights");
             m_AABB = serializedObject.FindProperty("m_AABB");
             m_DirtyAABB = serializedObject.FindProperty("m_DirtyAABB");
-            m_SkinnedMotionVectors = serializedObject.FindProperty("m_SkinnedMotionVectors");
+            m_BlendShapeWeights = serializedObject.FindProperty("m_BlendShapeWeights");
+            m_Quality = serializedObject.FindProperty("m_Quality");
+            m_UpdateWhenOffscreen = serializedObject.FindProperty("m_UpdateWhenOffscreen");
+            m_Mesh = serializedObject.FindProperty("m_Mesh");
+            m_RootBone = serializedObject.FindProperty("m_RootBone");
 
             m_BoundsHandle.SetColor(Handles.s_BoundingBoxHandleColor);
-
-            m_Lighting = new LightingSettingsInspector(serializedObject);
-            m_Lighting.showLightingSettings = new SavedBool($"{target.GetType()}.ShowLightingSettings", true);
-
-            m_ShowGeneralSettings = new SavedBool($"{target.GetType()}.ShowGeneralSettings", true);
-            m_ShowProbeSettings = new SavedBool($"{target.GetType()}.ShowProbeSettings", true);
-            m_ShowOtherSettings = new SavedBool($"{target.GetType()}.ShowOtherSettings", true);
-
-            InitializeProbeFields();
-
-            List<string> excludedProperties = new List<string>();
-            excludedProperties.AddRange(new[]
-            {
-                "m_CastShadows",
-                "m_ReceiveShadows",
-                "m_MotionVectors",
-                "m_Materials",
-                "m_BlendShapeWeights",
-                "m_AABB",
-                "m_LightmapParameters",
-                "m_DynamicOccludee",
-                "m_RendererPriority",
-                "m_RenderingLayerMask",
-                "m_SkinnedMotionVectors"
-            });
-            excludedProperties.AddRange(Probes.GetFieldsStringArray());
-            m_ExcludedProperties = excludedProperties.ToArray();
         }
 
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
 
-            m_ShowGeneralSettings.value = EditorGUILayout.Foldout(m_ShowGeneralSettings.value, Styles.GeneralSettings, true);
+            EditMode.DoEditModeInspectorModeButton(
+                EditMode.SceneViewEditMode.Collider,
+                "Edit Bounds",
+                PrimitiveBoundsHandle.editModeButton,
+                this
+            );
+            EditorGUI.BeginChangeCheck();
+            EditorGUILayout.PropertyField(m_AABB, Styles.bounds);
+            // If we set m_AABB then we need to set m_DirtyAABB to false
+            if (EditorGUI.EndChangeCheck())
+                m_DirtyAABB.boolValue = false;
 
-            if (m_ShowGeneralSettings.value)
-            {
-                EditorGUI.indentLevel += 1;
-                EditMode.DoEditModeInspectorModeButton(
-                    EditMode.SceneViewEditMode.Collider,
-                    "Edit Bounds",
-                    PrimitiveBoundsHandle.editModeButton,
-                    this
-                );
-                EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(m_AABB, EditorGUIUtility.TrTextContent("Bounds"));
-                // If we set m_AABB then we need to set m_DirtyAABB to false
-                if (EditorGUI.EndChangeCheck())
-                    m_DirtyAABB.boolValue = false;
+            OnBlendShapeUI();
 
-                OnBlendShapeUI();
+            EditorGUILayout.PropertyField(m_Quality, Styles.quality);
+            EditorGUILayout.PropertyField(m_UpdateWhenOffscreen, Styles.updateWhenOffscreen);
+            EditorGUILayout.PropertyField(m_Mesh, Styles.mesh);
+            EditorGUILayout.PropertyField(m_RootBone, Styles.rootBone);
 
-                DrawPropertiesExcluding(serializedObject, m_ExcludedProperties);
-                EditorGUI.indentLevel -= 1;
-            }
-
-            EditorGUILayout.PropertyField(m_Materials, true);
-
-            LightingFieldsGUI();
-
-            OtherSettingsGUI();
+            DrawMaterials();
+            LightingSettingsGUI(false);
+            OtherSettingsGUI(false, true);
 
             serializedObject.ApplyModifiedProperties();
         }
@@ -117,41 +82,6 @@ namespace UnityEditor
         internal override Bounds GetWorldBoundsOfTarget(Object targetObject)
         {
             return ((SkinnedMeshRenderer)targetObject).bounds;
-        }
-
-        private void LightingFieldsGUI()
-        {
-            m_Lighting.RenderMeshSettings(false);
-
-            m_ShowProbeSettings.value = EditorGUILayout.Foldout(m_ShowProbeSettings.value, Styles.ProbeSettings, true);
-
-            if (m_ShowProbeSettings.value)
-            {
-                EditorGUI.indentLevel += 1;
-                RenderProbeFields();
-                EditorGUI.indentLevel -= 1;
-            }
-        }
-
-        private void OtherSettingsGUI()
-        {
-            m_ShowOtherSettings.value = EditorGUILayout.Foldout(m_ShowOtherSettings.value, Styles.OtherSettings, true);
-
-            if (m_ShowOtherSettings.value)
-            {
-                EditorGUI.indentLevel++;
-
-                if (SupportedRenderingFeatures.active.motionVectors)
-                    EditorGUILayout.PropertyField(m_SkinnedMotionVectors, true);
-
-                RenderRenderingLayer();
-
-                RenderRendererPriority();
-
-                CullDynamicFieldGUI();
-
-                EditorGUI.indentLevel--;
-            }
         }
 
         public void OnBlendShapeUI()
@@ -171,7 +101,7 @@ namespace UnityEditor
             EditorGUI.indentLevel++;
 
             if (PlayerSettings.legacyClampBlendShapeWeights)
-                EditorGUILayout.HelpBox(Styles.LegacyClampBlendShapeWeightsInfo.text, MessageType.Info);
+                EditorGUILayout.HelpBox(Styles.legacyClampBlendShapeWeightsInfo.text, MessageType.Info);
 
             Mesh m = renderer.sharedMesh;
 

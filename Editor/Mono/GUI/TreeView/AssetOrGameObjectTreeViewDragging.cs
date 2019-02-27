@@ -56,32 +56,10 @@ namespace UnityEditor
 
         public override DragAndDropVisualMode DoDrag(TreeViewItem parentItem, TreeViewItem targetItem, bool perform, DropPosition dropPos)
         {
-            if (parentItem != null)
-            {
-                var hierarchyProperty = new HierarchyProperty(HierarchyType.Assets);
-                if (hierarchyProperty.Find(parentItem.id, null))
-                    return InternalEditorUtility.ProjectWindowDrag(hierarchyProperty, perform);
-
-                var path = AssetDatabase.GetAssetPath(parentItem.id);
-                if (string.IsNullOrEmpty(path))
-                    return DragAndDropVisualMode.Rejected;
-
-                var packageInfo = PackageManager.Packages.GetForAssetPath(path);
-                if (packageInfo != null)
-                {
-                    hierarchyProperty = new HierarchyProperty(packageInfo.assetPath);
-                    if (hierarchyProperty.Find(parentItem.id, null))
-                        return InternalEditorUtility.ProjectWindowDrag(hierarchyProperty, perform);
-                }
-
-                return DragAndDropVisualMode.Rejected;
-            }
-
-            // Perform drag as on the Assets folder
-            return InternalEditorUtility.ProjectWindowDrag(null, perform);
+            var dragToInstanceId = parentItem?.id ?? 0;
+            return DragAndDropService.Drop(DragAndDropService.kProjectBrowserDropDstId, dragToInstanceId, AssetDatabase.GetAssetPath(dragToInstanceId), perform);
         }
     }
-
 
     internal class GameObjectsTreeViewDragging : TreeViewDragging
     {
@@ -187,7 +165,7 @@ namespace UnityEditor
                 if (parentForDraggedObjectsOutsideItems != null)
                 {
                     // Use specific parent for DragAndDropForwarding
-                    return InternalEditorUtility.HierarchyWindowDrag(null, option, parentForDraggedObjectsOutsideItems, perform);
+                    return DragAndDropService.Drop(DragAndDropService.kHierarchyDropDstId, null, option, parentForDraggedObjectsOutsideItems, perform);
                 }
                 else
                 {
@@ -198,7 +176,7 @@ namespace UnityEditor
                     var prop = dataSource.CreateHierarchyProperty();
                     if (prop.Find(lastScene.handle, null))
                     {
-                        return InternalEditorUtility.HierarchyWindowDrag(prop, option, null, perform);
+                        return DragAndDropService.Drop(DragAndDropService.kHierarchyDropDstId, prop, option, null, perform);
                     }
 
                     Assert.IsFalse(true, "Could not find scene with handle: " + lastScene.handle);
@@ -241,7 +219,7 @@ namespace UnityEditor
                 option |= InternalEditorUtility.HierarchyDropMode.kHierarchyDropAfterParent;
             }
 
-            return InternalEditorUtility.HierarchyWindowDrag(hierarchyProperty, option, null, perform);
+            return DragAndDropService.Drop(DragAndDropService.kHierarchyDropDstId, hierarchyProperty, option, null, perform);
         }
 
         static bool IsDropTargetUserModifiable(GameObjectTreeViewItem targetItem, DropPosition dropPos)

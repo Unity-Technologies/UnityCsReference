@@ -119,6 +119,12 @@ namespace UnityEditor
             get;
         }
 
+        internal static extern bool isPreviewPackageInUse
+        {
+            [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
+            get;
+        }
+
         // Is remote connected to a client app?
         public static extern bool isRemoteConnected
         {
@@ -137,6 +143,9 @@ namespace UnityEditor
             [NativeName("UseLibmonoBackendForIl2cpp")]
             get;
         }
+
+        [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
+        internal static extern string GetLicenseType();
 
         // Prevents loading of assemblies when it is inconvenient.
         [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
@@ -197,6 +206,9 @@ namespace UnityEditor
 
         internal static extern void UpdateSceneIfNeeded();
 
+        [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
+        internal static extern void UpdateMainWindowTitle();
+
         // Plays system beep sound.
         [FreeFunction("UnityBeep")]
         public static extern void Beep();
@@ -217,6 +229,12 @@ namespace UnityEditor
         public static extern double timeSinceStartup
         {
             [FreeFunction]
+            get;
+        }
+
+        internal static extern string windowTitle
+        {
+            [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
             get;
         }
 

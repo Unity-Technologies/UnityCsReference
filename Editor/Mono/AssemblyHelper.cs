@@ -263,7 +263,6 @@ namespace UnityEditor
             foreach (var asm in precompiledAssemblies)
                 searchPaths.Add(Path.GetDirectoryName(asm.Path));
 
-            searchPaths.Add("Library/ScriptAssemblies");
             return searchPaths.ToArray();
         }
 
@@ -515,8 +514,7 @@ namespace UnityEditor
 
         public static bool IsInternalAssembly(string file)
         {
-            return UnityEditor.Modules.ModuleManager.IsRegisteredModule(file) ||
-                ModuleUtils.GetAdditionalReferencesForUserScripts().Any(p => p.Equals(file));
+            return ModuleUtils.GetAdditionalReferencesForUserScripts().Any(p => p.Equals(file));
         }
 
         const int kDefaultDepth = 10;

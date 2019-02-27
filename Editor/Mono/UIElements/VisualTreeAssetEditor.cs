@@ -96,11 +96,9 @@ namespace UnityEditor.UIElements
             }
 
             // Establish preview area viewport
-            {
-                var pixelsPerPoint = GUIUtility.pixelsPerPoint;
-                Rect viewportRect = new Rect(layoutRect.x * pixelsPerPoint, (GUIClip.visibleRect.height - layoutRect.yMax) * pixelsPerPoint, layoutRect.width * pixelsPerPoint, layoutRect.height * pixelsPerPoint);
-                GL.Viewport(viewportRect);
-            }
+            var pixelsPerPoint = GUIUtility.pixelsPerPoint;
+            var viewportRect = new Rect(layoutRect.x * pixelsPerPoint, (GUIClip.visibleRect.height - layoutRect.yMax) * pixelsPerPoint, layoutRect.width * pixelsPerPoint, layoutRect.height * pixelsPerPoint);
+            GL.Viewport(viewportRect);
             m_Panel.Repaint(Event.current);
 
             oldState.ApplyAndForget();

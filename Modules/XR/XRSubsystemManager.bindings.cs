@@ -164,6 +164,7 @@ namespace UnityEngine.Experimental
     }
 
     // Handle subsystem descriptor lifetime (on managed side)
+    [NativeHeader("Modules/XR/XRPrefix.h")]
     internal static class Internal_SubsystemDescriptors
     {
         internal static List<ISubsystemDescriptorImpl> s_IntegratedSubsystemDescriptors = new List<ISubsystemDescriptorImpl>();
@@ -210,6 +211,7 @@ namespace UnityEngine.Experimental
         public static extern bool GetDisablesLegacyVR(IntPtr descriptorPtr);
     }
 
+    [NativeHeader("Modules/XR/XRPrefix.h")]
     [NativeType(Header = "Modules/XR/XRSubsystemManager.h")]
     public static class SubsystemManager
     {
@@ -305,6 +307,8 @@ namespace UnityEngine.Experimental
         void Stop();
 
         void Destroy();
+
+        bool running { get; }
     }
 
     [NativeType(Header = "Modules/XR/XRSubsystem.h")]
@@ -324,6 +328,11 @@ namespace UnityEngine.Experimental
             Internal_SubsystemInstances.Internal_RemoveInstanceByPtr(m_Ptr);
             SubsystemManager.DestroyInstance_Internal(removedPtr);
         }
+
+        public bool running { get { return Internal_IsRunning(); } }
+
+        [NativeConditional("ENABLE_XR")]
+        extern internal bool Internal_IsRunning();
     }
 
     [UsedByNativeCode("XRSubsystem_TXRSubsystemDescriptor")]
@@ -344,6 +353,8 @@ namespace UnityEngine.Experimental
         abstract public void Stop();
 
         abstract public void Destroy();
+
+        abstract public bool running { get; }
     }
 
     public abstract class Subsystem<TSubsystemDescriptor> : Subsystem where TSubsystemDescriptor : ISubsystemDescriptor

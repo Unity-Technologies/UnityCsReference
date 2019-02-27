@@ -14,22 +14,23 @@ namespace UnityEngine.Assertions
     {
         internal const string UNITY_ASSERTIONS = "UNITY_ASSERTIONS";
 
-        public static bool raiseExceptions = false;
+        [Obsolete("Future versions of Unity are expected to always throw exceptions and not have this field.")]
+        public static bool raiseExceptions = true;
 
         static void Fail(string message, string userMessage)
         {
-            //Just throw an exception for now.
-            //One day maybe we can implement it with a proper opcode
-            if (Debugger.IsAttached)
-                throw new AssertionException(message, userMessage);
+            #pragma warning disable CS0618
+            if (!raiseExceptions)
+            {
+                if (message == null)
+                    message = "Assertion has failed\n";
+                if (userMessage != null)
+                    message = userMessage + '\n' + message;
+                Debug.LogAssertion(message);
+                return;
+            }
 
-            if (raiseExceptions)
-                throw new AssertionException(message, userMessage);
-            if (message == null)
-                message = "Assertion has failed\n";
-            if (userMessage != null)
-                message = userMessage + '\n' + message;
-            Debug.LogAssertion(message);
+            throw new AssertionException(message, userMessage);
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]

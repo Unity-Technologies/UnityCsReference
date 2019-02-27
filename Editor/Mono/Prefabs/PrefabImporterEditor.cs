@@ -41,6 +41,8 @@ namespace UnityEditor
             }
         }
 
+        protected override bool needsApplyRevert => false;
+
         public override bool showImportedObject { get { return false; } }
 
         internal override string targetTitle

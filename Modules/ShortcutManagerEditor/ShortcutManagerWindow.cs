@@ -176,7 +176,7 @@ namespace UnityEditor.ShortcutManagement
 
             titleContent = new GUIContent("Shortcuts");
             minSize = new Vector2(700, 570);
-            maxSize = new Vector2(700, 10000);
+            maxSize = new Vector2(10000, 10000);
 
             var directory = ShortcutIntegration.instance.directory;
             var contextManager = ShortcutIntegration.instance.contextManager;

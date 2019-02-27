@@ -73,6 +73,13 @@ namespace UnityEngine.UIElements
             }
         }
 
+        // We cache the clipping rect during regular painting so that we can reuse it
+        // during the DoMeasure call to DoOnGUI(). It's still important to not
+        // pass Rect.zero for the clipping rect as this eventually sets the
+        // global GUIClip.visibleRect which IMGUI code could be using to influence
+        // size. See case 1111923.
+        private Rect m_CachedClippingRect;
+
         private float layoutMeasuredWidth
         {
             get
@@ -459,10 +466,9 @@ namespace UnityEngine.UIElements
         internal bool HandleIMGUIEvent(Event e)
         {
             Matrix4x4 currentTransform;
-            Rect clippingRect;
-            GetCurrentTransformAndClip(this, e, out currentTransform, out clippingRect);
+            GetCurrentTransformAndClip(this, e, out currentTransform, out m_CachedClippingRect);
 
-            return HandleIMGUIEvent(e, currentTransform, clippingRect);
+            return HandleIMGUIEvent(e, currentTransform, m_CachedClippingRect);
         }
 
         internal bool HandleIMGUIEvent(Event e, Matrix4x4 worldTransform, Rect clippingRect)
@@ -577,9 +583,12 @@ namespace UnityEngine.UIElements
 
                 // When computing layout it's important to not call GetCurrentTransformAndClip
                 // because it will remove the dirty flag on the container transform which might
-                // set the transform in an invalid state.
-                // Since DoOnGUI doesn't use the worldTransform and clipping rect we can pass anything.
-                DoOnGUI(evt, Matrix4x4.identity, Rect.zero, true);
+                // set the transform in an invalid state. That's why we have to pass
+                // identity and a cached clipping state here. It's still important to not
+                // pass Rect.zero for the clipping rect as this eventually sets the
+                // global GUIClip.visibleRect which IMGUI code could be using to influence
+                // size. See case 1111923.
+                DoOnGUI(evt, Matrix4x4.identity, m_CachedClippingRect, true);
                 measuredWidth = layoutMeasuredWidth;
                 measuredHeight = layoutMeasuredHeight;
             }

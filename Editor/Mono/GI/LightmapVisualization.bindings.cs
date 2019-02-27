@@ -37,9 +37,9 @@ namespace UnityEditor
 
     internal sealed partial class LightmapVisualization
     {
-        [NativeHeader("Editor/Src/LightmapEditorSettings.h")]
-        [StaticAccessor("GetLightmapEditorSettings()", StaticAccessorType.Dot)]
-        [NativeName("ShowResolutionOverlay")]
+        [NativeHeader("Editor/Src/EditorSettings.h")]
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        [NativeName("ShowLightmapResolutionOverlay")]
         public   static extern bool  showResolution { get; set; }
 
         [NativeHeader("Editor/Src/Lightmapping.h")]

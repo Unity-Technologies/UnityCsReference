@@ -122,7 +122,7 @@ namespace UnityEditor
             if (assembly != null)
             {
                 assemblyInfo = assembly.FullName;
-                UnityEditor.PackageManager.PackageInfo packageInfo = (UnityEditor.PackageManager.PackageInfo)Packages.GetForAssembly(assembly);
+                PackageManager.PackageInfo packageInfo = PackageManager.PackageInfo.FindForAssembly(assembly);
                 if (packageInfo != null)
                 {
                     packageName = packageInfo.name;

@@ -4,6 +4,7 @@
 
 using System;
 using Unity.Collections;
+using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {
@@ -14,32 +15,17 @@ namespace UnityEngine.UIElements
     {
     }
 
-    internal struct UIVertex
-    {
-        public Vector3 position;
-        public Color32 tint;
-        public Vector2 uv;
-        public float transformID;   // Allocator gives an int, but we only take floats, so set to ((float)transformID)
-        public float clippingID;    // Similar to transformID, but for clipping rects.
-        public float flags;         // Solid,Textured,Font,SVG with gradients
-        // Winding order of vertices matters. CCW is for clipped meshes.
-    }
-
     internal interface IStylePainterInternal : IStylePainter
     {
         void DrawRect(RectStylePainterParameters painterParams);
         void DrawTexture(TextureStylePainterParameters painterParams);
         void DrawText(TextStylePainterParameters painterParams);
-        void DrawMesh(MeshStylePainterParameters painterParameters, out NativeSlice<UIVertex> vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset);
-        Matrix4x4 GetRenderTransform();
-        uint currentTransformID { get; }
-        uint currentClippingRectID { get; }
+        void DrawMesh(MeshStylePainterParameters painterParameters, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData);
 
         // The DrawImmediate method allow for inserting direct-GL calls at the right spot in the draw chain.
         void DrawImmediate(System.Action callback);
 
         void DrawBackground();
-        void ApplyClipping();
         void DrawBorder();
         void DrawText(string text);
 
@@ -223,6 +209,7 @@ namespace UnityEngine.UIElements
         public Material material;
         public uint vertexCount;
         public uint indexCount;
+        public bool uvIsDisplacement;
 
         public static MeshStylePainterParameters GetDefault(Material mat, uint vertices, uint indices)
         {

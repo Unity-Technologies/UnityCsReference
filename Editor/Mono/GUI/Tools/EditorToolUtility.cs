@@ -10,6 +10,9 @@ using UObject = UnityEngine.Object;
 
 namespace UnityEditor.EditorTools
 {
+    /// <summary>
+    /// An Editor instance and EditorTool type.
+    /// </summary>
     struct CustomEditorTool
     {
         public Editor owner;
@@ -165,6 +168,8 @@ namespace UnityEditor.EditorTools
 
         internal static void GetEditorToolsForTracker(ActiveEditorTracker tracker, List<CustomEditorTool> tools)
         {
+            tools.Clear();
+
             var editors = tracker.activeEditors;
 
             for (int i = 0, c = editors.Length; i < c; i++)

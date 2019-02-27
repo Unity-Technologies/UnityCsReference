@@ -21,6 +21,16 @@ namespace UnityEditor
             m_CanEditMultipleObjects = editorType.GetCustomAttributes(typeof(CanEditMultipleObjects), false).Length > 0;
         }
 
+        void OnEnable()
+        {
+            EditorTools.EditorTools.activeToolChanged += ActiveToolChanged;
+        }
+
+        void OnDisable()
+        {
+            EditorTools.EditorTools.activeToolChanged -= ActiveToolChanged;
+        }
+
         public abstract SceneViewEditMode editMode { get; }
 
         public abstract Type editorType { get; }
@@ -56,24 +66,31 @@ namespace UnityEditor
             internal set { m_Owner = value; }
         }
 
-        public sealed override void OnActivate()
+        public override bool IsAvailable()
+        {
+            return m_CanEditMultipleObjects || Selection.count == 1;
+        }
+
+        void ActiveToolChanged()
+        {
+            if (EditorTools.EditorTools.IsActiveTool(this))
+                OnActivate();
+            else
+                OnDeactivate();
+        }
+
+        void OnActivate()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isPlaying)
                 return;
             EditMode.ChangeEditModeFromToolContext(owner, editMode);
         }
 
-        public sealed override void OnDeactivate()
+        void OnDeactivate()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isPlaying)
                 return;
-
             EditMode.ChangeEditModeFromToolContext(owner, SceneViewEditMode.None);
-        }
-
-        public override bool IsAvailable()
-        {
-            return m_CanEditMultipleObjects || Selection.count == 1;
         }
     }
 }

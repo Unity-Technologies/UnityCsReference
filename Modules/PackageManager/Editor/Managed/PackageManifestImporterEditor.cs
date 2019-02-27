@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.IO;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditorInternal;
 using UnityEditor.Experimental.AssetImporters;
 using UnityEngine;
@@ -16,6 +17,25 @@ namespace UnityEditor.PackageManager
     [CustomEditor(typeof(PackageManifestImporter))]
     internal class PackageManifestImporterEditor : AssetImporterEditor
     {
+        // Must match supported package types in UPM server
+        private static string[] SupportedPackageTypes { get; } =
+        {
+            "tests",
+            "sample",
+            "template",
+            "module",
+            "library",
+            "tool",
+        };
+
+        // Must match hideInEditor package types in UPM server
+        private static string[] HiddenPackageTypes { get; } =
+        {
+            "module",
+            "library",
+            "tool",
+        };
+
         private static readonly string s_LocalizedTitle = L10n.Tr("Package '{0}' Manifest");
         private static readonly string s_LocalizedInvalidPackageManifest = L10n.Tr("Invalid Package Manifest");
         private static readonly string s_LocalizedPackageManagerUINotInstalledWarning = L10n.Tr("Package Manager UI package is required to see selected packaged detail.");
@@ -65,6 +85,8 @@ namespace UnityEditor.PackageManager
             public string displayName;
             public string version;
             public string description;
+            public string type;
+            public int hideInEditor;
             public PackageUnityVersion unity;
         }
 
@@ -83,6 +105,11 @@ namespace UnityEditor.PackageManager
             public static readonly GUIContent name = EditorGUIUtility.TrTextContent("Name", "Package name. Must be lowercase");
             public static readonly GUIContent displayName = EditorGUIUtility.TrTextContent("Display name", "Display name used in UI.");
             public static readonly GUIContent version = EditorGUIUtility.TrTextContent("Version", "Package Version, much follow SemVer (ex: 1.0.0-preview.1).");
+            public static readonly GUIContent type = EditorGUIUtility.TrTextContent("Type", "Package Type (optional).");
+
+            public static readonly GUIContent showAdvanced = EditorGUIUtility.TrTextContent("Advanced", "Show advanced settings.");
+
+            public static readonly GUIContent hideInEditor = EditorGUIUtility.TrTextContent("Hide in Editor", "Show/Hide package in Editor (optional).");
 
             public static readonly GUIContent unity = EditorGUIUtility.TrTextContent("Minimal Unity Version");
             public static readonly GUIContent unityMajor = EditorGUIUtility.TrTextContent("Major", "Major version of Unity");
@@ -95,6 +122,14 @@ namespace UnityEditor.PackageManager
             public static readonly GUIContent package = EditorGUIUtility.TrTextContent("Package name", "Package name. Must be lowercase");
 
             public static readonly GUIContent viewInPackageManager = EditorGUIUtility.TrTextContent("View in Package Manager");
+
+            public static readonly GUIStyle foldoutBold;
+
+            static Styles()
+            {
+                foldoutBold = EditorStyles.foldout;
+                foldoutBold.fontStyle = FontStyle.Bold;
+            }
         }
 
         public override bool showImportedObject => false;
@@ -126,13 +161,17 @@ namespace UnityEditor.PackageManager
         private SerializedProperty m_UnityMinor;
         private SerializedProperty m_UnityRelease;
         private SerializedProperty m_Description;
+        private SerializedProperty m_Type;
+        private SerializedProperty m_HideInEditor;
+
+        private bool m_ShowAdvanced;
 
         internal override string targetTitle
         {
             get
             {
                 return string.Format(s_LocalizedTitle, packageState != null && packageState.isValidFile ?
-                    !IsNullOrEmptyTrim(packageState.info.displayName) ? packageState.info.displayName : packageState.info.packageName :
+                    !IsNullOrEmptyTrim(packageState.info.displayName) ? packageState.info.displayName.Trim() : packageState.info.packageName :
                     s_LocalizedInvalidPackageManifest);
             }
         }
@@ -181,6 +220,9 @@ namespace UnityEditor.PackageManager
             m_UnityMinor = packageSerializedObject.FindProperty("info.unity.minor");
             m_UnityRelease = packageSerializedObject.FindProperty("info.unity.release");
             m_Description = packageSerializedObject.FindProperty("info.description");
+            m_Type = packageSerializedObject.FindProperty("info.type");
+            m_HideInEditor = packageSerializedObject.FindProperty("info.hideInEditor");
+            m_ShowAdvanced = packageState.info.hideInEditor == 1;
 
             m_DependenciesList = new ReorderableList(packageSerializedObject,
                 packageSerializedObject.FindProperty("dependencies"), false, false, true, true)
@@ -257,6 +299,7 @@ namespace UnityEditor.PackageManager
 
             ReadPackageManifest(target, packageState);
             packageSerializedObject.Update();
+            m_ShowAdvanced = packageState.info.hideInEditor == 1;
 
             GUI.FocusControl(null);
         }
@@ -280,6 +323,7 @@ namespace UnityEditor.PackageManager
                 EditorGUILayout.DelayedTextField(m_Name, Styles.name);
                 EditorGUILayout.DelayedTextField(m_DisplayName, Styles.displayName);
                 EditorGUILayout.DelayedTextField(m_Version, Styles.version);
+                m_Type.stringValue = EditorGUILayout.DelayedTextFieldDropDown(Styles.type, m_Type.stringValue, SupportedPackageTypes);
 
                 EditorGUILayout.PropertyField(m_UnityVersionEnabled, Styles.unity);
                 if (m_UnityVersionEnabled.boolValue)
@@ -309,6 +353,33 @@ namespace UnityEditor.PackageManager
             }
         }
 
+        private bool DoPackageAdvancedSettingsLayout()
+        {
+            m_ShowAdvanced = EditorGUILayout.Foldout(m_ShowAdvanced, Styles.showAdvanced, true, Styles.foldoutBold);
+            if (m_ShowAdvanced)
+            {
+                using (new EditorGUILayout.VerticalScope(GUI.skin.box, GUILayout.ExpandWidth(true)))
+                {
+                    using (var change = new EditorGUI.ChangeCheckScope())
+                    {
+                        EditorGUI.showMixedValue = m_HideInEditor.intValue == -1;
+                        var newValue = EditorGUILayout.Toggle(Styles.hideInEditor, m_HideInEditor.intValue == 1)
+                            ? 1
+                            : 0;
+                        EditorGUI.showMixedValue = false;
+
+                        if (change.changed)
+                        {
+                            m_HideInEditor.intValue = newValue;
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
         private void PerformValidation()
         {
             if (!PackageValidation.ValidateName(m_Name.stringValue))
@@ -324,7 +395,7 @@ namespace UnityEditor.PackageManager
                 {
                     var unityVersion = string.Join(".", new[] {m_UnityMajor.stringValue, m_UnityMinor.stringValue});
                     if (!IsNullOrEmptyTrim(m_UnityRelease.stringValue))
-                        unityVersion += "." + m_UnityRelease.stringValue;
+                        unityVersion += "." + m_UnityRelease.stringValue.Trim();
 
                     errorMessages.Add($"Invalid Unity Version '{unityVersion}'");
                 }
@@ -338,6 +409,15 @@ namespace UnityEditor.PackageManager
             if (IsNullOrEmptyTrim(m_Description.stringValue) || m_Description.stringValue.Trim().Length == 0)
             {
                 warningMessages.Add("Package description should be provided.");
+            }
+
+            if (packageState.info.hideInEditor == 1)
+            {
+                warningMessages.Add("This package and all its assets will be hidden by default because property 'hideInEditor' is checked");
+            }
+            else if (packageState.info.hideInEditor == -1 && HiddenPackageTypes.Contains(packageState.info.type))
+            {
+                warningMessages.Add($"This package and all its assets will be hidden by default because its type is '{packageState.info.type}'");
             }
         }
 
@@ -357,6 +437,7 @@ namespace UnityEditor.PackageManager
             errorMessages.Clear();
             warningMessages.Clear();
 
+            var hasChanged = false;
             using (var change = new EditorGUI.ChangeCheckScope())
             {
                 // Package information
@@ -371,12 +452,17 @@ namespace UnityEditor.PackageManager
                 GUILayout.Label(Styles.dependencies, EditorStyles.boldLabel);
                 m_DependenciesList.DoLayoutList();
 
-                // Validation
-                PerformValidation();
-
-                if (change.changed)
-                    m_IsModified.boolValue = true;
+                hasChanged |= change.changed;
             }
+
+            // Package advanced settings
+            hasChanged |= DoPackageAdvancedSettingsLayout();
+
+            // Validation
+            PerformValidation();
+
+            if (hasChanged)
+                m_IsModified.boolValue = true;
 
             packageSerializedObject.ApplyModifiedProperties();
 
@@ -427,6 +513,14 @@ namespace UnityEditor.PackageManager
 
                     if (info.ContainsKey("description") && info["description"] is string)
                         packageState.info.description = (string)info["description"];
+
+                    if (info.ContainsKey("type") && info["type"] is string)
+                        packageState.info.type = (string)info["type"];
+
+                    if (info.ContainsKey("hideInEditor") && info["hideInEditor"] is bool)
+                        packageState.info.hideInEditor = (bool)info["hideInEditor"] ? 1 : 0;
+                    else
+                        packageState.info.hideInEditor = -1;
 
                     if (info.ContainsKey("unity") && info["unity"] is string)
                     {
@@ -502,16 +596,26 @@ namespace UnityEditor.PackageManager
             json["name"] = packageState.info.packageName;
 
             if (!IsNullOrEmptyTrim(packageState.info.displayName))
-                json["displayName"] = packageState.info.displayName;
+                json["displayName"] = packageState.info.displayName.Trim();
             else
                 json.Remove("displayName");
 
             json["version"] = packageState.info.version;
 
             if (!IsNullOrEmptyTrim(packageState.info.description))
-                json["description"] = packageState.info.description;
+                json["description"] = packageState.info.description.Trim();
             else
                 json.Remove("description");
+
+            if (!IsNullOrEmptyTrim(packageState.info.type))
+                json["type"] = packageState.info.type.Trim();
+            else
+                json.Remove("type");
+
+            if (packageState.info.hideInEditor >= 0)
+                json["hideInEditor"] = packageState.info.hideInEditor == 1;
+            else
+                json.Remove("hideInEditor");
 
             if (packageState.info.unity.isEnable)
             {
@@ -519,10 +623,10 @@ namespace UnityEditor.PackageManager
                     !IsNullOrEmptyTrim(packageState.info.unity.minor))
                 {
                     json["unity"] = string.Join(".",
-                        new[] {packageState.info.unity.major, packageState.info.unity.minor});
+                        new[] {packageState.info.unity.major.Trim(), packageState.info.unity.minor.Trim()});
 
                     if (!IsNullOrEmptyTrim(packageState.info.unity.release))
-                        json["unityRelease"] = packageState.info.unity.release;
+                        json["unityRelease"] = packageState.info.unity.release.Trim();
                 }
             }
             else
@@ -537,7 +641,7 @@ namespace UnityEditor.PackageManager
                 foreach (var dependency in packageState.dependencies)
                 {
                     if (!IsNullOrEmptyTrim(dependency.packageName))
-                        dependencies.Add(dependency.packageName, dependency.version);
+                        dependencies.Add(dependency.packageName.Trim(), dependency.version);
                 }
 
                 json["dependencies"] = dependencies;

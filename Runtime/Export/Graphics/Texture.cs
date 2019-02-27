@@ -413,24 +413,6 @@ namespace UnityEngine
 
     public partial class Texture : Object
     {
-/*
-        internal static GraphicsFormat GetCompatibleFormat(TextureFormat format, bool isSRGB)
-        {
-            GraphicsFormat requestedFormat = GraphicsFormatUtility.GetGraphicsFormat(format, isSRGB);
-            GraphicsFormat compatibleFormat = SystemInfo.GetCompatibleFormat(requestedFormat, FormatUsage.Sample);
-
-            if (requestedFormat == compatibleFormat)
-            {
-                return requestedFormat;
-            }
-            else
-            {
-                Debug.LogWarning(String.Format("'{0}' is not supported. Texture fallbacks to {1} format on this platform. Use 'SystemInfo.IsFormatSupported' C# API to check format support.", requestedFormat.ToString(), compatibleFormat.ToString()));
-                return compatibleFormat;
-            }
-        }
-*/
-
         internal bool ValidateFormat(RenderTextureFormat format)
         {
             if (SystemInfo.SupportsRenderTextureFormat(format))

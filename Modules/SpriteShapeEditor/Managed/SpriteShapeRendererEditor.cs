@@ -17,8 +17,7 @@ namespace UnityEditor.Experimental.U2D
         private SerializedProperty m_Material;
         private SerializedProperty m_MaskInteraction;
 
-        private static Texture2D s_WarningIcon;
-        private static class Contents
+        private static class Styles
         {
             public static readonly GUIContent materialLabel = EditorGUIUtility.TrTextContent("Material", "Material to be used by SpriteRenderer");
             public static readonly GUIContent colorLabel = EditorGUIUtility.TrTextContent("Color", "Rendering color for the Sprite graphic");
@@ -28,6 +27,7 @@ namespace UnityEditor.Experimental.U2D
         public override void OnEnable()
         {
             base.OnEnable();
+
             m_Color = serializedObject.FindProperty("m_Color");
             m_Material = serializedObject.FindProperty("m_Materials.Array"); // Only allow to edit one material
             m_MaskInteraction = serializedObject.FindProperty("m_MaskInteraction");
@@ -36,9 +36,12 @@ namespace UnityEditor.Experimental.U2D
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
+
             GUI.enabled = true;
 
-            EditorGUILayout.PropertyField(m_Color, Contents.colorLabel, true);
+            EditorGUILayout.PropertyField(m_Color, Styles.colorLabel, true);
+            EditorGUILayout.PropertyField(m_MaskInteraction);
+
             if (m_Material.arraySize == 0)
                 m_Material.InsertArrayElementAtIndex(0);
 
@@ -48,7 +51,7 @@ namespace UnityEditor.Experimental.U2D
 
             EditorGUI.showMixedValue = m_Material.hasMultipleDifferentValues;
             Object currentMaterialRef = m_Material.GetArrayElementAtIndex(0).objectReferenceValue;
-            Object returnedMaterialRef = EditorGUI.ObjectField(r, Contents.materialLabel, currentMaterialRef, typeof(Material), false);
+            Object returnedMaterialRef = EditorGUI.ObjectField(r, Styles.materialLabel, currentMaterialRef, typeof(Material), false);
             if (returnedMaterialRef != currentMaterialRef)
             {
                 m_Material.GetArrayElementAtIndex(0).objectReferenceValue = returnedMaterialRef;
@@ -64,8 +67,7 @@ namespace UnityEditor.Experimental.U2D
                     ShowError("Material texture property _MainTex has offset/scale set. It is incompatible with SpriteRenderer.");
             }
 
-            EditorGUILayout.PropertyField(m_MaskInteraction);
-            RenderSortingLayerFields();
+            Other2DSettingsGUI();
 
             serializedObject.ApplyModifiedProperties();
         }
@@ -93,10 +95,7 @@ namespace UnityEditor.Experimental.U2D
 
         private static void ShowError(string error)
         {
-            if (s_WarningIcon == null)
-                s_WarningIcon = EditorGUIUtility.LoadIcon("console.warnicon");
-
-            var c = new GUIContent(error) {image = s_WarningIcon};
+            var c = new GUIContent(error) {image = Styles.warningIcon};
 
             GUILayout.Space(5);
             GUILayout.BeginVertical(EditorStyles.helpBox);

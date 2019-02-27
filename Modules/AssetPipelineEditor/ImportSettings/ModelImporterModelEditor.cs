@@ -51,6 +51,7 @@ namespace UnityEditor
 
         // Prefab
         SerializedProperty m_PreserveHierarchy;
+        SerializedProperty m_SortHierarchyByName;
         SerializedProperty m_AddColliders;
 
         public ModelImporterModelEditor(AssetImporterEditor panelContainer)
@@ -91,6 +92,7 @@ namespace UnityEditor
             m_WeldVertices = serializedObject.FindProperty("weldVertices");
             m_ImportVisibility = serializedObject.FindProperty("m_ImportVisibility");
             m_PreserveHierarchy = serializedObject.FindProperty("m_PreserveHierarchy");
+            m_SortHierarchyByName = serializedObject.FindProperty("m_SortHierarchyByName");
         }
 
         protected static class Styles
@@ -104,6 +106,7 @@ namespace UnityEditor
             public static GUIContent ImportCameras = EditorGUIUtility.TrTextContent("Import Cameras");
             public static GUIContent ImportLights = EditorGUIUtility.TrTextContent("Import Lights");
             public static GUIContent PreserveHierarchy = EditorGUIUtility.TrTextContent("Preserve Hierarchy", "Always create an explicit prefab root, even if the model only has a single root.");
+            public static GUIContent SortHierarchyByName = EditorGUIUtility.TrTextContent("Sort Hierarchy By Name", "Sort game objects children by name.");
 
             public static GUIContent Meshes = EditorGUIUtility.TrTextContent("Meshes", "Global settings for generated meshes");
             public static GUIContent MeshCompressionLabel = EditorGUIUtility.TrTextContent("Mesh Compression" , "Higher compression ratio means lower mesh precision. If enabled, the mesh bounds and a lower bit depth per component are used to compress the mesh data.");
@@ -236,6 +239,7 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_ImportCameras, Styles.ImportCameras);
             EditorGUILayout.PropertyField(m_ImportLights, Styles.ImportLights);
             EditorGUILayout.PropertyField(m_PreserveHierarchy, Styles.PreserveHierarchy);
+            EditorGUILayout.PropertyField(m_SortHierarchyByName, Styles.SortHierarchyByName);
         }
 
         protected void GeometryGUI()

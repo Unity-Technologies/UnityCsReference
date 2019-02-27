@@ -3,26 +3,35 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
-using UnityEngine;
 using UObject = UnityEngine.Object;
 
 namespace UnityEditor.EditorTools
 {
-    [InitializeOnLoad]
     public static class EditorTools
     {
-        static EditorTools()
+        public static Type activeToolType
         {
-            EditorToolContext.toolChanged += (from, to) =>
+            get
             {
-                // Don't expose the tool instance, but do pass along what type of tool it is.
-                if (activeToolChanged != null)
-                    activeToolChanged(from != null ? from.GetType() : null, to != null ? to.GetType() : null);
-            };
+                var tool = EditorToolContext.activeTool;
+                return tool != null ? tool.GetType() : null;
+            }
         }
 
-        public static event Action<Type, Type> activeToolChanged;
+        public static event Action activeToolChanging;
+        public static event Action activeToolChanged;
+
+        internal static void ActiveToolWillChange()
+        {
+            if (activeToolChanging != null)
+                activeToolChanging();
+        }
+
+        internal static void ActiveToolDidChange()
+        {
+            if (activeToolChanged != null)
+                activeToolChanged();
+        }
 
         public static void SetActiveTool<T>() where T : EditorTool
         {
@@ -59,6 +68,11 @@ namespace UnityEditor.EditorTools
         public static void RestorePreviousTool()
         {
             EditorToolContext.RestorePreviousTool();
+        }
+
+        public static bool IsActiveTool(EditorTool tool)
+        {
+            return EditorToolContext.activeTool == tool;
         }
     }
 }

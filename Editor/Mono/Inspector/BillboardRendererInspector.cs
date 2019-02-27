@@ -11,32 +11,28 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal class BillboardRendererInspector : RendererEditorBase
     {
-        private string[] m_ExcludedProperties;
+        class Styles
+        {
+            public static readonly GUIContent billboard = EditorGUIUtility.TrTextContent("Billboard");
+        }
+
+        private SerializedProperty m_Billboard;
 
         public override void OnEnable()
         {
             base.OnEnable();
-            InitializeProbeFields();
 
-            List<string> excludedProperties = new List<string>();
-            excludedProperties.AddRange(new[]
-            {
-                "m_Materials",
-                "m_LightmapParameters"
-            });
-            excludedProperties.AddRange(Probes.GetFieldsStringArray());
-            m_ExcludedProperties = excludedProperties.ToArray();
+            m_Billboard = serializedObject.FindProperty("m_Billboard");
         }
 
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
 
-            DrawPropertiesExcluding(serializedObject, m_ExcludedProperties);
+            EditorGUILayout.PropertyField(m_Billboard, Styles.billboard);
 
-            m_Probes.OnGUI(targets, (Renderer)target, false);
-
-            RenderRenderingLayer();
+            LightingSettingsGUI(false);
+            OtherSettingsGUI(true);
 
             serializedObject.ApplyModifiedProperties();
         }

@@ -54,8 +54,6 @@ namespace UnityEngine.Experimental.PlayerLoop
         [RequiredByNativeCode]
         public struct ResetFrameStatsAfterPresent {}
         [RequiredByNativeCode]
-        public struct UpdateAllUnityWebStreams {}
-        [RequiredByNativeCode]
         public struct UpdateAsyncReadbackManager {}
         [RequiredByNativeCode]
         public struct UpdateTextureStreamingManager {}

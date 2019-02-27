@@ -1438,7 +1438,7 @@ namespace UnityEditor
 
                     if (interactionRect.Contains(evt.mousePosition))
                     {
-                        DragAndDrop.visualMode = InternalEditorUtility.InspectorWindowDrag(targetObjs, false);
+                        DragAndDrop.visualMode = DragAndDropService.Drop(DragAndDropService.kInspectorDropDstId, targetObjs, false);
                         Event.current.Use();
                     }
                     break;
@@ -1446,7 +1446,7 @@ namespace UnityEditor
                 case EventType.DragPerform:
                     if (interactionRect.Contains(evt.mousePosition))
                     {
-                        DragAndDrop.visualMode = InternalEditorUtility.InspectorWindowDrag(targetObjs, true);
+                        DragAndDrop.visualMode = DragAndDropService.Drop(DragAndDropService.kInspectorDropDstId, targetObjs, true);
                         DragAndDrop.AcceptDrag();
                         Event.current.Use();
                     }

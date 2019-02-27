@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using UnityEngine;
 
 // ADD_NEW_PLATFORM_HERE
+[assembly: InternalsVisibleTo("Unity.LiveNotes")]
 [assembly: InternalsVisibleTo("Unity.Burst")]
 [assembly: InternalsVisibleTo("Unity.Burst.Editor")]
 [assembly: InternalsVisibleTo("Unity.CollabProxy.Editor")]
@@ -41,12 +42,14 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.WindowsStandalone.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.OSXStandalone.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.Lumin.Extensions")]
+[assembly: InternalsVisibleTo("UnityEditor.BJM.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.Networking")]
 [assembly: InternalsVisibleTo("UnityEngine.Networking")]
 [assembly: InternalsVisibleTo("Unity.Analytics.Editor")]
 [assembly: InternalsVisibleTo("UnityEditor.Analytics")]
 [assembly: InternalsVisibleTo("UnityEditor.Purchasing")]
 [assembly: InternalsVisibleTo("UnityEditor.Lumin")]
+[assembly: InternalsVisibleTo("UnityEditor.BJM")]
 [assembly: InternalsVisibleTo("UnityEditor.Switch.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.EditorTestsRunner")]
 [assembly: InternalsVisibleTo("UnityEditor.TestRunner")]

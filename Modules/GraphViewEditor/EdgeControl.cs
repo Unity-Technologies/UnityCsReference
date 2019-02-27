@@ -309,22 +309,22 @@ namespace UnityEditor.Experimental.GraphView
             if (m_FromCap != null)
             {
                 Vector2 size = m_FromCap.layout.size;
-                m_FromCap.layout = new Rect(parent.ChangeCoordinatesTo(this, m_From) - (size / 2), size);
+                if ((size.x > 0) && (size.y > 0))
+                    m_FromCap.layout = new Rect(parent.ChangeCoordinatesTo(this, m_From) - (size / 2), size);
             }
             if (m_ToCap != null)
             {
                 Vector2 size = m_ToCap.layout.size;
-                m_ToCap.layout = new Rect(parent.ChangeCoordinatesTo(this, m_To) - (size / 2), size);
+                if ((size.x > 0) && (size.y > 0))
+                    m_ToCap.layout = new Rect(parent.ChangeCoordinatesTo(this, m_To) - (size / 2), size);
             }
         }
 
         internal override void DoRepaint(IStylePainter painter)
         {
             UnityEngine.Profiling.Profiler.BeginSample("DrawEdge");
-            UpdateEdgeCaps();
             // Edges do NOT call base.DoRepaint. It would create a visual artifact.
             DrawEdge(painter);
-
             UnityEngine.Profiling.Profiler.EndSample();
         }
 
@@ -415,12 +415,13 @@ namespace UnityEditor.Experimental.GraphView
         public virtual void UpdateLayout()
         {
             if (parent == null) return;
-            if (m_ControlPointsDirty == false) return;
-
-
-            ComputeControlPoints(); // Computes the control points in parent ( graph ) coordinates
-            ComputeLayout(); // Update the element layout based on the control points.
-            m_ControlPointsDirty = false;
+            if (m_ControlPointsDirty)
+            {
+                ComputeControlPoints(); // Computes the control points in parent ( graph ) coordinates
+                ComputeLayout(); // Update the element layout based on the control points.
+                m_ControlPointsDirty = false;
+            }
+            UpdateEdgeCaps();
         }
 
         private List<Vector2> lastLocalControlPoints = new List<Vector2>();
@@ -876,10 +877,11 @@ namespace UnityEditor.Experimental.GraphView
             uint cpt = (uint)m_RenderPoints.Count;
             uint wantedLength = (cpt) * 2;
             uint indexCount = (wantedLength - 2) * 3;
-            NativeSlice<UnityEngine.UIElements.UIVertex> vertices;
+            NativeSlice<Vertex> vertices;
             NativeSlice<UInt16> indices;
-            UInt16 indexOffet;
-            painter.DrawMesh(MeshStylePainterParameters.GetDefault(null, wantedLength, indexCount), out vertices, out indices, out indexOffet);
+            var meshParams = MeshStylePainterParameters.GetDefault(null, wantedLength, indexCount);
+            meshParams.uvIsDisplacement = true; // We store displacement data in the UV channel
+            painter.DrawMesh(MeshStylePainterParameters.GetDefault(null, wantedLength, indexCount), out vertices, out indices);
             if (vertices.Length == 0)
                 return false;
 
@@ -890,10 +892,6 @@ namespace UnityEditor.Experimental.GraphView
             float halfWidth = edgeWidth * 0.5f;
             float currentLength = 0;
             float flags = (float)VertexFlags.LastType;
-
-            Matrix4x4 localToView = painter.GetRenderTransform();
-            uint transformID = painter.currentTransformID;
-            uint clippingRectID = painter.currentClippingRectID;
 
             Vector2 unitPreviousSegment = Vector2.zero;
             for (int i = 0; i < cpt; ++i)
@@ -923,18 +921,18 @@ namespace UnityEditor.Experimental.GraphView
                     dir = unitNextSegment;
                 }
 
-                Vector2 pos = localToView.MultiplyPoint3x4(m_RenderPoints[i]);// this.LocalToWorld(m_RenderPoints[i]);
+                Vector2 pos = m_RenderPoints[i];
                 Vector2 uv = new Vector2(dir.y * halfWidth, -dir.x * halfWidth); // Normal scaled by half width
                 Color32 tint = Color.LerpUnclamped(outColor, inColor, currentLength / polyLineLength);
                 int index = i * 2;
 
-                vertices[index] = new UnityEngine.UIElements.UIVertex()
+                vertices[index] = new Vertex()
                 {
-                    position = new Vector3(pos.x, pos.y, 1), uv = uv, tint = tint, transformID = transformID, clippingID = clippingRectID, flags = flags
+                    position = new Vector3(pos.x, pos.y, 1), uv = uv, tint = tint, flags = flags
                 };
-                vertices[index + 1] = new UnityEngine.UIElements.UIVertex()
+                vertices[index + 1] = new Vertex()
                 {
-                    position = new Vector3(pos.x, pos.y, -1), uv = uv, tint = tint, transformID = transformID, clippingID = clippingRectID, flags = flags
+                    position = new Vector3(pos.x, pos.y, -1), uv = uv, tint = tint, flags = flags
                 };
 
                 if (i < cpt - 2)
@@ -953,18 +951,17 @@ namespace UnityEditor.Experimental.GraphView
             for (uint i = 0; i < wantedLength - 2; ++i)
             {
                 int index = (int)(i * 3);
-                uint target = i + indexOffet;
                 if ((i & 0x01) == 0)
                 {
-                    indices[index] = (UInt16)target;
-                    indices[index + 1] = (UInt16)(target + 1);
-                    indices[index + 2] = (UInt16)(target + 2);
+                    indices[index] = (UInt16)i;
+                    indices[index + 1] = (UInt16)(i + 1);
+                    indices[index + 2] = (UInt16)(i + 2);
                 }
                 else
                 {
-                    indices[index] = (UInt16)(target + 1);
-                    indices[index + 1] = (UInt16)target;
-                    indices[index + 2] = (UInt16)(target + 2);
+                    indices[index] = (UInt16)(i + 1);
+                    indices[index + 1] = (UInt16)i;
+                    indices[index + 2] = (UInt16)(i + 2);
                 }
             }
             return true;

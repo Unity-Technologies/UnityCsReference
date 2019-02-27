@@ -6,16 +6,13 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Text;
-using UnityEditor;
 using UnityEditor.Hardware;
 using UnityEditorInternal;
 using UnityEngine;
 using Unity.DataContract;
 using Unity.Profiling;
-using UnityEditor.Callbacks;
 using UnityEditor.Utils;
 using UnityEditor.DeploymentTargets;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
@@ -25,19 +22,15 @@ namespace UnityEditor.Modules
     internal static class ModuleManager
     {
         [NonSerialized]
-        static List<IPlatformSupportModule> s_PlatformModules;
+        static Dictionary<string, IPlatformSupportModule> s_PlatformModules;
 
         [NonSerialized]
         static bool s_PlatformModulesInitialized;
 
         [NonSerialized]
-        static List<IEditorModule> s_EditorModules;
-
-        [NonSerialized]
-        static IPackageManagerModule s_PackageManager;
-
-        [NonSerialized]
         static IPlatformSupportModule s_ActivePlatformModule;
+
+        private const string k_IsCacheBuildKey = "ModuleManagerIsExtensionsRegistered";
 
         internal static bool EnableLogging
         {
@@ -47,16 +40,7 @@ namespace UnityEditor.Modules
             }
         }
 
-        internal static IPackageManagerModule packageManager
-        {
-            get
-            {
-                InitializeModuleManager();
-                return s_PackageManager;
-            }
-        }
-
-        internal static IEnumerable<IPlatformSupportModule> platformSupportModules
+        internal static Dictionary<string, IPlatformSupportModule> platformSupportModules
         {
             get
             {
@@ -67,30 +51,20 @@ namespace UnityEditor.Modules
             }
         }
 
+
         // Accesses the list of currently known platformSupportModules without forcing platform
         // support module registration. Use this API from all code which may run during the initial
         // domain reloading phase instead of accessing platformSupportModules. Platform support
         // modules will be registered automatically when it is safe to do so.
-        internal static IEnumerable<IPlatformSupportModule> platformSupportModulesDontRegister
+        internal static Dictionary<string, IPlatformSupportModule> platformSupportModulesDontRegister
         {
             get
             {
                 if (s_PlatformModules == null)
-                    return new List<IPlatformSupportModule>();
+                    return new Dictionary<string, IPlatformSupportModule>();
                 return s_PlatformModules;
             }
         }
-
-        static List<IEditorModule> editorModules
-        {
-            get
-            {
-                if (s_EditorModules == null)
-                    return new List<IEditorModule>();
-                return s_EditorModules;
-            }
-        }
-
 
         class BuildTargetChangedHandler : Build.IActiveBuildTargetChanged
         {
@@ -121,34 +95,19 @@ namespace UnityEditor.Modules
         {
             DeactivateActivePlatformModule();
 
-            foreach (var module in platformSupportModules)
+            IPlatformSupportModule selected;
+            if (platformSupportModules.TryGetValue(target, out selected))
             {
-                if (module.TargetName == target)
-                {
-                    s_ActivePlatformModule = module;
-                    module.OnActivate();
-                    return;
-                }
+                s_ActivePlatformModule = selected;
+                s_ActivePlatformModule.OnActivate();
             }
-
-            // There are still some unmodularized platforms, so we can't throw yet
-            //throw new ApplicationException("Couldn't find platform module for target: " + target);
-        }
-
-        internal static bool IsRegisteredModule(string file)
-        {
-            return (s_PackageManager != null && s_PackageManager.GetType().Assembly.Location.NormalizePath() == file.NormalizePath());
         }
 
         // entry point from native
         [RequiredByNativeCode]
         internal static bool IsPlatformSupportLoaded(string target)
         {
-            foreach (var module in platformSupportModules)
-                if (module.TargetName == target)
-                    return true;
-
-            return false;
+            return platformSupportModules.ContainsKey(target);
         }
 
         // Native binding doesn't support overloaded functions
@@ -163,7 +122,7 @@ namespace UnityEditor.Modules
         {
             foreach (var module in platformSupportModules)
             {
-                module.RegisterAdditionalUnityExtensions();
+                module.Value.RegisterAdditionalUnityExtensions();
             }
         }
 
@@ -174,58 +133,9 @@ namespace UnityEditor.Modules
         [RequiredByNativeCode]
         internal static void InitializeModuleManager()
         {
-            if (s_PackageManager != null)
-                return;
-
             using (s_InitializeModuleManagerMarker.Auto())
             {
                 RegisterPackageManager();
-                if (s_PackageManager != null)
-                    LoadUnityExtensions();
-                else
-                    Debug.LogError("Failed to load extension manager");
-            }
-        }
-
-        static string CombinePaths(params string[] paths)
-        {
-            if (null == paths)
-                throw new ArgumentNullException("paths");
-            if (1 == paths.Length)
-                return paths[0];
-
-            StringBuilder builder = new StringBuilder(paths[0]);
-            for (int i = 1; i < paths.Length; ++i)
-                builder.AppendFormat("{0}{1}", "/", paths[i]);
-            return builder.ToString();
-        }
-
-        private static void LoadUnityExtensions()
-        {
-            foreach (Unity.DataContract.PackageInfo extension in s_PackageManager.unityExtensions)
-            {
-                if (EnableLogging)
-                    Console.WriteLine("Setting {0} v{1} for Unity v{2} to {3}", extension.name, extension.version, extension.unityVersion, extension.basePath);
-                foreach (var file in extension.files.Where(f => f.Value.type == PackageFileType.Dll))
-                {
-                    string fullPath = Paths.NormalizePath(Path.Combine(extension.basePath, file.Key));
-                    if (!File.Exists(fullPath))
-                        Debug.LogWarningFormat("Missing assembly \t{0} for {1}. Extension support may be incomplete.", file.Key, extension.name);
-                    else
-                    {
-                        bool isExtension = !String.IsNullOrEmpty(file.Value.guid);
-                        if (EnableLogging)
-                            Console.WriteLine("  {0} ({1}) GUID: {2}",
-                                file.Key,
-                                isExtension ? "Extension" : "Custom",
-                                file.Value.guid);
-                        if (isExtension)
-                            InternalEditorUtility.RegisterExtensionDll(fullPath.Replace('\\', '/'), file.Value.guid);
-                        else
-                            InternalEditorUtility.RegisterPrecompiledAssembly(Path.GetFileName(fullPath), fullPath);
-                    }
-                }
-                s_PackageManager.LoadPackage(extension);
             }
         }
 
@@ -245,14 +155,12 @@ namespace UnityEditor.Modules
             }
 
             InitializeModuleManager();
-            RegisterPlatformSupportModules();
-
-            foreach (var module in platformSupportModules)
+            foreach (var module in platformSupportModules.Values)
             {
                 foreach (var library in module.NativeLibraries)
                     EditorUtility.LoadPlatformSupportNativeLibrary(library);
                 foreach (var fullPath in module.AssemblyReferencesForUserScripts)
-                    InternalEditorUtility.RegisterPrecompiledAssembly(Path.GetFileName(fullPath), fullPath);
+                    InternalEditorUtility.RegisterPlatformModuleAssembly(Path.GetFileName(fullPath), fullPath);
 
                 EditorUtility.LoadPlatformSupportModuleNativeDllInternal(module.TargetName);
 
@@ -273,7 +181,7 @@ namespace UnityEditor.Modules
 
             if (s_PlatformModules != null)
             {
-                foreach (var module in s_PlatformModules)
+                foreach (var module in s_PlatformModules.Values)
                     module.OnUnload();
             }
         }
@@ -282,46 +190,42 @@ namespace UnityEditor.Modules
         [RequiredByNativeCode(true)]
         internal static void ShutdownModuleManager()
         {
-            if (s_PackageManager != null)
-                s_PackageManager.Shutdown(true);
-
-            s_PackageManager = null;
             s_PlatformModules = null;
-            s_EditorModules = null;
         }
 
-        static void RegisterPackageManager()
+        private static void RegisterPackageManager()
         {
-            s_EditorModules = new List<IEditorModule>();  // TODO: no editor modules support for now, so just cache this
-
-            // if this is a domain reload after unity is already running, then package manager should already be loaded from
-            // the native land, so we don't go looking for it again and just use the assembly already loaded
             try
             {
-                Assembly assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => null != a.GetType("Unity.PackageManager.PackageManager"));
-                if (assembly != null)
+                if (!SessionState.GetBool(k_IsCacheBuildKey, false))
                 {
-                    if (InitializePackageManager(assembly, null))
-                        return;
+                    SessionState.SetBool(k_IsCacheBuildKey, true);
+                    LoadPackageManagerAndExtensions();
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error enumerating assemblies looking for extension manager. {0}", ex);
+                Console.WriteLine("Error initializing extension manager. {0}", ex);
             }
+        }
 
-
-            // check if locator assembly is in the domain (it should be loaded along with UnityEditor/UnityEngine at this point)
+        static void LoadPackageManagerAndExtensions()
+        {
+            //We can't use the cached native type scanner here since this is called to early for that to be built up.
             Type locatorType = AppDomain.CurrentDomain.GetAssemblies().Where(a => a.GetName().Name ==  "Unity.Locator").Select(a => a.GetType("Unity.PackageManager.Locator")).FirstOrDefault();
+
             try
             {
+                string unityExtensionsFolder = FileUtil.CombinePaths(Directory.GetParent(EditorApplication.applicationPath).ToString(), "Data", "UnityExtensions");
                 string playbackEngineFolders = FileUtil.CombinePaths(Directory.GetParent(EditorApplication.applicationPath).ToString(), "PlaybackEngines");
+
                 locatorType.InvokeMember("Scan", BindingFlags.Public | BindingFlags.Static | BindingFlags.InvokeMethod, null, null,
                     new object[]
                     {
-                        new string[]
+                        new[]
                         {
                             FileUtil.NiceWinPath(EditorApplication.applicationContentsPath),
+                            FileUtil.NiceWinPath(unityExtensionsFolder),
                             FileUtil.NiceWinPath(playbackEngineFolders)
                         },
                         Application.unityVersion
@@ -333,15 +237,36 @@ namespace UnityEditor.Modules
                 return;
             }
 
-            Unity.DataContract.PackageInfo package;
+            List<Unity.DataContract.PackageInfo> extensions;
             // get the package manager package
             try
             {
-                package = locatorType.InvokeMember("GetPackageManager", BindingFlags.Public | BindingFlags.Static | BindingFlags.InvokeMethod, null, null, new[] { Application.unityVersion }) as Unity.DataContract.PackageInfo;
-                if (package == null)
+                extensions = locatorType.InvokeMember("GetUnityExtensions", BindingFlags.Public | BindingFlags.Static | BindingFlags.InvokeMethod, null, null, null) as List<Unity.DataContract.PackageInfo>;
+
+                foreach (var packageInfo in extensions)
                 {
-                    Console.WriteLine("No extension manager found!");
-                    return;
+                    bool isExtension = packageInfo.type == PackageType.UnityExtension;
+                    foreach (var packageInfoFile in packageInfo.files)
+                    {
+                        string fullPath = Paths.NormalizePath(Path.Combine(packageInfo.basePath, packageInfoFile.Key));
+
+                        if (!File.Exists(fullPath))
+                            Debug.LogWarningFormat("Missing assembly \t{0} for {1}. Extension support may be incomplete.", fullPath, packageInfo.name);
+
+                        if (packageInfoFile.Value.type != PackageFileType.Dll)
+                        {
+                            continue;
+                        }
+
+                        if (isExtension)
+                        {
+                            InternalEditorUtility.RegisterExtensionDll(fullPath.Replace('\\', '/'), packageInfoFile.Value.guid);
+                        }
+                        else
+                        {
+                            InternalEditorUtility.RegisterPrecompiledAssembly(fullPath, fullPath);
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -349,77 +274,6 @@ namespace UnityEditor.Modules
                 Console.WriteLine("Error scanning for extensions. {0}", ex);
                 return;
             }
-
-            try
-            {
-                InitializePackageManager(package);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error initializing extension manager. {0}", ex);
-            }
-
-
-            // this will only happen when unity first starts up
-            if (s_PackageManager != null)
-                s_PackageManager.CheckForUpdates();
-        }
-
-        // instantiate package manager and add it to the native assembly list for automatic loading at domain reloads (play mode start, etc)
-        static bool InitializePackageManager(Unity.DataContract.PackageInfo package)
-        {
-            string dll = package.files.Where(x => x.Value.type == PackageFileType.Dll).Select(x => x.Key).FirstOrDefault();
-            if (dll == null || !File.Exists(Path.Combine(package.basePath, dll)))
-                return false;
-            InternalEditorUtility.SetPlatformPath(package.basePath);
-            Assembly assembly = InternalEditorUtility.LoadAssemblyWrapper(Path.GetFileName(dll), Path.Combine(package.basePath, dll));
-            return InitializePackageManager(assembly, package);
-        }
-
-        static bool InitializePackageManager(Assembly assembly, Unity.DataContract.PackageInfo package)
-        {
-            s_PackageManager = AssemblyHelper.FindImplementors<IPackageManagerModule>(assembly).FirstOrDefault();
-
-            if (s_PackageManager == null)
-                return false;
-
-            string dllpath = assembly.Location;
-
-            // if we have a package, it's because it came from the locator, which means we need to setup the dll
-            // for loading on the next domain reloads
-            if (package != null)
-                InternalEditorUtility.RegisterPrecompiledAssembly(Path.GetFileName(dllpath), dllpath);
-
-            else // just set the package with the path to the loaded assembly so package manager can get its information from there
-                package = new Unity.DataContract.PackageInfo() { basePath = Path.GetDirectoryName(dllpath) };
-
-            s_PackageManager.moduleInfo = package;
-            s_PackageManager.editorInstallPath = EditorApplication.applicationContentsPath;
-            s_PackageManager.unityVersion = new PackageVersion(Application.unityVersion);
-
-            s_PackageManager.Initialize();
-            foreach (Unity.DataContract.PackageInfo engine in s_PackageManager.playbackEngines)
-            {
-                BuildTargetGroup buildTargetGroup;
-                BuildTarget target;
-                if (!TryParseBuildTarget(engine.name, out buildTargetGroup, out target))
-                    continue;
-
-                if (EnableLogging)
-                    Console.WriteLine("Setting {4}:{0} v{1} for Unity v{2} to {3}", target, engine.version, engine.unityVersion, engine.basePath, buildTargetGroup);
-                foreach (var file in engine.files.Where(f => f.Value.type == PackageFileType.Dll))
-                {
-                    string fullPath = Paths.NormalizePath(Path.Combine(engine.basePath, file.Key));
-                    if (!File.Exists(fullPath))
-                        Debug.LogWarningFormat("Missing assembly \t{0} for {1}. Player support may be incomplete.", engine.basePath, engine.name);
-                    else
-                        InternalEditorUtility.RegisterPrecompiledAssembly(Path.GetFileName(dllpath), dllpath);
-                }
-                BuildPipeline.SetPlaybackEngineDirectory(buildTargetGroup, target, BuildOptions.None /* TODO */, engine.basePath);
-                InternalEditorUtility.SetPlatformPath(engine.basePath);
-                s_PackageManager.LoadPackage(engine);
-            }
-            return true;
         }
 
         static bool TryParseBuildTarget(string targetString, out BuildTargetGroup buildTargetGroup, out BuildTarget target)
@@ -447,57 +301,28 @@ namespace UnityEditor.Modules
             return false;
         }
 
-        static void RegisterPlatformSupportModules()
+        private static void RegisterPlatformSupportModules()
         {
-            if (s_PlatformModules != null)
+            var allTypesWithInterface = EditorAssemblies.GetAllTypesWithInterface<IPlatformSupportModule>();
+            s_PlatformModules = new Dictionary<string, IPlatformSupportModule>(allTypesWithInterface.Count());
+
+            foreach (var type in allTypesWithInterface)
             {
-                Console.WriteLine("Modules already registered, not loading");
-                return;
+                if (type.IsAbstract)
+                {
+                    continue;
+                }
+
+                var platformSupportModule = Activator.CreateInstance(type) as IPlatformSupportModule;
+                s_PlatformModules.Add(platformSupportModule.TargetName, platformSupportModule);
             }
-            Console.WriteLine("Registering platform support modules:");
-            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-            s_PlatformModules = RegisterModulesFromLoadedAssemblies<IPlatformSupportModule>(RegisterPlatformSupportModulesFromAssembly).ToList();
-
-            stopwatch.Stop();
-            Console.WriteLine("Registered platform support modules in: " +  stopwatch.Elapsed.TotalSeconds + "s.");
-        }
-
-        static IEnumerable<T> RegisterModulesFromLoadedAssemblies<T>(Func<Assembly, IEnumerable<T>> processAssembly)
-        {
-            if (processAssembly == null)
-                throw new ArgumentNullException("processAssembly");
-
-            return AppDomain.CurrentDomain.GetAssemblies().Aggregate(new List<T>(),
-                delegate(List<T> list, Assembly assembly) {
-                    try
-                    {
-                        var modules = processAssembly(assembly);
-                        if (modules != null && modules.Any())
-                            list.AddRange(modules);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine("Error while registering modules from " + assembly.FullName + ": " + ex.Message);
-                    }
-                    return list;
-                });
-        }
-
-        internal static IEnumerable<IPlatformSupportModule> RegisterPlatformSupportModulesFromAssembly(Assembly assembly)
-        {
-            return AssemblyHelper.FindImplementors<IPlatformSupportModule>(assembly);
-        }
-
-        static IEnumerable<IEditorModule> RegisterEditorModulesFromAssembly(Assembly assembly)
-        {
-            return AssemblyHelper.FindImplementors<IEditorModule>(assembly);
         }
 
         internal static List<string> GetJamTargets()
         {
             List<string> jamTargets = new List<string>();
 
-            foreach (var module in platformSupportModules)
+            foreach (var module in platformSupportModules.Values)
             {
                 jamTargets.Add(module.JamTarget);
             }
@@ -507,7 +332,7 @@ namespace UnityEditor.Modules
 
         internal static IPlatformSupportModule FindPlatformSupportModule(string moduleName)
         {
-            foreach (var module in platformSupportModules)
+            foreach (var module in platformSupportModules.Values)
                 if (module.TargetName == moduleName)
                     return module;
 
@@ -534,12 +359,11 @@ namespace UnityEditor.Modules
             if (target == null)
                 return null;
 
-            foreach (var module in platformSupportModules)
+            IPlatformSupportModule module;
+            if (platformSupportModules.TryGetValue(target, out module))
             {
-                if (module.TargetName == target)
-                    return module.CreateUserAssembliesValidatorExtension();
+                return platformSupportModules[target].CreateUserAssembliesValidatorExtension();
             }
-
             return null;
         }
 
@@ -548,10 +372,10 @@ namespace UnityEditor.Modules
             if (target == null)
                 return null;
 
-            foreach (var module in platformSupportModules)
+            IPlatformSupportModule module;
+            if (platformSupportModules.TryGetValue(target, out module))
             {
-                if (module.TargetName == target)
-                    return module.CreateBuildPostprocessor();
+                return platformSupportModules[target].CreateBuildPostprocessor();
             }
 
             return null;
@@ -567,10 +391,10 @@ namespace UnityEditor.Modules
             if (target == null)
                 return null;
 
-            foreach (var module in platformSupportModules)
+            IPlatformSupportModule module;
+            if (platformSupportModules.TryGetValue(target, out module))
             {
-                if (module.TargetName == target)
-                    return module.CreateDeploymentTargetsExtension();
+                return platformSupportModules[target].CreateDeploymentTargetsExtension();
             }
 
             return null;
@@ -584,11 +408,13 @@ namespace UnityEditor.Modules
         internal static IBuildAnalyzer GetBuildAnalyzer(string target)
         {
             if (target == null) return null;
-            foreach (var module in platformSupportModules)
+
+            IPlatformSupportModule module;
+            if (platformSupportModules.TryGetValue(target, out module))
             {
-                if (module.TargetName == target)
-                    return module.CreateBuildAnalyzer();
+                return platformSupportModules[target].CreateBuildAnalyzer();
             }
+
             return null;
         }
 
@@ -602,10 +428,10 @@ namespace UnityEditor.Modules
             if (string.IsNullOrEmpty(target))
                 return null;
 
-            foreach (var module in platformSupportModules)
+            IPlatformSupportModule module;
+            if (platformSupportModules.TryGetValue(target, out module))
             {
-                if (module.TargetName == target)
-                    return module.CreateSettingsEditorExtension();
+                return platformSupportModules[target].CreateSettingsEditorExtension();
             }
 
             return null;
@@ -618,10 +444,10 @@ namespace UnityEditor.Modules
 
         internal static ITextureImportSettingsExtension GetTextureImportSettingsExtension(string targetName)
         {
-            foreach (var module in platformSupportModules)
+            IPlatformSupportModule module;
+            if (platformSupportModules.TryGetValue(targetName, out module))
             {
-                if (module.TargetName == targetName)
-                    return module.CreateTextureImportSettingsExtension();
+                return platformSupportModules[targetName].CreateTextureImportSettingsExtension();
             }
 
             return new DefaultTextureImportSettingsExtension();
@@ -631,14 +457,13 @@ namespace UnityEditor.Modules
         {
             List<IPreferenceWindowExtension> prefWindExtensions = new List<IPreferenceWindowExtension>();
 
-            foreach (var module in platformSupportModules)
+            foreach (var module in platformSupportModules.Values)
             {
                 IPreferenceWindowExtension prefWindowExtension = module.CreatePreferenceWindowExtension();
 
                 if (prefWindowExtension != null)
                     prefWindExtensions.Add(prefWindowExtension);
             }
-
             return prefWindExtensions;
         }
 
@@ -647,10 +472,10 @@ namespace UnityEditor.Modules
             if (string.IsNullOrEmpty(target))
                 return null;
 
-            foreach (var module in platformSupportModules)
+            IPlatformSupportModule module;
+            if (platformSupportModules.TryGetValue(target, out module))
             {
-                if (module.TargetName == target)
-                    return module.CreateBuildWindowExtension();
+                return platformSupportModules[target].CreateBuildWindowExtension();
             }
 
             return null;
@@ -658,10 +483,10 @@ namespace UnityEditor.Modules
 
         internal static ICompilationExtension GetCompilationExtension(string target)
         {
-            foreach (var module in platformSupportModules)
+            IPlatformSupportModule module;
+            if (platformSupportModules.TryGetValue(target, out module))
             {
-                if (module.TargetName == target)
-                    return module.CreateCompilationExtension();
+                return platformSupportModules[target].CreateCompilationExtension();
             }
 
             return new DefaultCompilationExtension();
@@ -672,10 +497,10 @@ namespace UnityEditor.Modules
             if (string.IsNullOrEmpty(target))
                 return null;
 
-            foreach (var module in platformSupportModules)
+            IPlatformSupportModule module;
+            if (platformSupportModules.TryGetValue(target, out module))
             {
-                if (module.TargetName == target)
-                    return module.CreateScriptingImplementations();
+                return platformSupportModules[target].CreateScriptingImplementations();
             }
 
             return null;
@@ -696,10 +521,11 @@ namespace UnityEditor.Modules
             if (target == null)
                 return null;
 
-            foreach (var module in platformSupportModules)
+
+            IPlatformSupportModule module;
+            if (platformSupportModules.TryGetValue(target, out module))
             {
-                if (module.TargetName == target)
-                    return module.CreatePluginImporterExtension();
+                return platformSupportModules[target].CreatePluginImporterExtension();
             }
 
             return null;
@@ -756,10 +582,10 @@ namespace UnityEditor.Modules
             if (string.IsNullOrEmpty(target))
                 return null;
 
-            foreach (var module in platformSupportModules)
+            IPlatformSupportModule module;
+            if (platformSupportModules.TryGetValue(target, out module))
             {
-                if (module.TargetName == target)
-                    return module.ExtensionVersion;
+                return platformSupportModules[target].ExtensionVersion;
             }
 
             return null;
@@ -777,10 +603,10 @@ namespace UnityEditor.Modules
             if (string.IsNullOrEmpty(target))
                 return null;
 
-            foreach (var module in platformSupportModules)
+            IPlatformSupportModule module;
+            if (platformSupportModules.TryGetValue(target, out module))
             {
-                if (module.TargetName == target)
-                    return module.GetDisplayNames();
+                return platformSupportModules[target].GetDisplayNames();
             }
 
             return null;
@@ -794,7 +620,7 @@ namespace UnityEditor.Modules
         {
             var references = new List<string>();
 
-            foreach (var module in ModuleManager.platformSupportModulesDontRegister)
+            foreach (var module in ModuleManager.platformSupportModules.Values)
                 references.AddRange(module.AssemblyReferencesForUserScripts);
 
             return references.ToArray();
@@ -804,7 +630,7 @@ namespace UnityEditor.Modules
         {
             var references = new List<string>();
 
-            foreach (var module in ModuleManager.platformSupportModulesDontRegister)
+            foreach (var module in ModuleManager.platformSupportModules.Values)
                 references.AddRange(module.AssemblyReferencesForEditorCsharpProject);
 
             return references.ToArray();

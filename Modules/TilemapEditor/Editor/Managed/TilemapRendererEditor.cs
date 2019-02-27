@@ -46,7 +46,6 @@ namespace UnityEditor
         {
             serializedObject.Update();
 
-            EditorGUILayout.PropertyField(m_Material.GetArrayElementAtIndex(0), Styles.materialLabel, true);
             EditorGUILayout.PropertyField(m_SortOrder);
             EditorGUILayout.PropertyField(m_Mode);
             EditorGUILayout.PropertyField(m_DetectChunkCullingBounds);
@@ -54,11 +53,11 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_ChunkCullingBounds);
             GUI.enabled = true;
 
-            RenderSortingLayerFields();
-
-            EditorGUILayout.Space();
             EditorGUILayout.PropertyField(m_MaskInteraction, Styles.maskInteractionLabel);
-            RenderRenderingLayer();
+            EditorGUILayout.PropertyField(m_Material.GetArrayElementAtIndex(0), Styles.materialLabel, true);
+
+            Other2DSettingsGUI();
+
             serializedObject.ApplyModifiedProperties();
         }
     }

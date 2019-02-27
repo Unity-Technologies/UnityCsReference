@@ -193,10 +193,13 @@ namespace UnityEditor
     {
         static string kProjectBrowserString = "ProjectBrowser";
 
-        public ProjectBrowserColumnOneTreeViewDataSource(TreeViewController treeView) : base(treeView)
+        private readonly bool skipHiddenPackages;
+
+        public ProjectBrowserColumnOneTreeViewDataSource(TreeViewController treeView, bool skipHidden) : base(treeView)
         {
             showRootItem = false;
             rootIsCollapsable = false;
+            skipHiddenPackages = skipHidden;
             SavedSearchFilters.AddChangeListener(ReloadData); // We reload on change
         }
 
@@ -272,8 +275,9 @@ namespace UnityEditor
             TreeViewItem assetRootItem = new TreeViewItem(assetsFolderInstanceID, depth, m_RootItem, displayName);
             ReadAssetDatabase("Assets", assetRootItem, depth + 1);
 
-            var packagesMountPoint = PackageManager.Folders.GetPackagesPath();
-            TreeViewItem packagesRootItem = new TreeViewItem(ProjectBrowser.kPackagesFolderInstanceId, depth, m_RootItem, packagesMountPoint);
+            // Fetch packages folder
+            displayName = PackageManager.Folders.GetPackagesPath();
+            TreeViewItem packagesRootItem = new TreeViewItem(ProjectBrowser.kPackagesFolderInstanceId, depth, m_RootItem, displayName);
             depth++;
 
             Texture2D folderIcon = EditorGUIUtility.FindTexture(EditorResources.folderIconName);
@@ -281,7 +285,7 @@ namespace UnityEditor
 
             packagesRootItem.icon = emptyFolderIcon;
 
-            var packages = PackageManagerUtilityInternal.GetAllVisiblePackages();
+            var packages = PackageManagerUtilityInternal.GetAllVisiblePackages(skipHiddenPackages);
             foreach (var package in packages)
             {
                 var packageFolderInstanceId = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(package.assetPath);
@@ -300,9 +304,7 @@ namespace UnityEditor
             // Order
             visibleRoots.Add(savedFiltersRootItem);
             visibleRoots.Add(assetRootItem);
-
-            if (packagesRootItem != null)
-                visibleRoots.Add(packagesRootItem);
+            visibleRoots.Add(packagesRootItem);
 
             m_RootItem.children = visibleRoots;
 

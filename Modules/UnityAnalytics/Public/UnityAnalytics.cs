@@ -190,9 +190,16 @@ namespace UnityEngine.Analytics
             if (eventData == null)
                 return SendCustomEventName(customEventName);
             CustomEventData customEvent = new CustomEventData(customEventName);
-            customEvent.AddDictionary(eventData);
-            var result = SendCustomEvent(customEvent);
-            customEvent.Dispose();
+            AnalyticsResult result = AnalyticsResult.InvalidData;
+            try
+            {
+                customEvent.AddDictionary(eventData);
+                result = SendCustomEvent(customEvent);
+            }
+            finally
+            {
+                customEvent.Dispose();
+            }
             return result;
         }
 

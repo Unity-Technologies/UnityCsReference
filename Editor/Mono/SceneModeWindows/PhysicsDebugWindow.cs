@@ -24,6 +24,7 @@ namespace UnityEditor
 
         bool m_PickAdded = false;
         bool m_MouseLeaveListenerAdded = false;
+        bool m_SceneViewListenerAdded = false;
 
         private static class Style
         {
@@ -106,16 +107,27 @@ namespace UnityEditor
 
         void OnBecameVisible()
         {
-            PhysicsVisualizationSettings.InitDebugDraw();
-            SceneView.duringSceneGui += OnSceneViewGUI;
+            if (!m_SceneViewListenerAdded)
+            {
+                PhysicsVisualizationSettings.InitDebugDraw();
+                SceneView.duringSceneGui += OnSceneViewGUI;
+                m_SceneViewListenerAdded = true;
+            }
+
             RepaintSceneAndGameViews();
         }
 
         void OnBecameInvisible()
         {
             RemovePicker();
-            SceneView.duringSceneGui -= OnSceneViewGUI;
-            PhysicsVisualizationSettings.DeinitDebugDraw();
+
+            if (!m_SceneViewListenerAdded)
+            {
+                SceneView.duringSceneGui -= OnSceneViewGUI;
+                PhysicsVisualizationSettings.DeinitDebugDraw();
+                m_SceneViewListenerAdded = false;
+            }
+
             RepaintSceneAndGameViews();
         }
 

@@ -106,22 +106,58 @@ namespace UnityEditor
         [SerializeField]
         bool m_ShowContextualTools;
 
-        static void OnSelectedObjectWasDestroyed(int unused)
-        {
-            s_ActiveEditors = null;
-        }
-
-        static void OnEditorTrackerRebuilt()
-        {
-            s_ActiveEditors = null;
-        }
-
-        static Editor[] s_ActiveEditors;
-
         internal bool displayToolModes
         {
             get { return m_ShowContextualTools; }
             set { m_ShowContextualTools = value; }
+        }
+
+        static void OnSelectedObjectWasDestroyed(int unused)
+        {
+            s_ActiveEditorsDirty = true;
+        }
+
+        static void OnEditorTrackerRebuilt()
+        {
+            s_ActiveEditorsDirty = true;
+        }
+
+        static List<Editor> s_ActiveEditors = new List<Editor>();
+
+        static bool s_ActiveEditorsDirty;
+
+        internal static IEnumerable<Editor> activeEditors
+        {
+            get
+            {
+                CollectActiveEditors();
+                return s_ActiveEditors;
+            }
+        }
+
+        static void CollectActiveEditors()
+        {
+            if (!s_ActiveEditorsDirty)
+                return;
+
+            s_ActiveEditorsDirty = false;
+
+            s_ActiveEditors.Clear();
+
+            if (s_SharedTracker == null)
+                s_SharedTracker = ActiveEditorTracker.sharedTracker;
+
+            foreach (var editor in s_SharedTracker.activeEditors)
+                s_ActiveEditors.Add(editor);
+
+            foreach (var inspector in InspectorWindow.GetInspectors())
+            {
+                if (inspector.isLocked)
+                {
+                    foreach (var editor in inspector.tracker.activeEditors)
+                        s_ActiveEditors.Add(editor);
+                }
+            }
         }
 
         [SerializeField]
@@ -185,7 +221,7 @@ namespace UnityEditor
         const float k_MaxCameraFarClip = 1.844674E+19f;
 
         [NonSerialized]
-        ActiveEditorTracker m_Tracker;
+        static ActiveEditorTracker s_SharedTracker;
 
         [SerializeField]
         bool m_SceneIsLit = true;
@@ -427,10 +463,12 @@ namespace UnityEditor
         Camera m_Camera;
 
         [Serializable]
-        public class SceneViewCameraSettings
+        public class CameraSettings
         {
             const float kAbsoluteSpeedMin = .01f;
             const float kAbsoluteSpeedMax = 99f;
+            const float kAbsoluteEasingDurationMin = .1f;
+            const float kAbsoluteEasingDurationMax = 2f;
 
             [SerializeField]
             float m_Speed;
@@ -440,6 +478,10 @@ namespace UnityEditor
             float m_SpeedMin;
             [SerializeField]
             float m_SpeedMax;
+            [SerializeField]
+            bool m_EasingEnabled;
+            [SerializeField]
+            float m_EasingDuration;
 
             [SerializeField]
             float m_FieldOfView;
@@ -452,12 +494,14 @@ namespace UnityEditor
             [SerializeField]
             bool m_OcclusionCulling;
 
-            public SceneViewCameraSettings()
+            public CameraSettings()
             {
                 m_Speed = 1f;
                 m_SpeedNormalized = .5f;
                 m_SpeedMin = .01f;
                 m_SpeedMax = 2f;
+                m_EasingEnabled = true;
+                m_EasingDuration = .4f;
                 fieldOfView = kPerspectiveFov;
                 m_DynamicClip = true;
                 m_OcclusionCulling = false;
@@ -519,6 +563,27 @@ namespace UnityEditor
                 }
             }
 
+            public bool easingEnabled
+            {
+                get { return m_EasingEnabled; }
+                set { m_EasingEnabled = value; }
+            }
+
+            // How many seconds should the camera take to go from stand-still to initial full speed. When setting an animated value
+            // speed, use `1 / duration`.
+            public float easingDuration
+            {
+                get
+                {
+                    return m_EasingDuration;
+                }
+                set
+                {
+                    // Clamp and round to 1 decimal point
+                    m_EasingDuration = (float)(Math.Round((double)Mathf.Clamp(value, kAbsoluteEasingDurationMin, kAbsoluteEasingDurationMax), 1));
+                }
+            }
+
             internal void SetSpeedMinMax(float[] floatValues)
             {
                 // Round to nearest decimal: 2 decimal points when between [0.01, 0.1]; 1 decimal point when between [0.1, 10]; integral between [10, 99]
@@ -574,17 +639,17 @@ namespace UnityEditor
         }
 
         [SerializeField]
-        private SceneViewCameraSettings m_SceneViewCameraSettings;
+        private CameraSettings m_CameraSettings;
 
-        public SceneViewCameraSettings sceneViewCameraSettings
+        public CameraSettings cameraSettings
         {
-            get { return m_SceneViewCameraSettings; }
-            set { m_SceneViewCameraSettings = value; }
+            get { return m_CameraSettings; }
+            set { m_CameraSettings = value; }
         }
 
-        public void ResetSceneViewCameraSettings()
+        public void ResetCameraSettings()
         {
-            m_SceneViewCameraSettings = new SceneViewCameraSettings();
+            m_CameraSettings = new CameraSettings();
         }
 
         [SerializeField]
@@ -770,21 +835,6 @@ namespace UnityEditor
             return lastActiveSceneView.SendEvent(EditorGUIUtility.CommandEvent(EventCommandNames.FrameSelectedWithLock));
         }
 
-        internal IEnumerable<Editor> activeEditors
-        {
-            get
-            {
-                if (s_ActiveEditors == null)
-                {
-                    if (m_Tracker == null)
-                        m_Tracker = ActiveEditorTracker.sharedTracker;
-                    s_ActiveEditors = m_Tracker.activeEditors;
-                }
-
-                return s_ActiveEditors;
-            }
-        }
-
         private static List<Camera> GetAllSceneCamerasAsList()
         {
             s_AllSceneCameraList.Clear();
@@ -879,7 +929,7 @@ namespace UnityEditor
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
 
             EditorApplication.modifierKeysChanged += RepaintAll; // Because we show handles on shift
-            SceneVisibilityManager.hiddenContentChanged += HiddenContentChanged;
+            SceneVisibilityManager.visibilityChanged += VisibilityChanged;
             SceneVisibilityManager.currentStageIsolated += CurrentStageIsolated;
             ActiveEditorTracker.editorTrackerRebuilt += OnEditorTrackerRebuilt;
             Selection.selectedObjectWasDestroyed += OnSelectedObjectWasDestroyed;
@@ -902,6 +952,8 @@ namespace UnityEditor
                 m_StageHandling = new SceneViewStageHandling(this);
                 m_StageHandling.OnEnable();
             }
+
+            s_ActiveEditorsDirty = true;
         }
 
         protected virtual bool SupportsStageHandling()
@@ -915,7 +967,7 @@ namespace UnityEditor
             Repaint();
         }
 
-        private void HiddenContentChanged()
+        private void VisibilityChanged()
         {
             UpdateHiddenObjectCount();
             Repaint();
@@ -943,8 +995,8 @@ namespace UnityEditor
             if (sceneViewState == null)
                 m_SceneViewState = new SceneViewState();
 
-            if (m_SceneViewCameraSettings == null)
-                m_SceneViewCameraSettings = new SceneViewCameraSettings();
+            if (m_CameraSettings == null)
+                m_CameraSettings = new CameraSettings();
 
             if (m_2DMode || EditorSettings.defaultBehaviorMode == EditorBehaviorMode.Mode2D)
             {
@@ -982,7 +1034,7 @@ namespace UnityEditor
         {
             EditorApplication.modifierKeysChanged -= RepaintAll;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
-            SceneVisibilityManager.hiddenContentChanged -= HiddenContentChanged;
+            SceneVisibilityManager.visibilityChanged -= VisibilityChanged;
             SceneVisibilityManager.currentStageIsolated -= CurrentStageIsolated;
             Lightmapping.lightingDataUpdated -= RepaintAll;
             ActiveEditorTracker.editorTrackerRebuilt -= OnEditorTrackerRebuilt;
@@ -1036,7 +1088,7 @@ namespace UnityEditor
         // event since that would not guarantee the order dependency.
         internal void OnStageChanged(StageNavigationItem previousStage, StageNavigationItem newStage)
         {
-            HiddenContentChanged();
+            VisibilityChanged();
             // audioPlay may be different in the new stage,
             // so update regardless of whether it's on or off.
             // Not if we're in Play Mode however, as audio preview
@@ -1175,14 +1227,14 @@ namespace UnityEditor
 
         private void DoSceneVisibilityOverlay()
         {
-            if (SceneVisibilityManager.IsCurrentStageIsolated())
+            if (SceneVisibilityManager.instance.IsCurrentStageIsolated())
             {
                 SceneViewOverlay.Window(Styles.isolationModeOverlayContent,
                     delegate(Object target, SceneView view)
                     {
                         if (GUILayout.Button(Styles.isolationModeExitButton, GUILayout.MinWidth(120)))
                         {
-                            SceneVisibilityManager.RevertIsolation();
+                            SceneVisibilityManager.instance.ExitIsolation();
                         }
                     }, (int)SceneViewOverlay.Ordering.ParticleEffect + 100,
                     SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
@@ -1779,7 +1831,7 @@ namespace UnityEditor
             // Clear (color/skybox)
             // We do funky FOV interpolation when switching between ortho and perspective. However,
             // for the skybox we always want to use the same FOV.
-            float skyboxFOV = GetVerticalFOV(m_SceneViewCameraSettings.fieldOfView);
+            float skyboxFOV = GetVerticalFOV(m_CameraSettings.fieldOfView);
             float realFOV = m_Camera.fieldOfView;
 
             var clearFlags = m_Camera.clearFlags;
@@ -2493,14 +2545,14 @@ namespace UnityEditor
         internal float targetSize
         {
             get { return m_Size.target; }
-            set { m_Size.SetTarget(ValidateSceneSize(value), 1f / SceneViewMotion.movementEasingDuration); }
+            set { m_Size.target = ValidateSceneSize(value); }
         }
 
         float perspectiveFov
         {
             get
             {
-                return m_SceneViewCameraSettings.fieldOfView;
+                return m_CameraSettings.fieldOfView;
             }
         }
 
@@ -2644,7 +2696,7 @@ namespace UnityEditor
 
             EditorUtility.SetCameraAnimateMaterials(m_Camera, sceneViewState.showMaterialUpdate);
             ParticleSystemEditorUtils.renderInSceneView = m_SceneViewState.showParticleSystems;
-            SceneVisibilityManager.active = m_SceneVisActive;
+            SceneVisibilityManager.instance.enableSceneVisibility = m_SceneVisActive;
             ResetIfNaN();
 
             m_Camera.transform.rotation = m_Rotation.value;
@@ -2671,7 +2723,7 @@ namespace UnityEditor
                 m_Camera.orthographicSize = GetVerticalOrthoSize();
             }
 
-            if (m_SceneViewCameraSettings.dynamicClip)
+            if (m_CameraSettings.dynamicClip)
             {
                 float farClip = Mathf.Min(Mathf.Max(1000f, 2000f * size), k_MaxCameraFarClip);
                 m_Camera.nearClipPlane = farClip * 0.000005f;
@@ -2679,11 +2731,11 @@ namespace UnityEditor
             }
             else
             {
-                m_Camera.nearClipPlane = m_SceneViewCameraSettings.nearClip;
-                m_Camera.farClipPlane = m_SceneViewCameraSettings.farClip;
+                m_Camera.nearClipPlane = m_CameraSettings.nearClip;
+                m_Camera.farClipPlane = m_CameraSettings.farClip;
             }
 
-            m_Camera.useOcclusionCulling = m_SceneViewCameraSettings.occlusionCulling;
+            m_Camera.useOcclusionCulling = m_CameraSettings.occlusionCulling;
 
             m_Camera.transform.position = m_Position.value + m_Camera.transform.rotation * new Vector3(0, 0, -cameraDistance);
 
@@ -2933,7 +2985,7 @@ namespace UnityEditor
                     if (DragAndDrop.visualMode != DragAndDropVisualMode.Copy)
                     {
                         GameObject go = HandleUtility.PickGameObject(Event.current.mousePosition, true);
-                        DragAndDrop.visualMode = InternalEditorUtility.SceneViewDrag(go, pivot, Event.current.mousePosition, customParentForDraggedObjects, isPerform);
+                        DragAndDrop.visualMode = DragAndDropService.Drop(DragAndDropService.kSceneDropDstId, go, pivot, Event.current.mousePosition, customParentForDraggedObjects, isPerform);
                     }
 
                     if (isPerform && DragAndDrop.visualMode != DragAndDropVisualMode.None)

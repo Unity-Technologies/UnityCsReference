@@ -237,6 +237,147 @@ namespace UnityEditor
                 this.vertexSnappingRotation = vertexSnappingRotation;
                 this.vertexSnappingScale = vertexSnappingScale;
             }
+
+            public TransformHandleParam Without(PositionHandleParam.Handle handles)
+            {
+                return new TransformHandleParam(
+                    RemoveHandles(position, handles),
+                    rotation,
+                    scale,
+                    RemoveHandles(cameraAlignedPosition, handles),
+                    cameraAlignedRotation,
+                    cameraAlignedScale,
+                    RemoveHandles(localPosition, handles),
+                    localRotation,
+                    localScale,
+                    RemoveHandles(vertexSnappingPosition, handles),
+                    vertexSnappingRotation,
+                    vertexSnappingScale
+                );
+            }
+
+            static PositionHandleParam RemoveHandles(PositionHandleParam p, PositionHandleParam.Handle handles)
+            {
+                return new PositionHandleParam(p.handles & ~handles, p.axisOffset, p.axisSize, p.planeOffset, p.planeSize, p.axesOrientation, p.planeOrientation);
+            }
+
+            public TransformHandleParam Without(RotationHandleParam.Handle handles)
+            {
+                return new TransformHandleParam(
+                    position,
+                    RemoveHandles(rotation, handles),
+                    scale,
+                    cameraAlignedPosition,
+                    RemoveHandles(cameraAlignedRotation, handles),
+                    cameraAlignedScale,
+                    localPosition,
+                    RemoveHandles(localRotation, handles),
+                    localScale,
+                    vertexSnappingPosition,
+                    RemoveHandles(vertexSnappingRotation, handles),
+                    vertexSnappingScale
+                );
+            }
+
+            static RotationHandleParam RemoveHandles(RotationHandleParam r, RotationHandleParam.Handle handles)
+            {
+                return new RotationHandleParam(r.handles & ~handles, r.axisSize, r.xyzSize, r.cameraAxisSize, r.enableRayDrag, r.displayXYZCircle);
+            }
+
+            public TransformHandleParam Without(ScaleHandleParam.Handle handles)
+            {
+                return new TransformHandleParam(
+                    position,
+                    rotation,
+                    RemoveHandles(scale, handles),
+                    cameraAlignedPosition,
+                    cameraAlignedRotation,
+                    RemoveHandles(cameraAlignedScale, handles),
+                    localPosition,
+                    localRotation,
+                    RemoveHandles(localScale, handles),
+                    vertexSnappingPosition,
+                    vertexSnappingRotation,
+                    RemoveHandles(vertexSnappingScale, handles)
+                );
+            }
+
+            static ScaleHandleParam RemoveHandles(ScaleHandleParam s, ScaleHandleParam.Handle handles)
+            {
+                return new ScaleHandleParam(s.handles & ~handles, s.axisOffset, s.axisSize, s.axisLineScale, s.xyzSize, s.orientation);
+            }
+
+            public TransformHandleParam WithSoloPositionManipulatorSize()
+            {
+                return new TransformHandleParam(
+                    CopyDefaultSize(position),
+                    rotation,
+                    scale,
+                    CopyDefaultSize(cameraAlignedPosition),
+                    cameraAlignedRotation,
+                    cameraAlignedScale,
+                    CopyDefaultSize(localPosition),
+                    localRotation,
+                    localScale,
+                    CopyDefaultSize(vertexSnappingPosition),
+                    vertexSnappingRotation,
+                    vertexSnappingScale
+                );
+            }
+
+            static PositionHandleParam CopyDefaultSize(PositionHandleParam p)
+            {
+                var d = PositionHandleParam.DefaultHandle;
+                return new PositionHandleParam(p.handles, d.axisOffset, d.axisSize, d.planeOffset, d.planeSize, p.axesOrientation, p.planeOrientation);
+            }
+
+            public TransformHandleParam WithSoloRotationManipulatorSize()
+            {
+                return new TransformHandleParam(
+                    position,
+                    CopyDefaultSize(rotation),
+                    scale,
+                    cameraAlignedPosition,
+                    CopyDefaultSize(cameraAlignedRotation),
+                    cameraAlignedScale,
+                    localPosition,
+                    CopyDefaultSize(localRotation),
+                    localScale,
+                    vertexSnappingPosition,
+                    CopyDefaultSize(vertexSnappingRotation),
+                    vertexSnappingScale
+                );
+            }
+
+            static RotationHandleParam CopyDefaultSize(RotationHandleParam r)
+            {
+                var d = RotationHandleParam.Default;
+                return new RotationHandleParam(r.handles, d.axisSize, d.xyzSize, d.cameraAxisSize, r.enableRayDrag, r.displayXYZCircle);
+            }
+
+            public TransformHandleParam WithSoloScaleManipulatorSize()
+            {
+                return new TransformHandleParam(
+                    position,
+                    rotation,
+                    CopyDefaultSize(scale),
+                    cameraAlignedPosition,
+                    cameraAlignedRotation,
+                    CopyDefaultSize(cameraAlignedScale),
+                    localPosition,
+                    localRotation,
+                    CopyDefaultSize(localScale),
+                    vertexSnappingPosition,
+                    vertexSnappingRotation,
+                    CopyDefaultSize(vertexSnappingScale)
+                );
+            }
+
+            static ScaleHandleParam CopyDefaultSize(ScaleHandleParam s)
+            {
+                var d = ScaleHandleParam.Default;
+                return new ScaleHandleParam(s.handles, d.axisOffset, d.axisSize, d.axisLineScale, s.xyzSize, s.orientation);
+            }
         }
 
         struct RotationHandleData
@@ -245,11 +386,120 @@ namespace UnityEditor
             public Quaternion initialRotation;
         }
 
+        // non-uniform scale
         public static void TransformHandle(ref Vector3 position, ref Quaternion rotation, ref Vector3 scale)
         {
             TransformHandle(
                 TransformHandleIds.Default, ref position, ref rotation, ref scale, TransformHandleParam.Default
             );
+        }
+
+        public static void TransformHandle(ref Vector3 position, Quaternion rotation, ref Vector3 scale)
+        {
+            TransformHandle(
+                TransformHandleIds.Default, ref position, ref rotation, ref scale,
+                TransformHandleParam.Default.Without(RotationHandleParam.Handle.All)
+            );
+        }
+
+        public static void TransformHandle(Vector3 position, ref Quaternion rotation, ref Vector3 scale)
+        {
+            TransformHandle(
+                TransformHandleIds.Default, ref position, ref rotation, ref scale,
+                TransformHandleParam.Default.Without(PositionHandleParam.Handle.All)
+            );
+        }
+
+        // uniform scale
+        public static void TransformHandle(ref Vector3 position, ref Quaternion rotation, ref float uniformScale)
+        {
+            var s = Vector3.one * uniformScale;
+            TransformHandle(
+                TransformHandleIds.Default, ref position, ref rotation, ref s,
+                TransformHandleParam.Default
+                    .Without(ScaleHandleParam.Handle.X | ScaleHandleParam.Handle.Y | ScaleHandleParam.Handle.Z)
+            );
+            uniformScale = s.x;
+        }
+
+        public static void TransformHandle(ref Vector3 position, Quaternion rotation, ref float uniformScale)
+        {
+            var s = Vector3.one * uniformScale;
+            TransformHandle(
+                TransformHandleIds.Default, ref position, ref rotation, ref s,
+                TransformHandleParam.Default
+                    .Without(RotationHandleParam.Handle.All)
+                    .Without(ScaleHandleParam.Handle.X | ScaleHandleParam.Handle.Y | ScaleHandleParam.Handle.Z)
+            );
+            uniformScale = s.x;
+        }
+
+        public static void TransformHandle(Vector3 position, ref Quaternion rotation, ref float uniformScale)
+        {
+            var s = Vector3.one * uniformScale;
+            TransformHandle(
+                TransformHandleIds.Default, ref position, ref rotation, ref s,
+                TransformHandleParam.Default
+                    .Without(PositionHandleParam.Handle.All)
+                    .Without(ScaleHandleParam.Handle.X | ScaleHandleParam.Handle.Y | ScaleHandleParam.Handle.Z)
+            );
+            uniformScale = s.x;
+        }
+
+        // only position and rotation
+        public static void TransformHandle(ref Vector3 position, ref Quaternion rotation)
+        {
+            var s = Vector3.one;
+            TransformHandle(
+                TransformHandleIds.Default, ref position, ref rotation, ref s,
+                TransformHandleParam.Default.Without(ScaleHandleParam.Handle.All)
+            );
+        }
+
+        // only position
+        static void TransformHandle(ref Vector3 position, Quaternion rotation)
+        {
+            var s = Vector3.one;
+            TransformHandle(
+                TransformHandleIds.Default, ref position, ref rotation, ref s,
+                TransformHandleParam.Default.Without(ScaleHandleParam.Handle.All).WithSoloPositionManipulatorSize()
+            );
+        }
+
+        // only rotation
+        static void TransformHandle(Vector3 position, ref Quaternion rotation)
+        {
+            var s = Vector3.one;
+            TransformHandle(
+                TransformHandleIds.Default, ref position, ref rotation, ref s,
+                TransformHandleParam.Default.Without(ScaleHandleParam.Handle.All).WithSoloRotationManipulatorSize()
+            );
+        }
+
+        // only scale
+        static void TransformHandle(Vector3 position, Quaternion rotation, ref Vector3 scale)
+        {
+            TransformHandle(
+                TransformHandleIds.Default, ref position, ref rotation, ref scale,
+                TransformHandleParam.Default
+                    .Without(PositionHandleParam.Handle.All)
+                    .Without(RotationHandleParam.Handle.All)
+                    .WithSoloScaleManipulatorSize()
+            );
+        }
+
+        static void TransformHandle(Vector3 position, Quaternion rotation, ref float uniformScale)
+        {
+            var s = Vector3.one * uniformScale;
+            TransformHandle(
+                TransformHandleIds.Default, ref position, ref rotation, ref s,
+                TransformHandleParam.Default
+                    .Without(PositionHandleParam.Handle.All)
+                    .Without(RotationHandleParam.Handle.All)
+                    .Without(ScaleHandleParam.Handle.X | ScaleHandleParam.Handle.Y | ScaleHandleParam.Handle.Z)
+                    .WithSoloScaleManipulatorSize()
+            );
+            uniformScale = s.x;
         }
 
         static bool s_IsHotInCameraAlignedMode = false;

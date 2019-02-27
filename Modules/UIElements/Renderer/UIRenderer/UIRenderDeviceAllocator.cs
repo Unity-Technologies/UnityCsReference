@@ -38,7 +38,7 @@ namespace UnityEngine.UIElements.UIR
             if (m_Pool == null)
                 return new T();
 
-            System.Diagnostics.Debug.Assert(m_Pool != null);
+            Debug.Assert(m_Pool != null);
             T block = (T)m_Pool;
             m_Pool = m_Pool.poolNext;
             block.poolNext = null;
@@ -54,6 +54,10 @@ namespace UnityEngine.UIElements.UIR
     // Maintains its available memory range to the best, giving practically a fast allocation time
     // but O(n) free time where n is a factor of fragmentation (number of available blocks)
     // It always coalesces free blocks on every free operation
+    // For index buffers, go with immediate coalescing, but for vertex buffers we can
+    // be very lazy and don't aim for adjacency or care for internal fragmentation much.
+    // Instead we should improve allocation/free time more because vertex buffer content
+    // will update often
     class BestFitAllocator
     {
         public BestFitAllocator(uint size)
@@ -74,13 +78,13 @@ namespace UnityEngine.UIElements.UIR
             if (block == null)
                 return new Alloc(); // Or throw an exception?
 
-            System.Diagnostics.Debug.Assert(block.size >= size);
-            System.Diagnostics.Debug.Assert(!block.allocated);
+            Debug.Assert(block.size >= size);
+            Debug.Assert(!block.allocated);
 
             if (size != block.size)
                 SplitBlock(block, size);
 
-            System.Diagnostics.Debug.Assert(block.size == size);
+            Debug.Assert(block.size == size);
 
             if (block.end > m_HighWatermark)
                 m_HighWatermark = block.end;
@@ -105,13 +109,13 @@ namespace UnityEngine.UIElements.UIR
 
             if (!block.allocated)
             {
-                System.Diagnostics.Debug.Assert(false, "Severe error: UIR allocation double-free");
+                Debug.Assert(false, "Severe error: UIR allocation double-free");
                 return;
             }
 
-            System.Diagnostics.Debug.Assert(block.allocated);
-            System.Diagnostics.Debug.Assert(block.start == alloc.start);
-            System.Diagnostics.Debug.Assert(block.size == alloc.size);
+            Debug.Assert(block.allocated);
+            Debug.Assert(block.start == alloc.start);
+            Debug.Assert(block.size == alloc.size);
 
             if (block.end == m_HighWatermark)
             {
@@ -133,7 +137,7 @@ namespace UnityEngine.UIElements.UIR
 
             if (availableBefore == null)
             {
-                System.Diagnostics.Debug.Assert(block.prevAvailable == null);
+                Debug.Assert(block.prevAvailable == null);
                 block.nextAvailable = m_FirstAvailableBlock;
                 m_FirstAvailableBlock = block;
             }
@@ -163,8 +167,8 @@ namespace UnityEngine.UIElements.UIR
         /// </remarks>
         private Block CoalesceBlockWithPrevious(Block block)
         {
-            System.Diagnostics.Debug.Assert(block.prevAvailable.end == block.start);
-            System.Diagnostics.Debug.Assert(block.prev.nextAvailable == block);
+            Debug.Assert(block.prevAvailable.end == block.start);
+            Debug.Assert(block.prev.nextAvailable == block);
             Block prev = block.prev;
             prev.next = block.next;
             if (block.next != null)
@@ -229,7 +233,7 @@ namespace UnityEngine.UIElements.UIR
 
         void SplitBlock(Block block, uint size)
         {
-            System.Diagnostics.Debug.Assert(block.size > size);
+            Debug.Assert(block.size > size);
 
             Block after = m_BlockPool.Get();
 
@@ -271,6 +275,7 @@ namespace UnityEngine.UIElements.UIR
     {
         UInt32 m_TotalBlocks;
         UInt32 m_NewBlocksRemaining;
+        UInt32 m_Allocated; // For statistics only
 
         public BlockAllocator(UInt32 blockCount)
         {
@@ -281,20 +286,26 @@ namespace UnityEngine.UIElements.UIR
         public Alloc Allocate()
         {
             if (m_NewBlocksRemaining == 0)
-                return new Alloc(); // Or throw an exception
+                return new Alloc(); // Signifies a failed allocation, don't throw an exception
             Block block = m_BlockPool.Get();
             if (block.indexPlus1 == 0)
                 block.indexPlus1 = m_TotalBlocks - (--m_NewBlocksRemaining);
+            m_Allocated++;
             return new Alloc() { handle = block, start = block.indexPlus1, size = 1 };
         }
 
         public void Free(Alloc alloc)
         {
-            System.Diagnostics.Debug.Assert(((Block)alloc.handle).indexPlus1 == alloc.start);
-            System.Diagnostics.Debug.Assert(alloc.start != 0);
-            System.Diagnostics.Debug.Assert(alloc.start <= m_TotalBlocks);
+            Debug.Assert(((Block)alloc.handle).indexPlus1 == alloc.start);
+            Debug.Assert(alloc.start != 0);
+            Debug.Assert(alloc.start <= m_TotalBlocks);
+            m_Allocated--;
             m_BlockPool.Return((Block)alloc.handle);
         }
+
+        internal uint TotalBlocks { get { return m_TotalBlocks; } }
+        internal uint FreeBlocks { get { return m_TotalBlocks - m_Allocated; } }
+        internal uint AllocatedBlocks { get { return m_Allocated; } }
 
         class Block : PoolItem
         {
@@ -329,8 +340,12 @@ namespace UnityEngine.UIElements.UIR
 
             alloc.shortLived = shortLived;
 
-            if (HighLowCollide())
+            if (HighLowCollide() && alloc.size != 0)
+            {
+                Free(alloc);
                 return new Alloc(); // OOM
+            }
+
             return alloc;
         }
 
@@ -376,11 +391,11 @@ namespace UnityEngine.UIElements.UIR
 
     internal unsafe class Page : IDisposable
     {
-        public Page(uint vertexMaxCount, uint indexMaxCount, uint maxQueuedFrameCount)
+        public Page(uint vertexMaxCount, uint indexMaxCount, uint maxQueuedFrameCount, bool mockPage)
         {
             vertexMaxCount = Math.Min(vertexMaxCount, 0xFFFF); // Because we use UInt16 as the index type
-            vertices = new DataSet<Vertex>(Utility.GPUBufferType.Vertex, vertexMaxCount, maxQueuedFrameCount);
-            indices = new DataSet<UInt16>(Utility.GPUBufferType.Index, indexMaxCount, maxQueuedFrameCount);
+            vertices = new DataSet<Vertex>(Utility.GPUBufferType.Vertex, vertexMaxCount, maxQueuedFrameCount, 32, mockPage);
+            indices = new DataSet<UInt16>(Utility.GPUBufferType.Index, indexMaxCount, maxQueuedFrameCount, 32, mockPage);
         }
 
         #region Dispose Pattern
@@ -416,17 +431,18 @@ namespace UnityEngine.UIElements.UIR
 
         public class DataSet<T> : IDisposable where T : struct
         {
-            public DataSet(Utility.GPUBufferType bufferType, uint totalCount, uint maxQueuedFrameCount, uint updateRangePoolSize = 32)
+            public DataSet(Utility.GPUBufferType bufferType, uint totalCount, uint maxQueuedFrameCount, uint updateRangePoolSize, bool mockBuffer)
             {
-                gpuData = new Utility.GPUBuffer<T>((int)totalCount, bufferType);
+                if (!mockBuffer)
+                    gpuData = new Utility.GPUBuffer<T>((int)totalCount, bufferType);
                 cpuData = new NativeArray<T>((int)totalCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
                 allocator = new GPUBufferAllocator(totalCount);
-                m_ElemStride = (uint)gpuData.ElementStride;
+                if (!mockBuffer)
+                    m_ElemStride = (uint)gpuData.ElementStride;
 
                 m_UpdateRangePoolSize = updateRangePoolSize;
                 uint multipliedUpdateRangePoolSize = m_UpdateRangePoolSize * maxQueuedFrameCount;
                 updateRanges = new NativeArray<GfxUpdateBufferRange>((int)multipliedUpdateRangePoolSize, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-
                 m_UpdateRangeMin = uint.MaxValue;
                 m_UpdateRangeMax = 0;
                 m_UpdateRangesEnqueued = 0;
@@ -451,7 +467,7 @@ namespace UnityEngine.UIElements.UIR
 
                 if (disposing)
                 {
-                    gpuData.Dispose();
+                    gpuData?.Dispose();
                     cpuData.Dispose();
                     updateRanges.Dispose();
                 }
@@ -465,7 +481,7 @@ namespace UnityEngine.UIElements.UIR
 
             public void RegisterUpdate(uint start, uint size)
             {
-                System.Diagnostics.Debug.Assert(start + size <= cpuData.Length);
+                Debug.Assert(start + size <= cpuData.Length);
 
                 int rangeIndex = (int)(m_UpdateRangesBatchStart + m_UpdateRangesEnqueued);
 
@@ -532,7 +548,7 @@ namespace UnityEngine.UIElements.UIR
                         };
                     }
                 }
-                gpuData.UpdateRanges(updateRanges.Slice((int)m_UpdateRangesBatchStart, (int)m_UpdateRangesEnqueued), (int)minByte, (int)maxByte);
+                gpuData?.UpdateRanges(updateRanges.Slice((int)m_UpdateRangesBatchStart, (int)m_UpdateRangesEnqueued), (int)minByte, (int)maxByte);
 
                 // Reset state for upcoming updates
                 m_UpdateRangeMin = uint.MaxValue;

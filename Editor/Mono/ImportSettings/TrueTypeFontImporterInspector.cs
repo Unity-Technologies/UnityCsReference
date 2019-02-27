@@ -34,6 +34,8 @@ namespace UnityEditor
 
         public override void OnEnable()
         {
+            base.OnEnable();
+
             m_FontSize = serializedObject.FindProperty("m_FontSize");
             m_TextureCase = serializedObject.FindProperty("m_ForceTextureCase");
             m_IncludeFontData = serializedObject.FindProperty("m_IncludeFontData");
@@ -52,6 +54,16 @@ namespace UnityEditor
                 m_FontNamesString = GetFontNames();
                 var importer = (TrueTypeFontImporter)target;
                 m_FallbackFontReferences = importer.fontReferences;
+            }
+        }
+
+        protected override bool needsApplyRevert
+        {
+            get
+            {
+                if (m_FormatSupported != null && m_FormatSupported.Value == false)
+                    return false;
+                return base.needsApplyRevert;
             }
         }
 
@@ -221,6 +233,8 @@ namespace UnityEditor
                 return;
             }
 
+            serializedObject.Update();
+
             EditorGUILayout.PropertyField(m_FontSize);
             if (m_FontSize.intValue < 1)
                 m_FontSize.intValue = 1;
@@ -304,6 +318,7 @@ namespace UnityEditor
                 }
             }
 
+            serializedObject.ApplyModifiedProperties();
             ApplyRevertGUI();
         }
     }

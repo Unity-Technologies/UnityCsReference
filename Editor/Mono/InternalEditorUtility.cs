@@ -32,6 +32,7 @@ namespace UnityEditorInternal
                 case "guiskin": return EditorGUIUtility.FindTexture(typeof(GUISkin));
                 case "dll": return EditorGUIUtility.FindTexture("Assembly Icon");
                 case "asmdef": return EditorGUIUtility.FindTexture(typeof(AssemblyDefinitionAsset));
+                case "asmref": return EditorGUIUtility.FindTexture(typeof(AssemblyDefinitionAsset));
                 case "mat": return EditorGUIUtility.FindTexture(typeof(Material));
                 case "physicmaterial": return EditorGUIUtility.FindTexture(typeof(PhysicMaterial));
                 case "prefab": return EditorGUIUtility.FindTexture("Prefab Icon");

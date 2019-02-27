@@ -20,13 +20,27 @@ namespace UnityEngine.Experimental.XR
     {
         public static event Action<bool> displayFocusChanged;
 
-        extern public bool singlePassRenderingDisabled { get; set; }
-
         [RequiredByNativeCode]
         private static void InvokeDisplayFocusChanged(bool focus)
         {
             if (displayFocusChanged != null)
                 displayFocusChanged.Invoke(focus);
         }
+
+        extern public bool singlePassRenderingDisabled { get; set; }
+        extern public bool displayOpaque { get; }
+        extern public bool contentProtectionEnabled { get; set; }
+
+        public enum ReprojectionMode
+        {
+            Unspecified,
+            PositionAndOrientation,
+            OrientationOnly,
+            None
+        };
+
+        extern public ReprojectionMode reprojectionMode { get; set; }
+
+        extern public void SetFocusPlane(Vector3 point, Vector3 normal, Vector3 velocity);
     }
 }

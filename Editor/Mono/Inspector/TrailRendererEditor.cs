@@ -23,9 +23,11 @@ namespace UnityEditor
             public static GUIContent generateLightingData = EditorGUIUtility.TrTextContent("Generate Lighting Data", "Toggle generation of normal and tangent data, for use in lit shaders.");
         }
 
-        private string[] m_ExcludedProperties;
-
         private LineRendererCurveEditor m_CurveEditor = new LineRendererCurveEditor();
+        private SerializedProperty m_Time;
+        private SerializedProperty m_MinVertexDistance;
+        private SerializedProperty m_Autodestruct;
+        private SerializedProperty m_Emitting;
         private SerializedProperty m_ColorGradient;
         private SerializedProperty m_NumCornerVertices;
         private SerializedProperty m_NumCapVertices;
@@ -38,16 +40,11 @@ namespace UnityEditor
         {
             base.OnEnable();
 
-            List<string> excludedProperties = new List<string>();
-            excludedProperties.Add("m_LightProbeUsage");
-            excludedProperties.Add("m_LightProbeVolumeOverride");
-            excludedProperties.Add("m_ReflectionProbeUsage");
-            excludedProperties.Add("m_ProbeAnchor");
-            excludedProperties.Add("m_Parameters");
-            excludedProperties.Add("m_RenderingLayerMask");
-            m_ExcludedProperties = excludedProperties.ToArray();
-
             m_CurveEditor.OnEnable(serializedObject);
+            m_Time = serializedObject.FindProperty("m_Time");
+            m_MinVertexDistance = serializedObject.FindProperty("m_MinVertexDistance");
+            m_Autodestruct = serializedObject.FindProperty("m_Autodestruct");
+            m_Emitting = serializedObject.FindProperty("m_Emitting");
             m_ColorGradient = serializedObject.FindProperty("m_Parameters.colorGradient");
             m_NumCornerVertices = serializedObject.FindProperty("m_Parameters.numCornerVertices");
             m_NumCapVertices = serializedObject.FindProperty("m_Parameters.numCapVertices");
@@ -55,8 +52,6 @@ namespace UnityEditor
             m_TextureMode = serializedObject.FindProperty("m_Parameters.textureMode");
             m_ShadowBias = serializedObject.FindProperty("m_Parameters.shadowBias");
             m_GenerateLightingData = serializedObject.FindProperty("m_Parameters.generateLightingData");
-
-            InitializeProbeFields();
         }
 
         public void OnDisable()
@@ -68,18 +63,13 @@ namespace UnityEditor
         {
             serializedObject.Update();
 
-            List<string> excludedProperties = new List<string>();
-            if (!SupportedRenderingFeatures.active.motionVectors)
-                excludedProperties.Add("m_MotionVectors");
-            if (!SupportedRenderingFeatures.active.receiveShadows)
-                excludedProperties.Add("m_ReceiveShadows");
-            excludedProperties.AddRange(m_ExcludedProperties);
-
-            DrawPropertiesExcluding(m_SerializedObject, excludedProperties.ToArray());
-
             m_CurveEditor.CheckCurveChangedExternally();
             m_CurveEditor.OnInspectorGUI();
 
+            EditorGUILayout.PropertyField(m_Time);
+            EditorGUILayout.PropertyField(m_MinVertexDistance);
+            EditorGUILayout.PropertyField(m_Autodestruct);
+            EditorGUILayout.PropertyField(m_Emitting);
             EditorGUILayout.PropertyField(m_ColorGradient, Styles.colorGradient);
             EditorGUILayout.PropertyField(m_NumCornerVertices, Styles.numCornerVertices);
             EditorGUILayout.PropertyField(m_NumCapVertices, Styles.numCapVertices);
@@ -88,12 +78,9 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_GenerateLightingData, Styles.generateLightingData);
             EditorGUILayout.PropertyField(m_ShadowBias, Styles.shadowBias);
 
-            EditorGUILayout.Space();
-
-            RenderSortingLayerFields();
-
-            m_Probes.OnGUI(targets, (Renderer)target, false);
-            RenderRenderingLayer();
+            DrawMaterials();
+            LightingSettingsGUI(false);
+            OtherSettingsGUI(true, false, true);
 
             serializedObject.ApplyModifiedProperties();
         }

@@ -1246,23 +1246,7 @@ namespace UnityEditor
 
             public DragAndDropVisualMode DoDrag(int dragToInstanceID, bool perform)
             {
-                HierarchyProperty search = new HierarchyProperty(HierarchyType.Assets);
-                if (search.Find(dragToInstanceID, null))
-                    return InternalEditorUtility.ProjectWindowDrag(search, perform);
-
-                var path = AssetDatabase.GetAssetPath(dragToInstanceID);
-                if (string.IsNullOrEmpty(path))
-                    return DragAndDropVisualMode.Rejected;
-
-                var packageInfo = PackageManager.Packages.GetForAssetPath(path);
-                if (packageInfo != null)
-                {
-                    search = new HierarchyProperty(packageInfo.assetPath);
-                    if (search.Find(dragToInstanceID, null))
-                        return InternalEditorUtility.ProjectWindowDrag(search, perform);
-                }
-
-                return InternalEditorUtility.ProjectWindowDrag(null, perform);
+                return DragAndDropService.Drop(DragAndDropService.kProjectBrowserDropDstId, dragToInstanceID, AssetDatabase.GetAssetPath(dragToInstanceID), perform);
             }
 
             static internal int GetControlIDFromInstanceID(int instanceID)

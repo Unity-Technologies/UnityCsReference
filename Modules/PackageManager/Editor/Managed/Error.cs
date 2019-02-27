@@ -18,7 +18,7 @@ namespace UnityEditor.PackageManager
     {
         [SerializeField]
         [NativeName("errorCode")]
-        private ErrorCode m_ErrorCode;
+        private NativeErrorCode m_ErrorCode;
 
         [SerializeField]
         [NativeName("message")]
@@ -26,13 +26,14 @@ namespace UnityEditor.PackageManager
 
         private Error() {}
 
-        internal Error(ErrorCode errorCode, string message)
+        internal Error(NativeErrorCode errorCode, string message)
         {
             m_ErrorCode = errorCode;
             m_Message = message;
         }
 
-        public ErrorCode errorCode { get { return m_ErrorCode;  } }
-        public string message { get { return m_Message;  } }
+        public ErrorCode errorCode { get { return m_ErrorCode.ConvertToManaged(); } }
+
+        public string message { get { return m_Message; } }
     }
 }

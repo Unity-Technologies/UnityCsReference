@@ -73,7 +73,7 @@ namespace UnityEditor
                     managedLibraries.Add(file.path);
             }
 
-            var matchingPackages = Packages.GetForAssemblyFilePaths(managedLibraries);
+            var matchingPackages = UnityEditor.PackageManager.PackageInfo.GetForAssemblyFilePaths(managedLibraries);
             var packageIds = matchingPackages.Select(item => SanitizePackageId(item)).ToArray();
             if (packageIds.Length > 0)
                 EditorAnalytics.SendEventBuildPackageList(new BuildPackageIds() { package_ids = packageIds });

@@ -70,11 +70,12 @@ namespace UnityEditor.Experimental.AssetImporters
                     }
                 }
 
-                MethodInfo getImportDependencyHintMethod = importerType.GetMethod("GetHashOfImportedAssetDependencyHintsForTesting", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                var supportsImportDependencyHinting = importerType.GetMethod("GetHashOfImportedAssetDependencyHintsForTesting", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static) != null
+                    || importerType.GetMethod("GatherDependenciesFromSourceFile", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static) != null;
 
                 // Register the importer
                 foreach (var ext in handledExts)
-                    AssetImporter.RegisterImporter(importerType, attribute.version, attribute.importQueuePriority, ext.Key, getImportDependencyHintMethod != null);
+                    AssetImporter.RegisterImporter(importerType, attribute.version, attribute.importQueuePriority, ext.Key, supportsImportDependencyHinting);
             }
         }
 

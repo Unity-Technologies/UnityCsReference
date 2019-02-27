@@ -281,6 +281,13 @@ namespace UnityEditor
             }
         }
 
+        internal override bool IsEnabled()
+        {
+            if (FileUtil.IsReadOnly(m_Clip))
+                return false;
+            return base.IsEnabled();
+        }
+
         internal override void OnHeaderIconGUI(Rect iconRect)
         {
             // It doesn't make sense to try and use the preview
@@ -294,6 +301,7 @@ namespace UnityEditor
                     Repaint();
                 icon = AssetPreview.GetMiniThumbnail(target);
             }
+
             GUI.DrawTexture(iconRect, icon);
         }
 

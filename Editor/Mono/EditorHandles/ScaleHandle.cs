@@ -78,10 +78,12 @@ namespace UnityEditor
             [Flags]
             public enum Handle
             {
+                None = 0,
                 X = 1 << 0,
                 Y = 1 << 1,
                 Z = 1 << 2,
-                XYZ = 1 << 3
+                XYZ = 1 << 3,
+                All = ~None
             }
 
             public enum Orientation

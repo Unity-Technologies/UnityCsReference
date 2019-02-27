@@ -132,6 +132,11 @@ namespace UnityEngine.UIElements
         // Note: This overload is internal to hide the slots feature
         internal void CloneTree(VisualElement target, Dictionary<string, VisualElement> slotInsertionPoints)
         {
+            CloneTree(target, slotInsertionPoints, null);
+        }
+
+        internal void CloneTree(VisualElement target, Dictionary<string, VisualElement> slotInsertionPoints, List<TemplateAsset.AttributeOverride> attributeOverrides)
+        {
             if (target == null)
                 throw new ArgumentNullException(nameof(target));
 
@@ -165,7 +170,7 @@ namespace UnityEngine.UIElements
                 {
                     Assert.IsNotNull(rootElement);
                     VisualElement rootVe = CloneSetupRecursively(rootElement, idToChildren,
-                        new CreationContext(slotInsertionPoints, this, target));
+                        new CreationContext(slotInsertionPoints, attributeOverrides, this, target));
 
                     // if contentContainer == this, the shadow and the logical hierarchy are identical
                     // otherwise, if there is a CC, we want to insert in the shadow
@@ -436,10 +441,22 @@ namespace UnityEngine.UIElements
         public VisualTreeAsset visualTreeAsset { get; private set; }
         public Dictionary<string, VisualElement> slotInsertionPoints { get; private set; }
 
-        internal CreationContext(Dictionary<string, VisualElement> slotInsertionPoints, VisualTreeAsset vta, VisualElement target)
+        internal List<TemplateAsset.AttributeOverride> attributeOverrides { get; private set; }
+
+        internal CreationContext(
+            Dictionary<string, VisualElement> slotInsertionPoints,
+            VisualTreeAsset vta, VisualElement target)
+            : this(slotInsertionPoints, null, vta, target)
+        {}
+
+        internal CreationContext(
+            Dictionary<string, VisualElement> slotInsertionPoints,
+            List<TemplateAsset.AttributeOverride> attributeOverrides,
+            VisualTreeAsset vta, VisualElement target)
         {
             this.target = target;
             this.slotInsertionPoints = slotInsertionPoints;
+            this.attributeOverrides = attributeOverrides;
             visualTreeAsset = vta;
         }
 

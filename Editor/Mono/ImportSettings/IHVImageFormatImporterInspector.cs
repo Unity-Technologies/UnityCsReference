@@ -41,6 +41,8 @@ namespace UnityEditor
 
         public override void OnEnable()
         {
+            base.OnEnable();
+
             m_IsReadable    = serializedObject.FindProperty("m_IsReadable");
             m_sRGBTexture   = serializedObject.FindProperty("m_sRGBTexture");
             m_FilterMode    = serializedObject.FindProperty("m_TextureSettings.m_FilterMode");
@@ -72,6 +74,7 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
+            serializedObject.Update();
             EditorGUILayout.PropertyField(m_IsReadable, Styles.readWrite);
             EditorGUILayout.PropertyField(m_sRGBTexture, Styles.sRGBTexture);
 
@@ -102,11 +105,8 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_StreamingMipmapsPriority, Styles.streamingMipmapsPriority);
                 EditorGUI.indentLevel--;
             }
-
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
+            serializedObject.ApplyModifiedProperties();
             ApplyRevertGUI();
-            GUILayout.EndHorizontal();
         }
     }
 }

@@ -58,10 +58,6 @@ namespace UnityEditor.EditorTools
 
         public virtual void OnToolGUI(EditorWindow window) {}
 
-        public virtual void OnActivate() {}
-
-        public virtual void OnDeactivate() {}
-
         public virtual bool IsAvailable()
         {
             return true;

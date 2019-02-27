@@ -171,10 +171,17 @@ namespace UnityEditor
             if (s_EditorToolModes.Count > 0)
             {
                 EditorGUI.BeginChangeCheck();
+
                 EditorGUILayout.EditorToolbar(s_EditorToolModes);
+
                 if (EditorGUI.EndChangeCheck())
-                    foreach (var editor in sceneView.activeEditors)
-                        editor.Repaint();
+                {
+                    foreach (var inspector in InspectorWindow.GetInspectors())
+                    {
+                        foreach (var editor in inspector.tracker.activeEditors)
+                            editor.Repaint();
+                    }
+                }
             }
             else
             {

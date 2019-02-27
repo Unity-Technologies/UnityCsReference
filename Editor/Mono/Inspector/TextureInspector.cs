@@ -791,9 +791,6 @@ namespace UnityEditor
             TextureImporter textureImporter = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(t)) as TextureImporter;
             string info = t.width.ToString() + "x" + t.height.ToString();
 
-            if (QualitySettings.desiredColorSpace == ColorSpace.Linear)
-                info += " " + TextureUtil.GetTextureColorSpaceString(t);
-
             bool showSize = true;
             bool isPackedSprite = textureImporter && textureImporter.qualifiesForSpritePacking;
             bool isNormalmap = IsNormalMap(t);

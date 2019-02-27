@@ -366,8 +366,8 @@ namespace UnityEditor.Experimental.GraphView
 
                 current = current.hierarchy.parent;
             }
-
-            port.node.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+            if (port.node != null)
+                port.node.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         }
 
         void DoUntrackGraphElement(Port port)
@@ -388,7 +388,8 @@ namespace UnityEditor.Experimental.GraphView
 
                 current = current.hierarchy.parent;
             }
-            port.node.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+            if (port.node != null)
+                port.node.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         }
 
         private void OnPortGeometryChanged(GeometryChangedEvent evt)

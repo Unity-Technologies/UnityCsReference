@@ -261,6 +261,7 @@ namespace UnityEditor.Experimental.VFX
             CreateVisualEffectResource(this);
         }
 
+        public const string Extension = ".vfx";
         extern private static void CreateVisualEffectResource([Writable] VisualEffectResource resource);
         extern public void ClearRuntimeData();
 
@@ -388,23 +389,35 @@ namespace UnityEditor.Experimental.VFX
         public extern void SetAssetPath(string path);
 
         public static extern VisualEffectAsset CreateNewAsset(string path);
+        public static extern VisualEffectSubgraphOperator CreateNewSubgraphOperator(string path);
+        public static extern VisualEffectSubgraphBlock CreateNewSubgraphBlock(string path);
+
 
         public extern UnityObject[] GetContents();
         public extern void SetContents(UnityObject[] dependencies);
 
-        VisualEffectAsset m_Asset;
+        public bool isSubgraph
+        { get { return visualEffectObject is VisualEffectSubgraph; } }
+
+        VisualEffectObject m_Object;
         public VisualEffectAsset asset
+        { get { return visualEffectObject as VisualEffectAsset;} }
+        public VisualEffectSubgraph subgraph
+        { get { return visualEffectObject as VisualEffectSubgraph; } }
+
+        public VisualEffectObject visualEffectObject
         {
             get
             {
-                if (m_Asset == null)
-                    m_Asset = AssetDatabase.LoadAssetAtPath<VisualEffectAsset>(AssetDatabase.GetAssetPath(this));
-                return m_Asset;
+                if (m_Object == null)
+                {
+                    string assetPath = AssetDatabase.GetAssetPath(this);
+                    m_Object = AssetDatabase.LoadAssetAtPath<VisualEffectObject>(assetPath);
+                }
+                return m_Object;
             }
         }
-
         extern public ScriptableObject graph { get; set; }
-
         extern public int GetShaderIndex(UnityObject shader);
         public extern void ShowGeneratedShaderFile(int index, int line = 0);
     }

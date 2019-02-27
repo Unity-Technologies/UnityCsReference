@@ -8,6 +8,8 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEditor.Compilation;
+using Assembly = System.Reflection.Assembly;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 namespace UnityEditor.PackageManager
@@ -17,7 +19,7 @@ namespace UnityEditor.PackageManager
     [RequiredByNativeCode]
     [NativeAsStruct]
     [NativeType(IntermediateScriptingStructName = "PackageManager_PackageInfo")]
-    public class PackageInfo
+    public sealed partial class PackageInfo
     {
         [SerializeField]
         [NativeName("packageId")]
@@ -99,6 +101,10 @@ namespace UnityEditor.PackageManager
         [NativeName("registry")]
         private RegistryInfo m_Registry = new RegistryInfo();
 
+        [SerializeField]
+        [NativeName("hideInEditor")]
+        private bool m_HideInEditor;
+
         internal PackageInfo() {}
 
         public string packageId { get { return m_PackageId;  } }
@@ -119,6 +125,7 @@ namespace UnityEditor.PackageManager
         public DependencyInfo[] resolvedDependencies { get { return m_ResolvedDependencies; } }
         public string[] keywords { get { return m_Keywords;  } }
         public AuthorInfo author { get { return m_Author;  } }
+        internal bool hideInEditor { get { return m_HideInEditor;  } }
 
         public RegistryInfo registry
         {
@@ -126,6 +133,127 @@ namespace UnityEditor.PackageManager
             {
                 return m_HasRegistry ? m_Registry : null;
             }
+        }
+
+        public static PackageInfo FindForAssetPath(string assetPath)
+        {
+            if (string.IsNullOrEmpty(assetPath))
+                throw new ArgumentException("Asset path cannot be null or empty.", "assetPath");
+
+            var result = new PackageInfo();
+            return TryGetForAssetPath(assetPath, result) ? result : null;
+        }
+
+        public static PackageInfo FindForAssembly(Assembly assembly)
+        {
+            if (assembly == null)
+                throw new ArgumentNullException("assembly");
+
+            string fullPath = assembly.Location;
+            string relativePath = GetRelativePathForAssemblyFilePath(fullPath);
+            if (!String.IsNullOrEmpty(relativePath))
+                return FindForAssetPath(relativePath);
+            if (relativePath == null)
+                return null;
+
+            // Path is outside the project dir - or possibly inside the project dir but local (e.g. in LocalPackages in the test project)
+            // Might be in the global package cache, might be a built-in engine module, etc. Do a scan through all packages for one that owns
+            // this directory.
+            foreach (var package in GetAll())
+            {
+                if (fullPath.StartsWith(package.resolvedPath + System.IO.Path.DirectorySeparatorChar))
+                    return package;
+            }
+
+            return null;
+        }
+
+        private static string GetPathForPackageAssemblyName(string assemblyPath)
+        {
+            if (assemblyPath == null)
+                throw new ArgumentNullException("assemblyName");
+
+            if (assemblyPath == string.Empty)
+                throw new ArgumentException("Assembly path cannot be empty.", "assemblyPath");
+
+            var assemblyName = FileUtil.UnityGetFileNameWithoutExtension(assemblyPath);
+
+            var assets = AssetDatabase.FindAssets("a:packages " + assemblyName);
+            foreach (var guid in assets)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                if (path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                    return path;
+            }
+
+            return null;
+        }
+
+        private static string GetRelativePathForAssemblyFilePath(string fullPath)
+        {
+            if (fullPath == null)
+                throw new ArgumentNullException("fullPath");
+
+            if (fullPath.StartsWith(Environment.CurrentDirectory + System.IO.Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+            {
+                // Path is inside the project dir
+                var relativePath = fullPath.Substring(Environment.CurrentDirectory.Length + 1).Replace('\\', '/');
+
+                // See if there is an asmdef file for this assembly - use it if so
+                var asmdefPath = CompilationPipeline.GetAssemblyDefinitionFilePathFromAssemblyName(fullPath);
+                if (asmdefPath != null)
+                    relativePath = asmdefPath;
+
+                // See if this is a prebuilt package assembly - use it if so
+                var packagePath = GetPathForPackageAssemblyName(relativePath);
+                if (packagePath != null)
+                    relativePath = packagePath;
+
+                // If we don't have a valid path, or it's inside the Assets folder, it's not part of a package
+                if (string.IsNullOrEmpty(relativePath) || relativePath.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase))
+                    return null;
+
+                if (relativePath.StartsWith(Folders.GetPackagesPath() + "/", StringComparison.OrdinalIgnoreCase))
+                    return relativePath;
+            }
+            return String.Empty;
+        }
+
+        internal static List<PackageInfo> GetForAssemblyFilePaths(List<string> assemblyPaths)
+        {
+            // We will first get all the relative paths from assembly paths
+            Dictionary<string, string> matchingRelativePaths = new Dictionary<string, string>();
+            foreach (string assemblyPath in assemblyPaths)
+            {
+                string relativePath = GetRelativePathForAssemblyFilePath(assemblyPath);
+                if (relativePath != null)
+                    matchingRelativePaths.Add(assemblyPath, relativePath);
+            }
+
+            // We will loop thru all the packages and see if they match the relative paths
+            List<PackageInfo> matchingPackages = new List<PackageInfo>();
+            foreach (var package in GetAll())
+            {
+                foreach (var item in matchingRelativePaths)
+                {
+                    bool found;
+                    string relativePath = item.Value;
+                    if (!String.IsNullOrEmpty(relativePath))
+                        found = (relativePath == package.assetPath || relativePath.StartsWith(package.assetPath + '/'));
+                    else
+                        found = item.Key.StartsWith(package.resolvedPath + System.IO.Path.DirectorySeparatorChar);
+
+                    if (found)
+                    {
+                        matchingPackages.Add(package);
+                        matchingRelativePaths.Remove(item.Key);
+                        break;
+                    }
+                }
+                if (matchingRelativePaths.Count == 0)
+                    break;
+            }
+            return matchingPackages;
         }
     }
 }

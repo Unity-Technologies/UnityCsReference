@@ -59,20 +59,20 @@ namespace UnityEngine.UIElements
         {
             Rect yogaRect = new Rect(ve.yogaNode.LayoutX, ve.yogaNode.LayoutY, ve.yogaNode.LayoutWidth, ve.yogaNode.LayoutHeight);
             Rect lastRect = ve.renderData.lastLayout;
-            bool rectChanged = lastRect != yogaRect;
+            bool rectChanged = false;
 
             // If the last layout rect is different than the current one we must dirty transform on children
-            if (rectChanged)
+            if ((lastRect.width != yogaRect.width) || (lastRect.height != yogaRect.height))
             {
-                if (yogaRect.position != lastRect.position)
-                {
-                    ve.IncrementVersion(VersionChangeType.Transform);
-                }
-
-                // Layout change require a clip update + repaint
-                ve.IncrementVersion(VersionChangeType.Clip | VersionChangeType.Repaint);
-                ve.renderData.lastLayout = yogaRect;
+                ve.IncrementVersion(VersionChangeType.Clip | VersionChangeType.Repaint); // Layout change require a clip update + repaint
+                rectChanged = true;
             }
+            if (yogaRect.position != lastRect.position)
+            {
+                ve.IncrementVersion(VersionChangeType.Transform);
+                rectChanged = true;
+            }
+            ve.renderData.lastLayout = yogaRect;
 
             // ignore clean sub trees
             bool hasNewLayout = ve.yogaNode.HasNewLayout;

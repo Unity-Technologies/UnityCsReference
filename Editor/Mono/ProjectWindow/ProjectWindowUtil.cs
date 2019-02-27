@@ -310,6 +310,7 @@ namespace UnityEditor
                     icon = EditorGUIUtility.IconContent<Shader>().image as Texture2D;
                     break;
                 case ".asmdef":
+                case ".asmref":
                     icon = EditorGUIUtility.IconContent<AssemblyDefinitionAsset>().image as Texture2D;
                     break;
                 default:

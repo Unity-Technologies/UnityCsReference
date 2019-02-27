@@ -5,7 +5,6 @@
 using System;
 using UnityEngine;
 using System.Collections.Generic;
-using UnityEditor.Experimental.AssetImporters;
 using UnityEngine.Rendering;
 
 namespace UnityEditor
@@ -217,7 +216,7 @@ namespace UnityEditor
     }
 
     [CustomEditor(typeof(LookDevEnvironmentLibrary))]
-    internal class LookDevEnvironmentLibraryInspector : AssetImporterEditor
+    internal class LookDevEnvironmentLibraryInspector : Editor
     {
         // We don't want users to edit these in the inspector
         public override void OnInspectorGUI()

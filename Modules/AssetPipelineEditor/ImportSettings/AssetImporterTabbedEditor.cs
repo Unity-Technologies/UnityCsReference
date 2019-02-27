@@ -22,6 +22,8 @@ namespace UnityEditor
 
         public override void OnEnable()
         {
+            base.OnEnable();
+
             foreach (var tab in m_Tabs)
             {
                 tab.OnEnable();
@@ -62,6 +64,8 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
+            serializedObject.Update();
+            extraDataSerializedObject?.Update();
             // Always allow user to switch between tabs even when the editor is disabled, so they can look at all parts
             // of read-only assets
             using (new EditorGUI.DisabledScope(false)) // this doesn't enable the UI, but it seems correct to push the stack
@@ -92,6 +96,9 @@ namespace UnityEditor
 
                 activeTab.OnInspectorGUI();
             }
+
+            extraDataSerializedObject?.ApplyModifiedProperties();
+            serializedObject.ApplyModifiedProperties();
 
             // show a single Apply/Revert set of buttons for all the tabs
             ApplyRevertGUI();

@@ -153,6 +153,7 @@ namespace UnityEditor
             public static readonly GUIContent UIRequiresPersistentWiFi = EditorGUIUtility.TrTextContent("Requires Persistent WiFi*");
             public static readonly GUIContent iOSAllowHTTPDownload = EditorGUIUtility.TrTextContent("Allow downloads over HTTP (nonsecure)*");
             public static readonly GUIContent iOSURLSchemes = EditorGUIUtility.TrTextContent("Supported URL schemes*");
+            public static readonly GUIContent iOSExternalAudioInputNotSupported = EditorGUIUtility.TrTextContent("Audio input from Bluetooth microphones is not supported when Mute Other Audio Sources is off.");
             public static readonly GUIContent aotOptions = EditorGUIUtility.TrTextContent("AOT Compilation Options*");
             public static readonly GUIContent require31 = EditorGUIUtility.TrTextContent("Require ES3.1");
             public static readonly GUIContent requireAEP = EditorGUIUtility.TrTextContent("Require ES3.1+AEP");
@@ -2051,6 +2052,9 @@ namespace UnityEditor
                 if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS || targetGroup == BuildTargetGroup.Android)
                 {
                     EditorGUILayout.PropertyField(m_MuteOtherAudioSources, SettingsContent.muteOtherAudioSources);
+
+                    if (m_MuteOtherAudioSources.boolValue == false && targetGroup == BuildTargetGroup.iOS)
+                        EditorGUILayout.HelpBox(SettingsContent.iOSExternalAudioInputNotSupported.text, MessageType.Warning);
                 }
 
                 // TVOS TODO: check what should stay or go

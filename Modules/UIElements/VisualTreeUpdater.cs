@@ -124,7 +124,7 @@ namespace UnityEngine.UIElements
             SetUpdater<VisualTreeBindingsUpdater>(VisualTreeUpdatePhase.Bindings);
             SetUpdater<VisualTreeStyleUpdater>(VisualTreeUpdatePhase.Styles);
             SetUpdater<UIRLayoutUpdater>(VisualTreeUpdatePhase.Layout);
-            SetUpdater<UIRTransformClipUpdater>(VisualTreeUpdatePhase.TransformClip);
+            SetUpdater<VisualTreeTransformClipUpdater>(VisualTreeUpdatePhase.TransformClip);
             SetUpdater<UIRRepaintUpdater>(VisualTreeUpdatePhase.Repaint);
         }
     }

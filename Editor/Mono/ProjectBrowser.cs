@@ -72,6 +72,7 @@ namespace UnityEditor
             public GUIContent m_FilterByType = new GUIContent(EditorGUIUtility.FindTexture("FilterByType"), "Search by Type");
             public GUIContent m_CreateDropdownContent = EditorGUIUtility.TrTextContent("Create");
             public GUIContent m_SaveFilterContent = new GUIContent(EditorGUIUtility.FindTexture("Favorite"), "Save search");
+            public GUIContent m_PackagesVisibilityContent = EditorGUIUtility.TrIconContent("SceneViewVisibility", "Number of hidden packages, click to toggle hidden packages visibility");
             public GUIContent m_EmptyFolderText = EditorGUIUtility.TrTextContent("This folder is empty");
             public GUIContent m_SearchIn = EditorGUIUtility.TrTextContent("Search:");
 
@@ -151,6 +152,10 @@ namespace UnityEditor
         List<KeyValuePair<GUIContent, string>> m_BreadCrumbs = new List<KeyValuePair<GUIContent, string>>();
         bool m_BreadCrumbLastFolderHasSubFolders = false;
         ExposablePopupMenu m_SearchAreaMenu;
+
+        // Keep/Skip Hidden Packages
+        [SerializeField]
+        bool m_SkipHiddenPackages;
 
         // Layout
         const float     k_MinHeight = 250;
@@ -314,6 +319,14 @@ namespace UnityEditor
             return "Assets";
         }
 
+        private bool IsInsideHiddenPackage(string path)
+        {
+            if (!m_SkipHiddenPackages)
+                return false;
+
+            return !PackageManagerUtilityInternal.IsPathInVisiblePackage(path);
+        }
+
         void EnsureValidFolders()
         {
             HashSet<string> validFolders = new HashSet<string>();
@@ -326,6 +339,9 @@ namespace UnityEditor
                 }
                 if (AssetDatabase.IsValidFolder(folder))
                 {
+                    if (IsInsideHiddenPackage(folder))
+                        continue;
+
                     validFolders.Add(folder);
                 }
                 else
@@ -340,6 +356,9 @@ namespace UnityEditor
                         parentFolder = ProjectWindowUtil.GetContainingFolder(parentFolder);
                         if (!String.IsNullOrEmpty(parentFolder) && AssetDatabase.IsValidFolder(parentFolder))
                         {
+                            if (IsInsideHiddenPackage(parentFolder))
+                                continue;
+
                             validFolders.Add(parentFolder);
                             break;
                         }
@@ -350,19 +369,17 @@ namespace UnityEditor
             m_SearchFilter.folders = validFolders.ToArray();
         }
 
-        private void OnProjectChanged()
+        private void ResetViews()
         {
             if (m_AssetTree != null)
             {
-                m_AssetTree = null;
-                InitOneColumnView();
+                m_AssetTree.ReloadData();
                 SetSearchFoldersFromCurrentSelection(); // We could have moved, deleted or renamed a folder so ensure we get folder paths by instanceID
             }
 
             if (m_FolderTree != null)
             {
-                m_FolderTree = null;
-                InitTwoColumnView();
+                m_FolderTree.ReloadData();
                 SetSearchFolderFromFolderTreeSelection(); // We could have moved, deleted or renamed a folder so ensure we get folders paths by instanceID
             }
 
@@ -373,6 +390,11 @@ namespace UnityEditor
             RefreshSelectedPath();
 
             m_BreadCrumbs.Clear();
+        }
+
+        private void OnProjectChanged()
+        {
+            ResetViews();
         }
 
         public bool Initialized()
@@ -610,7 +632,7 @@ namespace UnityEditor
                 for (int i = 0; i < baseFolders.Length && i < maxShow; ++i)
                 {
                     var baseFolder = baseFolders[i];
-                    var packageInfo = PackageManager.Packages.GetForAssetPath(baseFolder);
+                    var packageInfo = PackageManager.PackageInfo.FindForAssetPath(baseFolder);
                     if (packageInfo != null && !string.IsNullOrEmpty(packageInfo.displayName))
                         baseFolder = Regex.Replace(baseFolder, @"^" + packageInfo.assetPath, PackageManager.Folders.GetPackagesPath() + "/" + packageInfo.displayName);
                     if (i > 0)
@@ -690,16 +712,18 @@ namespace UnityEditor
             var roots = new List<AssetsTreeViewDataSource.RootItem>();
             var packagesMountPoint = PackageManager.Folders.GetPackagesPath();
 
-            roots.Add(new AssetsTreeViewDataSource.RootItem(assetsFolderInstanceID, null, null));
-            roots.Add(new AssetsTreeViewDataSource.RootItem(kPackagesFolderInstanceId, packagesMountPoint, packagesMountPoint, true));
-            foreach (var package in PackageManagerUtilityInternal.GetAllVisiblePackages())
+            roots.Add(new AssetsTreeViewDataSource.RootItem(assetsFolderInstanceID, null, null, true, true));
+
+            var packages = PackageManagerUtilityInternal.GetAllVisiblePackages(m_SkipHiddenPackages);
+            roots.Add(new AssetsTreeViewDataSource.RootItem(kPackagesFolderInstanceId, packagesMountPoint, packagesMountPoint, true, m_SkipHiddenPackages));
+            foreach (var package in packages)
             {
                 var displayName = !string.IsNullOrEmpty(package.displayName) ? package.displayName : package.name;
                 var packageFolderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(package.assetPath);
                 if (packageFolderInstanceID == 0)
                     continue;
 
-                roots.Add(new AssetsTreeViewDataSource.RootItem(packageFolderInstanceID, displayName, package.assetPath));
+                roots.Add(new AssetsTreeViewDataSource.RootItem(packageFolderInstanceID, displayName, package.assetPath, false, m_SkipHiddenPackages));
             }
 
             var data = new AssetsTreeViewDataSource(m_AssetTree, roots);
@@ -722,7 +746,7 @@ namespace UnityEditor
             m_FolderTree.onGUIRowCallback += OnGUIAssetCallback;
             m_FolderTree.dragEndedCallback += FolderTreeDragEnded;
             m_FolderTree.Init(m_TreeViewRect,
-                new ProjectBrowserColumnOneTreeViewDataSource(m_FolderTree),
+                new ProjectBrowserColumnOneTreeViewDataSource(m_FolderTree, m_SkipHiddenPackages),
                 new ProjectBrowserColumnOneTreeViewGUI(m_FolderTree),
                 new ProjectBrowserColumnOneTreeViewDragging(m_FolderTree)
             );
@@ -953,10 +977,15 @@ namespace UnityEditor
             string folderPath = AssetDatabase.GetAssetPath(folderInstanceID);
             if (folderInstanceID == kPackagesFolderInstanceId)
                 folderPath = PackageManager.Folders.GetPackagesPath();
-            m_SearchFilter.ClearSearch();
-            m_SearchFilter.folders = new[] {folderPath};
-            m_FolderTree.SetSelection(new[] {folderInstanceID}, revealAndFrameInFolderTree);
-            FolderTreeSelectionChanged(true);
+
+            if (!m_SkipHiddenPackages || PackageManagerUtilityInternal.IsPathInVisiblePackage(folderPath))
+            {
+                m_SearchFilter.ClearSearch();
+                m_SearchFilter.folders = new[] {folderPath};
+                m_SearchFilter.skipHidden = m_SkipHiddenPackages;
+                m_FolderTree.SetSelection(new[] {folderInstanceID}, revealAndFrameInFolderTree);
+                FolderTreeSelectionChanged(true);
+            }
         }
 
         bool IsShowingFolderContents()
@@ -1091,9 +1120,14 @@ namespace UnityEditor
         void RefreshSelectedPath()
         {
             if (Selection.activeObject != null)
+            {
                 m_SelectedPath = AssetDatabase.GetAssetPath(Selection.activeObject);
-            else
-                m_SelectedPath = "";
+                if (!string.IsNullOrEmpty(m_SelectedPath) && IsInsideHiddenPackage(m_SelectedPath))
+                {
+                    m_SelectedPath = string.Empty;
+                    Selection.activeObject = null;
+                }
+            }
 
             // By clearing we auto refresh it when needed (in an OnGUI code path because we need Styles)
             m_SelectedPathSplitted.Clear();
@@ -1178,7 +1212,7 @@ namespace UnityEditor
             if (string.IsNullOrEmpty(path))
                 return false;
 
-            var packageInfo = PackageManager.Packages.GetForAssetPath(path);
+            var packageInfo = PackageManager.PackageInfo.FindForAssetPath(path);
             if (packageInfo != null)
             {
                 h = new HierarchyProperty(packageInfo.assetPath, false);
@@ -1331,6 +1365,9 @@ namespace UnityEditor
                 string path = AssetDatabase.GetAssetPath(instanceID);
                 if (AssetDatabase.IsValidFolder(path))
                 {
+                    if (IsInsideHiddenPackage(path))
+                        continue;
+
                     folders.Add(path);
                 }
                 else
@@ -1338,7 +1375,12 @@ namespace UnityEditor
                     // Add containing folder of the selected asset
                     string folderPath = ProjectWindowUtil.GetContainingFolder(path);
                     if (!String.IsNullOrEmpty(folderPath))
+                    {
+                        if (IsInsideHiddenPackage(folderPath))
+                            continue;
+
                         folders.Add(folderPath);
+                    }
                 }
             }
 
@@ -1466,6 +1508,7 @@ namespace UnityEditor
             ShowAndHideFolderTreeSelectionAsNeeded();
 
             var hierarchyType = HierarchyType.Assets;
+            m_SearchFilter.skipHidden = m_SkipHiddenPackages;
             m_ListArea.Init(m_ListAreaRect, hierarchyType, m_SearchFilter, false);
             m_ListArea.InitSelection(Selection.instanceIDs);
         }
@@ -2161,6 +2204,8 @@ namespace UnityEditor
                 {
                     ButtonSaveFilter();
                 }
+
+                ToggleHiddenPackagesVisibility();
             }
             GUILayout.EndHorizontal();
             GUILayout.EndArea();
@@ -2319,6 +2364,17 @@ namespace UnityEditor
             }
         }
 
+        private void ToggleHiddenPackagesVisibility()
+        {
+            s_Styles.m_PackagesVisibilityContent.text = PackageManagerUtilityInternal.HiddenPackagesCount.ToString();
+            var skipHiddenPackage = GUILayout.Toggle(m_SkipHiddenPackages, s_Styles.m_PackagesVisibilityContent, EditorStyles.toolbarButton);
+            if (skipHiddenPackage != m_SkipHiddenPackages)
+            {
+                m_SkipHiddenPackages = skipHiddenPackage;
+                ResetViews();
+            }
+        }
+
         void SearchField()
         {
             Rect rect = GUILayoutUtility.GetRect(0, EditorGUILayout.kLabelFloatMaxW * 1.5f, EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight, EditorStyles.toolbarSearchField, GUILayout.MinWidth(65), GUILayout.MaxWidth(300));
@@ -2430,6 +2486,7 @@ namespace UnityEditor
         void ClearSearch()
         {
             m_SearchFilter.ClearSearch();
+            m_SearchFilter.skipHidden = m_SkipHiddenPackages;
 
             // Clear GUI
             m_SearchFieldText = "";
@@ -2517,53 +2574,57 @@ namespace UnityEditor
             if (m_BreadCrumbs.Count == 0)
             {
                 var path = m_SearchFilter.folders[0];
-
-                var folderNames = new List<string>();
-                var folderDisplayNames = new List<string>();
-                var packagesMountPoint = PackageManager.Folders.GetPackagesPath();
-                var packageInfo = PackageManager.Packages.GetForAssetPath(path);
-                if (packageInfo != null)
+                if (IsInsideHiddenPackage(path))
                 {
-                    // Packages root
-                    folderNames.Add(packagesMountPoint);
-                    folderDisplayNames.Add(packagesMountPoint);
-
-                    // Package name/displayname
-                    folderNames.Add(packageInfo.name);
-                    folderDisplayNames.Add(string.IsNullOrEmpty(packageInfo.displayName) ? packageInfo.name : packageInfo.displayName);
-
-                    // Rest of the path;
-                    if (path != packageInfo.assetPath)
+                    m_BreadCrumbLastFolderHasSubFolders = false;
+                }
+                else
+                {
+                    var folderNames = new List<string>();
+                    var folderDisplayNames = new List<string>();
+                    var packagesMountPoint = PackageManager.Folders.GetPackagesPath();
+                    var packageInfo = PackageManager.PackageInfo.FindForAssetPath(path);
+                    if (packageInfo != null)
                     {
-                        var subpaths = Regex.Replace(path, @"^" + packageInfo.assetPath + "/", "").Split('/');
-                        folderNames.AddRange(subpaths);
-                        folderDisplayNames.AddRange(subpaths);
+                        // Packages root
+                        folderNames.Add(packagesMountPoint);
+                        folderDisplayNames.Add(packagesMountPoint);
+
+                        // Package name/displayname
+                        folderNames.Add(packageInfo.name);
+                        folderDisplayNames.Add(string.IsNullOrEmpty(packageInfo.displayName)
+                            ? packageInfo.name
+                            : packageInfo.displayName);
+
+                        // Rest of the path;
+                        if (path != packageInfo.assetPath)
+                        {
+                            var subpaths = Regex.Replace(path, @"^" + packageInfo.assetPath + "/", "").Split('/');
+                            folderNames.AddRange(subpaths);
+                            folderDisplayNames.AddRange(subpaths);
+                        }
                     }
-                }
-                else
-                {
-                    folderNames.AddRange(path.Split('/'));
-                    folderDisplayNames = folderNames;
-                }
+                    else
+                    {
+                        folderNames.AddRange(path.Split('/'));
+                        folderDisplayNames = folderNames;
+                    }
 
-                var folderPath = "";
-                var i = 0;
-                foreach (var folderName in folderNames)
-                {
-                    if (!string.IsNullOrEmpty(folderPath))
-                        folderPath += "/";
-                    folderPath += folderName;
+                    var folderPath = "";
+                    var i = 0;
+                    foreach (var folderName in folderNames)
+                    {
+                        if (!string.IsNullOrEmpty(folderPath))
+                            folderPath += "/";
+                        folderPath += folderName;
 
-                    m_BreadCrumbs.Add(new KeyValuePair<GUIContent, string>(new GUIContent(folderDisplayNames[i++]), folderPath));
-                }
+                        m_BreadCrumbs.Add(new KeyValuePair<GUIContent, string>(new GUIContent(folderDisplayNames[i++]), folderPath));
+                    }
 
-                if (path == packagesMountPoint)
-                {
-                    m_BreadCrumbLastFolderHasSubFolders = PackageManagerUtilityInternal.GetAllVisiblePackages().Length > 0;
-                }
-                else
-                {
-                    m_BreadCrumbLastFolderHasSubFolders = AssetDatabase.GetSubFolders(path).Length > 0;
+                    if (path == packagesMountPoint)
+                    {
+                        m_BreadCrumbLastFolderHasSubFolders = PackageManagerUtilityInternal.GetAllVisiblePackages(m_SkipHiddenPackages).Length > 0;
+                    }
                 }
             }
 

@@ -68,6 +68,10 @@ namespace UnityEditor
 
         public override void OnActivate(string searchContext, VisualElement rootElement)
         {
+            if (settingsEditor != null)
+            {
+                UnityEngine.Object.DestroyImmediate(settingsEditor);
+            }
             settingsEditor = m_EditorCreator?.Invoke();
             base.OnActivate(searchContext, rootElement);
         }
@@ -78,8 +82,8 @@ namespace UnityEditor
             {
                 var info = settingsEditor.GetType().GetMethod("OnDisable");
                 info?.Invoke(settingsEditor, null);
+                UnityEngine.Object.DestroyImmediate(settingsEditor);
             }
-
             settingsEditor = null;
             base.OnDeactivate();
         }
@@ -97,7 +101,7 @@ namespace UnityEditor
                     var remainingRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandHeight(true));
                     if ((Event.current.type == EventType.DragUpdated || Event.current.type == EventType.DragPerform) && remainingRect.Contains(Event.current.mousePosition))
                     {
-                        DragAndDrop.visualMode = InternalEditorUtility.InspectorWindowDrag(new[] { settingsEditor.target }, Event.current.type == EventType.DragPerform);
+                        DragAndDrop.visualMode = DragAndDropService.Drop(DragAndDropService.kInspectorDropDstId, new[] { settingsEditor.target }, Event.current.type == EventType.DragPerform);
                         if (Event.current.type == EventType.DragPerform)
                             DragAndDrop.AcceptDrag();
                     }

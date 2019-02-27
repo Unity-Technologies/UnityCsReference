@@ -220,25 +220,24 @@ namespace UnityEditor
 
         private void UpdateDrawChainRegistration(bool register)
         {
-            var p = m_Panel as BaseVisualElementPanel;
+            var p = panel as BaseVisualElementPanel;
             if (p != null)
             {
-                var repaintUpdater = p.GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater;
-                if (repaintUpdater != null)
+                var updater = p.GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater;
+                if (updater != null)
                 {
                     if (register)
-                        repaintUpdater.BeforeDrawChain += OnBeforeDrawChain;
-                    else
-                        repaintUpdater.BeforeDrawChain -= OnBeforeDrawChain;
+                        updater.BeforeDrawChain += OnBeforeDrawChain;
+                    else updater.BeforeDrawChain -= OnBeforeDrawChain;
                 }
             }
         }
 
         static readonly int s_EditorColorSpaceID = Shader.PropertyToID("_EditorColorSpace");
 
-        void OnBeforeDrawChain(UIRRepaintUpdater repaintUpdater)
+        void OnBeforeDrawChain(UnityEngine.UIElements.UIR.UIRenderDevice device)
         {
-            Material mat = repaintUpdater.renderDevice.GetStandardMaterial();
+            Material mat = device.GetStandardMaterial();
             mat.SetFloat(s_EditorColorSpaceID, QualitySettings.activeColorSpace == ColorSpace.Linear ? 1 : 0);
         }
 

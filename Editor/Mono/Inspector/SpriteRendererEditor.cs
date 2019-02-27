@@ -17,7 +17,7 @@ namespace UnityEditor
         private SerializedProperty m_Color;
         private SerializedProperty m_Material;
 
-        private static class Contents
+        class Styles
         {
             public static readonly GUIContent flipLabel = EditorGUIUtility.TrTextContent("Flip", "Sprite flipping");
             public static readonly GUIContent flipXLabel = EditorGUIUtility.TrTextContent("X", "Sprite horizontal flipping");
@@ -82,26 +82,12 @@ namespace UnityEditor
         {
             serializedObject.Update();
 
-            EditorGUILayout.PropertyField(m_Sprite, Contents.spriteLabel);
-
-            EditorGUILayout.PropertyField(m_Color, Contents.colorLabel, true);
+            EditorGUILayout.PropertyField(m_Sprite, Styles.spriteLabel);
+            EditorGUILayout.PropertyField(m_Color, Styles.colorLabel, true);
 
             FlipToggles();
 
-            Rect r = GUILayoutUtility.GetRect(
-                EditorGUILayout.kLabelFloatMinW, EditorGUILayout.kLabelFloatMaxW,
-                EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight);
-
-            EditorGUI.showMixedValue = m_Material.hasMultipleDifferentValues;
-            Object currentMaterialRef = m_Material.GetArrayElementAtIndex(0).objectReferenceValue;
-            Object returnedMaterialRef = EditorGUI.ObjectField(r, Contents.materialLabel, currentMaterialRef, typeof(Material), false);
-            if (returnedMaterialRef != currentMaterialRef)
-            {
-                m_Material.GetArrayElementAtIndex(0).objectReferenceValue = returnedMaterialRef;
-            }
-            EditorGUI.showMixedValue = false;
-
-            EditorGUILayout.PropertyField(m_DrawMode, Contents.drawModeLabel);
+            EditorGUILayout.PropertyField(m_DrawMode, Styles.drawModeLabel);
 
             m_ShowDrawMode.target = ShouldShowDrawMode();
             if (EditorGUILayout.BeginFadeGroup(m_ShowDrawMode.faded))
@@ -112,23 +98,23 @@ namespace UnityEditor
 
                 EditorGUI.indentLevel++;
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.PrefixLabel(Contents.sizeLabel);
+                EditorGUILayout.PrefixLabel(Styles.sizeLabel);
                 EditorGUI.showMixedValue = m_Size.hasMultipleDifferentValues;
-                FloatFieldLabelAbove(Contents.widthLabel, m_Size.FindPropertyRelative("x"));
-                FloatFieldLabelAbove(Contents.heightLabel, m_Size.FindPropertyRelative("y"));
+                FloatFieldLabelAbove(Styles.widthLabel, m_Size.FindPropertyRelative("x"));
+                FloatFieldLabelAbove(Styles.heightLabel, m_Size.FindPropertyRelative("y"));
                 EditorGUI.showMixedValue = false;
                 EditorGUILayout.EndHorizontal();
 
                 m_ShowTileMode.target = ShouldShowTileMode();
                 if (EditorGUILayout.BeginFadeGroup(m_ShowTileMode.faded))
                 {
-                    EditorGUILayout.PropertyField(m_SpriteTileMode, Contents.fullTileLabel);
+                    EditorGUILayout.PropertyField(m_SpriteTileMode, Styles.fullTileLabel);
 
                     m_ShowAdaptiveThreshold.target = ShouldShowAdaptiveThreshold();
                     if (EditorGUILayout.BeginFadeGroup(m_ShowAdaptiveThreshold.faded))
                     {
                         EditorGUI.indentLevel++;
-                        EditorGUILayout.Slider(m_AdaptiveModeThreshold, 0.0f, 1.0f, Contents.fullTileThresholdLabel);
+                        EditorGUILayout.Slider(m_AdaptiveModeThreshold, 0.0f, 1.0f, Styles.fullTileThresholdLabel);
                         EditorGUI.indentLevel--;
                     }
                     EditorGUILayout.EndFadeGroup();
@@ -138,15 +124,26 @@ namespace UnityEditor
             }
             EditorGUILayout.EndFadeGroup();
 
-            RenderSortingLayerFields();
+            EditorGUILayout.PropertyField(m_MaskInteraction, Styles.maskInteractionLabel);
+            EditorGUILayout.PropertyField(m_SpriteSortPoint, Styles.spriteSortPointLabel);
 
-            EditorGUILayout.PropertyField(m_MaskInteraction, Contents.maskInteractionLabel);
+            // material
+            Rect r = GUILayoutUtility.GetRect(
+                EditorGUILayout.kLabelFloatMinW, EditorGUILayout.kLabelFloatMaxW,
+                EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight);
 
-            EditorGUILayout.PropertyField(m_SpriteSortPoint, Contents.spriteSortPointLabel);
+            EditorGUI.showMixedValue = m_Material.hasMultipleDifferentValues;
+            Object currentMaterialRef = m_Material.GetArrayElementAtIndex(0).objectReferenceValue;
+            Object returnedMaterialRef = EditorGUI.ObjectField(r, Styles.materialLabel, currentMaterialRef, typeof(Material), false);
+            if (returnedMaterialRef != currentMaterialRef)
+            {
+                m_Material.GetArrayElementAtIndex(0).objectReferenceValue = returnedMaterialRef;
+            }
+            EditorGUI.showMixedValue = false;
 
-            RenderRenderingLayer();
+            ShowMaterialError();
 
-            CheckForErrors();
+            Other2DSettingsGUI();
 
             serializedObject.ApplyModifiedProperties();
         }
@@ -156,7 +153,7 @@ namespace UnityEditor
             EditorGUILayout.BeginVertical();
             Rect rtLabel = GUILayoutUtility.GetRect(contentLabel, EditorStyles.label);
             GUIContent label = EditorGUI.BeginProperty(rtLabel, contentLabel, sp);
-            int id = GUIUtility.GetControlID(Contents.sizeFieldHash, FocusType.Keyboard, rtLabel);
+            int id = GUIUtility.GetControlID(Styles.sizeFieldHash, FocusType.Keyboard, rtLabel);
             EditorGUI.HandlePrefixLabel(rtLabel, rtLabel, label, id);
             Rect rt = GUILayoutUtility.GetRect(contentLabel, EditorStyles.textField);
             EditorGUI.BeginChangeCheck();
@@ -172,7 +169,7 @@ namespace UnityEditor
             foreach (var t in targets)
             {
                 if (!(t as SpriteRenderer).shouldSupportTiling)
-                    return targets.Length == 1 ? Contents.notFullRectWarningLabel.text : Contents.notFullRectMultiEditWarningLabel.text;
+                    return targets.Length == 1 ? Styles.notFullRectWarningLabel.text : Styles.notFullRectMultiEditWarningLabel.text;
             }
             return null;
         }
@@ -197,12 +194,12 @@ namespace UnityEditor
             const int toggleOffset = 30;
             GUILayout.BeginHorizontal();
             Rect r = GUILayoutUtility.GetRect(EditorGUIUtility.fieldWidth, EditorGUILayout.kLabelFloatMaxW, EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight, EditorStyles.numberField);
-            int id = GUIUtility.GetControlID(Contents.flipToggleHash, FocusType.Keyboard, r);
-            r = EditorGUI.PrefixLabel(r, id, Contents.flipLabel);
+            int id = GUIUtility.GetControlID(Styles.flipToggleHash, FocusType.Keyboard, r);
+            r = EditorGUI.PrefixLabel(r, id, Styles.flipLabel);
             r.width = toggleOffset;
-            FlipToggle(r, Contents.flipXLabel, m_FlipX);
+            FlipToggle(r, Styles.flipXLabel, m_FlipX);
             r.x += toggleOffset;
-            FlipToggle(r, Contents.flipYLabel, m_FlipY);
+            FlipToggle(r, Styles.flipYLabel, m_FlipY);
             GUILayout.EndHorizontal();
         }
 
@@ -225,7 +222,7 @@ namespace UnityEditor
             EditorGUI.EndProperty();
         }
 
-        private void CheckForErrors()
+        private void ShowMaterialError()
         {
             if (IsMaterialTextureAtlasConflict())
                 ShowError("Material has CanUseSpriteAtlas=False tag. Sprite texture has atlasHint set. Rendering artifacts possible.");
@@ -282,7 +279,7 @@ namespace UnityEditor
 
         private static void ShowError(string error)
         {
-            var c = new GUIContent(error) {image = Contents.warningIcon};
+            var c = new GUIContent(error) {image = Styles.warningIcon};
 
             GUILayout.Space(5);
             GUILayout.BeginVertical(EditorStyles.helpBox);

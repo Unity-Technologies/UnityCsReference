@@ -6,24 +6,20 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Text;
-using UnityEditor;
 using UnityEngine;
-using System.IO;
 using UnityEditorInternal;
 using UnityEditor.Modules;
 using UnityEditor.Build;
-using Mono.Cecil;
 using UnityEditor.Callbacks;
 using UnityEditor.Compilation;
+using UnityEditor.Experimental.AssetImporters;
 using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor
 {
     [CustomEditor(typeof(PluginImporter))]
     [CanEditMultipleObjects]
-    internal class PluginImporterInspector : Experimental.AssetImporters.AssetImporterEditor
+    internal class PluginImporterInspector : AssetImporterEditor
     {
         private delegate Compatibility ValueSwitcher(Compatibility value);
         private bool m_HasModified;
@@ -375,7 +371,6 @@ namespace UnityEditor
 
         protected override void Apply()
         {
-            base.Apply();
             var constraints = m_DefineConstraintState.Where(x => x.displayValue > Compatibility.Mixed).Select(x => x.name).ToArray();
             foreach (var imp in importers)
             {
@@ -408,19 +403,22 @@ namespace UnityEditor
                     imp.isPreloaded = (m_Preload == Compatibility.Compatible);
             }
 
-            if (!IsEditingPlatformSettingsSupported())
-                return;
-
-            foreach (var extension in additionalExtensions)
+            if (IsEditingPlatformSettingsSupported())
             {
-                extension.Apply(this);
+                foreach (var extension in additionalExtensions)
+                {
+                    extension.Apply(this);
+                }
+
+                foreach (BuildTarget platform in GetValidBuildTargets())
+                {
+                    IPluginImporterExtension extension = ModuleManager.GetPluginImporterExtension(platform);
+                    if (extension != null) extension.Apply(this);
+                }
             }
 
-            foreach (BuildTarget platform in GetValidBuildTargets())
-            {
-                IPluginImporterExtension extension = ModuleManager.GetPluginImporterExtension(platform);
-                if (extension != null) extension.Apply(this);
-            }
+            serializedObject.Update();
+            base.Apply();
         }
 
         protected override void Awake()
@@ -429,10 +427,14 @@ namespace UnityEditor
             m_DesktopExtension = new DesktopPluginImporterExtension();
 
             base.Awake();
+
+            ResetValues();
         }
 
         public override void OnEnable()
         {
+            base.OnEnable();
+
             m_DefineConstraints = new ReorderableList(m_DefineConstraintState, typeof(DefineConstraint), false, false, true, true);
             m_DefineConstraints.drawElementCallback = DrawDefineConstraintListElement;
             m_DefineConstraints.onRemoveCallback = RemoveDefineConstraintListElement;
@@ -511,7 +513,7 @@ namespace UnityEditor
             }
         }
 
-        new void OnDisable()
+        public override void OnDisable()
         {
             base.OnDisable();
 
@@ -662,6 +664,7 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
+            serializedObject.Update();
             using (new EditorGUI.DisabledScope(false))
             {
                 if (!importer.isNativePlugin)
@@ -689,6 +692,9 @@ namespace UnityEditor
                     ShowLoadSettings();
                 }
             }
+
+            serializedObject.ApplyModifiedProperties();
+
             ApplyRevertGUI();
 
             // Don't output additional information if we have multiple plugins selected

@@ -46,6 +46,8 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
+            serializedObject.Update();
+
             MovieImporter importer = target as MovieImporter;
 
             if (importer != null)
@@ -64,6 +66,8 @@ namespace UnityEditor
                         size / (size < kbsize ? 1024.0f : kbsize), bitrate / 1000), EditorStyles.helpBox);
                 GUILayout.EndVertical();
             }
+
+            serializedObject.ApplyModifiedProperties();
 
             ApplyRevertGUI();
 

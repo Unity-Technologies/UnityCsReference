@@ -2,28 +2,35 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEditor.Experimental.AssetImporters;
 using System.Linq;
-using System.Reflection;
-using UnityEngine.Scripting;
+using UnityEngine.Rendering;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
     [CustomEditor(typeof(ShaderImporter))]
     internal class ShaderImporterInspector : AssetImporterEditor
     {
+        [Serializable]
         private class TextureProp
         {
             public string propertyName;
             public string displayName;
             public Texture texture;
-            public UnityEngine.Rendering.TextureDimension dimension;
+            public TextureDimension dimension;
             public bool modifiable;
         }
 
-        private List<TextureProp> m_Properties = new List<TextureProp>();
+        private class ShaderProperties : ScriptableObject
+        {
+            public List<TextureProp> m_Properties = new List<TextureProp>();
+        }
+
+        SerializedProperty m_Properties;
 
         internal override void OnHeaderControlsGUI()
         {
@@ -36,92 +43,13 @@ namespace UnityEditor
             }
         }
 
-        public override void OnEnable()
+        protected override Type extraDataType => typeof(ShaderProperties);
+
+        protected override void InitializeExtraDataInstance(Object extraTarget, int targetIndex)
         {
-            ResetValues();
-        }
+            var data = (ShaderProperties)extraTarget;
 
-        private void ShowTextures()
-        {
-            if (m_Properties.Count == 0)
-                return;
-
-            EditorGUILayout.LabelField("Default Maps", EditorStyles.boldLabel);
-            for (var i = 0; i < m_Properties.Count; i++)
-            {
-                if (!m_Properties[i].modifiable)
-                    continue;
-
-                DrawTextureField(m_Properties[i]);
-            }
-
-            EditorGUILayout.LabelField("NonModifiable Maps", EditorStyles.boldLabel);
-            for (var i = 0; i < m_Properties.Count; i++)
-            {
-                if (m_Properties[i].modifiable)
-                    continue;
-
-                DrawTextureField(m_Properties[i]);
-            }
-        }
-
-        private void DrawTextureField(TextureProp prop)
-        {
-            var oldTexture = prop.texture;
-            Texture newTexture = null;
-
-            EditorGUI.BeginChangeCheck();
-
-            System.Type textureType = MaterialEditor.GetTextureTypeFromDimension(prop.dimension);
-
-            if (textureType != null)
-            {
-                // Require at least two character in display name to prevent names like "-"
-                var text = string.IsNullOrEmpty(prop.displayName) ? ObjectNames.NicifyVariableName(prop.propertyName) : prop.displayName;
-                newTexture = EditorGUILayout.MiniThumbnailObjectField(GUIContent.Temp(text), oldTexture, textureType) as Texture;
-            }
-
-            if (EditorGUI.EndChangeCheck())
-                prop.texture = newTexture;
-        }
-
-        public override bool HasModified()
-        {
-            if (base.HasModified())
-                return true;
-
-            var importer = target as ShaderImporter;
-            if (importer == null)
-                return false;
-
-            var shader = importer.GetShader();
-            if (shader == null)
-                return false;
-
-            var propertyCount = ShaderUtil.GetPropertyCount(shader);
-            for (var i = 0; i < propertyCount; i++)
-            {
-                var propertyName = ShaderUtil.GetPropertyName(shader, i);
-                for (var k = 0; k < m_Properties.Count; k++)
-                {
-                    if (m_Properties[k].propertyName == propertyName)
-                    {
-                        var tex = m_Properties[k].modifiable ? importer.GetDefaultTexture(propertyName) : importer.GetNonModifiableTexture(propertyName);
-                        if (m_Properties[k].texture != tex)
-                            return true;
-                    }
-                }
-            }
-            return false;
-        }
-
-        protected override void ResetValues()
-        {
-            base.ResetValues();
-
-            m_Properties.Clear();
-
-            var importer = target as ShaderImporter;
+            var importer = targets[targetIndex] as ShaderImporter;
             if (importer == null)
                 return;
 
@@ -154,8 +82,64 @@ namespace UnityEditor
                     displayName = displayName,
                     modifiable = modifiable
                 };
-                m_Properties.Add(temp);
+                data.m_Properties.Add(temp);
             }
+        }
+
+        protected override bool needsApplyRevert => m_Properties.arraySize != 0 && base.needsApplyRevert;
+
+        public override void OnEnable()
+        {
+            base.OnEnable();
+
+            m_Properties = extraDataSerializedObject.FindProperty("m_Properties");
+        }
+
+        private void ShowTextures()
+        {
+            if (m_Properties.arraySize == 0)
+                return;
+
+            EditorGUILayout.LabelField("Default Maps", EditorStyles.boldLabel);
+            for (var i = 0; i < m_Properties.arraySize; i++)
+            {
+                var prop = m_Properties.GetArrayElementAtIndex(i);
+                if (!prop.FindPropertyRelative("modifiable").boolValue)
+                    continue;
+
+                DrawTextureField(prop);
+            }
+
+            EditorGUILayout.LabelField("NonModifiable Maps", EditorStyles.boldLabel);
+            for (var i = 0; i < m_Properties.arraySize; i++)
+            {
+                var prop = m_Properties.GetArrayElementAtIndex(i);
+                if (prop.FindPropertyRelative("modifiable").boolValue)
+                    continue;
+
+                DrawTextureField(prop);
+            }
+        }
+
+        private void DrawTextureField(SerializedProperty prop)
+        {
+            var oldTexture = prop.FindPropertyRelative("texture").objectReferenceValue;
+            Texture newTexture = null;
+
+            EditorGUI.BeginChangeCheck();
+
+            Type textureType = MaterialEditor.GetTextureTypeFromDimension((TextureDimension)prop.FindPropertyRelative("dimension").intValue);
+
+            if (textureType != null)
+            {
+                // Require at least two character in display name to prevent names like "-"
+                var displayName = prop.FindPropertyRelative("displayName").stringValue;
+                var text = string.IsNullOrEmpty(displayName) ? ObjectNames.NicifyVariableName(prop.FindPropertyRelative("propertyName").stringValue) : displayName;
+                newTexture = EditorGUILayout.MiniThumbnailObjectField(GUIContent.Temp(text), oldTexture, textureType) as Texture;
+            }
+
+            if (EditorGUI.EndChangeCheck())
+                prop.FindPropertyRelative("texture").objectReferenceValue = newTexture;
         }
 
         protected override void Apply()
@@ -166,12 +150,13 @@ namespace UnityEditor
             if (importer == null)
                 return;
 
-            var defaultNames = m_Properties.Where(x => x.modifiable).Select(x => x.propertyName).ToArray();
-            var defaultTextures = m_Properties.Where(x => x.modifiable).Select(x => x.texture).ToArray();
+            var properties = (ShaderProperties)extraDataTarget;
+            var defaultNames = properties.m_Properties.Where(x => x.modifiable).Select(x => x.propertyName).ToArray();
+            var defaultTextures = properties.m_Properties.Where(x => x.modifiable).Select(x => x.texture).ToArray();
             importer.SetDefaultTextures(defaultNames, defaultTextures);
 
-            var nonModNames = m_Properties.Where(x => !x.modifiable).Select(x => x.propertyName).ToArray();
-            var nonModTextures = m_Properties.Where(x => !x.modifiable).Select(x => x.texture).ToArray();
+            var nonModNames = properties.m_Properties.Where(x => !x.modifiable).Select(x => x.propertyName).ToArray();
+            var nonModTextures = properties.m_Properties.Where(x => !x.modifiable).Select(x => x.texture).ToArray();
             importer.SetNonModifiableTextures(nonModNames, nonModTextures);
 
             AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(importer));
@@ -200,10 +185,22 @@ namespace UnityEditor
             if (shader == null)
                 return;
 
-            if (GetNumberOfTextures(shader) != m_Properties.Count)
-                ResetValues();
+            if (GetNumberOfTextures(shader) != m_Properties.arraySize)
+            {
+                for (int i = 0; i < targets.Length; i++)
+                {
+                    InitializeExtraDataInstance(extraDataTargets[i], i);
+                }
+            }
+
+            serializedObject.Update();
+            extraDataSerializedObject.Update();
 
             ShowTextures();
+
+            extraDataSerializedObject.ApplyModifiedProperties();
+            serializedObject.ApplyModifiedProperties();
+
             ApplyRevertGUI();
         }
     }

@@ -79,6 +79,8 @@ namespace UnityEngineInternal.Video
         extern public bool GetLoop();
         extern public void SetLoop(bool value);
 
+        extern public void SetAdjustToLinearSpace(bool enable);
+
         [NativeHeader("Modules/Audio/Public/AudioSource.h")]
         extern public UInt16 GetAudioTrackCount();
         extern public UInt16 GetAudioChannelCount(UInt16 trackIdx);

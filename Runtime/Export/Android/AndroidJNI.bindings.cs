@@ -74,6 +74,8 @@ namespace UnityEngine
         public static IntPtr PopLocalFrame(IntPtr ptr) { return IntPtr.Zero; }
         public static IntPtr NewGlobalRef(IntPtr obj) { return IntPtr.Zero; }
         public static void DeleteGlobalRef(IntPtr obj) {}
+        public static IntPtr NewWeakGlobalRef(IntPtr obj) { return IntPtr.Zero; }
+        public static void DeleteWeakGlobalRef(IntPtr obj) {}
         public static IntPtr NewLocalRef(IntPtr obj) { return IntPtr.Zero; }
         public static void DeleteLocalRef(IntPtr obj) {}
         public static bool IsSameObject(IntPtr obj1, IntPtr obj2) { return false; }

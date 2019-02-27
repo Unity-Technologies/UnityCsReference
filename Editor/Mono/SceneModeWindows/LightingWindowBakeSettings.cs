@@ -18,13 +18,10 @@ namespace UnityEditor
     internal class LightingWindowBakeSettings
     {
         // light modes
-        private bool             m_ShowRealtimeLightsSettings       = true;
-        private bool             m_ShowMixedLightsSettings          = true;
-        private bool             m_ShowGeneralLightmapSettings      = true;
-        private bool             m_ShowDebugEnvironmentSettings     = false;
-        private const string     kShowRealtimeLightsSettingsKey     = "ShowRealtimeLightsSettings";
-        private const string     kShowMixedLightsSettingsKey        = "ShowMixedLightsSettings";
-        private const string     kShowGeneralLightmapSettingsKey    = "ShowGeneralLightmapSettings";
+        private SavedBool       m_ShowRealtimeLightsSettings;
+        private SavedBool       m_ShowMixedLightsSettings;
+        private SavedBool       m_ShowGeneralLightmapSettings;
+        private SavedBool       m_ShowDebugEnvironmentSettings;
 
         SerializedObject m_LightmapSettingsSO;
         Object m_LightmapSettings;
@@ -152,17 +149,14 @@ namespace UnityEditor
         {
             InitSettings();
 
-            m_ShowGeneralLightmapSettings = SessionState.GetBool(kShowGeneralLightmapSettingsKey, true);
-            m_ShowRealtimeLightsSettings = SessionState.GetBool(kShowRealtimeLightsSettingsKey, true);
-            m_ShowMixedLightsSettings = SessionState.GetBool(kShowMixedLightsSettingsKey, true);
+            m_ShowGeneralLightmapSettings = new SavedBool($"LightingWindow.ShowGeneralLightmapSettings", true);
+            m_ShowRealtimeLightsSettings = new SavedBool($"LightingWindow.ShowRealtimeLightsSettings", true);
+            m_ShowMixedLightsSettings = new SavedBool($"LightingWindow.ShowMixedLightsSettings", true);
+            m_ShowDebugEnvironmentSettings = new SavedBool($"LightingWindow.ShowDebugEnvironmentSettings", false);
         }
 
         public void OnDisable()
         {
-            SessionState.SetBool(kShowGeneralLightmapSettingsKey, m_ShowGeneralLightmapSettings);
-            SessionState.SetBool(kShowRealtimeLightsSettingsKey, m_ShowRealtimeLightsSettings);
-            SessionState.SetBool(kShowMixedLightsSettingsKey, m_ShowMixedLightsSettings);
-
             m_LightmapSettingsSO.Dispose();
             m_LightmapSettings = null;
             m_RenderSettingsSO.Dispose();
@@ -258,9 +252,9 @@ namespace UnityEditor
             if (!SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Realtime))
                 return;
 
-            m_ShowRealtimeLightsSettings = EditorGUILayout.FoldoutTitlebar(m_ShowRealtimeLightsSettings, Styles.RealtimeLightsLabel, true);
+            m_ShowRealtimeLightsSettings.value = EditorGUILayout.FoldoutTitlebar(m_ShowRealtimeLightsSettings.value, Styles.RealtimeLightsLabel, true);
 
-            if (m_ShowRealtimeLightsSettings)
+            if (m_ShowRealtimeLightsSettings.value)
             {
                 EditorGUI.indentLevel++;
 
@@ -286,9 +280,9 @@ namespace UnityEditor
             if (!SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Baked))
                 return;
 
-            m_ShowMixedLightsSettings = EditorGUILayout.FoldoutTitlebar(m_ShowMixedLightsSettings, Styles.MixedLightsLabel, true);
+            m_ShowMixedLightsSettings.value = EditorGUILayout.FoldoutTitlebar(m_ShowMixedLightsSettings.value, Styles.MixedLightsLabel, true);
 
-            if (m_ShowMixedLightsSettings)
+            if (m_ShowMixedLightsSettings.value)
             {
                 EditorGUI.indentLevel++;
 
@@ -378,22 +372,23 @@ namespace UnityEditor
             Lightmapping.filterMode = (FilterMode)EditorGUILayout.EnumPopup(EditorGUIUtility.TempContent("Filter Mode"), Lightmapping.filterMode);
             if (LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.Enlighten)
             {
-                m_ShowDebugEnvironmentSettings = EditorGUILayout.Foldout(m_ShowDebugEnvironmentSettings, EditorGUIUtility.TempContent("Environment"), true);
-                if (m_ShowDebugEnvironmentSettings)
+                m_ShowDebugEnvironmentSettings.value = EditorGUILayout.Foldout(m_ShowDebugEnvironmentSettings.value, EditorGUIUtility.TempContent("Environment"), true);
+
+                if (m_ShowDebugEnvironmentSettings.value)
                 {
                     EditorGUI.indentLevel++;
 
-                    bool disableEnvDirect = (m_PVREnvironmentMIS.intValue & 2) != 0;
-                    if (EditorGUILayout.Toggle(Styles.PVREnvironmentDisableDirect, disableEnvDirect))
-                        m_PVREnvironmentMIS.intValue |= 2;
-                    else
+                    bool enableEnvDirect = (m_PVREnvironmentMIS.intValue & 2) == 0;
+                    if (EditorGUILayout.Toggle(Styles.PVREnvironmentEnableDirect, enableEnvDirect))
                         m_PVREnvironmentMIS.intValue &= ~2;
-
-                    bool disableEnvIndirect = (m_PVREnvironmentMIS.intValue & 4) != 0;
-                    if (EditorGUILayout.Toggle(Styles.PVREnvironmentDisableIndirect, disableEnvIndirect))
-                        m_PVREnvironmentMIS.intValue |= 4;
                     else
+                        m_PVREnvironmentMIS.intValue |= 2;
+
+                    bool enableEnvIndirect = (m_PVREnvironmentMIS.intValue & 4) == 0;
+                    if (EditorGUILayout.Toggle(Styles.PVREnvironmentEnableIndirect, enableEnvIndirect))
                         m_PVREnvironmentMIS.intValue &= ~4;
+                    else
+                        m_PVREnvironmentMIS.intValue |= 4;
 
                     EditorGUILayout.PropertyField(m_PVREnvironmentReferencePointCount, Styles.PVREnvironmentReferencePointCount);
 
@@ -455,6 +450,7 @@ namespace UnityEditor
         void DrawDenoiserTypeDropdown(SerializedProperty prop, GUIContent label, DenoiserTarget target)
         {
             bool optixDenoiserSupported = LightmapEditorSettings.IsOptixDenoiserSupported();
+            bool openImageDenoiserSupported = LightmapEditorSettings.IsOpenImageDenoiserSupported();
             var rect = EditorGUILayout.GetControlRect();
             EditorGUI.BeginProperty(rect, label, prop);
             rect = EditorGUI.PrefixLabel(rect, label);
@@ -468,9 +464,12 @@ namespace UnityEditor
                 {
                     int value = Styles.DenoiserTypeValues[i];
                     bool optixDenoiserItem = (value == (int)LightmapEditorSettings.DenoiserType.Optix);
+                    bool openImageDenoiserItem = (value == (int)LightmapEditorSettings.DenoiserType.OpenImage);
                     bool selected = (value == prop.intValue);
 
                     if (!optixDenoiserSupported && optixDenoiserItem)
+                        menu.AddDisabledItem(Styles.DenoiserTypeStrings[i], selected);
+                    else if (!openImageDenoiserSupported && openImageDenoiserItem)
                         menu.AddDisabledItem(Styles.DenoiserTypeStrings[i], selected);
                     else
                     {
@@ -487,6 +486,15 @@ namespace UnityEditor
             EditorGUI.EndProperty();
         }
 
+        bool DenoiserSupported(LightmapEditorSettings.DenoiserType denoiserType)
+        {
+            if (denoiserType == LightmapEditorSettings.DenoiserType.Optix && !LightmapEditorSettings.IsOptixDenoiserSupported())
+                return false;
+            if (denoiserType == LightmapEditorSettings.DenoiserType.OpenImage && !LightmapEditorSettings.IsOpenImageDenoiserSupported())
+                return false;
+            return true;
+        }
+
         void GeneralLightmapSettingsGUI()
         {
             bool bakedGISupported = SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Baked);
@@ -495,8 +503,9 @@ namespace UnityEditor
             if (!bakedGISupported && !realtimeGISupported)
                 return;
 
-            m_ShowGeneralLightmapSettings = EditorGUILayout.FoldoutTitlebar(m_ShowGeneralLightmapSettings, Styles.GeneralLightmapLabel, true);
-            if (m_ShowGeneralLightmapSettings)
+            m_ShowGeneralLightmapSettings.value = EditorGUILayout.FoldoutTitlebar(m_ShowGeneralLightmapSettings.value, Styles.GeneralLightmapLabel, true);
+
+            if (m_ShowGeneralLightmapSettings.value)
             {
                 EditorGUI.indentLevel++;
                 using (new EditorGUI.DisabledScope(!m_EnabledBakedGI.boolValue && !m_EnableRealtimeGI.boolValue))
@@ -582,12 +591,15 @@ namespace UnityEditor
                                 {
                                     // Check if the platform doesn't support denoising.
                                     bool usingGPULightmapper = LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU;
-                                    bool optixDenoiserSupported = LightmapEditorSettings.IsOptixDenoiserSupported();
+                                    bool anyDenoisingSupported = (LightmapEditorSettings.IsOptixDenoiserSupported() || LightmapEditorSettings.IsOpenImageDenoiserSupported());
+                                    bool aoDenoisingSupported = DenoiserSupported((LightmapEditorSettings.DenoiserType)m_PVRDenoiserTypeAO.intValue);
+                                    bool directDenoisingSupported = DenoiserSupported((LightmapEditorSettings.DenoiserType)m_PVRDenoiserTypeDirect.intValue);
+                                    bool indirectDenoisingSupported = DenoiserSupported((LightmapEditorSettings.DenoiserType)m_PVRDenoiserTypeIndirect.intValue);
 
                                     EditorGUI.indentLevel++;
-                                    using (new EditorGUI.DisabledScope(!optixDenoiserSupported))
+                                    using (new EditorGUI.DisabledScope(!anyDenoisingSupported))
                                     {
-                                        DrawDenoiserTypeDropdown(m_PVRDenoiserTypeDirect, optixDenoiserSupported ? Styles.PVRDenoiserTypeDirect : Styles.OptixFilteringWarningDirect, DenoiserTarget.Direct);
+                                        DrawDenoiserTypeDropdown(m_PVRDenoiserTypeDirect, directDenoisingSupported ? Styles.PVRDenoiserTypeDirect : Styles.DenoisingWarningDirect, DenoiserTarget.Direct);
                                     }
                                     ClampFilterType(m_PVRFilterTypeDirect);
                                     if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU)
@@ -605,9 +617,9 @@ namespace UnityEditor
 
                                     EditorGUILayout.Space();
 
-                                    using (new EditorGUI.DisabledScope(!optixDenoiserSupported))
+                                    using (new EditorGUI.DisabledScope(!anyDenoisingSupported))
                                     {
-                                        DrawDenoiserTypeDropdown(m_PVRDenoiserTypeIndirect, optixDenoiserSupported ? Styles.PVRDenoiserTypeIndirect : Styles.OptixFilteringWarningIndirect, DenoiserTarget.Indirect);
+                                        DrawDenoiserTypeDropdown(m_PVRDenoiserTypeIndirect, indirectDenoisingSupported ? Styles.PVRDenoiserTypeIndirect : Styles.DenoisingWarningIndirect, DenoiserTarget.Indirect);
                                     }
                                     if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU)
                                         EditorGUILayout.IntPopup(m_PVRFilterTypeIndirect, Styles.GPUFilterOptions, Styles.GPUFilterInts, Styles.PVRFilterTypeIndirect);
@@ -626,9 +638,9 @@ namespace UnityEditor
                                     using (new EditorGUI.DisabledScope(!m_AmbientOcclusion.boolValue))
                                     {
                                         EditorGUILayout.Space();
-                                        using (new EditorGUI.DisabledScope(!optixDenoiserSupported))
+                                        using (new EditorGUI.DisabledScope(!anyDenoisingSupported))
                                         {
-                                            DrawDenoiserTypeDropdown(m_PVRDenoiserTypeAO, optixDenoiserSupported ? Styles.PVRDenoiserTypeAO : Styles.OptixFilteringWarningAO, DenoiserTarget.AO);
+                                            DrawDenoiserTypeDropdown(m_PVRDenoiserTypeAO, aoDenoisingSupported ? Styles.PVRDenoiserTypeAO : Styles.DenoisingWarningAO, DenoiserTarget.AO);
                                         }
                                         if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU)
                                             EditorGUILayout.IntPopup(m_PVRFilterTypeAO, Styles.GPUFilterOptions, Styles.GPUFilterInts, Styles.PVRFilterTypeAO);
@@ -734,10 +746,10 @@ namespace UnityEditor
                     {
                         EditorWindow.FocusWindowIfItsOpen<InspectorWindow>();
                     }
-
-                    EditorGUI.indentLevel--;
-                    EditorGUILayout.Space();
                 }
+
+                EditorGUI.indentLevel--;
+                EditorGUILayout.Space();
             }
         }
 
@@ -789,10 +801,11 @@ namespace UnityEditor
             };
 
             // must match PVRDenoiserType
-            public static readonly int[] DenoiserTypeValues = { (int)LightmapEditorSettings.DenoiserType.Optix, (int)LightmapEditorSettings.DenoiserType.None };
+            public static readonly int[] DenoiserTypeValues = { (int)LightmapEditorSettings.DenoiserType.Optix, (int)LightmapEditorSettings.DenoiserType.OpenImage, (int)LightmapEditorSettings.DenoiserType.None };
             public static readonly GUIContent[] DenoiserTypeStrings =
             {
                 EditorGUIUtility.TrTextContent("Optix"),
+                EditorGUIUtility.TrTextContent("OpenImageDenoise"),
                 EditorGUIUtility.TrTextContent("None")
             };
 
@@ -856,9 +869,9 @@ namespace UnityEditor
             //public static readonly GUIContent PVRSampleCountAdaptive = EditorGUIUtility.TrTextContent("Max Indirect Samples", "Maximum number of samples to use for indirect lighting.");
             public static readonly GUIContent PVRIndirectSampleCount = EditorGUIUtility.TrTextContent("Indirect Samples", "Controls the number of samples the lightmapper will use for indirect lighting calculations. Increasing this value may improve the quality of lightmaps but increases the time required for baking to complete.");
             public static readonly GUIContent PVRBounces = EditorGUIUtility.TrTextContent("Bounces", "Controls the maximum number of bounces the lightmapper will compute for indirect light.");
-            public static readonly GUIContent OptixFilteringWarningDirect = EditorGUIUtility.TrTextContent("Direct Denoiser", "Your hardware doesn’t support denoising. To see minimum requirements, read the documentation.");
-            public static readonly GUIContent OptixFilteringWarningIndirect = EditorGUIUtility.TrTextContent("Indirect Denoiser", "Your hardware doesn’t support denoising. To see minimum requirements, read the documentation.");
-            public static readonly GUIContent OptixFilteringWarningAO = EditorGUIUtility.TrTextContent("Ambient Occlusion Denoiser", "Your hardware doesn’t support denoising. To see minimum requirements, read the documentation.");
+            public static readonly GUIContent DenoisingWarningDirect = EditorGUIUtility.TrTextContent("Direct Denoiser", "Your hardware doesn’t support denoising. To see minimum requirements, read the documentation.");
+            public static readonly GUIContent DenoisingWarningIndirect = EditorGUIUtility.TrTextContent("Indirect Denoiser", "Your hardware doesn’t support denoising. To see minimum requirements, read the documentation.");
+            public static readonly GUIContent DenoisingWarningAO = EditorGUIUtility.TrTextContent("Ambient Occlusion Denoiser", "Your hardware doesn’t support denoising. To see minimum requirements, read the documentation.");
             public static readonly GUIContent PVRDenoiserTypeDirect = EditorGUIUtility.TrTextContent("Direct Denoiser", "Specifies the type of denoiser used to reduce noise for direct lights.");
             public static readonly GUIContent PVRDenoiserTypeIndirect = EditorGUIUtility.TrTextContent("Indirect Denoiser", "Specifies the type of denoiser used to reduce noise for indirect lights.");
             public static readonly GUIContent PVRDenoiserTypeAO = EditorGUIUtility.TrTextContent("Ambient Occlusion Denoiser", "Specifies the type of denoiser used to reduce noise for ambient occlusion.");
@@ -874,8 +887,8 @@ namespace UnityEditor
             public static readonly GUIContent PVRFilteringAtrousPositionSigmaAO = EditorGUIUtility.TrTextContent("Sigma", "Controls the threshold of the filter for ambient occlusion stored in the lightmap. A higher value increases the threshold, which reduces noise in the direct layer of the lightmap. Too high of a value can cause a loss of detail in the lightmap.");
             public static readonly GUIContent PVRCulling = EditorGUIUtility.TrTextContent("Prioritize View", "Specifies whether the lightmapper should prioritize baking texels within the scene view. When disabled, objects outside the scene view will have the same priority as those in the scene view.");
             public static readonly GUIContent PVREnvironmentMIS = EditorGUIUtility.TrTextContent("Multiple Importance Sampling", "Specifies whether to use multiple importance sampling for sampling the environment. This will generally lead to faster convergence when generating lightmaps, but can lead to noisier results in certain low frequency environments.");
-            public static readonly GUIContent PVREnvironmentDisableIndirect = EditorGUIUtility.TrTextContent("Disable indirect environment", "Specifies whether the environment should be sampled during GI passes.");
-            public static readonly GUIContent PVREnvironmentDisableDirect = EditorGUIUtility.TrTextContent("Disable direct environment", "Specifies whether the environment should be sampled during direct passes.");
+            public static readonly GUIContent PVREnvironmentEnableIndirect = EditorGUIUtility.TrTextContent("Indirect Environment", "Specifies whether the environment should be sampled during GI passes.");
+            public static readonly GUIContent PVREnvironmentEnableDirect = EditorGUIUtility.TrTextContent("Direct Environment", "Specifies whether the environment should be sampled during direct passes.");
             public static readonly GUIContent PVREnvironmentSampleCount = EditorGUIUtility.TrTextContent("Environment Samples", "Controls the number of samples the lightmapper will use for environment lighting calculations. Increasing this value may improve the quality of lightmaps but increases the time required for baking to complete.");
             public static readonly GUIContent PVREnvironmentReferencePointCount = EditorGUIUtility.TrTextContent("Environment Reference Points", "Specifies the number of reference points used for importance sampling the environment.");
             // TODO(RadeonRays): Used for hiding A-trous filtering option until it is implemented.

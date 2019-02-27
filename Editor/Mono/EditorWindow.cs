@@ -8,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.Scripting;
 using UnityEngine.Internal;
-using Unity.Experimental.EditorMode;
 
 using SerializableJsonDictionary = UnityEditor.UIElements.SerializableJsonDictionary;
 using UnityEngine.UIElements;
@@ -45,65 +44,32 @@ namespace UnityEditor
         [HideInInspector]
         internal Rect m_Pos = new Rect(0, 0, 320, 550);
 
-        private readonly Dictionary<Type, VisualElement> m_RootElementPerEditorMode = new Dictionary<Type, VisualElement>();
-
+        private VisualElement m_RootVisualElement;
         public VisualElement rootVisualElement
         {
             get
             {
-                return GetRootElement<DefaultEditorMode>(true);
+                if (m_RootVisualElement != null)
+                    return m_RootVisualElement;
+
+                m_RootVisualElement = CreateRoot();
+                return m_RootVisualElement;
             }
         }
 
-        internal VisualElement GetRootElement<TMode>(bool createIfNull) where TMode : EditorMode
+        private VisualElement CreateRoot()
         {
-            var type = typeof(TMode);
-            VisualElement root = null;
-            if (!m_RootElementPerEditorMode.TryGetValue(type, out root))
-            {
-                if (createIfNull)
-                {
-                    m_RootElementPerEditorMode[type] = root = CreateRoot<TMode>();
-                }
-                else
-                {
-                    root = GetRootElement<DefaultEditorMode>(true);
-                }
-            }
-            return root;
-        }
-
-        internal VisualElement GetRootVisualElementForCurrentMode()
-        {
-            return EditorModes.GetRootElement(this);
-        }
-
-        internal void RemoveOverride<TMode>() where TMode : EditorMode
-        {
-            RemoveOverride(typeof(TMode));
-        }
-
-        internal void RemoveOverride(Type type)
-        {
-            if (type != typeof(DefaultEditorMode))
-            {
-                m_RootElementPerEditorMode.Remove(type);
-            }
-        }
-
-        private VisualElement CreateRoot<TMode>() where TMode : EditorMode
-        {
-            var type = typeof(TMode);
-            var namePostfix = type == typeof(DefaultEditorMode) ? "" : "-" + type.Name;
-            var name = "rootVisualContainer" + namePostfix;
+            var name = "rootVisualContainer";
             var root = new VisualElement()
             {
                 name = VisualElementUtils.GetUniqueName(name),
                 pickingMode = PickingMode.Ignore, // do not eat events so IMGUI gets them
-                viewDataKey = name
+                viewDataKey = name,
+                renderHint = RenderHint.ClipWithScissors
             };
             root.pseudoStates |= PseudoStates.Root;
             UIElements.UIElementsEditorUtility.AddDefaultEditorStyleSheets(root);
+            root.style.overflow = UnityEngine.UIElements.Overflow.Hidden;
             return root;
         }
 
@@ -112,6 +78,8 @@ namespace UnityEditor
         private SerializableJsonDictionary m_ViewDataDictionary;
 
         private bool m_EnableViewDataPersistence;
+
+        private bool m_RequestedViewDataSave;
 
         internal SerializableJsonDictionary viewDataDictionary
         {
@@ -129,11 +97,18 @@ namespace UnityEditor
 
         internal void SaveViewData()
         {
-            if (m_EnableViewDataPersistence && m_ViewDataDictionary != null)
-            {
-                string editorPrefFileName = this.GetType().ToString();
-                UIElements.EditorWindowViewData.instance.Save(editorPrefFileName, m_ViewDataDictionary);
-            }
+            m_RequestedViewDataSave = true;
+        }
+
+        private void SaveViewDataToDisk()
+        {
+            if (!m_EnableViewDataPersistence || m_ViewDataDictionary == null || !m_RequestedViewDataSave)
+                return;
+
+            string editorPrefFileName = this.GetType().ToString();
+            EditorWindowViewData.instance.Save(editorPrefFileName, m_ViewDataDictionary);
+
+            m_RequestedViewDataSave = false;
         }
 
         internal ISerializableJsonDictionary GetViewDataDictionary()
@@ -257,7 +232,7 @@ namespace UnityEditor
             }
 
             // Fallback to type name (Do not localize type name)
-            return new GUIContent(t.ToString());
+            return new GUIContent(t.Name);
         }
 
         static EditorWindowTitleAttribute GetEditorWindowTitleAttribute(Type t)
@@ -266,7 +241,7 @@ namespace UnityEditor
             foreach (object attr in attrs)
             {
                 Attribute realAttr = (Attribute)attr;
-                if (realAttr.TypeId == typeof(EditorWindowTitleAttribute))
+                if ((Type)realAttr.TypeId == typeof(EditorWindowTitleAttribute))
                 {
                     return (EditorWindowTitleAttribute)attr;
                 }
@@ -1096,6 +1071,7 @@ namespace UnityEditor
         public EditorWindow()
         {
             m_EnableViewDataPersistence = true;
+            m_RequestedViewDataSave = false;
             titleContent.text = GetType().ToString();
         }
 
@@ -1106,15 +1082,13 @@ namespace UnityEditor
 
         private void OnEnableINTERNAL()
         {
-            EditorModes.RegisterWindow(this);
-
             AnimationMode.onAnimationRecordingStart += RefreshStylesAfterExternalEvent;
             AnimationMode.onAnimationRecordingStop += RefreshStylesAfterExternalEvent;
         }
 
         private void OnDisableINTERNAL()
         {
-            EditorModes.UnregisterWindow(this);
+            SaveViewDataToDisk();
 
             AnimationMode.onAnimationRecordingStart -= RefreshStylesAfterExternalEvent;
             AnimationMode.onAnimationRecordingStop -= RefreshStylesAfterExternalEvent;

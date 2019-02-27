@@ -91,22 +91,22 @@ namespace UnityEditor
         IMGUIContainer m_TrackerResetter;
 
         VisualElement m_EditorsElement;
-        VisualElement editorsElement => m_EditorsElement ?? (m_EditorsElement = FindVisualElementInTreeByName("editorsList"));
+        VisualElement editorsElement => m_EditorsElement ?? (m_EditorsElement = FindVisualElementInTreeByClassName(s_EditorListClassName));
         VisualElement m_RemovedPrefabComponentsElement;
 
         VisualElement m_PreviewAndLabelElement;
 
-        VisualElement previewAndLabelElement => m_PreviewAndLabelElement ?? (m_PreviewAndLabelElement = FindVisualElementInTreeByName("footerInfo"));
+        VisualElement previewAndLabelElement => m_PreviewAndLabelElement ?? (m_PreviewAndLabelElement = FindVisualElementInTreeByClassName(s_FooterInfoClassName));
 
         VisualElement m_MultiEditLabel;
 
-        VisualElement FindVisualElementInTreeByName(string elementName)
+        VisualElement FindVisualElementInTreeByClassName(string elementClassName)
         {
-            var element = rootVisualElement.Q<VisualElement>(elementName);
+            var element = rootVisualElement.Q<VisualElement>(className: elementClassName);
             if (element == null)
             {
                 LoadVisualTreeFromUxml();
-                element = rootVisualElement.Q<VisualElement>(elementName);
+                element = rootVisualElement.Q<VisualElement>(className: elementClassName);
             }
 
             return element;
@@ -142,6 +142,15 @@ namespace UnityEditor
                 "The built-in package '{0}', which is required by the package '{1}', which implements this component type, has been disabled in Package Manager. This object will be removed in play mode and from any builds you make."
             );
         }
+
+
+        internal static readonly string s_MultiEditClassName = "unity-inspector-no-multi-edit-warning";
+        internal static readonly string s_MultiEditLabelClassName = "unity-inspector-no-multi-edit-warning__label";
+        internal static readonly string s_ScrollViewClassName = "unity-inspector-root-scrollview";
+        internal static readonly string s_EditorListClassName = "unity-inspector-editors-list";
+        internal static readonly string s_AddComponentClassName = "unity-inspector-add-component-button";
+        internal static readonly string s_FooterInfoClassName = "unity-inspector-footer-info";
+        internal static readonly string s_MainContainerClassName = "unity-inspector-main-container";
 
         internal InspectorWindow()
         {
@@ -200,12 +209,14 @@ namespace UnityEditor
         {
             var tpl = EditorGUIUtility.Load("UXML/InspectorWindow/InspectorWindow.uxml") as VisualTreeAsset;
             var container = tpl.CloneTree();
-            container.AddToClassList("mainContainer");
+            container.AddToClassList(s_MainContainerClassName);
             rootVisualElement.hierarchy.Add(container);
 
-            var label = rootVisualElement.Q<VisualElement>("nomultieditwarning");
-            m_MultiEditLabel = label;
-            label.RemoveFromHierarchy();
+            var multiContainer = rootVisualElement.Q<VisualElement>(className: s_MultiEditClassName);
+            multiContainer.Query<TextElement>().ForEach((label) => label.text = L10n.Tr(label.text));
+            multiContainer.RemoveFromHierarchy();
+
+            m_MultiEditLabel = multiContainer;
 
             rootVisualElement.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
 
@@ -303,6 +314,7 @@ namespace UnityEditor
         {
             menu.AddItem(EditorGUIUtility.TrTextContent("Normal"), m_InspectorMode == InspectorMode.Normal, SetNormal);
             menu.AddItem(EditorGUIUtility.TrTextContent("Debug"), m_InspectorMode == InspectorMode.Debug, SetDebug);
+
             if (Unsupported.IsDeveloperMode())
             {
                 menu.AddItem(EditorGUIUtility.TrTextContent("Debug-Internal"), m_InspectorMode == InspectorMode.DebugInternal, SetDebugInternal);
@@ -310,7 +322,32 @@ namespace UnityEditor
             }
 
             menu.AddSeparator(String.Empty);
+
+            if (IsAnyComponentCollapsed())
+                menu.AddItem(EditorGUIUtility.TrTextContent("Expand All Components"), false, ExpandAllComponents);
+            else
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Expand All Components"));
+
+            if (IsAnyComponentExpanded())
+                menu.AddItem(EditorGUIUtility.TrTextContent("Collapse All Components"), false, CollapseAllComponents);
+            else
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Collapse All Components"));
+
+            menu.AddSeparator(String.Empty);
+
             m_LockTracker.AddItemsToMenu(menu);
+
+            if (m_Tracker != null)
+            {
+                foreach (var editor in m_Tracker.activeEditors)
+                {
+                    var menuContainer = editor as IHasCustomMenu;
+                    if (menuContainer != null)
+                    {
+                        menuContainer.AddItemsToMenu(menu);
+                    }
+                }
+            }
         }
 
         void RefreshTitle()
@@ -349,6 +386,52 @@ namespace UnityEditor
         void SetDebugInternal()
         {
             SetMode(InspectorMode.DebugInternal);
+        }
+
+        internal void ExpandAllComponents()
+        {
+            var editors = this.tracker.activeEditors;
+            for (int i = 1; i < editors.Length; i++)
+            {
+                this.tracker.SetVisible(i, 1);
+            }
+        }
+
+        private bool IsAnyComponentCollapsed()
+        {
+            if (Selection.activeGameObject == null)
+                return false;                               //If the selection is not a gameobject then disable the option.
+
+            var editors = this.tracker.activeEditors;
+            for (int i = 1; i < editors.Length; i++)
+            {
+                if (this.tracker.GetVisible(i) == 0)
+                    return true;
+            }
+            return false;
+        }
+
+        internal void CollapseAllComponents()
+        {
+            var editors = this.tracker.activeEditors;
+            for (int i = 1; i < editors.Length; i++)
+            {
+                this.tracker.SetVisible(i, 0);
+            }
+        }
+
+        private bool IsAnyComponentExpanded()
+        {
+            if (Selection.activeGameObject == null)
+                return false;                               //If the selection is not a gameobject then disable the option.
+
+            var editors = this.tracker.activeEditors;
+            for (int i = 1; i < editors.Length; i++)
+            {
+                if (this.tracker.GetVisible(i) == 1)
+                    return true;
+            }
+            return false;
         }
 
         public bool isLocked
@@ -566,7 +649,7 @@ namespace UnityEditor
             ResetKeyboardControl();
             s_CurrentInspectorWindow = this;
 
-            var addComponentButton = rootVisualElement.Q<VisualElement>("addComponentButton");
+            var addComponentButton = rootVisualElement.Q<VisualElement>(className: s_AddComponentClassName);
             addComponentButton.Clear();
             previewAndLabelElement.Clear();
 
@@ -582,14 +665,7 @@ namespace UnityEditor
             DrawEditors(editors);
             Profiler.EndSample();
 
-            var label = rootVisualElement.Q<VisualElement>("noMultiEditWarning");
-            var labelMustBeAdded = false;
-
-            if (label == null)
-            {
-                label = m_MultiEditLabel;
-                labelMustBeAdded = true;
-            }
+            var labelMustBeAdded = m_MultiEditLabel.parent != editorsElement;
 
             if (tracker.hasComponentsWhichCannotBeMultiEdited)
             {
@@ -602,19 +678,19 @@ namespace UnityEditor
                 {
                     if (labelMustBeAdded)
                     {
-                        editorsElement.Add(label);
+                        editorsElement.Add(m_MultiEditLabel);
                     }
                 }
                 Profiler.EndSample();
             }
             else
             {
-                label.RemoveFromHierarchy();
+                m_MultiEditLabel.RemoveFromHierarchy();
             }
 
             s_CurrentInspectorWindow = null;
 
-            if (editors.Any())
+            if (editors.Any() && RootEditorUtils.SupportsAddComponent(editors))
             {
                 Profiler.BeginSample("InspectorWindow.RebuildContentsContainers()::addComponentButton");
                 addComponentButton.Add(CreateIMGUIContainer(() =>

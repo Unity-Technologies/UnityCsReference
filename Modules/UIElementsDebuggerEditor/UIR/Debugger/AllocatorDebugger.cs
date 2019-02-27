@@ -8,7 +8,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.UIR;
-using static UnityEngine.UIElements.UIR.UIRenderDevice.Statistics;
+using static UnityEngine.UIElements.UIR.UIRenderDevice.AllocationStatistics;
 
 namespace UnityEditor.UIElements.Debugger
 {
@@ -74,7 +74,7 @@ namespace UnityEditor.UIElements.Debugger
 
         private void RefreshStats(UIRenderDevice renderDevice)
         {
-            var statistics = renderDevice.GatherStatistics();
+            var statistics = renderDevice.GatherAllocationStatistics();
             m_GlobalStats.UpdateStats(statistics);
             m_PagesStats.UpdateStats(statistics);
         }
@@ -91,11 +91,7 @@ namespace UnityEditor.UIElements.Debugger
     internal class AllocatorStatsDisplay : VisualElement
     {
         private IMGUIContainer m_IMGUIContainer;
-
-        private int m_PagesCount = 0;
-        private int[] m_FreesDeferred = new int[0];
-        private int m_CurrentFrameIndex = 0;
-        private int m_CurrentDrawRangeStart = 0;
+        private UIRenderDevice.AllocationStatistics m_Stats;
 
         public AllocatorStatsDisplay()
         {
@@ -103,29 +99,31 @@ namespace UnityEditor.UIElements.Debugger
             Add(m_IMGUIContainer);
         }
 
-        public void UpdateStats(UIRenderDevice.Statistics stats)
+        public void UpdateStats(UIRenderDevice.AllocationStatistics stats)
         {
-            m_PagesCount = stats.pages.Length;
-            m_FreesDeferred = stats.freesDeferred;
-            m_CurrentFrameIndex = stats.currentFrameIndex;
-            m_CurrentDrawRangeStart = stats.currentDrawRangeStart;
+            m_Stats = stats;
         }
 
         private void OnGUI()
         {
-            int freeSize = 0;
-            foreach (var freeDeferred in m_FreesDeferred)
-            {
-                freeSize += freeDeferred;
-            }
+            int freesDeferred = 0;
+            foreach (var freeDeferred in m_Stats.freesDeferred)
+                freesDeferred += freeDeferred;
 
             using (new EditorGUI.DisabledScope(Event.current.type != EventType.Repaint))
             {
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.IntField("Pages Count", m_PagesCount);
-                EditorGUILayout.IntField("Frame Index", m_CurrentFrameIndex);
-                EditorGUILayout.IntField("Draw Range Start", m_CurrentDrawRangeStart);
-                EditorGUILayout.IntField("Frees Deferred", freeSize);
+                EditorGUILayout.IntField("Fully init", m_Stats.completeInit ? 1 : 0);
+                EditorGUILayout.IntField("Pages Count", m_Stats.pages != null ? m_Stats.pages.Length : 0);
+                EditorGUILayout.IntField("Frees Deferred", freesDeferred);
+                EditorGUILayout.EndHorizontal();
+
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.IntField("Transform pages", m_Stats.transformPages);
+                EditorGUILayout.IntField("Allocated transforms", m_Stats.transformsAllocated);
+                if (m_Stats.transformsAvailable < 0)
+                    EditorGUILayout.TextField("Available transforms", "Unlimited");
+                else EditorGUILayout.IntField("Available transforms", m_Stats.transformsAvailable);
                 EditorGUILayout.EndHorizontal();
             }
         }
@@ -186,7 +184,7 @@ namespace UnityEditor.UIElements.Debugger
             Add(m_TempContainer);
         }
 
-        public void UpdateStats(UIRenderDevice.Statistics stats)
+        public void UpdateStats(UIRenderDevice.AllocationStatistics stats)
         {
             m_GlobalContainer.Clear();
             m_PermContainer.Clear();

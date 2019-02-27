@@ -80,12 +80,7 @@ namespace UnityEditor
 
         protected override bool OnApplyRevertGUI()
         {
-            bool applied;
-            using (new EditorGUI.DisabledScope(!HasModified()))
-            {
-                RevertButton();
-                applied = ApplyButton();
-            }
+            bool applied = base.OnApplyRevertGUI();
 
             if (HasRemappedMaterials())
             {

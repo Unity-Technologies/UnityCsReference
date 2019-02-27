@@ -219,6 +219,7 @@ namespace UnityEditor.Experimental.GraphView
             {
                 m_PortColorIsInline = true;
                 m_PortColor = value;
+                UpdateCapColor();
             }
         }
 
@@ -264,6 +265,7 @@ namespace UnityEditor.Experimental.GraphView
                 m_Connections.Add(edge);
 
             OnConnect?.Invoke(this);
+            UpdateCapColor();
         }
 
         public virtual void Disconnect(Edge edge)
@@ -272,15 +274,15 @@ namespace UnityEditor.Experimental.GraphView
                 throw new ArgumentException("The value passed to PortPresenter.Disconnect is null");
 
             m_Connections.Remove(edge);
-
             OnDisconnect?.Invoke(this);
+            UpdateCapColor();
         }
 
         public virtual void DisconnectAll()
         {
             m_Connections.Clear();
-
             OnDisconnect?.Invoke(this);
+            UpdateCapColor();
         }
 
         private class DefaultEdgeConnectorListener : IEdgeConnectorListener
@@ -467,7 +469,10 @@ namespace UnityEditor.Experimental.GraphView
             Color disableColorValue = Color.clear;
 
             if (!m_PortColorIsInline && styles.TryGetValue(s_PortColorProperty, out portColorValue))
+            {
                 m_PortColor = portColorValue;
+                UpdateCapColor();
+            }
 
             if (styles.TryGetValue(s_DisabledPortColorProperty, out disableColorValue))
                 m_DisabledPortColor = disableColorValue;

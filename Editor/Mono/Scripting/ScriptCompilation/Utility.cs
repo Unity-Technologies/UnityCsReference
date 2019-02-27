@@ -106,8 +106,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public static string FileNameWithoutExtension(string path)
         {
+            if (string.IsNullOrEmpty(path))
+            {
+                return "";
+            }
+
             var indexOfDot = -1;
-            var indexOfSlash = -1;
+            var indexOfSlash = 0;
             for (var i = path.Length - 1; i >= 0; i--)
             {
                 if (indexOfDot == -1 && path[i] == '.')
@@ -115,13 +120,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     indexOfDot = i;
                 }
 
-                if (indexOfSlash == -1 && path[i] == '/' || path[i] == '\\')
+                if (indexOfSlash == 0 && path[i] == '/' || path[i] == '\\')
                 {
                     indexOfSlash = i + 1;
-                }
-
-                if (indexOfDot != -1 && indexOfSlash != -1)
-                {
                     break;
                 }
             }
@@ -129,11 +130,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (indexOfDot == -1)
             {
                 indexOfDot = path.Length - 1;
-            }
-
-            if (indexOfSlash == -1)
-            {
-                indexOfSlash = 0;
             }
 
             return path.Substring(indexOfSlash, indexOfDot - indexOfSlash);

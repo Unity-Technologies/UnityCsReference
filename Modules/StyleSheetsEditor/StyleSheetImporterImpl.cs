@@ -244,7 +244,7 @@ namespace UnityEditor.StyleSheets
         }
     }
 
-    class StyleSheetImporterImpl : StyleValueImporter
+    internal class StyleSheetImporterImpl : StyleValueImporter
     {
         public StyleSheetImporterImpl(AssetImportContext context) : base(context)
         {
@@ -274,7 +274,11 @@ namespace UnityEditor.StyleSheets
         public void Import(UnityStyleSheet asset, string contents)
         {
             ParserStyleSheet styleSheet = m_Parser.Parse(contents);
+            ImportParserStyleSheet(asset, styleSheet);
+        }
 
+        protected void ImportParserStyleSheet(UnityStyleSheet asset, ParserStyleSheet styleSheet)
+        {
             if (styleSheet.Errors.Count > 0)
             {
                 foreach (StylesheetParseError error in styleSheet.Errors)

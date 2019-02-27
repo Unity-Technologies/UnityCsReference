@@ -429,7 +429,7 @@ namespace UnityEditor.ShortcutManagement
             var headerTemplate = EditorResources.Load("UXML/ShortcutManager/ShortcutManagerView.uxml", typeof(UnityEngine.Object)) as VisualTreeAsset;
             headerTemplate.CloneTree(m_Root, null);
             var header = m_Root.Query<VisualElement>("header").First();
-            var keyboardContainer = m_Root.Query<VisualElement>("keyboardContainer").First();
+            var keyboardContainer = m_Root.Query<VisualElement>("headerAndKeyboardContainer").First();
             var searchRowContainer = m_Root.Query<VisualElement>("searchRowContainer").First();
             var categoryContainer = m_Root.Query<VisualElement>("categoryContainer").First();
             var shortcutsTableContainer = m_Root.Query<VisualElement>("shortcutsTableContainer").First();
@@ -695,7 +695,6 @@ namespace UnityEditor.ShortcutManagement
         void ShortcutTableGeometryChanged(GeometryChangedEvent evt)
         {
             m_HorizontalColumnDragger.UpdatePositions();
-            m_ShortcutsTable.UnregisterCallback<GeometryChangedEvent>(ShortcutTableGeometryChanged);
         }
 
         bool CanEntryBeAssignedToKey(KeyCode keyCode, EventModifiers eventModifier, ShortcutEntry entry)
@@ -1463,7 +1462,10 @@ namespace UnityEditor.ShortcutManagement
             {
                 m_TargetPosition = EditorPrefs.GetFloat(k_ShortcutmanagerColumnposition, target.parent.layout.width / 2);
             }
+
+            m_TargetPosition = Mathf.Clamp(m_TargetPosition, m_ClampPositionPadding, target.parent.layout.width - m_ClampPositionPadding - target.style.width.value.value);
             UpdateElements(m_TargetPosition);
+
             m_UpdatePositionsRequested = false;
         }
 

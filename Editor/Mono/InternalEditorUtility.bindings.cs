@@ -179,6 +179,9 @@ namespace UnityEditorInternal
         extern internal static void RegisterExtensionDll(string dllLocation, string guid);
 
         [FreeFunction]
+        extern internal static void RegisterPlatformModuleAssembly(string dllName, string dllLocation);
+
+        [FreeFunction]
         extern internal static void RegisterPrecompiledAssembly(string dllName, string dllLocation);
 
         [FreeFunction("InternalEditorUtilityBindings::SetPlatformPath")]
@@ -832,8 +835,8 @@ namespace UnityEditorInternal
         [FreeFunction("GetPrecompiledAssembliesManaged")]
         extern internal static PrecompiledAssembly[] GetPrecompiledAssemblies(bool buildingForEditor, BuildTargetGroup buildTargetGroup, BuildTarget target);
 
-        [FreeFunction]
-        extern public static void ShowPackageManagerWindow();
+        [Obsolete("The Module Manager is deprecated", error: true)]
+        public static void ShowPackageManagerWindow() {}
 
         // For testing Vector2 marshalling
         [FreeFunction("InternalEditorUtilityBindings::PassAndReturnVector2")]

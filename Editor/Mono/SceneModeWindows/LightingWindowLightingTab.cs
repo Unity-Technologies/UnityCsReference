@@ -21,7 +21,7 @@ namespace UnityEditor
 {
     internal class LightingWindowLightingTab
     {
-        static class Styles
+        class Styles
         {
             public static readonly GUIContent OtherSettings = EditorGUIUtility.TrTextContent("Other Settings");
             public static readonly GUIContent DebugSettings = EditorGUIUtility.TrTextContent("Debug Settings");
@@ -50,11 +50,9 @@ namespace UnityEditor
         Editor          m_LightingEditor;
         Editor          m_FogEditor;
         Editor          m_OtherRenderingEditor;
-        bool            m_ShowOtherSettings = true;
-        bool            m_ShowDebugSettings = false;
-        bool            m_ShowProbeDebugSettings = false;
-        const string    kShowOtherSettings = "kShowOtherSettings";
-        const string    kShowDebugSettings = "kShowDebugSettings";
+        SavedBool       m_ShowOtherSettings;
+        SavedBool       m_ShowDebugSettings;
+        SavedBool       m_ShowProbeDebugSettings;
         Object          m_RenderSettings = null;
         Vector2         m_ScrollPosition = Vector2.zero;
 
@@ -121,16 +119,14 @@ namespace UnityEditor
 
             InitLightmapSettings();
 
-            m_ShowOtherSettings = SessionState.GetBool(kShowOtherSettings, true);
-            m_ShowDebugSettings = SessionState.GetBool(kShowDebugSettings, false);
+            m_ShowOtherSettings = new SavedBool($"LightingWindow.ShowOtherSettings", true);
+            m_ShowDebugSettings = new SavedBool($"LightingWindow.ShowDebugSettings", false);
+            m_ShowProbeDebugSettings = new SavedBool($"LightingWindow.ShowProbeDebugSettings", false);
         }
 
         public void OnDisable()
         {
             m_BakeSettings.OnDisable();
-
-            SessionState.SetBool(kShowOtherSettings, m_ShowOtherSettings);
-            SessionState.SetBool(kShowDebugSettings, m_ShowDebugSettings);
 
             ClearCachedProperties();
         }
@@ -156,15 +152,15 @@ namespace UnityEditor
 
         void DebugSettingsGUI()
         {
-            m_ShowDebugSettings = EditorGUILayout.FoldoutTitlebar(m_ShowDebugSettings, Styles.DebugSettings, true);
+            m_ShowDebugSettings.value = EditorGUILayout.FoldoutTitlebar(m_ShowDebugSettings.value, Styles.DebugSettings, true);
 
-            if (m_ShowDebugSettings)
+            if (m_ShowDebugSettings.value)
             {
                 EditorGUI.indentLevel++;
 
-                m_ShowProbeDebugSettings = EditorGUILayout.Foldout(m_ShowProbeDebugSettings, Styles.LightProbeVisualization, true);
+                m_ShowProbeDebugSettings.value = EditorGUILayout.Foldout(m_ShowProbeDebugSettings.value, Styles.LightProbeVisualization, true);
 
-                if (m_ShowProbeDebugSettings)
+                if (m_ShowProbeDebugSettings.value)
                 {
                     EditorGUI.BeginChangeCheck();
 
@@ -177,8 +173,6 @@ namespace UnityEditor
                     if (EditorGUI.EndChangeCheck())
                         EditorApplication.SetSceneRepaintDirty();
                 }
-                EditorGUILayout.Space();
-
                 m_BakeSettings.DeveloperBuildSettingsGUI();
 
                 EditorGUI.indentLevel--;
@@ -191,9 +185,9 @@ namespace UnityEditor
             if (SupportedRenderingFeatures.active.overridesFog && SupportedRenderingFeatures.active.overridesOtherLightingSettings)
                 return;
 
-            m_ShowOtherSettings = EditorGUILayout.FoldoutTitlebar(m_ShowOtherSettings, Styles.OtherSettings, true);
+            m_ShowOtherSettings.value = EditorGUILayout.FoldoutTitlebar(m_ShowOtherSettings.value, Styles.OtherSettings, true);
 
-            if (m_ShowOtherSettings)
+            if (m_ShowOtherSettings.value)
             {
                 EditorGUI.indentLevel++;
 

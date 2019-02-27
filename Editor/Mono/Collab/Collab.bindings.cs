@@ -218,6 +218,9 @@ namespace UnityEditor.Collaboration
         [NativeMethod(HasExplicitThis = true, ThrowsException = true, IsThreadSafe = true)]
         public extern void ClearSelectedChangesToPublish();
 
+        [NativeMethod(HasExplicitThis = true, ThrowsException = true, IsThreadSafe = true)]
+        public extern void SendCollabInfoNotification();
+
         [NativeMethod(HasExplicitThis = true, ThrowsException = true)]
         public extern SoftLock[] GetSoftLocks(string assetGuid);
     }

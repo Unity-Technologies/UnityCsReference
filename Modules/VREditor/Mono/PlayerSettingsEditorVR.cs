@@ -277,7 +277,7 @@ namespace UnityEditorInternal.VR
             switch (stereoRenderingPath)
             {
                 case StereoRenderingPath.MultiPass:
-                    return (UnityEngine.Rendering.GraphicsSettings.renderPipelineAsset == null);
+                    return true;
 
                 case StereoRenderingPath.SinglePass:
                     return BuildTargetDiscovery.PlatformGroupHasVRFlag(targetGroup, VRAttributes.SupportSinglePassStereoRendering);

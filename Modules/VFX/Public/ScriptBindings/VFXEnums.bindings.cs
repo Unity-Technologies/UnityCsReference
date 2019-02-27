@@ -195,6 +195,8 @@ namespace UnityEngine.Experimental.VFX
         ParticleQuadOutput          = Output | 2,
         ParticleHexahedronOutput    = Output | 3,
         ParticleMeshOutput          = Output | 4,
+        ParticleTriangleOutput      = Output | 5,
+        ParticleOctagonOutput       = Output | 6,
 
         // spawners
         ConstantRateSpawner         = Spawner | 0,

@@ -138,17 +138,17 @@ namespace UnityEditor
 
         private static void DrawGameObjectItem(Rect rect, GameObject gameObject, bool isItemHovered, bool isIconHovered)
         {
-            var isHidden = SceneVisibilityManager.IsGameObjectHidden(gameObject);
+            var isHidden = SceneVisibilityManager.instance.IsHidden(gameObject);
             bool shouldDisplayIcon = isItemHovered || isHidden;
             Styles.IconState iconState = isIconHovered ? Styles.iconHovered : Styles.iconNormal;
 
             GUIContent icon;
             if (isHidden)
             {
-                icon = gameObject.transform.childCount == 0 || SceneVisibilityManager.AreAllChildrenHidden(gameObject)
+                icon = gameObject.transform.childCount == 0 || SceneVisibilityManager.instance.AreAllDescendantsHidden(gameObject)
                     ? iconState.hiddenAll : iconState.hiddenMixed;
             }
-            else if (!SceneVisibilityManager.AreAllChildrenVisible(gameObject))
+            else if (!SceneVisibilityManager.instance.AreAllDescendantsVisible(gameObject))
             {
                 icon = iconState.visibleMixed;
                 shouldDisplayIcon = true;
@@ -160,16 +160,13 @@ namespace UnityEditor
 
             if (shouldDisplayIcon && GUI.Button(rect, icon, Styles.sceneVisibilityStyle))
             {
-                if (Event.current.alt)
-                    SceneVisibilityManager.ToggleHierarchyVisibility(gameObject);
-                else
-                    SceneVisibilityManager.ToggleGameObjectVisibility(gameObject);
+                SceneVisibilityManager.instance.ToggleVisibility(gameObject, Event.current.alt);
             }
         }
 
         private static void DrawSceneItem(Rect rect, Scene scene, bool isItemHovered, bool isIconHovered)
         {
-            var isHidden = SceneVisibilityManager.IsEntireSceneHidden(scene);
+            var isHidden = SceneVisibilityManager.instance.AreAllDescendantsHidden(scene);
             bool shouldDisplayIcon = true;
 
             GUIContent icon;
@@ -179,7 +176,7 @@ namespace UnityEditor
                 {
                     icon = Styles.iconNormal.hiddenAll;
                 }
-                else if (SceneVisibilityManager.HasHiddenGameObjects(scene))
+                else if (SceneVisibilityManager.instance.AreAnyDescendantsHidden(scene))
                 {
                     icon = Styles.iconNormal.hiddenMixed;
                 }
@@ -198,11 +195,11 @@ namespace UnityEditor
             {
                 if (isHidden)
                 {
-                    SceneVisibilityManager.ShowScene(scene);
+                    SceneVisibilityManager.instance.Show(scene);
                 }
                 else
                 {
-                    SceneVisibilityManager.HideScene(scene);
+                    SceneVisibilityManager.instance.Hide(scene);
                 }
             }
         }

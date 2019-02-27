@@ -5,9 +5,8 @@
 using System;
 using System.Globalization;
 using UnityEngine;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
+using JetBrains.Annotations;
 using UnityEngine.Scripting;
 using UnityEngine.Experimental.Networking.PlayerConnection;
 using UnityEditor.Experimental.Networking.PlayerConnection;
@@ -230,11 +229,6 @@ namespace UnityEditor
         static ConsoleWindow ms_ConsoleWindow = null;
         private string m_SearchText;
 
-        static void ShowConsoleWindowImmediate()
-        {
-            ShowConsoleWindow(true);
-        }
-
         public static void ShowConsoleWindow(bool immediate)
         {
             if (ms_ConsoleWindow == null)
@@ -295,7 +289,7 @@ namespace UnityEditor
             EditorGUI.hyperLinkClicked += EditorGUI_HyperLinkClicked;
         }
 
-        void OnEnable()
+        internal void OnEnable()
         {
             if (m_ConsoleAttachToPlayerState == null)
                 m_ConsoleAttachToPlayerState = new ConsoleAttachToPlayerState(this);
@@ -323,7 +317,7 @@ namespace UnityEditor
             }
         }
 
-        void OnDisable()
+        internal void OnDisable()
         {
             m_ConsoleAttachToPlayerState?.Dispose();
             m_ConsoleAttachToPlayerState = null;
@@ -332,13 +326,7 @@ namespace UnityEditor
                 ms_ConsoleWindow = null;
         }
 
-        private int RowHeight
-        {
-            get
-            {
-                return (Constants.LogStyleLineCount * m_LineHeight) + m_BorderHeight;
-            }
-        }
+        private int RowHeight => (Constants.LogStyleLineCount * m_LineHeight) + m_BorderHeight;
 
         private static bool HasMode(int mode, Mode modeToCheck) { return (mode & (int)modeToCheck) != 0; }
         private static bool HasFlag(ConsoleFlags flags) { return (LogEntries.consoleFlags & (int)flags) != 0; }
@@ -436,44 +424,6 @@ namespace UnityEditor
             return Constants.StatusLog;
         }
 
-        static string ContextString(LogEntry entry)
-        {
-            StringBuilder context = new StringBuilder();
-
-            if (HasMode(entry.mode, Mode.Error))
-                context.Append("Error ");
-            else if (HasMode(entry.mode, Mode.Log))
-                context.Append("Log ");
-            else
-                context.Append("Assert ");
-
-            context.Append("in file: ");
-            context.Append(entry.file);
-            context.Append(" at line: ");
-            context.Append(entry.line);
-
-            return context.ToString();
-        }
-
-        static string GetFirstLine(string s)
-        {
-            int i = s.IndexOf("\n");
-            return (i != -1) ? s.Substring(0, i) : s;
-        }
-
-        static string GetFirstTwoLines(string s)
-        {
-            int i = s.IndexOf("\n");
-            if (i != -1)
-            {
-                i = s.IndexOf("\n", i + 1);
-                if (i != -1)
-                    return s.Substring(0, i);
-            }
-
-            return s;
-        }
-
         void SetActiveEntry(LogEntry entry)
         {
             if (entry != null)
@@ -495,8 +445,8 @@ namespace UnityEditor
             }
         }
 
-        // Used implicitly with CallStaticMonoMethod("ConsoleWindow", "ShowConsoleRow", param);
-        static void ShowConsoleRow(int row)
+        [UsedImplicitly] // Used implicitly with CallStaticMonoMethod("ConsoleWindow", "ShowConsoleRow", param);
+        internal static void ShowConsoleRow(int row)
         {
             ShowConsoleWindow(false);
 
@@ -519,7 +469,7 @@ namespace UnityEditor
             m_ListView.scrollPos.y = LogEntries.GetCount() * newRowHeight;
         }
 
-        void OnGUI()
+        internal void OnGUI()
         {
             Event e = Event.current;
             LoadIcons();
@@ -630,8 +580,7 @@ namespace UnityEditor
                     {
                         int mode = 0;
                         string text = null;
-                        LogEntries.GetLinesAndModeFromEntryInternal(el.row, Constants.LogStyleLineCount, ref mode,
-                            ref text);
+                        LogEntries.GetLinesAndModeFromEntryInternal(el.row, Constants.LogStyleLineCount, ref mode, ref text);
 
                         // Draw the background
                         GUIStyle s = el.row % 2 == 0 ? Constants.OddBackground : Constants.EvenBackground;
@@ -842,17 +791,22 @@ namespace UnityEditor
         {
             EditorGUILayout.HyperLinkClickedEventArgs args = (EditorGUILayout.HyperLinkClickedEventArgs)e;
 
-            int line = Int32.Parse(args.hyperlinkInfos["line"]);
+            if (!args.hyperlinkInfos.ContainsKey("href"))
+                return;
+
+            int line = args.hyperlinkInfos.ContainsKey("line") ? Int32.Parse(args.hyperlinkInfos["line"]) : 0;
             int column = -1;
 
             LogEntries.OpenFileOnSpecificLineAndColumn(args.hyperlinkInfos["href"], line, column);
         }
 
+        [UsedImplicitly]
         public static bool GetConsoleErrorPause()
         {
             return HasFlag(ConsoleFlags.ErrorPause);
         }
 
+        [UsedImplicitly]
         public static void SetConsoleErrorPause(bool enabled)
         {
             SetFlag(ConsoleFlags.ErrorPause, enabled);
@@ -940,16 +894,15 @@ namespace UnityEditor
             }
         }
 
-        private static event EntryDoubleClickedDelegate entryWithManagedCallbackDoubleClicked;
+        [UsedImplicitly] private static event EntryDoubleClickedDelegate entryWithManagedCallbackDoubleClicked;
 
-        [RequiredByNativeCode]
+        [UsedImplicitly, RequiredByNativeCode]
         private static void SendEntryDoubleClicked(LogEntry entry)
         {
-            if (ConsoleWindow.entryWithManagedCallbackDoubleClicked != null)
-                ConsoleWindow.entryWithManagedCallbackDoubleClicked(entry);
+            entryWithManagedCallbackDoubleClicked?.Invoke(entry);
         }
 
-        // This method is used by the Visual Scripting project. Please do not delete. Contact @husseink for more information.
+        [UsedImplicitly] // This method is used by the Visual Scripting project. Please do not delete. Contact @husseink for more information.
         internal void AddMessageWithDoubleClickCallback(string message, string file, int mode, int instanceID)
         {
             var outputEntry = new LogEntry {message = message, file = file, mode = mode, instanceID = instanceID};
@@ -957,12 +910,13 @@ namespace UnityEditor
         }
     }
 
-    internal class GettingLogEntriesScope : IDisposable
+    internal struct GettingLogEntriesScope : IDisposable
     {
         private bool m_Disposed;
 
         public GettingLogEntriesScope(ListViewState listView)
         {
+            m_Disposed = false;
             listView.totalRows = LogEntries.StartGettingEntries();
         }
 
@@ -972,12 +926,6 @@ namespace UnityEditor
                 return;
             LogEntries.EndGettingEntries();
             m_Disposed = true;
-        }
-
-        ~GettingLogEntriesScope()
-        {
-            if (!m_Disposed)
-                Debug.LogError("Scope was not disposed! You should use the 'using' keyword or manually call Dispose.");
         }
     }
 }

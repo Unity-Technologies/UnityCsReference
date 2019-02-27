@@ -23,7 +23,7 @@ namespace UnityEditor
     internal class CodeStrippingUtils
     {
         private static UnityType s_GameManagerTypeInfo = null;
-        static UnityType GameManagerTypeInfo
+        internal static UnityType GameManagerTypeInfo
         {
             get
             {
@@ -56,6 +56,11 @@ namespace UnityEditor
 
         private static void AddNativeModuleInStrippingInfo(string moduleName, string requiredMessage, StrippingInfo strippingInfo, HashSet<string> nativeModules, string icon)
         {
+            if (AssemblyStripper.UseUnityLinkerEngineModuleStripping)
+            {
+                throw new NotSupportedException("Don't want to rely on this method when UnityLinker EMS is used");
+            }
+
             nativeModules.Add(moduleName);
             strippingInfo.AddModule(moduleName);
             strippingInfo.RegisterDependency(StrippingInfo.ModuleName(moduleName), requiredMessage);
@@ -65,6 +70,11 @@ namespace UnityEditor
         public static void InjectCustomDependencies(BuildTarget target, StrippingInfo strippingInfo, HashSet<UnityType> nativeClasses,
             HashSet<string> nativeModules)
         {
+            if (AssemblyStripper.UseUnityLinkerEngineModuleStripping)
+            {
+                throw new NotSupportedException("Don't want to rely on this method when UnityLinker EMS is used");
+            }
+
             // This function can be used to inject user-readable dependency information for specific classes which would not be obvious otherwise.
             // Can also be used to set up dependencies to modules which cannot be derived by the build pipeline without custom rules
             if (UnityEngine.Connect.UnityConnectSettings.enabled || UnityEditor.CrashReporting.CrashReportingSettings.enabled || UnityEngine.Analytics.PerformanceReporting.enabled || UnityEngine.Analytics.Analytics.enabled)
@@ -105,8 +115,40 @@ namespace UnityEditor
             }
         }
 
+        public static void GenerateDependencies2(string strippedAssemblyDir, bool doStripping, out HashSet<UnityType> nativeClasses,
+            out HashSet<string> nativeModules)
+        {
+            if (!doStripping)
+            {
+                nativeClasses = null;
+                nativeModules = GetAllStrippableModules();
+                return;
+            }
+
+            var dataFromLinker = AssemblyStripper.ReadLinkerToEditorData(strippedAssemblyDir);
+            nativeClasses = new HashSet<UnityType>();
+            nativeModules = new HashSet<string>();
+            foreach (var module in dataFromLinker.report.modules)
+            {
+                nativeModules.Add(module.name);
+                foreach (var dependency in module.dependencies)
+                {
+                    var unityType = UnityType.FindTypeByName(dependency.name);
+
+                    if (unityType != null)
+                        nativeClasses.Add(unityType);
+                }
+            }
+        }
+
         public static void GenerateDependencies(string strippedAssemblyDir, string icallsListFile, RuntimeClassRegistry rcr, bool doStripping, out HashSet<UnityType> nativeClasses, out HashSet<string> nativeModules, IIl2CppPlatformProvider platformProvider)
         {
+            if (AssemblyStripper.UseUnityLinkerEngineModuleStripping)
+            {
+                GenerateDependencies2(strippedAssemblyDir, doStripping, out nativeClasses, out nativeModules);
+                return;
+            }
+
             var strippingInfo = platformProvider == null ? null : StrippingInfo.GetBuildReportData(platformProvider.buildReport);
             var userAssemblies = GetUserAssemblies(strippedAssemblyDir);
             // [1] Extract native classes from scene and scripts
@@ -196,6 +238,11 @@ namespace UnityEditor
 
         public static void ApplyManualStrippingOverrides(HashSet<UnityType> nativeClasses, HashSet<string> nativeModules, StrippingInfo strippingInfo)
         {
+            if (AssemblyStripper.UseUnityLinkerEngineModuleStripping)
+            {
+                throw new NotSupportedException("Don't want to rely on this method when UnityLinker EMS is used");
+            }
+
             // Apply manual stripping overrides
             foreach (var module in ModuleMetadata.GetModuleNames())
             {
@@ -235,6 +282,11 @@ namespace UnityEditor
 
         static void RemoveClassesFromRemovedModules(HashSet<UnityType> nativeClasses, HashSet<string> nativeModules)
         {
+            if (AssemblyStripper.UseUnityLinkerEngineModuleStripping)
+            {
+                throw new NotSupportedException("Don't want to rely on this method when UnityLinker EMS is used");
+            }
+
             HashSet<UnityType> allModuleClasses = new HashSet<UnityType>();
             foreach (var module in nativeModules)
             {
@@ -246,6 +298,11 @@ namespace UnityEditor
 
         public static string GetModuleWhitelist(string module, string moduleStrippingInformationFolder)
         {
+            if (AssemblyStripper.UseUnityLinkerEngineModuleStripping)
+            {
+                throw new NotSupportedException("Don't want to rely on this method when UnityLinker EMS is used");
+            }
+
             return Paths.Combine(moduleStrippingInformationFolder, module + ".xml");
         }
 
@@ -270,6 +327,11 @@ namespace UnityEditor
 
         public static HashSet<string> GetNativeModulesToRegister(HashSet<UnityType> nativeClasses, StrippingInfo strippingInfo)
         {
+            if (AssemblyStripper.UseUnityLinkerEngineModuleStripping)
+            {
+                throw new NotSupportedException("Don't want to rely on this method when UnityLinker EMS is used");
+            }
+
             return (nativeClasses == null) ? GetAllStrippableModules() : GetRequiredStrippableModules(nativeClasses, strippingInfo);
         }
 
@@ -284,6 +346,11 @@ namespace UnityEditor
 
         private static HashSet<string> GetRequiredStrippableModules(HashSet<UnityType> nativeClasses, StrippingInfo strippingInfo)
         {
+            if (AssemblyStripper.UseUnityLinkerEngineModuleStripping)
+            {
+                throw new NotSupportedException("Don't want to rely on this method when UnityLinker EMS is used");
+            }
+
             HashSet<UnityType> nativeClassesUsedInModules = new HashSet<UnityType>();
             HashSet<string> nativeModules = new HashSet<string>();
             foreach (string module in ModuleMetadata.GetModuleNames())
@@ -324,6 +391,11 @@ namespace UnityEditor
 
         private static void ExcludeModuleManagers(ref HashSet<UnityType> nativeClasses)
         {
+            if (AssemblyStripper.UseUnityLinkerEngineModuleStripping)
+            {
+                throw new NotSupportedException("Don't want to rely on this method when UnityLinker EMS is used");
+            }
+
             string[] moduleNames = ModuleMetadata.GetModuleNames();
 
             foreach (string module in moduleNames)
@@ -364,6 +436,11 @@ namespace UnityEditor
 
         private static HashSet<UnityType> GenerateNativeClassList(RuntimeClassRegistry rcr, string directory, string[] rootAssemblies, StrippingInfo strippingInfo)
         {
+            if (AssemblyStripper.UseUnityLinkerEngineModuleStripping)
+            {
+                throw new NotSupportedException("Don't want to rely on this method when UnityLinker EMS is used");
+            }
+
             HashSet<UnityType> nativeClasses = CollectNativeClassListFromRoots(directory, rootAssemblies, strippingInfo);
 
             // List native classes found in scenes
@@ -411,6 +488,11 @@ namespace UnityEditor
 
         private static HashSet<UnityType> CollectNativeClassListFromRoots(string directory, string[] rootAssemblies, StrippingInfo strippingInfo)
         {
+            if (AssemblyStripper.UseUnityLinkerEngineModuleStripping)
+            {
+                throw new NotSupportedException("Don't want to rely on this method when UnityLinker EMS is used");
+            }
+
             // Collect managed types
             HashSet<string> managedTypeNames = CollectManagedTypeReferencesFromRoots(directory, rootAssemblies, strippingInfo);
 
@@ -424,6 +506,11 @@ namespace UnityEditor
         // Assemblies should be already stripped.
         private static HashSet<string> CollectManagedTypeReferencesFromRoots(string directory, string[] rootAssemblies, StrippingInfo strippingInfo)
         {
+            if (AssemblyStripper.UseUnityLinkerEngineModuleStripping)
+            {
+                throw new NotSupportedException("Don't want to rely on this method when UnityLinker EMS is used");
+            }
+
             HashSet<string> foundTypes = new HashSet<string>();
 
             AssemblyReferenceChecker checker = new AssemblyReferenceChecker();
@@ -582,7 +669,7 @@ namespace UnityEditor
                 foreach (var klass in nativeClasses)
                 {
                     w.WriteLine("\t//{0}. {1}", index, klass.qualifiedName);
-                    if (classesToSkip.Contains(klass))
+                    if (classesToSkip.Contains(klass) || (klass.baseClass == null))
                         w.WriteLine("\t//Skipping {0}", klass.qualifiedName);
                     else
                         w.WriteLine("\tRegisterUnityClass<{0}>(\"{1}\");", klass.qualifiedName, klass.module);

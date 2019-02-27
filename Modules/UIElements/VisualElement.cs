@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine.Yoga;
 using UnityEngine.UIElements.StyleSheets;
+using UnityEngine.UIElements.UIR;
 using PropertyBagValue = System.Collections.Generic.KeyValuePair<UnityEngine.PropertyName, object>;
 
 namespace UnityEngine.UIElements
@@ -192,7 +193,17 @@ namespace UnityEngine.UIElements
             get { return panel?.focusController; }
         }
 
-        internal RenderHint renderHint { get; set; }
+        private RenderHint m_RenderHint;
+        internal RenderHint renderHint
+        {
+            get { return m_RenderHint; }
+            set
+            {
+                if (panel != null)
+                    throw new InvalidOperationException("renderHint cannot be changed once the VisualElement is part of an active visual tree");
+                m_RenderHint = value;
+            }
+        }
 
         private RenderData m_RenderData;
         internal RenderData renderData
@@ -200,7 +211,7 @@ namespace UnityEngine.UIElements
             get { return m_RenderData ?? (m_RenderData = new RenderData()); }
         }
 
-        internal UIRenderData uiRenderData;
+        internal RenderChainVEData renderChainData;
 
         Vector3 m_Position = Vector3.zero;
         Quaternion m_Rotation = Quaternion.identity;
@@ -446,6 +457,7 @@ namespace UnityEngine.UIElements
         internal bool isWorldClipDirty { get; set; } = true;
 
         private Rect m_WorldClip = Rect.zero;
+        private Rect m_WorldClipMinusGroup = Rect.zero;
         internal Rect worldClip
         {
             get
@@ -458,28 +470,48 @@ namespace UnityEngine.UIElements
                 return m_WorldClip;
             }
         }
+        internal Rect worldClipMinusGroup
+        {
+            get
+            {
+                if (isWorldClipDirty)
+                {
+                    UpdateWorldClip();
+                    isWorldClipDirty = false;
+                }
+                return m_WorldClipMinusGroup;
+            }
+        }
 
         private void UpdateWorldClip()
         {
             if (hierarchy.parent != null)
             {
                 m_WorldClip = hierarchy.parent.worldClip;
+                if (hierarchy.parent != renderChainData.groupTransformAncestor) // Accessing render data here?
+                    m_WorldClipMinusGroup = hierarchy.parent.worldClipMinusGroup;
+                else m_WorldClipMinusGroup = GUIClip.topmostRect; // Not clipped
 
                 if (ShouldClip())
                 {
-                    var localClip = ComputeAAAlignedBound(rect, worldTransform);
+                    var wb = worldBound;
 
-                    float x1 = Mathf.Max(localClip.x, m_WorldClip.x);
-                    float x2 = Mathf.Min(localClip.x + localClip.width, m_WorldClip.x + m_WorldClip.width);
-                    float y1 = Mathf.Max(localClip.y, m_WorldClip.y);
-                    float y2 = Mathf.Min(localClip.y + localClip.height, m_WorldClip.y + m_WorldClip.height);
-
+                    float x1 = Mathf.Max(wb.xMin, m_WorldClip.xMin);
+                    float x2 = Mathf.Min(wb.xMax, m_WorldClip.xMax);
+                    float y1 = Mathf.Max(wb.yMin, m_WorldClip.yMin);
+                    float y2 = Mathf.Min(wb.yMax, m_WorldClip.yMax);
                     m_WorldClip = new Rect(x1, y1, x2 - x1, y2 - y1);
+
+                    x1 = Mathf.Max(wb.xMin, m_WorldClipMinusGroup.xMin);
+                    x2 = Mathf.Min(wb.xMax, m_WorldClipMinusGroup.xMax);
+                    y1 = Mathf.Max(wb.yMin, m_WorldClipMinusGroup.yMin);
+                    y2 = Mathf.Min(wb.yMax, m_WorldClipMinusGroup.yMax);
+                    m_WorldClipMinusGroup = new Rect(x1, y1, x2 - x1, y2 - y1);
                 }
             }
             else
             {
-                m_WorldClip = panel != null ? panel.visualTree.rect : GUIClip.topmostRect;
+                m_WorldClipMinusGroup = m_WorldClip = panel != null ? panel.visualTree.rect : GUIClip.topmostRect;
             }
         }
 
@@ -785,6 +817,8 @@ namespace UnityEngine.UIElements
             elementPanel?.OnVersionChanged(this, changeType);
         }
 
+        internal void InvokeHierarchyChanged(HierarchyChangeType changeType) { elementPanel?.InvokeHierarchyChanged(this, changeType); }
+
         //TODO: Make private once VisualContainer is merged with VisualElement
         protected internal bool SetEnabledFromHierarchy(bool state)
         {
@@ -859,7 +893,6 @@ namespace UnityEngine.UIElements
             var stylePainter = (IStylePainterInternal)painter;
             stylePainter.DrawBackground();
             stylePainter.DrawBorder();
-            stylePainter.ApplyClipping();
             DoRepaint(stylePainter);
         }
 
@@ -970,8 +1003,13 @@ namespace UnityEngine.UIElements
 
         internal void SaveViewData()
         {
-            if (elementPanel != null && elementPanel.saveViewData != null && !string.IsNullOrEmpty(viewDataKey))
+            if (elementPanel != null
+                && elementPanel.saveViewData != null
+                && !string.IsNullOrEmpty(viewDataKey)
+                && enableViewDataPersistence)
+            {
                 elementPanel.saveViewData();
+            }
         }
 
         internal bool IsViewDataPersitenceSupportedOnChildren(bool existingState)

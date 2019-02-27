@@ -472,6 +472,14 @@ namespace UnityEditor
             set { m_IsDirty = value ? 1 : 0; }
         }
 
+        public static Editor CreateEditorWithContext(UnityObject[] targetObjects, UnityObject context, [DefaultValue("null")] Type editorType)
+        {
+            if (editorType != null && !editorType.IsSubclassOf(typeof(Editor)))
+                throw new ArgumentException($"Editor type '{editorType}' does not derive from UnityEditor.Editor", "editorType");
+
+            return CreateEditorWithContextInternal(targetObjects, context, editorType);
+        }
+
         [ExcludeFromDocs]
         public static Editor CreateEditorWithContext(UnityObject[] targetObjects, UnityObject context)
         {
@@ -554,7 +562,7 @@ namespace UnityEditor
             return m_SerializedObject;
         }
 
-        internal void InternalSetTargets(UnityObject[] t) { m_Targets = t; }
+        internal virtual void InternalSetTargets(UnityObject[] t) { m_Targets = t; }
         internal void InternalSetHidden(bool hidden) { hideInspector = hidden; }
         internal void InternalSetContextObject(UnityObject context) { m_Context = context; }
 

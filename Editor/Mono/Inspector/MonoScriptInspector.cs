@@ -61,6 +61,8 @@ namespace UnityEditor
             }
         }
 
+        protected override bool needsApplyRevert => false;
+
         // Clear default references
         [MenuItem("CONTEXT/MonoImporter/Reset")]
         static void ResetDefaultReferences(MenuCommand command)

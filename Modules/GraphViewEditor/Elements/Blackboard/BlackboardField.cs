@@ -89,7 +89,8 @@ namespace UnityEditor.Experimental.GraphView
             if (evt.eventTypeId == AttachToPanelEvent.TypeId())
             {
                 var graphView = GetFirstAncestorOfType<GraphView>();
-                graphView.RestorePersitentSelectionForElement(this);
+                if (graphView != null)
+                    graphView.RestorePersitentSelectionForElement(this);
             }
         }
 

@@ -4,9 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.Profiling;
-using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
 
 namespace UnityEngine.UIElements
 {
@@ -43,10 +41,10 @@ namespace UnityEngine.UIElements
     internal enum RenderHint
     {
         None = 0,
-        ViewTransform = 1 << 0, // Act as a view matrix
-        SkinningTransform = 1 << 1, // Use skinning
+        GroupTransform = 1 << 0, // Use uniform matrix to transform children
+        BoneTransform = 1 << 1, // Use GPU buffer to store transform matrices
         ImmediateMode = 1 << 2, // Drawn with GL/IMGUI
-        ClipWithScissors = 1 << 3 // Used only for GraphView because the edge shader doesn't use the clipping rect.
+        ClipWithScissors = 1 << 3 // If clipping is requested on this element, prefer scissoring
     }
 
     internal class RepaintData
@@ -56,6 +54,8 @@ namespace UnityEngine.UIElements
         public Rect currentWorldClip { get; set; }
         public Event repaintEvent { get; set; }
     }
+
+    internal delegate void HierarchyEvent(VisualElement ve, HierarchyChangeType changeType);
 
     internal interface IGlobalPanelDebugger
     {
@@ -196,6 +196,9 @@ namespace UnityEngine.UIElements
 
         internal event Action standardShaderChanged;
         protected void InvokeStandardShaderChanged() { if (standardShaderChanged != null) standardShaderChanged(); }
+
+        internal event HierarchyEvent hierarchyChanged;
+        internal void InvokeHierarchyChanged(VisualElement ve, HierarchyChangeType changeType) { if (hierarchyChanged != null) hierarchyChanged(ve, changeType); }
 
         internal void SetElementUnderMouse(VisualElement newElementUnderMouse, EventBase triggerEvent)
         {
@@ -430,6 +433,7 @@ namespace UnityEngine.UIElements
             m_ProfileBindingsName = "PanelBindings";
 
             allowPixelCaching = true;
+            InvokeHierarchyChanged(visualTree, HierarchyChangeType.Add);
         }
 
         protected override void Dispose(bool disposing)

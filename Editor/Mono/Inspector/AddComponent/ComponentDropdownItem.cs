@@ -5,18 +5,11 @@
 using System;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
-using UnityEditorInternal;
 
 namespace UnityEditor.AddComponent
 {
     internal class ComponentDropdownItem : AdvancedDropdownItem
     {
-        struct ComponentMenuCommandInfo
-        {
-            public int instanceID;
-            public string guid;
-        };
-
         private string m_MenuPath;
         private bool m_IsLegacy;
         private string m_LocalizedName;
@@ -62,15 +55,7 @@ namespace UnityEditor.AddComponent
             m_MenuPath = menuPath;
             m_IsLegacy = menuPath.Contains("Legacy");
 
-            if (command.StartsWith("ASSET"))
-            {
-                var info = JsonUtility.FromJson<ComponentMenuCommandInfo>(command.Substring(5));
-                var obj = EditorUtility.InstanceIDToObject(info.instanceID);
-                var icon = AssetPreview.GetMiniThumbnail(obj);
-                base.name = name;
-                base.icon = icon;
-            }
-            else if (command.StartsWith("SCRIPT"))
+            if (command.StartsWith("SCRIPT"))
             {
                 var scriptId = int.Parse(command.Substring(6));
                 var obj = EditorUtility.InstanceIDToObject(scriptId);

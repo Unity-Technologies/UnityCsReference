@@ -31,7 +31,24 @@ namespace UnityEngine.UIElements
                 if (vea == null)
                     templateContainer.Add(new Label(string.Format("Unknown Element: '{0}'", templateContainer.templateId)));
                 else
-                    vea.CloneTree(templateContainer, cc.slotInsertionPoints);
+                {
+                    var bagOverrides = (bag as TemplateAsset)?.attributeOverrides;
+                    var contextOverrides = cc.attributeOverrides;
+
+                    List<TemplateAsset.AttributeOverride> attributeOverrides = null;
+                    if (bagOverrides != null || contextOverrides != null)
+                    {
+                        // We want to add contextOverrides first here, then bagOverrides, as we
+                        // want parent instances to always override child instances.
+                        attributeOverrides = new List<TemplateAsset.AttributeOverride>();
+                        if (contextOverrides != null)
+                            attributeOverrides.AddRange(contextOverrides);
+                        if (bagOverrides != null)
+                            attributeOverrides.AddRange(bagOverrides);
+                    }
+
+                    vea.CloneTree(templateContainer, cc.slotInsertionPoints, attributeOverrides);
+                }
 
                 if (vea == null)
                     Debug.LogErrorFormat("Could not resolve template with name '{0}'", templateContainer.templateId);

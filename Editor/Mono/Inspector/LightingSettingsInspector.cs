@@ -67,6 +67,7 @@ namespace UnityEditor
             public static readonly GUIContent LightmapSettings = EditorGUIUtility.TrTextContent("Lightmapping");
             public static readonly GUIContent CastShadows = EditorGUIUtility.TrTextContent("Cast Shadows", "Specifies whether a geometry creates shadows or not when a shadow-casting Light shines on it.");
             public static readonly GUIContent ReceiveShadows = EditorGUIUtility.TrTextContent("Receive Shadows", "When enabled, any shadows cast from other objects are drawn on the geometry.");
+            public static readonly GUIContent ShadowBias = EditorGUIUtility.TrTextContent("Shadow Bias", "Apply a shadow bias to prevent self-shadowing artifacts. The specified value is the proportion of the trail width at each segment.");
             public static readonly GUIContent ContributeGI = EditorGUIUtility.TrTextContent("Contribute Global Illumination", "When enabled, this GameObject influences lightmaps and Light Probes. If you want this object itself to be lightmapped, you must enable this property.");
             public static readonly GUIContent ReceiveGITitle = EditorGUIUtility.TrTextContent("Receive Global Illumination", "If enabled, this GameObject receives global illumination from lightmaps or Light Probes. To use lightmaps, Contribute Global Illumination must be enabled.");
 
@@ -166,7 +167,7 @@ namespace UnityEditor
             m_EnabledRealtimeGI = m_LightmapSettings.FindProperty("m_GISettings.m_EnableRealtimeLightmaps");
         }
 
-        public void RenderMeshSettings(bool showLightmapSettings)
+        public void RenderSettings(bool showLightmapSettings, bool showshadowBias)
         {
             if (m_SerializedObject == null || m_GameObjectsSerializedObject == null || m_GameObjectsSerializedObject.targetObjectsCount == 0)
                 return;
@@ -182,7 +183,7 @@ namespace UnityEditor
             // In this case we still have to mark it as "multiple values" even though both have "Lightmaps" as the value, but one is showing a grayed out "Light Probes" in the UI
             bool showMixedGIValue = m_ReceiveGI.hasMultipleDifferentValues || ((m_StaticEditorFlags.hasMultipleDifferentValuesBitwise & (int)StaticEditorFlags.ContributeGI) != 0);
 
-            m_ShowLightingSettings.value = EditorGUILayout.Foldout(m_ShowLightingSettings.value, Styles.LightingSettings, true);
+            m_ShowLightingSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowLightingSettings.value, Styles.LightingSettings);
 
             if (m_ShowLightingSettings.value)
             {
@@ -200,6 +201,9 @@ namespace UnityEditor
                 if (!showLightmapSettings)
                 {
                     EditorGUI.indentLevel -= 1;
+
+                    EditorGUILayout.EndFoldoutHeaderGroup();
+
                     return;
                 }
 
@@ -209,6 +213,9 @@ namespace UnityEditor
                 {
                     EditorGUILayout.HelpBox(Styles.GINotEnabledInfo.text, MessageType.Info);
                     EditorGUI.indentLevel -= 1;
+
+                    EditorGUILayout.EndFoldoutHeaderGroup();
+
                     return;
                 }
 
@@ -244,9 +251,11 @@ namespace UnityEditor
                 EditorGUI.indentLevel -= 1;
             }
 
+            EditorGUILayout.EndFoldoutHeaderGroup();
+
             if (showLightmapSettings && contributeGI && receiveGI == ReceiveGI.Lightmaps && !showMixedGIValue)
             {
-                m_ShowLightmapSettings.value = EditorGUILayout.Foldout(m_ShowLightmapSettings.value, Styles.LightmapSettings, true);
+                m_ShowLightmapSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowLightmapSettings.value, Styles.LightmapSettings);
 
                 if (m_ShowLightmapSettings.value)
                 {
@@ -288,6 +297,8 @@ namespace UnityEditor
 
                     EditorGUI.indentLevel -= 1;
                 }
+
+                EditorGUILayout.EndFoldoutHeaderGroup();
             }
         }
 
@@ -301,7 +312,7 @@ namespace UnityEditor
 
             bool contributeGI = (m_StaticEditorFlags.intValue & (int)StaticEditorFlags.ContributeGI) != 0;
 
-            m_ShowLightingSettings.value = EditorGUILayout.Foldout(m_ShowLightingSettings.value, Styles.LightingSettings, true);
+            m_ShowLightingSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowLightingSettings.value, Styles.LightingSettings);
 
             if (m_ShowLightingSettings.value)
             {
@@ -324,9 +335,11 @@ namespace UnityEditor
                 EditorGUI.indentLevel -= 1;
             }
 
+            EditorGUILayout.EndFoldoutHeaderGroup();
+
             if (contributeGI)
             {
-                m_ShowLightmapSettings.value = EditorGUILayout.Foldout(m_ShowLightmapSettings.value, Styles.LightmapSettings, true);
+                m_ShowLightmapSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowLightmapSettings.value, Styles.LightmapSettings);
 
                 if (m_ShowLightmapSettings.value)
                 {
@@ -347,6 +360,9 @@ namespace UnityEditor
 
                     EditorGUI.indentLevel -= 1;
                 }
+
+                EditorGUILayout.EndFoldoutHeaderGroup();
+
                 GUILayout.Space(10);
             }
         }

@@ -38,6 +38,13 @@ namespace UnityEditor
         Odd = 2
     }
 
+    [NativeHeader("Editor/Src/Video/VideoClipTranscode.h")]
+    internal enum VideoColorSpace
+    {
+        sRGB = 0,
+        Linear = 3,
+    }
+
     [NativeHeader("Modules/AssetPipelineEditor/Public/VideoClipImporter.h")]
     public enum VideoResizeMode
     {
@@ -122,6 +129,9 @@ namespace UnityEditor
 
         // Import Audio
         public extern bool importAudio { get; set; }
+
+        [NativeName("sRGBClip")]
+        public extern bool sRGBClip { get; set; }
 
         public VideoImporterTargetSettings defaultTargetSettings
         {

@@ -32,6 +32,8 @@ namespace UnityEngine.Video
 
         public extern uint pixelAspectRatioDenominator { get; }
 
+        public extern bool sRGB { [NativeName("IssRGB")] get; }
+
         public extern ushort audioTrackCount { get; }
 
         public extern ushort GetAudioChannelCount(ushort audioTrackIdx);

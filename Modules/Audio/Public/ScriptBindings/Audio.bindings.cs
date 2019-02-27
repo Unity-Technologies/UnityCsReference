@@ -17,7 +17,7 @@ namespace UnityEngine
     public enum AudioSpeakerMode
     {
         // Channel count is unaffected.
-        Raw = 0,
+        [Obsolete("Raw speaker mode is not supported. Do not use.", true)] Raw = 0,
         // Channel count is set to 1. The speakers are monaural.
         Mono = 1,
         // Channel count is set to 2. The speakers are stereo. This is the editor default.
@@ -215,6 +215,7 @@ namespace UnityEngine
     public sealed partial class AudioSettings
     {
         extern static private AudioSpeakerMode GetSpeakerMode();
+        [NativeThrows, NativeMethod(Name = "AudioSettings::SetConfiguration", IsFreeFunction = true)]
         extern static private bool SetConfiguration(AudioConfiguration config);
 
         [NativeMethod(Name = "AudioSettings::GetSampleRate", IsFreeFunction = true)]

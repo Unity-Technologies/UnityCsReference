@@ -3,11 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 using System.Text;
 using UnityEngine.SceneManagement;
-using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Scripting;
@@ -35,6 +33,28 @@ namespace UnityEditor
     {
         Paused,
         Unpaused,
+    }
+
+    internal class ApplicationTitleDescriptor
+    {
+        public ApplicationTitleDescriptor(string projectName, string unityVersion, string activeSceneName, string licenseType, bool previewPackageInUse, string targetName)
+        {
+            title = "";
+            this.projectName = projectName;
+            this.unityVersion = unityVersion;
+            this.activeSceneName = activeSceneName;
+            this.licenseType = licenseType;
+            this.previewPackageInUse = previewPackageInUse;
+            this.targetName = targetName;
+        }
+
+        public string title;
+        public string projectName { get; private set; }
+        public string unityVersion { get; private set; }
+        public string activeSceneName { get; private set; }
+        public string licenseType { get; private set; }
+        public bool previewPackageInUse { get; private set; }
+        public string targetName { get; private set; }
     }
 
     public sealed partial class EditorApplication
@@ -197,6 +217,54 @@ namespace UnityEditor
 
         // Global contextual menus for inspector values
         public static SerializedPropertyCallbackFunction contextualPropertyMenu;
+
+        internal static event Action<ApplicationTitleDescriptor> updateMainWindowTitle;
+
+        internal static string GetDefaultMainWindowTitle(ApplicationTitleDescriptor desc)
+        {
+            var title = $"Unity {desc.unityVersion}";
+            if (!string.IsNullOrEmpty(desc.licenseType))
+            {
+                title += $" {desc.licenseType}";
+            }
+            if (desc.previewPackageInUse)
+            {
+                title += " - " + L10n.Tr("[PREVIEW PACKAGES IN USE]");
+            }
+
+            title += $" - {desc.activeSceneName} - {desc.projectName}";
+
+            if (!string.IsNullOrEmpty(desc.targetName))
+            {
+                title += $" - {desc.targetName}";
+            }
+            return title;
+        }
+
+        [RequiredByNativeCode]
+        internal static string BuildMainWindowTitle()
+        {
+            var activeSceneName = L10n.Tr("Untitled");
+            if (!string.IsNullOrEmpty(SceneManager.GetActiveScene().path))
+            {
+                activeSceneName = Path.GetFileName(SceneManager.GetActiveScene().path);
+            }
+
+            var desc = new ApplicationTitleDescriptor(
+                isTemporaryProject ? PlayerSettings.productName : Path.GetFileName(Path.GetDirectoryName(Application.dataPath)),
+                Application.unityVersion,
+                activeSceneName,
+                GetLicenseType(),
+                isPreviewPackageInUse,
+                BuildPipeline.GetBuildTargetGroupDisplayName(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget))
+            );
+
+            desc.title = GetDefaultMainWindowTitle(desc);
+
+            updateMainWindowTitle?.Invoke(desc);
+
+            return desc.title;
+        }
 
         static void Internal_CallUpdateFunctions()
         {

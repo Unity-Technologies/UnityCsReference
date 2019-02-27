@@ -274,25 +274,15 @@ namespace UnityEditor
             {
                 if ((state.SetSelfAndInterCollision) || ((state.CollToolMode == CollToolMode.Paint) || (state.CollToolMode == CollToolMode.Erase)))
                 {
-                    if (cloth.selfCollisionDistance >= 0.0f)
+                    if ((cloth.selfCollisionDistance >= 0.0f) && (state.SelfCollisionDistance != cloth.selfCollisionDistance))
                     {
                         state.SelfCollisionDistance = cloth.selfCollisionDistance;
                         m_SelfCollisionDistance.floatValue = cloth.selfCollisionDistance;
                     }
-                    else
-                    {
-                        cloth.selfCollisionDistance = state.SelfCollisionDistance;
-                        m_SelfCollisionDistance.floatValue = state.SelfCollisionDistance;
-                    }
 
-                    if (cloth.selfCollisionStiffness >= 0.0f)
+                    if ((cloth.selfCollisionStiffness >= 0.0f) && (state.SelfCollisionStiffness != cloth.selfCollisionStiffness))
                     {
                         state.SelfCollisionStiffness = cloth.selfCollisionStiffness;
-                        m_SelfCollisionStiffness.floatValue = cloth.selfCollisionStiffness;
-                    }
-                    else
-                    {
-                        cloth.selfCollisionStiffness = state.SelfCollisionStiffness;
                         m_SelfCollisionStiffness.floatValue = cloth.selfCollisionStiffness;
                     }
 

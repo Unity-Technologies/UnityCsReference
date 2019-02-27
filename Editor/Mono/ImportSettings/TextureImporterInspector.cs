@@ -94,7 +94,7 @@ namespace UnityEditor
             get { return m_TextureType.hasMultipleDifferentValues; }
         }
 
-        public new void OnDisable()
+        public override void OnDisable()
         {
             base.OnDisable();
 
@@ -442,7 +442,7 @@ namespace UnityEditor
         SerializedProperty m_SpriteMode;
 
         SerializedProperty m_SingleChannelComponent;
-        List<SerializedProperty> m_TextureTypes;
+        List<TextureImporterType> m_TextureTypes;
         internal SpriteImportMode spriteImportMode
         {
             get
@@ -504,13 +504,11 @@ namespace UnityEditor
 
             m_SingleChannelComponent = serializedObject.FindProperty("m_SingleChannelComponent");
 
-            Object[] allTargetObjects = m_TextureType.serializedObject.targetObjects;
-            m_TextureTypes = new List<SerializedProperty>();
-            foreach (var targetObject in allTargetObjects)
+            m_TextureTypes = new List<TextureImporterType>();
+            foreach (var o in targets)
             {
-                SerializedObject iteratedObject = new SerializedObject(targetObject);
-                SerializedProperty iteratedProperty = iteratedObject.FindProperty(m_TextureType.propertyPath);
-                m_TextureTypes.Add(iteratedProperty);
+                var targetObject = (TextureImporter)o;
+                m_TextureTypes.Add(targetObject.textureType);
             }
         }
 
@@ -582,11 +580,15 @@ namespace UnityEditor
 
         public override void OnEnable()
         {
+            base.OnEnable();
+
             s_DefaultPlatformName = TextureImporter.defaultPlatformName; // Can't be called everywhere so we save it here for later use.
 
             m_ShowAdvanced = EditorPrefs.GetBool("TextureImporterShowAdvanced", m_ShowAdvanced);
 
             CacheSerializedProperties();
+
+            BuildTargetList();
 
             m_ShowBumpGenerationSettings.valueChanged.AddListener(Repaint);
             m_ShowCubeMapSettings.valueChanged.AddListener(Repaint);
@@ -1145,6 +1147,8 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
+            serializedObject.Update();
+
             if (s_Styles == null)
                 s_Styles = new Styles();
 
@@ -1202,11 +1206,11 @@ namespace UnityEditor
             if (m_TextureType.hasMultipleDifferentValues)
             {
                 showAdvanced = true;
-                int iteratedTextureType = m_TextureTypes[0].intValue;
+                int iteratedTextureType = (int)m_TextureTypes[0];
                 TextureInspectorGUIElement firstAdvancedElements = m_TextureTypeGUIElements[iteratedTextureType].advancedElements;
                 for (int selectionIndex = 1; selectionIndex < m_TextureTypes.Count(); selectionIndex++)
                 {
-                    iteratedTextureType = m_TextureTypes[selectionIndex].intValue;
+                    iteratedTextureType = (int)m_TextureTypes[selectionIndex];
                     if (firstAdvancedElements != m_TextureTypeGUIElements[iteratedTextureType].advancedElements)
                     {
                         showAdvanced = false;
@@ -1243,10 +1247,9 @@ namespace UnityEditor
 
             ShowPlatformSpecificSettings();
 
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
+            serializedObject.ApplyModifiedProperties();
+
             ApplyRevertGUI();
-            GUILayout.EndHorizontal();
 
             // screw this - after lots of retries i have no idea how to poll it only when we change related stuff
             UpdateImportWarning();

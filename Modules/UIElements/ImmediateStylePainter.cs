@@ -6,6 +6,7 @@ using System;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using UnityEngine.Bindings;
+using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {
@@ -101,11 +102,10 @@ namespace UnityEngine.UIElements
             DrawText(screenRect, text, font, fontSize, fontStyle, fontColor * m_OpacityColor, anchor, wordWrap, wordWrapWidth, richText, clipping);
         }
 
-        public void DrawMesh(MeshStylePainterParameters painterParameters, out NativeSlice<UIVertex> vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset)
+        public void DrawMesh(MeshStylePainterParameters painterParameters, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData)
         {
-            vertexData = new NativeSlice<UIVertex>();
+            vertexData = new NativeSlice<Vertex>();
             indexData = new NativeSlice<UInt16>();
-            indexOffset = 0;
         }
 
         public void DrawImmediate(System.Action callback)
@@ -133,11 +133,6 @@ namespace UnityEngine.UIElements
                 painterParams.border.SetWidth(0.0f);
                 DrawTexture(painterParams);
             }
-        }
-
-        public void ApplyClipping()
-        {
-            // Unused
         }
 
         public void DrawBorder()
@@ -170,21 +165,6 @@ namespace UnityEngine.UIElements
             {
                 m_OpacityColor.a = value;
             }
-        }
-
-        public uint currentTransformID
-        {
-            get { return 0; }
-        }
-
-        public uint currentClippingRectID
-        {
-            get { return 0; }
-        }
-
-        public Matrix4x4 GetRenderTransform()
-        {
-            return currentElement.worldTransform;
         }
     }
 }

@@ -1342,13 +1342,18 @@ namespace UnityEditor
         // Instantiates the given prefab.
         public static Object InstantiatePrefab(Object assetComponentOrGameObject)
         {
-            return InstantiatePrefab_internal(assetComponentOrGameObject, EditorSceneManager.GetTargetSceneForNewGameObjects());
+            return InstantiatePrefab_internal(assetComponentOrGameObject, EditorSceneManager.GetTargetSceneForNewGameObjects(), null);
         }
 
         // Instantiates the given prefab in a given scene
         public static Object InstantiatePrefab(Object assetComponentOrGameObject, Scene destinationScene)
         {
-            return InstantiatePrefab_internal(assetComponentOrGameObject, destinationScene);
+            return InstantiatePrefab_internal(assetComponentOrGameObject, destinationScene, null);
+        }
+
+        public static Object InstantiatePrefab(Object assetComponentOrGameObject, Transform parent)
+        {
+            return InstantiatePrefab_internal(assetComponentOrGameObject, EditorSceneManager.GetTargetSceneForNewGameObjects(), parent);
         }
 
         [Obsolete("Use SaveAsPrefabAsset with a path instead.")]
@@ -1667,6 +1672,12 @@ namespace UnityEditor
 
         public static GameObject LoadPrefabContents(string assetPath)
         {
+            if (!File.Exists(assetPath))
+                throw new ArgumentException(string.Format("Path: {0}, does not exist", assetPath));
+
+            if (Path.GetExtension(assetPath) != ".prefab")
+                throw new ArgumentException(string.Format("Path: {0}, is not a prefab file", assetPath));
+
             var previewScene = EditorSceneManager.OpenPreviewScene(assetPath);
             var roots = previewScene.GetRootGameObjects();
             if (roots.Length != 1)

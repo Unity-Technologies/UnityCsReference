@@ -55,7 +55,7 @@ namespace UnityEditorInternal
             return Paths.Combine(moduleStrippingInformationFolder, module + ".xml");
         }
 
-        private static bool StripAssembliesTo(string[] assemblies, string[] searchDirs, string outputFolder, string workingDirectory, out string output, out string error, string linkerPath, IIl2CppPlatformProvider platformProvider, IEnumerable<string> additionalBlacklist, BuildTargetGroup buildTargetGroup, ManagedStrippingLevel managedStrippingLevel, bool stripEngineCode)
+        private static bool StripAssembliesTo(string[] assemblies, string[] searchDirs, string outputFolder, string workingDirectory, out string output, out string error, string linkerPath, IIl2CppPlatformProvider platformProvider, IEnumerable<string> additionalBlacklist, BuildTargetGroup buildTargetGroup, ManagedStrippingLevel managedStrippingLevel, bool stripEngineCode, string editorToLinkerDataPath)
         {
             if (!Directory.Exists(outputFolder))
                 Directory.CreateDirectory(outputFolder);
@@ -72,8 +72,13 @@ namespace UnityEditorInternal
             var args = new List<string>
             {
                 $"-out={CommandLineFormatter.PrepareFileName(outputFolder)}",
-                $"-x={CommandLineFormatter.PrepareFileName(GetModuleWhitelist("Core", platformProvider.moduleStrippingInformationFolder))}",
             };
+
+            if (!UseUnityLinkerEngineModuleStripping)
+            {
+                args.Add($"-x={CommandLineFormatter.PrepareFileName(GetModuleWhitelist("Core", platformProvider.moduleStrippingInformationFolder))}");
+            }
+
             args.AddRange(additionalBlacklist.Select(path => $"-x={CommandLineFormatter.PrepareFileName(path)}"));
 
             args.AddRange(searchDirs.Select(d => $"-d={CommandLineFormatter.PrepareFileName(d)}"));
@@ -90,6 +95,7 @@ namespace UnityEditorInternal
                 args.Add("--editor-settings-flag=Development");
 
             args.Add($"--rule-set={GetRuleSetForStrippingLevel(managedStrippingLevel)}");
+            args.Add($"--editor-data-file={CommandLineFormatter.PrepareFileName(editorToLinkerDataPath)}");
 
             // One final check to make sure we only run high on latest runtime.
             if ((managedStrippingLevel == ManagedStrippingLevel.High) && (PlayerSettingsEditor.IsLatestApiCompatibility(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup))))
@@ -117,8 +123,15 @@ namespace UnityEditorInternal
                     args.Add($"--architecture={compilerArchitecture}");
             }
 
+            if (!UseUnityLinkerEngineModuleStripping)
+            {
+                args.Add("--disable-engine-module-support");
+            }
+
             if (stripEngineCode)
             {
+                args.Add("--enable-engine-module-stripping");
+
                 if (UnityEngine.Connect.UnityConnectSettings.enabled)
                     args.Add("--engine-stripping-flag=EnableUnityConnect");
 
@@ -299,7 +312,8 @@ namespace UnityEditorInternal
             string error;
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(platformProvider.target);
             bool isMono = PlayerSettings.GetScriptingBackend(buildTargetGroup) == ScriptingImplementation.Mono2x;
-            bool stripEngineCode = rcr != null && PlayerSettings.stripEngineCode && platformProvider.supportsEngineStripping && !platformProvider.scriptsOnlyBuild;
+            bool engineStrippingSupported = platformProvider.supportsEngineStripping && !isMono;
+            bool performEngineStripping = rcr != null && PlayerSettings.stripEngineCode && engineStrippingSupported && !platformProvider.scriptsOnlyBuild;
             IEnumerable<string> blacklists = Il2CppBlacklistPaths;
             if (rcr != null)
             {
@@ -323,7 +337,9 @@ namespace UnityEditorInternal
                 }
             }
 
-            if (!stripEngineCode)
+            string editorToLinkerDataPath = WriteEditorData(managedAssemblyFolderPath, rcr);
+
+            if (!performEngineStripping)
             {
                 // if we don't do stripping, add all modules blacklists.
                 foreach (var file in Directory.GetFiles(platformProvider.moduleStrippingInformationFolder, "*.xml"))
@@ -355,28 +371,32 @@ namespace UnityEditorInternal
                     blacklists,
                     buildTargetGroup,
                     managedStrippingLevel,
-                    stripEngineCode))
+                    performEngineStripping,
+                    editorToLinkerDataPath))
                     throw new Exception("Error in stripping assemblies: " + assemblies + ", " + error);
 
-                if (platformProvider.supportsEngineStripping)
+                if (engineStrippingSupported)
                 {
                     var icallSummaryPath = Path.Combine(managedAssemblyFolderPath, "ICallSummary.txt");
                     GenerateInternalCallSummaryFile(icallSummaryPath, managedAssemblyFolderPath, tempStripPath);
 
-                    if (stripEngineCode)
+                    if (performEngineStripping && !UseUnityLinkerEngineModuleStripping)
                     {
                         // Find which modules we must include in the build based on Assemblies
                         HashSet<UnityType> nativeClasses;
                         HashSet<string> nativeModules;
-                        CodeStrippingUtils.GenerateDependencies(tempStripPath, icallSummaryPath, rcr, stripEngineCode, out nativeClasses, out nativeModules, platformProvider);
+                        CodeStrippingUtils.GenerateDependencies(tempStripPath, icallSummaryPath, rcr, performEngineStripping, out nativeClasses, out nativeModules, platformProvider);
                         // Add module-specific blacklists.
                         addedMoreBlacklists = AddWhiteListsForModules(nativeModules, ref blacklists, platformProvider.moduleStrippingInformationFolder);
                     }
                 }
 
+                if (UseUnityLinkerEngineModuleStripping)
+                    UpdateBuildReport(ReadLinkerToEditorData(tempStripPath), platformProvider);
+
                 // If we had to add more whitelists, we need to run AssemblyStripper again with the added whitelists.
             }
-            while (addedMoreBlacklists);
+            while (addedMoreBlacklists && !UseUnityLinkerEngineModuleStripping);
 
             // keep unstripped files for debugging purposes
             var tempUnstrippedPath = Path.GetFullPath(Path.Combine(managedAssemblyFolderPath, "tempUnstripped"));
@@ -404,6 +424,11 @@ namespace UnityEditorInternal
             Directory.Delete(tempStripPath);
         }
 
+        public static bool UseUnityLinkerEngineModuleStripping
+        {
+            get { return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("UNITYLINKER_ENABLE_EMS")); }
+        }
+
         private static string WriteTypesInScenesBlacklist(string managedAssemblyDirectory, RuntimeClassRegistry rcr)
         {
             var items = rcr.GetAllManagedTypesInScenes();
@@ -412,6 +437,13 @@ namespace UnityEditorInternal
             sb.AppendLine("<linker>");
             foreach (var assemblyTypePair in items)
             {
+                // Some how stuff for assemblies that will not be in the build make it into UsedTypePerUserAssembly such as
+                // ex: [UnityEditor.TestRunner.dll] UnityEditor.TestTools.TestRunner.TestListCacheData
+                //
+                // Filter anything out where the assembly doesn't exist so that UnityLinker can be strict about preservations in link xml files
+                if (!File.Exists(Path.Combine(managedAssemblyDirectory, assemblyTypePair.Key)))
+                    continue;
+
                 sb.AppendLine($"\t<assembly fullname=\"{Path.GetFileNameWithoutExtension(assemblyTypePair.Key)}\">");
                 foreach (var type in assemblyTypePair.Value)
                 {
@@ -424,6 +456,141 @@ namespace UnityEditorInternal
             var path = Path.Combine(managedAssemblyDirectory, "TypesInScenes.xml");
             File.WriteAllText(path, sb.ToString());
             return path;
+        }
+
+        private static void UpdateBuildReport(LinkerToEditorData dataFromLinker, IIl2CppPlatformProvider platformProvider)
+        {
+            var strippingInfo = platformProvider == null ? null : StrippingInfo.GetBuildReportData(platformProvider.buildReport);
+
+            if (strippingInfo == null)
+                return;
+
+            foreach (var moduleInfo in dataFromLinker.report.modules)
+            {
+                strippingInfo.AddModule(moduleInfo.name);
+                foreach (var moduleDependency in moduleInfo.dependencies)
+                {
+                    strippingInfo.RegisterDependency(StrippingInfo.ModuleName(moduleInfo.name), moduleDependency.name);
+
+                    if (!string.IsNullOrEmpty(moduleDependency.icon))
+                        strippingInfo.SetIcon(moduleDependency.name, moduleDependency.icon);
+
+                    // Hacky way to match the existing behavior
+                    if (moduleDependency.name == "UnityConnectSettings")
+                        strippingInfo.RegisterDependency(moduleDependency.name, "Required by UnityAnalytics");
+
+                    foreach (var scene in moduleDependency.scenes)
+                    {
+                        strippingInfo.RegisterDependency(moduleDependency.name, scene);
+
+                        var klass = UnityType.FindTypeByName(moduleDependency.name);
+                        if (klass != null && !klass.IsDerivedFrom(CodeStrippingUtils.GameManagerTypeInfo))
+                        {
+                            if (scene.EndsWith(".unity"))
+                                strippingInfo.SetIcon(scene, "class/SceneAsset");
+                            else
+                                strippingInfo.SetIcon(scene, "class/AssetBundle");
+                        }
+                    }
+                }
+            }
+        }
+
+        internal static LinkerToEditorData ReadLinkerToEditorData(string outputDirectory)
+        {
+            var dataPath = Path.Combine(outputDirectory, "UnityLinkerToEditorData.json");
+            var contents = File.ReadAllText(dataPath);
+            var data = JsonUtility.FromJson<LinkerToEditorData>(contents);
+            return data;
+        }
+
+        private static string WriteEditorData(string managedAssemblyDirectory, RuntimeClassRegistry rcr)
+        {
+            var items = GetTypesInScenesInformation(managedAssemblyDirectory, rcr);
+
+            List<string> forceIncludeModules;
+            List<string> forceExcludeModules;
+            CollectIncludedAndExcludedModules(out forceIncludeModules, out forceExcludeModules);
+
+            var editorToLinkerData = new EditorToLinkerData
+            {
+                typesInScenes = items.ToArray(),
+                allNativeTypes = CollectNativeTypeData().ToArray(),
+                forceIncludeModules = forceIncludeModules.ToArray(),
+                forceExcludeModules = forceExcludeModules.ToArray()
+            };
+
+            var dataPath = Path.Combine(managedAssemblyDirectory, "EditorToUnityLinkerData.json");
+            File.WriteAllText(dataPath, JsonUtility.ToJson(editorToLinkerData, true));
+            return dataPath;
+        }
+
+        static List<EditorToLinkerData.TypeInSceneData> GetTypesInScenesInformation(string managedAssemblyDirectory, RuntimeClassRegistry rcr)
+        {
+            var items = new List<EditorToLinkerData.TypeInSceneData>();
+            foreach (var nativeClass in rcr.GetAllNativeClassesIncludingManagersAsString())
+            {
+                var unityType = UnityType.FindTypeByName(nativeClass);
+
+                var managedName = RuntimeClassMetadataUtils.ScriptingWrapperTypeNameForNativeID(unityType.persistentTypeID);
+                var usedInScenes = rcr.GetScenesForClass(unityType.persistentTypeID);
+
+                bool noManagedType = unityType.persistentTypeID != 0 && managedName == "UnityEngine.Object";
+                var information = new EditorToLinkerData.TypeInSceneData(
+                    noManagedType ? null : "UnityEngine.dll",
+                    noManagedType ? null : managedName,
+                    nativeClass,
+                    unityType.module,
+                    usedInScenes != null ? usedInScenes.ToArray() : null);
+
+                items.Add(information);
+            }
+
+            foreach (var userAssembly in rcr.UsedTypePerUserAssembly)
+            {
+                // Some how stuff for assemblies that will not be in the build make it into UsedTypePerUserAssembly such as
+                // ex: [UnityEditor.TestRunner.dll] UnityEditor.TestTools.TestRunner.TestListCacheData
+                //
+                // Filter anything out where the assembly doesn't exist so that UnityLinker can be strict about being able to find
+                // all of the types that are reported as being in the scene.
+                if (!File.Exists(Path.Combine(managedAssemblyDirectory, userAssembly.Key)))
+                    continue;
+
+                foreach (var type in userAssembly.Value)
+                    items.Add(new EditorToLinkerData.TypeInSceneData(userAssembly.Key, type, null, null, null));
+            }
+
+            return items;
+        }
+
+        static List<EditorToLinkerData.NativeTypeData> CollectNativeTypeData()
+        {
+            var items = new List<EditorToLinkerData.NativeTypeData>();
+            foreach (var unityType in UnityType.GetTypes())
+            {
+                items.Add(new EditorToLinkerData.NativeTypeData
+                {
+                    name = unityType.name,
+                    module = unityType.module
+                });
+            }
+
+            return items;
+        }
+
+        static void CollectIncludedAndExcludedModules(out List<string> forceInclude, out List<string> forceExclude)
+        {
+            forceInclude = new List<string>();
+            forceExclude = new List<string>();
+            // Apply manual stripping overrides
+            foreach (var module in ModuleMetadata.GetModuleNames())
+            {
+                var includeSetting = ModuleMetadata.GetModuleIncludeSettingForModule(module);
+                if (includeSetting == ModuleIncludeSetting.ForceInclude)
+                    forceInclude.Add(module);
+                else if (includeSetting == ModuleIncludeSetting.ForceExclude)
+                    forceExclude.Add(module);
+            }
         }
 
         private static string WriteMethodsToPreserveBlackList(RuntimeClassRegistry rcr, BuildTarget target)

@@ -8,6 +8,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.UIElements.UIR;
 using UnityEngine.UIElements;
+using Vertex = UnityEngine.UIElements.UIR.Vertex;
 
 namespace UnityEngine.Internal.UIElements
 {
@@ -105,16 +106,6 @@ namespace UnityEngine.Internal.UIElements
 
     internal unsafe class UIRPainter : IStylePainterInternal
     {
-        struct Vertex
-        {
-            public Vector3 Position;
-            public Color32 Tint;
-            public Vector2 UV;
-            public float TransformID;
-            public float ClippingId;
-            public float Flags;
-        }
-
         const int kMaxVertices = 1024;
         const int kMaxIndices = 4096;
         const int kMaxRanges = 1024;
@@ -163,10 +154,10 @@ namespace UnityEngine.Internal.UIElements
             var color = painterParams.color;
 
             var m = currentElement.worldTransform;
-            m_VertexData[m_VertexOffset + 0] = new Vertex() { Position = m.MultiplyPoint(new Vector2(rect.x, rect.y)), Tint = color, UV = Vector2.zero, TransformID = 0.0f, ClippingId = 0.0f, Flags = 0.0f };
-            m_VertexData[m_VertexOffset + 1] = new Vertex() { Position = m.MultiplyPoint(new Vector2(rect.x + rect.width, rect.y)), Tint = color, UV = Vector2.zero, TransformID = 0.0f, ClippingId = 0.0f, Flags = 0.0f };
-            m_VertexData[m_VertexOffset + 2] = new Vertex() { Position = m.MultiplyPoint(new Vector2(rect.x, rect.y + rect.height)), Tint = color, UV = Vector2.zero, TransformID = 0.0f, ClippingId = 0.0f, Flags = 0.0f };
-            m_VertexData[m_VertexOffset + 3] = new Vertex() { Position = m.MultiplyPoint(new Vector2(rect.x + rect.width, rect.y + rect.height)), Tint = color, UV = Vector2.zero, TransformID = 0.0f, ClippingId = 0.0f, Flags = 0.0f };
+            m_VertexData[m_VertexOffset + 0] = new Vertex() { position = m.MultiplyPoint(new Vector2(rect.x, rect.y)), tint = color };
+            m_VertexData[m_VertexOffset + 1] = new Vertex() { position = m.MultiplyPoint(new Vector2(rect.x + rect.width, rect.y)), tint = color };
+            m_VertexData[m_VertexOffset + 2] = new Vertex() { position = m.MultiplyPoint(new Vector2(rect.x, rect.y + rect.height)), tint = color };
+            m_VertexData[m_VertexOffset + 3] = new Vertex() { position = m.MultiplyPoint(new Vector2(rect.x + rect.width, rect.y + rect.height)), tint = color };
 
             int vertexStride = m_VertexGPUBuffer.ElementStride;
             m_VertexUpdateRanges[m_VertexUpdateOffset] = new GfxUpdateBufferRange() {
@@ -205,11 +196,10 @@ namespace UnityEngine.Internal.UIElements
             m_IndexOffset += 6;
         }
 
-        public void DrawMesh(MeshStylePainterParameters painterParameters, out NativeSlice<UnityEngine.UIElements.UIVertex> vertexData, out NativeSlice<ushort> indexData, out ushort indexOffset)
+        public void DrawMesh(MeshStylePainterParameters painterParameters, out NativeSlice<Vertex> vertexData, out NativeSlice<ushort> indexData)
         {
-            vertexData = new NativeSlice<UnityEngine.UIElements.UIVertex>();
+            vertexData = new NativeSlice<Vertex>();
             indexData = new NativeSlice<UInt16>();
-            indexOffset = 0;
         }
 
         public void DrawText(TextStylePainterParameters painterParams)
@@ -238,11 +228,6 @@ namespace UnityEngine.Internal.UIElements
             }
         }
 
-        public void ApplyClipping()
-        {
-            // Unused
-        }
-
         public void DrawBorder()
         {
             // Unused
@@ -251,21 +236,6 @@ namespace UnityEngine.Internal.UIElements
         public void DrawText(string text)
         {
             // Unused
-        }
-
-        public Matrix4x4 GetRenderTransform()
-        {
-            return currentElement.worldTransform;
-        }
-
-        public uint currentTransformID
-        {
-            get { return 0; }
-        }
-
-        public uint currentClippingRectID
-        {
-            get { return 0; }
         }
     }
 }

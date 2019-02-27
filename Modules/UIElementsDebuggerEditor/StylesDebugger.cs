@@ -189,6 +189,7 @@ namespace UnityEditor.UIElements.Debugger
 
             EditorGUILayout.LabelField("Layout", m_SelectedElement.layout.ToString());
             EditorGUILayout.LabelField("World Bound", m_SelectedElement.worldBound.ToString());
+            EditorGUILayout.LabelField("World Clip", m_SelectedElement.worldClip.ToString());
 
             if (m_ClassList == null)
                 InitClassList();
@@ -424,7 +425,7 @@ namespace UnityEditor.UIElements.Debugger
                 EditorGUILayout.LabelField(Styles.stylesheetsContent, Styles.KInspectorTitle);
                 foreach (string sheet in s_MatchedRulesExtractor.selectedElementStylesheets)
                 {
-                    if (GUILayout.Button(sheet))
+                    if (GUILayout.Button(sheet) && CanOpenStyleSheet(sheet))
                         InternalEditorUtility.OpenFileAtLineExternal(sheet, 0, 0);
                 }
             }
@@ -474,7 +475,7 @@ namespace UnityEditor.UIElements.Debugger
                     bool expanded = m_CurFoldout.Contains(i);
                     EditorGUILayout.BeginHorizontal();
                     bool foldout = EditorGUILayout.Foldout(m_CurFoldout.Contains(i), new GUIContent(builder.ToString()), true);
-                    if (rule.displayPath != null && GUILayout.Button(rule.displayPath, EditorStyles.miniButton, GUILayout.MaxWidth(150)))
+                    if (rule.displayPath != null && GUILayout.Button(rule.displayPath, EditorStyles.miniButton, GUILayout.MaxWidth(150)) && CanOpenStyleSheet(rule.fullPath))
                         InternalEditorUtility.OpenFileAtLineExternal(rule.fullPath, rule.lineNumber, -1);
                     EditorGUILayout.EndHorizontal();
 
@@ -508,6 +509,8 @@ namespace UnityEditor.UIElements.Debugger
             }
         }
 
+        static bool CanOpenStyleSheet(string path) => File.Exists(path);
+
         internal static class Styles
         {
             public static GUIStyle KInspectorTitle = "WhiteLargeCenterLabel";
@@ -539,12 +542,16 @@ namespace UnityEditor.UIElements.Debugger
                 this.matchRecord = matchRecord;
                 fullPath = AssetDatabase.GetAssetPath(matchRecord.sheet);
                 lineNumber = matchRecord.complexSelector.rule.line;
-                if (fullPath != null)
+                if (string.IsNullOrEmpty(fullPath))
+                {
+                    displayPath = matchRecord.sheet.name + ":" + lineNumber;
+                }
+                else
                 {
                     if (fullPath == "Library/unity editor resources")
                         displayPath = matchRecord.sheet.name + ":" + lineNumber;
                     else
-                        displayPath = Path.GetFileNameWithoutExtension(fullPath) + ":" + lineNumber;
+                        displayPath = Path.GetFileName(fullPath) + ":" + lineNumber;
                 }
             }
 
@@ -577,7 +584,8 @@ namespace UnityEditor.UIElements.Debugger
 
             foreach (StyleSheet sheet in cursor.styleSheetList)
             {
-                selectedElementStylesheets.Add(AssetDatabase.GetAssetPath(sheet) ?? "<unknown>");
+                string path = AssetDatabase.GetAssetPath(sheet);
+                selectedElementStylesheets.Add(string.IsNullOrEmpty(path) ? sheet.name : path);
                 matchingContext.styleSheetStack.Add(sheet);
             }
         }

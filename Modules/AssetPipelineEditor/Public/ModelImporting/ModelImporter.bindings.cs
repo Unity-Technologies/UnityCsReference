@@ -1002,5 +1002,10 @@ namespace UnityEditor
             get;
             set;
         }
+        public extern bool sortHierarchyByName
+        {
+            get;
+            set;
+        }
     }
 }

@@ -32,7 +32,7 @@ namespace UnityEditorInternal
             ownerID = SessionState.GetInt(kOwnerStringKey, ownerID);
             s_EditMode = (SceneViewEditMode)SessionState.GetInt(kEditModeStringKey, (int)s_EditMode);
             Selection.selectionChanged += OnSelectionChange;
-            EditorToolContext.toolChanged += ToolChanged;
+            EditorTools.activeToolChanging += ToolChanging;
         }
 
         private const float k_EditColliderbuttonWidth = 33;
@@ -141,9 +141,9 @@ namespace UnityEditorInternal
             QuitEditMode();
         }
 
-        static void ToolChanged(EditorTool previous, EditorTool active)
+        static void ToolChanging()
         {
-            var previousToolType = EditorToolUtility.GetEnumWithEditorTool(previous);
+            var previousToolType = EditorToolUtility.GetEnumWithEditorTool(EditorToolContext.activeTool);
 
             if (previousToolType == Tool.None && ownerID != k_OwnerIdNone)
                 ChangeEditModeFromToolContext(null, SceneViewEditMode.None);
@@ -301,6 +301,8 @@ namespace UnityEditorInternal
             {
                 if (s_EditMode != SceneViewEditMode.None && (EditorToolContext.activeTool is EditModeTool || EditorToolContext.activeTool is NoneTool))
                     EditorTools.RestorePreviousTool();
+
+                ownerID = 0;
 
                 return;
             }

@@ -20,11 +20,15 @@ namespace UnityEngine.XR
         bool m_SupportsImpulse;
         bool m_SupportsBuffer;
         uint m_BufferFrequencyHz;
+        uint m_BufferMaxSize;
+        uint m_BufferOptimalSize;
 
         public uint numChannels             { get { return m_NumChannels; }         internal set { m_NumChannels = value; } }
         public bool supportsImpulse         { get { return m_SupportsImpulse; }     internal set { m_SupportsImpulse = value; } }
         public bool supportsBuffer          { get { return m_SupportsBuffer; }      internal set { m_SupportsBuffer = value; } }
         public uint bufferFrequencyHz       { get { return m_BufferFrequencyHz; }   internal set { m_BufferFrequencyHz = value; } }
+        public uint bufferMaxSize           { get { return m_BufferMaxSize; } internal set { m_BufferMaxSize = value; } }
+        public uint bufferOptimalSize       { get { return m_BufferOptimalSize; } internal set { m_BufferOptimalSize = value; } }
 
         public override bool Equals(object obj)
         {
@@ -39,7 +43,9 @@ namespace UnityEngine.XR
             return numChannels == other.numChannels &&
                 supportsImpulse == other.supportsImpulse &&
                 supportsBuffer == other.supportsBuffer &&
-                bufferFrequencyHz == other.bufferFrequencyHz;
+                bufferFrequencyHz == other.bufferFrequencyHz &&
+                bufferMaxSize == other.bufferMaxSize &&
+                bufferOptimalSize == other.bufferOptimalSize;
         }
 
         public override int GetHashCode()
@@ -47,7 +53,9 @@ namespace UnityEngine.XR
             return numChannels.GetHashCode() ^
                 (supportsImpulse.GetHashCode() << 1) ^
                 (supportsBuffer.GetHashCode() >> 1) ^
-                (bufferFrequencyHz.GetHashCode() << 2);
+                (bufferFrequencyHz.GetHashCode() << 2) ^
+                (bufferMaxSize.GetHashCode() >> 2) ^
+                (bufferOptimalSize.GetHashCode() << 3);
         }
 
         public static bool operator==(HapticCapabilities a, HapticCapabilities b)
@@ -292,7 +300,15 @@ namespace UnityEngine.XR
         public InputDeviceRole role { get { return InputDevices.GetDeviceRole(m_DeviceId); } }
 
         // Haptics
-        public bool SendHapticImpulse(uint channel, float amplitude, float duration = 1.0f)     { return InputDevices.SendHapticImpulse(m_DeviceId, channel, amplitude, duration); }
+        public bool SendHapticImpulse(uint channel, float amplitude, float duration = 1.0f)
+        {
+            if (amplitude < 0.0f)
+                throw new ArgumentException("Amplitude of SendHapticImpulse cannot be negative.");
+            if (duration < 0.0f)
+                throw new ArgumentException("Duration of SendHapticImpulse cannot be negative.");
+            return InputDevices.SendHapticImpulse(m_DeviceId, channel, amplitude, duration);
+        }
+
         public bool SendHapticBuffer(uint channel, byte[] buffer)                               { return InputDevices.SendHapticBuffer(m_DeviceId, channel, buffer); }
         public bool TryGetHapticCapabilities(out HapticCapabilities capabilities)               { return InputDevices.TryGetHapticCapabilities(m_DeviceId, out capabilities); }
         public void StopHaptics()                                                               { InputDevices.StopHaptics(m_DeviceId); }
@@ -626,6 +642,17 @@ namespace UnityEngine.XR
             foreach (var device in allDevices)
                 if (device.role == role)
                     inputDevices.Add(device);
+        }
+
+        public static event Action<InputDevice> deviceConnected;
+        public static event Action<InputDevice> deviceDisconnected;
+
+        private static void InvokeConnectionEvent(UInt64 m_DeviceId, bool connected)
+        {
+            if (connected && deviceConnected != null)
+                deviceConnected(new InputDevice(m_DeviceId));
+            else if (deviceDisconnected != null)
+                deviceDisconnected(new InputDevice(m_DeviceId));
         }
 
         private static extern void GetDevices_Internal([NotNull] List<InputDevice> inputDevices);

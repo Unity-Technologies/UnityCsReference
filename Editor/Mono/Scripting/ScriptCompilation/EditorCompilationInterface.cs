@@ -51,7 +51,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 {
                     var message = string.Format("{0} ({1})", exception.Message, filePath);
 
-                    var asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(filePath);
+                    var asset = AssetDatabase.LoadAssetAtPath<TextAsset>(filePath);
                     var instanceID = asset.GetInstanceID();
 
                     CompilationPipeline.LogEditorCompilationError(message, instanceID);
@@ -109,7 +109,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         static void LogWarning(string warning, string assetPath)
         {
-            var asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(assetPath);
+            var asset = AssetDatabase.LoadAssetAtPath<TextAsset>(assetPath);
             Debug.LogWarning(warning, asset);
         }
 
@@ -240,6 +240,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
+        public static void SetAllCustomScriptAssemblyReferenceJsons(string[] allAssemblyReferenceJsons, string[] allAssemblyReferenceJsonContents)
+        {
+            EmitExceptionsAsErrors(Instance.SetAllCustomScriptAssemblyReferenceJsonsContents(allAssemblyReferenceJsons, allAssemblyReferenceJsonContents));
+        }
+
+        [RequiredByNativeCode]
         public static void SetAllCustomScriptAssemblyJsonContents(string[] allAssemblyJsonPaths, string[] allAssemblyJsonContents, string[] guids)
         {
             EmitExceptionsAsErrors(Instance.SetAllCustomScriptAssemblyJsonContents(allAssemblyJsonPaths, allAssemblyJsonContents, guids));
@@ -261,6 +267,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         assemblyAndReference.Assembly.FilePath,
                         assemblyAndReference.Reference.FilePath),
                         assemblyAndReference.Assembly.FilePath);
+                }
+            }
+
+            // Check we do not have any assembly definition references (asmref) without matching assembly definitions (asmdef)
+            List<CustomScriptAssemblyReference> referencesWithMissingAssemblies;
+            Instance.GetAssemblyDefinitionReferencesWithMissingAssemblies(out referencesWithMissingAssemblies);
+            if (referencesWithMissingAssemblies.Count > 0)
+            {
+                foreach (var asmref in referencesWithMissingAssemblies)
+                {
+                    var warning = string.Format("An Assembly Definition File with the name '{0}' could not be found. The Assembly Definition Reference file {1} will not be used.", asmref.Reference, asmref.FilePath);
+                    LogWarning(warning, asmref.FilePath);
                 }
             }
 

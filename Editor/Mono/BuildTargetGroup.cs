@@ -95,5 +95,7 @@ namespace UnityEditor
         Switch = 27,
 
         Lumin = 28,
+
+        BJM = 29
     }
 }

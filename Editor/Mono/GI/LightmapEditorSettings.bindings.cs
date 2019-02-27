@@ -66,7 +66,10 @@ namespace UnityEditor
             None = 0,
 
             // The NVIDIA Optix AI denoiser is applied.
-            Optix = 1
+            Optix = 1,
+
+            // The Intel Open Image AI denoiser is applied.
+            OpenImage = 2
         }
 
         // Which path tracer filter is used.
@@ -212,6 +215,10 @@ namespace UnityEditor
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
         extern static internal bool IsOptixDenoiserSupported();
+
+        [FreeFunction]
+        [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
+        extern static internal bool IsOpenImageDenoiserSupported();
 
         // Packing for realtime GI may fail of the mesh has zero UV or surface area. This is the outcome for the given renderer.
         [FreeFunction]

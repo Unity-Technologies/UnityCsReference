@@ -65,10 +65,13 @@ namespace UnityEditor.Experimental.GraphView
             {
                 graphView = GetFirstAncestorOfType<GraphView>();
 
-                // Restore selections on children.
-                foreach (var child in Children().OfType<GraphElement>())
+                if (graphView != null)
                 {
-                    graphView.RestorePersitentSelectionForElement(child);
+                    // Restore selections on children.
+                    foreach (var child in Children().OfType<GraphElement>())
+                    {
+                        graphView.RestorePersitentSelectionForElement(child);
+                    }
                 }
             }
         }

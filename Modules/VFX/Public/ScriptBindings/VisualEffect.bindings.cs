@@ -18,8 +18,18 @@ namespace UnityEngine.Experimental.VFX
     [NativeHeader("Modules/VFX/Public/ScriptBindings/VisualEffectAssetBindings.h")]
     [NativeHeader("Modules/VFX/Public/VisualEffectAsset.h")]
     [NativeHeader("VFXScriptingClasses.h")]
-    public class VisualEffectAsset : Object
+    public abstract class VisualEffectObject : Object
     {
+    }
+
+    [UsedByNativeCode]
+    [NativeHeader("Modules/VFX/Public/ScriptBindings/VisualEffectAssetBindings.h")]
+    [NativeHeader("Modules/VFX/Public/VisualEffectAsset.h")]
+    [NativeHeader("VFXScriptingClasses.h")]
+    public class VisualEffectAsset : VisualEffectObject
+    {
+        public const string PlayEventName = "OnPlay";
+        public const string StopEventName = "OnStop";
     }
 
     [NativeHeader("Modules/VFX/Public/VisualEffect.h")]

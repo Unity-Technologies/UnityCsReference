@@ -524,7 +524,13 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(pixelLightCountProperty);
 
             // still valid with SRP
+            EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(textureQualityProperty);
+            if (EditorGUI.EndChangeCheck() && usingSRP)
+            {
+                RenderPipelineManager.CleanupRenderPipeline();
+            }
+
             EditorGUILayout.PropertyField(anisotropicTexturesProperty);
 
             if (!usingSRP)

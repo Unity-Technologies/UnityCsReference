@@ -518,21 +518,13 @@ namespace UnityEditorInternal
             bool shouldUse = false;
             if (Application.platform == RuntimePlatform.OSXEditor)
             {
-                // On OSX 10.8 (and mabybe older versions, not sure) running .NET Core will result in the following error :
-                //          dyld: lazy symbol binding failed: Symbol not found: __sincos_stret
-                //
-                // I'm not sure exactly what the issue is, but based on some google searching it's an issue not unique to .NET Core
-                // and it does not happen in 10.9 and later.
-                //
-                // Some of our graphics tests run on OSX 10.8 and some users may have 10.8, in order to keep 10.8 working
-                // we will fallback to running il2cpp on mono.
-                // And as a precaution, let's use il2cpp on mono for anything older than 10.8 as well
+                // .Net Core 2.1 is only supported on MacOSX versions 10.12 and later
                 if (SystemInfo.operatingSystem.StartsWith("Mac OS X 10."))
                 {
                     var versionText = SystemInfo.operatingSystem.Substring(9);
                     var version = new Version(versionText);
 
-                    if (version >= new Version(10, 9))
+                    if (version >= new Version(10, 12))
                         shouldUse = true;
                 }
                 else

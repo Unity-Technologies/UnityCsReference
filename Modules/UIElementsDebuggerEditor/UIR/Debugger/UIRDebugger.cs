@@ -19,24 +19,6 @@ namespace UnityEditor.UIElements.Debugger
         public VisualElement visualTree { get { return panel.visualTree; } }
 
         public string name { get { return panel.name; } }
-
-        public RendererBase rendererChain
-        {
-            get
-            {
-                Debug.Assert(panel != null, "Visual tree doesn't have a UIRPanel!");
-                return UIRDebugUtility.GetUIRendererChain(panel);
-            }
-        }
-
-        public UIRenderData uirDataChain
-        {
-            get
-            {
-                Debug.Assert(panel != null, "Visual tree doesn't have a UIRPanel!");
-                return UIRDebugUtility.GetRootUirData(panel);
-            }
-        }
     }
 
     internal abstract class UIRDebugger : EditorWindow, IPanelDebugger

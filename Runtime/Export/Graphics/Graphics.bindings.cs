@@ -125,6 +125,8 @@ namespace UnityEngine
         }
 
         extern public static Resolution[] resolutions {[FreeFunction("ScreenScripting::GetResolutions")] get; }
+
+        extern public static float brightness { get; set; }
     }
 }
 

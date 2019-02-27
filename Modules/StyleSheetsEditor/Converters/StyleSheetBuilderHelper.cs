@@ -20,9 +20,9 @@ namespace UnityEditor.StyleSheets
             options = opts ?? new UssExportOptions();
         }
 
-        public StyleRule BeginRule(string comment = "")
+        public StyleRule BeginRule(string comment = "", int line = 0)
         {
-            var rule = builder.BeginRule(0);
+            var rule = builder.BeginRule(line);
             options.AddComment(rule, comment);
             return rule;
         }

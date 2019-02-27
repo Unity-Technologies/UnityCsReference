@@ -7,7 +7,6 @@ using System;
 using System.Reflection;
 using UnityEditor.UIElements.Debugger;
 using UnityEngine.UIElements;
-using Unity.Experimental.EditorMode;
 
 namespace UnityEditor
 {
@@ -60,7 +59,7 @@ namespace UnityEditor
 
             RectOffset margins = GetBorderSize();
 
-            IStyle style = EditorModes.GetRootElement(view).style;
+            IStyle style = view.rootVisualElement.style;
             style.top = margins.top;
             style.bottom = margins.bottom;
             style.left = margins.left;
@@ -81,7 +80,6 @@ namespace UnityEditor
                 m_ActualView.m_Pos = newPos;
                 UpdateViewMargins(m_ActualView);
                 m_ActualView.OnResized();
-                EditorModes.OnResize(m_ActualView);
             }
         }
 
@@ -133,10 +131,7 @@ namespace UnityEditor
 
                 try
                 {
-                    if (EditorModes.ShouldInvokeOnGUI(m_ActualView))
-                    {
-                        Invoke("OnGUI");
-                    }
+                    Invoke("OnGUI");
                 }
                 finally
                 {
@@ -200,31 +195,26 @@ namespace UnityEditor
         internal void OnProjectChange()
         {
             Invoke("OnProjectChange");
-            EditorModes.OnProjectChange(m_ActualView);
         }
 
         internal void OnSelectionChange()
         {
             Invoke("OnSelectionChange");
-            EditorModes.OnSelectionChanged(m_ActualView);
         }
 
         internal void OnDidOpenScene()
         {
             Invoke("OnDidOpenScene");
-            EditorModes.OnDidOpenScene(m_ActualView);
         }
 
         internal void OnInspectorUpdate()
         {
             Invoke("OnInspectorUpdate");
-            EditorModes.OnInspectorUpdate(m_ActualView);
         }
 
         internal void OnHierarchyChange()
         {
             Invoke("OnHierarchyChange");
-            EditorModes.OnHierarchyChange(m_ActualView);
         }
 
         MethodInfo GetPaneMethod(string methodName)
@@ -303,10 +293,7 @@ namespace UnityEditor
             {
                 using (new PerformanceTracker(actualView.GetType().Name + ".OnGUI." + Event.current.type))
                 {
-                    if (EditorModes.ShouldInvokeOnGUI(m_ActualView))
-                    {
-                        Invoke("OnGUI");
-                    }
+                    Invoke("OnGUI");
                 }
             }
             catch (TargetInvocationException e)
@@ -355,7 +342,7 @@ namespace UnityEditor
 
             m_ActualView.m_Parent = this;
 
-            visualTree.Add(EditorModes.GetRootElement(m_ActualView));
+            visualTree.Add(m_ActualView.rootVisualElement);
             panel.getViewDataDictionary = m_ActualView.GetViewDataDictionary;
             panel.saveViewData = m_ActualView.SaveViewData;
             panel.name = m_ActualView.GetType().Name;
@@ -363,12 +350,8 @@ namespace UnityEditor
             if (GetPaneMethod("Update") != null)
                 EditorApplication.update += SendUpdate;
 
-            EditorApplication.update += SendUpdateToOverride;
-
             if (GetPaneMethod("ModifierKeysChanged") != null)
                 EditorApplication.modifierKeysChanged += SendModKeysChanged;
-
-            EditorApplication.update += SendModKeysChangedToOverride;
 
             m_ActualView.MakeParentsSettingsMatchMe();
 
@@ -382,9 +365,7 @@ namespace UnityEditor
                 try
                 {
                     Invoke("OnBecameVisible");
-                    EditorModes.OnBecameVisible(m_ActualView);
                     Invoke("OnFocus");
-                    EditorModes.OnFocus(m_ActualView);
                 }
                 catch (TargetInvocationException ex)
                 {
@@ -402,7 +383,7 @@ namespace UnityEditor
             if (!m_ActualView)
                 return;
 
-            var root = EditorModes.GetRootElement(m_ActualView);
+            var root = m_ActualView.rootVisualElement;
             if (root.hierarchy.parent == visualTree)
             {
                 root.RemoveFromHierarchy();
@@ -413,12 +394,8 @@ namespace UnityEditor
             if (GetPaneMethod("Update") != null)
                 EditorApplication.update -= SendUpdate;
 
-            EditorApplication.update -= SendUpdateToOverride;
-
             if (GetPaneMethod("ModifierKeysChanged") != null)
                 EditorApplication.modifierKeysChanged -= SendModKeysChanged;
-
-            EditorApplication.update -= SendModKeysChangedToOverride;
 
             if (m_ActualView.m_FadeoutTime != 0)
             {
@@ -432,9 +409,7 @@ namespace UnityEditor
                 if (sendEvents)
                 {
                     Invoke("OnLostFocus", oldActualView);
-                    EditorModes.OnLostFocus(m_ActualView);
                     Invoke("OnBecameInvisible", oldActualView);
-                    EditorModes.OnBecameInvisible(oldActualView);
                 }
             }
         }
@@ -444,19 +419,9 @@ namespace UnityEditor
             Invoke("Update");
         }
 
-        void SendUpdateToOverride()
-        {
-            EditorModes.Update(m_ActualView);
-        }
-
         void SendModKeysChanged()
         {
             Invoke("ModifierKeysChanged");
-        }
-
-        void SendModKeysChangedToOverride()
-        {
-            EditorModes.ModifierKeysChanged(m_ActualView);
         }
 
         internal RectOffset borderSize => GetBorderSize();
@@ -508,7 +473,9 @@ namespace UnityEditor
         {
             GenericMenu menu = new GenericMenu();
 
-            EditorModes.AddItemsToMenu(view, menu);
+            IHasCustomMenu menuProvider = view as IHasCustomMenu;
+            if (menuProvider != null)
+                menuProvider.AddItemsToMenu(menu);
 
             AddDefaultItemsToMenu(menu, view);
             menu.DropDown(pos);

@@ -380,7 +380,7 @@ namespace UnityEditor.Experimental.GraphView
             AddToClassList("node");
 
             capabilities |= Capabilities.Selectable | Capabilities.Movable | Capabilities.Deletable | Capabilities.Ascendable;
-            renderHint = RenderHint.SkinningTransform;
+            renderHint = RenderHint.BoneTransform;
 
             m_Expanded = true;
             UpdateExpandedButtonState();

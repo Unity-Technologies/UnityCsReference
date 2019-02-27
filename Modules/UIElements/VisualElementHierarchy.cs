@@ -6,6 +6,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {
@@ -295,6 +296,7 @@ namespace UnityEngine.UIElements
 
                 child.PropagateEnabledToChildren(m_Owner.enabledInHierarchy);
 
+                child.InvokeHierarchyChanged(HierarchyChangeType.Add);
                 child.IncrementVersion(VersionChangeType.Hierarchy);
                 m_Owner.IncrementVersion(VersionChangeType.Hierarchy);
             }
@@ -320,6 +322,7 @@ namespace UnityEngine.UIElements
                     throw new ArgumentOutOfRangeException("Index out of range: " + index);
 
                 var child = m_Owner.m_Children[index];
+                child.InvokeHierarchyChanged(HierarchyChangeType.Remove);
                 RemoveChildAtIndex(index);
 
                 child.hierarchy.SetParent(null);
@@ -344,6 +347,7 @@ namespace UnityEngine.UIElements
                 {
                     foreach (VisualElement e in m_Owner.m_Children)
                     {
+                        e.InvokeHierarchyChanged(HierarchyChangeType.Remove);
                         e.hierarchy.SetParent(null);
                         e.m_LogicalParent = null;
                         m_Owner.elementPanel?.OnVersionChanged(e, VersionChangeType.Hierarchy);
@@ -424,8 +428,10 @@ namespace UnityEngine.UIElements
 
             private void MoveChildElement(VisualElement child, int currentIndex, int nextIndex)
             {
+                child.InvokeHierarchyChanged(HierarchyChangeType.Remove);
                 RemoveChildAtIndex(currentIndex);
                 PutChildAtIndex(child, nextIndex);
+                child.InvokeHierarchyChanged(HierarchyChangeType.Add);
 
                 m_Owner.IncrementVersion(VersionChangeType.Hierarchy);
             }
@@ -493,6 +499,7 @@ namespace UnityEngine.UIElements
                     {
                         m_Owner.yogaNode.Insert(i, m_Owner.m_Children[i].yogaNode);
                     }
+                    m_Owner.InvokeHierarchyChanged(HierarchyChangeType.Move);
                     m_Owner.IncrementVersion(VersionChangeType.Hierarchy);
                 }
             }

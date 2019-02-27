@@ -63,12 +63,12 @@ namespace UnityEditor
 
         public override void OnInitialize()
         {
-            SceneVisibilityManager.hiddenContentChanged += SceneVisibilityManagerOnHiddenContentChanged;
+            SceneVisibilityManager.visibilityChanged += SceneVisibilityManagerOnVisibilityChanged;
             m_PrevScollPos = m_TreeView.state.scrollPos.y;
             m_PrevTotalHeight = m_TreeView.GetTotalRect().height;
         }
 
-        private void SceneVisibilityManagerOnHiddenContentChanged()
+        private void SceneVisibilityManagerOnVisibilityChanged()
         {
             m_TreeView.Repaint();
         }

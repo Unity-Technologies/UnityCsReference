@@ -21,6 +21,21 @@ namespace UnityEngine.UIElements
             set { m_TemplateAlias = value; }
         }
 
+        [Serializable]
+        public struct AttributeOverride
+        {
+            public string m_ElementName;
+            public string m_AttributeName;
+            public string m_Value;
+        }
+        [SerializeField]
+        private List<AttributeOverride> m_AttributeOverrides;
+        public List<AttributeOverride> attributeOverrides
+        {
+            get { return m_AttributeOverrides == null ? (m_AttributeOverrides = new List<AttributeOverride>()) : m_AttributeOverrides; }
+            set { m_AttributeOverrides = value; }
+        }
+
         [SerializeField]
         private List<VisualTreeAsset.SlotUsageEntry> m_SlotUsages;
 

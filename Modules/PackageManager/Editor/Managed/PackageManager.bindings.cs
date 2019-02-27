@@ -10,43 +10,34 @@ using UnityEngine;
 
 namespace UnityEditor.PackageManager
 {
-    [NativeHeader("Modules/PackageManager/Editor/PackageManagerNativeClientImpl.h")]
     [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
+    [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
     class NativeClient
     {
-        [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
-        extern public static NativeStatusCode List([Out] out long operationId, bool offlineMode, bool includeIndirectDependencies);
+        public static extern NativeStatusCode List([Out] out long operationId, bool offlineMode, bool includeIndirectDependencies);
 
-        [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
-        extern public static NativeStatusCode Add([Out] out long operationId, string packageId);
+        public static extern NativeStatusCode Add([Out] out long operationId, string packageId);
 
-        [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
-        extern public static NativeStatusCode Remove([Out] out long operationId, string packageId);
+        public static extern NativeStatusCode Remove([Out] out long operationId, string packageId);
 
-        [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
-        extern public static NativeStatusCode Search([Out] out long operationId, string packageId, bool offlineMode);
+        public static extern NativeStatusCode Search([Out] out long operationId, string packageId, bool offlineMode);
 
-        [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
-        extern public static NativeStatusCode SearchAll([Out] out long operationId, bool offlineMode);
+        public static extern NativeStatusCode SearchAll([Out] out long operationId, bool offlineMode);
 
-        [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
-        extern public static NativeStatusCode ResetToEditorDefaults([Out] out long operationId);
+        public static extern NativeStatusCode ResetToEditorDefaults([Out] out long operationId);
 
-        [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
-        extern public static NativeStatusCode GetOperationStatus(long operationId);
+        public static extern NativeStatusCode GetOperationStatus(long operationId);
 
         [ThreadAndSerializationSafe]
-        extern public static void ReleaseCompletedOperation(long operationId);
+        public static extern void ReleaseCompletedOperation(long operationId);
 
-        extern public static Error GetOperationError(long operationId);
+        public static extern Error GetOperationError(long operationId);
 
-        extern public static OperationStatus GetListOperationData(long operationId);
+        public static extern OperationStatus GetListOperationData(long operationId);
 
-        extern public static PackageInfo GetAddOperationData(long operationId);
+        public static extern PackageInfo GetAddOperationData(long operationId);
 
-        extern public static string GetRemoveOperationData(long operationId);
-
-        extern public static PackageInfo[] GetSearchOperationData(long operationId);
+        public static extern PackageInfo[] GetSearchOperationData(long operationId);
     }
 
     [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
@@ -54,18 +45,19 @@ namespace UnityEditor.PackageManager
     [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
     class Folders
     {
-        extern public static string GetPackagesPath();
-        extern public static bool IsPackagedAssetPath(string path);
-        extern public static string[] GetPackagesPaths();
+        public static extern string GetPackagesPath();
+        public static extern bool IsPackagedAssetPath(string path);
+        public static extern string[] GetPackagesPaths();
     }
 
     [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
     [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
-    internal partial class Packages
+    public partial class PackageInfo
     {
         [NativeName("GetAllPackages")]
-        extern public static PackageInfo[] GetAll();
+        internal static extern PackageInfo[] GetAll();
 
-        extern private static bool GetPackageByAssetPath(string assetPath, [Out][NotNull] PackageInfo packageInfo);
+        [NativeName("GetPackageByAssetPath")]
+        private static extern bool TryGetForAssetPath(string assetPath, [Out][NotNull] PackageInfo packageInfo);
     }
 }

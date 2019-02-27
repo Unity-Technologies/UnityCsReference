@@ -279,6 +279,8 @@ namespace UnityEditor
 
         public override void OnEnable()
         {
+            base.OnEnable();
+
             m_ForceToMono = serializedObject.FindProperty("m_ForceToMono");
             m_Normalize = serializedObject.FindProperty("m_Normalize");
             m_PreloadAudioData = serializedObject.FindProperty("m_PreloadAudioData");
@@ -298,7 +300,7 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
-            serializedObject.UpdateIfRequiredOrScript();
+            serializedObject.Update();
 
             bool selectionContainsTrackerFile = false;
             foreach (AudioImporter importer in GetAllAudioImporterTargets())
@@ -338,6 +340,8 @@ namespace UnityEditor
                 GUILayout.Space(10);
                 EditorGUILayout.HelpBox("The selection contains sounds that are decompressed in hardware. Advanced mixing is not available for these sounds.", MessageType.Info);
             }
+
+            serializedObject.ApplyModifiedProperties();
 
             ApplyRevertGUI();
         }

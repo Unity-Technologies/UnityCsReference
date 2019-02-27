@@ -53,6 +53,8 @@ namespace UnityEditor
         [SerializeField]
         private bool m_ShowAllHits = false;         // If true then just one filter must match to show an object, if false then all filters must match to show an object
         [SerializeField]
+        private bool m_SkipHidden = true;
+        [SerializeField]
         SearchArea m_SearchArea = SearchArea.InAssetsOnly;
         // Folder browsing
         [SerializeField]
@@ -68,6 +70,7 @@ namespace UnityEditor
         public int[] referencingInstanceIDs { get { return m_ReferencingInstanceIDs; } set { m_ReferencingInstanceIDs = value; } }
         public int[] sceneHandles { get { return m_SceneHandles; } set { m_SceneHandles = value; } }
         public bool showAllHits { get { return m_ShowAllHits; } set { m_ShowAllHits = value; }}
+        public bool skipHidden { get { return m_SkipHidden; } set { m_SkipHidden = value; }}
         public string[] folders { get {return m_Folders; } set {m_Folders = value; }}
         public SearchArea searchArea {  get { return m_SearchArea; } set { m_SearchArea = value; }}
 
@@ -82,6 +85,7 @@ namespace UnityEditor
             m_VersionControlStates = new string[0];
             m_SoftLockControlStates = new string[0];
             m_ShowAllHits = false;
+            m_SkipHidden = true;
         }
 
         bool IsNullOrEmpty<T>(T[] list)
@@ -200,6 +204,11 @@ namespace UnityEditor
 
             m_ShowAllHits = newFilter.m_ShowAllHits;
 
+            if (newFilter.m_SkipHidden != m_SkipHidden)
+            {
+                m_SkipHidden = newFilter.m_SkipHidden;
+                changed = true;
+            }
 
             return changed;
         }
@@ -236,6 +245,7 @@ namespace UnityEditor
                 result += "[Folders: " + m_Folders[0] + "]";
 
             result += "[ShowAllHits: " + showAllHits + "]";
+            result += "[SkipHidden: " + skipHidden + "]";
             return result;
         }
 

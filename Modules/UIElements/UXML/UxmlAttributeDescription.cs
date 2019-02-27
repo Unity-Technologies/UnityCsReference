@@ -45,14 +45,57 @@ namespace UnityEngine.UIElements
 
         internal bool TryGetValueFromBagAsString(IUxmlAttributes bag, CreationContext cc, out string value)
         {
+            // Regardless of whether the attribute is overwridden or not, we want to error here
+            // if there is no valid name.
+            if (name == null && (m_ObsoleteNames == null || m_ObsoleteNames.Length == 0))
+            {
+                Debug.LogError("Attribute description has no name.");
+                value = null;
+                return false;
+            }
+
+            string elementName;
+            bag.TryGetAttributeValue("name", out elementName);
+            if (!string.IsNullOrEmpty(elementName) && cc.attributeOverrides != null)
+            {
+                for (var i = 0; i < cc.attributeOverrides.Count; ++i)
+                {
+                    if (cc.attributeOverrides[i].m_ElementName != elementName)
+                        continue;
+
+                    if (cc.attributeOverrides[i].m_AttributeName != name)
+                    {
+                        if (m_ObsoleteNames != null)
+                        {
+                            bool matchedObsoleteName = false;
+                            for (var j = 0; j < m_ObsoleteNames.Length; j++)
+                            {
+                                if (cc.attributeOverrides[i].m_AttributeName == m_ObsoleteNames[j])
+                                {
+                                    matchedObsoleteName = true;
+                                    break;
+                                }
+                            }
+
+                            if (!matchedObsoleteName)
+                                continue;
+                        }
+                        else
+                        {
+                            continue;
+                        }
+                    }
+
+                    value = cc.attributeOverrides[i].m_Value;
+                    return true;
+                }
+            }
+
             if (name == null)
             {
-                if (m_ObsoleteNames == null || m_ObsoleteNames.Length == 0)
-                {
-                    Debug.LogError("Attribute description has no name.");
-                    value = null;
-                    return false;
-                }
+                // Check for:
+                // (m_ObsoleteNames == null || m_ObsoleteNames.Length == 0)
+                // moved at the top of method so we can assume we have obsolete names here.
 
                 for (var i = 0; i < m_ObsoleteNames.Length; i++)
                 {

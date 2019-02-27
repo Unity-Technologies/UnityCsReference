@@ -56,7 +56,7 @@ namespace UnityEditor
             folders.AddRange(searchFilter.folders);
             if (folders.Remove(PackageManager.Folders.GetPackagesPath()))
             {
-                var packages = PackageManagerUtilityInternal.GetAllVisiblePackages();
+                var packages = PackageManagerUtilityInternal.GetAllVisiblePackages(searchFilter.skipHidden);
                 foreach (var package in packages)
                 {
                     if (!folders.Contains(package.assetPath))
@@ -64,15 +64,19 @@ namespace UnityEditor
                 }
             }
 
-            foreach (string folderPath in folders)
+            foreach (var folderPath in folders)
             {
                 var folderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(folderPath);
                 var rootPath = "Assets";
 
                 // Find the right rootPath if folderPath is part of a package
-                var packageInfo = PackageManager.Packages.GetForAssetPath(folderPath);
+                var packageInfo = PackageManager.PackageInfo.FindForAssetPath(folderPath);
                 if (packageInfo != null)
+                {
                     rootPath = packageInfo.assetPath;
+                    if (searchFilter.skipHidden && !PackageManagerUtilityInternal.IsPathInVisiblePackage(rootPath))
+                        continue;
+                }
 
                 // Set empty filter to ensure we search all assets to find folder
                 var property = new HierarchyProperty(rootPath);
@@ -106,7 +110,7 @@ namespace UnityEditor
             if (searchFilter.searchArea == SearchFilter.SearchArea.AllAssets ||
                 searchFilter.searchArea == SearchFilter.SearchArea.InPackagesOnly)
             {
-                var packages = PackageManagerUtilityInternal.GetAllVisiblePackages();
+                var packages = PackageManagerUtilityInternal.GetAllVisiblePackages(searchFilter.skipHidden);
                 foreach (var package in packages)
                 {
                     rootPaths.Add(package.assetPath);

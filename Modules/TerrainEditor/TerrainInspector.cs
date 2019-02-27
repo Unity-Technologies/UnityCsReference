@@ -1163,7 +1163,8 @@ namespace UnityEditor
         {
             TerrainData terrainData = m_Terrain.terrainData;
 
-            m_ShowBasicTerrainSettings = EditorGUILayout.FoldoutTitlebar(m_ShowBasicTerrainSettings, styles.basicTerrain, true);
+            m_ShowBasicTerrainSettings = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowBasicTerrainSettings, styles.basicTerrain);
+
             if (m_ShowBasicTerrainSettings)
             {
                 ++EditorGUI.indentLevel;
@@ -1276,7 +1277,10 @@ namespace UnityEditor
                 --EditorGUI.indentLevel;
             }
 
-            m_ShowTreeAndDetailSettings = EditorGUILayout.FoldoutTitlebar(m_ShowTreeAndDetailSettings, styles.treeAndDetails, true);
+            EditorGUILayout.EndFoldoutHeaderGroup();
+
+            m_ShowTreeAndDetailSettings = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowTreeAndDetailSettings, styles.treeAndDetails);
+
             if (m_ShowTreeAndDetailSettings)
             {
                 ++EditorGUI.indentLevel;
@@ -1332,7 +1336,10 @@ namespace UnityEditor
                 --EditorGUI.indentLevel;
             }
 
-            m_ShowPhysicsSettings = EditorGUILayout.FoldoutTitlebar(m_ShowPhysicsSettings, styles.physics, true);
+            EditorGUILayout.EndFoldoutHeaderGroup();
+
+            m_ShowPhysicsSettings = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowPhysicsSettings, styles.physics);
+
             if (m_ShowPhysicsSettings)
             {
                 ++EditorGUI.indentLevel;
@@ -1351,7 +1358,10 @@ namespace UnityEditor
                 --EditorGUI.indentLevel;
             }
 
-            m_ShowGrassWindSettings = EditorGUILayout.FoldoutTitlebar(m_ShowGrassWindSettings, styles.grassWindSettings, true);
+            EditorGUILayout.EndFoldoutHeaderGroup();
+
+            m_ShowGrassWindSettings = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowGrassWindSettings, styles.grassWindSettings);
+
             if (m_ShowGrassWindSettings)
             {
                 ++EditorGUI.indentLevel;
@@ -1375,6 +1385,8 @@ namespace UnityEditor
                 }
                 --EditorGUI.indentLevel;
             }
+
+            EditorGUILayout.EndFoldoutHeaderGroup();
 
             ShowResolution(terrainData);
             ShowTextures();
@@ -1492,9 +1504,13 @@ namespace UnityEditor
         private bool m_ShowTextures = true;
         public void ShowTextures()
         {
-            m_ShowTextures = EditorGUILayout.FoldoutTitlebar(m_ShowTextures, styles.textures, true);
+            m_ShowTextures = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowTextures, styles.textures);
+
             if (!m_ShowTextures)
+            {
+                EditorGUILayout.EndFoldoutHeaderGroup();
                 return;
+            }
 
             ++EditorGUI.indentLevel;
 
@@ -1562,15 +1578,21 @@ namespace UnityEditor
             GUILayout.EndHorizontal();
 
             --EditorGUI.indentLevel;
+
+            EditorGUILayout.EndFoldoutHeaderGroup();
         }
 
         private bool m_ShowResolution = true;
 
         public void ShowResolution(TerrainData terrainData)
         {
-            m_ShowResolution = EditorGUILayout.FoldoutTitlebar(m_ShowResolution, styles.meshResolution, true);
+            m_ShowResolution = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowResolution, styles.meshResolution);
+
             if (!m_ShowResolution)
+            {
+                EditorGUILayout.EndFoldoutHeaderGroup();
                 return;
+            }
 
             ++EditorGUI.indentLevel;
 
@@ -1639,6 +1661,8 @@ namespace UnityEditor
             }
 
             --EditorGUI.indentLevel;
+
+            EditorGUILayout.EndFoldoutHeaderGroup();
         }
 
         void ResizeDetailResolution(TerrainData terrainData, int resolution, int resolutionPerPatch)

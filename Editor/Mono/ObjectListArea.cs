@@ -11,7 +11,6 @@ using UnityEngine.Assertions;
 using Math = System.Math;
 using IndexOutOfRangeException = System.IndexOutOfRangeException;
 
-
 namespace UnityEditor
 {
     [System.Serializable]
@@ -1634,7 +1633,7 @@ namespace UnityEditor
                 if (string.IsNullOrEmpty(path))
                     return;
 
-                var packageInfo = PackageManager.Packages.GetForAssetPath(path);
+                var packageInfo = PackageManager.PackageInfo.FindForAssetPath(path);
                 if (packageInfo != null)
                 {
                     hierarchyProperty = new HierarchyProperty(packageInfo.assetPath);
@@ -1664,9 +1663,13 @@ namespace UnityEditor
                     m_Ping.m_ContentRect.height = pingLabelSize.y;
                     m_LeftPaddingForPinging = hierarchyProperty.isMainRepresentation ? LocalGroup.k_ListModeLeftPadding : LocalGroup.k_ListModeLeftPaddingForSubAssets;
                     FilteredHierarchy.FilterResult res = m_LocalAssets.LookupByInstanceID(instanceID);
+                    var icon = hierarchyProperty.icon;
                     m_Ping.m_ContentDraw = (Rect r) =>
                     {
-                        ObjectListArea.LocalGroup.DrawIconAndLabel(r, res, label, hierarchyProperty.icon, false, false);
+                        if (icon)
+                        {
+                            ObjectListArea.LocalGroup.DrawIconAndLabel(r, res, label, icon, false, false);
+                        }
                     };
                 }
                 else

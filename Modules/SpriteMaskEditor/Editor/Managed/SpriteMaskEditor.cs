@@ -21,7 +21,7 @@ namespace UnityEditor
         private SerializedProperty m_SpriteSortPoint;
         private AnimBool m_ShowCustomRangeValues;
 
-        private static class Contents
+        class Styles
         {
             public static readonly GUIContent spriteLabel = EditorGUIUtility.TrTextContent("Sprite", "The Sprite defining the mask");
             public static readonly GUIContent alphaCutoffLabel = EditorGUIUtility.TrTextContent("Alpha Cutoff", "The minimum alpha value used by the mask to select the area of influence defined over the mask's sprite.");
@@ -56,8 +56,8 @@ namespace UnityEditor
                 if (!PrefabUtility.IsPartOfPrefabAsset(activeGO))
                     GameObjectUtility.SetParentAndAlign(go, activeGO);
             }
-            go.name = GameObjectUtility.GetUniqueNameForSibling(go.transform.parent, Contents.newSpriteMaskName.text);
-            Undo.SetCurrentGroupName(Contents.createSpriteMaskUndoString.text);
+            go.name = GameObjectUtility.GetUniqueNameForSibling(go.transform.parent, Styles.newSpriteMaskName.text);
+            Undo.SetCurrentGroupName(Styles.createSpriteMaskUndoString.text);
             Selection.activeGameObject = go;
         }
 
@@ -81,31 +81,31 @@ namespace UnityEditor
         {
             serializedObject.Update();
 
-            EditorGUILayout.PropertyField(m_Sprite, Contents.spriteLabel);
+            EditorGUILayout.PropertyField(m_Sprite, Styles.spriteLabel);
 
-            EditorGUILayout.Slider(m_AlphaCutoff, 0f, 1f, Contents.alphaCutoffLabel);
+            EditorGUILayout.Slider(m_AlphaCutoff, 0f, 1f, Styles.alphaCutoffLabel);
 
             EditorGUILayout.Space();
-            EditorGUILayout.PropertyField(m_IsCustomRangeActive, Contents.isCustomRangeActive);
+            EditorGUILayout.PropertyField(m_IsCustomRangeActive, Styles.isCustomRangeActive);
 
             m_ShowCustomRangeValues.target = ShouldShowCustomRangeValues();
             if (EditorGUILayout.BeginFadeGroup(m_ShowCustomRangeValues.faded))
             {
                 EditorGUI.indentLevel++;
                 EditorGUILayout.Space();
-                EditorGUILayout.LabelField(Contents.frontLabel);
+                EditorGUILayout.LabelField(Styles.frontLabel);
                 SortingLayerEditorUtility.RenderSortingLayerFields(m_FrontSortingOrder, m_FrontSortingLayerID);
 
                 EditorGUILayout.Space();
-                EditorGUILayout.LabelField(Contents.backLabel);
+                EditorGUILayout.LabelField(Styles.backLabel);
                 SortingLayerEditorUtility.RenderSortingLayerFields(m_BackSortingOrder, m_BackSortingLayerID);
                 EditorGUI.indentLevel--;
             }
             EditorGUILayout.EndFadeGroup();
 
-            EditorGUILayout.PropertyField(m_SpriteSortPoint, Contents.spriteSortPointLabel);
+            EditorGUILayout.PropertyField(m_SpriteSortPoint, Styles.spriteSortPointLabel);
 
-            RenderRenderingLayer();
+            DrawRenderingLayer();
 
             serializedObject.ApplyModifiedProperties();
         }

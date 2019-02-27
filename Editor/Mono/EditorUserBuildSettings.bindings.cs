@@ -174,7 +174,9 @@ namespace UnityEditor
         /// *undocumented*
         LocalMachine = 0,
         /// *undocumented*
-        WindowsPhone = 1
+        WindowsPhone = 1,
+        /// *undocumented*
+        DevicePortal = 2
     }
 
     [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
@@ -489,6 +491,24 @@ namespace UnityEditor
             [NativeMethod("SetSelectedWSAUWPVSVersion")]
             set;
         }
+        public static extern string windowsDevicePortalAddress
+        {
+            [NativeMethod("GetWindowsDevicePortalAddress")]
+            get;
+            [NativeMethod("SetWindowsDevicePortalAddress")]
+            set;
+        }
+
+        public static extern string windowsDevicePortalUsername
+        {
+            [NativeMethod("GetWindowsDevicePortalUsername")]
+            get;
+            [NativeMethod("SetWindowsDevicePortalUsername")]
+            set;
+        }
+
+        // WDP password is not to be saved with other settings and only stored in memory until Editor is closed
+        public static string windowsDevicePortalPassword { get; set; }
 
         // *undocumented*
         public static extern WSABuildAndRunDeployTarget wsaBuildAndRunDeployTarget

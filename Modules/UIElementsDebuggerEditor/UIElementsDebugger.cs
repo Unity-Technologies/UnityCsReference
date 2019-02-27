@@ -5,7 +5,6 @@
 using System;
 using UnityEngine;
 using UnityEngine.UIElements;
-using Unity.Experimental.EditorMode;
 
 namespace UnityEditor.UIElements.Debugger
 {
@@ -49,7 +48,6 @@ namespace UnityEditor.UIElements.Debugger
         public Action<VisualElement> onSelectedElementChanged;
     }
 
-    [CannotBeUnsupported]
     internal class UIElementsDebugger : PanelDebugger, IGlobalPanelDebugger
     {
         const string k_DefaultStyleSheetPath = "StyleSheets/UIElementsDebugger/UIElementsDebugger.uss";
@@ -60,6 +58,7 @@ namespace UnityEditor.UIElements.Debugger
         private ToolbarToggle m_ShowLayoutToggle;
         private ToolbarToggle m_RepaintOverlayToggle;
         private ToolbarToggle m_UXMLLiveReloadToggle;
+        private ToolbarToggle m_ShowDrawStatsToggle;
 
         private DebuggerSelection m_DebuggerSelection;
         private RepaintOverlayPainter m_RepaintOverlay;
@@ -149,6 +148,17 @@ namespace UnityEditor.UIElements.Debugger
                 m_UXMLLiveReloadToggle.text = "UXML Live Reload";
                 m_UXMLLiveReloadToggle.RegisterValueChangedCallback((e) => RetainedMode.UxmlLiveReloadIsEnabled = e.newValue);
                 m_Toolbar.Add(m_UXMLLiveReloadToggle);
+
+                m_ShowDrawStatsToggle = new ToolbarToggle() { name = "drawStatsToggle" };
+                m_ShowDrawStatsToggle.text = "Draw Stats";
+                m_ShowDrawStatsToggle.RegisterValueChangedCallback((e) =>
+                {
+                    var updater = (panel as BaseVisualElementPanel)?.GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater;
+                    if (updater != null)
+                        updater.DebugGetRenderChain().drawStats = e.newValue;
+                    panelDebug?.MarkDirtyRepaint();
+                });
+                m_Toolbar.Add(m_ShowDrawStatsToggle);
             }
 
             var splitter = new DebuggerSplitter();

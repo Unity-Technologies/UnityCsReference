@@ -2,10 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.SceneManagement;
+using UnityEngine.Scripting;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -53,6 +56,15 @@ namespace UnityEditor
 
         public static extern int GetHiddenObjectCount();
         public static extern void SetPrefabStageScene(Scene scene);
+
+        public static Action internalStructureChanged;
+
+        [RequiredByNativeCode]
+        private static void Internal_InternalStructureChanged()
+        {
+            internalStructureChanged?.Invoke();
+        }
+
         public static extern bool active { get; set; }
         public static extern bool prefabStageIsolated { get; set; }
         public static extern bool mainStageIsolated { get; set; }

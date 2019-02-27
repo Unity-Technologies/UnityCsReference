@@ -40,7 +40,7 @@ namespace UnityEditor.PackageManager.Requests
 
         protected override PackageInfo[] GetResult()
         {
-            return NativeClient.GetSearchOperationData(Id).Select(p => (PackageInfo)p).ToArray();
+            return NativeClient.GetSearchOperationData(Id).Where(p => p.type != ShimPackageType).ToArray();
         }
     }
 }

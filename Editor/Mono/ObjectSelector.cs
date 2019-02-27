@@ -38,6 +38,8 @@ namespace UnityEditor
             public static GUIContent assetsTabLabel = EditorGUIUtility.TrTextContent("Assets");
             public static GUIContent sceneTabLabel = EditorGUIUtility.TrTextContent("Scene");
             public static GUIContent selfTabLabel = EditorGUIUtility.TrTextContent("Self");
+
+            public static readonly GUIContent packagesVisibilityContent = EditorGUIUtility.TrIconContent("SceneViewVisibility", "Number of hidden packages, click to toggle packages visibility");
         }
 
         public const string ObjectSelectorClosedCommand = "ObjectSelectorClosed";
@@ -51,6 +53,7 @@ namespace UnityEditor
         bool            m_FocusSearchFilter;
         bool            m_AllowSceneObjects;
         bool            m_IsShowingAssets;
+        bool            m_SkipHiddenPackages;
         SavedInt        m_StartGridSize = new SavedInt("ObjectSelector.GridSize", 64);
 
         // Misc
@@ -253,6 +256,9 @@ namespace UnityEditor
         void FilterSettingsChanged()
         {
             var filter = new SearchFilter();
+            if (m_IsShowingAssets)
+                filter.searchArea = SearchFilter.SearchArea.AllAssets;
+
             filter.SearchFieldStringToFilter(m_SearchFilter);
             if (!string.IsNullOrEmpty(m_RequiredType) && filter.classNames.Length == 0)
             {
@@ -270,17 +276,9 @@ namespace UnityEditor
                     filter.sceneHandles = new[] { scene.handle };
             }
 
-            // For now, we don t want to display assets from Packages
-            // Make sure we only search in Assets folder
             if (hierarchyType == HierarchyType.Assets)
             {
-                filter.searchArea = SearchFilter.SearchArea.InAssetsOnly;
-
-                // When AssemblyDefinitionAsset is the required type, search in all assets (Assets and Packages folder)
-                if (!string.IsNullOrEmpty(m_RequiredType) && m_RequiredType == typeof(AssemblyDefinitionAsset).Name)
-                {
-                    filter.searchArea = SearchFilter.SearchArea.AllAssets;
-                }
+                filter.skipHidden = m_SkipHiddenPackages;
             }
 
             m_ListArea.Init(listPosition, hierarchyType, filter, true);
@@ -308,6 +306,7 @@ namespace UnityEditor
             m_ObjectSelectorReceiver = null;
             m_AllowSceneObjects = allowSceneObjects;
             m_IsShowingAssets = true;
+            m_SkipHiddenPackages = true;
             m_AllowedIDs = allowedInstanceIDs;
 
             m_OnObjectSelectorClosed = onObjectSelectorClosed;
@@ -394,6 +393,13 @@ namespace UnityEditor
             int initialSelection = obj != null ? obj.GetInstanceID() : 0;
             if (property != null && property.hasMultipleDifferentValues)
                 initialSelection = 0; // don't select anything on multi selection
+
+            if (initialSelection != 0)
+            {
+                var assetPath = AssetDatabase.GetAssetPath(initialSelection);
+                if (m_SkipHiddenPackages && !PackageManagerUtilityInternal.IsPathInVisiblePackage(assetPath))
+                    m_SkipHiddenPackages = false;
+            }
 
             if (ShouldTreeViewBeUsed(requiredType))
             {
@@ -545,13 +551,31 @@ namespace UnityEditor
             if (GUI.changed)
                 FilterSettingsChanged();
 
+            var size = new Vector2(0, 0);
+            if (m_IsShowingAssets)
+            {
+                Styles.packagesVisibilityContent.text = PackageManagerUtilityInternal.HiddenPackagesCount.ToString();
+                size = EditorStyles.toolbarButton.CalcSize(Styles.packagesVisibilityContent);
+            }
+
             if (m_ListArea.CanShowThumbnails())
             {
                 EditorGUI.BeginChangeCheck();
-                int newGridSize = (int)GUI.HorizontalSlider(new Rect(position.width - 60, 26, 55, m_ToolbarHeight - 28), m_ListArea.gridSize, m_ListArea.minGridSize, m_ListArea.maxGridSize);
+                var newGridSize = (int)GUI.HorizontalSlider(new Rect(position.width - (60 + size.x), 26, 55, m_ToolbarHeight - 28), m_ListArea.gridSize, m_ListArea.minGridSize, m_ListArea.maxGridSize);
                 if (EditorGUI.EndChangeCheck())
                 {
                     m_ListArea.gridSize = newGridSize;
+                }
+            }
+
+            if (m_IsShowingAssets)
+            {
+                EditorGUI.BeginChangeCheck();
+                var skipHiddenPackages = GUI.Toggle(new Rect(position.width - size.x, 26, size.x, m_ToolbarHeight - 28), m_SkipHiddenPackages, Styles.packagesVisibilityContent, EditorStyles.toolbarButton);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    m_SkipHiddenPackages = skipHiddenPackages;
+                    FilterSettingsChanged();
                 }
             }
         }
