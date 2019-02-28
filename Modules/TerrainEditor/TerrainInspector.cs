@@ -1268,7 +1268,7 @@ namespace UnityEditor
         public void ShowDetails()
         {
             LoadDetailIcons();
-            ShowBrushes(0);
+            ShowBrushes(0, true, true, true, true);
             // Brush size
 
             // Detail picker
@@ -1554,18 +1554,26 @@ namespace UnityEditor
             }
         }
 
-        public void ShowBrushes(int spacing)
+        public void ShowBrushes(int spacing, bool showBrushes, bool showBrushEditor, bool showBrushSize, bool showBrushStrength)
         {
             EditorGUI.BeginDisabledGroup(s_activeTerrainInspector != GetInstanceID() || s_activeTerrainInspectorInstance != this);
 
             GUILayout.Space(spacing);
-            bool repaint = brushList.ShowGUI();
+            bool repaint = false;
+            if (showBrushes)
+                repaint = brushList.ShowGUI();
 
-            float safetyFactorHack = 0.9375f;
-            m_Size = EditorGUILayout.Slider(styles.brushSize, m_Size, 0.1f, Mathf.Round(Mathf.Min(m_Terrain.terrainData.size.x, m_Terrain.terrainData.size.z) * safetyFactorHack));
-            m_Strength = PercentSlider(styles.opacity, m_Strength, kMinBrushStrength, 1); // former string formatting: "0.0%"
+            if (showBrushSize)
+            {
+                float safetyFactorHack = 0.9375f;
+                m_Size = EditorGUILayout.Slider(styles.brushSize, m_Size, 0.1f, Mathf.Round(Mathf.Min(m_Terrain.terrainData.size.x, m_Terrain.terrainData.size.z) * safetyFactorHack));
+            }
 
-            brushList.ShowEditGUI();
+            if (showBrushStrength)
+                m_Strength = PercentSlider(styles.opacity, m_Strength, kMinBrushStrength, 1); // former string formatting: "0.0%"
+
+            if (showBrushEditor)
+                brushList.ShowEditGUI();
 
             if (repaint)
                 Repaint();

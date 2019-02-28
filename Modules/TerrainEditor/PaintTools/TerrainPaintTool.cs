@@ -10,6 +10,23 @@ using UnityEngine;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
+    [Flags]
+    public enum BrushGUIEditFlags
+    {
+        Select = 1,
+        Inspect = 2,
+        Size = 4,
+        Opacity = 8,
+        SelectAndInspect = 3,
+        All = 15,
+    };
+
+    [Flags]
+    public enum RepaintFlags
+    {
+        UI = 1,
+        Scene = 2,
+    };
     public interface IOnPaint
     {
         Texture brushTexture { get; }
@@ -18,6 +35,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         float brushSize { get; }
 
         void RepaintAllInspectors();
+        void Repaint(RepaintFlags flags = RepaintFlags.UI);
     }
     public interface IOnSceneGUI
     {
@@ -27,11 +45,15 @@ namespace UnityEditor.Experimental.TerrainAPI
         float brushSize { get; }
         bool hitValidTerrain { get; }
         RaycastHit raycastHit { get;  }
+
+        void Repaint(RepaintFlags flags = RepaintFlags.UI);
     }
 
     public interface IOnInspectorGUI
     {
         void ShowBrushesGUI(int spacing);
+        void ShowBrushesGUI(int spacing, BrushGUIEditFlags flags);
+        void Repaint(RepaintFlags flags = RepaintFlags.UI);
     }
 
     internal interface ITerrainPaintTool
@@ -90,7 +112,23 @@ namespace UnityEditor.Experimental.TerrainAPI
         public float brushStrength { get { return m_BrushStrength; } }
         public float brushSize { get { return m_BrushSize; } }
 
-        public void RepaintAllInspectors() { InspectorWindow.RepaintAllInspectors(); }
+        public void RepaintAllInspectors()
+        {
+            Repaint(RepaintFlags.UI);
+        }
+
+        public void Repaint(RepaintFlags flags)
+        {
+            if ((flags & RepaintFlags.UI) != 0)
+            {
+                InspectorWindow.RepaintAllInspectors();
+            }
+
+            if ((flags & RepaintFlags.Scene) != 0)
+            {
+                EditorApplication.SetSceneRepaintDirty();
+            }
+        }
     }
 
     internal class OnSceneGUIContext : IOnSceneGUI
@@ -124,11 +162,46 @@ namespace UnityEditor.Experimental.TerrainAPI
         public float brushSize { get { return m_BrushSize; } }
         public bool hitValidTerrain { get { return m_HitValidTerrain; } }
         public RaycastHit raycastHit { get { return m_RaycastHit; } }
+
+        public void Repaint(RepaintFlags flags)
+        {
+            if ((flags & RepaintFlags.UI) != 0)
+            {
+                InspectorWindow.RepaintAllInspectors();
+            }
+
+            if ((flags & RepaintFlags.Scene) != 0)
+            {
+                EditorApplication.SetSceneRepaintDirty();
+            }
+        }
     }
 
     internal class OnInspectorGUIContext : IOnInspectorGUI
     {
         public OnInspectorGUIContext() {}
-        public void ShowBrushesGUI(int spacing) { TerrainInspector.s_activeTerrainInspectorInstance.ShowBrushes(spacing); }
+        public void ShowBrushesGUI(int spacing) { ShowBrushesGUI(spacing, BrushGUIEditFlags.All); }
+        public void ShowBrushesGUI(int spacing, BrushGUIEditFlags flags)
+        {
+            TerrainInspector.s_activeTerrainInspectorInstance.ShowBrushes(
+                spacing,
+                (flags & BrushGUIEditFlags.Select) != 0,
+                (flags & BrushGUIEditFlags.Inspect) != 0,
+                (flags & BrushGUIEditFlags.Size) != 0,
+                (flags & BrushGUIEditFlags.Opacity) != 0);
+        }
+
+        public void Repaint(RepaintFlags flags)
+        {
+            if ((flags & RepaintFlags.UI) != 0)
+            {
+                InspectorWindow.RepaintAllInspectors();
+            }
+
+            if ((flags & RepaintFlags.Scene) != 0)
+            {
+                EditorApplication.SetSceneRepaintDirty();
+            }
+        }
     }
 }

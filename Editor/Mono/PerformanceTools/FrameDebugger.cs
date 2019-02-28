@@ -253,7 +253,8 @@ namespace UnityEditor
             "Draw Mesh (instanced)",
             "Begin Renderpass",
             "Next Subpass",
-            "End Renderpass"
+            "End Renderpass",
+            "SRP Batch"
         };
 
         // Cached strings built from FrameDebuggerEventData.

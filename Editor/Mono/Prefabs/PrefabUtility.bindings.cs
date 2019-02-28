@@ -86,7 +86,7 @@ namespace UnityEditor
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
-        extern static private Object InstantiatePrefab_internal(Object target, Scene destinationScene);
+        extern static private Object InstantiatePrefab_internal(Object target, Scene destinationScene, Transform parent);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
