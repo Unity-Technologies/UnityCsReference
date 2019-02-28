@@ -68,6 +68,10 @@ namespace UnityEditor
 
         public override void OnActivate(string searchContext, VisualElement rootElement)
         {
+            if (settingsEditor != null)
+            {
+                UnityEngine.Object.DestroyImmediate(settingsEditor);
+            }
             settingsEditor = m_EditorCreator?.Invoke();
             base.OnActivate(searchContext, rootElement);
         }
@@ -78,8 +82,8 @@ namespace UnityEditor
             {
                 var info = settingsEditor.GetType().GetMethod("OnDisable");
                 info?.Invoke(settingsEditor, null);
+                UnityEngine.Object.DestroyImmediate(settingsEditor);
             }
-
             settingsEditor = null;
             base.OnDeactivate();
         }

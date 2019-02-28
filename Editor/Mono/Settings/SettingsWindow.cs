@@ -109,10 +109,15 @@ namespace UnityEditor
 
             Undo.undoRedoPerformed -= OnUndoRedoPerformed;
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
+
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
 
         internal void OnDisable()
         {
+            m_TreeView.currentProvider?.OnDeactivate();
+
             if (m_Splitter != null && m_Splitter.childCount >= 1)
             {
                 var splitLeft = m_Splitter.Children().First();
@@ -125,11 +130,27 @@ namespace UnityEditor
 
             SettingsService.settingsProviderChanged -= OnSettingsProviderChanged;
             Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
         }
 
-        void OnUndoRedoPerformed()
+        private void OnUndoRedoPerformed()
         {
             Repaint();
+        }
+
+        private void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            if (m_TreeView.currentProvider != null)
+            {
+                if (state == PlayModeStateChange.ExitingPlayMode)
+                {
+                    ProviderChanged(m_TreeView.currentProvider, null);
+                }
+                else if (state == PlayModeStateChange.EnteredEditMode)
+                {
+                    RestoreSelection();
+                }
+            }
         }
 
         private void PrintProviderKeywords()

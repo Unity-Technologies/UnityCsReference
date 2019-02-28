@@ -278,6 +278,8 @@ namespace UnityEngine
             }
         }
 
+        public static event Action<bool> focusChanged;
+
         public static event Func<bool> wantsToQuit;
 
         public static event Action quitting;
@@ -314,6 +316,13 @@ namespace UnityEngine
         internal static void InvokeOnBeforeRender()
         {
             BeforeRenderHelper.Invoke();
+        }
+
+        [RequiredByNativeCode]
+        internal static void InvokeFocusChanged(bool focus)
+        {
+            if (focusChanged != null)
+                focusChanged.Invoke(focus);
         }
 
         [System.Obsolete("Application.RegisterLogCallback is deprecated. Use Application.logMessageReceived instead.")]
