@@ -430,6 +430,9 @@
     <Compile Include="..\..\Editor\Mono\PlayerSettingsIOS.bindings.cs">
       <Link>Editor\Mono\PlayerSettingsIOS.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\PlayerSettingsLumin.bindings.cs">
+      <Link>Editor\Mono\PlayerSettingsLumin.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\PlayerSettingsMacOS.bindings.cs">
       <Link>Editor\Mono\PlayerSettingsMacOS.bindings.cs</Link>
     </Compile>
@@ -3666,9 +3669,6 @@
     </Compile>
     <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\ModuleMetadataBindings.gen.cs">
       <Link>artifacts\generated\bindings_old\common\Editor\ModuleMetadataBindings.gen.cs</Link>
-    </Compile>
-    <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\PlayerSettingsLuminBindings.gen.cs">
-      <Link>artifacts\generated\bindings_old\common\Editor\PlayerSettingsLuminBindings.gen.cs</Link>
     </Compile>
     <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\PlayerSettingsVRGoogleBindings.gen.cs">
       <Link>artifacts\generated\bindings_old\common\Editor\PlayerSettingsVRGoogleBindings.gen.cs</Link>

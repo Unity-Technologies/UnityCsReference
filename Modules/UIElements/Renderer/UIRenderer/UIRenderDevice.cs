@@ -1085,10 +1085,9 @@ namespace UnityEngine.UIElements.UIR
             _1PixelClipWorld.y = 2.0f / renderTargetSize.y;
             {
                 Matrix4x4 matVPInv = (projection * view).inverse;
-                Vector3 v1 = matVPInv.MultiplyPoint(new Vector3(0, 0, 0));
-                Vector3 v2 = matVPInv.MultiplyPoint(new Vector3(_1PixelClipWorld.x, _1PixelClipWorld.y, 0));
-                _1PixelClipWorld.z = Mathf.Abs(v1.x - v2.x);
-                _1PixelClipWorld.w = Mathf.Abs(v1.y - v2.y);
+                Vector3 v = matVPInv.MultiplyVector(new Vector3(_1PixelClipWorld.x, _1PixelClipWorld.y));
+                _1PixelClipWorld.z = Mathf.Abs(v.x);
+                _1PixelClipWorld.w = Mathf.Abs(v.y);
             }
             mat.SetVector(s_1PixelClipWorldPropID, _1PixelClipWorld);
 

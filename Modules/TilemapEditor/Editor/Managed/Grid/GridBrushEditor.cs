@@ -52,15 +52,16 @@ namespace UnityEditor
 
         protected virtual void OnEnable()
         {
-            Undo.undoRedoPerformed += UndoRedoPerformed;
+            Undo.undoRedoPerformed += ClearLastPreview;
         }
 
         protected virtual void OnDisable()
         {
-            Undo.undoRedoPerformed -= UndoRedoPerformed;
+            Undo.undoRedoPerformed -= ClearLastPreview;
+            ClearLastPreview();
         }
 
-        private void UndoRedoPerformed()
+        private void ClearLastPreview()
         {
             ClearPreview();
             m_LastPreviewRefreshHash = 0;

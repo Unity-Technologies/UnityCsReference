@@ -100,6 +100,9 @@ namespace Unity.Collections.LowLevel.Unsafe
         [ThreadSafe]
         public static extern bool IsBlittable(Type type);
 
+        [ThreadSafe]
+        public static extern bool IsUnmanaged(Type type);
+
         // @TODO : This is probably not the ideal place to have this?
         [ThreadSafe]
         internal static extern void LogError(string msg, string filename, int linenumber);

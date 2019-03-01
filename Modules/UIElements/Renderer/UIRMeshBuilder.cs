@@ -313,16 +313,21 @@ namespace UnityEngine.UIElements
             return mesh;
         }
 
-        private static bool IsSimpleRect(BorderParameters border)
+        public static bool IsSimpleRect(BorderParameters border)
         {
             return border.topLeftRadius < Mathf.Epsilon &&
                 border.topRightRadius < Mathf.Epsilon &&
                 border.bottomRightRadius < Mathf.Epsilon &&
                 border.bottomLeftRadius < Mathf.Epsilon &&
-                border.leftWidth < Mathf.Epsilon &&
-                border.topWidth < Mathf.Epsilon &&
-                border.rightWidth < Mathf.Epsilon &&
-                border.bottomWidth < Mathf.Epsilon;
+                !IsBorder(border);
+        }
+
+        public static bool IsBorder(BorderParameters border)
+        {
+            return border.leftWidth >= Mathf.Epsilon ||
+                border.topWidth >= Mathf.Epsilon ||
+                border.rightWidth >= Mathf.Epsilon ||
+                border.bottomWidth >= Mathf.Epsilon;
         }
     }
 }

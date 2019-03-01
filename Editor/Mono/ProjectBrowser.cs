@@ -354,15 +354,13 @@ namespace UnityEditor
         {
             if (m_AssetTree != null)
             {
-                m_AssetTree = null;
-                InitOneColumnView();
+                m_AssetTree.ReloadData();
                 SetSearchFoldersFromCurrentSelection(); // We could have moved, deleted or renamed a folder so ensure we get folder paths by instanceID
             }
 
             if (m_FolderTree != null)
             {
-                m_FolderTree = null;
-                InitTwoColumnView();
+                m_FolderTree.ReloadData();
                 SetSearchFolderFromFolderTreeSelection(); // We could have moved, deleted or renamed a folder so ensure we get folders paths by instanceID
             }
 

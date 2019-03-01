@@ -420,7 +420,7 @@ namespace UnityEditor
                 {
                     m_FullName = fullName;
                     m_Prefix = prefix;
-                    id = (prefix + fullName).GetHashCode();
+                    id = (prefix + fullName + shaderName).GetHashCode();
                 }
             }
 

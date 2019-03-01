@@ -299,18 +299,20 @@ namespace UnityEngine.UIElements
             switch (tessellationType)
             {
                 case TessellationType.EdgeHorizontal:
-                    uv0 = new Vector2(x0, y3);
-                    uv1 = new Vector2(x3, y3);
-                    uv2 = new Vector2(x0, y0);
-                    uv3 = new Vector2(x3, y0);
+                    // The uvs contain the displacement from the vertically opposed corner.
+                    uv0 = new Vector2(0, y0 - y3);
+                    uv1 = new Vector2(0, y0 - y3);
+                    uv2 = new Vector2(0, y3 - y0);
+                    uv3 = new Vector2(0, y3 - y0);
                     flags0 = flags1 = (float)VertexFlags.IsSolid;
                     flags2 = flags3 = (float)VertexFlags.IsEdge;
                     break;
                 case TessellationType.EdgeVertical:
-                    uv0 = new Vector2(x3, y0);
-                    uv1 = new Vector2(x0, y0);
-                    uv2 = new Vector2(x3, y3);
-                    uv3 = new Vector2(x0, y3);
+                    // The uvs contain the displacement from the horizontally opposed corner.
+                    uv0 = new Vector2(x0 - x3, 0);
+                    uv1 = new Vector2(x3 - x0, 0);
+                    uv2 = new Vector2(x0 - x3, 0);
+                    uv3 = new Vector2(x3 - x0, 0);
                     flags0 = flags2 = (float)VertexFlags.IsSolid;
                     flags1 = flags3 = (float)VertexFlags.IsEdge;
                     break;
@@ -445,18 +447,13 @@ namespace UnityEngine.UIElements
                 return;
 
             var verts = vertices.GetValueOrDefault();
-            var center = new Vector2(rect.xMax, rect.yMax);
             if (flipHorizontal)
             {
                 for (int i = 0; i < vertexCount; ++i)
                 {
                     var vertex = verts[vertexStart + i];
-                    center.y = vertex.position.y;
-                    vertex.position.x = center.x - (vertex.position.x - center.x);
-                    vertex.position.y = center.y - (vertex.position.y - center.y);
-                    center.y = vertex.uv.y;
-                    vertex.uv.x = center.x - (vertex.uv.x - center.x);
-                    vertex.uv.y = center.y - (vertex.uv.y - center.y);
+                    vertex.position.x = rect.xMax - (vertex.position.x - rect.xMax);
+                    vertex.uv.x = -vertex.uv.x;
                     verts[vertexStart + i] = vertex;
                 }
             }
@@ -465,12 +462,8 @@ namespace UnityEngine.UIElements
                 for (int i = 0; i < vertexCount; ++i)
                 {
                     var vertex = verts[vertexStart + i];
-                    center.x = vertex.position.x;
-                    vertex.position.x = center.x - (vertex.position.x - center.x);
-                    vertex.position.y = center.y - (vertex.position.y - center.y);
-                    center.x = vertex.uv.x;
-                    vertex.uv.x = center.x - (vertex.uv.x - center.x);
-                    vertex.uv.y = center.y - (vertex.uv.y - center.y);
+                    vertex.position.y = rect.yMax - (vertex.position.y - rect.yMax);
+                    vertex.uv.y = -vertex.uv.y;
                     verts[vertexStart + i] = vertex;
                 }
             }

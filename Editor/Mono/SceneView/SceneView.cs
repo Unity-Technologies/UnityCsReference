@@ -1703,7 +1703,7 @@ namespace UnityEditor
                 return;
 
             bool oldAsync = ShaderUtil.allowAsyncCompilation;
-            ShaderUtil.allowAsyncCompilation = true;
+            ShaderUtil.allowAsyncCompilation = EditorPrefs.GetBool("AsynchronousShaderCompilation");
 
             DrawGridParameters gridParam = grid.PrepareGridRender(camera, pivot, m_Rotation.target, size, m_Ortho.target, drawGlobalGrid);
 

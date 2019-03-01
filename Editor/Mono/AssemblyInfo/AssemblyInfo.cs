@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using UnityEngine;
 
 // ADD_NEW_PLATFORM_HERE
+[assembly: InternalsVisibleTo("Unity.LiveNotes")]
 [assembly: InternalsVisibleTo("Unity.Burst")]
 [assembly: InternalsVisibleTo("Unity.Burst.Editor")]
 [assembly: InternalsVisibleTo("Unity.CollabProxy.Editor")]

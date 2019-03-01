@@ -72,7 +72,7 @@ namespace Unity.Collections
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), "Length must be >= 0");
 
-            IsBlittableAndThrow();
+            IsUnmanagedAndThrow();
 
             // Make sure we cannot allocate more than int.MaxValue (2,147,483,647 bytes)
             // because the underlying UnsafeUtility.Malloc is expecting a int.
@@ -92,12 +92,12 @@ namespace Unity.Collections
         public int Length => m_Length;
 
         [BurstDiscard]
-        internal static void IsBlittableAndThrow()
+        internal static void IsUnmanagedAndThrow()
         {
-            if (!UnsafeUtility.IsBlittable<T>())
+            if (!UnsafeUtility.IsUnmanaged<T>())
             {
                 throw new InvalidOperationException(
-                    $"{typeof(T)} used in NativeArray<{typeof(T)}> must be blittable.\n{UnsafeUtility.GetReasonForValueTypeNonBlittable<T>()}");
+                    $"{typeof(T)} used in NativeArray<{typeof(T)}> must be unmanaged (contain no managed types).");
             }
         }
 
@@ -450,7 +450,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), "Length must be >= 0");
 
-            NativeArray<T>.IsBlittableAndThrow();
+            NativeArray<T>.IsUnmanagedAndThrow();
 
             var totalSize = UnsafeUtility.SizeOf<T>() * (long)length;
             // Make sure we cannot allocate more than int.MaxValue (2,147,483,647 bytes)

@@ -264,48 +264,55 @@ namespace UnityEditor
 
             int i = 0;
             EditorUtility.DisplayProgressBar("Generating Tile Assets (" + i + "/" + sheet.Count + ")", "Generating tiles", 0f);
-            foreach (KeyValuePair<Vector2Int, Object> item in sheet)
+
+            try
             {
-                TileBase tile;
-                string tilePath = "";
-                if (item.Value is Sprite)
+                foreach (KeyValuePair<Vector2Int, Object> item in sheet)
                 {
-                    tile = CreateTile(item.Value as Sprite);
-                    tilePath = multipleTiles
-                        ? FileUtil.CombinePaths(path, String.Format("{0}.{1}", tile.name, k_TileExtension))
-                        : path;
-                    switch (userTileCreationMode)
+                    TileBase tile;
+                    string tilePath = "";
+                    if (item.Value is Sprite)
                     {
-                        case UserTileCreationMode.CreateUnique:
+                        tile = CreateTile(item.Value as Sprite);
+                        tilePath = multipleTiles
+                            ? FileUtil.CombinePaths(path, String.Format("{0}.{1}", tile.name, k_TileExtension))
+                            : path;
+                        switch (userTileCreationMode)
                         {
-                            if (File.Exists(tilePath))
-                                tilePath = AssetDatabase.GenerateUniqueAssetPath(tilePath);
-                            AssetDatabase.CreateAsset(tile, tilePath);
-                        }
-                        break;
-                        case UserTileCreationMode.Overwrite:
-                        {
-                            AssetDatabase.CreateAsset(tile, tilePath);
-                        }
-                        break;
-                        case UserTileCreationMode.Reuse:
-                        {
-                            if (File.Exists(tilePath))
-                                tile = AssetDatabase.LoadAssetAtPath<TileBase>(tilePath);
-                            else
+                            case UserTileCreationMode.CreateUnique:
+                            {
+                                if (File.Exists(tilePath))
+                                    tilePath = AssetDatabase.GenerateUniqueAssetPath(tilePath);
                                 AssetDatabase.CreateAsset(tile, tilePath);
+                            }
+                            break;
+                            case UserTileCreationMode.Overwrite:
+                            {
+                                AssetDatabase.CreateAsset(tile, tilePath);
+                            }
+                            break;
+                            case UserTileCreationMode.Reuse:
+                            {
+                                if (File.Exists(tilePath))
+                                    tile = AssetDatabase.LoadAssetAtPath<TileBase>(tilePath);
+                                else
+                                    AssetDatabase.CreateAsset(tile, tilePath);
+                            }
+                            break;
                         }
-                        break;
                     }
+                    else
+                    {
+                        tile = item.Value as TileBase;
+                    }
+                    EditorUtility.DisplayProgressBar("Generating Tile Assets (" + i + "/" + sheet.Count + ")", "Generating " + tilePath, (float)i++ / sheet.Count);
+                    result.Add(item.Key, tile);
                 }
-                else
-                {
-                    tile = item.Value as TileBase;
-                }
-                EditorUtility.DisplayProgressBar("Generating Tile Assets (" + i + "/" + sheet.Count + ")", "Generating " + tilePath, (float)i++ / sheet.Count);
-                result.Add(item.Key, tile);
             }
-            EditorUtility.ClearProgressBar();
+            finally
+            {
+                EditorUtility.ClearProgressBar();
+            }
 
             AssetDatabase.Refresh();
             return result;
