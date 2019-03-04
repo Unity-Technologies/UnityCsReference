@@ -346,8 +346,7 @@ namespace UnityEditor
             outIntensities = data.intensities;
         }
 
-        [NativeHeader("Editor/Src/GI/Progressive/PVRContextManager.h")]
-        [StaticAccessor("PVRContextManager::Get()", StaticAccessorType.Arrow)]
+        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
         [NativeName("GetEnvironmentSamples")]
         private static extern EnvironmentSamplesData GetEnvironmentSamplesInternal();
 

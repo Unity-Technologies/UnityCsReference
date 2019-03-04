@@ -277,7 +277,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 foreach (var asmref in referencesWithMissingAssemblies)
                 {
-                    var warning = string.Format("An Assembly Definition File with the name '{0}' could not be found. The Assembly Definition Reference file {1} will not be used.", asmref.Reference, asmref.FilePath);
+                    var warning = $"The Assembly Definition Reference file '{asmref.FilePath}' will not be used. ";
+                    if (string.IsNullOrEmpty(asmref.Reference))
+                        warning += "It does not contain a reference to an Assembly Definition File.";
+                    else
+                        warning += $"The reference to the Assembly Definition File with the name '{asmref.Reference}' could not be found.";
                     LogWarning(warning, asmref.FilePath);
                 }
             }

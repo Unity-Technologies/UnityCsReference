@@ -6,28 +6,28 @@
 using System;
 using UnityEngine.Bindings;
 
-namespace Unity.Experimental.Audio
+namespace Unity.Audio
 {
     [NativeType(Header = "Modules/Audio/Public/csas/DSPSampleProvider.bindings.h")]
-    internal partial struct DSPSampleProvider
+    internal partial struct DSPSampleProviderInternal
     {
         [NativeMethod(IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
-        static extern unsafe internal int Internal_ReadUInt8FromSampleProvider(
-            DSPSampleProvider provider, SampleProvider.NativeFormatType format, void* buffer, int length);
+        public static extern unsafe int Internal_ReadUInt8FromSampleProvider(
+            void* provider, int format, void* buffer, int length);
 
         [NativeMethod(IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
-        static extern unsafe internal int Internal_ReadSInt16FromSampleProvider(
-            DSPSampleProvider provider, SampleProvider.NativeFormatType format, void* buffer, int length);
+        public static extern unsafe int Internal_ReadSInt16FromSampleProvider(
+            void* provider, int format, void* buffer, int length);
 
         [NativeMethod(IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
-        static extern unsafe internal int Internal_ReadFloatFromSampleProvider(
-            DSPSampleProvider provider, void* buffer, int length);
+        public static extern unsafe int Internal_ReadFloatFromSampleProvider(
+            void* provider, void* buffer, int length);
 
         [NativeMethod(IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
-        static extern unsafe internal ushort Internal_GetChannelCount(DSPSampleProvider provider);
+        public static extern unsafe ushort Internal_GetChannelCount(void* provider);
 
         [NativeMethod(IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
-        static extern unsafe internal uint Internal_GetSampleRate(DSPSampleProvider provider);
+        public static extern unsafe uint Internal_GetSampleRate(void* provider);
     }
 }
 

@@ -1071,7 +1071,7 @@ namespace UnityEditor
         {
             if (RenderDoc.IsInstalled() && !RenderDoc.IsLoaded())
             {
-                menu.AddItem(EditorGUIUtility.TrTextContent("Load RenderDoc"), false, LoadRenderDoc);
+                menu.AddItem(EditorGUIUtility.TrTextContent(UnityEditor.RenderDocUtil.loadRenderDocLabel), false, LoadRenderDoc);
             }
         }
 
@@ -1165,7 +1165,7 @@ namespace UnityEditor
             autoRepaintOnSceneChange = true;
 
             titleContent = GetLocalizedTitleContent();
-            m_RenderdocContent = EditorGUIUtility.TrIconContent("renderdoc", "Capture the current view and open in RenderDoc");
+            m_RenderdocContent = EditorGUIUtility.TrIconContent("renderdoc", UnityEditor.RenderDocUtil.openInRenderDocLabel);
             m_SyncLightVertical = EditorGUIUtility.TrIconContent("LookDevCenterLight", "Sync all light vertically with current light position in current selected HDRI");
             m_ResetEnvironment = EditorGUIUtility.TrIconContent("LookDevResetEnv", "Reset all environment");
 

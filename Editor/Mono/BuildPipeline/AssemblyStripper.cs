@@ -17,7 +17,6 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditor.Utils;
 using Debug = UnityEngine.Debug;
-using PackageInfo = Unity.DataContract.PackageInfo;
 
 namespace UnityEditorInternal
 {

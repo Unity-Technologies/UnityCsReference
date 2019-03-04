@@ -26,6 +26,8 @@ namespace UnityEngine.UIElements
             else if ((versionChangeType & VersionChangeType.Clip) == VersionChangeType.Clip && !ve.isWorldClipDirty)
                 DirtyClipHierarchy(ve);
 
+            DirtyBoundingBoxHierarchy(ve);
+
             ++m_Version;
         }
 
@@ -60,6 +62,17 @@ namespace UnityEngine.UIElements
             }
         }
 
+        private void DirtyBoundingBoxHierarchy(VisualElement ve)
+        {
+            ve.isBoundingBoxDirty = true;
+            var parent = ve.hierarchy.parent;
+            while (parent != null && !parent.isBoundingBoxDirty)
+            {
+                parent.isBoundingBoxDirty = true;
+                parent = parent.hierarchy.parent;
+            }
+        }
+
         public override void Update()
         {
             if (m_Version == m_LastVersion)
@@ -68,6 +81,7 @@ namespace UnityEngine.UIElements
             m_LastVersion = m_Version;
 
             panel.UpdateElementUnderMouse();
+            panel.visualTree.UpdateBoundingBox();
         }
     }
 }

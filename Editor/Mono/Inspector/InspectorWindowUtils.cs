@@ -51,7 +51,7 @@ namespace UnityEditor
             // the InspectorWindow can be closed and reopened to refresh this list.
 
             previewableTypes = new Dictionary<Type, List<Type>>();
-            foreach (var type in EditorAssemblies.GetAllTypesWithInterface<IPreviewable>())
+            foreach (var type in TypeCache.GetTypesDerivedFrom<IPreviewable>())
             {
                 // we don't want Editor classes with preview here.
                 if (type.IsSubclassOf(typeof(Editor)))

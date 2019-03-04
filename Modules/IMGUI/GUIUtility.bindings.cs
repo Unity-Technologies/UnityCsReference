@@ -9,6 +9,7 @@ namespace UnityEngine
     // Utility class for making new GUI controls.
     [NativeHeader("Modules/IMGUI/GUIUtility.h"),
      NativeHeader("Modules/IMGUI/GUIManager.h"),
+     NativeHeader("Runtime/Input/InputBindings.h"),
      NativeHeader("Runtime/Input/InputManager.h"),
      NativeHeader("Runtime/Utilities/CopyPaste.h"),
      NativeHeader("Runtime/Camera/RenderLayers/GUITexture.h")]
@@ -84,6 +85,21 @@ namespace UnityEngine
         internal static extern bool OwnsId(int id);
 
         public static extern Rect AlignRectToDevice(Rect rect, out int widthInPixels, out int heightInPixels);
+
+        // Need to reverse the dependency here when moving native legacy Input code out of Core module.
+        [StaticAccessor("InputBindings", StaticAccessorType.DoubleColon)]
+        internal extern static string compositionString
+        {
+            [VisibleToOtherModules("UnityEngine.UIElementsModule")] get;
+        }
+
+        // Need to reverse the dependency here when moving native legacy Input code out of Core module.
+        [StaticAccessor("InputBindings", StaticAccessorType.DoubleColon)]
+        internal extern static Vector2 compositionCursorPos
+        {
+            [VisibleToOtherModules("UnityEngine.UIElementsModule")] get;
+            [VisibleToOtherModules("UnityEngine.UIElementsModule")] set;
+        }
 
         // This is used in sensitive alignment-related operations. Avoid calling this method if you can.
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]

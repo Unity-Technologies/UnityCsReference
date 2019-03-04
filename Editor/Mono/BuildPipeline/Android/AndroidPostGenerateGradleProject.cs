@@ -22,7 +22,7 @@ namespace UnityEditor.Android
         {
             buildPostProjectGeneratedProcessors = new List<IPostGenerateGradleAndroidProject>();
 
-            foreach (var type in EditorAssemblies.GetAllTypesWithInterface<IPostGenerateGradleAndroidProject>())
+            foreach (var type in TypeCache.GetTypesDerivedFrom<IPostGenerateGradleAndroidProject>())
             {
                 if (type.IsAbstract || type.IsInterface)
                     continue;

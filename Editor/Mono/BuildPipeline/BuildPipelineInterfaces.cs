@@ -187,7 +187,7 @@ namespace UnityEditor.Build
             bool findBuildPlayerScriptDLLsProcessors = (findFlags & BuildCallbacks.BuildPlayerScriptDLLProcessors) == BuildCallbacks.BuildPlayerScriptDLLProcessors;
 
             var postProcessBuildAttributeParams = new Type[] { typeof(BuildTarget), typeof(string) };
-            foreach (var t in EditorAssemblies.GetAllTypesWithInterface<IOrderedCallback>())
+            foreach (var t in TypeCache.GetTypesDerivedFrom<IOrderedCallback>())
             {
                 if (t.IsAbstract || t.IsInterface)
                     continue;

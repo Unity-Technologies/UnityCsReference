@@ -356,20 +356,24 @@ namespace UnityEditor.Experimental.GraphView
             {
                 //we use squareDistance to avoid sqrts
                 float distance = (allPoints[0] - localPoint).sqrMagnitude;
+                float interceptWidth2 = interceptWidth * interceptWidth;
                 for (var i = 0; i < allPoints.Count - 1; i++)
                 {
                     Vector2 currentPoint = allPoints[i];
                     Vector2 nextPoint = allPoints[i + 1];
 
+                    Vector2 next2Current = nextPoint - currentPoint;
                     float distanceNext = (nextPoint - localPoint).sqrMagnitude;
-                    float distanceLine = (currentPoint - nextPoint).sqrMagnitude;
-                    if (distance < distanceLine && distanceNext < distanceLine
-                    )     // the point is somewhere between the two points
+                    float distanceLine = next2Current.sqrMagnitude;
+
+                    // if the point is somewhere between the two points
+                    if (distance < distanceLine && distanceNext < distanceLine)
                     {
                         //https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
-                        if (Mathf.Abs((nextPoint.y - currentPoint.y) * localPoint.x -
-                            (nextPoint.x - currentPoint.x) * localPoint.y + nextPoint.x * currentPoint.y -
-                            nextPoint.y * currentPoint.x) / Mathf.Sqrt(distanceLine) < interceptWidth)
+                        var d = next2Current.y * localPoint.x -
+                            next2Current.x * localPoint.y + nextPoint.x * currentPoint.y -
+                            nextPoint.y * currentPoint.x;
+                        if (d * d < interceptWidth2 * distanceLine)
                         {
                             Profiler.EndSample();
                             return true;

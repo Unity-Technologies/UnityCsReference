@@ -90,6 +90,13 @@ namespace UnityEditor
         }
     }
 
+    internal struct ShaderVariantEntriesData
+    {
+        public int[] passTypes;
+        public string[] keywordLists;
+        public string[] remainingKeywords;
+    }
+
     [NativeHeader("Editor/Mono/ShaderUtil.bindings.h")]
     [NativeHeader("Editor/Src/ShaderData.h")]
     [NativeHeader("Editor/Src/ShaderMenu.h")]
@@ -252,6 +259,16 @@ namespace UnityEditor
         extern internal static int  GetCurrentShaderVariantCollectionShaderCount();
         extern internal static int  GetCurrentShaderVariantCollectionVariantCount();
         extern internal static bool AddNewShaderToCollection(Shader shader, ShaderVariantCollection collection);
+
+        private static extern ShaderVariantEntriesData GetShaderVariantEntriesFilteredInternal([NotNull] Shader shader, int maxEntries, string[] filterKeywords, ShaderVariantCollection excludeCollection);
+
+        internal static void GetShaderVariantEntriesFiltered(Shader shader, int maxEntries, string[] filterKeywords, ShaderVariantCollection excludeCollection, out int[] passTypes, out string[] keywordLists, out string[] remainingKeywords)
+        {
+            ShaderVariantEntriesData data = GetShaderVariantEntriesFilteredInternal(shader, maxEntries, filterKeywords, excludeCollection);
+            passTypes = data.passTypes;
+            keywordLists = data.keywordLists;
+            remainingKeywords = data.remainingKeywords;
+        }
 
         extern internal static string[] GetAllGlobalKeywords();
         extern internal static string[] GetShaderGlobalKeywords([NotNull] Shader shader);

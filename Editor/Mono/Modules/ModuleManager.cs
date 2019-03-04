@@ -8,10 +8,10 @@ using System.Linq;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
 using UnityEditor.Hardware;
 using UnityEditorInternal;
 using UnityEngine;
-using Unity.DataContract;
 using Unity.Profiling;
 using UnityEditor.Utils;
 using UnityEditor.DeploymentTargets;
@@ -200,7 +200,7 @@ namespace UnityEditor.Modules
                 if (!SessionState.GetBool(k_IsCacheBuildKey, false))
                 {
                     SessionState.SetBool(k_IsCacheBuildKey, true);
-                    LoadPackageManagerAndExtensions();
+                    LoadLegacyExtensionsFromIvyFiles();
                 }
             }
             catch (Exception ex)
@@ -209,58 +209,103 @@ namespace UnityEditor.Modules
             }
         }
 
-        static void LoadPackageManagerAndExtensions()
+        class IvyPackageFileData
+        {
+            public string filename;
+            public string type;
+            public string guid;
+
+            public bool IsDll => type.Equals("dll", StringComparison.InvariantCultureIgnoreCase);
+
+            public static IvyPackageFileData CreateFromRegexMatch(Match match)
+            {
+                var filename = match.Groups["name"].Value;
+                if (match.Groups["ext"].Success)
+                    filename += "." + match.Groups["ext"].Value;
+
+                return new IvyPackageFileData()
+                {
+                    filename = filename,
+                    type = match.Groups["type"].Value,
+                    guid = match.Groups["guid"].Value
+                };
+            }
+        }
+
+        static void LoadLegacyExtensionsFromIvyFiles()
         {
             //We can't use the cached native type scanner here since this is called to early for that to be built up.
-            Type locatorType = AppDomain.CurrentDomain.GetAssemblies().Where(a => a.GetName().Name ==  "Unity.Locator").Select(a => a.GetType("Unity.PackageManager.Locator")).FirstOrDefault();
 
+            HashSet<string> ivyFiles;
             try
             {
+                ivyFiles = new HashSet<string>();
+
                 string unityExtensionsFolder = FileUtil.CombinePaths(Directory.GetParent(EditorApplication.applicationPath).ToString(), "Data", "UnityExtensions");
                 string playbackEngineFolders = FileUtil.CombinePaths(Directory.GetParent(EditorApplication.applicationPath).ToString(), "PlaybackEngines");
 
-                locatorType.InvokeMember("Scan", BindingFlags.Public | BindingFlags.Static | BindingFlags.InvokeMethod, null, null,
-                    new object[]
-                    {
-                        new[]
-                        {
-                            FileUtil.NiceWinPath(EditorApplication.applicationContentsPath),
-                            FileUtil.NiceWinPath(unityExtensionsFolder),
-                            FileUtil.NiceWinPath(playbackEngineFolders)
-                        },
-                        Application.unityVersion
-                    });
+                foreach (var searchPath in new[]
+                     {
+                         FileUtil.NiceWinPath(EditorApplication.applicationContentsPath),
+                         FileUtil.NiceWinPath(unityExtensionsFolder),
+                         FileUtil.NiceWinPath(playbackEngineFolders)
+                     })
+                {
+                    if (!Directory.Exists(searchPath))
+                        continue;
+
+                    ivyFiles.UnionWith(Directory.GetFiles(searchPath, "ivy.xml", SearchOption.AllDirectories));
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error scanning for extensions. {0}", ex);
+                Console.WriteLine("Error scanning for extension ivy.xml files: {0}", ex);
                 return;
             }
 
-            List<Unity.DataContract.PackageInfo> extensions;
-            // get the package manager package
+            var packages = new Dictionary<string, List<IvyPackageFileData>>();
+
+            var artifactRegex = new Regex(@"<artifact(\s+(name=""(?<name>[^""]*)""|type=""(?<type>[^""]*)""|ext=""(?<ext>[^""]*)""|e:guid=""(?<guid>[^""]*)""))+\s*/>",
+                RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
+
+            foreach (var ivyFile in ivyFiles)
+            {
+                try
+                {
+                    var ivyFileContent = File.ReadAllText(ivyFile);
+                    var artifacts = artifactRegex.Matches(ivyFileContent).Cast<Match>()
+                        .Select(IvyPackageFileData.CreateFromRegexMatch).ToList();
+
+                    var packageDir = Path.GetDirectoryName(ivyFile);
+                    packages.Add(packageDir, artifacts);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Error reading extensions from ivy.xml file at {0}: {1}", ivyFile, ex);
+                }
+            }
+
             try
             {
-                extensions = locatorType.InvokeMember("GetUnityExtensions", BindingFlags.Public | BindingFlags.Static | BindingFlags.InvokeMethod, null, null, null) as List<Unity.DataContract.PackageInfo>;
-
-                foreach (var packageInfo in extensions)
+                foreach (var packageInfo in packages)
                 {
-                    bool isExtension = packageInfo.type == PackageType.UnityExtension;
-                    foreach (var packageInfoFile in packageInfo.files)
+                    var files = packageInfo.Value;
+                    foreach (var packageInfoFile in files)
                     {
-                        string fullPath = Paths.NormalizePath(Path.Combine(packageInfo.basePath, packageInfoFile.Key));
+                        string fullPath = Paths.NormalizePath(Path.Combine(packageInfo.Key, packageInfoFile.filename));
 
                         if (!File.Exists(fullPath))
-                            Debug.LogWarningFormat("Missing assembly \t{0} for {1}. Extension support may be incomplete.", fullPath, packageInfo.name);
+                            Debug.LogWarningFormat(
+                                "Missing assembly \t{0} listed in ivy file {1}. Extension support may be incomplete.", fullPath,
+                                packageInfo.Key);
 
-                        if (packageInfoFile.Value.type != PackageFileType.Dll)
-                        {
+                        if (!packageInfoFile.IsDll)
                             continue;
-                        }
 
-                        if (isExtension)
+                        if (!string.IsNullOrEmpty(packageInfoFile.guid))
                         {
-                            InternalEditorUtility.RegisterExtensionDll(fullPath.Replace('\\', '/'), packageInfoFile.Value.guid);
+                            InternalEditorUtility.RegisterExtensionDll(fullPath.Replace('\\', '/'),
+                                packageInfoFile.guid);
                         }
                         else
                         {
@@ -303,7 +348,7 @@ namespace UnityEditor.Modules
 
         private static void RegisterPlatformSupportModules()
         {
-            var allTypesWithInterface = EditorAssemblies.GetAllTypesWithInterface<IPlatformSupportModule>();
+            var allTypesWithInterface = TypeCache.GetTypesDerivedFrom<IPlatformSupportModule>();
             s_PlatformModules = new Dictionary<string, IPlatformSupportModule>(allTypesWithInterface.Count());
 
             foreach (var type in allTypesWithInterface)
@@ -566,15 +611,6 @@ namespace UnityEditor.Modules
         internal static bool IsPlatformSupported(BuildTarget target)
         {
             return GetTargetStringFromBuildTarget(target) != null;
-        }
-
-        internal static bool HaveLicenseForBuildTarget(string targetString)
-        {
-            BuildTargetGroup buildTargetGroup;
-            BuildTarget target;
-            if (!TryParseBuildTarget(targetString, out buildTargetGroup, out target))
-                return false;
-            return BuildPipeline.LicenseCheck(target);
         }
 
         internal static string GetExtensionVersion(string target)

@@ -36,11 +36,13 @@ namespace UnityEditor
         [FreeFunction(Name = "GetAllTypesWithAttribute")]
         extern static Type[] Internal_GetAllTypesWithAttribute(Type attrType);
 
+        //[Obsolete("Use public TypeCache.GetTypesDerivedFrom<> API instead.")]
         internal static IEnumerable<Type> GetAllTypesWithInterface<T>() where T : class
         {
             return GetAllTypesWithInterface(typeof(T));
         }
 
+        //[Obsolete("Use public TypeCache.GetTypesDerivedFrom<> API instead.")]
         private static IEnumerable<Type> GetAllTypesWithInterface(Type interfaceType)
         {
             if (!interfaceType.IsInterface)

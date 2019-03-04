@@ -26,18 +26,18 @@ namespace UnityEditor.PackageManager
             return List(false, false);
         }
 
-        public static AddRequest Add(string packageIdOrName)
+        public static AddRequest Add(string identifier)
         {
             long operationId;
-            var status = NativeClient.Add(out operationId, packageIdOrName);
+            var status = NativeClient.Add(out operationId, identifier);
             return new AddRequest(operationId, status);
         }
 
-        public static RemoveRequest Remove(string packageIdOrName)
+        public static RemoveRequest Remove(string packageName)
         {
             long operationId;
-            var status = NativeClient.Remove(out operationId, packageIdOrName);
-            return new RemoveRequest(operationId, status, packageIdOrName);
+            var status = NativeClient.Remove(out operationId, packageName);
+            return new RemoveRequest(operationId, status, packageName);
         }
 
         public static SearchRequest Search(string packageIdOrName, bool offlineMode)

@@ -50,6 +50,23 @@ namespace UnityEditor.Experimental.VFX
             this.index = index;
         }
     }
+
+    [UsedByNativeCode]
+    [NativeType(CodegenOptions.Custom, "ScriptingVFXMappingTemporary")]
+    internal struct VFXMappingTemporary
+    {
+        public VFXMapping mapping;
+        public uint pastFrameIndex;
+        public bool perCameraBuffer;
+
+        public VFXMappingTemporary(VFXMapping mapping, uint pastFrameIndex, bool perCameraBuffer)
+        {
+            this.mapping = mapping;
+            this.pastFrameIndex = pastFrameIndex;
+            this.perCameraBuffer = perCameraBuffer;
+        }
+    }
+
     internal struct VFXGPUBufferDesc
     {
         public VFXLayoutElementDesc[] layout;
@@ -57,6 +74,12 @@ namespace UnityEditor.Experimental.VFX
         public ComputeBufferType type;
         public uint size;
         public uint stride;
+    }
+
+    internal struct VFXTemporaryGPUBufferDesc
+    {
+        public VFXGPUBufferDesc desc;
+        public uint frameCount;
     }
 
     [UsedByNativeCode]
@@ -121,6 +144,7 @@ namespace UnityEditor.Experimental.VFX
     {
         public VFXTaskType type;
         public VFXMapping[] buffers;
+        public VFXMappingTemporary[] temporaryBuffers;
         public VFXMapping[] values;
         public VFXMapping[] parameters;
         private UnityObject processor;
@@ -362,18 +386,18 @@ namespace UnityEditor.Experimental.VFX
 
         public extern bool compileInitialVariants { get; set; }
 
-        public void SetRuntimeData(VFXExpressionSheet sheet, VFXEditorSystemDesc[] systemDesc, VFXEventDesc[] eventDesc, VFXGPUBufferDesc[] bufferDesc, VFXCPUBufferDesc[] cpuBufferDesc)
+        public void SetRuntimeData(VFXExpressionSheet sheet, VFXEditorSystemDesc[] systemDesc, VFXEventDesc[] eventDesc, VFXGPUBufferDesc[] bufferDesc, VFXCPUBufferDesc[] cpuBufferDesc, VFXTemporaryGPUBufferDesc[] temporaryBufferDesc = null)
         {
             var internalSheet = new VFXExpressionSheetInternal();
             internalSheet.expressions = sheet.expressions;
             internalSheet.values = CreateValueSheet(sheet.values);
             internalSheet.exposed = sheet.exposed;
 
-            SetRuntimeData(internalSheet, systemDesc, eventDesc, bufferDesc, cpuBufferDesc);
+            SetRuntimeData(internalSheet, systemDesc, eventDesc, bufferDesc, temporaryBufferDesc, cpuBufferDesc);
         }
 
         [NativeThrows]
-        extern private void SetRuntimeData(VFXExpressionSheetInternal sheet, VFXEditorSystemDesc[] systemDesc, VFXEventDesc[] eventDesc, VFXGPUBufferDesc[] bufferDesc, VFXCPUBufferDesc[] cpuBufferDesc);
+        extern private void SetRuntimeData(VFXExpressionSheetInternal sheet, VFXEditorSystemDesc[] systemDesc, VFXEventDesc[] eventDesc, VFXGPUBufferDesc[] bufferDesc, VFXTemporaryGPUBufferDesc[] temporaryBufferDesc, VFXCPUBufferDesc[] cpuBufferDesc);
         extern public VFXRendererSettings rendererSettings { get; set; }
         extern public VFXUpdateMode updateMode { get; set; }
         extern public float preWarmDeltaTime { get; set; }

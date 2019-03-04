@@ -11,8 +11,6 @@ using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Scripting;
 
 [assembly: InternalsVisibleTo("UnityEngine.VideoModule")]
-[assembly: InternalsVisibleTo("Unity.UNode.Audio.Tests")]
-[assembly: InternalsVisibleTo("Unity.Audio.Tests")]
 
 namespace UnityEngine.Experimental.Audio
 {

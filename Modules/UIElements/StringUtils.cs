@@ -8,6 +8,46 @@ using System.Text;
 
 namespace UnityEngine.UIElements
 {
+    internal static class StringUtils
+    {
+        public unsafe static int LevenshteinDistance(string s, string t)
+        {
+            int n = s.Length;
+            int m = t.Length;
+
+            if (n == 0)
+                return m;
+
+            if (m == 0)
+                return n;
+
+            int xSize = n + 1;
+            int ySize = m + 1;
+            int* d = stackalloc int[xSize * ySize];
+
+            for (int x = 0; x <= n; x++)
+                d[ySize * x] = x;
+            for (int y = 0; y <= m; y++)
+                d[y] = y;
+
+            for (int y = 1; y <= m; y++)
+            {
+                for (int x = 1; x <= n; x++)
+                {
+                    if (s[x - 1] == t[y - 1])
+                        d[ySize * x + y] = d[ySize * (x - 1) + y - 1];  // no operation
+                    else
+                        d[ySize * x + y] = Math.Min(Math.Min(
+                            d[ySize * (x - 1) + y] + 1,             // a deletion
+                            d[ySize * x + y - 1] + 1),             // an insertion
+                            d[ySize * (x - 1) + y - 1] + 1 // a substitution
+                        );
+                }
+            }
+            return d[ySize * n + m];
+        }
+    }
+
     internal static class StringUtilsExtensions
     {
         private static readonly char NoDelimiter = '\0'; //invalid character

@@ -15,15 +15,11 @@ namespace UnityEditor.Experimental.TerrainAPI
     {
         const string toolName = "Paint Texture";
 
-        MaterialEditor m_TemplateMaterialEditor = null;
-        [SerializeField]
-        bool m_ShowMaterialEditor = false;
+        Editor m_TemplateMaterialEditor = null;
+        Editor m_SelectedTerrainLayerInspector = null;
 
         [SerializeField]
         TerrainLayer m_SelectedTerrainLayer = null;
-        TerrainLayerInspector m_SelectedTerrainLayerInspector = null;
-        [SerializeField]
-        bool m_ShowLayerEditor = false;
 
         [FormerlyPrefKeyAs("Terrain/Texture Paint", "f4")]
         [Shortcut("Terrain/Paint Texture", typeof(TerrainToolShortcutContext))]
@@ -81,29 +77,6 @@ namespace UnityEditor.Experimental.TerrainAPI
             }
         }
 
-        private void DrawFoldoutEditor(Editor editor, int controlId, ref bool visible)
-        {
-            Rect titleRect = Editor.DrawHeaderGUI(editor, editor.target.name);
-            int id = GUIUtility.GetControlID(controlId, FocusType.Passive);
-
-            Rect renderRect = EditorGUI.GetInspectorTitleBarObjectFoldoutRenderRect(titleRect);
-            renderRect.y = titleRect.yMax - 17f; // align with bottom
-            bool newVisible = EditorGUI.DoObjectFoldout(visible, titleRect, renderRect, editor.targets, id);
-            // Toggle visibility
-            if (newVisible != visible)
-            {
-                UnityEditorInternal.InternalEditorUtility.SetIsInspectorExpanded(editor.target, newVisible);
-                visible = newVisible;
-                Save(true);
-            }
-
-            if (newVisible)
-            {
-                editor.OnInspectorGUI();
-                EditorGUILayout.Space();
-            }
-        }
-
         private const int kTemplateMaterialEditorControl = 67890;
         private const int kSelectedTerrainLayerEditorControl = 67891;
 
@@ -114,22 +87,9 @@ namespace UnityEditor.Experimental.TerrainAPI
             EditorGUI.BeginChangeCheck();
 
             EditorGUILayout.Space();
-            if (m_TemplateMaterialEditor != null && m_TemplateMaterialEditor.target != terrain.materialTemplate)
-            {
-                UnityEngine.Object.DestroyImmediate(m_TemplateMaterialEditor);
-                m_TemplateMaterialEditor = null;
-            }
-            if (m_TemplateMaterialEditor == null && terrain.materialTemplate != null)
-            {
-                m_TemplateMaterialEditor = Editor.CreateEditor(terrain.materialTemplate) as MaterialEditor;
-                m_TemplateMaterialEditor.firstInspectedEditor = true;
-            }
+            Editor.DrawFoldoutInspector(terrain.materialTemplate, ref m_TemplateMaterialEditor);
 
-            if (m_TemplateMaterialEditor != null)
-            {
-                DrawFoldoutEditor(m_TemplateMaterialEditor, kTemplateMaterialEditorControl, ref m_ShowMaterialEditor);
-                EditorGUILayout.Space();
-            }
+            EditorGUILayout.Space();
 
             int layerIndex = TerrainPaintUtility.FindTerrainLayerIndex(terrain, m_SelectedTerrainLayer);
             layerIndex = TerrainLayerUtility.ShowTerrainLayersSelectionHelper(terrain, layerIndex);
@@ -137,31 +97,14 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             if (EditorGUI.EndChangeCheck())
             {
-                if (layerIndex != -1)
-                    m_SelectedTerrainLayer = terrain.terrainData.terrainLayers[layerIndex];
-                else
-                    m_SelectedTerrainLayer = null;
-
-                if (m_SelectedTerrainLayerInspector != null)
-                {
-                    UnityEngine.Object.DestroyImmediate(m_SelectedTerrainLayerInspector);
-                    m_SelectedTerrainLayerInspector = null;
-                }
-                if (m_SelectedTerrainLayer != null)
-                    m_SelectedTerrainLayerInspector = Editor.CreateEditor(m_SelectedTerrainLayer) as TerrainLayerInspector;
-
+                m_SelectedTerrainLayer = layerIndex != -1 ? terrain.terrainData.terrainLayers[layerIndex] : null;
                 Save(true);
             }
 
-            if (m_SelectedTerrainLayerInspector != null)
-            {
-                var terrainLayerCustomUI = m_TemplateMaterialEditor?.m_CustomShaderGUI as ITerrainLayerCustomUI;
-                if (terrainLayerCustomUI != null)
-                    m_SelectedTerrainLayerInspector.SetCustomUI(terrainLayerCustomUI, terrain);
+            TerrainLayerUtility.ShowTerrainLayerGUI(terrain, m_SelectedTerrainLayer, ref m_SelectedTerrainLayerInspector,
+                (m_TemplateMaterialEditor as MaterialEditor)?.customShaderGUI as ITerrainLayerCustomUI);
+            EditorGUILayout.Space();
 
-                DrawFoldoutEditor(m_SelectedTerrainLayerInspector, kSelectedTerrainLayerEditorControl, ref m_ShowLayerEditor);
-                EditorGUILayout.Space();
-            }
             editContext.ShowBrushesGUI(5);
         }
     }

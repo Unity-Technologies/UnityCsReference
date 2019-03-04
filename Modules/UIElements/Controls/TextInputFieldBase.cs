@@ -454,14 +454,14 @@ namespace UnityEngine.UIElements
                     scrollOffset = Vector2.zero;
                 }
 
-                Input.compositionCursorPos = editorEngine.graphicalCursorPos - scrollOffset +
+                GUIUtility.compositionCursorPos = editorEngine.graphicalCursorPos - scrollOffset +
                     new Vector2(localPosition.x, localPosition.y + lineHeight);
 
                 Color drawCursorColor = cursorColor;
 
-                int selectionEndIndex = string.IsNullOrEmpty(Input.compositionString)
+                int selectionEndIndex = string.IsNullOrEmpty(GUIUtility.compositionString)
                     ? selectIndex
-                    : cursorIndex + Input.compositionString.Length;
+                    : cursorIndex + GUIUtility.compositionString.Length;
 
                 CursorPositionStylePainterParameters cursorParams;
 

@@ -53,17 +53,27 @@ namespace UnityEditor
         internal delegate void OnHeaderGUIDelegate(Rect availableRect, string scenePath);
         internal static OnHeaderGUIDelegate OnPostHeaderGUI = null;
 
+        GameObjectTreeViewDataSource dataSource
+        {
+            get { return (GameObjectTreeViewDataSource)m_TreeView.data; }
+        }
+
+        bool showingSearchResults
+        {
+            get { return !string.IsNullOrEmpty(dataSource.searchString); }
+        }
+
         public GameObjectTreeViewGUI(TreeViewController treeView, bool useHorizontalScroll)
             : base(treeView, useHorizontalScroll)
         {
             k_TopRowMargin = 0f;
-            k_BaseIndent += SceneVisibilityHierarchyGUI.utilityBarWidth;
             m_TreeView.enableItemHovering = true;
         }
 
         public override void OnInitialize()
         {
             SceneVisibilityManager.visibilityChanged += SceneVisibilityManagerOnVisibilityChanged;
+            dataSource.beforeReloading += SubSceneGUI.FetchSubSceneInfo;
             m_PrevScollPos = m_TreeView.state.scrollPos.y;
             m_PrevTotalHeight = m_TreeView.GetTotalRect().height;
         }
@@ -142,7 +152,7 @@ namespace UnityEditor
                 if (!isFirstItemLastInScene)
                     rect.y = scrollY;
 
-                var sceneHeaderItem = ((GameObjectTreeViewDataSource)m_TreeView.data).sceneHeaderItems.FirstOrDefault(p => p.scene == firstItem.scene);
+                var sceneHeaderItem = dataSource.sceneHeaderItems.FirstOrDefault(p => p.scene == firstItem.scene);
                 if (sceneHeaderItem != null)
                 {
                     bool selected = m_TreeView.IsItemDragSelectedOrSelected(sceneHeaderItem);
@@ -189,8 +199,7 @@ namespace UnityEditor
         {
             if (DetectUserInput())
             {
-                var data = (GameObjectTreeViewDataSource)m_TreeView.data;
-                data.EnsureFullyInitialized();
+                dataSource.EnsureFullyInitialized();
             }
 
             base.BeginRowGUI();
@@ -242,8 +251,8 @@ namespace UnityEditor
             if (goItem.isSceneHeader)
                 return false;
 
-            Object target = goItem.objectPPTR;
-            if ((target.hideFlags & HideFlags.NotEditable) != 0)
+            GameObject gameObject = (GameObject)goItem.objectPPTR;
+            if ((gameObject.hideFlags & HideFlags.NotEditable) != 0)
             {
                 Debug.LogWarning("Unable to rename a GameObject with HideFlags.NotEditable.");
                 return false;
@@ -272,10 +281,37 @@ namespace UnityEditor
             }
         }
 
+        private bool isDragging
+        {
+            get
+            {
+                return m_TreeView.isDragging ||
+                    (m_TreeView.dragging != null && m_TreeView.dragging.GetDropTargetControlID() != -1);
+            }
+        }
+
         override protected void DrawItemBackground(Rect rect, int row, TreeViewItem item, bool selected, bool focused)
         {
-            base.DrawItemBackground(rect, row, item, selected, focused);
+            var goItem = (GameObjectTreeViewItem)item;
+            if (goItem.isSceneHeader)
+            {
+                GUI.Label(rect, GUIContent.none, GameObjectStyles.sceneHeaderBg);
+            }
+            else
+            {
+                // Don't show indented sub scene header backgrounds when searching (as the texts are not indented here)
+                if (SubSceneGUI.IsUsingSubScenes() && !showingSearchResults)
+                {
+                    var gameObject = (GameObject)goItem.objectPPTR;
+                    if (gameObject != null && SubSceneGUI.IsSubSceneHeader(gameObject))
+                        SubSceneGUI.DrawSubSceneHeaderBackground(rect, gameObject);
+                }
+            }
+
             if (m_TreeView.hoveredItem != item)
+                return;
+
+            if (isDragging)
                 return;
 
             using (new GUI.BackgroundColorScope(GameObjectStyles.hoveredBackgroundColor))
@@ -292,29 +328,37 @@ namespace UnityEditor
 
             EnsureLazyInitialization(goItem);
 
-            // Scene header background (make it slightly transparent to hint it
-            // is not the normal scene header)
             if (goItem.isSceneHeader)
             {
-                Color oldColor = GUI.color;
-                GUI.color = GUI.color * new Color(1, 1, 1, 0.9f);
-                GUI.Label(rect, GUIContent.none, GameObjectStyles.sceneHeaderBg);
-                GUI.color = oldColor;
-
                 useBoldFont = (goItem.scene == SceneManager.GetActiveScene()) || IsPrefabStageHeader(goItem);
             }
+
+            SceneVisibilityHierarchyGUI.DoItemGUI(rect, goItem, selected && !IsRenaming(item.id), m_TreeView.hoveredItem == goItem, focused, isDragging);
+
+            rect.xMin += SceneVisibilityHierarchyGUI.utilityBarWidth;
 
             base.DoItemGUI(rect, row, item, selected, focused, useBoldFont);
 
             if (goItem.isSceneHeader)
+            {
                 DoAdditionalSceneHeaderGUI(goItem, rect);
+            }
             else
+            {
                 PrefabModeButton(goItem, rect);
-
-            SceneVisibilityHierarchyGUI.DoItemGUI(rect, goItem, selected, m_TreeView.hoveredItem == goItem, focused);
+                if (SubSceneGUI.IsUsingSubScenes() && !showingSearchResults)
+                    SubSceneGUI.DrawVerticalLine(rect, (GameObject)goItem.objectPPTR);
+            }
 
             if (SceneHierarchy.s_Debug)
                 GUI.Label(new Rect(rect.xMax - 70, rect.y, 70, rect.height), "" + row + " (" + goItem.id + ")", EditorStyles.boldLabel);
+        }
+
+        protected override Rect GetDropTargetRect(Rect rect)
+        {
+            rect.xMin -= SceneVisibilityHierarchyGUI.utilityBarWidth;
+
+            return rect;
         }
 
         protected void DoAdditionalSceneHeaderGUI(GameObjectTreeViewItem goItem, Rect rect)
@@ -367,6 +411,7 @@ namespace UnityEditor
             if (!item.lazyInitializationDone)
             {
                 item.lazyInitializationDone = true;
+
                 SetItemIcon(item);
                 SetItemOverlayIcon(item);
                 SetPrefabModeButtonVisibility(item);
@@ -390,7 +435,10 @@ namespace UnityEditor
             }
             else
             {
-                item.icon = PrefabUtility.GetIconForGameObject(go);
+                if (SubSceneGUI.IsSubSceneHeader(go))
+                    item.icon = GameObjectStyles.sceneAssetIcon;
+                else
+                    item.icon = PrefabUtility.GetIconForGameObject(go);
             }
         }
 
@@ -476,28 +524,14 @@ namespace UnityEditor
 
             int colorCode = goItem.colorCode;
 
-            if (string.IsNullOrEmpty(item.displayName))
-            {
-                /*
-                 * We refresh data between Editor and Player changes to the hierarchy. But we repaint after both has happened.
-                 * So there is a possibility that the Player deleted a gameobject that is still cached in our DataSource.
-                 * Due to risk mitigation for 4.5 we are working around this here.
-                 * A proper fix should be to make sure we also fetch data after Player changes as well.
-                 * Look into: Application.cpp and look where GetSceneTracker().TickHierarchyWindowHasChanged() is being called.
-                 * Likely the proper fix will be adding another call to TickHierarchyWindowHasChanged after the Player had a chance to run.
-                 */
-                if (goItem.objectPPTR != null)
-                    goItem.displayName = goItem.objectPPTR.name;
-                else
-                    goItem.displayName = "deleted gameobject";
-                label = goItem.displayName;
-            }
-
             GUIStyle lineStyle = Styles.lineStyle;
 
-            if (!goItem.shouldDisplay)
+            if (SubSceneGUI.IsUsingSubScenes())
+                useBoldFont = SubSceneGUI.UseBoldFontForGameObject((GameObject)goItem.objectPPTR);
+
+            if (useBoldFont)
             {
-                lineStyle = GameObjectStyles.disabledLabel; // TODO: THis need to be a better color then just the disabled.
+                lineStyle = Styles.lineBoldStyle;
             }
             else
             {

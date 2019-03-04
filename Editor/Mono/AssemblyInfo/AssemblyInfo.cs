@@ -100,5 +100,9 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEngine.Common")]
 [assembly: InternalsVisibleTo("Unity.GraphViewTestUtilities.Editor")]
 [assembly: InternalsVisibleTo("Unity.ProBuilder.Editor")]
+[assembly: InternalsVisibleTo("Unity.2D.Sprite.Editor")]
+[assembly: InternalsVisibleTo("Unity.2D.Sprite.EditorTests")]
+[assembly: InternalsVisibleTo("Unity.2D.Tilemap.Editor")]
+[assembly: InternalsVisibleTo("Unity.2D.Tilemap.EditorTests")]
 
 [assembly: AssemblyIsEditorAssembly]

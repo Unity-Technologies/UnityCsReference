@@ -280,7 +280,6 @@ namespace UnityEngine.UIElements
 
                 child.RemoveFromHierarchy();
 
-                child.hierarchy.SetParent(m_Owner);
                 if (m_Owner.m_Children == null)
                 {
                     //TODO: Trigger a release on finalizer or something, this means we'll need to make the pool thread-safe as well
@@ -294,6 +293,7 @@ namespace UnityEngine.UIElements
 
                 PutChildAtIndex(child, index);
 
+                child.hierarchy.SetParent(m_Owner);
                 child.PropagateEnabledToChildren(m_Owner.enabledInHierarchy);
 
                 child.InvokeHierarchyChanged(HierarchyChangeType.Add);
@@ -345,13 +345,10 @@ namespace UnityEngine.UIElements
             {
                 if (childCount > 0)
                 {
-                    foreach (VisualElement e in m_Owner.m_Children)
-                    {
-                        e.InvokeHierarchyChanged(HierarchyChangeType.Remove);
-                        e.hierarchy.SetParent(null);
-                        e.m_LogicalParent = null;
-                        m_Owner.elementPanel?.OnVersionChanged(e, VersionChangeType.Hierarchy);
-                    }
+                    // Copy children to a temporary list because removing child elements from
+                    // the panel may trigger modifications (DetachFromPanelEvent callback)
+                    // of the same list while we are in the foreach loop.
+                    var elements = VisualElementListPool.Copy(m_Owner.m_Children);
 
                     ReleaseChildList();
                     m_Owner.yogaNode.Clear();
@@ -359,6 +356,15 @@ namespace UnityEngine.UIElements
                     {
                         m_Owner.yogaNode.SetMeasureFunction(m_Owner.Measure);
                     }
+
+                    foreach (VisualElement e in elements)
+                    {
+                        e.InvokeHierarchyChanged(HierarchyChangeType.Remove);
+                        e.hierarchy.SetParent(null);
+                        e.m_LogicalParent = null;
+                        m_Owner.elementPanel?.OnVersionChanged(e, VersionChangeType.Hierarchy);
+                    }
+                    VisualElementListPool.Release(elements);
 
                     m_Owner.IncrementVersion(VersionChangeType.Hierarchy);
                 }

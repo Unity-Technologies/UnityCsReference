@@ -135,7 +135,7 @@ namespace UnityEngine.TextCore.LowLevel
     {
         private static readonly FontEngine s_Instance = new FontEngine();
 
-        private static uint[] s_GlyphIndexesToMarshall;
+        private static uint[] s_GlyphIndexes_MarshallingArray;
 
         private static GlyphMarshallingStruct[] s_GlyphMarshallingStruct_IN = new GlyphMarshallingStruct[16];
         private static GlyphMarshallingStruct[] s_GlyphMarshallingStruct_OUT = new GlyphMarshallingStruct[16];
@@ -143,7 +143,8 @@ namespace UnityEngine.TextCore.LowLevel
         private static GlyphRect[] s_FreeGlyphRects = new GlyphRect[16];
         private static GlyphRect[] s_UsedGlyphRects = new GlyphRect[16];
 
-        private static GlyphPairAdjustmentRecord[] s_GlyphPairAdjustmentRecords;
+        private static Glyph[] s_Glyphs = new Glyph[16];
+        private static GlyphPairAdjustmentRecord[] s_PairAdjustmentRecords_MarshallingArray;
 
         private static Dictionary<uint, Glyph> s_GlyphLookupDictionary = new Dictionary<uint, Glyph>();
 
@@ -822,14 +823,14 @@ namespace UnityEngine.TextCore.LowLevel
             int glyphCount = glyphIndexes.Count;
 
             // Make sure marshalling glyph index array allocations are appropriate.
-            if (s_GlyphIndexesToMarshall == null || s_GlyphIndexesToMarshall.Length < glyphCount)
+            if (s_GlyphIndexes_MarshallingArray == null || s_GlyphIndexes_MarshallingArray.Length < glyphCount)
             {
-                if (s_GlyphIndexesToMarshall == null)
-                    s_GlyphIndexesToMarshall = new uint[glyphCount];
+                if (s_GlyphIndexes_MarshallingArray == null)
+                    s_GlyphIndexes_MarshallingArray = new uint[glyphCount];
                 else
                 {
                     int newSize = Mathf.NextPowerOfTwo(glyphCount + 1);
-                    s_GlyphIndexesToMarshall = new uint[newSize];
+                    s_GlyphIndexes_MarshallingArray = new uint[newSize];
                 }
             }
 
@@ -858,7 +859,7 @@ namespace UnityEngine.TextCore.LowLevel
             for (int i = 0; i < glyphRectCount; i++)
             {
                 if (i < glyphCount)
-                    s_GlyphIndexesToMarshall[i] = glyphIndexes[i];
+                    s_GlyphIndexes_MarshallingArray[i] = glyphIndexes[i];
 
                 if (i < freeGlyphRectCount)
                     s_FreeGlyphRects[i] = freeGlyphRects[i];
@@ -868,10 +869,13 @@ namespace UnityEngine.TextCore.LowLevel
             }
 
             // Marshall data over to the native side.
-            bool allGlyphsAdded = TryAddGlyphsToTexture_Internal(s_GlyphIndexesToMarshall, padding, packingMode, s_FreeGlyphRects, ref freeGlyphRectCount, s_UsedGlyphRects, ref usedGlyphRectCount, renderMode, texture, s_GlyphMarshallingStruct_OUT, ref glyphCount);
+            bool allGlyphsAdded = TryAddGlyphsToTexture_Internal(s_GlyphIndexes_MarshallingArray, padding, packingMode, s_FreeGlyphRects, ref freeGlyphRectCount, s_UsedGlyphRects, ref usedGlyphRectCount, renderMode, texture, s_GlyphMarshallingStruct_OUT, ref glyphCount);
 
-            // Allocate array of glyphs
-            glyphs = new Glyph[glyphCount];
+            // Make sure internal glyph array is properly sized.
+            if (s_Glyphs == null || s_Glyphs.Length <= glyphCount)
+                s_Glyphs = new Glyph[Mathf.NextPowerOfTwo(glyphCount + 1)];
+
+            s_Glyphs[glyphCount] = null;
 
             freeGlyphRects.Clear();
             usedGlyphRects.Clear();
@@ -881,7 +885,7 @@ namespace UnityEngine.TextCore.LowLevel
             for (int i = 0; i < glyphRectCount; i++)
             {
                 if (i < glyphCount)
-                    glyphs[i] = new Glyph(s_GlyphMarshallingStruct_OUT[i]);
+                    s_Glyphs[i] = new Glyph(s_GlyphMarshallingStruct_OUT[i]);
 
                 if (i < freeGlyphRectCount)
                     freeGlyphRects.Add(s_FreeGlyphRects[i]);
@@ -890,6 +894,8 @@ namespace UnityEngine.TextCore.LowLevel
                     usedGlyphRects.Add(s_UsedGlyphRects[i]);
             }
 
+            glyphs = s_Glyphs;
+
             return allGlyphsAdded;
         }
 
@@ -897,6 +903,14 @@ namespace UnityEngine.TextCore.LowLevel
         extern static bool TryAddGlyphsToTexture_Internal(uint[] glyphIndex, int padding,
             GlyphPackingMode packingMode, [Out] GlyphRect[] freeGlyphRects, ref int freeGlyphRectCount, [Out] GlyphRect[] usedGlyphRects, ref int usedGlyphRectCount,
             GlyphRenderMode renderMode, Texture2D texture, [Out] GlyphMarshallingStruct[] glyphs, ref int glyphCount);
+
+
+        // ================================================
+        // OPENTYPE RELATED FEATURES AND FUNCTIONS
+        // ================================================
+
+        [NativeMethod(Name = "TextCore::FontEngine::GetOpenTypeFontFeatures", IsFreeFunction = true)]
+        internal extern static int GetOpenTypeFontFeatureTable();
 
         /// <summary>
         /// Internal function used to retrieve positional adjustments for pairs of glyphs.
@@ -907,33 +921,109 @@ namespace UnityEngine.TextCore.LowLevel
         {
             int maxGlyphPairAdjustmentRecords = glyphIndexes.Length * glyphIndexes.Length;
 
-            if (s_GlyphPairAdjustmentRecords == null || s_GlyphPairAdjustmentRecords.Length < maxGlyphPairAdjustmentRecords)
+            if (s_PairAdjustmentRecords_MarshallingArray == null || s_PairAdjustmentRecords_MarshallingArray.Length < maxGlyphPairAdjustmentRecords)
             {
-                s_GlyphPairAdjustmentRecords = new GlyphPairAdjustmentRecord[maxGlyphPairAdjustmentRecords];
+                s_PairAdjustmentRecords_MarshallingArray = new GlyphPairAdjustmentRecord[maxGlyphPairAdjustmentRecords];
             }
 
             int adjustmentRecordCount;
-            if (GetGlyphPairAdjustmentTable_Internal(glyphIndexes, s_GlyphPairAdjustmentRecords, out adjustmentRecordCount) != 0)
+            if (GetGlyphPairAdjustmentTable_Internal(glyphIndexes, s_PairAdjustmentRecords_MarshallingArray, out adjustmentRecordCount) != 0)
             {
                 // TODO: Add debug warning messages.
                 return null;
             }
 
-            GlyphPairAdjustmentRecord[] pairAdjustmentRecords = new GlyphPairAdjustmentRecord[adjustmentRecordCount];
+            // Since this internal array is used by several objects, we need to clear unused records in the array.
+            System.Array.Clear(s_PairAdjustmentRecords_MarshallingArray, adjustmentRecordCount, s_PairAdjustmentRecords_MarshallingArray.Length - adjustmentRecordCount);
 
-            for (int i = 0; i < adjustmentRecordCount; i++)
-            {
-                pairAdjustmentRecords[i] = s_GlyphPairAdjustmentRecords[i];
-            }
-
-            return pairAdjustmentRecords;
+            return s_PairAdjustmentRecords_MarshallingArray;
         }
+
+        [NativeMethod(Name = "TextCore::FontEngine::GetGlyphPairAdjustmentTable", IsFreeFunction = true)]
+        extern static int GetGlyphPairAdjustmentTable_Internal(uint[] glyphIndexes, [Out] GlyphPairAdjustmentRecord[] glyphPairAdjustmentRecords, out int adjustmentRecordCount);
 
         /// <summary>
         ///
         /// </summary>
-        [NativeMethod(Name = "TextCore::FontEngine::GetGlyphPairAdjustmentTable", IsFreeFunction = true)]
-        extern static int GetGlyphPairAdjustmentTable_Internal(uint[] glyphIndexes, [Out] GlyphPairAdjustmentRecord[] glyphPairAdjustmentRecords, out int adjustmentRecordCount);
+        /// <param name="firstGlyphIndex"></param>
+        /// <param name="secondGlyphIndex"></param>
+        /// <returns></returns>
+        [NativeMethod(Name = "TextCore::FontEngine::GetGlyphPairAdjustmentRecord", IsFreeFunction = true)]
+        internal extern static GlyphPairAdjustmentRecord GetGlyphPairAdjustmentRecord(uint firstGlyphIndex, uint secondGlyphIndex);
+
+
+        /// <summary>
+        /// Internal function used to retrieve the GlyphPairAdjustmentRecords for the given list of glyph indexes.
+        /// </summary>
+        /// <param name="glyphIndexes">List of the glyph indexes.</param>
+        /// <returns>The glyph pair adjustment records.</returns>
+        internal static GlyphPairAdjustmentRecord[] GetGlyphPairAdjustmentRecords(List<uint> glyphIndexes, out int recordCount)
+        {
+            int glyphIndexCount = glyphIndexes.Count;
+
+            if (s_GlyphIndexes_MarshallingArray == null || s_GlyphIndexes_MarshallingArray.Length < glyphIndexCount)
+                s_GlyphIndexes_MarshallingArray = new uint[Mathf.NextPowerOfTwo(glyphIndexCount + 1)];
+
+            // Populate marshalling array
+            for (int i = 0; i < glyphIndexCount; i++)
+                s_GlyphIndexes_MarshallingArray[i] = glyphIndexes[i];
+
+            // Set marshalling array boundary / terminator to value of zero.
+            s_GlyphIndexes_MarshallingArray[glyphIndexCount] = 0;
+
+            PopulatePairAdjustmentRecordMarshallingArray_from_GlyphIndexes(s_GlyphIndexes_MarshallingArray, out recordCount);
+
+            if (recordCount == 0)
+                return null;
+
+            // Make sure marshalling array allocation is appropriate.
+            if (s_PairAdjustmentRecords_MarshallingArray == null || s_PairAdjustmentRecords_MarshallingArray.Length < recordCount)
+                s_PairAdjustmentRecords_MarshallingArray = new GlyphPairAdjustmentRecord[Mathf.NextPowerOfTwo(recordCount + 1)];
+
+            // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
+            GetGlyphPairAdjustmentRecordsFromMarshallingArray(s_PairAdjustmentRecords_MarshallingArray);
+
+            return s_PairAdjustmentRecords_MarshallingArray;
+        }
+
+        /// <summary>
+        /// Internal function used to retrieve the GlyphPairAdjustmentRecords for the given glyph index.
+        /// </summary>
+        /// <param name="glyphIndex">Index of the target glyph.</param>
+        /// <param name="recordCount">Number of glyph pair adjustment records using this glyph.</param>
+        /// <returns>Array containing the glyph pair adjustment records.</returns>
+        internal static GlyphPairAdjustmentRecord[] GetGlyphPairAdjustmentRecords(uint glyphIndex, out int recordCount)
+        {
+            PopulatePairAdjustmentRecordMarshallingArray_from_GlyphIndex(glyphIndex, out recordCount);
+
+            if (recordCount == 0)
+                return null;
+
+            // Make sure marshalling array allocation is appropriate.
+            if (s_PairAdjustmentRecords_MarshallingArray == null || s_PairAdjustmentRecords_MarshallingArray.Length < recordCount)
+                s_PairAdjustmentRecords_MarshallingArray = new GlyphPairAdjustmentRecord[Mathf.NextPowerOfTwo(recordCount + 1)];
+
+            // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
+            GetGlyphPairAdjustmentRecordsFromMarshallingArray(s_PairAdjustmentRecords_MarshallingArray);
+
+            return s_PairAdjustmentRecords_MarshallingArray;
+        }
+
+        /// <summary>
+        /// Internal function used in the process of retrieving potential GlyphPairAdjustmentRecords for the given list of glyph indexes.
+        /// Function only populates an internal marshalling array which will be subsequently retrieved by the GetPopulatedGlyphPairAdjustmentRecords function.
+        /// </summary>
+        /// <param name="glyphIndexes">Glyph indexes</param>
+        /// <param name="recordCount">Number of glyph pair adjustment records for the given glyph indexes.</param>
+        /// <returns></returns>
+        [NativeMethod(Name = "TextCore::FontEngine::PopulatePairAdjustmentRecordMarshallingArray", IsFreeFunction = true)]
+        extern static int PopulatePairAdjustmentRecordMarshallingArray_from_GlyphIndexes(uint[] glyphIndexes, out int recordCount);
+
+        [NativeMethod(Name = "TextCore::FontEngine::PopulatePairAdjustmentRecordMarshallingArray", IsFreeFunction = true)]
+        extern static int PopulatePairAdjustmentRecordMarshallingArray_from_GlyphIndex(uint glyphIndex, out int recordCount);
+
+        [NativeMethod(Name = "TextCore::FontEngine::GetGlyphPairAdjustmentRecordsFromMarshallingArray", IsFreeFunction = true)]
+        extern static int GetGlyphPairAdjustmentRecordsFromMarshallingArray([Out] GlyphPairAdjustmentRecord[] glyphPairAdjustmentRecords);
 
         // ================================================
         // Experimental / Testing / Benchmarking Functions

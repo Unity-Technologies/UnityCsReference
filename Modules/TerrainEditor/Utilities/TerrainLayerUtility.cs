@@ -70,6 +70,20 @@ namespace UnityEditor
             return selectedTerrainLayer;
         }
 
+        public static void ShowTerrainLayerGUI(Terrain terrain, TerrainLayer terrainLayer, ref Editor terrainLayerEditor, ITerrainLayerCustomUI customGUI)
+        {
+            Editor.DrawFoldoutInspector(terrainLayer, ref terrainLayerEditor);
+
+            if (terrainLayerEditor != null)
+            {
+                var terrainLayerInspector = terrainLayerEditor as TerrainLayerInspector;
+                if (customGUI != null)
+                    terrainLayerInspector.ApplyCustomUI(customGUI, terrain);
+                else
+                    terrainLayerInspector.ApplyCustomUI(null, null);
+            }
+        }
+
         public static void ValidateDiffuseTextureUI(Texture2D texture)
         {
             if (texture == null)

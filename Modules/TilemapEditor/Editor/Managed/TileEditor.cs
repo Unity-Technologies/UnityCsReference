@@ -57,7 +57,7 @@ namespace UnityEditor
                 if (GUILayout.Button(Styles.spriteEditorLabel))
                 {
                     Selection.activeObject = m_Sprite.objectReferenceValue;
-                    SpriteEditorWindow.GetWindow();
+                    SpriteUtilityWindow.ShowSpriteEditorWindow();
                 }
                 GUILayout.EndHorizontal();
             }

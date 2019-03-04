@@ -91,7 +91,7 @@ namespace UnityEngine
             if (GUIUtility.keyboardControl != id)
                 content = GUIContent.Temp(text);
             else
-                content = GUIContent.Temp(text + Input.compositionString);
+                content = GUIContent.Temp(text + GUIUtility.compositionString);
 
             r = GUILayoutUtility.GetRect(content, style, options);
             if (GUIUtility.keyboardControl == id)

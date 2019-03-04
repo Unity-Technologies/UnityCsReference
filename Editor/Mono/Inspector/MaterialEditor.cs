@@ -65,7 +65,6 @@ namespace UnityEditor
         }
 
         private static readonly List<MaterialEditor> s_MaterialEditors = new List<MaterialEditor>(4);
-        private bool m_IsVisible;
         private bool m_CheckSetup;
 
         private static int s_ControlHash = "EditorTextField".GetHashCode();
@@ -100,7 +99,7 @@ namespace UnityEditor
             return type != PreviewType.Plane;
         }
 
-        public bool isVisible { get { return firstInspectedEditor || m_IsVisible; } }
+        public bool isVisible { get { return firstInspectedEditor || InternalEditorUtility.GetIsInspectorExpanded(target); } }
 
         private Shader m_Shader;
         private SerializedProperty m_EnableInstancing;
@@ -118,8 +117,9 @@ namespace UnityEditor
         private static readonly GUIContent  s_TilingText = EditorGUIUtility.TrTextContent("Tiling");
         private static readonly GUIContent  s_OffsetText = EditorGUIUtility.TrTextContent("Offset");
 
-        internal ShaderGUI  m_CustomShaderGUI;
+        private ShaderGUI   m_CustomShaderGUI;
         string              m_CustomEditorClassName;
+        public ShaderGUI customShaderGUI { get { return m_CustomShaderGUI; } }
 
         bool                                m_InsidePropertiesGUI;
         Renderer[]                          m_RenderersForAnimationMode;
@@ -443,7 +443,6 @@ namespace UnityEditor
 
         public virtual void Awake()
         {
-            m_IsVisible = InternalEditorUtility.GetIsInspectorExpanded(target);
             if (GetPreviewType(target as Material) == PreviewType.Skybox)
                 m_PreviewDir = new Vector2(0, 50);
         }
@@ -522,14 +521,12 @@ namespace UnityEditor
             {
                 Rect renderRect = EditorGUI.GetInspectorTitleBarObjectFoldoutRenderRect(titleRect);
                 renderRect.y = titleRect.yMax - 17f; // align with bottom
-                bool newVisible = EditorGUI.DoObjectFoldout(m_IsVisible, titleRect, renderRect, targets, id);
+                bool oldVisible = InternalEditorUtility.GetIsInspectorExpanded(target);
+                bool newVisible = EditorGUI.DoObjectFoldout(oldVisible, titleRect, renderRect, targets, id);
 
                 // Toggle visibility
-                if (newVisible != m_IsVisible)
-                {
-                    m_IsVisible = newVisible;
+                if (newVisible != oldVisible)
                     InternalEditorUtility.SetIsInspectorExpanded(target, newVisible);
-                }
             }
         }
 

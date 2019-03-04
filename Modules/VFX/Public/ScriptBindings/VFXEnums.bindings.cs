@@ -38,6 +38,7 @@ namespace UnityEngine.Experimental.VFX
         SystemSeed,
         LocalToWorld,
         WorldToLocal,
+        FrameIndex,
 
         // float math operations
         // unary
@@ -87,6 +88,11 @@ namespace UnityEngine.Experimental.VFX
         // Sampling and baking
         SampleCurve,
         SampleGradient,
+        SampleMeshFloat,
+        SampleMeshFloat2,
+        SampleMeshFloat3,
+        SampleMeshFloat4,
+        SampleMeshColor,
         BakeCurve,
         BakeGradient,
 
@@ -153,6 +159,11 @@ namespace UnityEngine.Experimental.VFX
         CellularCurlNoise3D,
 
         VoroNoise2D,
+
+        // Mesh
+        MeshVertexCount,
+        MeshChannelOffset,
+        MeshVertexStride,
     }
 
     internal enum VFXValueType
@@ -187,7 +198,10 @@ namespace UnityEngine.Experimental.VFX
         Output      = 0x40000000,
 
         // updates
-        CameraSort                  = Update | 1, // TMP
+        CameraSort                  = Update | 1,
+        StripSort                   = Update | 2,
+        StripUpdatePerParticle      = Update | 3,
+        StripUpdatePerStrip         = Update | 4,
 
         // outputs
         ParticlePointOutput         = Output | 0,
@@ -219,7 +233,8 @@ namespace UnityEngine.Experimental.VFX
         SystemDefault = 0,
         SystemHasKill = 1 << 0,
         SystemHasIndirectBuffer = 1 << 1,
-        SystemReceivedEventGPU = 1 << 2
+        SystemReceivedEventGPU = 1 << 2,
+        SystemHasStrips = 1 << 3,
     }
 
     internal enum VFXUpdateMode

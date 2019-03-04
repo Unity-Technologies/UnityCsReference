@@ -250,8 +250,7 @@ namespace UnityEditor
             GUI.enabled = BuildPipeline.IsBuildTargetSupported(selectedTargetGroup, selectedTarget);
             if (GUILayout.Button(EditorGUIUtility.TrTextContent("Player Settings..."), GUILayout.Width(Styles.kButtonWidth)))
             {
-                Selection.activeObject = Unsupported.GetSerializedAssetInterfaceSingleton("PlayerSettings");
-                EditorWindow.GetWindow<InspectorWindow>();
+                SettingsService.OpenProjectSettings("Project/Player");
             }
 
             GUILayout.EndHorizontal();

@@ -11,7 +11,6 @@ namespace UnityEditor
     {
         private TimeArea m_TimeArea;
         private Styles m_Styles;
-        private bool m_RippleTimeClutch;
 
         internal enum ToolCoord
         {
@@ -46,8 +45,14 @@ namespace UnityEditor
             public GUIStyle rectangleToolScaleBottom = "RectangleToolScaleBottom";
             public GUIStyle rectangleToolScaleTop = "RectangleToolScaleTop";
 
+            public GUIStyle rectangleToolRippleLeft = "RectangleToolRippleLeft";
+            public GUIStyle rectangleToolRippleRight = "RectangleToolRippleRight";
+
             public GUIStyle dopesheetScaleLeft = "DopesheetScaleLeft";
             public GUIStyle dopesheetScaleRight = "DopesheetScaleRight";
+
+            public GUIStyle dopesheetRippleLeft = "DopesheetRippleLeft";
+            public GUIStyle dopesheetRippleRight = "DopesheetRippleRight";
 
             public GUIStyle dragLabel = "ProfilerBadge";
         }
@@ -55,8 +60,6 @@ namespace UnityEditor
         public TimeArea timeArea { get { return m_TimeArea; } }
 
         public Styles styles { get { return m_Styles; } }
-
-        public bool rippleTimeClutch { get { return m_RippleTimeClutch; } }
 
         public Rect contentRect
         {
@@ -225,27 +228,6 @@ namespace UnityEditor
             float pixelValue = height - (value * pixelPerValue + zeroValuePixel);
 
             return pixelValue;
-        }
-
-        public void HandleClutchKeys()
-        {
-            Event evt = Event.current;
-            switch (evt.type)
-            {
-                case EventType.KeyDown:
-                    if (evt.keyCode == KeyCode.R)
-                    {
-                        m_RippleTimeClutch = true;
-                    }
-                    break;
-
-                case EventType.KeyUp:
-                    if (evt.keyCode == KeyCode.R)
-                    {
-                        m_RippleTimeClutch = false;
-                    }
-                    break;
-            }
         }
     }
 }

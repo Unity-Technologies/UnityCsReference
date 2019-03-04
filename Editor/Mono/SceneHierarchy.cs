@@ -594,9 +594,24 @@ namespace UnityEditor
 
         void TreeViewItemDoubleClicked(int instanceID)
         {
-            Scene scene = EditorSceneManager.GetSceneByHandle(instanceID);
+            bool setActiveScene = false;
 
+            Scene scene = EditorSceneManager.GetSceneByHandle(instanceID);
             if (IsSceneHeaderInHierarchyWindow(scene))
+            {
+                setActiveScene = true;
+            }
+            else if (SubSceneGUI.IsUsingSubScenes())
+            {
+                var gameObject = EditorUtility.InstanceIDToObject(instanceID) as GameObject;
+                if (gameObject != null && SubSceneGUI.IsSubSceneHeader(gameObject))
+                {
+                    scene = SubSceneGUI.GetSubScene(gameObject);
+                    setActiveScene = true;
+                }
+            }
+
+            if (setActiveScene)
             {
                 // scene header selected
                 if (scene.isLoaded && !EditorSceneManager.IsPreviewScene(scene))
@@ -1071,6 +1086,9 @@ namespace UnityEditor
                 // Sets includeCreateEmptyChild to false, since that item is superfluous here (the normal "Create Empty" is added as a child anyway)
                 AddCreateGameObjectItemsToMenu(menu, selectedGameObjects, false, false, targetSceneForCreation);
             }
+
+            SceneHierarchyHooks.AddCustomGameObjectContextMenuItems(menu, contextClickedItemID == 0 ? null : (GameObject)EditorUtility.InstanceIDToObject(contextClickedItemID));
+
             menu.ShowAsContext();
         }
 
@@ -1188,6 +1206,9 @@ namespace UnityEditor
                 menu.AddSeparator("");
                 AddCreateGameObjectItemsToSceneMenu(menu, scene);
             }
+
+            // Let users add extra items
+            SceneHierarchyHooks.AddCustomSceneHeaderContextMenuItems(menu, scene);
         }
 
         int GetNumLoadedScenesInSelection()
@@ -1268,7 +1289,9 @@ namespace UnityEditor
             }
             else
             {
-                CreateGameObjectContextClick(menu, contextClickedItemID);
+                var gameObject = (GameObject)EditorUtility.InstanceIDToObject(contextClickedItemID);
+                if (!SubSceneGUI.HandleGameObjectContextMenu(menu, gameObject))
+                    CreateGameObjectContextClick(menu, contextClickedItemID);
             }
 
             menu.ShowAsContext();

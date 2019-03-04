@@ -48,7 +48,7 @@ namespace UnityEditorInternal.VersionControl
         // Handle asset moving
         public static AssetMoveResult OnWillMoveAsset(string from, string to)
         {
-            if (!Provider.enabled)
+            if (!Provider.enabled || EditorUserSettings.WorkOffline)
                 return AssetMoveResult.DidNotMove;
 
             Asset asset = GetStatusCachedIfPossible(from, CachedStatusMode.Sync);
@@ -88,7 +88,7 @@ namespace UnityEditorInternal.VersionControl
         // Handle asset deletion
         public static AssetDeleteResult OnWillDeleteAsset(string assetPath, RemoveAssetOptions option)
         {
-            if (!Provider.enabled)
+            if (!Provider.enabled || EditorUserSettings.WorkOffline)
                 return AssetDeleteResult.DidNotDelete;
 
             Task task = Provider.Delete(assetPath);

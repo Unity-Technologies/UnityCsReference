@@ -21,6 +21,7 @@ namespace UnityEditor
         public static GUIContent lastKeyContent = EditorGUIUtility.TrIconContent("Animation.LastKey", "Go to the end of the animation clip.");
         public static GUIContent addKeyframeContent = EditorGUIUtility.TrIconContent("Animation.AddKeyframe", "Add keyframe.");
         public static GUIContent addEventContent = EditorGUIUtility.TrIconContent("Animation.AddEvent", "Add event.");
+        public static GUIContent filterBySelectionContent = EditorGUIUtility.TrIconContent("Animation.FilterBySelection", "Filter by selection.");
         public static GUIContent sequencerLinkContent = EditorGUIUtility.TrIconContent("Animation.SequencerLink", "Animation Window is linked to Sequence Editor.  Press to Unlink.");
 
         public static GUIContent noAnimatableObjectSelectedText = EditorGUIUtility.TrTextContent("No animatable object selected.");
@@ -34,6 +35,10 @@ namespace UnityEditor
         public static GUIContent createNewClip = EditorGUIUtility.TrTextContent("Create New Clip...");
 
         public static GUIContent animatorOptimizedText = EditorGUIUtility.TrTextContent("Editing and playback of animations on optimized game object hierarchy is not supported.\nPlease select a game object that does not have 'Optimize Game Objects' applied.");
+        public static GUIContent readOnlyPropertiesLabel = EditorGUIUtility.TrTextContent("Animation Clip is Read-Only");
+        public static GUIContent readOnlyPropertiesButton = EditorGUIUtility.TrTextContent("Show Read-Only Properties");
+
+        public static GUIContent optionsContent = EditorGUIUtility.IconContent("_Popup");
 
         public static GUIStyle playHead = "AnimationPlayHead";
 

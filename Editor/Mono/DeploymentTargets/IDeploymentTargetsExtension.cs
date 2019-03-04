@@ -145,6 +145,11 @@ namespace UnityEditor.DeploymentTargets
         //  Can be called from a background thread
         IDeploymentTargetInfo GetTargetInfo(IDeploymentTargetsMainThreadContext context, DeploymentTargetId targetId, ProgressHandler progressHandler = null);
 
+        // Returns device logger specific to target platform
+        // Throws DeploymentOperationFailedException (or one of its subclasses) is something goes wrong.
+        // Throws DeploymentOperationAbortedException if process is cancelled by the user.
+        DeploymentTargetLogger GetTargetLogger(IDeploymentTargetsMainThreadContext context, DeploymentTargetId targetId);
+
         // Launches a build on a target
         // Throws DeploymentOperationFailedException (or one of its subclasses) is something goes wrong.
         // Throws DeploymentOperationAbortedException if process is cancelled by the user.

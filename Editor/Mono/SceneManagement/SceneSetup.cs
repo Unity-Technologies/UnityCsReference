@@ -20,6 +20,8 @@ namespace UnityEditor.SceneManagement
         private bool m_IsLoaded = false;
         [SerializeField]
         private bool m_IsActive = false;
+        [SerializeField]
+        private bool m_IsSubScene = true;
 
         public string path
         {
@@ -37,6 +39,12 @@ namespace UnityEditor.SceneManagement
         {
             get { return m_IsActive; }
             set { m_IsActive = value; }
+        }
+
+        public bool isSubScene
+        {
+            get { return m_IsSubScene; }
+            set { m_IsSubScene = value; }
         }
     }
 }

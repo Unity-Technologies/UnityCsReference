@@ -36,7 +36,7 @@ namespace UnityEditor.ShortcutManagement
 
         public int activeContextCount => 1 + ((focusedWindow != null) ? 1 : 0) + m_PriorityContexts.Count(c => c.active) + m_ToolContexts.Count(c => c.active);
 
-        public bool playModeContextIsActive => focusedWindow is GameView && EditorApplication.isPlaying;
+        public bool playModeContextIsActive => focusedWindow is GameView && EditorApplication.isPlaying && !EditorApplication.isPaused;
 
         private EditorWindow focusedWindow
         {

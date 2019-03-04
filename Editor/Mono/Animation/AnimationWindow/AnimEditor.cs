@@ -83,12 +83,44 @@ namespace UnityEditor
             }
         }
 
+        static private Color s_FilterBySelectionColorLight = new Color(0.82f, 0.97f, 1.00f, 1.00f);
+        static private Color s_FilterBySelectionColorDark = new Color(0.54f, 0.85f, 1.00f, 1.00f);
+
+        static private Color filterBySelectionColor
+        {
+            get
+            {
+                return EditorGUIUtility.isProSkin ? s_FilterBySelectionColorDark : s_FilterBySelectionColorLight;
+            }
+        }
+
         internal const int kSliderThickness = 15;
         internal const int kLayoutRowHeight = EditorGUI.kWindowToolbarHeight + 1;
         internal const int kIntFieldWidth = 35;
         internal const int kHierarchyMinWidth = 300;
         internal const int kToggleButtonWidth = 80;
         internal const float kDisabledRulerAlpha = 0.12f;
+
+        internal struct FrameRateMenuEntry
+        {
+            public FrameRateMenuEntry(GUIContent content, float value)
+            {
+                this.content = content;
+                this.value = value;
+            }
+
+            public GUIContent content;
+            public float value;
+        };
+
+        internal static FrameRateMenuEntry[] kAvailableFrameRates = new FrameRateMenuEntry[]
+        {
+            new FrameRateMenuEntry(EditorGUIUtility.TextContent("Set Sample Rate/24"), 24f),
+            new FrameRateMenuEntry(EditorGUIUtility.TextContent("Set Sample Rate/25"), 25f),
+            new FrameRateMenuEntry(EditorGUIUtility.TextContent("Set Sample Rate/30"), 30f),
+            new FrameRateMenuEntry(EditorGUIUtility.TextContent("Set Sample Rate/50"), 50f),
+            new FrameRateMenuEntry(EditorGUIUtility.TextContent("Set Sample Rate/60"), 60f)
+        };
 
         public AnimationWindowState state { get { return m_State; } }
 
@@ -160,6 +192,10 @@ namespace UnityEditor
 
             using (new EditorGUI.DisabledScope(m_State.disabled || m_State.animatorIsOptimized))
             {
+                int optionsID = GUIUtility.GetControlID(FocusType.Passive);
+                if (Event.current.type != EventType.Repaint)
+                    OptionsOnGUI(optionsID);
+
                 OverlayEventOnGUI();
 
                 GUILayout.BeginHorizontal();
@@ -179,6 +215,7 @@ namespace UnityEditor
                 ClipSelectionDropDownOnGUI();
                 GUILayout.FlexibleSpace();
                 FrameRateInputFieldOnGUI();
+                FilterBySelectionButtonOnGUI();
                 AddKeyframeButtonOnGUI();
                 AddEventButtonOnGUI();
                 GUILayout.EndHorizontal();
@@ -212,6 +249,9 @@ namespace UnityEditor
                 // Overlay
                 OverlayOnGUI(contentLayoutRect);
 
+                if (Event.current.type == EventType.Repaint)
+                    OptionsOnGUI(optionsID);
+
                 RenderEventTooltip();
             }
         }
@@ -221,12 +261,13 @@ namespace UnityEditor
             //  Bail out if the hierarchy in animator is optimized.
             if (m_State.animatorIsOptimized)
             {
+                GUI.Label(contentLayoutRect, GUIContent.none, AnimationWindowStyles.dopeSheetBackground);
+
                 Vector2 textSize = GUI.skin.label.CalcSize(AnimationWindowStyles.animatorOptimizedText);
                 Rect labelRect = new Rect(contentLayoutRect.x + contentLayoutRect.width * .5f - textSize.x * .5f, contentLayoutRect.y + contentLayoutRect.height * .5f - textSize.y * .5f, textSize.x, textSize.y);
                 GUI.Label(labelRect, AnimationWindowStyles.animatorOptimizedText);
                 return;
             }
-
 
             if (m_State.disabled)
             {
@@ -367,6 +408,12 @@ namespace UnityEditor
             Repaint();
         }
 
+        public void OnSelectionUpdated()
+        {
+            m_State.OnSelectionUpdated();
+            Repaint();
+        }
+
         public void OnStartLiveEdit()
         {
             SaveCurveEditorKeySelection();
@@ -483,14 +530,41 @@ namespace UnityEditor
 
         private void HierarchyOnGUI()
         {
-            Rect r = GUILayoutUtility.GetRect(hierarchyWidth, hierarchyWidth, 0f, float.MaxValue, GUILayout.ExpandHeight(true));
+            Rect hierarchyLayoutRect = GUILayoutUtility.GetRect(hierarchyWidth, hierarchyWidth, 0f, float.MaxValue, GUILayout.ExpandHeight(true));
+
+            if (!m_State.showReadOnly && !m_State.selection.animationIsEditable)
+            {
+                Vector2 labelSize = GUI.skin.label.CalcSize(AnimationWindowStyles.readOnlyPropertiesLabel);
+
+                const float buttonWidth = 210f;
+                const float buttonHeight = 20f;
+                const float buttonPadding = 3f;
+
+                Rect labelRect = new Rect(hierarchyLayoutRect.x + hierarchyLayoutRect.width * .5f - labelSize.x * .5f, hierarchyLayoutRect.y + hierarchyLayoutRect.height * .5f - labelSize.y, labelSize.x, labelSize.y);
+
+                Rect buttonRect = new Rect(hierarchyLayoutRect.x + hierarchyLayoutRect.width * .5f - buttonWidth * .5f, labelRect.yMax + buttonPadding, buttonWidth, buttonHeight);
+
+                GUI.Label(labelRect, AnimationWindowStyles.readOnlyPropertiesLabel);
+                if (GUI.Button(buttonRect, AnimationWindowStyles.readOnlyPropertiesButton))
+                {
+                    m_State.showReadOnly = true;
+
+                    //  Layout has changed, bail out now.
+                    EditorGUIUtility.ExitGUI();
+                }
+
+                return;
+            }
 
             if (!m_State.disabled)
-                m_Hierarchy.OnGUI(r);
+                m_Hierarchy.OnGUI(hierarchyLayoutRect);
         }
 
         private void FrameRateInputFieldOnGUI()
         {
+            if (!m_State.showFrameRate)
+                return;
+
             using (new EditorGUI.DisabledScope(!selection.animationIsEditable))
             {
                 GUILayout.Label(AnimationWindowStyles.samples, AnimationWindowStyles.toolbarLabel);
@@ -599,6 +673,85 @@ namespace UnityEditor
 
             if (!m_State.disabled)
                 RenderOutOfRangeOverlay(timeRulerRectNoScrollbar);
+        }
+
+        private GenericMenu GenerateOptionsMenu()
+        {
+            GenericMenu menu = new GenericMenu();
+
+            menu.AddItem(EditorGUIUtility.TextContent("Seconds"), m_State.timeFormat == TimeArea.TimeFormat.TimeFrame, () => m_State.timeFormat = TimeArea.TimeFormat.TimeFrame);
+            menu.AddItem(EditorGUIUtility.TextContent("Frames"), m_State.timeFormat == TimeArea.TimeFormat.Frame, () => m_State.timeFormat = TimeArea.TimeFormat.Frame);
+
+            menu.AddSeparator("");
+
+            menu.AddItem(EditorGUIUtility.TextContent("Ripple"), m_State.rippleTime, () => m_State.rippleTime = !m_State.rippleTime);
+
+            menu.AddSeparator("");
+
+            menu.AddItem(EditorGUIUtility.TextContent("Show Sample Rate"), m_State.showFrameRate, () => m_State.showFrameRate = !m_State.showFrameRate);
+
+            bool isAnimatable = selection != null && selection.animationIsEditable;
+
+            GenericMenu.MenuFunction2 nullMenuFunction2 = null;
+
+            for (int i = 0; i < kAvailableFrameRates.Length; ++i)
+            {
+                FrameRateMenuEntry entry = kAvailableFrameRates[i];
+
+                bool isActive = m_State.clipFrameRate.Equals(entry.value);
+                menu.AddItem(entry.content, isActive, isAnimatable ? SetFrameRate : nullMenuFunction2, entry.value);
+            }
+
+            menu.AddSeparator("");
+
+            menu.AddItem(EditorGUIUtility.TextContent("Show Read-only Properties"), m_State.showReadOnly, () => m_State.showReadOnly = !m_State.showReadOnly);
+
+            return menu;
+        }
+
+        private void OptionsOnGUI(int controlID)
+        {
+            Rect layoutRect = new Rect(hierarchyWidth - 1f, -1f, contentWidth, kLayoutRowHeight);
+
+            GUI.BeginGroup(layoutRect);
+
+            Vector2 optionsSize = EditorStyles.toolbarButton.CalcSize(AnimationWindowStyles.optionsContent);
+            Rect optionsRect = new Rect(layoutRect.width - optionsSize.x, 0f, optionsSize.x, optionsSize.y);
+
+            if (EditorGUI.DropdownButton(controlID, optionsRect, AnimationWindowStyles.optionsContent, EditorStyles.toolbarButton))
+            {
+                var menu = GenerateOptionsMenu();
+                menu.ShowAsContext();
+            }
+
+            GUI.EndGroup();
+        }
+
+        internal void SetFrameRate(object frameRate)
+        {
+            m_State.clipFrameRate = (float)frameRate;
+            UpdateSelectedKeysToCurveEditor();
+        }
+
+        private void FilterBySelectionButtonOnGUI()
+        {
+            Color backupColor = GUI.color;
+
+            if (m_State.filterBySelection)
+            {
+                Color selectionColor = filterBySelectionColor;
+                selectionColor.a *= GUI.color.a;
+                GUI.color = selectionColor;
+            }
+
+            EditorGUI.BeginChangeCheck();
+            bool filterBySelection = GUILayout.Toggle(m_State.filterBySelection, AnimationWindowStyles.filterBySelectionContent, EditorStyles.toolbarButton);
+            if (EditorGUI.EndChangeCheck())
+            {
+                m_State.filterBySelection = filterBySelection;
+            }
+
+            GUI.color = backupColor;
         }
 
         private void AddEventButtonOnGUI()
@@ -818,6 +971,18 @@ namespace UnityEditor
             animEditor.UpdateSelectedKeysToCurveEditor();
 
             animEditor.Repaint();
+        }
+
+        [Shortcut("Animation/Toggle Ripple", typeof(AnimationWindow), KeyCode.Alpha2, ShortcutModifiers.Shift)]
+        static void ToggleRipple(ShortcutArguments args)
+        {
+            ExecuteShortcut(args, animEditor => { animEditor.state.rippleTime = !animEditor.state.rippleTime; });
+        }
+
+        [ClutchShortcut("Animation/Ripple (Clutch)", typeof(AnimationWindow), KeyCode.Alpha2)]
+        static void ClutchRipple(ShortcutArguments args)
+        {
+            ExecuteShortcut(args, animEditor => { animEditor.state.rippleTimeClutch = args.stage == ShortcutStage.Begin; });
         }
 
         private void PlayButtonOnGUI()

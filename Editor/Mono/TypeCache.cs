@@ -31,6 +31,11 @@ namespace UnityEditor
         public static TypeCollection GetTypesDerivedFrom<T>()
         {
             var parentType = typeof(T);
+            return GetTypesDerivedFrom(parentType);
+        }
+
+        public static TypeCollection GetTypesDerivedFrom(Type parentType)
+        {
             return parentType.IsInterface ? GetTypesDerivedFromInterface(parentType) : GetTypesDerivedFromType(parentType);
         }
     }

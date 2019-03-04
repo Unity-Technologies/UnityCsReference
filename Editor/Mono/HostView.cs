@@ -7,6 +7,7 @@ using System;
 using System.Reflection;
 using UnityEditor.UIElements.Debugger;
 using UnityEngine.UIElements;
+using System.Linq;
 
 namespace UnityEditor
 {
@@ -23,6 +24,8 @@ namespace UnityEditor
 
         // Cached version of the static color for the actual object instance...
         Color m_PlayModeDarkenColor;
+
+        private IMGUIContainer m_NotificationContainer;
 
         internal EditorWindow actualView
         {
@@ -99,6 +102,9 @@ namespace UnityEditor
             EditorPrefs.onValueWasUpdated += PlayModeTintColorChangedCallback;
             base.OnEnable();
             background = null;
+            m_NotificationContainer = new IMGUIContainer();
+            m_NotificationContainer.StretchToParentSize();
+            m_NotificationContainer.pickingMode = PickingMode.Ignore;
             RegisterSelectedPane(sendEvents: true);
         }
 
@@ -135,9 +141,7 @@ namespace UnityEditor
                 }
                 finally
                 {
-                    if (m_ActualView != null)
-                        if (m_ActualView.m_FadeoutTime != 0 && Event.current.type == EventType.Repaint)
-                            m_ActualView.DrawNotification();
+                    CheckNotificationStatus();
 
                     DoWindowDecorationEnd();
                     EditorGUI.ShowRepaints();
@@ -178,16 +182,21 @@ namespace UnityEditor
 
         protected Type[] GetPaneTypes()
         {
-            return new[]
-            {
-                typeof(SceneView),
-                typeof(GameView),
-                typeof(InspectorWindow),
-                typeof(SceneHierarchyWindow),
-                typeof(ProjectBrowser),
-                typeof(ProfilerWindow),
-                typeof(AnimationWindow)
-            };
+            const string k_PaneTypesSectionName = "pane_types";
+            if (!ModeService.HasSection(ModeService.currentIndex, k_PaneTypesSectionName))
+                return new[]
+                {
+                    typeof(SceneView),
+                    typeof(GameView),
+                    typeof(InspectorWindow),
+                    typeof(SceneHierarchyWindow),
+                    typeof(ProjectBrowser),
+                    typeof(ProfilerWindow),
+                    typeof(AnimationWindow)
+                };
+
+            var modePaneTypes = ModeService.GetModeDataSectionList<string>(ModeService.currentIndex, k_PaneTypesSectionName).ToArray();
+            return EditorAssemblies.SubclassesOf(typeof(EditorWindow)).Where(t => modePaneTypes.Any(mpt => t.Name.EndsWith(mpt))).ToArray();
         }
 
         // Messages sent by Unity to editor windows today.
@@ -307,9 +316,7 @@ namespace UnityEditor
                 // We can't reset gui state after ExitGUI we just want to bail completely
                 if (!isExitGUIException)
                 {
-                    bool isRepaint = (Event.current != null && Event.current.type == EventType.Repaint);
-                    if (actualView != null && actualView.m_FadeoutTime != 0 && isRepaint)
-                        actualView.DrawNotification();
+                    CheckNotificationStatus();
 
                     EndOffsetArea();
 
@@ -317,7 +324,7 @@ namespace UnityEditor
 
                     DoWindowDecorationEnd();
 
-                    if (isRepaint)
+                    if (Event.current != null && Event.current.type == EventType.Repaint)
                         HostViewStyles.overlay.Draw(onGUIPosition, GUIContent.none, 0);
                 }
             }
@@ -402,6 +409,9 @@ namespace UnityEditor
                 EditorApplication.update -= m_ActualView.CheckForWindowRepaint;
             }
 
+            m_NotificationContainer.onGUIHandler = null;
+            m_NotificationContainer.RemoveFromHierarchy();
+
             if (clearActualView)
             {
                 EditorWindow oldActualView = m_ActualView;
@@ -411,6 +421,25 @@ namespace UnityEditor
                     Invoke("OnLostFocus", oldActualView);
                     Invoke("OnBecameInvisible", oldActualView);
                 }
+            }
+        }
+
+        protected void CheckNotificationStatus()
+        {
+            if (m_ActualView != null && m_ActualView.m_FadeoutTime != 0)
+            {
+                if (m_NotificationContainer.parent == null)
+                {
+                    m_NotificationContainer.onGUIHandler = m_ActualView.DrawNotification;
+                    visualTree.Add(m_NotificationContainer);
+
+                    m_NotificationContainer.StretchToParentSize();
+                }
+            }
+            else
+            {
+                m_NotificationContainer.onGUIHandler = null;
+                m_NotificationContainer.RemoveFromHierarchy();
             }
         }
 
@@ -462,7 +491,7 @@ namespace UnityEditor
         private void RenderDocCaptureButton(Rect r)
         {
             if (s_RenderDocContent == null)
-                s_RenderDocContent = EditorGUIUtility.TrIconContent("renderdoc", "Capture this view in RenderDoc");
+                s_RenderDocContent = EditorGUIUtility.TrIconContent("renderdoc", UnityEditor.RenderDocUtil.openInRenderDocLabel);
 
             Rect r2 = new Rect(r.xMax - r.width, r.y, r.width, r.height);
             if (GUI.Button(r2, s_RenderDocContent, EditorStyles.iconButton))

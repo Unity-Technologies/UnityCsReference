@@ -85,8 +85,8 @@ namespace UnityEditor
                 if (assetModificationProcessors == null)
                 {
                     List<Type> processors = new List<Type>();
-                    processors.AddRange(EditorAssemblies.SubclassesOf(typeof(UnityEditor.AssetModificationProcessor)));
-                    processors.AddRange(EditorAssemblies.SubclassesOf(typeof(global::AssetModificationProcessor)));
+                    processors.AddRange(TypeCache.GetTypesDerivedFrom<AssetModificationProcessor>());
+                    processors.AddRange(TypeCache.GetTypesDerivedFrom<global::AssetModificationProcessor>());
                     assetModificationProcessors = processors.ToArray();
                 }
                 return assetModificationProcessors;

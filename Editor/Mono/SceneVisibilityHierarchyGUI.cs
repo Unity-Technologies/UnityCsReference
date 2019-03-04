@@ -87,13 +87,13 @@ namespace UnityEditor
             }
         }
 
-        public static void DoItemGUI(Rect rect, GameObjectTreeViewItem goItem, bool isSelected, bool isHovered, bool isFocused)
+        public static void DoItemGUI(Rect rect, GameObjectTreeViewItem goItem, bool isSelected, bool isHovered, bool isFocused, bool isDragging)
         {
             Rect iconRect = rect;
             iconRect.xMin += k_VisibilityIconPadding;
             iconRect.width = k_IconWidth;
-
-            bool isIconHovered = iconRect.Contains(Event.current.mousePosition);
+            isHovered = isHovered && !isDragging;
+            bool isIconHovered = !isDragging && iconRect.Contains(Event.current.mousePosition);
 
             if (isHovered)
             {
@@ -160,7 +160,7 @@ namespace UnityEditor
 
             if (shouldDisplayIcon && GUI.Button(rect, icon, Styles.sceneVisibilityStyle))
             {
-                SceneVisibilityManager.instance.ToggleVisibility(gameObject, Event.current.alt);
+                SceneVisibilityManager.instance.ToggleVisibility(gameObject, !Event.current.alt);
             }
         }
 

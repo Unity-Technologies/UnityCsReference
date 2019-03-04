@@ -249,6 +249,9 @@ namespace UnityEditorInternal
         [FreeFunction("InternalEditorUtilityBindings::HierarchyWindowDrag")]
         extern public static DragAndDropVisualMode HierarchyWindowDrag(HierarchyProperty property, HierarchyDropMode dropMode, Transform parentForDraggedObjects, bool perform);
 
+        [FreeFunction("InternalEditorUtilityBindings::HierarchyWindowDragByID")]
+        extern public static DragAndDropVisualMode HierarchyWindowDragByID(int dropTargetInstanceID, HierarchyDropMode dropMode, Transform parentForDraggedObjects, bool perform);
+
         [FreeFunction("InternalEditorUtilityBindings::InspectorWindowDrag")]
         extern internal static DragAndDropVisualMode InspectorWindowDrag(Object[] targets, bool perform);
 
@@ -405,14 +408,20 @@ namespace UnityEditorInternal
         [FreeFunction]
         extern public static bool IsInEditorFolder(string path);
 
-        [FreeFunction]
-        extern public static void ReloadWindowLayoutMenu();
+        public static void ReloadWindowLayoutMenu()
+        {
+            WindowLayout.ReloadWindowLayoutMenu();
+        }
 
-        [FreeFunction("RevertFactorySettings")]
-        extern public static void RevertFactoryLayoutSettings(bool quitOnCancel);
+        public static void RevertFactoryLayoutSettings(bool quitOnCancel)
+        {
+            WindowLayout.RevertFactorySettings(quitOnCancel);
+        }
 
-        [FreeFunction]
-        extern public static void LoadDefaultLayout();
+        public static void LoadDefaultLayout()
+        {
+            WindowLayout.LoadDefaultLayout();
+        }
 
         [StaticAccessor("GetRenderSettings()", StaticAccessorType.Dot)]
         extern internal static void CalculateAmbientProbeFromSkybox();
@@ -836,7 +845,8 @@ namespace UnityEditorInternal
         extern internal static PrecompiledAssembly[] GetPrecompiledAssemblies(bool buildingForEditor, BuildTargetGroup buildTargetGroup, BuildTarget target);
 
         [Obsolete("The Module Manager is deprecated", error: true)]
-        public static void ShowPackageManagerWindow() {}
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public static void ShowPackageManagerWindow() { throw new NotSupportedException("The Module Manager is deprecated"); }
 
         // For testing Vector2 marshalling
         [FreeFunction("InternalEditorUtilityBindings::PassAndReturnVector2")]

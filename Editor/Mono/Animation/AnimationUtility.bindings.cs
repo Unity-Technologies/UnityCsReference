@@ -148,9 +148,15 @@ namespace UnityEditor
             return Internal_GetAdditionalAnimatorBindings(targetObject);
         }
 
+        internal static EditorCurveBinding[] GetAnimationStreamBindings(GameObject root)
+        {
+            return Internal_GetAnimationStreamBindings(root);
+        }
+
         extern private static EditorCurveBinding[] Internal_GetGameObjectAnimatableBindings([NotNull] GameObject targetObject, [NotNull] GameObject root);
         extern private static EditorCurveBinding[] Internal_GetScriptableObjectAnimatableBindings([NotNull] ScriptableObject scriptableObject);
         extern private static EditorCurveBinding[] Internal_GetAdditionalAnimatorBindings([NotNull] GameObject targetObject);
+        extern private static EditorCurveBinding[] Internal_GetAnimationStreamBindings([NotNull] GameObject root);
 
         // Binds the property and returns the type of the bound value (Can be used to display special UI for it and to enforce correct drag and drop)
         // null if it can't be bound.
@@ -298,6 +304,7 @@ namespace UnityEditor
         extern private static void Internal_SetKeyRightTangentMode(ref Keyframe key, TangentMode tangentMode);
         extern private static void Internal_SetKeyBroken(ref Keyframe key, bool broken);
 
+        [NativeThrows]
         extern internal static int AddInbetweenKey(AnimationCurve curve, float time);
 
         [Obsolete("GetAllCurves is deprecated. Use GetCurveBindings and GetObjectReferenceCurveBindings instead.")]

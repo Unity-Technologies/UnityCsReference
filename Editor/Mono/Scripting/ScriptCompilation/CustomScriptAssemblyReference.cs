@@ -21,9 +21,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (assemblyRefData == null)
                 throw new Exception("Json file does not contain an assembly reference definition");
 
-            if (string.IsNullOrEmpty(assemblyRefData.reference))
-                throw new Exception("Required property 'reference' not set");
-
             return assemblyRefData;
         }
 

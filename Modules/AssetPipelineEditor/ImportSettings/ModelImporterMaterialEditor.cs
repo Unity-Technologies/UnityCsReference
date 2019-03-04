@@ -421,6 +421,12 @@ namespace UnityEditor
 
         void DoMaterialsGUI()
         {
+            if (targets.Length > 1)
+            {
+                EditorGUILayout.HelpBox(L10n.Tr("Material Editing is not supported on multiple selection"), MessageType.Info);
+                return;
+            }
+
             serializedObject.UpdateIfRequiredOrScript();
 
             UpdateShowAllMaterialNameOptions();

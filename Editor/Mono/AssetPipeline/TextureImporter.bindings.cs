@@ -18,7 +18,7 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/AssetPipeline/TextureImporting/TextureImporter.deprecated.h")]
     [NativeHeader("Editor/Src/AssetPipeline/TextureImporting/TextureImporterUtils.h")]
     [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
-    public sealed partial class TextureImporter : AssetImporter, ISpriteEditorDataProvider
+    public sealed partial class TextureImporter : AssetImporter
     {
         private string GetFixedPlatformName(string platform)
         {

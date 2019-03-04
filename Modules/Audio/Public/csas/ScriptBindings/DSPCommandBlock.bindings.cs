@@ -6,69 +6,71 @@
 using System;
 using UnityEngine.Bindings;
 
-namespace Unity.Experimental.Audio
+namespace Unity.Audio
 {
     [NativeType(Header = "Modules/Audio/Public/csas/DSPCommandBlock.bindings.h")]
-    internal partial struct DSPCommandBlock
+    internal struct DSPCommandBlockInternal
     {
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern unsafe void Internal_CreateDSPNode(ref DSPCommandBlock block, ref DSPNode node, void* jobReflectionData, void* jobMemory, void* parameterDescriptionArray, int parameterCount, void* sampleProviderDescriptionArray, int sampleProviderCount);
+        public static extern unsafe void Internal_CreateDSPNode(ref Handle graph, ref Handle block, ref Handle node, void* jobReflectionData, void* jobMemory, void* parameterDescriptionArray, int parameterCount, void* sampleProviderDescriptionArray, int sampleProviderCount);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern unsafe void Internal_SetFloat(ref DSPCommandBlock block, ref DSPNode node, void* jobReflectionData, uint pIndex, float value, uint interpolationLength);
+        public static extern unsafe void Internal_SetFloat(ref Handle graph, ref Handle block, ref Handle node, void* jobReflectionData, uint pIndex, float value, uint interpolationLength);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern unsafe void Internal_AddFloatKey(ref DSPCommandBlock block, ref DSPNode node, void* jobReflectionData, uint pIndex, ulong dspClock, float value);
+        public static extern unsafe void Internal_AddFloatKey(ref Handle graph, ref Handle block, ref Handle node, void* jobReflectionData, uint pIndex, ulong dspClock, float value);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern unsafe void Internal_SustainFloat(ref DSPCommandBlock block, ref DSPNode node, void* jobReflectionData, uint pIndex, ulong dspClock);
+        public static extern unsafe void Internal_SustainFloat(ref Handle graph, ref Handle block, ref Handle node, void* jobReflectionData, uint pIndex, ulong dspClock);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern unsafe void Internal_UpdateAudioJob(ref DSPCommandBlock block, ref DSPNode node, void* updateJobMem, void* updateJobReflectionData, void* nodeReflectionData);
+        public static extern unsafe void Internal_UpdateAudioJob(ref Handle graph, ref Handle block, ref Handle node, void* updateJobMem, void* updateJobReflectionData, void* nodeReflectionData);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern unsafe void Internal_CreateUpdateRequest(
-            ref DSPCommandBlock block, ref DSPNode node, ref DSPNodeUpdateRequestHandle request, object callback,
-            void* updateJobMem, void* updateJobReflectionData, void* nodeReflectionData);
+        public static extern unsafe void Internal_CreateUpdateRequest(
+            ref Handle graph, ref Handle block, ref Handle node, ref Handle request,
+            object callback, void* updateJobMem, void* updateJobReflectionData, void* nodeReflectionData);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern void Internal_ReleaseDSPNode(ref DSPCommandBlock block, ref DSPNode node);
+        public static extern void Internal_ReleaseDSPNode(ref Handle graph, ref Handle block, ref Handle node);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern void Internal_Connect(ref DSPCommandBlock block, ref DSPNode output, int outputPort, ref DSPNode input, int inputPort, ref DSPConnection connection);
+        public static extern void Internal_Connect(ref Handle graph, ref Handle block,
+            ref Handle output, int outputPort, ref Handle input, int inputPort, ref Handle connection);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern void Internal_Disconnect(ref DSPCommandBlock block, ref DSPNode output, int outputPort, ref DSPNode input, int inputPort);
+        public static extern void Internal_Disconnect(ref Handle graph, ref Handle block,
+            ref Handle output, int outputPort, ref Handle input, int inputPort);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern void Internal_DisconnectByHandle(ref DSPCommandBlock block, ref DSPConnection connection);
+        public static extern void Internal_DisconnectByHandle(ref Handle graph, ref Handle block, ref Handle connection);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern unsafe void Internal_SetAttenuation(ref DSPCommandBlock block, ref DSPConnection connection, void* value, byte dimension, uint interpolationLength);
+        public static extern unsafe void Internal_SetAttenuation(ref Handle graph, ref Handle block, ref Handle connection, void* value, byte dimension, uint interpolationLength);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern unsafe void Internal_AddAttenuationKey(ref DSPCommandBlock block, ref DSPConnection connection, ulong dspClock, void* value, byte dimension);
+        public static extern unsafe void Internal_AddAttenuationKey(ref Handle graph, ref Handle block, ref Handle connection, ulong dspClock, void* value, byte dimension);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern void Internal_SustainAttenuation(ref DSPCommandBlock block, ref DSPConnection connection, ulong dspClock);
+        public static extern void Internal_SustainAttenuation(ref Handle graph, ref Handle block, ref Handle connection, ulong dspClock);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern void Internal_AddInletPort(ref DSPCommandBlock block, ref DSPNode node, int channelCount, SoundFormat format);
+        public static extern void Internal_AddInletPort(ref Handle graph, ref Handle block, ref Handle node, int channelCount, int format);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern void Internal_AddOutletPort(ref DSPCommandBlock block, ref DSPNode node, int channelCount, SoundFormat format);
+        public static extern void Internal_AddOutletPort(ref Handle graph, ref Handle block, ref Handle node, int channelCount, int format);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern unsafe void Internal_SetSampleProvider(ref DSPCommandBlock block, ref DSPNode node, int item, int index, uint audioSampleProviderId);
+        public static extern unsafe void Internal_SetSampleProvider(ref Handle graph, ref Handle block, ref Handle node, int item, int index, uint audioSampleProviderId);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern unsafe void Internal_InsertSampleProvider(ref DSPCommandBlock block, ref DSPNode node, int item, int index, uint audioSampleProviderId);
+        public static extern unsafe void Internal_InsertSampleProvider(ref Handle graph, ref Handle block, ref Handle node, int item, int index, uint audioSampleProviderId);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern unsafe void Internal_RemoveSampleProvider(ref DSPCommandBlock block, ref DSPNode node, int item, int index);
+        public static extern unsafe void Internal_RemoveSampleProvider(ref Handle graph, ref Handle block, ref Handle node, int item, int index);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern void Internal_Complete(ref DSPCommandBlock block);
+        public static extern void Internal_Complete(ref Handle graph, ref Handle block);
     }
 }
 

@@ -784,7 +784,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             Dictionary<string, CustomScriptAssembly> guidsToAssemblies = null;
 
             // To check if a path prefix is already being used we use a Dictionary where the key is the prefix and the value is the file path.
-            var prefixToFilePathLookup = skipCustomScriptAssemblyGraphValidation ? null : customScriptAssemblies.ToDictionary(x => x.PathPrefix, x => new List<string>() { x.FilePath }, StringComparer.OrdinalIgnoreCase);
+            var prefixToFilePathLookup = skipCustomScriptAssemblyGraphValidation ?
+                null :
+                customScriptAssemblies.GroupBy(x => x.PathPrefix).ToDictionary(x => x.First().PathPrefix, x => new List<string>() { x.First().FilePath }, StringComparer.OrdinalIgnoreCase);
 
             for (var i = 0; i < paths.Length; ++i)
             {
@@ -907,6 +909,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         loadedCustomScriptAssembly = LoadCustomScriptAssemblyFromJsonPath(fullPath, guid);
                     }
 
+                    if (loadedCustomScriptAssembly.References == null)
+                        loadedCustomScriptAssembly.References = new string[0];
+
                     lowerCaseName = Utility.FastToLower(loadedCustomScriptAssembly.Name);
                     guidsToAssemblies[Utility.FastToLower(guid)] = loadedCustomScriptAssembly;
 
@@ -954,9 +959,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                                     loadedCustomScriptAssembly.PathPrefix), filePaths.ToArray());
                         }
                     }
-
-                    if (loadedCustomScriptAssembly.References == null)
-                        loadedCustomScriptAssembly.References = new string[0];
                 }
                 catch (Exception e)
                 {
@@ -966,6 +968,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 if (loadedCustomScriptAssembly != null)
                 {
+                    if (loadedCustomScriptAssembly.References == null)
+                        loadedCustomScriptAssembly.References = new string[0];
+
                     if (!skipCustomScriptAssemblyGraphValidation || !assemblyLowercaseNamesLookup.ContainsKey(lowerCaseName))
                     {
                         assemblyLowercaseNamesLookup[lowerCaseName] = loadedCustomScriptAssembly;

@@ -253,7 +253,7 @@ namespace UnityEngine.UIElements
                 else if (c == 0)
                 {
                     // if we have a composition string, make sure we clear the previous selection.
-                    if (!string.IsNullOrEmpty(Input.compositionString))
+                    if (!string.IsNullOrEmpty(GUIUtility.compositionString))
                     {
                         editorEngine.ReplaceSelection("");
                         m_Changed = true;
@@ -373,10 +373,10 @@ namespace UnityEngine.UIElements
 
             int cursorPos = editorEngine.cursorIndex;
 
-            if (!string.IsNullOrEmpty(Input.compositionString))
+            if (!string.IsNullOrEmpty(GUIUtility.compositionString))
             {
-                editorEngine.text = newText.Substring(0, editorEngine.cursorIndex) + Input.compositionString + newText.Substring(editorEngine.selectIndex);
-                cursorPos += Input.compositionString.Length;
+                editorEngine.text = newText.Substring(0, editorEngine.cursorIndex) + GUIUtility.compositionString + newText.Substring(editorEngine.selectIndex);
+                cursorPos += GUIUtility.compositionString.Length;
             }
             else
             {

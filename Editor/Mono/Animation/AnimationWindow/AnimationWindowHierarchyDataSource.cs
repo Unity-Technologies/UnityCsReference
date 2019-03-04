@@ -84,6 +84,10 @@ namespace UnityEditorInternal
             for (int i = 0; i < curves.Length; i++)
             {
                 AnimationWindowCurve curve = curves[i];
+
+                if (!state.ShouldShowCurve(curve))
+                    continue;
+
                 AnimationWindowCurve nextCurve = i < curves.Length - 1 ? curves[i + 1] : null;
 
                 singlePropertyCurves.Add(curve);

@@ -4,18 +4,29 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 
 namespace UnityEngine.UIElements
 {
     static class VisualElementFactoryRegistry
     {
-        internal static Dictionary<string, List<IUxmlFactory>> factories { get; private set; }
+        private static Dictionary<string, List<IUxmlFactory>> s_Factories;
+
+        internal static Dictionary<string, List<IUxmlFactory>> factories
+        {
+            get
+            {
+                if (s_Factories == null)
+                {
+                    s_Factories = new Dictionary<string, List<IUxmlFactory>>();
+                    RegisterEngineFactories();
+                }
+
+                return s_Factories;
+            }
+        }
 
         internal static void RegisterFactory(IUxmlFactory factory)
         {
-            DiscoverFactories();
             List<IUxmlFactory> factoryList;
             if (factories.TryGetValue(factory.uxmlQualifiedName, out factoryList))
             {
@@ -36,56 +47,10 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal static void DiscoverFactories()
-        {
-            if (factories != null)
-                return;
-
-            factories = new Dictionary<string, List<IUxmlFactory>>();
-            RegisterEngineFactories();
-
-            AppDomain currentDomain = AppDomain.CurrentDomain;
-            HashSet<string> userAssemblies = new HashSet<string>(ScriptingRuntime.GetAllUserAssemblies());
-            foreach (Assembly assembly in currentDomain.GetAssemblies())
-            {
-                if (!userAssemblies.Contains(assembly.GetName().Name + ".dll"))
-                    continue;
-
-                Type[] types;
-                try
-                {
-                    types = assembly.GetTypes();
-                }
-                catch (ReflectionTypeLoadException ex)
-                {
-                    var exceptionMessages = ex.LoaderExceptions.OfType<TypeLoadException>().Select(x  => $"{x.TypeName} : {x.Message}").ToArray();
-                    string loaderExceptionMessage = string.Empty;
-                    if (exceptionMessages.Any())
-                    {
-                        loaderExceptionMessage = "\n\n"  + string.Join("\n", exceptionMessages) + "\n";
-                    }
-
-                    Debug.LogWarning($"Error while loading types from assembly {assembly.FullName}: {ex}{loaderExceptionMessage}");
-                    types = ex.Types.Where(t => t != null).ToArray();
-                }
-
-                foreach (var type in types)
-                {
-                    if (typeof(IUxmlFactory).IsAssignableFrom(type))
-                    {
-                        var factory = (IUxmlFactory)Activator.CreateInstance(type);
-                        RegisterFactory(factory);
-                    }
-                }
-            }
-        }
-
         internal static bool TryGetValue(string fullTypeName, out List<IUxmlFactory> factoryList)
         {
-            DiscoverFactories();
-
             factoryList = null;
-            return factories != null && factories.TryGetValue(fullTypeName, out factoryList);
+            return factories.TryGetValue(fullTypeName, out factoryList);
         }
 
         static void RegisterEngineFactories()

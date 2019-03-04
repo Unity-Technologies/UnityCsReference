@@ -68,5 +68,20 @@ namespace Unity.Collections.LowLevel.Unsafe
             Type t = typeof(T);
             return GetReasonForTypeNonBlittableImpl(t, t.Name);
         }
+
+        internal struct IsUnmanagedCache<T>
+        {
+            internal static int value; // 0 == unknown, -1 false, 1 true
+        }
+
+        public static bool IsUnmanaged<T>()
+        {
+            int value = IsUnmanagedCache<T>.value;
+            if (value == 1)  // most common case
+                return true;
+            if (value == 0)
+                IsUnmanagedCache<T>.value = value = IsUnmanaged(typeof(T)) ? 1 : -1;
+            return value == 1;
+        }
     }
 }

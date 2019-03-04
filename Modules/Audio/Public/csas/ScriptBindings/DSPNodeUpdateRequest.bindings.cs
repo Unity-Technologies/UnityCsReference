@@ -7,25 +7,25 @@ using System;
 using Unity.Jobs;
 using UnityEngine.Bindings;
 
-namespace Unity.Experimental.Audio
+namespace Unity.Audio
 {
     [NativeType(Header = "Modules/Audio/Public/csas/DSPNodeUpdateRequest.bindings.h")]
-    internal partial struct DSPNodeUpdateRequestHandle
+    internal struct DSPNodeUpdateRequestHandleInternal
     {
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        public static extern unsafe void* Internal_GetUpdateJobData(ref DSPNodeUpdateRequestHandle requestHandle);
+        public static extern unsafe void* Internal_GetUpdateJobData(ref Handle graph, ref Handle requestHandle);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        public static extern bool Internal_HasError(ref DSPNodeUpdateRequestHandle requestHandle);
+        public static extern bool Internal_HasError(ref Handle graph, ref Handle requestHandle);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        public static extern void Internal_GetDSPNode(ref DSPNodeUpdateRequestHandle requestHandle, ref DSPNode node);
+        public static extern void Internal_GetDSPNode(ref Handle graph, ref Handle requestHandle, ref Handle node);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        public static extern void Internal_GetFence(ref DSPNodeUpdateRequestHandle requestHandle, ref JobHandle fence);
+        public static extern void Internal_GetFence(ref Handle graph, ref Handle requestHandle, ref JobHandle fence);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        public static extern void Internal_Dispose(ref DSPNodeUpdateRequestHandle requestHandle);
+        public static extern void Internal_Dispose(ref Handle graph, ref Handle requestHandle);
     }
 }
 

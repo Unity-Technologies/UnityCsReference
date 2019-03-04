@@ -4,10 +4,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
@@ -85,6 +83,8 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
             config.Set("mono-codegen", "il2cpp");
         if ((options & BuildOptions.EnableHeadlessMode) != 0)
             config.AddKey("headless");
+        if (!PlayerSettings.usePlayerLog)
+            config.AddKey("nolog");
     }
 
     private void CopyNativePlugins(BuildPostProcessArgs args, out List<string> cppPlugins)
@@ -221,11 +221,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         List<string> cppPlugins;
         CopyNativePlugins(args, out cppPlugins);
 
-        if (args.target == BuildTarget.StandaloneWindows ||
-            args.target == BuildTarget.StandaloneWindows64)
-        {
-            CreateApplicationData(args);
-        }
+        CreateApplicationData(args);
 
         PostprocessBuildPlayer.InstallStreamingAssets(args.stagingAreaData, args.report);
 
@@ -520,19 +516,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
     protected static string GetPathSafeProductName(BuildPostProcessArgs args)
     {
-        var invalidChars = Path.GetInvalidFileNameChars();
-        var normalizedProductName = args.productName.Trim().Normalize(NormalizationForm.FormD);
-        var sb = new StringBuilder();
-        foreach (var c in normalizedProductName)
-        {
-            if (invalidChars.Contains(c))
-                continue;
-            var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
-            if (unicodeCategory != UnicodeCategory.NonSpacingMark)
-                sb.Append(c);
-        }
-
-        return sb.ToString().Normalize(NormalizationForm.FormC);
+        return Paths.MakeValidFileName(args.productName);
     }
 
     protected abstract string PlatformStringFor(BuildTarget target);

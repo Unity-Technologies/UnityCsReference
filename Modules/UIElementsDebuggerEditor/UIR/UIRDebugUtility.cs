@@ -21,9 +21,7 @@ namespace UnityEditor.UIElements
     {
         public static void SwitchPanelRepaintMode(IPanel panel, RepaintMode newMode)
         {
-            RepaintMode currentMode = GetPanelRepaintMode(panel);
-            var previousUpdater = GetUIRRepaintUpdater(panel);
-            if (currentMode != newMode)
+            if (GetPanelRepaintMode(panel) != newMode)
             {
                 var p = panel as Panel;
                 if (newMode == RepaintMode.UIR)
@@ -37,9 +35,6 @@ namespace UnityEditor.UIElements
                     p.SetUpdater(new VisualTreeRepaintUpdater(), VisualTreeUpdatePhase.Repaint);
                     p.SetUpdater(new VisualTreeLayoutUpdater(), VisualTreeUpdatePhase.Layout);
                 }
-
-                if (previousUpdater != null)
-                    previousUpdater.Dispose();
 
                 panel.visualTree.MarkDirtyRepaint();
             }

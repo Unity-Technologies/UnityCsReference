@@ -16,7 +16,7 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
-    [CustomEditor(typeof(UnityEditorInternal.AssemblyDefinitionImporter))]
+    [CustomEditor(typeof(AssemblyDefinitionImporter))]
     [CanEditMultipleObjects]
     internal class AssemblyDefinitionImporterInspector : AssetImporterEditor
     {
@@ -65,6 +65,21 @@ namespace UnityEditor
             public string name;
             public string serializedReference;
             public AssemblyDefinitionAsset asset;
+
+            public void Load(string reference, bool useGUID)
+            {
+                var referencePath = CompilationPipeline.GetAssemblyDefinitionFilePathFromAssemblyReference(reference);
+                if (!string.IsNullOrEmpty(referencePath))
+                {
+                    asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(referencePath);
+
+                    if (useGUID)
+                    {
+                        var fileData = CustomScriptAssemblyData.FromJson(asset.text);
+                        name = fileData.name;
+                    }
+                }
+            }
         }
 
         [Serializable]
@@ -112,6 +127,8 @@ namespace UnityEditor
         SerializedProperty m_CompatibleWithAnyPlatform;
         SerializedProperty m_PlatformCompatibility;
 
+        Exception initializeException;
+
         public override bool showImportedObject { get { return false; } }
 
         public override void OnEnable()
@@ -131,6 +148,13 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
+            if (initializeException != null)
+            {
+                ShowLoadErrorExceptionGUI(initializeException);
+                ApplyRevertGUI();
+                return;
+            }
+
             extraDataSerializedObject.Update();
 
             var platforms = Compilation.CompilationPipeline.GetAssemblyDefinitionPlatforms();
@@ -327,7 +351,15 @@ namespace UnityEditor
 
         protected override void InitializeExtraDataInstance(Object extraTarget, int targetIndex)
         {
-            LoadAssemblyDefintionState((AssemblyDefinitionState)extraTarget, ((AssetImporter)targets[targetIndex]).assetPath);
+            try
+            {
+                LoadAssemblyDefintionState((AssemblyDefinitionState)extraTarget, ((AssetImporter)targets[targetIndex]).assetPath);
+                initializeException = null;
+            }
+            catch (Exception e)
+            {
+                initializeException = e;
+            }
         }
 
         void InitializeReorderableLists()
@@ -608,19 +640,7 @@ namespace UnityEditor
                             state.useGUIDs = true;
                         }
 
-                        var referencePath = CompilationPipeline.GetAssemblyDefinitionFilePathFromAssemblyReference(reference);
-
-                        if (!string.IsNullOrEmpty(referencePath))
-                        {
-                            assemblyDefinitionFile.asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(referencePath);
-                            // we need to gather the name from the extracted data in case we only kept reference to the guid.
-                            if (isGuid)
-                            {
-                                var fileData = CustomScriptAssemblyData.FromJson(assemblyDefinitionFile.asset.text);
-                                assemblyDefinitionFile.name = fileData.name;
-                            }
-                        }
-
+                        assemblyDefinitionFile.Load(reference, isGuid);
                         state.references.Add(assemblyDefinitionFile);
                     }
                     catch (AssemblyDefinitionException e)
@@ -807,13 +827,15 @@ namespace UnityEditor
             var label = string.IsNullOrEmpty(nameProp.stringValue) ? L10n.Tr("(Missing Reference)") : nameProp.stringValue;
             using (var change = new EditorGUI.ChangeCheckScope())
             {
-                bool mixed = assetProp.hasMultipleDifferentValues;
+                EditorGUI.showMixedValue = assetProp.hasMultipleDifferentValues;
                 EditorGUI.BeginDisabled(!string.IsNullOrEmpty(nameProp.stringValue) && assetProp.objectReferenceValue == null);
-                EditorGUI.ObjectField(rect, assetProp, typeof(AssemblyDefinitionAsset), mixed ? GUIContent.Temp("(Multiple Values)") : GUIContent.Temp(label));
+                var obj = EditorGUI.ObjectField(rect, EditorGUI.showMixedValue ? GUIContent.Temp("(Multiple Values)") : GUIContent.Temp(label), assetProp.objectReferenceValue, typeof(AssemblyDefinitionAsset), false);
+                EditorGUI.showMixedValue = false;
                 EditorGUI.EndDisabled();
 
-                if (change.changed && assetProp.objectReferenceValue != null)
+                if (change.changed && obj != null)
                 {
+                    assetProp.objectReferenceValue = obj;
                     var data = CustomScriptAssemblyData.FromJson(((AssemblyDefinitionAsset)assetProp.objectReferenceValue).text);
                     nameProp.stringValue = data.name;
                 }

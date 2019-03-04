@@ -1225,7 +1225,7 @@ namespace UnityEngine.TextCore
             Glyph[] glyphs;
             bool allCharactersAdded = FontEngine.TryAddGlyphsToTexture(m_GlyphIndexes, m_AtlasPadding, GlyphPackingMode.BestShortSideFit, m_FreeGlyphRects, m_UsedGlyphRects, m_AtlasRenderMode, m_AtlasTextures[m_AtlasTextureIndex], out glyphs);
 
-            for (int i = 0; i < glyphs.Length; i++)
+            for (int i = 0; i < glyphs.Length && glyphs[i] != null; i++)
             {
                 Glyph glyph = glyphs[i];
                 uint glyphIndex = glyph.index;
@@ -1339,7 +1339,7 @@ namespace UnityEngine.TextCore
             Glyph[] glyphs;
             bool allCharactersAdded = FontEngine.TryAddGlyphsToTexture(m_GlyphIndexes, m_AtlasPadding, GlyphPackingMode.BestShortSideFit, m_FreeGlyphRects, m_UsedGlyphRects, m_AtlasRenderMode, m_AtlasTextures[m_AtlasTextureIndex], out glyphs);
 
-            for (int i = 0; i < glyphs.Length; i++)
+            for (int i = 0; i < glyphs.Length && glyphs[i] != null; i++)
             {
                 Glyph glyph = glyphs[i];
                 uint glyphIndex = glyph.index;

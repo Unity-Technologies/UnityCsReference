@@ -219,7 +219,7 @@ namespace UnityEditor
             if (currentSRPType == null)
                 return GetDefaultLightingExplorerExtension();
 
-            var extensionTypes = EditorAssemblies.GetAllTypesWithInterface<ILightingExplorerExtension>();
+            var extensionTypes = TypeCache.GetTypesDerivedFrom<ILightingExplorerExtension>();
 
             foreach (System.Type extensionType in extensionTypes)
             {

@@ -90,6 +90,11 @@ namespace UnityEngine.Experimental.Animations
             InternalResolveAllSceneHandles(animator);
         }
 
+        internal static void UnbindAllHandles(this Animator animator)
+        {
+            InternalUnbindAllHandles(animator);
+        }
+
         extern private static void InternalBindStreamTransform([NotNull] Animator animator, [NotNull] Transform transform, out TransformStreamHandle transformStreamHandle);
 
         extern private static void InternalBindStreamProperty([NotNull] Animator animator, [NotNull] Transform transform, [NotNull] Type type, [NotNull] string property, bool isObjectReference, out PropertyStreamHandle propertyStreamHandle);
@@ -107,5 +112,7 @@ namespace UnityEngine.Experimental.Animations
         extern private static void InternalResolveAllStreamHandles([NotNull] Animator animator);
 
         extern private static void InternalResolveAllSceneHandles([NotNull] Animator animator);
+
+        extern private static void InternalUnbindAllHandles([NotNull] Animator animator);
     }
 }

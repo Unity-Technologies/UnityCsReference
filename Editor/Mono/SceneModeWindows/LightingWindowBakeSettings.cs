@@ -21,7 +21,6 @@ namespace UnityEditor
         private SavedBool       m_ShowRealtimeLightsSettings;
         private SavedBool       m_ShowMixedLightsSettings;
         private SavedBool       m_ShowGeneralLightmapSettings;
-        private SavedBool       m_ShowDebugEnvironmentSettings;
 
         SerializedObject m_LightmapSettingsSO;
         Object m_LightmapSettings;
@@ -71,7 +70,6 @@ namespace UnityEditor
         SerializedProperty m_PVRFilteringAtrousPositionSigmaAO;
         SerializedProperty m_PVREnvironmentMIS;
         SerializedProperty m_PVREnvironmentSampleCount;
-        SerializedProperty m_PVREnvironmentReferencePointCount;
 
         SerializedProperty m_BounceScale;
         SerializedProperty m_ExportTrainingData;
@@ -137,7 +135,6 @@ namespace UnityEditor
             m_PVRFilteringAtrousPositionSigmaAO = so.FindProperty("m_LightmapEditorSettings.m_PVRFilteringAtrousPositionSigmaAO");
             m_PVREnvironmentMIS = so.FindProperty("m_LightmapEditorSettings.m_PVREnvironmentMIS");
             m_PVREnvironmentSampleCount = so.FindProperty("m_LightmapEditorSettings.m_PVREnvironmentSampleCount");
-            m_PVREnvironmentReferencePointCount = so.FindProperty("m_LightmapEditorSettings.m_PVREnvironmentReferencePointCount");
 
             //dev debug properties
             m_BounceScale = so.FindProperty("m_GISettings.m_BounceScale");
@@ -152,7 +149,6 @@ namespace UnityEditor
             m_ShowGeneralLightmapSettings = new SavedBool($"LightingWindow.ShowGeneralLightmapSettings", true);
             m_ShowRealtimeLightsSettings = new SavedBool($"LightingWindow.ShowRealtimeLightsSettings", true);
             m_ShowMixedLightsSettings = new SavedBool($"LightingWindow.ShowMixedLightsSettings", true);
-            m_ShowDebugEnvironmentSettings = new SavedBool($"LightingWindow.ShowDebugEnvironmentSettings", false);
         }
 
         public void OnDisable()
@@ -370,31 +366,6 @@ namespace UnityEditor
             }
 
             Lightmapping.filterMode = (FilterMode)EditorGUILayout.EnumPopup(EditorGUIUtility.TempContent("Filter Mode"), Lightmapping.filterMode);
-            if (LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.Enlighten)
-            {
-                m_ShowDebugEnvironmentSettings.value = EditorGUILayout.Foldout(m_ShowDebugEnvironmentSettings.value, EditorGUIUtility.TempContent("Environment"), true);
-
-                if (m_ShowDebugEnvironmentSettings.value)
-                {
-                    EditorGUI.indentLevel++;
-
-                    bool enableEnvDirect = (m_PVREnvironmentMIS.intValue & 2) == 0;
-                    if (EditorGUILayout.Toggle(Styles.PVREnvironmentEnableDirect, enableEnvDirect))
-                        m_PVREnvironmentMIS.intValue &= ~2;
-                    else
-                        m_PVREnvironmentMIS.intValue |= 2;
-
-                    bool enableEnvIndirect = (m_PVREnvironmentMIS.intValue & 4) == 0;
-                    if (EditorGUILayout.Toggle(Styles.PVREnvironmentEnableIndirect, enableEnvIndirect))
-                        m_PVREnvironmentMIS.intValue &= ~4;
-                    else
-                        m_PVREnvironmentMIS.intValue |= 4;
-
-                    EditorGUILayout.PropertyField(m_PVREnvironmentReferencePointCount, Styles.PVREnvironmentReferencePointCount);
-
-                    EditorGUI.indentLevel--;
-                }
-            }
 
             EditorGUILayout.Slider(m_BounceScale, 0.0f, 10.0f, Styles.BounceScale);
 
@@ -525,15 +496,11 @@ namespace UnityEditor
 
                                 EditorGUILayout.PropertyField(m_PVRCulling, Styles.PVRCulling);
 
-                                if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU)
-                                {
-                                    bool enableMIS = (m_PVREnvironmentMIS.intValue & 1) != 0;
-                                    if (EditorGUILayout.Toggle(Styles.PVREnvironmentMIS, enableMIS))
-                                        m_PVREnvironmentMIS.intValue |= 1;
-                                    else
-                                        m_PVREnvironmentMIS.intValue &= ~1;
-                                }
-
+                                bool enableMIS = (m_PVREnvironmentMIS.intValue & 1) != 0;
+                                if (EditorGUILayout.Toggle(Styles.PVREnvironmentMIS, enableMIS))
+                                    m_PVREnvironmentMIS.intValue |= 1;
+                                else
+                                    m_PVREnvironmentMIS.intValue &= ~1;
 
                                 // Sampling type
                                 //EditorGUILayout.PropertyField(m_PvrSampling, Styles.m_PVRSampling); // TODO(PVR): make non-fixed sampling modes work.
@@ -569,15 +536,13 @@ namespace UnityEditor
                                         m_PVRDirectSampleCount.intValue = Math.Max(Math.Min(m_PVRDirectSampleCount.intValue, kMaxSamples), kMinDirectSamples);
                                     }
 
-                                    if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU)
-                                    {
-                                        EditorGUILayout.PropertyField(m_PVREnvironmentSampleCount, Styles.PVREnvironmentSampleCount);
+                                    EditorGUILayout.PropertyField(m_PVREnvironmentSampleCount, Styles.PVREnvironmentSampleCount);
 
-                                        if (m_PVREnvironmentSampleCount.intValue < kMinEnvironmentSamples || m_PVREnvironmentSampleCount.intValue > kMaxSamples)
-                                        {
-                                            m_PVREnvironmentSampleCount.intValue = Math.Max(Math.Min(m_PVREnvironmentSampleCount.intValue, kMaxSamples), kMinEnvironmentSamples);
-                                        }
+                                    if (m_PVREnvironmentSampleCount.intValue < kMinEnvironmentSamples || m_PVREnvironmentSampleCount.intValue > kMaxSamples)
+                                    {
+                                        m_PVREnvironmentSampleCount.intValue = Math.Max(Math.Min(m_PVREnvironmentSampleCount.intValue, kMaxSamples), kMinEnvironmentSamples);
                                     }
+
                                     // TODO(PVR): make non-fixed sampling modes work.
                                     //EditorGUI.indentLevel--;
                                 }
@@ -887,10 +852,7 @@ namespace UnityEditor
             public static readonly GUIContent PVRFilteringAtrousPositionSigmaAO = EditorGUIUtility.TrTextContent("Sigma", "Controls the threshold of the filter for ambient occlusion stored in the lightmap. A higher value increases the threshold, which reduces noise in the direct layer of the lightmap. Too high of a value can cause a loss of detail in the lightmap.");
             public static readonly GUIContent PVRCulling = EditorGUIUtility.TrTextContent("Prioritize View", "Specifies whether the lightmapper should prioritize baking texels within the scene view. When disabled, objects outside the scene view will have the same priority as those in the scene view.");
             public static readonly GUIContent PVREnvironmentMIS = EditorGUIUtility.TrTextContent("Multiple Importance Sampling", "Specifies whether to use multiple importance sampling for sampling the environment. This will generally lead to faster convergence when generating lightmaps, but can lead to noisier results in certain low frequency environments.");
-            public static readonly GUIContent PVREnvironmentEnableIndirect = EditorGUIUtility.TrTextContent("Indirect Environment", "Specifies whether the environment should be sampled during GI passes.");
-            public static readonly GUIContent PVREnvironmentEnableDirect = EditorGUIUtility.TrTextContent("Direct Environment", "Specifies whether the environment should be sampled during direct passes.");
             public static readonly GUIContent PVREnvironmentSampleCount = EditorGUIUtility.TrTextContent("Environment Samples", "Controls the number of samples the lightmapper will use for environment lighting calculations. Increasing this value may improve the quality of lightmaps but increases the time required for baking to complete.");
-            public static readonly GUIContent PVREnvironmentReferencePointCount = EditorGUIUtility.TrTextContent("Environment Reference Points", "Specifies the number of reference points used for importance sampling the environment.");
             // TODO(RadeonRays): Used for hiding A-trous filtering option until it is implemented.
             public static readonly GUIContent[] GPUFilterOptions = new[] { EditorGUIUtility.TrTextContent("Gaussian"), EditorGUIUtility.TrTextContent("None") };
             public static readonly int[] GPUFilterInts = new[] { (int)LightmapEditorSettings.FilterType.Gaussian, (int)LightmapEditorSettings.FilterType.None };

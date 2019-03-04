@@ -129,9 +129,17 @@ namespace UnityEditor
             }
             else
             {
-                AnimationClip activeAnimationClip = activeObject as AnimationClip;
-                if (activeAnimationClip != null)
-                    EditAnimationClip(activeAnimationClip);
+                Transform activeTransform = activeObject as Transform;
+                if (activeTransform != null)
+                {
+                    EditGameObject(activeTransform.gameObject);
+                }
+                else
+                {
+                    AnimationClip activeAnimationClip = activeObject as AnimationClip;
+                    if (activeAnimationClip != null)
+                        EditAnimationClip(activeAnimationClip);
+                }
             }
 
             if (restoringLockedSelection && !m_AnimEditor.stateDisabled)
@@ -182,18 +190,15 @@ namespace UnityEditor
             if (state.linkedWithSequencer == true)
                 return false;
 
-            return EditAnimationClipInternal(animationClip, (Object)null, (IAnimationWindowControl)null);
+            EditAnimationClipInternal(animationClip, (Object)null, (IAnimationWindowControl)null);
+            return true;
         }
 
         public bool EditSequencerClip(AnimationClip animationClip, Object sourceObject, IAnimationWindowControl controlInterface)
         {
-            if (EditAnimationClipInternal(animationClip, sourceObject, controlInterface))
-            {
-                state.linkedWithSequencer = true;
-                return true;
-            }
-
-            return false;
+            EditAnimationClipInternal(animationClip, sourceObject, controlInterface);
+            state.linkedWithSequencer = true;
+            return true;
         }
 
         public void UnlinkSequencer()
@@ -225,12 +230,12 @@ namespace UnityEditor
                 m_LastSelectedObjectID = gameObject != null ? gameObject.GetInstanceID() : 0;
             }
             else
-                return false;
+                m_AnimEditor.OnSelectionUpdated();
 
             return true;
         }
 
-        private bool EditAnimationClipInternal(AnimationClip animationClip, Object sourceObject, IAnimationWindowControl controlInterface)
+        private void EditAnimationClipInternal(AnimationClip animationClip, Object sourceObject, IAnimationWindowControl controlInterface)
         {
             var newSelection = AnimationClipSelectionItem.Create(animationClip, sourceObject);
             if (ShouldUpdateSelection(newSelection))
@@ -241,9 +246,7 @@ namespace UnityEditor
                 m_LastSelectedObjectID = animationClip != null ? animationClip.GetInstanceID() : 0;
             }
             else
-                return false;
-
-            return true;
+                m_AnimEditor.OnSelectionUpdated();
         }
 
         protected virtual void ShowButton(Rect r)

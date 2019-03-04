@@ -135,13 +135,12 @@ namespace UnityEngine.UIElements
         }
 
         // End the 2D GUI.
-        internal static void EndContainerGUI(Event evt)
+        internal static void EndContainerGUI(Event evt, Rect layoutSize)
         {
             if (Event.current.type == EventType.Layout
                 && s_ContainerStack.Count > 0)
             {
-                var r = s_ContainerStack.Peek().layout;
-                GUILayoutUtility.LayoutFromContainer(r.width, r.height);
+                GUILayoutUtility.LayoutFromContainer(layoutSize.width, layoutSize.height);
             }
             // restore cache
             GUILayoutUtility.SelectIDList(GUIUtility.s_OriginalID, false);

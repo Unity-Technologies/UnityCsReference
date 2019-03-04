@@ -185,7 +185,7 @@ namespace UnityEngine.UIElements.UIR
 
             m_UsesStraightYCoordinateSystem =
                 SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLCore ||
-                SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLES2  ||
+                SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLES2 ||
                 SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLES3;
         }
 
@@ -695,7 +695,7 @@ namespace UnityEngine.UIElements.UIR
             s_BeforeDrawSampler.End();
         }
 
-        void EvaluateChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, Texture atlas)
+        void EvaluateChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, Texture atlas, ref Exception immediateException)
         {
             var drawParams = new DrawParams(viewport, projection);
             ComputeBuffer transformsAsStructBuffer = m_TransformBuffers != null ? m_TransformBuffers[m_TransformBufferToUse] : null;
@@ -739,11 +739,13 @@ namespace UnityEngine.UIElements.UIR
                         materialChanges |= head.state.custom != curState.custom;
                         curState.custom = head.state.custom;
                     }
+
                     if (head.state.font != null)
                     {
                         materialChanges |= head.state.font != curState.font;
                         curState.font = head.state.font;
                     }
+
                     kickRanges = materialChanges || (head.mesh.allocPage != curPage);
                     if (!kickRanges)
                         stashRange = curDrawIndex != (head.mesh.allocIndices.start + head.indexOffset); // Should we stash at least?
@@ -767,6 +769,7 @@ namespace UnityEngine.UIElements.UIR
                         curDrawRange = new DrawBufferRange();
                         m_DrawStats.drawRangeCount++;
                     }
+
                     if (head.type == CommandType.Draw)
                     {
                         curDrawRange.firstIndex = (int)head.mesh.allocIndices.start + head.indexOffset;
@@ -800,7 +803,7 @@ namespace UnityEngine.UIElements.UIR
                     if (head.type != CommandType.Draw)
                     {
                         if (!m_MockDevice)
-                            head.ExecuteNonDrawMesh(drawParams, m_UsesStraightYCoordinateSystem);
+                            head.ExecuteNonDrawMesh(drawParams, m_UsesStraightYCoordinateSystem, ref immediateException);
                         if (head.type == CommandType.Immediate)
                             curState.material = m_DefaultMaterial; // A value that is considered unique and not null to force material reset on next draw command
                     }
@@ -808,6 +811,7 @@ namespace UnityEngine.UIElements.UIR
                     {
                         curPage = head.mesh.allocPage;
                     }
+
                     if (materialChanges)
                     {
                         if (!m_MockDevice)
@@ -829,6 +833,7 @@ namespace UnityEngine.UIElements.UIR
                             mat.SetTexture(s_FontTexPropID, curState.font);
                             mat.SetPass(0); // No multipass support, should it be even considered?
                         }
+
                         m_DrawStats.materialSetCount++;
                     }
                     else if (head.type == CommandType.PushView || head.type == CommandType.PopView)
@@ -840,12 +845,14 @@ namespace UnityEngine.UIElements.UIR
                             mat.SetVector(s_PixelClipRectPropID, drawParams.view.Peek().clipRect);
                             mat.SetPass(0);
                         }
+
                         m_DrawStats.materialSetCount++;
                     }
                 }
 
                 head = head.next;
             }
+
             m_DrawRangeStart = rangesStart;
         }
 
@@ -879,14 +886,16 @@ namespace UnityEngine.UIElements.UIR
         }
 
         // Called every frame to draw one entire UI window
-        public void DrawChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, Texture atlas)
+        public void DrawChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, Texture atlas, ref Exception immediateException)
         {
             if (head == null)
                 return;
 
             BeforeDraw();
             Utility.ProfileDrawChainBegin();
-            EvaluateChain(head, viewport, projection, atlas);
+
+            EvaluateChain(head, viewport, projection, atlas, ref immediateException);
+
             Utility.ProfileDrawChainEnd();
 
             if (m_Fences != null)

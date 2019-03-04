@@ -93,14 +93,25 @@ namespace UnityEditorInternal
 
         public static void CreateDefaultCurves(AnimationWindowState state, EditorCurveBinding[] properties)
         {
-            properties = RotationCurveInterpolation.ConvertRotationPropertiesToDefaultInterpolation(state.activeAnimationClip, properties);
-            foreach (EditorCurveBinding prop in properties)
-                state.SaveCurve(state.activeAnimationClip, CreateDefaultCurve(state, prop));
+            CreateDefaultCurves(state, state.activeAnimationClip, properties);
         }
 
-        public static AnimationWindowCurve CreateDefaultCurve(AnimationWindowState state, EditorCurveBinding binding)
+        public static void CreateDefaultCurves(AnimationWindowState state, AnimationClip animationClip, EditorCurveBinding[] properties)
         {
-            AnimationClip animationClip = state.activeAnimationClip;
+            properties = RotationCurveInterpolation.ConvertRotationPropertiesToDefaultInterpolation(animationClip, properties);
+
+            if (properties.Length == 0)
+                return;
+
+            var curves = new List<AnimationWindowCurve>(properties.Length);
+            foreach (EditorCurveBinding prop in properties)
+                curves.Add(CreateDefaultCurve(state, animationClip, prop));
+
+            state.SaveCurves(animationClip, curves);
+        }
+
+        public static AnimationWindowCurve CreateDefaultCurve(AnimationWindowState state, AnimationClip animationClip, EditorCurveBinding binding)
+        {
             Type type = state.selection.GetEditorCurveValueType(binding);
 
             AnimationWindowCurve curve = new AnimationWindowCurve(animationClip, binding, type);

@@ -26,6 +26,8 @@ namespace UnityEditorInternal
         const int kLabelMarginHorizontal = 8;
         const int kLabelMarginVertical = 2;
 
+        static private Color s_SelectedKeyColor = new Color32(87, 133, 217, 255);
+
         struct DrawElement
         {
             public Rect position;
@@ -479,7 +481,10 @@ namespace UnityEditorInternal
 
                 if (AnyKeyIsSelectedAtTime(dopeline, i))
                 {
-                    color = dopeline.tallMode && dopeline.isPptrDopeline ? Color.white : new Color(0.34f, 0.52f, 0.85f, 1f);
+                    color = s_SelectedKeyColor;
+                    if (dopeline.tallMode && dopeline.isPptrDopeline)
+                        color = Color.white;
+
                     if (dopeline.isMasterDopeline)
                         color = color.RGBMultiplied(0.85f);
 
@@ -628,7 +633,7 @@ namespace UnityEditorInternal
                         m_IsDraggingPlayheadStarted = true;
                         GUIUtility.hotControl = id;
                         m_DragStartTime = state.PixelToTime(Event.current.mousePosition.x);
-                        m_RectangleTool.OnStartMove(new Vector2(m_DragStartTime, 0f), m_RectangleTool.rippleTimeClutch);
+                        m_RectangleTool.OnStartMove(new Vector2(m_DragStartTime, 0f), state.rippleTime);
                         Event.current.Use();
                     }
                 }

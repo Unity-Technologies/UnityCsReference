@@ -2,8 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
 
 namespace UnityEditor.StyleSheets
@@ -12,6 +14,7 @@ namespace UnityEditor.StyleSheets
     {
         Syntax,
         Semantic,
+        Validation,
         Other,
         Internal
     }
@@ -28,67 +31,99 @@ namespace UnityEditor.StyleSheets
         UnsupportedSelectorFormat,
         RecursiveSelectorDetected,
         MissingFunctionArgument,
+        InvalidProperty,
         InvalidURILocation,
         InvalidURIScheme,
         InvalidURIProjectAssetPath,
         InvalidURIProjectAssetType
     }
 
-    class StyleSheetImportErrors
+    struct StyleSheetImportError
     {
-        struct Error
+        public readonly StyleSheetImportErrorType error;
+        public readonly StyleSheetImportErrorCode code;
+        public readonly string assetPath;
+        public readonly string message;
+        public readonly int line;
+        public readonly bool isWarning;
+
+        public StyleSheetImportError(StyleSheetImportErrorType error, StyleSheetImportErrorCode code, string assetPath, string message, int line = -1, bool isWarning = false)
         {
-            public readonly StyleSheetImportErrorType error;
-            public readonly StyleSheetImportErrorCode code;
-            public readonly string context;
-
-            public Error(StyleSheetImportErrorType error, StyleSheetImportErrorCode code, string context)
-            {
-                this.error = error;
-                this.code = code;
-                this.context = context;
-            }
-
-            public override string ToString()
-            {
-                return UnityString.Format("[StyleSheetImportError: error={0}, code={1}, context={2}]", error, code, context);
-            }
+            this.error = error;
+            this.code = code;
+            this.assetPath = assetPath;
+            this.message = message;
+            this.line = line;
+            this.isWarning = isWarning;
         }
 
-        List<Error> m_Errors = new List<Error>();
-
-        public void AddSyntaxError(string context)
+        public override string ToString()
         {
-            m_Errors.Add(new Error(
+            string lineStr = line >= 0 ? $":{line}" : "";
+            return UnityString.Format("StyleSheet import: type={0}, code={1} file={2}{3}\n    {4}",
+                error, code, assetPath, lineStr, message);
+        }
+    }
+
+    class StyleSheetImportErrors : IEnumerable<StyleSheetImportError>
+    {
+        List<StyleSheetImportError> m_Errors = new List<StyleSheetImportError>();
+
+        public string assetPath { get; set; }
+
+        public void AddSyntaxError(string message)
+        {
+            m_Errors.Add(new StyleSheetImportError(
                 StyleSheetImportErrorType.Syntax,
                 StyleSheetImportErrorCode.None,
-                context)
+                assetPath,
+                message)
             );
         }
 
-        public void AddSemanticError(StyleSheetImportErrorCode code, string context)
+        public void AddSemanticError(StyleSheetImportErrorCode code, string message)
         {
-            m_Errors.Add(new Error(
+            m_Errors.Add(new StyleSheetImportError(
                 StyleSheetImportErrorType.Semantic,
                 code,
-                context)
+                assetPath,
+                message)
             );
         }
 
-        public void AddInternalError(string context)
+        public void AddInternalError(string message)
         {
-            m_Errors.Add(new Error(
+            m_Errors.Add(new StyleSheetImportError(
                 StyleSheetImportErrorType.Internal,
                 StyleSheetImportErrorCode.None,
-                context)
+                assetPath,
+                message)
             );
         }
 
-        public bool hasErrors { get { return m_Errors.Count > 0; } }
-
-        public IEnumerable<string> FormatErrors()
+        public void AddValidationWarning(string message, int line)
         {
-            return m_Errors.Select(e => e.ToString());
+            m_Errors.Add(new StyleSheetImportError(
+                StyleSheetImportErrorType.Validation,
+                StyleSheetImportErrorCode.InvalidProperty,
+                assetPath,
+                message,
+                line,
+                true)
+            );
         }
+
+        public IEnumerator<StyleSheetImportError> GetEnumerator()
+        {
+            return m_Errors.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return m_Errors.GetEnumerator();
+        }
+
+        public bool hasErrors { get { return m_Errors.Any(e => !e.isWarning); } }
+        public bool hasWarning { get { return m_Errors.Any(e => e.isWarning); } }
     }
 }

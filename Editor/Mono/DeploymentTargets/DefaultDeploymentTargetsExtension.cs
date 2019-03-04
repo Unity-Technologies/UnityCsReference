@@ -36,6 +36,15 @@ namespace UnityEditor.DeploymentTargets
         }
     }
 
+    internal class DefaultDeploymentTargetLogger : DeploymentTargetLogger
+    {
+        internal override void Start() {}
+
+        internal override void Stop() {}
+
+        internal override void Clear() {}
+    }
+
     internal abstract class DefaultDeploymentTargetsExtension
         : IDeploymentTargetsExtension
     {
@@ -59,6 +68,11 @@ namespace UnityEditor.DeploymentTargets
         public virtual IDeploymentTargetInfo GetTargetInfo(IDeploymentTargetsMainThreadContext context, DeploymentTargetId targetId, ProgressHandler progressHandler = null)
         {
             return new DefaultDeploymentTargetInfo();
+        }
+
+        public virtual DeploymentTargetLogger GetTargetLogger(IDeploymentTargetsMainThreadContext context, DeploymentTargetId targetId)
+        {
+            return new DefaultDeploymentTargetLogger();
         }
 
         public virtual void LaunchBuildOnTarget(IDeploymentTargetsMainThreadContext context, BuildProperties buildProperties, DeploymentTargetId targetId, ProgressHandler progressHandler = null)

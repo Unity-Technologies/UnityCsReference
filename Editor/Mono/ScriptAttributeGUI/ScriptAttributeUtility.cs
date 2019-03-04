@@ -6,6 +6,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace UnityEditor
@@ -78,9 +79,7 @@ namespace UnityEditor
         {
             s_DrawerTypeForType = new Dictionary<Type, DrawerKeySet>();
 
-            var loadedTypes = AppDomain.CurrentDomain.GetAssemblies().SelectMany(x => AssemblyHelper.GetTypesFromAssembly(x)).ToArray();
-
-            foreach (var type in EditorAssemblies.SubclassesOf(typeof(GUIDrawer)))
+            foreach (var type in TypeCache.GetTypesDerivedFrom<GUIDrawer>())
             {
                 //Debug.Log("Drawer: " + type);
                 object[] attrs = type.GetCustomAttributes(typeof(CustomPropertyDrawer), true);
@@ -96,7 +95,7 @@ namespace UnityEditor
                     if (!editor.m_UseForChildren)
                         continue;
 
-                    var candidateTypes = loadedTypes.Where(x => x.IsSubclassOf(editor.m_Type));
+                    var candidateTypes = TypeCache.GetTypesDerivedFrom(editor.m_Type);
                     foreach (var candidateType in candidateTypes)
                     {
                         //Debug.Log("Candidate Type: "+ candidateType);
@@ -173,29 +172,66 @@ namespace UnityEditor
             return script.GetClass();
         }
 
+        struct Cache : IEquatable<Cache>
+        {
+            Type host;
+            string path;
+
+            public Cache(Type host, string path)
+            {
+                this.host = host;
+                this.path = path;
+            }
+
+            public bool Equals(Cache other)
+            {
+                return Equals(host, other.host) && string.Equals(path, other.path);
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) return false;
+                return obj is Cache && Equals((Cache)obj);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    return ((host != null ? host.GetHashCode() : 0) * 397) ^ (path != null ? path.GetHashCode() : 0);
+                }
+            }
+        }
+
+        static Dictionary<Cache, FieldInfo> s_FieldInfoFromPropertyPathCache = new Dictionary<Cache, FieldInfo>();
+
         private static FieldInfo GetFieldInfoFromPropertyPath(Type host, string path, out Type type)
         {
             FieldInfo field = null;
+
+            var regex = new Regex(@"\.Array\.data\[[0-9]+\]");
+            var match = regex.IsMatch(path);
+            if (match)
+                path = regex.Replace(path, "");
+
+            Cache cache = new Cache(host, path);
+            if (s_FieldInfoFromPropertyPathCache.TryGetValue(cache, out field))
+            {
+                type = field?.FieldType;
+                // we want to get the element type if we are looking for Array.data[x]
+                if (match && type != null && type.IsArrayOrList())
+                {
+                    type = type.GetArrayOrListElementType();
+                    return null;
+                }
+                return field;
+            }
+
             type = host;
             string[] parts = path.Split('.');
             for (int i = 0; i < parts.Length; i++)
             {
                 string member = parts[i];
-
-                // Special handling of array elements.
-                // The "Array" and "data[x]" parts of the propertyPath don't correspond to any types,
-                // so they should be skipped by the code that drills down into the types.
-                // However, we want to change the type from the type of the array to the type of the array element before we do the skipping.
-                if (i < parts.Length - 1 && member == "Array" && parts[i + 1].StartsWith("data["))
-                {
-                    if (type.IsArrayOrList())
-                        type = type.GetArrayOrListElementType();
-
-                    // Skip rest of handling for this part ("Array") and the next part ("data[x]").
-                    i++;
-                    continue;
-                }
-
                 // GetField on class A will not find private fields in base classes to A,
                 // so we have to iterate through the base classes and look there too.
                 // Private fields are relevant because they can still be shown in the Inspector,
@@ -207,12 +243,19 @@ namespace UnityEditor
                 if (foundField == null)
                 {
                     type = null;
+                    s_FieldInfoFromPropertyPathCache.Add(cache, null);
                     return null;
                 }
 
                 field = foundField;
                 type = field.FieldType;
+                // we want to get the element type if we are looking for Array.data[x]
+                if (match && type.IsArrayOrList())
+                {
+                    type = type.GetArrayOrListElementType();
+                }
             }
+            s_FieldInfoFromPropertyPathCache.Add(cache, field);
             return field;
         }
 

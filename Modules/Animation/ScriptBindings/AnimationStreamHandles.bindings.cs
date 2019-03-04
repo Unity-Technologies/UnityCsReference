@@ -8,6 +8,8 @@ using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using System;
 using System.Runtime.InteropServices;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine.Experimental.Animations
 {
@@ -122,6 +124,34 @@ namespace UnityEngine.Experimental.Animations
         public Vector3 GetLocalScale(AnimationStream stream) { CheckIsValidAndResolve(ref stream); return GetLocalScaleInternal(ref stream); }
         public void SetLocalScale(AnimationStream stream, Vector3 scale) { CheckIsValidAndResolve(ref stream); SetLocalScaleInternal(ref stream, scale); }
 
+        public bool GetPositionReadMask(AnimationStream stream) { CheckIsValidAndResolve(ref stream); return GetPositionReadMaskInternal(ref stream); }
+        public bool GetRotationReadMask(AnimationStream stream) { CheckIsValidAndResolve(ref stream); return GetRotationReadMaskInternal(ref stream); }
+        public bool GetScaleReadMask(AnimationStream stream) { CheckIsValidAndResolve(ref stream); return GetScaleReadMaskInternal(ref stream); }
+
+        public void GetLocalTRS(AnimationStream stream, out Vector3 position, out Quaternion rotation, out Vector3 scale)
+        {
+            CheckIsValidAndResolve(ref stream);
+            GetLocalTRSInternal(ref stream, out position, out rotation, out scale);
+        }
+
+        public void SetLocalTRS(AnimationStream stream, Vector3 position, Quaternion rotation, Vector3 scale, bool useMask)
+        {
+            CheckIsValidAndResolve(ref stream);
+            SetLocalTRSInternal(ref stream, position, rotation, scale, useMask);
+        }
+
+        public void GetGlobalTR(AnimationStream stream, out Vector3 position, out Quaternion rotation)
+        {
+            CheckIsValidAndResolve(ref stream);
+            GetGlobalTRInternal(ref stream, out position, out rotation);
+        }
+
+        public void SetGlobalTR(AnimationStream stream, Vector3 position, Quaternion rotation, bool useMask)
+        {
+            CheckIsValidAndResolve(ref stream);
+            SetGlobalTRInternal(ref stream, position, rotation, useMask);
+        }
+
         [NativeMethod(Name = "Resolve", IsThreadSafe = true)]
         private extern void ResolveInternal(ref AnimationStream stream);
 
@@ -154,6 +184,27 @@ namespace UnityEngine.Experimental.Animations
 
         [NativeMethod(Name = "TransformStreamHandleBindings::SetLocalScaleInternal", IsFreeFunction = true, HasExplicitThis = true, IsThreadSafe = true)]
         private extern void SetLocalScaleInternal(ref AnimationStream stream, Vector3 scale);
+
+        [NativeMethod(Name = "TransformStreamHandleBindings::GetPositionReadMaskInternal", IsFreeFunction = true, HasExplicitThis = true, IsThreadSafe = true)]
+        private extern bool GetPositionReadMaskInternal(ref AnimationStream stream);
+
+        [NativeMethod(Name = "TransformStreamHandleBindings::GetRotationReadMaskInternal", IsFreeFunction = true, HasExplicitThis = true, IsThreadSafe = true)]
+        private extern bool GetRotationReadMaskInternal(ref AnimationStream stream);
+
+        [NativeMethod(Name = "TransformStreamHandleBindings::GetScaleReadMaskInternal", IsFreeFunction = true, HasExplicitThis = true, IsThreadSafe = true)]
+        private extern bool GetScaleReadMaskInternal(ref AnimationStream stream);
+
+        [NativeMethod(Name = "TransformStreamHandleBindings::GetLocalTRSInternal", IsFreeFunction = true, HasExplicitThis = true, IsThreadSafe = true)]
+        private extern void GetLocalTRSInternal(ref AnimationStream stream, out Vector3 position, out Quaternion rotation, out Vector3 scale);
+
+        [NativeMethod(Name = "TransformStreamHandleBindings::SetLocalTRSInternal", IsFreeFunction = true, HasExplicitThis = true, IsThreadSafe = true)]
+        private extern void SetLocalTRSInternal(ref AnimationStream stream, Vector3 position, Quaternion rotation, Vector3 scale, bool useMask);
+
+        [NativeMethod(Name = "TransformStreamHandleBindings::GetGlobalTRInternal", IsFreeFunction = true, HasExplicitThis = true, IsThreadSafe = true)]
+        private extern void GetGlobalTRInternal(ref AnimationStream stream, out Vector3 position, out Quaternion rotation);
+
+        [NativeMethod(Name = "TransformStreamHandleBindings::SetGlobalTRInternal", IsFreeFunction = true, HasExplicitThis = true, IsThreadSafe = true)]
+        private extern void SetGlobalTRInternal(ref AnimationStream stream, Vector3 position, Quaternion rotation, bool useMask);
     }
 
     [NativeHeader("Modules/Animation/Director/AnimationStreamHandles.h")]
@@ -293,6 +344,12 @@ namespace UnityEngine.Experimental.Animations
             SetBoolInternal(ref stream, value);
         }
 
+        public bool GetReadMask(AnimationStream stream)
+        {
+            CheckIsValidAndResolve(ref stream);
+            return GetReadMaskInternal(ref stream);
+        }
+
         [NativeMethod(Name = "Resolve", IsThreadSafe = true)]
         private extern void ResolveInternal(ref AnimationStream stream);
 
@@ -313,6 +370,9 @@ namespace UnityEngine.Experimental.Animations
 
         [NativeMethod(Name = "SetBool", IsThreadSafe = true)]
         private extern void SetBoolInternal(ref AnimationStream stream, bool value);
+
+        [NativeMethod(Name = "GetReadMask", IsThreadSafe = true)]
+        private extern bool GetReadMaskInternal(ref AnimationStream stream);
     }
 
     [NativeHeader("Modules/Animation/ScriptBindings/AnimationStreamHandles.bindings.h")]
@@ -398,6 +458,18 @@ namespace UnityEngine.Experimental.Animations
             return GetLocalScaleInternal(ref stream);
         }
 
+        public void GetLocalTRS(AnimationStream stream, out Vector3 position, out Quaternion rotation, out Vector3 scale)
+        {
+            CheckIsValid(ref stream);
+            GetLocalTRSInternal(ref stream, out position, out rotation, out scale);
+        }
+
+        public void GetGlobalTR(AnimationStream stream, out Vector3 position, out Quaternion rotation)
+        {
+            CheckIsValid(ref stream);
+            GetGlobalTRInternal(ref stream, out position, out rotation);
+        }
+
         [Obsolete("SceneHandle is now read-only; it was problematic with the engine multithreading and determinism", true)]
         public void SetLocalScale(AnimationStream stream, Vector3 scale) {}
 
@@ -418,6 +490,12 @@ namespace UnityEngine.Experimental.Animations
 
         [NativeMethod(Name = "TransformSceneHandleBindings::GetLocalScaleInternal", IsFreeFunction = true, IsThreadSafe = true, HasExplicitThis = true)]
         private extern Vector3 GetLocalScaleInternal(ref AnimationStream stream);
+
+        [NativeMethod(Name = "TransformSceneHandleBindings::GetLocalTRSInternal", IsFreeFunction = true, IsThreadSafe = true, HasExplicitThis = true)]
+        private extern void GetLocalTRSInternal(ref AnimationStream stream, out Vector3 position, out Quaternion rotation, out Vector3 scale);
+
+        [NativeMethod(Name = "TransformSceneHandleBindings::GetGlobalTRInternal", IsFreeFunction = true, IsThreadSafe = true, HasExplicitThis = true)]
+        private extern void GetGlobalTRInternal(ref AnimationStream stream, out Vector3 position, out Quaternion rotation);
     }
 
     [NativeHeader("Modules/Animation/Director/AnimationSceneHandles.h")]
@@ -520,6 +598,108 @@ namespace UnityEngine.Experimental.Animations
 
         [NativeMethod(Name = "GetBool", IsThreadSafe = true)]
         private extern bool GetBoolInternal(ref AnimationStream stream);
+    }
+
+    [NativeHeader("Modules/Animation/ScriptBindings/AnimationStreamHandles.bindings.h")]
+    unsafe public static class AnimationSceneHandleUtility
+    {
+        public static void ReadInts(AnimationStream stream, NativeArray<PropertySceneHandle> handles, NativeArray<int> buffer)
+        {
+            int count = ValidateAndGetArrayCount(ref stream, handles, buffer);
+            if (count == 0)
+                return;
+
+            ReadSceneIntsInternal(ref stream, handles.GetUnsafePtr(), buffer.GetUnsafePtr(), count);
+        }
+
+        public static void ReadFloats(AnimationStream stream, NativeArray<PropertySceneHandle> handles, NativeArray<float> buffer)
+        {
+            int count = ValidateAndGetArrayCount(ref stream, handles, buffer);
+            if (count == 0)
+                return;
+
+            ReadSceneFloatsInternal(ref stream, handles.GetUnsafePtr(), buffer.GetUnsafePtr(), count);
+        }
+
+        internal static int ValidateAndGetArrayCount<T0, T1>(ref AnimationStream stream, NativeArray<T0> handles, NativeArray<T1> buffer)
+            where T0 : struct
+            where T1 : struct
+        {
+            stream.CheckIsValid();
+
+            if (!handles.IsCreated)
+                throw new NullReferenceException("Handle array is invalid.");
+            if (!buffer.IsCreated)
+                throw new NullReferenceException("Data buffer is invalid.");
+            if (buffer.Length < handles.Length)
+                throw new InvalidOperationException("Data buffer array is smaller than handles array.");
+
+            return handles.Length;
+        }
+
+        // PropertySceneHandle
+        [NativeMethod(Name = "AnimationHandleUtilityBindings::ReadSceneIntsInternal", IsFreeFunction = true, HasExplicitThis = false, IsThreadSafe = true)]
+        static private extern void ReadSceneIntsInternal(ref AnimationStream stream, void* propertySceneHandles, void* intBuffer, int count);
+
+        [NativeMethod(Name = "AnimationHandleUtilityBindings::ReadSceneFloatsInternal", IsFreeFunction = true, HasExplicitThis = false, IsThreadSafe = true)]
+        static private extern void ReadSceneFloatsInternal(ref AnimationStream stream, void* propertySceneHandles, void* floatBuffer, int count);
+    }
+
+    [NativeHeader("Modules/Animation/ScriptBindings/AnimationStreamHandles.bindings.h")]
+    unsafe public static class AnimationStreamHandleUtility
+    {
+        public static void WriteInts(AnimationStream stream, NativeArray<PropertyStreamHandle> handles, NativeArray<int> buffer, bool useMask)
+        {
+            stream.CheckIsValid();
+            int count = AnimationSceneHandleUtility.ValidateAndGetArrayCount(ref stream, handles, buffer);
+            if (count == 0)
+                return;
+
+            WriteStreamIntsInternal(ref stream, handles.GetUnsafePtr(), buffer.GetUnsafePtr(), count, useMask);
+        }
+
+        public static void WriteFloats(AnimationStream stream, NativeArray<PropertyStreamHandle> handles, NativeArray<float> buffer, bool useMask)
+        {
+            stream.CheckIsValid();
+            int count = AnimationSceneHandleUtility.ValidateAndGetArrayCount(ref stream, handles, buffer);
+            if (count == 0)
+                return;
+
+            WriteStreamFloatsInternal(ref stream, handles.GetUnsafePtr(), buffer.GetUnsafePtr(), count, useMask);
+        }
+
+        public static void ReadInts(AnimationStream stream, NativeArray<PropertyStreamHandle> handles, NativeArray<int> buffer)
+        {
+            stream.CheckIsValid();
+            int count = AnimationSceneHandleUtility.ValidateAndGetArrayCount(ref stream, handles, buffer);
+            if (count == 0)
+                return;
+
+            ReadStreamIntsInternal(ref stream, handles.GetUnsafePtr(), buffer.GetUnsafePtr(), count);
+        }
+
+        public static void ReadFloats(AnimationStream stream, NativeArray<PropertyStreamHandle> handles, NativeArray<float> buffer)
+        {
+            stream.CheckIsValid();
+            int count = AnimationSceneHandleUtility.ValidateAndGetArrayCount(ref stream, handles, buffer);
+            if (count == 0)
+                return;
+
+            ReadStreamFloatsInternal(ref stream, handles.GetUnsafePtr(), buffer.GetUnsafePtr(), count);
+        }
+
+        // PropertyStreamHandle
+        [NativeMethod(Name = "AnimationHandleUtilityBindings::ReadStreamIntsInternal", IsFreeFunction = true, HasExplicitThis = false, IsThreadSafe = true)]
+        static private extern void ReadStreamIntsInternal(ref AnimationStream stream, void* propertyStreamHandles, void* intBuffer, int count);
+
+        [NativeMethod(Name = "AnimationHandleUtilityBindings::ReadStreamFloatsInternal", IsFreeFunction = true, HasExplicitThis = false, IsThreadSafe = true)]
+        static private extern void ReadStreamFloatsInternal(ref AnimationStream stream, void* propertyStreamHandles, void* floatBuffer, int count);
+
+        [NativeMethod(Name = "AnimationHandleUtilityBindings::WriteStreamIntsInternal", IsFreeFunction = true, HasExplicitThis = false, IsThreadSafe = true)]
+        static private extern void WriteStreamIntsInternal(ref AnimationStream stream, void* propertyStreamHandles, void* intBuffer, int count, bool useMask);
+
+        [NativeMethod(Name = "AnimationHandleUtilityBindings::WriteStreamFloatsInternal", IsFreeFunction = true, HasExplicitThis = false, IsThreadSafe = true)]
+        static private extern void WriteStreamFloatsInternal(ref AnimationStream stream, void* propertyStreamHandles, void* floatBuffer, int count, bool useMask);
     }
 }
 

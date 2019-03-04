@@ -11,6 +11,7 @@ using ParserStyleSheet = ExCSS.StyleSheet;
 using ParserStyleRule = ExCSS.StyleRule;
 using UnityStyleSheet = UnityEngine.UIElements.StyleSheet;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 using ExCSS;
 using UnityEditor.Experimental.AssetImporters;
 
@@ -24,6 +25,8 @@ namespace UnityEditor.StyleSheets
         protected readonly Parser m_Parser;
         protected readonly StyleSheetBuilder m_Builder;
         protected readonly StyleSheetImportErrors m_Errors;
+        protected readonly StyleValidator m_Validator;
+        protected string m_AssetPath;
 
         public StyleValueImporter(AssetImportContext context)
         {
@@ -31,27 +34,40 @@ namespace UnityEditor.StyleSheets
                 throw new ArgumentNullException(nameof(context));
 
             m_Context = context;
+            m_AssetPath = context.assetPath;
             m_Parser = new Parser();
             m_Builder = new StyleSheetBuilder();
             m_Errors = new StyleSheetImportErrors();
+            m_Validator = new StyleValidator();
+
+            LoadPropertiesDefinition();
         }
 
         internal StyleValueImporter()
         {
             m_Context = null;
+            m_AssetPath = null;
             m_Parser = new Parser();
             m_Builder = new StyleSheetBuilder();
             m_Errors = new StyleSheetImportErrors();
+            m_Validator = new StyleValidator();
+
+            LoadPropertiesDefinition();
         }
 
-        public virtual string assetPath
+        private void LoadPropertiesDefinition()
         {
-            get
-            {
-                Debug.Assert(m_Context != null);
-                return m_Context.assetPath;
-            }
+            // Load properties definition to initialize the validation
+            var textAsset = EditorGUIUtility.Load(StyleValidator.kDefaultPropertiesPath) as TextAsset;
+            m_Validator.LoadPropertiesDefinition(textAsset.text);
         }
+
+        public bool disableValidation { get; set; }
+
+        // Used by test
+        public StyleSheetImportErrors importErrors { get { return m_Errors; } }
+
+        public string assetPath => m_AssetPath;
 
         // Allow overriding this in tests
         public virtual UnityEngine.Object DeclareDependencyAndLoad(string path)
@@ -118,7 +134,7 @@ namespace UnityEditor.StyleSheets
 
             if (string.IsNullOrEmpty(projectRelativePath) || !File.Exists(projectRelativePath))
             {
-                m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidURIProjectAssetPath, projectRelativePath);
+                m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidURIProjectAssetPath, path);
             }
             else
             {
@@ -259,16 +275,21 @@ namespace UnityEditor.StyleSheets
             if (m_Context == null)
                 return;
 
-            foreach (string importError in errors.FormatErrors())
+            foreach (var e in errors)
             {
-                m_Context.LogImportError(importError);
+                if (e.isWarning)
+                {
+                    m_Context.LogImportWarning(e.ToString(), e.assetPath, e.line);
+                }
+                else
+                {
+                    m_Context.LogImportError(e.ToString(), e.assetPath, e.line);
+                }
             }
         }
 
         protected virtual void OnImportSuccess(UnityStyleSheet asset)
         {
-            m_Context?.AddObjectToAsset("stylesheet", asset);
-            m_Context?.SetMainObject(asset);
         }
 
         public void Import(UnityStyleSheet asset, string contents)
@@ -279,6 +300,8 @@ namespace UnityEditor.StyleSheets
 
         protected void ImportParserStyleSheet(UnityStyleSheet asset, ParserStyleSheet styleSheet)
         {
+            m_Errors.assetPath = assetPath;
+
             if (styleSheet.Errors.Count > 0)
             {
                 foreach (StylesheetParseError error in styleSheet.Errors)
@@ -299,14 +322,34 @@ namespace UnityEditor.StyleSheets
                 }
             }
 
-            if (!m_Errors.hasErrors)
+            bool success = !m_Errors.hasErrors;
+            if (success)
             {
                 m_Builder.BuildTo(asset);
                 OnImportSuccess(asset);
             }
-            else
+
+            if (!success || m_Errors.hasWarning)
             {
                 OnImportError(m_Errors);
+            }
+        }
+
+        void ValidateProperty(Property property)
+        {
+            if (!disableValidation)
+            {
+                var name = property.Name;
+                var value = property.Term.ToString();
+                var result = m_Validator.ValidateProperty(name, value);
+                if (!result.success)
+                {
+                    string msg = $"{result.message}\n    {name}: {value}";
+                    if (!string.IsNullOrEmpty(result.hint))
+                        msg = $"{msg} -> {result.hint}";
+
+                    m_Errors.AddValidationWarning(msg, property.Line);
+                }
             }
         }
 
@@ -321,6 +364,8 @@ namespace UnityEditor.StyleSheets
 
                 foreach (Property property in  rule.Declarations)
                 {
+                    ValidateProperty(property);
+
                     m_Builder.BeginProperty(property.Name);
 
                     // Note: we must rely on recursion to correctly handle parser types here

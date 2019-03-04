@@ -284,9 +284,9 @@ namespace UnityEditor
             m_ListArea.Init(listPosition, hierarchyType, filter, true);
         }
 
-        static bool ShouldTreeViewBeUsed(Type type)
+        static bool ShouldTreeViewBeUsed(String typeStr)
         {
-            return type == typeof(AudioMixerGroup);
+            return (String.Equals(typeof(AudioMixerGroup).Name, typeStr));
         }
 
         public void Show(UnityObject obj, Type requiredType, SerializedProperty property, bool allowSceneObjects)
@@ -401,7 +401,7 @@ namespace UnityEditor
                     m_SkipHiddenPackages = false;
             }
 
-            if (ShouldTreeViewBeUsed(requiredType))
+            if (ShouldTreeViewBeUsed(m_RequiredType))
             {
                 m_ObjectTreeWithSearch.Init(position, this, CreateAndSetTreeView, TreeViewSelection, ItemWasDoubleClicked, initialSelection, 0);
             }

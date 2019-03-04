@@ -676,8 +676,22 @@ namespace UnityEditor.UIElements
                 if (element == null)
                     return;
 
+                bool handlePrefabState = false;
+
+                try
+                {
+                    // This can throw if the serialized object changes type under our feet
+                    handlePrefabState = prop.serializedObject.targetObjects.Length == 1 &&
+                        prop.isInstantiatedPrefab &&
+                        prop.prefabOverride;
+                }
+                catch (Exception)
+                {
+                    return;
+                }
+
                 // Handle prefab state.
-                if (prop.serializedObject.targetObjects.Length == 1 && prop.isInstantiatedPrefab && prop.prefabOverride)
+                if (handlePrefabState)
                 {
                     if (!element.ClassListContains(prefabOverrideUssClassName))
                     {

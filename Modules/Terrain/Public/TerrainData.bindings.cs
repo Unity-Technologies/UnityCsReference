@@ -356,6 +356,18 @@ namespace UnityEngine
         [NativeName(k_HeightmapPrefix + "GetInterpolatedHeight")]
         extern public float GetInterpolatedHeight(float x, float y);
 
+        public float[,] GetInterpolatedHeights(float xBase, float yBase, int xCount, int yCount, float xInterval, float yInterval)
+        {
+            if (xCount <= 0)
+                throw new ArgumentOutOfRangeException("xCount");
+            if (yCount <= 0)
+                throw new ArgumentOutOfRangeException("yCount");
+            return Internal_GetInterpolatedHeights(xBase, yBase, xCount, yCount, xInterval, yInterval);
+        }
+
+        [FreeFunction(k_ScriptingInterfacePrefix + "GetInterpolatedHeights", HasExplicitThis = true)]
+        extern private float[,] Internal_GetInterpolatedHeights(float xBase, float yBase, int xCount, int yCount, float xInterval, float yInterval);
+
         public float[,] GetHeights(int xBase, int yBase, int width, int height)
         {
             if (xBase < 0 || yBase < 0 || xBase + width < 0 || yBase + height < 0 || xBase + width > heightmapWidth || yBase + height > heightmapHeight)

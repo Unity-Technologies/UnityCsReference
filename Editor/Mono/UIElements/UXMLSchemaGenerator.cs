@@ -187,7 +187,6 @@ namespace UnityEditor.UIElements
             {
                 baseDir = Application.temporaryCachePath + "/";
             }
-            VisualElementFactoryRegistry.DiscoverFactories();
 
             // Convert the factories into schemas info.
             foreach (var factories in VisualElementFactoryRegistry.factories)

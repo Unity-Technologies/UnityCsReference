@@ -54,6 +54,12 @@ namespace UnityEngine
             set;
         }
 
+        public static extern Texture exposure
+        {
+            get;
+            set;
+        }
+
         public static extern void DrawFrustum(Vector3 center, float fov, float maxRange, float minRange, float aspect);
     }
 }

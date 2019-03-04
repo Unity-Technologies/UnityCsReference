@@ -59,9 +59,13 @@ namespace UnityEditor
         private AreaManipulator m_SelectionScaleLeft;
         private AreaManipulator m_SelectionScaleRight;
 
+        private AreaManipulator m_SelectionRippleLeft;
+        private AreaManipulator m_SelectionRippleRight;
+
         private bool hasSelection { get { return (m_State.selectedKeys.Count > 0); } }
         private Bounds selectionBounds { get { return m_State.selectionBounds; } }
         private float frameRate { get { return m_State.frameRate; } }
+        private bool rippleTime { get { return m_State.rippleTime; } }
 
         private bool isDragging { get { return m_IsDragging || m_DopeSheetEditor.isDragging; } }
 
@@ -84,7 +88,7 @@ namespace UnityEditor
                         bool curveEditorOverride = evt.shift || EditorGUI.actionKey;
                         if (!curveEditorOverride && hasSelection && manipulator.rect.Contains(evt.mousePosition))
                         {
-                            OnStartMove(new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0.0f), rippleTimeClutch);
+                            OnStartMove(new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0.0f), rippleTime);
                             return true;
                         }
 
@@ -111,7 +115,7 @@ namespace UnityEditor
                 {
                     if (hasSelection && manipulator.rect.Contains(evt.mousePosition))
                     {
-                        OnStartScale(ToolCoord.Right, ToolCoord.Left, new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0f), rippleTimeClutch);
+                        OnStartScale(ToolCoord.Right, ToolCoord.Left, new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0f), false);
                         return true;
                     }
 
@@ -137,7 +141,7 @@ namespace UnityEditor
                 {
                     if (hasSelection && manipulator.rect.Contains(evt.mousePosition))
                     {
-                        OnStartScale(ToolCoord.Left, ToolCoord.Right, new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0f), rippleTimeClutch);
+                        OnStartScale(ToolCoord.Left, ToolCoord.Right, new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0f), false);
                         return true;
                     }
 
@@ -149,6 +153,58 @@ namespace UnityEditor
                     return true;
                 };
                 m_SelectionScaleRight.onEndDrag += (AnimationWindowManipulator manipulator, Event evt) =>
+                {
+                    OnEndScale();
+                    return true;
+                };
+            }
+
+            if (m_SelectionRippleLeft == null)
+            {
+                m_SelectionRippleLeft = new AreaManipulator(styles.dopesheetRippleLeft, MouseCursor.ResizeHorizontal);
+
+                m_SelectionRippleLeft.onStartDrag += (AnimationWindowManipulator manipulator, Event evt) =>
+                {
+                    if (hasSelection && manipulator.rect.Contains(evt.mousePosition))
+                    {
+                        OnStartScale(ToolCoord.Right, ToolCoord.Left, new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0f), true);
+                        return true;
+                    }
+
+                    return false;
+                };
+                m_SelectionRippleLeft.onDrag += (AnimationWindowManipulator manipulator, Event evt) =>
+                {
+                    OnScaleTime(PixelToTime(evt.mousePosition.x, frameRate));
+                    return true;
+                };
+                m_SelectionRippleLeft.onEndDrag += (AnimationWindowManipulator manipulator, Event evt) =>
+                {
+                    OnEndScale();
+                    return true;
+                };
+            }
+
+            if (m_SelectionRippleRight == null)
+            {
+                m_SelectionRippleRight = new AreaManipulator(styles.dopesheetRippleRight, MouseCursor.ResizeHorizontal);
+
+                m_SelectionRippleRight.onStartDrag += (AnimationWindowManipulator manipulator, Event evt) =>
+                {
+                    if (hasSelection && manipulator.rect.Contains(evt.mousePosition))
+                    {
+                        OnStartScale(ToolCoord.Left, ToolCoord.Right, new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0f), true);
+                        return true;
+                    }
+
+                    return false;
+                };
+                m_SelectionRippleRight.onDrag += (AnimationWindowManipulator manipulator, Event evt) =>
+                {
+                    OnScaleTime(PixelToTime(evt.mousePosition.x, frameRate));
+                    return true;
+                };
+                m_SelectionRippleRight.onEndDrag += (AnimationWindowManipulator manipulator, Event evt) =>
                 {
                     OnEndScale();
                     return true;
@@ -169,18 +225,34 @@ namespace UnityEditor
             m_SelectionBoxes[0].OnGUI(m_Layout.summaryRect);
             m_SelectionBoxes[1].OnGUI(m_Layout.selectionRect);
 
-            m_SelectionScaleLeft.OnGUI(m_Layout.scaleLeftRect);
-            m_SelectionScaleRight.OnGUI(m_Layout.scaleRightRect);
+            bool showRippleHandles = (rippleTime && !isDragging) || (m_RippleTime && isDragging);
+
+            if (showRippleHandles)
+            {
+                m_SelectionRippleLeft.OnGUI(m_Layout.scaleLeftRect);
+                m_SelectionRippleRight.OnGUI(m_Layout.scaleRightRect);
+            }
+            else
+            {
+                m_SelectionScaleLeft.OnGUI(m_Layout.scaleLeftRect);
+                m_SelectionScaleRight.OnGUI(m_Layout.scaleRightRect);
+            }
 
             DrawLabels();
         }
 
         public void HandleEvents()
         {
-            HandleClutchKeys();
-
-            m_SelectionScaleLeft.HandleEvents();
-            m_SelectionScaleRight.HandleEvents();
+            if (rippleTime)
+            {
+                m_SelectionRippleLeft.HandleEvents();
+                m_SelectionRippleRight.HandleEvents();
+            }
+            else
+            {
+                m_SelectionScaleLeft.HandleEvents();
+                m_SelectionScaleRight.HandleEvents();
+            }
 
             m_SelectionBoxes[0].HandleEvents();
             m_SelectionBoxes[1].HandleEvents();

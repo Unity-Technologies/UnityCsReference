@@ -97,14 +97,24 @@ namespace UnityEngine.UIElements.UIR
             callback = null;
         }
 
-        internal void ExecuteNonDrawMesh(DrawParams drawParams, bool straightY)
+        internal void ExecuteNonDrawMesh(DrawParams drawParams, bool straightY, ref Exception immediateException)
         {
             switch (type)
             {
                 case CommandType.Immediate:
+                    if (immediateException != null)
+                        break;
+
                     Utility.ProfileImmediateRendererBegin();
-                    using (new GUIClip.ParentClipScope(owner.worldTransform, owner.worldClip))
-                        callback();
+                    try
+                    {
+                        using (new GUIClip.ParentClipScope(owner.worldTransform, owner.worldClip))
+                            callback();
+                    }
+                    catch (Exception e)
+                    {
+                        immediateException = e;
+                    }
                     GL.modelview = drawParams.view.Peek().transform;
                     GL.LoadProjectionMatrix(drawParams.projection);
                     Utility.ProfileImmediateRendererEnd();

@@ -184,7 +184,7 @@ namespace UnityEditor
                 if (showSpriteEditorAfter)
                 {
                     Selection.activeObject = AssetDatabase.LoadMainAssetAtPath(pathName);
-                    SpriteEditorWindow.GetWindow();
+                    SpriteUtilityWindow.ShowSpriteEditorWindow();
                 }
             }
         }

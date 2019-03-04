@@ -991,7 +991,7 @@ namespace UnityEditor
                             if (EditorUtility.DisplayDialog("Unapplied import settings", dialogText, "Apply", "Cancel"))
                             {
                                 ApplyAndImport();
-                                SpriteEditorWindow.GetWindow();
+                                SpriteUtilityWindow.ShowSpriteEditorWindow();
 
                                 // We reimported the asset which destroyed the editor, so we can't keep running the UI here.
                                 GUIUtility.ExitGUI();
@@ -999,7 +999,7 @@ namespace UnityEditor
                         }
                         else
                         {
-                            SpriteEditorWindow.GetWindow();
+                            SpriteUtilityWindow.ShowSpriteEditorWindow();
                         }
                     }
                     GUILayout.EndHorizontal();

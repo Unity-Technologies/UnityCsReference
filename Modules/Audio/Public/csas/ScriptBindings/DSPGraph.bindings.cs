@@ -6,44 +6,44 @@
 using System;
 using UnityEngine.Bindings;
 
-namespace Unity.Experimental.Audio
+namespace Unity.Audio
 {
     [NativeType(Header = "Modules/Audio/Public/csas/DSPGraph.bindings.h")]
-    internal partial struct DSPGraph
+    internal struct DSPGraphInternal
     {
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern void Internal_CreateDSPGraph(out DSPGraph graph, SoundFormat outputFormat, uint outputChannels, uint dspBufferSize, uint sampleRate);
+        public static extern void Internal_CreateDSPGraph(out Handle graph, int outputFormat, uint outputChannels, uint dspBufferSize, uint sampleRate);
 
         [NativeMethod(IsFreeFunction = true)]
-        static extern void Internal_GetDefaultGraph(out DSPGraph graph);
+        public static extern void Internal_GetDefaultGraph(out Handle graph);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern void Internal_DisposeDSPGraph(ref DSPGraph graph);
+        public static extern void Internal_DisposeDSPGraph(ref Handle graph);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern void Internal_CreateDSPCommandBlock(ref DSPGraph graph, ref DSPCommandBlock block);
+        public static extern void Internal_CreateDSPCommandBlock(ref Handle graph, ref Handle block);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern uint Internal_AddNodeEventHandler(
-            ref DSPGraph graph, long eventTypeHashCode, object handler);
+        public static extern uint Internal_AddNodeEventHandler(
+            ref Handle graph, long eventTypeHashCode, object handler);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern bool Internal_RemoveNodeEventHandler(ref DSPGraph graph, uint handlerId);
+        public static extern bool Internal_RemoveNodeEventHandler(ref Handle graph, uint handlerId);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern void Internal_GetRootDSP(ref DSPGraph graph, ref DSPNode root);
+        public static extern void Internal_GetRootDSP(ref Handle graph, ref Handle root);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern ulong Internal_GetDSPClock(ref DSPGraph graph);
+        public static extern ulong Internal_GetDSPClock(ref Handle graph);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern void Internal_BeginMix(ref DSPGraph graph);
+        public static extern void Internal_BeginMix(ref Handle graph);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern unsafe void Internal_ReadMix(ref DSPGraph graph, void* buffer, int length);
+        public static extern unsafe void Internal_ReadMix(ref Handle graph, void* buffer, int length);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        static extern unsafe void Internal_Update(ref DSPGraph graph);
+        public static extern unsafe void Internal_Update(ref Handle graph);
     }
 }
 

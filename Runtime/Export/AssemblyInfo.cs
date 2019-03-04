@@ -27,6 +27,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Timeline.Editor")] // for Driven Properties
 [assembly: InternalsVisibleTo("Unity.Timeline.EditorTests")]
 [assembly: InternalsVisibleTo("UnityEditor.InteractiveTutorialsFramework")]
+[assembly: InternalsVisibleTo("Unity.2D.Tilemap.Editor")]
+[assembly: InternalsVisibleTo("Unity.2D.Tilemap.EditorTests")]
 
 // Required for the type forwarder UnityEngine.dll
 [assembly: InternalsVisibleTo("UnityEngine")]
@@ -59,6 +61,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("GoogleAR.UnityNative")]
 [assembly: InternalsVisibleTo("Unity.WindowsMRAutomation")]
 [assembly: InternalsVisibleTo("UnityEngine.SpriteShapeModule")]
+[assembly: InternalsVisibleTo("Unity.2D.Sprite.Editor")]
+[assembly: InternalsVisibleTo("Unity.2D.Sprite.EditorTests")]
 
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.001")]
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.002")]

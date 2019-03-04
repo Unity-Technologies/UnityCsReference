@@ -53,11 +53,18 @@ namespace UnityEngine.UIElements
         internal RenderChain DebugGetRenderChain() { return renderChain; }
 
         // Overriden in tests
+        protected virtual RenderChain CreateRenderChain() { return new RenderChain(panel, panel.standardShader); }
         protected virtual void DrawChain(Rect topRect, Matrix4x4 projection)
         {
             Profiler.BeginSample("DrawChain");
-            renderChain.Render(topRect, projection);
-            Profiler.EndSample();
+            try
+            {
+                renderChain.Render(topRect, projection);
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
         }
 
         static UIRRepaintUpdater()
@@ -89,7 +96,7 @@ namespace UnityEngine.UIElements
             DisposeRenderChain();
             if (panel != null)
             {
-                renderChain = new RenderChain(panel, panel.standardShader);
+                renderChain = CreateRenderChain();
                 if (panel.visualTree != null)
                 {
                     renderChain.UIEOnChildAdded(panel.visualTree.hierarchy.parent, panel.visualTree,

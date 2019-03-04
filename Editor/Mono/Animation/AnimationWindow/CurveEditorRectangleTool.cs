@@ -125,6 +125,10 @@ namespace UnityEditor
 
         private AreaManipulator m_SelectionScaleLeft;
         private AreaManipulator m_SelectionScaleRight;
+
+        private AreaManipulator m_SelectionRippleLeft;
+        private AreaManipulator m_SelectionRippleRight;
+
         private AreaManipulator m_SelectionScaleBottom;
         private AreaManipulator m_SelectionScaleTop;
 
@@ -132,6 +136,7 @@ namespace UnityEditor
         private Bounds selectionBounds { get { return m_CurveEditor.selectionBounds; } }
 
         private float frameRate { get { return m_CurveEditor.invSnap; } }
+        private bool rippleTime { get { return m_CurveEditor.rippleTime; } }
 
         private DragMode dragMode
         {
@@ -160,7 +165,7 @@ namespace UnityEditor
                 {
                     if (hasSelection && manipulator.rect.Contains(evt.mousePosition))
                     {
-                        OnStartScale(ToolCoord.Right, ToolCoord.Left, new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0f), DragMode.ScaleHorizontal, rippleTimeClutch);
+                        OnStartScale(ToolCoord.Right, ToolCoord.Left, new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0f), DragMode.ScaleHorizontal, rippleTime);
                         return true;
                     }
 
@@ -186,7 +191,7 @@ namespace UnityEditor
                 {
                     if (hasSelection && manipulator.rect.Contains(evt.mousePosition))
                     {
-                        OnStartScale(ToolCoord.Left, ToolCoord.Right, new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0f), DragMode.ScaleHorizontal, rippleTimeClutch);
+                        OnStartScale(ToolCoord.Left, ToolCoord.Right, new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0f), DragMode.ScaleHorizontal, rippleTime);
                         return true;
                     }
 
@@ -212,7 +217,7 @@ namespace UnityEditor
                 {
                     if (hasSelection && manipulator.rect.Contains(evt.mousePosition))
                     {
-                        OnStartMove(new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0f), DragMode.MoveHorizontal, rippleTimeClutch);
+                        OnStartMove(new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0f), DragMode.MoveHorizontal, rippleTime);
                         return true;
                     }
 
@@ -317,7 +322,7 @@ namespace UnityEditor
                     bool curveEditorOverride = evt.shift || EditorGUI.actionKey;
                     if (!curveEditorOverride && hasSelection && manipulator.rect.Contains(evt.mousePosition))
                     {
-                        OnStartMove(new Vector2(PixelToTime(evt.mousePosition.x, frameRate), PixelToValue(evt.mousePosition.y)), rippleTimeClutch ? DragMode.MoveHorizontal : DragMode.MoveBothAxis, rippleTimeClutch);
+                        OnStartMove(new Vector2(PixelToTime(evt.mousePosition.x, frameRate), PixelToValue(evt.mousePosition.y)), DragMode.MoveBothAxis, rippleTime);
                         return true;
                     }
 
@@ -354,7 +359,7 @@ namespace UnityEditor
                 {
                     if (hasSelection && manipulator.rect.Contains(evt.mousePosition))
                     {
-                        OnStartScale(ToolCoord.Right, ToolCoord.Left, new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0f), DragMode.ScaleHorizontal, rippleTimeClutch);
+                        OnStartScale(ToolCoord.Right, ToolCoord.Left, new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0f), DragMode.ScaleHorizontal, false);
                         return true;
                     }
 
@@ -380,7 +385,7 @@ namespace UnityEditor
                 {
                     if (hasSelection && manipulator.rect.Contains(evt.mousePosition))
                     {
-                        OnStartScale(ToolCoord.Left, ToolCoord.Right, new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0f), DragMode.ScaleHorizontal, rippleTimeClutch);
+                        OnStartScale(ToolCoord.Left, ToolCoord.Right, new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0f), DragMode.ScaleHorizontal, false);
                         return true;
                     }
 
@@ -392,6 +397,58 @@ namespace UnityEditor
                     return true;
                 };
                 m_SelectionScaleRight.onEndDrag += (AnimationWindowManipulator manipulator, Event evt) =>
+                {
+                    OnEndScale();
+                    return true;
+                };
+            }
+
+            if (m_SelectionRippleLeft == null)
+            {
+                m_SelectionRippleLeft = new AreaManipulator(styles.rectangleToolRippleLeft, MouseCursor.ResizeHorizontal);
+
+                m_SelectionRippleLeft.onStartDrag += (AnimationWindowManipulator manipulator, Event evt) =>
+                {
+                    if (hasSelection && manipulator.rect.Contains(evt.mousePosition))
+                    {
+                        OnStartScale(ToolCoord.Right, ToolCoord.Left, new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0f), DragMode.ScaleHorizontal, true);
+                        return true;
+                    }
+
+                    return false;
+                };
+                m_SelectionRippleLeft.onDrag += (AnimationWindowManipulator manipulator, Event evt) =>
+                {
+                    OnScaleTime(PixelToTime(evt.mousePosition.x, frameRate));
+                    return true;
+                };
+                m_SelectionRippleLeft.onEndDrag += (AnimationWindowManipulator manipulator, Event evt) =>
+                {
+                    OnEndScale();
+                    return true;
+                };
+            }
+
+            if (m_SelectionRippleRight == null)
+            {
+                m_SelectionRippleRight = new AreaManipulator(styles.rectangleToolRippleRight, MouseCursor.ResizeHorizontal);
+
+                m_SelectionRippleRight.onStartDrag += (AnimationWindowManipulator manipulator, Event evt) =>
+                {
+                    if (hasSelection && manipulator.rect.Contains(evt.mousePosition))
+                    {
+                        OnStartScale(ToolCoord.Left, ToolCoord.Right, new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0f), DragMode.ScaleHorizontal, true);
+                        return true;
+                    }
+
+                    return false;
+                };
+                m_SelectionRippleRight.onDrag += (AnimationWindowManipulator manipulator, Event evt) =>
+                {
+                    OnScaleTime(PixelToTime(evt.mousePosition.x, frameRate));
+                    return true;
+                };
+                m_SelectionRippleRight.onEndDrag += (AnimationWindowManipulator manipulator, Event evt) =>
                 {
                     OnEndScale();
                     return true;
@@ -480,8 +537,19 @@ namespace UnityEditor
 
             m_SelectionScaleTop.OnGUI(m_Layout.scaleTopRect);
             m_SelectionScaleBottom.OnGUI(m_Layout.scaleBottomRect);
-            m_SelectionScaleLeft.OnGUI(m_Layout.scaleLeftRect);
-            m_SelectionScaleRight.OnGUI(m_Layout.scaleRightRect);
+
+            bool showRippleHandles = (rippleTime && dragMode == DragMode.None) || (m_RippleTime && dragMode != DragMode.None);
+
+            if (showRippleHandles)
+            {
+                m_SelectionRippleLeft.OnGUI(m_Layout.scaleLeftRect);
+                m_SelectionRippleRight.OnGUI(m_Layout.scaleRightRect);
+            }
+            else
+            {
+                m_SelectionScaleLeft.OnGUI(m_Layout.scaleLeftRect);
+                m_SelectionScaleRight.OnGUI(m_Layout.scaleRightRect);
+            }
 
             GUI.color = oldColor;
         }
@@ -523,16 +591,23 @@ namespace UnityEditor
 
             m_SelectionScaleTop.HandleEvents();
             m_SelectionScaleBottom.HandleEvents();
-            m_SelectionScaleLeft.HandleEvents();
-            m_SelectionScaleRight.HandleEvents();
+
+            if (rippleTime)
+            {
+                m_SelectionRippleLeft.HandleEvents();
+                m_SelectionRippleRight.HandleEvents();
+            }
+            else
+            {
+                m_SelectionScaleLeft.HandleEvents();
+                m_SelectionScaleRight.HandleEvents();
+            }
 
             m_SelectionBox.HandleEvents();
         }
 
         public void HandleOverlayEvents()
         {
-            HandleClutchKeys();
-
             RectangleToolFlags flags = m_CurveEditor.settings.rectangleToolFlags;
             if (flags == RectangleToolFlags.NoRectangleTool)
                 return;
@@ -837,7 +912,7 @@ namespace UnityEditor
         {
             if (m_RippleTime)
             {
-                m_CurveEditor.TransformRippleKeys(matrix, m_RippleTimeStart, m_RippleTimeEnd, flipX);
+                m_CurveEditor.TransformRippleKeys(matrix, m_RippleTimeStart, m_RippleTimeEnd, flipX, flipY);
                 GUI.changed = true;
             }
             else

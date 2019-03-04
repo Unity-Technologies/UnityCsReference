@@ -200,7 +200,7 @@ namespace UnityEditor
         static Type[] GetCachedAssetPostprocessorClasses()
         {
             if (m_PostprocessorClasses == null)
-                m_PostprocessorClasses = EditorAssemblies.SubclassesOf(typeof(AssetPostprocessor)).ToArray();
+                m_PostprocessorClasses = TypeCache.GetTypesDerivedFrom<AssetPostprocessor>().ToArray();
             return m_PostprocessorClasses;
         }
 

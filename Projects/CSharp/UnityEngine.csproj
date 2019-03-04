@@ -55,21 +55,6 @@
     <Compile Include="..\..\Runtime\Export\Android\AndroidDevice.bindings.cs">
       <Link>Runtime\Export\Android\AndroidDevice.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Android\AndroidInput.bindings.cs">
-      <Link>Runtime\Export\Android\AndroidInput.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Android\AndroidJNI.bindings.cs">
-      <Link>Runtime\Export\Android\AndroidJNI.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Android\AndroidJNISafe.cs">
-      <Link>Runtime\Export\Android\AndroidJNISafe.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Android\AndroidJava.bindings.cs">
-      <Link>Runtime\Export\Android\AndroidJava.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Android\AndroidJavaImpl.cs">
-      <Link>Runtime\Export\Android\AndroidJavaImpl.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Android\AndroidPermissions.bindings.cs">
       <Link>Runtime\Export\Android\AndroidPermissions.bindings.cs</Link>
     </Compile>
@@ -463,14 +448,8 @@
     <Compile Include="..\..\Runtime\Export\Input\Cursor.bindings.cs">
       <Link>Runtime\Export\Input\Cursor.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Input\Input.bindings.cs">
-      <Link>Runtime\Export\Input\Input.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Input\KeyCode.cs">
       <Link>Runtime\Export\Input\KeyCode.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Input\MouseEvents.cs">
-      <Link>Runtime\Export\Input\MouseEvents.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Internal\DefaultValueAttribute.cs">
       <Link>Runtime\Export\Internal\DefaultValueAttribute.cs</Link>
@@ -994,11 +973,20 @@
     <Compile Include="..\..\Runtime\Export\Windows\AppTrial.bindings.cs">
       <Link>Runtime\Export\Windows\AppTrial.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Windows\PhotoCapture.bindings.cs">
+      <Link>Runtime\Export\Windows\PhotoCapture.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Windows\Speech.bindings.cs">
       <Link>Runtime\Export\Windows\Speech.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Windows\Speech.cs">
       <Link>Runtime\Export\Windows\Speech.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Windows\VideoCapture.bindings.cs">
+      <Link>Runtime\Export\Windows\VideoCapture.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Windows\WebCam.bindings.cs">
+      <Link>Runtime\Export\Windows\WebCam.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Windows\WindowsCrashReporting.bindings.cs">
       <Link>Runtime\Export\Windows\WindowsCrashReporting.bindings.cs</Link>
@@ -1222,6 +1210,15 @@
     <Compile Include="..\..\Modules\Accessibility\VisionUtility.cs">
       <Link>Modules\Accessibility\VisionUtility.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\AndroidJNI.bindings.cs">
+      <Link>Modules\AndroidJNI\AndroidJNI.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\AndroidJNISafe.cs">
+      <Link>Modules\AndroidJNI\AndroidJNISafe.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\AndroidJava.cs">
+      <Link>Modules\AndroidJNI\AndroidJava.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Animation\Managed\Animation.deprecated.cs">
       <Link>Modules\Animation\Managed\Animation.deprecated.cs</Link>
     </Compile>
@@ -1243,8 +1240,11 @@
     <Compile Include="..\..\Modules\Animation\Managed\IAnimationJobPlayable.cs">
       <Link>Modules\Animation\Managed\IAnimationJobPlayable.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Animation\Managed\IAnimationWindowPostProcess.cs">
-      <Link>Modules\Animation\Managed\IAnimationWindowPostProcess.cs</Link>
+    <Compile Include="..\..\Modules\Animation\Managed\IAnimationWindowPreview.cs">
+      <Link>Modules\Animation\Managed\IAnimationWindowPreview.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\Managed\NotKeyableAttribute.cs">
+      <Link>Modules\Animation\Managed\NotKeyableAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Animation\Managed\ProcessAnimationJobStruct.cs">
       <Link>Modules\Animation\Managed\ProcessAnimationJobStruct.cs</Link>
@@ -1411,41 +1411,8 @@
     <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioSampleProvider.bindings.cs">
       <Link>Modules\Audio\Public\ScriptBindings\AudioSampleProvider.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Audio\Public\csas\Managed\AudioJobUpdateExtensions.cs">
-      <Link>Modules\Audio\Public\csas\Managed\AudioJobUpdateExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Audio\Public\csas\Managed\AudioJobsExtensions.cs">
-      <Link>Modules\Audio\Public\csas\Managed\AudioJobsExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Audio\Public\csas\Managed\DSPCommandBlock.cs">
-      <Link>Modules\Audio\Public\csas\Managed\DSPCommandBlock.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Audio\Public\csas\Managed\DSPGraph.cs">
-      <Link>Modules\Audio\Public\csas\Managed\DSPGraph.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Audio\Public\csas\Managed\DSPNodeUpdateRequest.cs">
-      <Link>Modules\Audio\Public\csas\Managed\DSPNodeUpdateRequest.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Audio\Public\csas\Managed\ExecuteContext.cs">
-      <Link>Modules\Audio\Public\csas\Managed\ExecuteContext.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Audio\Public\csas\Managed\IAudioJob.cs">
-      <Link>Modules\Audio\Public\csas\Managed\IAudioJob.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Audio\Public\csas\Managed\IAudioJobUpdate.cs">
-      <Link>Modules\Audio\Public\csas\Managed\IAudioJobUpdate.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Audio\Public\csas\Managed\ParameterData.cs">
-      <Link>Modules\Audio\Public\csas\Managed\ParameterData.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Audio\Public\csas\Managed\ResourceContext.cs">
-      <Link>Modules\Audio\Public\csas\Managed\ResourceContext.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Audio\Public\csas\Managed\SampleBufferArray.cs">
-      <Link>Modules\Audio\Public\csas\Managed\SampleBufferArray.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Audio\Public\csas\Managed\SampleProviderContainer.cs">
-      <Link>Modules\Audio\Public\csas\Managed\SampleProviderContainer.cs</Link>
+    <Compile Include="..\..\Modules\Audio\Public\csas\ScriptBindings\AudioHandle.bindings.cs">
+      <Link>Modules\Audio\Public\csas\ScriptBindings\AudioHandle.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Audio\Public\csas\ScriptBindings\DSPCommandBlock.bindings.cs">
       <Link>Modules\Audio\Public\csas\ScriptBindings\DSPCommandBlock.bindings.cs</Link>
@@ -1461,6 +1428,9 @@
     </Compile>
     <Compile Include="..\..\Modules\Audio\Public\csas\ScriptBindings\ExecuteContext.bindings.cs">
       <Link>Modules\Audio\Public\csas\ScriptBindings\ExecuteContext.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\csas\ScriptBindings\ExposeDSPGraph.cs">
+      <Link>Modules\Audio\Public\csas\ScriptBindings\ExposeDSPGraph.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Audio\Public\csas\ScriptBindings\ResourceContext.bindings.cs">
       <Link>Modules\Audio\Public\csas\ScriptBindings\ResourceContext.bindings.cs</Link>
@@ -1593,6 +1563,15 @@
     </Compile>
     <Compile Include="..\..\Modules\ImageConversion\ScriptBindings\ImageConversion.bindings.cs">
       <Link>Modules\ImageConversion\ScriptBindings\ImageConversion.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\InputLegacy\AndroidInput.bindings.cs">
+      <Link>Modules\InputLegacy\AndroidInput.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\InputLegacy\Input.bindings.cs">
+      <Link>Modules\InputLegacy\Input.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\InputLegacy\MouseEvents.cs">
+      <Link>Modules\InputLegacy\MouseEvents.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Input\Private\Input.cs">
       <Link>Modules\Input\Private\Input.cs</Link>
@@ -2191,6 +2170,27 @@
     <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleValueType.cs">
       <Link>Modules\UIElements\StyleSheets\StyleValueType.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\StyleSheets\Syntax\StyleSyntaxExpression.cs">
+      <Link>Modules\UIElements\StyleSheets\Syntax\StyleSyntaxExpression.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\StyleSheets\Syntax\StyleSyntaxParser.cs">
+      <Link>Modules\UIElements\StyleSheets\Syntax\StyleSyntaxParser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\StyleSheets\Syntax\StyleSyntaxToken.cs">
+      <Link>Modules\UIElements\StyleSheets\Syntax\StyleSyntaxToken.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\StyleSheets\Validation\StyleMatcher.cs">
+      <Link>Modules\UIElements\StyleSheets\Validation\StyleMatcher.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\StyleSheets\Validation\StylePropertyInfo.cs">
+      <Link>Modules\UIElements\StyleSheets\Validation\StylePropertyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\StyleSheets\Validation\StylePropertyValueParser.cs">
+      <Link>Modules\UIElements\StyleSheets\Validation\StylePropertyValueParser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\StyleSheets\Validation\StyleValidator.cs">
+      <Link>Modules\UIElements\StyleSheets\Validation\StyleValidator.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\StyleSheets\VisualElementStylesData.cs">
       <Link>Modules\UIElements\StyleSheets\VisualElementStylesData.cs</Link>
     </Compile>
@@ -2464,6 +2464,9 @@
     <Compile Include="..\..\Modules\VFX\Public\ScriptBindings\VFXEventAttribute.bindings.cs">
       <Link>Modules\VFX\Public\ScriptBindings\VFXEventAttribute.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\VFX\Public\ScriptBindings\VFXExpressionMesh.bindings.cs">
+      <Link>Modules\VFX\Public\ScriptBindings\VFXExpressionMesh.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\VFX\Public\ScriptBindings\VFXExpressionNoise.bindings.cs">
       <Link>Modules\VFX\Public\ScriptBindings\VFXExpressionNoise.bindings.cs</Link>
     </Compile>
@@ -2509,17 +2512,8 @@
     <Compile Include="..\..\Modules\VR\HoloLens\ScriptBindings\InteractionManager.deprecated.cs">
       <Link>Modules\VR\HoloLens\ScriptBindings\InteractionManager.deprecated.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\VR\HoloLens\ScriptBindings\PhotoCapture.bindings.cs">
-      <Link>Modules\VR\HoloLens\ScriptBindings\PhotoCapture.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\VR\HoloLens\ScriptBindings\SpatialMapping.bindings.cs">
       <Link>Modules\VR\HoloLens\ScriptBindings\SpatialMapping.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VR\HoloLens\ScriptBindings\VideoCapture.bindings.cs">
-      <Link>Modules\VR\HoloLens\ScriptBindings\VideoCapture.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VR\HoloLens\ScriptBindings\WebCam.bindings.cs">
-      <Link>Modules\VR\HoloLens\ScriptBindings\WebCam.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\VR\HoloLens\ScriptBindings\WorldAnchor.bindings.cs">
       <Link>Modules\VR\HoloLens\ScriptBindings\WorldAnchor.bindings.cs</Link>

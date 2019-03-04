@@ -3,10 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEditor;
 using UnityEditor.Web;
 using UnityEditor.Connect;
 using UnityEditorInternal;
@@ -106,7 +104,6 @@ namespace UnityEditor
 
         static class Styles
         {
-            public readonly static GUIStyle collabButtonStyle = "OffsetDropDown";
             public static readonly GUIStyle dropdown = "Dropdown";
             public static readonly GUIStyle appToolbar = "AppToolbar";
             public static readonly GUIStyle command = "Command";
@@ -227,31 +224,36 @@ namespace UnityEditor
             DoToolSettings(EditorToolGUI.GetThickArea(pos));
 
             // Position centered controls.
-            pos = new Rect(playModeControlsStart, 0, 140, 0);
+            pos = new Rect(playModeControlsStart, 0, 240, 0);
 
-            GUILayout.BeginArea(EditorToolGUI.GetThickArea(pos));
-            GUILayout.BeginHorizontal();
+            if (ModeService.HasCapability(ModeCapability.Playbar, true))
             {
-                DoPlayButtons(isOrWillEnterPlaymode);
+                GUILayout.BeginArea(EditorToolGUI.GetThickArea(pos));
+                GUILayout.BeginHorizontal();
+                {
+                    if (!ModeService.Execute("gui_playbar", isOrWillEnterPlaymode))
+                        DoPlayButtons(isOrWillEnterPlaymode);
+                }
+                GUILayout.EndHorizontal();
+                GUILayout.EndArea();
             }
-            GUILayout.EndHorizontal();
-            GUILayout.EndArea();
 
             // Position right aligned controls controls - start from right to left.
             pos = new Rect(position.width, 0, 0, 0);
 
             // Right spacing side
             ReserveWidthLeft(space, ref pos);
-
             ReserveWidthLeft(dropdownWidth, ref pos);
             DoLayoutDropDown(EditorToolGUI.GetThinArea(pos));
 
+            if (ModeService.HasCapability(ModeCapability.Layers, true))
+            {
+                ReserveWidthLeft(space, ref pos);
+                ReserveWidthLeft(dropdownWidth, ref pos);
+                DoLayersDropDown(EditorToolGUI.GetThinArea(pos));
+            }
+
             ReserveWidthLeft(space, ref pos);
-
-            ReserveWidthLeft(dropdownWidth, ref pos);
-            DoLayersDropDown(EditorToolGUI.GetThinArea(pos));
-
-            ReserveWidthLeft(largeSpace, ref pos);
 
             ReserveWidthLeft(dropdownWidth, ref pos);
             if (EditorGUI.DropdownButton(EditorToolGUI.GetThinArea(pos), s_AccountContent, FocusType.Passive, Styles.dropdown))
@@ -272,6 +274,19 @@ namespace UnityEditor
                 subToolbar.OnGUI(EditorToolGUI.GetThinArea(pos));
             }
 
+
+            if (ModeService.modeCount > 1)
+            {
+                EditorGUI.BeginChangeCheck();
+                ReserveWidthLeft(space, ref pos);
+                ReserveWidthLeft(dropdownWidth, ref pos);
+                var selectedModeIndex = EditorGUI.Popup(EditorToolGUI.GetThinArea(pos), ModeService.currentIndex, ModeService.modeNames, Styles.dropdown);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    EditorApplication.delayCall += () => ModeService.ChangeModeByIndex(selectedModeIndex);
+                    GUIUtility.ExitGUI();
+                }
+            }
 
             EditorGUI.ShowRepaints();
             Highlighter.ControlHighlightGUI(this);

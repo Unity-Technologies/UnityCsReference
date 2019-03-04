@@ -6,16 +6,16 @@
 using System;
 using UnityEngine.Bindings;
 
-namespace Unity.Experimental.Audio
+namespace Unity.Audio
 {
     [NativeType(Header = "Modules/Audio/Public/csas/ResourceContext.bindings.h")]
-    internal partial struct ResourceContext
+    internal struct ResourceContextInternal
     {
         [NativeMethod(IsThreadSafe = true, IsFreeFunction = true)]
-        static extern unsafe internal void* Internal_AllocateArray(void* dspNodePtr, int size);
+        public static extern unsafe void* Internal_AllocateArray(void* dspNodePtr, int size);
 
         [NativeMethod(IsThreadSafe = true, IsFreeFunction = true)]
-        static extern unsafe internal void Internal_FreeArray(void* dspNodePtr, void* memory);
+        public static extern unsafe void Internal_FreeArray(void* dspNodePtr, void* memory);
     }
 }
 

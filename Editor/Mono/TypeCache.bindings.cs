@@ -24,6 +24,8 @@ namespace UnityEditor
             readonly IntPtr ptr;
             readonly int count;
 
+            internal TypeCollection(IntPtr p, int s) { ptr = p; count = s; }
+
             public int Count => count;
 
             public bool IsReadOnly => true;
@@ -245,6 +247,8 @@ namespace UnityEditor
             readonly IntPtr ptr;
             readonly int count;
 
+            internal MethodCollection(IntPtr p, int s) { ptr = p; count = s; }
+
             public int Count => count;
 
             public bool IsReadOnly => true;
@@ -457,10 +461,10 @@ namespace UnityEditor
         }
 
         [ThreadSafe]
-        static extern TypeCollection GetTypesWithAttribute(Type attrType);
+        public static extern TypeCollection GetTypesWithAttribute(Type attrType);
 
         [ThreadSafe]
-        static extern MethodCollection GetMethodsWithAttribute(Type interfaceType);
+        public static extern MethodCollection GetMethodsWithAttribute(Type attrType);
 
         [ThreadSafe]
         static extern TypeCollection GetTypesDerivedFromInterface(Type interfaceType);

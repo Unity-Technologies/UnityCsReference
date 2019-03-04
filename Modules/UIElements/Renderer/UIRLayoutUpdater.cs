@@ -44,8 +44,13 @@ namespace UnityEngine.UIElements
                 if (validateLayoutCount > 0)
                     panel.ApplyStyles();
 
+                panel.duringLayoutPhase = true;
                 visualTree.yogaNode.CalculateLayout();
-                UpdateSubTree(visualTree);
+                panel.duringLayoutPhase = false;
+                using (new EventDispatcherGate(visualTree.panel.dispatcher))
+                {
+                    UpdateSubTree(visualTree, validateLayoutCount);
+                }
 
                 if (validateLayoutCount++ >= kMaxValidateLayoutCount)
                 {
@@ -55,7 +60,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private void UpdateSubTree(VisualElement ve)
+        private void UpdateSubTree(VisualElement ve, int currentLayoutPass)
         {
             Rect yogaRect = new Rect(ve.yogaNode.LayoutX, ve.yogaNode.LayoutY, ve.yogaNode.LayoutWidth, ve.yogaNode.LayoutHeight);
             Rect lastRect = ve.renderData.lastLayout;
@@ -80,7 +85,7 @@ namespace UnityEngine.UIElements
             {
                 for (int i = 0; i < ve.hierarchy.childCount; ++i)
                 {
-                    UpdateSubTree(ve.hierarchy[i]);
+                    UpdateSubTree(ve.hierarchy[i], currentLayoutPass);
                 }
             }
 
@@ -88,6 +93,7 @@ namespace UnityEngine.UIElements
             {
                 using (var evt = GeometryChangedEvent.GetPooled(lastRect, yogaRect))
                 {
+                    evt.layoutPass = currentLayoutPass;
                     evt.target = ve;
                     ve.SendEvent(evt);
                 }

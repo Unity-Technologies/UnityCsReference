@@ -125,7 +125,6 @@ namespace UnityEngine.UIElements.UIR
         public void Render(Rect topRect, Matrix4x4 projection)
         {
             s_RenderSampler.Begin();
-
             m_Stats = new ChainBuilderStats();
             m_Stats.elementsAdded += m_StatsElementsAdded;
             m_Stats.elementsRemoved += m_StatsElementsRemoved;
@@ -206,9 +205,14 @@ namespace UnityEngine.UIElements.UIR
 
             if (BeforeDrawChain != null)
                 BeforeDrawChain(device);
-            device.DrawChain(m_FirstCommand, topRect, projection, atlasManager?.atlas);
+
+            Exception immediateException = null;
+            device.DrawChain(m_FirstCommand, topRect, projection, atlasManager?.atlas, ref immediateException);
 
             s_RenderSampler.End();
+
+            if (immediateException != null)
+                throw immediateException;
 
             if (drawStats)
                 DrawStats();
@@ -602,6 +606,7 @@ namespace UnityEngine.UIElements.UIR
         internal MeshHandle data, closingData;
         internal Alloc transformID;
         internal Matrix4x4 verticesSpace; // Transform describing the space which the vertices in 'data' are relative to
+        internal int displacementUVStart, displacementUVEnd;
         internal uint dirtyID;
 
         // Text update acceleration

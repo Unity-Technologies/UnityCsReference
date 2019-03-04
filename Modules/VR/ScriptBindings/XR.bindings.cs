@@ -72,6 +72,10 @@ namespace UnityEngine.XR
         [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static UnityEngine.RenderTextureDescriptor eyeTextureDesc { get; }
 
+        [NativeName("DeviceEyeTextureDimension")]
+        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        extern public static TextureDimension deviceEyeTextureDimension { get; }
+
         public static float renderViewportScale
         {
             get

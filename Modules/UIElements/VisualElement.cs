@@ -368,6 +368,45 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal static Vector2 MultiplyMatrix44Point2(Matrix4x4 lhs, Vector2 point)
+        {
+            Vector2 res;
+            res.x = lhs.m00 * point.x + lhs.m01 * point.y + lhs.m03;
+            res.y = lhs.m10 * point.x + lhs.m11 * point.y + lhs.m13;
+            return res;
+        }
+
+        internal bool isBoundingBoxDirty = true;
+        private Rect m_BoundingBox;
+
+        internal Rect boundingBox
+        {
+            get
+            {
+                if (isBoundingBoxDirty)
+                {
+                    UpdateBoundingBox();
+                    isBoundingBoxDirty = false;
+                }
+
+                return m_BoundingBox;
+            }
+        }
+
+        internal void UpdateBoundingBox()
+        {
+            m_BoundingBox = rect;
+            for (int i = 0; i < hierarchy.childCount; i++)
+            {
+                var childBB = m_Children[i].boundingBox;
+                childBB = m_Children[i].ChangeCoordinatesTo(this, childBB);
+                m_BoundingBox.xMin = Math.Min(m_BoundingBox.xMin, childBB.xMin);
+                m_BoundingBox.xMax = Math.Max(m_BoundingBox.xMax, childBB.xMax);
+                m_BoundingBox.yMin = Math.Min(m_BoundingBox.yMin, childBB.yMin);
+                m_BoundingBox.yMax = Math.Max(m_BoundingBox.yMax, childBB.yMax);
+            }
+        }
+
         /// <summary>
         /// AABB after applying the world transform to <c>rect</c>.
         /// </summary>
@@ -409,8 +448,10 @@ namespace UnityEngine.UIElements
         }
 
         internal bool isWorldTransformDirty { get; set; } = true;
+        internal bool isWorldTransformInverseDirty { get; set; } = true;
 
-        private Matrix4x4 m_WorldTransform = Matrix4x4.identity;
+        private Matrix4x4 m_WorldTransformCache = Matrix4x4.identity;
+        private Matrix4x4 m_WorldTransformInverseCache = Matrix4x4.identity;
 
         /// <summary>
         /// Returns a matrix that cumulates the following operations (in order):
@@ -430,28 +471,44 @@ namespace UnityEngine.UIElements
                 if (isWorldTransformDirty)
                 {
                     UpdateWorldTransform();
-                    isWorldTransformDirty = false;
                 }
-                return m_WorldTransform;
+                return m_WorldTransformCache;
+            }
+        }
+
+        internal Matrix4x4 worldTransformInverse
+        {
+            get
+            {
+                if (isWorldTransformDirty || isWorldTransformInverseDirty)
+                {
+                    m_WorldTransformInverseCache = worldTransform.inverse;
+                    isWorldTransformInverseDirty = false;
+                }
+                return m_WorldTransformInverseCache;
             }
         }
 
         private void UpdateWorldTransform()
         {
-            if (elementPanel != null && elementPanel.duringLayoutPhase)
+            // If we are during a layout we don't want to remove the dirty transform flag
+            // since this could lead to invalid computed transform (see ScopeContentainer.DoMeasure)
+            if (elementPanel != null && !elementPanel.duringLayoutPhase)
             {
-                throw new Exception("Can't access worldTransform while measuring Layout!");
+                isWorldTransformDirty = false;
             }
 
             var offset = Matrix4x4.Translate(new Vector3(layout.x, layout.y, 0));
             if (hierarchy.parent != null)
             {
-                m_WorldTransform = hierarchy.parent.worldTransform * offset * transform.matrix;
+                m_WorldTransformCache = hierarchy.parent.worldTransform * offset * transform.matrix;
             }
             else
             {
-                m_WorldTransform = offset * transform.matrix;
+                m_WorldTransformCache = offset * transform.matrix;
             }
+
+            isWorldTransformInverseDirty = true;
         }
 
         internal bool isWorldClipDirty { get; set; } = true;
@@ -893,7 +950,14 @@ namespace UnityEngine.UIElements
             var stylePainter = (IStylePainterInternal)painter;
             stylePainter.DrawBackground();
             stylePainter.DrawBorder();
-            DoRepaint(stylePainter);
+            try
+            {
+                DoRepaint(stylePainter);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
         }
 
         internal virtual void DoRepaint(IStylePainter painter)
@@ -1352,7 +1416,7 @@ namespace UnityEngine.UIElements
                 throw new ArgumentNullException(nameof(ele));
             }
 
-            return ele.worldTransform.inverse.MultiplyPoint3x4((Vector3)p);
+            return VisualElement.MultiplyMatrix44Point2(ele.worldTransformInverse, p);
         }
 
         // transforms a point to Panel space referential
@@ -1363,7 +1427,7 @@ namespace UnityEngine.UIElements
                 throw new ArgumentNullException(nameof(ele));
             }
 
-            return (Vector2)ele.worldTransform.MultiplyPoint3x4((Vector3)p);
+            return VisualElement.MultiplyMatrix44Point2(ele.worldTransform, p);
         }
 
         // transforms a rect assumed in Panel space to the referential inside of the element bound (local)
@@ -1374,10 +1438,9 @@ namespace UnityEngine.UIElements
                 throw new ArgumentNullException(nameof(ele));
             }
 
-            var inv = ele.worldTransform.inverse;
-            Vector2 position = inv.MultiplyPoint3x4((Vector2)r.position);
+            Vector2 position = VisualElement.MultiplyMatrix44Point2(ele.worldTransformInverse, r.position);
             r.position = position;
-            r.size = inv.MultiplyVector(r.size);
+            r.size = ele.worldTransformInverse.MultiplyVector(r.size);
             return r;
         }
 
@@ -1390,7 +1453,7 @@ namespace UnityEngine.UIElements
             }
 
             var toWorldMatrix = ele.worldTransform;
-            r.position = toWorldMatrix.MultiplyPoint3x4(r.position);
+            r.position = VisualElement.MultiplyMatrix44Point2(toWorldMatrix, r.position);
             r.size = toWorldMatrix.MultiplyVector(r.size);
             return r;
         }

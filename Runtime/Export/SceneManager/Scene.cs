@@ -73,6 +73,12 @@ namespace UnityEngine.SceneManagement
             get { return GetRootCountInternal(handle); }
         }
 
+        public bool isSubScene
+        {
+            get { return IsSubScene(handle); }
+            set { SetIsSubScene(handle, value); }
+        }
+
         public GameObject[] GetRootGameObjects()
         {
             var rootGameObjects = new List<GameObject>(rootCount);

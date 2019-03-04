@@ -36,15 +36,17 @@ namespace UnityEditorInternal
         [SerializeField] public AnimEditor animEditor; // Reference to owner of this state. Used to trigger repaints.
         [SerializeField] public bool showCurveEditor; // Do we show dopesheet or curves
         [SerializeField] public bool linkedWithSequencer; // Toggle Sequencer selection mode.
+        [SerializeField] private bool m_RippleTime; // Toggle ripple time option for curve editor and dopesheet.
+        private bool m_RippleTimeClutch; // Toggle ripple time option for curve editor and dopesheet.
         [SerializeField] private TimeArea m_TimeArea; // Either curveeditor or dopesheet depending on which is selected
         [SerializeField] private AnimationWindowSelectionItem m_EmptySelection;
         [SerializeField] private AnimationWindowSelectionItem m_Selection; // Internal selection
         [SerializeField] private AnimationWindowKeySelection m_KeySelection; // What is selected. Hashes persist cache reload, because they are from keyframe time+value
         [SerializeField] private int m_ActiveKeyframeHash; // Which keyframe is active (selected key that user previously interacted with)
         [SerializeField] private float m_FrameRate = kDefaultFrameRate;
-        [SerializeField] private TimeArea.TimeFormat m_TimeFormat = TimeArea.TimeFormat.TimeFrame;
         [SerializeField] private AnimationWindowControl m_ControlInterface;
         [SerializeField] private IAnimationWindowControl m_OverrideControlInterface;
+        [SerializeField] private int[] m_SelectionFilter;
 
         [NonSerialized] public Action onStartLiveEdit;
         [NonSerialized] public Action onEndLiveEdit;
@@ -54,6 +56,7 @@ namespace UnityEditorInternal
 
         [NonSerialized] public AnimationWindowHierarchyDataSource hierarchyData;
 
+        private List<AnimationWindowCurve> m_AllCurvesCache;
         private List<AnimationWindowCurve> m_ActiveCurvesCache;
         private List<DopeLine> m_dopelinesCache;
         private List<AnimationWindowKeyframe> m_SelectedKeysCache;
@@ -220,6 +223,54 @@ namespace UnityEditorInternal
             }
         }
 
+
+        public bool filterBySelection
+        {
+            get
+            {
+                return AnimationWindowOptions.filterBySelection;
+            }
+            set
+            {
+                AnimationWindowOptions.filterBySelection = value;
+                UpdateSelectionFilter();
+
+                // Refresh everything.
+                refresh = RefreshType.Everything;
+            }
+        }
+
+        public bool showReadOnly
+        {
+            get
+            {
+                return AnimationWindowOptions.showReadOnly;
+            }
+            set
+            {
+                AnimationWindowOptions.showReadOnly = value;
+
+                // Refresh everything.
+                refresh = RefreshType.Everything;
+            }
+        }
+
+        public bool rippleTime
+        {
+            get
+            {
+                return m_RippleTime || m_RippleTimeClutch;
+            }
+            set
+            {
+                m_RippleTime = value;
+            }
+        }
+
+        public bool rippleTimeClutch { get { return m_RippleTimeClutch; } set { m_RippleTimeClutch = value; } }
+
+        public bool showFrameRate { get { return AnimationWindowOptions.showFrameRate; } set { AnimationWindowOptions.showFrameRate = value; } }
+
         public void OnGUI()
         {
             RefreshHashCheck();
@@ -245,6 +296,7 @@ namespace UnityEditorInternal
                 selection.ClearCache();
 
                 m_ActiveKeyframeCache = null;
+                m_AllCurvesCache = null;
                 m_ActiveCurvesCache = null;
                 m_dopelinesCache = null;
                 m_SelectedKeysCache = null;
@@ -335,11 +387,23 @@ namespace UnityEditorInternal
             if (onFrameRateChange != null)
                 onFrameRateChange(frameRate);
 
+            UpdateSelectionFilter();
+
             // reset back time at 0 upon selection change.
             controlInterface.OnSelectionChanged();
 
             if (animEditor != null)
                 animEditor.OnSelectionChanged();
+        }
+
+        public void OnSelectionUpdated()
+        {
+            UpdateSelectionFilter();
+            if (filterBySelection)
+            {
+                // Refresh everything.
+                refresh = RefreshType.Everything;
+            }
         }
 
         // Set this property to ask for refresh at the next OnGUI.
@@ -424,7 +488,7 @@ namespace UnityEditorInternal
             Repaint();
         }
 
-        public void SaveCurves(AnimationClip clip, ICollection<AnimationWindowCurve> curves, string undoLabel)
+        public void SaveCurves(AnimationClip clip, ICollection<AnimationWindowCurve> curves, string undoLabel = kEditCurveUndoLabel)
         {
             if (curves.Count == 0)
                 return;
@@ -532,9 +596,62 @@ namespace UnityEditorInternal
             controlInterface.ResampleAnimation();
         }
 
+        public bool ShouldShowCurve(AnimationWindowCurve curve)
+        {
+            if (filterBySelection && activeRootGameObject != null)
+            {
+                if (m_SelectionFilter != null)
+                {
+                    Transform t = activeRootGameObject.transform.Find(curve.path);
+                    if (t != null)
+                    {
+                        if (!m_SelectionFilter.Contains(t.gameObject.GetInstanceID()))
+                            return false;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private void UpdateSelectionFilter()
+        {
+            m_SelectionFilter = (filterBySelection) ? (int[])Selection.instanceIDs.Clone() : null;
+        }
+
         public List<AnimationWindowCurve> allCurves
         {
-            get { return selection.curves; }
+            get
+            {
+                if (m_AllCurvesCache == null)
+                {
+                    if (!selection.animationIsEditable && !showReadOnly)
+                    {
+                        // Empty list.
+                        m_AllCurvesCache = new List<AnimationWindowCurve>();
+                    }
+                    else if (!filterBySelection || activeRootGameObject == null)
+                    {
+                        m_AllCurvesCache = selection.curves;
+                    }
+                    else
+                    {
+                        List<AnimationWindowCurve> allCurvesUnfiltered = selection.curves;
+                        m_AllCurvesCache = new List<AnimationWindowCurve>();
+                        for (int i = 0; i < allCurvesUnfiltered.Count; ++i)
+                        {
+                            if (ShouldShowCurve(allCurvesUnfiltered[i]))
+                                m_AllCurvesCache.Add(allCurvesUnfiltered[i]);
+                        }
+                    }
+                }
+
+                return m_AllCurvesCache;
+            }
         }
 
         public List<AnimationWindowCurve> activeCurves
@@ -1466,6 +1583,9 @@ namespace UnityEditorInternal
         // Set scene active go to be the same as the one selected from hierarchy
         private void SyncSceneSelection(int[] selectedNodeIDs)
         {
+            if (filterBySelection)
+                return;
+
             if (!selection.canSyncSceneSelection)
                 return;
 
@@ -1476,6 +1596,10 @@ namespace UnityEditorInternal
             List<int> selectedGameObjectIDs = new List<int>(selectedNodeIDs.Length);
             foreach (var selectedNodeID in selectedNodeIDs)
             {
+                // Skip nodes without associated curves.
+                if (selectedNodeID == 0)
+                    continue;
+
                 AnimationWindowHierarchyNode node = hierarchyData.FindItem(selectedNodeID) as AnimationWindowHierarchyNode;
 
                 if (node == null)
@@ -1519,7 +1643,7 @@ namespace UnityEditorInternal
                     SaveKeySelection(kEditCurveUndoLabel);
 
                     // Reposition all keyframes to match the new sampling rate
-                    foreach (var curve in allCurves)
+                    foreach (var curve in selection.curves)
                     {
                         foreach (var key in curve.m_Keyframes)
                         {
@@ -1528,7 +1652,7 @@ namespace UnityEditorInternal
                         }
                     }
 
-                    SaveCurves(activeAnimationClip, allCurves, kEditCurveUndoLabel);
+                    SaveCurves(activeAnimationClip, selection.curves, kEditCurveUndoLabel);
 
                     AnimationEvent[] events = AnimationUtility.GetAnimationEvents(activeAnimationClip);
                     foreach (AnimationEvent ev in events)
@@ -1564,7 +1688,7 @@ namespace UnityEditorInternal
         public int currentFrame { get { return time.frame; } set { controlInterface.GoToFrame(value); } }
         public float currentTime { get { return time.time; } set { controlInterface.GoToTime(value); } }
 
-        public TimeArea.TimeFormat timeFormat { get { return m_TimeFormat; } set { m_TimeFormat = value; } }
+        public TimeArea.TimeFormat timeFormat { get { return AnimationWindowOptions.timeFormat; } set { AnimationWindowOptions.timeFormat = value; } }
 
         public TimeArea timeArea
         {

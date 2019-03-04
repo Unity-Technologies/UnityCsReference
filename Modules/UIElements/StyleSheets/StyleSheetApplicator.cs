@@ -117,19 +117,9 @@ namespace UnityEngine.UIElements.StyleSheets
                     {
                         if (!sheet.TryReadFloat(handles, index++, out hotspotY))
                         {
+                            Debug.LogWarning("USS 'cursor' property requires two integers for the hot spot value.");
                         }
                     }
-                }
-
-                if (index < handles.Length)
-                {
-                    if (getCursorIdFunc != null)
-                    {
-                        cursorId = getCursorIdFunc(sheet, handles[index]);
-                    }
-                }
-                else
-                {
                 }
             }
             else

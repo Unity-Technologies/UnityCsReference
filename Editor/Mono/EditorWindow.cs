@@ -275,6 +275,9 @@ namespace UnityEditor
 
         internal void DrawNotification()
         {
+            if (Event.current.type != EventType.Repaint)
+                return;
+
             EditorStyles.notificationText.CalcMinMaxWidth(m_Notification, out m_NotificationSize.y, out m_NotificationSize.x);
             m_NotificationSize.y = EditorStyles.notificationText.CalcHeight(m_Notification, m_NotificationSize.x);
 
@@ -1031,11 +1034,10 @@ namespace UnityEditor
                     }
                     else if (da.parent && da.m_Panes.Count == 1 && !da.parent.parent)     // We should have a DockArea, then a splitView, then null
                     {
+                        // This introduces a shift of Y coordinate by top value(20)
                         var newPosition = da.borderSize.Add(value);
-                        if (da.background != null)
-                        {
-                            newPosition.y -= da.background.margin.top;
-                        }
+                        // Adding the same top value
+                        newPosition.y += da.borderSize.top;
                         da.window.position = newPosition;
                     }
                     else

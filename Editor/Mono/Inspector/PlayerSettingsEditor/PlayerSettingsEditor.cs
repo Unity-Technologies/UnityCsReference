@@ -162,10 +162,7 @@ namespace UnityEditor
             public static readonly GUIContent skinOnGPUPS4 = EditorGUIUtility.TrTextContent("Compute Skinning*", "Use Compute pipeline for Skinning");
             public static readonly GUIContent disableStatistics = EditorGUIUtility.TrTextContent("Disable HW Statistics*", "Disables HW Statistics");
             public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TrTextContent("Scripting Define Symbols");
-            public static readonly GUIContent scriptingRuntimeVersionActive = EditorGUIUtility.TrTextContent("Active Scripting Runtime Version*", "The scripting runtime version currently in use by the Editor.");
-            public static readonly GUIContent scriptingRuntimeVersionActiveWarning = EditorGUIUtility.TrTextContent("The scripting runtime version currently in use by the Editor does not match the version specified by the project. An Editor restart is required for requested changes to take effect.");
-            public static readonly GUIContent scriptingRuntimeVersionDeprecationWarning = EditorGUIUtility.TrTextContent("The .NET 3.5 scripting runtime has been deprecated and will be removed in a future release.");
-            public static readonly GUIContent scriptingBackendDeprecationWarning = EditorGUIUtility.TrTextContent("Support for the Mono scripting backend had been deprecated for this platform and will be removed in a future release.");
+            public static readonly GUIContent scriptingRuntimeVersionDeprecationWarning = EditorGUIUtility.TrTextContent("The .NET 3.5 scripting runtime has been removed. Please select .NET 4.x Equivalent.");
             public static readonly GUIContent scriptingRuntimeVersion = EditorGUIUtility.TrTextContent("Scripting Runtime Version*", "The scripting runtime version to be used. Unity uses different scripting backends based on platform, so these options are listed as equivalent expected behavior.");
             public static readonly GUIContent scriptingRuntimeVersionLegacy = EditorGUIUtility.TrTextContent(".NET 3.5 Equivalent (Deprecated)");
             public static readonly GUIContent scriptingRuntimeVersionLatest = EditorGUIUtility.TrTextContent(".NET 4.x Equivalent");
@@ -173,7 +170,6 @@ namespace UnityEditor
             public static readonly GUIContent managedStrippingLevel = EditorGUIUtility.TrTextContent("Managed Stripping Level", "If scripting backend is IL2CPP, managed stripping can't be disabled.");
             public static readonly GUIContent il2cppCompilerConfiguration = EditorGUIUtility.TrTextContent("C++ Compiler Configuration");
             public static readonly GUIContent scriptingMono2x = EditorGUIUtility.TrTextContent("Mono");
-            public static readonly GUIContent scriptingMono2xDeprecated = EditorGUIUtility.TrTextContent("Mono (Deprecated)");
             public static readonly GUIContent scriptingIL2CPP = EditorGUIUtility.TrTextContent("IL2CPP");
             public static readonly GUIContent scriptingDefault = EditorGUIUtility.TrTextContent("Default");
             public static readonly GUIContent strippingDisabled = EditorGUIUtility.TrTextContent("Disabled");
@@ -1896,51 +1892,36 @@ namespace UnityEditor
             // scripting runtime settings in play mode are not supported
             using (new EditorGUI.DisabledScope(EditorApplication.isPlaying))
             {
-                // Scripting Runtime Version
-                var scriptingRuntimeVersions = new[] {ScriptingRuntimeVersion.Legacy, ScriptingRuntimeVersion.Latest};
-                var scriptingRuntimeVersionNames = new[] {SettingsContent.scriptingRuntimeVersionLegacy, SettingsContent.scriptingRuntimeVersionLatest};
-                var newScriptingRuntimeVersions = PlayerSettings.scriptingRuntimeVersion;
-
-                if (EditorApplication.isPlaying)
-                {
-                    var current = PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy ? SettingsContent.scriptingRuntimeVersionLegacy : SettingsContent.scriptingRuntimeVersionLatest;
-                    BuildDisabledEnumPopup(current, SettingsContent.scriptingRuntimeVersion);
-                }
-                else
-                {
-                    newScriptingRuntimeVersions = BuildEnumPopup(SettingsContent.scriptingRuntimeVersion, PlayerSettings.scriptingRuntimeVersion, scriptingRuntimeVersions, scriptingRuntimeVersionNames);
-                }
-
-                if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy)
+                // If the user somehow managed to start the editor with legacy settings we need to provide a way out
+                if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy
+                    || PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy)
                 {
                     EditorGUILayout.HelpBox(SettingsContent.scriptingRuntimeVersionDeprecationWarning.text, MessageType.Warning);
-                }
 
-                if (PlayerSettings.scriptingRuntimeVersion != EditorApplication.scriptingRuntimeVersion)
-                {
-                    var activeScriptingRuntime = EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy ? SettingsContent.scriptingRuntimeVersionLegacy : SettingsContent.scriptingRuntimeVersionLatest;
-                    BuildDisabledEnumPopup(activeScriptingRuntime, SettingsContent.scriptingRuntimeVersionActive);
+                    var newScriptingRuntimeVersion = PlayerSettings.scriptingRuntimeVersion;
+                    var scriptingRuntimeVersions = new[] {ScriptingRuntimeVersion.Legacy, ScriptingRuntimeVersion.Latest};
+                    var scriptingRuntimeVersionNames = new[] {SettingsContent.scriptingRuntimeVersionLegacy, SettingsContent.scriptingRuntimeVersionLatest};
+                    newScriptingRuntimeVersion = BuildEnumPopup(SettingsContent.scriptingRuntimeVersion, PlayerSettings.scriptingRuntimeVersion, scriptingRuntimeVersions, scriptingRuntimeVersionNames);
 
-                    EditorGUILayout.HelpBox(SettingsContent.scriptingRuntimeVersionActiveWarning.text, MessageType.Warning);
-                }
-
-                if (newScriptingRuntimeVersions != PlayerSettings.scriptingRuntimeVersion)
-                {
-                    if (newScriptingRuntimeVersions == EditorApplication.scriptingRuntimeVersion)
+                    if (newScriptingRuntimeVersion != PlayerSettings.scriptingRuntimeVersion)
                     {
-                        PlayerSettings.scriptingRuntimeVersion = newScriptingRuntimeVersions;
-                    }
-                    else
-                    {
-                        var currentScriptingRuntimeVersions = PlayerSettings.scriptingRuntimeVersion;
-                        PlayerSettings.scriptingRuntimeVersion = newScriptingRuntimeVersions;
-
-                        if (!PlayerSettings.RelaunchProjectIfScriptRuntimeVersionHasChanged())
+                        if (newScriptingRuntimeVersion == EditorApplication.scriptingRuntimeVersion)
                         {
-                            PlayerSettings.scriptingRuntimeVersion = currentScriptingRuntimeVersions;
+                            PlayerSettings.scriptingRuntimeVersion = newScriptingRuntimeVersion;
+                        }
+                        else
+                        {
+                            var currentScriptingRuntimeVersion = PlayerSettings.scriptingRuntimeVersion;
+                            PlayerSettings.scriptingRuntimeVersion = newScriptingRuntimeVersion;
+
+                            if (!PlayerSettings.RelaunchProjectIfScriptRuntimeVersionHasChanged())
+                            {
+                                PlayerSettings.scriptingRuntimeVersion = currentScriptingRuntimeVersion;
+                            }
                         }
                     }
                 }
+
 
                 // Scripting back-end
                 IScriptingImplementations scripting = ModuleManager.GetScriptingImplementations(targetGroup);
@@ -1958,31 +1939,15 @@ namespace UnityEditor
                     ScriptingImplementation currBackend = PlayerSettings.GetScriptingBackend(targetGroup);
                     allowCompilerConfigurationSelection = currBackend == ScriptingImplementation.IL2CPP && scripting.AllowIL2CPPCompilerConfigurationSelection();
                     ScriptingImplementation newBackend;
-                    var mono2xDeprecated = targetGroup == BuildTargetGroup.iOS;
 
-                    if (targetGroup == BuildTargetGroup.tvOS)
-                    {
-                        newBackend = ScriptingImplementation.IL2CPP;
-                        PlayerSettingsEditor.BuildDisabledEnumPopup(SettingsContent.scriptingIL2CPP, SettingsContent.scriptingBackend);
-                    }
-                    else if (backends.Length == 1)
+                    if (backends.Length == 1)
                     {
                         newBackend = backends[0];
-                        BuildDisabledEnumPopup(GetNiceScriptingBackendName(backends[0], mono2xDeprecated), SettingsContent.scriptingBackend);
+                        BuildDisabledEnumPopup(GetNiceScriptingBackendName(backends[0]), SettingsContent.scriptingBackend);
                     }
                     else
                     {
-                        newBackend = BuildEnumPopup(SettingsContent.scriptingBackend, currBackend, backends, GetNiceScriptingBackendNames(backends, mono2xDeprecated));
-                    }
-
-                    if (targetGroup == BuildTargetGroup.iOS && newBackend == ScriptingImplementation.Mono2x)
-                    {
-                        EditorGUILayout.HelpBox(SettingsContent.monoNotSupportediOS11WarningGUIContent.text, MessageType.Warning);
-                    }
-
-                    if ((targetGroup == BuildTargetGroup.PS4 || targetGroup == BuildTargetGroup.XboxOne) &&  newBackend == ScriptingImplementation.Mono2x)
-                    {
-                        EditorGUILayout.HelpBox(SettingsContent.scriptingBackendDeprecationWarning.text, MessageType.Warning);
+                        newBackend = BuildEnumPopup(SettingsContent.scriptingBackend, currBackend, backends, GetNiceScriptingBackendNames(backends));
                     }
 
                     if (newBackend != currBackend)
@@ -1991,7 +1956,7 @@ namespace UnityEditor
 
                 // Api Compatibility Level
                 var currentCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(targetGroup);
-                var availableCompatibilityLevels = GetAvailableApiCompatibilityLevels(targetGroup);
+                var availableCompatibilityLevels = new ApiCompatibilityLevel[] { ApiCompatibilityLevel.NET_4_6, ApiCompatibilityLevel.NET_Standard_2_0 };
 
                 var newCompatibilityLevel = BuildEnumPopup(SettingsContent.apiCompatibilityLevel, currentCompatibilityLevel, availableCompatibilityLevels, GetNiceApiCompatibilityLevelNames(availableCompatibilityLevels));
 
@@ -2191,25 +2156,6 @@ namespace UnityEditor
             EditorGUILayout.Space();
         }
 
-        static ApiCompatibilityLevel[] only_4_x_profiles = new ApiCompatibilityLevel[] { ApiCompatibilityLevel.NET_4_6, ApiCompatibilityLevel.NET_Standard_2_0 };
-        static ApiCompatibilityLevel[] only_2_0_profiles = new ApiCompatibilityLevel[] { ApiCompatibilityLevel.NET_2_0, ApiCompatibilityLevel.NET_2_0_Subset };
-        static ApiCompatibilityLevel[] wsa_profiles = new ApiCompatibilityLevel[] { ApiCompatibilityLevel.NET_2_0, ApiCompatibilityLevel.NET_2_0_Subset, ApiCompatibilityLevel.NET_4_6 };
-
-        private ApiCompatibilityLevel[] GetAvailableApiCompatibilityLevels(BuildTargetGroup activeBuildTargetGroup)
-        {
-            if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
-                return only_4_x_profiles;
-
-            ScriptingImplementation currBackend = PlayerSettings.GetScriptingBackend(activeBuildTargetGroup);
-            if (activeBuildTargetGroup == BuildTargetGroup.XboxOne && currBackend == ScriptingImplementation.Mono2x)
-                return only_2_0_profiles;
-
-            if (activeBuildTargetGroup == BuildTargetGroup.WSA || activeBuildTargetGroup == BuildTargetGroup.XboxOne)
-                return wsa_profiles;
-
-            return only_2_0_profiles;
-        }
-
         static ManagedStrippingLevel[] mono_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Disabled, ManagedStrippingLevel.Low, ManagedStrippingLevel.Medium, ManagedStrippingLevel.High };
         static ManagedStrippingLevel[] il2cpp_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Low, ManagedStrippingLevel.Medium, ManagedStrippingLevel.High };
         static ManagedStrippingLevel[] mono_levels_old_runtime = new ManagedStrippingLevel[] { ManagedStrippingLevel.Disabled, ManagedStrippingLevel.Low };
@@ -2340,17 +2286,17 @@ namespace UnityEditor
             return names;
         }
 
-        static GUIContent[] GetNiceScriptingBackendNames(ScriptingImplementation[] scriptingBackends, bool mono2xDeprecated)
+        static GUIContent[] GetNiceScriptingBackendNames(ScriptingImplementation[] scriptingBackends)
         {
-            return scriptingBackends.Select(s => GetNiceScriptingBackendName(s, mono2xDeprecated)).ToArray();
+            return scriptingBackends.Select(s => GetNiceScriptingBackendName(s)).ToArray();
         }
 
-        static GUIContent GetNiceScriptingBackendName(ScriptingImplementation scriptingBackend, bool mono2xDeprecated)
+        static GUIContent GetNiceScriptingBackendName(ScriptingImplementation scriptingBackend)
         {
             switch (scriptingBackend)
             {
                 case ScriptingImplementation.Mono2x:
-                    return mono2xDeprecated ? SettingsContent.scriptingMono2xDeprecated : SettingsContent.scriptingMono2x;
+                    return SettingsContent.scriptingMono2x;
                 case ScriptingImplementation.IL2CPP:
                     return SettingsContent.scriptingIL2CPP;
                 default:

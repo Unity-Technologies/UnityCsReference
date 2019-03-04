@@ -260,26 +260,25 @@ namespace UnityEditor
             //For transitions with exit time == 0, skip to end of clip so transition happens on first frame
             if (m_RefTransition.exitTime == 0)
             {
-                m_AvatarPreview.Animator.CrossFade(0, 0f, 0, 0.9999f);
+                m_AvatarPreview.Animator.CrossFade(0, 0f, 0, 0.9f);
             }
             m_AvatarPreview.Animator.StartRecording(-1);
 
-            m_LeftStateWeightA = 0;
-            m_LeftStateTimeA = 0;
-
             m_AvatarPreview.Animator.Update(0.0f);
-
+            AnimatorStateInfo currentState = m_AvatarPreview.Animator.GetCurrentAnimatorStateInfo(m_LayerIndex);
+            m_LeftStateWeightA = currentState.normalizedTime;
+            m_LeftStateTimeA = currentTime;
             while (!hasFinished && currentTime < maxDuration)
             {
                 m_AvatarPreview.Animator.Update(stepTime);
 
-                AnimatorStateInfo currentState = m_AvatarPreview.Animator.GetCurrentAnimatorStateInfo(m_LayerIndex);
+                currentState = m_AvatarPreview.Animator.GetCurrentAnimatorStateInfo(m_LayerIndex);
                 currentTime += stepTime;
 
                 if (!hasStarted)
                 {
-                    m_LeftStateWeightA = m_LeftStateWeightB = currentState.normalizedTime;
-                    m_LeftStateTimeA = m_LeftStateTimeB = currentTime;
+                    m_LeftStateWeightB = currentState.normalizedTime;
+                    m_LeftStateTimeB = currentTime;
 
                     hasStarted = true;
                 }

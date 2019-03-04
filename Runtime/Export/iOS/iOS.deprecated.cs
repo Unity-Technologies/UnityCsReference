@@ -101,35 +101,28 @@ namespace UnityEngine
         [Obsolete("screenCanDarken property is deprecated. Please use (Screen.sleepTimeout != SleepTimeout.NeverSleep) instead.", false)]
         public static bool screenCanDarken { get { return false; } }
 
-        [Obsolete("StartLocationServiceUpdates method is deprecated. Please use Input.location.Start instead.", false)]
+        [Obsolete("StartLocationServiceUpdates method is deprecated. Please use Input.location.Start instead.", true)]
         public static void StartLocationServiceUpdates(float desiredAccuracyInMeters, float updateDistanceInMeters)
         {
-            Input.location.Start(desiredAccuracyInMeters, updateDistanceInMeters);
         }
 
-        [Obsolete("StartLocationServiceUpdates method is deprecated. Please use Input.location.Start instead.", false)]
+        [Obsolete("StartLocationServiceUpdates method is deprecated. Please use Input.location.Start instead.", true)]
         public static void StartLocationServiceUpdates(float desiredAccuracyInMeters)
         {
-            Input.location.Start(desiredAccuracyInMeters);
         }
 
-        [Obsolete("StartLocationServiceUpdates method is deprecated. Please use Input.location.Start instead.", false)]
+        [Obsolete("StartLocationServiceUpdates method is deprecated. Please use Input.location.Start instead.", true)]
         public static void StartLocationServiceUpdates()
         {
-            Input.location.Start();
         }
 
-        [Obsolete("StopLocationServiceUpdates method is deprecated. Please use Input.location.Stop instead.", false)]
+        [Obsolete("StopLocationServiceUpdates method is deprecated. Please use Input.location.Stop instead.", true)]
         public static void StopLocationServiceUpdates()
         {
-            Input.location.Stop();
         }
 
-        [Obsolete("locationServiceEnabledByUser property is deprecated. Please use Input.location.isEnabledByUser instead.", false)]
-        public static bool locationServiceEnabledByUser { get { return Input.location.isEnabledByUser; } }
-
-        [Obsolete("locationServiceStatus property is deprecated. Please use Input.location.status instead.", false)]
-        public static LocationServiceStatus locationServiceStatus { get { return Input.location.status; } }
+        [Obsolete("locationServiceEnabledByUser property is deprecated. Please use Input.location.isEnabledByUser instead.", true)]
+        public static bool locationServiceEnabledByUser { get { return false; } }
     }
 
     //
@@ -289,10 +282,6 @@ namespace UnityEngine
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("orientation property is deprecated. Please use Input.deviceOrientation instead (UnityUpgradable) -> Input.deviceOrientation", true)]
         public static iPhoneOrientation orientation { get { return default(iPhoneOrientation); } }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("lastLocation property is deprecated. Please use Input.location.lastData instead.", true)]
-        public static LocationInfo lastLocation { get { return default(LocationInfo); } }
 
         // Folowing members are not strictly required to update references from iPhoneInput -> Input, but
         // any method that takes an argument like iPhoneInput.touchCount will fail resolution if the member (touchCount) is not present

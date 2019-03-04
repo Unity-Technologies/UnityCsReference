@@ -29,6 +29,13 @@ namespace UnityEngine.SceneManagement
         extern private static string GetGUIDInternal(int sceneHandle);
 
         [StaticAccessor("SceneBindings", StaticAccessorType.DoubleColon)]
+        extern private static bool IsSubScene(int sceneHandle);
+
+        [StaticAccessor("SceneBindings", StaticAccessorType.DoubleColon)]
+        extern private static void SetIsSubScene(int sceneHandle, bool value);
+
+
+        [StaticAccessor("SceneBindings", StaticAccessorType.DoubleColon)]
         extern private static bool GetIsLoadedInternal(int sceneHandle);
 
         [StaticAccessor("SceneBindings", StaticAccessorType.DoubleColon)]

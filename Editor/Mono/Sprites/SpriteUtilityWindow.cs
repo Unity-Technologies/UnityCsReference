@@ -81,8 +81,8 @@ namespace UnityEditor
         protected const float k_MouseZoomSpeed = 0.005f;
         protected const float k_ToolbarHeight = 17f;
 
-        protected UnityEngine.U2D.Interface.ITexture2D m_Texture;
-        protected UnityEngine.U2D.Interface.ITexture2D m_TextureAlphaOverride;
+        protected Texture2D m_Texture;
+        protected Texture2D m_TextureAlphaOverride;
         protected Rect m_TextureViewRect;
         protected Rect m_TextureRect;
 
@@ -348,7 +348,7 @@ namespace UnityEditor
         {
             if (texture != m_Texture)
             {
-                m_Texture = new UnityEngine.U2D.Interface.Texture2D(texture);
+                m_Texture = texture;
                 m_Zoom = -1;
                 m_TextureAlphaOverride = null;
             }
@@ -358,7 +358,7 @@ namespace UnityEditor
         {
             if (alphaTexture != m_TextureAlphaOverride)
             {
-                m_TextureAlphaOverride = new UnityEngine.U2D.Interface.Texture2D(alphaTexture);
+                m_TextureAlphaOverride = alphaTexture;
                 m_Zoom = -1;
             }
         }
@@ -378,5 +378,22 @@ namespace UnityEditor
             if (drawRect.width > 0)
                 drawAction(drawRect);
         }
+
+        internal static void SetShowSpriteEditorWindow(Func<bool> spriteEditorWindow)
+        {
+            if (spriteEditorWindow != null)
+                showSpriteEditorWindow = spriteEditorWindow;
+        }
+
+        internal static bool ShowSpriteEditorWindow()
+        {
+            return showSpriteEditorWindow();
+        }
+
+        static Func<bool> showSpriteEditorWindow = () =>
+        {
+            Debug.Log("No Sprite Editor Window is registered.");
+            return false;
+        };
     } // class
 }

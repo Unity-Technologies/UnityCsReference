@@ -178,10 +178,11 @@ namespace UnityEngine.UIElements.UIR.Implementation
         {
             Debug.Assert(ve.panel != null);
 
+            if (ve.renderChainData.isInChain)
+                return 0; // Already added, redundant call
+
             if (resetState)
                 ve.renderChainData = new RenderChainVEData();
-            else if (ve.renderChainData.isInChain)
-                return 0; // Already added, redundant call
 
             ve.renderChainData.isInChain = true;
             ve.renderChainData.verticesSpace = Matrix4x4.identity;
@@ -370,11 +371,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
             else if ((ve.renderChainData.dirtiedVisuals == 0) && (ve.renderChainData.data != null))
             {
                 // If a visual update will happen, then skip work here as the visual update will incorporate the transformed vertices
-                if (!ve.renderChainData.disableNudging)
-                {
-                    NudgeVerticesToNewSpace(ve, device);
+                if (!ve.renderChainData.disableNudging && NudgeVerticesToNewSpace(ve, device))
                     stats.nudgeTransformed++;
-                }
                 else
                 {
                     OnVisualsChanged(renderChain, ve, false); // Nudging not allowed, so do a full visual repaint
@@ -550,7 +548,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 painter.device.UpdateTransform(ve.renderChainData.transformID, GetTransformIDTransformInfo(ve), GetTransformIDClipInfo(ve)); // Update the transform if we allocated it
 
             MeshHandle data = ve.renderChainData.data;
-            if (painter.totalVertices <= 64 * 1024 && (entries.Count > 0))
+            if (painter.totalVertices <= UInt16.MaxValue && (entries.Count > 0))
             {
                 NativeSlice<Vertex> verts = new NativeSlice<Vertex>();
                 NativeSlice<UInt16> indices = new NativeSlice<UInt16>();
@@ -569,6 +567,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 if (oldCmdPrev == null && oldCmdNext == null)
                     FindCommandInsertionPoint(ve, out cmdPrev, out cmdNext);
 
+                int firstDisplacementUV = -1, lastDisplacementUVPlus1 = -1;
                 foreach (var entry in painter.entries)
                 {
                     if (entry.vertices.Length > 0 && entry.indices.Length > 0)
@@ -576,9 +575,19 @@ namespace UnityEngine.UIElements.UIR.Implementation
                         // Copy vertices, transforming them as necessary
                         var targetVerticesSlice = verts.Slice(vertsFilled, entry.vertices.Length);
                         if (entry.uvIsDisplacement)
+                        {
+                            if (firstDisplacementUV < 0)
+                            {
+                                firstDisplacementUV = vertsFilled;
+                                lastDisplacementUVPlus1 = vertsFilled + entry.vertices.Length;
+                            }
+                            else if (lastDisplacementUVPlus1 == vertsFilled)
+                                lastDisplacementUVPlus1 += entry.vertices.Length;
+                            else ve.renderChainData.disableNudging = true; // Disjoint displacement UV entries, we can't keep track of them, so disable nudging optimization altogether
+
                             CopyTransformVertsPosAndVec(entry.vertices, targetVerticesSlice, transform, transformID, entry.clipRectID);
-                        else
-                            CopyTransformVertsPos(entry.vertices, targetVerticesSlice, transform, transformID, entry.clipRectID);
+                        }
+                        else CopyTransformVertsPos(entry.vertices, targetVerticesSlice, transform, transformID, entry.clipRectID);
 
                         // Copy indices
                         int entryIndexCount = entry.indices.Length;
@@ -611,6 +620,12 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     {
                         Debug.Assert(false); // Unable to determine what kind of command to generate here
                     }
+                }
+
+                if (!ve.renderChainData.disableNudging && (firstDisplacementUV >= 0))
+                {
+                    ve.renderChainData.displacementUVStart = firstDisplacementUV;
+                    ve.renderChainData.displacementUVEnd = lastDisplacementUVPlus1;
                 }
             }
             else if (data != null)
@@ -776,7 +791,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 target[i] = (UInt16)(source[i] + indexOffset);
         }
 
-        static void NudgeVerticesToNewSpace(VisualElement ve, UIRenderDevice device)
+        static bool NudgeVerticesToNewSpace(VisualElement ve, UIRenderDevice device)
         {
             Debug.Assert(!ve.renderChainData.disableNudging);
 
@@ -784,19 +799,65 @@ namespace UnityEngine.UIElements.UIR.Implementation
             Matrix4x4 newTransform;
             GetVerticesTransformInfo(ve, out newTransform, out transformID);
             Matrix4x4 nudgeTransform = newTransform * ve.renderChainData.verticesSpace.inverse;
+
+            // Attempt to reconstruct the absolute transform. If the result diverges from the absolute
+            // considerably, then we assume that the vertices have become degenerate beyond restoration.
+            // In this case we refuse to nudge, and ask for this element to be fully repainted to regenerate
+            // the vertices without error.
+            const float kMaxAllowedDeviation = 0.0001f;
+            Matrix4x4 reconstructedNewTransform = nudgeTransform * ve.renderChainData.verticesSpace;
+            float error;
+            error  = Mathf.Abs(newTransform.m00 - reconstructedNewTransform.m00);
+            error += Mathf.Abs(newTransform.m01 - reconstructedNewTransform.m01);
+            error += Mathf.Abs(newTransform.m02 - reconstructedNewTransform.m02);
+            error += Mathf.Abs(newTransform.m03 - reconstructedNewTransform.m03);
+            error += Mathf.Abs(newTransform.m10 - reconstructedNewTransform.m10);
+            error += Mathf.Abs(newTransform.m11 - reconstructedNewTransform.m11);
+            error += Mathf.Abs(newTransform.m12 - reconstructedNewTransform.m12);
+            error += Mathf.Abs(newTransform.m13 - reconstructedNewTransform.m13);
+            error += Mathf.Abs(newTransform.m20 - reconstructedNewTransform.m20);
+            error += Mathf.Abs(newTransform.m21 - reconstructedNewTransform.m21);
+            error += Mathf.Abs(newTransform.m22 - reconstructedNewTransform.m22);
+            error += Mathf.Abs(newTransform.m23 - reconstructedNewTransform.m23);
+            if (error > kMaxAllowedDeviation)
+                return false;
+
             ve.renderChainData.verticesSpace = newTransform; // This is the new space of the vertices
 
             int vertCount = (int)ve.renderChainData.data.allocVerts.size;
             NativeSlice<Vertex> oldVerts = ve.renderChainData.data.allocPage.vertices.cpuData.Slice((int)ve.renderChainData.data.allocVerts.start, vertCount);
             NativeSlice<Vertex> newVerts;
             device.Update(ve.renderChainData.data, (uint)vertCount, out newVerts);
-            for (int i = 0; i < vertCount; i++)
+
+            int vertsBeforeUVDisplacement = ve.renderChainData.displacementUVStart;
+            int vertsAfterUVDisplacement = ve.renderChainData.displacementUVEnd;
+
+            // Position-only transform loop
+            for (int i = 0; i < vertsBeforeUVDisplacement; i++)
             {
                 var v = oldVerts[i];
                 v.position = nudgeTransform.MultiplyPoint3x4(v.position);
-                // Can't tell if UVs are holding positions, so it's not supported
                 newVerts[i] = v;
             }
+
+            // Position and UV transform loop
+            for (int i = vertsBeforeUVDisplacement; i < vertsAfterUVDisplacement; i++)
+            {
+                var v = oldVerts[i];
+                v.position = nudgeTransform.MultiplyPoint3x4(v.position);
+                v.uv = nudgeTransform.MultiplyVector(v.uv);
+                newVerts[i] = v;
+            }
+
+            // Position-only transform loop
+            for (int i = vertsAfterUVDisplacement; i < vertCount; i++)
+            {
+                var v = oldVerts[i];
+                v.position = nudgeTransform.MultiplyPoint3x4(v.position);
+                newVerts[i] = v;
+            }
+
+            return true;
         }
 
         static RenderChainCommand InjectMeshDrawCommand(RenderChain renderChain, VisualElement ve, ref RenderChainCommand cmdPrev, ref RenderChainCommand cmdNext, VertexFlags drawType, MeshHandle mesh, int indexCount, int indexOffset, Material material, Texture custom, Texture font)
@@ -1190,6 +1251,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
         {
             opacity = currentElement.resolvedStyle.opacity;
             currentElement.renderChainData.usesText = currentElement.renderChainData.usesAtlas = currentElement.renderChainData.disableNudging = false;
+            currentElement.renderChainData.displacementUVStart = currentElement.renderChainData.displacementUVEnd = 0;
             if ((currentElement.renderHint & RenderHint.GroupTransform) == RenderHint.GroupTransform)
             {
                 var cmd = m_Owner.AllocCommand();
@@ -1232,8 +1294,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 indexData = new NativeSlice<UInt16>();
                 return;
             }
-            if (painterParameters.uvIsDisplacement)
-                currentElement.renderChainData.disableNudging = true; // Nudging doesn't support displacements
 
             m_CurrentEntry = new Entry()
             {
@@ -1443,8 +1503,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
             if (m_CurrentEntry.vertices.Length > 0 && m_CurrentEntry.indices.Length > 0)
             {
                 m_CurrentEntry.uvIsDisplacement = UIRMeshBuilder.IsBorder(painterParams.border);
-                if (m_CurrentEntry.uvIsDisplacement)
-                    currentElement.renderChainData.disableNudging = true; // Nudging doesn't support positions stored in UVs for now
 
                 m_Entries.Add(m_CurrentEntry);
                 totalVertices += m_CurrentEntry.vertices.Length;

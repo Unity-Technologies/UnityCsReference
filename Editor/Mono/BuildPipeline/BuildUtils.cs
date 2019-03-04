@@ -17,7 +17,6 @@ using UnityEditor;
 using UnityEditor.Build.Reporting;
 using UnityEditor.Utils;
 using Debug = UnityEngine.Debug;
-using PackageInfo = Unity.DataContract.PackageInfo;
 using System.Xml.XPath;
 
 namespace UnityEditorInternal

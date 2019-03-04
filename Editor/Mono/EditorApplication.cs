@@ -222,22 +222,48 @@ namespace UnityEditor
 
         internal static string GetDefaultMainWindowTitle(ApplicationTitleDescriptor desc)
         {
-            var title = $"Unity {desc.unityVersion}";
-            if (!string.IsNullOrEmpty(desc.licenseType))
-            {
-                title += $" {desc.licenseType}";
-            }
-            if (desc.previewPackageInUse)
-            {
-                title += " - " + L10n.Tr("[PREVIEW PACKAGES IN USE]");
-            }
+            // de facto dev tool window title conventions:
+            // https://unity.slack.com/archives/C06TQ0QMQ/p1550046908037800
+            //
+            // _windows_ & _linux_
+            //
+            //   <Project> - <ThingImEditing> [- <MaybeSomeBuildConfigStuff>] - <AppName> [<ProbablyVersionToo>]
+            //
+            //   this is done to keep the most important data at the front to deal with truncation that happens
+            //   in various interfaces like alt-tab and hover taskbar icon.
+            //
+            // _mac_
+            //
+            //   <ThingImEditing> - <Project> [- <MaybeSomeBuildConfigStuff>] - <AppName> [<ProbablyVersionToo>]
+            //
+            //   most macOS apps show the icon of "ThingImEditing" in front of the title, so it makes sense
+            //   for the icon to be next to what it represents. (Unity does not currently show the icon though.)
+            //
 
-            title += $" - {desc.activeSceneName} - {desc.projectName}";
+            var title = Application.platform == RuntimePlatform.OSXEditor
+                ? $"{desc.activeSceneName} - {desc.projectName}"
+                : $"{desc.projectName} - {desc.activeSceneName}";
+
+            // FUTURE: "preview packages in use" and the build target info do not belong in the title bar. they
+            // are there now because we want them to be always-visible to user, which normally would be a) buildconfig
+            // bar or b) status bar, but we don't have a) and our b) needs work to support such a thing.
 
             if (!string.IsNullOrEmpty(desc.targetName))
             {
                 title += $" - {desc.targetName}";
             }
+
+            title += $" - Unity {desc.unityVersion}";
+            if (!string.IsNullOrEmpty(desc.licenseType))
+            {
+                title += $" {desc.licenseType}";
+            }
+
+            if (desc.previewPackageInUse)
+            {
+                title += " " + L10n.Tr("[PREVIEW PACKAGES IN USE]");
+            }
+
             return title;
         }
 
@@ -247,7 +273,7 @@ namespace UnityEditor
             var activeSceneName = L10n.Tr("Untitled");
             if (!string.IsNullOrEmpty(SceneManager.GetActiveScene().path))
             {
-                activeSceneName = Path.GetFileName(SceneManager.GetActiveScene().path);
+                activeSceneName = Path.GetFileNameWithoutExtension(SceneManager.GetActiveScene().path);
             }
 
             var desc = new ApplicationTitleDescriptor(

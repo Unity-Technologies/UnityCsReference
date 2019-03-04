@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.Scripting;
 using Attribute = System.Attribute;
@@ -27,19 +28,19 @@ namespace UnityEditor.ShortcutManagement
     {
         class LastUsedProfileIdProvider : ILastUsedProfileIdProvider
         {
-            const string k_LastUsedProfileIdEditorPrefKey = "ShortcutManagement_LastUsedShortcutProfileId";
+            static string lastUsedProfileIdEditorPrefKey => $"ShortcutManagement_LastUsedShortcutProfileId_{ModeService.currentId}";
 
             public string lastUsedProfileId
             {
                 get
                 {
-                    var profileId = EditorPrefs.GetString(k_LastUsedProfileIdEditorPrefKey);
+                    var profileId = EditorPrefs.GetString(lastUsedProfileIdEditorPrefKey);
                     return profileId == "" ? null : profileId;
                 }
 
                 set
                 {
-                    EditorPrefs.SetString(k_LastUsedProfileIdEditorPrefKey, value ?? "");
+                    EditorPrefs.SetString(lastUsedProfileIdEditorPrefKey, value ?? "");
                 }
             }
         }
@@ -141,6 +142,8 @@ namespace UnityEditor.ShortcutManagement
 
             ActivateLastUsedProfile();
             MigrateUserSpecifiedPrefKeys();
+
+            ModeService.modeChanged += HandleModeChanged;
         }
 
         internal void RebuildShortcuts()
@@ -153,6 +156,57 @@ namespace UnityEditor.ShortcutManagement
         {
             m_Directory.Initialize(profileManager.GetAllShortcuts());
             availableShortcutsChanged?.Invoke();
+        }
+
+        void HandleModeChanged(ModeService.ModeChangedArgs args)
+        {
+            // Install profile specific to the current mode.
+            var shortcutProfiles = ModeService.GetModeDataSection(args.nextIndex, ModeService.k_ShortcutSectionName) as System.Collections.IList;
+            if (shortcutProfiles == null || shortcutProfiles.Count == 0)
+                return;
+
+            // Rebuild shortcuts so all shortcuts bound to invisible menu items are removed.
+            RebuildShortcuts();
+
+            string defaultMode = null;
+            try
+            {
+                var shortcutProfilePath = ShortcutProfileStore.GetShortcutFolderPath();
+                if (!System.IO.Directory.Exists(shortcutProfilePath))
+                {
+                    System.IO.Directory.CreateDirectory(shortcutProfilePath);
+                }
+                for (var i = 0; i < shortcutProfiles.Count; ++i)
+                {
+                    var srcProfilePath = shortcutProfiles[i] as string;
+                    if (srcProfilePath == null || !File.Exists(srcProfilePath))
+                        continue;
+                    var baseName = Path.GetFileName(srcProfilePath);
+                    var dstPath = Path.Combine(shortcutProfilePath, baseName);
+                    if (!File.Exists(dstPath))
+                    {
+                        File.Copy(srcProfilePath, dstPath);
+                    }
+
+                    if (i == 0)
+                    {
+                        // Assume first item is the default mode if needed.
+                        defaultMode = Path.GetFileNameWithoutExtension(srcProfilePath);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                Debug.LogError("Error while installing new profile for mode: " + ModeService.currentId);
+            }
+
+            // Reload profiles will unset the lastUsedProfile so make a copy of it:
+            var lastUsedProfileId = m_LastUsedProfileIdProvider.lastUsedProfileId ?? defaultMode;
+            if (lastUsedProfileId != null)
+            {
+                profileManager.ReloadProfiles();
+                LoadProfileById(lastUsedProfileId);
+            }
         }
 
         void OnShortcutBindingChanged(IShortcutProfileManager sender, Identifier identifier, ShortcutBinding oldBinding, ShortcutBinding newBinding)
@@ -188,11 +242,15 @@ namespace UnityEditor.ShortcutManagement
 
         void ActivateLastUsedProfile()
         {
-            var lastUsedProfileId = m_LastUsedProfileIdProvider.lastUsedProfileId;
-            if (lastUsedProfileId == null)
+            LoadProfileById(m_LastUsedProfileIdProvider.lastUsedProfileId);
+        }
+
+        void LoadProfileById(string profileId)
+        {
+            if (profileId == null)
                 return;
 
-            var lastUsedProfile = profileManager.GetProfileById(lastUsedProfileId);
+            var lastUsedProfile = profileManager.GetProfileById(profileId);
             if (lastUsedProfile != null)
                 profileManager.activeProfile = lastUsedProfile;
         }

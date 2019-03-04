@@ -457,7 +457,13 @@ namespace UnityEngine.UIElements
             return (long)(Time.realtimeSinceStartup * 1000.0f);
         }
 
-        internal static VisualElement PickAll(VisualElement root, Vector2 point, List<VisualElement> picked = null)
+        // For tests only.
+        internal static VisualElement PickAllWithoutValidatingLayout(VisualElement root, Vector2 point)
+        {
+            return PickAll(root, point);
+        }
+
+        private static VisualElement PickAll(VisualElement root, Vector2 point, List<VisualElement> picked = null)
         {
             Profiler.BeginSample("Panel.PickAll");
             var result = PerformPick(root, point, picked);
@@ -476,9 +482,14 @@ namespace UnityEngine.UIElements
                 return null;
             }
 
-            Vector3 localPoint = root.WorldToLocal(point);
-            bool containsPoint = root.ContainsPoint(localPoint);
+            Vector2 localPoint = root.WorldToLocal(point);
 
+            if (!root.boundingBox.Contains(localPoint))
+            {
+                return null;
+            }
+
+            bool containsPoint = root.ContainsPoint(localPoint);
             // we only skip children in the case we visually clip them
             if (!containsPoint && root.ShouldClip())
             {
@@ -531,6 +542,7 @@ namespace UnityEngine.UIElements
 
         public override VisualElement Pick(Vector2 point)
         {
+            ValidateLayout();
             return PickAll(visualTree, point);
         }
 
@@ -577,9 +589,14 @@ namespace UnityEngine.UIElements
             repaintData.repaintEvent = e;
             Profiler.BeginSample(m_ProfileUpdateName);
 
-            m_VisualTreeUpdater.UpdateVisualTree();
-
-            Profiler.EndSample();
+            try
+            {
+                m_VisualTreeUpdater.UpdateVisualTree();
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
 
             panelDebug?.Refresh();
         }

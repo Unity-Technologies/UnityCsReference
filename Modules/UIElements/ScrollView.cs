@@ -265,6 +265,18 @@ namespace UnityEngine.UIElements
                 return;
             }
 
+            // Get the initial information on the necessity of the scrollbars
+            bool needsVerticalCached = needsVertical;
+            bool needsHorizontalCached = needsHorizontal;
+
+            // Here, we allow the removal of the scrollbar only in the first layout pass.
+            // Addition is always allowed.
+            if (evt.layoutPass > 0)
+            {
+                needsVerticalCached = needsVerticalCached || verticalScroller.visible;
+                needsHorizontalCached = needsHorizontalCached || horizontalScroller.visible;
+            }
+
             if (contentContainer.layout.width > Mathf.Epsilon)
                 horizontalScroller.Adjust(contentViewport.layout.width / contentContainer.layout.width);
             if (contentContainer.layout.height > Mathf.Epsilon)
@@ -275,12 +287,12 @@ namespace UnityEngine.UIElements
             verticalScroller.SetEnabled(contentContainer.layout.height - contentViewport.layout.height > 0);
 
             // Expand content if scrollbars are hidden
-            contentViewport.style.marginRight = needsVertical ? verticalScroller.layout.width : 0;
-            horizontalScroller.style.right = needsVertical ? verticalScroller.layout.width : 0;
-            contentViewport.style.marginBottom = needsHorizontal ? horizontalScroller.layout.height : 0;
-            verticalScroller.style.bottom = needsHorizontal ? horizontalScroller.layout.height : 0;
+            contentViewport.style.marginRight = needsVerticalCached ? verticalScroller.layout.width : 0;
+            horizontalScroller.style.right = needsVerticalCached ? verticalScroller.layout.width : 0;
+            contentViewport.style.marginBottom = needsHorizontalCached ? horizontalScroller.layout.height : 0;
+            verticalScroller.style.bottom = needsHorizontalCached ? horizontalScroller.layout.height : 0;
 
-            if (needsHorizontal && scrollableWidth > 0f)
+            if (needsHorizontalCached && scrollableWidth > 0f)
             {
                 horizontalScroller.lowValue = 0f;
                 horizontalScroller.highValue = scrollableWidth;
@@ -290,7 +302,7 @@ namespace UnityEngine.UIElements
                 horizontalScroller.value = 0f;
             }
 
-            if (needsVertical && scrollableHeight > 0f)
+            if (needsVerticalCached && scrollableHeight > 0f)
             {
                 verticalScroller.lowValue = 0f;
                 verticalScroller.highValue = scrollableHeight;
@@ -301,23 +313,22 @@ namespace UnityEngine.UIElements
             }
 
             // Set visibility and remove/add content viewport margin as necessary
-            if (horizontalScroller.visible != needsHorizontal)
+            if (horizontalScroller.visible != needsHorizontalCached)
             {
-                horizontalScroller.visible = needsHorizontal;
+                horizontalScroller.visible = needsHorizontalCached;
             }
-
-            if (verticalScroller.visible != needsVertical)
+            if (verticalScroller.visible != needsVerticalCached)
             {
-                verticalScroller.visible = needsVertical;
+                verticalScroller.visible = needsVerticalCached;
             }
 
             UpdateContentViewTransform();
         }
 
-        // TODO: Same behaviour as IMGUI Scroll view; it would probably be nice to show same behaviour
-        // as Web browsers, which give back event to parent if not consumed
+        // TODO: Same behaviour as IMGUI Scroll view
         void OnScrollWheel(WheelEvent evt)
         {
+            var oldValue = verticalScroller.value;
             if (contentContainer.layout.height - layout.height > 0)
             {
                 if (evt.delta.y < 0)
@@ -326,7 +337,10 @@ namespace UnityEngine.UIElements
                     verticalScroller.ScrollPageDown(Mathf.Abs(evt.delta.y));
             }
 
-            evt.StopPropagation();
+            if (verticalScroller.value != oldValue)
+            {
+                evt.StopPropagation();
+            }
         }
     }
 }

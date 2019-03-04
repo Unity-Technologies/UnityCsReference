@@ -54,6 +54,11 @@ namespace UnityEditor.DeploymentTargets
             return m_Extension.GetKnownTargets(m_Context);
         }
 
+        internal DeploymentTargetLogger GetTargetLogger(DeploymentTargetId targetId)
+        {
+            return m_Extension.GetTargetLogger(m_Context, targetId);
+        }
+
         // Launch a build on any target on a platform
         public List<DeploymentTargetId> FindValidTargetsForLaunchBuild(BuildProperties buildProperties)
         {

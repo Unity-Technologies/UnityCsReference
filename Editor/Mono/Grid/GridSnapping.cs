@@ -9,8 +9,8 @@ namespace UnityEditor
 {
     internal static class GridSnapping
     {
-        public static Func<Vector3, Vector3> snapPosition;
-        public static Func<bool> activeFunc;
+        public static Func<Vector3, Vector3> snapPosition = null;
+        public static Func<bool> activeFunc = null;
 
         public static bool active
         {

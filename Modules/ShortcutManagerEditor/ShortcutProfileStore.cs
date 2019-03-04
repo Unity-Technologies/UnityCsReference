@@ -81,7 +81,7 @@ namespace UnityEditor.ShortcutManagement
 
         public static string GetShortcutFolderPath()
         {
-            return Paths.Combine(InternalEditorUtility.unityPreferencesFolder, "shortcuts");
+            return Paths.Combine(InternalEditorUtility.unityPreferencesFolder, "shortcuts", ModeService.currentId);
         }
 
         static string GetPathForProfile(string id)

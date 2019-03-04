@@ -9,8 +9,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using System.Xml;
-using System.Xml.Linq;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -20,9 +18,7 @@ using UnityEditor.Scripting.ScriptCompilation;
 using Object = UnityEngine.Object;
 using Event = UnityEngine.Event;
 using UnityEditor.Build;
-using UnityEditor.StyleSheets;
 using UnityEngine.Internal;
-using DescriptionAttribute = System.ComponentModel.DescriptionAttribute;
 
 namespace UnityEditor
 {
@@ -2838,7 +2834,11 @@ namespace UnityEditor
         // Make an enum popup selection field.
         private static Enum EnumPopupInternal(Rect position, GUIContent label, Enum selected, Func<Enum, bool> checkEnabled, bool includeObsolete, GUIStyle style)
         {
-            var enumType = selected.GetType();
+            return EnumPopupInternal(position, label, selected, selected.GetType(), checkEnabled, includeObsolete, style);
+        }
+
+        private static Enum EnumPopupInternal(Rect position, GUIContent label, Enum selected, Type enumType, Func<Enum, bool> checkEnabled, bool includeObsolete, GUIStyle style)
+        {
             if (!enumType.IsEnum)
             {
                 throw new ArgumentException("Parameter selected must be of type System.Enum", nameof(selected));
@@ -2852,6 +2852,23 @@ namespace UnityEditor
             i = PopupInternal(position, label, i, options, checkEnabled == null ? (Func<int, bool>)null : CheckCurrentEnumTypeEnabled, style);
             s_CurrentCheckEnumEnabled = null;
             return (i < 0 || i >= enumData.flagValues.Length) ? selected : enumData.values[i];
+        }
+
+        private static int EnumPopupInternal(Rect position, GUIContent label, int flagValue, Type enumType, Func<Enum, bool> checkEnabled, bool includeObsolete, GUIStyle style)
+        {
+            if (!enumType.IsEnum)
+            {
+                throw new ArgumentException("Parameter selected must be of type System.Enum", nameof(enumType));
+            }
+
+            var enumData = GetCachedEnumData(enumType, !includeObsolete);
+            var i = Array.IndexOf(enumData.flagValues, flagValue);
+            GUIContent[] options = EditorUtility.IsUnityAssembly(enumType) ? EditorGUIUtility.TrTempContent(enumData.displayNames, enumData.tooltip) : EditorGUIUtility.TempContent(enumData.displayNames, enumData.tooltip);
+            s_CurrentCheckEnumEnabled = checkEnabled;
+            s_CurrentEnumData = enumData;
+            i = PopupInternal(position, label, i, options, checkEnabled == null ? (Func<int, bool>)null : CheckCurrentEnumTypeEnabled, style);
+            s_CurrentCheckEnumEnabled = null;
+            return (i < 0 || i >= enumData.flagValues.Length) ? flagValue : enumData.flagValues[i];
         }
 
         private static int IntPopupInternal(Rect position, GUIContent label, int selectedValue, GUIContent[] displayedOptions, int[] optionValues, GUIStyle style)
@@ -3259,12 +3276,12 @@ namespace UnityEditor
 
         private static string EnumNameFromEnumField(FieldInfo field)
         {
-            var description = field.GetCustomAttributes(typeof(DescriptionAttribute), false);
+            var description = field.GetCustomAttributes(typeof(InspectorNameAttribute), false);
             if (description.Length > 0)
             {
-                return ((DescriptionAttribute)description.First()).Description;
+                return ((InspectorNameAttribute)description.First()).displayName;
             }
-            else if (field.IsDefined(typeof(ObsoleteAttribute), false))
+            if (field.IsDefined(typeof(ObsoleteAttribute), false))
             {
                 return string.Format("{0} (Obsolete)", ObjectNames.NicifyVariableName(field.Name));
             }
@@ -3313,6 +3330,10 @@ namespace UnityEditor
                 .Where(f => CheckObsoleteAddition(f, excludeObsolete))
                 .OrderBy(f => f.MetadataToken).ToList();
             enumData.displayNames = enumFields.Select(f => EnumNameFromEnumField(f)).ToArray();
+            if (enumData.displayNames.Distinct().Count() != enumData.displayNames.Length)
+            {
+                Debug.LogWarning($"Enum {enumType.Name} has multiple entries with the same display name, this prevents selection in EnumPopup.");
+            }
             enumData.tooltip = enumFields.Select(f => EnumTooltipFromEnumField(f)).ToArray();
             enumData.values = enumFields.Select(f => (Enum)Enum.Parse(enumType, f.Name)).ToArray();
             enumData.flagValues = enumData.unsigned ?
@@ -3406,7 +3427,11 @@ namespace UnityEditor
         // Internal version that also gives you back which flags were changed and what they were changed to.
         internal static Enum EnumFlagsField(Rect position, GUIContent label, Enum enumValue, bool includeObsolete, out int changedFlags, out bool changedToValue, GUIStyle style)
         {
-            var enumType = enumValue.GetType();
+            return EnumFlagsField(position, label, enumValue, enumValue.GetType(), includeObsolete, out changedFlags, out changedToValue, style);
+        }
+
+        internal static Enum EnumFlagsField(Rect position, GUIContent label, Enum enumValue, Type enumType, bool includeObsolete, out int changedFlags, out bool changedToValue, GUIStyle style)
+        {
             if (!enumType.IsEnum)
                 throw new ArgumentException("Parameter enumValue must be of type System.Enum", nameof(enumValue));
 
@@ -3426,6 +3451,24 @@ namespace UnityEditor
                 return enumValue;
 
             return IntToEnumFlags(enumType, flagsInt);
+        }
+
+        internal static int EnumFlagsField(Rect position, GUIContent label, int enumValue, Type enumType, bool includeObsolete, GUIStyle style)
+        {
+            if (!enumType.IsEnum)
+                throw new ArgumentException("Specified enumType must be System.Enum", nameof(enumType));
+
+            var enumData = GetCachedEnumData(enumType, !includeObsolete);
+            if (!enumData.serializable)
+                // this is the same message used in ScriptPopupMenus.cpp
+                throw new NotSupportedException(string.Format("Unsupported enum base type for {0}", enumType.Name));
+
+            var id = GUIUtility.GetControlID(s_EnumFlagsField, FocusType.Keyboard, position);
+            position = PrefixLabel(position, id, label);
+
+            int changedFlags;
+            bool changedToValue;
+            return MaskFieldGUI.DoMaskField(position, id, enumValue, enumData.displayNames, enumData.flagValues, style, out changedFlags, out changedToValue);
         }
 
         public static void ObjectField(Rect position, SerializedProperty property)
@@ -5547,7 +5590,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
                 var hasPrefabOverride = property.prefabOverride;
                 if (!linkedProperties || hasPrefabOverride)
                     EditorGUIUtility.SetBoldDefaultFont(hasPrefabOverride);
-                if (hasPrefabOverride && !property.isDefaultOverride)
+                if (hasPrefabOverride && !property.isDefaultOverride && !property.isDrivenRectTransformProperty)
                 {
                     Rect highlightRect = totalPosition;
                     highlightRect.xMin += EditorGUI.indent;
@@ -6087,7 +6130,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
                     }
                     case SerializedPropertyType.Enum:
                     {
-                        Popup(position, property, label);
+                        EnumPopup(position, property, label);
                         break;
                     }
                     // Multi @todo: Needs testing for texture types
@@ -7073,6 +7116,32 @@ This warning only shows up in development builds.", helpTopic, pageName);
         public static Enum EnumPopup(Rect position, GUIContent label, Enum selected, [DefaultValue("null")] Func<Enum, bool> checkEnabled, [DefaultValue("false")] bool includeObsolete = false, [DefaultValue("null")] GUIStyle style = null)
         {
             return EnumPopupInternal(position, label, selected, checkEnabled, includeObsolete, style ?? EditorStyles.popup);
+        }
+
+        private static void EnumPopup(Rect position, SerializedProperty property, GUIContent label)
+        {
+            Type type;
+            ScriptAttributeUtility.GetFieldInfoFromProperty(property, out type);
+            if (type != null && type.IsEnum)
+            {
+                BeginChangeCheck();
+                int value = type.GetCustomAttributes(typeof(FlagsAttribute), false).Length > 0
+                    ? EnumFlagsField(position, label, property.intValue, type, false, EditorStyles.popup)
+                    : EnumPopupInternal(position, label, property.intValue, type, null, false, EditorStyles.popup);
+                if (EndChangeCheck())
+                {
+                    property.intValue = value;
+                }
+            }
+            else
+            {
+                BeginChangeCheck();
+                int idx = Popup(position, label, property.hasMultipleDifferentValues ? -1 : property.enumValueIndex, EditorGUIUtility.TempContent(property.enumLocalizedDisplayNames));
+                if (EndChangeCheck())
+                {
+                    property.enumValueIndex = idx;
+                }
+            }
         }
 
         [ExcludeFromDocs]

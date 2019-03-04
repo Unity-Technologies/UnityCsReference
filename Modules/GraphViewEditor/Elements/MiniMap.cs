@@ -153,7 +153,7 @@ namespace UnityEditor.Experimental.GraphView
             m_ContentRectLocal = m_ContentRect;
 
             // Retrieve viewport rectangle as if zoom and pan were inactive
-            Matrix4x4 containerInvTransform = container.worldTransform.inverse;
+            Matrix4x4 containerInvTransform = container.worldTransformInverse;
             Vector4 containerInvTranslation = containerInvTransform.GetColumn(3);
             var containerInvScale = new Vector2(containerInvTransform.m00, containerInvTransform.m11);
 

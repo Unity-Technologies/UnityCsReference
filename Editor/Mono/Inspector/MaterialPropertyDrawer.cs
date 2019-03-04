@@ -134,7 +134,7 @@ namespace UnityEditor
             }
 
             //Debug.Log ("looking for class " + className + " args '" + args + "'");
-            foreach (var klass in EditorAssemblies.SubclassesOf(typeof(MaterialPropertyDrawer)))
+            foreach (var klass in TypeCache.GetTypesDerivedFrom<MaterialPropertyDrawer>())
             {
                 // When you write [Foo] in shader, get Foo, FooDrawer, MaterialFooDrawer,
                 // FooDecorator or MaterialFooDecorator class;
@@ -521,7 +521,7 @@ namespace UnityEditor
             try
             {
                 var enumType = loadedTypes.FirstOrDefault(
-                    x => x.IsSubclassOf(typeof(Enum)) && (x.Name == enumName || x.FullName == enumName)
+                    x => x.IsEnum && (x.Name == enumName || x.FullName == enumName)
                 );
                 var enumNames = Enum.GetNames(enumType);
                 this.names = new GUIContent[enumNames.Length];

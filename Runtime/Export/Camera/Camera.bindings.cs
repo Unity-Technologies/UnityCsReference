@@ -160,9 +160,6 @@ namespace UnityEngine
         public Ray ScreenPointToRay(Vector3 pos, MonoOrStereoscopicEye eye) { return ScreenPointToRay((Vector2)pos, eye); }
         public Ray ScreenPointToRay(Vector3 pos) { return ScreenPointToRay(pos, MonoOrStereoscopicEye.Mono); }
 
-        [FreeFunction("CameraScripting::RaycastTry", HasExplicitThis = true)]   extern internal GameObject RaycastTry(Ray ray, float distance, int layerMask);
-        [FreeFunction("CameraScripting::RaycastTry2D", HasExplicitThis = true)] extern internal GameObject RaycastTry2D(Ray ray, float distance, int layerMask);
-
         [FreeFunction("CameraScripting::CalculateViewportRayVectors", HasExplicitThis = true)]
         extern private void CalculateFrustumCornersInternal(Rect viewport, float z, MonoOrStereoscopicEye eye, [Out] Vector3[] outCorners);
 

@@ -1806,6 +1806,13 @@ namespace UnityEditor
             {
                 var ed = editors[newEditorsIndex];
                 var currentEd = currentElements[previousEditorsIndex];
+
+                if (currentEd.editor == null)
+                {
+                    ++previousEditorsIndex;
+                    continue;
+                }
+
                 if (ed.GetType() != currentEd.editor.GetType())
                 {
                     // We won't have an EditorElement for editors that are normally culled so we should skip this
@@ -1819,7 +1826,7 @@ namespace UnityEditor
                 }
 
                 currentEd.Reinit(newEditorsIndex);
-                editorToElementMap[ed.target.GetInstanceID()] =  currentEd;
+                editorToElementMap[ed.target.GetInstanceID()] = currentEd;
                 ++newEditorsIndex;
                 ++previousEditorsIndex;
             }

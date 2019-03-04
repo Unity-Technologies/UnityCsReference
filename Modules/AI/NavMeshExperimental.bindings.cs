@@ -411,6 +411,34 @@ namespace UnityEngine.Experimental.AI
             return status;
         }
 
+        [ThreadSafe]
+        static extern unsafe PathQueryStatus GetEdgesAndNeighbors(IntPtr navMeshQuery, PolygonId node, int maxVerts, int maxNei,
+            void* verts, void* neighbors, void* edgeIndices,
+            out int vertCount, out int neighborsCount);
+
+        public unsafe PathQueryStatus GetEdgesAndNeighbors(PolygonId node,
+            NativeSlice<Vector3> edgeVertices, NativeSlice<PolygonId> neighbors, NativeSlice<byte> edgeIndices,
+            out int verticesCount, out int neighborsCount)
+        {
+            AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
+
+            if (edgeIndices.Length != neighbors.Length && neighbors.Length > 0 && edgeIndices.Length > 0)
+            {
+                throw new ArgumentException($"The length of the {nameof(edgeIndices)} buffer ({edgeIndices.Length}) " +
+                    $"needs to be the same as that of the {nameof(neighbors)} buffer ({neighbors.Length}) " +
+                    "because the elements from the two arrays will pair up at the same index.");
+            }
+            var vertPtr = edgeVertices.Length > 0 ? edgeVertices.GetUnsafePtr() : null;
+            var neiPtr = neighbors.Length > 0 ? neighbors.GetUnsafePtr() : null;
+            var edgesPtr = edgeIndices.Length > 0 ? edgeIndices.GetUnsafePtr() : null;
+            var maxVertices = edgeVertices.Length;
+            var maxNeighbors = neighbors.Length > 0 ? neighbors.Length : edgeIndices.Length;
+            var status = GetEdgesAndNeighbors(m_NavMeshQuery, node, maxVertices, maxNeighbors,
+                vertPtr, neiPtr, edgesPtr,
+                out verticesCount, out neighborsCount);
+            return status;
+        }
+
         //// Polygon Queries
         //public NavMeshPolyData GetPolygon(PolygonId poly);
         //public void GetPolygon(NativeArray<PolygonId> polygonIDs, NativeArray<NavMeshPolyData> polygons);

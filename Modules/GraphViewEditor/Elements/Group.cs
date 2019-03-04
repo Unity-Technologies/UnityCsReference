@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
+using UnityEngine.Internal;
 
 namespace UnityEditor.Experimental.GraphView
 {
@@ -144,13 +145,18 @@ namespace UnityEditor.Experimental.GraphView
             {
                 if (HitTest(e.localMousePosition))
                 {
-                    m_TitleEditor.value = title;
-                    m_TitleEditor.style.display = DisplayStyle.Flex;
-                    m_TitleItem.visible = false;
-                    m_TitleEditor.SelectAll();
-                    m_TitleEditor.Q(TextField.textInputUssName).Focus();
+                    FocusTitleTextField();
                 }
             }
+        }
+
+        public void FocusTitleTextField()
+        {
+            m_TitleEditor.SetValueWithoutNotify(title);
+            m_TitleEditor.style.display = DisplayStyle.Flex;
+            m_TitleItem.visible = false;
+            m_TitleEditor.SelectAll();
+            m_TitleEditor.Q(TextField.textInputUssName).Focus();
         }
 
         protected virtual void OnGroupRenamed(string oldName, string newName)

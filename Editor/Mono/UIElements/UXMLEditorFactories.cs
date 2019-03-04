@@ -2,7 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor.UIElements;
+using System;
+using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -78,6 +80,18 @@ namespace UnityEditor.UIElements
 
             foreach (IUxmlFactory factory in factories)
             {
+                VisualElementFactoryRegistry.RegisterFactory(factory);
+            }
+
+            // Discover packages and user factories.
+            HashSet<string> userAssemblies = new HashSet<string>(ScriptingRuntime.GetAllUserAssemblies());
+            var types = TypeCache.GetTypesDerivedFrom<IUxmlFactory>();
+            foreach (var type in types)
+            {
+                if (type.IsAbstract || !userAssemblies.Contains(type.Assembly.GetName().Name + ".dll"))
+                    continue;
+
+                var factory = (IUxmlFactory)Activator.CreateInstance(type);
                 VisualElementFactoryRegistry.RegisterFactory(factory);
             }
         }

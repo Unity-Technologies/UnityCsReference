@@ -31,6 +31,9 @@ namespace UnityEditor
     internal interface ICurveEditorState
     {
         TimeArea.TimeFormat timeFormat { get; }
+        Vector2 timeRange { get; }
+
+        bool rippleTime { get; }
     }
 
     internal class CurveWrapper
@@ -346,6 +349,17 @@ namespace UnityEditor
                     return state.timeFormat;
 
                 return TimeArea.TimeFormat.None;
+            }
+        }
+
+        public bool rippleTime
+        {
+            get
+            {
+                if (state != null)
+                    return state.rippleTime;
+
+                return false;
             }
         }
 
@@ -754,8 +768,15 @@ namespace UnityEditor
 
             const float kMinRange = 0.1F;
 
-            m_DrawingBounds = m_DefaultBounds;
-            m_CurveBounds = m_DefaultBounds;
+            if (state != null)
+            {
+                m_CurveBounds.SetMinMax(new Vector3(state.timeRange.x, 0f, 0f), new Vector3(state.timeRange.y, 1f, 0f));
+                m_DrawingBounds = m_CurveBounds;
+            }
+            else
+            {
+                m_DrawingBounds = m_CurveBounds = m_DefaultBounds;
+            }
 
             if (animationCurves != null)
             {
@@ -1528,7 +1549,7 @@ namespace UnityEditor
                 EndLiveEdit();
         }
 
-        internal void TransformRippleKeys(Matrix4x4 matrix, float t1, float t2, bool flipX)
+        internal void TransformRippleKeys(Matrix4x4 matrix, float t1, float t2, bool flipX, bool flipY)
         {
             bool inLiveEdit = InLiveEdit();
             if (!inLiveEdit)
@@ -1542,7 +1563,7 @@ namespace UnityEditor
 
                     if (keyframe.selected != CurveWrapper.SelectionMode.None)
                     {
-                        Vector3 v = new Vector3(keyframe.key.time, 0f, 0f);
+                        Vector3 v = new Vector3(keyframe.key.time, keyframe.key.value, 0f);
                         v = matrix.MultiplyPoint3x4(v);
 
                         newTime = v.x;
@@ -1556,6 +1577,18 @@ namespace UnityEditor
                         {
                             duplicateKeyframe.key.inTangent = (keyframe.key.outTangent != Mathf.Infinity) ? -keyframe.key.outTangent : Mathf.Infinity;
                             duplicateKeyframe.key.outTangent = (keyframe.key.inTangent != Mathf.Infinity) ? -keyframe.key.inTangent : Mathf.Infinity;
+                        }
+
+                        // if it's fully selected, also move on Y
+                        if (duplicateKeyframe.selected == CurveWrapper.SelectionMode.Selected)
+                        {
+                            duplicateKeyframe.key.value = ClampVerticalValue(v.y, curve.curveId);
+
+                            if (flipY)
+                            {
+                                duplicateKeyframe.key.inTangent = (duplicateKeyframe.key.inTangent != Mathf.Infinity) ? -duplicateKeyframe.key.inTangent : Mathf.Infinity;
+                                duplicateKeyframe.key.outTangent = (duplicateKeyframe.key.outTangent != Mathf.Infinity) ? -duplicateKeyframe.key.outTangent : Mathf.Infinity;
+                            }
                         }
 
                         return duplicateKeyframe;
@@ -1788,7 +1821,7 @@ namespace UnityEditor
             {
                 CurveWrapper wrapper = GetCurveWrapperFromID(m_DrawOrder[i]);
 
-                if (wrapper.hidden || wrapper.readOnly)
+                if (wrapper.hidden || wrapper.readOnly || wrapper.curve.length == 0)
                     continue;
 
                 // Sample the curves at pixel intervals in the area around the desired time,
@@ -2838,7 +2871,7 @@ namespace UnityEditor
                             {
                                 Keyframe keyframe = GetKeyframeFromSelection(cs);
                                 SetupKeyOrCurveDragging(new Vector2(keyframe.time, keyframe.value), curveWrapper, id, evt.mousePosition);
-                                m_RectangleTool.OnStartMove(s_StartMouseDragPosition, m_RectangleTool.rippleTimeClutch);
+                                m_RectangleTool.OnStartMove(s_StartMouseDragPosition, rippleTime);
                                 evt.Use();
                                 break;
                             }

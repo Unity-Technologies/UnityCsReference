@@ -190,6 +190,7 @@ namespace UnityEditor.UIElements.Debugger
             EditorGUILayout.LabelField("Layout", m_SelectedElement.layout.ToString());
             EditorGUILayout.LabelField("World Bound", m_SelectedElement.worldBound.ToString());
             EditorGUILayout.LabelField("World Clip", m_SelectedElement.worldClip.ToString());
+            EditorGUILayout.LabelField("Bounding Box", m_SelectedElement.boundingBox.ToString());
 
             if (m_ClassList == null)
                 InitClassList();

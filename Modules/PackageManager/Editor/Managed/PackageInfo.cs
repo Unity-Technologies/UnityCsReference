@@ -26,8 +26,8 @@ namespace UnityEditor.PackageManager
         private string m_PackageId = "";
 
         [SerializeField]
-        [NativeName("isRootDependency")]
-        private bool m_IsRootDependency = false;
+        [NativeName("isDirectDependency")]
+        private bool m_IsDirectDependency = false;
 
         [SerializeField]
         [NativeName("version")]
@@ -105,10 +105,14 @@ namespace UnityEditor.PackageManager
         [NativeName("hideInEditor")]
         private bool m_HideInEditor;
 
+        [SerializeField]
+        [NativeName("entitlements")]
+        private EntitlementsInfo m_Entitlements = new EntitlementsInfo();
+
         internal PackageInfo() {}
 
         public string packageId { get { return m_PackageId;  } }
-        internal bool isRootDependency { get { return m_IsRootDependency;  } }
+        public bool isDirectDependency { get { return m_IsDirectDependency;  } }
         public string version { get { return m_Version;  } }
         public PackageSource source { get { return m_Source;  } }
         public string resolvedPath { get { return m_ResolvedPath;  } }
@@ -126,6 +130,7 @@ namespace UnityEditor.PackageManager
         public string[] keywords { get { return m_Keywords;  } }
         public AuthorInfo author { get { return m_Author;  } }
         internal bool hideInEditor { get { return m_HideInEditor;  } }
+        internal EntitlementsInfo entitlements { get { return m_Entitlements; } }
 
         public RegistryInfo registry
         {

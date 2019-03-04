@@ -11,6 +11,46 @@ using UnityEngine.Scripting;
 namespace UnityEngine.TextCore.LowLevel
 {
     /// <summary>
+    /// The OpenType Layout Tables.
+    /// </summary>
+    internal enum OTFLayoutTableType
+    {
+        BASE = 0x01000,
+        GDEF = 0x02000,
+        GPOS = 0x04000,
+        GSUB = 0x08000,
+        JSTF = 0x10000,
+        MATH = 0x20000,
+    }
+
+    /// <summary>
+    /// The Lookup tables referenced in OpenType Layout Tables.
+    /// </summary>
+    internal enum OTFLookupTableType
+    {
+        // GPOS
+        Single_Adjustment                               = OTFLayoutTableType.GPOS | 1,
+        Pair_Adjustment                                 = OTFLayoutTableType.GPOS | 2,
+        Cursive_Attachment                              = OTFLayoutTableType.GPOS | 3,
+        Mark_to_Base_Attachment                         = OTFLayoutTableType.GPOS | 4,
+        Mark_to_Ligature_Attachment                     = OTFLayoutTableType.GPOS | 5,
+        Mark_to_Mark_Attachment                         = OTFLayoutTableType.GPOS | 6,
+        Contextual_Positioning                          = OTFLayoutTableType.GPOS | 7,
+        Chaining_Contextual_Positioning                 = OTFLayoutTableType.GPOS | 8,
+        Extension_Positioning                           = OTFLayoutTableType.GPOS | 9,
+
+        // GSUB
+        Single_Substitution                             = OTFLayoutTableType.GSUB | 1,
+        Multiple_Substitution                           = OTFLayoutTableType.GSUB | 2,
+        Alternate_Substitution                          = OTFLayoutTableType.GSUB | 3,
+        Ligature_Substitution                           = OTFLayoutTableType.GSUB | 4,
+        Contextual_Substitution                         = OTFLayoutTableType.GSUB | 5,
+        Chaining_Contextual_Substitution                = OTFLayoutTableType.GSUB | 6,
+        Extension_Substitution                          = OTFLayoutTableType.GSUB | 7,
+        Reverse_Chaining_Contextual_Single_Substitution = OTFLayoutTableType.GSUB | 8,
+    }
+
+    /// <summary>
     /// The values used to adjust the position of a glyph or set of glyphs.
     /// </summary>
     [Serializable]
@@ -157,5 +197,16 @@ namespace UnityEngine.TextCore.LowLevel
         [SerializeField]
         [NativeName("secondAdjustmentRecord")]
         private GlyphAdjustmentRecord m_SecondAdjustmentRecord;
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="firstAdjustmentRecord">First glyph adjustment record.</param>
+        /// <param name="secondAdjustmentRecord">Second glyph adjustment record.</param>
+        public GlyphPairAdjustmentRecord(GlyphAdjustmentRecord firstAdjustmentRecord, GlyphAdjustmentRecord secondAdjustmentRecord)
+        {
+            m_FirstAdjustmentRecord = firstAdjustmentRecord;
+            m_SecondAdjustmentRecord = secondAdjustmentRecord;
+        }
     }
 }

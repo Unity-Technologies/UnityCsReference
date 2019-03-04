@@ -28,7 +28,7 @@ namespace UnityEditor.TextCore
         }
 
         // Add a Context Menu to the Sprite Asset Editor Panel to update existing sprite assets.
-        [MenuItem("CONTEXT/TMP_SpriteAsset/Update Sprite Asset", false, 2100)]
+        [MenuItem("CONTEXT/TextSpriteAsset/Update Sprite Asset", false, 2100)]
         static void UpdateSpriteAsset(MenuCommand command)
         {
             TextSpriteAsset spriteAsset = (TextSpriteAsset)command.context;

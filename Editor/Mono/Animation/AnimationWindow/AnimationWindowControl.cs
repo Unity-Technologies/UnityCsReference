@@ -104,8 +104,7 @@ namespace UnityEditorInternal
             RefreshViews        = 1 << 1,
             FlushUndos          = 1 << 2,
 
-            Scrub               = RefreshViews | FlushUndos,
-            Default             = RebuildGraph | RefreshViews | FlushUndos
+            Default             = RefreshViews | FlushUndos
         };
 
         private static bool HasFlag(ResampleFlags flags, ResampleFlags flag)
@@ -121,15 +120,17 @@ namespace UnityEditorInternal
         public AnimEditor animEditor { get { return state.animEditor; } }
 
         [SerializeField] private AnimationClip m_CandidateClip;
+        [SerializeField] private AnimationClip m_DefaultPose;
 
         [SerializeField] private AnimationModeDriver m_Driver;
         [SerializeField] private AnimationModeDriver m_CandidateDriver;
 
-        private IAnimationWindowPostProcess[] m_PostProcessComponents;
         private PlayableGraph m_Graph;
         private Playable m_GraphRoot;
         private AnimationClipPlayable m_ClipPlayable;
         private AnimationClipPlayable m_CandidateClipPlayable;
+        private AnimationClipPlayable m_DefaultPosePlayable;
+        private bool m_UsesPostProcessComponents = false;
 
         private static ProfilerMarker s_ResampleAnimationMarker = new ProfilerMarker("AnimationWindowControl.ResampleAnimation");
 
@@ -297,7 +298,7 @@ namespace UnityEditorInternal
                 m_Time = AnimationKeyTime.Time(value, state.frameRate);
                 StartPreview();
                 ClearCandidates();
-                ResampleAnimation(ResampleFlags.Scrub);
+                ResampleAnimation();
             }
         }
 
@@ -308,7 +309,7 @@ namespace UnityEditorInternal
                 m_Time = AnimationKeyTime.Frame(value, state.frameRate);
                 StartPreview();
                 ClearCandidates();
-                ResampleAnimation(ResampleFlags.Scrub);
+                ResampleAnimation();
             }
         }
 
@@ -374,7 +375,7 @@ namespace UnityEditorInternal
 
             m_Time = AnimationKeyTime.Time(Mathf.Clamp(newTime, state.minTime, state.maxTime), state.frameRate);
 
-            ResampleAnimation(ResampleFlags.Scrub);
+            ResampleAnimation();
 
             return true;
         }
@@ -415,8 +416,18 @@ namespace UnityEditorInternal
             AnimationMode.StartAnimationMode(GetAnimationModeDriver());
             AnimationPropertyContextualMenu.Instance.SetResponder(this);
             Undo.postprocessModifications += PostprocessAnimationRecordingModifications;
-            FetchPostProcessComponents();
             DestroyGraph();
+            CreateCandidateClip();
+
+            IAnimationWindowPreview[] previewComponents = FetchPostProcessComponents();
+            m_UsesPostProcessComponents = previewComponents != null;
+            if (previewComponents != null)
+            {
+                foreach (var component in previewComponents)
+                {
+                    component.StartPreview();
+                }
+            }
 
             return true;
         }
@@ -427,6 +438,7 @@ namespace UnityEditorInternal
             StopRecording();
             ClearCandidates();
             DestroyGraph();
+            DestroyCandidateClip();
 
             AnimationMode.StopAnimationMode(GetAnimationModeDriver());
 
@@ -434,6 +446,29 @@ namespace UnityEditorInternal
             if (AnimationPropertyContextualMenu.Instance.IsResponder(this))
             {
                 AnimationPropertyContextualMenu.Instance.SetResponder(null);
+            }
+
+            if (m_UsesPostProcessComponents)
+            {
+                IAnimationWindowPreview[] previewComponents = FetchPostProcessComponents();
+                if (previewComponents != null)
+                {
+                    foreach (var component in previewComponents)
+                    {
+                        component.StopPreview();
+                    }
+
+                    if (!Application.isPlaying)
+                    {
+                        var animator = state.activeAnimationPlayer as Animator;
+                        if (animator != null)
+                        {
+                            animator.UnbindAllHandles();
+                        }
+                    }
+                }
+
+                m_UsesPostProcessComponents = false;
             }
 
             Undo.postprocessModifications -= PostprocessAnimationRecordingModifications;
@@ -494,7 +529,6 @@ namespace UnityEditorInternal
         private void StartCandidateRecording()
         {
             AnimationMode.StartCandidateRecording(GetCandidateDriver());
-            DestroyGraph();
         }
 
         private void StopCandidateRecording()
@@ -523,30 +557,45 @@ namespace UnityEditorInternal
             m_ClipPlayable.SetLoopTime(false);
             m_ClipPlayable.SetApplyFootIK(false);
 
-            m_GraphRoot = (Playable)m_ClipPlayable;
+            m_CandidateClipPlayable = AnimationClipPlayable.Create(m_Graph, m_CandidateClip);
 
-            if (m_CandidateClip != null)
+            IAnimationWindowPreview[] previewComponents = FetchPostProcessComponents();
+            bool requiresDefaultPose = previewComponents != null && previewComponents.Length > 0;
+            int nInputs = requiresDefaultPose ? 3 : 2;
+
+            // Create a layer mixer if necessary, we'll connect playable nodes to it after having populated AnimationStream.
+            AnimationLayerMixerPlayable mixer = AnimationLayerMixerPlayable.Create(m_Graph, nInputs);
+            m_GraphRoot = (Playable)mixer;
+
+            // Populate custom playable preview graph.
+            if (previewComponents != null)
             {
-                var mixer = AnimationLayerMixerPlayable.Create(m_Graph, 2);
-
-                m_CandidateClipPlayable = AnimationClipPlayable.Create(m_Graph, m_CandidateClip);
-
-                m_Graph.Connect(m_GraphRoot, 0, mixer, 0);
-                m_Graph.Connect(m_CandidateClipPlayable, 0, mixer, 1);
-
-                mixer.SetInputWeight(0, 1.0f);
-                mixer.SetInputWeight(1, 1.0f);
-
-                m_GraphRoot = (Playable)mixer;
-            }
-
-            if (m_PostProcessComponents != null)
-            {
-                foreach (var component in m_PostProcessComponents)
+                foreach (var component in previewComponents)
                 {
-                    m_GraphRoot = component.PostProcessPlayableGraph(m_Graph, m_GraphRoot);
+                    m_GraphRoot = component.BuildPreviewGraph(m_Graph, m_GraphRoot);
                 }
             }
+
+            // Finish hooking up mixer.
+            int inputIndex = 0;
+
+            if (requiresDefaultPose)
+            {
+                AnimationMode.RevertPropertyModificationsForGameObject(state.activeRootGameObject);
+
+                EditorCurveBinding[] streamBindings = AnimationUtility.GetAnimationStreamBindings(state.activeRootGameObject);
+
+                m_DefaultPose = new AnimationClip() { name = "DefaultPose" };
+
+                AnimationWindowUtility.CreateDefaultCurves(state, m_DefaultPose, streamBindings);
+
+                m_DefaultPosePlayable = AnimationClipPlayable.Create(m_Graph, m_DefaultPose);
+
+                mixer.ConnectInput(inputIndex++, m_DefaultPosePlayable, 0, 1.0f);
+            }
+
+            mixer.ConnectInput(inputIndex++, m_ClipPlayable, 0, 1.0f);
+            mixer.ConnectInput(inputIndex++, m_CandidateClipPlayable, 0, 1.0f);
 
             if (animator.applyRootMotion)
             {
@@ -564,13 +613,14 @@ namespace UnityEditorInternal
             output.SetWeight(0.0f);
         }
 
-        private void FetchPostProcessComponents()
+        private IAnimationWindowPreview[] FetchPostProcessComponents()
         {
-            m_PostProcessComponents = null;
             if (state.activeRootGameObject != null)
             {
-                m_PostProcessComponents = state.activeRootGameObject.GetComponents<IAnimationWindowPostProcess>();
+                return state.activeRootGameObject.GetComponents<IAnimationWindowPreview>();
             }
+
+            return null;
         }
 
         public override void ResampleAnimation()
@@ -591,20 +641,37 @@ namespace UnityEditorInternal
             s_ResampleAnimationMarker.Begin();
             if (state.activeAnimationClip != null)
             {
-                AnimationMode.BeginSampling();
-
-                if (HasFlag(flags, ResampleFlags.FlushUndos))
-                    Undo.FlushUndoRecordObjects();
-
                 var animationPlayer = state.activeAnimationPlayer;
-                if (animationPlayer is Animator)
+                bool usePlayableGraph = animationPlayer is Animator;
+
+                if (usePlayableGraph)
                 {
                     if (HasFlag(flags, ResampleFlags.RebuildGraph) || !m_Graph.IsValid())
                     {
                         RebuildGraph((Animator)animationPlayer);
                     }
+                }
 
-                    if (m_CandidateClip != null)
+                AnimationMode.BeginSampling();
+
+                if (HasFlag(flags, ResampleFlags.FlushUndos))
+                    Undo.FlushUndoRecordObjects();
+
+                if (usePlayableGraph)
+                {
+                    if (m_UsesPostProcessComponents)
+                    {
+                        IAnimationWindowPreview[] previewComponents = FetchPostProcessComponents();
+                        if (previewComponents != null)
+                        {
+                            foreach (var component in previewComponents)
+                            {
+                                component.UpdatePreviewGraph(m_Graph);
+                            }
+                        }
+                    }
+
+                    if (!m_CandidateClip.empty)
                         AnimationMode.AddCandidates(state.activeRootGameObject, m_CandidateClip);
 
                     m_ClipPlayable.SetSampleRate(playing ? -1 : state.activeAnimationClip.frameRate);
@@ -613,13 +680,13 @@ namespace UnityEditorInternal
 
                     // This will cover euler/quaternion matching in basic playable graphs only (animation clip + candidate clip).
                     AnimationUtility.SampleEulerHint(state.activeRootGameObject, state.activeAnimationClip, time.time, WrapMode.Clamp);
-                    if (m_CandidateClip != null)
+                    if (!m_CandidateClip.empty)
                         AnimationUtility.SampleEulerHint(state.activeRootGameObject, m_CandidateClip, time.time, WrapMode.Clamp);
                 }
                 else
                 {
                     AnimationMode.SampleAnimationClip(state.activeRootGameObject, state.activeAnimationClip, time.time);
-                    if (m_CandidateClip != null)
+                    if (!m_CandidateClip.empty)
                         AnimationMode.SampleCandidateClip(state.activeRootGameObject, m_CandidateClip, 0f);
                 }
 
@@ -695,8 +762,8 @@ namespace UnityEditorInternal
                 modifications = RegisterCandidates(modifications);
 
             // Only resample when playable graph has been customized with post process nodes.
-            if (m_PostProcessComponents != null)
-                ResampleAnimation(ResampleFlags.RebuildGraph);
+            if (m_UsesPostProcessComponents)
+                ResampleAnimation(ResampleFlags.None);
 
             return modifications;
         }
@@ -715,24 +782,17 @@ namespace UnityEditorInternal
 
         private UndoPropertyModification[] RegisterCandidates(UndoPropertyModification[] modifications)
         {
-            bool createNewClip = (m_CandidateClip == null);
-            if (createNewClip)
-            {
-                m_CandidateClip = new AnimationClip();
-                m_CandidateClip.legacy = state.activeAnimationClip.legacy;
-                m_CandidateClip.name = "CandidateClip";
+            bool hasCandidates = AnimationMode.IsRecordingCandidates();
 
+            if (!hasCandidates)
                 StartCandidateRecording();
-            }
 
             CandidateRecordingState recordingState = new CandidateRecordingState(state, m_CandidateClip);
             UndoPropertyModification[] discardedModifications = AnimationRecording.Process(recordingState, modifications);
 
-            // No modifications were added to the candidate clip, discard.
-            if (createNewClip && discardedModifications.Length == modifications.Length)
-            {
-                ClearCandidates();
-            }
+            // No modifications were added to the candidate clip, stop recording candidates.
+            if (!hasCandidates && discardedModifications.Length == modifications.Length)
+                StopCandidateRecording();
 
             // Make sure inspector is repainted after adding new candidates to get appropriate feedback.
             InspectorWindow.RepaintAllInspectors();
@@ -742,9 +802,6 @@ namespace UnityEditorInternal
 
         private void RemoveFromCandidates(PropertyModification[] modifications)
         {
-            if (m_CandidateClip == null)
-                return;
-
             EditorCurveBinding[] bindings = AnimationWindowUtility.PropertyModificationsToEditorCurveBindings(modifications, state.activeRootGameObject, m_CandidateClip);
             if (bindings.Length == 0)
                 return;
@@ -766,22 +823,28 @@ namespace UnityEditorInternal
                 ClearCandidates();
         }
 
+        private void CreateCandidateClip()
+        {
+            m_CandidateClip = new AnimationClip();
+            m_CandidateClip.legacy = state.activeAnimationClip.legacy;
+            m_CandidateClip.name = "CandidateClip";
+        }
+
+        private void DestroyCandidateClip()
+        {
+            m_CandidateClip = null;
+        }
+
         public override void ClearCandidates()
         {
             StopCandidateRecording();
 
             if (m_CandidateClip != null)
-            {
-                m_CandidateClip = null;
-                DestroyGraph();
-            }
+                m_CandidateClip.ClearCurves();
         }
 
         public override void ProcessCandidates()
         {
-            if (m_CandidateClip == null)
-                return;
-
             BeginKeyModification();
 
             EditorCurveBinding[] bindings = AnimationUtility.GetCurveBindings(m_CandidateClip);
@@ -908,7 +971,7 @@ namespace UnityEditorInternal
 
         public bool HasAnyCandidates()
         {
-            return (m_CandidateClip != null);
+            return !m_CandidateClip.empty;
         }
 
         public bool HasAnyCurves()

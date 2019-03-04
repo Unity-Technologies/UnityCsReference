@@ -78,23 +78,36 @@ namespace UnityEditor.Experimental.AssetImporters
         [NativeName("DependsOnImportedAsset")]
         private extern void DependsOnImportedAssetInternal(string path);
 
-        // Internal for now, will be made public once UI/UX for persistent importer logs is implemented.
         public void LogImportError(string msg, UnityEngine.Object obj = null)
         {
             AddToLog(msg, true, obj);
         }
 
-        // Internal for now, will be made public once UI/UX for persistent importer logs is implemented.
+        internal void LogImportError(string msg, string file, int line, UnityEngine.Object obj = null)
+        {
+            AddToLog(msg, file, line, true, obj);
+        }
+
         public void LogImportWarning(string msg, UnityEngine.Object obj = null)
         {
             AddToLog(msg, false, obj);
+        }
+
+        internal void LogImportWarning(string msg, string file, int line, UnityEngine.Object obj = null)
+        {
+            AddToLog(msg, file, line, false, obj);
         }
 
         void AddToLog(string msg, bool isAnError, UnityEngine.Object obj)
         {
             var st = new StackTrace(2, true);
             var sf = st.GetFrame(0);
-            LogMessage(msg, sf.GetFileName(), sf.GetFileLineNumber(), obj, isAnError);
+            AddToLog(msg, sf.GetFileName(), sf.GetFileLineNumber(), isAnError, obj);
+        }
+
+        void AddToLog(string msg, string file, int line, bool isAnError, UnityEngine.Object obj)
+        {
+            LogMessage(msg, file, line, obj, isAnError);
         }
     }
 }

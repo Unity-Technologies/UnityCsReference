@@ -146,8 +146,17 @@ namespace UnityEditor.VisualStudioIntegration
             if (extension == ".dll")
                 return true;
 
-            if (file.ToLower().EndsWith(".asmdef"))
-                return true;
+            // Check if the file is an asmref or asmdef
+            if (file.Length > 7)
+            {
+                var extensionLower = file.Substring(file.Length - 7, 7).ToLower();
+
+                if (extensionLower.EndsWith(".asmdef"))
+                    return true;
+
+                if (extensionLower.EndsWith(".asmref"))
+                    return true;
+            }
 
             return IsSupportedExtension(extension);
         }

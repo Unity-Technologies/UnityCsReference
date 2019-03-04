@@ -9,9 +9,9 @@ namespace UnityEditor.UIElements
         public static string CreateUssTemplate()
         {
             return @"Label {
-    font-size: 20;
-    font-weight: bold;
-    text-color: rgb(68, 138, 255);
+    font-size: 20px;
+    -unity-font-style: bold;
+    color: rgb(68, 138, 255);
 }";
         }
     }

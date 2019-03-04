@@ -933,6 +933,36 @@ namespace UnityEditor
             }
         }
 
+        public static void DrawFoldoutInspector(UnityObject target, ref Editor editor)
+        {
+            if (editor != null && editor.target != target)
+            {
+                UnityObject.DestroyImmediate(editor);
+                editor = null;
+            }
+
+            if (editor == null && target != null)
+                editor = Editor.CreateEditor(target);
+
+            if (editor == null)
+                return;
+
+            const float kSpaceForFoldoutArrow = 10f;
+            Rect titleRect = Editor.DrawHeaderGUI(editor, editor.targetTitle, kSpaceForFoldoutArrow);
+            int id = GUIUtility.GetControlID(45678, FocusType.Passive);
+
+            Rect renderRect = EditorGUI.GetInspectorTitleBarObjectFoldoutRenderRect(titleRect);
+            renderRect.y = titleRect.yMax - 17f; // align with bottom
+            bool oldVisible = UnityEditorInternal.InternalEditorUtility.GetIsInspectorExpanded(target);
+            bool newVisible = EditorGUI.DoObjectFoldout(oldVisible, titleRect, renderRect, editor.targets, id);
+
+            if (newVisible != oldVisible)
+                UnityEditorInternal.InternalEditorUtility.SetIsInspectorExpanded(target, newVisible);
+
+            if (newVisible)
+                editor.OnInspectorGUI();
+        }
+
         // Override this method in subclasses if you implement OnPreviewGUI.
         public virtual bool HasPreviewGUI()
         {

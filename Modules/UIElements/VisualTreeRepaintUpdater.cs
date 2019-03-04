@@ -276,7 +276,7 @@ namespace UnityEngine.UIElements
                 using (new GUIClip.ParentClipScope(offset * root.worldTransform, currentGlobalClip))
                 {
                     repaintData.currentWorldClip = currentGlobalClip;
-                    repaintData.mousePosition = root.worldTransform.inverse.MultiplyPoint3x4(repaintData.repaintEvent.mousePosition);
+                    repaintData.mousePosition = VisualElement.MultiplyMatrix44Point2(root.worldTransformInverse, repaintData.repaintEvent.mousePosition);
 
                     m_StylePainter.opacity = root.resolvedStyle.opacity;
                     root.Repaint(m_StylePainter);

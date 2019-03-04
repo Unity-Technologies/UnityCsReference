@@ -185,7 +185,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private void DoOnGUI(Event evt, Matrix4x4 parentTransform, Rect clippingRect, bool isComputingLayout = false)
+        private void DoOnGUI(Event evt, Matrix4x4 parentTransform, Rect clippingRect, bool isComputingLayout, Rect layoutSize)
         {
             // If we are computing the layout, we should not try to get the worldTransform...
             // it is dependant on the layout, which is being calculated (thus, not good)
@@ -391,7 +391,7 @@ namespace UnityEngine.UIElements
             }
 
             // This will copy Event.current into evt.
-            UIElementsUtility.EndContainerGUI(evt);
+            UIElementsUtility.EndContainerGUI(evt, layoutSize);
             RestoreGlobals();
 
             // See if the container size has changed. This is to make absolutely sure the VisualElement resizes
@@ -482,10 +482,10 @@ namespace UnityEngine.UIElements
             e.type = EventType.Layout;
 
             // layout event
-            DoOnGUI(e, worldTransform, clippingRect);
+            DoOnGUI(e, worldTransform, clippingRect, false, layout);
             // the actual event
             e.type = originalEventType;
-            DoOnGUI(e, worldTransform, clippingRect);
+            DoOnGUI(e, worldTransform, clippingRect, false, layout);
 
             if (newKeyboardFocusControlID > 0)
             {
@@ -580,7 +580,20 @@ namespace UnityEngine.UIElements
             if (widthMode != MeasureMode.Exactly || heightMode != MeasureMode.Exactly)
             {
                 var evt = new Event { type = EventType.Layout };
-
+                var layoutRect = layout;
+                // Make sure the right width/height will be used at the final stage of the calculation
+                switch (widthMode)
+                {
+                    case MeasureMode.Exactly:
+                        layoutRect.width = desiredWidth;
+                        break;
+                }
+                switch (heightMode)
+                {
+                    case MeasureMode.Exactly:
+                        layoutRect.height = desiredHeight;
+                        break;
+                }
                 // When computing layout it's important to not call GetCurrentTransformAndClip
                 // because it will remove the dirty flag on the container transform which might
                 // set the transform in an invalid state. That's why we have to pass
@@ -588,7 +601,7 @@ namespace UnityEngine.UIElements
                 // pass Rect.zero for the clipping rect as this eventually sets the
                 // global GUIClip.visibleRect which IMGUI code could be using to influence
                 // size. See case 1111923.
-                DoOnGUI(evt, Matrix4x4.identity, m_CachedClippingRect, true);
+                DoOnGUI(evt, Matrix4x4.identity, m_CachedClippingRect, true, layoutRect);
                 measuredWidth = layoutMeasuredWidth;
                 measuredHeight = layoutMeasuredHeight;
             }

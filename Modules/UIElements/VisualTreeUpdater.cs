@@ -71,8 +71,14 @@ namespace UnityEngine.UIElements
             {
                 var updater = m_UpdaterArray[i];
                 Profiler.BeginSample(updater.description);
-                updater.Update();
-                Profiler.EndSample();
+                try
+                {
+                    updater.Update();
+                }
+                finally
+                {
+                    Profiler.EndSample();
+                }
             }
         }
 
@@ -81,8 +87,14 @@ namespace UnityEngine.UIElements
             var updater = m_UpdaterArray[phase];
 
             Profiler.BeginSample(updater.description);
-            updater.Update();
-            Profiler.EndSample();
+            try
+            {
+                updater.Update();
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
         }
 
         public void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
@@ -103,12 +115,14 @@ namespace UnityEngine.UIElements
 
         public void SetUpdater(IVisualTreeUpdater updater, VisualTreeUpdatePhase phase)
         {
+            m_UpdaterArray[phase]?.Dispose();
             updater.panel = m_Panel;
             m_UpdaterArray[phase] = updater;
         }
 
         public void SetUpdater<T>(VisualTreeUpdatePhase phase) where T : IVisualTreeUpdater, new()
         {
+            m_UpdaterArray[phase]?.Dispose();
             var updater = new T() {panel = m_Panel};
             m_UpdaterArray[phase] = updater;
         }

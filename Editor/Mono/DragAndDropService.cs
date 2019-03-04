@@ -19,7 +19,7 @@ namespace UnityEditor
 
         public delegate DragAndDropVisualMode ProjectBrowserDropHandler(int dragInstanceId, string dropUponPath, bool perform);
         public delegate DragAndDropVisualMode SceneDropHandler(UnityEngine.Object dropUpon, Vector3 worldPosition, Vector2 viewportPosition, Transform parentForDraggedObjects, bool perform);
-        public delegate DragAndDropVisualMode HierarchyDropHandler(HierarchyProperty property, InternalEditorUtility.HierarchyDropMode dropMode, Transform parentForDraggedObjects, bool perform);
+        public delegate DragAndDropVisualMode HierarchyDropHandler(int dropTargetInstanceID, InternalEditorUtility.HierarchyDropMode dropMode, Transform parentForDraggedObjects, bool perform);
         public delegate DragAndDropVisualMode InspectorDropHandler(UnityEngine.Object[] targets, bool perform);
 
         struct DropDescriptor : IComparable<DropDescriptor>
@@ -143,7 +143,7 @@ namespace UnityEditor
             AddDropHandler(DefaultProjectBrowserDrop, true);
             AddDropHandler(InternalEditorUtility.SceneViewDrag, true);
             AddDropHandler(InternalEditorUtility.InspectorWindowDrag, true);
-            AddDropHandler(InternalEditorUtility.HierarchyWindowDrag, true);
+            AddDropHandler(InternalEditorUtility.HierarchyWindowDragByID, true);
         }
 
         internal static bool Validate()

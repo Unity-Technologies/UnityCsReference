@@ -92,7 +92,7 @@ namespace UnityEditor
             public static GUIContent muteContent = EditorGUIUtility.TrTextContent("Mute Audio");
             public static GUIContent statsContent = EditorGUIUtility.TrTextContent("Stats");
             public static GUIContent frameDebuggerOnContent = EditorGUIUtility.TrTextContent("Frame Debugger On");
-            public static GUIContent loadRenderDocContent = EditorGUIUtility.TrTextContent("Load RenderDoc");
+            public static GUIContent loadRenderDocContent = EditorGUIUtility.TrTextContent(UnityEditor.RenderDocUtil.loadRenderDocLabel);
             public static GUIContent noCameraWarningContextMenuContent = EditorGUIUtility.TrTextContent("Warn if No Cameras Rendering");
             public static GUIContent clearEveryFrameContextMenuContent = EditorGUIUtility.TrTextContent("Clear Every Frame in Edit Mode");
             public static GUIContent lowResAspectRatiosContextMenuContent = EditorGUIUtility.TrTextContent("Low Resolution Aspect Ratios");
@@ -107,7 +107,7 @@ namespace UnityEditor
             {
                 gameViewBackgroundStyle = (GUIStyle)"GameViewBackground";
                 gizmoButtonStyle = (GUIStyle)"GV Gizmo DropDown";
-                renderdocContent = EditorGUIUtility.TrIconContent("renderdoc", "Capture the current view and open in RenderDoc.");
+                renderdocContent = EditorGUIUtility.TrIconContent("renderdoc", UnityEditor.RenderDocUtil.openInRenderDocLabel);
             }
         };
 

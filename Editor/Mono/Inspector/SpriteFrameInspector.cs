@@ -20,9 +20,9 @@ namespace UnityEditor
         {
             public static readonly GUIContent nameLabel = EditorGUIUtility.TrTextContent("Name", "The name for the Sprite.");
             public static readonly GUIContent spriteAlignmentLabel = EditorGUIUtility.TrTextContent("Pivot", "The value is normalized to the Sprite's size where (0, 0) is the lower left and (1, 1) is the upper right. May be used for syncing animation frames of different sizes.");
-            public static readonly GUIContent spriteAlignmentText = EditorGUIUtility.TrTextContent("X:{0}, Y:{1}");
+            public static readonly GUIContent spriteAlignmentText = EditorGUIUtility.TrTextContent("X:{0:0.##}, Y:{1:0.##}");
             public static readonly GUIContent borderLabel = EditorGUIUtility.TrTextContent("Border", "Border values for the Sprite set in Sprite Editor window. May be useful for 9-Slicing Sprites.");
-            public static readonly GUIContent borderText = EditorGUIUtility.TrTextContent("L:{0} B:{1} R:{2} T:{3}");
+            public static readonly GUIContent borderText = EditorGUIUtility.TrTextContent("L:{0:0.##} B:{1:0.##} R:{2:0.##} T:{3:0.##}");
             public static readonly GUIContent multiValueText = EditorGUIUtility.TrTextContent("-");
         }
 
@@ -48,26 +48,10 @@ namespace UnityEditor
 
         Vector4 GetSpriteBorderValue(Sprite sprite)
         {
-            var returnValue = Vector4.one;
-            var path = AssetDatabase.GetAssetPath(sprite);
-            var spriteDataProvider = AssetImporter.GetAtPath(path) as ISpriteEditorDataProvider;
-            if (spriteDataProvider != null)
-            {
-                var textureDataProvider = spriteDataProvider.GetDataProvider<ITextureDataProvider>();
-                if (textureDataProvider?.texture != null)
-                {
-                    int width, height;
-                    textureDataProvider.GetTextureActualWidthAndHeight(out width, out height);
-                    var texture = textureDataProvider.texture;
-                    var textureScale = new Vector2(width / (float)texture.width, height / (float)texture.height);
-                    returnValue.x = Mathf.RoundToInt(sprite.border.x * textureScale.x);
-                    returnValue.z = Mathf.RoundToInt(sprite.border.z * textureScale.x);
-                    returnValue.y = Mathf.RoundToInt(sprite.border.y * textureScale.y);
-                    returnValue.w = Mathf.RoundToInt(sprite.border.w * textureScale.y);
-                }
-            }
-
-            return returnValue;
+            return new Vector4(sprite.border.x / sprite.rect.width,
+                sprite.border.y / sprite.rect.height,
+                sprite.border.z / sprite.rect.width,
+                sprite.border.w / sprite.rect.height);
         }
 
         void CheckBorderHasSameValue()

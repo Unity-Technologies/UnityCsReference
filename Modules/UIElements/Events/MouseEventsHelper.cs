@@ -56,7 +56,7 @@ namespace UnityEngine.UIElements
 
             while (prevDepth > currDepth)
             {
-                using (var leaveEvent = MouseEventBase<TLeaveEvent>.GetPooled(triggerEvent, mousePosition))
+                using (var leaveEvent = MouseEventBase<TLeaveEvent>.GetPooled(triggerEvent, mousePosition, false))
                 {
                     leaveEvent.target = p;
                     p.SendEvent(leaveEvent);
@@ -81,7 +81,7 @@ namespace UnityEngine.UIElements
             // Now p and c are at the same depth. Go up the tree until p == c.
             while (p != c)
             {
-                using (var leaveEvent = MouseEventBase<TLeaveEvent>.GetPooled(triggerEvent, mousePosition))
+                using (var leaveEvent = MouseEventBase<TLeaveEvent>.GetPooled(triggerEvent, mousePosition, false))
                 {
                     leaveEvent.target = p;
                     p.SendEvent(leaveEvent);
@@ -95,7 +95,7 @@ namespace UnityEngine.UIElements
 
             for (var i = enteringElements.Count - 1; i >= 0; i--)
             {
-                using (var enterEvent = MouseEventBase<TEnterEvent>.GetPooled(triggerEvent, mousePosition))
+                using (var enterEvent = MouseEventBase<TEnterEvent>.GetPooled(triggerEvent, mousePosition, false))
                 {
                     enterEvent.target = enteringElements[i];
                     enteringElements[i].SendEvent(enterEvent);
@@ -110,7 +110,7 @@ namespace UnityEngine.UIElements
             // Send MouseOut event for element no longer under the mouse.
             if (previousTopElementUnderMouse != null && previousTopElementUnderMouse.panel != null)
             {
-                using (var outEvent = MouseOutEvent.GetPooled(triggerEvent, mousePosition))
+                using (var outEvent = MouseOutEvent.GetPooled(triggerEvent, mousePosition, false))
                 {
                     outEvent.target = previousTopElementUnderMouse;
                     previousTopElementUnderMouse.SendEvent(outEvent);
@@ -120,7 +120,7 @@ namespace UnityEngine.UIElements
             // Send MouseOver event for element now under the mouse
             if (currentTopElementUnderMouse != null)
             {
-                using (var overEvent = MouseOverEvent.GetPooled(triggerEvent, mousePosition))
+                using (var overEvent = MouseOverEvent.GetPooled(triggerEvent, mousePosition, false))
                 {
                     overEvent.target = currentTopElementUnderMouse;
                     currentTopElementUnderMouse.SendEvent(overEvent);

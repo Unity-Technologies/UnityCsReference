@@ -126,7 +126,7 @@ namespace UnityEngine.UIElements
             return e;
         }
 
-        internal static T GetPooled(IMouseEvent triggerEvent, Vector2 mousePosition)
+        internal static T GetPooled(IMouseEvent triggerEvent, Vector2 mousePosition, bool recomputeTopElementUnderMouse)
         {
             if (triggerEvent != null)
             {
@@ -135,6 +135,7 @@ namespace UnityEngine.UIElements
 
             T e = GetPooled();
             e.mousePosition = mousePosition;
+            ((IMouseEventInternal)e).recomputeTopElementUnderMouse = recomputeTopElementUnderMouse;
             return e;
         }
 

@@ -633,10 +633,5 @@ namespace UnityEditor
             copy.alphaIsTransparency = original.alphaIsTransparency;
             return copy;
         }
-
-        public static SpriteImportMode GetSpriteImportMode(ISpriteEditorDataProvider dataProvider)
-        {
-            return dataProvider == null ? SpriteImportMode.None : dataProvider.spriteImportMode;
-        }
     }
 }

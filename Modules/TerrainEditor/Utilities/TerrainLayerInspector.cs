@@ -4,21 +4,16 @@
 
 using System;
 using UnityEngine;
-using UnityEngine.Experimental.Rendering;
-using UnityEditor.Experimental.AssetImporters;
-using System.Collections;
-using System.IO;
-using UnityEditorInternal;
-using UnityEditor;
+using DefaultFormat = UnityEngine.Experimental.Rendering.DefaultFormat;
 
 namespace UnityEditor
 {
     [CustomEditor(typeof(TerrainLayer))]
     [CanEditMultipleObjects]
-    internal class TerrainLayerInspector : Editor
+    public sealed class TerrainLayerInspector : Editor
     {
         [MenuItem("Assets/Create/Terrain Layer")]
-        public static void CreateNewDefaultTerrainLayer()
+        private static void CreateDefaultTerrainLayer()
         {
             TerrainLayer terrainLayer = new TerrainLayer();
             ProjectWindowUtil.CreateAsset(terrainLayer, "New Terrain Layer.terrainlayer");
@@ -45,7 +40,7 @@ namespace UnityEditor
         private static Styles s_Styles = new Styles();
 
         [SerializeField]
-        protected Vector2 m_Pos;
+        Vector2 m_Pos;
 
         SerializedProperty m_DiffuseTexture;
         SerializedProperty m_NormalMapTexture;
@@ -72,7 +67,7 @@ namespace UnityEditor
         ITerrainLayerCustomUI m_CustomUI = null;
         Terrain m_CustomUITerrain = null;
 
-        internal bool m_ShowMaskMap = true;
+        private bool m_ShowMaskMap = true;
         private bool m_MaskMapUsed = false;
         private GUIContent m_MaskMapText = s_Styles.maskMapTexture;
         private GUIContent m_DiffuseMapText = s_Styles.diffuseTexture;
@@ -82,7 +77,7 @@ namespace UnityEditor
         private GUIContent m_MaskRemapBText = s_Styles.blue;
         private GUIContent m_MaskRemapAText = s_Styles.alpha;
 
-        internal virtual void OnEnable()
+        private void OnEnable()
         {
             if (!target)
                 return;
@@ -108,13 +103,13 @@ namespace UnityEditor
             m_NormalMapHasCorrectTextureType = TerrainLayerUtility.CheckNormalMapTextureType(m_NormalMapTexture.objectReferenceValue as Texture2D);
         }
 
-        internal void SetCustomUI(ITerrainLayerCustomUI customUI, Terrain terrain)
+        public void ApplyCustomUI(ITerrainLayerCustomUI customUI, Terrain terrain)
         {
             m_CustomUI = customUI;
             m_CustomUITerrain = terrain;
         }
 
-        internal void UpdateMaskMapChannelUsages(string maskMapR, string maskMapG, string maskMapB, string maskMapA, string diffuseA, string diffuseAMaskEnabled, bool maskMapUsed)
+        private void UpdateMaskMapChannelUsages(string maskMapR, string maskMapG, string maskMapB, string maskMapA, string diffuseA, string diffuseAMaskEnabled, bool maskMapUsed)
         {
             if (String.IsNullOrEmpty(maskMapR) && String.IsNullOrEmpty(maskMapG) && String.IsNullOrEmpty(maskMapB) && String.IsNullOrEmpty(maskMapA))
             {
@@ -347,7 +342,7 @@ namespace UnityEditor
             m_Pos = PreviewGUI.EndScrollView();
         }
 
-        public sealed override Texture2D RenderStaticPreview(string assetPath, UnityEngine.Object[] subAssets, int width, int height)
+        public override Texture2D RenderStaticPreview(string assetPath, UnityEngine.Object[] subAssets, int width, int height)
         {
             TerrainLayer t = AssetDatabase.LoadMainAssetAtPath(assetPath) as TerrainLayer;
 

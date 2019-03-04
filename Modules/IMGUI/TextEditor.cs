@@ -1079,10 +1079,10 @@ namespace UnityEngine
         {
             string realText = text;
             int cursorPos = cursorIndex;
-            if (Input.compositionString.Length > 0)
+            if (GUIUtility.compositionString.Length > 0)
             {
-                m_Content.text = newText.Substring(0, cursorIndex) + Input.compositionString + newText.Substring(selectIndex);
-                cursorPos += Input.compositionString.Length;
+                m_Content.text = newText.Substring(0, cursorIndex) + GUIUtility.compositionString + newText.Substring(selectIndex);
+                cursorPos += GUIUtility.compositionString.Length;
             }
             else
                 m_Content.text = newText;
@@ -1097,10 +1097,10 @@ namespace UnityEngine
 
             // Debug.Log ("ScrollOffset : " + scrollOffset);
 
-            Input.compositionCursorPos = graphicalCursorPos + new Vector2(position.x, position.y + style.lineHeight) - scrollOffset;
+            GUIUtility.compositionCursorPos = graphicalCursorPos + new Vector2(position.x, position.y + style.lineHeight) - scrollOffset;
 
-            if (Input.compositionString.Length > 0)
-                style.DrawWithTextSelection(position, m_Content, controlID, cursorIndex, cursorIndex + Input.compositionString.Length, true);
+            if (GUIUtility.compositionString.Length > 0)
+                style.DrawWithTextSelection(position, m_Content, controlID, cursorIndex, cursorIndex + GUIUtility.compositionString.Length, true);
             else
                 style.DrawWithTextSelection(position, m_Content, controlID, cursorIndex, selectIndex);
 

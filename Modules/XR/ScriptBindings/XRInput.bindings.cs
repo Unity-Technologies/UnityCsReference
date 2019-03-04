@@ -342,6 +342,26 @@ namespace UnityEngine.XR
             return false;
         }
 
+        // Features
+        public bool TryGetFeatureValue(InputFeatureUsage<bool> usage, DateTime time, out bool value) { return InputDevices.TryGetFeatureValueAtTime_bool(m_DeviceId, usage.name, TimeConverter.ToUnixTimeMilliseconds(time), out value); }
+        public bool TryGetFeatureValue(InputFeatureUsage<uint> usage, DateTime time, out uint value) { return InputDevices.TryGetFeatureValueAtTime_UInt32(m_DeviceId, usage.name, TimeConverter.ToUnixTimeMilliseconds(time), out value); }
+        public bool TryGetFeatureValue(InputFeatureUsage<float> usage, DateTime time, out float value) { return InputDevices.TryGetFeatureValueAtTime_float(m_DeviceId, usage.name, TimeConverter.ToUnixTimeMilliseconds(time), out value); }
+        public bool TryGetFeatureValue(InputFeatureUsage<Vector2> usage, DateTime time, out Vector2 value) { return InputDevices.TryGetFeatureValueAtTime_Vector2f(m_DeviceId, usage.name, TimeConverter.ToUnixTimeMilliseconds(time), out value); }
+        public bool TryGetFeatureValue(InputFeatureUsage<Vector3> usage, DateTime time, out Vector3 value) { return InputDevices.TryGetFeatureValueAtTime_Vector3f(m_DeviceId, usage.name, TimeConverter.ToUnixTimeMilliseconds(time), out value); }
+        public bool TryGetFeatureValue(InputFeatureUsage<Quaternion> usage, DateTime time, out Quaternion value) { return InputDevices.TryGetFeatureValueAtTime_Quaternionf(m_DeviceId, usage.name, TimeConverter.ToUnixTimeMilliseconds(time), out value); }
+
+        public bool TryGetFeatureValue(InputFeatureUsage<InputTrackingState> usage, DateTime time, out InputTrackingState value)
+        {
+            uint intValue = 0;
+            if (InputDevices.TryGetFeatureValueAtTime_UInt32(m_DeviceId, usage.name, TimeConverter.ToUnixTimeMilliseconds(time), out intValue))
+            {
+                value = (InputTrackingState)intValue;
+                return true;
+            }
+            value = InputTrackingState.None;
+            return false;
+        }
+
         public override bool Equals(object obj)
         {
             if (!(obj is InputDevice))
@@ -370,6 +390,27 @@ namespace UnityEngine.XR
             return !(a == b);
         }
     }
+
+    internal static class TimeConverter
+    {
+        static readonly DateTime s_Epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        public static DateTime now
+        {
+            get { return DateTime.Now; }
+        }
+
+        public static long ToUnixTimeMilliseconds(DateTime date)
+        {
+            return Convert.ToInt64((date.ToUniversalTime() - s_Epoch).TotalMilliseconds);
+        }
+
+        public static long ToUnixTimeSeconds(DateTime date)
+        {
+            return Convert.ToInt64((date.ToUniversalTime() - s_Epoch).TotalSeconds);
+        }
+    }
+
 
     public enum HandFinger
     {
@@ -591,6 +632,7 @@ namespace UnityEngine.XR
         }
     }
 
+
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     [NativeConditional("ENABLE_VR")]
@@ -670,6 +712,14 @@ namespace UnityEngine.XR
         internal static extern bool TryGetFeatureValue_Vector2f(UInt64 deviceId, string usage, out Vector2 value);
         internal static extern bool TryGetFeatureValue_Vector3f(UInt64 deviceId, string usage, out Vector3 value);
         internal static extern bool TryGetFeatureValue_Quaternionf(UInt64 deviceId, string usage, out Quaternion value);
+
+        internal static extern bool TryGetFeatureValueAtTime_bool(UInt64 deviceId, string usage, Int64 time, out bool value);
+        internal static extern bool TryGetFeatureValueAtTime_UInt32(UInt64 deviceId, string usage, Int64 time, out uint value);
+        internal static extern bool TryGetFeatureValueAtTime_float(UInt64 deviceId, string usage, Int64 time, out float value);
+        internal static extern bool TryGetFeatureValueAtTime_Vector2f(UInt64 deviceId, string usage, Int64 time, out Vector2 value);
+        internal static extern bool TryGetFeatureValueAtTime_Vector3f(UInt64 deviceId, string usage, Int64 time, out Vector3 value);
+        internal static extern bool TryGetFeatureValueAtTime_Quaternionf(UInt64 deviceId, string usage, Int64 time, out Quaternion value);
+
         internal static extern bool TryGetFeatureValue_XRHand(UInt64 deviceId, string usage, out Hand value);
         internal static extern bool TryGetFeatureValue_XRBone(UInt64 deviceId, string usage, out Bone value);
         internal static extern bool TryGetFeatureValue_XREyes(UInt64 deviceId, string usage, out Eyes value);

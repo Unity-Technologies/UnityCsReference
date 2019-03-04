@@ -653,6 +653,19 @@ namespace UnityEditor
         [NativeName("IsDefaultOverride")]
         private extern bool GetIsDefaultOverrideInternal();
 
+        // Is property a driven property (using RectTransform driven properties)? (RO)
+        internal bool isDrivenRectTransformProperty
+        {
+            get
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                return GetIsDrivenRectTransformPropertyInternal();
+            }
+        }
+
+        [NativeName("IsDrivenRectTransformProperty")]
+        private extern bool GetIsDrivenRectTransformPropertyInternal();
+
         // Type of this property (RO).
         public SerializedPropertyType propertyType
         {

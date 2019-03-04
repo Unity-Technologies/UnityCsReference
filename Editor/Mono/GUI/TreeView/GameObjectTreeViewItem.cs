@@ -12,7 +12,6 @@ namespace UnityEditor
     {
         int m_ColorCode;
         Object m_ObjectPPTR;
-        bool m_ShouldDisplay;
         Scene m_UnityScene;
 
         // Lazy initialized together with icon.
@@ -29,8 +28,19 @@ namespace UnityEditor
         {
             get
             {
-                if (string.IsNullOrEmpty(base.displayName))
+                // Lazy initilize displayName
+                if (base.displayName == null)
                 {
+                    if (SubSceneGUI.IsUsingSubScenes())
+                    {
+                        var subSceneHeaderName = SubSceneGUI.GetSubSceneHeaderText((GameObject)objectPPTR);
+                        if (subSceneHeaderName != null)
+                        {
+                            base.displayName = subSceneHeaderName;
+                            return base.displayName;
+                        }
+                    }
+
                     if (m_ObjectPPTR != null)
                         displayName = objectPPTR.name;
                     else
@@ -43,7 +53,6 @@ namespace UnityEditor
 
         virtual public int colorCode { get { return m_ColorCode; } set { m_ColorCode = value; } }
         virtual public Object objectPPTR { get { return m_ObjectPPTR; } set { m_ObjectPPTR = value; } }
-        virtual public bool shouldDisplay { get { return m_ShouldDisplay; } set { m_ShouldDisplay = value; } }
         virtual public bool lazyInitializationDone { get { return m_LazyInitializationDone; } set { m_LazyInitializationDone = value; } }
         virtual public bool showPrefabModeButton { get { return m_ShowPrefabModeButton; } set { m_ShowPrefabModeButton = value; } }
         virtual public Texture2D overlayIcon { get { return m_OverlayIcon; } set { m_OverlayIcon = value; } }

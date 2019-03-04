@@ -6,13 +6,13 @@
 using System;
 using UnityEngine.Bindings;
 
-namespace Unity.Experimental.Audio
+namespace Unity.Audio
 {
     [NativeType(Header = "Modules/Audio/Public/csas/ExecuteContext.bindings.h")]
     internal unsafe struct ExecuteContextInternal
     {
         [NativeMethod(IsThreadSafe = true, IsFreeFunction = true)]
-        static extern unsafe internal void Internal_PostEvent(void* dspNodePtr, long eventTypeHashCode, void* eventPtr, int eventSize);
+        public static extern unsafe void Internal_PostEvent(void* dspNodePtr, long eventTypeHashCode, void* eventPtr, int eventSize);
     }
 }
 

@@ -22,6 +22,7 @@ using UnityScript.Scripting;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEditorInternal;
+using UnityEditor.SceneManagement;
 using UnityEditor.Collaboration;
 using UnityEditor.Connect;
 
@@ -128,6 +129,10 @@ public sealed partial class HierarchyProperty : IHierarchyProperty
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private void SetCustomSceneHandles (int[] sceneHandles) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public void SetSubScenes (SceneHierarchyHooks.SubSceneInfo[] subScenes) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
