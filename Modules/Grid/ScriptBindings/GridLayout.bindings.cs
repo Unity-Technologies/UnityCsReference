@@ -57,6 +57,14 @@ namespace UnityEngine
         [FreeFunction("GridLayoutBindings::GetBoundsLocal", HasExplicitThis = true)]
         public extern Bounds GetBoundsLocal(Vector3Int cellPosition);
 
+        public Bounds GetBoundsLocal(Vector3 origin, Vector3 size)
+        {
+            return GetBoundsLocalOriginSize(origin, size);
+        }
+
+        [FreeFunction("GridLayoutBindings::GetBoundsLocalOriginSize", HasExplicitThis = true)]
+        private extern Bounds GetBoundsLocalOriginSize(Vector3 origin, Vector3 size);
+
         [FreeFunction("GridLayoutBindings::CellToLocal", HasExplicitThis = true)]
         public extern Vector3 CellToLocal(Vector3Int cellPosition);
 

@@ -13,14 +13,23 @@ namespace UnityEditor
 {
     internal class GridPaintingState : ScriptableSingleton<GridPaintingState>, IToolModeOwner
     {
-        internal class GridPaintTargetsSorting
+        internal class GridPaintActiveTargetsPreferences
         {
             public static readonly string targetSortingModeEditorPref = "TilePalette.ActiveTargetsSortingMode";
             public static readonly string targetSortingModeLookup = "Tile Palette Active Targets Sorting Mode";
+            public static readonly string targetRestoreEditModeSelectionEditorPref = "TilePalette.RestoreEditModeSelection";
+            public static readonly string targetRestoreEditModeSelectionLookup = "Tile Palette Restore Edit Mode Active Target";
 
             public static readonly string defaultSortingMode = L10n.Tr("None");
-            public static readonly string noValidUserSortingComparer = L10n.Tr("There is no valid user comparer method for sorting Tile Palette Active Targets.");
             public static readonly GUIContent targetSortingModeLabel = EditorGUIUtility.TrTextContent(targetSortingModeLookup, "Controls the sorting of the Active Targets in the Tile Palette");
+            public static readonly GUIContent targetRestoreEditModeSelectionLabel = EditorGUIUtility.TrTextContent(targetRestoreEditModeSelectionLookup
+                , "When exiting Play Mode, restores the Active Target in the Tile Palette to the last selected target from Edit Mode");
+
+            public static bool restoreEditModeSelection
+            {
+                get { return EditorPrefs.GetBool(targetRestoreEditModeSelectionEditorPref, true); }
+                set { EditorPrefs.SetBool(targetRestoreEditModeSelectionEditorPref, value); }
+            }
 
             private static string[] s_SortingNames;
             private static int s_SortingSelectionIndex;
@@ -61,10 +70,10 @@ namespace UnityEditor
                     }
 
                     EditorGUI.BeginChangeCheck();
-                    var val = EditorGUILayout.Popup(targetSortingModeLabel, s_SortingSelectionIndex, s_SortingNames);
+                    var sortingSelection = EditorGUILayout.Popup(targetSortingModeLabel, s_SortingSelectionIndex, s_SortingNames);
                     if (EditorGUI.EndChangeCheck())
                     {
-                        s_SortingSelectionIndex = val;
+                        s_SortingSelectionIndex = sortingSelection;
                         var sortingTypeFullName = defaultSortingMode;
                         if (s_SortingSelectionIndex > 0 && s_SortingSelectionIndex <= GridPaintSortingAttribute.sortingMethods.Count)
                         {
@@ -82,6 +91,13 @@ namespace UnityEditor
                         }
                         EditorPrefs.SetString(targetSortingModeEditorPref, sortingTypeFullName);
                         GridPaintingState.FlushCache();
+                    }
+
+                    EditorGUI.BeginChangeCheck();
+                    var editModeSelection = EditorGUILayout.Toggle(targetRestoreEditModeSelectionLabel, restoreEditModeSelection);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        restoreEditModeSelection = editModeSelection;
                     }
                 }
             }
@@ -107,13 +123,14 @@ namespace UnityEditor
             }
         }
 
+        [SerializeField] private GameObject m_EditModeScenePaintTarget; // Which GameObject in scene was the last painting target in EditMode
         [SerializeField] private GameObject m_ScenePaintTarget; // Which GameObject in scene is considered as painting target
         [SerializeField] private GridBrushBase m_Brush; // Which brush will handle painting callbacks
         [SerializeField] private PaintableGrid m_ActiveGrid; // Grid that has painting focus (can be palette, too)
         [SerializeField] private PaintableGrid m_LastActiveGrid; // Grid that last had painting focus (can be palette, too)
         [SerializeField] private HashSet<Object> m_InterestedPainters = new HashSet<Object>(); // A list of objects that can paint using the GridPaintingState
 
-        private GameObject[] m_CachedPaintTargets = null;
+        private GameObject[] m_CachedPaintTargets;
         private bool m_FlushPaintTargetCache;
         private Editor m_CachedEditor;
         private bool m_SavingPalette;
@@ -124,6 +141,7 @@ namespace UnityEditor
         void OnEnable()
         {
             EditorApplication.hierarchyChanged += HierarchyChanged;
+            EditorApplication.playModeStateChanged += PlayModeStateChanged;
             Selection.selectionChanged += OnSelectionChange;
             m_FlushPaintTargetCache = true;
         }
@@ -132,6 +150,7 @@ namespace UnityEditor
         {
             m_InterestedPainters.Clear();
             EditorApplication.hierarchyChanged -= HierarchyChanged;
+            EditorApplication.playModeStateChanged -= PlayModeStateChanged;
             Selection.selectionChanged -= OnSelectionChange;
             FlushCache();
         }
@@ -141,6 +160,21 @@ namespace UnityEditor
             if (hasInterestedPainters && ValidatePaintTarget(Selection.activeGameObject))
             {
                 scenePaintTarget = Selection.activeGameObject;
+            }
+        }
+
+        private void PlayModeStateChanged(PlayModeStateChange state)
+        {
+            if (state == PlayModeStateChange.ExitingEditMode)
+            {
+                m_EditModeScenePaintTarget = scenePaintTarget;
+            }
+            else if (state == PlayModeStateChange.EnteredEditMode)
+            {
+                if (GridPaintActiveTargetsPreferences.restoreEditModeSelection && m_EditModeScenePaintTarget != null)
+                {
+                    scenePaintTarget = m_EditModeScenePaintTarget;
+                }
             }
         }
 
@@ -175,7 +209,7 @@ namespace UnityEditor
                     scenePaintTarget = null;
                 else
                 {
-                    var comparer = GridPaintTargetsSorting.GetTargetComparer();
+                    var comparer = GridPaintActiveTargetsPreferences.GetTargetComparer();
                     if (comparer != null)
                         Array.Sort(m_CachedPaintTargets, comparer);
                 }

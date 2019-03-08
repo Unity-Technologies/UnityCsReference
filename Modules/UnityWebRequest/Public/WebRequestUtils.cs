@@ -562,11 +562,6 @@ namespace UnityEngineInternal
                 return "file://" + path;
             }
 
-            // if URL contains '%', assume it is properly escaped, otherwise '%2f' gets unescaped as '/' (which may not be correct)
-            // otherwise escape it, i.e. replaces spaces by '%20'
-            if (targetUrl.Contains("%"))
-                return targetUri.OriginalString;
-
             // Special handling for URIs like jar:file (Android), blob:http (WebGL and similar
             // Uri.AbsoluteUri class in those cases results in jar:file/path, which is incorrect because of only one slash
             // Uri.Scheme also returns scheme part before the colon (jar, blob)
@@ -583,13 +578,26 @@ namespace UnityEngineInternal
                     string path = targetUri.AbsolutePath;
                     if (path.Contains("%"))
                         path = URLDecode(path);
-                    sb.Append(path);
+
+                    // common error when using Uri class and converting to string: URI will be jar:file:/path instead of jar:file:///path
+                    if (path.StartsWith("file:/") && path.Length > 6 && path[6] != '/')
+                    {
+                        sb.Append("file://");
+                        sb.Append(path.Substring(5));
+                    }
+                    else
+                        sb.Append(path);
                     return sb.ToString();
                 }
                 sb.Append(targetUri.PathAndQuery);
                 sb.Append(targetUri.Fragment);
                 return sb.ToString();
             }
+
+            // if URL contains '%', assume it is properly escaped, otherwise '%2f' gets unescaped as '/' (which may not be correct)
+            // otherwise escape it, i.e. replaces spaces by '%20'
+            if (targetUrl.Contains("%"))
+                return targetUri.OriginalString;
 
             return targetUri.AbsoluteUri;
         }

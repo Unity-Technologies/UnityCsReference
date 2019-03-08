@@ -266,12 +266,11 @@ namespace UnityEditor
             if (tilemap != null)
             {
                 var transform = tilemap.transform;
-                Vector3 forward = tilemap.orientationMatrix.MultiplyVector(transform.forward) * -1f;
-                Plane plane = new Plane(forward, transform.position);
+                Plane plane = new Plane(GetGridForward(tilemap), transform.position);
                 Vector3Int cell = LocalToGrid(tilemap, GridEditorUtility.ScreenToLocal(transform, screenPosition, plane));
                 return new Vector2Int(cell.x, cell.y);
             }
-            if (grid)
+            if (grid != null)
             {
                 Vector3Int cell = LocalToGrid(grid, GridEditorUtility.ScreenToLocal(gridTransform, screenPosition, GetGridPlane(grid)));
                 return new Vector2Int(cell.x, cell.y);
@@ -299,24 +298,29 @@ namespace UnityEditor
             return gridLayout.LocalToCell(local);
         }
 
-        private Plane GetGridPlane(Grid grid)
+        private Vector3 GetGridForward(GridLayout grid)
         {
             switch (grid.cellSwizzle)
             {
                 case Grid.CellSwizzle.XYZ:
-                    return new Plane(grid.transform.forward * -1f, grid.transform.position);
+                    return grid.transform.forward * -1f;
                 case Grid.CellSwizzle.XZY:
-                    return new Plane(grid.transform.up * -1f, grid.transform.position);
+                    return grid.transform.up * -1f;
                 case Grid.CellSwizzle.YXZ:
-                    return new Plane(grid.transform.forward, grid.transform.position);
+                    return grid.transform.forward;
                 case Grid.CellSwizzle.YZX:
-                    return new Plane(grid.transform.up, grid.transform.position);
+                    return grid.transform.up;
                 case Grid.CellSwizzle.ZXY:
-                    return new Plane(grid.transform.right, grid.transform.position);
+                    return grid.transform.right;
                 case Grid.CellSwizzle.ZYX:
-                    return new Plane(grid.transform.right * -1f, grid.transform.position);
+                    return grid.transform.right * -1f;
             }
-            return new Plane(grid.transform.forward * -1f, grid.transform.position);
+            return grid.transform.forward * -1f;
+        }
+
+        private Plane GetGridPlane(Grid grid)
+        {
+            return new Plane(GetGridForward(grid), grid.transform.position);
         }
 
         private GridLayout GetGridView()
