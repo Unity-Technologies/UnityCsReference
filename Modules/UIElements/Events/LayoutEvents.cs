@@ -29,6 +29,8 @@ namespace UnityEngine.UIElements
         public Rect oldRect { get; private set; }
         public Rect newRect { get; private set; }
 
+        internal int layoutPass {get; set; }
+
         public GeometryChangedEvent()
         {
             LocalInit();

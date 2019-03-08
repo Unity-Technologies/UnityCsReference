@@ -154,6 +154,13 @@ namespace UnityEngine
             [FreeFunction(Name = "GetTextureStreamingManager().SetDiscardUnusedMips")]
             set;
         }
+        extern public static bool allowThreadedTextureCreation
+        {
+            [FreeFunction(Name = "Texture2DScripting::IsCreateTextureThreadedEnabled")]
+            get;
+            [FreeFunction(Name = "Texture2DScripting::EnableCreateTextureThreaded")]
+            set;
+        }
     }
 
     [NativeHeader("Runtime/Graphics/Texture2D.h")]

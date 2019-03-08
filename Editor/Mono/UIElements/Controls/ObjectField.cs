@@ -272,7 +272,9 @@ namespace UnityEditor.UIElements
 
         internal void ShowObjectSelector()
         {
-            ObjectSelector.get.Show(value, objectType, null, allowSceneObjects, null, OnObjectChanged, OnObjectChanged);
+            // Since we have nothing useful to do on the object selector closing action, we just do not assign any callback
+            // All the object changes will be notified through the OnObjectChanged and a "cancellation" (Escape key) on the ObjectSelector is calling the closing callback without any good object
+            ObjectSelector.get.Show(value, objectType, null, allowSceneObjects, null, null, OnObjectChanged);
         }
     }
 }

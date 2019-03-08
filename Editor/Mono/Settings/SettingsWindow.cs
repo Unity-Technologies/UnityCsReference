@@ -29,7 +29,6 @@ namespace UnityEditor
         private string m_SearchText;
         private bool m_SearchFieldGiveFocus;
 
-
         private static class ImguiStyles
         {
             public static readonly GUIStyle header = "SettingsHeader";
@@ -45,6 +44,11 @@ namespace UnityEditor
 
         public static float s_DefaultLabelWidth => Styles.window.GetFloat("-unity-label-width");
         public static float s_DefaultLayoutMaxWidth => Styles.window.GetFloat("-unity-max-layout-width");
+
+        public SettingsWindow()
+            : this(SettingsScope.Project)
+        {
+        }
 
         public SettingsWindow(SettingsScope scope)
         {
@@ -324,7 +328,7 @@ namespace UnityEditor
 
         private void DrawTitleBar()
         {
-            GUILayout.BeginHorizontal(GUILayout.MaxWidth(s_DefaultLayoutMaxWidth));
+            GUILayout.BeginHorizontal();
             GUILayout.Space(Styles.settingsPanel.GetFloat(StyleCatalogKeyword.marginLeft));
             var headerContent = new GUIContent(m_TreeView.currentProvider.label, Styles.header.GetBool("-unity-show-icon") ? m_TreeView.currentProvider.icon : null);
             GUILayout.Label(headerContent, ImguiStyles.header, GUILayout.MaxHeight(Styles.header.GetFloat("max-height")));
@@ -406,7 +410,7 @@ namespace UnityEditor
             {
                 m_LabelWidth = EditorGUIUtility.labelWidth;
                 EditorGUIUtility.labelWidth = s_DefaultLabelWidth;
-                GUILayout.BeginHorizontal(GUILayout.MaxWidth(layoutMaxWidth));
+                GUILayout.BeginHorizontal();
                 GUILayout.Space(Styles.settingsPanel.GetFloat(StyleCatalogKeyword.marginLeft));
                 GUILayout.BeginVertical();
                 GUILayout.Space(Styles.settingsPanel.GetFloat(StyleCatalogKeyword.marginTop));
