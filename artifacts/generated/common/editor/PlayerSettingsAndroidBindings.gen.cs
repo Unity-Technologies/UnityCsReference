@@ -18,6 +18,22 @@ using UnityEngine;
 
 namespace UnityEditor
 {
+
+
+public enum AndroidTargetDevice
+{
+    
+    FAT = 0,
+    
+    
+    
+    
+    
+    ARMv7 = 3,
+    
+    x86 = 4,
+}
+
 [Flags]
 public enum AndroidArchitecture : uint
 {
@@ -269,6 +285,16 @@ public sealed partial class PlayerSettings : UnityEngine.Object
         extern internal static  void SetAndroidBanners (Texture2D[] banners) ;
 
         internal extern static bool createWallpaper
+        {
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            get;
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            set;
+        }
+
+        public extern static AndroidTargetDevice targetDevice
         {
             [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
             [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
