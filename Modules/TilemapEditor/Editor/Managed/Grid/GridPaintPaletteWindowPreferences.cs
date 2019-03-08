@@ -14,7 +14,9 @@ namespace UnityEditor
     {
         // Used by SettingsProvider to pick up Search Keywords in preferences filter
         public static readonly GUIContent targetEditModeDialogLabel = GridPaintPaletteWindow.TilePaletteProperties.targetEditModeDialogLabel;
-        public static readonly GUIContent targetSortingModeLabel = GridPaintingState.GridPaintTargetsSorting.targetSortingModeLabel;
+        public static readonly GUIContent targetSortingModeLabel = GridPaintingState.GridPaintActiveTargetsPreferences.targetSortingModeLabel;
+        public static readonly GUIContent keepEditModeActiveTargetLabel =
+            GridPaintingState.GridPaintActiveTargetsPreferences.targetRestoreEditModeSelectionLabel;
 
         [SettingsProvider]
         internal static SettingsProvider CreateSettingsProvider()
@@ -24,7 +26,7 @@ namespace UnityEditor
                 guiHandler = searchContext =>
                 {
                     GridPaintPaletteWindow.PreferencesGUI();
-                    GridPaintingState.GridPaintTargetsSorting.PreferencesGUI();
+                    GridPaintingState.GridPaintActiveTargetsPreferences.PreferencesGUI();
                 }
             };
             return settingsProvider;

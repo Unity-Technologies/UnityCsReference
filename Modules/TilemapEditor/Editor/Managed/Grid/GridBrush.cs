@@ -278,6 +278,9 @@ namespace UnityEditor
             Reset();
             UpdateSizeAndPivot(new Vector3Int(position.size.x, position.size.y, 1), new Vector3Int(pickStart.x, pickStart.y, 0));
 
+            if (brushTarget == null)
+                return;
+
             Tilemap tilemap = brushTarget.GetComponent<Tilemap>();
             foreach (Vector3Int pos in position.allPositionsWithin)
             {

@@ -132,14 +132,12 @@ namespace UnityEditor
                 float paddingW = previewUtility.camera.orthographicSize * GUIAspect * k_Padding * 2f;
                 float paddingH = previewUtility.camera.orthographicSize * k_Padding * 2f;
 
-                RectInt size = bounds;
-                Vector2 min = grid.CellToLocal(new Vector3Int(size.xMin, size.yMin, 0));
-                Vector2 max = grid.CellToLocal(new Vector3Int(size.xMax, size.yMax, 0));
-
+                Bounds localBounds = grid.GetBoundsLocal(
+                    new Vector3(bounds.xMin, bounds.yMin, 0.0f),
+                    new Vector3(bounds.size.x, bounds.size.y, 0.0f));
                 Rect result = new Rect(
-                    min - new Vector2(paddingW, paddingH),
-                    (max - min) + new Vector2(paddingW, paddingH) * 2f
-                );
+                    new Vector2(localBounds.min.x - paddingW, localBounds.min.y - paddingH),
+                    new Vector2(localBounds.size.x + paddingW * 2f, localBounds.size.y + paddingH * 2f));
 
                 return result;
             }
