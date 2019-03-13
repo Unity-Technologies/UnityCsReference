@@ -2,11 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
-using Object = UnityEngine.Object;
 
 namespace UnityEditor.UIElements
 {
@@ -15,7 +12,7 @@ namespace UnityEditor.UIElements
     {
         private Panel m_Panel;
         private VisualElement m_Tree;
-        private VisualTreeAsset m_LastTree;
+        private int m_LastTreeHash = -1;
         private Texture2D m_FileTypeIcon;
 
         protected void OnEnable()
@@ -29,14 +26,6 @@ namespace UnityEditor.UIElements
             {
                 m_Panel.Dispose();
                 m_Panel = null;
-            }
-        }
-
-        protected void OnDestroy()
-        {
-            if (m_LastTree != null)
-            {
-                UIElementsUtility.RemoveCachedPanel(m_LastTree.GetInstanceID());
             }
         }
 
@@ -57,9 +46,10 @@ namespace UnityEditor.UIElements
                 return;
 
             bool dirty = false;
-            if (vta != m_LastTree || !m_LastTree)
+
+            if (m_LastTreeHash != vta.contentHash)
             {
-                m_LastTree = vta;
+                m_LastTreeHash = vta.contentHash;
                 m_Tree = (vta as UnityEngine.UIElements.VisualTreeAsset).CloneTree();
                 m_Tree.StretchToParentSize();
                 dirty = true;
@@ -67,7 +57,7 @@ namespace UnityEditor.UIElements
 
             if (m_Panel == null)
             {
-                m_Panel = UIElementsUtility.FindOrCreatePanel(m_LastTree, ContextType.Editor);
+                m_Panel = UIElementsUtility.FindOrCreatePanel(vta, ContextType.Editor);
                 var visualTree = m_Panel.visualTree;
                 visualTree.pseudoStates |= PseudoStates.Root;
                 UIElementsEditorUtility.AddDefaultEditorStyleSheets(visualTree);
@@ -96,11 +86,12 @@ namespace UnityEditor.UIElements
             }
 
             // Establish preview area viewport
-            {
-                var pixelsPerPoint = GUIUtility.pixelsPerPoint;
-                Rect viewportRect = new Rect(layoutRect.x * pixelsPerPoint, (GUIClip.visibleRect.height - layoutRect.yMax) * pixelsPerPoint, layoutRect.width * pixelsPerPoint, layoutRect.height * pixelsPerPoint);
-                GL.Viewport(viewportRect);
-            }
+            var pixelsPerPoint = GUIUtility.pixelsPerPoint;
+            var viewportRect = new Rect(
+                layoutRect.x * pixelsPerPoint, (GUIClip.visibleRect.height - layoutRect.yMax) * pixelsPerPoint,
+                layoutRect.width * pixelsPerPoint, layoutRect.height * pixelsPerPoint);
+            GL.Viewport(viewportRect);
+
             m_Panel.Repaint(Event.current);
 
             oldState.ApplyAndForget();

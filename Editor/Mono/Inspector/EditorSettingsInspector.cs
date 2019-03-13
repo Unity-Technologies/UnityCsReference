@@ -58,6 +58,9 @@ namespace UnityEditor
             public static GUIContent streamingSettings = EditorGUIUtility.TrTextContent("Streaming Settings");
             public static GUIContent enablePlayModeTextureStreaming = EditorGUIUtility.TrTextContent("Enable Texture Streaming In Play Mode", "Texture Streaming must be enabled in Quality Settings for mipmap streaming to function in Play Mode");
             public static GUIContent enableEditModeTextureStreaming = EditorGUIUtility.TrTextContent("Enable Texture Streaming In Edit Mode", "Texture Streaming must be enabled in Quality Settings for mipmap streaming to function in Edit Mode");
+
+            public static GUIContent shaderCompilation = EditorGUIUtility.TrTextContent("Shader Compilation");
+            public static GUIContent asyncShaderCompilation = EditorGUIUtility.TrTextContent("Asynchronous Shader Compilation", "Enables async shader compilation in Game and Scene view. Async compilation for custom editor tools can be achieved via script API and is not affected by this option.");
         }
 
         struct PopupElement
@@ -187,6 +190,8 @@ namespace UnityEditor
         SerializedProperty m_EnableTextureStreamingInPlayMode;
         SerializedProperty m_EnableTextureStreamingInEditMode;
 
+        SerializedProperty m_AsyncShaderCompilation;
+
         public void OnEnable()
         {
             Plugin[] availvc = Plugin.availablePlugins;
@@ -205,6 +210,8 @@ namespace UnityEditor
 
             m_EnableTextureStreamingInPlayMode = serializedObject.FindProperty("m_EnableTextureStreamingInPlayMode");
             m_EnableTextureStreamingInEditMode = serializedObject.FindProperty("m_EnableTextureStreamingInEditMode");
+
+            m_AsyncShaderCompilation = serializedObject.FindProperty("m_AsyncShaderCompilation");
         }
 
         public void OnDisable()
@@ -451,6 +458,7 @@ namespace UnityEditor
             DoEtcTextureCompressionSettings();
             DoLineEndingsSettings();
             DoStreamingSettings();
+            DoShaderCompilationSettings();
 
             serializedObject.ApplyModifiedProperties();
         }
@@ -512,6 +520,14 @@ namespace UnityEditor
 
             EditorGUILayout.PropertyField(m_EnableTextureStreamingInPlayMode, Content.enablePlayModeTextureStreaming);
             EditorGUILayout.PropertyField(m_EnableTextureStreamingInEditMode, Content.enableEditModeTextureStreaming);
+        }
+
+        private void DoShaderCompilationSettings()
+        {
+            GUILayout.Space(10);
+            GUILayout.Label(Content.shaderCompilation, EditorStyles.boldLabel);
+
+            EditorGUILayout.PropertyField(m_AsyncShaderCompilation, Content.asyncShaderCompilation);
         }
 
         static int GetIndexById(DevDevice[] elements, string id, int defaultIndex)

@@ -1703,7 +1703,7 @@ namespace UnityEditor
                 return;
 
             bool oldAsync = ShaderUtil.allowAsyncCompilation;
-            ShaderUtil.allowAsyncCompilation = EditorPrefs.GetBool("AsynchronousShaderCompilation");
+            ShaderUtil.allowAsyncCompilation = EditorSettings.asyncShaderCompilation;
 
             DrawGridParameters gridParam = grid.PrepareGridRender(camera, pivot, m_Rotation.target, size, m_Ortho.target, drawGlobalGrid);
 
@@ -2225,7 +2225,10 @@ namespace UnityEditor
 
         void RepaintGizmosThatAreRenderedOnTopOfSceneView()
         {
-            svRot.OnGUI(this);
+            if (Event.current.type == EventType.Repaint)
+            {
+                svRot.OnGUI(this);
+            }
         }
 
         void InputForGizmosThatAreRenderedOnTopOfSceneView()

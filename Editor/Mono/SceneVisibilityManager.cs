@@ -34,12 +34,18 @@ namespace UnityEditor
             EditorSceneManager.sceneSaving += EditorSceneManagerOnSceneSaving;
             EditorSceneManager.sceneSaved += EditorSceneManagerOnSceneSaved;
             EditorSceneManager.sceneOpening += EditorSceneManagerOnSceneOpening;
+            EditorSceneManager.sceneOpened += EditorSceneManagerOnSceneOpened;
             EditorSceneManager.sceneClosing += EditorSceneManagerOnSceneClosing;
             EditorApplication.playModeStateChanged += EditorApplicationPlayModeStateChanged;
             StageNavigationManager.instance.stageChanged += StageNavigationManagerOnStageChanging;
-
+            SceneVisibilityState.internalStructureChanged += InternalStructureChanged;
             PrefabStage stage = StageNavigationManager.instance.GetCurrentPrefabStage();
             SceneVisibilityState.SetPrefabStageScene(stage == null ? default(Scene) : stage.scene);
+        }
+
+        private static void InternalStructureChanged()
+        {
+            HiddenContentChanged();
         }
 
         private static void EditorSceneManagerOnSceneOpened(Scene scene, OpenSceneMode mode)
@@ -59,6 +65,7 @@ namespace UnityEditor
                         SceneVisibilityState.SetSceneIsolation(scene, true);
                 }
             }
+            HiddenContentChanged();
         }
 
         private static void StageNavigationManagerOnStageChanging(StageNavigationItem oldItem, StageNavigationItem newItem)
@@ -116,6 +123,7 @@ namespace UnityEditor
             }
             //need to clear scene on new scene since all new scenes use the same GUID
             SceneVisibilityState.ClearScene(scene);
+            HiddenContentChanged();
         }
 
         private static void UndoRedoPerformed()
@@ -267,13 +275,10 @@ namespace UnityEditor
         {
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Isolate GameObjects");
 
-            if (gameObjects.Length > 0)
-            {
-                IsolateCurrentStage();
-                HideAllNoUndo();
-                SceneVisibilityState.SetGameObjectsHidden(gameObjects, false, includeChildren);
-                HiddenContentChanged();
-            }
+            IsolateCurrentStage();
+            HideAllNoUndo();
+            SceneVisibilityState.SetGameObjectsHidden(gameObjects, false, includeChildren);
+            HiddenContentChanged();
         }
 
         private static void ToggleSelectionVisibility()
@@ -440,10 +445,10 @@ namespace UnityEditor
             }
         }
 
-        [Shortcut("Scene Visibility/Isolate Selection And Children")]
-        internal static void SelectionHierarchyIsolation()
+        [Shortcut("Scene Visibility/Toggle Isolation on Selection And Children")]
+        internal static void ToggleSelectionHierarchyIsolation()
         {
-            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Isolate Selection And Children");
+            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Isolation on Selection And Children");
 
             if (!IsCurrentStageIsolated())
             {
@@ -459,24 +464,15 @@ namespace UnityEditor
             }
             else
             {
-                if (Selection.gameObjects.Length > 0)
-                {
-                    HideAllNoUndo();
-                    SceneVisibilityState.SetGameObjectsHidden(Selection.gameObjects, false, true);
-                    HiddenContentChanged();
-                }
-                else
-                {
-                    RevertIsolationCurrentStage();
-                    HiddenContentChanged();
-                }
+                RevertIsolationCurrentStage();
+                HiddenContentChanged();
             }
         }
 
-        [Shortcut("Scene Visibility/Isolate Selection")]
-        internal static void SelectionGameObjectIsolation()
+        [Shortcut("Scene Visibility/Toggle Isolation on Selection")]
+        internal static void ToggleSelectionGameObjectIsolation()
         {
-            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Isolate Selection");
+            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Isolation on Selection");
 
             if (!IsCurrentStageIsolated())
             {
@@ -492,17 +488,8 @@ namespace UnityEditor
             }
             else
             {
-                if (Selection.gameObjects.Length > 0)
-                {
-                    HideAllNoUndo();
-                    SceneVisibilityState.SetGameObjectsHidden(Selection.gameObjects, false, false);
-                    HiddenContentChanged();
-                }
-                else
-                {
-                    RevertIsolationCurrentStage();
-                    HiddenContentChanged();
-                }
+                RevertIsolationCurrentStage();
+                HiddenContentChanged();
             }
         }
     }

@@ -9,8 +9,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using System.Xml;
-using System.Xml.Linq;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -20,9 +18,7 @@ using UnityEditor.Scripting.ScriptCompilation;
 using Object = UnityEngine.Object;
 using Event = UnityEngine.Event;
 using UnityEditor.Build;
-using UnityEditor.StyleSheets;
 using UnityEngine.Internal;
-using DescriptionAttribute = System.ComponentModel.DescriptionAttribute;
 
 namespace UnityEditor
 {
@@ -3259,12 +3255,12 @@ namespace UnityEditor
 
         private static string EnumNameFromEnumField(FieldInfo field)
         {
-            var description = field.GetCustomAttributes(typeof(DescriptionAttribute), false);
+            var description = field.GetCustomAttributes(typeof(InspectorNameAttribute), false);
             if (description.Length > 0)
             {
-                return ((DescriptionAttribute)description.First()).Description;
+                return ((InspectorNameAttribute)description.First()).displayName;
             }
-            else if (field.IsDefined(typeof(ObsoleteAttribute), false))
+            if (field.IsDefined(typeof(ObsoleteAttribute), false))
             {
                 return string.Format("{0} (Obsolete)", ObjectNames.NicifyVariableName(field.Name));
             }
@@ -5549,7 +5545,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
                 var hasPrefabOverride = property.prefabOverride;
                 if (!linkedProperties || hasPrefabOverride)
                     EditorGUIUtility.SetBoldDefaultFont(hasPrefabOverride);
-                if (hasPrefabOverride && !property.isDefaultOverride)
+                if (hasPrefabOverride && !property.isDefaultOverride && !property.isDrivenRectTransformProperty)
                 {
                     Rect highlightRect = totalPosition;
                     highlightRect.xMin += EditorGUI.indent;

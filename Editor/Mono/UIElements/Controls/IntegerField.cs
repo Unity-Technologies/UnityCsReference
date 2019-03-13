@@ -68,9 +68,16 @@ namespace UnityEditor.UIElements
             {
                 double sensitivity = NumericFieldDraggerUtility.CalculateIntDragSensitivity(startValue);
                 float acceleration = NumericFieldDraggerUtility.Acceleration(speed == DeltaSpeed.Fast, speed == DeltaSpeed.Slow);
-                long v = parentIntegerField.value;
+                long v = StringToValue(text);
                 v += (long)Math.Round(NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity);
-                parentIntegerField.value = MathUtils.ClampToInt(v);
+                if (parentIntegerField.isDelayed)
+                {
+                    text = ValueToString(MathUtils.ClampToInt(v));
+                }
+                else
+                {
+                    parentIntegerField.value = MathUtils.ClampToInt(v);
+                }
             }
 
             protected override string ValueToString(int v)

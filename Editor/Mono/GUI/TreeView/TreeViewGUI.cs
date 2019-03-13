@@ -256,7 +256,10 @@ namespace UnityEditor.IMGUI.Controls
 
                 // Draw drop marker
                 if (isDropTarget)
+                {
+                    GetDropTargetRect(rect);
                     Styles.lineStyle.Draw(rect, GUIContent.none, true, true, false, false);
+                }
 
                 // Show insertion marker below this item (rendered end of rows)
                 if (m_TreeView.dragging != null && m_TreeView.dragging.GetRowMarkerControlID() == itemControlID)
@@ -276,6 +279,11 @@ namespace UnityEditor.IMGUI.Controls
             }
 
             EditorGUIUtility.SetIconSize(Vector2.zero);
+        }
+
+        protected virtual Rect GetDropTargetRect(Rect rect)
+        {
+            return rect;
         }
 
         float GetTopPixelOfRow(int row)

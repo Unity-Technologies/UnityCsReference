@@ -59,7 +59,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             public TargetAssembly()
             {
                 References = new List<TargetAssembly>();
-                Defines = new string[0];
+                Defines = null;
             }
 
             public TargetAssembly(string name,
@@ -401,7 +401,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     args.NotCompiledTargetAssemblies.Add(targetAssembly);
             }
 
-            bool isAnyCustomScriptAssemblyDirty = dirtyTargetAssemblies.Any(entry => entry.Key.Type == TargetAssemblyType.Custom);
+            bool isAnyCustomScriptAssemblyDirty = dirtyTargetAssemblies.Any(entry =>
+            {
+                var targetAssembly = entry.Key;
+                bool isCustomScriptAssembly = targetAssembly.Type == TargetAssemblyType.Custom;
+                bool isExplicitlyReferenced = (targetAssembly.Flags & AssemblyFlags.ExplicitlyReferenced) == AssemblyFlags.ExplicitlyReferenced;
+                bool isTestAssembly = (targetAssembly.OptionalUnityReferences & OptionalUnityReferences.TestAssemblies) == OptionalUnityReferences.TestAssemblies;
+                return isCustomScriptAssembly && !isExplicitlyReferenced && !isTestAssembly;
+            });
 
             // If we have any dirty custom target assemblies, then the predefined target assemblies are marked as dirty,
             // as the predefined assemblies always reference the custom script assemblies.
@@ -545,7 +552,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     scriptAssembly);
 
                 scriptAssembly.OutputDirectory = settings.OutputDirectory;
-                scriptAssembly.Defines = targetAssembly.Defines.Concat(compilerDefines).ToArray();
+                scriptAssembly.Defines = targetAssembly.Defines == null ? compilerDefines : targetAssembly.Defines.Concat(compilerDefines).ToArray();
                 scriptAssembly.Files = sourceFiles.ToArray();
 
                 if (targetAssembly.Type == TargetAssemblyType.Predefined)

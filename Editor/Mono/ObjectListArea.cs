@@ -659,7 +659,7 @@ namespace UnityEditor
             return m_State.m_CreateAssetUtility;
         }
 
-        RenameOverlay GetRenameOverlay()
+        internal RenameOverlay GetRenameOverlay()
         {
             return m_State.m_RenameOverlay;
         }

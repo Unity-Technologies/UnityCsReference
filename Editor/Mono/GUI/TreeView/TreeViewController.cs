@@ -527,28 +527,18 @@ namespace UnityEditor.IMGUI.Controls
                 EndNameEditing(true);
             }
 
-            // Grab keyboard focus if requested or if we have a mousedown in entire rect
-            if (m_GrabKeyboardFocus || (evt.type == EventType.MouseDown && m_TotalRect.Contains(evt.mousePosition)))
+            // Grab keyboard focus if requested
+            if (m_GrabKeyboardFocus)
             {
                 m_GrabKeyboardFocus = false;
                 GUIUtility.keyboardControl = m_KeyboardControlID;
-                m_AllowRenameOnMouseUp = true;
                 Repaint(); // Ensure repaint so we can show we have keyboard focus
             }
 
-            bool hasFocus = HasFocus();
-
-            // Detect got focus (ignore layout event which might get fired infront of mousedown)
-            if (hasFocus != m_HadFocusLastEvent && evt.type != EventType.Layout)
+            bool isMouseDownInTotalRect = evt.type == EventType.MouseDown && m_TotalRect.Contains(evt.mousePosition);
+            if (isMouseDownInTotalRect)
             {
-                m_HadFocusLastEvent = hasFocus;
-
-                // We got focus this event
-                if (hasFocus)
-                {
-                    if (evt.type == EventType.MouseDown)
-                        m_AllowRenameOnMouseUp = false; // If we got focus by mouse down then we do not want to begin renaming if clicking on an already selected item
-                }
+                m_AllowRenameOnMouseUp = true; // reset value (can be changed later in this event if the TreeView gets focus)
             }
 
             // Might change expanded state so call before InitIfNeeded (delayed collapse until animation is done)
@@ -605,7 +595,7 @@ namespace UnityEditor.IMGUI.Controls
                 int numVisibleRows = lastRow - firstRow + 1;
                 float rowWidth = Mathf.Max(GUIClip.visibleRect.width, m_ContentRect.width);
 
-                IterateVisibleItems(firstRow, numVisibleRows, rowWidth, hasFocus);
+                IterateVisibleItems(firstRow, numVisibleRows, rowWidth, HasFocus());
             }
 
             // Call before gui.EndRowGUI() so stuff we render in EndRowGUI does not end up
@@ -623,6 +613,9 @@ namespace UnityEditor.IMGUI.Controls
             HandleUnusedEvents();
             KeyboardGUI();
 
+            // Call after iterating rows since selecting a row takes keyboard focus
+            HandleTreeViewGotFocus(isMouseDownInTotalRect);
+
             // Prevent controlID inconsistency for the controls following this tree view: We use the hint parameter of GetControlID to
             // fast forward to a fixed entry in the id list so the following controls always start from there regardless of the rows that have been
             // culled.
@@ -630,6 +623,26 @@ namespace UnityEditor.IMGUI.Controls
 
             if (Event.current.type == EventType.MouseLeaveWindow)
                 hoveredItem = null;
+        }
+
+        void HandleTreeViewGotFocus(bool isMouseDownInTotalRect)
+        {
+            if (Event.current.type == EventType.Layout)
+                return;
+
+            // Detect if TreeView got keyboard focus (ignore layout event which gets fired infront of mousedown)
+            bool hasFocus = HasFocus();
+            if (hasFocus != m_HadFocusLastEvent)
+            {
+                m_HadFocusLastEvent = hasFocus;
+
+                if (hasFocus && isMouseDownInTotalRect)
+                {
+                    // If we got focus this event by mouse down then we do not want to begin renaming
+                    // if clicking on an already selected item in the up coming MouseUp event.
+                    m_AllowRenameOnMouseUp = false;
+                }
+            }
         }
 
         void IterateVisibleItems(int firstRow, int numVisibleRows, float rowWidth, bool hasFocus)
@@ -830,11 +843,18 @@ namespace UnityEditor.IMGUI.Controls
                     break;
 
                 case EventType.MouseDown:
-                    if (deselectOnUnhandledMouseDown && Event.current.button == 0 && m_TotalRect.Contains(Event.current.mousePosition) &&  state.selectedIDs.Count > 0)
+                    bool containsMouse = m_TotalRect.Contains(Event.current.mousePosition);
+                    if (containsMouse)
+                    {
+                        GUIUtility.keyboardControl = m_KeyboardControlID;
+                        Repaint();
+                    }
+                    if (deselectOnUnhandledMouseDown && containsMouse && Event.current.button == 0 && state.selectedIDs.Count > 0)
                     {
                         SetSelection(new int[0], false);
                         NotifyListenersThatSelectionChanged();
                     }
+
                     break;
                 case EventType.ContextClick:
                     if (m_TotalRect.Contains(Event.current.mousePosition))

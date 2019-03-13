@@ -67,7 +67,6 @@ namespace UnityEditor
             : base(treeView, useHorizontalScroll)
         {
             k_TopRowMargin = 0f;
-            k_BaseIndent += SceneVisibilityHierarchyGUI.utilityBarWidth;
             m_TreeView.enableItemHovering = true;
         }
 
@@ -282,6 +281,15 @@ namespace UnityEditor
             }
         }
 
+        private bool isDragging
+        {
+            get
+            {
+                return m_TreeView.isDragging ||
+                    (m_TreeView.dragging != null && m_TreeView.dragging.GetDropTargetControlID() != -1);
+            }
+        }
+
         override protected void DrawItemBackground(Rect rect, int row, TreeViewItem item, bool selected, bool focused)
         {
             var goItem = (GameObjectTreeViewItem)item;
@@ -303,6 +311,9 @@ namespace UnityEditor
             if (m_TreeView.hoveredItem != item)
                 return;
 
+            if (isDragging)
+                return;
+
             using (new GUI.BackgroundColorScope(GameObjectStyles.hoveredBackgroundColor))
             {
                 GUI.Label(rect, GUIContent.none, GameObjectStyles.hoveredItemBackgroundStyle);
@@ -322,6 +333,10 @@ namespace UnityEditor
                 useBoldFont = (goItem.scene == SceneManager.GetActiveScene()) || IsPrefabStageHeader(goItem);
             }
 
+            SceneVisibilityHierarchyGUI.DoItemGUI(rect, goItem, selected && !IsRenaming(item.id), m_TreeView.hoveredItem == goItem, focused, isDragging);
+
+            rect.xMin += SceneVisibilityHierarchyGUI.utilityBarWidth;
+
             base.DoItemGUI(rect, row, item, selected, focused, useBoldFont);
 
             if (goItem.isSceneHeader)
@@ -335,10 +350,15 @@ namespace UnityEditor
                     SubSceneGUI.DrawVerticalLine(rect, (GameObject)goItem.objectPPTR);
             }
 
-            SceneVisibilityHierarchyGUI.DoItemGUI(rect, goItem, selected, m_TreeView.hoveredItem == goItem, focused);
-
             if (SceneHierarchy.s_Debug)
                 GUI.Label(new Rect(rect.xMax - 70, rect.y, 70, rect.height), "" + row + " (" + goItem.id + ")", EditorStyles.boldLabel);
+        }
+
+        protected override Rect GetDropTargetRect(Rect rect)
+        {
+            rect.xMin -= SceneVisibilityHierarchyGUI.utilityBarWidth;
+
+            return rect;
         }
 
         protected void DoAdditionalSceneHeaderGUI(GameObjectTreeViewItem goItem, Rect rect)

@@ -223,5 +223,7 @@ namespace UnityEditor
         }
 
         internal static extern void CloseAndRelaunch(string[] arguments);
+
+        internal static extern void RequestCloseAndRelaunchWithCurrentArguments();
     }
 }

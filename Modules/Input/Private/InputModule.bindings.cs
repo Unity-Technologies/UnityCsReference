@@ -17,6 +17,8 @@ namespace UnityEngineInternal.Input
     {
         internal static extern bool hasDeviceDiscoveredCallback { set; }
 
+        internal static extern bool ShouldUpdateFallback(NativeInputUpdateType updateType);
+
         public static extern double currentTime { get; }
 
         public static extern double currentTimeOffsetToRealtimeSinceStartup { get; }

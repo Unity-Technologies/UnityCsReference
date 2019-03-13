@@ -73,6 +73,7 @@ namespace UnityEditor
         [SerializeField]
         private string m_SelectedSpriteRectGUID;
 
+        internal Func<string, string, bool> onHandleApplyRevertDialog = ShowHandleApplyRevertDialog;
         public static void GetWindow()
         {
             EditorWindow.GetWindow<SpriteEditorWindow>();
@@ -347,12 +348,17 @@ namespace UnityEditor
                 String.Format(SpriteEditorWindowStyles.applyRevertDialogContent.text, m_SelectedAssetPath));
         }
 
+        static bool ShowHandleApplyRevertDialog(string dialogTitle, string dialogContent)
+        {
+            return EditorUtility.DisplayDialog(dialogTitle, dialogContent,
+                SpriteEditorWindowStyles.applyButtonLabel.text, SpriteEditorWindowStyles.revertButtonLabel.text);
+        }
+
         void HandleApplyRevertDialog(string dialogTitle, string dialogContent)
         {
             if (textureIsDirty && IsSpriteDataProviderValid())
             {
-                if (EditorUtility.DisplayDialog(dialogTitle, dialogContent,
-                    SpriteEditorWindowStyles.applyButtonLabel.text, SpriteEditorWindowStyles.revertButtonLabel.text))
+                if (onHandleApplyRevertDialog(dialogTitle, dialogContent))
                     DoApply();
                 else
                     DoRevert();
@@ -377,7 +383,7 @@ namespace UnityEditor
             InitSelectedSpriteRect();
         }
 
-        private void Update()
+        private void UpdateAssetSelectionChange()
         {
             if (m_ResetOnNextRepaint || selectedProviderChanged)
             {
@@ -400,6 +406,7 @@ namespace UnityEditor
         private void DoTextureAndModulesGUI()
         {
             InitStyles();
+            UpdateAssetSelectionChange();
             if (!activeDataProviderSelected)
             {
                 using (new EditorGUI.DisabledScope(true))
@@ -633,7 +640,7 @@ namespace UnityEditor
 
         void UpdateSelectedSpriteRect(Sprite sprite)
         {
-            if (m_RectsCache == null)
+            if (m_RectsCache == null || sprite == null || sprite.Equals(null))
                 return;
 
             var spriteGUID = sprite.GetSpriteID();

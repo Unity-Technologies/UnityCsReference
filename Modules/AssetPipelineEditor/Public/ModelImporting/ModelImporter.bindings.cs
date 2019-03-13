@@ -6,7 +6,6 @@ using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Bindings;
-using DescriptionAttribute = System.ComponentModel.DescriptionAttribute;
 using Object = UnityEngine.Object;
 using UsedByNativeCodeAttribute = UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
@@ -246,7 +245,7 @@ namespace UnityEditor
     [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ImportMesh.h")]
     public enum ModelImporterNormalCalculationMode
     {
-        [Description("Unweighted (Legacy)")]
+        [InspectorName("Unweighted (Legacy)")]
         Unweighted_Legacy,
 
         Unweighted,
@@ -272,7 +271,7 @@ namespace UnityEditor
         CalculateLegacy = 1,
 
         CalculateLegacyWithSplitTangents = 4,
-        [Description("Calculate Mikktspace")]
+        [InspectorName("Calculate Mikktspace")]
         CalculateMikk = 3,
 
         None = 2,
@@ -289,9 +288,9 @@ namespace UnityEditor
     public enum ModelImporterIndexFormat
     {
         Auto = 0,
-        [Description("16 bits")]
+        [InspectorName("16 bits")]
         UInt16 = 1,
-        [Description("32 bits")]
+        [InspectorName("32 bits")]
         UInt32 = 2,
     }
 

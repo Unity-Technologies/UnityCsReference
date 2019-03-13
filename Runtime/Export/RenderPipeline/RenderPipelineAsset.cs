@@ -26,6 +26,12 @@ namespace UnityEngine.Rendering
 
         public virtual Shader autodeskInteractiveMaskedShader => null;
 
+        public virtual Shader terrainDetailLitShader => null;
+
+        public virtual Shader terrainDetailGrassShader => null;
+
+        public virtual Shader terrainDetailGrassBillboardShader => null;
+
         public virtual Material defaultParticleMaterial => null;
 
         public virtual Material defaultLineMaterial => null;

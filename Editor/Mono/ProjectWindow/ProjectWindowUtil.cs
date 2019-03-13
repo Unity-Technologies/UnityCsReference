@@ -15,6 +15,7 @@ using UnityEditor.Experimental;
 using UnityEditor.Utils;
 using UnityEngine;
 using UnityEngine.Internal;
+using UnityEngine.Scripting;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -297,10 +298,19 @@ namespace UnityEditor
             StartNameEditingIfProjectWindowExists(0, action, filename, icon, null);
         }
 
-        static void CreateScriptAsset(string templatePath, string destName)
+        [RequiredByNativeCode]
+        public static void CreateScriptAssetFromTemplateFile(string templatePath, string defaultNewFileName)
         {
+            if (templatePath == null)
+                throw new ArgumentNullException(nameof(templatePath));
+            if (!File.Exists(templatePath))
+                throw new FileNotFoundException($"The template file \"{templatePath}\" could not be found.", templatePath);
+
+            if (string.IsNullOrEmpty(defaultNewFileName))
+                defaultNewFileName = Path.GetFileName(templatePath);
+
             Texture2D icon = null;
-            switch (Path.GetExtension(destName))
+            switch (Path.GetExtension(defaultNewFileName))
             {
                 case ".cs":
                     icon = EditorGUIUtility.IconContent("cs Script Icon").image as Texture2D;
@@ -315,7 +325,7 @@ namespace UnityEditor
                     icon = EditorGUIUtility.IconContent<TextAsset>().image as Texture2D;
                     break;
             }
-            StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateScriptAsset>(), destName, icon, templatePath);
+            StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateScriptAsset>(), defaultNewFileName, icon, templatePath);
         }
 
         public static void ShowCreatedAsset(Object o)
