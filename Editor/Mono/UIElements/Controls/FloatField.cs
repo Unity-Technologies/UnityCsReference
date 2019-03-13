@@ -66,10 +66,17 @@ namespace UnityEditor.UIElements
             {
                 double sensitivity = NumericFieldDraggerUtility.CalculateFloatDragSensitivity(startValue);
                 float acceleration = NumericFieldDraggerUtility.Acceleration(speed == DeltaSpeed.Fast, speed == DeltaSpeed.Slow);
-                double v = parentFloatField.value;
+                double v = StringToValue(text);
                 v += NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity;
                 v = MathUtils.RoundBasedOnMinimumDifference(v, sensitivity);
-                parentFloatField.value = MathUtils.ClampToFloat(v);
+                if (parentFloatField.isDelayed)
+                {
+                    text = ValueToString(MathUtils.ClampToFloat(v));
+                }
+                else
+                {
+                    parentFloatField.value = MathUtils.ClampToFloat(v);
+                }
             }
 
             protected override string ValueToString(float v)

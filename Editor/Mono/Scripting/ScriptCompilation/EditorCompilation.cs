@@ -758,6 +758,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         loadedCustomScriptAssembly = LoadCustomScriptAssemblyFromJsonPath(fullPath, guid);
                     }
 
+                    if (loadedCustomScriptAssembly.References == null)
+                        loadedCustomScriptAssembly.References = new string[0];
+
                     guidsToAssemblies[Utility.FastToLower(guid)] = loadedCustomScriptAssembly;
 
                     if (!skipCustomScriptAssemblyGraphValidation)
@@ -804,9 +807,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                                     loadedCustomScriptAssembly.PathPrefix), filePaths.ToArray());
                         }
                     }
-
-                    if (loadedCustomScriptAssembly.References == null)
-                        loadedCustomScriptAssembly.References = new string[0];
                 }
                 catch (Exception e)
                 {
@@ -900,19 +900,30 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return m_AssetPathsMetaData.Any(p => path.StartsWith(p.DirectoryPath, StringComparison.OrdinalIgnoreCase));
         }
 
-        // Delete all .dll's that aren't used anymore
         public void DeleteUnusedAssemblies()
+        {
+            ScriptAssemblySettings settings = CreateEditorScriptAssemblySettings(EditorScriptCompilationOptions.BuildingForEditor);
+            DeleteUnusedAssemblies(settings);
+        }
+
+        // Delete all .dll's that aren't used anymore
+        public void DeleteUnusedAssemblies(ScriptAssemblySettings settings)
         {
             string fullEditorAssemblyPath = AssetPath.Combine(projectDirectory, GetCompileScriptsOutputDirectory());
 
             if (!Directory.Exists(fullEditorAssemblyPath))
+            {
+                // This is called in GetTargetAssembliesWithScripts and is required for compilation to
+                // be set up correctly. Since we early out here, we need to call this here.
+                UpdateAllTargetAssemblyDefines(customTargetAssemblies, EditorBuildRules.GetPredefinedTargetAssemblies(), m_AllDistinctVersionMetaDatas, settings);
                 return;
+            }
 
             var deleteFiles = Directory.GetFiles(fullEditorAssemblyPath).Select(f => AssetPath.ReplaceSeparators(f)).ToList();
             string timestampPath = GetAssemblyTimestampPath(GetCompileScriptsOutputDirectory());
             deleteFiles.Remove(AssetPath.Combine(projectDirectory, timestampPath));
 
-            var targetAssemblies = GetTargetAssembliesWithScripts(EditorScriptCompilationOptions.BuildingForEditor);
+            var targetAssemblies = GetTargetAssembliesWithScripts(settings);
 
             foreach (var assembly in targetAssemblies)
             {
@@ -1127,14 +1138,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         internal CompileStatus CompileScripts(ScriptAssemblySettings scriptAssemblySettings, string tempBuildDirectory, EditorScriptCompilationOptions options, ref EditorBuildRules.TargetAssembly[] notCompiledTargetAssemblies, ref string[] notCompiledScripts)
         {
-            DeleteUnusedAssemblies();
+            DeleteUnusedAssemblies(scriptAssemblySettings);
 
             if (!DoesProjectFolderHaveAnyDirtyScripts() &&
                 !ArePrecompiledAssembliesDirty() &&
                 runScriptUpdaterAssemblies.Count == 0)
                 return CompileStatus.Idle;
-
-            UpdateAllTargetAssemblyDefines(customTargetAssemblies, EditorBuildRules.GetPredefinedTargetAssemblies(), m_AllDistinctVersionMetaDatas, scriptAssemblySettings);
 
             var assemblies = new EditorBuildRules.CompilationAssemblies
             {
@@ -1188,7 +1197,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             if (returnCompilationComplete)
             {
-                DeleteUnusedAssemblies();
+                DeleteUnusedAssemblies(scriptAssemblySettings);
                 compilationTask = null;
                 return CompileStatus.CompilationComplete;
             }
@@ -1579,6 +1588,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public TargetAssemblyInfo[] GetTargetAssembliesWithScripts(EditorScriptCompilationOptions options)
         {
             ScriptAssemblySettings settings = CreateEditorScriptAssemblySettings(EditorScriptCompilationOptions.BuildingForEditor | options);
+            return GetTargetAssembliesWithScripts(settings);
+        }
+
+        public TargetAssemblyInfo[] GetTargetAssembliesWithScripts(ScriptAssemblySettings settings)
+        {
+            UpdateAllTargetAssemblyDefines(customTargetAssemblies, EditorBuildRules.GetPredefinedTargetAssemblies(), m_AllDistinctVersionMetaDatas, settings);
+
             var targetAssemblies = EditorBuildRules.GetTargetAssembliesWithScripts(allScripts, projectDirectory, customTargetAssemblies, settings);
 
             var targetAssemblyInfos = new TargetAssemblyInfo[targetAssemblies.Length];
@@ -1664,6 +1680,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return EditorBuildRules.GetAllScriptAssemblies(allScripts, projectDirectory, settings, assemblies, runScriptUpdaterAssemblies);
         }
 
+        // TODO: Get rid of calls to this method and ensure that the defines are always setup correctly at all times.
         private static void UpdateAllTargetAssemblyDefines(EditorBuildRules.TargetAssembly[] customScriptAssemblies, EditorBuildRules.TargetAssembly[] predefinedTargetAssemblies, Dictionary<string, string> assetPathVersionMetaDatas, ScriptAssemblySettings settings)
         {
             var allTargetAssemblies = (customScriptAssemblies ?? new EditorBuildRules.TargetAssembly[0])

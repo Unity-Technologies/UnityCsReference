@@ -257,7 +257,15 @@ namespace UnityEngine.UIElements.UIR
             else
                 dcs.scissorRect = UIRUtility.IntersectRects(dcs.scissorRect, scissorArea.Transform(transform));
 
-            Utility.SetScissorRect(FlipRectYAxis(dcs.scissorRect, dcs.viewport));
+            var tScissorRect = FlipRectYAxis(dcs.scissorRect, dcs.viewport);
+            // Scissor test is performed in fragment coordinates,
+            // it is independent of the viewport,
+            // so we have to offset our scissor rects according to the current viewport
+            var currentViewport = Utility.GetViewport();
+            tScissorRect.x += currentViewport.x;
+            tScissorRect.y += currentViewport.y;
+
+            Utility.SetScissorRect(tScissorRect);
 
             try
             {

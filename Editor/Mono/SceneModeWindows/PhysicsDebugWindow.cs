@@ -183,7 +183,7 @@ namespace UnityEditor
             {
                 EditorGUILayout.Space();
                 m_ShowInfoFoldout.value = EditorGUILayout.Foldout(m_ShowInfoFoldout.value, Style.selectedObjectInfo);
-                if (m_ShowColliderTypeFoldout.value)
+                if (m_ShowInfoFoldout.value)
                 {
                     EditorGUI.indentLevel++;
                     EditorGUILayout.Space();

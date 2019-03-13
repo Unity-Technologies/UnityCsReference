@@ -47,8 +47,9 @@ namespace UnityEditor
             Compatible = 1
         }
 
-        private Compatibility m_CompatibleWithAnyPlatform;
         private Compatibility m_AutoReferenced;
+        private Compatibility m_ValidateReferences;
+        private Compatibility m_CompatibleWithAnyPlatform;
         private Compatibility m_CompatibleWithEditor;
         private Compatibility[] m_CompatibleWithPlatform = new Compatibility[GetPlatformGroupArraySize()];
         private List<DefineConstraint> m_DefineConstraintState = new List<DefineConstraint>();
@@ -314,6 +315,7 @@ namespace UnityEditor
             ResetCompatability(ref m_CompatibleWithAnyPlatform, (imp => imp.GetCompatibleWithAnyPlatform()));
             ResetCompatability(ref m_CompatibleWithEditor, (imp => imp.GetCompatibleWithEditor()));
             ResetCompatability(ref m_AutoReferenced, (imp => !imp.IsExplicitlyReferenced));
+            ResetCompatability(ref m_ValidateReferences, (imp => imp.ValidateReferences));
             // If Any Platform is selected, initialize m_Compatible* variables using compatability function
             // If Any Platform is unselected, initialize m_Compatible* variables using exclude function
             // This gives correct initialization in case when plugin is imported for the first time, and only "Any Platform" is selected
@@ -390,6 +392,9 @@ namespace UnityEditor
 
                 if (m_AutoReferenced > Compatibility.Mixed)
                     imp.IsExplicitlyReferenced = m_AutoReferenced != Compatibility.Compatible;
+
+                if (m_ValidateReferences > Compatibility.Mixed)
+                    imp.ValidateReferences = m_ValidateReferences == Compatibility.Compatible;
 
                 foreach (BuildTarget platform in GetValidBuildTargets())
                 {
@@ -655,6 +660,8 @@ namespace UnityEditor
             EditorGUILayout.BeginVertical(GUI.skin.box);
             EditorGUI.BeginChangeCheck();
             m_AutoReferenced = ToggleWithMixedValue(m_AutoReferenced, "Auto Reference");
+            m_ValidateReferences = ToggleWithMixedValue(m_ValidateReferences, "Validate References");
+
             if (EditorGUI.EndChangeCheck())
             {
                 m_HasModified = true;
@@ -666,7 +673,8 @@ namespace UnityEditor
         {
             using (new EditorGUI.DisabledScope(false))
             {
-                if (!importer.isNativePlugin)
+                var isManagedPlugin = importers.All(x => x.dllType == DllType.ManagedNET35 || x.dllType == DllType.ManagedNET40);
+                if (isManagedPlugin)
                 {
                     ShowReferenceOptions();
                     GUILayout.Space(10f);
@@ -681,8 +689,11 @@ namespace UnityEditor
                 if (IsEditingPlatformSettingsSupported())
                     ShowPlatformSettings();
 
-                GUILayout.Label(defineConstraints, EditorStyles.boldLabel);
-                m_DefineConstraints.DoLayoutList();
+                if (isManagedPlugin)
+                {
+                    GUILayout.Label(defineConstraints, EditorStyles.boldLabel);
+                    m_DefineConstraints.DoLayoutList();
+                }
 
                 if (importers.All(imp => imp.isNativePlugin))
                 {

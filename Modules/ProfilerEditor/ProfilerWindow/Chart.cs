@@ -18,6 +18,7 @@ namespace UnityEditorInternal
         private const int kDistFromTopToFirstLabel = 38;
         private const int kLabelHeight = 11;
         private const int kCloseButtonSize = 13;
+        private const int kCloseButtonXOffset = 4;
         private const float kLabelOffset = 5f;
         private const float kWarningLabelHeightOffset = 43f;
         private const float kChartMinHeight = 130;
@@ -177,7 +178,7 @@ namespace UnityEditorInternal
 
             Rect closeButtonRect = headerRect;
             closeButtonRect.xMax -= Styles.legendHeaderLabel.padding.right;
-            closeButtonRect.xMin = closeButtonRect.xMax - kCloseButtonSize;
+            closeButtonRect.xMin = closeButtonRect.xMax - kCloseButtonSize - kCloseButtonXOffset;
             closeButtonRect.yMin += Styles.legendHeaderLabel.padding.top;
             closeButtonRect.yMax = closeButtonRect.yMin + kCloseButtonSize;
 
@@ -464,16 +465,16 @@ namespace UnityEditorInternal
 
             // get values of all series and cumulative value of all enabled stacks
             m_SelectedFrameValues.Clear();
-            var cumulativeValueOfAllEnabledSeries = 0f;
             var stacked = chartType == ChartType.StackedFill;
             var numLabels = 0;
-            for (int s = 0, count = data.numSeries; s < count; ++s)
+
+            for (int s = 0; s < data.numSeries; ++s)
             {
-                var value = data.series[s].yValues[selectedIndex];
+                var chartData = data.hasOverlay ? data.overlays[s] : data.series[s];
+                var value = chartData.yValues[selectedIndex] * chartData.yScale;
                 m_SelectedFrameValues.Add(value);
                 if (data.series[s].enabled)
                 {
-                    cumulativeValueOfAllEnabledSeries += value;
                     ++numLabels;
                 }
             }
@@ -487,36 +488,45 @@ namespace UnityEditorInternal
                 chartPosition.x + chartPosition.width * ((selectedIndex + 0.5f) / (domain.y - domain.x));
             var maxLabelWidth = 0f;
             numLabels = 0;
-            for (int s = 0, count = data.numSeries; s < count; ++s)
+            for (int s = 0; s < data.numSeries; ++s)
             {
                 var labelData = new LabelLayoutData();
-
+                var chartData = data.series[s];
                 var value = m_SelectedFrameValues[s];
 
-                if (data.series[s].enabled && value >= labelRange.x && value <= labelRange.y)
+                if (chartData.enabled && value >= labelRange.x && value <= labelRange.y)
                 {
-                    var rangeAxis = data.series[s].rangeAxis;
-                    var rangeSize = rangeAxis.sqrMagnitude == 0f ? 1f : rangeAxis.y - rangeAxis.x;
+                    var rangeAxis = chartData.rangeAxis;
+                    var rangeSize = rangeAxis.sqrMagnitude == 0f ? 1f : rangeAxis.y * chartData.yScale - rangeAxis.x;
 
                     // convert stacked series to cumulative value of enabled series
                     if (stacked)
                     {
                         var accumulatedValues = 0f;
-                        for (int i = 0; i < count; ++i)
+                        //if the current series is non stackable a.k.a "Others" then just add up all other series
+                        int currentChartIndex = s == data.unstackableSeriesIndex ? data.series.Length : m_LabelOrder.FindIndex(x => x == s);
+
+                        for (int i = currentChartIndex - 1; i >= 0; --i)
                         {
                             var otherSeriesIdx = data.order[i];
-                            if (otherSeriesIdx < s && data.series[otherSeriesIdx].enabled)
-                                accumulatedValues += data.series[otherSeriesIdx].yValues[selectedIndex];
+                            var otherChartData = data.hasOverlay ? data.overlays[otherSeriesIdx] : data.series[otherSeriesIdx];
+                            bool enabled = data.series[otherSeriesIdx].enabled;
+
+                            // account for "non stackable category"
+                            if (enabled &&  otherSeriesIdx != data.unstackableSeriesIndex)
+                            {
+                                accumulatedValues += otherChartData.yValues[selectedIndex] * otherChartData.yScale;
+                            }
                         }
                         // labels for stacked series will be in the middle of their stacks
-                        value = cumulativeValueOfAllEnabledSeries - accumulatedValues - 0.5f * value;
+                        value = accumulatedValues + (0.5f * value);
                     }
 
                     // default position is left aligned to midline
                     var position = new Vector2(
                         // offset by half a point so there is a 1-point gap down the midline if labels are on both sides
                         selectedFrameMidline + 0.5f,
-                        chartPosition.y + chartPosition.height * (1f - (value - rangeAxis.x) / rangeSize)
+                        chartPosition.y + chartPosition.height * (1.0f - ((value * chartData.yScale - rangeAxis.x) / rangeSize))
                     );
                     var size = Styles.whiteLabel.CalcSize(EditorGUIUtility.TempContent(data.selectedLabels[s]));
                     position.y -= 0.5f * size.y;
@@ -543,7 +553,7 @@ namespace UnityEditorInternal
             // right align labels to the selected frame midline if approaching right border
             if (selectedFrameMidline > chartPosition.x + chartPosition.width - maxLabelWidth)
             {
-                for (int s = 0, count = data.numSeries; s < count; ++s)
+                for (int s = 0; s < data.numSeries; ++s)
                 {
                     var label = m_LabelData[s];
                     label.position.x -= label.position.width;
@@ -554,7 +564,7 @@ namespace UnityEditorInternal
             else if (selectedFrameMidline > chartPosition.x + maxLabelWidth)
             {
                 var processed = 0;
-                for (int s = 0, count = data.numSeries; s < count; ++s)
+                for (int s = 0; s < data.numSeries; ++s)
                 {
                     var labelIndex = m_LabelOrder[s];
 
@@ -579,7 +589,7 @@ namespace UnityEditorInternal
                 m_MostOverlappingLabels.Clear();
 
                 // work on the biggest cluster of overlapping rects
-                for (int s1 = 0, count = data.numSeries; s1 < count; ++s1)
+                for (int s1 = 0; s1 < data.numSeries; ++s1)
                 {
                     m_OverlappingLabels.Clear();
                     m_OverlappingLabels.Add(s1);
@@ -587,7 +597,7 @@ namespace UnityEditorInternal
                     if (m_LabelData[s1].position.size.sqrMagnitude == 0f)
                         continue;
 
-                    for (int s2 = 0; s2 < count; ++s2)
+                    for (int s2 = 0; s2 < data.numSeries; ++s2)
                     {
                         if (m_LabelData[s2].position.size.sqrMagnitude == 0f)
                             continue;
@@ -617,7 +627,7 @@ namespace UnityEditorInternal
                     foundOverlaps = false;
                     var minY = geometricCenter - 0.5f * totalHeight;
                     var maxY = geometricCenter + 0.5f * totalHeight;
-                    for (int s = 0, count = data.numSeries; s < count; ++s)
+                    for (int s = 0; s < data.numSeries; ++s)
                     {
                         if (m_MostOverlappingLabels.Contains(s))
                             continue;
@@ -650,7 +660,7 @@ namespace UnityEditorInternal
                 // separate overlapping rects and distribute them away from their geometric center
                 m_MostOverlappingLabels.Sort(SortOverlappingRectIndices);
                 var heightAllotted = 0f;
-                for (int i = 0, count = m_MostOverlappingLabels.Count; i < count; ++i)
+                for (int i = 0; i < m_MostOverlappingLabels.Count; ++i)
                 {
                     var labelIndex = m_MostOverlappingLabels[i];
                     var label = m_LabelData[labelIndex];
@@ -725,9 +735,10 @@ namespace UnityEditorInternal
             float rectBottom = r.y + r.height;
             for (int i = 0; i < series.numDataPoints; ++i)
             {
+                float yValue = series.yValues[i] * series.yScale;
                 m_LineDrawingPoints[i].Set(
                     (series.xValues[i] - domain.x) * domainScale + r.x,
-                    rectBottom - (Mathf.Clamp(series.yValues[i], graphRange.x, graphRange.y) - series.rangeAxis.x) * rangeScale,
+                    rectBottom - (Mathf.Clamp(yValue, graphRange.x, graphRange.y) - series.rangeAxis.x) * rangeScale,
                     0f
                 );
             }
@@ -761,8 +772,8 @@ namespace UnityEditorInternal
             for (int i = 0; i < numSamples; i++, x += step)
             {
                 float y = rectBottom - stackedSampleSums[i];
-
-                float value = cdata.series[index].yValues[i];
+                var serie = cdata.series[index];
+                float value = serie.yValues[i] * serie.yScale;
                 if (value == -1f)
                     continue;
 
@@ -800,8 +811,8 @@ namespace UnityEditorInternal
             for (int i = 0; i < numSamples; i++, x += step)
             {
                 float y = rectBottom - stackedSampleSums[i];
-
-                float value = cdata.overlays[orderIdx].yValues[i];
+                var overlay = cdata.overlays[orderIdx];
+                float value = overlay.yValues[i] * overlay.yScale;
                 if (value == -1f)
                     continue;
 
@@ -993,6 +1004,7 @@ namespace UnityEditorInternal
         public Color color { get; private set; }
         public bool enabled;
         public float[] xValues { get; private set; }
+        public float yScale { get; internal set; }
         public float[] yValues { get; private set; }
         public Vector2 rangeAxis { get; set; }
         public int numDataPoints { get; private set; }
@@ -1004,6 +1016,7 @@ namespace UnityEditorInternal
             this.numDataPoints = numDataPoints;
             xValues = new float[numDataPoints];
             yValues = new float[numDataPoints];
+            yScale = 1.0f;
             enabled = true;
         }
     }
@@ -1023,8 +1036,15 @@ namespace UnityEditorInternal
         public int numSeries { get; private set; }
         public int chartDomainOffset { get; private set; }
 
-        public void Assign(ChartSeriesViewData[] series, int firstFrame, int firstSelectableFrame)
+        public int unstackableSeriesIndex { get; private set; }
+
+        public void Assign(ChartSeriesViewData[] series, int unstackableSeriesIndex, int firstFrame, int firstSelectableFrame)
         {
+            if (unstackableSeriesIndex != -1)
+            {
+                this.unstackableSeriesIndex = unstackableSeriesIndex;
+            }
+
             this.series = series;
             this.chartDomainOffset = firstFrame;
             this.firstSelectableFrame = firstSelectableFrame;

@@ -292,8 +292,14 @@ namespace UnityEditor
                         // Move added components relative to target components
                         if (!ComponentUtility.MoveComponentsRelativeToComponents(addedComponents, targetComponents, m_TargetAbove))
                         {
-                            // Revert added components if move operation fails (e.g. user aborts when asked to break prefab instance)
+                            // Ensure we have the same selection after calling RevertAllDownToGroup below (MoveComponentsRelativeToComponents can have opened a Prefab in Prefab Mode and changed selection to that root)
+                            var wantedSelectedGameObject = Selection.activeGameObject;
+
+                            // Revert added components if move operation fails (e.g. user has been shown the dialog with 'prefab instance restructuring is not posssible' or object is not editable)
                             Undo.RevertAllDownToGroup(undoGroup);
+
+                            if (wantedSelectedGameObject != Selection.activeGameObject)
+                                Selection.activeGameObject = wantedSelectedGameObject;
                         }
                     }
                 }

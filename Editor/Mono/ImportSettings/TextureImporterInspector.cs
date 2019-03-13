@@ -944,7 +944,12 @@ namespace UnityEditor
             m_ShowGenericSpriteSettings.target = (m_SpriteMode.intValue != 0);
             if (EditorGUILayout.BeginFadeGroup(m_ShowGenericSpriteSettings.faded))
             {
-                EditorGUILayout.PropertyField(m_SpritePackingTag, s_Styles.spritePackingTag);
+                if (EditorSettings.spritePackerMode == SpritePackerMode.AlwaysOn ||
+                    EditorSettings.spritePackerMode == SpritePackerMode.BuildTimeOnly)
+                {
+                    EditorGUILayout.PropertyField(m_SpritePackingTag, s_Styles.spritePackingTag);
+                }
+
                 EditorGUILayout.PropertyField(m_SpritePixelsToUnits, s_Styles.spritePixelsPerUnit);
 
                 m_ShowSpriteMeshTypeOption.target = ShouldShowSpriteMeshTypeOption();

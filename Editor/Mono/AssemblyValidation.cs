@@ -144,6 +144,16 @@ namespace UnityEditor
             return pluginImporter.GetCompatibleWithEditor();
         }
 
+        public static bool ShouldValidateReferences(string path)
+        {
+            var pluginImporter = AssetImporter.GetAtPath(path) as PluginImporter;
+
+            if (pluginImporter == null)
+                return true;
+
+            return pluginImporter.ValidateReferences;
+        }
+
         public static void PrintAssemblyDefinitions(AssemblyDefinition[] assemblyDefinitions)
         {
             foreach (var assemblyDefinition in assemblyDefinitions)
@@ -231,6 +241,13 @@ namespace UnityEditor
             for (int i = 0; i < assemblyPaths.Length; ++i)
             {
                 if (errors[i].HasFlag(ErrorFlags.IncompatibleWithEditor))
+                    continue;
+
+                var assemblyPath = assemblyPaths[i];
+
+                // Check if "Validate References" option is enabled
+                // in the PluginImporter
+                if (!ShouldValidateReferences(assemblyPath))
                     continue;
 
                 ResolveAndSetupReferences(i,
@@ -327,7 +344,7 @@ namespace UnityEditor
                 catch (AssemblyResolutionException)
                 {
                     errors[index].Add(ErrorFlags.UnresolvableReference,
-                        string.Format("Unable to resolve reference '{0}'. Is the assembly missing or incompatible with the current platform?",
+                        string.Format("Unable to resolve reference '{0}'. Is the assembly missing or incompatible with the current platform?\nReference validation can be disabled in the Plugin Inspector.",
                             reference.Name));
                 }
             }

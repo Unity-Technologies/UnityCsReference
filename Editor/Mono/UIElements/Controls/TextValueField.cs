@@ -127,6 +127,10 @@ namespace UnityEditor.UIElements
 
             public void StopDragging()
             {
+                if (textValueFieldParent.isDelayed)
+                {
+                    UpdateValueFromText();
+                }
                 isDragging = false;
                 SelectAll();
                 MarkDirtyRepaint();

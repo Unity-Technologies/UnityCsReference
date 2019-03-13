@@ -144,6 +144,10 @@ namespace UnityEditor
         [SerializeField]
         ObjectListAreaState m_ListAreaState; // state that survives assembly reloads
         ObjectListArea  m_ListArea;
+        internal ObjectListArea ListArea // Exposed for usage in tests
+        {
+            get { return m_ListArea; }
+        }
         int m_ListKeyboardControlID;
         bool m_GrabKeyboardFocusForListArea = false;
 
@@ -776,7 +780,7 @@ namespace UnityEditor
             RepaintImmediately();
         }
 
-        void EndRenaming()
+        public void EndRenaming()
         {
             if (m_AssetTree != null)
                 m_AssetTree.EndNameEditing(true);
@@ -2637,7 +2641,7 @@ namespace UnityEditor
             EditorGUIUtility.SetIconSize(new Vector2(0, 0));
         }
 
-        void SelectAssetsFolder()
+        public void SelectAssetsFolder()
         {
             ShowFolderContents(AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets"), true);
         }

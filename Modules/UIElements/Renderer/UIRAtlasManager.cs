@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Profiling;
+using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {
@@ -75,6 +76,7 @@ namespace UnityEngine.UIElements
         private bool m_ForceReblitAll;
         private ColorSpace m_ColorSpace;
         private bool m_RequiresReset;
+        private RectInt m_Viewport;
 
         public int maxImageSize { get; }
 
@@ -451,6 +453,8 @@ namespace UnityEngine.UIElements
 
         private void BeginBlit(RenderTexture dst)
         {
+            m_Viewport = Utility.GetViewport();
+
             if (m_BlitMaterial == null)
             {
                 var blitShader = Shader.Find("Hidden/Internal-UIRAtlasBlitCopy");
@@ -520,6 +524,8 @@ namespace UnityEngine.UIElements
         private void EndBlit()
         {
             Graphics.SetRenderTarget(null);
+            // As we used a RenderTexture, we may have changed the viewport and need to restore it
+            GL.Viewport(new Rect(m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height));
         }
     }
 }

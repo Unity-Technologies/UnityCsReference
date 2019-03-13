@@ -220,7 +220,6 @@ namespace UnityEngine.UIElements
 
         public static readonly Rect s_InfiniteRect = new Rect(-1000000, -1000000, 2000000, 2000000);
 
-        // to be moved to UIR Utility
         public static bool GetOpenGLCoreVersion(out int major, out int minor)
         {
             if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLCore)

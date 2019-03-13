@@ -1039,6 +1039,8 @@ namespace UnityEngine.UIElements.UIR
         static readonly int s_FontTexPropID = Shader.PropertyToID("_FontTex");
         static readonly int s_CustomTexPropID = Shader.PropertyToID("_CustomTex");
         static readonly int s_1PixelClipWorldPropID = Shader.PropertyToID("_1PixelClipWorld");
+        static readonly int s_ViewportID = Shader.PropertyToID("_Viewport");
+        static readonly int s_RenderTargetSize = Shader.PropertyToID("_RenderTargetSize");
         static readonly int s_TransformsPropID = Shader.PropertyToID("_Transforms");
         static readonly int s_TransformsBufferPropID = Shader.PropertyToID("_TransformsBuffer");
         static readonly int s_ClippingBufferPropID = Shader.PropertyToID("_ClippingBuffer");
@@ -1079,10 +1081,12 @@ namespace UnityEngine.UIElements.UIR
                     mat.SetBuffer(s_ClippingBufferPropID, m_ClippingBuffer);
             }
 
+            var viewport = Utility.GetViewport();
+            mat.SetVector(s_ViewportID, new Vector4(viewport.x, viewport.y, viewport.width, viewport.height));
+
             Vector4 _1PixelClipWorld;
-            Vector2 renderTargetSize = UIRUtility.GetRenderTargetSize();
-            _1PixelClipWorld.x = 2.0f / renderTargetSize.x;
-            _1PixelClipWorld.y = 2.0f / renderTargetSize.y;
+            _1PixelClipWorld.x = 2.0f / viewport.width;
+            _1PixelClipWorld.y = 2.0f / viewport.height;
             {
                 Matrix4x4 matVPInv = (projection * view).inverse;
                 Vector3 v = matVPInv.MultiplyVector(new Vector3(_1PixelClipWorld.x, _1PixelClipWorld.y));
@@ -1090,6 +1094,9 @@ namespace UnityEngine.UIElements.UIR
                 _1PixelClipWorld.w = Mathf.Abs(v.y);
             }
             mat.SetVector(s_1PixelClipWorldPropID, _1PixelClipWorld);
+
+            Vector2 renderTargetSize = UIRUtility.GetRenderTargetSize();
+            mat.SetVector(s_RenderTargetSize, renderTargetSize);
 
             mat.SetPass(0);
             GL.modelview = view;

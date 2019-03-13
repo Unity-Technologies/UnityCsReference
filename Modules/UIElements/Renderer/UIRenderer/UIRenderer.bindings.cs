@@ -109,5 +109,6 @@ namespace UnityEngine.UIElements.UIR
         public extern static void ProfileDrawChainBegin();
         public extern static void ProfileDrawChainEnd();
         public extern static void NotifyOfUIREvents(bool subscribe);
+        public extern static RectInt GetViewport();
     }
 }

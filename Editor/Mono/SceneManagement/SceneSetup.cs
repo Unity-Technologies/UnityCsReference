@@ -21,7 +21,7 @@ namespace UnityEditor.SceneManagement
         [SerializeField]
         private bool m_IsActive = false;
         [SerializeField]
-        private bool m_IsSubScene = true;
+        private bool m_IsSubScene = false;
 
         public string path
         {
