@@ -110,6 +110,7 @@ namespace UnityEngine.UIElements.UIR
 
         public extern static void SetScissorRect(RectInt scissorRect);
         public extern static void DisableScissor();
+        public extern static bool IsScissorEnabled();
         public extern static UInt32 InsertCPUFence();
         public extern static bool CPUFencePassed(UInt32 fence);
         public extern static void WaitForCPUFencePassed(UInt32 fence);

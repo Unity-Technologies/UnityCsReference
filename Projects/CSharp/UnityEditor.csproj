@@ -4066,6 +4066,9 @@
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\AddRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\AddRequest.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\EmbedRequest.cs">
+      <Link>Modules\PackageManager\Editor\Managed\Requests\EmbedRequest.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\ListRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\ListRequest.cs</Link>
     </Compile>

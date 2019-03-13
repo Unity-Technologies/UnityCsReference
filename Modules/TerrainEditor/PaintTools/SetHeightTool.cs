@@ -19,7 +19,6 @@ namespace UnityEditor.Experimental.TerrainAPI
         float m_HeightWorldSpace;
 
         [SerializeField]
-        bool m_FlattenAll;
 
         [FormerlyPrefKeyAs("Terrain/Set Height", "f2")]
         [Shortcut("Terrain/Set Height", typeof(TerrainToolShortcutContext))]
@@ -32,9 +31,9 @@ namespace UnityEditor.Experimental.TerrainAPI
         class Styles
         {
             public readonly GUIContent description = EditorGUIUtility.TrTextContent("Left click to set the height.\n\nHold shift and left click to sample the target height.");
-            public readonly GUIContent flattenAll = EditorGUIUtility.TrTextContent("Flatten all", "If selected, it will traverse all neighbors and flatten them too");
             public readonly GUIContent height = EditorGUIUtility.TrTextContent("Height", "You can set the Height property manually or you can shift-click on the terrain to sample the height at the mouse position (rather like the 'eyedropper' tool in an image editor).");
-            public readonly GUIContent flatten = EditorGUIUtility.TrTextContent("Flatten", "The Flatten button levels the whole terrain to the chosen height.");
+            public readonly GUIContent flatten = EditorGUIUtility.TrTextContent("Flatten Tile", "The Flatten button levels the whole terrain to the chosen height.");
+            public readonly GUIContent flattenAll = EditorGUIUtility.TrTextContent("Flatten All", "If selected, it will traverse all neighbors and flatten them too");
         }
 
         private static Styles m_styles;
@@ -153,18 +152,14 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             Styles styles = GetStyles();
 
-            m_FlattenAll = EditorGUILayout.Toggle(styles.flattenAll, m_FlattenAll);
-
             EditorGUI.BeginChangeCheck();
-            GUILayout.BeginHorizontal();
             m_HeightWorldSpace = EditorGUILayout.Slider(styles.height, m_HeightWorldSpace, 0, terrain.terrainData.size.y);
+            GUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
             if (GUILayout.Button(styles.flatten, GUILayout.ExpandWidth(false)))
-            {
-                if (m_FlattenAll)
-                    FlattenAll();
-                else
-                    Flatten(terrain);
-            }
+                Flatten(terrain);
+            if (GUILayout.Button(styles.flattenAll, GUILayout.ExpandWidth(false)))
+                FlattenAll();
             GUILayout.EndHorizontal();
             if (EditorGUI.EndChangeCheck())
                 Save(true);

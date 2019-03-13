@@ -38,7 +38,34 @@ namespace UnityEditor
             AssetPopup<T>(serializedProperty, label, fileExtension, "Default");
         }
 
-        // private
+        private class DoCreateNewAsset : ProjectWindowCallback.EndNameEditAction
+        {
+            private SerializedProperty m_Property;
+
+            public void SetProperty(SerializedProperty property)
+            {
+                var so = new SerializedObject(property.serializedObject.targetObject);
+                m_Property = so.FindProperty(property.propertyPath);
+            }
+
+            public override void Action(int instanceId, string pathName, string resourceFile)
+            {
+                var obj = EditorUtility.InstanceIDToObject(instanceId);
+                AssetDatabase.CreateAsset(obj, AssetDatabase.GenerateUniqueAssetPath(pathName));
+                ProjectWindowUtil.FrameObjectInProjectWindow(instanceId);
+                m_Property.objectReferenceValue = obj;
+                m_Property.serializedObject.ApplyModifiedProperties();
+                m_Property.serializedObject.Dispose();
+                m_Property.Dispose();
+            }
+
+            public override void Cancelled(int instanceId, string pathName, string resourceFile)
+            {
+                Selection.activeObject = m_Property.serializedObject.targetObject;
+                m_Property.serializedObject.Dispose();
+                m_Property.Dispose();
+            }
+        }
 
         static void ShowAssetsPopupMenu<T>(Rect buttonRect, string typeName, SerializedProperty serializedProperty, string fileExtension, string defaultFieldName) where T : Object, new()
         {
@@ -94,9 +121,9 @@ namespace UnityEditor
             gm.AddItem(EditorGUIUtility.TrTextContent("Create New..."), false, delegate
             {
                 var newAsset = Activator.CreateInstance<T>();
-                ProjectWindowUtil.CreateAsset(newAsset, "New " + typeName + "." + fileExtension);
-                serializedProperty.objectReferenceValue = newAsset;
-                serializedProperty.m_SerializedObject.ApplyModifiedProperties();
+                var doCreate = ScriptableObject.CreateInstance<DoCreateNewAsset>();
+                doCreate.SetProperty(serializedProperty);
+                ProjectWindowUtil.StartNameEditingIfProjectWindowExists(newAsset.GetInstanceID(), doCreate, "New " + typeName + "." + fileExtension, AssetPreview.GetMiniThumbnail(newAsset), null);
             });
 
             gm.DropDown(buttonRect);

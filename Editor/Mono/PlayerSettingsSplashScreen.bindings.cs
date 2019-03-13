@@ -87,6 +87,14 @@ namespace UnityEditor
                 set;
             }
 
+            public static extern bool blurBackgroundImage
+            {
+                [FreeFunction("GetBlurSplashScreenBackground")]
+                get;
+                [FreeFunction("SetBlurSplashScreenBackground")]
+                set;
+            }
+
             [NativeName("SplashScreenBackgroundColor")]
             public static extern Color backgroundColor { get; set; }
 

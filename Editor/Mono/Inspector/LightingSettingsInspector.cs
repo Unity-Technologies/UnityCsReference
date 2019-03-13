@@ -336,6 +336,7 @@ namespace UnityEditor
             }
 
             EditorGUILayout.EndFoldoutHeaderGroup();
+            EditorGUILayout.Space();
 
             if (contributeGI)
             {

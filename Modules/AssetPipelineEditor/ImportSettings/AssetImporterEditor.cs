@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Experimental.AssetBundlePatching;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.Experimental.AssetImporters
@@ -145,9 +144,20 @@ namespace UnityEditor.Experimental.AssetImporters
                     int count = editors.Count(e => e.targets.Contains(t[i]));
                     if (s_UnreleasedInstances != null && s_UnreleasedInstances.Contains(instanceID))
                         count++;
-                    if (count != GetInspectorCopyCount(instanceID))
+                    var instances = GetInspectorCopyCount(instanceID);
+                    if (count != instances)
                     {
-                        Debug.LogError($"The previous instance of {GetType()} has not been disposed correctly. Make sure you are calling base.OnDisable() in your AssetImporterEditor implementation.");
+                        // Preemptively dispose the extra instance of the object so we fall back in a correct state.
+                        if (count == instances - 1)
+                            ReleaseInspectorCopy(instanceID);
+                        if (!CanEditorSurviveAssemblyReload())
+                        {
+                            Debug.LogError($"The previous instance of {GetType()} has not been disposed correctly. Make sure {GetType()} is a valid MonoScript.");
+                        }
+                        else
+                        {
+                            Debug.LogError($"The previous instance of {GetType()} has not been disposed correctly. Make sure you are calling base.OnDisable() in your AssetImporterEditor implementation.");
+                        }
                     }
                 }
 
@@ -174,7 +184,9 @@ namespace UnityEditor.Experimental.AssetImporters
             // make sure underlying data still match saved data
             for (int i = 0; i < targets.Length; i++)
             {
-                CheckForInspectorCopyBackingData(targets[i]);
+                // targets[i] may be null if the importer/asset was destroyed during an assembly reload
+                if (targets[i] != null)
+                    CheckForInspectorCopyBackingData(targets[i]);
                 extraDataSerializedObject?.Update();
                 serializedObject.Update();
             }
@@ -340,6 +352,12 @@ namespace UnityEditor.Experimental.AssetImporters
 
             m_OnEnableCalled = false;
             m_ApplyRevertGUICalled = false;
+        }
+
+        bool CanEditorSurviveAssemblyReload()
+        {
+            var script = new SerializedObject(this).FindProperty("m_Script").objectReferenceValue as MonoScript;
+            return script != null && AssetDatabase.Contains(script);
         }
 
         bool IsClosingInspector()

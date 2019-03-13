@@ -13,12 +13,11 @@ using UnityEngine.Scripting;
 
 using intptr_t = System.Int32;
 
-namespace UnityEngine.Experimental
+namespace UnityEngine
 {
     public interface ISubsystemDescriptor
     {
         string id { get; }
-        bool disablesLegacyVr { get; }
         ISubsystem Create();
     }
 
@@ -38,11 +37,6 @@ namespace UnityEngine.Experimental
             get { return Internal_SubsystemDescriptors.GetId(m_Ptr); }
         }
 
-        public bool disablesLegacyVr
-        {
-            get { return Internal_SubsystemDescriptors.GetDisablesLegacyVR(m_Ptr); }
-        }
-
         IntPtr ISubsystemDescriptorImpl.ptr { get { return m_Ptr; } set { m_Ptr = value; } }
 
         ISubsystem ISubsystemDescriptor.Create()
@@ -56,7 +50,6 @@ namespace UnityEngine.Experimental
     public abstract class SubsystemDescriptor : ISubsystemDescriptor
     {
         public string id { get; set; }
-        public bool disablesLegacyVr { get; set; }
 
         public System.Type subsystemImplementationType { get; set; }
 
@@ -206,9 +199,6 @@ namespace UnityEngine.Experimental
 
         [NativeConditional("ENABLE_XR")]
         public static extern string GetId(IntPtr descriptorPtr);
-
-        [NativeConditional("ENABLE_XR")]
-        public static extern bool GetDisablesLegacyVR(IntPtr descriptorPtr);
     }
 
     [NativeHeader("Modules/XR/XRPrefix.h")]

@@ -44,7 +44,6 @@ namespace UnityEditor.Experimental.GraphView
             pickingMode = PickingMode.Ignore;
 
             this.StretchToParentSize();
-            renderHint = RenderHint.ImmediateMode;
 
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
         }

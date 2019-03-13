@@ -18,6 +18,8 @@ namespace UnityEditor.PackageManager
 
         public static extern NativeStatusCode Add([Out] out long operationId, string packageId);
 
+        public extern static NativeStatusCode Embed([Out] out long operationId, string packageId);
+
         public static extern NativeStatusCode Remove([Out] out long operationId, string packageId);
 
         public static extern NativeStatusCode Search([Out] out long operationId, string packageId, bool offlineMode);
@@ -36,6 +38,8 @@ namespace UnityEditor.PackageManager
         public static extern OperationStatus GetListOperationData(long operationId);
 
         public static extern PackageInfo GetAddOperationData(long operationId);
+
+        extern public static PackageInfo GetEmbedOperationData(long operationId);
 
         public static extern PackageInfo[] GetSearchOperationData(long operationId);
     }

@@ -29,70 +29,38 @@ namespace UnityEngine.UIElements.StyleSheets
         internal delegate int GetCursorIdFunction(StyleSheet sheet, StyleValueHandle handle);
         internal static GetCursorIdFunction getCursorIdFunc = null;
 
-        private bool ApplyUnset<T, U>(StyleValueHandle[] handles, int specificity, ref T property) where T : struct, IStyleValue<U>
-        {
-            if (handles[0].valueType == StyleValueType.Keyword && handles[0].valueIndex == (int)StyleValueKeyword.Unset)
-            {
-                var defaultValue = default(T);
-                property.Apply(defaultValue, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
         public void ApplyFloat(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleFloat property)
         {
-            if (ApplyUnset<StyleFloat, float>(handles, specificity, ref property))
-                return;
-
             var value = sheet.ReadStyleFloat(handles[0], specificity);
             property.Apply(value, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
         }
 
         public void ApplyFlexBasis(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleLength property)
         {
-            if (ApplyUnset<StyleLength, Length>(handles, specificity, ref property))
-                return;
-
             var value = sheet.ReadStyleLength(handles[0], specificity);
             property.Apply(value, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
         }
 
         public void ApplyInt(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleInt property)
         {
-            if (ApplyUnset<StyleInt, int>(handles, specificity, ref property))
-                return;
-
             var value = sheet.ReadStyleInt(handles[0], specificity);
             property.Apply(value, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
         }
 
         public void ApplyEnum<T>(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleInt property)
         {
-            if (ApplyUnset<StyleInt, int>(handles, specificity, ref property))
-                return;
-
             var value = sheet.ReadStyleEnum<T>(handles[0], specificity);
             property.Apply(value, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
         }
 
         public void ApplyLength(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleLength property)
         {
-            if (ApplyUnset<StyleLength, Length>(handles, specificity, ref property))
-                return;
-
             var value = sheet.ReadStyleLength(handles[0], specificity);
             property.Apply(value, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
         }
 
         public void ApplyColor(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleColor property)
         {
-            if (ApplyUnset<StyleColor, Color>(handles, specificity, ref property))
-                return;
-
             var value = sheet.ReadStyleColor(handles[0], specificity);
             property.Apply(value, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
         }
@@ -134,9 +102,6 @@ namespace UnityEngine.UIElements.StyleSheets
 
         public void ApplyCursor(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleCursor property)
         {
-            if (ApplyUnset<StyleCursor, Cursor>(handles, specificity, ref property))
-                return;
-
             float hotspotX;
             float hotspotY;
             int cursorId;
@@ -150,9 +115,6 @@ namespace UnityEngine.UIElements.StyleSheets
 
         public void ApplyFont(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleFont property)
         {
-            if (ApplyUnset<StyleFont, Font>(handles, specificity, ref property))
-                return;
-
             StyleValueHandle handle = handles[0];
             Font font = null;
 
@@ -199,9 +161,6 @@ namespace UnityEngine.UIElements.StyleSheets
 
         public void ApplyImage(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleBackground property)
         {
-            if (ApplyUnset<StyleBackground, Background>(handles, specificity, ref property))
-                return;
-
             Texture2D source = null;
 
             StyleValueHandle handle = handles[0];
@@ -227,9 +186,6 @@ namespace UnityEngine.UIElements.StyleSheets
 
         public void ApplyAlign(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleInt property)
         {
-            if (ApplyUnset<StyleInt, int>(handles, specificity, ref property))
-                return;
-
             if (handles[0].valueType == StyleValueType.Keyword && handles[0].valueIndex == (int)StyleValueKeyword.Auto)
             {
                 StyleInt auto = new StyleInt((int)Align.Auto) {specificity = specificity};
@@ -249,9 +205,6 @@ namespace UnityEngine.UIElements.StyleSheets
 
         public void ApplyDisplay(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleInt property)
         {
-            if (ApplyUnset<StyleInt, int>(handles, specificity, ref property))
-                return;
-
             if (handles[0].valueType == StyleValueType.Keyword && handles[0].valueIndex == (int)StyleValueKeyword.None)
             {
                 StyleInt none = new StyleInt((int)DisplayStyle.None) {specificity = specificity};

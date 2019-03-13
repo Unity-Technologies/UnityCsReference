@@ -117,13 +117,10 @@ namespace UnityEngine.UIElements
         public IMGUIContainer()
             : this(null)
         {
-            renderHint = RenderHint.ImmediateMode;
         }
 
         public IMGUIContainer(Action onGUIHandler)
         {
-            renderHint = RenderHint.ImmediateMode;
-
             AddToClassList(ussClassName);
 
             this.onGUIHandler = onGUIHandler;
@@ -131,8 +128,6 @@ namespace UnityEngine.UIElements
             focusable = true;
 
             requireMeasureFunction = true;
-
-            style.overflow = Overflow.Hidden;
         }
 
         internal override void DoRepaint(IStylePainter painter)

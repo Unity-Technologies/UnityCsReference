@@ -6,12 +6,12 @@ using System;
 using System.Collections.Generic;
 
 using UnityEngine.Bindings;
-using UnityEngine.Experimental;
-
+using UnityEngine;
+using UnityEngine.Experimental.XR;
 using UnityEngine.Internal;
 using UnityEngine.Scripting;
 
-namespace UnityEditor.Experimental.XR
+namespace UnityEditor.XR
 {
     [NativeType(Header = "Modules/XREditor/Build/XRBuildSystem.h")]
     [StaticAccessor("XRBuildSystem", StaticAccessorType.DoubleColon)]
@@ -34,8 +34,13 @@ namespace UnityEditor.Experimental.XR
 
             foreach (var descriptor in descriptors)
             {
-                if (descriptor.disablesLegacyVr)
-                    return true;
+                if (descriptor.GetType() == typeof(XRDisplaySubsystemDescriptor))
+                {
+                    XRDisplaySubsystemDescriptor displayDescriptor = (XRDisplaySubsystemDescriptor)descriptor;
+
+                    if (displayDescriptor.disablesLegacyVr)
+                        return true;
+                }
             }
             return false;
         }

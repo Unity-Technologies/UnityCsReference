@@ -30,7 +30,14 @@ namespace UnityEditor
     [EditorWindowTitle(title = "Inspector", useTypeNameAsIconName = true)]
     internal class InspectorWindow : EditorWindow, IHasCustomMenu
     {
-        internal InspectorMode   m_InspectorMode = InspectorMode.Normal;
+        InspectorMode   m_InspectorMode = InspectorMode.Normal;
+
+        internal InspectorMode inspectorMode
+        {
+            get { return m_InspectorMode; }
+            set { SetMode(value); }
+        }
+
         internal bool m_UseUIElementsDefaultInspector = false;
 
         static readonly List<InspectorWindow> m_AllInspectors = new List<InspectorWindow>();
@@ -362,30 +369,37 @@ namespace UnityEditor
         void SetUseUIEDefaultInspector()
         {
             m_UseUIElementsDefaultInspector = !m_UseUIElementsDefaultInspector;
+            // Clear the editors Element so that a real rebuild is done
+            editorsElement.Clear();
             RebuildContentsContainers();
         }
 
         void SetMode(InspectorMode mode)
         {
-            m_InspectorMode = mode;
-            RefreshTitle();
-            tracker.inspectorMode = mode;
-            m_ResetKeyboardControl = true;
+            if (m_InspectorMode != mode)
+            {
+                m_InspectorMode = mode;
+                RefreshTitle();
+                // Clear the editors Element so that a real rebuild is done
+                editorsElement.Clear();
+                tracker.inspectorMode = mode;
+                m_ResetKeyboardControl = true;
+            }
         }
 
         void SetDebug()
         {
-            SetMode(InspectorMode.Debug);
+            inspectorMode = InspectorMode.Debug;
         }
 
         void SetNormal()
         {
-            SetMode(InspectorMode.Normal);
+            inspectorMode = InspectorMode.Normal;
         }
 
         void SetDebugInternal()
         {
-            SetMode(InspectorMode.DebugInternal);
+            inspectorMode = InspectorMode.DebugInternal;
         }
 
         internal void ExpandAllComponents()

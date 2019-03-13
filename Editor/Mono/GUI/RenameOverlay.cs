@@ -54,7 +54,7 @@ namespace UnityEditor
         string k_RenameOverlayFocusName = "RenameOverlayField";
 
         // property interface
-        public string name { get {return m_Name; }}
+        public string name { get {return m_Name; } internal set { m_Name = value; } }
         public string originalName { get {return m_OriginalName; }}
         public bool userAcceptedRename { get {return m_UserAcceptedRename; }}
         public int userData { get {return m_UserData; }}

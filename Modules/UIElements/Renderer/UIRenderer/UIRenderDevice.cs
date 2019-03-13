@@ -727,7 +727,7 @@ namespace UnityEngine.UIElements.UIR
                 m_DrawStats.commandCount++;
                 m_DrawStats.drawCommandCount += (head.type == CommandType.Draw ? 1u : 0u);
 
-                bool kickRanges = (head.type != CommandType.Draw) || (head.next == null);
+                bool kickRanges = (head.type != CommandType.Draw);
                 bool stashRange = true;
                 bool materialChanges = false;
                 if (!kickRanges)
@@ -852,6 +852,15 @@ namespace UnityEngine.UIElements.UIR
 
                 head = head.next;
             }
+
+            // Kick any pending ranges, this usually occurs when the draw chain ends with a draw command.
+            if (curDrawRange.indexCount > 0)
+            {
+                int wrapAroundIndex = (rangesStart + rangesReady++) & rangesCountMinus1;
+                ranges[wrapAroundIndex] = curDrawRange;
+            }
+            if (rangesReady > 0)
+                KickRanges(ranges, ref rangesReady, ref rangesStart, rangesCount, curPage);
 
             m_DrawRangeStart = rangesStart;
         }

@@ -10,7 +10,6 @@ namespace UnityEngine.UIElements
     {
         public ImmediateModeElement()
         {
-            renderHint = RenderHint.ImmediateMode;
         }
 
         internal override void DoRepaint(IStylePainter painter)

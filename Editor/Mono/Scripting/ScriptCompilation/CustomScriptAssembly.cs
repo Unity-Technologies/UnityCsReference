@@ -214,7 +214,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return true;
         }
 
-        public bool IsCompatibleWith(BuildTarget buildTarget, EditorScriptCompilationOptions options, string[] defines = null)
+        public bool IsCompatibleWith(BuildTarget buildTarget, EditorScriptCompilationOptions options, string[] defines)
         {
             bool buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;
 
@@ -224,6 +224,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 return false;
             }
+
+            if (defines != null && defines.Length == 0)
+                throw new ArgumentException("defines cannot be empty", "defines");
 
             if (!DefineConstraintsHelper.IsDefineConstraintsCompatible(defines, DefineConstraints))
             {

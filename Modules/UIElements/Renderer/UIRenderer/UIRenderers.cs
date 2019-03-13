@@ -102,8 +102,13 @@ namespace UnityEngine.UIElements.UIR
             switch (type)
             {
                 case CommandType.Immediate:
+                {
                     if (immediateException != null)
                         break;
+
+                    bool hasScissor = drawParams.scissor.Count > 1; // We always expect the "unbound" scissor rectangle to exists
+                    if (hasScissor)
+                        Utility.DisableScissor(); // Disable scissor since most IMGUI code assume it's inactive
 
                     Utility.ProfileImmediateRendererBegin();
                     try
@@ -115,10 +120,15 @@ namespace UnityEngine.UIElements.UIR
                     {
                         immediateException = e;
                     }
+
                     GL.modelview = drawParams.view.Peek().transform;
                     GL.LoadProjectionMatrix(drawParams.projection);
                     Utility.ProfileImmediateRendererEnd();
+
+                    if (hasScissor)
+                        Utility.SetScissorRect(FlipRectYAxis(drawParams.scissor.Peek(), drawParams.viewport));
                     break;
+                }
                 case CommandType.PushView:
                     var vt = new ViewTransform() { transform = owner.worldTransform, clipRect = RectToScreenSpace(owner.worldClip, drawParams.projection, straightY) };
                     drawParams.view.Push(vt);

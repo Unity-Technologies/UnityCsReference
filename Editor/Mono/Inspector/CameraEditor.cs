@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Experimental;
+using UnityEngine.Experimental.XR;
 using UnityEngine.Experimental.Rendering;
 using AnimatedBool = UnityEditor.AnimatedValues.AnimBool;
 using UnityEngine.Scripting;
@@ -425,10 +427,7 @@ namespace UnityEditor
 
             public void DrawTargetEye()
             {
-                if (PlayerSettings.virtualRealitySupported)
-                {
-                    EditorGUILayout.IntPopup(targetEye, kTargetEyes, kTargetEyeValues, EditorGUIUtility.TempContent("Target Eye"));
-                }
+                EditorGUILayout.IntPopup(targetEye, kTargetEyes, kTargetEyeValues, EditorGUIUtility.TempContent("Target Eye"));
             }
 
             public static void DrawCameraWarnings(Camera camera)
@@ -503,6 +502,12 @@ namespace UnityEditor
             get { return settings.targetEye.intValue; }
         }
 
+        static List<XRDisplaySubsystemDescriptor> displayDescriptors = new List<XRDisplaySubsystemDescriptor>();
+
+        static void OnReloadSubsystemsComplete()
+        {
+            SubsystemManager.GetSubsystemDescriptors(displayDescriptors);
+        }
 
         public void OnEnable()
         {
@@ -516,6 +521,9 @@ namespace UnityEditor
             m_ShowBGColorOptions.valueChanged.AddListener(Repaint);
             m_ShowOrthoOptions.valueChanged.AddListener(Repaint);
             m_ShowTargetEyeOption.valueChanged.AddListener(Repaint);
+
+            SubsystemManager.GetSubsystemDescriptors(displayDescriptors);
+            SubsystemManager.reloadSubsytemsCompleted += OnReloadSubsystemsComplete;
         }
 
         internal void OnDisable()
@@ -645,7 +653,9 @@ namespace UnityEditor
             var c = (Camera)target;
             m_ShowBGColorOptions.target = !clearFlagsHasMultipleValues && (c.clearFlags == CameraClearFlags.SolidColor || c.clearFlags == CameraClearFlags.Skybox);
             m_ShowOrthoOptions.target = !orthographicHasMultipleValues && c.orthographic;
-            m_ShowTargetEyeOption.target = targetEyeValue != (int)StereoTargetEyeMask.Both || PlayerSettings.virtualRealitySupported;
+
+            bool displaySubsystemPresent = displayDescriptors.Count > 0;
+            m_ShowTargetEyeOption.target = targetEyeValue != (int)StereoTargetEyeMask.Both || PlayerSettings.virtualRealitySupported || displaySubsystemPresent;
 
             settings.DrawClearFlags();
 

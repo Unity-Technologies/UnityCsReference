@@ -119,7 +119,13 @@ namespace UnityEditor
             string resourceFile = m_ResourceFile;
             Clear(); // Ensure clear if anything goes bad in EndNameEditAction and gui is exited.
 
-            ProjectWindowUtil.EndNameEditAction(endAction, instanceID, path, resourceFile);
+            ProjectWindowUtil.EndNameEditAction(endAction, instanceID, path, resourceFile, true);
+        }
+
+        public void EndNewAssetCreationCanceled(string name)
+        {
+            string path = folder + "/" + name + extension;
+            ProjectWindowUtil.EndNameEditAction(m_EndAction, m_InstanceID, path, m_ResourceFile, false);
         }
 
         public bool IsCreatingNewAsset()

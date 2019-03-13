@@ -14,5 +14,7 @@ namespace UnityEngine.Experimental.XR
     [UsedByNativeCode]
     public class XRDisplaySubsystemDescriptor : IntegratedSubsystemDescriptor<XRDisplaySubsystem>
     {
+        [NativeConditional("ENABLE_XR")]
+        public extern bool disablesLegacyVr { get; }
     }
 }

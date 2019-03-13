@@ -218,14 +218,21 @@ namespace UnityEditorInternal
             return defines.ToArray();
         }
 
+        internal static string[] GetDebuggerIL2CPPArguments(IIl2CppPlatformProvider il2cppPlatformProvider, BuildTargetGroup buildTargetGroup)
+        {
+            var arguments = new List<string>();
+
+            if (EnableIL2CPPDebugger(il2cppPlatformProvider, buildTargetGroup))
+                arguments.Add("--enable-debugger");
+
+            return arguments.ToArray();
+        }
+
         internal static string[] GetBuildingIL2CPPArguments(IIl2CppPlatformProvider il2cppPlatformProvider, BuildTargetGroup buildTargetGroup)
         {
             // When changing this function, don't forget to change GetBuilderDefinedDefines!
             var arguments = new List<string>();
             var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
-
-            if (EnableIL2CPPDebugger(il2cppPlatformProvider, buildTargetGroup))
-                arguments.Add("--enable-debugger");
 
             if (BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", il2cppPlatformProvider.target))
             {
@@ -415,6 +422,14 @@ namespace UnityEditorInternal
             if (m_BuildForMonoRuntime)
                 arguments.Add("--mono-runtime");
 
+            // Working around gcc bug 41091
+            if (m_PlatformProvider.target == BuildTarget.StandaloneLinux ||
+                m_PlatformProvider.target == BuildTarget.StandaloneLinux64 ||
+                m_PlatformProvider.target == BuildTarget.StandaloneLinuxUniversal)
+            {
+                arguments.Add("--disable-aggressive-inlining");
+            }
+
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
             var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
             arguments.Add(string.Format("--dotnetprofile=\"{0}\"", IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(apiCompatibilityLevel)));
@@ -428,6 +443,7 @@ namespace UnityEditorInternal
                 arguments.AddRange(Il2CppNativeCodeBuilderUtils.AddBuilderArguments(il2CppNativeCodeBuilder, OutputFileRelativePath(), m_PlatformProvider.includePaths, m_PlatformProvider.libraryPaths, compilerConfiguration));
             }
 
+            arguments.AddRange(IL2CPPUtils.GetDebuggerIL2CPPArguments(m_PlatformProvider, buildTargetGroup));
             arguments.AddRange(IL2CPPUtils.GetBuildingIL2CPPArguments(m_PlatformProvider, buildTargetGroup));
             arguments.Add($"--map-file-parser={CommandLineFormatter.PrepareFileName(GetMapFileParserPath())}");
 

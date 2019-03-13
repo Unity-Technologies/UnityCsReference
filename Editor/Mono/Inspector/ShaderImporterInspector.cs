@@ -28,6 +28,11 @@ namespace UnityEditor
         private class ShaderProperties : ScriptableObject
         {
             public List<TextureProp> m_Properties = new List<TextureProp>();
+
+            public void CleanUp()
+            {
+                m_Properties.Clear();
+            }
         }
 
         SerializedProperty m_Properties;
@@ -48,6 +53,7 @@ namespace UnityEditor
         protected override void InitializeExtraDataInstance(Object extraTarget, int targetIndex)
         {
             var data = (ShaderProperties)extraTarget;
+            data.CleanUp();
 
             var importer = targets[targetIndex] as ShaderImporter;
             if (importer == null)

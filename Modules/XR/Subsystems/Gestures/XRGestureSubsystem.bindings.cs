@@ -50,7 +50,7 @@ namespace UnityEngine.Experimental.XR
     public enum GestureHoldValidFields : UInt32
     {
         None = 0,
-        TimeStamp = 1 << 0,
+        Time = 1 << 0,
         DeviceId = 1 << 1,
         PointerPose = 1 << 2
     }
@@ -62,7 +62,7 @@ namespace UnityEngine.Experimental.XR
     internal struct NativeGestureHoldEvent
     {
         internal GestureEventState eventState { get; set; }
-        internal Int64 timeStamp { get; set; }
+        internal Int64 time { get; set; }
         internal UInt32 internalDeviceId { get; set; }
         internal Pose pointerPose { get; set; }
         internal GestureHoldValidFields validFields { get; set; }
@@ -71,7 +71,7 @@ namespace UnityEngine.Experimental.XR
     public struct GestureHoldEvent
     {
         public GestureEventState eventState { get { return nativeEvent.eventState; } }
-        public Int64 timeStamp { get { return nativeEvent.timeStamp; } }
+        public DateTime time { get { return TimeConverter.UnixTimeMillisecondsToLocalDateTime(nativeEvent.time); } }
         public Pose pointerPose { get { return nativeEvent.pointerPose; } }
         public GestureHoldValidFields validFields { get { return nativeEvent.validFields; } }
 
@@ -84,7 +84,7 @@ namespace UnityEngine.Experimental.XR
     public enum GestureManipulationValidFields : UInt32
     {
         None = 0,
-        TimeStamp = 1 << 0,
+        Time = 1 << 0,
         DeviceId = 1 << 1,
         Translation = 1 << 2,
         PointerPose = 1 << 3
@@ -97,7 +97,7 @@ namespace UnityEngine.Experimental.XR
     internal struct NativeGestureManipulationEvent
     {
         internal GestureEventState eventState { get; set; }
-        internal Int64 timeStamp { get; set; }
+        internal Int64 time { get; set; }
         internal UInt32 internalDeviceId { get; set; }
         internal Vector3 translation { get; set; }
         internal Pose pointerPose { get; set; }
@@ -107,7 +107,7 @@ namespace UnityEngine.Experimental.XR
     public struct GestureManipulationEvent
     {
         public GestureEventState eventState { get { return nativeEvent.eventState; } }
-        public Int64 timeStamp { get { return nativeEvent.timeStamp; } }
+        public DateTime time { get { return TimeConverter.UnixTimeMillisecondsToLocalDateTime(nativeEvent.time); } }
         public Vector3 translation { get { return nativeEvent.translation; } }
         public Pose pointerPose { get { return nativeEvent.pointerPose; } }
         public GestureManipulationValidFields validFields { get { return nativeEvent.validFields; } }
@@ -121,7 +121,7 @@ namespace UnityEngine.Experimental.XR
     public enum GestureNavigationValidFields : UInt32
     {
         None = 0,
-        TimeStamp = 1 << 0,
+        Time = 1 << 0,
         DeviceId = 1 << 1,
         GestureTrackingCoordinates = 1 << 2,
         NormalizedOffset = 1 << 3,
@@ -135,7 +135,7 @@ namespace UnityEngine.Experimental.XR
     internal struct NativeGestureNavigationEvent
     {
         internal GestureEventState eventState { get; set; }
-        internal Int64 timeStamp { get; set; }
+        internal Int64 time { get; set; }
         internal UInt32 internalDeviceId { get; set; }
         internal GestureTrackingCoordinates gestureTrackingCoordinates { get; set; }
         internal Vector3 normalizedOffset { get; set; }
@@ -146,7 +146,7 @@ namespace UnityEngine.Experimental.XR
     public struct GestureNavigationEvent
     {
         public GestureEventState eventState { get { return nativeEvent.eventState; } }
-        public Int64 timeStamp { get { return nativeEvent.timeStamp; } }
+        public DateTime time { get { return TimeConverter.UnixTimeMillisecondsToLocalDateTime(nativeEvent.time); } }
         public GestureTrackingCoordinates gestureTrackingCoordinates { get { return nativeEvent.gestureTrackingCoordinates; } }
         public Vector3 normalizedOffset { get { return nativeEvent.normalizedOffset; } }
         public Pose pointerPose { get { return nativeEvent.pointerPose; } }
@@ -161,7 +161,7 @@ namespace UnityEngine.Experimental.XR
     public enum GestureRecognitionValidFields : UInt32
     {
         None = 0,
-        TimeStamp = 1 << 0,
+        Time = 1 << 0,
         DeviceId = 1 << 1,
         PointerPose = 1 << 2
     }
@@ -173,7 +173,7 @@ namespace UnityEngine.Experimental.XR
     internal struct NativeGestureRecognitionEvent
     {
         internal GestureEventState eventState { get; set; }
-        internal Int64 timeStamp { get; set; }
+        internal Int64 time { get; set; }
         internal UInt32 internalDeviceId { get; set; }
         internal Pose pointerPose { get; set; }
         internal GestureRecognitionValidFields validFields { get; set; }
@@ -182,7 +182,7 @@ namespace UnityEngine.Experimental.XR
     public struct GestureRecognitionEvent
     {
         public GestureEventState eventState { get { return nativeEvent.eventState; } }
-        public Int64 timeStamp { get { return nativeEvent.timeStamp; } }
+        public DateTime time { get { return TimeConverter.UnixTimeMillisecondsToLocalDateTime(nativeEvent.time); } }
         public Pose pointerPose { get { return nativeEvent.pointerPose; } }
         public GestureRecognitionValidFields validFields { get { return nativeEvent.validFields; } }
 
@@ -195,7 +195,7 @@ namespace UnityEngine.Experimental.XR
     public enum GestureTappedValidFields : UInt32
     {
         None = 0,
-        TimeStamp = 1 << 0,
+        Time = 1 << 0,
         DeviceId = 1 << 1,
         TappedCount = 1 << 2,
         PointerPose = 1 << 3
@@ -208,7 +208,7 @@ namespace UnityEngine.Experimental.XR
     internal struct NativeGestureTappedEvent
     {
         internal GestureEventState eventState { get; set; }
-        internal Int64 timeStamp { get; set; }
+        internal Int64 time { get; set; }
         internal UInt32 internalDeviceId { get; set; }
         internal UInt32 tappedCount { get; set; }
         internal Pose pointerPose { get; set; }
@@ -218,7 +218,7 @@ namespace UnityEngine.Experimental.XR
     public struct GestureTappedEvent
     {
         public GestureEventState eventState { get { return nativeEvent.eventState; } }
-        public Int64 timeStamp { get { return nativeEvent.timeStamp; } }
+        public DateTime time { get { return TimeConverter.UnixTimeMillisecondsToLocalDateTime(nativeEvent.time); } }
         public UInt32 tappedCount { get { return nativeEvent.tappedCount; } }
         public Pose pointerPose { get { return nativeEvent.pointerPose; } }
         public GestureTappedValidFields validFields { get { return nativeEvent.validFields; } }

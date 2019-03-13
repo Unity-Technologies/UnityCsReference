@@ -54,7 +54,7 @@ namespace UnityEditor.UIElements
                         var action = ScriptableObject.CreateInstance<DoCreateAssetWithContent>();
                         action.filecontent = data;
 
-                        ProjectWindowUtil.EndNameEditAction(action, 0, fileName, null);
+                        ProjectWindowUtil.EndNameEditAction(action, 0, fileName, null, true);
                         Selection.activeObject = EditorUtility.InstanceIDToObject(0);
                     }
                 }

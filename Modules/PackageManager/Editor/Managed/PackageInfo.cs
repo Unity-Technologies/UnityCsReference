@@ -109,6 +109,10 @@ namespace UnityEditor.PackageManager
         [NativeName("entitlements")]
         private EntitlementsInfo m_Entitlements = new EntitlementsInfo();
 
+        [SerializeField]
+        [NativeName("datePublishedTicks")]
+        private long m_DatePublishedTicks;
+
         internal PackageInfo() {}
 
         public string packageId { get { return m_PackageId;  } }
@@ -137,6 +141,14 @@ namespace UnityEditor.PackageManager
             get
             {
                 return m_HasRegistry ? m_Registry : null;
+            }
+        }
+
+        public DateTime? datePublished
+        {
+            get
+            {
+                return m_DatePublishedTicks == 0 ? (DateTime?)null : new DateTime(m_DatePublishedTicks, DateTimeKind.Utc);
             }
         }
 

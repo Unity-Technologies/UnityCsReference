@@ -458,6 +458,8 @@ namespace UnityEditor
                     ObjectNames.SetNameSmartWithInstanceID(instanceID, name);
                 }
             }
+            else if (isCreating)
+                GetCreateAssetUtility().EndNewAssetCreationCanceled(name);
         }
 
         override protected void ClearRenameAndNewItemState()

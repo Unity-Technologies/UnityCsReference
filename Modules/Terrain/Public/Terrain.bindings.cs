@@ -53,14 +53,6 @@ namespace UnityEngine
     [StaticAccessor("GetITerrainManager()", StaticAccessorType.Arrow)]
     public sealed partial class Terrain : Behaviour
     {
-        public enum MaterialType
-        {
-            BuiltInStandard = 0,
-            BuiltInLegacyDiffuse,
-            BuiltInLegacySpecular,
-            Custom
-        }
-
         extern public TerrainData terrainData { get; set; }
 
         extern public float treeDistance { get; set; }
@@ -80,14 +72,6 @@ namespace UnityEngine
 
         extern public float basemapDistance { get; set; }
 
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("splatmapDistance is deprecated, please use basemapDistance instead. (UnityUpgradable) -> basemapDistance", true)]
-        public float splatmapDistance
-        {
-            get { return basemapDistance; }
-            set { basemapDistance = value; }
-        }
-
         [NativeProperty("StaticLightmapIndexInt")]
         extern public int lightmapIndex { get; set; }
 
@@ -103,26 +87,13 @@ namespace UnityEngine
         [NativeProperty("GarbageCollectCameraData")]
         extern public bool freeUnusedRenderingResources { get; set; }
 
-        [Obsolete("castShadows is deprecated, please use shadowCastingMode instead.")]
-        public bool castShadows
-        {
-            get { return shadowCastingMode != ShadowCastingMode.Off; }
-            set { shadowCastingMode = value ? ShadowCastingMode.TwoSided : ShadowCastingMode.Off; }
-        }
-
         extern public ShadowCastingMode shadowCastingMode { get; set; }
 
         extern public ReflectionProbeUsage reflectionProbeUsage { get; set; }
 
         extern public void GetClosestReflectionProbes(List<ReflectionProbeBlendInfo> result);
 
-        extern public Terrain.MaterialType materialType { get; set; }
-
         extern public Material materialTemplate { get; set; }
-
-        extern public Color legacySpecular { get; set; }
-
-        extern public float legacyShininess { get; set; }
 
         extern public bool drawHeightmap { get; set; }
         extern public bool allowAutoConnect { get; set; }
@@ -137,12 +108,6 @@ namespace UnityEngine
         extern public Vector3 patchBoundsMultiplier { get; set; }
 
         extern public float SampleHeight(Vector3 worldPosition);
-
-        [Obsolete("Use TerrainData.SyncHeightmap to notify all Terrain instances using the TerrainData.", false)]
-        public void ApplyDelayedHeightmapModification()
-        {
-            terrainData?.SyncHeightmap();
-        }
 
         extern public void AddTreeInstance(TreeInstance instance);
 

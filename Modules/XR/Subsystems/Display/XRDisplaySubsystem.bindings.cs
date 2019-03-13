@@ -31,6 +31,7 @@ namespace UnityEngine.Experimental.XR
         extern public bool displayOpaque { get; }
         extern public bool contentProtectionEnabled { get; set; }
 
+
         public enum ReprojectionMode
         {
             Unspecified,
