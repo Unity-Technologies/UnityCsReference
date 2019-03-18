@@ -14,7 +14,7 @@ namespace UnityEditor.UIElements
     {
         readonly InspectorWindow inspectorWindow;
 
-        Editor[] m_Editors => inspectorWindow.tracker.activeEditors;
+        internal Editor[] m_Editors => inspectorWindow.tracker.activeEditors;
         int m_editorIndex;
         public Editor editor => m_Editors[m_editorIndex];
 

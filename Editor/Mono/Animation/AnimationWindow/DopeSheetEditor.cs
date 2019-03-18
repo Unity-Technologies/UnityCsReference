@@ -703,18 +703,6 @@ namespace UnityEditorInternal
                         break;
                 }
             }
-
-            // Frame All.
-            // Manually handle hotkey unless we decide to add it to default Unity hotkeys like
-            // we did for FrameSelected.
-            if (Event.current.type == EventType.KeyDown)
-            {
-                if (Event.current.keyCode == KeyCode.A)
-                {
-                    FrameClip();
-                    Event.current.Use();
-                }
-            }
         }
 
         private void HandleSelectAll()

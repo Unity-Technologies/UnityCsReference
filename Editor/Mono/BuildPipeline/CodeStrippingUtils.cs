@@ -254,7 +254,7 @@ namespace UnityEditor
             HashSet<UnityType> nativeClasses;
             HashSet<string> nativeModules;
             // by default, we only care about il2cpp
-            bool doStripping = PlayerSettings.stripEngineCode && !platformProvider.scriptsOnlyBuild;
+            bool doStripping = PlayerSettings.stripEngineCode;
             GenerateDependencies(strippedAssemblyDir, icallsListFile, rcr, doStripping, out nativeClasses, out nativeModules, platformProvider);
 
             var outputClassRegistration = Path.Combine(outputDir, "UnityClassRegistration.cpp");

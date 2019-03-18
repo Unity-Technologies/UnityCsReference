@@ -14,18 +14,15 @@ namespace UnityEditor.UIElements.Debugger
 
         private VisualElement m_DragLine;
 
+        [SerializeField]
+        private float leftPaneWidth;
+
         public DebuggerSplitter()
         {
             name = "unity-debugger-splitter";
+            viewDataKey = "unity-uie-debugger-splitter";
 
             leftPane = new VisualElement();
-
-            // TODO: would be nice but we had issues with the
-            // search bar results count indicator appearing and
-            // disappearing causing the left pane to change size
-            // slightly.
-            //leftPane.style.flexGrow = 1;
-            leftPane.style.width = 400;
             Add(leftPane);
 
             var dragLineAnchor = new VisualElement();
@@ -34,23 +31,31 @@ namespace UnityEditor.UIElements.Debugger
 
             m_DragLine = new VisualElement();
             m_DragLine.name = "unity-debugger-splitter-dragline";
-            m_DragLine.AddManipulator(new SquareResizer(leftPane));
+            m_DragLine.AddManipulator(new SquareResizer(this));
             dragLineAnchor.Add(m_DragLine);
 
             rightPane = new VisualElement();
             rightPane.name = "unity-debugger-splitter__right-pane";
             Add(rightPane);
+
+            leftPaneWidth = 400;
+        }
+
+        override internal void OnViewDataReady()
+        {
+            OverwriteFromViewData(this, viewDataKey);
+            leftPane.style.width = leftPaneWidth;
         }
 
         class SquareResizer : MouseManipulator
         {
             private Vector2 m_Start;
             protected bool m_Active;
-            private VisualElement m_LeftPane;
+            private DebuggerSplitter m_Splitter;
 
-            public SquareResizer(VisualElement leftPane)
+            public SquareResizer(DebuggerSplitter splitter)
             {
-                m_LeftPane = leftPane;
+                m_Splitter = splitter;
                 activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
                 m_Active = false;
             }
@@ -94,9 +99,7 @@ namespace UnityEditor.UIElements.Debugger
 
                 Vector2 diff = e.localMousePosition - m_Start;
 
-                // TODO: See TODO above.
-                //m_LeftPane.style.flexGrow = float.NaN;
-                m_LeftPane.style.width = m_LeftPane.layout.width + diff.x;
+                m_Splitter.leftPane.style.width = m_Splitter.leftPane.layout.width + diff.x;
 
                 e.StopPropagation();
             }
@@ -109,6 +112,9 @@ namespace UnityEditor.UIElements.Debugger
                 m_Active = false;
                 target.ReleaseMouse();
                 e.StopPropagation();
+
+                m_Splitter.leftPaneWidth = m_Splitter.leftPane.resolvedStyle.width;
+                m_Splitter.SaveViewData();
             }
         }
     }

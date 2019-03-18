@@ -35,17 +35,23 @@ namespace UnityEngine.UIElements.UIR
     {
         public T Get()
         {
-            if (m_Pool == null)
-                return new T();
+            return m_Pool == null ? new T() : GetPooled();
+        }
 
-            System.Diagnostics.Debug.Assert(m_Pool != null);
-            T block = (T)m_Pool;
-            m_Pool = m_Pool.poolNext;
-            block.poolNext = null;
-            return block;
+        public T TryGet()
+        {
+            return m_Pool == null ? null : GetPooled();
         }
 
         public void Return(T obj) { obj.poolNext = m_Pool; m_Pool = obj; }
+
+        T GetPooled()
+        {
+            T item = (T)m_Pool;
+            m_Pool = m_Pool.poolNext;
+            item.poolNext = null;
+            return item;
+        }
 
         PoolItem m_Pool;
     }
@@ -329,8 +335,12 @@ namespace UnityEngine.UIElements.UIR
 
             alloc.shortLived = shortLived;
 
-            if (HighLowCollide())
+            if (HighLowCollide() && alloc.size != 0)
+            {
+                Free(alloc);
                 return new Alloc(); // OOM
+            }
+
             return alloc;
         }
 

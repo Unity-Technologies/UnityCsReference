@@ -6,8 +6,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.IMGUI.Controls;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEditorInternal;
+using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -1546,16 +1548,21 @@ namespace UnityEditor
         static Renderer[] GetAssociatedRenderersFromInspector()
         {
             List<Renderer> renderers = new List<Renderer>();
-            if (InspectorWindow.s_CurrentInspectorWindow != null)
+            var imguicontainer = UIElementsUtility.GetCurrentIMGUIContainer();
+            if (imguicontainer != null)
             {
-                Editor[] editors = InspectorWindow.s_CurrentInspectorWindow.tracker.activeEditors;
-                foreach (var editor in editors)
+                var editorElement = imguicontainer.GetFirstAncestorOfType<EditorElement>();
+                if (editorElement != null)
                 {
-                    foreach (Object target in editor.targets)
+                    Editor[] editors = editorElement.m_Editors;
+                    foreach (var editor in editors)
                     {
-                        var renderer = target as Renderer;
-                        if (renderer)
-                            renderers.Add(renderer);
+                        foreach (Object target in editor.targets)
+                        {
+                            var renderer = target as Renderer;
+                            if (renderer)
+                                renderers.Add(renderer);
+                        }
                     }
                 }
             }

@@ -3,9 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace UnityEditor.Utils
 {
@@ -321,6 +323,21 @@ namespace UnityEditor.Utils
                 }
             }
             return literal.ToString();
+        }
+
+        public static string MakeValidFileName(string unsafeFileName)
+        {
+            var normalizedFileName = unsafeFileName.Trim().Normalize(NormalizationForm.FormD);
+            var stringBuilder = new StringBuilder();
+            foreach (var c in normalizedFileName)
+            {
+                if (invalidFilenameChars.Contains(c))
+                    continue;
+                var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
+                if (unicodeCategory != UnicodeCategory.NonSpacingMark)
+                    stringBuilder.Append(c);
+            }
+            return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
         }
     }
 }

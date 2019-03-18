@@ -114,6 +114,9 @@ namespace UnityEditor
             public static readonly GUIContent fullscreenWindow = EditorGUIUtility.TrTextContent("Fullscreen Window");
             public static readonly GUIContent maximizedWindow = EditorGUIUtility.TrTextContent("Maximized Window");
             public static readonly GUIContent windowed = EditorGUIUtility.TrTextContent("Windowed");
+            public static readonly GUIContent displayResolutionDialogEnabledLabel = EditorGUIUtility.TrTextContent("Enabled (Deprecated)");
+            public static readonly GUIContent displayResolutionDialogHiddenLabel = EditorGUIUtility.TrTextContent("Hidden by Default (Deprecated)");
+            public static readonly GUIContent displayResolutionDialogDeprecationWarning = EditorGUIUtility.TrTextContent("The Display Resolution Dialog has been deprecated and will be removed in a future version.");
             public static readonly GUIContent visibleInBackground = EditorGUIUtility.TrTextContent("Visible In Background");
             public static readonly GUIContent allowFullscreenSwitch = EditorGUIUtility.TrTextContent("Allow Fullscreen Switch");
             public static readonly GUIContent use32BitDisplayBuffer = EditorGUIUtility.TrTextContent("Use 32-bit Display Buffer*", "If set Display Buffer will be created to hold 32-bit color values. Use it only if you see banding, as it has performance implications.");
@@ -935,6 +938,12 @@ namespace UnityEditor
                         GUILayout.Label(SettingsContent.standalonePlayerOptionsTitle, EditorStyles.boldLabel);
                         EditorGUILayout.PropertyField(m_CaptureSingleScreen);
                         EditorGUILayout.PropertyField(m_DisplayResolutionDialog);
+
+                        if (m_DisplayResolutionDialog.intValue > 0)
+                        {
+                            EditorGUILayout.HelpBox(SettingsContent.displayResolutionDialogDeprecationWarning.text, MessageType.Warning, true);
+                        }
+
                         EditorGUILayout.PropertyField(m_UsePlayerLog);
                         EditorGUILayout.PropertyField(m_ResizableWindow);
 

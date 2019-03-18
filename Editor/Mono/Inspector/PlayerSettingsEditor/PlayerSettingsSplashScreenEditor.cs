@@ -63,6 +63,7 @@ namespace UnityEditor
             public GUIContent backgroundTitle = EditorGUIUtility.TrTextContent("Background*");
             public GUIContent backgroundZoom = EditorGUIUtility.TrTextContent("Background Zoom");
             public GUIContent configDialogBanner = EditorGUIUtility.TrTextContent("Application Config Dialog Banner");
+            public GUIContent configDialogBannerDeprecationWarning = EditorGUIUtility.TrTextContent("Application Config Dialog Banner is deprecated and will be removed in future versions.");
             public GUIContent drawMode = EditorGUIUtility.TrTextContent("Draw Mode");
             public GUIContent logoDuration = EditorGUIUtility.TrTextContent("Logo Duration", "The time the logo will be shown for.");
             public GUIContent logosTitle = EditorGUIUtility.TrTextContent("Logos*");
@@ -282,6 +283,11 @@ namespace UnityEditor
                 if (targetGroup == BuildTargetGroup.Standalone)
                 {
                     ObjectReferencePropertyField<Texture2D>(m_ResolutionDialogBanner, k_Texts.configDialogBanner);
+                    if (m_ResolutionDialogBanner.objectReferenceValue != null)
+                    {
+                        EditorGUILayout.HelpBox(k_Texts.configDialogBannerDeprecationWarning.text, MessageType.Warning, true);
+                    }
+
                     EditorGUILayout.Space();
                 }
 

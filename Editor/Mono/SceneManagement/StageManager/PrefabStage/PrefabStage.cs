@@ -443,12 +443,6 @@ namespace UnityEditor.Experimental.SceneManagement
         internal bool SaveAsNewPrefabWithSavePanel()
         {
             Assert.IsTrue(m_PrefabContentsRoot != null, "We should have a valid m_PrefabContentsRoot when saving to prefab asset");
-            bool editablePrefab = !AnimationMode.InAnimationMode();
-            if (!editablePrefab)
-            {
-                EditorUtility.DisplayDialog(L10n.Tr("Cannot Save Prefab"), L10n.Tr("Cannot save prefab in Animation Preview Mode"), L10n.Tr("OK"));
-                return false;
-            }
 
             string directoryOfCurrentPrefab = Path.GetDirectoryName(m_PrefabAssetPath);
             string nameOfCurrentPrefab = Path.GetFileNameWithoutExtension(m_PrefabAssetPath);

@@ -304,8 +304,9 @@ namespace UnityEditorInternal
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(platformProvider.target);
             bool isMono = PlayerSettings.GetScriptingBackend(buildTargetGroup) == ScriptingImplementation.Mono2x;
             bool engineStrippingSupported = platformProvider.supportsEngineStripping && !isMono;
-            bool performEngineStripping = rcr != null && PlayerSettings.stripEngineCode && engineStrippingSupported && !platformProvider.scriptsOnlyBuild;
+            bool performEngineStripping = rcr != null && PlayerSettings.stripEngineCode && engineStrippingSupported;
             IEnumerable<string> blacklists = Il2CppBlacklistPaths;
+
             if (rcr != null)
             {
                 blacklists = blacklists.Concat(new[]

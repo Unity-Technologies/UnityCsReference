@@ -32,22 +32,34 @@ namespace UnityEngine.UIElements
 
         private static void FreeRenderer(IUIRenderDevice renderDevice, RendererBase renderer)
         {
+            if (renderDevice == null)
+                return;
+
             if (renderer.rendererType == RendererTypes.MeshRenderer)
             {
-                var meshRenderer = renderer as UIR.MeshRenderer;
+                var meshRenderer = (UIR.MeshRenderer)renderer;
 
                 var meshNode = meshRenderer.meshChain;
                 while (meshNode != null)
                 {
                     renderDevice.Free(meshNode.mesh);
-                    meshNode = meshNode.next;
+                    var nextMeshNode = meshNode.next;
+                    renderDevice.meshNodePool.Return(meshNode);
+                    meshNode = nextMeshNode;
                 }
+
+                if (meshRenderer.state != null)
+                    renderDevice.statePool.Return(meshRenderer.state);
+
+                renderDevice.meshRendererPool.Return(meshRenderer);
             }
             else if (renderer.rendererType == RendererTypes.MaskRenderer)
             {
                 var maskRenderer = (MaskRenderer)renderer;
                 renderDevice.Free(maskRenderer.maskRegister.mesh);
+                renderDevice.meshNodePool.Return(maskRenderer.maskRegister);
                 renderDevice.Free(maskRenderer.maskUnregister.mesh);
+                renderDevice.meshNodePool.Return(maskRenderer.maskUnregister);
             }
         }
 

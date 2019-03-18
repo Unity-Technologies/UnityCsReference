@@ -2050,6 +2050,9 @@
     <Compile Include="..\..\Modules\UIElements\Renderer\UIRenderData.cs">
       <Link>Modules\UIElements\Renderer\UIRenderData.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Renderer\UIRenderer\UIPools.cs">
+      <Link>Modules\UIElements\Renderer\UIRenderer\UIPools.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Renderer\UIRenderer\UIRenderDevice.cs">
       <Link>Modules\UIElements\Renderer\UIRenderer\UIRenderDevice.cs</Link>
     </Compile>

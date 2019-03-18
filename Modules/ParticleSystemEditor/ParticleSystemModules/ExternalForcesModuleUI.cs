@@ -10,7 +10,7 @@ namespace UnityEditor
 {
     class ExternalForcesModuleUI : ModuleUI
     {
-        SerializedProperty m_Multiplier;
+        SerializedMinMaxCurve m_Multiplier;
         SerializedProperty m_InfluenceFilter;
         SerializedProperty m_InfluenceMask;
         SerializedProperty m_InfluenceList;
@@ -46,7 +46,7 @@ namespace UnityEditor
             if (s_Texts == null)
                 s_Texts = new Texts();
 
-            m_Multiplier = GetProperty("multiplier");
+            m_Multiplier = new SerializedMinMaxCurve(this, s_Texts.multiplier, "multiplierCurve");
             m_InfluenceFilter = GetProperty("influenceFilter");
             m_InfluenceMask = GetProperty("influenceMask");
             m_InfluenceList = GetProperty("influenceList");
@@ -59,7 +59,7 @@ namespace UnityEditor
 
         override public void OnInspectorGUI(InitialModuleUI initial)
         {
-            GUIFloat(s_Texts.multiplier, m_Multiplier);
+            GUIMinMaxCurve(s_Texts.multiplier, m_Multiplier);
 
             ParticleSystemGameObjectFilter filter = (ParticleSystemGameObjectFilter)GUIPopup(s_Texts.influenceFilter, m_InfluenceFilter, s_Texts.influenceFilters);
             if (m_InfluenceFilter.hasMultipleDifferentValues)

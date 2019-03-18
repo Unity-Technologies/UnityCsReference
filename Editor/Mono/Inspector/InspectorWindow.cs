@@ -515,8 +515,6 @@ namespace UnityEditor
             }
         }
 
-        static internal InspectorWindow s_CurrentInspectorWindow;
-
         private bool m_TrackerResetInserted;
 
         internal IMGUIContainer CreateIMGUIContainer(Action onGUIHandler, string name = null)
@@ -564,7 +562,6 @@ namespace UnityEditor
             FlushAllOptimizedGUIBlocksIfNeeded();
 
             ResetKeyboardControl();
-            s_CurrentInspectorWindow = this;
 
             var addComponentButton = rootVisualElement.Q<VisualElement>("addComponentButton");
             addComponentButton.Clear();
@@ -611,8 +608,6 @@ namespace UnityEditor
             {
                 label.RemoveFromHierarchy();
             }
-
-            s_CurrentInspectorWindow = null;
 
             if (editors.Any())
             {

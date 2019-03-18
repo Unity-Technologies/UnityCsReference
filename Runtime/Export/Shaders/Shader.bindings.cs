@@ -54,6 +54,18 @@ namespace UnityEngine
 
         extern public Shader GetDependency(string name);
 
+        extern public int passCount { [FreeFunction(Name = "ShaderScripting::GetPassCount", HasExplicitThis = true)] get; }
+
+        public Rendering.ShaderTagId FindPassTagValue(int passIndex, Rendering.ShaderTagId tagName)
+        {
+            if (passIndex < 0 || passIndex >= passCount)
+                throw new ArgumentOutOfRangeException("passIndex");
+            var id = Internal_FindPassTagValue(passIndex, tagName.id);
+            return new Rendering.ShaderTagId { id = id };
+        }
+
+        [FreeFunction(Name = "ShaderScripting::FindPassTagValue", HasExplicitThis = true)] extern private int Internal_FindPassTagValue(int passIndex, int tagName);
+
         [NativeProperty("CustomEditorName")] extern internal string customEditor { get; }
     }
 
