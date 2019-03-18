@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Threading;
 using System.Collections.Generic;
 using UnityEngine.Scripting;
@@ -113,7 +114,15 @@ namespace UnityEngine
 
             public void Invoke()
             {
-                m_DelagateCallback(m_DelagateState);
+                try
+                {
+                    m_DelagateCallback(m_DelagateState);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+
                 if (m_WaitHandle != null)
                     m_WaitHandle.Set();
             }

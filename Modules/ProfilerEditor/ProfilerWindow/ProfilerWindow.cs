@@ -88,6 +88,7 @@ namespace UnityEditor
             }
         }
 
+        private const string k_CPUUnstackableSeriesName = "Others";
         private static readonly ProfilerArea[] ms_StackedAreas = { ProfilerArea.CPU, ProfilerArea.GPU, ProfilerArea.UI, ProfilerArea.GlobalIllumination };
 
         [NonSerialized]
@@ -379,6 +380,12 @@ namespace UnityEditor
                 }
 
                 ProfilerChart chart = CreateProfilerChart((ProfilerArea)i, chartType, scale, length);
+
+                if (chart.m_Area == ProfilerArea.CPU)
+                {
+                    chart.SetOnSeriesToggleCallback(OnToggleCPUChartSeries);
+                }
+
                 for (int s = 0; s < length; s++)
                 {
                     chart.m_Series[s] = new ChartSeriesViewData(statisticsNames[s], historySize, chartAreaColors[s % chartAreaColors.Length]);
@@ -423,6 +430,18 @@ namespace UnityEditor
                 chart.LoadAndBindSettings();
 
             m_Initialized = true;
+        }
+
+        void OnToggleCPUChartSeries(bool wasToggled)
+        {
+            if (wasToggled)
+            {
+                int historyLength = ProfilerDriver.maxHistoryLength - 1;
+                int firstEmptyFrame = ProfilerDriver.lastFrameIndex - historyLength;
+                int firstFrame = Mathf.Max(ProfilerDriver.firstFrameIndex, firstEmptyFrame);
+
+                ComputeChartScaleValue(ProfilerArea.CPU, historyLength, firstEmptyFrame, firstFrame);
+            }
         }
 
         void CPUOrGPUViewSelectionChanged(int id)
@@ -1130,7 +1149,8 @@ namespace UnityEditor
                         cpuChart.m_Data.overlays[i].xValues[frameIdx] = (float)frameIdx;
                     int identifier = ProfilerDriver.GetStatisticsIdentifierForArea(cpuChart.m_Area, string.Format("Selected{0}", chart.name));
                     float maxValue;
-                    ProfilerDriver.GetStatisticsValues(identifier, firstEmptyFrame, cpuChart.m_DataScale, cpuChart.m_Data.overlays[i].yValues, out maxValue);
+                    ProfilerDriver.GetStatisticsValues(identifier, firstEmptyFrame, 1.0f, cpuChart.m_Data.overlays[i].yValues, out maxValue);
+                    cpuChart.m_Data.overlays[i].yScale = cpuChart.m_DataScale;
                 }
             }
             else
@@ -1169,8 +1189,11 @@ namespace UnityEditor
                 float timeNow = 0.0F;
                 for (int j = 0; j < chart.m_Series.Length; j++)
                 {
-                    if (chart.m_Series[j].enabled)
-                        timeNow += chart.m_Series[j].yValues[k];
+                    var series = chart.m_Data.unstackableSeriesIndex == j && chart.m_Data.hasOverlay ?
+                        chart.m_Data.overlays[j] : chart.m_Series[j];
+
+                    if (series.enabled)
+                        timeNow += series.yValues[k];
                 }
                 if (timeNow > timeMax)
                     timeMax = timeNow;
@@ -1180,7 +1203,7 @@ namespace UnityEditor
             if (timeMaxExcludeFirst != 0.0f)
                 timeMax = timeMaxExcludeFirst;
 
-            timeMax = Math.Min(timeMax, m_ChartMaxClamp);
+            timeMax = Math.Min(timeMax * chart.m_DataScale, m_ChartMaxClamp);
 
             // Do not apply the new scale immediately, but gradually go towards it
             if (m_ChartOldMax[(int)i] > 0.0f)
@@ -1195,12 +1218,15 @@ namespace UnityEditor
         internal static void UpdateSingleChart(ProfilerChart chart, int firstEmptyFrame, int firstFrame)
         {
             float totalMaxValue = 1;
+            int unstackableChartIndex = -1;
             var maxValues = new float[chart.m_Series.Length];
             for (int i = 0, count = chart.m_Series.Length; i < count; ++i)
             {
                 int identifier = ProfilerDriver.GetStatisticsIdentifierForArea(chart.m_Area, chart.m_Series[i].name);
                 float maxValue;
-                ProfilerDriver.GetStatisticsValues(identifier, firstEmptyFrame, chart.m_DataScale, chart.m_Series[i].yValues, out maxValue);
+                ProfilerDriver.GetStatisticsValues(identifier, firstEmptyFrame, 1.0f, chart.m_Series[i].yValues, out maxValue);
+                chart.m_Series[i].yScale = chart.m_DataScale;
+                maxValue *= chart.m_DataScale;
 
                 // Minimum size so we don't generate nans during drawing
                 maxValue = Mathf.Max(maxValue, 0.0001F);
@@ -1218,6 +1244,14 @@ namespace UnityEditor
                 else
                 {
                     maxValues[i] = maxValue;
+                    if (chart.m_Area == ProfilerArea.CPU)
+                    {
+                        if (chart.m_Series[i].name == k_CPUUnstackableSeriesName)
+                        {
+                            unstackableChartIndex = i;
+                            break;
+                        }
+                    }
                 }
             }
             if (chart.m_Area == ProfilerArea.NetworkMessages || chart.m_Area == ProfilerArea.NetworkOperations)
@@ -1226,7 +1260,7 @@ namespace UnityEditor
                     chart.m_Series[i].rangeAxis = new Vector2(0f, 0.9f * totalMaxValue);
                 chart.m_Data.maxValue = totalMaxValue;
             }
-            chart.m_Data.Assign(chart.m_Series, firstEmptyFrame, firstFrame);
+            chart.m_Data.Assign(chart.m_Series, unstackableChartIndex, firstEmptyFrame, firstFrame);
             ProfilerDriver.GetStatisticsAvailable(chart.m_Area, firstEmptyFrame, chart.m_Data.dataAvailable);
 
             if (chart is UISystemProfilerChart)
