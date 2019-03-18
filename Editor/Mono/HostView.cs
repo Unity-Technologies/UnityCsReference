@@ -25,6 +25,8 @@ namespace UnityEditor
         // Cached version of the static color for the actual object instance...
         Color m_PlayModeDarkenColor;
 
+        private IMGUIContainer m_NotificationContainer;
+
         internal EditorWindow actualView
         {
             get { return m_ActualView; }
@@ -101,6 +103,9 @@ namespace UnityEditor
             EditorPrefs.onValueWasUpdated += PlayModeTintColorChangedCallback;
             base.OnEnable();
             background = null;
+            m_NotificationContainer = new IMGUIContainer();
+            m_NotificationContainer.StretchToParentSize();
+            m_NotificationContainer.pickingMode = PickingMode.Ignore;
             RegisterSelectedPane(sendEvents: true);
         }
 
@@ -140,9 +145,7 @@ namespace UnityEditor
                 }
                 finally
                 {
-                    if (m_ActualView != null)
-                        if (m_ActualView.m_FadeoutTime != 0 && Event.current.type == EventType.Repaint)
-                            m_ActualView.DrawNotification();
+                    CheckNotificationStatus();
 
                     DoWindowDecorationEnd();
                     EditorGUI.ShowRepaints();
@@ -320,9 +323,7 @@ namespace UnityEditor
                 // We can't reset gui state after ExitGUI we just want to bail completely
                 if (!isExitGUIException)
                 {
-                    bool isRepaint = (Event.current != null && Event.current.type == EventType.Repaint);
-                    if (actualView != null && actualView.m_FadeoutTime != 0 && isRepaint)
-                        actualView.DrawNotification();
+                    CheckNotificationStatus();
 
                     EndOffsetArea();
 
@@ -330,7 +331,7 @@ namespace UnityEditor
 
                     DoWindowDecorationEnd();
 
-                    if (isRepaint)
+                    if (Event.current != null && Event.current.type == EventType.Repaint)
                         HostViewStyles.overlay.Draw(onGUIPosition, GUIContent.none, 0);
                 }
             }
@@ -425,6 +426,9 @@ namespace UnityEditor
                 EditorApplication.update -= m_ActualView.CheckForWindowRepaint;
             }
 
+            m_NotificationContainer.onGUIHandler = null;
+            m_NotificationContainer.RemoveFromHierarchy();
+
             if (clearActualView)
             {
                 EditorWindow oldActualView = m_ActualView;
@@ -436,6 +440,25 @@ namespace UnityEditor
                     Invoke("OnBecameInvisible", oldActualView);
                     EditorModes.OnBecameInvisible(oldActualView);
                 }
+            }
+        }
+
+        protected void CheckNotificationStatus()
+        {
+            if (m_ActualView != null && m_ActualView.m_FadeoutTime != 0)
+            {
+                if (m_NotificationContainer.parent == null)
+                {
+                    m_NotificationContainer.onGUIHandler = m_ActualView.DrawNotification;
+                    visualTree.Add(m_NotificationContainer);
+
+                    m_NotificationContainer.StretchToParentSize();
+                }
+            }
+            else
+            {
+                m_NotificationContainer.onGUIHandler = null;
+                m_NotificationContainer.RemoveFromHierarchy();
             }
         }
 

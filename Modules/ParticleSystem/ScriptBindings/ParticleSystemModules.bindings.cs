@@ -341,7 +341,10 @@ namespace UnityEngine
 
             extern public bool enabled { get; set; }
             extern public float multiplier { get; set; }
+            extern public MinMaxCurve multiplierCurve { get; set; }
             extern public ParticleSystemGameObjectFilter influenceFilter { get; set; }
+            extern public LayerMask influenceMask { get; set; }
+
             extern public int influenceCount { get; }
 
             extern public bool IsAffectedBy(ParticleSystemForceField field);
@@ -352,6 +355,7 @@ namespace UnityEngine
             public void RemoveInfluence(int index) { RemoveInfluenceAtIndex(index); }
 
             extern public void RemoveInfluence([NotNull] ParticleSystemForceField field);
+            extern public void RemoveAllInfluences();
             extern public void SetInfluence(int index, [NotNull] ParticleSystemForceField field);
             extern public ParticleSystemForceField GetInfluence(int index);
         }

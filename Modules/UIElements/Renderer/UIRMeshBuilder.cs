@@ -254,6 +254,12 @@ namespace UnityEngine.UIElements
             10, 11, 14, 14, 11, 15
         };
 
+        // Caches.
+        static readonly float[] k_TexCoordSlicesX = new float[4];
+        static readonly float[] k_TexCoordSlicesY = new float[4];
+        static readonly float[] k_PositionSlicesX = new float[4];
+        static readonly float[] k_PositionSlicesY = new float[4];
+
         private static MeshHandle MakeSlicedQuad(IUIRenderDevice uir, Matrix4x4 transform, MeshHandle oldMeshHandle, TextureStylePainterParameters texParams, uint transformID, uint clippingID, VertexFlags vertexFlags)
         {
             var texture = texParams.texture;
@@ -284,22 +290,37 @@ namespace UnityEngine.UIElements
             float uConversion = isAtlassed ? 1 : 1f / texture.width;
             float vConversion = isAtlassed ? 1 : 1f / texture.height;
 
-            float[] texCoordSlicesX = { texParams.uv.min.x, texParams.uv.min.x + uvSliceLeft * uConversion, texParams.uv.max.x - uvSliceRight * uConversion, texParams.uv.max.x };
-            float[] texCoordSlicesY = { texParams.uv.max.y, texParams.uv.max.y - uvSliceBottom * vConversion, texParams.uv.min.y + uvSliceTop * vConversion, texParams.uv.min.y };
-            float[] positionSlicesX = { texParams.rect.x, texParams.rect.x + texParams.sliceLeft, texParams.rect.xMax - texParams.sliceRight, texParams.rect.xMax };
-            float[] positionSlicesY = { texParams.rect.yMax, texParams.rect.yMax - texParams.sliceBottom, texParams.rect.y + texParams.sliceTop, texParams.rect.y };
+            k_TexCoordSlicesX[0] = texParams.uv.min.x;
+            k_TexCoordSlicesX[1] = texParams.uv.min.x + uvSliceLeft * uConversion;
+            k_TexCoordSlicesX[2] = texParams.uv.max.x - uvSliceRight * uConversion;
+            k_TexCoordSlicesX[3] = texParams.uv.max.x;
+
+            k_TexCoordSlicesY[0] = texParams.uv.max.y;
+            k_TexCoordSlicesY[1] = texParams.uv.max.y - uvSliceBottom * vConversion;
+            k_TexCoordSlicesY[2] = texParams.uv.min.y + uvSliceTop * vConversion;
+            k_TexCoordSlicesY[3] = texParams.uv.min.y;
+
+            k_PositionSlicesX[0] = texParams.rect.x;
+            k_PositionSlicesX[1] = texParams.rect.x + texParams.sliceLeft;
+            k_PositionSlicesX[2] = texParams.rect.xMax - texParams.sliceRight;
+            k_PositionSlicesX[3] = texParams.rect.xMax;
+
+            k_PositionSlicesY[0] = texParams.rect.yMax;
+            k_PositionSlicesY[1] = texParams.rect.yMax - texParams.sliceBottom;
+            k_PositionSlicesY[2] = texParams.rect.y + texParams.sliceTop;
+            k_PositionSlicesY[3] = texParams.rect.y;
 
             for (int i = 0; i < 16; ++i)
             {
                 int x = i % 4;
                 int y = i / 4;
 
-                var p = transform.MultiplyPoint3x4(new Vector3(positionSlicesX[x], positionSlicesY[y], 0));
+                var p = transform.MultiplyPoint3x4(new Vector3(k_PositionSlicesX[x], k_PositionSlicesY[y], 0));
                 p.z = UIR.MeshRenderer.k_PosZ;
 
                 vertices[i] = new Vertex() {
                     position = p,
-                    uv = new Vector2(texCoordSlicesX[x], texParams.uv.min.y + texParams.uv.max.y - texCoordSlicesY[y]),
+                    uv = new Vector2(k_TexCoordSlicesX[x], texParams.uv.min.y + texParams.uv.max.y - k_TexCoordSlicesY[y]),
                     tint = texParams.color,
                     transformID = transformID,
                     clippingID = clippingID,

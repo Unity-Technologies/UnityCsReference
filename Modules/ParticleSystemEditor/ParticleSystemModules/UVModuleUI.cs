@@ -142,11 +142,25 @@ namespace UnityEditor
             if (!m_TimeMode.hasMultipleDifferentValues)
             {
                 if (timeMode == ParticleSystemAnimationTimeMode.FPS)
+                {
                     GUIFloat(s_Texts.fps, m_FPS);
+                    foreach (ParticleSystem ps in m_ParticleSystemUI.m_ParticleSystems)
+                    {
+                        if (ps.main.startLifetimeMultiplier == Mathf.Infinity)
+                        {
+                            EditorGUILayout.HelpBox("FPS mode does not work when using infinite particle lifetimes.", MessageType.Error, true);
+                            break;
+                        }
+                    }
+                }
                 else if (timeMode == ParticleSystemAnimationTimeMode.Speed)
+                {
                     GUIMinMaxRange(s_Texts.speedRange, m_SpeedRange);
+                }
                 else
+                {
                     GUIMinMaxCurve(s_Texts.frameOverTime, m_FrameOverTime);
+                }
             }
             GUIMinMaxCurve(s_Texts.startFrame, m_StartFrame);
 

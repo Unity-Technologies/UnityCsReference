@@ -110,7 +110,6 @@ namespace UnityEngine.UIElements
         public IMGUIContainer()
             : this(null)
         {
-            renderHint = RenderHint.ImmediateMode;
         }
 
         public IMGUIContainer(Action onGUIHandler)
@@ -126,13 +125,17 @@ namespace UnityEngine.UIElements
             requireMeasureFunction = true;
 
             style.overflow = Overflow.Hidden;
+
+            m_DrawImmediateAction = HandleIMGUIEvent;
         }
+
+        readonly Action m_DrawImmediateAction;
 
         internal override void DoRepaint(IStylePainter painter)
         {
             lastWorldClip = elementPanel.repaintData.currentWorldClip;
             var stylePainter = (IStylePainterInternal)painter;
-            stylePainter.DrawImmediate(HandleIMGUIEvent);
+            stylePainter.DrawImmediate(m_DrawImmediateAction);
         }
 
         // global GUI values.

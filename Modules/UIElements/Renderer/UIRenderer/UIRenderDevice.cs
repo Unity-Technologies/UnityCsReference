@@ -28,17 +28,31 @@ namespace UnityEngine.UIElements.UIR
     // The values stored here could be updated behind the back of the holder of this
     // object. Hence, never turn this into a struct or else we can't do automatic
     // defragmentation and address ordering optimizations
-    internal class MeshHandle
+    internal class MeshHandle : PoolItem
     {
         internal Alloc allocVerts, allocIndices;
         internal uint triangleCount; // Can be less than the actual indices if only a portion of the allocation is used
         internal Page allocPage;
         internal uint allocTime; // Frame this mesh was allocated/updated
         internal uint updateAllocID; // If not 0, the alloc here points to a temporary location managed by an update record with the said ID
+
+        public void Reset()
+        {
+            allocVerts = new Alloc();
+            allocIndices = new Alloc();
+            triangleCount = 0;
+            allocPage = null;
+            allocTime = 0;
+            updateAllocID = 0;
+        }
     }
 
     interface IUIRenderDevice : IDisposable
     {
+        MeshNodePool meshNodePool { get; }
+        MeshRendererPool meshRendererPool { get; }
+        StatePool statePool { get; }
+
         MeshHandle Allocate(uint vertexCount, uint indexCount, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset);
         Alloc AllocateTransform();
         Alloc AllocateClipping();
@@ -174,6 +188,12 @@ namespace UnityEngine.UIElements.UIR
         private static int m_ActiveDeviceCount = 0; // Not thread safe for now
         private static bool m_SubscribedToNotifications; // Not thread safe for now
         private static bool m_SynchronousFree; // This is set on domain unload or app quit, so it is irreversible
+
+        public MeshNodePool meshNodePool { get; } = new MeshNodePool();
+        public MeshRendererPool meshRendererPool { get; } = new MeshRendererPool();
+        public StatePool statePool { get; } = new StatePool();
+        readonly MeshHandlePool m_MeshHandlePool = new MeshHandlePool();
+        readonly DrawChainState m_DrawChainState = new DrawChainState();
 
 
         static UIRenderDevice()
@@ -325,7 +345,8 @@ namespace UnityEngine.UIElements.UIR
 
         public MeshHandle Allocate(uint vertexCount, uint indexCount, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset)
         {
-            MeshHandle meshHandle = new MeshHandle() { triangleCount = indexCount / 3 };
+            MeshHandle meshHandle = m_MeshHandlePool.Get();
+            meshHandle.triangleCount = indexCount / 3;
             Allocate(meshHandle, vertexCount, indexCount, out vertexData, out indexData, false);
             indexOffset = (UInt16)meshHandle.allocVerts.start;
             return meshHandle;
@@ -600,6 +621,8 @@ namespace UnityEngine.UIElements.UIR
                 mesh.allocPage.indices.allocator.Free(mesh.allocIndices);
             }
 
+
+            m_MeshHandlePool.Return(mesh);
         }
 
         public Shader standardShader
@@ -743,11 +766,12 @@ namespace UnityEngine.UIElements.UIR
         {
             BeforeDraw();
             Utility.ProfileDrawChainBegin();
-            var dcs = new DrawChainState(m_DrawRangeStart, m_DrawRanges, viewport, projection, atlas, GetStandardMaterial(), m_TransformPages,
+
+            m_DrawChainState.Reset(m_DrawRangeStart, m_DrawRanges, viewport, projection, atlas, GetStandardMaterial(), m_TransformPages,
                 m_TransformBuffers != null ? m_TransformBuffers[m_TransformBufferToUse] : null,
                 m_ClippingBuffers != null ? m_ClippingBuffers[m_ClippingBufferToUse] : null);
-            ContinueChain(head, dcs, false);
-            m_DrawRangeStart = dcs.CloseAndReturnRangesNewStart();
+            ContinueChain(head, m_DrawChainState, false);
+            m_DrawRangeStart = m_DrawChainState.CloseAndReturnRangesNewStart();
             Utility.ProfileDrawChainEnd();
 
             if (m_Fences != null)
@@ -926,8 +950,7 @@ namespace UnityEngine.UIElements.UIR
 
     internal class DrawChainState
     {
-        internal DrawChainState(
-            int rangesStart,
+        public void Reset(int rangesStart,
             NativeArray<DrawBufferRange> ranges,
             Rect viewport,
             Matrix4x4 proj,
@@ -937,10 +960,22 @@ namespace UnityEngine.UIElements.UIR
             ComputeBuffer transformsBuffer,
             ComputeBuffer clippingBuffer)
         {
+            state?.Reset();
+            m_StateIsValid = false;
+
+            // Default initialization
+            pageObj = null;
+            currentDrawRange = new DrawBufferRange();
+            nextInChainIsMeshRenderer = false;
+            scissorRect = new Rect();
+            scissorCount = 0;
+            m_RangesReady = 0;
+
+            // Parameter-based initialization
             m_RangesStart = rangesStart;
             m_Ranges = ranges;
             this.viewport = viewport;
-            this.view = Matrix4x4.identity;
+            view = Matrix4x4.identity;
             projection = proj;
             this.atlas = atlas;
             m_DefaultMaterial = defaultMat;
@@ -958,7 +993,7 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        internal State state { get; private set; }
+        internal State state { get; } = new State();
         internal object pageObj;
         internal DrawBufferRange currentDrawRange;
         internal bool nextInChainIsMeshRenderer;
@@ -987,6 +1022,7 @@ namespace UnityEngine.UIElements.UIR
         }
 
 
+        bool m_StateIsValid;
         NativeArray<DrawBufferRange> m_Ranges;
         int m_RangesStart;
         int m_RangesReady;
@@ -1007,7 +1043,8 @@ namespace UnityEngine.UIElements.UIR
 
         internal void InvalidateState()
         {
-            state = null;
+            state.Reset();
+            m_StateIsValid = false;
         }
 
         /// <summary>
@@ -1048,15 +1085,8 @@ namespace UnityEngine.UIElements.UIR
         {
             Debug.Assert(newState != null);
 
-            bool firstState = false;
-            if (state == null)
-            {
-                state = new State();
-                firstState = true;
-            }
-
             StateFields overrides = state.OverrideWith(newState);
-            if (!firstState)
+            if (m_StateIsValid)
             {
                 if (overrides == StateFields.None)
                     return;
@@ -1064,6 +1094,8 @@ namespace UnityEngine.UIElements.UIR
                 // Kick any pending ranges before the overrides are applied.
                 KickRanges();
             }
+            else
+                m_StateIsValid = true;
 
             Material mat = state.material != null ? state.material : m_DefaultMaterial;
             mat.mainTexture = atlas;
@@ -1100,15 +1132,6 @@ namespace UnityEngine.UIElements.UIR
 
             mat.SetPass(0);
             GL.modelview = view;
-            GL.LoadProjectionMatrix(projection);
-        }
-
-        internal void SetProjection(Matrix4x4 newProjection)
-        {
-            if (state != null)
-                KickRanges();
-
-            projection = newProjection;
             GL.LoadProjectionMatrix(projection);
         }
     }

@@ -300,6 +300,9 @@ namespace UnityEditor
 
         internal void DrawNotification()
         {
+            if (Event.current.type != EventType.Repaint)
+                return;
+
             EditorStyles.notificationText.CalcMinMaxWidth(m_Notification, out m_NotificationSize.y, out m_NotificationSize.x);
             m_NotificationSize.y = EditorStyles.notificationText.CalcHeight(m_Notification, m_NotificationSize.x);
 

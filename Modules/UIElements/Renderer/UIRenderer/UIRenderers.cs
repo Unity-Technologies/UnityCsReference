@@ -5,13 +5,20 @@
 using System;
 using Unity.Collections;
 using UnityEngine.Assertions;
+using UnityEngine.Profiling;
 
 namespace UnityEngine.UIElements.UIR
 {
-    internal class MeshNode
+    internal class MeshNode : PoolItem
     {
         public MeshHandle mesh;
         public MeshNode next;
+
+        public void Reset()
+        {
+            mesh = null;
+            next = null;
+        }
     }
 
     [Flags]
@@ -62,7 +69,7 @@ namespace UnityEngine.UIElements.UIR
         Font = 1 << 2
     }
 
-    internal class State
+    internal sealed class State : PoolItem
     {
         public Material material; // Responsible for enabling immediate clipping
         public Texture custom, font;
@@ -74,6 +81,14 @@ namespace UnityEngine.UIElements.UIR
         {
             Assert.IsNotNull(other);
             CopyFrom(other);
+        }
+
+        public void Reset()
+        {
+            material = null;
+            custom = null;
+            font = null;
+            key = 0;
         }
 
         public UInt64 key { get; private set; }
@@ -143,7 +158,7 @@ namespace UnityEngine.UIElements.UIR
         ContentRenderer = ScissorClipRenderer | MaskRenderer | ZoomPanRenderer
     }
 
-    internal abstract class RendererBase
+    internal abstract class RendererBase : PoolItem
     {
         internal RendererTypes type;
         protected bool m_ChainsWithMeshRenderer;
@@ -152,6 +167,12 @@ namespace UnityEngine.UIElements.UIR
         internal abstract void Draw(DrawChainState dcs);
         internal RendererTypes rendererType { get { return type; } }
         internal bool chainsWithMeshRenderer { get { return m_ChainsWithMeshRenderer; } }
+
+        protected void Reset()
+        {
+            next = null;
+            contents = null;
+        }
     }
 
     internal abstract class ContentRendererBase : RendererBase
@@ -161,10 +182,11 @@ namespace UnityEngine.UIElements.UIR
     /// <summary>
     /// The role of this renderer is to maintain the insertion point of a VisualElement within the DrawChain.
     /// </summary>
-    internal class EmptyRenderer : RendererBase
+    internal sealed class EmptyRenderer : RendererBase
     {
         public EmptyRenderer()
         {
+            type = RendererTypes.EmptyRenderer;
             m_ChainsWithMeshRenderer = true;
         }
 
@@ -175,7 +197,7 @@ namespace UnityEngine.UIElements.UIR
         }
     }
 
-    internal class MeshRenderer : RendererBase
+    internal sealed class MeshRenderer : RendererBase
     {
         public const float k_PosZ = -1.0f; // The correct z value to use to draw a shape regularly (no clipping)
 
@@ -186,6 +208,13 @@ namespace UnityEngine.UIElements.UIR
         {
             type = RendererTypes.MeshRenderer;
             m_ChainsWithMeshRenderer = true;
+        }
+
+        public new void Reset()
+        {
+            state = null;
+            meshChain = null;
+            base.Reset();
         }
 
         internal override void Draw(DrawChainState dcs) { DrawMeshChain(dcs, state, meshChain); }
@@ -239,7 +268,7 @@ namespace UnityEngine.UIElements.UIR
         }
     }
 
-    internal class ScissorClipRenderer : ContentRendererBase
+    internal sealed class ScissorClipRenderer : ContentRendererBase
     {
         public ScissorClipRenderer() { type = RendererTypes.ScissorClipRenderer; }
 
@@ -295,7 +324,7 @@ namespace UnityEngine.UIElements.UIR
         }
     }
 
-    internal class MaskRenderer : ContentRendererBase
+    internal sealed class MaskRenderer : ContentRendererBase
     {
         public MaskRenderer() { type = RendererTypes.MaskRenderer; m_ChainsWithMeshRenderer = true; } // Perfectly compatible with MeshRenderer
 
@@ -373,7 +402,7 @@ namespace UnityEngine.UIElements.UIR
         #endregion
     }
 
-    internal class ZoomPanRenderer : ContentRendererBase
+    internal sealed class ZoomPanRenderer : ContentRendererBase
     {
         public ZoomPanRenderer() { type = RendererTypes.ZoomPanRenderer; }
 
@@ -392,7 +421,7 @@ namespace UnityEngine.UIElements.UIR
         }
     }
 
-    internal class ImmediateRenderer : RendererBase
+    internal sealed class ImmediateRenderer : RendererBase
     {
         public ImmediateRenderer() { type = RendererTypes.ImmediateRenderer; }
 
@@ -402,6 +431,8 @@ namespace UnityEngine.UIElements.UIR
         internal Matrix4x4 worldTransform;
         internal Rect worldClip;
 
+        static readonly CustomSampler k_Sampler = CustomSampler.Create("UIR.ImmediateRenderer");
+
         internal override void Draw(DrawChainState dcs)
         {
             // The immediate callback may do anything, including changing the current material.
@@ -409,8 +440,10 @@ namespace UnityEngine.UIElements.UIR
             dcs.InvalidateState();
 
             // Start a GUIClip scope since most GL/Handles use cases make use of the _GUIClipTexture
+            k_Sampler.Begin();
             using (new GUIClip.ParentClipScope(worldTransform, worldClip))
                 immediateHandler();
+            k_Sampler.End();
         }
     }
 

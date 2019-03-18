@@ -109,7 +109,9 @@ namespace UnityEngine.UIElements
                 // to allow contiguous draw ranges.
                 MeshHandle maskUnregister;
                 MaskRenderer.MakeMeshRegisterUnregister(m_RenderDevice, maskRenderer.maskRegister.mesh, out maskUnregister);
-                maskRenderer.maskUnregister = new MeshNode { mesh = maskUnregister };
+                var meshNode = renderDevice.meshNodePool.Get();
+                meshNode.mesh = maskUnregister;
+                maskRenderer.maskUnregister = meshNode;
             }
         }
 
@@ -209,7 +211,8 @@ namespace UnityEngine.UIElements
                 if (maskRegister == null)
                     return;
 
-                var maskRegNode = new MeshNode { mesh = maskRegister };
+                var maskRegNode = renderDevice.meshNodePool.Get();
+                maskRegNode.mesh = maskRegister;
                 var maskRenderer = new MaskRenderer { maskRegister = maskRegNode, state = new State() };
                 m_PaintData.QueueRenderer(maskRenderer);
             }
@@ -278,7 +281,9 @@ namespace UnityEngine.UIElements
 
             SetTexture(null);
             SetMaterial(painterParameters.material);
-            QueueMeshNode(new MeshNode { mesh = mesh });
+            var meshNode = renderDevice.meshNodePool.Get();
+            meshNode.mesh = mesh;
+            QueueMeshNode(meshNode);
         }
 
         public void DrawRect(RectStylePainterParameters painterParams)
@@ -289,7 +294,8 @@ namespace UnityEngine.UIElements
             if (mesh == null)
                 // This can happen in cases where the width or height is close to zero.
                 return;
-            var meshNode = new MeshNode { mesh = mesh };
+            var meshNode = renderDevice.meshNodePool.Get();
+            meshNode.mesh = mesh;
 
             SetTexture(null);
             QueueMeshNode(meshNode);
@@ -321,10 +327,8 @@ namespace UnityEngine.UIElements
 
                 if (oldMeshHandle == null)
                 {
-                    var meshNode = new MeshNode
-                    {
-                        mesh = UIRMeshBuilder.MakeTextMeshHandle(m_RenderDevice, vertices, textTransform, null, currentTransformID, currentClippingRectID)
-                    };
+                    var meshNode = renderDevice.meshNodePool.Get();
+                    meshNode.mesh = UIRMeshBuilder.MakeTextMeshHandle(m_RenderDevice, vertices, textTransform, null, currentTransformID, currentClippingRectID);
                     SetFontTexture(painterParams.font.material.mainTexture);
                     QueueMeshNode(meshNode);
 
@@ -482,10 +486,8 @@ namespace UnityEngine.UIElements
             painterParams.texture = texture;
             painterParams.rect = textureRect;
             painterParams.uv = sourceRect;
-            var meshNode = new MeshNode
-            {
-                mesh = UIRMeshBuilder.MakeTextureMeshHandle(m_RenderDevice, painterParams, GetRenderTransform(), null, currentTransformID, currentClippingRectID, vertexFlags)
-            };
+            var meshNode = renderDevice.meshNodePool.Get();
+            meshNode.mesh = UIRMeshBuilder.MakeTextureMeshHandle(m_RenderDevice, painterParams, GetRenderTransform(), null, currentTransformID, currentClippingRectID, vertexFlags);
 
             SetTexture(VertexFlagsUtil.TypeIsEqual(vertexFlags, VertexFlags.IsCustom) ? texture : null);
             QueueMeshNode(meshNode);
@@ -644,7 +646,11 @@ namespace UnityEngine.UIElements
 
         private void QueueNewMeshRenderer()
         {
-            m_PaintData.QueueRenderer(new UIR.MeshRenderer() {state = new State(m_State)});
+            var meshRenderer = renderDevice.meshRendererPool.Get();
+            var state = renderDevice.statePool.Get();
+            state.CopyFrom(m_State);
+            meshRenderer.state =  state;
+            m_PaintData.QueueRenderer(meshRenderer);
         }
 
         public Matrix4x4 GetRenderTransform()
