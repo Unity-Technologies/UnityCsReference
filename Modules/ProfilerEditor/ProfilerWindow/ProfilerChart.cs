@@ -6,6 +6,7 @@ using System.Diagnostics;
 using UnityEngine;
 using UnityEditor;
 using UnityEngine.Profiling;
+using System;
 
 namespace UnityEditorInternal
 {
@@ -54,6 +55,15 @@ namespace UnityEditorInternal
             m_Series = new ChartSeriesViewData[seriesCount];
             m_Active = ReadActiveState();
             ApplyActiveState();
+        }
+
+        /// <summary>
+        /// Callback parameter will be either true if a state change occured
+        /// </summary>
+        /// <param name="onSeriesToggle"></param>
+        public void SetOnSeriesToggleCallback(Action<bool> onSeriesToggle)
+        {
+            onDoSeriesToggle = onSeriesToggle;
         }
 
         private string GetLocalizedChartName()

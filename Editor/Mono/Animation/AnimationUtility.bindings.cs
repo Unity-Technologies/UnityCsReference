@@ -298,6 +298,7 @@ namespace UnityEditor
         extern private static void Internal_SetKeyRightTangentMode(ref Keyframe key, TangentMode tangentMode);
         extern private static void Internal_SetKeyBroken(ref Keyframe key, bool broken);
 
+        [NativeThrows]
         extern internal static int AddInbetweenKey(AnimationCurve curve, float time);
 
         [Obsolete("GetAllCurves is deprecated. Use GetCurveBindings and GetObjectReferenceCurveBindings instead.")]

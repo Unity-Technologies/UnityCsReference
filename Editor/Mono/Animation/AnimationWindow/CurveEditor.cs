@@ -1784,7 +1784,7 @@ namespace UnityEditor
             {
                 CurveWrapper wrapper = GetCurveWrapperFromID(m_DrawOrder[i]);
 
-                if (wrapper.hidden || wrapper.readOnly)
+                if (wrapper.hidden || wrapper.readOnly || wrapper.curve.length == 0)
                     continue;
 
                 // Sample the curves at pixel intervals in the area around the desired time,
