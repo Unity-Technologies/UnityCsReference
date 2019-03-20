@@ -23,6 +23,7 @@ namespace UnityEditor
         SerializedProperty m_SplashScreenBackgroundColor;
         SerializedProperty m_SplashScreenBackgroundLandscape;
         SerializedProperty m_SplashScreenBackgroundPortrait;
+        SerializedProperty m_SplashScreenBlurBackground;
         SerializedProperty m_SplashScreenDrawMode;
         SerializedProperty m_SplashScreenLogoAnimationZoom;
         SerializedProperty m_SplashScreenLogos;
@@ -54,6 +55,24 @@ namespace UnityEditor
         readonly AnimBool m_ShowBackgroundColorAnimator = new AnimBool();
         readonly AnimBool m_ShowLogoControlsAnimator = new AnimBool();
 
+        // If the user changes an asset(delete, re-import etc) then we should cancel the splash screen to avoid using invalid data. (case 857060)
+        class CancelSplashScreenOnAssetChange : AssetPostprocessor
+        {
+            void OnPreprocessAsset()
+            {
+                SplashScreen.Stop(SplashScreen.StopBehavior.StopImmediate);
+            }
+        }
+
+        class CancelSplashScreenOnAssetDelete : AssetModificationProcessor
+        {
+            static AssetDeleteResult OnWillDeleteAsset(string asset, RemoveAssetOptions options)
+            {
+                SplashScreen.Stop(SplashScreen.StopBehavior.StopImmediate);
+                return AssetDeleteResult.DidNotDelete;
+            }
+        }
+
         class Texts
         {
             public GUIContent animate = EditorGUIUtility.TrTextContent("Animation");
@@ -62,7 +81,10 @@ namespace UnityEditor
             public GUIContent backgroundPortraitImage = EditorGUIUtility.TrTextContent("Alternate Portrait Image*", "Optional image to be used in portrait mode.");
             public GUIContent backgroundTitle = EditorGUIUtility.TrTextContent("Background*");
             public GUIContent backgroundZoom = EditorGUIUtility.TrTextContent("Background Zoom");
+            public GUIContent blurBackground = EditorGUIUtility.TrTextContent("Blur Background Image");
+            public GUIContent cancelPreviewSplash = EditorGUIUtility.TrTextContent("Cancel Preview");
             public GUIContent configDialogBanner = EditorGUIUtility.TrTextContent("Application Config Dialog Banner");
+            public GUIContent configDialogBannerDeprecationWarning = EditorGUIUtility.TrTextContent("Application Config Dialog Banner is deprecated and will be removed in future versions.");
             public GUIContent drawMode = EditorGUIUtility.TrTextContent("Draw Mode");
             public GUIContent logoDuration = EditorGUIUtility.TrTextContent("Logo Duration", "The time the logo will be shown for.");
             public GUIContent logosTitle = EditorGUIUtility.TrTextContent("Logos*");
@@ -93,6 +115,7 @@ namespace UnityEditor
             m_SplashScreenBackgroundColor = m_Owner.FindPropertyAssert("m_SplashScreenBackgroundColor");
             m_SplashScreenBackgroundLandscape = m_Owner.FindPropertyAssert("splashScreenBackgroundSourceLandscape");
             m_SplashScreenBackgroundPortrait = m_Owner.FindPropertyAssert("splashScreenBackgroundSourcePortrait");
+            m_SplashScreenBlurBackground = m_Owner.FindPropertyAssert("blurSplashScreenBackground");
             m_SplashScreenDrawMode = m_Owner.FindPropertyAssert("m_SplashScreenDrawMode");
             m_SplashScreenLogoAnimationZoom = m_Owner.FindPropertyAssert("m_SplashScreenLogoAnimationZoom");
             m_SplashScreenLogos = m_Owner.FindPropertyAssert("m_SplashScreenLogos");
@@ -134,11 +157,10 @@ namespace UnityEditor
 
             // Unity logo
             float logoWidth = Mathf.Clamp(rect.width - k_LogoListPropertyMinWidth, k_LogoListUnityLogoMinWidth, k_LogoListUnityLogoMaxWidth);
-            float logoHeight = logoWidth / (s_UnityLogo.texture.width / (float)s_UnityLogo.texture.height);
-            var logoRect = new Rect(rect.x, rect.y + (rect.height - logoHeight) / 2.0f, k_LogoListUnityLogoMaxWidth, logoHeight);
+            var logoRect = new Rect(rect.x, rect.y, logoWidth, rect.height);
             var oldCol = GUI.color;
             GUI.color = (m_SplashScreenLogoStyle.intValue == (int)PlayerSettings.SplashScreen.UnityLogoStyle.DarkOnLight ? Color.black : Color.white);
-            GUI.Label(logoRect, s_UnityLogo.texture);
+            GUI.DrawTexture(logoRect, s_UnityLogo.texture, ScaleMode.ScaleToFit);
             GUI.color = oldCol;
 
             // Properties
@@ -178,16 +200,14 @@ namespace UnityEditor
                 logo.objectReferenceValue = value;
 
             // Properties
-            var oldLabelWidth = EditorGUIUtility.labelWidth;
             EditorGUIUtility.labelWidth = k_LogoListPropertyLabelWidth;
-            var propertyRect = new Rect(rect.x + unityLogoWidth, rect.y + EditorGUIUtility.standardVerticalSpacing + EditorGUIUtility.singleLineHeight, rect.width - unityLogoWidth, EditorGUIUtility.singleLineHeight);
-            EditorGUI.BeginChangeCheck();
+            var propertyRect = new Rect(rect.x + unityLogoWidth, rect.y + EditorGUIUtility.standardVerticalSpacing, rect.width - unityLogoWidth, EditorGUIUtility.singleLineHeight);
             var duration = element.FindPropertyRelative("duration");
+
+            EditorGUI.BeginChangeCheck();
             var newDurationVal = EditorGUI.Slider(propertyRect, k_Texts.logoDuration, duration.floatValue, k_MinLogoTime, k_MaxLogoTime);
             if (EditorGUI.EndChangeCheck())
                 duration.floatValue = newDurationVal;
-
-            EditorGUIUtility.labelWidth = oldLabelWidth;
 
             m_TotalLogosDuration += duration.floatValue;
         }
@@ -269,19 +289,22 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck())
             {
                 property.objectReferenceValue = value;
-                GUI.changed = true;
             }
             EditorGUI.EndProperty();
         }
 
         public void SplashSectionGUI(BuildPlatform platform, BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension, int sectionIndex = 2)
         {
-            GUI.changed = false;
             if (m_Owner.BeginSettingsBox(sectionIndex, k_Texts.title))
             {
                 if (targetGroup == BuildTargetGroup.Standalone)
                 {
                     ObjectReferencePropertyField<Texture2D>(m_ResolutionDialogBanner, k_Texts.configDialogBanner);
+                    if (m_ResolutionDialogBanner.objectReferenceValue != null)
+                    {
+                        EditorGUILayout.HelpBox(k_Texts.configDialogBannerDeprecationWarning.text, MessageType.Warning, true);
+                    }
+
                     EditorGUILayout.Space();
                 }
 
@@ -311,15 +334,24 @@ namespace UnityEditor
                     return;
             }
 
-            Rect previewButtonRect = GUILayoutUtility.GetRect(k_Texts.previewSplash, "button");
+            GUIContent buttonLabel = SplashScreen.isFinished ? k_Texts.previewSplash : k_Texts.cancelPreviewSplash;
+            Rect previewButtonRect = GUILayoutUtility.GetRect(buttonLabel, "button");
             previewButtonRect = EditorGUI.PrefixLabel(previewButtonRect, new GUIContent(" "));
-            if (GUI.Button(previewButtonRect, k_Texts.previewSplash))
+            if (GUI.Button(previewButtonRect, buttonLabel))
             {
-                SplashScreen.Begin();
-
-                var gv = GameView.GetMainGameView();
-                if (gv)
-                    gv.Focus();
+                if (SplashScreen.isFinished)
+                {
+                    SplashScreen.Begin();
+                    var gv = GameView.GetMainGameView();
+                    if (gv)
+                        gv.Focus();
+                    EditorApplication.update += PollSplashState;
+                }
+                else
+                {
+                    SplashScreen.Stop(SplashScreen.StopBehavior.StopImmediate);
+                    EditorApplication.update -= PollSplashState;
+                }
 
                 GameView.RepaintAll();
             }
@@ -386,13 +418,25 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_SplashScreenBackgroundColor, k_Texts.backgroundColor);
             EditorGUILayout.EndFadeGroup();
 
+            EditorGUILayout.PropertyField(m_SplashScreenBlurBackground, k_Texts.blurBackground);
+            EditorGUI.BeginChangeCheck();
             ObjectReferencePropertyField<Sprite>(m_SplashScreenBackgroundLandscape, k_Texts.backgroundImage);
-            if (GUI.changed && m_SplashScreenBackgroundLandscape.objectReferenceValue == null)
+            if (EditorGUI.EndChangeCheck() && m_SplashScreenBackgroundLandscape.objectReferenceValue == null)
                 m_SplashScreenBackgroundPortrait.objectReferenceValue = null;
 
             using (new EditorGUI.DisabledScope(m_SplashScreenBackgroundLandscape.objectReferenceValue == null))
             {
                 ObjectReferencePropertyField<Sprite>(m_SplashScreenBackgroundPortrait, k_Texts.backgroundPortraitImage);
+            }
+        }
+
+        void PollSplashState()
+        {
+            // When the splash screen is playing we need to keep track so that we can update the preview button when it has finished.
+            if (SplashScreen.isFinished)
+            {
+                m_Owner.Repaint();
+                EditorApplication.update -= PollSplashState;
             }
         }
     }

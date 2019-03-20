@@ -16,6 +16,7 @@ using UnityEditor.Experimental;
 using UnityEditor.Utils;
 using UnityEngine;
 using UnityEngine.Internal;
+using UnityEngine.Scripting;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -44,6 +45,7 @@ namespace UnityEditor
             }
 
             public abstract void Action(int instanceId, string pathName, string resourceFile);
+            public virtual void Cancelled(int instanceId, string pathName, string resourceFile) {}
 
             public virtual void CleanUp()
             {
@@ -58,6 +60,11 @@ namespace UnityEditor
                 AssetDatabase.CreateAsset(EditorUtility.InstanceIDToObject(instanceId),
                     AssetDatabase.GenerateUniqueAssetPath(pathName));
                 ProjectWindowUtil.FrameObjectInProjectWindow(instanceId);
+            }
+
+            public override void Cancelled(int instanceId, string pathName, string resourceFile)
+            {
+                Selection.activeObject = null;
             }
         }
 
@@ -230,12 +237,15 @@ namespace UnityEditor
             return true;
         }
 
-        internal static void EndNameEditAction(EndNameEditAction action, int instanceId, string pathName, string resourceFile)
+        internal static void EndNameEditAction(EndNameEditAction action, int instanceId, string pathName, string resourceFile, bool accepted)
         {
             pathName = AssetDatabase.GenerateUniqueAssetPath(pathName);
             if (action != null)
             {
-                action.Action(instanceId, pathName, resourceFile);
+                if (accepted)
+                    action.Action(instanceId, pathName, resourceFile);
+                else
+                    action.Cancelled(instanceId, pathName, resourceFile);
                 action.CleanUp();
             }
         }
@@ -298,10 +308,19 @@ namespace UnityEditor
             StartNameEditingIfProjectWindowExists(0, action, filename, icon, null);
         }
 
-        static void CreateScriptAsset(string templatePath, string destName)
+        [RequiredByNativeCode]
+        public static void CreateScriptAssetFromTemplateFile(string templatePath, string defaultNewFileName)
         {
+            if (templatePath == null)
+                throw new ArgumentNullException(nameof(templatePath));
+            if (!File.Exists(templatePath))
+                throw new FileNotFoundException($"The template file \"{templatePath}\" could not be found.", templatePath);
+
+            if (string.IsNullOrEmpty(defaultNewFileName))
+                defaultNewFileName = Path.GetFileName(templatePath);
+
             Texture2D icon = null;
-            switch (Path.GetExtension(destName))
+            switch (Path.GetExtension(defaultNewFileName))
             {
                 case ".cs":
                     icon = EditorGUIUtility.IconContent("cs Script Icon").image as Texture2D;
@@ -317,7 +336,7 @@ namespace UnityEditor
                     icon = EditorGUIUtility.IconContent<TextAsset>().image as Texture2D;
                     break;
             }
-            StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateScriptAsset>(), destName, icon, templatePath);
+            StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateScriptAsset>(), defaultNewFileName, icon, templatePath);
         }
 
         public static void ShowCreatedAsset(Object o)
@@ -471,7 +490,7 @@ namespace UnityEditor
             {
                 if (!pathName.StartsWith("assets/", StringComparison.CurrentCultureIgnoreCase))
                     pathName = "Assets/" + pathName;
-                EndNameEditAction(endAction, instanceID, pathName, resourceFile);
+                EndNameEditAction(endAction, instanceID, pathName, resourceFile, true);
                 Selection.activeObject = EditorUtility.InstanceIDToObject(instanceID);
             }
         }

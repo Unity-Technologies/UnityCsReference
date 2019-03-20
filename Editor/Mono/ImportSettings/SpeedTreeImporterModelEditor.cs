@@ -66,6 +66,8 @@ namespace UnityEditor
         private readonly AnimBool m_ShowSmoothLODOptions = new AnimBool();
         private readonly AnimBool m_ShowCrossFadeWidthOptions = new AnimBool();
 
+        public bool doMaterialsHaveDifferentShader = false;
+
         public SpeedTreeImporterModelEditor(AssetImporterEditor panelContainer)
             : base(panelContainer)
         {}
@@ -146,6 +148,40 @@ namespace UnityEditor
                 && !m_LODSettings.FindPropertyRelative("Array.size").hasMultipleDifferentValues;
         }
 
+        private bool DoMaterialsHaveDifferentShader()
+        {
+            var importerArray = importers.ToArray();
+            var prefabs = assetTargets?.Cast<GameObject>().ToArray();
+
+            // In tests assetTargets can become null
+            for (int i = 0; i < Math.Min(importerArray.Length, prefabs?.Length ?? 0); ++i)
+            {
+                var im = importerArray[i];
+                var defaultShader = im.defaultShader;
+                var defaultBillboardShader = im.defaultBillboardShader;
+
+                foreach (var mr in prefabs[i].transform.GetComponentsInChildren<MeshRenderer>())
+                {
+                    foreach (var mat in mr.sharedMaterials)
+                    {
+                        if (mat.shader != defaultShader)
+                            return true;
+                    }
+                }
+
+                if (defaultBillboardShader != null)
+                {
+                    foreach (var br in prefabs[i].transform.GetComponentsInChildren<BillboardRenderer>())
+                    {
+                        if (br.billboard.material.shader != defaultBillboardShader)
+                            return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         public override void OnInspectorGUI()
         {
             ShowMeshGUI();
@@ -154,8 +190,15 @@ namespace UnityEditor
 
             EditorGUILayout.Space();
 
-            if (upgradeMaterials)
+            bool materialsNeedToBeUpgraded = upgradeMaterials;
+            doMaterialsHaveDifferentShader = !materialsNeedToBeUpgraded && DoMaterialsHaveDifferentShader();
+
+            if (materialsNeedToBeUpgraded)
                 EditorGUILayout.HelpBox(String.Format("SpeedTree materials need to be upgraded. Please back them up (if modified manually) then hit the \"{0}\" button below.", Styles.ApplyAndGenerate.text), MessageType.Warning);
+
+            if (doMaterialsHaveDifferentShader)
+                EditorGUILayout.HelpBox(String.Format("There is a different SpeedTree shader provided by the current render pipeline which probably is more suitable for rendering. Hit the \"{0}\" button to regenerate the materials.",
+                    (panelContainer as SpeedTreeImporterInspector).GetGenButtonText(HasModified(), materialsNeedToBeUpgraded).text), MessageType.Warning);
         }
 
         private void ShowMeshGUI()

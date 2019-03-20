@@ -48,7 +48,7 @@ namespace UnityEditor
 
         class SettingsContent
         {
-            public static readonly GUIContent colorSpaceAndroidWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires OpenGL ES 3.0 or Vulkan, uncheck 'Automatic Graphics API' to remove OpenGL ES 2 API, Blit Type must be Always Blit or Auto and 'Minimum API Level' must be at least Android 4.3");
+            public static readonly GUIContent colorSpaceAndroidWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires OpenGL ES 3.0 or Vulkan, uncheck 'Automatic Graphics API' to remove OpenGL ES 2 API, Blit Type for non-SRP projects must be Always Blit or Auto and 'Minimum API Level' must be at least Android 4.3");
             public static readonly GUIContent colorSpaceWebGLWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires WebGL 2.0, uncheck 'Automatic Graphics API' to remove WebGL 1.0 API. WARNING: If DXT sRGB is not supported by the browser, texture will be decompressed");
             public static readonly GUIContent colorSpaceIOSWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2/3 APIs.");
             public static readonly GUIContent recordingInfo = EditorGUIUtility.TrTextContent("Reordering the list will switch editor to the first available platform");
@@ -114,6 +114,9 @@ namespace UnityEditor
             public static readonly GUIContent fullscreenWindow = EditorGUIUtility.TrTextContent("Fullscreen Window");
             public static readonly GUIContent maximizedWindow = EditorGUIUtility.TrTextContent("Maximized Window");
             public static readonly GUIContent windowed = EditorGUIUtility.TrTextContent("Windowed");
+            public static readonly GUIContent displayResolutionDialogEnabledLabel = EditorGUIUtility.TrTextContent("Enabled (Deprecated)");
+            public static readonly GUIContent displayResolutionDialogHiddenLabel = EditorGUIUtility.TrTextContent("Hidden by Default (Deprecated)");
+            public static readonly GUIContent displayResolutionDialogDeprecationWarning = EditorGUIUtility.TrTextContent("The Display Resolution Dialog has been deprecated and will be removed in a future version.");
             public static readonly GUIContent visibleInBackground = EditorGUIUtility.TrTextContent("Visible In Background");
             public static readonly GUIContent allowFullscreenSwitch = EditorGUIUtility.TrTextContent("Allow Fullscreen Switch");
             public static readonly GUIContent use32BitDisplayBuffer = EditorGUIUtility.TrTextContent("Use 32-bit Display Buffer*", "If set Display Buffer will be created to hold 32-bit color values. Use it only if you see banding, as it has performance implications.");
@@ -931,6 +934,12 @@ namespace UnityEditor
                         GUILayout.Label(SettingsContent.standalonePlayerOptionsTitle, EditorStyles.boldLabel);
                         EditorGUILayout.PropertyField(m_CaptureSingleScreen);
                         EditorGUILayout.PropertyField(m_DisplayResolutionDialog);
+
+                        if (m_DisplayResolutionDialog.intValue > 0)
+                        {
+                            EditorGUILayout.HelpBox(SettingsContent.displayResolutionDialogDeprecationWarning.text, MessageType.Warning, true);
+                        }
+
                         EditorGUILayout.PropertyField(m_UsePlayerLog);
                         EditorGUILayout.PropertyField(m_ResizableWindow);
 
@@ -1053,32 +1062,33 @@ namespace UnityEditor
         }
         private ChangeGraphicsApiAction CheckApplyGraphicsAPIList(BuildTarget target, bool firstEntryChanged)
         {
-            bool doChange = true, doReload = false;
+            bool doRestart = false;
             // If we're changing the first API for relevant editor, this will cause editor to switch: ask for scene save & confirmation
             if (firstEntryChanged && WillEditorUseFirstGraphicsAPI(target))
             {
-                doChange = false;
                 if (EditorUtility.DisplayDialog("Changing editor graphics device",
-                    "Changing active graphics API requires reloading all graphics objects, it might take a while",
-                    "Apply", "Cancel"))
+                    "You've changed the active graphics API. This requires a restart of the Editor.",
+                    "Restart Editor", "Not now"))
                 {
                     if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
-                        doChange = doReload = true;
+                        doRestart = true;
                 }
                 else
-                    doChange = doReload = false;
+                    doRestart = false;
             }
-            return new ChangeGraphicsApiAction(doChange, doReload);
+            return new ChangeGraphicsApiAction(true, doRestart);
         }
 
         private void ApplyChangeGraphicsApiAction(BuildTarget target, GraphicsDeviceType[] apis, ChangeGraphicsApiAction action)
         {
-            if (action.changeList)  PlayerSettings.SetGraphicsAPIs(target, apis);
-            else                    s_GraphicsDeviceLists.Remove(target); // we cancelled the list change, so remove the cached one
+            if (action.changeList)
+                PlayerSettings.SetGraphicsAPIs(target, apis);
+            else
+                s_GraphicsDeviceLists.Remove(target); // we cancelled the list change, so remove the cached one
 
             if (action.reloadGfx)
             {
-                ShaderUtil.RecreateGfxDevice();
+                EditorApplication.RequestCloseAndRelaunchWithCurrentArguments();
                 GUIUtility.ExitGUI();
             }
         }
@@ -1471,33 +1481,30 @@ namespace UnityEditor
             // Display a warning for platforms that some devices don't support linear rendering if the settings are not fine for linear colorspace
             if (PlayerSettings.colorSpace == ColorSpace.Linear)
             {
-                bool hasMinGraphicsAPI = false;
+                bool showWarning = false;
+                GUIContent warningMessage = null;
                 var apis = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
 
                 if (targetGroup == BuildTargetGroup.Android)
                 {
-                    hasMinGraphicsAPI = (apis.Contains(GraphicsDeviceType.Vulkan) || apis.Contains(GraphicsDeviceType.OpenGLES3)) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
-
-                    var hasBlitDisabled = PlayerSettings.Android.blitType == AndroidBlitType.Never;
-                    if (hasBlitDisabled || !hasMinGraphicsAPI || (int)PlayerSettings.Android.minSdkVersion < 18)
-                        EditorGUILayout.HelpBox(SettingsContent.colorSpaceAndroidWarning.text, MessageType.Warning);
+                    // SRP should handle blits internally
+                    bool hasBlitDisabled = (PlayerSettings.Android.blitType == AndroidBlitType.Never) && (GraphicsSettings.renderPipelineAsset == null);
+                    showWarning = hasBlitDisabled || apis.Contains(GraphicsDeviceType.OpenGLES2) || (int)PlayerSettings.Android.minSdkVersion < 18;
+                    warningMessage = SettingsContent.colorSpaceAndroidWarning;
                 }
                 else if (targetGroup == BuildTargetGroup.iOS || platform.targetGroup == BuildTargetGroup.tvOS)
                 {
-                    hasMinGraphicsAPI = !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
-
-                    if (!hasMinGraphicsAPI)
-                    {
-                        EditorGUILayout.HelpBox(SettingsContent.colorSpaceIOSWarning.text, MessageType.Warning);
-                    }
+                    showWarning = apis.Contains(GraphicsDeviceType.OpenGLES3) || apis.Contains(GraphicsDeviceType.OpenGLES2);
+                    warningMessage = SettingsContent.colorSpaceIOSWarning;
                 }
-                else if ((targetGroup == BuildTargetGroup.WebGL) && !hasMinGraphicsAPI)
+                else if ((targetGroup == BuildTargetGroup.WebGL))
                 {
-                    // must have OpenGLES3-only
-                    hasMinGraphicsAPI = apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
-                    if (!hasMinGraphicsAPI)
-                        EditorGUILayout.HelpBox(SettingsContent.colorSpaceWebGLWarning.text, MessageType.Error);
+                    showWarning = apis.Contains(GraphicsDeviceType.OpenGLES2);
+                    warningMessage = SettingsContent.colorSpaceWebGLWarning;
                 }
+
+                if (showWarning)
+                    EditorGUILayout.HelpBox(warningMessage.text, MessageType.Warning);
             }
 
             // Graphics APIs

@@ -29,13 +29,13 @@ namespace UnityEditor.Experimental.GraphView
         private int thickLines => m_ThickLines;
 
         Color m_LineColor = s_DefaultLineColor;
-        private Color lineColor => m_LineColor;
+        private Color lineColor => m_LineColor * UIElementsUtility.editorPlayModeTintColor;
 
         Color m_ThickLineColor = s_DefaultThickLineColor;
-        private Color thickLineColor => m_ThickLineColor;
+        private Color thickLineColor => m_ThickLineColor * UIElementsUtility.editorPlayModeTintColor;
 
         Color m_GridBackgroundColor = s_DefaultGridBackgroundColor;
-        private Color gridBackgroundColor => m_GridBackgroundColor;
+        private Color gridBackgroundColor => m_GridBackgroundColor * UIElementsUtility.editorPlayModeTintColor;
 
         private VisualElement m_Container;
 
@@ -44,7 +44,6 @@ namespace UnityEditor.Experimental.GraphView
             pickingMode = PickingMode.Ignore;
 
             this.StretchToParentSize();
-            renderHint = RenderHint.ImmediateMode;
 
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
         }

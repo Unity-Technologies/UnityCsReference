@@ -18,6 +18,7 @@ namespace UnityEditorInternal
         private const int kDistFromTopToFirstLabel = 38;
         private const int kLabelHeight = 11;
         private const int kCloseButtonSize = 13;
+        private const int kCloseButtonXOffset = 4;
         private const float kLabelOffset = 5f;
         private const float kWarningLabelHeightOffset = 43f;
         private const float kChartMinHeight = 130;
@@ -177,7 +178,7 @@ namespace UnityEditorInternal
 
             Rect closeButtonRect = headerRect;
             closeButtonRect.xMax -= Styles.legendHeaderLabel.padding.right;
-            closeButtonRect.xMin = closeButtonRect.xMax - kCloseButtonSize;
+            closeButtonRect.xMin = closeButtonRect.xMax - kCloseButtonSize - kCloseButtonXOffset;
             closeButtonRect.yMin += Styles.legendHeaderLabel.padding.top;
             closeButtonRect.yMax = closeButtonRect.yMin + kCloseButtonSize;
 

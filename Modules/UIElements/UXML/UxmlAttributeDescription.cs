@@ -279,7 +279,7 @@ namespace UnityEngine.UIElements
             defaultValue = 0;
         }
 
-        public override string defaultValueAsString { get { return defaultValue.ToString(); } }
+        public override string defaultValueAsString { get { return defaultValue.ToString(CultureInfo.InvariantCulture.NumberFormat); } }
 
         public override int GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
         {
@@ -310,7 +310,7 @@ namespace UnityEngine.UIElements
             defaultValue = 0;
         }
 
-        public override string defaultValueAsString { get { return defaultValue.ToString(); } }
+        public override string defaultValueAsString { get { return defaultValue.ToString(CultureInfo.InvariantCulture.NumberFormat); } }
 
         public override long GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
         {

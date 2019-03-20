@@ -202,7 +202,6 @@ namespace UnityEngine.Profiling
         }
 
         [NativeMethod(Name = "ProfilerBindings::GetRuntimeMemorySizeLong", IsFreeFunction = true)]
-        [NativeConditional("ENABLE_PROFILER")]
         public extern static long GetRuntimeMemorySizeLong(Object o);
 
         [Obsolete("GetMonoHeapSize has been deprecated since it is limited to 4GB. Please use GetMonoHeapSizeLong() instead.")]

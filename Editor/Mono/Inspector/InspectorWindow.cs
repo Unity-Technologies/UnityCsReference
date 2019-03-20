@@ -30,7 +30,14 @@ namespace UnityEditor
     [EditorWindowTitle(title = "Inspector", useTypeNameAsIconName = true)]
     internal class InspectorWindow : EditorWindow, IHasCustomMenu
     {
-        internal InspectorMode   m_InspectorMode = InspectorMode.Normal;
+        InspectorMode   m_InspectorMode = InspectorMode.Normal;
+
+        internal InspectorMode inspectorMode
+        {
+            get { return m_InspectorMode; }
+            set { SetMode(value); }
+        }
+
         internal bool m_UseUIElementsDefaultInspector = false;
 
         static readonly List<InspectorWindow> m_AllInspectors = new List<InspectorWindow>();
@@ -163,7 +170,7 @@ namespace UnityEditor
             AddInspectorWindow(this);
         }
 
-        void OnDestroy()
+        protected virtual void OnDestroy()
         {
             if (m_PreviewWindow != null)
                 m_PreviewWindow.Close();
@@ -362,30 +369,37 @@ namespace UnityEditor
         void SetUseUIEDefaultInspector()
         {
             m_UseUIElementsDefaultInspector = !m_UseUIElementsDefaultInspector;
+            // Clear the editors Element so that a real rebuild is done
+            editorsElement.Clear();
             RebuildContentsContainers();
         }
 
         void SetMode(InspectorMode mode)
         {
-            m_InspectorMode = mode;
-            RefreshTitle();
-            tracker.inspectorMode = mode;
-            m_ResetKeyboardControl = true;
+            if (m_InspectorMode != mode)
+            {
+                m_InspectorMode = mode;
+                RefreshTitle();
+                // Clear the editors Element so that a real rebuild is done
+                editorsElement.Clear();
+                tracker.inspectorMode = mode;
+                m_ResetKeyboardControl = true;
+            }
         }
 
         void SetDebug()
         {
-            SetMode(InspectorMode.Debug);
+            inspectorMode = InspectorMode.Debug;
         }
 
         void SetNormal()
         {
-            SetMode(InspectorMode.Normal);
+            inspectorMode = InspectorMode.Normal;
         }
 
         void SetDebugInternal()
         {
-            SetMode(InspectorMode.DebugInternal);
+            inspectorMode = InspectorMode.DebugInternal;
         }
 
         internal void ExpandAllComponents()
@@ -498,7 +512,7 @@ namespace UnityEditor
             GameObject go = m_Tracker.activeEditors[0].target as GameObject;
             if (go == null)
                 return;
-            GameObject sourceGo = PrefabUtility.GetCorrespondingObjectFromSource(go);
+            GameObject sourceGo = PrefabUtility.GetCorrespondingConnectedObjectFromSource(go);
             if (sourceGo == null)
                 return;
 
@@ -598,8 +612,6 @@ namespace UnityEditor
             }
         }
 
-        static internal InspectorWindow s_CurrentInspectorWindow;
-
         private bool m_TrackerResetInserted;
 
         internal IMGUIContainer CreateIMGUIContainer(Action onGUIHandler, string name = null)
@@ -647,7 +659,6 @@ namespace UnityEditor
             FlushAllOptimizedGUIBlocksIfNeeded();
 
             ResetKeyboardControl();
-            s_CurrentInspectorWindow = this;
 
             var addComponentButton = rootVisualElement.Q<VisualElement>(className: s_AddComponentClassName);
             addComponentButton.Clear();
@@ -687,8 +698,6 @@ namespace UnityEditor
             {
                 m_MultiEditLabel.RemoveFromHierarchy();
             }
-
-            s_CurrentInspectorWindow = null;
 
             if (editors.Any() && RootEditorUtils.SupportsAddComponent(editors))
             {

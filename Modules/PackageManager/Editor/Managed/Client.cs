@@ -33,6 +33,13 @@ namespace UnityEditor.PackageManager
             return new AddRequest(operationId, status);
         }
 
+        public static EmbedRequest Embed(string packageName)
+        {
+            long operationId;
+            var status = NativeClient.Embed(out operationId, packageName);
+            return new EmbedRequest(operationId, status);
+        }
+
         public static RemoveRequest Remove(string packageName)
         {
             long operationId;

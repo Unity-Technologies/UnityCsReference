@@ -8,7 +8,7 @@ using UsedByNativeCodeAttribute = UnityEngine.Scripting.UsedByNativeCodeAttribut
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace UnityEngine.Experimental.XR
+namespace UnityEngine.XR
 {
     [NativeType(Header = "Modules/XR/Subsystems/Input/XRInputSubsystem")]
     [UsedByNativeCode]

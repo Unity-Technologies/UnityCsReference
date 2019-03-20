@@ -1675,6 +1675,9 @@
     <Compile Include="..\..\Modules\Terrain\Public\Terrain.bindings.cs">
       <Link>Modules\Terrain\Public\Terrain.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Terrain\Public\Terrain.deprecated.cs">
+      <Link>Modules\Terrain\Public\Terrain.deprecated.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Terrain\Public\TerrainCallbacks.cs">
       <Link>Modules\Terrain\Public\TerrainCallbacks.cs</Link>
     </Compile>
@@ -2043,9 +2046,6 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Panel.cs">
       <Link>Modules\UIElements\Panel.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\PanelWrapper.cs">
-      <Link>Modules\UIElements\PanelWrapper.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\PopupWindow.cs">
       <Link>Modules\UIElements\PopupWindow.cs</Link>

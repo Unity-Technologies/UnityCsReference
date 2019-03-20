@@ -360,13 +360,32 @@ namespace UnityEngine
         {
             if (xCount <= 0)
                 throw new ArgumentOutOfRangeException("xCount");
-            if (yCount <= 0)
+            else if (yCount <= 0)
                 throw new ArgumentOutOfRangeException("yCount");
-            return Internal_GetInterpolatedHeights(xBase, yBase, xCount, yCount, xInterval, yInterval);
+
+            float[,] results = new float[yCount, xCount];
+            Internal_GetInterpolatedHeights(results, xCount, 0, 0, xBase, yBase, xCount, yCount, xInterval, yInterval);
+            return results;
+        }
+
+        public void GetInterpolatedHeights(float[,] results, int resultXOffset, int resultYOffset, float xBase, float yBase, int xCount, int yCount, float xInterval, float yInterval)
+        {
+            if (results == null)
+                throw new ArgumentNullException("results");
+            else if (xCount <= 0)
+                throw new ArgumentOutOfRangeException("xCount");
+            else if (yCount <= 0)
+                throw new ArgumentOutOfRangeException("yCount");
+            else if (resultXOffset < 0 || resultXOffset + xCount > results.GetLength(1))
+                throw new ArgumentOutOfRangeException("resultXOffset");
+            else if (resultYOffset < 0 || resultYOffset + yCount > results.GetLength(0))
+                throw new ArgumentOutOfRangeException("resultYOffset");
+
+            Internal_GetInterpolatedHeights(results, results.GetLength(1), resultXOffset, resultYOffset, xBase, yBase, xCount, yCount, xInterval, yInterval);
         }
 
         [FreeFunction(k_ScriptingInterfacePrefix + "GetInterpolatedHeights", HasExplicitThis = true)]
-        extern private float[,] Internal_GetInterpolatedHeights(float xBase, float yBase, int xCount, int yCount, float xInterval, float yInterval);
+        private extern void Internal_GetInterpolatedHeights(float[,] results, int resultXDimension, int resultXOffset, int resultYOffset, float xBase, float yBase, int xCount, int yCount, float xInterval, float yInterval);
 
         public float[,] GetHeights(int xBase, int yBase, int width, int height)
         {

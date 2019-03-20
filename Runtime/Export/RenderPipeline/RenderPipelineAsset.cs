@@ -48,6 +48,10 @@ namespace UnityEngine.Rendering
 
         public virtual Shader defaultShader => null;
 
+        public virtual Shader defaultSpeedTree7Shader => null;
+
+        public virtual Shader defaultSpeedTree8Shader => null;
+
         protected abstract RenderPipeline CreatePipeline();
 
         protected virtual void OnValidate()

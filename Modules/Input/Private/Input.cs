@@ -12,7 +12,7 @@ namespace UnityEngineInternal.Input
 {
     using NativeBeforeUpdateCallback = System.Action<NativeInputUpdateType>;
     using NativeDeviceDiscoveredCallback = System.Action<int, string>;
-
+    using NativeShouldRunUpdateCallback = System.Func<NativeInputUpdateType, bool>;
     public unsafe delegate void NativeUpdateCallback(NativeInputUpdateType updateType, NativeInputEventBuffer* buffer);
 
     // C# doesn't support multi-character literals, so we do it by hand here...
@@ -72,6 +72,7 @@ namespace UnityEngineInternal.Input
     {
         public static NativeUpdateCallback onUpdate;
         public static NativeBeforeUpdateCallback onBeforeUpdate;
+        public static NativeShouldRunUpdateCallback onShouldRunUpdate;
 
         static NativeDeviceDiscoveredCallback s_OnDeviceDiscoveredCallback;
         public static NativeDeviceDiscoveredCallback onDeviceDiscovered
@@ -121,6 +122,18 @@ namespace UnityEngineInternal.Input
             NativeDeviceDiscoveredCallback callback = s_OnDeviceDiscoveredCallback;
             if (callback != null)
                 callback(deviceId, deviceDescriptor);
+        }
+
+        [RequiredByNativeCode]
+        internal static bool ShouldRunUpdate(NativeInputUpdateType updateType)
+        {
+            NativeShouldRunUpdateCallback callback = onShouldRunUpdate;
+            if (callback != null)
+                return callback(updateType);
+
+            // Transitional code path. Remove this when we have onShouldRunUpdate implemented
+            // in the supported input package versions.
+            return ShouldUpdateFallback(updateType);
         }
     }
 }

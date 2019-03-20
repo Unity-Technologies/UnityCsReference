@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -15,6 +17,9 @@ namespace UnityEditor.UIElements
         readonly InspectorWindow inspectorWindow;
 
         Editor[] m_Editors => inspectorWindow.tracker.activeEditors;
+
+        internal IEnumerable<Editor> Editors => m_Editors.AsEnumerable();
+
         int m_EditorIndex;
         public Editor editor
         {
@@ -54,7 +59,13 @@ namespace UnityEditor.UIElements
             Init();
 
             Add(m_Header);
-            Add(m_InspectorElement);
+            // If the editor targets contain many target and the multi editing is not supported, we should not add this inspector.
+            // However, the header and footer are kept since these are showing information regarding this state.
+            if ((editor.targets.Length <= 1) || (iw.IsMultiEditingSupported(editor, editor.target)))
+            {
+                Add(m_InspectorElement);
+            }
+
             Add(m_Footer);
         }
 
@@ -63,9 +74,9 @@ namespace UnityEditor.UIElements
             Object editorTarget = editor.targets[0];
             string editorTitle = ObjectNames.GetInspectorTitle(editorTarget);
 
-            var inspectorElementMode = InspectorElement.GetModeFromInspectorMode(inspectorWindow.m_InspectorMode);
+            var inspectorElementMode = InspectorElement.GetModeFromInspectorMode(inspectorWindow.inspectorMode);
             if (inspectorWindow.m_UseUIElementsDefaultInspector)
-                inspectorElementMode ^= InspectorElement.Mode.IMGUIDefault;
+                inspectorElementMode &= ~(InspectorElement.Mode.IMGUIDefault);
 
             m_InspectorElement = new InspectorElement(editor, inspectorElementMode)
             {

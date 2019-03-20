@@ -40,7 +40,7 @@ namespace UnityEngine.Experimental.TerrainAPI
         }
 
         // initialized by constructor
-        private List<TerrainTile> m_TerrainTiles;   // all terrain tiles touched by this paint context
+        private List<TerrainTile> m_TerrainTiles;              // all terrain tiles touched by this paint context
 
         internal struct TerrainTile
         {
@@ -50,8 +50,8 @@ namespace UnityEngine.Experimental.TerrainAPI
             public RectInt clippedLocalPixels;      // the tile pixels touched by this PaintContext (in local target texture pixels)
             public RectInt clippedPCPixels;         // the tile pixels touched by this PaintContext (in PaintContext/source/destRenderTexture pixels)
 
-            public int mapIndex;                    // for splatmap operations, the splatmap index on this Terrain containing the desired TerrainLayer weight
-            public int channelIndex;                // for splatmap operations, the channel on the splatmap containing the desired TerrainLayer weight
+            public int mapIndex;                  // for splatmap operations, the splatmap index on this Terrain containing the desired TerrainLayer weight
+            public int channelIndex;              // for splatmap operations, the channel on the splatmap containing the desired TerrainLayer weight
 
             public static TerrainTile Make(Terrain terrain, int tileOriginPixelsX, int tileOriginPixelsY, RectInt pixelRect, int targetTextureWidth, int targetTextureHeight)
             {

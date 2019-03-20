@@ -56,14 +56,27 @@ namespace UnityEditor.UIElements
 
                     if (renderMode == RenderMode.Mesh)
                     {
+                        m_ContentParent = new VisualElement();
+                        m_ContentParent.AddToClassList(contentUssClassName);
+                        visualInput.Insert(0, m_ContentParent);
+
                         m_Content = new CurveFieldContent();
-                        m_Content.AddToClassList(contentUssClassName);
-                        visualInput.Insert(0, m_Content);
+                        m_ZeroIndicator = new VisualElement() {style = {height = 1, backgroundColor = Color.black}};
+                        m_ContentParent.Add(m_ZeroIndicator);
+                        m_ContentParent.Add(m_Content);
+                        m_Content.StretchToParentSize();
+                        m_ZeroIndicator.StretchToParentWidth();
                     }
                     else
                     {
+                        m_ZeroIndicator.RemoveFromHierarchy();
+                        m_ZeroIndicator = null;
+
                         m_Content.RemoveFromHierarchy();
                         m_Content = null;
+
+                        m_ContentParent.RemoveFromHierarchy();
+                        m_ContentParent = null;
                     }
 
                     m_TextureDirty = true;
@@ -110,6 +123,8 @@ namespace UnityEditor.UIElements
             }
         }
         CurveFieldContent m_Content;
+        VisualElement m_ZeroIndicator;
+        VisualElement m_ContentParent;
 
         public CurveField()
             : this(null) {}
@@ -334,9 +349,10 @@ namespace UnityEditor.UIElements
 
             Vector3 scale = new Vector3(m_Content.layout.width, m_Content.layout.height);
 
-            vertices[0] = vertices[1] = Vector3.Scale(new Vector3(0, 1 - Mathf.InverseLerp(minValue, maxValue, valueCache[0]), 0), scale);
+            var yStartValue = (!Mathf.Approximately(minValue, maxValue)) ? 1.0f : 0.5f;
+            vertices[0] = vertices[1] = Vector3.Scale(new Vector3(0, yStartValue - Mathf.InverseLerp(minValue, maxValue, valueCache[0]), 0), scale);
 
-            Vector3 secondPoint = Vector3.Scale(new Vector3(1.0f / k_HorizontalCurveResolution, 1 - Mathf.InverseLerp(minValue, maxValue, valueCache[1]), 0), scale);
+            Vector3 secondPoint = Vector3.Scale(new Vector3(1.0f / k_HorizontalCurveResolution, yStartValue - Mathf.InverseLerp(minValue, maxValue, valueCache[1]), 0), scale);
             Vector3 prevDir = (secondPoint - vertices[0]).normalized;
 
             Vector3 norm = new Vector3(prevDir.y, -prevDir.x, 1);
@@ -350,7 +366,7 @@ namespace UnityEditor.UIElements
             {
                 vertices[i * 2] = vertices[i * 2 + 1] = currentPoint;
 
-                Vector3 nextPoint = Vector3.Scale(new Vector3(Mathf.InverseLerp(startTime, endTime, timeCache[i + 1]), 1 - Mathf.InverseLerp(minValue, maxValue, valueCache[i + 1]), 0), scale);
+                Vector3 nextPoint = Vector3.Scale(new Vector3(Mathf.InverseLerp(startTime, endTime, timeCache[i + 1]), yStartValue - Mathf.InverseLerp(minValue, maxValue, valueCache[i + 1]), 0), scale);
 
                 Vector3 nextDir = (nextPoint - currentPoint).normalized;
                 Vector3 dir = (prevDir + nextDir).normalized;
@@ -391,6 +407,15 @@ namespace UnityEditor.UIElements
             }
 
             m_Mesh.triangles = indices;
+
+            if (Mathf.Approximately(minValue, maxValue))
+            {
+                m_ZeroIndicator.style.top = m_Content.layout.height * Mathf.InverseLerp(-1, 1, minValue);
+            }
+            else
+            {
+                m_ZeroIndicator.style.top = m_Content.layout.height * (yStartValue - Mathf.InverseLerp(minValue, maxValue, 0));
+            }
         }
 
         void SetupMeshRepaint()
@@ -414,51 +439,14 @@ namespace UnityEditor.UIElements
             int previewWidth = (int)visualInput.layout.width;
             int previewHeight = (int)visualInput.layout.height;
 
-            Rect rangeRect = new Rect(0, 0, 1, 1);
+            // The default range is (0,0,-1,-1), see AnimationCurvePreviewCache.cpp
+            // This will mimic the IMGUI curve since the range will be calculated by the CurvePreview if the range is at the default value...
+            Rect rangeRect = new Rect(0, 0, -1, -1);
 
+            // We assign the ranges if different than the Rect() default value
             if (ranges.width > 0 && ranges.height > 0)
             {
                 rangeRect = ranges;
-            }
-            else if (!m_ValueNull && rawValue.keys.Length > 1)
-            {
-                float xMin = Mathf.Infinity;
-                float yMin = Mathf.Infinity;
-                float xMax = -Mathf.Infinity;
-                float yMax = -Mathf.Infinity;
-
-                for (int i = 0; i < rawValue.keys.Length; ++i)
-                {
-                    float y = rawValue.keys[i].value;
-                    float x = rawValue.keys[i].time;
-                    if (xMin > x)
-                    {
-                        xMin = x;
-                    }
-                    if (xMax < x)
-                    {
-                        xMax = x;
-                    }
-                    if (yMin > y)
-                    {
-                        yMin = y;
-                    }
-                    if (yMax < y)
-                    {
-                        yMax = y;
-                    }
-                }
-
-                if (yMin == yMax)
-                {
-                    yMax = yMin + 1;
-                }
-                if (xMin == xMax)
-                {
-                    xMax = xMin + 1;
-                }
-
-                rangeRect = Rect.MinMaxRect(xMin, yMin, xMax, yMax);
             }
 
             if (previewHeight > 1 && previewWidth > 1)
@@ -549,13 +537,16 @@ namespace UnityEditor.UIElements
                     realWidth = k_MinEdgeWidth / scale;
                 }
 
+                Color finalColor = (QualitySettings.activeColorSpace == ColorSpace.Linear) ? curveColor.gamma : curveColor;
+                finalColor *= UIElementsUtility.editorPlayModeTintColor;
+
                 // Send the view zoom factor so that the antialias width do not grow when zooming in.
                 m_Mat.SetFloat("_ZoomFactor", scale * realWidth / CurveField.k_EdgeWidth * EditorGUIUtility.pixelsPerPoint);
 
                 // Send the view zoom correction so that the vertex shader can scale the edge triangles when below m_MinWidth.
                 m_Mat.SetFloat("_ZoomCorrection", realWidth / CurveField.k_EdgeWidth);
 
-                m_Mat.SetColor("_Color", (QualitySettings.activeColorSpace == ColorSpace.Linear) ? curveColor.gamma : curveColor);
+                m_Mat.SetColor("_Color", finalColor);
                 m_Mat.SetPass(0);
 
                 Graphics.DrawMeshNow(m_Mesh, Matrix4x4.identity);

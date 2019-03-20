@@ -21,7 +21,8 @@ using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor
 {
-    internal class WindowLayout
+    [InitializeOnLoad]
+    internal static class WindowLayout
     {
         private const string kMaximizeRestoreFile = "CurrentMaximizeLayout.dwlt";
         private const string kLastLayoutName = "LastLayout.dwlt";

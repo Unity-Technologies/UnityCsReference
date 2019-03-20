@@ -17,23 +17,11 @@ namespace UnityEditor.PackageManager
     [CustomEditor(typeof(PackageManifestImporter))]
     internal class PackageManifestImporterEditor : AssetImporterEditor
     {
-        // Must match supported package types in UPM server
-        private static string[] SupportedPackageTypes { get; } =
+        private enum PackageVisibility
         {
-            "tests",
-            "sample",
-            "template",
-            "module",
-            "library",
-            "tool",
-        };
-
-        // Must match hideInEditor package types in UPM server
-        private static string[] HiddenPackageTypes { get; } =
-        {
-            "module",
-            "library",
-            "tool",
+            DependsOnType,
+            AlwaysHidden,
+            AlwaysVisible
         };
 
         private static readonly string s_LocalizedTitle = L10n.Tr("Package '{0}' Manifest");
@@ -86,7 +74,7 @@ namespace UnityEditor.PackageManager
             public string version;
             public string description;
             public string type;
-            public int hideInEditor;
+            public PackageVisibility visibility;
             public PackageUnityVersion unity;
         }
 
@@ -109,7 +97,13 @@ namespace UnityEditor.PackageManager
 
             public static readonly GUIContent showAdvanced = EditorGUIUtility.TrTextContent("Advanced", "Show advanced settings.");
 
-            public static readonly GUIContent hideInEditor = EditorGUIUtility.TrTextContent("Hide in Editor", "Show/Hide package in Editor (optional).");
+            public static readonly GUIContent visibility = EditorGUIUtility.TrTextContent("Visibility in Editor", "Package visibility in Editor.");
+            public static readonly GUIContent[] visibilityOptions =
+            {
+                EditorGUIUtility.TrTextContent("Depends on type"),
+                EditorGUIUtility.TrTextContent("Always Hidden"),
+                EditorGUIUtility.TrTextContent("Always Visible"),
+            };
 
             public static readonly GUIContent unity = EditorGUIUtility.TrTextContent("Minimal Unity Version");
             public static readonly GUIContent unityMajor = EditorGUIUtility.TrTextContent("Major", "Major version of Unity");
@@ -122,14 +116,6 @@ namespace UnityEditor.PackageManager
             public static readonly GUIContent package = EditorGUIUtility.TrTextContent("Package name", "Package name. Must be lowercase");
 
             public static readonly GUIContent viewInPackageManager = EditorGUIUtility.TrTextContent("View in Package Manager");
-
-            public static readonly GUIStyle foldoutBold;
-
-            static Styles()
-            {
-                foldoutBold = EditorStyles.foldout;
-                foldoutBold.fontStyle = FontStyle.Bold;
-            }
         }
 
         public override bool showImportedObject => false;
@@ -162,9 +148,7 @@ namespace UnityEditor.PackageManager
         private SerializedProperty m_UnityRelease;
         private SerializedProperty m_Description;
         private SerializedProperty m_Type;
-        private SerializedProperty m_HideInEditor;
-
-        private bool m_ShowAdvanced;
+        private SerializedProperty m_Visibility;
 
         internal override string targetTitle
         {
@@ -193,6 +177,8 @@ namespace UnityEditor.PackageManager
 
         public override void OnEnable()
         {
+            base.OnEnable();
+
             if (targets == null)
                 return;
 
@@ -221,8 +207,7 @@ namespace UnityEditor.PackageManager
             m_UnityRelease = packageSerializedObject.FindProperty("info.unity.release");
             m_Description = packageSerializedObject.FindProperty("info.description");
             m_Type = packageSerializedObject.FindProperty("info.type");
-            m_HideInEditor = packageSerializedObject.FindProperty("info.hideInEditor");
-            m_ShowAdvanced = packageState.info.hideInEditor == 1;
+            m_Visibility = packageSerializedObject.FindProperty("info.visibility");
 
             m_DependenciesList = new ReorderableList(packageSerializedObject,
                 packageSerializedObject.FindProperty("dependencies"), false, false, true, true)
@@ -299,7 +284,6 @@ namespace UnityEditor.PackageManager
 
             ReadPackageManifest(target, packageState);
             packageSerializedObject.Update();
-            m_ShowAdvanced = packageState.info.hideInEditor == 1;
 
             GUI.FocusControl(null);
         }
@@ -323,7 +307,7 @@ namespace UnityEditor.PackageManager
                 EditorGUILayout.DelayedTextField(m_Name, Styles.name);
                 EditorGUILayout.DelayedTextField(m_DisplayName, Styles.displayName);
                 EditorGUILayout.DelayedTextField(m_Version, Styles.version);
-                m_Type.stringValue = EditorGUILayout.DelayedTextFieldDropDown(Styles.type, m_Type.stringValue, SupportedPackageTypes);
+                m_Type.stringValue = EditorGUILayout.DelayedTextFieldDropDown(Styles.type, m_Type.stringValue, PackageInfo.GetPredefinedPackageTypes());
 
                 EditorGUILayout.PropertyField(m_UnityVersionEnabled, Styles.unity);
                 if (m_UnityVersionEnabled.boolValue)
@@ -355,24 +339,15 @@ namespace UnityEditor.PackageManager
 
         private bool DoPackageAdvancedSettingsLayout()
         {
-            m_ShowAdvanced = EditorGUILayout.Foldout(m_ShowAdvanced, Styles.showAdvanced, true, Styles.foldoutBold);
-            if (m_ShowAdvanced)
+            using (new EditorGUILayout.VerticalScope(GUI.skin.box, GUILayout.ExpandWidth(true)))
             {
-                using (new EditorGUILayout.VerticalScope(GUI.skin.box, GUILayout.ExpandWidth(true)))
+                using (var change = new EditorGUI.ChangeCheckScope())
                 {
-                    using (var change = new EditorGUI.ChangeCheckScope())
+                    var newValue = EditorGUILayout.Popup(Styles.visibility, m_Visibility.enumValueIndex, Styles.visibilityOptions);
+                    if (change.changed && newValue != m_Visibility.enumValueIndex)
                     {
-                        EditorGUI.showMixedValue = m_HideInEditor.intValue == -1;
-                        var newValue = EditorGUILayout.Toggle(Styles.hideInEditor, m_HideInEditor.intValue == 1)
-                            ? 1
-                            : 0;
-                        EditorGUI.showMixedValue = false;
-
-                        if (change.changed)
-                        {
-                            m_HideInEditor.intValue = newValue;
-                            return true;
-                        }
+                        m_Visibility.enumValueIndex = newValue;
+                        return true;
                     }
                 }
             }
@@ -411,13 +386,22 @@ namespace UnityEditor.PackageManager
                 warningMessages.Add("Package description should be provided.");
             }
 
-            if (packageState.info.hideInEditor == 1)
+            if (packageState.info.visibility == PackageVisibility.AlwaysHidden)
             {
-                warningMessages.Add("This package and all its assets will be hidden by default because property 'hideInEditor' is checked");
+                warningMessages.Add("This package and all its assets will be hidden by default in Editor because its visibility is set to 'Always Hidden'");
             }
-            else if (packageState.info.hideInEditor == -1 && HiddenPackageTypes.Contains(packageState.info.type))
+            else if (packageState.info.visibility == PackageVisibility.AlwaysVisible)
             {
-                warningMessages.Add($"This package and all its assets will be hidden by default because its type is '{packageState.info.type}'");
+                warningMessages.Add("This package and all its assets will be visible by default in Editor because its visibility is set to 'Always Visible'");
+            }
+            else
+            {
+                if (IsNullOrEmptyTrim(packageState.info.type))
+                    warningMessages.Add("This package and all its assets will be hidden by default in Editor because its type is empty");
+                else if (PackageInfo.GetPredefinedHiddenByDefaultPackageTypes().Contains(packageState.info.type))
+                    warningMessages.Add($"This package and all its assets will be hidden by default in Editor because its type is '{packageState.info.type}'");
+                else
+                    warningMessages.Add($"This package and all its assets will be visible by default in Editor because its type is '{packageState.info.type}'");
             }
         }
 
@@ -456,6 +440,7 @@ namespace UnityEditor.PackageManager
             }
 
             // Package advanced settings
+            GUILayout.Label(Styles.showAdvanced, EditorStyles.boldLabel);
             hasChanged |= DoPackageAdvancedSettingsLayout();
 
             // Validation
@@ -518,9 +503,9 @@ namespace UnityEditor.PackageManager
                         packageState.info.type = (string)info["type"];
 
                     if (info.ContainsKey("hideInEditor") && info["hideInEditor"] is bool)
-                        packageState.info.hideInEditor = (bool)info["hideInEditor"] ? 1 : 0;
+                        packageState.info.visibility = (bool)info["hideInEditor"] ? PackageVisibility.AlwaysHidden : PackageVisibility.AlwaysVisible;
                     else
-                        packageState.info.hideInEditor = -1;
+                        packageState.info.visibility = PackageVisibility.DependsOnType;
 
                     if (info.ContainsKey("unity") && info["unity"] is string)
                     {
@@ -612,10 +597,10 @@ namespace UnityEditor.PackageManager
             else
                 json.Remove("type");
 
-            if (packageState.info.hideInEditor >= 0)
-                json["hideInEditor"] = packageState.info.hideInEditor == 1;
-            else
+            if (packageState.info.visibility == PackageVisibility.DependsOnType)
                 json.Remove("hideInEditor");
+            else
+                json["hideInEditor"] = packageState.info.visibility == PackageVisibility.AlwaysHidden;
 
             if (packageState.info.unity.isEnable)
             {

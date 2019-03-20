@@ -293,6 +293,7 @@ namespace UnityEditor.Experimental.GraphView
 
 
             // Display elements in the MiniMap
+            Color darken = UIElementsUtility.editorPlayModeTintColor;
             Color currentColor = Handles.color;
             gView.graphElements.ForEach(elem =>
             {
@@ -300,7 +301,7 @@ namespace UnityEditor.Experimental.GraphView
                     return;
 
                 var rect = CalculateElementRect(elem);
-                Handles.color = elem.elementTypeColor;
+                Handles.color = elem.elementTypeColor * darken;
 
                 s_CachedRect[0].Set(rect.xMin, rect.yMin, 0.0f);
                 s_CachedRect[1].Set(rect.xMax, rect.yMin, 0.0f);

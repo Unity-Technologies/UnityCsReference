@@ -24,6 +24,8 @@ namespace UnityEngine
 
         extern public static int masterTextureLimit { get; set; }
 
+        extern public int mipmapCount { [NativeName("GetMipmapCount")] get; }
+
         [NativeProperty("AnisoLimit")] extern public static AnisotropicFiltering anisotropicFiltering { get; set; }
         [NativeName("SetGlobalAnisoLimits")] extern public static void SetGlobalAnisotropicFilteringLimits(int forcedMin, int globalMax);
 
@@ -168,7 +170,6 @@ namespace UnityEngine
     [UsedByNativeCode]
     public sealed partial class Texture2D : Texture
     {
-        extern public int mipmapCount { [NativeName("CountDataMipmaps")] get; }
         extern public TextureFormat format { [NativeName("GetTextureFormat")] get; }
 
         [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] extern public static Texture2D whiteTexture { get; }
@@ -178,10 +179,10 @@ namespace UnityEngine
         extern public void Compress(bool highQuality);
 
         [FreeFunction("Texture2DScripting::Create")]
-        extern private static bool Internal_CreateImpl([Writable] Texture2D mono, int w, int h, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex);
-        private static void Internal_Create([Writable] Texture2D mono, int w, int h, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex)
+        extern private static bool Internal_CreateImpl([Writable] Texture2D mono, int w, int h, int mipCount, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex);
+        private static void Internal_Create([Writable] Texture2D mono, int w, int h, int mipCount, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex)
         {
-            if (!Internal_CreateImpl(mono, w, h, format, flags, nativeTex))
+            if (!Internal_CreateImpl(mono, w, h, mipCount, format, flags, nativeTex))
                 throw new UnityException("Failed to create texture because of invalid parameters.");
         }
 
@@ -311,14 +312,13 @@ namespace UnityEngine
     [ExcludeFromPreset]
     public sealed partial class Cubemap : Texture
     {
-        extern public int mipmapCount { [NativeName("CountDataMipmaps")] get; }
         extern public TextureFormat format { [NativeName("GetTextureFormat")] get; }
 
         [FreeFunction("CubemapScripting::Create")]
-        extern private static bool Internal_CreateImpl([Writable] Cubemap mono, int ext, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex);
-        private static void Internal_Create([Writable] Cubemap mono, int ext, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex)
+        extern private static bool Internal_CreateImpl([Writable] Cubemap mono, int ext, int mipCount, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex);
+        private static void Internal_Create([Writable] Cubemap mono, int ext, int mipCount, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex)
         {
-            if (!Internal_CreateImpl(mono, ext, format, flags, nativeTex))
+            if (!Internal_CreateImpl(mono, ext, mipCount, format, flags, nativeTex))
                 throw new UnityException("Failed to create texture because of invalid parameters.");
         }
 
@@ -365,10 +365,10 @@ namespace UnityEngine
         [NativeName("GetPixelBilinear")] extern private Color GetPixelBilinearImpl(int image, float u, float v, float w);
 
         [FreeFunction("Texture3DScripting::Create")]
-        extern private static bool Internal_CreateImpl([Writable] Texture3D mono, int w, int h, int d, GraphicsFormat format, TextureCreationFlags flags);
-        private static void Internal_Create([Writable] Texture3D mono, int w, int h, int d, GraphicsFormat format, TextureCreationFlags flags)
+        extern private static bool Internal_CreateImpl([Writable] Texture3D mono, int w, int h, int d, int mipCount, GraphicsFormat format, TextureCreationFlags flags);
+        private static void Internal_Create([Writable] Texture3D mono, int w, int h, int d, int mipCount, GraphicsFormat format, TextureCreationFlags flags)
         {
-            if (!Internal_CreateImpl(mono, w, h, d, format, flags))
+            if (!Internal_CreateImpl(mono, w, h, d, mipCount, format, flags))
                 throw new UnityException("Failed to create texture because of invalid parameters.");
         }
 
@@ -418,10 +418,10 @@ namespace UnityEngine
         extern override public bool isReadable { get; }
 
         [FreeFunction("Texture2DArrayScripting::Create")]
-        extern private static bool Internal_CreateImpl([Writable] Texture2DArray mono, int w, int h, int d, GraphicsFormat format, TextureCreationFlags flags);
-        private static void Internal_Create([Writable] Texture2DArray mono, int w, int h, int d, GraphicsFormat format, TextureCreationFlags flags)
+        extern private static bool Internal_CreateImpl([Writable] Texture2DArray mono, int w, int h, int d, int mipCount, GraphicsFormat format, TextureCreationFlags flags);
+        private static void Internal_Create([Writable] Texture2DArray mono, int w, int h, int d, int mipCount, GraphicsFormat format, TextureCreationFlags flags)
         {
-            if (!Internal_CreateImpl(mono, w, h, d, format, flags))
+            if (!Internal_CreateImpl(mono, w, h, d, mipCount, format, flags))
                 throw new UnityException("Failed to create 2D array texture because of invalid parameters.");
         }
 
@@ -470,10 +470,10 @@ namespace UnityEngine
         extern override public bool isReadable { get; }
 
         [FreeFunction("CubemapArrayScripting::Create")]
-        extern private static bool Internal_CreateImpl([Writable] CubemapArray mono, int ext, int count, GraphicsFormat format, TextureCreationFlags flags);
-        private static void Internal_Create([Writable] CubemapArray mono, int ext, int count, GraphicsFormat format, TextureCreationFlags flags)
+        extern private static bool Internal_CreateImpl([Writable] CubemapArray mono, int ext, int count, int mipCount, GraphicsFormat format, TextureCreationFlags flags);
+        private static void Internal_Create([Writable] CubemapArray mono, int ext, int count, int mipCount, GraphicsFormat format, TextureCreationFlags flags)
         {
-            if (!Internal_CreateImpl(mono, ext, count, format, flags))
+            if (!Internal_CreateImpl(mono, ext, count, mipCount, format, flags))
                 throw new UnityException("Failed to create cubemap array texture because of invalid parameters.");
         }
 

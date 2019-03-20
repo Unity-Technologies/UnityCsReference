@@ -88,16 +88,6 @@ namespace UnityEngine
         // The size of the area light. Editor only.
         extern public Vector2 areaSize { get; set; }
 
-        // Table defining the falloff curve for baked light sources.
-        [FreeFunction("Light_Bindings::SetFalloffTable", HasExplicitThis = true, ThrowsException = true)]
-        extern private void SetFalloffTable([NotNull] float[] input);
-
-        [FreeFunction("Light_Bindings::SetAllLightsFalloffToInverseSquared")]
-        extern private static void SetAllLightsFalloffToInverseSquared();
-
-        [FreeFunction("Light_Bindings::SetAllLightsFalloffToUnityLegacy")]
-        extern private static void SetAllLightsFalloffToUnityLegacy();
-
         // Lightmapping mode. Editor only.
         extern public LightmapBakeType lightmapBakeType
         {

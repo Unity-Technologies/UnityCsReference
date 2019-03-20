@@ -450,6 +450,11 @@ namespace UnityEngine
             get { return MinConstantBufferOffsetAlignment(); }
         }
 
+        public static bool hasMipMaxLevel
+        {
+            get { return HasMipMaxLevel(); }
+        }
+
         public static bool supportsMipStreaming
         {
             get { return SupportsMipStreaming(); }
@@ -649,6 +654,9 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::MinConstantBufferOffsetAlignment")]
         static extern bool MinConstantBufferOffsetAlignment();
+
+        [FreeFunction("ScriptingGraphicsCaps::HasMipMaxLevel")]
+        static extern bool HasMipMaxLevel();
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsMipStreaming")]
         static extern bool SupportsMipStreaming();

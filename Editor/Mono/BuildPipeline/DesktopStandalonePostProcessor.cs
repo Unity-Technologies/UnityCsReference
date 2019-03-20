@@ -343,12 +343,14 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
     protected static void CopyResolutionDialogBanner(string destinationFolder)
     {
+#pragma warning disable 618
         var bannerTexture = PlayerSettings.resolutionDialogBanner;
         if (bannerTexture != null)
         {
             var path = Path.Combine(destinationFolder, "ScreenSelector.png");
             IconUtility.SaveTextureToFile(path, bannerTexture, StringToFourCC("PNGf"));
         }
+#pragma warning restore 618
     }
 
     protected virtual void CopyPlayerSolutionIntoStagingArea(BuildPostProcessArgs args, HashSet<string> filesToNotOverwrite)

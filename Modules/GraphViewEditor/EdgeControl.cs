@@ -837,6 +837,9 @@ namespace UnityEditor.Experimental.GraphView
             Color inputColor = this.inputColor;
             Color outputColor = this.outputColor;
 
+            inputColor *= UIElementsUtility.editorPlayModeTintColor;
+            outputColor *= UIElementsUtility.editorPlayModeTintColor;
+
             float realWidth = edgeWidth;
             if (realWidth * m_GraphView.scale < k_MinEdgeWidth)
             {
@@ -877,6 +880,9 @@ namespace UnityEditor.Experimental.GraphView
 
             Color inColor = this.inputColor;
             Color outColor = this.outputColor;
+
+            inColor *= UIElementsUtility.editorPlayModeTintColor;
+            outColor *= UIElementsUtility.editorPlayModeTintColor;
 
             uint cpt = (uint)m_RenderPoints.Count;
             uint wantedLength = (cpt) * 2;

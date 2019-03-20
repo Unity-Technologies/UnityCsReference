@@ -598,7 +598,7 @@ namespace UnityEngine.UIElements.UIR
         internal VisualElement nextDirtyVisuals, nextDirtyTransform, nextDirtyClipping; // Embedded linked list for dirty updates
         internal RenderChainCommand firstCommand, lastCommand; // Sequential for the same owner
         internal RenderChainCommand firstClosingCommand, lastClosingCommand; // Optional, sequential for the same owner, the presence of closing commands requires starting commands too, otherwise certain optimizations will become invalid
-        internal bool isInChain, isStencilClipped, isHidden;
+        internal bool isInChain, isStencilClipped, isHierarchyHidden;
         internal bool usesText, usesAtlas, disableNudging, disableTransformID;
         internal byte dirtiedVisuals; // 0, 1 is for self, and 2 is hierarchical
         internal bool dirtiedClipping, dirtiedTransform;

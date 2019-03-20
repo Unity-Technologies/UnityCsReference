@@ -43,8 +43,7 @@ namespace UnityEngine.UIElements
         None = 0,
         GroupTransform = 1 << 0, // Use uniform matrix to transform children
         BoneTransform = 1 << 1, // Use GPU buffer to store transform matrices
-        ImmediateMode = 1 << 2, // Drawn with GL/IMGUI
-        ClipWithScissors = 1 << 3 // If clipping is requested on this element, prefer scissoring
+        ClipWithScissors = 1 << 2 // If clipping is requested on this element, prefer scissoring
     }
 
     internal class RepaintData
@@ -473,8 +472,8 @@ namespace UnityEngine.UIElements
 
         private static VisualElement PerformPick(VisualElement root, Vector2 point, List<VisualElement> picked = null)
         {
-            // do not pick invisible
-            if (root.visible == false)
+            // Skip picking for elements with display: none
+            if (root.resolvedStyle.display == DisplayStyle.None)
                 return null;
 
             if (root.pickingMode == PickingMode.Ignore && root.hierarchy.childCount == 0)
@@ -502,11 +501,11 @@ namespace UnityEngine.UIElements
             {
                 var child = root.hierarchy[i];
                 var result = PerformPick(child, point, picked);
-                if (returnedChild == null && result != null)
+                if (returnedChild == null && result != null && result.visible)
                     returnedChild = result;
             }
 
-            if (picked != null && root.enabledInHierarchy && root.pickingMode == PickingMode.Position && containsPoint)
+            if (picked != null && root.enabledInHierarchy && root.visible && root.pickingMode == PickingMode.Position && containsPoint)
             {
                 picked.Add(root);
             }
@@ -518,7 +517,7 @@ namespace UnityEngine.UIElements
             {
                 case PickingMode.Position:
                 {
-                    if (containsPoint && root.enabledInHierarchy)
+                    if (containsPoint && root.enabledInHierarchy && root.visible)
                     {
                         return root;
                     }

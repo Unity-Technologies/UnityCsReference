@@ -24,6 +24,15 @@ namespace UnityEditor
             CreateTracker();
         }
 
+        // It's important to NOT call the base.OnDestroy() here!
+        // The InspectorWindow.OnDestroy() deletes the tracker if we are not using the
+        // shared tracker. This makes sense when we are an InspectorWindow about to die,
+        // but it does not make sense when we are a PreviewWindow sharing this tracker with
+        // a perfectly not dead InspectorWindow. Killing the tracker used by a still-alive
+        // InspectorWindow cause many problems.
+        // case 1119612
+        protected override void OnDestroy() {}
+
         protected override void OnEnable()
         {
             titleContent = EditorGUIUtility.TrTextContent("Preview");
@@ -75,6 +84,7 @@ namespace UnityEditor
 
         protected void DrawPreview()
         {
+            GUI.color = EditorApplication.isPlayingOrWillChangePlaymode ? HostView.kPlayModeDarken : Color.white;
             if (m_ParentInspectorWindow == null)
             {
                 Close();

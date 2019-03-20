@@ -7,9 +7,8 @@ using System.Collections.Generic;
 
 using UnityEditorInternal.VR;
 using UnityEngine;
-using UnityEngine.Experimental;
 
-namespace UnityEditor.Experimental.XR
+namespace UnityEditor.XR
 {
     internal static class VRDeviceTransition
     {

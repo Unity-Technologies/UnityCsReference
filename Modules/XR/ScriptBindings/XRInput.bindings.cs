@@ -343,17 +343,17 @@ namespace UnityEngine.XR
         }
 
         // Features
-        public bool TryGetFeatureValue(InputFeatureUsage<bool> usage, DateTime time, out bool value) { return InputDevices.TryGetFeatureValueAtTime_bool(m_DeviceId, usage.name, TimeConverter.ToUnixTimeMilliseconds(time), out value); }
-        public bool TryGetFeatureValue(InputFeatureUsage<uint> usage, DateTime time, out uint value) { return InputDevices.TryGetFeatureValueAtTime_UInt32(m_DeviceId, usage.name, TimeConverter.ToUnixTimeMilliseconds(time), out value); }
-        public bool TryGetFeatureValue(InputFeatureUsage<float> usage, DateTime time, out float value) { return InputDevices.TryGetFeatureValueAtTime_float(m_DeviceId, usage.name, TimeConverter.ToUnixTimeMilliseconds(time), out value); }
-        public bool TryGetFeatureValue(InputFeatureUsage<Vector2> usage, DateTime time, out Vector2 value) { return InputDevices.TryGetFeatureValueAtTime_Vector2f(m_DeviceId, usage.name, TimeConverter.ToUnixTimeMilliseconds(time), out value); }
-        public bool TryGetFeatureValue(InputFeatureUsage<Vector3> usage, DateTime time, out Vector3 value) { return InputDevices.TryGetFeatureValueAtTime_Vector3f(m_DeviceId, usage.name, TimeConverter.ToUnixTimeMilliseconds(time), out value); }
-        public bool TryGetFeatureValue(InputFeatureUsage<Quaternion> usage, DateTime time, out Quaternion value) { return InputDevices.TryGetFeatureValueAtTime_Quaternionf(m_DeviceId, usage.name, TimeConverter.ToUnixTimeMilliseconds(time), out value); }
+        public bool TryGetFeatureValue(InputFeatureUsage<bool> usage, DateTime time, out bool value) { return InputDevices.TryGetFeatureValueAtTime_bool(m_DeviceId, usage.name, TimeConverter.LocalDateTimeToUnixTimeMilliseconds(time), out value); }
+        public bool TryGetFeatureValue(InputFeatureUsage<uint> usage, DateTime time, out uint value) { return InputDevices.TryGetFeatureValueAtTime_UInt32(m_DeviceId, usage.name, TimeConverter.LocalDateTimeToUnixTimeMilliseconds(time), out value); }
+        public bool TryGetFeatureValue(InputFeatureUsage<float> usage, DateTime time, out float value) { return InputDevices.TryGetFeatureValueAtTime_float(m_DeviceId, usage.name, TimeConverter.LocalDateTimeToUnixTimeMilliseconds(time), out value); }
+        public bool TryGetFeatureValue(InputFeatureUsage<Vector2> usage, DateTime time, out Vector2 value) { return InputDevices.TryGetFeatureValueAtTime_Vector2f(m_DeviceId, usage.name, TimeConverter.LocalDateTimeToUnixTimeMilliseconds(time), out value); }
+        public bool TryGetFeatureValue(InputFeatureUsage<Vector3> usage, DateTime time, out Vector3 value) { return InputDevices.TryGetFeatureValueAtTime_Vector3f(m_DeviceId, usage.name, TimeConverter.LocalDateTimeToUnixTimeMilliseconds(time), out value); }
+        public bool TryGetFeatureValue(InputFeatureUsage<Quaternion> usage, DateTime time, out Quaternion value) { return InputDevices.TryGetFeatureValueAtTime_Quaternionf(m_DeviceId, usage.name, TimeConverter.LocalDateTimeToUnixTimeMilliseconds(time), out value); }
 
         public bool TryGetFeatureValue(InputFeatureUsage<InputTrackingState> usage, DateTime time, out InputTrackingState value)
         {
             uint intValue = 0;
-            if (InputDevices.TryGetFeatureValueAtTime_UInt32(m_DeviceId, usage.name, TimeConverter.ToUnixTimeMilliseconds(time), out intValue))
+            if (InputDevices.TryGetFeatureValueAtTime_UInt32(m_DeviceId, usage.name, TimeConverter.LocalDateTimeToUnixTimeMilliseconds(time), out intValue))
             {
                 value = (InputTrackingState)intValue;
                 return true;
@@ -400,14 +400,15 @@ namespace UnityEngine.XR
             get { return DateTime.Now; }
         }
 
-        public static long ToUnixTimeMilliseconds(DateTime date)
+        public static long LocalDateTimeToUnixTimeMilliseconds(DateTime date)
         {
             return Convert.ToInt64((date.ToUniversalTime() - s_Epoch).TotalMilliseconds);
         }
 
-        public static long ToUnixTimeSeconds(DateTime date)
+        public static DateTime UnixTimeMillisecondsToLocalDateTime(long unixTimeInMilliseconds)
         {
-            return Convert.ToInt64((date.ToUniversalTime() - s_Epoch).TotalSeconds);
+            DateTime dateTime = s_Epoch;
+            return dateTime.AddMilliseconds(unixTimeInMilliseconds).ToLocalTime();
         }
     }
 

@@ -72,12 +72,16 @@ namespace UnityEditor.UIElements
 
         internal VisualElement prefabOverrideBlueBarsContainer { get; private set; }
 
+        private bool m_IgnoreOnInspectorGUIErrors;
+
         public InspectorElement() : this(null as Object) {}
 
         public InspectorElement(Object obj) : this(obj, Mode.Normal) {}
 
         internal InspectorElement(Object obj, Mode mode)
         {
+            m_IgnoreOnInspectorGUIErrors = false;
+
             AddToClassList(ussClassName);
 
             this.mode = mode;
@@ -354,8 +358,38 @@ namespace UnityEditor.UIElements
             {
                 inspector = new IMGUIContainer();
             }
+
+            m_IgnoreOnInspectorGUIErrors = false;
             inspector.onGUIHandler = () =>
             {
+                // It's possible to run 2-3 frames after the tracker of this inspector window has
+                // been recreated, and with it the Editor and its SerializedObject. One example of
+                // when this happens is when the Preview window is detached from a *second* instance
+                // of an InspectorWindow and re-attached.
+                //
+                // This is only a problem for the *second* (or third, forth, etc) instance of
+                // the InspectorWindow because only the first instance can use the
+                // ActiveEditorTracker.sharedTracker in InspectorWindow.CreateTracker(). The
+                // other instances have to create a new tracker...each time.
+                //
+                // Not an ideal solution, but basically we temporarily hold the printing to console
+                // for errors for which GUIUtility.ShouldRethrowException(e) returns false.
+                // The errors that may occur during this brief "bad state" are SerializedProperty
+                // errors. If the custom Editor created and remembered references to some
+                // SerializedProperties during its OnEnable(), those references will be invalid
+                // when the tracker is refreshed, until this GUIHandler is reassigned. This fix
+                // just ignores those errors.
+                //
+                // We don't simply early return here because that can break some tests that
+                // rely heavily on yields and timing of UI redraws. Yes..
+                //
+                // case 1119612
+                if (editor.m_SerializedObject == null)
+                {
+                    editor.Repaint();
+                    m_IgnoreOnInspectorGUIErrors = true;
+                }
+
                 if ((editor.target == null && !GenericInspector.ObjectIsMonoBehaviourOrScriptableObject(editor.target)) ||
                     !editor.serializedObject.isValid)
                 {
@@ -452,7 +486,8 @@ namespace UnityEditor.UIElements
                                         throw;
                                     }
 
-                                    Debug.LogException(e);
+                                    if (!m_IgnoreOnInspectorGUIErrors)
+                                        Debug.LogException(e);
                                 }
                             }
                             EditorGUILayout.EndVertical();

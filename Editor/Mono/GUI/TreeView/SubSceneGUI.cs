@@ -167,9 +167,12 @@ static class SubSceneGUI
 
     internal static void DrawSubSceneHeaderBackground(Rect rect, GameObject gameObject)
     {
-        float indent = CalcIndentOfVerticalLine(gameObject);
+        float indent = CalcIndentOfSubSceneHeader(gameObject);
         if (indent < 0)
-            indent = 0f;
+        {
+            Debug.LogError("Only call DrawSubSceneHeaderBackground if IsSubSceneHeader() is true");
+            return;
+        }
         Rect headerRect = rect;
         headerRect.xMin += indent;
 
@@ -179,49 +182,89 @@ static class SubSceneGUI
         GUI.color = oldColor;
     }
 
-    internal static void DrawVerticalLine(Rect rect, GameObject gameObject)
+    static float CalcIndentOfSubSceneHeader(GameObject gameObject)
     {
-        if (Event.current.type == EventType.Repaint)
-        {
-            float indent = CalcIndentOfVerticalLine(gameObject);
-            if (indent > 0)
-            {
-                Rect lineRect = rect;
-                lineRect.x += indent;
-                lineRect.width = 1;
-
-                EditorGUI.DrawRect(lineRect, GetColorForSubScene(gameObject.scene));
-            }
-        }
-    }
-
-    static float CalcIndentOfVerticalLine(GameObject gameObject)
-    {
-        SceneHierarchyHooks.SubSceneInfo subScene;
-        if (gameObject == null || !m_SceneToSubSceneMap.TryGetValue(gameObject.scene, out subScene))
+        SceneHierarchyHooks.SubSceneInfo subSceneInfo;
+        if (gameObject == null || !m_SubSceneHeadersMap.TryGetValue(gameObject, out subSceneInfo))
             return -1;  // Input is not a sub scene GameObject
 
-        int hierarchyDepth = CalculateHierarchyDepthOfSubScene(subScene);
+        int hierarchyDepth = CalculateHierarchyDepthOfSubScene(subSceneInfo);
         if (hierarchyDepth > 0)
         {
-            float padding = 28; // visibility icon area
             float indentWidth = 14f;
-            float indent = hierarchyDepth * indentWidth + 4f + padding;
+            float indent = hierarchyDepth * indentWidth;
             return indent;
         }
         return -1f;
     }
 
-    internal static int CalculateHierarchyDepthOfSubScene(SceneHierarchyHooks.SubSceneInfo subScene)
+    // Temp cache for optimizing vertical line drawing
+    static SceneHierarchyHooks.SubSceneInfo s_LastSubSceneInfo;
+    static Rect s_LastRectCalculated;
+
+    internal static Rect GetRectForVerticalLine(Rect rowRect, Scene scene)
     {
-        if (!subScene.isValid)
+        // Fast path: reuse last rect if same scene
+        if (s_LastSubSceneInfo.isValid && s_LastSubSceneInfo.scene == scene)
+        {
+            s_LastRectCalculated.y = rowRect.y;
+            return s_LastRectCalculated;
+        }
+
+        // Reset and calculate new rect
+        s_LastRectCalculated = new Rect();
+        if (!m_SceneToSubSceneMap.TryGetValue(scene, out s_LastSubSceneInfo))
+            return new Rect();
+
+        if (s_LastSubSceneInfo.color.a == 0)
+            return new Rect();
+
+        float indent = CalcIndentOfVerticalLine(s_LastSubSceneInfo);
+        if (indent < 0)
+            return new Rect();
+
+        s_LastRectCalculated = rowRect;
+        s_LastRectCalculated.x += indent;
+        s_LastRectCalculated.width = 1;
+
+        return s_LastRectCalculated;
+    }
+
+    internal static void DrawVerticalLine(Rect rowRect, GameObject gameObject)
+    {
+        if (gameObject == null)
+            return;
+
+        if (Event.current.type == EventType.Repaint)
+        {
+            Rect lineRect = GetRectForVerticalLine(rowRect, gameObject.scene);
+            if (lineRect.width > 0f)
+                EditorGUI.DrawRect(lineRect, GetColorForSubScene(gameObject.scene));
+        }
+    }
+
+    static float CalcIndentOfVerticalLine(SceneHierarchyHooks.SubSceneInfo subSceneInfo)
+    {
+        int hierarchyDepth = CalculateHierarchyDepthOfSubScene(subSceneInfo);
+        if (hierarchyDepth > 0)
+        {
+            float indentWidth = 14f;
+            float indent = hierarchyDepth * indentWidth;
+            return indent;
+        }
+        return -1f;
+    }
+
+    internal static int CalculateHierarchyDepthOfSubScene(SceneHierarchyHooks.SubSceneInfo subSceneInfo)
+    {
+        if (!subSceneInfo.isValid)
             return -1;
 
         int hierarchyDepth = 0; // Root scene offset
         while (true)
         {
-            hierarchyDepth += FindTransformDepth(subScene.transform) + 1;  // the +1 is for the SubScene header
-            if (!m_SceneToSubSceneMap.TryGetValue(subScene.transform.gameObject.scene, out subScene))
+            hierarchyDepth += FindTransformDepth(subSceneInfo.transform) + 1;  // the +1 is for the SubScene header
+            if (!m_SceneToSubSceneMap.TryGetValue(subSceneInfo.transform.gameObject.scene, out subSceneInfo))
                 break;
         }
 

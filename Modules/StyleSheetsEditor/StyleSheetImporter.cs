@@ -22,10 +22,7 @@ namespace UnityEditor.StyleSheets
         private static readonly List<string> s_ValidationPathWhitelist = new List<string>()
         {
             "Packages/com.unity.shadergraph",
-            "Packages/com.unity.render-pipelines.high-definition",
-            "Packages/com.unity.package-manager-ui",
-            "Packages/com.unity.package-validation-suite",
-            "Packages/com.unity.collab-proxy"
+            "Packages/com.unity.render-pipelines.high-definition"
         };
 
         public override void OnImportAsset(AssetImportContext ctx)

@@ -20,6 +20,7 @@ namespace UnityEngine
         public int height { get; set; }
         public int msaaSamples { get; set; }
         public int volumeDepth { get; set; }
+        public int mipCount { get; set; }
 
         private GraphicsFormat _graphicsFormat;// { get; set; }
         public GraphicsFormat graphicsFormat
@@ -64,10 +65,33 @@ namespace UnityEngine
         private RenderTextureCreationFlags _flags;
         public RenderTextureCreationFlags flags { get { return _flags; } }
         public RenderTextureMemoryless memoryless { get; set; }
-        public RenderTextureDescriptor(int width, int height) : this(width, height, SystemInfo.GetGraphicsFormat(DefaultFormat.LDR), 0) {}
-        public RenderTextureDescriptor(int width, int height, RenderTextureFormat colorFormat) : this(width, height, colorFormat, 0) {}
-        public RenderTextureDescriptor(int width, int height, RenderTextureFormat colorFormat, int depthBufferBits) : this(width, height, SystemInfo.GetCompatibleFormat(GraphicsFormatUtility.GetGraphicsFormat(colorFormat, false), FormatUsage.Render), depthBufferBits) {}
-        public RenderTextureDescriptor(int width, int height, GraphicsFormat colorFormat, int depthBufferBits) : this()
+
+        public RenderTextureDescriptor(int width, int height)
+            : this(width, height, SystemInfo.GetGraphicsFormat(DefaultFormat.LDR), 0, Texture.GenerateAllMips)
+        {
+        }
+
+        public RenderTextureDescriptor(int width, int height, RenderTextureFormat colorFormat)
+            : this(width, height, colorFormat, 0)
+        {
+        }
+
+        public RenderTextureDescriptor(int width, int height, RenderTextureFormat colorFormat, int depthBufferBits)
+            : this(width, height, SystemInfo.GetCompatibleFormat(GraphicsFormatUtility.GetGraphicsFormat(colorFormat, false), FormatUsage.Render), depthBufferBits)
+        {
+        }
+
+        public RenderTextureDescriptor(int width, int height, GraphicsFormat colorFormat, int depthBufferBits)
+            : this(width, height, colorFormat, depthBufferBits, Texture.GenerateAllMips)
+        {
+        }
+
+        public RenderTextureDescriptor(int width, int height, RenderTextureFormat colorFormat, int depthBufferBits, int mipCount)
+            : this(width, height, SystemInfo.GetCompatibleFormat(GraphicsFormatUtility.GetGraphicsFormat(colorFormat, false), FormatUsage.Render), depthBufferBits, mipCount)
+        {
+        }
+
+        public RenderTextureDescriptor(int width, int height, GraphicsFormat colorFormat, int depthBufferBits, int mipCount) : this()
         {
             this.width = width;
             this.height = height;
@@ -75,6 +99,7 @@ namespace UnityEngine
             msaaSamples = 1;
             this.graphicsFormat = colorFormat;
             this.depthBufferBits = depthBufferBits;
+            this.mipCount = mipCount;
             this.sRGB = GraphicsFormatUtility.IsSRGBFormat(colorFormat);
             dimension = Rendering.TextureDimension.Tex2D;
             shadowSamplingMode = Rendering.ShadowSamplingMode.None;
@@ -185,6 +210,21 @@ namespace UnityEngine
             SetSRGBReadWrite(GraphicsFormatUtility.IsSRGBFormat(format));
         }
 
+        public RenderTexture(int width, int height, int depth, GraphicsFormat format, int mipCount)
+        {
+            // Note: the code duplication here is because you can't set a descriptor with
+            // zero width/height, which our own code (and possibly existing user code) relies on.
+            if (!ValidateFormat(format, FormatUsage.Render))
+                return;
+
+            Internal_Create(this);
+            this.width = width; this.height = height; this.depth = depth; this.graphicsFormat = format;
+
+            descriptor = new RenderTextureDescriptor(width, height, format, depth, mipCount);
+
+            SetSRGBReadWrite(GraphicsFormatUtility.IsSRGBFormat(format));
+        }
+
         public RenderTexture(int width, int height, int depth, [uei.DefaultValue("RenderTextureFormat.Default")] RenderTextureFormat format, [uei.DefaultValue("RenderTextureReadWrite.Default")] RenderTextureReadWrite readWrite)
             : this(width, height, depth, GraphicsFormatUtility.GetGraphicsFormat(format, readWrite))
         {
@@ -199,6 +239,12 @@ namespace UnityEngine
         [uei.ExcludeFromDocs]
         public RenderTexture(int width, int height, int depth)
             : this(width, height, depth, GraphicsFormatUtility.GetGraphicsFormat(RenderTextureFormat.Default, RenderTextureReadWrite.Default))
+        {
+        }
+
+        [uei.ExcludeFromDocs]
+        public RenderTexture(int width, int height, int depth, RenderTextureFormat format, int mipCount)
+            : this(width, height, depth, GraphicsFormatUtility.GetGraphicsFormat(format, RenderTextureReadWrite.Default), mipCount)
         {
         }
 
@@ -413,6 +459,8 @@ namespace UnityEngine
 
     public partial class Texture : Object
     {
+        public static readonly int GenerateAllMips = -1;
+
         internal bool ValidateFormat(RenderTextureFormat format)
         {
             if (SystemInfo.SupportsRenderTextureFormat(format))
@@ -468,10 +516,10 @@ namespace UnityEngine
 
     public partial class Texture2D : Texture
     {
-        internal Texture2D(int width, int height, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex)
+        internal Texture2D(int width, int height, GraphicsFormat format, TextureCreationFlags flags, int mipCount, IntPtr nativeTex)
         {
             if (ValidateFormat(format, FormatUsage.Sample))
-                Internal_Create(this, width, height, format, flags, nativeTex);
+                Internal_Create(this, width, height, mipCount, format, flags, nativeTex);
         }
 
         public Texture2D(int width, int height, DefaultFormat format, TextureCreationFlags flags)
@@ -480,36 +528,44 @@ namespace UnityEngine
         }
 
         public Texture2D(int width, int height, GraphicsFormat format, TextureCreationFlags flags)
-            : this(width, height, format, flags, IntPtr.Zero)
+            : this(width, height, format, flags, Texture.GenerateAllMips, IntPtr.Zero)
         {
         }
 
-        internal Texture2D(int width, int height, TextureFormat textureFormat, bool mipChain, bool linear, IntPtr nativeTex)
+        public Texture2D(int width, int height, GraphicsFormat format, int mipCount, TextureCreationFlags flags)
+            : this(width, height, format, flags, mipCount, IntPtr.Zero)
+        {
+        }
+
+        internal Texture2D(int width, int height, TextureFormat textureFormat, int mipCount, bool linear, IntPtr nativeTex)
         {
             if (!ValidateFormat(textureFormat))
                 return;
 
             GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, !linear);
-            TextureCreationFlags flags = TextureCreationFlags.None;
-            if (mipChain)
-                flags |= TextureCreationFlags.MipChain;
+            TextureCreationFlags flags = (mipCount != 1) ? TextureCreationFlags.MipChain : TextureCreationFlags.None;
             if (GraphicsFormatUtility.IsCrunchFormat(textureFormat))
                 flags |= TextureCreationFlags.Crunch;
-            Internal_Create(this, width, height, format, flags, nativeTex);
+            Internal_Create(this, width, height, mipCount, format, flags, nativeTex);
+        }
+
+        public Texture2D(int width, int height, [uei.DefaultValue("TextureFormat.RGBA32")] TextureFormat textureFormat, [uei.DefaultValue("-1")] int mipCount, [uei.DefaultValue("false")] bool linear)
+            : this(width, height, textureFormat, mipCount, linear, IntPtr.Zero)
+        {
         }
 
         public Texture2D(int width, int height, [uei.DefaultValue("TextureFormat.RGBA32")] TextureFormat textureFormat, [uei.DefaultValue("true")] bool mipChain, [uei.DefaultValue("false")] bool linear)
-            : this(width, height, textureFormat, mipChain, linear, IntPtr.Zero)
+            : this(width, height, textureFormat, mipChain ? -1 : 1, linear, IntPtr.Zero)
         {
         }
 
         public Texture2D(int width, int height, TextureFormat textureFormat, bool mipChain)
-            : this(width, height, textureFormat, mipChain, false, IntPtr.Zero)
+            : this(width, height, textureFormat, mipChain ? -1 : 1, false, IntPtr.Zero)
         {
         }
 
         public Texture2D(int width, int height)
-            : this(width, height, TextureFormat.RGBA32, true, false, IntPtr.Zero)
+            : this(width, height, TextureFormat.RGBA32, Texture.GenerateAllMips, false, IntPtr.Zero)
         {
         }
 
@@ -517,7 +573,7 @@ namespace UnityEngine
         {
             if (nativeTex == IntPtr.Zero)
                 throw new ArgumentException("nativeTex can not be null");
-            return new Texture2D(width, height, format, mipChain, linear, nativeTex);
+            return new Texture2D(width, height, format, mipChain ? -1 : 1, linear, nativeTex);
         }
 
         public void SetPixel(int x, int y, Color color)
@@ -719,26 +775,40 @@ namespace UnityEngine
         public Cubemap(int width, GraphicsFormat format, TextureCreationFlags flags)
         {
             if (ValidateFormat(format, FormatUsage.Sample))
-                Internal_Create(this, width, format, flags, IntPtr.Zero);
+                Internal_Create(this, width, Texture.GenerateAllMips, format, flags, IntPtr.Zero);
         }
 
-        internal Cubemap(int width, TextureFormat textureFormat, bool mipChain, IntPtr nativeTex)
+        public Cubemap(int width, TextureFormat format, int mipCount)
+            : this(width, format, mipCount, IntPtr.Zero)
+        {
+        }
+
+        public Cubemap(int width, GraphicsFormat format, TextureCreationFlags flags, int mipCount)
+        {
+            if (ValidateFormat(format, FormatUsage.Sample))
+                Internal_Create(this, width, mipCount, format, flags, IntPtr.Zero);
+        }
+
+        internal Cubemap(int width, TextureFormat textureFormat, int mipCount, IntPtr nativeTex)
         {
             if (!ValidateFormat(textureFormat))
                 return;
 
             GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, false);
-            TextureCreationFlags flags = TextureCreationFlags.None;
-            if (mipChain)
-                flags |= TextureCreationFlags.MipChain;
+            TextureCreationFlags flags = (mipCount != 1) ? TextureCreationFlags.MipChain : TextureCreationFlags.None;
             if (GraphicsFormatUtility.IsCrunchFormat(textureFormat))
                 flags |= TextureCreationFlags.Crunch;
 
-            Internal_Create(this, width, format, flags, nativeTex);
+            Internal_Create(this, width, mipCount, format, flags, nativeTex);
+        }
+
+        internal Cubemap(int width, TextureFormat textureFormat, bool mipChain, IntPtr nativeTex)
+            : this(width, textureFormat, mipChain ? -1 : 1, nativeTex)
+        {
         }
 
         public Cubemap(int width, TextureFormat textureFormat, bool mipChain)
-            : this(width, textureFormat, mipChain, IntPtr.Zero)
+            : this(width, textureFormat, mipChain ? -1 : 1, IntPtr.Zero)
         {
         }
 
@@ -779,23 +849,31 @@ namespace UnityEngine
 
         [RequiredByNativeCode] // used to create builtin textures
         public Texture3D(int width, int height, int depth, GraphicsFormat format, TextureCreationFlags flags)
+            : this(width, height, depth, format, flags, Texture.GenerateAllMips)
         {
-            if (ValidateFormat(format, FormatUsage.Sample))
-                Internal_Create(this, width, height, depth, format, flags);
         }
 
-        public Texture3D(int width, int height, int depth, TextureFormat textureFormat, bool mipChain)
+        public Texture3D(int width, int height, int depth, GraphicsFormat format, TextureCreationFlags flags, int mipCount)
+        {
+            if (ValidateFormat(format, FormatUsage.Sample))
+                Internal_Create(this, width, height, depth, mipCount, format, flags);
+        }
+
+        public Texture3D(int width, int height, int depth, TextureFormat textureFormat, int mipCount)
         {
             if (!ValidateFormat(textureFormat))
                 return;
 
             GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, false);
-            TextureCreationFlags flags = TextureCreationFlags.None;
-            if (mipChain)
-                flags |= TextureCreationFlags.MipChain;
+            TextureCreationFlags flags = (mipCount != 1) ? TextureCreationFlags.MipChain : TextureCreationFlags.None;
             if (GraphicsFormatUtility.IsCrunchFormat(textureFormat))
                 flags |= TextureCreationFlags.Crunch;
-            Internal_Create(this, width, height, depth, format, flags);
+            Internal_Create(this, width, height, depth, mipCount, format, flags);
+        }
+
+        public Texture3D(int width, int height, int depth, TextureFormat textureFormat, bool mipChain)
+            : this(width, height, depth, textureFormat, mipChain ? -1 : 1)
+        {
         }
 
         public void Apply([uei.DefaultValue("true")] bool updateMipmaps, [uei.DefaultValue("false")] bool makeNoLongerReadable)
@@ -853,27 +931,35 @@ namespace UnityEngine
 
         [RequiredByNativeCode] // used to create builtin textures
         public Texture2DArray(int width, int height, int depth, GraphicsFormat format, TextureCreationFlags flags)
+            : this(width, height, depth, format, flags, Texture.GenerateAllMips)
         {
-            if (ValidateFormat(format, FormatUsage.Sample))
-                Internal_Create(this, width, height, depth, format, flags);
         }
 
-        public Texture2DArray(int width, int height, int depth, TextureFormat textureFormat, bool mipChain, [uei.DefaultValue("true")] bool linear)
+        public Texture2DArray(int width, int height, int depth, GraphicsFormat format, TextureCreationFlags flags, int mipCount)
+        {
+            if (ValidateFormat(format, FormatUsage.Sample))
+                Internal_Create(this, width, height, depth, mipCount, format, flags);
+        }
+
+        public Texture2DArray(int width, int height, int depth, TextureFormat textureFormat, int mipCount, [uei.DefaultValue("true")] bool linear)
         {
             if (!ValidateFormat(textureFormat))
                 return;
 
             GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, !linear);
-            TextureCreationFlags flags = TextureCreationFlags.None;
-            if (mipChain)
-                flags |= TextureCreationFlags.MipChain;
+            TextureCreationFlags flags = (mipCount != 1) ? TextureCreationFlags.MipChain : TextureCreationFlags.None;
             if (GraphicsFormatUtility.IsCrunchFormat(textureFormat))
                 flags |= TextureCreationFlags.Crunch;
-            Internal_Create(this, width, height, depth, format, flags);
+            Internal_Create(this, width, height, depth, mipCount, format, flags);
+        }
+
+        public Texture2DArray(int width, int height, int depth, TextureFormat textureFormat, bool mipChain, [uei.DefaultValue("true")] bool linear)
+            : this(width, height, depth, textureFormat, mipChain ? -1 : 1, linear)
+        {
         }
 
         public Texture2DArray(int width, int height, int depth, TextureFormat textureFormat, bool mipChain)
-            : this(width, height, depth, textureFormat, mipChain, false)
+            : this(width, height, depth, textureFormat, mipChain ? -1 : 1, false)
         {
         }
 
@@ -896,27 +982,35 @@ namespace UnityEngine
 
         [RequiredByNativeCode]
         public CubemapArray(int width, int cubemapCount, GraphicsFormat format, TextureCreationFlags flags)
+            : this(width, cubemapCount, format, flags, Texture.GenerateAllMips)
         {
-            if (ValidateFormat(format, FormatUsage.Sample))
-                Internal_Create(this, width, cubemapCount, format, flags);
         }
 
-        public CubemapArray(int width, int cubemapCount, TextureFormat textureFormat, bool mipChain, [uei.DefaultValue("true")] bool linear)
+        public CubemapArray(int width, int cubemapCount, GraphicsFormat format, TextureCreationFlags flags, int mipCount)
+        {
+            if (ValidateFormat(format, FormatUsage.Sample))
+                Internal_Create(this, width, cubemapCount, mipCount, format, flags);
+        }
+
+        public CubemapArray(int width, int cubemapCount, TextureFormat textureFormat, int mipCount, [uei.DefaultValue("true")] bool linear)
         {
             if (!ValidateFormat(textureFormat))
                 return;
 
             GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, !linear);
-            TextureCreationFlags flags = TextureCreationFlags.None;
-            if (mipChain)
-                flags |= TextureCreationFlags.MipChain;
+            TextureCreationFlags flags = (mipCount != 1) ? TextureCreationFlags.MipChain : TextureCreationFlags.None;
             if (GraphicsFormatUtility.IsCrunchFormat(textureFormat))
                 flags |= TextureCreationFlags.Crunch;
-            Internal_Create(this, width, cubemapCount, format, flags);
+            Internal_Create(this, width, cubemapCount, mipCount, format, flags);
+        }
+
+        public CubemapArray(int width, int cubemapCount, TextureFormat textureFormat, bool mipChain, [uei.DefaultValue("true")] bool linear)
+            : this(width, cubemapCount, textureFormat, mipChain ? -1 : 1, linear)
+        {
         }
 
         public CubemapArray(int width, int cubemapCount, TextureFormat textureFormat, bool mipChain)
-            : this(width, cubemapCount, textureFormat, mipChain, false)
+            : this(width, cubemapCount, textureFormat, mipChain ? -1 : 1, false)
         {
         }
 

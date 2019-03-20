@@ -658,7 +658,7 @@ namespace UnityEditor
             return m_State.m_CreateAssetUtility;
         }
 
-        RenameOverlay GetRenameOverlay()
+        internal RenameOverlay GetRenameOverlay()
         {
             return m_State.m_RenameOverlay;
         }
@@ -716,6 +716,8 @@ namespace UnityEditor
             {
                 if (GetRenameOverlay().userAcceptedRename)
                     GetCreateAssetUtility().EndNewAssetCreation(name);
+                else
+                    GetCreateAssetUtility().EndNewAssetCreationCanceled(name);
             }
             else // renaming existing asset
             {

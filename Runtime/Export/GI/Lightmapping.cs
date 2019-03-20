@@ -8,6 +8,7 @@ using UnityEngine.Rendering;
 using Unity.Collections;
 using NativeArrayUnsafeUtility = Unity.Collections.LowLevel.Unsafe.NativeArrayUnsafeUtility;
 using Unity.Collections.LowLevel.Unsafe;
+using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 namespace UnityEngine
 {
@@ -189,22 +190,24 @@ namespace UnityEngine
             public float        range;
             public float        width;
             public float        height;
+            public FalloffType  falloff;
         }
         public struct DiscLight
         {
             // light id
-            public int instanceID;
+            public int          instanceID;
             // shadow
-            public bool shadow;
+            public bool         shadow;
             // light mode
-            public LightMode mode;
+            public LightMode    mode;
             // light
-            public Vector3 position;
-            public Quaternion orientation;
-            public LinearColor color;
-            public LinearColor indirectColor;
-            public float range;
-            public float radius;
+            public Vector3      position;
+            public Quaternion   orientation;
+            public LinearColor  color;
+            public LinearColor  indirectColor;
+            public float        range;
+            public float        radius;
+            public FalloffType  falloff;
         }
 
         // This struct must be kept in sync with its counterpart in LightDataGI.h
@@ -302,25 +305,25 @@ namespace UnityEngine
                 type           = LightType.Rectangle;
                 mode           = light.mode;
                 shadow         = (byte)(light.shadow ? 1 : 0);
-                falloff        = FalloffType.Undefined;
+                falloff        = light.falloff;
             }
 
             public void Init(ref DiscLight light)
             {
-                instanceID = light.instanceID;
-                color = light.color;
-                indirectColor = light.indirectColor;
-                orientation = light.orientation;
-                position = light.position;
-                range = light.range;
-                coneAngle = 0.0f;
+                instanceID     = light.instanceID;
+                color          = light.color;
+                indirectColor  = light.indirectColor;
+                orientation    = light.orientation;
+                position       = light.position;
+                range          = light.range;
+                coneAngle      = 0.0f;
                 innerConeAngle = 0.0f;
-                shape0 = light.radius;
-                shape1 = 0.0f;
-                type = LightType.Disc;
-                mode = light.mode;
-                shadow = (byte)(light.shadow ? 1 : 0);
-                falloff = FalloffType.Undefined;
+                shape0         = light.radius;
+                shape1         = 0.0f;
+                type           = LightType.Disc;
+                mode           = light.mode;
+                shadow         = (byte)(light.shadow ? 1 : 0);
+                falloff        = light.falloff;
             }
 
             public void InitNoBake(int lightInstanceID)
@@ -406,30 +409,38 @@ namespace UnityEngine
                 rect.range          = l.range;
                 rect.width          = l.areaSize.x;
                 rect.height         = l.areaSize.y;
+                rect.falloff        = FalloffType.Legacy;
             }
 
             public static void Extract(Light l, ref DiscLight disc)
             {
-                disc.instanceID = l.GetInstanceID();
-                disc.mode = Extract(l.lightmapBakeType);
-                disc.shadow = l.shadows != LightShadows.None;
-                disc.position = l.transform.position;
-                disc.orientation = l.transform.rotation;
-                disc.color = LinearColor.Convert(l.color, l.intensity);
-                disc.indirectColor = ExtractIndirect(l);
-                disc.range = l.range;
-                disc.radius = l.areaSize.x;
+                disc.instanceID     = l.GetInstanceID();
+                disc.mode           = Extract(l.lightmapBakeType);
+                disc.shadow         = l.shadows != LightShadows.None;
+                disc.position       = l.transform.position;
+                disc.orientation    = l.transform.rotation;
+                disc.color          = LinearColor.Convert(l.color, l.intensity);
+                disc.indirectColor  = ExtractIndirect(l);
+                disc.range          = l.range;
+                disc.radius         = l.areaSize.x;
+                disc.falloff        = FalloffType.Legacy;
             }
         }
 
         public static class Lightmapping
         {
             public delegate void RequestLightsDelegate(Light[] requests, NativeArray<LightDataGI> lightsOutput);
+
+            [RequiredByNativeCode]
             public static void SetDelegate(RequestLightsDelegate del)   { s_RequestLightsDelegate = del != null ? del : s_DefaultDelegate; }
+
+            [RequiredByNativeCode]
             public static RequestLightsDelegate GetDelegate()           { return s_RequestLightsDelegate; }
+
+            [RequiredByNativeCode]
             public static void ResetDelegate()                          { s_RequestLightsDelegate = s_DefaultDelegate; }
 
-            [UnityEngine.Scripting.UsedByNativeCode]
+            [RequiredByNativeCode]
             internal unsafe static void RequestLights(Light[] lights, System.IntPtr outLightsPtr, int outLightsCount, AtomicSafetyHandle safetyHandle)
             {
                 var outLights = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<LightDataGI>((void*)outLightsPtr, outLightsCount, Allocator.None);
@@ -437,7 +448,7 @@ namespace UnityEngine
                 s_RequestLightsDelegate(lights, outLights);
             }
 
-
+            [RequiredByNativeCode]
             private static readonly RequestLightsDelegate s_DefaultDelegate   = (Light[] requests, NativeArray<LightDataGI> lightsOutput) =>
             {
                 // get all lights in the scene
@@ -462,6 +473,7 @@ namespace UnityEngine
                     lightsOutput[i] = ld;
                 }
             };
+            [RequiredByNativeCode]
             private static RequestLightsDelegate s_RequestLightsDelegate = s_DefaultDelegate;
         }
     }

@@ -129,7 +129,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 stats.recursiveVisualUpdates++;
             else stats.nonRecursiveVisualUpdates++;
             var parent = ve.hierarchy.parent;
-            DepthFirstOnVisualsChanged(renderChain, ve, dirtyID, parent != null ? IsElementHidden(parent) : false, hierarchical, ref stats);
+            DepthFirstOnVisualsChanged(renderChain, ve, dirtyID, parent != null ? IsElementHierarchyHidden(parent) : false, hierarchical, ref stats);
         }
 
         internal static void ProcessRegenText(RenderChain renderChain, VisualElement ve, UIRTextUpdatePainter painter, UIRenderDevice device, ref ChainBuilderStats stats)
@@ -397,7 +397,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             }
         }
 
-        static void DepthFirstOnVisualsChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, bool parentHidden, bool hierarchical, ref ChainBuilderStats stats)
+        static void DepthFirstOnVisualsChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, bool parentHierarchyHidden, bool hierarchical, ref ChainBuilderStats stats)
         {
             if (dirtyID == ve.renderChainData.dirtyID)
                 return;
@@ -406,9 +406,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
             if (hierarchical)
                 stats.recursiveVisualUpdatesExpanded++;
 
-            bool wasHidden = ve.renderChainData.isHidden;
-            ve.renderChainData.isHidden = parentHidden || IsElementHidden(ve);
-            if (wasHidden != ve.renderChainData.isHidden)
+            bool wasHierarchyHidden = ve.renderChainData.isHierarchyHidden;
+            ve.renderChainData.isHierarchyHidden = parentHierarchyHidden || IsElementHierarchyHidden(ve);
+            if (wasHierarchyHidden != ve.renderChainData.isHierarchyHidden)
                 hierarchical = true;
 
             Debug.Assert(ve.renderChainData.clipMethod != ClipMethod.Undetermined);
@@ -427,7 +427,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 // Recurse on children
                 int childrenCount = ve.hierarchy.childCount;
                 for (int i = 0; i < childrenCount; i++)
-                    DepthFirstOnVisualsChanged(renderChain, ve.hierarchy[i], dirtyID, ve.renderChainData.isHidden, true, ref stats);
+                    DepthFirstOnVisualsChanged(renderChain, ve.hierarchy[i], dirtyID, ve.renderChainData.isHierarchyHidden, true, ref stats);
             }
 
             // By closing the element after its children, we can ensure closing data is allocated
@@ -436,12 +436,14 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 ClosePaintElement(ve, painterClosingInfo, painter.device, ref stats);
         }
 
-        static bool IsElementHidden(VisualElement ve)
+        static bool IsElementHierarchyHidden(VisualElement ve)
         {
-            return
-                ve.resolvedStyle.visibility == Visibility.Hidden ||
-                ve.resolvedStyle.opacity < Mathf.Epsilon ||
-                ve.resolvedStyle.display == DisplayStyle.None;
+            return ve.resolvedStyle.opacity < Mathf.Epsilon || ve.resolvedStyle.display == DisplayStyle.None;
+        }
+
+        static bool IsElementSelfHidden(VisualElement ve)
+        {
+            return ve.resolvedStyle.visibility == Visibility.Hidden;
         }
 
         static VisualElement GetLastDeepestChild(VisualElement ve)
@@ -488,12 +490,14 @@ namespace UnityEngine.UIElements.UIR.Implementation
         {
             if (!ve.ShouldClip())
                 return ClipMethod.NotClipped;
+
             if (!UIRUtility.IsRoundRect(ve))
             {
-                if (ve.renderChainData.disableTransformID || ((ve.renderHint & (RenderHint.ClipWithScissors | RenderHint.ImmediateMode)) != 0))
+                if (ve.renderChainData.disableTransformID || (ve.renderHint & RenderHint.ClipWithScissors) != 0)
                     return ClipMethod.Scissor;
                 return ClipMethod.ShaderDiscard;
             }
+
             return ClipMethod.Stencil;
         }
 
@@ -504,7 +508,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         internal static UIRStylePainter PaintElement(RenderChain renderChain, VisualElement ve, ref ChainBuilderStats stats)
         {
-            if (ve.renderChainData.isHidden)
+            if (IsElementSelfHidden(ve) || ve.renderChainData.isHierarchyHidden)
             {
                 if (ve.renderChainData.data != null)
                 {
@@ -1322,6 +1326,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
             TextNativeSettings textSettings = painterParams.GetTextNativeSettings(scaling);
             textSettings.color.a *= opacity;
 
+            textSettings.color *= UIElementsUtility.editorPlayModeTintColor;
+
             using (NativeArray<TextVertex> textVertices = TextNative.GetVertices(textSettings))
             {
                 if (textVertices.Length == 0)
@@ -1344,6 +1350,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
         public void DrawTexture(TextureStylePainterParameters painterParams)
         {
             painterParams.color.a *= opacity;
+
+            painterParams.color *= UIElementsUtility.editorPlayModeTintColor;
 
             // Handle scaling mode
             Rect screenRect = painterParams.rect;
@@ -1498,6 +1506,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
             m_CurrentEntry.isStencilClipped = m_StencilClip;
             m_CurrentEntry.isClipRegisterEntry = isClipRegisterEntry;
 
+            painterParams.color *= UIElementsUtility.editorPlayModeTintColor;
+
             bool generatedData = false;
             UIRMeshBuilder.MakeRect(painterParams, posZ, m_AllocDelegate);
             if (m_CurrentEntry.vertices.Length > 0 && m_CurrentEntry.indices.Length > 0)
@@ -1636,6 +1646,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
             float scaling = TextNative.ComputeTextScaling(m_CurrentElement.worldTransform, GUIUtility.pixelsPerPoint);
             TextNativeSettings textSettings = painterParams.GetTextNativeSettings(scaling);
             textSettings.color.a *= opacity;
+
+            textSettings.color *= UIElementsUtility.editorPlayModeTintColor;
 
             using (NativeArray<TextVertex> textVertices = TextNative.GetVertices(textSettings))
             {

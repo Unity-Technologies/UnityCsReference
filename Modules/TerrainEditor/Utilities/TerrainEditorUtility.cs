@@ -3,9 +3,19 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.Experimental.TerrainAPI;
 
 namespace UnityEditor
 {
+    internal class TerrainModificationProcessor : AssetModificationProcessor
+    {
+        public static string[] OnWillSaveAssets(string[] paths)
+        {
+            PaintContext.ApplyDelayedActions();
+            return paths;
+        }
+    }
+
     internal class TerrainEditorUtility
     {
         internal static void RemoveTree(Terrain terrain, int index)

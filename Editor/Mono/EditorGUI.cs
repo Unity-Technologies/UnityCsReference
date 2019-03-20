@@ -353,7 +353,10 @@ namespace UnityEditor
         public static bool EndChangeCheck()
         {
             bool changed = GUI.changed;
-            GUI.changed |= s_ChangedStack.Pop();
+            if (s_ChangedStack.Count == 0)
+                Debug.LogError("Change stack is empty, did you call BeginChangeCheck first?");
+            else
+                GUI.changed |= s_ChangedStack.Pop();
             return changed;
         }
 
@@ -4980,7 +4983,7 @@ namespace UnityEditor
                 targetObjs.Length == 1 &&
                 comp != null &&
                 EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None &&
-                PrefabUtility.GetCorrespondingObjectFromSource(comp.gameObject) != null &&
+                PrefabUtility.GetCorrespondingConnectedObjectFromSource(comp.gameObject) != null &&
                 PrefabUtility.GetCorrespondingObjectFromSource(comp) == null;
         }
 

@@ -18,6 +18,8 @@ namespace UnityEditor.PackageManager
 
         public static extern NativeStatusCode Add([Out] out long operationId, string packageId);
 
+        public extern static NativeStatusCode Embed([Out] out long operationId, string packageId);
+
         public static extern NativeStatusCode Remove([Out] out long operationId, string packageId);
 
         public static extern NativeStatusCode Search([Out] out long operationId, string packageId, bool offlineMode);
@@ -36,6 +38,8 @@ namespace UnityEditor.PackageManager
         public static extern OperationStatus GetListOperationData(long operationId);
 
         public static extern PackageInfo GetAddOperationData(long operationId);
+
+        extern public static PackageInfo GetEmbedOperationData(long operationId);
 
         public static extern PackageInfo[] GetSearchOperationData(long operationId);
     }
@@ -56,6 +60,12 @@ namespace UnityEditor.PackageManager
     {
         [NativeName("GetAllPackages")]
         internal static extern PackageInfo[] GetAll();
+
+        [NativeName("GetPredefinedPackageTypes")]
+        internal static extern string[] GetPredefinedPackageTypes();
+
+        [NativeName("GetPredefinedHiddenByDefaultPackageTypes")]
+        internal static extern string[] GetPredefinedHiddenByDefaultPackageTypes();
 
         [NativeName("GetPackageByAssetPath")]
         private static extern bool TryGetForAssetPath(string assetPath, [Out][NotNull] PackageInfo packageInfo);

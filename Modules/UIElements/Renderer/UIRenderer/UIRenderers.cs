@@ -56,20 +56,20 @@ namespace UnityEngine.UIElements.UIR
     {
         internal static readonly Rect k_UnlimitedRect = new Rect(-100000, -100000, 200000, 200000);
 
-        internal DrawParams(Rect _viewport, Matrix4x4 _projection)
+        public void Reset(Rect _viewport, Matrix4x4 _projection)
         {
             viewport = _viewport;
             projection = _projection;
-            view = new Stack<ViewTransform>();
-            view.Push(new ViewTransform() { transform = Matrix4x4.identity, clipRect = k_UnlimitedRect.ToVector4() });
-            scissor = new Stack<Rect>();
+            view.Clear();
+            view.Push(new ViewTransform { transform = Matrix4x4.identity, clipRect = k_UnlimitedRect.ToVector4() });
+            scissor.Clear();
             scissor.Push(k_UnlimitedRect);
         }
 
-        internal readonly Rect viewport; // In points, not in pixels
-        internal readonly Matrix4x4 projection;
-        internal readonly Stack<ViewTransform> view;
-        internal readonly Stack<Rect> scissor;
+        internal Rect viewport; // In points, not in pixels
+        internal Matrix4x4 projection;
+        internal readonly Stack<ViewTransform> view = new Stack<ViewTransform>(8);
+        internal readonly Stack<Rect> scissor = new Stack<Rect>(8);
     }
 
     internal class RenderChainCommand : PoolItem
@@ -102,8 +102,13 @@ namespace UnityEngine.UIElements.UIR
             switch (type)
             {
                 case CommandType.Immediate:
+                {
                     if (immediateException != null)
                         break;
+
+                    bool hasScissor = drawParams.scissor.Count > 1; // We always expect the "unbound" scissor rectangle to exists
+                    if (hasScissor)
+                        Utility.DisableScissor(); // Disable scissor since most IMGUI code assume it's inactive
 
                     Utility.ProfileImmediateRendererBegin();
                     try
@@ -115,10 +120,15 @@ namespace UnityEngine.UIElements.UIR
                     {
                         immediateException = e;
                     }
+
                     GL.modelview = drawParams.view.Peek().transform;
                     GL.LoadProjectionMatrix(drawParams.projection);
                     Utility.ProfileImmediateRendererEnd();
+
+                    if (hasScissor)
+                        Utility.SetScissorRect(FlipRectYAxis(drawParams.scissor.Peek(), drawParams.viewport));
                     break;
+                }
                 case CommandType.PushView:
                     var vt = new ViewTransform() { transform = owner.worldTransform, clipRect = RectToScreenSpace(owner.worldClip, drawParams.projection, straightY) };
                     drawParams.view.Push(vt);

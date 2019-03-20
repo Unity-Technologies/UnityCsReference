@@ -201,8 +201,7 @@ namespace UnityEditor
             InitializeToolIcons();
 
             bool isOrWillEnterPlaymode = EditorApplication.isPlayingOrWillChangePlaymode;
-            if (isOrWillEnterPlaymode)
-                GUI.color = HostView.kPlayModeDarken;
+            GUI.color = isOrWillEnterPlaymode ? HostView.kPlayModeDarken : Color.white;
 
             if (Event.current.type == EventType.Repaint)
                 Styles.appToolbar.Draw(new Rect(0, 0, position.width, position.height), false, false, false, false);

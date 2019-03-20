@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using UnityEngine;
 using UnityEngine.Experimental.AssetBundlePatching;
 using Object = UnityEngine.Object;
@@ -25,8 +26,8 @@ namespace UnityEditor.Experimental.AssetImporters
             public static string unappliedSettingMultipleAssets = L10n.Tr("Unapplied import settings for \'{0}\' files");
         }
 
-        // list of Time Stamps. We need to force reload the inspector in case the asset changed on disk.
-        ulong[] m_AssetTimeStamps;
+        // list of asset hashes. We need to force reload the inspector in case the asset changed on disk.
+        Hash128[] m_AssetHashes;
 
         // Target asset values, these are the main imported object Editor and targets.
         Editor m_AssetEditor;
@@ -114,7 +115,7 @@ namespace UnityEditor.Experimental.AssetImporters
                 }
                 foreach (var index in AssetWasUpdated())
                 {
-                    ResetTimeStamp(index);
+                    ResetHash(index);
                     ReloadAssetData(index);
                 }
             }
@@ -145,9 +146,20 @@ namespace UnityEditor.Experimental.AssetImporters
                     int count = editors.Count(e => e.targets.Contains(t[i]));
                     if (s_UnreleasedInstances != null && s_UnreleasedInstances.Contains(instanceID))
                         count++;
-                    if (count != GetInspectorCopyCount(instanceID))
+                    var instances = GetInspectorCopyCount(instanceID);
+                    if (count != instances)
                     {
-                        Debug.LogError($"The previous instance of {GetType()} has not been disposed correctly. Make sure you are calling base.OnDisable() in your AssetImporterEditor implementation.");
+                        // Preemptively dispose the extra instance of the object so we fall back in a correct state.
+                        if (count == instances - 1)
+                            ReleaseInspectorCopy(instanceID);
+                        if (!CanEditorSurviveAssemblyReload())
+                        {
+                            Debug.LogError($"The previous instance of {GetType()} has not been disposed correctly. Make sure {GetType()} is a valid MonoScript.");
+                        }
+                        else
+                        {
+                            Debug.LogError($"The previous instance of {GetType()} has not been disposed correctly. Make sure you are calling base.OnDisable() in your AssetImporterEditor implementation.");
+                        }
                     }
                 }
 
@@ -174,7 +186,9 @@ namespace UnityEditor.Experimental.AssetImporters
             // make sure underlying data still match saved data
             for (int i = 0; i < targets.Length; i++)
             {
-                CheckForInspectorCopyBackingData(targets[i]);
+                // targets[i] may be null if the importer/asset was destroyed during an assembly reload
+                if (targets[i] != null)
+                    CheckForInspectorCopyBackingData(targets[i]);
                 extraDataSerializedObject?.Update();
                 serializedObject.Update();
             }
@@ -342,6 +356,12 @@ namespace UnityEditor.Experimental.AssetImporters
             m_ApplyRevertGUICalled = false;
         }
 
+        bool CanEditorSurviveAssemblyReload()
+        {
+            var script = new SerializedObject(this).FindProperty("m_Script").objectReferenceValue as MonoScript;
+            return script != null && AssetDatabase.Contains(script);
+        }
+
         bool IsClosingInspector()
         {
             return m_ApplyRevertGUICalled && (m_Inspector == null || !InspectorWindow.GetInspectors().Contains(m_Inspector));
@@ -365,7 +385,7 @@ namespace UnityEditor.Experimental.AssetImporters
                 if (diskModifiedAssets.Count > 0 && i == diskModifiedAssets[diskModifiedAssets.Count - 1])
                 {
                     // make sure we are cancelling the changes here so that asset will re-import with previous values.
-                    ResetTimeStamp(i);
+                    ResetHash(i);
                     ReloadAssetData(i);
                     diskModifiedAssets.RemoveAt(diskModifiedAssets.Count - 1);
                     continue;
@@ -415,7 +435,7 @@ namespace UnityEditor.Experimental.AssetImporters
 
         protected virtual void Awake()
         {
-            ResetTimeStamp();
+            ResetHash();
         }
 
         public override void OnInspectorGUI()
@@ -485,23 +505,23 @@ namespace UnityEditor.Experimental.AssetImporters
             {
                 var importer = targets[i] as AssetImporter;
                 // check for AssetImporter being null as it may have been destroyed when closing...
-                if (importer != null && m_AssetTimeStamps[i] != importer.assetTimeStamp)
+                if (importer != null && m_AssetHashes[i] != AssetDatabase.GetAssetDependencyHash(importer.assetPath))
                     yield return i;
             }
         }
 
-        private void ResetTimeStamp()
+        private void ResetHash()
         {
-            m_AssetTimeStamps = new ulong[targets.Length];
+            m_AssetHashes = new Hash128[targets.Length];
             for (int i = 0; i < targets.Length; i++)
             {
-                ResetTimeStamp(i);
+                ResetHash(i);
             }
         }
 
-        private void ResetTimeStamp(int index)
+        private void ResetHash(int index)
         {
-            m_AssetTimeStamps[index] = ((AssetImporter)targets[index]).assetTimeStamp;
+            m_AssetHashes[index] = AssetDatabase.GetAssetDependencyHash(((AssetImporter)targets[index]).assetPath);
         }
 
         protected internal void ApplyAndImport()
@@ -535,7 +555,7 @@ namespace UnityEditor.Experimental.AssetImporters
             if (GUILayout.Button(Styles.revertButton))
             {
                 GUI.FocusControl(null);
-                ResetTimeStamp();
+                ResetHash();
                 ResetValues();
                 if (HasModified())
                     Debug.LogError("Importer reports modified values after reset.");
@@ -602,7 +622,7 @@ namespace UnityEditor.Experimental.AssetImporters
 
                     foreach (var index in updatedAssets)
                     {
-                        ResetTimeStamp(index);
+                        ResetHash(index);
                         ReloadAssetData(index);
                     }
                     applied = true;
