@@ -307,3 +307,12 @@ namespace UnityEngine.Rendering
         Tier3 = 2,
     }
 }
+
+namespace UnityEditor.Experimental
+{
+    public partial class RenderSettings
+    {
+        [Obsolete("Use UnityEngine.Experimental.GlobalIllumination.useRadianceAmbientProbe instead. (UnityUpgradable) -> UnityEngine.Experimental.GlobalIllumination.RenderSettings.useRadianceAmbientProbe", true)]
+        public static bool useRadianceAmbientProbe { get; set; }
+    }
+}

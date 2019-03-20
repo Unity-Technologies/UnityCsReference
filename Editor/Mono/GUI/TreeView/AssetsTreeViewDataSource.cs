@@ -19,55 +19,85 @@ namespace UnityEditor
 
     internal class AssetsTreeViewDataSource : LazyTreeViewDataSource
     {
-        public class RootItem
+        private class RootItem
         {
             public int instanceID { get; }
             public string displayName { get; }
             public string path { get; }
             public bool skipValidation { get; }
-            public bool skipHidden { get; }
 
-            public RootItem(int instanceID, string displayName, string path, bool skipValidation = false, bool skipHidden = false)
+            public RootItem(int instanceID, string displayName, string path, bool skipValidation = false)
             {
                 this.instanceID = instanceID;
                 this.displayName = displayName;
                 this.path = path;
                 this.skipValidation = skipValidation;
-                this.skipHidden = skipHidden;
             }
         }
 
+        public bool skipHiddenPackages { get; set; }
         public bool foldersOnly { get; set; }
         public bool foldersFirst { get; set; }
-        private List<RootItem> m_Roots;
+
         private Dictionary<string, TreeViewItem> m_RootsTreeViewItem;
         private bool m_ExpandAtFirstTime;
+        private List<RootItem> m_Roots;
+        private int m_rootInstanceID;
+
         const HierarchyType k_HierarchyType = HierarchyType.Assets;
 
-        private AssetsTreeViewDataSource(TreeViewController treeView)
+        public AssetsTreeViewDataSource(TreeViewController treeView, bool skipHidden = true)
             : base(treeView)
         {
             m_ExpandAtFirstTime = true;
             showRootItem = false;
             rootIsCollapsable = false;
-        }
-
-        public AssetsTreeViewDataSource(TreeViewController treeView, List<RootItem> roots)
-            : this(treeView)
-        {
-            m_Roots = roots;
+            skipHiddenPackages = skipHidden;
         }
 
         public AssetsTreeViewDataSource(TreeViewController treeView, int rootInstanceID)
             : this(treeView)
         {
-            m_Roots = new List<RootItem>();
-            m_Roots.Add(new RootItem(rootInstanceID, null, null));
+            m_rootInstanceID = rootInstanceID;
         }
 
         static string CreateDisplayName(int instanceID)
         {
             return Path.GetFileNameWithoutExtension(AssetDatabase.GetAssetPath(instanceID));
+        }
+
+        private void BuildRoots()
+        {
+            m_Roots = new List<RootItem>();
+
+            if (m_rootInstanceID != 0)
+            {
+                m_Roots.Add(new RootItem(m_rootInstanceID, null, null, true));
+                return;
+            }
+
+            var packagesMountPoint = PackageManager.Folders.GetPackagesPath();
+
+            var assetsFolderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets");
+            m_Roots.Add(new RootItem(assetsFolderInstanceID, null, null, true));
+
+            var packages = PackageManagerUtilityInternal.GetAllVisiblePackages(skipHiddenPackages);
+            m_Roots.Add(new RootItem(ProjectBrowser.kPackagesFolderInstanceId, packagesMountPoint, packagesMountPoint, true));
+            foreach (var package in packages)
+            {
+                var displayName = !string.IsNullOrEmpty(package.displayName) ? package.displayName : package.name;
+                var packageFolderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(package.assetPath);
+                if (packageFolderInstanceID == 0)
+                    continue;
+
+                m_Roots.Add(new RootItem(packageFolderInstanceID, displayName, package.assetPath));
+            }
+        }
+
+        public override void ReloadData()
+        {
+            BuildRoots();
+            base.ReloadData();
         }
 
         public override void FetchData()
@@ -147,7 +177,7 @@ namespace UnityEditor
 
                 m_RootsTreeViewItem[rootPath] = rootItem;
 
-                if (!root.skipHidden)
+                if (!skipHiddenPackages)
                     property.SetSearchFilter(new SearchFilter {skipHidden = false});
 
                 var expandIDs = GetExpandedIDs();

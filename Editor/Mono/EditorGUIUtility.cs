@@ -1319,7 +1319,7 @@ namespace UnityEditor
 
             // Draw background color
             Color oldColor = GUI.color;
-            GUI.color = bgColor;
+            GUI.color = EditorApplication.isPlayingOrWillChangePlaymode ? bgColor * HostView.kPlayModeDarken : bgColor;
             GUIStyle gs = whiteTextureStyle;
             gs.Draw(position, false, false, false, false);
             GUI.color = oldColor;

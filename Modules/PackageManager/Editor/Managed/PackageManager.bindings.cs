@@ -61,6 +61,12 @@ namespace UnityEditor.PackageManager
         [NativeName("GetAllPackages")]
         internal static extern PackageInfo[] GetAll();
 
+        [NativeName("GetPredefinedPackageTypes")]
+        internal static extern string[] GetPredefinedPackageTypes();
+
+        [NativeName("GetPredefinedHiddenByDefaultPackageTypes")]
+        internal static extern string[] GetPredefinedHiddenByDefaultPackageTypes();
+
         [NativeName("GetPackageByAssetPath")]
         private static extern bool TryGetForAssetPath(string assetPath, [Out][NotNull] PackageInfo packageInfo);
     }

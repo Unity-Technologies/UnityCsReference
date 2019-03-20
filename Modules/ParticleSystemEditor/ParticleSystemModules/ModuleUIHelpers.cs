@@ -579,7 +579,7 @@ namespace UnityEditor
                 intProp.intValue = newValue;
 
             EditorGUI.EndProperty();
-            return intProp.intValue;
+            return newValue;
         }
 
         public static int GUIPopup(GUIContent label, int intValue, GUIContent[] options, params GUILayoutOption[] layoutOptions)

@@ -400,8 +400,8 @@ namespace UnityEngine.UIElements
             var verts = vertices.GetValueOrDefault();
             var inds = indices.GetValueOrDefault();
 
-            verts[vertexCount++] = new Vertex { position = new Vector3(q.x, q.y, posZ), uv = p, tint = color, flags = (float)innerVertexFlags };
-            verts[vertexCount++] = new Vertex { position = new Vector3(p.x, p.y, posZ), uv = q, tint = color, flags = (float)outerVertexFlags };
+            verts[vertexCount++] = new Vertex { position = new Vector3(q.x, q.y, posZ), uv = q - p, tint = color, flags = (float)innerVertexFlags };
+            verts[vertexCount++] = new Vertex { position = new Vector3(p.x, p.y, posZ), uv = p - q, tint = color, flags = (float)outerVertexFlags };
 
             for (int k = 1; k < kSubdivisions; ++k)
             {
@@ -409,8 +409,8 @@ namespace UnityEngine.UIElements
                 float angle = (Mathf.PI / 2.0f) * percent;
                 p = center + new Vector2(-Mathf.Cos(angle), -Mathf.Sin(angle)) * radius;
                 q = center + new Vector2(-a * Mathf.Cos(angle), -b * Mathf.Sin(angle));
-                verts[vertexCount++] = new Vertex { position = new Vector3(q.x, q.y, posZ), uv = p, tint = color, flags = (float)innerVertexFlags };
-                verts[vertexCount++] = new Vertex { position = new Vector3(p.x, p.y, posZ), uv = q, tint = color, flags = (float)outerVertexFlags };
+                verts[vertexCount++] = new Vertex { position = new Vector3(q.x, q.y, posZ), uv = q - p, tint = color, flags = (float)innerVertexFlags };
+                verts[vertexCount++] = new Vertex { position = new Vector3(p.x, p.y, posZ), uv = p - q, tint = color, flags = (float)outerVertexFlags };
 
                 int i = k * 2;
                 inds[indexCount++] = (UInt16)(indexOffset + (i - 2));

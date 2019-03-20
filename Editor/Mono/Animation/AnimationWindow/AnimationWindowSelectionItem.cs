@@ -219,10 +219,7 @@ namespace UnityEditorInternal
 
                                 m_CurvesCache.Add(curve);
 
-                                if (curveBinding.type == typeof(Transform) ||
-                                    curveBinding.type == typeof(RectTransform) && (curveBinding.propertyName.StartsWith("m_LocalScale") ||
-                                                                                   curveBinding.propertyName.StartsWith("m_LocalRotation") ||
-                                                                                   curveBinding.propertyName.StartsWith("localEuler")))
+                                if (AnimationWindowUtility.IsActualTransformCurve(curveBinding))
                                 {
                                     transformCurves.Add(curve);
                                 }

@@ -11,6 +11,7 @@ using UnityEngine.Bindings;
 namespace UnityEditor
 {
     // Resolution dialog setting
+    [Obsolete("ResolutionDialogSetting is deprecated and will be removed in future versions.", false)]
     public enum ResolutionDialogSetting
     {
         // Never show the resolutions dialog.
@@ -407,7 +408,7 @@ namespace UnityEditor
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
         internal static extern void SetCloudServiceEnabled(string serviceKey, bool enabled);
 
-        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         internal static extern bool GetCloudServiceEnabled(string serviceKey);
 
         /// Uniquely identifies your product.
@@ -436,6 +437,7 @@ namespace UnityEditor
         public static extern int defaultWebScreenHeight { get; set; }
 
         // Defines the behaviour of the Resolution Dialog on product launch.
+        [Obsolete("displayResolutionDialog is deprecated and will be removed in future versions.", false)]
         public static extern ResolutionDialogSetting displayResolutionDialog { get; set; }
 
         // Returns whether or not the specified aspect ratio is enabled.
@@ -553,6 +555,7 @@ namespace UnityEditor
         }
 
         // The image to display in the Resolution Dialog window.
+        [Obsolete("resolutionDialogBanner is deprecated and will be removed in future versions.", false)]
         public static extern Texture2D resolutionDialogBanner { get; set; }
 
         // The image to display on the Virtual Reality splash screen.

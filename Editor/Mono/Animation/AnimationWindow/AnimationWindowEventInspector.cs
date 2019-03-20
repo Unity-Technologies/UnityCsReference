@@ -133,7 +133,7 @@ namespace UnityEditor
             {
                 EditorGUI.showMixedValue = !singleFunctionName;
                 string oldFunctionName = singleFunctionName ? firstEvent.functionName : "";
-                string functionName = EditorGUILayout.TextField(EditorGUIUtility.TrTextContent("Function"), oldFunctionName);
+                string functionName = EditorGUILayout.TextField(EditorGUIUtility.TrTextContent("Function"), oldFunctionName).Replace(" ", "");
                 if (functionName != oldFunctionName)
                 {
                     foreach (var evt in data.selectedEvents)

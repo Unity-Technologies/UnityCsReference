@@ -170,7 +170,7 @@ namespace UnityEditor
             AddInspectorWindow(this);
         }
 
-        void OnDestroy()
+        protected virtual void OnDestroy()
         {
             if (m_PreviewWindow != null)
                 m_PreviewWindow.Close();
@@ -512,7 +512,7 @@ namespace UnityEditor
             GameObject go = m_Tracker.activeEditors[0].target as GameObject;
             if (go == null)
                 return;
-            GameObject sourceGo = PrefabUtility.GetCorrespondingObjectFromSource(go);
+            GameObject sourceGo = PrefabUtility.GetCorrespondingConnectedObjectFromSource(go);
             if (sourceGo == null)
                 return;
 
@@ -612,8 +612,6 @@ namespace UnityEditor
             }
         }
 
-        static internal InspectorWindow s_CurrentInspectorWindow;
-
         private bool m_TrackerResetInserted;
 
         internal IMGUIContainer CreateIMGUIContainer(Action onGUIHandler, string name = null)
@@ -661,7 +659,6 @@ namespace UnityEditor
             FlushAllOptimizedGUIBlocksIfNeeded();
 
             ResetKeyboardControl();
-            s_CurrentInspectorWindow = this;
 
             var addComponentButton = rootVisualElement.Q<VisualElement>(className: s_AddComponentClassName);
             addComponentButton.Clear();
@@ -701,8 +698,6 @@ namespace UnityEditor
             {
                 m_MultiEditLabel.RemoveFromHierarchy();
             }
-
-            s_CurrentInspectorWindow = null;
 
             if (editors.Any() && RootEditorUtils.SupportsAddComponent(editors))
             {

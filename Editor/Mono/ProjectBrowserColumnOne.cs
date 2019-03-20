@@ -193,7 +193,7 @@ namespace UnityEditor
     {
         static string kProjectBrowserString = "ProjectBrowser";
 
-        private readonly bool skipHiddenPackages;
+        public bool skipHiddenPackages { get; set; }
 
         public ProjectBrowserColumnOneTreeViewDataSource(TreeViewController treeView, bool skipHidden) : base(treeView)
         {

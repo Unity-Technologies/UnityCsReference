@@ -69,8 +69,10 @@ namespace UnityEditor
         [FreeFunction]
         public static extern TextureFormat ConvertToAlphaTextureFormat(TextureFormat format);
 
-        [FreeFunction]
-        public static extern bool IsDepthRTFormat(RenderTextureFormat format);
+        public static bool IsDepthRTFormat(RenderTextureFormat format)
+        {
+            return format == RenderTextureFormat.Depth || format == RenderTextureFormat.Shadowmap;
+        }
 
         [FreeFunction]
         public static extern bool HasMipMap(Texture t);

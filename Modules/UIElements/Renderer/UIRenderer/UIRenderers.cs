@@ -56,20 +56,20 @@ namespace UnityEngine.UIElements.UIR
     {
         internal static readonly Rect k_UnlimitedRect = new Rect(-100000, -100000, 200000, 200000);
 
-        internal DrawParams(Rect _viewport, Matrix4x4 _projection)
+        public void Reset(Rect _viewport, Matrix4x4 _projection)
         {
             viewport = _viewport;
             projection = _projection;
-            view = new Stack<ViewTransform>();
-            view.Push(new ViewTransform() { transform = Matrix4x4.identity, clipRect = k_UnlimitedRect.ToVector4() });
-            scissor = new Stack<Rect>();
+            view.Clear();
+            view.Push(new ViewTransform { transform = Matrix4x4.identity, clipRect = k_UnlimitedRect.ToVector4() });
+            scissor.Clear();
             scissor.Push(k_UnlimitedRect);
         }
 
-        internal readonly Rect viewport; // In points, not in pixels
-        internal readonly Matrix4x4 projection;
-        internal readonly Stack<ViewTransform> view;
-        internal readonly Stack<Rect> scissor;
+        internal Rect viewport; // In points, not in pixels
+        internal Matrix4x4 projection;
+        internal readonly Stack<ViewTransform> view = new Stack<ViewTransform>(8);
+        internal readonly Stack<Rect> scissor = new Stack<Rect>(8);
     }
 
     internal class RenderChainCommand : PoolItem

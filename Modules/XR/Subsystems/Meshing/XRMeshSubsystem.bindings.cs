@@ -147,7 +147,7 @@ namespace UnityEngine.Experimental.XR
     }
 
     [NativeHeader("Modules/XR/XRPrefix.h")]
-    [NativeHeader("Modules/XR/Subsystems/Meshing/XRMeshSubsystem.h")]
+    [NativeHeader("Modules/XR/Subsystems/Meshing/XRMeshingSubsystem.h")]
     [NativeConditional("ENABLE_XR")]
     [UsedByNativeCode]
     public class XRMeshSubsystem : IntegratedSubsystem<XRMeshSubsystemDescriptor>
@@ -179,5 +179,9 @@ namespace UnityEngine.Experimental.XR
             if (onMeshGenerationComplete != null)
                 onMeshGenerationComplete(result);
         }
+
+        public extern float meshDensity { get; set; }
+
+        public extern bool SetBoundingVolume(Vector3 origin, Vector3 extents);
     }
 }

@@ -712,25 +712,7 @@ namespace UnityEditor
             m_AssetTree.onGUIRowCallback += OnGUIAssetCallback;
             m_AssetTree.dragEndedCallback += AssetTreeDragEnded;
 
-            var assetsFolderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets");
-            var roots = new List<AssetsTreeViewDataSource.RootItem>();
-            var packagesMountPoint = PackageManager.Folders.GetPackagesPath();
-
-            roots.Add(new AssetsTreeViewDataSource.RootItem(assetsFolderInstanceID, null, null, true, true));
-
-            var packages = PackageManagerUtilityInternal.GetAllVisiblePackages(m_SkipHiddenPackages);
-            roots.Add(new AssetsTreeViewDataSource.RootItem(kPackagesFolderInstanceId, packagesMountPoint, packagesMountPoint, true, m_SkipHiddenPackages));
-            foreach (var package in packages)
-            {
-                var displayName = !string.IsNullOrEmpty(package.displayName) ? package.displayName : package.name;
-                var packageFolderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(package.assetPath);
-                if (packageFolderInstanceID == 0)
-                    continue;
-
-                roots.Add(new AssetsTreeViewDataSource.RootItem(packageFolderInstanceID, displayName, package.assetPath, false, m_SkipHiddenPackages));
-            }
-
-            var data = new AssetsTreeViewDataSource(m_AssetTree, roots);
+            var data = new AssetsTreeViewDataSource(m_AssetTree, m_SkipHiddenPackages);
             data.foldersFirst = GetShouldShowFoldersFirst();
 
             m_AssetTree.Init(m_TreeViewRect,
@@ -2375,6 +2357,20 @@ namespace UnityEditor
             if (skipHiddenPackage != m_SkipHiddenPackages)
             {
                 m_SkipHiddenPackages = skipHiddenPackage;
+                EndRenaming();
+
+                if (m_AssetTree != null)
+                {
+                    var dataSource = m_AssetTree.data as AssetsTreeViewDataSource;
+                    dataSource.skipHiddenPackages = m_SkipHiddenPackages;
+                }
+
+                if (m_FolderTree != null)
+                {
+                    var dataSource = m_FolderTree.data as ProjectBrowserColumnOneTreeViewDataSource;
+                    dataSource.skipHiddenPackages = m_SkipHiddenPackages;
+                }
+
                 ResetViews();
             }
         }
@@ -3003,7 +2999,7 @@ namespace UnityEditor
                 var subFolderDisplayNames = new List<string>();
                 if (folder == Folders.GetPackagesPath())
                 {
-                    foreach (var package in PackageManagerUtilityInternal.GetAllVisiblePackages())
+                    foreach (var package in PackageManagerUtilityInternal.GetAllVisiblePackages(caller.m_SkipHiddenPackages))
                     {
                         subFolders.Add(package.assetPath);
                         var displayName = !string.IsNullOrEmpty(package.displayName) ? package.displayName : package.name;

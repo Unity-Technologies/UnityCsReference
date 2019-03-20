@@ -68,8 +68,7 @@ namespace UnityEditor
             if (background == null)
                 background = "AppToolbar";
 
-            if (EditorApplication.isPlayingOrWillChangePlaymode)
-                GUI.color = HostView.kPlayModeDarken;
+            GUI.color = EditorApplication.isPlayingOrWillChangePlaymode ? HostView.kPlayModeDarken : Color.white;
 
             if (Event.current.type == EventType.Repaint)
                 background.Draw(new Rect(0, 0, position.width, position.height), false, false, false, false);

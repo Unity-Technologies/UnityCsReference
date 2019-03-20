@@ -1281,6 +1281,13 @@ namespace UnityEditorInternal
             return type == typeof(Transform) || type == typeof(RectTransform);
         }
 
+        public static bool IsActualTransformCurve(EditorCurveBinding curveBinding)
+        {
+            return curveBinding.type == typeof(Transform) || curveBinding.type == typeof(RectTransform) && (curveBinding.propertyName.StartsWith("m_LocalScale") ||
+                curveBinding.propertyName.StartsWith("m_LocalRotation") ||
+                curveBinding.propertyName.StartsWith("localEuler"));
+        }
+
         public static bool ForceGrouping(EditorCurveBinding binding)
         {
             if (binding.type == typeof(Transform))

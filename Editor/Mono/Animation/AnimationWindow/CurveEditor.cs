@@ -849,29 +849,17 @@ namespace UnityEditor
             m_SelectionBoundsAreDirty = false;
         }
 
-        // Frame all curves to be visible.
-        public void FrameClip(bool horizontally, bool vertically)
+        public Bounds GetClipBounds()
         {
-            Bounds frameBounds = curveBounds;
-            if (frameBounds.size == Vector3.zero)
-                return;
-
-            if (horizontally)
-                SetShownHRangeInsideMargins(frameBounds.min.x, frameBounds.max.x);
-            if (vertically)
-                SetShownVRangeInsideMargins(frameBounds.min.y, frameBounds.max.y);
+            return curveBounds;
         }
 
-        // Frame selected keys to be visible.
-        public void FrameSelected(bool horizontally, bool vertically)
+        public Bounds GetSelectionBounds()
         {
             if (!hasSelection)
-            {
-                FrameClip(horizontally, vertically);
-                return;
-            }
+                return GetClipBounds();
 
-            Bounds frameBounds = new Bounds();
+            Bounds frameBounds;
 
             // Add neighboring keys in bounds if only a single key is selected.
             if (selectedCurves.Count == 1)
@@ -895,6 +883,26 @@ namespace UnityEditor
 
             // Enforce minimum size of bounds
             frameBounds.size = new Vector3(Mathf.Max(frameBounds.size.x, 0.1F), Mathf.Max(frameBounds.size.y, 0.1F), 0);
+
+            return frameBounds;
+        }
+
+        // Frame all curves to be visible.
+        public void FrameClip(bool horizontally, bool vertically)
+        {
+            Frame(GetClipBounds(), horizontally, vertically);
+        }
+
+        // Frame selected keys to be visible.
+        public void FrameSelected(bool horizontally, bool vertically)
+        {
+            Frame(GetSelectionBounds(), horizontally, vertically);
+        }
+
+        public void Frame(Bounds frameBounds, bool horizontally, bool vertically)
+        {
+            if (frameBounds.size == Vector3.zero)
+                return;
 
             if (horizontally)
                 SetShownHRangeInsideMargins(frameBounds.min.x, frameBounds.max.x);
@@ -1006,15 +1014,6 @@ namespace UnityEditor
                     if ((evt.keyCode == KeyCode.Backspace || evt.keyCode == KeyCode.Delete) && hasSelection)
                     {
                         DeleteSelectedKeys();
-                        evt.Use();
-                    }
-
-                    // Frame All.
-                    // Manually handle hotkey unless we decide to add it to default Unity hotkeys like
-                    // we did for FrameSelected.
-                    if (evt.keyCode == KeyCode.A)
-                    {
-                        FrameClip(true, true);
                         evt.Use();
                     }
                     break;
@@ -2025,6 +2024,9 @@ namespace UnityEditor
             int keyIndex = AnimationUtility.AddInbetweenKey(cw.curve, time);
             if (keyIndex >= 0)
             {
+                CurveUtility.SetKeyModeFromContext(cw.curve, keyIndex);
+                AnimationUtility.UpdateTangentsFromModeSurrounding(cw.curve, keyIndex);
+
                 // Select the key
                 CurveSelection selectedPoint = new CurveSelection(cw.id, keyIndex);
                 cw.selected = CurveWrapper.SelectionMode.Selected;

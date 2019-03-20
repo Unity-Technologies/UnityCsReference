@@ -153,12 +153,12 @@ namespace UnityEditor.IMGUI.Controls
 
         public bool showingVerticalScrollBar
         {
-            get { return m_ContentRect.height > m_VisibleRect.height; }
+            get { return m_VisibleRect.height > 0 && m_ContentRect.height > m_VisibleRect.height; }
         }
 
         public bool showingHorizontalScrollBar
         {
-            get { return m_ContentRect.width > m_VisibleRect.width; }
+            get { return m_VisibleRect.width > 0 && m_ContentRect.width > m_VisibleRect.width; }
         }
 
         public string searchString

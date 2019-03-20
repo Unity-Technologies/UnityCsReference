@@ -1326,6 +1326,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
             TextNativeSettings textSettings = painterParams.GetTextNativeSettings(scaling);
             textSettings.color.a *= opacity;
 
+            textSettings.color *= UIElementsUtility.editorPlayModeTintColor;
+
             using (NativeArray<TextVertex> textVertices = TextNative.GetVertices(textSettings))
             {
                 if (textVertices.Length == 0)
@@ -1348,6 +1350,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
         public void DrawTexture(TextureStylePainterParameters painterParams)
         {
             painterParams.color.a *= opacity;
+
+            painterParams.color *= UIElementsUtility.editorPlayModeTintColor;
 
             // Handle scaling mode
             Rect screenRect = painterParams.rect;
@@ -1502,6 +1506,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
             m_CurrentEntry.isStencilClipped = m_StencilClip;
             m_CurrentEntry.isClipRegisterEntry = isClipRegisterEntry;
 
+            painterParams.color *= UIElementsUtility.editorPlayModeTintColor;
+
             bool generatedData = false;
             UIRMeshBuilder.MakeRect(painterParams, posZ, m_AllocDelegate);
             if (m_CurrentEntry.vertices.Length > 0 && m_CurrentEntry.indices.Length > 0)
@@ -1640,6 +1646,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
             float scaling = TextNative.ComputeTextScaling(m_CurrentElement.worldTransform, GUIUtility.pixelsPerPoint);
             TextNativeSettings textSettings = painterParams.GetTextNativeSettings(scaling);
             textSettings.color.a *= opacity;
+
+            textSettings.color *= UIElementsUtility.editorPlayModeTintColor;
 
             using (NativeArray<TextVertex> textVertices = TextNative.GetVertices(textSettings))
             {
