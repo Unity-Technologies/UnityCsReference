@@ -434,6 +434,9 @@ public static bool BuildAssetBundleExplicitAssetNames(Object[] assets, string[] 
     
     internal static AssetBundleManifest BuildAssetBundles(string outputPath, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform)
         {
+            if (isBuildingPlayer)
+                throw new InvalidOperationException("Cannot build asset bundles while a build is in progress.");
+
             if (!System.IO.Directory.Exists(outputPath))
                 throw new ArgumentException("The output path \"" + outputPath + "\" doesn't exist");
 
@@ -454,6 +457,9 @@ public static bool BuildAssetBundleExplicitAssetNames(Object[] assets, string[] 
     
     internal static AssetBundleManifest BuildAssetBundles(string outputPath, AssetBundleBuild[] builds, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform)
         {
+            if (isBuildingPlayer)
+                throw new InvalidOperationException("Cannot build asset bundles while a build is in progress.");
+
             if (!System.IO.Directory.Exists(outputPath))
                 throw new ArgumentException("The output path \"" + outputPath + "\" doesn't exist");
 

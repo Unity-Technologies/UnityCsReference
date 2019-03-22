@@ -118,7 +118,16 @@ namespace UnityEngine
         {
             object[] args =  new object[javaArgs.Length];
             for (int i = 0; i < javaArgs.Length; ++i)
+            {
                 args[i] = _AndroidJNIHelper.Unbox(javaArgs[i]);
+                if (!(args[i] is AndroidJavaObject))
+                {
+                    // If we're not passing a AndroidJavaObject/Class to the proxy, we can safely dispose
+                    // Otherwise the GC would do it eventally, but it might be too slow and hit the global ref limit
+                    if (javaArgs[i] != null)
+                        javaArgs[i].Dispose();
+                }
+            }
             return Invoke(methodName, args);
         }
 
@@ -863,32 +872,34 @@ namespace UnityEngine
             if (obj == null)
                 return null;
 
-            AndroidJavaObject clazz = obj.Call<AndroidJavaObject>("getClass");
-            string className        = clazz.Call<string>("getName");
-            if ("java.lang.Integer" == className)
-                return obj.Call<System.Int32>("intValue");
-            else if ("java.lang.Boolean" == className)
-                return obj.Call<System.Boolean>("booleanValue");
-            else if ("java.lang.Byte" == className)
-                return obj.Call<System.Byte>("byteValue");
-            else if ("java.lang.Short" == className)
-                return obj.Call<System.Int16>("shortValue");
-            else if ("java.lang.Long" == className)
-                return obj.Call<System.Int64>("longValue");
-            else if ("java.lang.Float" == className)
-                return obj.Call<System.Single>("floatValue");
-            else if ("java.lang.Double" == className)
-                return obj.Call<System.Double>("doubleValue");
-            else if ("java.lang.Character" == className)
-                return obj.Call<System.Char>("charValue");
-            else if ("java.lang.String" == className)
-                return obj.Call<System.String>("toString"); // um, can obvoiusly be performed in a better fasion
-            else if ("java.lang.Class" == className)
-                return new AndroidJavaClass(obj.GetRawObject());
-            else if (clazz.Call<bool>("isArray"))
-                return UnboxArray(obj);
-            else
-                return obj;
+            using (AndroidJavaObject clazz = obj.Call<AndroidJavaObject>("getClass"))
+            {
+                string className        = clazz.Call<string>("getName");
+                if ("java.lang.Integer" == className)
+                    return obj.Call<System.Int32>("intValue");
+                else if ("java.lang.Boolean" == className)
+                    return obj.Call<System.Boolean>("booleanValue");
+                else if ("java.lang.Byte" == className)
+                    return obj.Call<System.Byte>("byteValue");
+                else if ("java.lang.Short" == className)
+                    return obj.Call<System.Int16>("shortValue");
+                else if ("java.lang.Long" == className)
+                    return obj.Call<System.Int64>("longValue");
+                else if ("java.lang.Float" == className)
+                    return obj.Call<System.Single>("floatValue");
+                else if ("java.lang.Double" == className)
+                    return obj.Call<System.Double>("doubleValue");
+                else if ("java.lang.Character" == className)
+                    return obj.Call<System.Char>("charValue");
+                else if ("java.lang.String" == className)
+                    return obj.Call<System.String>("toString"); // um, can obvoiusly be performed in a better fasion
+                else if ("java.lang.Class" == className)
+                    return new AndroidJavaClass(obj.GetRawObject());
+                else if (clazz.Call<bool>("isArray"))
+                    return UnboxArray(obj);
+                else
+                    return obj;
+            }
         }
 
         public static AndroidJavaObject Box(object obj)
