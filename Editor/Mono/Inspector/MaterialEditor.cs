@@ -17,6 +17,7 @@ namespace UnityEditor
     {
         private static class Styles
         {
+            public static readonly GUIStyle inspectorBigInner = "IN BigTitle inner";
             public static readonly GUIStyle kReflectionProbePickerStyle = "PaneOptions";
             public static readonly GUIContent lightmapEmissiveLabel = EditorGUIUtility.TrTextContent("Global Illumination", "Controls if the emission is baked or realtime.\n\nBaked only has effect in scenes where baked global illumination is enabled.\n\nRealtime uses realtime global illumination if enabled in the scene. Otherwise the emission won't light up other objects.");
             public static GUIContent[] lightmapEmissiveStrings = { EditorGUIUtility.TextContent("Realtime"), EditorGUIUtility.TrTextContent("Baked"), EditorGUIUtility.TrTextContent("None") };
@@ -2071,6 +2072,11 @@ namespace UnityEditor
         internal override bool HasLargeHeader()
         {
             return true;
+        }
+
+        internal override void OnHeaderIconGUI(Rect iconRect)
+        {
+            OnPreviewGUI(iconRect, Styles.inspectorBigInner);
         }
     }
 } // namespace UnityEditor

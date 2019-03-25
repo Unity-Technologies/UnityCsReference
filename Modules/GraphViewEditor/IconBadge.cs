@@ -2,9 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements.StyleEnums;
@@ -133,6 +131,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return result;
         }
 
+        private GraphView m_GraphView = null;
+
         public void AttachTo(VisualElement target, SpriteAlignment align)
         {
             Detach();
@@ -141,12 +141,20 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_IsAttached = true;
             target.RegisterCallback<DetachFromPanelEvent>(OnTargetDetachedFromPanel);
             CreateAttacher();
+
+            if (m_GraphView == null)
+            {
+                m_GraphView = target.panel.visualTree.Q<GraphView>();
+            }
+            m_GraphView.viewTransformChanged += OnGraphViewTransformChanged;
         }
 
         public void Detach()
         {
             if (m_IsAttached)
             {
+                if (m_GraphView != null)
+                    m_GraphView.viewTransformChanged -= OnGraphViewTransformChanged;
                 target.UnregisterCallback<DetachFromPanelEvent>(OnTargetDetachedFromPanel);
                 m_IsAttached = false;
             }
@@ -224,6 +232,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     m_TextElement.style.paddingBottom;
                 PerformTipLayout();
             }
+        }
+
+        private void OnGraphViewTransformChanged(GraphView gv)
+        {
+            ComputeTextSize();
         }
 
         private void ShowText()

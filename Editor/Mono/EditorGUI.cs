@@ -5447,7 +5447,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
                 var hasPrefabOverride = property.prefabOverride;
                 if (!linkedProperties || hasPrefabOverride)
                     EditorGUIUtility.SetBoldDefaultFont(hasPrefabOverride);
-                if (hasPrefabOverride && !property.isDefaultOverride)
+                if (hasPrefabOverride && !property.isDefaultOverride && !property.isDrivenRectTransformProperty)
                 {
                     Rect highlightRect = totalPosition;
                     highlightRect.xMin += EditorGUI.indent;
