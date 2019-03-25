@@ -707,6 +707,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     if (loadedCustomScriptAssembly.References == null)
                         loadedCustomScriptAssembly.References = new string[0];
 
+
                     if (loadedCustomScriptAssembly.References.Length != loadedCustomScriptAssembly.References.Distinct().Count())
                     {
                         var duplicateRefs = loadedCustomScriptAssembly.References.GroupBy(r => r).Where(g => g.Count() > 0).Select(g => g.Key).ToArray();

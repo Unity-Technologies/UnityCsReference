@@ -427,7 +427,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     args.NotCompiledTargetAssemblies.Add(targetAssembly);
             }
 
-            bool isAnyCustomScriptAssemblyDirty = dirtyTargetAssemblies.Any(entry => entry.Key.Type == TargetAssemblyType.Custom);
+            bool isAnyCustomScriptAssemblyDirty = dirtyTargetAssemblies.Any(entry =>
+            {
+                var targetAssembly = entry.Key;
+                bool isCustomScriptAssembly = targetAssembly.Type == TargetAssemblyType.Custom;
+                bool isExplicitlyReferenced = (targetAssembly.Flags & AssemblyFlags.ExplicitlyReferenced) == AssemblyFlags.ExplicitlyReferenced;
+                bool isTestAssembly = (targetAssembly.OptionalUnityReferences & OptionalUnityReferences.TestAssemblies) == OptionalUnityReferences.TestAssemblies;
+                return isCustomScriptAssembly && !isExplicitlyReferenced && !isTestAssembly;
+            });
 
             // If we have any dirty custom target assemblies, then the predefined target assemblies are marked as dirty,
             // as the predefined assemblies always reference the custom script assemblies.

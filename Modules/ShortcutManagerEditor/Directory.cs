@@ -112,8 +112,8 @@ namespace UnityEditor.ShortcutManagement
         {
             return contextManager.HasActiveContextOfType(entry.context) &&
                 // Emulate old play mode shortcut behavior
+                // * Non-menu shortcuts do NOT apply only when the Game View is focused, the editor is playing, and is NOT paused
                 // * Menu shortcuts are always active
-                // * Non-menu shortcuts only apply when the game view does not have focus
                 (!contextManager.playModeContextIsActive ||
                     entry.type == ShortcutType.Menu);
         }
