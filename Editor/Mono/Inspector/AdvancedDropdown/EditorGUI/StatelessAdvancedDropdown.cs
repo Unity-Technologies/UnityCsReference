@@ -87,7 +87,7 @@ namespace UnityEditor
 
         internal static int DoSearchablePopup(Rect rect, int selectedIndex, string[] displayedOptions, GUIStyle style)
         {
-            string contentLabel = null;
+            string contentLabel = "";
             if (selectedIndex >= 0)
             {
                 contentLabel = displayedOptions[selectedIndex];

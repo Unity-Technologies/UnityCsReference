@@ -435,6 +435,15 @@ namespace UnityEditorInternal.Profiling
         {
             if (searchChanged != null)
                 searchChanged.Invoke(newSearch);
+            if (m_TreeView.HasSelection())
+            {
+                var selection = m_TreeView.GetSelection();
+                if (selection != null && selection.Count > 0 && selection[0] > 0)
+                {
+                    m_TreeView.SetSelection(selection);
+                    m_TreeView.FrameItem(selection[0]);
+                }
+            }
         }
 
         void FrameItem(int id)

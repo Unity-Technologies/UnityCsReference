@@ -27,7 +27,7 @@ namespace UnityEditorInternal
         private Vector3[] m_LineDrawingPoints;
         private float[] m_StackedSampleSums;
         private static readonly Color s_OverlayBackgroundDimFactor = new Color(0.9f, 0.9f, 0.9f, 0.4f);
-
+        protected Action<bool> onDoSeriesToggle;
         string m_ChartSettingsName;
         int m_chartControlID;
 
@@ -772,7 +772,7 @@ namespace UnityEditorInternal
             for (int i = 0; i < numSamples; i++, x += step)
             {
                 float y = rectBottom - stackedSampleSums[i];
-                var serie = cdata.series[index];
+                var serie = cdata.unstackableSeriesIndex == index && cdata.hasOverlay ? cdata.overlays[index] : cdata.series[index];
                 float value = serie.yValues[i] * serie.yScale;
                 if (value == -1f)
                     continue;
@@ -780,6 +780,7 @@ namespace UnityEditorInternal
                 float val = (value - cdata.series[0].rangeAxis.x) * rangeScale;
                 if (y - val < r.yMin)
                     val = y - r.yMin; // Clamp the values to be inside drawrect
+
                 GL.Color(color);
                 GL.Vertex3(x, y - val, 0f); // clip chart top
                 GL.Vertex3(x, y, 0f);
@@ -930,6 +931,7 @@ namespace UnityEditorInternal
         protected void DoSeriesToggle(Rect position, GUIContent label, ref bool enabled, Color color, ChartViewData cdata)
         {
             Color oldColor = GUI.backgroundColor;
+            bool oldEnableState = enabled;
 
             GUI.backgroundColor = enabled ? color : Color.black;
 
@@ -939,6 +941,11 @@ namespace UnityEditorInternal
                 SaveChartsSettingsEnabled(cdata);
 
             GUI.backgroundColor = oldColor;
+
+            if (onDoSeriesToggle != null)
+            {
+                onDoSeriesToggle(oldEnableState != enabled);
+            }
         }
 
         private void LoadChartsSettings(ChartViewData cdata)

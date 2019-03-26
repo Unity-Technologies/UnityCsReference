@@ -14,7 +14,7 @@ namespace UnityEditor
 
         VisualElement m_previewElement;
 
-        VisualElement previewElement => m_previewElement ?? (m_previewElement = rootVisualElement.Q<VisualElement>("preview"));
+        VisualElement previewElement => m_previewElement ?? (m_previewElement = rootVisualElement.Q<VisualElement>(className: "unity-inspector-preview"));
 
         public void SetParentInspector(InspectorWindow inspector)
         {
@@ -32,7 +32,7 @@ namespace UnityEditor
             AddInspectorWindow(this);
             var tpl = EditorGUIUtility.Load("UXML/InspectorWindow/PreviewWindow.uxml") as VisualTreeAsset;
             var container = tpl.CloneTree();
-            container.AddToClassList("mainContainer");
+            container.AddToClassList(s_MainContainerClassName);
             rootVisualElement.hierarchy.Add(container);
 
             rootVisualElement.AddStyleSheetPath("StyleSheets/InspectorWindow/PreviewWindow.uss");

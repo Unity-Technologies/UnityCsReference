@@ -356,7 +356,8 @@ namespace UnityEditor.UIElements
             }
             inspector.onGUIHandler = () =>
             {
-                if (!editor.serializedObject.isValid)
+                if ((editor.target == null && !GenericInspector.ObjectIsMonoBehaviourOrScriptableObject(editor.target)) ||
+                    !editor.serializedObject.isValid)
                 {
                     return;
                 }

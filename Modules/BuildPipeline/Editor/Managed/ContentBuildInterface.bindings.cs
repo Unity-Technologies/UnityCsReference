@@ -94,10 +94,6 @@ namespace UnityEditor.Build.Content
                 throw new ArgumentException("String is null or empty.", "outputFolder");
             if (string.IsNullOrEmpty(scenePath))
                 throw new ArgumentException("String is null or empty.", "scenePath");
-            if (string.IsNullOrEmpty(processedScene))
-                throw new ArgumentException("String is null or empty.", "processedScene");
-            if (!File.Exists(processedScene))
-                throw new ArgumentException(string.Format("File '{0}' does not exist.", processedScene), "processedScene");
             if (writeCommand == null)
                 throw new ArgumentNullException("writeCommand");
             if (referenceMap == null)
@@ -113,10 +109,6 @@ namespace UnityEditor.Build.Content
                 throw new ArgumentException("String is null or empty.", "outputFolder");
             if (string.IsNullOrEmpty(scenePath))
                 throw new ArgumentException("String is null or empty.", "scenePath");
-            if (string.IsNullOrEmpty(processedScene))
-                throw new ArgumentException("String is null or empty.", "processedScene");
-            if (!File.Exists(processedScene))
-                throw new ArgumentException(string.Format("File '{0}' does not exist.", processedScene), "processedScene");
             if (writeCommand == null)
                 throw new ArgumentNullException("writeCommand");
             if (referenceMap == null)
@@ -134,10 +126,6 @@ namespace UnityEditor.Build.Content
                 throw new ArgumentException("String is null or empty.", "outputFolder");
             if (string.IsNullOrEmpty(scenePath))
                 throw new ArgumentException("String is null or empty.", "scenePath");
-            if (string.IsNullOrEmpty(processedScene))
-                throw new ArgumentException("String is null or empty.", "processedScene");
-            if (!File.Exists(processedScene))
-                throw new ArgumentException(string.Format("File '{0}' does not exist.", processedScene), "processedScene");
             if (writeCommand == null)
                 throw new ArgumentNullException("writeCommand");
             if (referenceMap == null)
