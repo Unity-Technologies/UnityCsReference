@@ -44,6 +44,10 @@ namespace UnityEditor
             get;
         }
 
+        public extern Shader defaultShader { get; }
+
+        public extern Shader defaultBillboardShader { get; }
+
         /////////////////////////////////////////////////////////////////////////////
         // Mesh properties
 

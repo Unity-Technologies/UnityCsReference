@@ -603,7 +603,7 @@ namespace UnityEditor.Experimental.GraphView
             // To ensure that the selected GraphElement gets unselected if it is removed from the GraphView.
             graphElement.RegisterCallback<DetachFromPanelEvent>(OnSelectedElementDetachedFromPanel);
 
-            contentViewContainer.MarkDirtyRepaint();
+            graphElement.MarkDirtyRepaint();
         }
 
         private void RemoveFromSelectionNoUndoRecord(ISelectable selectable)
@@ -616,7 +616,7 @@ namespace UnityEditor.Experimental.GraphView
             selection.Remove(selectable);
             graphElement.OnUnselected();
             graphElement.UnregisterCallback<DetachFromPanelEvent>(OnSelectedElementDetachedFromPanel);
-            contentViewContainer.MarkDirtyRepaint();
+            graphElement.MarkDirtyRepaint();
         }
 
         public virtual void RemoveFromSelection(ISelectable selectable)
@@ -647,11 +647,11 @@ namespace UnityEditor.Experimental.GraphView
 
                 graphElement.OnUnselected();
                 graphElement.UnregisterCallback<DetachFromPanelEvent>(OnSelectedElementDetachedFromPanel);
+                graphElement.MarkDirtyRepaint();
             }
 
             bool selectionWasNotEmpty = selection.Any();
             selection.Clear();
-            contentViewContainer.MarkDirtyRepaint();
 
             return selectionWasNotEmpty;
         }

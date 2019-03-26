@@ -91,22 +91,22 @@ namespace UnityEditor
         IMGUIContainer m_TrackerResetter;
 
         VisualElement m_EditorsElement;
-        VisualElement editorsElement => m_EditorsElement ?? (m_EditorsElement = FindVisualElementInTreeByName("editorsList"));
+        VisualElement editorsElement => m_EditorsElement ?? (m_EditorsElement = FindVisualElementInTreeByClassName(s_EditorListClassName));
         VisualElement m_RemovedPrefabComponentsElement;
 
         VisualElement m_PreviewAndLabelElement;
 
-        VisualElement previewAndLabelElement => m_PreviewAndLabelElement ?? (m_PreviewAndLabelElement = FindVisualElementInTreeByName("footerInfo"));
+        VisualElement previewAndLabelElement => m_PreviewAndLabelElement ?? (m_PreviewAndLabelElement = FindVisualElementInTreeByClassName(s_FooterInfoClassName));
 
         VisualElement m_MultiEditLabel;
 
-        VisualElement FindVisualElementInTreeByName(string elementName)
+        VisualElement FindVisualElementInTreeByClassName(string elementClassName)
         {
-            var element = rootVisualElement.Q<VisualElement>(elementName);
+            var element = rootVisualElement.Q<VisualElement>(className: elementClassName);
             if (element == null)
             {
                 LoadVisualTreeFromUxml();
-                element = rootVisualElement.Q<VisualElement>(elementName);
+                element = rootVisualElement.Q<VisualElement>(className: elementClassName);
             }
 
             return element;
@@ -142,6 +142,15 @@ namespace UnityEditor
                 "The built-in package '{0}', which is required by the package '{1}', which implements this component type, has been disabled in Package Manager. This object will be removed in play mode and from any builds you make."
             );
         }
+
+
+        internal static readonly string s_MultiEditClassName = "unity-inspector-no-multi-edit-warning";
+        internal static readonly string s_MultiEditLabelClassName = "unity-inspector-no-multi-edit-warning__label";
+        internal static readonly string s_ScrollViewClassName = "unity-inspector-root-scrollview";
+        internal static readonly string s_EditorListClassName = "unity-inspector-editors-list";
+        internal static readonly string s_AddComponentClassName = "unity-inspector-add-component-button";
+        internal static readonly string s_FooterInfoClassName = "unity-inspector-footer-info";
+        internal static readonly string s_MainContainerClassName = "unity-inspector-main-container";
 
         internal InspectorWindow()
         {
@@ -200,12 +209,14 @@ namespace UnityEditor
         {
             var tpl = EditorGUIUtility.Load("UXML/InspectorWindow/InspectorWindow.uxml") as VisualTreeAsset;
             var container = tpl.CloneTree();
-            container.AddToClassList("mainContainer");
+            container.AddToClassList(s_MainContainerClassName);
             rootVisualElement.hierarchy.Add(container);
 
-            var label = rootVisualElement.Q<VisualElement>("nomultieditwarning");
-            m_MultiEditLabel = label;
-            label.RemoveFromHierarchy();
+            var multiContainer = rootVisualElement.Q<VisualElement>(className: s_MultiEditClassName);
+            multiContainer.Query<TextElement>().ForEach((label) => label.text = L10n.Tr(label.text));
+            multiContainer.RemoveFromHierarchy();
+
+            m_MultiEditLabel = multiContainer;
 
             rootVisualElement.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
 
@@ -415,7 +426,7 @@ namespace UnityEditor
             GameObject go = m_Tracker.activeEditors[0].target as GameObject;
             if (go == null)
                 return;
-            GameObject sourceGo = PrefabUtility.GetCorrespondingObjectFromSource(go);
+            GameObject sourceGo = PrefabUtility.GetCorrespondingConnectedObjectFromSource(go);
             if (sourceGo == null)
                 return;
 
@@ -563,7 +574,7 @@ namespace UnityEditor
 
             ResetKeyboardControl();
 
-            var addComponentButton = rootVisualElement.Q<VisualElement>("addComponentButton");
+            var addComponentButton = rootVisualElement.Q<VisualElement>(className: s_AddComponentClassName);
             addComponentButton.Clear();
             previewAndLabelElement.Clear();
 
@@ -579,14 +590,7 @@ namespace UnityEditor
             DrawEditors(editors);
             Profiler.EndSample();
 
-            var label = rootVisualElement.Q<VisualElement>("noMultiEditWarning");
-            var labelMustBeAdded = false;
-
-            if (label == null)
-            {
-                label = m_MultiEditLabel;
-                labelMustBeAdded = true;
-            }
+            var labelMustBeAdded = m_MultiEditLabel.parent != editorsElement;
 
             if (tracker.hasComponentsWhichCannotBeMultiEdited)
             {
@@ -599,14 +603,14 @@ namespace UnityEditor
                 {
                     if (labelMustBeAdded)
                     {
-                        editorsElement.Add(label);
+                        editorsElement.Add(m_MultiEditLabel);
                     }
                 }
                 Profiler.EndSample();
             }
             else
             {
-                label.RemoveFromHierarchy();
+                m_MultiEditLabel.RemoveFromHierarchy();
             }
 
             if (editors.Any())
@@ -1737,6 +1741,13 @@ namespace UnityEditor
             {
                 var ed = editors[newEditorsIndex];
                 var currentEd = currentElements[previousEditorsIndex];
+
+                if (currentEd.editor == null)
+                {
+                    ++previousEditorsIndex;
+                    continue;
+                }
+
                 if (ed.GetType() != currentEd.editor.GetType())
                 {
                     // We won't have an EditorElement for editors that are normally culled so we should skip this
@@ -1750,7 +1761,7 @@ namespace UnityEditor
                 }
 
                 currentEd.Reinit(newEditorsIndex);
-                editorToElementMap[ed.target.GetInstanceID()] =  currentEd;
+                editorToElementMap[ed.target.GetInstanceID()] = currentEd;
                 ++newEditorsIndex;
                 ++previousEditorsIndex;
             }

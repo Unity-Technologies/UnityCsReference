@@ -1075,7 +1075,7 @@ namespace UnityEngine.UIElements.UIR
 
         static readonly int s_FontTexPropID = Shader.PropertyToID("_FontTex");
         static readonly int s_CustomTexPropID = Shader.PropertyToID("_CustomTex");
-        static readonly int s_1PixelClipWorldPropID = Shader.PropertyToID("_1PixelClipWorld");
+        static readonly int s_1PixelClipInvViewPropID = Shader.PropertyToID("_1PixelClipInvView");
         static readonly int s_ViewportID = Shader.PropertyToID("_Viewport");
         static readonly int s_RenderTargetSize = Shader.PropertyToID("_RenderTargetSize");
         static readonly int s_TransformsPropID = Shader.PropertyToID("_Transforms");
@@ -1116,16 +1116,18 @@ namespace UnityEngine.UIElements.UIR
             var viewport = Utility.GetViewport();
             mat.SetVector(s_ViewportID, new Vector4(viewport.x, viewport.y, viewport.width, viewport.height));
 
-            Vector4 _1PixelClipWorld;
-            _1PixelClipWorld.x = 2.0f / viewport.width;
-            _1PixelClipWorld.y = 2.0f / viewport.height;
-            {
-                Matrix4x4 matVPInv = (projection * view).inverse;
-                Vector3 v = matVPInv.MultiplyVector(new Vector3(_1PixelClipWorld.x, _1PixelClipWorld.y));
-                _1PixelClipWorld.z = Mathf.Abs(v.x);
-                _1PixelClipWorld.w = Mathf.Abs(v.y);
-            }
-            mat.SetVector(s_1PixelClipWorldPropID, _1PixelClipWorld);
+            // Size of 1 pixel in clip space.
+            Vector4 _1PixelClipInvView;
+            _1PixelClipInvView.x = 2.0f / viewport.width;
+            _1PixelClipInvView.y = 2.0f / viewport.height;
+
+            // Pixel density in group space.
+            Matrix4x4 matVPInv = (projection * view).inverse;
+            Vector3 v = matVPInv.MultiplyVector(new Vector3(_1PixelClipInvView.x, _1PixelClipInvView.y));
+            _1PixelClipInvView.z = 1 / (Mathf.Abs(v.x) + Mathf.Epsilon);
+            _1PixelClipInvView.w = 1 / (Mathf.Abs(v.y) + Mathf.Epsilon);
+
+            mat.SetVector(s_1PixelClipInvViewPropID, _1PixelClipInvView);
 
             Vector2 renderTargetSize = UIRUtility.GetRenderTargetSize();
             mat.SetVector(s_RenderTargetSize, renderTargetSize);

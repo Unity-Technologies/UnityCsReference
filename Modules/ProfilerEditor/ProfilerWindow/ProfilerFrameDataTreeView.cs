@@ -588,7 +588,7 @@ namespace UnityEditorInternal
 
         protected override IList<int> GetAncestors(int id)
         {
-            if (m_FrameDataView == null)
+            if (m_FrameDataView == null || !m_FrameDataView.valid)
                 return new List<int>();
 
             var ancestors = new List<int>();
@@ -598,7 +598,7 @@ namespace UnityEditorInternal
 
         protected override IList<int> GetDescendantsThatHaveChildren(int id)
         {
-            if (m_FrameDataView == null)
+            if (m_FrameDataView == null || !m_FrameDataView.valid)
                 return new List<int>();
 
             var children = new List<int>();

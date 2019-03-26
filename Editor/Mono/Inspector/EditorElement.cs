@@ -15,8 +15,27 @@ namespace UnityEditor.UIElements
         readonly InspectorWindow inspectorWindow;
 
         internal Editor[] m_Editors => inspectorWindow.tracker.activeEditors;
-        int m_editorIndex;
-        public Editor editor => m_Editors[m_editorIndex];
+        int m_EditorIndex;
+        public Editor editor
+        {
+            get
+            {
+                if (m_EditorIndex < m_Editors.Length)
+                {
+                    return m_Editors[m_EditorIndex];
+                }
+                return null;
+            }
+        }
+
+        private bool IsEditorValid()
+        {
+            if (m_EditorIndex < m_Editors.Length)
+            {
+                return m_Editors[m_EditorIndex] != null;
+            }
+            return false;
+        }
 
         Rect m_DragRect;
         Rect m_ContentRect;
@@ -29,7 +48,7 @@ namespace UnityEditor.UIElements
 
         internal EditorElement(int editorIndex, InspectorWindow iw)
         {
-            m_editorIndex = editorIndex;
+            m_EditorIndex = editorIndex;
             inspectorWindow = iw;
 
             Init();
@@ -70,11 +89,19 @@ namespace UnityEditor.UIElements
 
         internal void Reinit(int editorIndex)
         {
-            m_editorIndex = editorIndex;
+            Object editorTarget = editor.targets[0];
+            string editorTitle = ObjectNames.GetInspectorTitle(editorTarget);
+
+            m_EditorIndex = editorIndex;
 
             m_Header.onGUIHandler = HeaderOnGUI;
             m_Footer.onGUIHandler = FooterOnGUI;
             m_InspectorElement.editor = editor;
+
+            name = editorTitle;
+            m_InspectorElement.name = editorTitle + "Inspector";
+            m_Header.name = editorTitle + "Header";
+            m_Footer.name = editorTitle + "Footer";
         }
 
         internal void AddPrefabComponent(VisualElement comp)
@@ -104,8 +131,7 @@ namespace UnityEditor.UIElements
 
         void HeaderOnGUI()
         {
-            var editors = inspectorWindow.tracker.activeEditors;
-            if (editors.Length <= m_editorIndex)
+            if (!IsEditorValid())
             {
                 SetElementVisible(m_InspectorElement, false);
                 return;
@@ -124,13 +150,13 @@ namespace UnityEditor.UIElements
                 return;
             }
 
-            bool wasVisible = inspectorWindow.WasEditorVisible(editors, m_editorIndex, target);
+            bool wasVisible = inspectorWindow.WasEditorVisible(m_Editors, m_EditorIndex, target);
 
             GUIUtility.GetControlID(target.GetInstanceID(), FocusType.Passive);
             EditorGUIUtility.ResetGUIState();
 
             if (editor.target is AssetImporter)
-                inspectorWindow.editorsWithImportedObjectLabel.Add(m_editorIndex + 1);
+                inspectorWindow.editorsWithImportedObjectLabel.Add(m_EditorIndex + 1);
 
             //set the current PropertyHandlerCache to the current editor
             ScriptAttributeUtility.propertyHandlerCache = editor.propertyHandlerCache;
@@ -139,7 +165,7 @@ namespace UnityEditor.UIElements
                 m_DragRect = DrawEditorHeader(target, ref wasVisible);
             }
 
-            if (wasVisible != m_InspectorElement.visible)
+            if (wasVisible != IsElementVisible(m_InspectorElement))
             {
                 SetElementVisible(m_InspectorElement, wasVisible);
             }
@@ -166,7 +192,17 @@ namespace UnityEditor.UIElements
                     "The module which implements this component type has been force excluded in player settings. This object will be removed in play mode and from any builds you make.",
                     MessageType.Warning);
 
-            m_ContentRect = m_InspectorElement.layout;
+            if (IsElementVisible(m_InspectorElement))
+            {
+                m_ContentRect = m_InspectorElement.layout;
+            }
+            else
+            {
+                Rect r = m_Header.layout;
+                r.y = r.y + r.height - 1;
+                r.height = kFooterDefaultHeight;
+                m_ContentRect = r;
+            }
         }
 
         Rect DrawEditorHeader(Object target, ref bool wasVisible)
@@ -182,7 +218,12 @@ namespace UnityEditor.UIElements
 
         bool DrawEditorLargeHeader(ref bool wasVisible)
         {
-            bool largeHeader = InspectorWindow.EditorHasLargeHeader(m_editorIndex, m_Editors);
+            if (!IsEditorValid())
+            {
+                return true;
+            }
+
+            bool largeHeader = InspectorWindow.EditorHasLargeHeader(m_EditorIndex, m_Editors);
 
             // Draw large headers before we do the culling of unsupported editors below,
             // so the large header is always shown even when the editor can't be.
@@ -192,7 +233,7 @@ namespace UnityEditor.UIElements
                 bool IsOpenForEdit = editor.IsOpenForEdit(out message);
                 wasVisible = true;
 
-                if (inspectorWindow.editorsWithImportedObjectLabel.Contains(m_editorIndex))
+                if (inspectorWindow.editorsWithImportedObjectLabel.Contains(m_EditorIndex))
                 {
                     var importedObjectBarRect = GUILayoutUtility.GetRect(16, 16);
                     importedObjectBarRect.height = 17;
@@ -218,8 +259,11 @@ namespace UnityEditor.UIElements
         // so we don't draw a component header for all the components that can't be shown.
         Rect DrawEditorSmallHeader(Object target, bool wasVisible)
         {
-            var editors = m_Editors;
-            var editor = editors[m_editorIndex];
+            var currentEditor = editor;
+
+            if (currentEditor == null)
+                return GUILayoutUtility.GetLastRect();
+
             // ensure first component's title bar is flush with the header
             if (EditorNeedsVerticalOffset(target))
             {
@@ -231,39 +275,41 @@ namespace UnityEditor.UIElements
                 );
             }
 
-            using (new EditorGUI.DisabledScope(!editor.IsEnabled()))
+            using (new EditorGUI.DisabledScope(!currentEditor.IsEnabled()))
             {
-                bool isVisible = EditorGUILayout.InspectorTitlebar(wasVisible, editor);
+                bool isVisible = EditorGUILayout.InspectorTitlebar(wasVisible, currentEditor);
                 if (wasVisible != isVisible)
                 {
-                    inspectorWindow.tracker.SetVisible(m_editorIndex, isVisible ? 1 : 0);
+                    inspectorWindow.tracker.SetVisible(m_EditorIndex, isVisible ? 1 : 0);
                     InternalEditorUtility.SetIsInspectorExpanded(target, isVisible);
                     if (isVisible)
                     {
-                        inspectorWindow.lastInteractedEditor = editor;
+                        inspectorWindow.lastInteractedEditor = currentEditor;
                     }
-                    else if (inspectorWindow.lastInteractedEditor == editor)
+                    else if (inspectorWindow.lastInteractedEditor == currentEditor)
                     {
                         inspectorWindow.lastInteractedEditor = null;
                     }
                 }
             }
-
             return GUILayoutUtility.GetLastRect();
+        }
+
+        private bool IsElementVisible(VisualElement ve)
+        {
+            return (ve.resolvedStyle.display == DisplayStyle.Flex);
         }
 
         internal static void SetElementVisible(InspectorElement ve, bool visible)
         {
             if (visible)
             {
-                ve.style.position = Position.Relative;
-                ve.style.visibility = Visibility.Visible;
+                ve.style.display = DisplayStyle.Flex;
                 SetInspectorElementChildIMGUIContainerFocusable(ve, true);
             }
             else
             {
-                ve.style.position = Position.Absolute;
-                ve.style.visibility = Visibility.Hidden;
+                ve.style.display = DisplayStyle.None;
                 SetInspectorElementChildIMGUIContainerFocusable(ve, false);
             }
         }
@@ -283,26 +329,25 @@ namespace UnityEditor.UIElements
         #endregion Header
 
         #region Footer
-
+        const float kFooterDefaultHeight = 3;
         IMGUIContainer BuildFooterElement(string editorTitle)
         {
             IMGUIContainer footerElement = inspectorWindow.CreateIMGUIContainer(FooterOnGUI, editorTitle + "Footer");
-            footerElement.style.height = 3;
+            footerElement.style.height = kFooterDefaultHeight;
             return footerElement;
         }
 
         void FooterOnGUI()
         {
-            var editors = m_Editors;
-            if (editors.Length <= m_editorIndex)
+            var ed = editor;
+
+            if (ed == null)
             {
                 return;
             }
 
-            var ed = editors[m_editorIndex];
-
             m_ContentRect.y = -m_ContentRect.height;
-            inspectorWindow.editorDragging.HandleDraggingToEditor(editors, m_editorIndex, m_DragRect, m_ContentRect);
+            inspectorWindow.editorDragging.HandleDraggingToEditor(m_Editors, m_EditorIndex, m_DragRect, m_ContentRect);
             HandleComponentScreenshot(m_ContentRect, ed);
 
             var target = ed.target;
@@ -311,7 +356,7 @@ namespace UnityEditor.UIElements
             if (EditorGUI.ShouldDrawOverrideBackground(ed.targets, Event.current, comp))
             {
                 var rect = GUILayoutUtility.kDummyRect;
-                bool wasVisible = inspectorWindow.WasEditorVisible(editors, m_editorIndex, target);
+                bool wasVisible = inspectorWindow.WasEditorVisible(m_Editors, m_EditorIndex, target);
                 // if the inspector is currently visible then the override background drawn by the footer needs to be slightly larger than if the inspector is collapsed
                 if (wasVisible)
                 {
@@ -347,7 +392,7 @@ namespace UnityEditor.UIElements
 
         internal bool EditorNeedsVerticalOffset(Object target)
         {
-            return m_editorIndex > 0 && m_Editors[m_editorIndex - 1].target is GameObject && target is Component;
+            return m_EditorIndex > 0 && IsEditorValid() && m_Editors[m_EditorIndex - 1].target is GameObject && target is Component;
         }
     }
 }
