@@ -27,6 +27,9 @@ namespace UnityEditor
         [NativeProperty("IsExplicitlyReferenced")]
         internal extern bool IsExplicitlyReferenced { get; set; }
 
+        [NativeProperty("ValidateReferences")]
+        internal extern bool ValidateReferences { get; set;}
+
         [NativeProperty("DefineConstraints")]
         public extern string[] DefineConstraints { get; set; }
 

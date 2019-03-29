@@ -707,6 +707,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     if (loadedCustomScriptAssembly.References == null)
                         loadedCustomScriptAssembly.References = new string[0];
 
+
                     if (loadedCustomScriptAssembly.References.Length != loadedCustomScriptAssembly.References.Distinct().Count())
                     {
                         var duplicateRefs = loadedCustomScriptAssembly.References.GroupBy(r => r).Where(g => g.Count() > 0).Select(g => g.Key).ToArray();
@@ -754,19 +755,30 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return customScriptAssembly;
         }
 
-        // Delete all .dll's that aren't used anymore
         public void DeleteUnusedAssemblies()
+        {
+            ScriptAssemblySettings settings = CreateEditorScriptAssemblySettings(EditorScriptCompilationOptions.BuildingForEditor);
+            DeleteUnusedAssemblies(settings);
+        }
+
+        // Delete all .dll's that aren't used anymore
+        public void DeleteUnusedAssemblies(ScriptAssemblySettings settings)
         {
             string fullEditorAssemblyPath = AssetPath.Combine(projectDirectory, GetCompileScriptsOutputDirectory());
 
             if (!Directory.Exists(fullEditorAssemblyPath))
+            {
+                // This is called in GetTargetAssembliesWithScripts and is required for compilation to
+                // be set up correctly. Since we early out here, we need to call this here.
+                UpdateAllTargetAssemblyDefines(customTargetAssemblies, EditorBuildRules.GetPredefinedTargetAssemblies(), settings);
                 return;
+            }
 
             var deleteFiles = Directory.GetFiles(fullEditorAssemblyPath).Select(f => AssetPath.ReplaceSeparators(f)).ToList();
             string timestampPath = GetAssemblyTimestampPath(GetCompileScriptsOutputDirectory());
             deleteFiles.Remove(AssetPath.Combine(projectDirectory, timestampPath));
 
-            var scriptAssemblies = GetAllScriptAssemblies(EditorScriptCompilationOptions.BuildingForEditor);
+            var scriptAssemblies = GetAllScriptAssemblies(EditorScriptCompilationOptions.BuildingForEditor, settings);
 
             foreach (var assembly in scriptAssemblies)
             {
@@ -963,14 +975,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         internal CompileStatus CompileScripts(ScriptAssemblySettings scriptAssemblySettings, string tempBuildDirectory, EditorScriptCompilationOptions options, ref EditorBuildRules.TargetAssembly[] notCompiledTargetAssemblies, ref string[] notCompiledScripts)
         {
-            DeleteUnusedAssemblies();
+            DeleteUnusedAssemblies(scriptAssemblySettings);
 
             if (!DoesProjectFolderHaveAnyDirtyScripts() &&
                 !ArePrecompiledAssembliesDirty() &&
                 runScriptUpdaterAssemblies.Count == 0)
                 return CompileStatus.Idle;
-
-            UpdateAllTargetAssemblyDefines(customTargetAssemblies, EditorBuildRules.GetPredefinedTargetAssemblies(), scriptAssemblySettings);
 
             var assemblies = new EditorBuildRules.CompilationAssemblies
             {
@@ -1024,7 +1034,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             if (returnCompilationComplete)
             {
-                DeleteUnusedAssemblies();
+                DeleteUnusedAssemblies(scriptAssemblySettings);
                 compilationTask = null;
                 return CompileStatus.CompilationComplete;
             }
@@ -1072,7 +1082,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 CheckCyclicAssemblyReferences();
             }
 
-            DeleteUnusedAssemblies();
+            DeleteUnusedAssemblies(scriptAssemblySettings);
 
             if (!Directory.Exists(scriptAssemblySettings.OutputDirectory))
                 Directory.CreateDirectory(scriptAssemblySettings.OutputDirectory);
@@ -1400,6 +1410,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public TargetAssemblyInfo[] GetTargetAssembliesWithScripts(EditorScriptCompilationOptions options)
         {
             ScriptAssemblySettings settings = CreateEditorScriptAssemblySettings(EditorScriptCompilationOptions.BuildingForEditor | options);
+            return GetTargetAssembliesWithScripts(settings);
+        }
+
+        public TargetAssemblyInfo[] GetTargetAssembliesWithScripts(ScriptAssemblySettings settings)
+        {
+            UpdateAllTargetAssemblyDefines(customTargetAssemblies, EditorBuildRules.GetPredefinedTargetAssemblies(), settings);
+
             var targetAssemblies = EditorBuildRules.GetTargetAssembliesWithScripts(allScripts, projectDirectory, customTargetAssemblies, settings);
 
             var targetAssemblyInfos = new TargetAssemblyInfo[targetAssemblies.Length];
@@ -1467,10 +1484,19 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return GetAllScriptAssemblies(options, unityAssemblies, precompiledAssemblies);
         }
 
+        public ScriptAssembly[] GetAllScriptAssemblies(EditorScriptCompilationOptions options, ScriptAssemblySettings settings)
+        {
+            return GetAllScriptAssemblies(options, settings, unityAssemblies, precompiledAssemblies);
+        }
+
         public ScriptAssembly[] GetAllScriptAssemblies(EditorScriptCompilationOptions options, PrecompiledAssembly[] unityAssembliesArg, PrecompiledAssembly[] precompiledAssembliesArg)
         {
             ScriptAssemblySettings settings = CreateEditorScriptAssemblySettings(options);
+            return GetAllScriptAssemblies(options, settings, unityAssembliesArg, precompiledAssembliesArg);
+        }
 
+        public ScriptAssembly[] GetAllScriptAssemblies(EditorScriptCompilationOptions options, ScriptAssemblySettings settings, PrecompiledAssembly[] unityAssembliesArg, PrecompiledAssembly[] precompiledAssembliesArg)
+        {
             UpdateAllTargetAssemblyDefines(customTargetAssemblies, EditorBuildRules.GetPredefinedTargetAssemblies(), settings);
 
             var assemblies = new EditorBuildRules.CompilationAssemblies
@@ -1485,6 +1511,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return EditorBuildRules.GetAllScriptAssemblies(allScripts, projectDirectory, settings, assemblies);
         }
 
+        // TODO: Get rid of calls to this method and ensure that the defines are always setup correctly at all times.
         private static void UpdateAllTargetAssemblyDefines(EditorBuildRules.TargetAssembly[] customScriptAssemblies, EditorBuildRules.TargetAssembly[] predefinedTargetAssemblies, ScriptAssemblySettings settings)
         {
             var allTargetAssemblies = (customScriptAssemblies ?? new EditorBuildRules.TargetAssembly[0])
