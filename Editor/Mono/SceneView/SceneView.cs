@@ -1833,7 +1833,10 @@ namespace UnityEditor
 
         void RepaintGizmosThatAreRenderedOnTopOfSceneView()
         {
-            svRot.OnGUI(this);
+            if (Event.current.type == EventType.Repaint)
+            {
+                svRot.OnGUI(this);
+            }
         }
 
         void InputForGizmosThatAreRenderedOnTopOfSceneView()

@@ -363,8 +363,13 @@ namespace UnityEngine
         // Make a single press button. The user clicks them and something happens immediately.
         public static bool Button(Rect position, GUIContent content, GUIStyle style)
         {
-            GUIUtility.CheckOnGUI();
             int id = GUIUtility.GetControlID(s_ButonHash, FocusType.Passive, position);
+            return Button(position, id, content, style);
+        }
+
+        internal static bool Button(Rect position, int id, GUIContent content, GUIStyle style)
+        {
+            GUIUtility.CheckOnGUI();
             return DoButton(position, id, content, style);
         }
 

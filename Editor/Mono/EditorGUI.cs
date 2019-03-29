@@ -1933,7 +1933,7 @@ namespace UnityEditor
             {
                 if (!editor.IsEditingControl(id))
                 {
-                    str = s_RecycledCurrentEditingString = isDouble ? doubleVal.ToString(formatString) : longVal.ToString(formatString);
+                    str = s_RecycledCurrentEditingString = isDouble ? doubleVal.ToString(formatString, CultureInfo.InvariantCulture) : longVal.ToString(formatString, CultureInfo.InvariantCulture);
                 }
                 else
                 {
@@ -1946,13 +1946,13 @@ namespace UnityEditor
                     */
                     if (evt.type == EventType.ValidateCommand && evt.commandName == EventCommandNames.UndoRedoPerformed)
                     {
-                        str = isDouble ? doubleVal.ToString(formatString) : longVal.ToString(formatString);
+                        str = isDouble ? doubleVal.ToString(formatString, CultureInfo.InvariantCulture) : longVal.ToString(formatString, CultureInfo.InvariantCulture);
                     }
                 }
             }
             else
             {
-                str = isDouble ? doubleVal.ToString(formatString) : longVal.ToString(formatString);
+                str = isDouble ? doubleVal.ToString(formatString, CultureInfo.InvariantCulture) : longVal.ToString(formatString, CultureInfo.InvariantCulture);
             }
 
             if (GUIUtility.keyboardControl == id)

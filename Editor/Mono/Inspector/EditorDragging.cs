@@ -214,8 +214,14 @@ namespace UnityEditor
                                 // Move added components relative to target components
                                 if (!ComponentUtility.MoveComponentsRelativeToComponents(addedComponents, targetComponents, m_TargetAbove))
                                 {
+                                    // Ensure we have the same selection after calling RevertAllDownToGroup below (MoveComponentsRelativeToComponents can have opened a Prefab in Prefab Mode and changed selection to that root)
+                                    var wantedSelectedGameObject = Selection.activeGameObject;
+
                                     // Revert added components if move operation fails (e.g. user aborts when asked to break prefab instance)
                                     Undo.RevertAllDownToGroup(undoGroup);
+
+                                    if (wantedSelectedGameObject != Selection.activeGameObject)
+                                        Selection.activeGameObject = wantedSelectedGameObject;
                                 }
                             }
                         }

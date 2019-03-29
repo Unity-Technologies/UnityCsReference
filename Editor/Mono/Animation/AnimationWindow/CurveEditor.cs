@@ -983,15 +983,6 @@ namespace UnityEditor
                         DeleteSelectedKeys();
                         evt.Use();
                     }
-
-                    // Frame All.
-                    // Manually handle hotkey unless we decide to add it to default Unity hotkeys like
-                    // we did for FrameSelected.
-                    if (evt.keyCode == KeyCode.A)
-                    {
-                        FrameClip(true, true);
-                        evt.Use();
-                    }
                     break;
 
                 case EventType.ContextClick:
@@ -1988,6 +1979,9 @@ namespace UnityEditor
             int keyIndex = AnimationUtility.AddInbetweenKey(cw.curve, time);
             if (keyIndex >= 0)
             {
+                CurveUtility.SetKeyModeFromContext(cw.curve, keyIndex);
+                AnimationUtility.UpdateTangentsFromModeSurrounding(cw.curve, keyIndex);
+
                 // Select the key
                 CurveSelection selectedPoint = new CurveSelection(cw.id, keyIndex);
                 cw.selected = CurveWrapper.SelectionMode.Selected;

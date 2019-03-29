@@ -186,6 +186,10 @@ namespace UnityEditor
         {
             if (stage == null)
                 return;
+
+            if (stage.prefabStage != null && !stage.prefabStage.isValid)
+                return;
+
             string key = StageUtility.CreateWindowAndStageIdentifier(hierarchyWindow.windowGUID, stage);
             var state = m_StateCache.GetState(key);
             if (state == null)
@@ -257,7 +261,7 @@ namespace UnityEditor
             }
 
             var prefabStage = currentItem.prefabStage;
-            if (prefabStage == null)
+            if (prefabStage == null || !prefabStage.isValid)
                 return;
 
             // Cache header text

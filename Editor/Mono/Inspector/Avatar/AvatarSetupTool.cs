@@ -631,6 +631,7 @@ namespace UnityEditor
             {
                 BoneWrapper bone = humanBones[i];
                 if (mapping.ContainsKey(i))
+                {
                     humanBoneMappings.Add(
                         new HumanBone()
                         {
@@ -638,6 +639,8 @@ namespace UnityEditor
                             humanName = bone.humanBoneName,
                             limit = new HumanLimit() { useDefaultValues = true }
                         });
+                    humanBones[i].bone = mapping[i];
+                }
             }
             humanBoneMappingArray = humanBoneMappings.ToArray();
             SimpleProfiler.End();

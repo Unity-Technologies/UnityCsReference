@@ -3,10 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using UnityEngine;
 using UnityEditor;
-using System.Collections.Generic;
 
 namespace UnityEditorInternal
 {
@@ -484,7 +485,7 @@ namespace UnityEditorInternal
             else
             {
                 float temp;
-                if (float.TryParse(modification.value, out temp))
+                if (float.TryParse(modification.value, NumberStyles.Float, CultureInfo.InvariantCulture, out temp))
                 {
                     outObject = temp;
                     return true;

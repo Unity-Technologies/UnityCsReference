@@ -13,6 +13,7 @@ using System.IO;
 using System;
 using UnityEditor.Build.Reporting;
 using UnityEditor.Connect;
+using UnityEditor.Utils;
 
 namespace UnityEditor
 {
@@ -356,7 +357,7 @@ namespace UnityEditor
                 if (isWindowsStandalone)
                 {
                     extension = realExtension;
-                    path = Path.Combine(path, PlayerSettings.productName + '.' + extension);
+                    path = Path.Combine(path, Paths.MakeValidFileName(PlayerSettings.productName) + '.' + extension);
                 }
 
                 if (!IsBuildPathValid(path))

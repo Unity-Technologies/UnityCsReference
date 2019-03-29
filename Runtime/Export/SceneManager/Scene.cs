@@ -12,8 +12,9 @@ namespace UnityEngine.SceneManagement
         internal enum LoadingState
         {
             NotLoaded = 0,
-            Loading,
-            Loaded
+            Loading = 1,
+            Loaded = 2,
+            Unloading = 3
         }
 
         [SerializeField]

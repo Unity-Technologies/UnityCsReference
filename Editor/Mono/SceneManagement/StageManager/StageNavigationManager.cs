@@ -151,9 +151,28 @@ namespace UnityEditor.SceneManagement
             if (time > m_NextUpdate)
             {
                 m_NextUpdate = time + 0.2;
+                ValidateAndUpdatePrefabStages(true);
+            }
+        }
 
-                foreach (var prefabStage in m_PrefabStages)
-                    prefabStage.Update();
+        // internal for testing
+        internal void ValidateAndUpdatePrefabStages(bool showDialogIfInvalid)
+        {
+            foreach (var prefabStage in m_PrefabStages)
+            {
+                if (!prefabStage.isValid)
+                {
+                    var errorMsg = prefabStage.GetErrorMessage();
+                    Assert.IsNotNull(errorMsg);
+                    if (showDialogIfInvalid)
+                        EditorUtility.DisplayDialog("Exiting Prefab Mode", errorMsg, "OK");
+
+                    Assert.IsTrue(m_NavigationHistory.CanGoBackward());
+                    NavigateBack(Analytics.ChangeType.EnterViaUnknown);
+                    return;
+                }
+
+                prefabStage.Update();
             }
         }
 
@@ -206,7 +225,10 @@ namespace UnityEditor.SceneManagement
         bool CleanupCurrentStageBeforeSwitchingStage()
         {
             var prefabStage = currentItem.prefabStage;
-            if (prefabStage != null)
+
+            // Allow user to save any unsaved changes only after recompiling have finished so any new scripts can be
+            // saved properly to the Prefab file (but only if the stage is valid)
+            if (prefabStage != null && prefabStage.isValid)
             {
                 if (EditorApplication.isCompiling && prefabStage.HasSceneBeenModified())
                 {
@@ -502,7 +524,7 @@ namespace UnityEditor.SceneManagement
             // the PrefabStage is not fully initialized as it does not have a reference to the prefabContentsRoot yet. In this case
             // the go is not auto parented and the parenting must be handled by the client.
             var prefabStage = GetCurrentPrefabStage();
-            if (prefabStage != null && prefabStage.initialized && go != null && go.transform.parent == null)
+            if (prefabStage != null && prefabStage.isValid && go != null && go.transform.parent == null)
             {
                 go.transform.SetParent(prefabStage.prefabContentsRoot.transform, true);
             }
