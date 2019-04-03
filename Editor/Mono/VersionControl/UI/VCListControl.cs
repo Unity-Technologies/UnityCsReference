@@ -788,7 +788,8 @@ namespace UnityEditorInternal.VersionControl
                 EditorGUI.Foldout(new Rect(x, y, 16, c_lineHeight), item.Expanded, GUIContent.none);
             }
 
-            Texture icon = item.Icon;
+            Texture icon = GetIconTexture(item);
+
             Color tmpColor = GUI.color;
             Color tmpContentColor = GUI.contentColor;
 
@@ -1354,6 +1355,18 @@ namespace UnityEditorInternal.VersionControl
         {
             ListItem twinMeta = GetTwinMeta(item);
             return twinMeta != null && twinMeta.Hidden;
+        }
+
+        private Texture GetIconTexture(ListItem item)
+        {
+            if (item.Asset != null && item.Asset.isInCurrentProject)
+            {
+                return item.Icon;
+            }
+            else
+            {
+                return defaultIcon;
+            }
         }
     }
 }

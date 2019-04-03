@@ -109,7 +109,7 @@ namespace UnityEditor
         internal static bool HasCurrentWindowKeyFocus()
         {
             CheckOnGUI();
-            return GUIView.current.hasFocus;
+            return GUIView.current != null ? GUIView.current.hasFocus : false;
         }
 
         public static Rect PointsToPixels(Rect rect)
