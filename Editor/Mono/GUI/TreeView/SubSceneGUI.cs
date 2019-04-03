@@ -8,12 +8,12 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-
 static class SubSceneGUI
 {
     static Dictionary<GameObject, SceneHierarchyHooks.SubSceneInfo> m_SubSceneHeadersMap = new Dictionary<GameObject, SceneHierarchyHooks.SubSceneInfo>();
     static Dictionary<Scene, SceneHierarchyHooks.SubSceneInfo> m_SceneToSubSceneMap = new Dictionary<Scene, SceneHierarchyHooks.SubSceneInfo>();
     static Dictionary<SceneAsset, SceneHierarchyHooks.SubSceneInfo> m_SceneAssetToSubSceneMap = new Dictionary<SceneAsset, SceneHierarchyHooks.SubSceneInfo>();
+    const int kMaxSubSceneIterations = 100;
 
     internal static void FetchSubSceneInfo()
     {
@@ -45,6 +45,51 @@ static class SubSceneGUI
     internal static bool IsUsingSubScenes()
     {
         return SceneHierarchyHooks.provideSubScenes != null;
+    }
+
+    static Transform GetParentCheckSubScenes(Transform transform)
+    {
+        if (transform.parent == null)
+        {
+            SceneHierarchyHooks.SubSceneInfo subScene;
+            if (m_SceneToSubSceneMap.TryGetValue(transform.gameObject.scene, out subScene))
+                return subScene.transform;
+            else
+                return null; // Reached root of a root scene
+        }
+
+        return transform.parent;
+    }
+
+    internal static bool IsChildOrSameAsOtherTransform(Transform transform, Transform otherTransform)
+    {
+        if (IsUsingSubScenes())
+        {
+            Transform current = transform;
+            int i = 0;
+            while (current != null && i++ < kMaxSubSceneIterations)
+            {
+                if (current == otherTransform)
+                    return true;
+
+                current = GetParentCheckSubScenes(current);
+            }
+
+            if (i >= kMaxSubSceneIterations)
+                Debug.LogError("Recursive SubScene setup detected. Report a bug.");
+        }
+        else
+        {
+            Transform current = transform;
+            while (current != null)
+            {
+                if (current == otherTransform)
+                    return true;
+
+                current = current.parent;
+            }
+        }
+        return false;
     }
 
     internal static bool IsSubSceneHeader(GameObject gameObject)
@@ -260,13 +305,17 @@ static class SubSceneGUI
         if (!subSceneInfo.isValid)
             return -1;
 
-        int hierarchyDepth = 0; // Root scene offset
-        while (true)
+        int hierarchyDepth = 0;
+        int i = 0;
+        while (i++ < kMaxSubSceneIterations)
         {
             hierarchyDepth += FindTransformDepth(subSceneInfo.transform) + 1;  // the +1 is for the SubScene header
             if (!m_SceneToSubSceneMap.TryGetValue(subSceneInfo.transform.gameObject.scene, out subSceneInfo))
                 break;
         }
+
+        if (i >= kMaxSubSceneIterations)
+            Debug.LogError("Recursive SubScene setup detected. Report a bug.");
 
         return hierarchyDepth;
     }

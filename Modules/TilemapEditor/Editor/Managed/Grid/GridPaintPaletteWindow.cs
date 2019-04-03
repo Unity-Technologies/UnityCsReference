@@ -568,9 +568,7 @@ namespace UnityEditor
                 GridPaintingState.savingPalette = true;
                 SetHideFlagsRecursivelyIgnoringTilemapChildren(paletteInstance, HideFlags.HideInHierarchy);
                 string path = AssetDatabase.GetAssetPath(palette);
-                #pragma warning disable CS0618 // Type or member is obsolete
-                PrefabUtility.ReplacePrefabAssetNameBased(paletteInstance, path, true);
-                #pragma warning restore CS0618 // Type or member is obsolete
+                PrefabUtility.SaveAsPrefabAssetAndConnect(paletteInstance, path, InteractionMode.AutomatedAction);
                 SetHideFlagsRecursivelyIgnoringTilemapChildren(paletteInstance, HideFlags.HideAndDontSave);
                 GridPaintingState.savingPalette = false;
             }

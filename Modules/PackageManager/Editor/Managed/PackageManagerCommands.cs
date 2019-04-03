@@ -15,13 +15,13 @@ namespace UnityEditor.PackageManager
         {
             if (EditorUtility.DisplayDialog(L10n.Tr("Unity Package Manager"),
                 L10n.Tr("Resetting packages to defaults will discard any changes you have made and/or remove packages set by the project template.\nThis action may result in compilation errors or a broken project. Are you sure?"),
-                L10n.Tr("No"), L10n.Tr("Yes")))
-                return;
-
-            ResetToEditorDefaultsRequest request = Client.ResetToEditorDefaults();
-            if (request.Status == StatusCode.Failure)
+                L10n.Tr("Yes"), L10n.Tr("No")))
             {
-                Debug.LogError("Resetting packages to defaults failed. Reason: " + request.Error.message);
+                ResetToEditorDefaultsRequest request = Client.ResetToEditorDefaults();
+                if (request.Status == StatusCode.Failure)
+                {
+                    Debug.LogError("Resetting packages to defaults failed. Reason: " + request.Error.message);
+                }
             }
         }
     }

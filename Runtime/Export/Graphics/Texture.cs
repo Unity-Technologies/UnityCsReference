@@ -24,10 +24,7 @@ namespace UnityEngine
         private GraphicsFormat _graphicsFormat;// { get; set; }
         public GraphicsFormat graphicsFormat
         {
-            get
-            {
-                return _graphicsFormat;
-            }
+            get { return _graphicsFormat; }
 
             set
             {
@@ -40,6 +37,12 @@ namespace UnityEngine
         {
             get { return GraphicsFormatUtility.GetRenderTextureFormat(graphicsFormat); }
             set { graphicsFormat = SystemInfo.GetCompatibleFormat(GraphicsFormatUtility.GetGraphicsFormat(value, sRGB), FormatUsage.Render); }
+        }
+
+        public bool sRGB
+        {
+            get { return GraphicsFormatUtility.IsSRGBFormat(graphicsFormat); }
+            set { graphicsFormat = GraphicsFormatUtility.GetGraphicsFormat(colorFormat, value); }
         }
 
         private int _depthBufferBits;
@@ -69,17 +72,16 @@ namespace UnityEngine
         public RenderTextureDescriptor(int width, int height, RenderTextureFormat colorFormat, int depthBufferBits) : this(width, height, SystemInfo.GetCompatibleFormat(GraphicsFormatUtility.GetGraphicsFormat(colorFormat, false), FormatUsage.Render), depthBufferBits) {}
         public RenderTextureDescriptor(int width, int height, GraphicsFormat colorFormat, int depthBufferBits) : this()
         {
+            _flags = RenderTextureCreationFlags.AutoGenerateMips | RenderTextureCreationFlags.AllowVerticalFlip; // Set before graphicsFormat to avoid erasing the flag set by graphicsFormat
             this.width = width;
             this.height = height;
             volumeDepth = 1;
             msaaSamples = 1;
             this.graphicsFormat = colorFormat;
             this.depthBufferBits = depthBufferBits;
-            this.sRGB = GraphicsFormatUtility.IsSRGBFormat(colorFormat);
             dimension = Rendering.TextureDimension.Tex2D;
             shadowSamplingMode = Rendering.ShadowSamplingMode.None;
             vrUsage = VRTextureUsage.None;
-            _flags = RenderTextureCreationFlags.AutoGenerateMips | RenderTextureCreationFlags.AllowVerticalFlip;
             memoryless = RenderTextureMemoryless.None;
         }
 
@@ -92,19 +94,6 @@ namespace UnityEngine
             else
             {
                 _flags &= ~flag;
-            }
-        }
-
-        public bool sRGB
-        {
-            get { return (_flags & RenderTextureCreationFlags.SRGB) != 0; }
-            set
-            {
-                if (value)
-                    graphicsFormat = GraphicsFormatUtility.GetSRGBFormat(graphicsFormat);
-                else
-                    graphicsFormat = GraphicsFormatUtility.GetLinearFormat(graphicsFormat);
-                SetOrClearRenderTextureCreationFlag(value, RenderTextureCreationFlags.SRGB);
             }
         }
 

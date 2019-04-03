@@ -86,9 +86,6 @@ namespace UnityEditor
             bool wasEnabled = GUI.enabled;
             var visibleRect = GUIClip.visibleRect;
             var contentOffset = contentRect.y;
-
-            contentRect.xMin += InspectorWindow.kInspectorPaddingLeft;
-            contentRect.xMax -= InspectorWindow.kInspectorPaddingRight;
             contentRect.y += EditorGUI.kControlVerticalSpacing;
 
             var property = m_SerializedObject.GetIterator();

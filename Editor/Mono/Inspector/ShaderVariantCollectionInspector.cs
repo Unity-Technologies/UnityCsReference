@@ -38,20 +38,6 @@ namespace UnityEditor
             var data = new AddShaderVariantWindow.PopupData();
             data.shader = shader;
             data.collection = collection;
-            string[] keywordStrings;
-            ShaderUtil.GetShaderVariantEntries(shader, collection, out data.types, out keywordStrings);
-            if (keywordStrings.Length == 0)
-            {
-                // nothing available to add
-                EditorApplication.Beep();
-                return;
-            }
-
-            data.keywords = new string[keywordStrings.Length][];
-            for (var i = 0; i < keywordStrings.Length; ++i)
-            {
-                data.keywords[i] = keywordStrings[i].Split(' ');
-            }
             AddShaderVariantWindow.ShowAddVariantWindow(data);
             GUIUtility.ExitGUI();
         }
@@ -156,10 +142,6 @@ namespace UnityEditor
         {
             public Shader shader;
             public ShaderVariantCollection collection;
-            // list of all shader variants that are in the shader but not in collection yet
-            // (for each: pass type and shader keywords)
-            public int[] types;
-            public string[][] keywords;
         }
 
         class Styles
@@ -183,9 +165,14 @@ namespace UnityEditor
 
         PopupData m_Data;
         List<string> m_SelectedKeywords;
-        List<string> m_AvailableKeywords; // Other keywords still available in the currently filtered variants for further narrowing down
-        List<int> m_FilteredVariants; // Indices of variants that pass the keyword filter
+        List<string> m_AvailableKeywords;
         List<int> m_SelectedVariants; // Indices of variants currently selected for adding
+
+        int[] m_FilteredVariantTypes;
+        string[][] m_FilteredVariantKeywords;
+
+        int m_MaxVisibleVariants;
+        int m_NumFilteredVariants;
 
         public AddShaderVariantWindow()
         {
@@ -200,8 +187,6 @@ namespace UnityEditor
             m_SelectedKeywords = new List<string>();
             m_AvailableKeywords = new List<string>();
             m_SelectedVariants = new List<int>();
-            m_AvailableKeywords.Sort();
-            m_FilteredVariants = new List<int>();
             ApplyKeywordFilter();
         }
 
@@ -214,34 +199,27 @@ namespace UnityEditor
 
         void ApplyKeywordFilter()
         {
-            m_FilteredVariants.Clear();
-            m_AvailableKeywords.Clear();
+            m_MaxVisibleVariants = (int)(CalcVerticalSpaceForVariants() / EditorGUI.kSingleLineHeight);
+            string[] keywordLists, remainingKeywords;
+            m_FilteredVariantTypes = new int[m_MaxVisibleVariants];
 
-            // Go over all variants and see which ones pass the selected keywords filter
-            for (var i = 0; i < m_Data.keywords.Length; ++i)
+            ShaderUtil.GetShaderVariantEntriesFiltered(m_Data.shader,
+                m_MaxVisibleVariants + 1,                                         // query one more to know if we're truncating
+                m_SelectedKeywords.ToArray(),
+                m_Data.collection,
+                out m_FilteredVariantTypes,
+                out keywordLists,
+                out remainingKeywords);
+
+            m_NumFilteredVariants = m_FilteredVariantTypes.Length;
+            m_FilteredVariantKeywords = new string[m_NumFilteredVariants][];
+            for (var i = 0; i < m_NumFilteredVariants; ++i)
             {
-                bool containsAll = true;
-                for (var j = 0; j < m_SelectedKeywords.Count; ++j)
-                {
-                    if (!m_Data.keywords[i].Contains(m_SelectedKeywords[j]))
-                    {
-                        containsAll = false;
-                        break;
-                    }
-                }
-                if (containsAll)
-                {
-                    // Contains all keywords -> passed the filter
-                    m_FilteredVariants.Add(i);
-                    // Add keywords in this variant that aren't selected yet into "available" set
-                    foreach (var k in m_Data.keywords[i])
-                    {
-                        if (!m_AvailableKeywords.Contains(k) && !m_SelectedKeywords.Contains(k))
-                            m_AvailableKeywords.Add(k);
-                    }
-                }
+                m_FilteredVariantKeywords[i] = keywordLists[i].Split(' ');
             }
 
+            m_AvailableKeywords.Clear();
+            m_AvailableKeywords.InsertRange(0, remainingKeywords);
             m_AvailableKeywords.Sort();
         }
 
@@ -292,7 +270,7 @@ namespace UnityEditor
         void DrawKeywordsList(ref Rect rect, List<string> keywords, bool clickingAddsToSelected)
         {
             rect.height = CalcVerticalSpaceForKeywords();
-            var displayKeywords = keywords.Select(k => string.IsNullOrEmpty(k) ? "<no keyword>" : k.ToLowerInvariant()).ToList();
+            var displayKeywords = keywords.Select(k => k.ToLowerInvariant()).ToList();
 
             GUI.BeginGroup(rect);
             Rect indentRect = new Rect(4, 0, rect.width, rect.height);
@@ -303,11 +281,16 @@ namespace UnityEditor
                 {
                     if (clickingAddsToSelected)
                     {
-                        m_SelectedKeywords.Add(keywords[i]);
-                        m_SelectedKeywords.Sort();
+                        if (!m_SelectedKeywords.Contains(keywords[i]))
+                        {
+                            m_SelectedKeywords.Add(keywords[i]);
+                            m_SelectedKeywords.Sort();
+                            m_AvailableKeywords.Remove(keywords[i]);
+                        }
                     }
                     else
                     {
+                        m_AvailableKeywords.Add(keywords[i]);
                         m_SelectedKeywords.Remove(keywords[i]);
                     }
                     ApplyKeywordFilter();
@@ -347,30 +330,33 @@ namespace UnityEditor
 
             DrawSectionHeader(ref rect, "Shader variants with these keywords (click to select):", true);
 
-            if (m_FilteredVariants.Count > 0)
+            if (m_NumFilteredVariants > 0)
             {
                 int maxFilteredLength = (int)(CalcVerticalSpaceForVariants() / EditorGUI.kSingleLineHeight);
 
+                if (maxFilteredLength > m_MaxVisibleVariants) // Query data again if we have bigger window than at last query
+                    ApplyKeywordFilter();
+
                 // Display first N variants (don't want to display thousands of them if filter is not narrow)
-                for (var i = 0; i < Mathf.Min(m_FilteredVariants.Count, maxFilteredLength); ++i)
+                for (var i = 0; i < Mathf.Min(m_NumFilteredVariants, maxFilteredLength); ++i)
                 {
-                    var index = m_FilteredVariants[i];
-                    var passType = (UnityEngine.Rendering.PassType)m_Data.types[index];
-                    var wasSelected = m_SelectedVariants.Contains(index);
-                    var displayString = passType.ToString() + " " + string.Join(" ", m_Data.keywords[index]).ToLowerInvariant();
+                    var passType = (UnityEngine.Rendering.PassType)m_FilteredVariantTypes[i];
+                    var wasSelected = m_SelectedVariants.Contains(i);
+                    var keywordString = string.IsNullOrEmpty(m_FilteredVariantKeywords[i][0]) ? "<no keywords>" : string.Join(" ", m_FilteredVariantKeywords[i]);
+                    var displayString = passType.ToString() + " " + keywordString.ToLowerInvariant();
                     var isSelected = GUI.Toggle(rect, wasSelected, displayString, Styles.sMenuItem);
                     rect.y += rect.height;
 
                     if (isSelected && !wasSelected)
-                        m_SelectedVariants.Add(index);
+                        m_SelectedVariants.Add(i);
                     else if (!isSelected && wasSelected)
-                        m_SelectedVariants.Remove(index);
+                        m_SelectedVariants.Remove(i);
                 }
 
                 // show how many variants we skipped due to filter not being narrow enough
-                if (m_FilteredVariants.Count > maxFilteredLength)
+                if (m_NumFilteredVariants > maxFilteredLength)
                 {
-                    GUI.Label(rect, string.Format("[{0} more variants skipped]", m_FilteredVariants.Count - maxFilteredLength), EditorStyles.miniLabel);
+                    GUI.Label(rect, "List of variants was cropped. Pick further keywords to narrow the selection.", EditorStyles.miniLabel);
                     rect.y += rect.height;
                 }
             }
@@ -393,7 +379,7 @@ namespace UnityEditor
                     for (var i = 0; i < m_SelectedVariants.Count; ++i)
                     {
                         var index = m_SelectedVariants[i];
-                        var variant = new ShaderVariantCollection.ShaderVariant(m_Data.shader, (UnityEngine.Rendering.PassType)m_Data.types[index], m_Data.keywords[index]);
+                        var variant = new ShaderVariantCollection.ShaderVariant(m_Data.shader, (UnityEngine.Rendering.PassType)m_FilteredVariantTypes[index], m_FilteredVariantKeywords[index]);
                         m_Data.collection.Add(variant);
                     }
                     // Close our popup
