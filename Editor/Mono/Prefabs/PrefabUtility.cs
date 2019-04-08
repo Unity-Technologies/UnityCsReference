@@ -9,6 +9,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEditor;
+using UnityEditor.Utils;
 using UnityEngine.SceneManagement;
 using UnityEditor.SceneManagement;
 using Object = UnityEngine.Object;
@@ -1127,12 +1128,34 @@ namespace UnityEditor
             if (root != asset)
                 throw new ArgumentException("GameObject to save Prefab from must be a Prefab root");
 
-#pragma warning disable CS0618 // Type or member is obsolete
-            return SavePrefab(root, path, ReplacePrefabOptions.Default, PrefabCreationFlags.None);
-#pragma warning restore CS0618 // Type or member is obsolete
+            return SavePrefabAsset_Internal(root);
         }
 
-        private static void SaveAsPrefabAssetArgumentCheck(GameObject instanceRoot)
+        private static void ValidatePath(GameObject instanceRoot, string path)
+        {
+            if (String.IsNullOrEmpty(path))
+                throw new ArgumentNullException("path is null or empty");
+
+            if (!Paths.IsValidAssetPath(path, ".prefab"))
+                throw new ArgumentException("Given path is not valid: '" + path + "'");
+
+            string directory = Path.GetDirectoryName(path);
+
+            bool isRootFolder = false;
+            bool isImmutableFolder = false;
+            bool isValidAssetFolder = AssetDatabase.GetAssetFolderInfo(directory, out isRootFolder, out isImmutableFolder);
+            if (isValidAssetFolder && isImmutableFolder)
+                throw new ArgumentException("Saving Prefab to immutable folder is not allowed: '" + path + "'");
+
+            if (directory.Length > 0 && !Directory.Exists(directory))
+                throw new ArgumentException("Given path does not exist: '" + path + "'");
+
+            string prefabGUID = AssetDatabase.AssetPathToGUID(path);
+            if (!VerifyNestingFromScript(new GameObject[] {instanceRoot}, prefabGUID, PrefabUtility.GetPrefabInstanceHandle(instanceRoot)))
+                throw new ArgumentException("Cyclic nesting detected");
+        }
+
+        private static void SaveAsPrefabAssetArgumentCheck(GameObject instanceRoot, string path)
         {
             if (instanceRoot == null)
                 throw new ArgumentNullException("Parameter root is null");
@@ -1149,6 +1172,16 @@ namespace UnityEditor
                 if (actualInstanceRoot != instanceRoot)
                     throw new ArgumentException("Can't save part of a Prefab instance as a Prefab");
             }
+
+            ValidatePath(instanceRoot, path);
+        }
+
+        private static void ReplacePrefabArgumentCheck(GameObject root, string path)
+        {
+            if (root == null)
+                throw new ArgumentNullException("Parameter root is null");
+
+            ValidatePath(root, path);
         }
 
         private static bool IsPrefabInstanceRoot(GameObject gameObject)
@@ -1159,15 +1192,9 @@ namespace UnityEditor
 
         public static GameObject SaveAsPrefabAsset(GameObject instanceRoot, string assetPath, out bool success)
         {
-            SaveAsPrefabAssetArgumentCheck(instanceRoot);
+            SaveAsPrefabAssetArgumentCheck(instanceRoot, assetPath);
 
-            PrefabCreationFlags creationFlags = PrefabCreationFlags.None;
-            if (IsPrefabInstanceRoot(instanceRoot))
-                creationFlags = PrefabCreationFlags.CreateVariant;
-
-#pragma warning disable CS0618 // Type or member is obsolete
-            return SavePrefab(instanceRoot, assetPath, ReplacePrefabOptions.Default, creationFlags, out success);
-#pragma warning restore CS0618 // Type or member is obsolete
+            return SaveAsPrefabAsset_Internal(instanceRoot, assetPath, out success);
         }
 
         public static GameObject SaveAsPrefabAsset(GameObject instanceRoot, string assetPath)
@@ -1184,7 +1211,7 @@ namespace UnityEditor
 
         public static GameObject SaveAsPrefabAssetAndConnect(GameObject instanceRoot, string assetPath, InteractionMode action, out bool success)
         {
-            SaveAsPrefabAssetArgumentCheck(instanceRoot);
+            SaveAsPrefabAssetArgumentCheck(instanceRoot, assetPath);
 
             var actionName = "Connect to Prefab";
 
@@ -1193,13 +1220,7 @@ namespace UnityEditor
                 Undo.RegisterFullObjectHierarchyUndo(instanceRoot, actionName);
             }
 
-            PrefabCreationFlags creationFlags = PrefabCreationFlags.None;
-            if (IsPrefabInstanceRoot(instanceRoot))
-                creationFlags = PrefabCreationFlags.CreateVariant;
-
-#pragma warning disable CS0618 // Type or member is obsolete
-            var assetRoot = SavePrefab(instanceRoot, assetPath, ReplacePrefabOptions.ConnectToPrefab, creationFlags, out success);
-#pragma warning restore CS0618 // Type or member is obsolete
+            var assetRoot = SaveAsPrefabAssetAndConnect_Internal(instanceRoot, assetPath, out success);
 
             if (!success)
             {
@@ -1248,35 +1269,9 @@ namespace UnityEditor
             var assetObject = GetCorrespondingObjectFromSource(instance);
             string path = AssetDatabase.GetAssetPath(assetObject);
 
-#pragma warning disable CS0618 // Type or member is obsolete
-            SavePrefab(instance, path, ReplacePrefabOptions.ConnectToPrefab, PrefabCreationFlags.None);
-#pragma warning restore CS0618 // Type or member is obsolete
-        }
+            SaveAsPrefabAssetArgumentCheck(instance, path);
 
-        // TOOO: Remove entirely once regular methods handle merging
-        // based on both ids and names on a smarter and more granular level.
-        internal static GameObject ReplacePrefabAssetNameBased(GameObject root, string targetPrefab, bool connectToInstance)
-        {
-#pragma warning disable CS0618 // Type or member is obsolete
-            var options = ReplacePrefabOptions.ReplaceNameBased;
-            if (connectToInstance)
-                options |= ReplacePrefabOptions.ConnectToPrefab;
-
-            var createOptions = PrefabCreationFlags.None;
-
-            if (IsPartOfNonAssetPrefabInstance(root))
-            {
-                if (!IsOutermostPrefabInstanceRoot(root))
-                    throw new ArgumentException("Can't replace with part of Prefab instance. Please specify instance root object or a non-instance object.");
-
-                createOptions = PrefabCreationFlags.CreateVariant;
-            }
-
-            if (IsPartOfPrefabAsset(root) && connectToInstance)
-                throw new ArgumentException("Argument connectToInstance is true but root object is an asset not an instance");
-
-            return SavePrefab(root, targetPrefab, options, createOptions);
-#pragma warning restore CS0618 // Type or member is obsolete
+            ApplyPrefabInstance_Internal(instance);
         }
 
         // Can't use UnityUpgradable since it doesn't currently support swapping parameter order.
@@ -1289,13 +1284,8 @@ namespace UnityEditor
         [Obsolete("Use SaveAsPrefabAsset or SaveAsPrefabAssetAndConnect instead.")]
         public static GameObject CreatePrefab(string path, GameObject go, ReplacePrefabOptions options)
         {
-            if (options == ReplacePrefabOptions.ConnectToPrefab)
+            if ((options & ReplacePrefabOptions.ConnectToPrefab) != 0)
                 return SaveAsPrefabAssetAndConnect(go, path, InteractionMode.AutomatedAction);
-            else if ((options & ReplacePrefabOptions.ReplaceNameBased) != 0)
-            {
-                bool connectToPrefab = (options & ReplacePrefabOptions.ConnectToPrefab) != 0;
-                return ReplacePrefabAssetNameBased(go, path, connectToPrefab);
-            }
             else
                 return SaveAsPrefabAsset(go, path);
         }
@@ -1360,7 +1350,11 @@ namespace UnityEditor
             }
 
             var assetPath = AssetDatabase.GetAssetPath(targetPrefabObject);
-            return SavePrefab(go, assetPath, replaceOptions, PrefabCreationFlags.None);
+
+            ReplacePrefabArgumentCheck(go, assetPath);
+
+            bool success = false;
+            return SavePrefab_Internal(go, assetPath, (replaceOptions & ReplacePrefabOptions.ConnectToPrefab) != 0, out success);
         }
 
         // Returns the corresponding object from its immediate source, or null if it can't be found.

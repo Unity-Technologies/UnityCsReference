@@ -32,6 +32,7 @@ namespace UnityEditorInternal.VersionControl
         object item;
         string[] actions;
         int      identifier;
+        static Texture2D defaultIcon = null;
 
         public ListItem()
         {
@@ -48,9 +49,24 @@ namespace UnityEditorInternal.VersionControl
         {
             get
             {
+                if (defaultIcon == null)
+                {
+                    defaultIcon = EditorGUIUtility.LoadIcon("vcs_document");
+                    defaultIcon.hideFlags = HideFlags.HideAndDontSave;
+                }
+
                 Asset asset = item as Asset;
                 if (icon == null && asset != null)
-                    return AssetDatabase.GetCachedIcon(asset.path);
+                {
+                    if (asset.isInCurrentProject)
+                    {
+                        icon = AssetDatabase.GetCachedIcon(asset.path);
+                    }
+                    else
+                    {
+                        icon = defaultIcon;
+                    }
+                }
 
                 return icon;
             }

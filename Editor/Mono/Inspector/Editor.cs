@@ -579,7 +579,8 @@ namespace UnityEditor
                 // Need to make sure internal target list PPtr have been updated from a native memory
                 // When assets are reloaded they are destroyed and recreated and the managed list does not get updated
                 // The m_SerializedObject is a native object thus its targetObjects is a native memory PPtr list which have the new PPtr ids.
-                InternalSetTargets(m_SerializedObject.targetObjects);
+                if (m_SerializedObject.targetObjects != null && m_SerializedObject.targetObjects[0] != null)
+                    InternalSetTargets(m_SerializedObject.targetObjects);
             }
         }
 
@@ -621,7 +622,7 @@ namespace UnityEditor
         internal static bool DoDrawDefaultInspector(SerializedObject obj)
         {
             EditorGUI.BeginChangeCheck();
-            obj.Update();
+            obj.UpdateIfRequiredOrScript();
 
             // Loop through properties and create one field (including children) for each top level property.
             SerializedProperty property = obj.GetIterator();
