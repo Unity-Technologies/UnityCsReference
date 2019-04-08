@@ -21,7 +21,7 @@ namespace UnityEditor
             public static readonly GUIContent kStreamingMipmapsActive = EditorGUIUtility.TrTextContent("Texture Streaming", "Enable to use texture mipmap streaming.");
             public static readonly GUIContent kStreamingMipmapsMemoryBudget = EditorGUIUtility.TrTextContent("Memory Budget", "Texture Streaming Budget in MB.");
             public static readonly GUIContent kStreamingMipmapsRenderersPerFrame = EditorGUIUtility.TrTextContent("Renderers Per Frame", "Number of renderers to process each frame. A lower number will decrease the CPU load at the cost of delaying the mipmap loading.");
-            public static readonly GUIContent kStreamingMipmapsAddAllCameras = EditorGUIUtility.TrTextContent("Add All Cameras", "Adds all cameras to texture streaming system even if it lacks a StreamingController component. If a camera has the StreamingController component that will control whether its processed or not.");
+            public static readonly GUIContent kStreamingMipmapsAddAllCameras = EditorGUIUtility.TrTextContent("Add All Cameras", "Adds all cameras to texture streaming system even if it lacks a StreamingController component. If a camera has the StreamingController component, that will control whether it is processed or not.");
             public static readonly GUIContent kStreamingMipmapsMaxLevelReduction = EditorGUIUtility.TrTextContent("Max Level Reduction", "This is the maximum number of mipmap levels a texture should drop.");
             public static readonly GUIContent kStreamingMipmapsMaxFileIORequests = EditorGUIUtility.TrTextContent("Max IO Requests", "Maximum number of texture file IO calls active from the texture streaming system at any time.");
 

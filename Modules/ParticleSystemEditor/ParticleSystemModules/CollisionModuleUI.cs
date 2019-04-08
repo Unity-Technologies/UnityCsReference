@@ -70,7 +70,7 @@ namespace UnityEditor
             public GUIContent collidesWithDynamic = EditorGUIUtility.TrTextContent("Enable Dynamic Colliders", "Should particles collide with dynamic objects?");
             public GUIContent maxCollisionShapes = EditorGUIUtility.TrTextContent("Max Collision Shapes", "How many collision shapes can be considered for particle collisions. Excess shapes will be ignored. Terrains take priority.");
             public GUIContent quality = EditorGUIUtility.TrTextContent("Collision Quality", "Quality of world collisions. Medium and low quality are approximate and may leak particles.");
-            public GUIContent voxelSize = EditorGUIUtility.TrTextContent("Voxel Size", "Size of voxels in the collision cache. Smaller values improve accuracy, but require higher memory usage and are less efficient.");
+            public GUIContent voxelSize = EditorGUIUtility.TrTextContent("Voxel Size", "Size of voxels in the collision cache. Smaller values improve accuracy but require higher memory usage and are less efficient.");
             public GUIContent collisionMessages = EditorGUIUtility.TrTextContent("Send Collision Messages", "Send collision callback messages.");
             public GUIContent collisionType = EditorGUIUtility.TrTextContent("Type", "Collide with a list of Planes, or the Physics World.");
             public GUIContent collisionMode = EditorGUIUtility.TrTextContent("Mode", "Use 3D Physics or 2D Physics.");

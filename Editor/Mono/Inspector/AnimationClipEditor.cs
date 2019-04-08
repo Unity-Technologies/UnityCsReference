@@ -48,7 +48,7 @@ namespace UnityEditor
 
             public static GUIContent HasAdditiveReferencePose = EditorGUIUtility.TrTextContent("Additive Reference Pose", "Enable to define the additive reference pose frame.");
             public static GUIContent AdditiveReferencePoseFrame = EditorGUIUtility.TrTextContent("Pose Frame", "Pose Frame.");
-            public static GUIContent LoopTime = EditorGUIUtility.TrTextContent("Loop Time", "Enable to make the animation plays through and then restarts when the end is reached.");
+            public static GUIContent LoopTime = EditorGUIUtility.TrTextContent("Loop Time", "Enable to make the animation play through and then restart when the end is reached.");
             public static GUIContent LoopPose = EditorGUIUtility.TrTextContent("Loop Pose", "Enable to make the animation loop seamlessly.");
             public static GUIContent LoopCycleOffset = EditorGUIUtility.TrTextContent("Cycle Offset", "Offset to the cycle of a looping animation, if we want to start it at a different time.");
             public static GUIContent RootTransformRotation = EditorGUIUtility.TrTextContent("Root Transform Rotation");

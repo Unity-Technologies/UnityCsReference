@@ -64,7 +64,7 @@ namespace UnityEditor.U2D
             public readonly GUIContent packButton = EditorGUIUtility.TrTextContent("Pack Preview", "Pack this atlas.");
 
             public readonly GUIContent disabledPackLabel = EditorGUIUtility.TrTextContent("Sprite Atlas packing is disabled. Enable it in Edit > Settings > Editor.", null, EditorGUIUtility.GetHelpIcon(MessageType.Info));
-            public readonly GUIContent packableListLabel = EditorGUIUtility.TrTextContent("Objects for Packing", "Only accept Folder, Sprite Sheet(Texture) and Sprite.");
+            public readonly GUIContent packableListLabel = EditorGUIUtility.TrTextContent("Objects for Packing", "Only accept Folder, Sprite Sheet (Texture) and Sprite.");
 
             public readonly GUIContent notPowerOfTwoWarning = EditorGUIUtility.TrTextContent("This scale will produce a Sprite Atlas variant with a packed texture that is NPOT (non - power of two). This may cause visual artifacts in certain compression/texture formats.");
 

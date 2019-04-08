@@ -95,7 +95,7 @@ namespace UnityEditor
 
         internal class LanguageProperties
         {
-            public static readonly GUIContent editorLanguageExperimental = EditorGUIUtility.TrTextContent("Editor Language(Experimental)");
+            public static readonly GUIContent editorLanguageExperimental = EditorGUIUtility.TrTextContent("Editor Language (Experimental)");
             public static readonly GUIContent editorLanguage = EditorGUIUtility.TrTextContent("Editor language");
         }
 

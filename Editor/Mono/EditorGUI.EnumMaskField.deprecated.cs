@@ -397,7 +397,7 @@ namespace UnityEditor
                             mask = ~0;
                         }
                         else
-                            buttonContent = EditorGUIUtility.TempContent("Mixed ...");
+                            buttonContent = EditorGUIUtility.TempContent("Mixed...");
                         break;
                 }
             }
