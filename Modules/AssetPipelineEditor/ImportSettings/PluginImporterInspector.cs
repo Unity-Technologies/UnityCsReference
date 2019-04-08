@@ -654,7 +654,8 @@ namespace UnityEditor
         {
             using (new EditorGUI.DisabledScope(false))
             {
-                if (!importer.isNativePlugin)
+                var isManagedPlugin = importers.All(x => x.dllType == DllType.ManagedNET35 || x.dllType == DllType.ManagedNET40);
+                if (isManagedPlugin)
                 {
                     ShowReferenceOptions();
                     GUILayout.Space(10f);
@@ -669,8 +670,11 @@ namespace UnityEditor
                 if (IsEditingPlatformSettingsSupported())
                     ShowPlatformSettings();
 
-                GUILayout.Label(defineConstraints, EditorStyles.boldLabel);
-                m_DefineConstraints.DoLayoutList();
+                if (isManagedPlugin)
+                {
+                    GUILayout.Label(defineConstraints, EditorStyles.boldLabel);
+                    m_DefineConstraints.DoLayoutList();
+                }
             }
             ApplyRevertGUI();
 

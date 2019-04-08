@@ -286,8 +286,7 @@ namespace UnityEditor
 
         internal void DrawNotification()
         {
-            EditorStyles.notificationText.CalcMinMaxWidth(m_Notification, out m_NotificationSize.y, out m_NotificationSize.x);
-            m_NotificationSize.y = EditorStyles.notificationText.CalcHeight(m_Notification, m_NotificationSize.x);
+            m_NotificationSize = EditorStyles.notificationText.CalcSize(m_Notification);
 
             Vector2 warningSize = m_NotificationSize;
             float targetWidth = position.width - EditorStyles.notificationText.margin.horizontal;
@@ -295,24 +294,15 @@ namespace UnityEditor
             // See if we can fit horizontally. If not, rescale down.
             if (targetWidth < m_NotificationSize.x)
             {
-                float scale = targetWidth / m_NotificationSize.x;
-                warningSize.x *= scale;
-
-                warningSize.y = EditorStyles.notificationText.CalcHeight(m_Notification, warningSize.x);
+                warningSize = EditorStyles.notificationText.CalcSize(m_Notification);
             }
+
+            warningSize.x += 1; //we'll give the text a little room to breathe to avoid word-wrapping issues with drop shadows
 
             if (warningSize.y > targetHeight)
                 warningSize.y = targetHeight;
 
             Rect r = new Rect((position.width - warningSize.x) * .5f, 20 + (position.height - 20 - warningSize.y) * .7f, warningSize.x, warningSize.y);
-
-            // Round notification coordinate & with to integers, so that text
-            // shadow rendering(which is offset from base text) gets exactly
-            // the same floating point results for text wrapping. Without this,
-            // it can lead to tiny differences that make shadow be word - wrapped
-            // differently from foreground text.
-            r.x = Mathf.FloorToInt(r.x);
-            r.width = Mathf.FloorToInt(r.width);
 
             double time = EditorApplication.timeSinceStartup;
             if (time > m_FadeoutTime)

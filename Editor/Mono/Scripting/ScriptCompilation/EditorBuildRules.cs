@@ -58,7 +58,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             public TargetAssembly()
             {
                 References = new List<TargetAssembly>();
-                Defines = new string[0];
+                Defines = null;
             }
 
             public TargetAssembly(string name,
@@ -578,7 +578,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     scriptAssembly);
 
                 scriptAssembly.OutputDirectory = settings.OutputDirectory;
-                scriptAssembly.Defines = targetAssembly.Defines.Concat(compilerDefines).ToArray();
+                scriptAssembly.Defines = targetAssembly.Defines == null ? compilerDefines : targetAssembly.Defines.Concat(compilerDefines).ToArray();
                 scriptAssembly.Files = sourceFiles.ToArray();
 
                 if (targetAssembly.Type == TargetAssemblyType.Predefined)

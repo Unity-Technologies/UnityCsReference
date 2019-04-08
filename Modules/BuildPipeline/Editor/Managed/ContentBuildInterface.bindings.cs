@@ -4,22 +4,16 @@
 
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
 using UnityEditor.Build.Player;
-using UnityEngine;
 using UnityEngine.Bindings;
-using UnityEngine.Scripting;
 
 namespace UnityEditor.Build.Content
 {
     [NativeHeader("Modules/BuildPipeline/Editor/Public/ContentBuildTypes.h")]
-
     [NativeHeader("Modules/BuildPipeline/Editor/Shared/ContentBuildInterface.bindings.h")]
-
-    [NativeHeader("Modules/BuildPipeline/Editor/Shared/ContentBuildInterface.bindings.h")]
+    [StaticAccessor("BuildPipeline", StaticAccessorType.DoubleColon)]
     public static class ContentBuildInterface
     {
-        [FreeFunction("BuildPipeline::GenerateAssetBundleBuilds")]
         extern public static AssetBundleBuild[] GenerateAssetBundleBuilds();
 
         public static SceneDependencyInfo PrepareScene(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet, string outputFolder)
@@ -36,16 +30,13 @@ namespace UnityEditor.Build.Content
             return PrepareSceneInternal(scenePath, settings, usageSet, usageCache, outputFolder);
         }
 
-        [FreeFunction("BuildPipeline::PrepareScene")]
+        [FreeFunction("PrepareScene")]
         extern private static SceneDependencyInfo PrepareSceneInternal(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet, BuildUsageCache usageCache, string outputFolder);
 
-        [FreeFunction("BuildPipeline::GetPlayerObjectIdentifiersInAsset")]
         extern public static ObjectIdentifier[] GetPlayerObjectIdentifiersInAsset(GUID asset, BuildTarget target);
 
-        [FreeFunction("BuildPipeline::GetPlayerDependenciesForObject")]
         extern public static ObjectIdentifier[] GetPlayerDependenciesForObject(ObjectIdentifier objectID, BuildTarget target, TypeDB typeDB);
 
-        [FreeFunction("BuildPipeline::GetPlayerDependenciesForObjects")]
         extern public static ObjectIdentifier[] GetPlayerDependenciesForObjects(ObjectIdentifier[] objectIDs, BuildTarget target, TypeDB typeDB);
 
         public static void CalculateBuildUsageTags(ObjectIdentifier[] objectIDs, ObjectIdentifier[] dependentObjectIDs, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet)
@@ -53,16 +44,12 @@ namespace UnityEditor.Build.Content
             CalculateBuildUsageTags(objectIDs, dependentObjectIDs, globalUsage, usageSet, null);
         }
 
-        [FreeFunction("BuildPipeline::CalculateBuildUsageTags")]
         extern public static void CalculateBuildUsageTags(ObjectIdentifier[] objectIDs, ObjectIdentifier[] dependentObjectIDs, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildUsageCache usageCache);
 
-        [FreeFunction("BuildPipeline::GetTypeForObject")]
         extern public static System.Type GetTypeForObject(ObjectIdentifier objectID);
 
-        [FreeFunction("BuildPipeline::GetTypeForObjects")]
         extern public static System.Type[] GetTypeForObjects(ObjectIdentifier[] objectIDs);
 
-        [FreeFunction("BuildPipeline::IsBuildInProgress")]
         extern internal static bool IsBuildInProgress();
 
         public static WriteResult WriteSerializedFile(string outputFolder, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap)
@@ -93,10 +80,8 @@ namespace UnityEditor.Build.Content
             return WriteSerializedFileAssetBundle(outputFolder, writeCommand, settings, globalUsage, usageSet, referenceMap, bundleInfo);
         }
 
-        [FreeFunction("BuildPipeline::WriteSerializedFileRaw")]
         extern private static WriteResult WriteSerializedFileRaw(string outputFolder, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap);
 
-        [FreeFunction("BuildPipeline::WriteSerializedFileAssetBundle")]
         extern private static WriteResult WriteSerializedFileAssetBundle(string outputFolder, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, AssetBundleInfo bundleInfo);
 
         public static WriteResult WriteSceneSerializedFile(string outputFolder, string scenePath, string processedScene, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap)
@@ -162,16 +147,12 @@ namespace UnityEditor.Build.Content
             return WriteSceneSerializedFileAssetBundle(outputFolder, scenePath, processedScene, writeCommand, settings, globalUsage, usageSet, referenceMap, preloadInfo, sceneBundleInfo);
         }
 
-        [FreeFunction("BuildPipeline::WriteSceneSerializedFileRaw")]
         extern private static WriteResult WriteSceneSerializedFileRaw(string outputFolder, string scenePath, string processedScene, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap);
 
-        [FreeFunction("BuildPipeline::WriteSceneSerializedFilePlayerData")]
         extern private static WriteResult WriteSceneSerializedFilePlayerData(string outputFolder, string scenePath, string processedScene, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, PreloadInfo preloadInfo);
 
-        [FreeFunction("BuildPipeline::WriteSceneSerializedFileAssetBundle")]
         extern private static WriteResult WriteSceneSerializedFileAssetBundle(string outputFolder, string scenePath, string processedScene, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, PreloadInfo preloadInfo, SceneBundleInfo sceneBundleInfo);
 
-        [FreeFunction("BuildPipeline::ArchiveAndCompress")]
         extern public static uint ArchiveAndCompress(ResourceFile[] resourceFiles, string outputBundlePath, UnityEngine.BuildCompression compression);
     }
 }

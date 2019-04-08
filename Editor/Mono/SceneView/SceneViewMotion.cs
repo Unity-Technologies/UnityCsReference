@@ -415,6 +415,8 @@ namespace UnityEditor
 
         private int[] m_ViewDirectionControlIDs;
         private int m_CenterButtonControlID;
+        private int m_RotationLockControlID;
+        private int m_PerspectiveIsoControlID;
 
 
         int currentDir = 7;
@@ -492,6 +494,8 @@ namespace UnityEditor
                 }
 
                 m_CenterButtonControlID = GUIUtility.GetPermanentControlID();
+                m_RotationLockControlID = GUIUtility.GetPermanentControlID();
+                m_PerspectiveIsoControlID = GUIUtility.GetPermanentControlID();
             }
         }
 
@@ -669,7 +673,7 @@ namespace UnityEditor
                 var prevColor = GUI.color;
                 GUI.color = c;
                 var content = (view.isRotationLocked) ? styles.lockedRotationIcon : styles.unlockedRotationIcon;
-                if (GUI.Button(lockRect, content, styles.lockStyle) && !view.in2DMode)
+                if (GUI.Button(lockRect, m_RotationLockControlID, content, styles.lockStyle) && !view.in2DMode)
                 {
                     view.isRotationLocked = !view.isRotationLocked;
                     m_RotationLocked.target = !view.isRotationLocked;
@@ -686,7 +690,7 @@ namespace UnityEditor
             // Button (overlayed over the labels) to toggle between iso and perspective
             if (!view.in2DMode && !view.isRotationLocked)
             {
-                if (GUI.Button(labelRect, string.Empty, styles.viewLabelStyleLeftAligned))
+                if (GUI.Button(labelRect, m_PerspectiveIsoControlID, GUIContent.none, styles.viewLabelStyleLeftAligned))
                 {
                     if (Event.current.button == 1)
                         DisplayContextMenu(labelRect, view);

@@ -422,9 +422,10 @@ namespace UnityEditorInternal
             return sb.ToString();
         }
 
-        static public void InvokeFromBuildPlayer(BuildTarget buildTarget, RuntimeClassRegistry usedClasses, ManagedStrippingLevel managedStrippingLevel, BuildReport report)
+        static public void StripForMonoBackend(BuildTarget buildTarget, RuntimeClassRegistry usedClasses, ManagedStrippingLevel managedStrippingLevel, BuildReport report, string stagingAreaData)
         {
-            var stagingAreaData = Paths.Combine("Temp", "StagingArea", "Data");
+            if (managedStrippingLevel == ManagedStrippingLevel.Disabled)
+                return;
 
             var platformProvider = new BaseIl2CppPlatformProvider(buildTarget, Path.Combine(stagingAreaData, "Libraries"), report);
 

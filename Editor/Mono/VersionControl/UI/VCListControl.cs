@@ -49,7 +49,6 @@ namespace UnityEditorInternal.VersionControl
         Texture2D yellowTex = null;
         [SerializeField] ListState m_listState;
         Dictionary<string, ListItem> pathSearch = new Dictionary<string, ListItem>();
-        Texture2D defaultIcon = null;
         bool readOnly = false;
         bool scrollVisible = false;
         string menuFolder = null;
@@ -660,12 +659,6 @@ namespace UnityEditorInternal.VersionControl
                 yellowTex.hideFlags = HideFlags.HideAndDontSave;
                 yellowTex.Apply();
             }
-
-            if (defaultIcon == null)
-            {
-                defaultIcon = EditorGUIUtility.LoadIcon("vcs_document");
-                defaultIcon.hideFlags = HideFlags.HideAndDontSave;
-            }
         }
 
         // Parse all key input supported by the list here
@@ -789,6 +782,7 @@ namespace UnityEditorInternal.VersionControl
             }
 
             Texture icon = item.Icon;
+
             Color tmpColor = GUI.color;
             Color tmpContentColor = GUI.contentColor;
 

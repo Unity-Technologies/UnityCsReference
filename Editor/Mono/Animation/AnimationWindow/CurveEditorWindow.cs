@@ -5,6 +5,7 @@
 using System;
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.ShortcutManagement;
 using System.Linq;
 
 using TangentMode = UnityEditor.AnimationUtility.TangentMode;
@@ -284,6 +285,16 @@ namespace UnityEditor
 
             Init(settings);
             ShowAuxWindow();
+        }
+
+        public void FrameSelected()
+        {
+            m_CurveEditor.FrameSelected(true, true);
+        }
+
+        public void FrameClip()
+        {
+            m_CurveEditor.FrameClip(true, true);
         }
 
         internal class Styles
@@ -607,6 +618,18 @@ namespace UnityEditor
                 m_OnCurveChanged(curve);
             }
             GUI.changed = true;
+        }
+
+        [Shortcut("Curve Editor/Frame All", typeof(CurveEditorWindow), "#a")]
+        static void FrameClip(ShortcutArguments args)
+        {
+            var curveEditorWindow = (CurveEditorWindow)args.context;
+
+            if (EditorWindow.focusedWindow != curveEditorWindow)
+                return;
+
+            curveEditorWindow.FrameClip();
+            curveEditorWindow.Repaint();
         }
     }
 }

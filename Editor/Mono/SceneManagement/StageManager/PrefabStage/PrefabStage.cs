@@ -120,9 +120,9 @@ namespace UnityEditor.Experimental.SceneManagement
             get { return m_TemporarilyDisableAutoSave; }
         }
 
-        internal bool initialized
+        internal bool isValid
         {
-            get { return m_PrefabContentsRoot != null; }
+            get { return m_PrefabContentsRoot != null && m_PrefabContentsRoot.scene == m_PreviewScene; }
         }
 
         internal PrefabStage()
@@ -131,7 +131,7 @@ namespace UnityEditor.Experimental.SceneManagement
 
         internal bool LoadStage(string prefabPath)
         {
-            if (initialized)
+            if (isValid)
                 Cleanup();
 
             m_PrefabAssetPath = prefabPath;
@@ -155,7 +155,7 @@ namespace UnityEditor.Experimental.SceneManagement
                 Cleanup();
             }
 
-            return initialized;
+            return isValid;
         }
 
         // Returns true if opened successfully
@@ -163,16 +163,13 @@ namespace UnityEditor.Experimental.SceneManagement
         {
             if (LoadStage(prefabPath))
             {
-                if (prefabStageOpened != null)
-                {
-                    prefabStageOpened(this);
+                prefabStageOpened?.Invoke(this);
 
-                    // Update environment scene objects after the 'prefabStageOpened' user callback so we can
-                    // ensure: correct hideflags and that our prefab root is not under a prefab instance (which would mark it as an added object).
-                    // Note: The user can have reparented and created new GameObjects in the environment scene during this callback.
-                    EnsureParentOfPrefabRootIsUnpacked();
-                    UpdateEnvironmentHideFlags();
-                }
+                // Update environment scene objects after the 'prefabStageOpened' user callback so we can ensure: correct hideflags and
+                // that our prefab root is not under a prefab instance (which would mark it as an added object).
+                // Note: The user can have reparented and created new GameObjects in the environment scene during this callback.
+                EnsureParentOfPrefabRootIsUnpacked();
+                UpdateEnvironmentHideFlags();
                 return true;
             }
             return false;
@@ -180,24 +177,21 @@ namespace UnityEditor.Experimental.SceneManagement
 
         internal void CloseStage()
         {
-            if (!initialized)
-                return;
-
-            prefabStageClosing?.Invoke(this);
+            if (isValid)
+                prefabStageClosing?.Invoke(this);
 
             Cleanup();
         }
 
         void Cleanup()
         {
-            if (m_PreviewScene.IsValid())
+            if (m_PrefabContentsRoot != null && m_PrefabContentsRoot.scene != m_PreviewScene)
             {
-                List<GameObject> roots = new List<GameObject>();
-                m_PreviewScene.GetRootGameObjects(roots);
-                foreach (var go in roots)
-                    UnityEngine.Object.DestroyImmediate(go);
-                PrefabStageUtility.DestroyPreviewScene(m_PreviewScene);
+                UnityEngine.Object.DestroyImmediate(m_PrefabContentsRoot);
             }
+
+            if (m_PreviewScene.IsValid())
+                PrefabStageUtility.DestroyPreviewScene(m_PreviewScene); // Automatically deletes all GameObjects in scene
 
             m_PrefabContentsRoot = null;
             m_HideFlagUtility = null;
@@ -221,9 +215,20 @@ namespace UnityEditor.Experimental.SceneManagement
                 Debug.Log("RELOADING done");
         }
 
+        internal string GetErrorMessage()
+        {
+            if (m_PrefabContentsRoot == null)
+                return L10n.Tr("Error: The Prefab contents root has been deleted.\n\nPrefab: ") + m_PrefabAssetPath;
+
+            if (m_PrefabContentsRoot.scene != m_PreviewScene)
+                return L10n.Tr("Error: The root GameObject of the opened Prefab has been moved out of the Prefab Stage scene by a script.\n\nPrefab: ") + m_PrefabAssetPath;
+
+            return null;
+        }
+
         internal void Update()
         {
-            if (!initialized)
+            if (!isValid)
                 return;
 
             if (HasSceneBeenModified())
@@ -344,7 +349,7 @@ namespace UnityEditor.Experimental.SceneManagement
         // Returns true if saved succesfully (internal so we can use it in Tests)
         internal bool SavePrefab()
         {
-            if (!initialized)
+            if (!isValid)
                 return false;
 
             m_AnalyticsDidUserSave = true;
@@ -404,7 +409,7 @@ namespace UnityEditor.Experimental.SceneManagement
 
         internal bool SaveAsNewPrefab(string newPath, bool asCopy)
         {
-            if (!initialized)
+            if (!isValid)
                 return false;
 
             if (newPath == m_PrefabAssetPath)
@@ -438,12 +443,6 @@ namespace UnityEditor.Experimental.SceneManagement
         internal bool SaveAsNewPrefabWithSavePanel()
         {
             Assert.IsTrue(m_PrefabContentsRoot != null, "We should have a valid m_PrefabContentsRoot when saving to prefab asset");
-            bool editablePrefab = !AnimationMode.InAnimationMode();
-            if (!editablePrefab)
-            {
-                EditorUtility.DisplayDialog(L10n.Tr("Cannot Save Prefab"), L10n.Tr("Cannot save prefab in Animation Preview Mode"), L10n.Tr("OK"));
-                return false;
-            }
 
             string directoryOfCurrentPrefab = Path.GetDirectoryName(m_PrefabAssetPath);
             string nameOfCurrentPrefab = Path.GetFileNameWithoutExtension(m_PrefabAssetPath);

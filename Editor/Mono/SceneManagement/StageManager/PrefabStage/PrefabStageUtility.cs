@@ -86,7 +86,7 @@ namespace UnityEditor.Experimental.SceneManagement
         internal static bool IsGameObjectThePrefabRootInAnyPrefabStage(GameObject gameObject)
         {
             PrefabStage prefabStage = GetCurrentPrefabStage();
-            if (prefabStage != null)
+            if (prefabStage != null && prefabStage.isValid)
             {
                 return prefabStage.prefabContentsRoot == gameObject;
             }
@@ -139,7 +139,7 @@ namespace UnityEditor.Experimental.SceneManagement
             return result;
         }
 
-        static GameObject RepairBrokenPrefabIfNeeded(string prefabAssetPath, GameObject[] environmentRoots, GameObject[] rootsAfterLoadingPrefab)
+        static void RemoveBrokenPrefabRootsIfNeeded(string prefabAssetPath, GameObject[] environmentRoots, GameObject[] rootsAfterLoadingPrefab, UInt64 prefabAssetRootFileID)
         {
             var rootsLoadedFromFile = rootsAfterLoadingPrefab.Except(environmentRoots).ToList();
 
@@ -149,38 +149,53 @@ namespace UnityEditor.Experimental.SceneManagement
 
             if (rootsLoadedFromFile.Count >= 2)
             {
-                Debug.LogError(string.Format("Prefab Mode: Multiple roots detected. Combined under new generated root. Prefab '{0}'", prefabAssetPath));
-                var root = ObjectFactory.CreateGameObject("Replacement Root");
-                var rootTransform = root.GetComponent<Transform>();
-                var previewScene = rootsLoadedFromFile[0].scene;
-                SceneManager.MoveGameObjectToScene(root.gameObject, previewScene);
+                Debug.LogError(string.Format("Prefab Mode: Broken Prefab with multiple roots detected ('{0}')", prefabAssetPath));
 
+                // First see if we can find a valid root at all. The root could have been reparenting in User land in Awake.
+                // Keep only the same root as the PrefabImporter if possible.
+                GameObject root = null;
                 foreach (var go in rootsLoadedFromFile)
                 {
-                    go.GetComponent<Transform>().parent = rootTransform;
+                    if (GetPrefabOrVariantFileID(go) == prefabAssetRootFileID)
+                        root = go;
                 }
-                return root;
-            }
 
-            return null;
+                // If we found the correct root we can delete the other roots
+                if (root != null)
+                {
+                    foreach (var go in rootsLoadedFromFile)
+                    {
+                        if (go != root)
+                            UnityEngine.Object.DestroyImmediate(go);
+                    }
+                }
+            }
         }
 
         static GameObject FindPrefabRoot(string prefabAssetPath, GameObject[] environmentRoots, GameObject[] rootsAfterLoadingPrefab)
         {
-            var assetRoot = AssetDatabase.LoadAssetAtPath<GameObject>(prefabAssetPath);
+            var assetRoot = AssetDatabase.LoadMainAssetAtPath(prefabAssetPath) as GameObject;
             if (assetRoot == null)
             {
                 Debug.LogError(string.Format("Opening Prefab Mode failed: The Prefab at '{0}' is broken.", prefabAssetPath));
                 return null;
             }
 
-            var repairedRoot = RepairBrokenPrefabIfNeeded(prefabAssetPath, environmentRoots, rootsAfterLoadingPrefab);
-            if (repairedRoot != null)
-                return repairedRoot;
-
-            // Normal use case: Find the prefab root or variant root among the roots of the scene (or as a child)
+            // Find the prefab root or variant root among the roots of the scene (or as a child)
             UInt64 prefabAssetRootFileID = GetPersistentPrefabOrVariantFileIdentifier(assetRoot);
 
+            // Check for broken prefabs with multiple roots
+            RemoveBrokenPrefabRootsIfNeeded(prefabAssetPath, environmentRoots, rootsAfterLoadingPrefab, prefabAssetRootFileID);
+
+            // Fast path (most common): check all roots first
+            foreach (var prefabRoot in rootsAfterLoadingPrefab)
+            {
+                UInt64 id = GetPrefabOrVariantFileID(prefabRoot);
+                if (id == prefabAssetRootFileID)
+                    return prefabRoot;
+            }
+
+            // If not found in list of roots then check descendants
             foreach (var root in rootsAfterLoadingPrefab)
             {
                 var prefabRoot = FindFirstGameObjectThatMatchesFileID(root.transform, prefabAssetRootFileID);
@@ -336,9 +351,10 @@ namespace UnityEditor.Experimental.SceneManagement
             // We require a RectTransform and a CanvasRenderer to be considered a UI prefab.
             // E.g 3D TextMeshPro uses RectTransform but a MeshRenderer so should not be considered a UI prefab
             // This function needs to be peformant since it is called every time a prefab is opened in a prefab stage.
-            var root = AssetDatabase.LoadAssetAtPath<GameObject>(prefabAssetPath);
+            var root = AssetDatabase.LoadMainAssetAtPath(prefabAssetPath) as GameObject;
             if (root == null)
                 return false;
+
             return root.GetComponent<RectTransform>() != null && root.GetComponentInChildren<CanvasRenderer>(true) != null;
         }
 

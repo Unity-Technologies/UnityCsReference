@@ -55,9 +55,39 @@ namespace UnityEditor
 
         public void HandleDraggingToBottomArea(Editor[] editors, Rect bottomRect)
         {
+            HandleNativeDragDropInBottomArea(editors, bottomRect);
+
             var editorIndex = m_LastIndex;
             if (editorIndex >= 0 && editorIndex < editors.Length)
                 HandleEditorDragging(editors, editorIndex, bottomRect, m_LastMarkerY, true);
+        }
+
+        void HandleNativeDragDropInBottomArea(Editor[] editors, Rect rect)
+        {
+            if (!DraggingOverRect(rect))
+            {
+                return;
+            }
+
+            var editor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(editors);
+            if (editor == null)
+            {
+                return;
+            }
+
+            DragAndDrop.visualMode = InternalEditorUtility.InspectorWindowDrag(editor.targets, Event.current.type == EventType.DragPerform);
+
+            if (Event.current.type == EventType.DragPerform)
+            {
+                DragAndDrop.AcceptDrag();
+                m_TargetIndex = -1;
+                GUIUtility.ExitGUI();
+            }
+        }
+
+        static bool DraggingOverRect(Rect rect)
+        {
+            return (Event.current.type == EventType.DragUpdated || Event.current.type == EventType.DragPerform) && rect.Contains(Event.current.mousePosition);
         }
 
         void HandleEditorDragging(Editor[] editors, int editorIndex, Rect targetRect, float markerY, bool bottomTarget)
@@ -159,7 +189,7 @@ namespace UnityEditor
                     break;
 
                 case EventType.DragPerform:
-                    if (m_TargetIndex != -1)
+                    if (m_TargetIndex != -1 && targetRect.Contains(evt.mousePosition))
                     {
                         var draggingMode = DragAndDrop.GetGenericData(k_DraggingModeKey) as DraggingMode ? ;
                         if (!draggingMode.HasValue || draggingMode.Value == DraggingMode.NotApplicable)
@@ -214,8 +244,14 @@ namespace UnityEditor
                                 // Move added components relative to target components
                                 if (!ComponentUtility.MoveComponentsRelativeToComponents(addedComponents, targetComponents, m_TargetAbove))
                                 {
+                                    // Ensure we have the same selection after calling RevertAllDownToGroup below (MoveComponentsRelativeToComponents can have opened a Prefab in Prefab Mode and changed selection to that root)
+                                    var wantedSelectedGameObject = Selection.activeGameObject;
+
                                     // Revert added components if move operation fails (e.g. user aborts when asked to break prefab instance)
                                     Undo.RevertAllDownToGroup(undoGroup);
+
+                                    if (wantedSelectedGameObject != Selection.activeGameObject)
+                                        Selection.activeGameObject = wantedSelectedGameObject;
                                 }
                             }
                         }
