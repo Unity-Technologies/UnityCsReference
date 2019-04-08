@@ -80,7 +80,7 @@ namespace UnityEditor.Experimental.Networking.PlayerConnection
         {
             public static readonly GUIContent EnterIPText = UnityEditor.EditorGUIUtility.TrTextContent("<Enter IP>");
             public static readonly GUIContent AutoconnectedPlayer = UnityEditor.EditorGUIUtility.TrTextContent("(Autoconnected Player)");
-            public static readonly GUIContent ConnectingToPlayerMessage = UnityEditor.EditorGUIUtility.TrTextContent("Connecting to player...(this can take a while)");
+            public static readonly GUIContent ConnectingToPlayerMessage = UnityEditor.EditorGUIUtility.TrTextContent("Connecting to player... (this can take a while)");
 
             public static readonly string LocalHostProhibited = L10n.Tr(" (Localhost prohibited)");
             public static readonly string VersionMismatch = L10n.Tr(" (Version mismatch)");

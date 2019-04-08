@@ -288,6 +288,10 @@ namespace UnityEditor.UIElements
             {
                 AddMissingScriptLabel(serializedObject);
             }
+            else
+            {
+                SetEnabled(false);
+            }
 
             AddToClassList(uIEDefaultVariantUssClassName);
             AddToClassList(uIEInspectorVariantUssClassName);
@@ -300,7 +304,7 @@ namespace UnityEditor.UIElements
             SerializedProperty scriptProperty = serializedObject.FindProperty("m_Script");
             if (scriptProperty != null)
             {
-                hierarchy.Add(new IMGUIContainer(() => GenericInspector.CheckIfScriptLoaded(scriptProperty)));
+                hierarchy.Add(new IMGUIContainer(() => GenericInspector.ShowScriptNotLoadedWarning(scriptProperty)));
                 return true;
             }
 

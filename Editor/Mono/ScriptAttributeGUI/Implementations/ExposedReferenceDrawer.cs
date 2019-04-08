@@ -16,7 +16,7 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
     protected readonly GUIContent ExposePropertyContent = EditorGUIUtility.TrTextContent("Expose Property");
     protected readonly GUIContent UnexposePropertyContent = EditorGUIUtility.TrTextContent("Unexpose Property");
     protected readonly GUIContent NotFoundOn = EditorGUIUtility.TrTextContent("not found on");
-    protected readonly GUIContent OverridenByContent = EditorGUIUtility.TrTextContent("Overriden by ");
+    protected readonly GUIContent OverridenByContent = EditorGUIUtility.TrTextContent("Overridden by ");
 
     private GUIContent m_ModifiedLabel = new GUIContent();
 

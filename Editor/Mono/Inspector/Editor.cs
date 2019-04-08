@@ -607,8 +607,7 @@ namespace UnityEditor
                 // Need to make sure internal target list PPtr have been updated from a native memory
                 // When assets are reloaded they are destroyed and recreated and the managed list does not get updated
                 // The m_SerializedObject is a native object thus its targetObjects is a native memory PPtr list which have the new PPtr ids.
-                if (m_SerializedObject.targetObjects != null && m_SerializedObject.targetObjects[0] != null)
-                    InternalSetTargets(m_SerializedObject.targetObjects);
+                InternalSetTargets(m_SerializedObject.targetObjects);
             }
         }
 

@@ -223,7 +223,7 @@ namespace UnityEditor
             public readonly GUIContent[] cubemapOptions =
             {
                 EditorGUIUtility.TrTextContent("Auto"),
-                EditorGUIUtility.TrTextContent("6 Frames Layout (Cubic Environment)", "Texture contains 6 images arranged in one of the standard cubemap layouts - cross or sequence (+x,-x, +y, -y, +z, -z). Texture can be in vertical or horizontal orientation."),
+                EditorGUIUtility.TrTextContent("6 Frames Layout (Cubic Environment)", "Texture contains 6 images arranged in one of the standard cubemap layouts - cross or sequence (+x, -x, +y, -y, +z, -z). Texture can be in vertical or horizontal orientation."),
                 EditorGUIUtility.TrTextContent("Latitude-Longitude Layout (Cylindrical)", "Texture contains an image of a ball unwrapped such that latitude and longitude are mapped to horizontal and vertical dimensions (as on a globe)."),
                 EditorGUIUtility.TrTextContent("Mirrored Ball (Spheremap)", "Texture contains an image of a mirrored ball.")
             };
@@ -256,7 +256,7 @@ namespace UnityEditor
             public readonly GUIContent mipmapFadeOutToggle = EditorGUIUtility.TrTextContent("Fadeout Mip Maps");
             public readonly GUIContent mipmapFadeOut = EditorGUIUtility.TrTextContent("Fade Range");
             public readonly GUIContent readWrite = EditorGUIUtility.TrTextContent("Read/Write Enabled", "Enable to be able to access the raw pixel data from code.");
-            public readonly GUIContent streamingMipmaps = EditorGUIUtility.TrTextContent("Streaming Mip Maps", "Only load larger mip maps as needed to render the current game cameras. Requires texture streaming to be enabled in quality settings.");
+            public readonly GUIContent streamingMipmaps = EditorGUIUtility.TrTextContent("Streaming MipMaps", "Only load larger mipmaps as needed to render the current game cameras. Requires texture streaming to be enabled in quality settings.");
             public readonly GUIContent streamingMipmapsPriority = EditorGUIUtility.TrTextContent("Mip Map Priority", "Mip map streaming priority when there's contention for resources. Positive numbers represent higher priority. Valid range is -128 to 127.");
 
             public readonly GUIContent alphaSource = EditorGUIUtility.TrTextContent("Alpha Source", "How is the alpha generated for the imported texture.");
@@ -296,7 +296,7 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Box"),
                 EditorGUIUtility.TrTextContent("Kaiser"),
             };
-            public readonly GUIContent npot = EditorGUIUtility.TrTextContent("Non Power of 2", "How non-power-of-two textures are scaled on import.");
+            public readonly GUIContent npot = EditorGUIUtility.TrTextContent("Non-Power of 2", "How non-power-of-two textures are scaled on import.");
             public readonly GUIContent generateCubemap = EditorGUIUtility.TrTextContent("Generate Cubemap");
 
             public readonly GUIContent compressionQuality = EditorGUIUtility.TrTextContent("Compressor Quality");

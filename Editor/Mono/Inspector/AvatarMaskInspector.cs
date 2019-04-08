@@ -162,10 +162,10 @@ namespace UnityEditor
         private static class Styles
         {
             // Model Importer related options
-            public static GUIContent MaskDefinition = EditorGUIUtility.TrTextContent("Definition", "Choose between Create From This Model, Copy From Other Avatar. The first one create a Mask for this file and the second one use a Mask from another file to import animation.");
+            public static GUIContent MaskDefinition = EditorGUIUtility.TrTextContent("Definition", "Choose between Create From This Model, Copy From Other Avatar. The first one creates a Mask for this file and the second one uses a Mask from another file to import animation.");
             public static GUIContent[] MaskDefinitionOpt =
             {
-                EditorGUIUtility.TrTextContent("Create From This Model", "Create a Mask based on the model from this file. For Humanoid rig all the human transform are always imported and converted to muscle curve, thus they cannot be unchecked."),
+                EditorGUIUtility.TrTextContent("Create From This Model", "Create a Mask based on the model from this file. For Humanoid rig all the human transforms are always imported and converted to muscle curve, thus they cannot be unchecked."),
                 EditorGUIUtility.TrTextContent("Copy From Other Mask", "Copy a Mask from another file to import animation clip."),
                 EditorGUIUtility.TrTextContent("None ", " Import Everything")
             };

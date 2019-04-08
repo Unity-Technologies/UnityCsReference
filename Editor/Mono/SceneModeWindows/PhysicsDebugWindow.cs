@@ -50,7 +50,7 @@ namespace UnityEditor
             public static readonly GUIContent showLayers            = EditorGUIUtility.TrTextContent("Show Layers", "Show selected layers");
             public static readonly GUIContent showPhysicsScenes     = EditorGUIUtility.TrTextContent("Show Physics Scene", "Show selected physics scenes");
             public static readonly GUIContent showStaticCollider    = EditorGUIUtility.TrTextContent("Show Static Colliders", "Show collision geometry from Colliders that do not have a Rigidbody");
-            public static readonly GUIContent showTriggers          = EditorGUIUtility.TrTextContent("Show Triggers", "Show collision geometry from Colliders that have 'isTrigge' enabled");
+            public static readonly GUIContent showTriggers          = EditorGUIUtility.TrTextContent("Show Triggers", "Show collision geometry from Colliders that have 'isTrigger' enabled");
             public static readonly GUIContent showRigibodies        = EditorGUIUtility.TrTextContent("Show Rigidbodies", "Show collision geometry from Rigidbodies");
             public static readonly GUIContent showKinematicBodies   = EditorGUIUtility.TrTextContent("Show Kinematic Bodies", "Show collision geometry from Kinematic Rigidbodies");
             public static readonly GUIContent showSleepingBodies    = EditorGUIUtility.TrTextContent("Show Sleeping Bodies", "Show collision geometry from Sleeping Rigidbodies");

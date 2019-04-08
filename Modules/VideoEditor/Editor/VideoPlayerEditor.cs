@@ -45,7 +45,7 @@ namespace UnityEditor
             public readonly GUIContent cameraContent =
                 EditorGUIUtility.TrTextContent("Camera", "Camera where the images will be drawn, behind (Back Plane) or in front of (Front Plane) of the scene.");
             public readonly GUIContent textureContent =
-                EditorGUIUtility.TrTextContent("Target Texture", "RenderTexture where the images will be drawn.  RenderTextures can be created under the Assets folder and the used on other objects.");
+                EditorGUIUtility.TrTextContent("Target Texture", "RenderTexture where the images will be drawn. RenderTextures can be created under the Assets folder and then used on other objects.");
             public readonly GUIContent alphaContent =
                 EditorGUIUtility.TrTextContent("Alpha", "A value less than 1.0 will reveal the content behind the video.");
             public readonly GUIContent camera3DLayout =

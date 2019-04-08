@@ -58,7 +58,7 @@ namespace UnityEditor
         {
             public GUIContent animate = EditorGUIUtility.TrTextContent("Animation");
             public GUIContent backgroundColor = EditorGUIUtility.TrTextContent("Background Color", "Background color when no background image is used.");
-            public GUIContent backgroundImage = EditorGUIUtility.TrTextContent("Background Image", "Image to be used in landscape and portrait(when portrait image is not set).");
+            public GUIContent backgroundImage = EditorGUIUtility.TrTextContent("Background Image", "Image to be used in landscape and portrait (when portrait image is not set).");
             public GUIContent backgroundPortraitImage = EditorGUIUtility.TrTextContent("Alternate Portrait Image*", "Optional image to be used in portrait mode.");
             public GUIContent backgroundTitle = EditorGUIUtility.TrTextContent("Background*");
             public GUIContent backgroundZoom = EditorGUIUtility.TrTextContent("Background Zoom");

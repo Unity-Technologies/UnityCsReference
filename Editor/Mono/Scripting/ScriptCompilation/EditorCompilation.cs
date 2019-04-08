@@ -1747,6 +1747,17 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     continue;
                 }
 
+                if (string.IsNullOrEmpty(targetAssemblyVersionDefines[i].expression))
+                {
+                    var define = targetAssemblyVersionDefines[i].define;
+                    if (!string.IsNullOrEmpty(define))
+                    {
+                        defines[populatedVersionDefinesCount] = define;
+                        populatedVersionDefinesCount++;
+                    }
+                    continue;
+                }
+
                 var versionDefineExpression = semVersionRangesFactory.GetExpression(targetAssemblyVersionDefines[i].expression);
                 var assetPathVersionMetaData = assetPathVersionMetaDatas[targetAssemblyVersionDefines[i].name];
                 var semVersion = SemVersionParser.Parse(assetPathVersionMetaData);

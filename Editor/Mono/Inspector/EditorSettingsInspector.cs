@@ -37,7 +37,7 @@ namespace UnityEditor
 
 
             public static GUIContent assetSerialization = EditorGUIUtility.TrTextContent("Asset Serialization");
-            public static GUIContent defaultBehaviorMode = EditorGUIUtility.TrTextContent("Default Behavior Mode");
+            public static GUIContent defaultBehaviorMode = EditorGUIUtility.TrTextContent("Default Behaviour Mode");
             public static GUIContent spritePacker = EditorGUIUtility.TrTextContent("Sprite Packer");
 
             public static GUIContent cSharpProjectGeneration = EditorGUIUtility.TrTextContent("C# Project Generation");
@@ -45,7 +45,7 @@ namespace UnityEditor
             public static GUIContent rootNamespace = EditorGUIUtility.TrTextContent("Root namespace");
 
             public static GUIContent etcTextureCompressor = EditorGUIUtility.TrTextContent("ETC Texture Compressor");
-            public static GUIContent behavior = EditorGUIUtility.TrTextContent("Behavior");
+            public static GUIContent behavior = EditorGUIUtility.TrTextContent("Behaviour");
             public static GUIContent fast = EditorGUIUtility.TrTextContent("Fast");
             public static GUIContent normal = EditorGUIUtility.TrTextContent("Normal");
             public static GUIContent best = EditorGUIUtility.TrTextContent("Best");
