@@ -113,16 +113,24 @@ namespace UnityEngine
 
         ~TextGenerator()
         {
-            ((IDisposable)this).Dispose();
+            Dispose(false);
         }
 
         void IDisposable.Dispose()
+        {
+            Dispose(true);
+
+            GC.SuppressFinalize(this);
+        }
+
+        private void Dispose(bool disposing)
         {
             lock (s_Instances)
             {
                 s_Instances.Remove(m_Id);
             }
-            Dispose_cpp();
+            if (disposing)
+                Dispose_cpp();
         }
 
         [RequiredByNativeCode]
