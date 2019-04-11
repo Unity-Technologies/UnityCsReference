@@ -23,7 +23,6 @@ namespace UnityEditor
         internal class Styles
         {
             public static readonly GUIContent name = EditorGUIUtility.TrTextContent("Name", "The assembly name is used to generate a <name>.dll file on you disk.");
-            public static readonly GUIContent unityReferences = EditorGUIUtility.TrTextContent("Unity References");
             public static readonly GUIContent defineConstraints = EditorGUIUtility.TrTextContent("Define Constraints", "Specify a constraint in the assembly definition. The assembly definition only builds if this constraint returns True.");
             public static readonly GUIContent versionDefines = EditorGUIUtility.TrTextContent("Version Defines", "Specify which versions of a packages and modules to include in compilations.");
             public static readonly GUIContent references = EditorGUIUtility.TrTextContent("Assembly Definition References", "The list of assembly files that this assembly definition should reference.");
@@ -103,7 +102,6 @@ namespace UnityEditor
             public List<PrecompiledReference> precompiledReferences;
             public List<DefineConstraint> defineConstraints;
             public List<VersionDefine> versionDefines;
-            public bool[] optionalUnityReferences;
             public bool allowUnsafeCode;
             public bool overrideReferences;
             public bool useGUIDs;
@@ -123,7 +121,6 @@ namespace UnityEditor
         SerializedProperty m_UseGUIDs;
         SerializedProperty m_AutoReferenced;
         SerializedProperty m_OverrideReferences;
-        SerializedProperty m_OptionalUnityReferences;
         SerializedProperty m_CompatibleWithAnyPlatform;
         SerializedProperty m_PlatformCompatibility;
 
@@ -141,7 +138,6 @@ namespace UnityEditor
             m_UseGUIDs = extraDataSerializedObject.FindProperty("useGUIDs");
             m_AutoReferenced = extraDataSerializedObject.FindProperty("autoReferenced");
             m_OverrideReferences = extraDataSerializedObject.FindProperty("overrideReferences");
-            m_OptionalUnityReferences = extraDataSerializedObject.FindProperty("optionalUnityReferences");
             m_CompatibleWithAnyPlatform = extraDataSerializedObject.FindProperty("compatibleWithAnyPlatform");
             m_PlatformCompatibility = extraDataSerializedObject.FindProperty("platformCompatibility");
         }
@@ -158,8 +154,6 @@ namespace UnityEditor
             extraDataSerializedObject.Update();
 
             var platforms = Compilation.CompilationPipeline.GetAssemblyDefinitionPlatforms();
-            var optionalUnityReferences = CustomScriptAssembly.OptinalUnityAssemblies;
-
             using (new EditorGUI.DisabledScope(false))
             {
                 if (targets.Length > 1)
@@ -213,31 +207,6 @@ namespace UnityEditor
                     m_PrecompiledReferencesList.DoLayoutList();
                 }
 
-                GUILayout.Label(Styles.unityReferences, EditorStyles.boldLabel);
-                EditorGUILayout.BeginVertical(GUI.skin.box);
-                for (int i = 0; i < optionalUnityReferences.Length; ++i)
-                {
-                    SerializedProperty property;
-                    if (i >= m_OptionalUnityReferences.arraySize)
-                    {
-                        m_OptionalUnityReferences.arraySize++;
-                        property = m_OptionalUnityReferences.GetArrayElementAtIndex(i);
-                        property.boolValue = false;
-                    }
-                    else
-                    {
-                        property = m_OptionalUnityReferences.GetArrayElementAtIndex(i);
-                    }
-                    EditorGUILayout.PropertyField(property, new GUIContent(optionalUnityReferences[i].DisplayName, optionalUnityReferences[i].Tooltip));
-
-                    if (!property.hasMultipleDifferentValues && property.boolValue)
-                    {
-                        EditorGUILayout.HelpBox(optionalUnityReferences[i].AdditinalInformationWhenEnabled, MessageType.Info);
-                    }
-                }
-
-                EditorGUILayout.EndVertical();
-                GUILayout.Space(10f);
 
                 GUILayout.Label(Styles.platforms, EditorStyles.boldLabel);
                 EditorGUILayout.BeginVertical(GUI.skin.box);
@@ -681,22 +650,6 @@ namespace UnityEditor
             var platforms = CompilationPipeline.GetAssemblyDefinitionPlatforms();
             state.platformCompatibility = new bool[platforms.Length];
 
-            var OptinalUnityAssemblies = CustomScriptAssembly.OptinalUnityAssemblies;
-            state.optionalUnityReferences = new bool[OptinalUnityAssemblies.Length];
-
-            if (data.optionalUnityReferences != null)
-            {
-                for (int i = 0; i < OptinalUnityAssemblies.Length; i++)
-                {
-                    var optionalUnityReferences = OptinalUnityAssemblies[i].OptionalUnityReferences.ToString();
-                    var any = data.optionalUnityReferences.Any(x => x == optionalUnityReferences);
-                    if (any)
-                    {
-                        state.optionalUnityReferences[i] = true;
-                    }
-                }
-            }
-
             state.compatibleWithAnyPlatform = true;
             string[] dataPlatforms = null;
 
@@ -731,7 +684,6 @@ namespace UnityEditor
         {
             var references = state.references;
             var platforms = CompilationPipeline.GetAssemblyDefinitionPlatforms();
-            var OptinalUnityAssemblies = CustomScriptAssembly.OptinalUnityAssemblies;
 
             CustomScriptAssemblyData data = new CustomScriptAssemblyData();
 
@@ -772,15 +724,6 @@ namespace UnityEditor
             data.precompiledReferences = state.precompiledReferences
                 .Select(r => r.name).ToArray();
 
-            List<string> optionalUnityReferences = new List<string>();
-
-            for (int i = 0; i < OptinalUnityAssemblies.Length; i++)
-            {
-                if (state.optionalUnityReferences[i])
-                    optionalUnityReferences.Add(OptinalUnityAssemblies[i].OptionalUnityReferences.ToString());
-            }
-
-            data.optionalUnityReferences = optionalUnityReferences.ToArray();
 
             data.allowUnsafeCode = state.allowUnsafeCode;
 

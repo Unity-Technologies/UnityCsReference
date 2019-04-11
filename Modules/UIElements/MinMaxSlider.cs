@@ -284,7 +284,7 @@ namespace UnityEngine.UIElements
             return SliderLerpUnclamped(lowLimit, highLimit, interpolant);
         }
 
-        protected internal override void ExecuteDefaultAction(EventBase evt)
+        protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
 

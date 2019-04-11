@@ -26,6 +26,8 @@ namespace UnityEditor
             public static GUIContent AmbisonicDecoderPlugin = EditorGUIUtility.TrTextContent("Ambisonic Decoder Plugin", "Native audio plugin performing ambisonic-to-binaural filtering of sources.");
             public static GUIContent DisableAudio           = EditorGUIUtility.TrTextContent("Disable Unity Audio", "Prevent allocating the output device in the runtime. Use this if you want to use other sound systems than the built-in one.");
             public static GUIContent VirtualizeEffects      = EditorGUIUtility.TrTextContent("Virtualize Effects", "When enabled dynamically turn off effects and spatializers on AudioSources that are culled in order to save CPU.");
+
+            public static GUIContent DSPBufferSizeInfo = EditorGUIUtility.TrTextContent("The requested buffer size ({0}) has been overridden to {1} by the operating system");
         }
 
         private SerializedProperty m_Volume;
@@ -33,7 +35,8 @@ namespace UnityEditor
         private SerializedProperty m_DopplerFactor;
         private SerializedProperty m_DefaultSpeakerMode;
         private SerializedProperty m_SampleRate;
-        private SerializedProperty m_DSPBufferSize;
+        private SerializedProperty m_RequestedDSPBufferSize;
+        private SerializedProperty m_ActualDSPBufferSize;
         private SerializedProperty m_VirtualVoiceCount;
         private SerializedProperty m_RealVoiceCount;
         private SerializedProperty m_SpatializerPlugin;
@@ -48,7 +51,8 @@ namespace UnityEditor
             m_DopplerFactor             = serializedObject.FindProperty("Doppler Factor");
             m_DefaultSpeakerMode        = serializedObject.FindProperty("Default Speaker Mode");
             m_SampleRate                = serializedObject.FindProperty("m_SampleRate");
-            m_DSPBufferSize             = serializedObject.FindProperty("m_DSPBufferSize");
+            m_RequestedDSPBufferSize    = serializedObject.FindProperty("m_RequestedDSPBufferSize");
+            m_ActualDSPBufferSize       = serializedObject.FindProperty("m_DSPBufferSize");
             m_VirtualVoiceCount         = serializedObject.FindProperty("m_VirtualVoiceCount");
             m_RealVoiceCount            = serializedObject.FindProperty("m_RealVoiceCount");
             m_SpatializerPlugin         = serializedObject.FindProperty("m_SpatializerPlugin");
@@ -79,7 +83,13 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_DopplerFactor, Styles.DopplerFactor);
             EditorGUILayout.PropertyField(m_DefaultSpeakerMode, Styles.DefaultSpeakerMode);
             EditorGUILayout.PropertyField(m_SampleRate, Styles.SampleRate);
-            EditorGUILayout.PropertyField(m_DSPBufferSize, Styles.DSPBufferSize);
+            EditorGUILayout.PropertyField(m_RequestedDSPBufferSize, Styles.DSPBufferSize);
+            if (m_RequestedDSPBufferSize.intValue != m_ActualDSPBufferSize.intValue)
+                EditorGUILayout.HelpBox(
+                    string.Format(Styles.DSPBufferSizeInfo.text,
+                        m_RequestedDSPBufferSize.intValue == 0 ? "default" : m_RequestedDSPBufferSize.intValue.ToString(),
+                        m_ActualDSPBufferSize.intValue),
+                    MessageType.Info);
             EditorGUILayout.PropertyField(m_VirtualVoiceCount, Styles.VirtualVoiceCount);
             EditorGUILayout.PropertyField(m_RealVoiceCount, Styles.RealVoiceCount);
 

@@ -68,7 +68,9 @@ namespace UnityEditor.EditorTools
                 if (index > -1)
                     instance.m_ToolHistory.RemoveAt(index);
 
-                instance.m_ToolHistory.Add(tool);
+                // Never add `None` tool to history
+                if (!(tool is NoneTool))
+                    instance.m_ToolHistory.Add(tool);
 
                 EditorTools.ActiveToolWillChange();
 
@@ -181,12 +183,12 @@ namespace UnityEditor.EditorTools
 
         void OnEnable()
         {
-            RebuildAvailableCustomEditorTools();
-
             EditorApplication.playModeStateChanged += PlayModeStateChanged;
             Undo.undoRedoPerformed += UndoRedoPerformed;
             ActiveEditorTracker.editorTrackerRebuilt += TrackerRebuilt;
             Selection.selectedObjectWasDestroyed += SelectedObjectWasDestroyed;
+            // Delay rebuild until all InspectorWindows have been enabled
+            EditorApplication.delayCall += RebuildAvailableCustomEditorTools;
         }
 
         void OnDisable()
@@ -398,6 +400,8 @@ namespace UnityEditor.EditorTools
 
         void RebuildAvailableCustomEditorTools()
         {
+            EditorApplication.delayCall -= RebuildAvailableCustomEditorTools;
+
             // Do not rebuild the cache since objects are serialized, destroyed, deserialized during this phase
             if (m_PlayModeState == PlayModeStateChange.ExitingEditMode ||
                 m_PlayModeState == PlayModeStateChange.ExitingPlayMode)
@@ -455,7 +459,7 @@ namespace UnityEditor.EditorTools
 
                     // domain reload - the owning editor was destroyed and therefore we need to reset the EditMode active
                     if (m_ActiveTool is EditModeTool && toolOwner.GetInstanceID() != UnityEditorInternal.EditMode.ownerID)
-                        UnityEditorInternal.EditMode.ChangeEditModeFromToolContext(toolOwner, ((EditModeTool)m_ActiveTool).editMode);
+                        UnityEditorInternal.EditMode.EditModeToolStateChanged(toolOwner, ((EditModeTool)m_ActiveTool).editMode);
 
                     customEditorToolInstance = m_ActiveTool;
                 }

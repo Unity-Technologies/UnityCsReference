@@ -289,7 +289,7 @@ namespace UnityEditor
             }
 
             SessionState.SetString(uid + Styles.serializeTreeViewState, JsonUtility.ToJson(state));
-            SessionState.SetString(uid + Styles.serializeColumnHeaderState, JsonUtility.ToJson(multiColumnHeader.state));
+            EditorPrefs.SetString(uid + Styles.serializeColumnHeaderState, JsonUtility.ToJson(multiColumnHeader.state));
         }
 
         public void DeserializeState(string uid)
@@ -297,7 +297,7 @@ namespace UnityEditor
             m_bFilterSelection = SessionState.GetBool(uid + Styles.serializeFilterSelection, false);
 
             MultiColumnHeaderState headerState = new MultiColumnHeaderState(multiColumnHeader.state.columns);
-            string columnHeaderState = SessionState.GetString(uid + Styles.serializeColumnHeaderState, "");
+            string columnHeaderState = EditorPrefs.GetString(uid + Styles.serializeColumnHeaderState, "");
 
             if (!string.IsNullOrEmpty(columnHeaderState))
                 JsonUtility.FromJsonOverwrite(columnHeaderState, headerState);

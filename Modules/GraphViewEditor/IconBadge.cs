@@ -326,7 +326,7 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
-        protected internal override void ExecuteDefaultAction(EventBase evt)
+        protected override void ExecuteDefaultAction(EventBase evt)
         {
             if (evt.eventTypeId == GeometryChangedEvent.TypeId())
             {

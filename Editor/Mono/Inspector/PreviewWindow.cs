@@ -14,7 +14,7 @@ namespace UnityEditor
 
         VisualElement m_previewElement;
 
-        VisualElement previewElement => m_previewElement ?? (m_previewElement = rootVisualElement.Q<VisualElement>(className: "unity-inspector-preview"));
+        VisualElement previewElement => m_previewElement ?? (m_previewElement = rootVisualElement.Q(className: "unity-inspector-preview"));
 
         public void SetParentInspector(InspectorWindow inspector)
         {

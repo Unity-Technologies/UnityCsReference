@@ -41,9 +41,12 @@ namespace UnityEditor.PackageManager.UI
 
             StatusLabel.RegisterCallback<MouseDownEvent>(e =>
             {
-                collection.FetchListOfflineCache(true);
-                collection.FetchListCache(true);
-                collection.FetchSearchCache(true);
+                if (!EditorApplication.isPlaying)
+                {
+                    collection.FetchListOfflineCache(true);
+                    collection.FetchListCache(true);
+                    collection.FetchSearchCache(true);
+                }
             });
         }
 

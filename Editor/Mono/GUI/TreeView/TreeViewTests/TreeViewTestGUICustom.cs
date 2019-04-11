@@ -114,17 +114,5 @@ namespace UnityEditor.TreeViewExamples
                 }
             }
         }
-
-        /*
-        void ChangeExpandedState(TreeViewItem item, bool expand)
-        {
-            if (Event.current.alt)
-                m_TreeView.data.SetExpandedWithChildren(item, expand);
-            else
-                m_TreeView.data.SetExpanded(item, expand);
-
-            if (expand)
-                m_TreeView.UserExpandedItem(item);
-        }*/
     }
 }

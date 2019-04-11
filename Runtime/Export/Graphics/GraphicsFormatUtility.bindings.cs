@@ -139,6 +139,8 @@ namespace UnityEngine
                 [FreeFunction]
                 extern public static bool IsSIntFormat(GraphicsFormat format);
 
+                [FreeFunction]
+                extern public static bool IsXRFormat(GraphicsFormat format);
 
                 [FreeFunction]
                 extern public static bool IsDXTCFormat(GraphicsFormat format);
@@ -157,6 +159,9 @@ namespace UnityEngine
 
                 [FreeFunction]
                 extern public static bool IsETCFormat(GraphicsFormat format);
+
+                [FreeFunction]
+                extern public static bool IsEACFormat(GraphicsFormat format);
 
                 [FreeFunction]
                 extern public static bool IsASTCFormat(GraphicsFormat format);

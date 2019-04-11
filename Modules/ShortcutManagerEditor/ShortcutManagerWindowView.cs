@@ -83,9 +83,9 @@ namespace UnityEditor.ShortcutManagement
 
         public RebindResolution HandleRebindWillCreateConflict(ShortcutEntry entry, IList<KeyCombination> newBinding, IList<ShortcutEntry> conflicts)
         {
-            var title = L10n.Tr("Binding conflict");
+            var title = L10n.Tr("Binding Conflict");
             var message = string.Format(L10n.Tr("The key {0} is already assigned to the \"{1}\" shortcut.\nDo you want to reassign this key?"), KeyCombination.SequenceToString(newBinding), conflicts[0].displayName);
-            var result = EditorUtility.DisplayDialogComplex(title, message, L10n.Tr("Reassign"), L10n.Tr("Cancel"), L10n.Tr("Create conflict"));
+            var result = EditorUtility.DisplayDialogComplex(title, message, L10n.Tr("Reassign"), L10n.Tr("Cancel"), L10n.Tr("Create Conflict"));
             switch (result)
             {
                 case 0:
@@ -173,9 +173,9 @@ namespace UnityEditor.ShortcutManagement
 
             var nameElement = (TextElement)shortcutElementTemplate[0];
             var bindingContainer = shortcutElementTemplate[1];
-            var bindingTextElement = bindingContainer.Query<TextElement>().First();
-            var bindingField = bindingContainer.Query<ShortcutTextField>().First();
-            var warningIcon = shortcutElementTemplate.Query(null, "warning-icon").First();
+            var bindingTextElement = bindingContainer.Q<TextElement>();
+            var bindingField = bindingContainer.Q<ShortcutTextField>();
+            var warningIcon = shortcutElementTemplate.Q(null, "warning-icon");
 
             nameElement.text = m_ViewController.GetShortcutPathList()[index];
             nameElement.tooltip = nameElement.text;
@@ -257,10 +257,10 @@ namespace UnityEditor.ShortcutManagement
 
         void BuildSearchField(VisualElement root)
         {
-            var searchControlContainer = root.Query("searchControlContainer").First();
-            var searchOptionsDropDown = root.Query("searchOptionsDropDown").First();
-            m_SearchTextField = root.Query<TextField>();
-            m_SearchCancelEnding = root.Query("searchCancelEnding");
+            var searchControlContainer = root.Q("searchControlContainer");
+            var searchOptionsDropDown = root.Q("searchOptionsDropDown");
+            m_SearchTextField = root.Q<TextField>();
+            m_SearchCancelEnding = root.Q("searchCancelEnding");
             m_KeyBindingSearchField = new ShortcutTextField();
 
             ShowAppropriateSearchField();
@@ -370,7 +370,7 @@ namespace UnityEditor.ShortcutManagement
 
         void BuildLegendRow(VisualElement root)
         {
-            var container = root.Query<VisualElement>("legendContainer").First();
+            var container = root.Q("legendContainer");
 
             var labels = new[] { L10n.Tr("Unassigned Key"), L10n.Tr("Assigned Key"), L10n.Tr("Global Key") };
             var classes = new[] { "unassigned", "contextuallyBound", "global" };
@@ -428,13 +428,13 @@ namespace UnityEditor.ShortcutManagement
             m_Root = new VisualElement(){name = "ShortcutManagerView"};
             var headerTemplate = EditorResources.Load("UXML/ShortcutManager/ShortcutManagerView.uxml", typeof(UnityEngine.Object)) as VisualTreeAsset;
             headerTemplate.CloneTree(m_Root, null);
-            var header = m_Root.Query<VisualElement>("header").First();
-            var keyboardContainer = m_Root.Query<VisualElement>("headerAndKeyboardContainer").First();
-            var searchRowContainer = m_Root.Query<VisualElement>("searchRowContainer").First();
-            var categoryContainer = m_Root.Query<VisualElement>("categoryContainer").First();
-            var shortcutsTableContainer = m_Root.Query<VisualElement>("shortcutsTableContainer").First();
-            m_ShortcutsTableSearchFilterContainer = shortcutsTableContainer.Query("shortcutsTableSearchFilterContainer").First();
-            m_SearchFiltersContainer = shortcutsTableContainer.Query("searchFiltersContainer").First();
+            var header = m_Root.Q("header");
+            var keyboardContainer = m_Root.Q("headerAndKeyboardContainer");
+            var searchRowContainer = m_Root.Q("searchRowContainer");
+            var categoryContainer = m_Root.Q("categoryContainer");
+            var shortcutsTableContainer = m_Root.Q("shortcutsTableContainer");
+            m_ShortcutsTableSearchFilterContainer = shortcutsTableContainer.Q("shortcutsTableSearchFilterContainer");
+            m_SearchFiltersContainer = shortcutsTableContainer.Q("searchFiltersContainer");
 
 
             m_KeyboardElement = new Keyboard(m_BindingStateProvider, m_ViewController.GetSelectedKey(), m_ViewController.GetSelectedEventModifiers());
@@ -563,7 +563,7 @@ namespace UnityEditor.ShortcutManagement
         static void FocusElementDelayed(GeometryChangedEvent evt)
         {
             var element = (VisualElement)evt.target;
-            element.Q("unity-text-input").Focus();
+            element.Q(TextField.textInputUssName).Focus();
             element.UnregisterCallback<GeometryChangedEvent>(FocusElementDelayed);
         }
 

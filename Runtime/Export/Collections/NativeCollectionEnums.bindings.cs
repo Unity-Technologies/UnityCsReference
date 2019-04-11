@@ -17,6 +17,7 @@ namespace Unity.Collections
         None = 1,
         Temp = 2,
         TempJob = 3,
-        Persistent = 4
+        Persistent = 4,
+        AudioKernel = 5,
     }
 }

@@ -213,7 +213,7 @@ namespace UnityEditor.UIElements
             CurveEditorWindow.color = curveColor;
         }
 
-        protected internal override void ExecuteDefaultAction(EventBase evt)
+        protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
 
@@ -499,7 +499,7 @@ namespace UnityEditor.UIElements
                 pickingMode = PickingMode.Ignore;
             }
 
-            protected internal override void ExecuteDefaultAction(EventBase evt)
+            protected override void ExecuteDefaultAction(EventBase evt)
             {
                 base.ExecuteDefaultAction(evt);
 

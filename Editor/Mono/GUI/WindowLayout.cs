@@ -65,8 +65,16 @@ namespace UnityEditor
         [UsedImplicitly, RequiredByNativeCode]
         public static void SaveDefaultWindowPreferences()
         {
+            // Do not save layout to default if running tests
+            if (!InternalEditorUtility.isHumanControllingUs)
+                return;
+
             // Save Project Current Layout
             SaveWindowLayout(Path.Combine(Directory.GetCurrentDirectory(), kCurrentLayoutPath));
+
+            // Make sure we have a layout directory to save the last layout.
+            if (!Directory.Exists(layoutsPreferencesPath))
+                Directory.CreateDirectory(layoutsPreferencesPath);
 
             // Save Global Last Layout
             SaveWindowLayout(Path.Combine(layoutsPreferencesPath, kLastLayoutName));
@@ -592,10 +600,10 @@ namespace UnityEditor
 
         public static bool LoadWindowLayout(string path, bool newProjectLayoutWasCreated)
         {
-            return LoadWindowLayout(path, newProjectLayoutWasCreated, true);
+            return LoadWindowLayout(path, newProjectLayoutWasCreated, true, false);
         }
 
-        public static bool LoadWindowLayout(string path, bool newProjectLayoutWasCreated, bool setLastLoadedLayoutName)
+        public static bool LoadWindowLayout(string path, bool newProjectLayoutWasCreated, bool setLastLoadedLayoutName, bool keepMainWindow)
         {
             Rect mainWindowPosition = new Rect();
             UnityObject[] containers = Resources.FindObjectsOfTypeAll(typeof(ContainerWindow));
@@ -614,7 +622,7 @@ namespace UnityEditor
             {
                 ContainerWindow.SetFreezeDisplay(true);
 
-                CloseWindows(keepMainWindow: true);
+                CloseWindows(keepMainWindow);
 
                 ContainerWindow mainWindowToSetSize = null;
                 ContainerWindow mainWindow = null;
@@ -673,6 +681,14 @@ namespace UnityEditor
                         {
                             dockArea.Close(null);
                             UnityObject.DestroyImmediate(dockArea, true);
+                            continue;
+                        }
+
+                        // Host views that donot hold any containers are not desirable at this stage
+                        HostView hostview = o as HostView;
+                        if (hostview != null && hostview.actualView == null)
+                        {
+                            UnityObject.DestroyImmediate(hostview, true);
                             continue;
                         }
                     }
@@ -759,7 +775,7 @@ namespace UnityEditor
 
                     ContainerWindow containerWindow = newWindows[i] as ContainerWindow;
                     if (containerWindow && containerWindow != mainWindow)
-                        containerWindow.Show(containerWindow.showMode, loadPosition: true, displayImmediately: true, setFocus: true);
+                        containerWindow.Show(containerWindow.showMode, loadPosition: false, displayImmediately: true, setFocus: true);
                 }
 
                 // Unmaximize maximized GameView if maximize on play is enabled
@@ -880,14 +896,8 @@ namespace UnityEditor
             UnityObject[] oldViews = Resources.FindObjectsOfTypeAll(typeof(View));
             if (oldViews.Length != 0)
             {
-                string output = "";
                 foreach (View killme in oldViews)
-                {
-                    output += "\n" + killme.GetType().Name;
                     UnityObject.DestroyImmediate(killme, true);
-                }
-
-                Debug.LogError("Failed to destroy views: #" + oldViews.Length + output);
             }
         }
 
@@ -1079,6 +1089,7 @@ namespace UnityEditor
                 Toolbar.lastLoadedLayoutName = s_LayoutName;
                 WindowLayout.SaveWindowLayout(path);
                 WindowLayout.ReloadWindowLayoutMenu();
+                EditorUtility.Internal_UpdateAllMenus();
                 ShortcutIntegration.instance.RebuildShortcuts();
                 GUIUtility.ExitGUI();
             }
@@ -1144,6 +1155,7 @@ namespace UnityEditor
 
                     File.Delete(path);
                     WindowLayout.ReloadWindowLayoutMenu();
+                    EditorUtility.Internal_UpdateAllMenus();
                     ShortcutIntegration.instance.RebuildShortcuts();
                     InitializePaths();
                 }

@@ -314,8 +314,10 @@ namespace UnityEditor
                 return false;
 
             // Apply sequentially.
+            AssetDatabase.StartAssetEditing();
             for (int i = 0; i < m_SelectedGameObjects.Length; i++)
                 PrefabUtility.ApplyPrefabInstance(m_SelectedGameObjects[i], InteractionMode.UserAction);
+            AssetDatabase.StopAssetEditing();
 
             EditorUtility.ForceRebuildInspectors();
             return true;

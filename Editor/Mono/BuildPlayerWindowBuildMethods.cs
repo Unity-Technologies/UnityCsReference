@@ -183,7 +183,10 @@ namespace UnityEditor
                             Debug.LogWarning(resultStr);
                             break;
                         case Build.Reporting.BuildResult.Failed:
-                            DeleteBuildFolderIfEmpty(report.summary.outputPath);
+                            //  On some platforms the user creates the build folder, therefore they own the folder and
+                            // it should not be automatically deleted by the Unity Editor, even if it is empty (case 1073851)
+                            if (options.target != BuildTarget.XboxOne)
+                                DeleteBuildFolderIfEmpty(report.summary.outputPath);
                             Debug.LogError(resultStr);
                             throw new BuildMethodException(report.SummarizeErrors());
                         default:

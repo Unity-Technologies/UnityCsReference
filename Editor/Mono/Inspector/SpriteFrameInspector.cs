@@ -163,7 +163,7 @@ namespace UnityEditor
             }
             else
             {
-                if (hasColors)
+                if (hasColors || texture == null)
                 {
                     SpriteUtility.previewSpriteDefaultMaterial.SetPass(0);
                 }

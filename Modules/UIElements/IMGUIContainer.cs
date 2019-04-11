@@ -456,7 +456,7 @@ namespace UnityEngine.UIElements
         }
 
         // This is the IStylePainterInternal.DrawImmediate callback
-        internal void HandleIMGUIEvent()
+        private void HandleIMGUIEvent()
         {
             var offset = elementPanel.repaintData.currentOffset;
             HandleIMGUIEvent(elementPanel.repaintData.repaintEvent, offset * worldTransform, ComputeAAAlignedBound(worldClip, offset));
@@ -470,7 +470,7 @@ namespace UnityEngine.UIElements
             return HandleIMGUIEvent(e, currentTransform, m_CachedClippingRect);
         }
 
-        internal bool HandleIMGUIEvent(Event e, Matrix4x4 worldTransform, Rect clippingRect)
+        private bool HandleIMGUIEvent(Event e, Matrix4x4 worldTransform, Rect clippingRect)
         {
             if (e == null || onGUIHandler == null || elementPanel == null || elementPanel.IMGUIEventInterests.WantsEvent(e.type) == false)
             {
@@ -524,7 +524,7 @@ namespace UnityEngine.UIElements
             return false;
         }
 
-        protected internal override void ExecuteDefaultAction(EventBase evt)
+        protected override void ExecuteDefaultAction(EventBase evt)
         {
             if (evt == null)
             {

@@ -35,5 +35,11 @@ namespace UnityEditor
         {
             InternalEditorUtility.ExecuteCommandOnKeyWindow(EventCommandNames.InvertSelection);
         }
+
+        [Shortcut("Edit/Delete", KeyCode.Delete, ShortcutModifiers.Shift, displayName = "Delete Current Selection")]
+        internal static void DeleteSelectedAssetsShortcut()
+        {
+            InternalEditorUtility.ExecuteCommandOnKeyWindow(EventCommandNames.Delete);
+        }
     }
 }

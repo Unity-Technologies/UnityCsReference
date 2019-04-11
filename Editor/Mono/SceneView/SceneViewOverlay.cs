@@ -111,9 +111,12 @@ namespace UnityEditor
                 EditorGUIUtility.ResetGUIState();
                 GUI.skin = EditorGUIUtility.GetBuiltinSkin(EditorSkin.Scene);
                 EditorStyles.UpdateSkinCache(1);              // EditorResources.h defines this as the index for the dark skin
+                GUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
                 GUILayout.BeginVertical(win.m_Title, GUI.skin.window);
                 win.m_SceneViewFunc(win.m_Target, m_SceneView);
                 GUILayout.EndVertical();
+                GUILayout.EndHorizontal();
             }
             EditorStyles.UpdateSkinCache();              // Sets the cache back according to the user selected skin
             GUILayout.EndVertical();

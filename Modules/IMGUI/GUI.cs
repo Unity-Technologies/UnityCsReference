@@ -931,7 +931,8 @@ namespace UnityEngine
                     }
                     break;
                 case EventType.KeyDown:
-                    if (evt.character == (char)KeyCode.Space && GUIUtility.keyboardControl == id)
+                    bool anyModifiers = (evt.alt || evt.shift || evt.command || evt.control);
+                    if ((evt.keyCode == KeyCode.Space || evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter) && !anyModifiers && GUIUtility.keyboardControl == id)
                     {
                         evt.Use();
                         changed = true;

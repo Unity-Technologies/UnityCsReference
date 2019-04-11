@@ -117,7 +117,7 @@ namespace UnityEditor.PackageManager.UI
         }
 
         private VisualElement _addFromIdFieldContainer;
-        private VisualElement AddFromIdFieldContainer { get { return _addFromIdFieldContainer ?? (_addFromIdFieldContainer = root.Q<VisualElement>("addFromIdFieldContainer")); } }
+        private VisualElement AddFromIdFieldContainer { get { return _addFromIdFieldContainer ?? (_addFromIdFieldContainer = root.Q("addFromIdFieldContainer")); } }
 
         private TextField _idTextField;
         private TextField idTextField { get { return _idTextField ?? (_idTextField = root.Q<TextField>("idTextField")); } }

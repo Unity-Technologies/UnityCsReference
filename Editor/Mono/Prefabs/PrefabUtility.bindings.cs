@@ -167,56 +167,20 @@ namespace UnityEditor
         [NativeMethod("CreateVariant", IsFreeFunction = true)]
         extern private static GameObject CreateVariant_Internal([NotNull] GameObject original, string path);
 
-        private enum PrefabCreationFlags
-        {
-            None = 0,
-            CreateVariant = 1,
-        }
-
-        // TODO: Having an non-obsolete method that takes an obsolete enum types as parameter is no good.
-#pragma warning disable 0618 // Type or member is obsolete
-        private static GameObject SavePrefab(GameObject inputObject, string path, ReplacePrefabOptions replaceOptions, PrefabCreationFlags creationFlags, out bool success)
-        {
-            if (inputObject == null)
-                throw new ArgumentNullException("inputObject is null");
-
-            if (String.IsNullOrEmpty(path))
-                throw new ArgumentNullException("path is null or empty");
-
-            if (!Paths.IsValidAssetPath(path, ".prefab"))
-                throw new ArgumentException("Given path is not valid: '" + path + "'");
-
-            string directory = Path.GetDirectoryName(path);
-
-            bool isRootFolder = false;
-            bool isImmutableFolder = false;
-            bool isValidAssetFolder = AssetDatabase.GetAssetFolderInfo(directory, out isRootFolder, out isImmutableFolder);
-            if (isValidAssetFolder && isImmutableFolder)
-                throw new ArgumentException("Saving Prefab to immutable folder is not allowed: '" + path + "'");
-
-            if (directory.Length > 0 && !Directory.Exists(directory))
-                throw new ArgumentException("Given path does not exist: '" + path + "'");
-
-            string prefabGUID = AssetDatabase.AssetPathToGUID(path);
-            if (!VerifyNestingFromScript(new GameObject[] {inputObject}, prefabGUID, PrefabUtility.GetPrefabInstanceHandle(inputObject)))
-                throw new ArgumentException("Cyclic nesting detected");
-
-            return SavePrefab_Internal(inputObject, path, replaceOptions, creationFlags, out success);
-        }
-
-        private static GameObject SavePrefab(GameObject inputObject, string path, ReplacePrefabOptions replaceOptions, PrefabCreationFlags creationFlags)
-        {
-            bool success;
-            return SavePrefab(inputObject, path, replaceOptions, creationFlags, out success);
-        }
-
-#pragma warning restore 0618 // Type or member is obsolete
-
-        // TODO: Having an non-obsolete method that takes an obsolete enum types as parameter is no good.
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
-#pragma warning disable 0618 // Type or member is obsolete
-        extern private static GameObject SavePrefab_Internal([NotNull] GameObject root, string path, ReplacePrefabOptions replaceOptions, PrefabCreationFlags createOptions, out bool success);
-#pragma warning restore 0618 // Type or member is obsolete
+        extern private static GameObject SavePrefab_Internal([NotNull] GameObject root, string path, bool connectToInstance, out bool success);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern private static GameObject ApplyPrefabInstance_Internal([NotNull] GameObject root);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern private static GameObject SaveAsPrefabAsset_Internal([NotNull] GameObject root, string path, out bool success);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern private static GameObject SaveAsPrefabAssetAndConnect_Internal([NotNull] GameObject root, string path, out bool success);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern private static GameObject SavePrefabAsset_Internal([NotNull] GameObject root);
 
         internal static void AddGameObjectsToPrefabAndConnect(GameObject[] gameObjects, Object targetPrefab)
         {

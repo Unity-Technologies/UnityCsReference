@@ -367,7 +367,7 @@ namespace UnityEditor.Experimental.GraphView
 
             m_TitleLabel = main.Q<Label>(name: "title-label");
             titleButtonContainer = main.Q(name: "title-button-container");
-            m_CollapseButton = main.Q<VisualElement>(name: "collapse-button");
+            m_CollapseButton = main.Q(name: "collapse-button");
             m_CollapseButton.AddManipulator(new Clickable(ToggleCollapse));
 
             elementTypeColor = new Color(0.9f, 0.9f, 0.9f, 0.5f);

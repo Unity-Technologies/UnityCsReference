@@ -677,14 +677,16 @@ namespace UnityEditorInternal
                     break;
 
                 case EventType.MouseDown:
-                    if (!listRect.Contains(Event.current.mousePosition) || Event.current.button != 0)
+
+                    if (!listRect.Contains(Event.current.mousePosition) || (Event.current.button != 0 && Event.current.button != 1))
                         break;
+
                     // clicking on the list should end editing any existing edits
                     EditorGUI.EndEditingActiveTextField();
                     // pick the active element based on click position
                     m_ActiveElement = GetRowIndex(Event.current.mousePosition.y - listRect.y);
 
-                    if (m_Draggable)
+                    if (m_Draggable && Event.current.button == 0)
                     {
                         // if we can drag, set the hot control and start dragging (storing the offset)
                         m_DragOffset = (Event.current.mousePosition.y - listRect.y) - GetElementYOffset(m_ActiveElement);

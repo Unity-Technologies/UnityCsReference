@@ -2,11 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine;
-using UnityEditor;
-using System.Collections;
-using System.Collections.Generic;
 
 using TangentMode = UnityEditor.AnimationUtility.TangentMode;
 
@@ -16,12 +12,6 @@ namespace UnityEditor
     {
         private static Texture2D iconKey;
         private static Texture2D iconCurve;
-
-
-        public static int GetPathAndTypeID(string path, Type type)
-        {
-            return path.GetHashCode() * 27 ^ type.GetHashCode();
-        }
 
         public static Texture2D GetIconCurve()
         {
@@ -200,135 +190,6 @@ namespace UnityEditor
 
     struct QuaternionCurveTangentCalculation
     {
-        AnimationCurve eulerX;
-        AnimationCurve eulerY;
-        AnimationCurve eulerZ;
-
-        public AnimationCurve GetCurve(int index)
-        {
-            if (index == 0)
-                return eulerX;
-            else if (index == 1)
-                return eulerY;
-            else
-                return eulerZ;
-        }
-
-        public void SetCurve(int index, AnimationCurve curve)
-        {
-            if (index == 0)
-                eulerX = curve;
-            else if (index == 1)
-                eulerY = curve;
-            else
-                eulerZ = curve;
-        }
-
-        private Vector3 EvaluateEulerCurvesDirectly(float time)
-        {
-            return new Vector3(
-                eulerX.Evaluate(time),
-                eulerY.Evaluate(time),
-                eulerZ.Evaluate(time));
-        }
-
-        public float CalculateLinearTangent(int fromIndex, int toIndex, int componentIndex)
-        {
-            AnimationCurve curve = GetCurve(componentIndex);
-            return CalculateLinearTangent(curve[fromIndex], curve[toIndex], componentIndex);
-        }
-
-        public float CalculateLinearTangent(Keyframe from, Keyframe to, int component)
-        {
-            float epsilon = 0.01f;
-            Vector3 fromEuler = EvaluateEulerCurvesDirectly(to.time);
-            Vector3 toEuler = EvaluateEulerCurvesDirectly(from.time);
-            Quaternion fromQ = Quaternion.Euler(fromEuler);
-            Quaternion toQ = Quaternion.Euler(toEuler);
-            Quaternion slerped = Quaternion.Slerp(fromQ, toQ, epsilon);
-            Vector3 euler = GetEulerFromQuaternion(slerped, fromEuler);
-            switch (component)
-            {
-                case 0: return (euler.x - fromEuler.x) / epsilon / -(to.time - from.time);
-                case 1: return (euler.y - fromEuler.y) / epsilon / -(to.time - from.time);
-                case 2: return (euler.z - fromEuler.z) / epsilon / -(to.time - from.time);
-                default: return 0;
-            }
-        }
-
-        public float CalculateSmoothTangent(int index, int component)
-        {
-            AnimationCurve curve = GetCurve(component);
-            if (curve.length < 2)
-                return 0;
-
-            // First keyframe
-            // slope are set to be the linear slerped slope from this to the right key
-            if (index <= 0)
-                return CalculateLinearTangent(curve[0], curve[1], component);
-
-            // last keyframe
-            // slope is set to be the linear slerped slope from this to the left key
-            if (index >= curve.length - 1)
-                return CalculateLinearTangent(curve[curve.length - 1], curve[curve.length - 2], component);
-
-            // Keys are on the left and right
-            // Calculates the slopes from this key to the left key and the right key.
-            float prevTime = curve[index - 1].time;
-            float thisTime = curve[index].time;
-            float nextTime = curve[index + 1].time;
-            Vector3 prevEuler = EvaluateEulerCurvesDirectly(prevTime);
-            Vector3 thisEuler = EvaluateEulerCurvesDirectly(thisTime);
-            Vector3 nextEuler = EvaluateEulerCurvesDirectly(nextTime);
-            Quaternion prevQ = Quaternion.Euler(prevEuler);
-            Quaternion thisQ = Quaternion.Euler(thisEuler);
-            Quaternion nextQ = Quaternion.Euler(nextEuler);
-            if (prevQ.x * thisQ.x + prevQ.y * thisQ.y + prevQ.z * thisQ.z + prevQ.w * thisQ.w < 0)
-                prevQ = new Quaternion(-prevQ.x, -prevQ.y, -prevQ.z, -prevQ.w);
-            if (nextQ.x * thisQ.x + nextQ.y * thisQ.y + nextQ.z * thisQ.z + nextQ.w * thisQ.w < 0)
-                nextQ = new Quaternion(-nextQ.x, -nextQ.y, -nextQ.z, -nextQ.w);
-
-            Quaternion tangent = new Quaternion();
-            float dx1 = thisTime - prevTime;
-            float dx2 = nextTime - thisTime;
-            for (int c = 0; c < 4; c++)
-            {
-                /*
-                float dx1 = curve.GetKey (key).time - curve.GetKey (key-1).time;
-                T dy1 = curve.GetKey (key).value - curve.GetKey (key-1).value;
-
-                float dx2 = curve.GetKey (key+1).time - curve.GetKey (key).time;
-                T dy2 = curve.GetKey (key+1).value - curve.GetKey (key).value;
-
-                T m1 = SafeDeltaDivide(dy1, dx1);
-                T m2 = SafeDeltaDivide(dy2, dx2);
-
-                T m = (1.0F + b) * 0.5F * m1 + (1.0F - b) * 0.5F * m2;
-                curve.GetKey (key).inSlope = m; curve.GetKey (key).outSlope = m;
-                */
-
-                float dy1 = thisQ[c] - prevQ[c];
-                float dy2 = nextQ[c] - thisQ[c];
-                float m1 = SafeDeltaDivide(dy1, dx1);
-                float m2 = SafeDeltaDivide(dy2, dx2);
-                tangent[c] = 0.5F * m1 + 0.5F * m2;
-            }
-
-            float small = Mathf.Abs(nextTime - prevTime) * 0.01f;
-            Quaternion epsilonBeforeQ = new Quaternion(thisQ.x - tangent.x * small,
-                thisQ.y - tangent.y * small,
-                thisQ.z - tangent.z * small,
-                thisQ.w - tangent.w * small);
-            Quaternion epsilonAfterQ = new Quaternion(thisQ.x + tangent.x * small,
-                thisQ.y + tangent.y * small,
-                thisQ.z + tangent.z * small,
-                thisQ.w + tangent.w * small);
-            Vector3 epsilonBeforeEuler = GetEulerFromQuaternion(epsilonBeforeQ, thisEuler);
-            Vector3 epsilonAfterEuler = GetEulerFromQuaternion(epsilonAfterQ, thisEuler);
-            Vector3 tangentEuler = (epsilonAfterEuler - epsilonBeforeEuler) / (small * 2);
-            return tangentEuler[component];
-        }
-
         public static Vector3[] GetEquivalentEulerAngles(Quaternion quat)
         {
             Vector3 euler = quat.eulerAngles;
@@ -368,9 +229,6 @@ namespace UnityEditor
                 }
             }
 
-            //for (int i=0; i<eulers.Length; i++)
-            //  debugPoints.Add(new Vector4(eulers[i].x, eulers[i].y, eulers[i].z, time));
-
             // Find out which euler is closest to reference
             Vector3 euler = eulers[0];
             float dist = (eulers[0] - refEuler).sqrMagnitude;
@@ -385,82 +243,6 @@ namespace UnityEditor
             }
 
             return euler;
-        }
-
-        public static float SafeDeltaDivide(float dy, float dx)
-        {
-            if (dx == 0)
-                return 0;
-            return dy / dx;
-        }
-
-        public void UpdateTangentsFromMode(int componentIndex)
-        {
-            AnimationCurve curve = GetCurve(componentIndex);
-            for (int i = 0; i < curve.length; i++)
-                UpdateTangentsFromMode(i, componentIndex);
-        }
-
-        public void UpdateTangentsFromMode(int index, int componentIndex)
-        {
-            AnimationCurve curve = GetCurve(componentIndex);
-
-            if (index < 0 || index >= curve.length)
-                return;
-
-            Keyframe key = curve[index];
-            // Adjust linear tangent
-            if (AnimationUtility.GetKeyLeftTangentMode(key) == TangentMode.Linear && index >= 1)
-            {
-                key.inTangent = CalculateLinearTangent(index, index - 1, componentIndex);
-                curve.MoveKey(index, key);
-            }
-            if (AnimationUtility.GetKeyRightTangentMode(key) == TangentMode.Linear && index + 1 < curve.length)
-            {
-                key.outTangent = CalculateLinearTangent(index, index + 1, componentIndex);
-                curve.MoveKey(index, key);
-            }
-
-            // Adjust smooth tangents
-            if (AnimationUtility.GetKeyLeftTangentMode(key) == TangentMode.ClampedAuto || AnimationUtility.GetKeyRightTangentMode(key) == TangentMode.ClampedAuto)
-            {
-                key.inTangent = key.outTangent = CalculateSmoothTangent(index, componentIndex);
-                curve.MoveKey(index, key);
-            }
-        }
-
-        public static void UpdateTangentsFromMode(AnimationCurve curve, AnimationClip clip, EditorCurveBinding curveBinding)
-        {
-            //      if (RotationCurveInterpolation.GetModeFromCurveData(curveBinding) == RotationCurveInterpolation.Mode.NonBaked)
-            //      {
-            //          QuaternionCurveTangentCalculation tangentCalculator = new QuaternionCurveTangentCalculation();
-            //
-            //          int index = RotationCurveInterpolation.GetCurveIndexFromName (curveBinding.propertyName);
-            //
-            //          for (int i=0;i<3;i++)
-            //          {
-            //              if (i == index)
-            //                  tangentCalculator.SetCurve(i, curve);
-            //              else
-            //              {
-            //                  EditorCurveBinding tempBinding = curveBinding;
-            //                      tempBinding.propertyName = "localEulerAngles." + RotationCurveInterpolation.kPostFix[i];
-            //
-            //                  AnimationCurve clipCurve = AnimationUtility.GetEditorCurve (clip, tempBinding);
-            //
-            //                  // We need all curves to do quaternion tangent smoothing
-            //                  if (clipCurve == null)
-            //                      return;
-            //                  tangentCalculator.SetCurve(i, clipCurve);
-            //              }
-            //          }
-            //
-            //          tangentCalculator.UpdateTangentsFromMode(index);
-            //      }
-            //      else
-            {
-                AnimationUtility.UpdateTangentsFromMode(curve);
-            }
         }
     }
 } // namespace

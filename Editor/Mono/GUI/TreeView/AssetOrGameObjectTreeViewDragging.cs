@@ -90,7 +90,7 @@ namespace UnityEditor
             draggedItemIDs = m_TreeView.SortIDsInVisiblityOrder(draggedItemIDs);
 
             if (!draggedItemIDs.Contains(draggedItem.id))
-                draggedItemIDs = new List<int> {draggedItem.id};
+                draggedItemIDs = new List<int> { draggedItem.id };
 
             Object[] draggedObjReferences = ProjectWindowUtil.GetDragAndDropObjects(draggedItem.id, draggedItemIDs);
             DragAndDrop.objectReferences = draggedObjReferences;
@@ -182,11 +182,6 @@ namespace UnityEditor
             }
 
             // Here we are hovering over items
-            var hierarchyProperty = dataSource.CreateHierarchyProperty();
-            if (!hierarchyProperty.Find(targetItem.id, null))
-            {
-                hierarchyProperty = null;
-            }
 
             var draggingUpon = dropPos == TreeViewDragging.DropPosition.Upon;
 
@@ -197,7 +192,7 @@ namespace UnityEditor
 
             if (draggingUpon)
             {
-                option |=  InternalEditorUtility.HierarchyDropMode.kHierarchyDropUpon;
+                option |= InternalEditorUtility.HierarchyDropMode.kHierarchyDropUpon;
             }
             else
             {
@@ -217,20 +212,25 @@ namespace UnityEditor
                 option |= InternalEditorUtility.HierarchyDropMode.kHierarchyDropAfterParent;
             }
 
-            int gameObjectOrSceneInstanceID = GetDropTargetInstanceID(hierarchyTargetItem);
+            int gameObjectOrSceneInstanceID = GetDropTargetInstanceID(hierarchyTargetItem, dropPos);
             if (gameObjectOrSceneInstanceID == 0)
+                return DragAndDropVisualMode.Rejected;
+
+            if (SubSceneGUI.IsUsingSubScenes() && !IsValidSubSceneDropTarget(gameObjectOrSceneInstanceID, dropPos, DragAndDrop.objectReferences))
                 return DragAndDropVisualMode.Rejected;
 
             return DragAndDropService.Drop(DragAndDropService.kHierarchyDropDstId, gameObjectOrSceneInstanceID, option, null, perform);
         }
 
-        int GetDropTargetInstanceID(GameObjectTreeViewItem hierarchyTargetItem)
+        int GetDropTargetInstanceID(GameObjectTreeViewItem hierarchyTargetItem, DropPosition dropPosition)
         {
             if (SubSceneGUI.IsUsingSubScenes())
             {
                 var gameObjectDropTarget = hierarchyTargetItem.objectPPTR as GameObject;
                 if (gameObjectDropTarget != null)
                 {
+                    if (dropPosition == DropPosition.Above)
+                        return hierarchyTargetItem.id;
                     if (SubSceneGUI.IsSubSceneHeader(gameObjectDropTarget))
                     {
                         Scene subScene = SubSceneGUI.GetSubScene(gameObjectDropTarget);
@@ -242,6 +242,72 @@ namespace UnityEditor
                 }
             }
             return hierarchyTargetItem.id;
+        }
+
+        bool IsValidSubSceneDropTarget(int dropTargetGameObjectOrSceneInstanceID, DropPosition dropPosition, Object[] draggedObjects)
+        {
+            if (draggedObjects == null || draggedObjects.Length == 0)
+                return false;
+
+            Transform parentForDrop = GetTransformParentForDrop(dropTargetGameObjectOrSceneInstanceID, dropPosition);
+            if (parentForDrop == null)
+            {
+                // Drop is on a root scene which is always allowed
+                return true;
+            }
+
+            foreach (var obj in draggedObjects)
+            {
+                var gameObject = obj as GameObject;
+                if (gameObject == null)
+                    continue;
+
+                // Require all dragged objects to be valid (since native cannot filter out invalid sub scene drags currently)
+                if (SubSceneGUI.IsChildOrSameAsOtherTransform(parentForDrop, gameObject.transform))
+                    return false;
+            }
+
+            // Valid drop target for current dragged objects
+            return true;
+        }
+
+        Transform GetTransformParentForDrop(int gameObjectOrSceneInstanceID, DropPosition dropPosition)
+        {
+            var obj = EditorUtility.InstanceIDToObject(gameObjectOrSceneInstanceID);
+            if (obj != null)
+            {
+                // Find transform parent from GameObject
+                var go = obj as GameObject;
+                if (go == null)
+                    throw new InvalidOperationException("Unexpected UnityEngine.Object type in Hierarchy " + obj.GetType());
+
+                switch (dropPosition)
+                {
+                    case DropPosition.Upon:
+                        return go.transform;
+
+                    case DropPosition.Below:
+                    case DropPosition.Above:
+                        if (go.transform.parent == null)
+                        {
+                            var subSceneInfo = SubSceneGUI.GetSubSceneInfo(go.scene);
+                            if (subSceneInfo.isValid)
+                                return subSceneInfo.transform;
+                        }
+                        return go.transform.parent;
+                    default:
+                        throw new InvalidOperationException("Unhandled enum " + dropPosition);
+                }
+            }
+            else
+            {
+                // Find transform parent from Scene
+                var scene = EditorSceneManager.GetSceneByHandle(gameObjectOrSceneInstanceID);
+                var subSceneInfo = SubSceneGUI.GetSubSceneInfo(scene);
+                if (subSceneInfo.isValid)
+                    return subSceneInfo.transform;
+                return null; // root scene has no transform parent
+            }
         }
 
         static bool IsDropTargetUserModifiable(GameObjectTreeViewItem targetItem, DropPosition dropPos)

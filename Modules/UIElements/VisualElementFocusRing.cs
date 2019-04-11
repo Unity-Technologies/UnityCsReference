@@ -272,12 +272,14 @@ namespace UnityEngine.UIElements
 
                 if (kde.character == (char)25 || kde.character == '\t')
                 {
-                    if ((kde.modifiers & EventModifiers.Shift) == 0)
+                    if (kde.modifiers == EventModifiers.Shift)
+                    {
+                        return VisualElementFocusChangeDirection.left;
+                    }
+                    if (kde.modifiers == EventModifiers.None)
                     {
                         return VisualElementFocusChangeDirection.right;
                     }
-
-                    return VisualElementFocusChangeDirection.left;
                 }
             }
 

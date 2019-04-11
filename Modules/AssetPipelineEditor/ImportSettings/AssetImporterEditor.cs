@@ -340,14 +340,20 @@ namespace UnityEditor.Experimental.AssetImporters
                     }
                     foreach (var t in targets)
                     {
-                        s_UnreleasedInstances.Add(t.GetInstanceID());
+                        if (t != null)
+                        {
+                            s_UnreleasedInstances.Add(t.GetInstanceID());
+                        }
                     }
                 }
                 else
                 {
                     foreach (var t in targets)
                     {
-                        ReleaseInspectorCopy(t.GetInstanceID());
+                        if (t != null)
+                        {
+                            ReleaseInspectorCopy(t.GetInstanceID());
+                        }
                     }
                 }
             }

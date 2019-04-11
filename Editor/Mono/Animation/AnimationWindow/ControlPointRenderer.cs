@@ -25,6 +25,7 @@ namespace UnityEditor
             public bool isDirty = true;
         }
 
+        private int m_RenderChunkIndex = -1;
         private List<RenderChunk> m_RenderChunks = new List<RenderChunk>();
 
         private Texture2D m_Icon;
@@ -80,6 +81,8 @@ namespace UnityEditor
 
                 renderChunk.isDirty = true;
             }
+
+            m_RenderChunkIndex = 0;
         }
 
         public void Render()
@@ -144,12 +147,24 @@ namespace UnityEditor
 
         private RenderChunk GetRenderChunk()
         {
-            RenderChunk renderChunk;
+            RenderChunk renderChunk = null;
             if (m_RenderChunks.Count > 0)
             {
-                renderChunk = m_RenderChunks.Last();
-                // Dynamically create new render chunks when needed.
-                if ((renderChunk.vertices.Count + 4) > kMaxVertices)
+                while (m_RenderChunkIndex < m_RenderChunks.Count)
+                {
+                    renderChunk = m_RenderChunks[m_RenderChunkIndex];
+                    // Dynamically create new render chunks when needed.
+                    if ((renderChunk.vertices.Count + 4) > kMaxVertices)
+                    {
+                        m_RenderChunkIndex++;
+                        renderChunk = null;
+                        continue;
+                    }
+
+                    break;
+                }
+
+                if (renderChunk == null)
                 {
                     renderChunk = CreateRenderChunk();
                 }
@@ -176,6 +191,7 @@ namespace UnityEditor
             renderChunk.indices = new List<int>();
 
             m_RenderChunks.Add(renderChunk);
+            m_RenderChunkIndex = m_RenderChunks.Count - 1;
 
             return renderChunk;
         }

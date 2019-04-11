@@ -15,6 +15,7 @@ using Object = UnityEngine.Object;
 namespace UnityEditor.PackageManager
 {
     [CustomEditor(typeof(PackageManifestImporter))]
+    [CanEditMultipleObjects]
     internal class PackageManifestImporterEditor : AssetImporterEditor
     {
         private enum PackageVisibility
@@ -25,6 +26,7 @@ namespace UnityEditor.PackageManager
         };
 
         private static readonly string s_LocalizedTitle = L10n.Tr("Package '{0}' Manifest");
+        private static readonly string s_LocalizedMultipleTitle = L10n.Tr("{0} Package Manifests");
         private static readonly string s_LocalizedInvalidPackageManifest = L10n.Tr("Invalid Package Manifest");
         private static readonly string s_LocalizedPackageManagerUINotInstalledWarning = L10n.Tr("Package Manager UI package is required to see selected packaged detail.");
 
@@ -51,6 +53,12 @@ namespace UnityEditor.PackageManager
         private static readonly List<string> MinorUnityVersions = new List<string> { "1", "2", "3", "4" };
 
         [Serializable]
+        private class AdvancedSettings
+        {
+            public PackageVisibility visibility;
+        }
+
+        [Serializable]
         private class PackageDependency
         {
             public string packageName;
@@ -74,18 +82,19 @@ namespace UnityEditor.PackageManager
             public string version;
             public string description;
             public string type;
-            public PackageVisibility visibility;
-            public PackageUnityVersion unity;
+            public AdvancedSettings settings = new AdvancedSettings();
+            public PackageUnityVersion unity = new PackageUnityVersion();
         }
 
         [Serializable]
         private class PackageManifestState : ScriptableObject
         {
-            public bool isModified;
             public bool isValidFile;
             public PackageInformation info;
             public List<PackageDependency> dependencies;
         }
+
+        PackageManifestState packageState => extraDataTarget as PackageManifestState;
 
         private static class Styles
         {
@@ -98,12 +107,6 @@ namespace UnityEditor.PackageManager
             public static readonly GUIContent showAdvanced = EditorGUIUtility.TrTextContent("Advanced", "Show advanced settings.");
 
             public static readonly GUIContent visibility = EditorGUIUtility.TrTextContent("Visibility in Editor", "Package visibility in Editor.");
-            public static readonly GUIContent[] visibilityOptions =
-            {
-                EditorGUIUtility.TrTextContent("Depends on type"),
-                EditorGUIUtility.TrTextContent("Always Hidden"),
-                EditorGUIUtility.TrTextContent("Always Visible"),
-            };
 
             public static readonly GUIContent unity = EditorGUIUtility.TrTextContent("Minimal Unity Version");
             public static readonly GUIContent unityMajor = EditorGUIUtility.TrTextContent("Major", "Major version of Unity");
@@ -122,11 +125,7 @@ namespace UnityEditor.PackageManager
 
         protected override bool useAssetDrawPreview => false;
 
-        [SerializeField]
-        private PackageManifestState packageState;
-
-        [SerializeField]
-        private SerializedObject packageSerializedObject;
+        protected override Type extraDataType => typeof(PackageManifestState);
 
         [HideInInspector]
         [SerializeField]
@@ -137,7 +136,6 @@ namespace UnityEditor.PackageManager
 
         ReorderableList m_DependenciesList;
 
-        private SerializedProperty m_IsModified;
         private SerializedProperty m_IsValidFile;
         private SerializedProperty m_Name;
         private SerializedProperty m_DisplayName;
@@ -148,12 +146,17 @@ namespace UnityEditor.PackageManager
         private SerializedProperty m_UnityRelease;
         private SerializedProperty m_Description;
         private SerializedProperty m_Type;
+        private SerializedProperty m_Advanced;
         private SerializedProperty m_Visibility;
 
         internal override string targetTitle
         {
             get
             {
+                if (targets.Length > 1)
+                {
+                    return string.Format(s_LocalizedMultipleTitle, targets.Length);
+                }
                 return string.Format(s_LocalizedTitle, packageState != null && packageState.isValidFile ?
                     !IsNullOrEmptyTrim(packageState.info.displayName) ? packageState.info.displayName.Trim() : packageState.info.packageName :
                     s_LocalizedInvalidPackageManifest);
@@ -166,7 +169,7 @@ namespace UnityEditor.PackageManager
 
             // We want to have this button enabled even for immutable package
             var previousEnabled = GUI.enabled;
-            GUI.enabled = packageState != null && packageState.isValidFile;
+            GUI.enabled = packageState != null && packageState.isValidFile && targets.Length == 1;
             if (GUILayout.Button(Styles.viewInPackageManager, EditorStyles.miniButton))
             {
                 if (!EditorApplication.ExecuteMenuItemWithTemporaryContext("Window/Package Manager", new[] { packageState }))
@@ -179,43 +182,37 @@ namespace UnityEditor.PackageManager
         {
             base.OnEnable();
 
-            if (targets == null)
+            if (target == null)
                 return;
 
             errorMessages = new List<string>();
             warningMessages = new List<string>();
 
-            if (packageSerializedObject == null)
-            {
-                packageState = CreateInstance<PackageManifestState>();
-                ReadPackageManifest(target, packageState);
-                packageSerializedObject = new SerializedObject(packageState);
-            }
-            else
-            {
-                packageState = packageSerializedObject.targetObject as PackageManifestState;
-            }
+            m_IsValidFile = extraDataSerializedObject.FindProperty("isValidFile");
+            m_Name = extraDataSerializedObject.FindProperty("info.packageName");
+            m_DisplayName = extraDataSerializedObject.FindProperty("info.displayName");
+            m_Version = extraDataSerializedObject.FindProperty("info.version");
+            m_UnityVersionEnabled = extraDataSerializedObject.FindProperty("info.unity.isEnable");
+            m_UnityMajor = extraDataSerializedObject.FindProperty("info.unity.major");
+            m_UnityMinor = extraDataSerializedObject.FindProperty("info.unity.minor");
+            m_UnityRelease = extraDataSerializedObject.FindProperty("info.unity.release");
+            m_Description = extraDataSerializedObject.FindProperty("info.description");
+            m_Type = extraDataSerializedObject.FindProperty("info.type");
+            m_Advanced = extraDataSerializedObject.FindProperty("info.settings");
+            m_Visibility = extraDataSerializedObject.FindProperty("info.settings.visibility");
 
-            m_IsValidFile = packageSerializedObject.FindProperty("isValidFile");
-            m_IsModified = packageSerializedObject.FindProperty("isModified");
-            m_Name = packageSerializedObject.FindProperty("info.packageName");
-            m_DisplayName = packageSerializedObject.FindProperty("info.displayName");
-            m_Version = packageSerializedObject.FindProperty("info.version");
-            m_UnityVersionEnabled = packageSerializedObject.FindProperty("info.unity.isEnable");
-            m_UnityMajor = packageSerializedObject.FindProperty("info.unity.major");
-            m_UnityMinor = packageSerializedObject.FindProperty("info.unity.minor");
-            m_UnityRelease = packageSerializedObject.FindProperty("info.unity.release");
-            m_Description = packageSerializedObject.FindProperty("info.description");
-            m_Type = packageSerializedObject.FindProperty("info.type");
-            m_Visibility = packageSerializedObject.FindProperty("info.visibility");
-
-            m_DependenciesList = new ReorderableList(packageSerializedObject,
-                packageSerializedObject.FindProperty("dependencies"), false, false, true, true)
+            m_DependenciesList = new ReorderableList(extraDataSerializedObject,
+                extraDataSerializedObject.FindProperty("dependencies"), false, false, true, true)
             {
                 drawElementCallback = DrawDependencyListElement,
                 drawHeaderCallback = DrawDependencyHeaderElement,
                 elementHeight = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing
             };
+        }
+
+        protected override void InitializeExtraDataInstance(Object extraData, int targetIndex)
+        {
+            ReadPackageManifest(targets[targetIndex], (PackageManifestState)extraData);
         }
 
         private static void DrawDependencyHeaderElement(Rect rect)
@@ -258,34 +255,14 @@ namespace UnityEditor.PackageManager
             }
         }
 
-        public override bool HasModified()
-        {
-            return base.HasModified() || m_IsModified.boolValue;
-        }
-
         protected override void Apply()
         {
             base.Apply();
 
-            if (packageState == null)
-                return;
-
-            WritePackageManifest(target, packageState);
-
-            GUI.FocusControl(null);
-        }
-
-        protected override void ResetValues()
-        {
-            base.ResetValues();
-
-            if (packageState == null)
-                return;
-
-            ReadPackageManifest(target, packageState);
-            packageSerializedObject.Update();
-
-            GUI.FocusControl(null);
+            for (int i = 0; i < targets.Length; i++)
+            {
+                WritePackageManifest(targets[i], (PackageManifestState)extraDataTargets[i]);
+            }
         }
 
         protected override bool OnApplyRevertGUI()
@@ -312,14 +289,18 @@ namespace UnityEditor.PackageManager
                 EditorGUILayout.PropertyField(m_UnityVersionEnabled, Styles.unity);
                 if (m_UnityVersionEnabled.boolValue)
                 {
+                    EditorGUI.showMixedValue = m_UnityMajor.hasMultipleDifferentValues;
                     m_UnityMajor.stringValue = EditorGUILayout.DelayedTextFieldDropDown(Styles.unityMajor,
                         m_UnityMajor.stringValue, MajorUnityVersions.ToArray());
 
+                    EditorGUI.showMixedValue = m_UnityMinor.hasMultipleDifferentValues;
                     m_UnityMinor.stringValue = EditorGUILayout.DelayedTextFieldDropDown(Styles.unityMinor,
                         m_UnityMinor.stringValue, MinorUnityVersions.ToArray());
 
+                    EditorGUI.showMixedValue = m_UnityRelease.hasMultipleDifferentValues;
                     m_UnityRelease.stringValue =
                         EditorGUILayout.DelayedTextField(Styles.unityRelease, m_UnityRelease.stringValue);
+                    EditorGUI.showMixedValue = false;
                 }
             }
         }
@@ -337,24 +318,6 @@ namespace UnityEditor.PackageManager
             }
         }
 
-        private bool DoPackageAdvancedSettingsLayout()
-        {
-            using (new EditorGUILayout.VerticalScope(GUI.skin.box, GUILayout.ExpandWidth(true)))
-            {
-                using (var change = new EditorGUI.ChangeCheckScope())
-                {
-                    var newValue = EditorGUILayout.Popup(Styles.visibility, m_Visibility.enumValueIndex, Styles.visibilityOptions);
-                    if (change.changed && newValue != m_Visibility.enumValueIndex)
-                    {
-                        m_Visibility.enumValueIndex = newValue;
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        }
-
         private void PerformValidation()
         {
             if (!PackageValidation.ValidateName(m_Name.stringValue))
@@ -363,7 +326,7 @@ namespace UnityEditor.PackageManager
             if (!PackageValidation.ValidateVersion(m_Version.stringValue))
                 errorMessages.Add($"Invalid Version '{m_Version.stringValue}'");
 
-            if (packageState.info.unity.isEnable)
+            if (m_UnityVersionEnabled.boolValue)
             {
                 if (!PackageValidation.ValidateUnityVersion(m_UnityMajor.stringValue, m_UnityMinor.stringValue,
                     m_UnityRelease.stringValue))
@@ -386,11 +349,11 @@ namespace UnityEditor.PackageManager
                 warningMessages.Add("Package description should be provided.");
             }
 
-            if (packageState.info.visibility == PackageVisibility.AlwaysHidden)
+            if ((PackageVisibility)m_Visibility.intValue == PackageVisibility.AlwaysHidden)
             {
                 warningMessages.Add("This package and all its assets will be hidden by default in Editor because its visibility is set to 'Always Hidden'");
             }
-            else if (packageState.info.visibility == PackageVisibility.AlwaysVisible)
+            if ((PackageVisibility)m_Visibility.intValue == PackageVisibility.AlwaysVisible)
             {
                 warningMessages.Add("This package and all its assets will be visible by default in Editor because its visibility is set to 'Always Visible'");
             }
@@ -407,10 +370,7 @@ namespace UnityEditor.PackageManager
 
         public override void OnInspectorGUI()
         {
-            if (packageState == null)
-                return;
-
-            packageSerializedObject.Update();
+            extraDataSerializedObject.Update();
 
             if (!m_IsValidFile.boolValue)
             {
@@ -421,35 +381,32 @@ namespace UnityEditor.PackageManager
             errorMessages.Clear();
             warningMessages.Clear();
 
-            var hasChanged = false;
-            using (var change = new EditorGUI.ChangeCheckScope())
-            {
-                // Package information
-                GUILayout.Label(Styles.information, EditorStyles.boldLabel);
-                DoPackageInformationLayout();
+            // Package information
+            GUILayout.Label(Styles.information, EditorStyles.boldLabel);
+            DoPackageInformationLayout();
 
-                // Package description
-                GUILayout.Label(Styles.description, EditorStyles.boldLabel);
-                DoPackageDescriptionLayout();
+            // Package description
+            GUILayout.Label(Styles.description, EditorStyles.boldLabel);
+            DoPackageDescriptionLayout();
 
-                // Package dependencies
-                GUILayout.Label(Styles.dependencies, EditorStyles.boldLabel);
-                m_DependenciesList.DoLayoutList();
-
-                hasChanged |= change.changed;
-            }
+            // Package dependencies
+            GUILayout.Label(Styles.dependencies, EditorStyles.boldLabel);
+            m_DependenciesList.DoLayoutList();
 
             // Package advanced settings
-            GUILayout.Label(Styles.showAdvanced, EditorStyles.boldLabel);
-            hasChanged |= DoPackageAdvancedSettingsLayout();
+            EditorGUILayout.PropertyField(m_Advanced, Styles.showAdvanced, false);
+            if (m_Advanced.isExpanded)
+            {
+                using (new EditorGUILayout.VerticalScope(GUI.skin.box, GUILayout.ExpandWidth(true)))
+                {
+                    EditorGUILayout.PropertyField(m_Visibility, Styles.visibility);
+                }
+            }
 
             // Validation
             PerformValidation();
 
-            if (hasChanged)
-                m_IsModified.boolValue = true;
-
-            packageSerializedObject.ApplyModifiedProperties();
+            extraDataSerializedObject.ApplyModifiedProperties();
 
             ApplyRevertGUI();
 
@@ -503,9 +460,9 @@ namespace UnityEditor.PackageManager
                         packageState.info.type = (string)info["type"];
 
                     if (info.ContainsKey("hideInEditor") && info["hideInEditor"] is bool)
-                        packageState.info.visibility = (bool)info["hideInEditor"] ? PackageVisibility.AlwaysHidden : PackageVisibility.AlwaysVisible;
+                        packageState.info.settings.visibility = (bool)info["hideInEditor"] ? PackageVisibility.AlwaysHidden : PackageVisibility.AlwaysVisible;
                     else
-                        packageState.info.visibility = PackageVisibility.DependsOnType;
+                        packageState.info.settings.visibility = PackageVisibility.DependsOnType;
 
                     if (info.ContainsKey("unity") && info["unity"] is string)
                     {
@@ -546,8 +503,6 @@ namespace UnityEditor.PackageManager
                         }
                     }
                 }
-
-                packageState.isModified = false;
             }
             catch (IOException)
             {
@@ -597,10 +552,10 @@ namespace UnityEditor.PackageManager
             else
                 json.Remove("type");
 
-            if (packageState.info.visibility == PackageVisibility.DependsOnType)
+            if (packageState.info.settings.visibility == PackageVisibility.DependsOnType)
                 json.Remove("hideInEditor");
             else
-                json["hideInEditor"] = packageState.info.visibility == PackageVisibility.AlwaysHidden;
+                json["hideInEditor"] = packageState.info.settings.visibility == PackageVisibility.AlwaysHidden;
 
             if (packageState.info.unity.isEnable)
             {
@@ -612,6 +567,8 @@ namespace UnityEditor.PackageManager
 
                     if (!IsNullOrEmptyTrim(packageState.info.unity.release))
                         json["unityRelease"] = packageState.info.unity.release.Trim();
+                    else
+                        json.Remove("unityRelease");
                 }
             }
             else
@@ -637,7 +594,6 @@ namespace UnityEditor.PackageManager
             try
             {
                 File.WriteAllText(assetPath, Json.Serialize(json, true));
-                packageState.isModified = false;
             }
             catch (IOException)
             {

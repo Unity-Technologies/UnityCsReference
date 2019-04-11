@@ -105,6 +105,10 @@ namespace UnityEditor
 
         // Wait for player connection on start
         WaitForPlayerConnection = 1 << 25,
+
+        // Enables Code Coverage. Can be used as a complimentary way of enabling code coverage on platforms
+        // that do not support command line arguments
+        EnableCodeCoverage = 1 << 26,
     }
 
     // Asset Bundle building options.

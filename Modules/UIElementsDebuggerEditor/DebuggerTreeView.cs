@@ -242,7 +242,7 @@ namespace UnityEditor.UIElements.Debugger
             if (string.IsNullOrEmpty(query))
                 return;
 
-            var selected = m_TreeView.Query(classes: "unity-list-view__item--selected").First();
+            var selected = m_TreeView.Q(className: "unity-list-view__item--selected");
             if (selected == null || searchHighlight == SearchHighlight.None)
                 return;
 

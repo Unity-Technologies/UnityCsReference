@@ -1372,6 +1372,8 @@ namespace UnityEditor
                 GUI.changed = true;
             }
             SelectNone();
+
+            GUIUtility.hotControl = 0;
         }
 
         private void DeleteKeys(object obj)

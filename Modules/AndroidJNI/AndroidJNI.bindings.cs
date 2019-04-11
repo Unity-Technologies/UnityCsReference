@@ -30,10 +30,8 @@ namespace UnityEngine
     [NativeHeader("Modules/AndroidJNI/Public/AndroidJNIBindingsHelpers.h")]
     [StaticAccessor("AndroidJNIBindingsHelpers", StaticAccessorType.DoubleColon)]
     [NativeConditional("PLATFORM_ANDROID")]
-    public class AndroidJNIHelper
+    public static class AndroidJNIHelper
     {
-        private AndroidJNIHelper() {}
-
         // Set /debug/ to true to log calls through the AndroidJNIHelper
         public static extern bool debug { get; set; }
 
@@ -189,10 +187,8 @@ namespace UnityEngine
     [NativeHeader("Modules/AndroidJNI/Public/AndroidJNIBindingsHelpers.h")]
     [StaticAccessor("AndroidJNIBindingsHelpers", StaticAccessorType.DoubleColon)]
     [NativeConditional("PLATFORM_ANDROID")]
-    public class AndroidJNI
+    public static class AndroidJNI
     {
-        private AndroidJNI() {}
-
         // Attaches the current thread to a Java (Dalvik) VM.
         [ThreadSafe]
         public static extern int AttachCurrentThread();
@@ -310,9 +306,26 @@ namespace UnityEngine
         [ThreadSafe]
         public static extern IntPtr GetStaticFieldID(IntPtr clazz, string name, string sig);
 
+        public static IntPtr NewString(string chars)
+        {
+            return NewStringFromStr(chars);
+        }
+
+        [ThreadSafe]
+        private static extern IntPtr NewStringFromStr(string chars);
+
+        // Constructs a new <tt>java.lang.String</tt> object from an array of Unicode characters.
+        [ThreadSafe]
+        public static extern IntPtr NewString(char[] chars);
+
         // Constructs a new <tt>java.lang.String</tt> object from an array of characters in modified UTF-8 encoding.
         [ThreadSafe]
         public static extern IntPtr NewStringUTF(string bytes);
+        [ThreadSafe]
+        public static extern string GetStringChars(IntPtr str);
+        // Returns the length (the count of Unicode characters) of a Java string.
+        [ThreadSafe]
+        public static extern int GetStringLength(IntPtr str);
         // Returns the length in bytes of the modified UTF-8 representation of a string.
         [ThreadSafe]
         public static extern int GetStringUTFLength(IntPtr str);

@@ -69,6 +69,9 @@ namespace UnityEditor
         [FreeFunction("ImportPackageAssets")]
         public static extern void ImportPackageAssetsImmediately(string packageName, ImportPackageItem[] items, bool performReInstall);
 
+        [FreeFunction("ImportPackageCancelledGUI")]
+        public static extern void ImportPackageAssetsCancelledFromGUI(string packageName, ImportPackageItem[] items);
+
         [FreeFunction("TickPackageImport")]
         public static extern void TickPackageImport();
     }

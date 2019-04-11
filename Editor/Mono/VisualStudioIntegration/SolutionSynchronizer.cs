@@ -10,7 +10,6 @@ using System.Security;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-
 using UnityEditor.Scripting;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEditor.Utils;

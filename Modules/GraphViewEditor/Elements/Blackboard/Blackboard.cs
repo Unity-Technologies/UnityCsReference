@@ -115,7 +115,7 @@ namespace UnityEditor.Experimental.GraphView
 
             m_TitleLabel = m_MainContainer.Q<Label>(name: "titleLabel");
             m_SubTitleLabel = m_MainContainer.Q<Label>(name: "subTitleLabel");
-            m_ContentContainer = m_MainContainer.Q<VisualElement>(name: "contentContainer");
+            m_ContentContainer = m_MainContainer.Q(name: "contentContainer");
 
             hierarchy.Add(m_MainContainer);
 

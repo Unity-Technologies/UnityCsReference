@@ -112,18 +112,18 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnEnterPanel(AttachToPanelEvent evt)
         {
-            SearchTextField.Q("unity-text-input").RegisterCallback<FocusEvent>(OnSearchTextFieldFocus);
-            SearchTextField.Q("unity-text-input").RegisterCallback<FocusOutEvent>(OnSearchTextFieldFocusOut);
+            SearchTextField.visualInput.RegisterCallback<FocusEvent>(OnSearchTextFieldFocus);
+            SearchTextField.visualInput.RegisterCallback<FocusOutEvent>(OnSearchTextFieldFocusOut);
             SearchTextField.RegisterCallback<ChangeEvent<string>>(OnSearchTextFieldChange);
-            SearchTextField.Q("unity-text-input").RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);
+            SearchTextField.visualInput.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);
         }
 
         private void OnLeavePanel(DetachFromPanelEvent evt)
         {
-            SearchTextField.Q("unity-text-input").UnregisterCallback<FocusEvent>(OnSearchTextFieldFocus);
-            SearchTextField.Q("unity-text-input").UnregisterCallback<FocusOutEvent>(OnSearchTextFieldFocusOut);
+            SearchTextField.visualInput.UnregisterCallback<FocusEvent>(OnSearchTextFieldFocus);
+            SearchTextField.visualInput.UnregisterCallback<FocusOutEvent>(OnSearchTextFieldFocusOut);
             SearchTextField.UnregisterCallback<ChangeEvent<string>>(OnSearchTextFieldChange);
-            SearchTextField.Q("unity-text-input").UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
+            SearchTextField.visualInput.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
         }
 
         private void OnKeyDownShortcut(KeyDownEvent evt)

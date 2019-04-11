@@ -15,6 +15,7 @@ namespace UnityEditor.PackageManager.UI
         {
             this.sample = sample;
             NameLabel.text = sample.displayName;
+            NameLabel.tooltip = sample.displayName; // add tooltip for when the label text is cut off
             SizeLabel.text = sample.Size;
             RefreshImportStatus();
             ImportButton.clickable.clicked += OnImportButtonClicked;

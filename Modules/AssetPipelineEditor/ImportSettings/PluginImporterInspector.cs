@@ -23,7 +23,6 @@ namespace UnityEditor
     {
         private delegate Compatibility ValueSwitcher(Compatibility value);
         private bool m_HasModified;
-        private string m_ReferencesUnityEngineModule;
         private ReorderableList m_DefineConstraints;
 
         // Notes regarding Standalone target
@@ -485,8 +484,6 @@ namespace UnityEditor
                 m_PluginInformation["Assembly Info"] = info;
             }
 
-            m_ReferencesUnityEngineModule = importer.HasDiscouragedReferences();
-
             ResetCompatability(ref m_Preload, (imp => imp.isPreloaded));
         }
 
@@ -733,8 +730,6 @@ namespace UnityEditor
                 EditorGUILayout.HelpBox("Once a native plugin is loaded from script, it's never unloaded. If you deselect a native plugin and it's already loaded, please restart Unity.", MessageType.Warning);
             if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy && importer.dllType == DllType.ManagedNET40 && m_CompatibleWithEditor == Compatibility.Compatible)
                 EditorGUILayout.HelpBox("Plugin targets .NET 4.x and is marked as compatible with Editor, Editor can only use assemblies targeting .NET 3.5 or lower, please unselect Editor as compatible platform.", MessageType.Error);
-            if (m_ReferencesUnityEngineModule != null)
-                EditorGUILayout.HelpBox($"This plugin references at least one UnityEngine module assemblies directly ({m_ReferencesUnityEngineModule}.dll). To assure forward compatibility, only reference UnityEngine.dll, which contains type forwarders for all the module dlls.", MessageType.Warning);
         }
     }
 }

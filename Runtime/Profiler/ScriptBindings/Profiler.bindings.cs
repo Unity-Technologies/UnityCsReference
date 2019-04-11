@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -143,6 +144,7 @@ namespace UnityEngine.Profiling
         // Begin profiling a piece of code with a custom label.
         // TODO: make obsolete
         //OBSOLETE warning Profiler.BeginSample method is deprecated. Please use faster CustomSampler.Begin method instead.
+        [MethodImpl(256)]
         [Conditional("ENABLE_PROFILER")]
         public static void BeginSample(string name)
         {
@@ -152,6 +154,7 @@ namespace UnityEngine.Profiling
         // Begin profiling a piece of code with a custom label.
         // TODO: make obsolete
         //OBSOLETE warning Profiler.BeginSample method is deprecated. Please use faster CustomSampler.Begin method instead.
+        [MethodImpl(256)]
         [Conditional("ENABLE_PROFILER")]
         public static void BeginSample(string name, Object targetObject)
         {

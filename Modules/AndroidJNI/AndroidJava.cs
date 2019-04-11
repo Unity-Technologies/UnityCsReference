@@ -846,7 +846,7 @@ namespace UnityEngine
             try
             {
                 jniArgs[0].l = jclass;
-                jniArgs[1].l = AndroidJNISafe.NewStringUTF(signature);
+                jniArgs[1].l = AndroidJNISafe.NewString(signature);
                 return AndroidJNISafe.CallStaticObjectMethod(s_ReflectionHelperClass, s_ReflectionHelperGetConstructorID, jniArgs);
             }
             finally
@@ -861,8 +861,8 @@ namespace UnityEngine
             try
             {
                 jniArgs[0].l = jclass;
-                jniArgs[1].l = AndroidJNISafe.NewStringUTF(methodName);
-                jniArgs[2].l = AndroidJNISafe.NewStringUTF(signature);
+                jniArgs[1].l = AndroidJNISafe.NewString(methodName);
+                jniArgs[2].l = AndroidJNISafe.NewString(signature);
                 jniArgs[3].z = isStatic;
                 return AndroidJNISafe.CallStaticObjectMethod(s_ReflectionHelperClass, s_ReflectionHelperGetMethodID, jniArgs);
             }
@@ -879,8 +879,8 @@ namespace UnityEngine
             try
             {
                 jniArgs[0].l = jclass;
-                jniArgs[1].l = AndroidJNISafe.NewStringUTF(fieldName);
-                jniArgs[2].l = AndroidJNISafe.NewStringUTF(signature);
+                jniArgs[1].l = AndroidJNISafe.NewString(fieldName);
+                jniArgs[2].l = AndroidJNISafe.NewString(signature);
                 jniArgs[3].z = isStatic;
                 return AndroidJNISafe.CallStaticObjectMethod(s_ReflectionHelperClass, s_ReflectionHelperGetFieldID, jniArgs);
             }
@@ -938,7 +938,7 @@ namespace UnityEngine
                     IntPtr objectRef = AndroidJNISafe.GetObjectArrayElement(jargs, i);
                     args[i] = objectRef != IntPtr.Zero ? new AndroidJavaObject(objectRef) : null;
                 }
-                using (AndroidJavaObject result = proxy.Invoke(AndroidJNI.GetStringUTFChars(jmethodName), args))
+                using (AndroidJavaObject result = proxy.Invoke(AndroidJNI.GetStringChars(jmethodName), args))
                 {
                     if (result == null)
                         return IntPtr.Zero;
@@ -987,7 +987,7 @@ namespace UnityEngine
                 }
                 else if (obj is System.String)
                 {
-                    ret[i].l = AndroidJNISafe.NewStringUTF((System.String)obj);
+                    ret[i].l = AndroidJNISafe.NewString((System.String)obj);
                 }
                 else if (obj is AndroidJavaClass)
                 {
@@ -1205,7 +1205,7 @@ namespace UnityEngine
                 IntPtr res = AndroidJNI.NewObjectArray(arrayLen, arrayType, IntPtr.Zero);
                 for (int i = 0; i < arrayLen; ++i)
                 {
-                    IntPtr jstring = AndroidJNISafe.NewStringUTF(strArray[i]);
+                    IntPtr jstring = AndroidJNISafe.NewString(strArray[i]);
                     AndroidJNI.SetObjectArrayElement(res, i, jstring);
                     AndroidJNISafe.DeleteLocalRef(jstring);
                 }
@@ -1291,7 +1291,7 @@ namespace UnityEngine
                 for (int i = 0; i < arrayLen; ++i)
                 {
                     IntPtr jstring = AndroidJNI.GetObjectArrayElement(array, i);
-                    strArray[i] = AndroidJNISafe.GetStringUTFChars(jstring);
+                    strArray[i] = AndroidJNISafe.GetStringChars(jstring);
                     AndroidJNISafe.DeleteLocalRef(jstring);
                 }
                 return (ArrayType)(object)strArray;

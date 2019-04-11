@@ -29,6 +29,9 @@ namespace UnityEditor
         private AnimBool m_ShowAnimateCrossFading = new AnimBool();
         private AnimBool m_ShowFadeTransitionWidth = new AnimBool();
 
+        private Mesh m_BillboardPreviewMesh = null;
+        private MaterialPropertyBlock m_BillboardPreviewProperties = null;
+
         void OnEnable()
         {
             // TODO: support multi-editing?
@@ -60,6 +63,9 @@ namespace UnityEditor
             m_ShowFadeTransitionWidth.valueChanged.RemoveListener(Repaint);
             if (m_PreviewUtility != null)
                 m_PreviewUtility.Cleanup();
+
+            DestroyImmediate(m_BillboardPreviewMesh, true);
+            m_BillboardPreviewProperties = null;
         }
 
         // Find the given sceen space recangular bounds from a list of vector 3 points.
@@ -448,6 +454,8 @@ namespace UnityEditor
                             content = new GUIContent(AssetPreview.GetAssetPreview(filter.sharedMesh), renderer.gameObject.name);
                         else if (renderer is SkinnedMeshRenderer)
                             content = new GUIContent(AssetPreview.GetAssetPreview((renderer as SkinnedMeshRenderer).sharedMesh), renderer.gameObject.name);
+                        else if (renderer is BillboardRenderer)
+                            content = new GUIContent(AssetPreview.GetAssetPreview((renderer as BillboardRenderer).billboard), renderer.gameObject.name);
                         else
                             content = new GUIContent(ObjectNames.NicifyVariableName(renderer.GetType().Name), renderer.gameObject.name);
 
@@ -1158,6 +1166,7 @@ namespace UnityEditor
             bool boundsSet = false;
 
             var meshsToRender = new List<MeshFilter>();
+            var billboards = new List<BillboardRenderer>();
             var renderers = serializedObject.FindProperty(string.Format(kRenderRootPath, activeLOD));
             for (int i = 0; i < renderers.arraySize; i++)
             {
@@ -1171,6 +1180,12 @@ namespace UnityEditor
                 if (meshFilter != null && meshFilter.sharedMesh != null && meshFilter.sharedMesh.subMeshCount > 0)
                 {
                     meshsToRender.Add(meshFilter);
+                }
+
+                var billboard = renderer.GetComponent<BillboardRenderer>();
+                if (billboard != null && billboard.billboard != null && billboard.sharedMaterial != null)
+                {
+                    billboards.Add(billboard);
                 }
 
                 if (!boundsSet)
@@ -1216,6 +1231,26 @@ namespace UnityEditor
                             k);
                     }
                 }
+            }
+
+            foreach (var billboard in billboards)
+            {
+                if (m_BillboardPreviewMesh == null)
+                {
+                    m_BillboardPreviewMesh = new Mesh();
+                    m_BillboardPreviewMesh.hideFlags = HideFlags.HideAndDontSave;
+                    m_BillboardPreviewMesh.MarkDynamic();
+                }
+                if (m_BillboardPreviewProperties == null)
+                    m_BillboardPreviewProperties = new MaterialPropertyBlock();
+                BillboardAssetInspector.MakeRenderMesh(m_BillboardPreviewMesh, billboard.billboard);
+                billboard.billboard.MakeMaterialProperties(m_BillboardPreviewProperties, m_PreviewUtility.camera);
+                var matrix = Matrix4x4.TRS(billboard.transform.position, billboard.transform.rotation, billboard.transform.localScale);
+                m_PreviewUtility.DrawMesh(
+                    m_BillboardPreviewMesh,
+                    matrix,
+                    billboard.sharedMaterial,
+                    0, m_BillboardPreviewProperties);
             }
 
             m_PreviewUtility.Render();

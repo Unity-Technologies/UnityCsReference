@@ -229,6 +229,8 @@ namespace UnityEditor
             GUILayout.FlexibleSpace();
             if (GUILayout.Button(EditorGUIUtility.TrTextContent("Cancel")))
             {
+                PackageUtility.ImportPackageAssetsCancelledFromGUI(m_PackageName, m_ImportPackageItems);
+
                 PopupWindowWithoutFocus.Hide();
                 Close();
                 GUIUtility.ExitGUI();

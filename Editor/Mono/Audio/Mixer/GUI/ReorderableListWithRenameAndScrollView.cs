@@ -257,15 +257,6 @@ namespace UnityEditorInternal
             if (evt.type != EventType.KeyDown)
                 return;
 
-            /*if (GUI.GetNameOfFocusedControl () == kRenameField)
-            {
-                switch (Event.current.keyCode)
-                {
-                    case KeyCode.Escape:
-                        EndRename ();
-                        break;
-                }
-            }*/
             if (m_ReorderableList.HasKeyboardControl())
             {
                 switch (Event.current.keyCode)
@@ -273,14 +264,12 @@ namespace UnityEditorInternal
                     case KeyCode.Home:
                         evt.Use();
                         m_ReorderableList.index = 0;
-                        //EndRename(true);
                         FrameItem(m_ReorderableList.index);
                         break;
 
                     case KeyCode.End:
                         evt.Use();
                         m_ReorderableList.index = m_ReorderableList.count - 1;
-                        //EndRename(true);
                         FrameItem(m_ReorderableList.index);
                         break;
 

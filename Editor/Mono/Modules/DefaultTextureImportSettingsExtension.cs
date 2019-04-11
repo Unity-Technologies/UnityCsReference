@@ -73,7 +73,7 @@ namespace UnityEditor.Modules
 
             int formatForAll = 0;
 
-
+            // TODO : This should not be calculated every refresh and be kept in a cache somewhere instead...
             for (int i = 0; i < editor.targets.Length; i++)
             {
                 TextureImporter imp = editor.targets[i] as TextureImporter;
@@ -128,18 +128,19 @@ namespace UnityEditor.Modules
             using (new EditorGUI.DisabledScope(formatOptionsAreDifferent || formatStringsForAll.Length == 1))
             {
                 EditorGUI.BeginChangeCheck();
-                EditorGUI.showMixedValue = formatOptionsAreDifferent || platformSettings.textureFormatIsDifferent;
-                formatForAll = EditorGUILayout.IntPopup(TextureImporterInspector.s_Styles.textureFormat, formatForAll, EditorGUIUtility.TempContent(formatStringsForAll), formatValuesForAll);
+                bool mixedValues = formatOptionsAreDifferent || platformSettings.textureFormatIsDifferent;
+                EditorGUI.showMixedValue = mixedValues;
+                var selectionResult = EditorGUILayout.IntPopup(TextureImporterInspector.s_Styles.textureFormat, formatForAll, EditorGUIUtility.TempContent(formatStringsForAll), formatValuesForAll);
                 EditorGUI.showMixedValue = false;
                 if (EditorGUI.EndChangeCheck())
                 {
-                    platformSettings.SetTextureFormatForAll((TextureImporterFormat)formatForAll);
+                    platformSettings.SetTextureFormatForAll((TextureImporterFormat)selectionResult);
+                    formatForAll = selectionResult;
                 }
 
-                // In case the platform is overriden, the chosen format can become invalid when changing texture type (example: Switching from "Default" overridden with RGBAHalf to "Single Channel" where only Alpha8 is available)
-                if (Array.IndexOf(formatValuesForAll, formatForAll) == -1)
+                if (!mixedValues && !Array.Exists(formatValuesForAll, i => i == formatForAll))
                 {
-                    platformSettings.SetTextureFormatForAll((TextureImporterFormat)formatValuesForAll[0]);
+                    EditorGUILayout.HelpBox(string.Format(L10n.Tr("The selected format value {0} is not compatible on this platform, please change it to a valid one from the dropdown."), (TextureImporterFormat)formatForAll), MessageType.Error);
                 }
             }
 

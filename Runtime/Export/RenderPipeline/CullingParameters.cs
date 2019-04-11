@@ -268,7 +268,8 @@ namespace UnityEngine.Rendering
         NeedsLighting = 1 << 2,
         NeedsReflectionProbes = 1 << 3,
         Stereo = 1 << 4,
-        DisablePerObjectCulling = 1 << 5
+        DisablePerObjectCulling = 1 << 5,
+        ShadowCasters = 1 << 6
     };
 
 

@@ -156,6 +156,8 @@ namespace UnityEngine.UIElements
         private List<int> m_SelectedIndices = new List<int>();
         private List<object> m_SelectedItems = new List<object>();
 
+        private int m_RangeSelectionOrigin = -1;
+
         public int selectedIndex
         {
             get { return m_SelectedIndices.Count == 0 ? -1 : m_SelectedIndices.First(); }
@@ -223,6 +225,7 @@ namespace UnityEngine.UIElements
                 return;
 
             bool shouldStopPropagation = true;
+            bool shouldScroll = true;
 
             switch (evt.keyCode)
             {
@@ -250,15 +253,30 @@ namespace UnityEngine.UIElements
                 case KeyCode.PageUp:
                     selectedIndex = Math.Max(0, selectedIndex - (int)(m_LastHeight / itemHeight));
                     break;
+                case KeyCode.A:
+                    if (evt.actionKey)
+                    {
+                        SelectAll();
+                        shouldScroll = false;
+                    }
+                    break;
+                case KeyCode.Escape:
+                    ClearSelection();
+                    shouldScroll = false;
+                    break;
                 default:
                     shouldStopPropagation = false;
+                    shouldScroll = false;
                     break;
             }
 
             if (shouldStopPropagation)
                 evt.StopPropagation();
 
-            ScrollToItem(selectedIndex);
+            if (shouldScroll)
+            {
+                ScrollToItem(selectedIndex);
+            }
         }
 
         public void ScrollToItem(int index)
@@ -266,9 +284,23 @@ namespace UnityEngine.UIElements
             if (!HasValidDataAndBindings())
                 throw new InvalidOperationException("Can't scroll without valid source, bind method, or factory method.");
 
-            if (m_VisibleItemCount == 0)
+            if (m_VisibleItemCount == 0 || index < -1)
                 return;
-            if (m_FirstVisibleIndex > index)
+
+            if (index == -1)
+            {
+                // Scroll to last item
+                int actualCount = (int)(m_LastHeight / itemHeight);
+                if (itemsSource.Count < actualCount)
+                {
+                    m_ScrollView.scrollOffset = new Vector2(0, 0);
+                }
+                else
+                {
+                    m_ScrollView.scrollOffset = new Vector2(0, itemsSource.Count * itemHeight);
+                }
+            }
+            else if (m_FirstVisibleIndex > index)
             {
                 m_ScrollView.scrollOffset = Vector2.up * itemHeight * index;
             }
@@ -314,12 +346,48 @@ namespace UnityEngine.UIElements
                         return;
 
                     if (selectionType == SelectionType.Multiple && evt.actionKey)
+                    {
+                        m_RangeSelectionOrigin = clickedIndex;
+
+                        // Add/remove single clicked element
                         if (m_SelectedIds.Contains(clickedItemId))
                             RemoveFromSelection(clickedIndex);
                         else
                             AddToSelection(clickedIndex);
+                    }
+                    else if (selectionType == SelectionType.Multiple && evt.shiftKey)
+                    {
+                        if (m_RangeSelectionOrigin == -1)
+                        {
+                            m_RangeSelectionOrigin = clickedIndex;
+                            SetSelection(clickedIndex);
+                        }
+                        else
+                        {
+                            foreach (var recycledItem in m_Pool)
+                                recycledItem.SetSelected(false);
+                            m_SelectedIds.Clear();
+                            m_SelectedIndices.Clear();
+                            m_SelectedItems.Clear();
+
+                            // Add range
+                            if (clickedIndex < m_RangeSelectionOrigin)
+                            {
+                                for (int i = clickedIndex; i <= m_RangeSelectionOrigin; i++)
+                                    AddToSelection(i);
+                            }
+                            else
+                            {
+                                for (int i = m_RangeSelectionOrigin; i <= clickedIndex; i++)
+                                    AddToSelection(i);
+                            }
+                        }
+                    }
                     else // single
+                    {
+                        m_RangeSelectionOrigin = clickedIndex;
                         SetSelection(clickedIndex);
+                    }
                     break;
                 case 2:
                     if (onItemChosen == null)
@@ -328,6 +396,38 @@ namespace UnityEngine.UIElements
                     onItemChosen.Invoke(clickedItem);
                     break;
             }
+        }
+
+        internal void SelectAll()
+        {
+            if (!HasValidDataAndBindings())
+                return;
+
+            if (selectionType != SelectionType.Multiple)
+            {
+                return;
+            }
+
+            for (var index = 0; index < itemsSource.Count; index++)
+            {
+                var id = GetIdFromIndex(index);
+                var item = m_ItemsSource[index];
+
+                foreach (var recycledItem in m_Pool)
+                    if (recycledItem.id == id)
+                        recycledItem.SetSelected(true);
+
+                if (!m_SelectedIds.Contains(id))
+                {
+                    m_SelectedIds.Add(id);
+                    m_SelectedIndices.Add(index);
+                    m_SelectedItems.Add(item);
+                }
+            }
+
+            NotifyOfSelectionChange();
+
+            SaveViewData();
         }
 
         private int GetIdFromIndex(int index)

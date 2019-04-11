@@ -67,7 +67,7 @@ namespace UnityEditor
                 var handler = ScriptAttributeUtility.GetHandler(property);
                 height += handler.GetHeight(property, null, false) + EditorGUI.kControlVerticalSpacing;
 
-                childrenAreExpanded = property.isExpanded;
+                childrenAreExpanded = property.isExpanded && EditorGUI.HasVisibleChildFields(property);
             }
 
             m_LastHeight = height;
@@ -82,16 +82,12 @@ namespace UnityEditor
             bool wasEnabled = GUI.enabled;
             var visibleRect = GUIClip.visibleRect;
             var contentOffset = contentRect.y;
-
             if (Event.current.type != EventType.Repaint)
                 visibleRect = m_LastVisibleRect;
 
             // Release keyboard focus before scrolling so that the virtual scrolling focus wrong control.
             if (Event.current.type == EventType.ScrollWheel)
                 GUIUtility.keyboardControl = 0;
-
-            contentRect.xMin += InspectorWindow.kInspectorPaddingLeft;
-            contentRect.xMax -= InspectorWindow.kInspectorPaddingRight;
 
             var property = m_SerializedObject.GetIterator();
             var isInspectorModeNormal = inspectorMode == InspectorMode.Normal;
@@ -107,7 +103,7 @@ namespace UnityEditor
                         childrenAreExpanded = handler.OnGUI(contentRect, property, null, false, visibleRect) && property.isExpanded;
                 }
                 else
-                    childrenAreExpanded = property.isExpanded;
+                    childrenAreExpanded = property.isExpanded && EditorGUI.HasVisibleChildFields(property);
 
                 contentRect.y += contentRect.height + EditorGUI.kControlVerticalSpacing;
             }
@@ -135,9 +131,21 @@ namespace UnityEditor
             if (scriptProperty == null)
                 return false;
 
+            bool scriptLoaded = CheckIfScriptLoaded(scriptProperty);
+            bool oldGUIEnabled = GUI.enabled;
+            if (!GUI.enabled && !scriptLoaded)
+            {
+                GUI.enabled = true;
+            }
+
             EditorGUILayout.PropertyField(scriptProperty);
 
-            CheckIfScriptLoaded(scriptProperty);
+            if (!scriptLoaded)
+            {
+                ShowScriptNotLoadedWarning();
+            }
+
+            GUI.enabled = oldGUIEnabled;
 
             if (serializedObject.ApplyModifiedProperties())
                 EditorUtility.ForceRebuildInspectors();
@@ -145,14 +153,25 @@ namespace UnityEditor
             return true;
         }
 
-        internal static void CheckIfScriptLoaded(SerializedProperty scriptProperty)
+        private static bool CheckIfScriptLoaded(SerializedProperty scriptProperty)
         {
-            MonoScript targetScript = scriptProperty.objectReferenceValue as MonoScript;
-            bool showScriptWarning = targetScript == null || !targetScript.GetScriptTypeWasJustCreatedFromComponentMenu();
-            if (showScriptWarning)
+            MonoScript targetScript = scriptProperty?.objectReferenceValue as MonoScript;
+            return targetScript != null && targetScript.GetScriptTypeWasJustCreatedFromComponentMenu();
+        }
+
+        private static void ShowScriptNotLoadedWarning()
+        {
+            var text = L10n.Tr(
+                "The associated script can not be loaded.\nPlease fix any compile errors\nand assign a valid script.");
+            EditorGUILayout.HelpBox(text, MessageType.Warning, true);
+        }
+
+        internal static void ShowScriptNotLoadedWarning(SerializedProperty scriptProperty)
+        {
+            bool scriptLoaded = CheckIfScriptLoaded(scriptProperty);
+            if (!scriptLoaded)
             {
-                var text = L10n.Tr("The associated script can not be loaded.\nPlease fix any compile errors\nand assign a valid script.");
-                EditorGUILayout.HelpBox(text, MessageType.Warning, true);
+                ShowScriptNotLoadedWarning();
             }
         }
 

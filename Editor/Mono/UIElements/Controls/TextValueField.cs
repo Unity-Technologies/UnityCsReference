@@ -140,7 +140,7 @@ namespace UnityEditor.UIElements
 
             protected abstract TValueType StringToValue(string str);
 
-            protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
+            protected override void ExecuteDefaultActionAtTarget(EventBase evt)
             {
                 base.ExecuteDefaultActionAtTarget(evt);
 
@@ -186,7 +186,7 @@ namespace UnityEditor.UIElements
                 }
             }
 
-            protected internal override void ExecuteDefaultAction(EventBase evt)
+            protected override void ExecuteDefaultAction(EventBase evt)
             {
                 base.ExecuteDefaultAction(evt);
 

@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using UnityEngine;
 
 namespace Unity.Collections
 {
@@ -22,17 +23,20 @@ namespace Unity.Collections
         static int s_NativeLeakDetectionMode;
         const string kNativeLeakDetectionModePrefsString = "Unity.Colletions.NativeLeakDetection.Mode";
 
+        [RuntimeInitializeOnLoadMethod]
+        static void Initialize()
+        {
+            s_NativeLeakDetectionMode = UnityEngine.PlayerPrefs.GetInt(kNativeLeakDetectionModePrefsString, (int)NativeLeakDetectionMode.Enabled);
+            if (s_NativeLeakDetectionMode < (int)NativeLeakDetectionMode.Disabled || s_NativeLeakDetectionMode > (int)NativeLeakDetectionMode.EnabledWithStackTrace)
+                s_NativeLeakDetectionMode = (int)NativeLeakDetectionMode.Enabled;
+        }
+
         public static NativeLeakDetectionMode Mode
         {
             get
             {
                 if (s_NativeLeakDetectionMode == 0)
-                {
-                    s_NativeLeakDetectionMode = UnityEngine.PlayerPrefs.GetInt(kNativeLeakDetectionModePrefsString, (int)NativeLeakDetectionMode.Enabled);
-                    if (s_NativeLeakDetectionMode < (int)NativeLeakDetectionMode.Disabled || s_NativeLeakDetectionMode > (int)NativeLeakDetectionMode.EnabledWithStackTrace)
-                        s_NativeLeakDetectionMode = (int)NativeLeakDetectionMode.Enabled;
-                }
-
+                    Initialize();
                 return (NativeLeakDetectionMode)s_NativeLeakDetectionMode;
             }
             set
@@ -76,7 +80,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         {
             safety = (allocator == Allocator.Temp) ? AtomicSafetyHandle.GetTempMemoryHandle() : AtomicSafetyHandle.Create();
             sentinel = null;
-            if (allocator == Allocator.Temp)
+            if (allocator == Allocator.Temp || allocator == Allocator.AudioKernel)
                 return;
 
             if (Unity.Jobs.LowLevel.Unsafe.JobsUtility.IsExecutingJob)
@@ -131,6 +135,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             }
         }
 
+        [Unity.Burst.BurstDiscard]
         public static void Clear(ref DisposeSentinel sentinel)
         {
             if (sentinel != null)

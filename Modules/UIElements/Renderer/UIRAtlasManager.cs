@@ -77,6 +77,7 @@ namespace UnityEngine.UIElements
         private ColorSpace m_ColorSpace;
         private bool m_RequiresReset;
         private RectInt m_Viewport;
+        private RenderTexture m_PrevRT;
 
         static CustomSampler s_ResetSampler = CustomSampler.Create("UIR.AtlasManager.Reset");
         static CustomSampler s_CommitSampler = CustomSampler.Create("UIR.AtlasManager.Commit");
@@ -467,6 +468,7 @@ namespace UnityEngine.UIElements
             }
             // store viewport as we'll have to restore it once the AtlasManager is done rendering
             m_Viewport = Utility.GetActiveViewport();
+            m_PrevRT = RenderTexture.active;
             GL.LoadPixelMatrix(0, dst.width, 0, dst.height);
             Graphics.SetRenderTarget(dst);
         }
@@ -529,7 +531,7 @@ namespace UnityEngine.UIElements
 
         private void EndBlit()
         {
-            Graphics.SetRenderTarget(null);
+            Graphics.SetRenderTarget(m_PrevRT);
             // restore viewport (which has been implicitely modified as we used a rendertarget)
             GL.Viewport(new Rect(m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height));
         }

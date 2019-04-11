@@ -53,9 +53,6 @@ namespace UnityEditor.UIElements
         public static readonly string labelUssClassName = ussClassName + "__label";
         public static readonly string inputUssClassName = ussClassName + "__input";
 
-        internal static readonly string ussFoldoutDepthClassName = "unity-foldout--depth-";
-        internal static readonly int ussFoldoutMaxDepth = 4;
-
         public PropertyField() : this(null, string.Empty) {}
 
         public PropertyField(SerializedProperty property) : this(property, string.Empty) {}
@@ -71,7 +68,7 @@ namespace UnityEditor.UIElements
             bindingPath = property.propertyPath;
         }
 
-        protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
+        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
             base.ExecuteDefaultActionAtTarget(evt);
 
@@ -171,9 +168,6 @@ namespace UnityEditor.UIElements
             foldout.value = property.isExpanded;
             foldout.bindingPath = property.propertyPath;
             foldout.name = "unity-foldout-" + property.propertyPath;
-
-            var depthStr = property.depth <= ussFoldoutMaxDepth ? property.depth.ToString() : "max";
-            foldout.AddToClassList(ussFoldoutDepthClassName + depthStr);
 
             var endProperty = property.GetEndProperty();
             property.NextVisible(true); // Expand the first child.

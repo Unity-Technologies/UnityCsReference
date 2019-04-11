@@ -77,9 +77,8 @@ namespace UnityEditor.PackageManager.UI
 
         private void SetContentVisibility(bool visible)
         {
-            // Setting visibility directly instead of `UIUtils.SetElementDisplay` to keep it in the UI layout.
-            DetailView.visible = visible;
-            PackageToolbarContainer.visible = visible;
+            UIUtils.SetElementDisplay(DetailContainer, visible);
+            UIUtils.SetElementDisplay(PackageToolbarContainer, visible);
         }
 
         public void SetCollection(PackageCollection collection)
@@ -189,7 +188,7 @@ namespace UnityEditor.PackageManager.UI
                 SampleList.SetPackage(DisplayPackage);
 
                 root.Q<Label>("detailName").text = DisplayPackage.Name;
-                DetailView.scrollOffset = new Vector2(0, 0);
+                DetailScrollView.scrollOffset = new Vector2(0, 0);
 
                 DetailModuleReference.text = "";
                 if (isBuiltIn)
@@ -264,7 +263,7 @@ namespace UnityEditor.PackageManager.UI
 
         internal void OnLatestPackageInfoFetched(PackageInfo fetched, bool isDefaultVersion)
         {
-            if (DisplayPackage.PackageId != fetched.PackageId)
+            if (DisplayPackage == null || DisplayPackage.PackageId != fetched.PackageId)
                 return;
             SetDisplayPackage(fetched);
             SetEnabled(true);
@@ -284,7 +283,7 @@ namespace UnityEditor.PackageManager.UI
 
         private void SetError(Error error)
         {
-            DetailError.AdjustSize(DetailView.verticalScroller.visible);
+            DetailError.AdjustSize(DetailScrollView.verticalScroller.visible);
             DetailError.SetError(error);
             DetailError.OnCloseError = () =>
             {
@@ -395,34 +394,29 @@ namespace UnityEditor.PackageManager.UI
             var enableButton = !Package.AddRemoveOperationInProgress;
 
             var action = PackageAction.Update;
-            var inprogress = false;
+            var addOperation = package.AddSignal.Operation;
+            var inprogress = addOperation != null && addOperation.PackageInfo.PackageId == DisplayPackage.PackageId;
             var isBuiltIn = package.IsBuiltIn;
 
-            if (package.AddSignal.Operation != null)
+            if (addOperation != null)
             {
                 if (isBuiltIn)
                 {
                     action = PackageAction.Enable;
-                    inprogress = true;
-                    enableButton = false;
                 }
                 else
                 {
-                    var addOperationVersion = package.AddSignal.Operation.PackageInfo.Version;
                     if (package.Current == null)
                     {
                         action = PackageAction.Add;
-                        inprogress = true;
                     }
                     else
                     {
-                        action = addOperationVersion.CompareByPrecedence(package.Current.Version) >= 0
+                        action = addOperation.PackageInfo.Version.CompareByPrecedence(package.Current.Version) >= 0
                             ? PackageAction.Update : PackageAction.Downgrade;
-                        inprogress = true;
                     }
-
-                    enableButton = false;
                 }
+                enableButton = false;
             }
             else
             {
@@ -727,7 +721,8 @@ namespace UnityEditor.PackageManager.UI
         private Button ViewLicenses { get { return Cache.Get<Button>("viewLicenses"); } }
         private VisualElement ViewLicensesContainer { get { return Cache.Get<VisualElement>("viewLicensesContainer"); } }
         private Alert DetailError { get { return Cache.Get<Alert>("detailError"); } }
-        private ScrollView DetailView { get { return Cache.Get<ScrollView>("detailView"); } }
+        private ScrollView DetailScrollView { get { return Cache.Get<ScrollView>("detailView"); } }
+        private VisualElement DetailContainer { get { return Cache.Get<VisualElement>("detail"); } }
         private Label DetailModuleReference { get { return Cache.Get<Label>("detailModuleReference"); } }
         private Label DetailVersion { get { return Cache.Get<Label>("detailVersion"); } }
         private Label DetailAuthor { get { return Cache.Get<Label>("detailAuthor"); } }

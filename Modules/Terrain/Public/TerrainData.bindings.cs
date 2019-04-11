@@ -773,6 +773,20 @@ namespace UnityEngine
             set;
         }
 
+        public void SetTerrainLayersRegisterUndo(TerrainLayer[] terrainLayers, string undoName)
+        {
+            if (string.IsNullOrEmpty(undoName))
+            {
+                // The native code will skip creating undo if the name is empty (for the native path without undo).
+                // Make sure we don't hit that path by using an empty string.
+                throw new ArgumentNullException("undoName");
+            }
+            Internal_SetTerrainLayersRegisterUndo(terrainLayers, undoName);
+        }
+
+        [FreeFunction(k_ScriptingInterfacePrefix + "SetTerrainLayersRegisterUndo", HasExplicitThis = true)]
+        extern private void Internal_SetTerrainLayersRegisterUndo(TerrainLayer[] terrainLayers, string undoName);
+
         [NativeName(k_TreeDatabasePrefix + "AddTree")]
         extern internal void AddTree(ref TreeInstance tree);
 

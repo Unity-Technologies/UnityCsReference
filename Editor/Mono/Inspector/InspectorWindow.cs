@@ -109,11 +109,11 @@ namespace UnityEditor
 
         VisualElement FindVisualElementInTreeByClassName(string elementClassName)
         {
-            var element = rootVisualElement.Q<VisualElement>(className: elementClassName);
+            var element = rootVisualElement.Q(className: elementClassName);
             if (element == null)
             {
                 LoadVisualTreeFromUxml();
-                element = rootVisualElement.Q<VisualElement>(className: elementClassName);
+                element = rootVisualElement.Q(className: elementClassName);
             }
 
             return element;
@@ -219,7 +219,7 @@ namespace UnityEditor
             container.AddToClassList(s_MainContainerClassName);
             rootVisualElement.hierarchy.Add(container);
 
-            var multiContainer = rootVisualElement.Q<VisualElement>(className: s_MultiEditClassName);
+            var multiContainer = rootVisualElement.Q(className: s_MultiEditClassName);
             multiContainer.Query<TextElement>().ForEach((label) => label.text = L10n.Tr(label.text));
             multiContainer.RemoveFromHierarchy();
 
@@ -660,7 +660,7 @@ namespace UnityEditor
 
             ResetKeyboardControl();
 
-            var addComponentButton = rootVisualElement.Q<VisualElement>(className: s_AddComponentClassName);
+            var addComponentButton = rootVisualElement.Q(className: s_AddComponentClassName);
             addComponentButton.Clear();
             previewAndLabelElement.Clear();
 
@@ -1205,10 +1205,14 @@ namespace UnityEditor
                 const int stickyRectHeight = 80;
                 var rect = new Rect(10, anchorRect.y - stickyRectHeight, anchorRect.width - 30, stickyRectHeight);
                 rect.y -= offset;
+
+                if (GUI.Button(rect, "", Styles.stickyNote))
+                {
+                    EditorPrefs.SetBool("vcssticky", true);
+                }
+
                 if (Event.current.type == EventType.Repaint)
                 {
-                    Styles.stickyNote.Draw(rect, false, false, false, false);
-
                     Rect iconRect = new Rect(rect.x, rect.y + rect.height / 2 - 32, 64, 64);
                     if (EditorSettings.externalVersionControl == "Perforce") // TODO: remove hardcoding of perforce
                     {
@@ -1296,10 +1300,15 @@ namespace UnityEditor
                             // TODO: Retrieve default CheckoutMode from VC settings (depends on asset type; native vs. imported)
                             Task task = Provider.Checkout(assetEditor.targets, CheckoutMode.Both);
                             task.Wait();
-                            hostWindow.Repaint();
+                            if (hostWindow != null)
+                                hostWindow.Repaint();
                         }
                     }
-                    DrawVCSSticky(rect, assetEditor, rect.height / 2);
+
+                    if (!EditorPrefs.GetBool("vcssticky"))
+                    {
+                        DrawVCSSticky(rect, assetEditor, rect.height / 2);
+                    }
                 }
             }
         }

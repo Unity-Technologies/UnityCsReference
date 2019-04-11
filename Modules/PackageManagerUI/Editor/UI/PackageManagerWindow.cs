@@ -68,10 +68,12 @@ namespace UnityEditor.PackageManager.UI
                 if (!Collection.LatestListPackages.Any())
                     PackageManagerToolbar.SetEnabled(false);
 
-                Collection.FetchListOfflineCache(!Collection.listOperationOfflineOngoing);
-                Collection.FetchListCache(!Collection.listOperationOngoing);
-                Collection.FetchSearchCache(!Collection.searchOperationOngoing);
-
+                if (!EditorApplication.isPlayingOrWillChangePlaymode)
+                {
+                    Collection.FetchListOfflineCache(!Collection.listOperationOfflineOngoing);
+                    Collection.FetchListCache(!Collection.listOperationOngoing);
+                    Collection.FetchSearchCache(!Collection.searchOperationOngoing);
+                }
                 Collection.TriggerPackagesChanged();
             }
         }

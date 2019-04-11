@@ -508,10 +508,17 @@ namespace UnityEditor
             index = Mathf.Clamp((int)EditorSettings.defaultBehaviorMode, 0, behaviorPopupList.Length - 1);
             CreatePopupMenu(Content.mode.text, behaviorPopupList, index, SetDefaultBehaviorMode);
 
-            DoAssetPipelineSettings();
+            {
+                var wasEnabled = GUI.enabled;
+                GUI.enabled = true;
 
-            if (m_AssetPipelineMode.intValue == (int)AssetPipelineMode.Version2)
-                DoCacheServerSettings();
+                DoAssetPipelineSettings();
+
+                if (m_AssetPipelineMode.intValue == (int)AssetPipelineMode.Version2)
+                    DoCacheServerSettings();
+
+                GUI.enabled = wasEnabled;
+            }
             GUILayout.Space(10);
 
             GUI.enabled = true;
@@ -568,8 +575,6 @@ namespace UnityEditor
             DoShaderCompilationSettings();
 
             serializedObject.ApplyModifiedProperties();
-
-            LoadEditorUserSettings();
             m_EditorUserSettings.ApplyModifiedProperties();
         }
 

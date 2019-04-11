@@ -83,6 +83,8 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
             config.Set("mono-codegen", "il2cpp");
         if ((options & BuildOptions.EnableHeadlessMode) != 0)
             config.AddKey("headless");
+        if ((options & BuildOptions.EnableCodeCoverage) != 0)
+            config.Set("enableCodeCoverage", "1");
         if (!PlayerSettings.usePlayerLog)
             config.AddKey("nolog");
     }

@@ -225,7 +225,7 @@ namespace UnityEditor
                 case EventType.KeyDown:
                     if (GUIUtility.keyboardControl == id)
                     {
-                        if (evt.keyCode == KeyCode.Backspace || evt.keyCode == KeyCode.Delete)
+                        if (evt.keyCode == KeyCode.Backspace || (evt.keyCode == KeyCode.Delete && (evt.modifiers & EventModifiers.Shift) == 0))
                         {
                             if (property != null)
                                 property.objectReferenceValue = null;

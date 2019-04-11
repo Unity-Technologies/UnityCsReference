@@ -21,7 +21,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public string[] ExtraGeneralDefines { get; set; }
 
-        public OptionalUnityReferences OptionalUnityReferences { get; set; }
 
         public ScriptAssemblySettings()
         {

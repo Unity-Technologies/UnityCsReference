@@ -557,32 +557,6 @@ namespace UnityEditor
             }
         }
 
-        // Polynomial curves have limitations on how they have to be authored.
-        // Since we don't enforce the layout, we have a button that enforces the curve layout instead.
-        /*
-        void OptimizePolynomialCurve (Rect rect)
-        {
-            ///@TODO: only show this when editing shuriken curves....
-
-            bool wasEnabled = GUI.enabled;
-
-            bool isValidPolynomialCurve = true;
-            for (int i=0;i<m_CurveEditor.animationCurves.Length;i++)
-                isValidPolynomialCurve &= AnimationUtility.IsValidPolynomialCurve(m_CurveEditor.animationCurves[i].curve);
-
-            GUI.enabled = !isValidPolynomialCurve;
-            if (GUI.Button (rect, "Optimize Polynomial Curve"))
-            {
-                for (int i=0;i<m_CurveEditor.animationCurves.Length;i++)
-                    AnimationUtility.ConstrainToPolynomialCurve(m_CurveEditor.animationCurves[i].curve);
-
-                m_CurveEditor.SelectNone();
-                SendEvent (EventCommandNames.CurveChangedCommand, true);
-            }
-
-            GUI.enabled = wasEnabled;
-        }*/
-
         public void UpdateCurve()
         {
             DoUpdateCurve(false);

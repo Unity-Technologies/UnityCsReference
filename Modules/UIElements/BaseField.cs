@@ -9,7 +9,6 @@ namespace UnityEngine.UIElements
 {
     public abstract class BaseField<TValueType> : BindableElement, INotifyValueChanged<TValueType>
     {
-        public new class UxmlFactory : UxmlFactory<BaseField<TValueType>, UxmlTraits> {}
         public new class UxmlTraits : BindableElement.UxmlTraits
         {
             UxmlStringAttributeDescription m_Label = new UxmlStringAttributeDescription { name = "label" };
@@ -32,7 +31,6 @@ namespace UnityEngine.UIElements
         public static readonly string inputUssClassName = ussClassName + "__input";
         public static readonly string noLabelVariantUssClassName = ussClassName + "--no-label";
         public static readonly string labelDraggerVariantUssClassName = labelUssClassName + "--with-dragger";
-
 
         private VisualElement m_VisualInput;
 

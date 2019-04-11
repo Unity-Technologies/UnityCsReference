@@ -6,6 +6,9 @@ namespace UnityEngine.UIElements
 {
     public class Foldout : BindableElement, INotifyValueChanged<bool>
     {
+        internal static readonly string ussFoldoutDepthClassName = "unity-foldout--depth-";
+        internal static readonly int ussFoldoutMaxDepth = 4;
+
         public new class UxmlFactory : UxmlFactory<Foldout, UxmlTraits> {}
 
         Toggle m_Toggle;
@@ -85,6 +88,43 @@ namespace UnityEngine.UIElements
             };
             m_Container.AddToClassList(contentUssClassName);
             hierarchy.Add(m_Container);
+
+            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+        }
+
+        void OnAttachToPanel(AttachToPanelEvent evt)
+        {
+            var depth = 0;
+            // Remove from all the depth classes...
+            for (int i = 0; i <= ussFoldoutMaxDepth; i++)
+            {
+                RemoveFromClassList(ussFoldoutDepthClassName + i);
+            }
+            RemoveFromClassList(ussFoldoutDepthClassName + "max");
+
+            // Figure out the real depth of this actual Foldout...
+            if (parent != null)
+            {
+                var curParent = parent;
+                while (curParent != null)
+                {
+                    if (curParent.GetType() == typeof(Foldout))
+                    {
+                        depth++;
+                    }
+                    curParent = curParent.parent;
+                }
+            }
+
+            // Add the class name corresponding to that depth
+            if (depth > ussFoldoutMaxDepth)
+            {
+                AddToClassList(ussFoldoutDepthClassName + "max");
+            }
+            else
+            {
+                AddToClassList(ussFoldoutDepthClassName + depth);
+            }
         }
     }
 }

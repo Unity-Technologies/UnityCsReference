@@ -237,7 +237,7 @@ namespace UnityEditor.UIElements
                 hierarchy.Add(customInspector);
         }
 
-        protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
+        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
             base.ExecuteDefaultActionAtTarget(evt);
 
@@ -292,6 +292,10 @@ namespace UnityEditor.UIElements
             {
                 AddMissingScriptLabel(serializedObject);
             }
+            else
+            {
+                SetEnabled(false);
+            }
 
             AddToClassList(uIEDefaultVariantUssClassName);
             AddToClassList(uIEInspectorVariantUssClassName);
@@ -304,7 +308,7 @@ namespace UnityEditor.UIElements
             SerializedProperty scriptProperty = serializedObject.FindProperty("m_Script");
             if (scriptProperty != null)
             {
-                hierarchy.Add(new IMGUIContainer(() => GenericInspector.CheckIfScriptLoaded(scriptProperty)));
+                hierarchy.Add(new IMGUIContainer(() => GenericInspector.ShowScriptNotLoadedWarning(scriptProperty)));
                 return true;
             }
 
@@ -534,7 +538,8 @@ namespace UnityEditor.UIElements
                 if (inspectorElement != null)
                 {
                     AddToClassList(uIECustomVariantUssClassName);
-                    AddToClassList(uIEInspectorVariantUssClassName);
+                    if (editor.UseDefaultMargins())
+                        AddToClassList(uIEInspectorVariantUssClassName);
                     inspectorElement.AddToClassList(customInspectorUssClassName);
                 }
             }

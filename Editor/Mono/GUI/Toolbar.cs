@@ -274,7 +274,7 @@ namespace UnityEditor
             }
 
 
-            if (ModeService.modeCount > 1)
+            if (ModeService.modeCount > 1 && Unsupported.IsDeveloperBuild())
             {
                 EditorGUI.BeginChangeCheck();
                 ReserveWidthLeft(space, ref pos);

@@ -1031,13 +1031,6 @@ namespace UnityEditor
                                 Event.current.Use();
                         }
                         break;
-                    case KeyCode.Delete:
-                        if (Event.current.shift)
-                        {
-                            DeleteSelectedAssets(false);
-                            Event.current.Use();
-                        }
-                        break;
                 }
             }
         }
@@ -1307,13 +1300,6 @@ namespace UnityEditor
                         {
                             Event.current.Use();
                             OpenAssetSelection(Selection.instanceIDs);
-                        }
-                        break;
-                    case KeyCode.Delete:
-                        if (Event.current.shift)
-                        {
-                            DeleteSelectedAssets(false);
-                            Event.current.Use();
                         }
                         break;
                 }
@@ -1837,18 +1823,6 @@ namespace UnityEditor
                     Vector2 stringSize = s_Styles.selectedPathLabel.CalcSize(GUIContent.Temp(displayPath));
                     if (stringSize.x + 25f > availableWidth)
                     {
-                        /*
-                        // Full path to subassets
-                        IHierarchyProperty activeSelectedInHierachy = new HierarchyProperty (HierarchyType.Assets);
-                        activeSelectedInHierachy.Find (m_ListAreaState.m_LastClickedInstanceID, null);
-                        do
-                        {
-                            m_SelectedPathSplitted.Add (new GUIContent (activeSelectedInHierachy.name, activeSelectedInHierachy.icon));
-                        }
-                        while (activeSelectedInHierachy.Parent());
-                        m_SelectedPathSplitted.Reverse ();
-                         */
-
                         var split = displayPath.Split('/');
                         var splitPath = m_SelectedPath.Split('/');
                         var curPath = string.Empty;

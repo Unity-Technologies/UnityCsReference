@@ -84,7 +84,7 @@ namespace UnityEditor.UIElements
             choices = new List<TValueChoice>();
         }
 
-        protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
+        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
             base.ExecuteDefaultActionAtTarget(evt);
 
