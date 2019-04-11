@@ -182,21 +182,9 @@ namespace UnityEditor.VersionControl
                 cancelled = true;
                 Close();
             }
-            /*
-            GUI.enabled = assetList.Count > 0;
 
-
-            if (GUILayout.Button ("Resolve"))
-            {
-                Provider.Resolve (assetList, true).Wait ();
-                VCCache.Invalidate (assetList);
-                AssetDatabase.Refresh ();
-                Close ();
-            }
-             */
             GUILayout.EndHorizontal();
             GUILayout.Space(12);
-            //GUI.enabled = true;
             if (repaint)
                 Repaint();
         }

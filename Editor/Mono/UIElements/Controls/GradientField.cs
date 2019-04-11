@@ -82,7 +82,7 @@ namespace UnityEditor.UIElements
             rawValue = new Gradient();
         }
 
-        protected internal override void ExecuteDefaultAction(EventBase evt)
+        protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
 

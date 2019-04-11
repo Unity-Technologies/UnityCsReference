@@ -157,7 +157,7 @@ namespace UnityEngine.UIElements
             m_TextInputBase.maskChar = maskChar;
         }
 
-        protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
+        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
             base.ExecuteDefaultActionAtTarget(evt);
 
@@ -614,7 +614,7 @@ namespace UnityEngine.UIElements
                 return TextElement.MeasureVisualElementTextSize(this, textToUse, desiredWidth, widthMode, desiredHeight, heightMode);
             }
 
-            protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
+            protected override void ExecuteDefaultActionAtTarget(EventBase evt)
             {
                 base.ExecuteDefaultActionAtTarget(evt);
 
@@ -652,7 +652,7 @@ namespace UnityEngine.UIElements
                 editorEventHandler.ExecuteDefaultActionAtTarget(evt);
             }
 
-            protected internal override void ExecuteDefaultAction(EventBase evt)
+            protected override void ExecuteDefaultAction(EventBase evt)
             {
                 base.ExecuteDefaultAction(evt);
 

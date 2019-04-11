@@ -61,10 +61,10 @@ namespace UnityEditor.ShortcutManagement
             // Find elements
             m_HeaderTextElement = root.Q<TextElement>("header");
             m_MessageTextElement = root.Q<TextElement>("message");
-            var labelAndTextField = root.Q<VisualElement>("label-and-text-field");
+            var labelAndTextField = root.Q("label-and-text-field");
             m_LabelTextElement = labelAndTextField.Q<TextElement>();
             m_TextField = labelAndTextField.Q<TextField>();
-            var buttons = root.Q<VisualElement>("buttons");
+            var buttons = root.Q("buttons");
             m_SubmitButton = root.Q<Button>("submit");
             var cancelButton = root.Q<Button>("cancel");
 

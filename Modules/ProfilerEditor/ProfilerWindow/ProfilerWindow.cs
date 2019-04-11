@@ -308,6 +308,11 @@ namespace UnityEditor
 
                 ProfilerChart chart = CreateProfilerChart((ProfilerArea)i, chartType, scale, length);
 
+                if (chart.m_Area == ProfilerArea.CPU)
+                {
+                    chart.SetOnSeriesToggleCallback(OnToggleCPUChartSeries);
+                }
+
                 for (int s = 0; s < length; s++)
                 {
                     chart.m_Series[s] = new ChartSeriesViewData(statisticsNames[s], historySize, chartAreaColors[s % chartAreaColors.Length]);
@@ -352,6 +357,18 @@ namespace UnityEditor
                 chart.LoadAndBindSettings();
 
             m_Initialized = true;
+        }
+
+        void OnToggleCPUChartSeries(bool wasToggled)
+        {
+            if (wasToggled)
+            {
+                int historyLength = ProfilerDriver.maxHistoryLength - 1;
+                int firstEmptyFrame = ProfilerDriver.lastFrameIndex - historyLength;
+                int firstFrame = Mathf.Max(ProfilerDriver.firstFrameIndex, firstEmptyFrame);
+
+                ComputeChartScaleValue(ProfilerArea.CPU, historyLength, firstEmptyFrame, firstFrame);
+            }
         }
 
         void CPUOrGPUViewSelectionChanged(int id)
@@ -1084,8 +1101,11 @@ namespace UnityEditor
                 float timeNow = 0.0F;
                 for (int j = 0; j < chart.m_Series.Length; j++)
                 {
-                    if (chart.m_Series[j].enabled)
-                        timeNow += chart.m_Series[j].yValues[k];
+                    var series = chart.m_Data.unstackableSeriesIndex == j && chart.m_Data.hasOverlay ?
+                        chart.m_Data.overlays[j] : chart.m_Series[j];
+
+                    if (series.enabled)
+                        timeNow += series.yValues[k];
                 }
                 if (timeNow > timeMax)
                     timeMax = timeNow;
@@ -1095,7 +1115,7 @@ namespace UnityEditor
             if (timeMaxExcludeFirst != 0.0f)
                 timeMax = timeMaxExcludeFirst;
 
-            timeMax = Math.Min(timeMax, m_ChartMaxClamp);
+            timeMax = Math.Min(timeMax * chart.m_DataScale, m_ChartMaxClamp);
 
             // Do not apply the new scale immediately, but gradually go towards it
             if (m_ChartOldMax[(int)i] > 0.0f)

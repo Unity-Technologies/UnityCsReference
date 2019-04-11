@@ -105,7 +105,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
+        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
             base.ExecuteDefaultActionAtTarget(evt);
 

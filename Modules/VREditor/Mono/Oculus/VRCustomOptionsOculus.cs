@@ -13,10 +13,11 @@ namespace UnityEditorInternal.VR
     {
         static GUIContent s_SharedDepthBufferLabel = EditorGUIUtility.TextContent("Shared Depth Buffer|Enable depth buffer submission to allow for overlay depth occlusion, etc.");
         static GUIContent s_DashSupportLabel = EditorGUIUtility.TextContent("Dash Support|If enabled, pressing the home button brings up Dash, otherwise it brings up the older universal menu.");
-        static GUIContent s_SharedDepthAndroidInfo = EditorGUIUtility.TrTextContent("Shared Depth Buffer and Dash Support aren't available when targeting mobile.");
+        static GUIContent s_LowOverheadModeLabel = EditorGUIUtility.TextContent("Low Overhead Mode|If enabled, the GLES graphics driver will bypass validation code, potentially running faster.");
 
         SerializedProperty m_SharedDepthBuffer;
         SerializedProperty m_DashSupport;
+        SerializedProperty m_LowOverheadMode;
 
         public override void Initialize(SerializedObject settings)
         {
@@ -28,6 +29,7 @@ namespace UnityEditorInternal.VR
             base.Initialize(settings, propertyName);
             m_SharedDepthBuffer = FindPropertyAssert("sharedDepthBuffer");
             m_DashSupport = FindPropertyAssert("dashSupport");
+            m_LowOverheadMode = FindPropertyAssert("lowOverheadMode");
         }
 
         public override Rect Draw(BuildTargetGroup target, Rect rect)
@@ -59,9 +61,15 @@ namespace UnityEditorInternal.VR
             }
             else
             {
-                EditorGUI.BeginDisabled(true);
-                EditorGUI.LabelField(rect, s_SharedDepthAndroidInfo.text, EditorStyles.wordWrappedMiniLabel);
-                EditorGUI.EndDisabled();
+                rect.height = EditorGUIUtility.singleLineHeight;
+                GUIContent label = EditorGUI.BeginProperty(rect, s_LowOverheadModeLabel, m_LowOverheadMode);
+                EditorGUI.BeginChangeCheck();
+                bool boolValue = EditorGUI.Toggle(rect, label, m_LowOverheadMode.boolValue);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    m_LowOverheadMode.boolValue = boolValue;
+                }
+                EditorGUI.EndProperty();
             }
 
             rect.y += rect.height + EditorGUIUtility.standardVerticalSpacing;

@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -15,6 +17,9 @@ namespace UnityEditor.UIElements
         readonly InspectorWindow inspectorWindow;
 
         Editor[] m_Editors => inspectorWindow.tracker.activeEditors;
+
+        internal IEnumerable<Editor> Editors => m_Editors.AsEnumerable();
+
         int m_EditorIndex;
         public Editor editor
         {

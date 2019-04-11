@@ -28,7 +28,7 @@ namespace UnityEditor
             public static readonly GUIContent newProjectsAssetPipeline = EditorGUIUtility.TrTextContent("New Projects default asset pipeline", "The default asset pipeline used when creating a new project. Note that this default can be overridden by using a -adb1 or -adb2 command line argument.");
             public static readonly GUIContent activeAssetPipelineVersionLabel = EditorGUIUtility.TrTextContent("Active version", activeAssetPipelineVersionTooltip);
             public static readonly GUIContent activeAssetPipelineVersion = new GUIContent(AssetDatabase.IsV1Enabled() ? "1" : "2", activeAssetPipelineVersionTooltip);
-            private const string activeAssetPipelineVersionTooltip = "The active asset import pipeline is choosen by inspecting the following sources in order: Environment variable, command line argument (-adb1 or -adb2), local per project editor settings, global preferences (the dropdown above)";
+            private const string activeAssetPipelineVersionTooltip = "The active asset import pipeline is chosen at startup by inspecting the following sources by priority: Environment variable, command line argument (-adb1 or -adb2), local per project editor settings, builtin default. In the case of creating a new project, the default pipeline is selected by the dropdown above and will have a priority one higher than the builtin default.";
             public static readonly GUIContent cacheServerDefaultMode = new GUIContent("Cache Server Default Mode", "Specifies if cache server should be enabled or disabled by default. This can be overridden per project in editor settings.");
             public static readonly GUIContent cacheServerIPLabel = new GUIContent("Default IP address", "This IP address is used for the cache server if not overridden in the editor settings per project.");
         }
@@ -42,7 +42,7 @@ namespace UnityEditor
             }
         }
 
-        const string kAssetPipelineVersion = "AssetPipelineVersion";
+        const string kAssetPipelineVersionForNewProjects = "AssetPipelineVersion";
         const string kIPAddress2Key = "CacheServer2IPAddress";
         const string kMode2Key = "CacheServer2Mode";
 
@@ -56,7 +56,7 @@ namespace UnityEditor
         enum ConnectionState { Unknown, Success, Failure };
         private static ConnectionState s_ConnectionState;
         public enum AssetPipelineVersion { Version1, Version2 }
-        public static AssetPipelineVersion s_AssetPipelineVersion;
+        public static AssetPipelineVersion s_AssetPipelineVersionForNewProjects;
         private static string s_CacheServer2IPAddress;
         public enum CacheServer2Mode { Enabled, Disabled }
         private static CacheServer2Mode s_CacheServer2Mode;
@@ -69,21 +69,12 @@ namespace UnityEditor
         private static bool s_EnableCustomPath;
         private static string s_CachePath;
 
-        public static bool IsAssetPipelineV2
-        {
-            get
-            {
-                EnsurePreferencesRead();
-                return s_AssetPipelineVersion == AssetPipelineVersion.Version2;
-            }
-        }
-
         public static bool IsCacheServerV2Enabled
         {
             get
             {
                 EnsurePreferencesRead();
-                return IsAssetPipelineV2 && s_CacheServer2Mode == CacheServer2Mode.Enabled;
+                return AssetDatabase.IsV2Enabled() && s_CacheServer2Mode == CacheServer2Mode.Enabled;
             }
         }
 
@@ -98,7 +89,7 @@ namespace UnityEditor
 
         public static void ReadPreferences()
         {
-            s_AssetPipelineVersion = (AssetPipelineVersion)EditorPrefs.GetInt(kAssetPipelineVersion, (int)AssetPipelineVersion.Version1);
+            s_AssetPipelineVersionForNewProjects = (AssetPipelineVersion)EditorPrefs.GetInt(kAssetPipelineVersionForNewProjects, (int)AssetPipelineVersion.Version1);
             s_CacheServer2IPAddress = EditorPrefs.GetString(kIPAddress2Key, s_CacheServer2IPAddress);
             s_CacheServer2Mode = (CacheServer2Mode)EditorPrefs.GetInt(kMode2Key, (int)CacheServer2Mode.Disabled);
             s_CacheServerIPAddress = EditorPrefs.GetString(kIPAddressKey, s_CacheServerIPAddress);
@@ -138,7 +129,7 @@ namespace UnityEditor
                 }
             }
 
-            EditorPrefs.SetInt(kAssetPipelineVersion, (int)s_AssetPipelineVersion);
+            EditorPrefs.SetInt(kAssetPipelineVersionForNewProjects, (int)s_AssetPipelineVersionForNewProjects);
             EditorPrefs.SetString(kIPAddress2Key, s_CacheServer2IPAddress);
             EditorPrefs.SetInt(kMode2Key, (int)s_CacheServer2Mode);
             EditorPrefs.SetString(kIPAddressKey, s_CacheServerIPAddress);
@@ -231,7 +222,7 @@ namespace UnityEditor
 
                 EditorGUI.BeginChangeCheck();
 
-                s_AssetPipelineVersion = (AssetPipelineVersion)EditorGUILayout.EnumPopup(Properties.newProjectsAssetPipeline, s_AssetPipelineVersion);
+                s_AssetPipelineVersionForNewProjects = (AssetPipelineVersion)EditorGUILayout.EnumPopup(Properties.newProjectsAssetPipeline, s_AssetPipelineVersionForNewProjects);
 
                 EditorGUILayout.LabelField(Properties.activeAssetPipelineVersionLabel, Properties.activeAssetPipelineVersion);
                 var overrideAddress = GetCommandLineRemoteAddressOverride();
@@ -463,10 +454,7 @@ namespace UnityEditor
         private static void OnPreferencesReadGUI()
         {
             bool shouldTryConnect = s_ConnectionState == ConnectionState.Unknown &&
-                (
-                    (s_AssetPipelineVersion == AssetPipelineVersion.Version1 && s_CacheServerMode != CacheServerMode.Disabled) ||
-                    (s_AssetPipelineVersion == AssetPipelineVersion.Version2 && s_CacheServer2Mode != CacheServer2Mode.Disabled)
-                );
+                (AssetDatabase.IsV1Enabled() ? s_CacheServerMode != CacheServerMode.Disabled : s_CacheServer2Mode != CacheServer2Mode.Disabled);
 
             if (shouldTryConnect)
             {

@@ -105,8 +105,8 @@ namespace UnityEngine.UIElements
             return m_CallbackRegistry != null && m_CallbackRegistry.HasBubbleHandlers();
         }
 
-        protected internal virtual void ExecuteDefaultActionAtTarget(EventBase evt) {}
+        protected virtual void ExecuteDefaultActionAtTarget(EventBase evt) {}
 
-        protected internal virtual void ExecuteDefaultAction(EventBase evt) {}
+        protected virtual void ExecuteDefaultAction(EventBase evt) {}
     }
 }

@@ -49,7 +49,7 @@ namespace UnityEditor.Experimental.GraphView
             AddStyleSheetPath("StyleSheets/GraphView/StackNode.uss");
         }
 
-        protected internal override void ExecuteDefaultAction(EventBase evt)
+        protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
 

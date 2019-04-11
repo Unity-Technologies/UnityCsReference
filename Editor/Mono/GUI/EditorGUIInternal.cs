@@ -25,14 +25,6 @@ namespace UnityEditor
         {
             Event evt = Event.current;
 
-            // Toggle selected toggle on space or return key
-            if (evt.MainActionKeyForControl(id))
-            {
-                value = !value;
-                evt.Use();
-                GUI.changed = true;
-            }
-
             if (EditorGUI.showMixedValue)
                 style = mixedToggleStyle;
 

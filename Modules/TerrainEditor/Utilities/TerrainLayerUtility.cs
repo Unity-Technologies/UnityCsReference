@@ -149,13 +149,11 @@ namespace UnityEditor
                     return;
             }
 
-            Undo.RegisterCompleteObjectUndo(terrainData, "Add terrain layer");
-
             int newIndex = layers.Length;
             var newarray = new TerrainLayer[newIndex + 1];
             Array.Copy(layers, 0, newarray, 0, newIndex);
             newarray[newIndex] = inputLayer;
-            terrainData.terrainLayers = newarray;
+            terrainData.SetTerrainLayersRegisterUndo(newarray, "Add terrain layer");
         }
 
         internal static void ReplaceTerrainLayer(Terrain terrain, int index, TerrainLayer inputLayer)
@@ -177,17 +175,13 @@ namespace UnityEditor
                     return;
             }
 
-            Undo.RegisterCompleteObjectUndo(terrain.terrainData, "Replace terrain layer");
-
             layers[index] = inputLayer;
-            terrain.terrainData.terrainLayers = layers;
+            terrain.terrainData.SetTerrainLayersRegisterUndo(layers, "Replace terrain layer");
         }
 
         internal static void RemoveTerrainLayer(Terrain terrain, int index)
         {
             var terrainData = terrain.terrainData;
-            Undo.RegisterCompleteObjectUndo(terrainData, "Remove terrain layer");
-
             int width = terrainData.alphamapWidth;
             int height = terrainData.alphamapHeight;
             float[,,] alphamap = terrainData.GetAlphamaps(0, 0, width, height);
@@ -241,7 +235,7 @@ namespace UnityEditor
                 newSplats[a] = layers[a];
             for (int a = index + 1; a < alphaCount; ++a)
                 newSplats[a - 1] = layers[a];
-            terrainData.terrainLayers = newSplats;
+            terrainData.SetTerrainLayersRegisterUndo(newSplats, "Remove terrain layer");
 
             // set new alphamaps
             terrainData.SetAlphamaps(0, 0, newalphamap);

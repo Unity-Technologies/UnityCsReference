@@ -109,7 +109,7 @@ namespace UnityEditor
         internal static bool HasCurrentWindowKeyFocus()
         {
             CheckOnGUI();
-            return GUIView.current.hasFocus;
+            return GUIView.current != null ? GUIView.current.hasFocus : false;
         }
 
         public static Rect PointsToPixels(Rect rect)
@@ -1319,7 +1319,7 @@ namespace UnityEditor
 
             // Draw background color
             Color oldColor = GUI.color;
-            GUI.color = bgColor;
+            GUI.color = EditorApplication.isPlayingOrWillChangePlaymode ? bgColor * HostView.kPlayModeDarken : bgColor;
             GUIStyle gs = whiteTextureStyle;
             gs.Draw(position, false, false, false, false);
             GUI.color = oldColor;
@@ -1452,6 +1452,15 @@ namespace UnityEditor
         public static void ShowObjectPicker<T>(UnityObject obj, bool allowSceneObjects, string searchFilter, int controlID) where T : UnityObject
         {
             Type objType = typeof(T);
+            //case 1113046: Delay the show method when it is called while other object picker is closing
+            if (Event.current.commandName == "ObjectSelectorClosed")
+                EditorApplication.delayCall += () => SetupObjectSelector(obj, objType, allowSceneObjects, searchFilter, controlID);
+            else
+                SetupObjectSelector(obj, objType, allowSceneObjects, searchFilter, controlID);
+        }
+
+        private static void SetupObjectSelector(UnityObject obj, Type objType, bool allowSceneObjects, string searchFilter, int controlID)
+        {
             ObjectSelector.get.Show(obj, objType, null, allowSceneObjects);
             ObjectSelector.get.objectSelectorID = controlID;
             ObjectSelector.get.searchFilter = searchFilter;

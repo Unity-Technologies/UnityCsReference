@@ -278,6 +278,11 @@ namespace UnityEditor
 
             if (hierarchyType == HierarchyType.Assets)
             {
+                // When AssemblyDefinitionAsset is the required type, don't skip hidden packages
+                if (!string.IsNullOrEmpty(m_RequiredType) && m_RequiredType == typeof(AssemblyDefinitionAsset).Name)
+                {
+                    m_SkipHiddenPackages = false;
+                }
                 filter.skipHidden = m_SkipHiddenPackages;
             }
 

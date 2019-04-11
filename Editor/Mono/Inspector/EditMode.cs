@@ -32,7 +32,7 @@ namespace UnityEditorInternal
             ownerID = SessionState.GetInt(kOwnerStringKey, ownerID);
             s_EditMode = (SceneViewEditMode)SessionState.GetInt(kEditModeStringKey, (int)s_EditMode);
             Selection.selectionChanged += OnSelectionChange;
-            EditorTools.activeToolChanging += ToolChanging;
+            EditorTools.activeToolChanging += OnActiveToolWillChange;
         }
 
         private const float k_EditColliderbuttonWidth = 33;
@@ -82,7 +82,7 @@ namespace UnityEditorInternal
             ParticleSystemShapeModuleScale
         }
 
-        static EditorTool GetTool(IToolModeOwner owner, SceneViewEditMode mode)
+        static EditModeTool GetTool(IToolModeOwner owner, SceneViewEditMode mode)
         {
             var editor = owner as Editor;
 
@@ -95,9 +95,11 @@ namespace UnityEditorInternal
             {
                 var tool = x as EditModeTool;
                 return tool != null
+                && tool.editMode == mode
+                && tool.owner == owner
                 && tool.editorType == editorType
                 && tool.target == editor.target;
-            }, true);
+            }, true) as EditModeTool;
         }
 
         public static bool IsOwner(Editor editor)
@@ -112,10 +114,7 @@ namespace UnityEditorInternal
 
         internal static int ownerID
         {
-            get
-            {
-                return s_OwnerID;
-            }
+            get { return s_OwnerID; }
             set
             {
                 s_OwnerID = value;
@@ -133,6 +132,12 @@ namespace UnityEditorInternal
             }
         }
 
+        static void OnActiveToolWillChange()
+        {
+            if (ownerID != k_OwnerIdNone)
+                EditModeToolStateChanged(null, SceneViewEditMode.None);
+        }
+
         public static void OnSelectionChange()
         {
             IToolModeOwner owner = InternalEditorUtility.GetObjectFromInstanceID(ownerID) as IToolModeOwner;
@@ -141,59 +146,10 @@ namespace UnityEditorInternal
             QuitEditMode();
         }
 
-        static void ToolChanging()
-        {
-            var previousToolType = EditorToolUtility.GetEnumWithEditorTool(EditorToolContext.activeTool);
-
-            if (previousToolType == Tool.None && ownerID != k_OwnerIdNone)
-                ChangeEditModeFromToolContext(null, SceneViewEditMode.None);
-        }
-
         public static void QuitEditMode()
         {
             if (ownerID != k_OwnerIdNone)
                 ChangeEditMode(SceneViewEditMode.None, new Bounds(Vector3.zero, Vector3.positiveInfinity), null);
-        }
-
-        internal static void ChangeEditModeFromToolContext(IToolModeOwner owner, SceneViewEditMode mode)
-        {
-            // In cases of domain reloads the EditorTool can be deserialized prior to the target Inspector being
-            // created. The EditMode tools do not expect an editModeStarted callback on reloads.
-            if (owner == null && mode != SceneViewEditMode.None)
-            {
-                editMode = mode;
-                return;
-            }
-
-            IToolModeOwner oldOwner = InternalEditorUtility.GetObjectFromInstanceID(ownerID) as IToolModeOwner;
-
-            editMode = mode;
-
-            if (oldOwner != null)
-            {
-                if (onEditModeEndDelegate != null && oldOwner is Editor)
-                    onEditModeEndDelegate(oldOwner as Editor);
-
-                if (editModeEnded != null)
-                    editModeEnded(oldOwner);
-            }
-
-            ownerID = mode != SceneViewEditMode.None ? owner.GetInstanceID() : k_OwnerIdNone;
-
-            if (editMode != SceneViewEditMode.None)
-            {
-                if (onEditModeStartDelegate != null && owner is Editor)
-                    onEditModeStartDelegate(owner as Editor, editMode);
-
-                if (editModeStarted != null)
-                    editModeStarted(owner, editMode);
-            }
-
-            EditModeChanged((mode != SceneViewEditMode.None && owner != null)
-                ? owner.GetWorldBoundsOfTargets()
-                : new Bounds(Vector3.zero, Vector3.positiveInfinity));
-
-            InspectorWindow.RepaintAllInspectors();
         }
 
         [Obsolete("Obsolete msg (UnityUpgradable) -> UnityEditor.EditorTools.EditorTools.RestorePreviousTool()")]
@@ -299,30 +255,69 @@ namespace UnityEditorInternal
         {
             if (mode == SceneViewEditMode.None)
             {
-                if (s_EditMode != SceneViewEditMode.None && (EditorToolContext.activeTool is EditModeTool || EditorToolContext.activeTool is NoneTool))
-                    EditorTools.RestorePreviousTool();
+                var activeToolIsEditModeTool = (EditorToolContext.activeTool is EditModeTool || EditorToolContext.activeTool is NoneTool);
 
-                ownerID = 0;
+                if (s_EditMode != SceneViewEditMode.None && activeToolIsEditModeTool)
+                    EditorTools.RestorePreviousPersistentTool();
 
+                EditModeToolStateChanged(owner, mode);
                 return;
             }
 
             var tool = GetTool(owner, mode);
 
             if (tool != null)
-            {
                 EditorTools.SetActiveTool(tool);
-            }
             else
-            {
                 // SceneViewEditModeTool doesn't exist, use old path
                 EditorTools.SetActiveTool<NoneTool>();
-                ChangeEditModeFromToolContext(owner, mode);
+
+            EditModeToolStateChanged(owner, mode);
+        }
+
+        internal static void EditModeToolStateChanged(IToolModeOwner owner, SceneViewEditMode mode)
+        {
+            // In cases of domain reloads the EditorTool can be deserialized prior to the target Inspector being
+            // created. The EditMode tools do not expect an editModeStarted callback on reloads.
+            if (owner == null && mode != SceneViewEditMode.None)
+            {
+                editMode = mode;
+                return;
             }
+
+            IToolModeOwner oldOwner = InternalEditorUtility.GetObjectFromInstanceID(ownerID) as IToolModeOwner;
+
+            editMode = mode;
+
+            if (oldOwner != null)
+            {
+                if (onEditModeEndDelegate != null && oldOwner is Editor)
+                    onEditModeEndDelegate(oldOwner as Editor);
+
+                if (editModeEnded != null)
+                    editModeEnded(oldOwner);
+            }
+
+            ownerID = mode != SceneViewEditMode.None ? owner.GetInstanceID() : k_OwnerIdNone;
+
+            if (editMode != SceneViewEditMode.None)
+            {
+                if (onEditModeStartDelegate != null && owner is Editor)
+                    onEditModeStartDelegate(owner as Editor, editMode);
+
+                if (editModeStarted != null)
+                    editModeStarted(owner, editMode);
+            }
+
+            FocusEditModeToolTarget((mode != SceneViewEditMode.None && owner != null)
+                ? owner.GetWorldBoundsOfTargets()
+                : new Bounds(Vector3.zero, Vector3.positiveInfinity));
+
+            InspectorWindow.RepaintAllInspectors();
         }
 
         // We make sure edited object is seen by the camera. We need object bounds to do that check.
-        private static void EditModeChanged(Bounds bounds)
+        static void FocusEditModeToolTarget(Bounds bounds)
         {
             // When entering the edit mode, check if the collider is seen by the scene view camera. If not, then we frame it.
             if (editMode != SceneViewEditMode.None && SceneView.lastActiveSceneView != null && SceneView.lastActiveSceneView.camera != null)

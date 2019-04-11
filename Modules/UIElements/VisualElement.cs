@@ -746,7 +746,7 @@ namespace UnityEngine.UIElements
             renderHint = RenderHint.None;
         }
 
-        protected internal override void ExecuteDefaultAction(EventBase evt)
+        protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
             if (evt == null)

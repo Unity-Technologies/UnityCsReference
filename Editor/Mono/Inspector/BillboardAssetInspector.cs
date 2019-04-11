@@ -184,7 +184,7 @@ namespace UnityEditor
 
         // Make a mesh out of the BillboardAsset that is used for rendering by SpeedTree billboard shader.
         // Vertices are expanded by the shader therefore the mesh vertices are not used (filled by zeroes).
-        private void MakeRenderMesh(Mesh mesh, BillboardAsset billboard)
+        internal static void MakeRenderMesh(Mesh mesh, BillboardAsset billboard)
         {
             mesh.SetVertices(Enumerable.Repeat(Vector3.zero, billboard.vertexCount).ToList());
             mesh.SetColors(Enumerable.Repeat(Color.black, billboard.vertexCount).ToList());

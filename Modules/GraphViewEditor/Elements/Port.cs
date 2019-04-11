@@ -429,7 +429,7 @@ namespace UnityEditor.Experimental.GraphView
             m_ConnectorBox.SetEnabled(highlight);
         }
 
-        protected internal override void ExecuteDefaultAction(EventBase evt)
+        protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
 

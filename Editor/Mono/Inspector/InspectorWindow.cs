@@ -109,11 +109,11 @@ namespace UnityEditor
 
         VisualElement FindVisualElementInTreeByClassName(string elementClassName)
         {
-            var element = rootVisualElement.Q<VisualElement>(className: elementClassName);
+            var element = rootVisualElement.Q(className: elementClassName);
             if (element == null)
             {
                 LoadVisualTreeFromUxml();
-                element = rootVisualElement.Q<VisualElement>(className: elementClassName);
+                element = rootVisualElement.Q(className: elementClassName);
             }
 
             return element;
@@ -170,7 +170,7 @@ namespace UnityEditor
             AddInspectorWindow(this);
         }
 
-        void OnDestroy()
+        protected virtual void OnDestroy()
         {
             if (m_PreviewWindow != null)
                 m_PreviewWindow.Close();
@@ -219,7 +219,7 @@ namespace UnityEditor
             container.AddToClassList(s_MainContainerClassName);
             rootVisualElement.hierarchy.Add(container);
 
-            var multiContainer = rootVisualElement.Q<VisualElement>(className: s_MultiEditClassName);
+            var multiContainer = rootVisualElement.Q(className: s_MultiEditClassName);
             multiContainer.Query<TextElement>().ForEach((label) => label.text = L10n.Tr(label.text));
             multiContainer.RemoveFromHierarchy();
 
@@ -512,7 +512,7 @@ namespace UnityEditor
             GameObject go = m_Tracker.activeEditors[0].target as GameObject;
             if (go == null)
                 return;
-            GameObject sourceGo = PrefabUtility.GetCorrespondingObjectFromSource(go);
+            GameObject sourceGo = PrefabUtility.GetCorrespondingConnectedObjectFromSource(go);
             if (sourceGo == null)
                 return;
 
@@ -612,8 +612,6 @@ namespace UnityEditor
             }
         }
 
-        static internal InspectorWindow s_CurrentInspectorWindow;
-
         private bool m_TrackerResetInserted;
 
         internal IMGUIContainer CreateIMGUIContainer(Action onGUIHandler, string name = null)
@@ -661,9 +659,8 @@ namespace UnityEditor
             FlushAllOptimizedGUIBlocksIfNeeded();
 
             ResetKeyboardControl();
-            s_CurrentInspectorWindow = this;
 
-            var addComponentButton = rootVisualElement.Q<VisualElement>(className: s_AddComponentClassName);
+            var addComponentButton = rootVisualElement.Q(className: s_AddComponentClassName);
             addComponentButton.Clear();
             previewAndLabelElement.Clear();
 
@@ -701,8 +698,6 @@ namespace UnityEditor
             {
                 m_MultiEditLabel.RemoveFromHierarchy();
             }
-
-            s_CurrentInspectorWindow = null;
 
             if (editors.Any() && RootEditorUtils.SupportsAddComponent(editors))
             {
@@ -1210,10 +1205,14 @@ namespace UnityEditor
                 const int stickyRectHeight = 80;
                 var rect = new Rect(10, anchorRect.y - stickyRectHeight, anchorRect.width - 30, stickyRectHeight);
                 rect.y -= offset;
+
+                if (GUI.Button(rect, "", Styles.stickyNote))
+                {
+                    EditorPrefs.SetBool("vcssticky", true);
+                }
+
                 if (Event.current.type == EventType.Repaint)
                 {
-                    Styles.stickyNote.Draw(rect, false, false, false, false);
-
                     Rect iconRect = new Rect(rect.x, rect.y + rect.height / 2 - 32, 64, 64);
                     if (EditorSettings.externalVersionControl == "Perforce") // TODO: remove hardcoding of perforce
                     {
@@ -1301,10 +1300,15 @@ namespace UnityEditor
                             // TODO: Retrieve default CheckoutMode from VC settings (depends on asset type; native vs. imported)
                             Task task = Provider.Checkout(assetEditor.targets, CheckoutMode.Both);
                             task.Wait();
-                            hostWindow.Repaint();
+                            if (hostWindow != null)
+                                hostWindow.Repaint();
                         }
                     }
-                    DrawVCSSticky(rect, assetEditor, rect.height / 2);
+
+                    if (!EditorPrefs.GetBool("vcssticky"))
+                    {
+                        DrawVCSSticky(rect, assetEditor, rect.height / 2);
+                    }
                 }
             }
         }

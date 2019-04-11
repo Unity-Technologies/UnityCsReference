@@ -670,6 +670,15 @@ namespace UnityEditor
             style.Draw(position, content, false, false, false, false);
         }
 
+        static bool IsPrintableChar(char c)
+        {
+            if (c < 32)
+            {
+                return false;
+            }
+            return true;
+        }
+
         static bool MightBePrintableKey(Event evt)
         {
             if (evt.command || evt.control)
@@ -716,7 +725,7 @@ namespace UnityEditor
                 case KeyCode.UpArrow:
                     return false;
                 case KeyCode.None:
-                    return evt.character != 0;
+                    return IsPrintableChar(evt.character);
                 default:
                     return true;
             }
@@ -1073,7 +1082,7 @@ namespace UnityEditor
                         }
                         else if (editor.IsEditingControl(id))
                         {
-                            bool validCharacter = (allowedletters == null || allowedletters.IndexOf(c) != -1) && c != 0;
+                            bool validCharacter = (allowedletters == null || allowedletters.IndexOf(c) != -1) && IsPrintableChar(c);
                             if (validCharacter)
                             {
                                 editor.Insert(c);
@@ -2025,12 +2034,6 @@ namespace UnityEditor
                 else
                 {
                     str = s_RecycledCurrentEditingString;
-                    // This piece of code will change the actively edited textfield to readjust whenever the underlying value changes.
-                    /*
-                                    if (isFloat ? (s_RecycledCurrentEditingFloat == floatVal) : (s_RecycledCurrentEditingInt == intVal)) {
-                                        str = s_RecycledCurrentEditingString;
-                                    }
-                    */
                     if (evt.type == EventType.ValidateCommand && evt.commandName == EventCommandNames.UndoRedoPerformed)
                     {
                         str = isDouble ? doubleVal.ToString(formatString, CultureInfo.InvariantCulture) : longVal.ToString(formatString, CultureInfo.InvariantCulture);
@@ -4983,7 +4986,7 @@ namespace UnityEditor
                 targetObjs.Length == 1 &&
                 comp != null &&
                 EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None &&
-                PrefabUtility.GetCorrespondingObjectFromSource(comp.gameObject) != null &&
+                PrefabUtility.GetCorrespondingConnectedObjectFromSource(comp.gameObject) != null &&
                 PrefabUtility.GetCorrespondingObjectFromSource(comp) == null;
         }
 

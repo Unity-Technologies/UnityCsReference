@@ -98,12 +98,12 @@ namespace UnityEditor.UIElements
             VisualElement uxmlLayout = visualTree.CloneTree();
             m_Root.Add(uxmlLayout);
 
-            m_ErrorMessageBox = m_Root.Q<VisualElement>("errorMessageBox");
+            m_ErrorMessageBox = m_Root.Q("errorMessageBox");
 
             var cSharpTextField = m_Root.Q<TextField>("cSharpTextField");
             cSharpTextField.RegisterCallback<ChangeEvent<string>>(OnCSharpValueChanged);
 
-            var cSharpTextInput = cSharpTextField.Q<VisualElement>(TextField.textInputUssName);
+            var cSharpTextInput = cSharpTextField.Q(TextField.textInputUssName);
             cSharpTextInput.RegisterCallback<KeyDownEvent>(OnReturnKey);
             cSharpTextInput.RegisterCallback<FocusEvent>(e => HideErrorMessage());
 
@@ -128,7 +128,7 @@ namespace UnityEditor.UIElements
                 m_UxmlName = e.newValue;
             });
 
-            var uxmlTextInput = uxmlTextField.Q<VisualElement>(TextField.textInputUssName);
+            var uxmlTextInput = uxmlTextField.Q(TextField.textInputUssName);
             uxmlTextInput.RegisterCallback<KeyDownEvent>(OnReturnKey);
             uxmlTextInput.RegisterCallback<FocusEvent>(e => HideErrorMessage());
 
@@ -151,7 +151,7 @@ namespace UnityEditor.UIElements
                 m_UssName = e.newValue;
             });
 
-            var ussTextInput = ussTextField.Q<VisualElement>(TextField.textInputUssName);
+            var ussTextInput = ussTextField.Q(TextField.textInputUssName);
             ussTextInput.RegisterCallback<KeyDownEvent>(OnReturnKey);
             ussTextInput.RegisterCallback<FocusEvent>(e => HideErrorMessage());
 

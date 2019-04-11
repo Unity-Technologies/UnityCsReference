@@ -173,13 +173,11 @@ namespace UnityEditor.ShortcutManagement
             {
                 var shortcutProfilePath = ShortcutProfileStore.GetShortcutFolderPath();
                 if (!System.IO.Directory.Exists(shortcutProfilePath))
-                {
                     System.IO.Directory.CreateDirectory(shortcutProfilePath);
-                }
                 for (var i = 0; i < shortcutProfiles.Count; ++i)
                 {
                     var srcProfilePath = shortcutProfiles[i] as string;
-                    if (srcProfilePath == null || !File.Exists(srcProfilePath))
+                    if (String.IsNullOrEmpty(srcProfilePath) || !File.Exists(srcProfilePath))
                         continue;
                     var baseName = Path.GetFileName(srcProfilePath);
                     var dstPath = Path.Combine(shortcutProfilePath, baseName);
@@ -202,7 +200,7 @@ namespace UnityEditor.ShortcutManagement
 
             // Reload profiles will unset the lastUsedProfile so make a copy of it:
             var lastUsedProfileId = m_LastUsedProfileIdProvider.lastUsedProfileId ?? defaultMode;
-            if (lastUsedProfileId != null)
+            if (!String.IsNullOrEmpty(lastUsedProfileId))
             {
                 profileManager.ReloadProfiles();
                 LoadProfileById(lastUsedProfileId);

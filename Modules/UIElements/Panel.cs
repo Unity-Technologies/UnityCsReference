@@ -321,6 +321,24 @@ namespace UnityEngine.UIElements
 
         internal static LoadResourceFunction loadResourceFunc = null;
 
+        private Focusable m_SavedFocusedElement;
+
+        internal void Focus()
+        {
+            if (m_SavedFocusedElement != null && !(m_SavedFocusedElement is IMGUIContainer))
+                m_SavedFocusedElement.Focus();
+
+            m_SavedFocusedElement = null;
+        }
+
+        internal void Blur()
+        {
+            m_SavedFocusedElement = focusController?.GetLeafFocusedElement();
+
+            if (m_SavedFocusedElement != null && !(m_SavedFocusedElement is IMGUIContainer))
+                m_SavedFocusedElement.Blur();
+        }
+
         internal string name
         {
             get { return m_PanelName; }

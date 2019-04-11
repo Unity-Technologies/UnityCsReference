@@ -16,7 +16,7 @@ namespace UnityEditor.SceneManagement
             public Transform transform;
             public Scene scene;
             public SceneAsset sceneAsset;
-            public string sceneName;
+            public string sceneName;  // TODO: remove when when we have changed our examples to use 'provideSubSceneName'
             public Color32 color;
 
 
@@ -27,6 +27,7 @@ namespace UnityEditor.SceneManagement
         }
 
         public static Func<SubSceneInfo[]> provideSubScenes;
+        public static Func<SubSceneInfo, string> provideSubSceneName;
         public static event Action<GenericMenu, GameObject> addItemsToGameObjectContextMenu;
         public static event Action<GenericMenu, Scene> addItemsToSceneHeaderContextMenu;
 
@@ -34,6 +35,44 @@ namespace UnityEditor.SceneManagement
         {
             foreach (var window in SceneHierarchyWindow.GetAllSceneHierarchyWindows())
                 window.sceneHierarchy.ReloadData();
+        }
+
+        static void RefreshSubSceneInfo()
+        {
+            if (SubSceneGUI.IsUsingSubScenes())
+                SubSceneGUI.FetchSubSceneInfo();
+        }
+
+        public static bool CanSetNewParent(Transform transform, Transform newParent)
+        {
+            if (transform == null)
+                throw new ArgumentNullException("transform");
+
+            if (newParent == null)
+                return true;
+
+            RefreshSubSceneInfo();
+            var parentIsChild = SubSceneGUI.IsChildOrSameAsOtherTransform(newParent, transform);
+            return !parentIsChild;
+        }
+
+        public static bool CanMoveTransformToScene(Transform transform, Scene scene)
+        {
+            if (transform == null)
+                throw new ArgumentNullException("transform");
+
+            if (!scene.IsValid())
+                throw new ArgumentException("The scene is not valid", "scene");
+
+            RefreshSubSceneInfo();
+            var subSceneInfo = SubSceneGUI.GetSubSceneInfo(scene);
+            if (!subSceneInfo.isValid)
+                return true;  // scene is a root and is always valid to move into
+
+            if (transform == subSceneInfo.transform)
+                return false;  // cannot move a SubScene's transform parent into itself
+
+            return CanSetNewParent(transform, subSceneInfo.transform);
         }
 
         internal static void AddCustomGameObjectContextMenuItems(GenericMenu menu, GameObject gameObject)

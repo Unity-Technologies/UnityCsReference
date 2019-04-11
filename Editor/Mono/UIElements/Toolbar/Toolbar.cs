@@ -10,9 +10,8 @@ namespace UnityEditor.UIElements
 {
     public class Toolbar : VisualElement
     {
-        private static readonly string s_ToolbarCommonStyleSheetPath = "StyleSheets/ToolbarCommon.uss";
-        private static readonly string s_ToolbarDarkStyleSheetPath = "StyleSheets/ToolbarDark.uss";
-        private static readonly string s_ToolbarLightStyleSheetPath = "StyleSheets/ToolbarLight.uss";
+        private static readonly string s_ToolbarDarkStyleSheetPath = "StyleSheets/Generated/ToolbarDark.uss.asset";
+        private static readonly string s_ToolbarLightStyleSheetPath = "StyleSheets/Generated/ToolbarLight.uss.asset";
 
         private static readonly StyleSheet s_ToolbarDarkStyleSheet;
         private static readonly StyleSheet s_ToolbarLightStyleSheet;
@@ -21,25 +20,11 @@ namespace UnityEditor.UIElements
 
         static Toolbar()
         {
-            s_ToolbarDarkStyleSheet = ScriptableObject.CreateInstance<StyleSheet>();
-            s_ToolbarDarkStyleSheet.hideFlags = HideFlags.HideAndDontSave;
+            s_ToolbarDarkStyleSheet = EditorGUIUtility.Load(s_ToolbarDarkStyleSheetPath) as StyleSheet;
             s_ToolbarDarkStyleSheet.isUnityStyleSheet = true;
 
-            s_ToolbarLightStyleSheet = ScriptableObject.CreateInstance<StyleSheet>();
-            s_ToolbarLightStyleSheet.hideFlags = HideFlags.HideAndDontSave;
+            s_ToolbarLightStyleSheet = EditorGUIUtility.Load(s_ToolbarLightStyleSheetPath) as StyleSheet;
             s_ToolbarLightStyleSheet.isUnityStyleSheet = true;
-
-            ReloadStyleSheets();
-        }
-
-        internal static void ReloadStyleSheets()
-        {
-            var defaultCommonSheet = EditorGUIUtility.Load(s_ToolbarCommonStyleSheetPath) as StyleSheet;
-            var defaultDarkSheet = EditorGUIUtility.Load(s_ToolbarDarkStyleSheetPath) as StyleSheet;
-            var defaultLightSheet = EditorGUIUtility.Load(s_ToolbarLightStyleSheetPath) as StyleSheet;
-
-            UIElementsEditorUtility.ResolveStyleSheets(s_ToolbarDarkStyleSheet, defaultCommonSheet, defaultDarkSheet);
-            UIElementsEditorUtility.ResolveStyleSheets(s_ToolbarLightStyleSheet, defaultCommonSheet, defaultLightSheet);
         }
 
         internal static void SetToolbarStyleSheet(VisualElement ve)

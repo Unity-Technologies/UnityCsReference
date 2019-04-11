@@ -985,6 +985,12 @@ namespace UnityEditor
             ExecuteShortcut(args, animEditor => { animEditor.state.rippleTimeClutch = args.stage == ShortcutStage.Begin; });
         }
 
+        [Shortcut("Animation/Frame All", typeof(AnimationWindow), KeyCode.A)]
+        static void FrameAll(ShortcutArguments args)
+        {
+            ExecuteShortcut(args, animEditor => { animEditor.triggerFraming = true; });
+        }
+
         private void PlayButtonOnGUI()
         {
             EditorGUI.BeginChangeCheck();

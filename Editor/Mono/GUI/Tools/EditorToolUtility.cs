@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using UnityEngine;
 using UObject = UnityEngine.Object;
 
 namespace UnityEditor.EditorTools
@@ -38,6 +39,7 @@ namespace UnityEditor.EditorTools
 
         static CustomEditorToolAssociation[] s_CustomEditorTools;
         static Dictionary<Type, List<Type>> s_CustomEditorToolsTypeAssociations = new Dictionary<Type, List<Type>>();
+        static Dictionary<Type, GUIContent> s_EditorToolDefaulToolbarIcons = new Dictionary<Type, GUIContent>();
 
         static CustomEditorToolAssociation[] customEditorTools
         {
@@ -249,6 +251,32 @@ namespace UnityEditor.EditorTools
                 if (customEditorTools[i].editorTool == type)
                     return customEditorTools[i].targetBehaviour != null;
             return false;
+        }
+
+        internal static GUIContent GetDefaultToolbarIcon(Type editorToolType)
+        {
+            GUIContent res;
+
+            if (s_EditorToolDefaulToolbarIcons.TryGetValue(editorToolType, out res))
+                return res;
+
+            var name = GetToolName(editorToolType);
+
+            res = new GUIContent()
+            {
+                tooltip = name
+            };
+
+            var attrib = GetEditorToolAttribute(editorToolType);
+
+            if (attrib != null && attrib.targetType != null)
+                res.image = AssetPreview.GetMiniTypeThumbnailFromType(attrib.targetType);
+            else
+                res.image = EditorGUIUtility.LoadIconRequired("CustomTool");
+
+            s_EditorToolDefaulToolbarIcons.Add(editorToolType, res);
+
+            return res;
         }
     }
 }

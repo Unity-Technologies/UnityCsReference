@@ -67,13 +67,6 @@ namespace UnityEditor
         private GUIStyle messageStyle;
         private string focus;
 
-        /*private static readonly Regex publisherRegex = new Regex(@"^[A-Za-z0-9\.\-]+$", (RegexOptions.Compiled | RegexOptions.CultureInvariant));
-
-        private static bool IsValidPublisher(string value)
-        {
-            return publisherRegex.IsMatch(value);
-        }*/
-
         public static void Show(string publisher)
         {
             var windows = (MetroCreateTestCertificateWindow[])Resources.FindObjectsOfTypeAll(typeof(MetroCreateTestCertificateWindow));

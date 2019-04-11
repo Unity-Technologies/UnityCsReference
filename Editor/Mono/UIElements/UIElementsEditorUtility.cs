@@ -12,46 +12,19 @@ namespace UnityEditor.UIElements
 {
     internal static class UIElementsEditorUtility
     {
-        internal static readonly string s_DefaultCommonStyleSheetPath = "StyleSheets/DefaultCommon.uss";
-        internal static readonly string s_DefaultCommonDarkStyleSheetPath = "StyleSheets/DefaultCommonDark.uss";
-        internal static readonly string s_DefaultCommonLightStyleSheetPath = "StyleSheets/DefaultCommonLight.uss";
+        internal static readonly string s_DefaultCommonDarkStyleSheetPath = "StyleSheets/Generated/DefaultCommonDark.uss.asset";
+        internal static readonly string s_DefaultCommonLightStyleSheetPath = "StyleSheets/Generated/DefaultCommonLight.uss.asset";
 
         internal static readonly StyleSheet s_DefaultCommonDarkStyleSheet;
         internal static readonly StyleSheet s_DefaultCommonLightStyleSheet;
 
         static UIElementsEditorUtility()
         {
-            s_DefaultCommonDarkStyleSheet = ScriptableObject.CreateInstance<StyleSheet>();
-            s_DefaultCommonDarkStyleSheet.hideFlags = HideFlags.HideAndDontSave;
+            s_DefaultCommonDarkStyleSheet = EditorGUIUtility.Load(s_DefaultCommonDarkStyleSheetPath) as StyleSheet;
             s_DefaultCommonDarkStyleSheet.isUnityStyleSheet = true;
-            s_DefaultCommonDarkStyleSheet.name = Path.GetFileName(s_DefaultCommonStyleSheetPath);
 
-
-            s_DefaultCommonLightStyleSheet = ScriptableObject.CreateInstance<StyleSheet>();
-            s_DefaultCommonLightStyleSheet.hideFlags = HideFlags.HideAndDontSave;
+            s_DefaultCommonLightStyleSheet = EditorGUIUtility.Load(s_DefaultCommonLightStyleSheetPath) as StyleSheet;
             s_DefaultCommonLightStyleSheet.isUnityStyleSheet = true;
-            s_DefaultCommonLightStyleSheet.name = Path.GetFileName(s_DefaultCommonStyleSheetPath);
-
-            ReloadDefaultEditorStyleSheets();
-        }
-
-        internal static void ReloadDefaultEditorStyleSheets()
-        {
-            var defaultCommonSheet = EditorGUIUtility.Load(s_DefaultCommonStyleSheetPath) as StyleSheet;
-            var defaultDarkSheet = EditorGUIUtility.Load(s_DefaultCommonDarkStyleSheetPath) as StyleSheet;
-            var defaultLighSheet = EditorGUIUtility.Load(s_DefaultCommonLightStyleSheetPath) as StyleSheet;
-
-            ResolveStyleSheets(s_DefaultCommonDarkStyleSheet, defaultCommonSheet, defaultDarkSheet);
-            ResolveStyleSheets(s_DefaultCommonLightStyleSheet, defaultCommonSheet, defaultLighSheet);
-
-            Toolbar.ReloadStyleSheets();
-        }
-
-        internal static void ResolveStyleSheets(StyleSheet dest, params StyleSheet[] sheetsToResolve)
-        {
-            var resolver = new StyleSheetResolver();
-            resolver.AddStyleSheets(sheetsToResolve);
-            resolver.ResolveTo(dest);
         }
 
         internal static int GetCursorId(StyleSheet sheet, StyleValueHandle handle)

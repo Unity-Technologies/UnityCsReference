@@ -469,8 +469,12 @@ namespace UnityEditor
 
         public virtual void OnLostFocus()
         {
-            // Added because this window uses RenameOverlay
-            treeView.EndNameEditing(true);
+            // On lost focus can be called before OnEnable have been called
+            if (m_TreeView != null)
+            {
+                // Added because this window uses RenameOverlay
+                m_TreeView.EndNameEditing(true);
+            }
         }
 
         public virtual void OnEnable()
@@ -1627,9 +1631,18 @@ namespace UnityEditor
             TreeViewSelectionChanged(newSelection);
         }
 
+        public void CollapseAll()
+        {
+            treeViewState.expandedIDs.Clear();
+            ReloadData();
+        }
+
         public virtual void AddItemsToWindowMenu(GenericMenu menu)
         {
+            menu.AddItem(EditorGUIUtility.TrTextContent("Collapse All"), false, CollapseAll);
+            menu.AddSeparator("");
             m_LockTracker.AddItemsToMenu(menu);
+
             if (Unsupported.IsDeveloperMode())
             {
                 menu.AddItem(new GUIContent("DEVELOPER/Debug Mode - Hierarchy "), s_Debug, () => s_Debug = !s_Debug);

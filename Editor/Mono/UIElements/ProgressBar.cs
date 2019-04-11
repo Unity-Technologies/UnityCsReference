@@ -60,8 +60,8 @@ namespace UnityEditor.UIElements
             container.AddToClassList(containerUssClassName);
             hierarchy.Add(container);
 
-            m_Background = container.Q<VisualElement>(null, backgroundUssClassName);
-            m_Progress = container.Q<VisualElement>(null, progressUssClassName);
+            m_Background = container.Q(null, backgroundUssClassName);
+            m_Progress = container.Q(null, progressUssClassName);
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         }
 

@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
@@ -35,23 +36,27 @@ namespace Unity.Profiling
         [NativeDisableUnsafePtrRestriction]
         internal readonly IntPtr m_Ptr;
 
+        [MethodImpl(256)]
         public ProfilerMarker(string name)
         {
             m_Ptr = Internal_Create(name, MarkerFlags.Default);
         }
 
+        [MethodImpl(256)]
         [Conditional("ENABLE_PROFILER")]
         public void Begin()
         {
             Internal_Begin(m_Ptr);
         }
 
+        [MethodImpl(256)]
         [Conditional("ENABLE_PROFILER")]
         public void Begin(UnityEngine.Object contextUnityObject)
         {
             Internal_BeginWithObject(m_Ptr, contextUnityObject);
         }
 
+        [MethodImpl(256)]
         [Conditional("ENABLE_PROFILER")]
         public void End()
         {
@@ -64,18 +69,21 @@ namespace Unity.Profiling
             [NativeDisableUnsafePtrRestriction]
             internal readonly IntPtr m_Ptr;
 
+            [MethodImpl(256)]
             internal AutoScope(IntPtr markerPtr)
             {
                 m_Ptr = markerPtr;
                 Internal_Begin(markerPtr);
             }
 
+            [MethodImpl(256)]
             public void Dispose()
             {
                 Internal_End(m_Ptr);
             }
         }
 
+        [MethodImpl(256)]
         public AutoScope Auto()
         {
             return new AutoScope(m_Ptr);

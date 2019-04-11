@@ -12,7 +12,6 @@ namespace UnityEditor
 {
     abstract class EditModeTool : EditorTool
     {
-        GUIContent m_Content;
         IToolModeOwner m_Owner;
         bool m_CanEditMultipleObjects;
 
@@ -23,42 +22,19 @@ namespace UnityEditor
 
         void OnEnable()
         {
+            EditorTools.EditorTools.activeToolChanging += ActiveToolChanging;
             EditorTools.EditorTools.activeToolChanged += ActiveToolChanged;
         }
 
         void OnDisable()
         {
+            EditorTools.EditorTools.activeToolChanging -= ActiveToolChanging;
             EditorTools.EditorTools.activeToolChanged -= ActiveToolChanged;
         }
 
         public abstract SceneViewEditMode editMode { get; }
 
         public abstract Type editorType { get; }
-
-        public override GUIContent toolbarIcon
-        {
-            get
-            {
-                if (m_Content == null)
-                {
-                    var customEditorAttributes = editorType.GetCustomAttributes(typeof(CustomEditor), false);
-
-                    if (customEditorAttributes.Length > 0)
-                    {
-                        m_Content = new GUIContent(
-                            AssetPreview.GetMiniTypeThumbnailFromType(((CustomEditor)customEditorAttributes[0])
-                                .m_InspectedType),
-                            editorType.ToString());
-                    }
-                    else
-                    {
-                        m_Content = new GUIContent(editorType.ToString(), editorType.ToString());
-                    }
-                }
-
-                return m_Content;
-            }
-        }
 
         public IToolModeOwner owner
         {
@@ -71,26 +47,26 @@ namespace UnityEditor
             return m_CanEditMultipleObjects || Selection.count == 1;
         }
 
+        void ActiveToolChanging()
+        {
+            if (EditorTools.EditorTools.IsActiveTool(this))
+                OnDeactivate();
+        }
+
         void ActiveToolChanged()
         {
             if (EditorTools.EditorTools.IsActiveTool(this))
                 OnActivate();
-            else
-                OnDeactivate();
         }
 
         void OnActivate()
         {
-            if (EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isPlaying)
-                return;
-            EditMode.ChangeEditModeFromToolContext(owner, editMode);
+            EditMode.EditModeToolStateChanged(owner, editMode);
         }
 
         void OnDeactivate()
         {
-            if (EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isPlaying)
-                return;
-            EditMode.ChangeEditModeFromToolContext(owner, SceneViewEditMode.None);
+            EditMode.EditModeToolStateChanged(owner, SceneViewEditMode.None);
         }
     }
 }

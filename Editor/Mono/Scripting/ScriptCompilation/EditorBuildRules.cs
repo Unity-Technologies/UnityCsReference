@@ -50,7 +50,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             public List<PrecompiledAssembly> PrecompiledReferences { get; set; }
             public TargetAssemblyType Type { get; private set; }
             public string[] Defines { get; set; }
-            public OptionalUnityReferences OptionalUnityReferences { get; set; }
             public ScriptCompilerOptions CompilerOptions { get; set; }
             public List<VersionDefine> VersionDefines { get; set; }
             public int MaxPathLength { get; private set; }
@@ -110,6 +109,30 @@ namespace UnityEditor.Scripting.ScriptCompilation
             public override string ToString()
             {
                 return string.Format("{0} ({1})", Filename, Type);
+            }
+
+            protected bool Equals(TargetAssembly other)
+            {
+                return string.Equals(Filename, other.Filename) && Flags == other.Flags && Type == other.Type;
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) return false;
+                if (ReferenceEquals(this, obj)) return true;
+                if (obj.GetType() != this.GetType()) return false;
+                return Equals((TargetAssembly)obj);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    var hashCode = (Filename != null ? Filename.GetHashCode() : 0);
+                    hashCode = (hashCode * 397) ^ (int)Flags;
+                    hashCode = (hashCode * 397) ^ (int)Type;
+                    return hashCode;
+                }
             }
         }
 
@@ -232,7 +255,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     (settings, defines) => customAssembly.IsCompatibleWith(settings.BuildTarget, settings.CompilationOptions, defines),
                     customAssembly.CompilerOptions)
                 {
-                    OptionalUnityReferences = customAssembly.OptionalUnityReferences,
                     PrecompiledReferences = new List<PrecompiledAssembly>(),
                     VersionDefines = customAssembly.VersionDefines != null
                         ? customAssembly.VersionDefines.ToList() : new List<VersionDefine>(),
@@ -449,8 +471,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 var targetAssembly = entry.Key;
                 bool isCustomScriptAssembly = targetAssembly.Type == TargetAssemblyType.Custom;
                 bool isExplicitlyReferenced = (targetAssembly.Flags & AssemblyFlags.ExplicitlyReferenced) == AssemblyFlags.ExplicitlyReferenced;
-                bool isTestAssembly = (targetAssembly.OptionalUnityReferences & OptionalUnityReferences.TestAssemblies) == OptionalUnityReferences.TestAssemblies;
-                return isCustomScriptAssembly && !isExplicitlyReferenced && !isTestAssembly;
+                return isCustomScriptAssembly && !isExplicitlyReferenced;
             });
 
             // If we have any dirty custom target assemblies, then the predefined target assemblies are marked as dirty,
@@ -644,6 +665,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var unityReferences = GetUnityReferences(scriptAssembly, assemblies.UnityAssemblies, settings.CompilationOptions, UnityReferencesOptions.None);
             references.AddRange(unityReferences);
 
+            if (TestRunnerHelpers.ShouldAddTestRunnerReferences(targetAssembly) && assemblies.CustomTargetAssemblies != null)
+            {
+                targetAssembly.References.AddRange(TestRunnerHelpers.GetReferences(assemblies.CustomTargetAssemblies.Values, settings.OutputDirectory));
+            }
+
             // Setup target assembly references
             foreach (var reference in targetAssembly.References)
             {
@@ -690,11 +716,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             // Add pre-compiled assemblies as references
             PrecompiledAssembly[] allPrecompiledAssemblies = assemblies.PrecompiledAssemblies ?? new PrecompiledAssembly[] {};
 
-            if (settings.OptionalUnityReferences != OptionalUnityReferences.None)
-            {
-                allPrecompiledAssemblies = allPrecompiledAssemblies.Where(x => x.OptionalUnityReferences == OptionalUnityReferences.None || ((targetAssembly.OptionalUnityReferences & x.OptionalUnityReferences & settings.OptionalUnityReferences) != 0)).ToArray();
-            }
-
             List<PrecompiledAssembly> precompiledReferences = new List<PrecompiledAssembly>();
             if ((targetAssembly.Flags & AssemblyFlags.ExplicitReferences) == AssemblyFlags.ExplicitReferences)
             {
@@ -705,6 +726,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             else
             {
                 precompiledReferences.AddRange(allPrecompiledAssemblies.Where(x => (x.Flags & AssemblyFlags.ExplicitlyReferenced) != AssemblyFlags.ExplicitlyReferenced));
+            }
+
+            if (TestRunnerHelpers.ShouldAddNunitReferences(targetAssembly))
+            {
+                precompiledReferences.AddRange(allPrecompiledAssemblies.Where(x => TestRunnerHelpers.IsPrecompiledAssemblyNunit(ref x)));
             }
 
             var precompiledReferenceNames = GetPrecompiledReferences(scriptAssembly, targetAssembly.Type, settings.CompilationOptions, targetAssembly.editorCompatibility, precompiledReferences.ToArray());
@@ -874,7 +900,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     (settings, defines) => IsCompatibleWithEditor(settings),
                     scriptCompilerOptions)
                 {
-                    OptionalUnityReferences = OptionalUnityReferences.TestAssemblies,
                 };
 
                 var editor = new TargetAssembly("Assembly-" + languageName + "-Editor" + ".dll",
@@ -887,7 +912,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     (settings, defines) => IsCompatibleWithEditor(settings),
                     scriptCompilerOptions)
                 {
-                    OptionalUnityReferences = OptionalUnityReferences.TestAssemblies,
                 };
 
                 runtimeFirstPassAssemblies.Add(runtimeFirstPass);
@@ -922,7 +946,17 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return assemblies.ToArray();
         }
 
-        internal static TargetAssembly[] GetTargetAssembliesWithScripts(Dictionary<string, string> allScripts,
+        internal static TargetAssembly[] GetTargetAssembliesWithScripts(
+            Dictionary<string, string> allScripts,
+            string projectDirectory,
+            IDictionary<string, TargetAssembly> customTargetAssemblies,
+            ScriptAssemblySettings settings)
+        {
+            return GetTargetAssembliesWithScriptsHashSet(allScripts, projectDirectory, customTargetAssemblies, settings).ToArray();
+        }
+
+        internal static HashSet<TargetAssembly> GetTargetAssembliesWithScriptsHashSet(
+            Dictionary<string, string> allScripts,
             string projectDirectory,
             IDictionary<string, TargetAssembly> customTargetAssemblies,
             ScriptAssemblySettings settings)
@@ -946,7 +980,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 uniqueTargetAssemblies.Add(targetAssembly);
             }
 
-            return uniqueTargetAssemblies.ToArray();
+            return uniqueTargetAssemblies;
         }
 
         internal static TargetAssembly GetTargetAssembly(string scriptPath, string assemblyName, string projectDirectory, IDictionary<string, TargetAssembly> customTargetAssemblies)

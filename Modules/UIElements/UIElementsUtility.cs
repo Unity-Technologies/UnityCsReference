@@ -31,6 +31,16 @@ namespace UnityEngine.UIElements
             GUIUtility.guiChanged += MakeCurrentIMGUIContainerDirty;
         }
 
+        internal static IMGUIContainer GetCurrentIMGUIContainer()
+        {
+            if (s_ContainerStack.Count > 0)
+            {
+                return s_ContainerStack.Peek();
+            }
+
+            return null;
+        }
+
         internal static void MakeCurrentIMGUIContainerDirty()
         {
             if (s_ContainerStack.Count > 0)

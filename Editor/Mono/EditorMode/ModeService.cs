@@ -210,7 +210,7 @@ namespace UnityEditor
 
         internal static bool IsValidModeId(string id)
         {
-            return !string.IsNullOrEmpty(id) && id.All(c => char.IsLetterOrDigit(c) || c == '_' || c == '-');
+            return !string.IsNullOrEmpty(id) && id.All(c => char.IsLetterOrDigit(c) || c == '_' || c == '-' || c == '.');
         }
 
         private static void ScanModes()
@@ -404,27 +404,27 @@ namespace UnityEditor
             if (args.prevIndex == -1)
                 return;
 
-            if (!HasCapability(ModeCapability.LayoutSwitching, true))
-                return;
-
-            // Save previous mode layout
-            var prevLayoutPath = Path.Combine(Application.temporaryCachePath, $"{k_ModeLayoutKeyName}-{GetModeId(args.prevIndex)}.wlt");
-            WindowLayout.SaveWindowLayout(prevLayoutPath);
-
-            // Load exiting layout if available
-            var modeLayoutPath = Path.Combine(Application.temporaryCachePath, $"{k_ModeLayoutKeyName}-{GetModeId(args.nextIndex)}.wlt");
-            if (File.Exists(modeLayoutPath))
+            if (HasCapability(ModeCapability.LayoutSwitching, true))
             {
-                WindowLayout.LoadWindowLayout(modeLayoutPath, false, false);
-            }
-            else
-            {
-                var layouts = GetModeDataSection(args.nextIndex, k_LayoutsSectionName) as IList<object>;
-                if (layouts != null && layouts.Count > 0)
+                // Save previous mode layout
+                var prevLayoutPath = Path.Combine(Application.temporaryCachePath, $"{k_ModeLayoutKeyName}-{GetModeId(args.prevIndex)}.wlt");
+                WindowLayout.SaveWindowLayout(prevLayoutPath);
+
+                // Load exiting layout if available
+                var modeLayoutPath = Path.Combine(Application.temporaryCachePath, $"{k_ModeLayoutKeyName}-{GetModeId(args.nextIndex)}.wlt");
+                if (File.Exists(modeLayoutPath))
                 {
-                    var layoutPath = layouts[0] as string;
-                    if (layoutPath != null)
-                        WindowLayout.LoadWindowLayout(layoutPath, false, false);
+                    WindowLayout.LoadWindowLayout(modeLayoutPath, false, false, true);
+                }
+                else
+                {
+                    var layouts = GetModeDataSection(args.nextIndex, k_LayoutsSectionName) as IList<object>;
+                    if (layouts != null && layouts.Count > 0)
+                    {
+                        var layoutPath = layouts[0] as string;
+                        if (layoutPath != null)
+                            WindowLayout.LoadWindowLayout(layoutPath, false, false, true);
+                    }
                 }
             }
 
@@ -433,6 +433,7 @@ namespace UnityEditor
 
         private static void OnModeChangeUpdate(ModeChangedArgs args)
         {
+            EditorApplication.UpdateMainWindowTitle();
             SaveProjectPrefModeIndex(args.nextIndex);
         }
 

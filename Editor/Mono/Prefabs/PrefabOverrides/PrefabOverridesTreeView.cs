@@ -414,6 +414,13 @@ namespace UnityEditor
 
         internal void ReloadOverridesDisplay()
         {
+            // Driven properties are ignored when collecting overrides.
+            // Properties that affect which properties are driven may have changed
+            // due to an apply or revert since we last reloaded the overrides display.
+            // Execute a layout call to get driven properties into a stable state
+            // before collecting overrides.
+            Canvas.ForceUpdateCanvases();
+
             base.Reload();
             if (m_Window != null)
                 m_Window.RefreshStatus();

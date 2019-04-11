@@ -296,8 +296,8 @@ namespace UnityEditor
                         float topMar = padding.top, bottomMar = padding.bottom;
                         if (entries.Count != 0)
                         {
-                            topMar = Mathf.Max(topMar, ((GUILayoutEntry)entries[0]).margin.top);
-                            bottomMar = Mathf.Max(bottomMar, ((GUILayoutEntry)entries[entries.Count - 1]).margin.bottom);
+                            topMar = Mathf.Max(topMar, ((GUILayoutEntry)entries[0]).marginTop);
+                            bottomMar = Mathf.Max(bottomMar, ((GUILayoutEntry)entries[entries.Count - 1]).marginBottom);
                         }
                         y += topMar;
                         height -= bottomMar + topMar;
@@ -334,9 +334,9 @@ namespace UnityEditor
                     {
                         foreach (GUILayoutEntry i in entries)
                         {
-                            float topMar = Mathf.Max(i.margin.top, padding.top);
+                            float topMar = Mathf.Max(i.marginTop, padding.top);
                             float thisY = y + topMar;
-                            float thisHeight = height - Mathf.Max(i.margin.bottom, padding.bottom) - topMar;
+                            float thisHeight = height - Mathf.Max(i.marginBottom, padding.bottom) - topMar;
 
                             if (i.stretchHeight != 0)
                                 i.SetVertical(thisY, thisHeight);
@@ -347,14 +347,14 @@ namespace UnityEditor
                     else
                     {
                         // If not, the subelements' margins have already been propagated upwards to this group, so we can safely ignore them
-                        float thisY = y - margin.top;
-                        float thisHeight = height + margin.vertical;
+                        float thisY = y - marginTop;
+                        float thisHeight = height + marginVertical;
                         foreach (GUILayoutEntry i in entries)
                         {
                             if (i.stretchHeight != 0)
-                                i.SetVertical(thisY + i.margin.top, thisHeight - i.margin.vertical);
+                                i.SetVertical(thisY + i.marginTop, thisHeight - i.marginVertical);
                             else
-                                i.SetVertical(thisY + i.margin.top, Mathf.Clamp(thisHeight - i.margin.vertical, i.minHeight, i.maxHeight));
+                                i.SetVertical(thisY + i.marginTop, Mathf.Clamp(thisHeight - i.marginVertical, i.minHeight, i.maxHeight));
                         }
                     }
                 }

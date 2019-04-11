@@ -339,5 +339,32 @@ namespace UnityEditor.Utils
             }
             return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
         }
+
+        static readonly char[] PathSeparators = new[] { '\\', '/' };
+
+        public static string MakeRelativePath(string basePath, string filePath)
+        {
+            var basePathComponents = basePath.Split(PathSeparators, StringSplitOptions.RemoveEmptyEntries);
+            var filePathComponents = filePath.Split(PathSeparators, StringSplitOptions.RemoveEmptyEntries);
+
+            int commonParts;
+
+            for (commonParts = 0; commonParts < basePathComponents.Length && commonParts < filePathComponents.Length; commonParts++)
+            {
+                if (basePathComponents[commonParts].ToLower() != filePathComponents[commonParts].ToLower())
+                    break;
+            }
+
+            var relativePathParts = new List<string>();
+            var parentDirCount = basePathComponents.Length - commonParts;
+
+            for (int i = 0; i < parentDirCount; i++)
+                relativePathParts.Add("..");
+
+            for (int i = commonParts; i < filePathComponents.Length; i++)
+                relativePathParts.Add(filePathComponents[i]);
+
+            return string.Join("\\", relativePathParts.ToArray());
+        }
     }
 }

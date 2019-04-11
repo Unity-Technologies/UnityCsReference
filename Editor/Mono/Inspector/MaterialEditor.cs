@@ -6,8 +6,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.IMGUI.Controls;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEditorInternal;
+using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -1541,16 +1543,20 @@ namespace UnityEditor
         static Renderer[] GetAssociatedRenderersFromInspector()
         {
             List<Renderer> renderers = new List<Renderer>();
-            if (InspectorWindow.s_CurrentInspectorWindow != null)
+            var imguicontainer = UIElementsUtility.GetCurrentIMGUIContainer();
+            if (imguicontainer != null)
             {
-                Editor[] editors = InspectorWindow.s_CurrentInspectorWindow.tracker.activeEditors;
-                foreach (var editor in editors)
+                var editorElement = imguicontainer.GetFirstAncestorOfType<EditorElement>();
+                if (editorElement != null)
                 {
-                    foreach (Object target in editor.targets)
+                    foreach (var editor in editorElement.Editors)
                     {
-                        var renderer = target as Renderer;
-                        if (renderer)
-                            renderers.Add(renderer);
+                        foreach (Object target in editor.targets)
+                        {
+                            var renderer = target as Renderer;
+                            if (renderer)
+                                renderers.Add(renderer);
+                        }
                     }
                 }
             }
@@ -1640,6 +1646,30 @@ namespace UnityEditor
 
         public bool PropertiesGUI()
         {
+            // OnInspectorGUI is wrapped inside a BeginVertical/EndVertical block that adds padding,
+            // which we don't want here so we could have the VC bar span the entire Material Editor width
+            // we stop the vertical block, draw the VC bar, and then start a new vertical block with the same style.
+            var style = GUILayoutUtility.topLevel.style;
+            EditorGUILayout.EndVertical();
+
+            // setting the GUI to enabled where the VC status bar is drawn because it gets disabled by the parent inspector
+            // for non-checked out materials, and we need the version control status bar to be always active
+            bool wasGUIEnabled = GUI.enabled;
+            GUI.enabled = true;
+
+            // Material Editor is the first inspected editor when accessed through the Project panel
+            // and this is the scenario where we do not want to redraw the VC status bar
+            // since InspectorWindow already takes care of that. Otherwise, the Material Editor
+            // is not the first inspected editor (e.g. when it's a part of a GO Inspector)
+            // thus we draw the VC status bar
+            if (!firstInspectedEditor)
+            {
+                InspectorWindow.DrawVCSShortInfo(EditorWindow.focusedWindow, this);
+            }
+
+            GUI.enabled = wasGUIEnabled;
+            EditorGUILayout.BeginVertical(style);
+
             if (m_InsidePropertiesGUI)
             {
                 Debug.LogWarning("PropertiesGUI() is being called recursively. If you want to render the default gui for shader properties then call PropertiesDefaultGUI() instead");

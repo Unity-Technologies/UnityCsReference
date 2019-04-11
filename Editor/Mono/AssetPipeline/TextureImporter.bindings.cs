@@ -10,6 +10,7 @@ using UnityEditor.Experimental.AssetImporters;
 using UnityEditor.Experimental.U2D;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -200,6 +201,34 @@ namespace UnityEditor
 
         [FreeFunction]
         internal static extern TextureImporterFormat[] RecommendedFormatsFromTextureTypeAndPlatform(TextureImporterType textureType, BuildTarget destinationPlatform);
+
+        [RequiredByNativeCode]
+        public static bool IsPlatformTextureFormatValid(TextureImporterType textureType, BuildTarget target, TextureImporterFormat currentFormat)
+        {
+            if (currentFormat != TextureImporterFormat.Automatic)
+            {
+                int[] formatValues;
+                string[] formatStrings;
+                TextureImportValidFormats.GetPlatformTextureFormatValuesAndStrings(textureType, target, out formatValues, out formatStrings);
+                return Array.Exists(formatValues, i => i == (int)currentFormat);
+            }
+
+            return true;
+        }
+
+        [RequiredByNativeCode]
+        public static bool IsDefaultPlatformTextureFormatValid(TextureImporterType textureType, TextureImporterFormat currentFormat)
+        {
+            if (currentFormat != TextureImporterFormat.Automatic)
+            {
+                int[] formatValues;
+                string[] formatStrings;
+                TextureImportValidFormats.GetDefaultTextureFormatValuesAndStrings(textureType, out formatValues, out formatStrings);
+                return Array.Exists(formatValues, i => i == (int)currentFormat);
+            }
+
+            return true;
+        }
 
         // Cubemap generation mode.
         public extern TextureImporterGenerateCubemap generateCubemap { get; set; }

@@ -22,7 +22,7 @@ namespace UnityEngine.UIElements.UIR
     // The values stored here could be updated behind the back of the holder of this
     // object. Hence, never turn this into a struct or else we can't do automatic
     // defragmentation and address ordering optimizations
-    internal class MeshHandle
+    internal class MeshHandle : PoolItem
     {
         internal Alloc allocVerts, allocIndices;
         internal uint triangleCount; // Can be less than the actual indices if only a portion of the allocation is used
@@ -114,6 +114,10 @@ namespace UnityEngine.UIElements.UIR
         private ComputeBuffer[] m_TransformBuffers;
         private DrawStatistics m_DrawStats;
         private bool m_UsesStraightYCoordinateSystem;
+
+        readonly Pool<MeshHandle> m_MeshHandles = new Pool<MeshHandle>();
+        readonly DrawParams m_DrawParams = new DrawParams();
+
         private static LinkedList<DeviceToFree> m_DeviceFreeQueue = new LinkedList<DeviceToFree>();   // Not thread safe for now
         private static int m_ActiveDeviceCount = 0; // Not thread safe for now
         private static bool m_SubscribedToNotifications; // Not thread safe for now
@@ -121,7 +125,7 @@ namespace UnityEngine.UIElements.UIR
 
         static readonly int s_FontTexPropID = Shader.PropertyToID("_FontTex");
         static readonly int s_CustomTexPropID = Shader.PropertyToID("_CustomTex");
-        static readonly int s_1PixelClipViewPropID = Shader.PropertyToID("_1PixelClipView");
+        static readonly int s_1PixelClipInvViewPropID = Shader.PropertyToID("_1PixelClipInvView");
         static readonly int s_PixelClipRectPropID = Shader.PropertyToID("_PixelClipRect");
         static readonly int s_TransformsPropID = Shader.PropertyToID("_Transforms");
         static readonly int s_TransformsBufferPropID = Shader.PropertyToID("_TransformsBuffer");
@@ -282,7 +286,8 @@ namespace UnityEngine.UIElements.UIR
 
         public MeshHandle Allocate(uint vertexCount, uint indexCount, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset)
         {
-            MeshHandle meshHandle = new MeshHandle() { triangleCount = indexCount / 3 };
+            MeshHandle meshHandle = m_MeshHandles.Get();
+            meshHandle.triangleCount = indexCount / 3;
             Allocate(meshHandle, vertexCount, indexCount, out vertexData, out indexData, false);
             indexOffset = (UInt16)meshHandle.allocVerts.start;
             return meshHandle;
@@ -529,6 +534,7 @@ namespace UnityEngine.UIElements.UIR
             mesh.allocIndices = new Alloc();
             mesh.allocPage = null;
             mesh.updateAllocID = 0;
+            m_MeshHandles.Return(mesh);
 
         }
 
@@ -634,18 +640,20 @@ namespace UnityEngine.UIElements.UIR
 
         static void Set1PixelSizeOnMaterial(DrawParams drawParams, Material mat)
         {
-            Vector4 _1PixelClipGroup = new Vector4();
+            Vector4 _1PixelClipInvView = new Vector4();
 
+            // Size of 1 pixel in clip space.
             RectInt viewport = Utility.GetActiveViewport();
-            _1PixelClipGroup.x = 2.0f / viewport.width;
-            _1PixelClipGroup.y = 2.0f / viewport.height;
+            _1PixelClipInvView.x = 2.0f / viewport.width;
+            _1PixelClipInvView.y = 2.0f / viewport.height;
 
+            // Pixel density in group space.
             Matrix4x4 matVPInv = (drawParams.projection * drawParams.view.Peek().transform).inverse;
-            Vector3 v = matVPInv.MultiplyVector(new Vector3(_1PixelClipGroup.x, _1PixelClipGroup.y));
-            _1PixelClipGroup.z = Mathf.Abs(v.x);
-            _1PixelClipGroup.w = Mathf.Abs(v.y);
+            Vector3 v = matVPInv.MultiplyVector(new Vector3(_1PixelClipInvView.x, _1PixelClipInvView.y));
+            _1PixelClipInvView.z = 1 / (Mathf.Abs(v.x) + Mathf.Epsilon);
+            _1PixelClipInvView.w = 1 / (Mathf.Abs(v.y) + Mathf.Epsilon);
 
-            mat.SetVector(s_1PixelClipViewPropID, _1PixelClipGroup);
+            mat.SetVector(s_1PixelClipInvViewPropID, _1PixelClipInvView);
         }
 
         void BeforeDraw()
@@ -697,7 +705,8 @@ namespace UnityEngine.UIElements.UIR
 
         void EvaluateChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, Texture atlas, ref Exception immediateException)
         {
-            var drawParams = new DrawParams(viewport, projection);
+            var drawParams = m_DrawParams;
+            drawParams.Reset(viewport, projection);
             ComputeBuffer transformsAsStructBuffer = m_TransformBuffers != null ? m_TransformBuffers[m_TransformBufferToUse] : null;
 
             Material standardMaterial = null;

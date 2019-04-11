@@ -294,27 +294,11 @@ namespace UnityEditor
             if (m_ConsoleAttachToPlayerState == null)
                 m_ConsoleAttachToPlayerState = new ConsoleAttachToPlayerState(this);
 
-            MakeSureConsoleAlwaysOnlyOne();
-
             titleContent = GetLocalizedTitleContent();
             ms_ConsoleWindow = this;
             m_DevBuild = Unsupported.IsDeveloperMode();
 
             Constants.LogStyleLineCount = EditorPrefs.GetInt("ConsoleWindowLogLineCount", 2);
-        }
-
-        void MakeSureConsoleAlwaysOnlyOne()
-        {
-            // make sure that console window is always open as only one.
-            if (ms_ConsoleWindow != null)
-            {
-                // get the container window of this console window.
-                ContainerWindow cw = ms_ConsoleWindow.m_Parent.window;
-
-                // the container window must not be main view(prevent from quitting editor).
-                if (cw.rootView.GetType() != typeof(MainView))
-                    cw.Close();
-            }
         }
 
         internal void OnDisable()

@@ -67,6 +67,14 @@ namespace UnityEditorInternal
             [NativeMethod("SetOculusDashSupportEnabled")]
             set;
         }
+
+        public static extern bool lowOverheadMode
+        {
+            [NativeMethod("GetOculusLowOverheadModeEnabled")]
+            get;
+            [NativeMethod("SetOculusLowOverheadModeEnabled")]
+            set;
+        }
     }
 
     [NativeHeader("Runtime/Misc/PlayerSettings.h")]
@@ -99,6 +107,12 @@ namespace UnityEditor
             {
                 get { return UnityEditorInternal.PlayerSettingsOculus.dashSupport; }
                 set { UnityEditorInternal.PlayerSettingsOculus.dashSupport = value; }
+            }
+
+            public static bool lowOverheadMode
+            {
+                get { return UnityEditorInternal.PlayerSettingsOculus.lowOverheadMode; }
+                set { UnityEditorInternal.PlayerSettingsOculus.lowOverheadMode = value; }
             }
         }
     }

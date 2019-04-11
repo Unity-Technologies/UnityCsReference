@@ -24,14 +24,12 @@ namespace UnityEditor
 
         private SerializedProperty m_MaterialLocation;
         private SerializedProperty m_Materials;
-        private SerializedProperty m_ExternalObjects;
         private bool m_HasRemappedMaterials = false;
 
         public override void OnEnable()
         {
             m_MaterialLocation = serializedObject.FindProperty("m_MaterialLocation");
             m_Materials = serializedObject.FindProperty("m_Materials");
-            m_ExternalObjects = serializedObject.FindProperty("m_ExternalObjects");
 
             if (tabs == null)
             {
@@ -78,41 +76,36 @@ namespace UnityEditor
             get { return importers.Any(i => i.materialsShouldBeRegenerated); }
         }
 
+        internal GUIContent GetGenButtonText(bool modified, bool upgrade)
+        {
+            if (modified || upgrade)
+            {
+                if (m_MaterialLocation.intValue == (int)SpeedTreeImporter.MaterialLocation.External)
+                    return Styles.ApplyAndGenerate;
+                else
+                    return Styles.ApplyAndGenerateRemapped;
+            }
+            else
+            {
+                if (m_MaterialLocation.intValue == (int)SpeedTreeImporter.MaterialLocation.External)
+                    return Styles.Regenerate;
+                else
+                    return Styles.RegenerateRemapped;
+            }
+        }
+
         protected override bool OnApplyRevertGUI()
         {
             bool applied = base.OnApplyRevertGUI();
 
-            if (HasRemappedMaterials())
+            bool doMatsHaveDifferentShaders = (tabs[0] as SpeedTreeImporterModelEditor).doMaterialsHaveDifferentShader;
+
+            if (HasRemappedMaterials() || doMatsHaveDifferentShaders)
             {
                 bool upgrade = upgradeMaterials;
-                GUIContent genButtonText = null;
-                if (HasModified() || upgrade)
+                bool hasModified = HasModified();
+                if (GUILayout.Button(GetGenButtonText(hasModified, upgrade)))
                 {
-                    if (m_MaterialLocation.intValue == (int)SpeedTreeImporter.MaterialLocation.External)
-                    {
-                        genButtonText = Styles.ApplyAndGenerate;
-                    }
-                    else
-                    {
-                        genButtonText = Styles.ApplyAndGenerateRemapped;
-                    }
-                }
-                else
-                {
-                    if (m_MaterialLocation.intValue == (int)SpeedTreeImporter.MaterialLocation.External)
-                    {
-                        genButtonText = Styles.Regenerate;
-                    }
-                    else
-                    {
-                        genButtonText = Styles.RegenerateRemapped;
-                    }
-                }
-
-                if (GUILayout.Button(genButtonText))
-                {
-                    bool hasModified = HasModified();
-
                     // Apply the changes and generate the materials before importing so that asset previews are up-to-date.
                     if (hasModified)
                         Apply();
@@ -177,13 +170,12 @@ namespace UnityEditor
                 return true;
 
             // if the m_ExternalObjecs map has any unapplied changes, keep the state of the button as is
-            if (m_ExternalObjects.serializedObject.hasModifiedProperties)
+            if (serializedObject.hasModifiedProperties)
                 return m_HasRemappedMaterials;
 
             m_HasRemappedMaterials = true;
-            foreach (var t in m_ExternalObjects.serializedObject.targetObjects)
+            foreach (var importer in importers)
             {
-                var importer = t as SpeedTreeImporter;
                 var externalObjectMap = importer.GetExternalObjectMap();
                 var materialsList = importer.sourceMaterials;
 
@@ -195,6 +187,8 @@ namespace UnityEditor
                 }
 
                 m_HasRemappedMaterials = m_HasRemappedMaterials && remappedMaterialCount != 0;
+                if (!m_HasRemappedMaterials)
+                    break;
             }
             return m_HasRemappedMaterials;
         }

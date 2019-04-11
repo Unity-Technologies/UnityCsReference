@@ -213,7 +213,7 @@ namespace UnityEditor.UIElements
             CurveEditorWindow.color = curveColor;
         }
 
-        protected internal override void ExecuteDefaultAction(EventBase evt)
+        protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
 
@@ -499,7 +499,7 @@ namespace UnityEditor.UIElements
                 pickingMode = PickingMode.Ignore;
             }
 
-            protected internal override void ExecuteDefaultAction(EventBase evt)
+            protected override void ExecuteDefaultAction(EventBase evt)
             {
                 base.ExecuteDefaultAction(evt);
 
@@ -537,13 +537,16 @@ namespace UnityEditor.UIElements
                     realWidth = k_MinEdgeWidth / scale;
                 }
 
+                Color finalColor = (QualitySettings.activeColorSpace == ColorSpace.Linear) ? curveColor.gamma : curveColor;
+                finalColor *= UIElementsUtility.editorPlayModeTintColor;
+
                 // Send the view zoom factor so that the antialias width do not grow when zooming in.
                 m_Mat.SetFloat("_ZoomFactor", scale * realWidth / CurveField.k_EdgeWidth * EditorGUIUtility.pixelsPerPoint);
 
                 // Send the view zoom correction so that the vertex shader can scale the edge triangles when below m_MinWidth.
                 m_Mat.SetFloat("_ZoomCorrection", realWidth / CurveField.k_EdgeWidth);
 
-                m_Mat.SetColor("_Color", (QualitySettings.activeColorSpace == ColorSpace.Linear) ? curveColor.gamma : curveColor);
+                m_Mat.SetColor("_Color", finalColor);
                 m_Mat.SetPass(0);
 
                 Graphics.DrawMeshNow(m_Mesh, Matrix4x4.identity);

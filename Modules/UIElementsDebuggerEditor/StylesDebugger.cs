@@ -585,8 +585,11 @@ namespace UnityEditor.UIElements.Debugger
 
             foreach (StyleSheet sheet in cursor.styleSheetList)
             {
-                string path = AssetDatabase.GetAssetPath(sheet);
-                selectedElementStylesheets.Add(string.IsNullOrEmpty(path) ? sheet.name : path);
+                string name = AssetDatabase.GetAssetPath(sheet);
+                if (string.IsNullOrEmpty(name) || sheet.isUnityStyleSheet)
+                    name = sheet.name;
+
+                selectedElementStylesheets.Add(name);
                 matchingContext.styleSheetStack.Add(sheet);
             }
         }

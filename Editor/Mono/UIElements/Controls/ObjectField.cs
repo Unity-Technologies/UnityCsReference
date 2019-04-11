@@ -89,7 +89,7 @@ namespace UnityEditor.UIElements
                 m_ObjectLabel.text = content.text;
             }
 
-            protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
+            protected override void ExecuteDefaultActionAtTarget(EventBase evt)
             {
                 base.ExecuteDefaultActionAtTarget(evt);
 
@@ -224,7 +224,7 @@ namespace UnityEditor.UIElements
                 m_ObjectField = objectField;
             }
 
-            protected internal override void ExecuteDefaultAction(EventBase evt)
+            protected override void ExecuteDefaultAction(EventBase evt)
             {
                 base.ExecuteDefaultAction(evt);
 

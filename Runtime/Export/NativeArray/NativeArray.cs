@@ -80,6 +80,7 @@ namespace Unity.Collections
             if (totalSize > int.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(length), $"Length * sizeof(T) cannot exceed {int.MaxValue} bytes");
 
+            array = default(NativeArray<T>);
             array.m_Buffer = UnsafeUtility.Malloc(totalSize, UnsafeUtility.AlignOf<T>(), allocator);
             array.m_Length = length;
             array.m_AllocatorLabel = allocator;

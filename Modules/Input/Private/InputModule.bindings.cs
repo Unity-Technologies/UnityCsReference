@@ -17,8 +17,6 @@ namespace UnityEngineInternal.Input
     {
         internal static extern bool hasDeviceDiscoveredCallback { set; }
 
-        internal static extern bool ShouldUpdateFallback(NativeInputUpdateType updateType);
-
         public static extern double currentTime { get; }
 
         public static extern double currentTimeOffsetToRealtimeSinceStartup { get; }
@@ -42,6 +40,9 @@ namespace UnityEngineInternal.Input
 
         public static extern void Update(NativeInputUpdateType updateType);
 
-        public static extern void SetUpdateMask(NativeInputUpdateType mask);
+        [Obsolete("This is not needed any longer.")]
+        public static void SetUpdateMask(NativeInputUpdateType mask)
+        {
+        }
     }
 }

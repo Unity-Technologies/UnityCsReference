@@ -175,8 +175,6 @@ namespace UnityEditor
                 if (panel.contextType != ContextType.Editor)
                     continue;
 
-                // Reload default style sheets to resolve variables if they changed
-                UIElementsEditorUtility.ReloadDefaultEditorStyleSheets();
                 panel.DirtyStyleSheets();
 
                 var guiView = panel.ownerObject as GUIView;

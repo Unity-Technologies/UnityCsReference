@@ -126,11 +126,11 @@ namespace UnityEngine
     }
 }
 
-namespace UnityEditor.Experimental
+namespace UnityEngine.Experimental.GlobalIllumination
 {
     [NativeHeader("Runtime/Camera/RenderSettings.h")]
     [StaticAccessor("GetRenderSettings()", StaticAccessorType.Dot)]
-    public sealed partial class RenderSettings : Object
+    public partial class RenderSettings
     {
         extern public static bool useRadianceAmbientProbe { get; set; }
     }

@@ -69,8 +69,27 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public bool showHorizontal { get; set; }
-        public bool showVertical { get; set; }
+        private bool m_ShowHorizontal;
+        public bool showHorizontal
+        {
+            get { return m_ShowHorizontal;}
+            set
+            {
+                m_ShowHorizontal = value;
+                UpdateScrollers(m_ShowHorizontal, m_ShowVertical);
+            }
+        }
+
+        private bool m_ShowVertical;
+        public bool showVertical
+        {
+            get { return m_ShowVertical;}
+            set
+            {
+                m_ShowVertical = value;
+                UpdateScrollers(m_ShowHorizontal, m_ShowVertical);
+            }
+        }
 
         internal bool needsHorizontal
         {
@@ -277,6 +296,12 @@ namespace UnityEngine.UIElements
                 needsHorizontalCached = needsHorizontalCached || horizontalScroller.visible;
             }
 
+            UpdateScrollers(needsHorizontalCached, needsVerticalCached);
+            UpdateContentViewTransform();
+        }
+
+        void UpdateScrollers(bool displayHorizontal, bool displayVertical)
+        {
             if (contentContainer.layout.width > Mathf.Epsilon)
                 horizontalScroller.Adjust(contentViewport.layout.width / contentContainer.layout.width);
             if (contentContainer.layout.height > Mathf.Epsilon)
@@ -287,12 +312,12 @@ namespace UnityEngine.UIElements
             verticalScroller.SetEnabled(contentContainer.layout.height - contentViewport.layout.height > 0);
 
             // Expand content if scrollbars are hidden
-            contentViewport.style.marginRight = needsVerticalCached ? verticalScroller.layout.width : 0;
-            horizontalScroller.style.right = needsVerticalCached ? verticalScroller.layout.width : 0;
-            contentViewport.style.marginBottom = needsHorizontalCached ? horizontalScroller.layout.height : 0;
-            verticalScroller.style.bottom = needsHorizontalCached ? horizontalScroller.layout.height : 0;
+            contentViewport.style.marginRight = displayVertical ? verticalScroller.layout.width : 0;
+            horizontalScroller.style.right = displayVertical ? verticalScroller.layout.width : 0;
+            contentViewport.style.marginBottom = displayHorizontal ? horizontalScroller.layout.height : 0;
+            verticalScroller.style.bottom = displayHorizontal ? horizontalScroller.layout.height : 0;
 
-            if (needsHorizontalCached && scrollableWidth > 0f)
+            if (displayHorizontal && scrollableWidth > 0f)
             {
                 horizontalScroller.lowValue = 0f;
                 horizontalScroller.highValue = scrollableWidth;
@@ -302,7 +327,7 @@ namespace UnityEngine.UIElements
                 horizontalScroller.value = 0f;
             }
 
-            if (needsVerticalCached && scrollableHeight > 0f)
+            if (displayVertical && scrollableHeight > 0f)
             {
                 verticalScroller.lowValue = 0f;
                 verticalScroller.highValue = scrollableHeight;
@@ -313,16 +338,14 @@ namespace UnityEngine.UIElements
             }
 
             // Set visibility and remove/add content viewport margin as necessary
-            if (horizontalScroller.visible != needsHorizontalCached)
+            if (horizontalScroller.visible != displayHorizontal)
             {
-                horizontalScroller.visible = needsHorizontalCached;
+                horizontalScroller.visible = displayHorizontal;
             }
-            if (verticalScroller.visible != needsVerticalCached)
+            if (verticalScroller.visible != displayVertical)
             {
-                verticalScroller.visible = needsVerticalCached;
+                verticalScroller.visible = displayVertical;
             }
-
-            UpdateContentViewTransform();
         }
 
         // TODO: Same behaviour as IMGUI Scroll view

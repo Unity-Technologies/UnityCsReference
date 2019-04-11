@@ -453,6 +453,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             bool removed;
 
             var removedAssemblies = new List<CustomScriptAssemblyAndReference>();
+            var assembliesWithScripts = GetTargetAssembliesWithScriptsHashSet(options);
 
             do
             {
@@ -475,6 +476,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
                             // as those assemblies have not been compiled.
                             if (!EditorBuildRules.IsCompatibleWithPlatformAndDefines(reference, buildTarget, options))
                                 continue;
+
+                            if (!assembliesWithScripts.Contains(reference))
+                            {
+                                continue;
+                            }
 
                             if (!customTargetAssemblyCompiledPaths.ContainsKey(reference))
                             {
@@ -1290,9 +1296,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         private static EditorBuildRules.TargetAssembly[] GetPredefinedAssemblyReferences(IDictionary<string, EditorBuildRules.TargetAssembly> targetAssemblies)
         {
-            var targetAssembliesResult = targetAssemblies.Values.ToArray()
-                .Where(x => (x.OptionalUnityReferences & OptionalUnityReferences.TestAssemblies) == OptionalUnityReferences.None
-                    && (x.Flags & AssemblyFlags.ExplicitlyReferenced) == AssemblyFlags.None)
+            var targetAssembliesResult = (targetAssemblies.Values ?? Enumerable.Empty<EditorBuildRules.TargetAssembly>())
+                .Where(x => (x.Flags & AssemblyFlags.ExplicitlyReferenced) == AssemblyFlags.None)
                 .ToArray();
             return targetAssembliesResult;
         }
@@ -1575,7 +1580,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 ApiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup),
                 CompilationOptions = options,
                 PredefinedAssembliesCompilerOptions = predefinedAssembliesCompilerOptions,
-                OptionalUnityReferences = ToOptionalUnityReferences(options),
             };
 
             return settings;
@@ -1677,19 +1681,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             compilationTask.Stop();
         }
 
-        internal static OptionalUnityReferences ToOptionalUnityReferences(EditorScriptCompilationOptions editorScriptCompilationOptions)
-        {
-            var optinalUnityReferences = OptionalUnityReferences.None;
-
-            var buildingIncludingTestAssemblies = (editorScriptCompilationOptions & EditorScriptCompilationOptions.BuildingIncludingTestAssemblies) == EditorScriptCompilationOptions.BuildingIncludingTestAssemblies;
-            if (buildingIncludingTestAssemblies)
-            {
-                optinalUnityReferences |= OptionalUnityReferences.TestAssemblies;
-            }
-
-            return optinalUnityReferences;
-        }
-
         public CompileStatus TickCompilationPipeline(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform)
         {
             // Return CompileStatus.Compiling if any compile task is still compiling.
@@ -1771,6 +1762,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 targetAssemblyInfos[i] = ToTargetAssemblyInfo(targetAssemblies[i]);
 
             return targetAssemblyInfos;
+        }
+
+        public HashSet<EditorBuildRules.TargetAssembly> GetTargetAssembliesWithScriptsHashSet(EditorScriptCompilationOptions options)
+        {
+            ScriptAssemblySettings settings = CreateEditorScriptAssemblySettings(EditorScriptCompilationOptions.BuildingForEditor | options);
+            var targetAssemblies = EditorBuildRules.GetTargetAssembliesWithScriptsHashSet(allScripts, projectDirectory, customTargetAssemblies, settings);
+
+            return targetAssemblies;
         }
 
         public ScriptAssembly[] GetAllScriptAssembliesForLanguage<T>(EditorScriptCompilationOptions additionalOptions) where T : SupportedLanguage

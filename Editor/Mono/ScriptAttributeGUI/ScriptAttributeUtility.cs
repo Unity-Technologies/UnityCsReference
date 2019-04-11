@@ -159,6 +159,10 @@ namespace UnityEditor
 
         private static Type GetScriptTypeFromProperty(SerializedProperty property)
         {
+            if (property.serializedObject.targetObject != null)
+                return property.serializedObject.targetObject.GetType();
+
+            // Fallback in case the targetObject has been destroyed but the property is still valid.
             SerializedProperty scriptProp = property.serializedObject.FindProperty("m_Script");
 
             if (scriptProp == null)
@@ -220,10 +224,7 @@ namespace UnityEditor
                 type = field?.FieldType;
                 // we want to get the element type if we are looking for Array.data[x]
                 if (match && type != null && type.IsArrayOrList())
-                {
                     type = type.GetArrayOrListElementType();
-                    return null;
-                }
                 return field;
             }
 

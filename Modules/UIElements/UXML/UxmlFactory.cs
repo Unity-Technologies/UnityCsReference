@@ -82,7 +82,7 @@ namespace UnityEngine.UIElements
         VisualElement Create(IUxmlAttributes bag, CreationContext cc);
     }
 
-    public class UxmlFactory<TCreatedType, TTraits> : IUxmlFactory where TCreatedType : VisualElement where TTraits : UxmlTraits, new()
+    public class UxmlFactory<TCreatedType, TTraits> : IUxmlFactory where TCreatedType : VisualElement, new() where TTraits : UxmlTraits, new()
     {
         // Make private once we get rid of PropertyControl
         internal TTraits m_Traits;
@@ -182,79 +182,13 @@ namespace UnityEngine.UIElements
             return true;
         }
 
-        static bool s_WarningLogged = false;
-
         public virtual VisualElement Create(IUxmlAttributes bag, CreationContext cc)
         {
-            TCreatedType ve;
-
-            // Ideally, we would simply do
-            //   TCreatedType ve = new TCreatedType()
-            // since we now have a default constructor on all VisualElement classes.
-            // However, we want to preserve compatibility with 2018.1, which did not
-            // have this requirement, but required overriding DoCreate() instead.
-            //
-            // The reason we need to preserve compatibility with 2018.1, despite our
-            // experimental status, is that we cannot at the moment force users to
-            // upgrade their packages, and package-manager-ui package would need to
-            // be upgraded to use the new UxmlFactory.
-            //
-            // We examine the factory type to see if it contains a
-            // protected override TCreatedType DoCreate(IUxmlAttributes bag, CreationContext cc)
-            // method and call it if we find one. Otherwise, we try calling TCreatedType default
-            // constructor.
-            Type[] parameterTypes = { typeof(IUxmlAttributes), typeof(CreationContext) };
-            bool doCreateIsOverridden = GetType().GetMethod("DoCreate",
-                BindingFlags.DeclaredOnly | BindingFlags.ExactBinding | BindingFlags.Instance | BindingFlags.NonPublic,
-                null, parameterTypes, null) != null;
-
-            if (doCreateIsOverridden)
-            {
-                if (!s_WarningLogged)
-                {
-                    Debug.LogWarning("Calling obsolete method " + GetType().FullName + ".DoCreate(IUxmlAttributes bag, CreationContext cc). Remove and implemenent a default constructor for the created type instead.");
-                    s_WarningLogged = true;
-                }
-#pragma warning disable 618
-                // Disable warning for call to obsolete method.
-                ve = DoCreate(bag, cc);
-#pragma warning restore
-            }
-            else
-            {
-                try
-                {
-                    // Calling the default constructor would require a constraint on TCreatedType,
-                    // which cannot be added to preserve compatibility with 2018.1
-                    // (we want types without default constructor to still be accepted as a parameter
-                    // to the generic UxmlFactory<>).
-                    ve = (TCreatedType)Activator.CreateInstance(typeof(TCreatedType));
-                }
-                catch (MemberAccessException)
-                {
-                    if (!s_WarningLogged)
-                    {
-                        Debug.LogError("No accessible default constructor for " + typeof(TCreatedType));
-                        s_WarningLogged = true;
-                    }
-                    ve = null;
-                }
-            }
-
-            if (ve != null)
-            {
-                m_Traits.Init(ve, bag, cc);
-            }
-
+            TCreatedType ve = new TCreatedType();
+            m_Traits.Init(ve, bag, cc);
             return ve;
-        }
-
-        [Obsolete("Remove and implemenent a default constructor for the created type instead.")]
-        protected virtual TCreatedType DoCreate(IUxmlAttributes bag, CreationContext cc)
-        {
-            return null;
         }
     }
 
-    public class UxmlFactory<TCreatedType> : UxmlFactory<TCreatedType, VisualElement.UxmlTraits> where TCreatedType : VisualElement {}
+    public class UxmlFactory<TCreatedType> : UxmlFactory<TCreatedType, VisualElement.UxmlTraits> where TCreatedType : VisualElement, new() {}
 }

@@ -72,9 +72,9 @@ namespace UnityEditor.Experimental.GraphView
             m_MainContainer = tpl.CloneTree();
             m_MainContainer.AddToClassList("mainContainer");
 
-            m_Header = m_MainContainer.Q<VisualElement>("sectionHeader");
+            m_Header = m_MainContainer.Q("sectionHeader");
             m_TitleLabel = m_MainContainer.Q<Label>("sectionTitleLabel");
-            m_RowsContainer = m_MainContainer.Q<VisualElement>("rowsContainer");
+            m_RowsContainer = m_MainContainer.Q("rowsContainer");
 
             hierarchy.Add(m_MainContainer);
 

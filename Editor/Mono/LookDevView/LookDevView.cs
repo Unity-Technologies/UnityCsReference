@@ -891,31 +891,6 @@ namespace UnityEditor
                         }
                     }
                     GUILayout.EndHorizontal();
-
-                    /*
-                    GUILayout.BeginHorizontal();
-                    {
-                        GUILayout.Label(LookDevViewsWindow.styles.sRotation, GetPropertyLabelStyle(LookDevProperty.kEnvRotation), GUILayout.Width(sliderLabelWidth));
-
-                        float envRotation = m_LookDevConfig.lookDevContexts[m_LookDevConfig.lookDevContextIndex].envRotation;
-                        EditorGUI.BeginChangeCheck();
-                        envRotation = GUILayout.HorizontalSlider(envRotation, 0.0f, 720.0f, GUILayout.Width(sliderWidth));
-                        envRotation = Mathf.Clamp(EditorGUILayout.FloatField(float.Parse(envRotation.ToString("F0")), GUILayout.Width(fieldWidth)), 0.0f, 720.0f);
-                        if (EditorGUI.EndChangeCheck())
-                        {
-                            UpdateFloatProperty(LookDevProperty.kEnvRotation, envRotation);
-                        }
-                        bool linked = false;
-                        EditorGUI.BeginChangeCheck();
-                        bool isLink = m_LookDevConfig.IsPropertyLinked(LookDevProperty.kEnvRotation);
-                        linked = GUILayout.Toggle(isLink, GetGUIContentLink(isLink), styles.sToolBarButton);
-                        if (EditorGUI.EndChangeCheck())
-                        {
-                            UpdatePropertyLink(LookDevProperty.kEnvRotation, linked);
-                        }
-                    }
-                    GUILayout.EndHorizontal();
-                    */
                 }
                 GUILayout.EndVertical();
             }

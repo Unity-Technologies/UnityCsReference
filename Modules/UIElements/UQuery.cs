@@ -67,17 +67,12 @@ namespace UnityEngine.UIElements
         {
             internal List<RuleMatcher> m_Matchers;
 
-
-            internal List<RuleMatcher> m_MatchersUsedInRecursion;
-
             protected UQueryMatcher()
             {
             }
 
             public override void Traverse(VisualElement element)
             {
-                // TODO not actually sure this copy is necessary, review
-                m_MatchersUsedInRecursion = new List<RuleMatcher>(m_Matchers);
                 base.Traverse(element);
             }
 
@@ -90,13 +85,13 @@ namespace UnityEngine.UIElements
 
             public override void TraverseRecursive(VisualElement element, int depth)
             {
-                int originalCount = m_MatchersUsedInRecursion.Count;
+                int originalCount = m_Matchers.Count;
 
-                int count = m_MatchersUsedInRecursion.Count; // changes while we iterate so save
+                int count = m_Matchers.Count; // changes while we iterate so save
 
                 for (int j = 0; j < count; j++)
                 {
-                    RuleMatcher matcher = m_MatchersUsedInRecursion[j];
+                    RuleMatcher matcher = m_Matchers[j];
 
                     if (StyleSelectorHelper.MatchRightToLeft(element, matcher.complexSelector, NoProcessResult))
                     {
@@ -111,9 +106,9 @@ namespace UnityEngine.UIElements
                 Recurse(element, depth);
 
                 // Remove all matchers that we could possibly have added at this level of recursion
-                if (m_MatchersUsedInRecursion.Count > originalCount)
+                if (m_Matchers.Count > originalCount)
                 {
-                    m_MatchersUsedInRecursion.RemoveRange(originalCount, m_MatchersUsedInRecursion.Count - originalCount);
+                    m_Matchers.RemoveRange(originalCount, m_Matchers.Count - originalCount);
                 }
             }
 
@@ -197,7 +192,7 @@ namespace UnityEngine.UIElements
         private static ActionQueryMatcher s_Action = new ActionQueryMatcher();
 
         private readonly VisualElement m_Element;
-        private readonly List<RuleMatcher> m_Matchers;
+        internal readonly List<RuleMatcher> m_Matchers;
 
         internal UQueryState(VisualElement element, List<RuleMatcher> matchers)
         {
@@ -293,10 +288,23 @@ namespace UnityEngine.UIElements
 
         public void ForEach(Action<T> funcCall)
         {
-            s_Action.callBack = funcCall;
+            var act = s_Action;
 
-            s_Action.Run(m_Element, m_Matchers);
-            s_Action.callBack = null;
+            if (act.callBack != null)
+            {
+                //we're inside a ForEach callback already. we need to allocate :(
+                act = new ActionQueryMatcher();
+            }
+
+            try
+            {
+                act.callBack = funcCall;
+                act.Run(m_Element, m_Matchers);
+            }
+            finally
+            {
+                act.callBack = null;
+            }
         }
 
         private class DelegateQueryMatcher<TReturnType> : UQuery.UQueryMatcher
@@ -323,11 +331,23 @@ namespace UnityEngine.UIElements
         {
             var matcher = DelegateQueryMatcher<T2>.s_Instance;
 
-            matcher.callBack = funcCall;
-            matcher.result = result;
-            matcher.Run(m_Element, m_Matchers);
-            matcher.callBack = null;
-            matcher.result = null;
+            if (matcher.callBack != null)
+            {
+                //we're inside a call to ForEach already!, we need to allocate :(
+                matcher = new DelegateQueryMatcher<T2>();
+            }
+
+            try
+            {
+                matcher.callBack = funcCall;
+                matcher.result = result;
+                matcher.Run(m_Element, m_Matchers);
+            }
+            finally
+            {
+                matcher.callBack = null;
+                matcher.result = null;
+            }
         }
 
         public List<T2> ForEach<T2>(Func<T, T2> funcCall)
@@ -459,6 +479,13 @@ namespace UnityEngine.UIElements
             AddName(name);
             AddClass(className);
             return AddRelationship<T2>(StyleSelectorRelationship.None);
+        }
+
+        //Only used to avoid allocations in Q<>() Don't use this unless you know what you're doing
+        internal UQueryBuilder<T> SingleBaseType()
+        {
+            parts.Add(StyleSelectorPart.CreatePredicate(UQuery.IsOfType<T>.s_Instance));
+            return this;
         }
 
         public UQueryBuilder<T> Where(Func<T, bool> selectorPredicate)
@@ -741,14 +768,20 @@ namespace UnityEngine.UIElements
 
     public static class UQueryExtensions
     {
+        private static UQueryState<VisualElement> SingleElementEmptyQuery = new UQueryBuilder<VisualElement>(null).Build();
+
+        private static UQueryState<VisualElement> SingleElementNameQuery = new UQueryBuilder<VisualElement>(null).Name(String.Empty).Build();
+        private static UQueryState<VisualElement> SingleElementClassQuery = new UQueryBuilder<VisualElement>(null).Class(String.Empty).Build();
+        private static UQueryState<VisualElement> SingleElementNameAndClassQuery = new UQueryBuilder<VisualElement>(null).Name(String.Empty).Class(String.Empty).Build();
+
+        private static UQueryState<VisualElement> SingleElementTypeQuery = new UQueryBuilder<VisualElement>(null).SingleBaseType().Build();
+        private static UQueryState<VisualElement> SingleElementTypeAndNameQuery = new UQueryBuilder<VisualElement>(null).SingleBaseType().Name(String.Empty).Build();
+        private static UQueryState<VisualElement> SingleElementTypeAndClassQuery = new UQueryBuilder<VisualElement>(null).SingleBaseType().Class(String.Empty).Build();
+        private static UQueryState<VisualElement> SingleElementTypeAndNameAndClassQuery = new UQueryBuilder<VisualElement>(null).SingleBaseType().Name(String.Empty).Class(String.Empty).Build();
+
         public static T Q<T>(this VisualElement e, string name = null, params string[] classes) where T : VisualElement
         {
             return e.Query<T>(name, classes).Build().First();
-        }
-
-        public static T Q<T>(this VisualElement e, string name = null, string className = null) where T : VisualElement
-        {
-            return e.Query<T>(name, className).Build().First();
         }
 
         public static VisualElement Q(this VisualElement e, string name = null, params string[] classes)
@@ -756,9 +789,73 @@ namespace UnityEngine.UIElements
             return e.Query<VisualElement>(name, classes).Build().First();
         }
 
+        public static T Q<T>(this VisualElement e, string name = null, string className = null) where T : VisualElement
+        {
+            if (typeof(T) == typeof(VisualElement))
+            {
+                return e.Q(name, className) as T;
+            }
+
+            UQueryState<VisualElement> query;
+
+            if (name == null)
+            {
+                if (className == null)
+                {
+                    query = SingleElementTypeQuery.RebuildOn(e);
+                    query.m_Matchers[0].complexSelector.selectors[0].parts[0] = StyleSelectorPart.CreatePredicate(UQuery.IsOfType<T>.s_Instance);
+                    return query.First() as T;
+                }
+
+                query = SingleElementTypeAndClassQuery.RebuildOn(e);
+                query.m_Matchers[0].complexSelector.selectors[0].parts[0] = StyleSelectorPart.CreatePredicate(UQuery.IsOfType<T>.s_Instance);
+                query.m_Matchers[0].complexSelector.selectors[0].parts[1] = StyleSelectorPart.CreateClass(className);
+                return query.First() as T;
+            }
+
+            if (className == null)
+            {
+                query = SingleElementTypeAndNameQuery.RebuildOn(e);
+                query.m_Matchers[0].complexSelector.selectors[0].parts[0] = StyleSelectorPart.CreatePredicate(UQuery.IsOfType<T>.s_Instance);
+                query.m_Matchers[0].complexSelector.selectors[0].parts[1] = StyleSelectorPart.CreateId(name);
+                return query.First() as T;
+            }
+
+
+            query = SingleElementTypeAndNameAndClassQuery.RebuildOn(e);
+            query.m_Matchers[0].complexSelector.selectors[0].parts[0] = StyleSelectorPart.CreatePredicate(UQuery.IsOfType<T>.s_Instance);
+            query.m_Matchers[0].complexSelector.selectors[0].parts[1] = StyleSelectorPart.CreateId(name);
+            query.m_Matchers[0].complexSelector.selectors[0].parts[2] = StyleSelectorPart.CreateClass(className);
+            return query.First() as T;
+        }
+
         public static VisualElement Q(this VisualElement e, string name = null, string className = null)
         {
-            return e.Query<VisualElement>(name, className).Build().First();
+            UQueryState<VisualElement> query;
+
+            if (name == null)
+            {
+                if (className == null)
+                {
+                    return SingleElementEmptyQuery.RebuildOn(e).First();
+                }
+
+                query = SingleElementClassQuery.RebuildOn(e);
+                query.m_Matchers[0].complexSelector.selectors[0].parts[0] = StyleSelectorPart.CreateClass(className);
+                return query.First();
+            }
+
+            if (className == null)
+            {
+                query = SingleElementNameQuery.RebuildOn(e);
+                query.m_Matchers[0].complexSelector.selectors[0].parts[0] = StyleSelectorPart.CreateId(name);
+                return query.First();
+            }
+
+            query = SingleElementNameAndClassQuery.RebuildOn(e);
+            query.m_Matchers[0].complexSelector.selectors[0].parts[0] = StyleSelectorPart.CreateId(name);
+            query.m_Matchers[0].complexSelector.selectors[0].parts[1] = StyleSelectorPart.CreateClass(className);
+            return query.First();
         }
 
         public static UQueryBuilder<VisualElement> Query(this VisualElement e, string name = null, params string[] classes)

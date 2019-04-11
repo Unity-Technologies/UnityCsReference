@@ -589,6 +589,14 @@ namespace UnityEditor
                     return true;
             }
 
+            // Do we have a billboard?
+            var billboards = go.GetComponentsInChildren<BillboardRenderer>();
+            foreach (var billboard in billboards)
+            {
+                if (billboard.billboard && billboard.sharedMaterial)
+                    return true;
+            }
+
             // Nope, we don't have it.
             return false;
         }
@@ -596,8 +604,8 @@ namespace UnityEditor
         public static void GetRenderableBoundsRecurse(ref Bounds bounds, GameObject go)
         {
             // Do we have a mesh?
-            MeshRenderer renderer = go.GetComponent(typeof(MeshRenderer)) as MeshRenderer;
-            MeshFilter filter = go.GetComponent(typeof(MeshFilter)) as MeshFilter;
+            var renderer = go.GetComponent<MeshRenderer>();
+            var filter = go.GetComponent<MeshFilter>();
             if (renderer && filter && filter.sharedMesh)
             {
                 // To prevent origo from always being included in bounds we initialize it
@@ -609,7 +617,7 @@ namespace UnityEditor
             }
 
             // Do we have a skinned mesh?
-            SkinnedMeshRenderer skin = go.GetComponent(typeof(SkinnedMeshRenderer)) as SkinnedMeshRenderer;
+            var skin = go.GetComponent<SkinnedMeshRenderer>();
             if (skin && skin.sharedMesh)
             {
                 if (bounds.extents == Vector3.zero)
@@ -619,13 +627,23 @@ namespace UnityEditor
             }
 
             // Do we have a Sprite?
-            SpriteRenderer sprite = go.GetComponent(typeof(SpriteRenderer)) as SpriteRenderer;
+            var sprite = go.GetComponent<SpriteRenderer>();
             if (sprite && sprite.sprite)
             {
                 if (bounds.extents == Vector3.zero)
                     bounds = sprite.bounds;
                 else
                     bounds.Encapsulate(sprite.bounds);
+            }
+
+            // Do we have a billboard?
+            var billboard = go.GetComponent<BillboardRenderer>();
+            if (billboard && billboard.billboard && billboard.sharedMaterial)
+            {
+                if (bounds.extents == Vector3.zero)
+                    bounds = billboard.bounds;
+                else
+                    bounds.Encapsulate(billboard.bounds);
             }
 
             // Recurse into children
@@ -645,12 +663,13 @@ namespace UnityEditor
             if (depth > minDepth)
             {
                 // Do we have a mesh?
-                MeshRenderer renderer = go.GetComponent(typeof(MeshRenderer)) as MeshRenderer;
-                MeshFilter filter = go.GetComponent(typeof(MeshFilter)) as MeshFilter;
-                SkinnedMeshRenderer skin = go.GetComponent(typeof(SkinnedMeshRenderer)) as SkinnedMeshRenderer;
-                SpriteRenderer sprite = go.GetComponent(typeof(SpriteRenderer)) as SpriteRenderer;
+                var renderer = go.GetComponent<MeshRenderer>();
+                var filter = go.GetComponent<MeshFilter>();
+                var skin = go.GetComponent<SkinnedMeshRenderer>();
+                var sprite = go.GetComponent<SpriteRenderer>();
+                var billboard = go.GetComponent<BillboardRenderer>();
 
-                if (renderer == null && filter == null && skin == null && sprite == null)
+                if (renderer == null && filter == null && skin == null && sprite == null && billboard == null)
                 {
                     ret = 1;
                     center = center + go.transform.position;
@@ -676,6 +695,14 @@ namespace UnityEditor
                 else if (sprite != null)
                 {
                     if (Vector3.Distance(sprite.bounds.center, go.transform.position) < 0.01F)
+                    {
+                        ret = 1;
+                        center = center + go.transform.position;
+                    }
+                }
+                else if (billboard != null)
+                {
+                    if (Vector3.Distance(billboard.bounds.center, go.transform.position) < 0.01F)
                     {
                         ret = 1;
                         center = center + go.transform.position;

@@ -51,9 +51,19 @@ namespace UnityEngine
             if (localref != IntPtr.Zero) AndroidJNI.DeleteLocalRef(localref);
         }
 
+        public static IntPtr NewString(string chars)
+        {
+            try { return AndroidJNI.NewString(chars); } finally { CheckException(); }
+        }
+
         public static IntPtr NewStringUTF(string bytes)
         {
             try { return AndroidJNI.NewStringUTF(bytes); } finally { CheckException(); }
+        }
+
+        public static string GetStringChars(IntPtr str)
+        {
+            try { return AndroidJNI.GetStringChars(str); } finally { CheckException(); }
         }
 
         public static string GetStringUTFChars(IntPtr str)

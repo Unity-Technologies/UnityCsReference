@@ -249,11 +249,11 @@ namespace UnityEditor
                 {
                     p.x = EditorPrefs.GetFloat(ID + "x", m_PixelRect.x);
                     p.y = EditorPrefs.GetFloat(ID + "y", m_PixelRect.y);
+                    p.width = EditorPrefs.GetFloat(ID + "w", m_PixelRect.width);
+                    p.height = EditorPrefs.GetFloat(ID + "h", m_PixelRect.height);
                 }
-                p.width = Mathf.Max(EditorPrefs.GetFloat(ID + "w", m_PixelRect.width), m_MinSize.x);
-                p.width = Mathf.Min(p.width, m_MaxSize.x);
-                p.height = Mathf.Max(EditorPrefs.GetFloat(ID + "h", m_PixelRect.height), m_MinSize.y);
-                p.height = Mathf.Min(p.height, m_MaxSize.y);
+                p.width = Mathf.Min(Mathf.Max(p.width, m_MinSize.x), m_MaxSize.x);
+                p.height = Mathf.Min(Mathf.Max(p.height, m_MinSize.y), m_MaxSize.y);
                 m_PixelRect = p;
             }
         }
@@ -437,13 +437,24 @@ namespace UnityEditor
                     if (titleBarRect.Contains(evt.mousePosition) && GUIUtility.hotControl == 0 && evt.button == 0)
                     {
                         GUIUtility.hotControl = id;
+                        if (Application.platform != RuntimePlatform.WindowsEditor)
+                        {
+                            s_LastDragMousePos = evt.mousePosition;
+                            startDragDpi = GUIUtility.pixelsPerPoint;
+                        }
+                        else
+                        {
+                            SendCaptionEvent(true);
+                        }
+
                         Event.current.Use();
-                        s_LastDragMousePos = evt.mousePosition;
-                        startDragDpi = GUIUtility.pixelsPerPoint;
                         Unsupported.SetAllowCursorLock(false, Unsupported.DisallowCursorLockReasons.SizeMove);
                     }
                     break;
                 case EventType.MouseUp:
+                    if (Application.platform == RuntimePlatform.WindowsEditor)
+                        SendCaptionEvent(false);
+
                     if (GUIUtility.hotControl == id)
                     {
                         GUIUtility.hotControl = 0;

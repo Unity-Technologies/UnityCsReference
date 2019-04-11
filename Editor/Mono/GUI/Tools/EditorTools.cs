@@ -70,6 +70,16 @@ namespace UnityEditor.EditorTools
             EditorToolContext.RestorePreviousTool();
         }
 
+        public static void RestorePreviousPersistentTool()
+        {
+            var last = EditorToolContext.GetLastTool(x => x && !EditorToolUtility.IsCustomEditorTool(x.GetType()));
+
+            if (last != null)
+                SetActiveTool(last);
+            else
+                SetActiveTool<MoveTool>();
+        }
+
         public static bool IsActiveTool(EditorTool tool)
         {
             return EditorToolContext.activeTool == tool;

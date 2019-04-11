@@ -94,7 +94,7 @@ namespace UnityEngine.UIElements
             text = rawValue;
         }
 
-        protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
+        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
             base.ExecuteDefaultActionAtTarget(evt);
 
@@ -202,7 +202,7 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
+            protected override void ExecuteDefaultActionAtTarget(EventBase evt)
             {
                 base.ExecuteDefaultActionAtTarget(evt);
                 if (evt == null)
@@ -249,7 +249,7 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            protected internal override void ExecuteDefaultAction(EventBase evt)
+            protected override void ExecuteDefaultAction(EventBase evt)
             {
                 base.ExecuteDefaultAction(evt);
 

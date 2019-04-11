@@ -27,9 +27,10 @@ namespace UnityEngineInternal.Input
     }
 
     // We pass this as a struct to make it less painful to change the OnUpdate() API if need be.
-    [StructLayout(LayoutKind.Explicit, Size = 20, Pack = 1)]
+    [StructLayout(LayoutKind.Explicit, Size = structSize, Pack = 1)]
     public unsafe struct NativeInputEventBuffer
     {
+        public const int structSize = 20;
         // NOTE: Keep this as the first field in the struct. This avoids alignment/packing issues
         //       on the C++ side due to the compiler wanting to align the 64bit pointer.
         [FieldOffset(0)] public void* eventBuffer;
@@ -38,14 +39,16 @@ namespace UnityEngineInternal.Input
         [FieldOffset(16)] public int capacityInBytes;
     }
 
-    [StructLayout(LayoutKind.Explicit, Size = 20, Pack = 1)]
+    [StructLayout(LayoutKind.Explicit, Size = structSize, Pack = 1)]
     public struct NativeInputEvent
     {
+        public const int structSize = 20;
+
         [FieldOffset(0)] public NativeInputEventType type;
         [FieldOffset(4)] public ushort sizeInBytes;
         [FieldOffset(6)] public ushort deviceId;
-        [FieldOffset(8)] public int eventId;
-        [FieldOffset(12)] public double time; // Time on GetTimeSinceStartup() timeline in seconds. *NOT* on Time.time timeline.
+        [FieldOffset(8)] public double time; // Time on GetTimeSinceStartup() timeline in seconds. *NOT* on Time.time timeline.
+        [FieldOffset(16)] public int eventId;
 
         public NativeInputEvent(NativeInputEventType type, int sizeInBytes, int deviceId, double time)
         {
@@ -131,9 +134,7 @@ namespace UnityEngineInternal.Input
             if (callback != null)
                 return callback(updateType);
 
-            // Transitional code path. Remove this when we have onShouldRunUpdate implemented
-            // in the supported input package versions.
-            return ShouldUpdateFallback(updateType);
+            return false;
         }
     }
 }

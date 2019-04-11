@@ -37,7 +37,10 @@ namespace UnityEditor
         {
             if (window != null)
             {
+                Color prevColor = GUI.color;
+                GUI.color = Color.white;
                 GUI.Box(new Rect(0, 0, m_optimalSize.x, m_optimalSize.y) , m_tooltip, m_Style);
+                GUI.color = prevColor;
             }
         }
 

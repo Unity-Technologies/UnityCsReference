@@ -157,6 +157,11 @@ namespace UnityEditor
             if (!this)
                 return false;
 
+            if (panel != null)
+            {
+                panel.Focus();
+            }
+
             Repaint();
             return true;
         }
@@ -169,6 +174,11 @@ namespace UnityEditor
             // Callback could have killed us
             if (!this)
                 return;
+
+            if (panel != null)
+            {
+                panel.Blur();
+            }
 
             Repaint();
         }

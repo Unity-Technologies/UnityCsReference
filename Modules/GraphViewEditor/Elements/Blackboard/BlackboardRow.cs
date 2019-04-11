@@ -48,9 +48,9 @@ namespace UnityEditor.Experimental.GraphView
 
             mainContainer.AddToClassList("mainContainer");
 
-            m_Root = mainContainer.Q<VisualElement>("root");
-            m_ItemContainer = mainContainer.Q<VisualElement>("itemContainer");
-            m_PropertyViewContainer = mainContainer.Q<VisualElement>("propertyViewContainer");
+            m_Root = mainContainer.Q("root");
+            m_ItemContainer = mainContainer.Q("itemContainer");
+            m_PropertyViewContainer = mainContainer.Q("propertyViewContainer");
 
             m_ExpandButton = mainContainer.Q<Button>("expandButton");
             m_ExpandButton.clickable.clicked += () => expanded = !expanded;

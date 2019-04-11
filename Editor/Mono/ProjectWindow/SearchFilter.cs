@@ -53,7 +53,7 @@ namespace UnityEditor
         [SerializeField]
         private bool m_ShowAllHits = false;         // If true then just one filter must match to show an object, if false then all filters must match to show an object
         [SerializeField]
-        private bool m_SkipHidden = true;
+        private bool m_SkipHidden = false;
         [SerializeField]
         SearchArea m_SearchArea = SearchArea.InAssetsOnly;
         // Folder browsing
@@ -85,7 +85,7 @@ namespace UnityEditor
             m_VersionControlStates = new string[0];
             m_SoftLockControlStates = new string[0];
             m_ShowAllHits = false;
-            m_SkipHidden = true;
+            m_SkipHidden = false;
         }
 
         bool IsNullOrEmpty<T>(T[] list)

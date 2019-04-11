@@ -83,6 +83,8 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
             config.Set("mono-codegen", "il2cpp");
         if ((options & BuildOptions.EnableHeadlessMode) != 0)
             config.AddKey("headless");
+        if ((options & BuildOptions.EnableCodeCoverage) != 0)
+            config.Set("enableCodeCoverage", "1");
         if (!PlayerSettings.usePlayerLog)
             config.AddKey("nolog");
     }
@@ -343,12 +345,14 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
     protected static void CopyResolutionDialogBanner(string destinationFolder)
     {
+#pragma warning disable 618
         var bannerTexture = PlayerSettings.resolutionDialogBanner;
         if (bannerTexture != null)
         {
             var path = Path.Combine(destinationFolder, "ScreenSelector.png");
             IconUtility.SaveTextureToFile(path, bannerTexture, StringToFourCC("PNGf"));
         }
+#pragma warning restore 618
     }
 
     protected virtual void CopyPlayerSolutionIntoStagingArea(BuildPostProcessArgs args, HashSet<string> filesToNotOverwrite)

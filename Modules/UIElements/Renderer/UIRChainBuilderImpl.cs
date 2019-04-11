@@ -195,23 +195,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
             }
             else ve.renderChainData.groupTransformAncestor = null;
 
-            // Since group transform is pushed as the view matrix, TransformIDs cannot parent a group transform because that's not how the math works
-            if ((ve.renderHint & (RenderHint.GroupTransform)) != 0)
-            {
-                ve.renderChainData.disableTransformID = true;
-                var p = parent;
-                VisualElement highestParentWithFastTransform = null;
-                while (p != null)
-                {
-                    p.renderChainData.disableTransformID = true;
-                    if (p.renderChainData.allocatedTransformID)
-                        highestParentWithFastTransform = p;
-                    p = p.hierarchy.parent;
-                }
-                if (highestParentWithFastTransform != null)
-                    RenderEvents.OnClippingChanged(renderChain, highestParentWithFastTransform);
-            }
-
             if (index > 0)
             {
                 Debug.Assert(parent != null);
@@ -300,12 +283,15 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 }
             }
             else if (ve.renderChainData.allocatedTransformID)
+            {
                 device.Free(ve.renderChainData.transformID);
+                ve.renderChainData.transformID = new Alloc();
+            }
 
             bool hasParent = parent != null;
             if (!ve.renderChainData.allocatedTransformID)
             {
-                if (hasParent)
+                if (hasParent && (ve.renderHint & RenderHint.GroupTransform) == 0)
                 {
                     if (parent.renderChainData.allocatedTransformID)
                         ve.renderChainData.boneTransformAncestor = parent;
@@ -361,6 +347,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 isAncestorOfChangeSkinned = true;
                 stats.boneTransformed++;
             }
+            else if ((ve.renderHint & RenderHint.GroupTransform) != 0)
+            {
+                stats.groupTransformElementsChanged++;
+            }
             else if (isAncestorOfChangeSkinned)
             {
                 // Children of a bone element inherit the transform and clip data change automatically when the root updates that data, no need to do anything for children
@@ -391,10 +381,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     DepthFirstOnTransformChanged(renderChain, ve, ve.hierarchy[i], dirtyID, device, isAncestorOfChangeSkinned, ref stats);
             }
             else
-            {
-                stats.groupTransformElementsChanged++;
                 renderChain.OnGroupTransformElementChangedTransform(ve); // Hack until UIE moves to TMP
-            }
         }
 
         static void DepthFirstOnVisualsChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, bool parentHierarchyHidden, bool hierarchical, ref ChainBuilderStats stats)
@@ -412,7 +399,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 hierarchical = true;
 
             Debug.Assert(ve.renderChainData.clipMethod != ClipMethod.Undetermined);
-            Debug.Assert(ve.renderChainData.allocatedTransformID || ve.hierarchy.parent == null || ve.renderChainData.transformID.start == ve.hierarchy.parent.renderChainData.transformID.start);
+            Debug.Assert(ve.renderChainData.allocatedTransformID || ve.hierarchy.parent == null || ve.renderChainData.transformID.start == ve.hierarchy.parent.renderChainData.transformID.start || (ve.renderHint & RenderHint.GroupTransform) != 0);
 
             var painterClosingInfo = new UIRStylePainter.ClosingInfo();
             var painter = PaintElement(renderChain, ve, ref stats);
@@ -493,7 +480,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             if (!UIRUtility.IsRoundRect(ve))
             {
-                if (ve.renderChainData.disableTransformID || (ve.renderHint & RenderHint.ClipWithScissors) != 0)
+                if ((ve.renderHint & (RenderHint.GroupTransform | RenderHint.ClipWithScissors)) != 0)
                     return ClipMethod.Scissor;
                 return ClipMethod.ShaderDiscard;
             }
@@ -503,7 +490,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         static bool NeedsTransformID(VisualElement ve, ClipMethod newClipMethod)
         {
-            return !ve.renderChainData.disableTransformID && ((newClipMethod == ClipMethod.ShaderDiscard) || ((ve.renderHint & RenderHint.BoneTransform) == RenderHint.BoneTransform));
+            return (ve.renderHint & RenderHint.GroupTransform) == 0 && ((newClipMethod == ClipMethod.ShaderDiscard) || ((ve.renderHint & RenderHint.BoneTransform) == RenderHint.BoneTransform));
         }
 
         internal static UIRStylePainter PaintElement(RenderChain renderChain, VisualElement ve, ref ChainBuilderStats stats)
@@ -1256,7 +1243,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
             opacity = currentElement.resolvedStyle.opacity;
             currentElement.renderChainData.usesText = currentElement.renderChainData.usesAtlas = currentElement.renderChainData.disableNudging = false;
             currentElement.renderChainData.displacementUVStart = currentElement.renderChainData.displacementUVEnd = 0;
-            if ((currentElement.renderHint & RenderHint.GroupTransform) == RenderHint.GroupTransform)
+            bool isGroupTransform = (currentElement.renderHint & RenderHint.GroupTransform) != 0;
+            if (isGroupTransform)
             {
                 var cmd = m_Owner.AllocCommand();
                 cmd.owner = currentElement;
@@ -1267,7 +1255,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             if (currentElement.hierarchy.parent != null)
             {
                 m_StencilClip = currentElement.hierarchy.parent.renderChainData.isStencilClipped;
-                m_ClipRectID = currentElement.hierarchy.parent.renderChainData.transformID.start;
+                m_ClipRectID = isGroupTransform ? 0 : currentElement.hierarchy.parent.renderChainData.transformID.start;
             }
             else
             {
@@ -1326,6 +1314,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
             TextNativeSettings textSettings = painterParams.GetTextNativeSettings(scaling);
             textSettings.color.a *= opacity;
 
+            textSettings.color *= UIElementsUtility.editorPlayModeTintColor;
+
             using (NativeArray<TextVertex> textVertices = TextNative.GetVertices(textSettings))
             {
                 if (textVertices.Length == 0)
@@ -1348,6 +1338,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
         public void DrawTexture(TextureStylePainterParameters painterParams)
         {
             painterParams.color.a *= opacity;
+
+            painterParams.color *= UIElementsUtility.editorPlayModeTintColor;
 
             // Handle scaling mode
             Rect screenRect = painterParams.rect;
@@ -1449,6 +1441,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
             if (style.backgroundImage.value.texture != null)
             {
                 var painterParams = TextureStylePainterParameters.GetDefault(currentElement);
+                if (style.unityBackgroundImageTintColor != Color.clear)
+                    painterParams.color = style.unityBackgroundImageTintColor.value;
                 painterParams.border.SetWidth(0.0f);
                 DrawTexture(painterParams);
             }
@@ -1501,6 +1495,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
             m_CurrentEntry.clipRectID = m_ClipRectID;
             m_CurrentEntry.isStencilClipped = m_StencilClip;
             m_CurrentEntry.isClipRegisterEntry = isClipRegisterEntry;
+
+            painterParams.color *= UIElementsUtility.editorPlayModeTintColor;
 
             bool generatedData = false;
             UIRMeshBuilder.MakeRect(painterParams, posZ, m_AllocDelegate);
@@ -1640,6 +1636,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
             float scaling = TextNative.ComputeTextScaling(m_CurrentElement.worldTransform, GUIUtility.pixelsPerPoint);
             TextNativeSettings textSettings = painterParams.GetTextNativeSettings(scaling);
             textSettings.color.a *= opacity;
+
+            textSettings.color *= UIElementsUtility.editorPlayModeTintColor;
 
             using (NativeArray<TextVertex> textVertices = TextNative.GetVertices(textSettings))
             {

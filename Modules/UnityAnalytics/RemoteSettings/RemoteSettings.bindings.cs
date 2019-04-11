@@ -187,6 +187,8 @@ namespace UnityEngine
 
         public extern static bool SendDeviceInfoInConfigRequest();
 
+        public extern static void AddSessionTag(string tag);
+
         // Forces an update of the remote config from the server.
         public extern void ForceUpdate();
 

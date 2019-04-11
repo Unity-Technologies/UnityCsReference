@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Globalization;
+using System;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Rendering;
@@ -20,6 +21,57 @@ namespace UnityEditor
 
         public delegate void OnAvatarChange();
         OnAvatarChange m_OnAvatarChangeFunc = null;
+
+        private class ObjectSelectorOperation : ObjectSelectorReceiver
+        {
+            public static void Start(AvatarPreview owner)
+            {
+                var operation = new ObjectSelectorOperation(owner, ObjectSelector.get);
+                operation.Execute();
+            }
+
+            public ObjectSelectorOperation(AvatarPreview owner, ObjectSelector selector)
+            {
+                m_Owner = owner;
+                m_Selector = selector;
+            }
+
+            AvatarPreview m_Owner;
+            ObjectSelector m_Selector;
+
+            bool IsValid()
+            {
+                return m_Owner != null;
+            }
+
+            private void Execute()
+            {
+                if (m_Selector)
+                {
+                    m_Selector.Show(null, typeof(GameObject), null, false);
+                    m_Selector.objectSelectorReceiver = this;
+                }
+            }
+
+            public override void OnSelectionChanged(Object selection)
+            {
+                if (IsValid())
+                {
+                    m_Owner.SetPreview(ObjectSelector.GetCurrentObject() as GameObject);
+                    InspectorWindow.RepaintAllInspectors();
+                }
+            }
+
+            public override void OnSelectionClosed(Object selection)
+            {
+                if (IsValid())
+                {
+                    m_Owner.SetPreview(ObjectSelector.GetCurrentObject() as GameObject);
+                }
+
+                m_Selector.objectSelectorReceiver = null;
+            }
+        }
 
         public OnAvatarChange OnAvatarChangeFunc
         {
@@ -122,8 +174,6 @@ namespace UnityEditor
         bool                        m_2D;
 
         bool                        m_IsValid;
-        int                         m_ModelSelectorId = EditorGUIUtility.GetPermanentControlID();
-
 
         private const float kFloorFadeDuration = 0.2f;
         private const float kFloorScale = 5;
@@ -1029,17 +1079,6 @@ namespace UnityEditor
                     "No model is available for preview.\nPlease drag a model into this Preview Area.");
             }
 
-            // Check for model selected from ObjectSelector
-            if (evt.type == EventType.ExecuteCommand)
-            {
-                string commandName = evt.commandName;
-                if (commandName == ObjectSelector.ObjectSelectorUpdatedCommand && ObjectSelector.get.objectSelectorID == m_ModelSelectorId)
-                {
-                    SetPreview(ObjectSelector.GetCurrentObject() as GameObject);
-                    evt.Use();
-                }
-            }
-
             // Apply the current cursor
             if (evt.type == EventType.Repaint)
                 EditorGUIUtility.AddCursorRect(previewRect, currentCursor);
@@ -1059,8 +1098,7 @@ namespace UnityEditor
             }
             else if (m_Option == PreviewPopupOptions.Other)
             {
-                ObjectSelector.get.Show(null, typeof(GameObject), null, false);
-                ObjectSelector.get.objectSelectorID = m_ModelSelectorId;
+                ObjectSelectorOperation.Start(this);
             }
         }
 

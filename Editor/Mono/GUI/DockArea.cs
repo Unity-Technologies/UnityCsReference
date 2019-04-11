@@ -639,7 +639,7 @@ namespace UnityEditor
         {
             int mainWindowPaneCount = 0;
 
-            ContainerWindow w = ContainerWindow.windows.First(e => e.showMode == ShowMode.MainWindow);
+            ContainerWindow w = ContainerWindow.windows.FirstOrDefault(e => e.showMode == ShowMode.MainWindow);
             if (w != null)
             {
                 foreach (View view in w.rootView.allChildren)

@@ -536,11 +536,12 @@ namespace UnityEngine
                 Blend = 5,
                 GetPixels = 6,
                 SetPixels = 7,
-                ReadPixels = 8,
-                LoadStore = 9,
-                MSAA2x = 10,
-                MSAA4x = 11,
-                MSAA8x = 12,
+                SetPixels32 = 8,
+                ReadPixels = 9,
+                LoadStore = 10,
+                MSAA2x = 11,
+                MSAA4x = 12,
+                MSAA8x = 13,
             }
 
             // Keep in sync with DefaultFormat in Runtime/Graphics/Format.h
