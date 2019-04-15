@@ -438,6 +438,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             bool removed;
 
             var removedAssemblies = new List<CustomScriptAssemblyAndReference>();
+            var assembliesWithScripts = GetTargetAssembliesWithScriptsHashSet(options);
 
             do
             {
@@ -459,6 +460,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
                             // as those assemblies have not been compiled.
                             if (!EditorBuildRules.IsCompatibleWithPlatformAndDefines(reference, buildTarget, options))
                                 continue;
+
+                            if (!assembliesWithScripts.Contains(reference))
+                            {
+                                continue;
+                            }
 
                             if (!customTargetAssemblyCompiledPaths.ContainsKey(reference))
                             {
@@ -1594,15 +1600,21 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public TargetAssemblyInfo[] GetTargetAssembliesWithScripts(ScriptAssemblySettings settings)
         {
             UpdateAllTargetAssemblyDefines(customTargetAssemblies, EditorBuildRules.GetPredefinedTargetAssemblies(), m_AllDistinctVersionMetaDatas, settings);
-
             var targetAssemblies = EditorBuildRules.GetTargetAssembliesWithScripts(allScripts, projectDirectory, customTargetAssemblies, settings);
-
             var targetAssemblyInfos = new TargetAssemblyInfo[targetAssemblies.Length];
 
             for (int i = 0; i < targetAssemblies.Length; ++i)
                 targetAssemblyInfos[i] = ToTargetAssemblyInfo(targetAssemblies[i]);
 
             return targetAssemblyInfos;
+        }
+
+        private HashSet<EditorBuildRules.TargetAssembly> GetTargetAssembliesWithScriptsHashSet(EditorScriptCompilationOptions options)
+        {
+            ScriptAssemblySettings settings = CreateEditorScriptAssemblySettings(EditorScriptCompilationOptions.BuildingForEditor | options);
+            var targetAssemblies = EditorBuildRules.GetTargetAssembliesWithScriptsHashSet(allScripts, projectDirectory, customTargetAssemblies, settings);
+
+            return targetAssemblies;
         }
 
         public ScriptAssembly[] GetAllScriptAssembliesForLanguage<T>(EditorScriptCompilationOptions additionalOptions) where T : SupportedLanguage

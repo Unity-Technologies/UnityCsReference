@@ -872,7 +872,17 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return assemblies.ToArray();
         }
 
-        internal static TargetAssembly[] GetTargetAssembliesWithScripts(IEnumerable<string> allScripts,
+        internal static TargetAssembly[] GetTargetAssembliesWithScripts(
+            IEnumerable<string> allScripts,
+            string projectDirectory,
+            TargetAssembly[] customTargetAssemblies,
+            ScriptAssemblySettings settings)
+        {
+            return GetTargetAssembliesWithScriptsHashSet(allScripts, projectDirectory, customTargetAssemblies, settings).ToArray();
+        }
+
+        internal static HashSet<TargetAssembly> GetTargetAssembliesWithScriptsHashSet(
+            IEnumerable<string> allScripts,
             string projectDirectory,
             TargetAssembly[] customTargetAssemblies,
             ScriptAssemblySettings settings)
@@ -894,7 +904,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 uniqueTargetAssemblies.Add(targetAssembly);
             }
 
-            return uniqueTargetAssemblies.ToArray();
+            return uniqueTargetAssemblies;
         }
 
         internal static TargetAssembly GetTargetAssembly(string scriptPath, string projectDirectory, TargetAssembly[] customTargetAssemblies)

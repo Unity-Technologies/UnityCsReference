@@ -46,6 +46,18 @@ namespace UnityEditor.UIElements
         internal InspectorElement m_InspectorElement { get; private set; }
         IMGUIContainer m_Footer;
 
+        static class Styles
+        {
+            public static GUIStyle importedObjectsHeaderStyle = new GUIStyle("IN BigTitle");
+
+            static Styles()
+            {
+                importedObjectsHeaderStyle.font = EditorStyles.label.font;
+                importedObjectsHeaderStyle.fontSize = EditorStyles.label.fontSize;
+                importedObjectsHeaderStyle.alignment = TextAnchor.UpperLeft;
+            }
+        }
+
         internal EditorElement(int editorIndex, InspectorWindow iw)
         {
             m_EditorIndex = editorIndex;
@@ -244,11 +256,9 @@ namespace UnityEditor.UIElements
                     var importedObjectBarRect = GUILayoutUtility.GetRect(16, 16);
                     importedObjectBarRect.height = 17;
 
-                    // Clip the label to avoid a black border at the bottom
-                    GUI.BeginGroup(importedObjectBarRect);
-                    GUI.Label(new Rect(0, 0, importedObjectBarRect.width, importedObjectBarRect.height),
-                        "Imported Object", "OL Title");
-                    GUI.EndGroup();
+                    var headerText = m_Editors[0] is PrefabImporterEditor ? "Root in Prefab Asset" : "Imported Object";
+                    GUILayout.Label(headerText, Styles.importedObjectsHeaderStyle, GUILayout.ExpandWidth(true));
+                    GUILayout.Space(-7f); // Ensures no spacing between this header and the next header
                 }
 
                 // Header
