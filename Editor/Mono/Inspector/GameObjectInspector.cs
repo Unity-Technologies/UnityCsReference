@@ -313,7 +313,7 @@ namespace UnityEditor
 
         private void DoPrefabButtons()
         {
-            if (!m_IsPrefabInstanceAnyRoot)
+            if (!m_IsPrefabInstanceAnyRoot || m_IsAsset)
                 return;
 
             using (new EditorGUI.DisabledScope(m_PlayModeObjects))

@@ -2400,7 +2400,7 @@ namespace UnityEditor
                         info.properties = properties;
                         info.assetPath = AssetDatabase.GetAssetPath(sourceObject);
                         GameObject rootObject = PrefabUtility.GetRootGameObject(sourceObject);
-                        if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject))
+                        if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject) || EditorUtility.IsPersistent(targetObject))
                             pm.AddDisabledItem(menuItemContent);
                         else
                             pm.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabPropertyOverride, info);
@@ -5004,16 +5004,20 @@ namespace UnityEditor
                 GenericMenu menu = new GenericMenu();
                 PrefabUtility.HandleApplyRevertMenuItems(
                     "Removed Component",
-                    sourceComponent,
+                    instanceGo,
                     (menuItemContent, sourceObject) =>
                     {
                         TargetChoiceHandler.ObjectInstanceAndSourceInfo info = new TargetChoiceHandler.ObjectInstanceAndSourceInfo();
                         info.instanceObject = instanceGo;
                         Component componentToRemove = sourceComponent;
-                        while (componentToRemove != sourceObject)
+                        while (componentToRemove.gameObject != sourceObject)
+                        {
                             componentToRemove = PrefabUtility.GetCorrespondingObjectFromSource(componentToRemove);
+                            if (componentToRemove == null)
+                                return;
+                        }
                         info.correspondingObjectInSource = componentToRemove;
-                        if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(componentToRemove))
+                        if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(componentToRemove) || EditorUtility.IsPersistent(instanceGo))
                             menu.AddDisabledItem(menuItemContent);
                         else
                             menu.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabRemovedComponent, info);
