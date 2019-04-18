@@ -316,7 +316,7 @@ namespace UnityEditor
 
         private void DrawTitleBar()
         {
-            GUILayout.BeginHorizontal(GUILayout.MaxWidth(s_DefaultLayoutMaxWidth));
+            GUILayout.BeginHorizontal();
             GUILayout.Space(Styles.settingsPanel.GetFloat(StyleKeyword.marginLeft));
             var headerContent = new GUIContent(m_TreeView.currentProvider.label, Styles.header.GetBool("-unity-show-icon") ? m_TreeView.currentProvider.icon : null);
             GUILayout.Label(headerContent, ImguiStyles.header, GUILayout.MaxHeight(Styles.header.GetFloat("max-height")));
@@ -398,7 +398,7 @@ namespace UnityEditor
             {
                 m_LabelWidth = EditorGUIUtility.labelWidth;
                 EditorGUIUtility.labelWidth = s_DefaultLabelWidth;
-                GUILayout.BeginHorizontal(GUILayout.MaxWidth(layoutMaxWidth));
+                GUILayout.BeginHorizontal();
                 GUILayout.Space(Styles.settingsPanel.GetFloat(StyleKeyword.marginLeft));
                 GUILayout.BeginVertical();
                 GUILayout.Space(Styles.settingsPanel.GetFloat(StyleKeyword.marginTop));

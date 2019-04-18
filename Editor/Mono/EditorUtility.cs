@@ -333,7 +333,7 @@ namespace UnityEditor
                 Component targetComponent = (Component)targetObject;
 
                 // Do nothing if component is not on a prefab instance.
-                if (PrefabUtility.GetCorrespondingObjectFromSource(targetComponent.gameObject) == null) {}
+                if (PrefabUtility.GetCorrespondingConnectedObjectFromSource(targetComponent.gameObject) == null) {}
                 // Handle added component.
                 else if (PrefabUtility.GetCorrespondingObjectFromSource(targetObject) == null && targetComponent != null)
                 {

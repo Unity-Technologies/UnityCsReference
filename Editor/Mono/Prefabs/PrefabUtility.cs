@@ -1357,6 +1357,15 @@ namespace UnityEditor
             return SavePrefab_Internal(go, assetPath, (replaceOptions & ReplacePrefabOptions.ConnectToPrefab) != 0, out success);
         }
 
+        // Returns the corresponding object from its immediate source from a connected Prefab,
+        // or null if it can't be found, or the Prefab instance is disconnected.
+        internal static TObject GetCorrespondingConnectedObjectFromSource<TObject>(TObject componentOrGameObject) where TObject : Object
+        {
+            if (IsDisconnectedFromPrefabAsset(GetGameObject(componentOrGameObject)))
+                return null;
+            return (TObject)GetCorrespondingObjectFromSource_internal(componentOrGameObject);
+        }
+
         // Returns the corresponding object from its immediate source, or null if it can't be found.
         public static TObject GetCorrespondingObjectFromSource<TObject>(TObject componentOrGameObject) where TObject : Object
         {
@@ -1455,6 +1464,9 @@ namespace UnityEditor
         {
             Transform parent = gameObject.transform.parent;
             if (parent == null)
+                return false;
+
+            if (IsDisconnectedFromPrefabAsset(parent))
                 return false;
 
             // Can't be added to a prefab instance if the parent is not part of a prefab instance.

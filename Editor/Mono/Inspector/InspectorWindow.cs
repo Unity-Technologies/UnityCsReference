@@ -365,7 +365,7 @@ namespace UnityEditor
             GameObject go = m_Tracker.activeEditors[0].target as GameObject;
             if (go == null)
                 return;
-            GameObject sourceGo = PrefabUtility.GetCorrespondingObjectFromSource(go);
+            GameObject sourceGo = PrefabUtility.GetCorrespondingConnectedObjectFromSource(go);
             if (sourceGo == null)
                 return;
 
@@ -1642,7 +1642,7 @@ namespace UnityEditor
                 Component comp = targets[0] as Component;
                 if (comp != null &&
                     EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None &&
-                    PrefabUtility.GetCorrespondingObjectFromSource(comp.gameObject) != null &&
+                    PrefabUtility.GetCorrespondingConnectedObjectFromSource(comp.gameObject) != null &&
                     PrefabUtility.GetCorrespondingObjectFromSource(comp) == null)
                 {
                     // Ensure colored margin here for component body doesn't overlap colored margin from InspectorTitlebar,

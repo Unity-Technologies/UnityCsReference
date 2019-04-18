@@ -93,6 +93,13 @@ namespace UnityEditor.Experimental.SceneManagement
             return false;
         }
 
+        [UsedByNativeCode]
+        internal static bool IsGameObjectInInvalidPrefabStage(GameObject gameObject)
+        {
+            PrefabStage prefabStage = GetCurrentPrefabStage();
+            return (prefabStage != null && prefabStage.scene == gameObject.scene && !prefabStage.isValid);
+        }
+
         static bool IsDynamicallyCreatedDuringLoad(GameObject gameObject)
         {
             return Unsupported.GetFileIDHint(gameObject) == 0;
@@ -363,7 +370,33 @@ namespace UnityEditor.Experimental.SceneManagement
             // We need a Canvas in order to render UI so ensure the prefab instance is under a Canvas
             Canvas canvas = instanceRoot.GetComponent<Canvas>();
             if (canvas != null)
-                return;
+            {
+                // We have a Canvas. Check if it's suitable to use as root Canvas.
+                if (canvas.renderMode == RenderMode.WorldSpace)
+                {
+                    // Do nothing; do not early out and use Canvas as root Canvas.
+                    // We can't know if a World Space Canvas was a root or not in all cases,
+                    // but it's important to not make it a root if its RectTransform
+                    // has stretching (non-identical min and max anchors); otherwise it will
+                    // be previewed stretching to a single point (or less!).
+                    // The downsides of making a World Space Canvas that was a root into a
+                    // nested Canvas in Prefab Mode are less severe (a few settings on the
+                    // Canvas component will be hidden), so we make it always nested
+                    // as the lesser evil. Note that regardless, there is no data loss,
+                    // since World Space canvases don't drive their RectTransform.
+                }
+                else
+                {
+                    // A Screen Space Canvas whose RectTransform values are not all 0
+                    // can't have been driven when it was created, which means it can't
+                    // have been a root Canvas. In that case it shouldn't be used as root
+                    // Canvas here either, since that would cause its RectTransform values
+                    // to be overridden with driven values, and then serialized as 0.
+                    RectTransform rt = (RectTransform)canvas.transform;
+                    if (rt.sizeDelta == Vector2.zero && rt.anchorMin == Vector2.zero && rt.anchorMax == Vector2.zero && rt.pivot == Vector2.zero)
+                        return; // Use as root.
+                }
+            }
 
             GameObject canvasGameObject = GetOrCreateCanvasGameObject(instanceRoot);
             instanceRoot.transform.SetParent(canvasGameObject.transform, false);

@@ -4702,7 +4702,7 @@ namespace UnityEditor
                 targetObjs.Length == 1 &&
                 comp != null &&
                 EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None &&
-                PrefabUtility.GetCorrespondingObjectFromSource(comp.gameObject) != null &&
+                PrefabUtility.GetCorrespondingConnectedObjectFromSource(comp.gameObject) != null &&
                 PrefabUtility.GetCorrespondingObjectFromSource(comp) == null)
             {
                 isAddedComponentAndEventIsRepaint = true;
