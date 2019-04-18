@@ -281,7 +281,8 @@ namespace UnityEditorInternal
             string error;
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(platformProvider.target);
             bool isMono = PlayerSettings.GetScriptingBackend(buildTargetGroup) == ScriptingImplementation.Mono2x;
-            bool stripEngineCode = rcr != null && PlayerSettings.stripEngineCode && platformProvider.supportsEngineStripping && !EditorUserBuildSettings.buildScriptsOnly;
+            bool engineStrippingSupported = platformProvider.supportsEngineStripping && !isMono;
+            bool performEngineStripping = rcr != null && PlayerSettings.stripEngineCode && engineStrippingSupported && !EditorUserBuildSettings.buildScriptsOnly;
             IEnumerable<string> blacklists = Il2CppBlacklistPaths;
             if (rcr != null)
             {
@@ -304,7 +305,7 @@ namespace UnityEditorInternal
                 }
             }
 
-            if (!stripEngineCode)
+            if (!performEngineStripping)
             {
                 // if we don't do stripping, add all modules blacklists.
                 foreach (var file in Directory.GetFiles(platformProvider.moduleStrippingInformationFolder, "*.xml"))
@@ -338,17 +339,17 @@ namespace UnityEditorInternal
                     managedStrippingLevel))
                     throw new Exception("Error in stripping assemblies: " + assemblies + ", " + error);
 
-                if (platformProvider.supportsEngineStripping)
+                if (engineStrippingSupported)
                 {
                     var icallSummaryPath = Path.Combine(managedAssemblyFolderPath, "ICallSummary.txt");
                     GenerateInternalCallSummaryFile(icallSummaryPath, managedAssemblyFolderPath, tempStripPath);
 
-                    if (stripEngineCode)
+                    if (performEngineStripping)
                     {
                         // Find which modules we must include in the build based on Assemblies
                         HashSet<UnityType> nativeClasses;
                         HashSet<string> nativeModules;
-                        CodeStrippingUtils.GenerateDependencies(tempStripPath, icallSummaryPath, rcr, stripEngineCode, out nativeClasses, out nativeModules, platformProvider);
+                        CodeStrippingUtils.GenerateDependencies(tempStripPath, icallSummaryPath, rcr, performEngineStripping, out nativeClasses, out nativeModules, platformProvider);
                         // Add module-specific blacklists.
                         addedMoreBlacklists = AddWhiteListsForModules(nativeModules, ref blacklists, platformProvider.moduleStrippingInformationFolder);
                     }
