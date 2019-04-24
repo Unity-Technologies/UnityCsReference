@@ -17,23 +17,24 @@ namespace UnityEngine.UIElements
     [Flags]
     internal enum VersionChangeType
     {
-        //Some data was bound
+        // Some data was bound
         Bindings = 1 << 8,
         // persistent data ready
         ViewData = 1 << 7,
         // changes to hierarchy
         Hierarchy = 1 << 6,
-        // changes to layout
+        // changes to properties that may have an impact on layout
         Layout = 1 << 5,
         // changes to StyleSheet, USS class
         StyleSheet = 1 << 4,
         // changes to styles, colors and other render properties
         Styles = 1 << 3,
-        // transforms are invalid
+        // changes that may impact the world transform (e.g. laid out position, local transform)
         Transform = 1 << 2,
-        // clips (rect position or size) are invalid
-        Clip = 1 << 1,
-        // pixels in the target have been changed, just repaint, only makes sense on the Panel
+        // changes to the size of the element after layout has been performed, without taking the local transform into account
+        Size = 1 << 1,
+        // The visuals of the element have changed
+        // TODO: Rename to visuals
         Repaint = 1 << 0,
     }
 
@@ -563,13 +564,24 @@ namespace UnityEngine.UIElements
             return PickAll(visualTree, point);
         }
 
+        private bool m_ValidatingLayout = false;
         public override void ValidateLayout()
         {
-            Profiler.BeginSample(m_ProfileLayoutName);
-            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Styles);
-            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Layout);
-            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.TransformClip);
-            Profiler.EndSample();
+            // Reentrancy proofing: ValidateLayout() could be in the code path of updaters.
+            // Actual case: TransformClip update phase recomputes elements under mouse, which does a pick, which validates layout.
+            // Updaters use version numbers for early exit, but it may happen that an updater invalidates a subsequent updater.
+            if (!m_ValidatingLayout)
+            {
+                m_ValidatingLayout = true;
+
+                Profiler.BeginSample(m_ProfileLayoutName);
+                m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Styles);
+                m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Layout);
+                m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.TransformClip);
+                Profiler.EndSample();
+
+                m_ValidatingLayout = false;
+            }
         }
 
         public override void UpdateBindings()

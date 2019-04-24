@@ -252,6 +252,12 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
                     ProcessIl2CppOutputForBinary(args);
                 }
             }
+            else
+            {
+                var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(args.target);
+                var managedStrippingLevel = PlayerSettings.GetManagedStrippingLevel(buildTargetGroup);
+                AssemblyStripper.StripForMonoBackend(args.target, args.usedClassRegistry, managedStrippingLevel, args.report);
+            }
 
             RenameFilesInStagingArea(args);
         }

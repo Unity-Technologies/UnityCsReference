@@ -286,7 +286,7 @@ namespace UnityEditor
             }
         }
 
-        static void ThrowExceptionIfNotValidNonPersistentPrefabInstanceObject(Object prefabInstanceObject)
+        static void ThrowExceptionIfNotValidPrefabInstanceObject(Object prefabInstanceObject, bool isApply)
         {
             if (!(prefabInstanceObject is GameObject || prefabInstanceObject is Component))
                 throw new ArgumentException("Calling apply or revert methods on an object which is not a GameObject or Component is not supported.", nameof(prefabInstanceObject));
@@ -294,18 +294,21 @@ namespace UnityEditor
                 throw new NullReferenceException("Cannot apply or revert object. Object is null.");
             if (!PrefabUtility.IsPartOfPrefabInstance(prefabInstanceObject))
                 throw new ArgumentException("Calling apply or revert methods on an object which is not part of a Prefab instance is not supported.", nameof(prefabInstanceObject));
-            ThrowExceptionIfInstanceIsPersistent(prefabInstanceObject);
+
+            // We support revert operations on Prefab Assets, but not apply operations.
+            if (isApply)
+                ThrowExceptionIfInstanceIsPersistent(prefabInstanceObject);
         }
 
         static void ThrowExceptionIfInstanceIsPersistent(Object prefabInstanceObject)
         {
             if (EditorUtility.IsPersistent(prefabInstanceObject))
-                throw new ArgumentException("Calling apply or revert methods on an instance which is part of a Prefab Asset is not supported.", nameof(prefabInstanceObject));
+                throw new ArgumentException("Calling apply methods on an instance which is part of a Prefab Asset is not supported.", nameof(prefabInstanceObject));
         }
 
         public static void RevertPrefabInstance(GameObject instanceRoot, InteractionMode action)
         {
-            ThrowExceptionIfNotValidNonPersistentPrefabInstanceObject(instanceRoot);
+            ThrowExceptionIfNotValidPrefabInstanceObject(instanceRoot, false);
 
             bool isDisconnected = PrefabUtility.IsDisconnectedFromPrefabAsset(instanceRoot);
 
@@ -337,7 +340,7 @@ namespace UnityEditor
         {
             DateTime startTime = DateTime.UtcNow;
 
-            ThrowExceptionIfNotValidNonPersistentPrefabInstanceObject(instanceRoot);
+            ThrowExceptionIfNotValidPrefabInstanceObject(instanceRoot, true);
 
             GameObject prefabInstanceRoot = GetOutermostPrefabInstanceRoot(instanceRoot);
             var isDisconnected = GetPrefabInstanceHandle(prefabInstanceRoot) == null;
@@ -397,7 +400,7 @@ namespace UnityEditor
             DateTime startTime = DateTime.UtcNow;
 
             Object prefabInstanceObject = instanceProperty.serializedObject.targetObject;
-            ThrowExceptionIfNotValidNonPersistentPrefabInstanceObject(prefabInstanceObject);
+            ThrowExceptionIfNotValidPrefabInstanceObject(prefabInstanceObject, true);
 
             ApplyPropertyOverrides(prefabInstanceObject, instanceProperty, assetPath, true, action);
 
@@ -497,12 +500,38 @@ namespace UnityEditor
                 }
             }
 
+            // Ensure importing of saved Prefab Assets only kicks in after all Prefab Asset have been saved
+            AssetDatabase.StartAssetEditing();
+
             // Write modified value to prefab source object.
             for (int i = 0; i < serializedObjects.Count; i++)
             {
-                serializedObjects[i].ApplyModifiedProperties();
+                if (serializedObjects[i].ApplyModifiedProperties())
+                    SaveChangesToPrefabFileIfPersistent(serializedObjects[i]);
+
                 if (action == InteractionMode.UserAction)
                     Undo.FlushUndoRecordObjects(); // flush'es ensure that SavePrefab() on undo/redo on the source happens in the right order
+            }
+
+            AssetDatabase.StopAssetEditing();
+        }
+
+        static void SaveChangesToPrefabFileIfPersistent(SerializedObject serializedObject)
+        {
+            if (!EditorUtility.IsPersistent(serializedObject.targetObject))
+                return;
+
+            GameObject go = serializedObject.targetObject as GameObject;
+            if (go == null)
+            {
+                var cmp = serializedObject.targetObject as Component;
+                if (cmp != null)
+                    go = cmp.gameObject;
+            }
+
+            if (go != null)
+            {
+                SavePrefabAsset(go.transform.root.gameObject);
             }
         }
 
@@ -670,7 +699,7 @@ namespace UnityEditor
         public static void RevertPropertyOverride(SerializedProperty instanceProperty, InteractionMode action)
         {
             Object prefabInstanceObject = instanceProperty.serializedObject.targetObject;
-            ThrowExceptionIfNotValidNonPersistentPrefabInstanceObject(prefabInstanceObject);
+            ThrowExceptionIfNotValidPrefabInstanceObject(prefabInstanceObject, false);
 
             instanceProperty.prefabOverride = false;
             // Because prefabOverride changed ApplyModifiedProperties will do a prefab merge causing the revert.
@@ -684,7 +713,7 @@ namespace UnityEditor
         {
             DateTime startTime = DateTime.UtcNow;
 
-            ThrowExceptionIfNotValidNonPersistentPrefabInstanceObject(instanceComponentOrGameObject);
+            ThrowExceptionIfNotValidPrefabInstanceObject(instanceComponentOrGameObject, true);
 
             ApplyPropertyOverrides(instanceComponentOrGameObject, null, assetPath, false, action);
 
@@ -700,7 +729,7 @@ namespace UnityEditor
 
         public static void RevertObjectOverride(Object instanceComponentOrGameObject, InteractionMode action)
         {
-            ThrowExceptionIfNotValidNonPersistentPrefabInstanceObject(instanceComponentOrGameObject);
+            ThrowExceptionIfNotValidPrefabInstanceObject(instanceComponentOrGameObject, false);
 
             if (action == InteractionMode.UserAction)
                 Undo.RegisterCompleteObjectUndo(instanceComponentOrGameObject, "Revert component property overrides");
@@ -771,8 +800,6 @@ namespace UnityEditor
             if (!PrefabUtility.IsAddedComponentOverride(component))
                 throw new ArgumentException("Cannot revert added component. Component is not an added component override on a Prefab instance.", nameof(component));
 
-            ThrowExceptionIfInstanceIsPersistent(component);
-
             if (action == InteractionMode.UserAction)
             {
                 string dependentComponents = string.Join(
@@ -827,7 +854,7 @@ namespace UnityEditor
         {
             DateTime startTime = DateTime.UtcNow;
 
-            ThrowExceptionIfNotValidNonPersistentPrefabInstanceObject(instanceGameObject);
+            ThrowExceptionIfNotValidPrefabInstanceObject(instanceGameObject, true);
 
             if (assetComponent == null)
                 throw new ArgumentNullException(nameof(assetComponent), "Prefab source may not be null.");
@@ -884,7 +911,7 @@ namespace UnityEditor
 
         public static void RevertRemovedComponent(GameObject instanceGameObject, Component assetComponent, InteractionMode action)
         {
-            ThrowExceptionIfNotValidNonPersistentPrefabInstanceObject(instanceGameObject);
+            ThrowExceptionIfNotValidPrefabInstanceObject(instanceGameObject, false);
 
             var actionName = "Revert Prefab removed component";
             var prefabInstanceObject = PrefabUtility.GetPrefabInstanceHandle(instanceGameObject);
@@ -1017,7 +1044,8 @@ namespace UnityEditor
             string thingThatChanged,
             Object instanceOrAssetObject,
             Action<GUIContent, Object> addApplyMenuItemAction,
-            bool defaultOverrideComparedToSomeSources = false)
+            bool defaultOverrideComparedToSomeSources = false,
+            bool includeSelfAsTarget = false)
         {
             // If thingThatChanged word is empty, apply menu items directly into menu.
             // Otherwise, insert as sub-menu named after thingThatChanged.
@@ -1026,7 +1054,7 @@ namespace UnityEditor
             if (thingThatChanged != String.Empty)
                 thingThatChanged += "/";
 
-            List<Object> applyTargets = GetApplyTargets(instanceOrAssetObject, defaultOverrideComparedToSomeSources);
+            List<Object> applyTargets = GetApplyTargets(instanceOrAssetObject, defaultOverrideComparedToSomeSources, includeSelfAsTarget);
             if (applyTargets == null || applyTargets.Count == 0)
                 return;
 
@@ -1149,6 +1177,12 @@ namespace UnityEditor
 
         public static GameObject SavePrefabAsset(GameObject asset)
         {
+            bool savedSuccesfully;
+            return SavePrefabAsset(asset, out savedSuccesfully);
+        }
+
+        public static GameObject SavePrefabAsset(GameObject asset, out bool savedSuccessfully)
+        {
             if (asset == null)
                 throw new ArgumentNullException("Parameter prefabAssetGameObject is null");
 
@@ -1167,7 +1201,7 @@ namespace UnityEditor
             if (root != asset)
                 throw new ArgumentException("GameObject to save Prefab from must be a Prefab root");
 
-            return SavePrefabAsset_Internal(root);
+            return SavePrefabAsset_Internal(root, out savedSuccessfully);
         }
 
         private static void ValidatePath(GameObject instanceRoot, string path)
@@ -1791,7 +1825,7 @@ namespace UnityEditor
             return goInAsset.transform.root == goInAsset.transform;
         }
 
-        internal static List<Object> GetApplyTargets(Object instanceOrAssetObject, bool defaultOverrideComparedToSomeSources)
+        internal static List<Object> GetApplyTargets(Object instanceOrAssetObject, bool defaultOverrideComparedToSomeSources, bool includeSelfAsTarget = false)
         {
             List<Object> applyTargets = new List<Object>();
 
@@ -1800,8 +1834,8 @@ namespace UnityEditor
                 instanceGameObject = (instanceOrAssetObject as Component).gameObject;
 
             Object source = instanceOrAssetObject;
-            if (!EditorUtility.IsPersistent(source))
-                source = PrefabUtility.GetCorrespondingObjectFromSource(instanceOrAssetObject);
+            if (!EditorUtility.IsPersistent(source) || !includeSelfAsTarget)
+                source = PrefabUtility.GetCorrespondingObjectFromSource(source);
             if (source == null)
                 return applyTargets;
 

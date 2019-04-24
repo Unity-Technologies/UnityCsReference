@@ -420,8 +420,12 @@ namespace UnityEditor
         }
 
         // Snapping windows
-        static Vector2 s_LastDragMousePos;
-        float startDragDpi;
+        private static Vector2 s_LastDragMousePos;
+        private float startDragDpi;
+
+        // Indicates that we are using the native title bar caption dragging.
+        private bool m_DraggingNativeTitleBarCaption = false;
+
         private void DragTitleBar(Rect titleBarRect)
         {
             int id = GUIUtility.GetControlID(FocusType.Passive);
@@ -430,30 +434,33 @@ namespace UnityEditor
             switch (evt.GetTypeForControl(id))
             {
                 case EventType.Repaint:
+                    if (m_DraggingNativeTitleBarCaption)
+                        m_DraggingNativeTitleBarCaption = false;
                     EditorGUIUtility.AddCursorRect(titleBarRect, MouseCursor.Arrow);
                     break;
                 case EventType.MouseDown:
                     // If the mouse is inside the title bar rect, we say that we're the hot control
                     if (titleBarRect.Contains(evt.mousePosition) && GUIUtility.hotControl == 0 && evt.button == 0)
                     {
-                        GUIUtility.hotControl = id;
-                        if (Application.platform != RuntimePlatform.WindowsEditor)
+                        if (Application.platform == RuntimePlatform.WindowsEditor)
                         {
-                            s_LastDragMousePos = evt.mousePosition;
-                            startDragDpi = GUIUtility.pixelsPerPoint;
+                            Event.current.Use();
+                            m_DraggingNativeTitleBarCaption = true;
+                            SendCaptionEvent(m_DraggingNativeTitleBarCaption);
                         }
                         else
                         {
-                            SendCaptionEvent(true);
+                            GUIUtility.hotControl = id;
+                            Event.current.Use();
+                            s_LastDragMousePos = evt.mousePosition;
+                            startDragDpi = GUIUtility.pixelsPerPoint;
+                            Unsupported.SetAllowCursorLock(false, Unsupported.DisallowCursorLockReasons.SizeMove);
                         }
-
-                        Event.current.Use();
-                        Unsupported.SetAllowCursorLock(false, Unsupported.DisallowCursorLockReasons.SizeMove);
                     }
                     break;
                 case EventType.MouseUp:
-                    if (Application.platform == RuntimePlatform.WindowsEditor)
-                        SendCaptionEvent(false);
+                    if (m_DraggingNativeTitleBarCaption)
+                        break;
 
                     if (GUIUtility.hotControl == id)
                     {
@@ -463,6 +470,9 @@ namespace UnityEditor
                     }
                     break;
                 case EventType.MouseDrag:
+                    if (m_DraggingNativeTitleBarCaption)
+                        break;
+
                     if (GUIUtility.hotControl == id)
                     {
                         Vector2 mousePos = evt.mousePosition;

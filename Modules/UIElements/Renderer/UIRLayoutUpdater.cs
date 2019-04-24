@@ -66,17 +66,23 @@ namespace UnityEngine.UIElements
             Rect lastRect = ve.renderData.lastLayout;
             bool rectChanged = false;
 
+            VersionChangeType changeType = 0;
+
             // If the last layout rect is different than the current one we must dirty transform on children
             if ((lastRect.width != yogaRect.width) || (lastRect.height != yogaRect.height))
             {
-                ve.IncrementVersion(VersionChangeType.Clip | VersionChangeType.Repaint); // Layout change require a clip update + repaint
+                changeType |= VersionChangeType.Size | VersionChangeType.Repaint;
                 rectChanged = true;
             }
             if (yogaRect.position != lastRect.position)
             {
-                ve.IncrementVersion(VersionChangeType.Transform);
+                changeType |= VersionChangeType.Transform;
                 rectChanged = true;
             }
+
+            if (changeType != 0)
+                ve.IncrementVersion(changeType);
+
             ve.renderData.lastLayout = yogaRect;
 
             // ignore clean sub trees

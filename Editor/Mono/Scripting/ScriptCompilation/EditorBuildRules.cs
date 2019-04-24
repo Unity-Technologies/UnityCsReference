@@ -601,13 +601,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 scriptAssembly.Language = targetAssembly.Language;
                 scriptAssembly.OriginPath = targetAssembly.PathPrefix;
 
-                var editorOnlyTargetAssembly = (targetAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
-
-                if (editorOnlyTargetAssembly || (buildingForEditor && settings.ApiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6))
-                    scriptAssembly.ApiCompatibilityLevel = (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest) ? ApiCompatibilityLevel.NET_4_6 : ApiCompatibilityLevel.NET_2_0;
-                else
-                    scriptAssembly.ApiCompatibilityLevel = settings.ApiCompatibilityLevel;
-
                 scriptAssembly.Filename = targetAssembly.Filename;
 
                 if (runUpdaterAssemblies != null && runUpdaterAssemblies.Contains(scriptAssembly.Filename))
@@ -625,6 +618,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     scriptAssembly.CompilerOptions = settings.PredefinedAssembliesCompilerOptions;
                 else
                     scriptAssembly.CompilerOptions = targetAssembly.CompilerOptions;
+
+                var editorOnlyTargetAssembly = (targetAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
+
+                if (editorOnlyTargetAssembly || buildingForEditor && settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6)
+                    scriptAssembly.CompilerOptions.ApiCompatibilityLevel = EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest ? ApiCompatibilityLevel.NET_4_6 : ApiCompatibilityLevel.NET_2_0;
+                else
+                    scriptAssembly.CompilerOptions.ApiCompatibilityLevel = settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel;
 
                 // Script files must always be passed in the same order to the compiler.
                 // Otherwise player builds might fail for partial classes.
@@ -739,7 +739,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (buildingForEditor && assemblies.EditorAssemblyReferences != null)
                 references.AddRange(assemblies.EditorAssemblyReferences);
 
-            references.AddRange(MonoLibraryHelpers.GetSystemLibraryReferences(scriptAssembly.ApiCompatibilityLevel, scriptAssembly.Language));
+            references.AddRange(MonoLibraryHelpers.GetSystemLibraryReferences(scriptAssembly.CompilerOptions.ApiCompatibilityLevel, scriptAssembly.Language));
 
             scriptAssembly.ScriptAssemblyReferences = scriptAssemblyReferences.ToArray();
             scriptAssembly.References = references.ToArray();

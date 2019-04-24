@@ -8,7 +8,9 @@ using UnityEditor;
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
+using Unity.CodeEditor;
 using UnityEditor.Utils;
 
 namespace UnityEditorInternal
@@ -26,11 +28,13 @@ namespace UnityEditorInternal
 
         static readonly List<Func<Installation[]>> k_PathCallbacks = new List<Func<Installation[]>>();
 
+        [Obsolete("Use UnityEditor.ScriptEditor.Register()", false)]
         public static void RegisterIde(Func<Installation[]> pathCallBack)
         {
             k_PathCallbacks.Add(pathCallBack);
         }
 
+        [Obsolete("This functionality is going to be removed. See IExternalCodeEditor for more information", false)]
         public static ScriptEditor GetScriptEditorFromPath(string path)
         {
             string lowerCasePath = path.ToLower();
@@ -69,6 +73,7 @@ namespace UnityEditorInternal
             return filename.StartsWith("visualstudio") && !filename.Contains("code") && filename.EndsWith(".app");
         }
 
+        #pragma warning disable 618
         public static string GetExternalScriptEditor()
         {
             var editor =  EditorPrefs.GetString("kScriptsDefaultApp");
@@ -85,64 +90,33 @@ namespace UnityEditorInternal
             return string.Empty;
         }
 
+        [Obsolete("This method has been moved to CodeEditor.SetExternalScriptEditor", false)]
         public static void SetExternalScriptEditor(string path)
         {
-            EditorPrefs.SetString("kScriptsDefaultApp", path);
+            CodeEditor.SetExternalScriptEditor(path);
         }
 
-        static string GetScriptEditorArgsKey(string path)
-        {
-            // Starting in Unity 5.5, we support setting script editor arguments on OSX and
-            // use then when opening the script editor.
-            // Before Unity 5.5, we would still save the default script editor args in EditorPrefs,
-            // even though we never used them. This means that the user potentially has some
-            // script editor args saved and once he upgrades to 5.5, they will be used when
-            // open the script editor. Which unintended and causes a regression in behaviour.
-            // So on OSX we change the key for per application for script editor args,
-            // to avoid reading the one from previous versions.
-            if (Application.platform == RuntimePlatform.OSXEditor)
-                return "kScriptEditorArgs_" + path;
-
-            return "kScriptEditorArgs" + path;
-        }
-
-        static string GetDefaultStringEditorArgs()
-        {
-            // On OSX there is a built-in mechanism for opening files in apps.
-            // We use this mechanism when the external script editor args are not set.
-            // Which was the only support behaviour before Unity 5.5. We therefor
-            // default to this behavior.
-            // If the script editor args are set, we only launch the script editor with args
-            // specified and do not use the built-in mechanism for opening script files.
-            if (Application.platform == RuntimePlatform.OSXEditor)
-                return "";
-
-            return "\"$(File)\"";
-        }
-
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("This functionality has been moved to the IExternalCodeEditor packages", true)]
         public static string GetExternalScriptEditorArgs()
         {
-            string editor = GetExternalScriptEditor();
-            var scriptEditor = GetScriptEditorFromPath(editor);
-
-            if (scriptEditor != ScriptEditor.Other)
-                return "";
-
-            return EditorPrefs.GetString(GetScriptEditorArgsKey(editor), GetDefaultStringEditorArgs());
+            throw new NotSupportedException("This functionality has been moved to the IExternalCodeEditor packages");
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("This functionality has been moved to the IExternalCodeEditor packages", true)]
         public static void SetExternalScriptEditorArgs(string args)
         {
-            string editor = GetExternalScriptEditor();
-
-            EditorPrefs.SetString(GetScriptEditorArgsKey(editor), args);
+            throw new NotSupportedException("This functionality has been moved to the IExternalCodeEditor packages");
         }
 
+        [Obsolete("Use UnityEditor.ScriptEditor.GetCurrentEditor()", false)]
         public static ScriptEditor GetScriptEditorFromPreferences()
         {
             return GetScriptEditorFromPath(GetExternalScriptEditor());
         }
 
+        [Obsolete("This method is being internalized, please use UnityEditorInternal.CodeEditorUtility.GetFoundScriptEditorPaths", false)]
         public static Dictionary<string, string> GetFoundScriptEditorPaths(RuntimePlatform platform)
         {
             var result = new Dictionary<string, string>();

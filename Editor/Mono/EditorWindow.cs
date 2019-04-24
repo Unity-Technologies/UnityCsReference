@@ -757,7 +757,17 @@ namespace UnityEditor
                 return win;
             }
 
-            win = CreateInstance<T>();
+            return CreateWindow<T>(title, desiredDockNextTo);
+        }
+
+        public static T CreateWindow<T>(params System.Type[] desiredDockNextTo) where T : EditorWindow
+        {
+            return CreateWindow<T>(null, desiredDockNextTo);
+        }
+
+        public static T CreateWindow<T>(string title, params System.Type[] desiredDockNextTo) where T : EditorWindow
+        {
+            T win = CreateInstance<T>();
             if (title != null)
                 win.titleContent =  new GUIContent(title);
 

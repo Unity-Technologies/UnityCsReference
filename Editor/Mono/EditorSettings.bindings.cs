@@ -5,7 +5,6 @@
 using System;
 using System.Linq;
 using System.Runtime.InteropServices;
-using UnityEditor.VisualStudioIntegration;
 using UnityEngine.Bindings;
 using Object = UnityEngine.Object;
 
@@ -193,7 +192,7 @@ namespace UnityEditor
 
         public static string[] projectGenerationBuiltinExtensions
         {
-            get { return SolutionSynchronizer.BuiltinSupportedExtensions.Keys.ToArray(); }
+            get { return new[] { "cs", "uxml", "uss", "shader", "compute", "cginc", "hlsl", "glslinc", "template" }; }
         }
 
         internal static extern string Internal_ProjectGenerationUserExtensions

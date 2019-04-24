@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics;
 
 namespace UnityEngine.UIElements
 {
@@ -18,51 +19,45 @@ namespace UnityEngine.UIElements
 
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
-            if ((versionChangeType & (VersionChangeType.Transform | VersionChangeType.Clip)) == 0)
+            if ((versionChangeType & (VersionChangeType.Transform | VersionChangeType.Size)) == 0)
                 return;
 
-            if ((versionChangeType & VersionChangeType.Transform) == VersionChangeType.Transform && (!ve.isWorldTransformDirty || !ve.isWorldClipDirty))
-                DirtyTransformClipHierarchy(ve); // Dirty both transform and clip when the transform changes
-            else if ((versionChangeType & VersionChangeType.Clip) == VersionChangeType.Clip && !ve.isWorldClipDirty)
-                DirtyClipHierarchy(ve);
+            // According to the flags, what operations must be done?
+            bool mustDirtyWorldTransform = (versionChangeType & VersionChangeType.Transform) != 0;
+            bool mustDirtyWorldClip = (versionChangeType & (VersionChangeType.Transform | VersionChangeType.Size)) != 0;
+
+            // Are these operations already done?
+            mustDirtyWorldTransform = mustDirtyWorldTransform && !ve.isWorldTransformDirty;
+            mustDirtyWorldClip = mustDirtyWorldClip && !ve.isWorldClipDirty;
+
+            if (mustDirtyWorldTransform || mustDirtyWorldClip)
+                DirtyHierarchy(ve, mustDirtyWorldTransform, mustDirtyWorldClip);
 
             DirtyBoundingBoxHierarchy(ve);
 
             ++m_Version;
         }
 
-        private void DirtyTransformClipHierarchy(VisualElement ve)
+        static void DirtyHierarchy(VisualElement ve, bool mustDirtyWorldTransform, bool mustDirtyWorldClip)
         {
-            ve.isWorldTransformDirty = true;
-            ve.isWorldClipDirty = true;
+            if (mustDirtyWorldTransform)
+                ve.isWorldTransformDirty = true;
+
+            if (mustDirtyWorldClip)
+                ve.isWorldClipDirty = true;
 
             int count = ve.hierarchy.childCount;
             for (int i = 0; i < count; i++)
             {
                 var child = ve.hierarchy[i];
-                if (child.isWorldTransformDirty && child.isWorldClipDirty)
-                    continue;
 
-                DirtyTransformClipHierarchy(child);
+                if (mustDirtyWorldTransform && !child.isWorldTransformDirty ||
+                    mustDirtyWorldClip && !child.isWorldClipDirty)
+                    DirtyHierarchy(child, mustDirtyWorldTransform, mustDirtyWorldClip);
             }
         }
 
-        private void DirtyClipHierarchy(VisualElement ve)
-        {
-            ve.isWorldClipDirty = true;
-
-            int count = ve.hierarchy.childCount;
-            for (int i = 0; i < count; i++)
-            {
-                var child = ve.hierarchy[i];
-                if (child.isWorldClipDirty)
-                    continue;
-
-                DirtyClipHierarchy(child);
-            }
-        }
-
-        private void DirtyBoundingBoxHierarchy(VisualElement ve)
+        static void DirtyBoundingBoxHierarchy(VisualElement ve)
         {
             ve.isBoundingBoxDirty = true;
             var parent = ve.hierarchy.parent;

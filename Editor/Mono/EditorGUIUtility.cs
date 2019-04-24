@@ -1091,7 +1091,7 @@ namespace UnityEditor
             }
         }
 
-        public static float currentViewWidth => GUIView.current.position.width;
+        public static float currentViewWidth => GUIView.current ? GUIView.current.position.width : 0;
 
         public static float labelWidth
         {

@@ -13,14 +13,30 @@ namespace Unity.Collections.LowLevel.Unsafe
     public static partial class UnsafeUtility
     {
         // Copies sizeof(T) bytes from ptr to output
+        [MethodImpl(256)] // AggressiveInlining
         unsafe public static void CopyPtrToStructure<T>(void* ptr, out T output) where T : struct
+        {
+            if (ptr == null)
+                throw new ArgumentNullException();
+            InternalCopyPtrToStructure(ptr, out output);
+        }
+
+        unsafe static void InternalCopyPtrToStructure<T>(void* ptr, out T output) where T : struct
         {
             // @patched at compile time
             throw new NotImplementedException("Patching this method failed");
         }
 
         // Copies sizeof(T) bytes from output to ptr
+        [MethodImpl(256)] // AggressiveInlining
         unsafe public static void CopyStructureToPtr<T>(ref T input, void* ptr) where T : struct
+        {
+            if (ptr == null)
+                throw new ArgumentNullException();
+            InternalCopyStructureToPtr(ref input, ptr);
+        }
+
+        unsafe static void InternalCopyStructureToPtr<T>(ref T input, void* ptr) where T : struct
         {
             // @patched at compile time
             throw new NotImplementedException("Patching this method failed");

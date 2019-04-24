@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Scripting;
 using UnityEditorInternal;
+using UnityEngine.TestTools;
 
 namespace UnityEditor
 {
@@ -37,7 +38,7 @@ namespace UnityEditor
 
     internal class ApplicationTitleDescriptor
     {
-        public ApplicationTitleDescriptor(string projectName, string unityVersion, string activeSceneName, string licenseType, bool previewPackageInUse, string targetName)
+        public ApplicationTitleDescriptor(string projectName, string unityVersion, string activeSceneName, string licenseType, bool previewPackageInUse, string targetName, bool codeCoverageEnabled)
         {
             title = "";
             this.projectName = projectName;
@@ -46,6 +47,7 @@ namespace UnityEditor
             this.licenseType = licenseType;
             this.previewPackageInUse = previewPackageInUse;
             this.targetName = targetName;
+            this.codeCoverageEnabled = codeCoverageEnabled;
         }
 
         public string title;
@@ -55,6 +57,7 @@ namespace UnityEditor
         public string licenseType { get; private set; }
         public bool previewPackageInUse { get; private set; }
         public string targetName { get; private set; }
+        public bool codeCoverageEnabled { get; private set; }
     }
 
     public sealed partial class EditorApplication
@@ -244,7 +247,7 @@ namespace UnityEditor
                 ? $"{desc.activeSceneName} - {desc.projectName}"
                 : $"{desc.projectName} - {desc.activeSceneName}";
 
-            // FUTURE: "preview packages in use" and the build target info do not belong in the title bar. they
+            // FUTURE: [PREVIEW PACKAGES IN USE], [CODE COVERAGE] and the build target info do not belong in the title bar. they
             // are there now because we want them to be always-visible to user, which normally would be a) buildconfig
             // bar or b) status bar, but we don't have a) and our b) needs work to support such a thing.
 
@@ -262,6 +265,11 @@ namespace UnityEditor
             if (desc.previewPackageInUse)
             {
                 title += " " + L10n.Tr("[PREVIEW PACKAGES IN USE]");
+            }
+
+            if (desc.codeCoverageEnabled)
+            {
+                title += " " + L10n.Tr("[CODE COVERAGE]");
             }
 
             return title;
@@ -282,7 +290,8 @@ namespace UnityEditor
                 activeSceneName,
                 GetLicenseType(),
                 isPreviewPackageInUse,
-                BuildPipeline.GetBuildTargetGroupDisplayName(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget))
+                BuildPipeline.GetBuildTargetGroupDisplayName(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget)),
+                Coverage.enabled
             );
 
             desc.title = GetDefaultMainWindowTitle(desc);

@@ -1571,13 +1571,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             if ((options & EditorScriptCompilationOptions.BuildingPredefinedAssembliesAllowUnsafeCode) == EditorScriptCompilationOptions.BuildingPredefinedAssembliesAllowUnsafeCode)
                 predefinedAssembliesCompilerOptions.AllowUnsafeCode = true;
+            predefinedAssembliesCompilerOptions.ApiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
 
             var settings = new ScriptAssemblySettings
             {
                 BuildTarget = buildTarget,
                 BuildTargetGroup = buildTargetGroup,
                 OutputDirectory = GetCompileScriptsOutputDirectory(),
-                ApiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup),
                 CompilationOptions = options,
                 PredefinedAssembliesCompilerOptions = predefinedAssembliesCompilerOptions,
             };
@@ -1869,7 +1869,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             editorOnlyCompatibleDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, apiCompatibilityLevel);
 
-            var playerAssembliesDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, settings.ApiCompatibilityLevel);
+            var playerAssembliesDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel);
 
             foreach (var targetAssembly in allTargetAssemblies)
             {
@@ -2055,12 +2055,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var scriptAssembly = new ScriptAssembly();
             scriptAssembly.Flags = ToAssemblyFlags(assemblyBuilder.flags);
             scriptAssembly.BuildTarget = assemblyBuilder.buildTarget;
-            scriptAssembly.ApiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(assemblyBuilder.buildTargetGroup);
             scriptAssembly.Language = ScriptCompilers.GetLanguageFromExtension(ScriptCompilers.GetExtensionOfSourceFile(assemblyBuilder.scriptPaths[0]));
             scriptAssembly.Files = scriptFiles;
             scriptAssembly.Filename = AssetPath.GetFileName(assemblyPath);
             scriptAssembly.OutputDirectory = AssetPath.GetDirectoryName(assemblyPath);
             scriptAssembly.CompilerOptions = assemblyBuilder.compilerOptions;
+            scriptAssembly.CompilerOptions.ApiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(assemblyBuilder.buildTargetGroup);
             scriptAssembly.ScriptAssemblyReferences = new ScriptAssembly[0];
 
             return scriptAssembly;
@@ -2102,7 +2102,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var customReferences = EditorBuildRules.GetCompiledCustomAssembliesReferences(scriptAssembly, customTargetAssemblies, GetCompileScriptsOutputDirectory());
             var precompiledReferences = EditorBuildRules.GetPrecompiledReferences(scriptAssembly, EditorBuildRules.TargetAssemblyType.Custom, options, EditorBuildRules.EditorCompatibility.CompatibleWithEditor, precompiledAssemblies);
-            var additionalReferences = MonoLibraryHelpers.GetSystemLibraryReferences(scriptAssembly.ApiCompatibilityLevel, scriptAssembly.Language);
+            var additionalReferences = MonoLibraryHelpers.GetSystemLibraryReferences(scriptAssembly.CompilerOptions.ApiCompatibilityLevel, scriptAssembly.Language);
             string[] editorReferences = buildingForEditor ? ModuleUtils.GetAdditionalReferencesForUserScripts() : new string[0];
 
             var references = new List<string>();

@@ -180,7 +180,7 @@ namespace UnityEditor
         extern private static GameObject SaveAsPrefabAssetAndConnect_Internal([NotNull] GameObject root, string path, out bool success);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
-        extern private static GameObject SavePrefabAsset_Internal([NotNull] GameObject root);
+        extern private static GameObject SavePrefabAsset_Internal([NotNull] GameObject root, out bool success);
 
         internal static void AddGameObjectsToPrefabAndConnect(GameObject[] gameObjects, Object targetPrefab)
         {

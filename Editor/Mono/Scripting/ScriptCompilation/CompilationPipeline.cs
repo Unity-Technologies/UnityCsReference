@@ -4,8 +4,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using UnityEditor.Scripting.ScriptCompilation;
 using System.Linq;
+using UnityEditor.Scripting.Compilers;
 using sc = UnityEditor.Scripting.ScriptCompilation;
 using UnityEditorInternal;
 
@@ -21,10 +23,14 @@ namespace UnityEditor.Compilation
     public class ScriptCompilerOptions
     {
         public bool AllowUnsafeCode { get; set; }
+        public ApiCompatibilityLevel ApiCompatibilityLevel { get; set; }
+        public string[] ResponseFiles { get; set; }
 
         public ScriptCompilerOptions()
         {
             AllowUnsafeCode = false;
+            ApiCompatibilityLevel = ApiCompatibilityLevel.NET_4_6;
+            ResponseFiles = new string[0];
         }
     }
 
@@ -89,6 +95,15 @@ namespace UnityEditor.Compilation
             this.flags = flags;
             this.compilerOptions = compilerOptions;
         }
+    }
+
+    public class ResponseFileData
+    {
+        public string[] Defines;
+        public string[] FullPathReferences;
+        public string[] Errors;
+        public string[] OtherArguments;
+        public bool Unsafe;
     }
 
     public struct AssemblyDefinitionPlatform
@@ -172,6 +187,16 @@ namespace UnityEditor.Compilation
                     UnityEngine.Debug.LogException(e);
                 }
             };
+        }
+
+        public static string[] GetSystemAssemblyDirectories(ApiCompatibilityLevel apiCompatibilityLevel)
+        {
+            return MonoLibraryHelpers.GetSystemReferenceDirectories(apiCompatibilityLevel);
+        }
+
+        public static ResponseFileData ParseResponseFile(string relativePath, string projectDirectory, string[] systemReferenceDirectories)
+        {
+            return ScriptCompilerBase.ParseResponseFileFromFile(relativePath, projectDirectory, systemReferenceDirectories);
         }
 
         public static Assembly[] GetAssemblies()
@@ -356,6 +381,7 @@ namespace UnityEditor.Compilation
                     flags |= AssemblyFlags.EditorAssembly;
 
                 var compilerOptions = scriptAssembly.CompilerOptions;
+                compilerOptions.ResponseFiles = scriptAssembly.GetResponseFiles();
 
                 assemblies[i] = new Assembly(name,
                     outputPath,
@@ -375,13 +401,23 @@ namespace UnityEditor.Compilation
             for (int i = 0; i < scriptAssemblies.Length; ++i)
             {
                 var scriptAssembly = scriptAssemblies[i];
-                var assemblyReferences = scriptAssembly.ScriptAssemblyReferences.Select(a => scriptAssemblyToAssembly[a]).ToArray();
+                var assemblyReferences = scriptAssembly.ScriptAssemblyReferences.Select(a => scriptAssemblyToAssembly[a]).Where(a => !IsInternalPlugin(a.outputPath)).ToArray();
 
                 assemblies[i].assemblyReferences = assemblyReferences;
             }
 
 
             return assemblies;
+        }
+
+        static bool IsInternalPlugin(string fullReference)
+        {
+            if (AssemblyHelper.IsInternalAssembly(fullReference))
+            {
+                if (!Modules.ModuleUtils.GetAdditionalReferencesForEditorCsharpProject().Contains(fullReference))
+                    return true;
+            }
+            return false;
         }
 
         static int CompareAssemblyDefinitionPlatformByDisplayName(AssemblyDefinitionPlatform p1, AssemblyDefinitionPlatform p2)
