@@ -147,6 +147,7 @@ namespace UnityEngine.UIElements
             t.y = GUIUtility.RoundToPixelGrid(-offset.y);
             contentContainer.transform.position = t;
 
+            // TODO: Can we get rid of this?
             this.IncrementVersion(VersionChangeType.Repaint);
         }
 

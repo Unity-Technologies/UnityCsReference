@@ -26,8 +26,8 @@ namespace UnityEngine.UIElements.UIR
     {
         RenderChainCommand m_FirstCommand;
         uint m_DirtyID; // A monotonically increasing ID used to avoid double processing of some elements
-        VisualElement m_FirstDirtyVisuals, m_FirstDirtyTransform, m_FirstDirtyClipping;
-        VisualElement m_LastDirtyVisuals, m_LastDirtyTransform, m_LastDirtyClipping;
+        VisualElement m_FirstDirtyVisuals, m_FirstDirtyTransformOrSize, m_FirstDirtyClipping;
+        VisualElement m_LastDirtyVisuals, m_LastDirtyTransformOrSize, m_LastDirtyClipping;
         Pool<RenderChainCommand> m_CommandPool = new Pool<RenderChainCommand>();
         ChainBuilderStats m_Stats;
         uint m_StatsElementsAdded, m_StatsElementsRemoved;
@@ -154,19 +154,20 @@ namespace UnityEngine.UIElements.UIR
             m_FirstDirtyClipping = m_LastDirtyClipping = null;
 
             m_DirtyID++;
-            dirty = m_FirstDirtyTransform;
+            var clearDirty = ~(RenderDataDirtyTypes.Transform | RenderDataDirtyTypes.Size);
+            dirty = m_FirstDirtyTransformOrSize;
             s_TransformProcessingSampler.Begin();
             while (dirty != null)
             {
                 if (dirty.renderChainData.isInChain && dirty.renderChainData.dirtyID != m_DirtyID)
-                    Implementation.RenderEvents.ProcessOnTransformChanged(this, dirty, m_DirtyID, device, ref m_Stats);
-                dirty.renderChainData.dirtiedTransform = false;
+                    Implementation.RenderEvents.ProcessOnTransformOrSizeChanged(this, dirty, m_DirtyID, device, ref m_Stats);
+                dirty.renderChainData.dirtiedValues &= clearDirty;
                 var old = dirty;
-                dirty = dirty.renderChainData.nextDirtyTransform;
-                old.renderChainData.nextDirtyTransform = null;
+                dirty = dirty.renderChainData.nextDirtyTransformOrSize;
+                old.renderChainData.nextDirtyTransformOrSize = null;
             }
             s_TransformProcessingSampler.End();
-            m_FirstDirtyTransform = m_LastDirtyTransform = null;
+            m_FirstDirtyTransformOrSize = m_LastDirtyTransformOrSize = null;
 
             m_DirtyID++;
             dirty = m_FirstDirtyVisuals;
@@ -275,10 +276,10 @@ namespace UnityEngine.UIElements.UIR
             var removalInfo = new Implementation.RemovalInfo();
             m_StatsElementsRemoved += Implementation.RenderEvents.OnChildRemoving(this, ve, ref removalInfo);
             Debug.Assert(!ve.renderChainData.isInChain);
-            CleanupDirtyLists(removalInfo.anyDirtiedClipping, removalInfo.anyDirtiedTransform, removalInfo.anyDirtiedVisuals);
+            CleanupDirtyLists(removalInfo.anyDirtiedClipping, removalInfo.anyDirtiedTransformOrSize, removalInfo.anyDirtiedVisuals);
         }
 
-        public void CleanupDirtyLists(bool cleanClipping, bool cleanTransform, bool cleanVisuals)
+        public void CleanupDirtyLists(bool cleanClipping, bool cleanTransformOrSize, bool cleanVisuals)
         {
             if (cleanClipping)
             {
@@ -309,16 +310,16 @@ namespace UnityEngine.UIElements.UIR
                 m_LastDirtyClipping = last;
             }
 
-            if (cleanTransform)
+            if (cleanTransformOrSize)
             {
                 // Reset transform.
                 VisualElement first = null;
                 VisualElement last = null;
-                VisualElement current = m_FirstDirtyTransform;
+                VisualElement current = m_FirstDirtyTransformOrSize;
                 VisualElement next = null;
                 while (current != null)
                 {
-                    next = current.renderChainData.nextDirtyTransform;
+                    next = current.renderChainData.nextDirtyTransformOrSize;
                     if (current.renderChainData.isInChain)
                     {
                         first = first ?? current;
@@ -327,16 +328,16 @@ namespace UnityEngine.UIElements.UIR
                     else
                     {
                         if (last != null)
-                            last.renderChainData.nextDirtyTransform = next;
-                        current.renderChainData.nextDirtyTransform = null;
+                            last.renderChainData.nextDirtyTransformOrSize = next;
+                        current.renderChainData.nextDirtyTransformOrSize = null;
                     }
 
                     current = next;
                     m_StatsTransformListCleanup++;
                 }
 
-                m_FirstDirtyTransform = first;
-                m_LastDirtyTransform = last;
+                m_FirstDirtyTransformOrSize = first;
+                m_LastDirtyTransformOrSize = last;
             }
 
             if (cleanVisuals)
@@ -369,7 +370,11 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        public void UIEOnTransformChanged(VisualElement ve) { Implementation.RenderEvents.OnTransformChanged(this, ve); }
+        public void UIEOnTransformOrSizeChanged(VisualElement ve, bool transformChanged, bool sizeChanged)
+        {
+            Implementation.RenderEvents.OnTransformOrSizeChanged(this, ve, transformChanged, sizeChanged);
+        }
+
         public void UIEOnClippingChanged(VisualElement ve) { Implementation.RenderEvents.OnClippingChanged(this, ve); }
         public void UIEOnVisualsChanged(VisualElement ve, bool hierarchical) { Implementation.RenderEvents.OnVisualsChanged(this, ve, hierarchical); }
         #endregion
@@ -461,15 +466,24 @@ namespace UnityEngine.UIElements.UIR
             else m_FirstDirtyClipping = m_LastDirtyClipping = ve;
         }
 
-        internal void OnTransformChanged(VisualElement ve)
+        internal void OnTransformOrSizeChanged(VisualElement ve, bool transformChanged, bool sizeChanged)
         {
-            ve.renderChainData.dirtiedTransform = true;
-            if (m_LastDirtyTransform != null)
+            RenderDataDirtyTypes current = ve.renderChainData.dirtiedValues;
+            bool isInList = (current & (RenderDataDirtyTypes.Transform | RenderDataDirtyTypes.Size)) != 0;
+
+            ve.renderChainData.dirtiedValues = current |
+                (transformChanged ? RenderDataDirtyTypes.Transform : RenderDataDirtyTypes.None) |
+                (sizeChanged ? RenderDataDirtyTypes.Size : RenderDataDirtyTypes.None);
+
+            if (!isInList)
             {
-                m_LastDirtyTransform.renderChainData.nextDirtyTransform = ve;
-                m_LastDirtyTransform = ve;
+                if (m_LastDirtyTransformOrSize != null)
+                {
+                    m_LastDirtyTransformOrSize.renderChainData.nextDirtyTransformOrSize = ve;
+                    m_LastDirtyTransformOrSize = ve;
+                }
+                else m_FirstDirtyTransformOrSize = m_LastDirtyTransformOrSize = ve;
             }
-            else m_FirstDirtyTransform = m_LastDirtyTransform = ve;
         }
 
         internal void BeforeRenderDeviceRelease()
@@ -591,17 +605,26 @@ namespace UnityEngine.UIElements.UIR
 
     }
 
+    [Flags]
+    internal enum RenderDataDirtyTypes
+    {
+        None = 0,
+        Transform = 1 << 0,
+        Size = 1 << 1,
+    }
+
     internal struct RenderChainVEData
     {
         internal VisualElement prev, next; // This is a flattened view of the visual element hierarchy
         internal VisualElement groupTransformAncestor, boneTransformAncestor;
-        internal VisualElement nextDirtyVisuals, nextDirtyTransform, nextDirtyClipping; // Embedded linked list for dirty updates
+        internal VisualElement nextDirtyVisuals, nextDirtyTransformOrSize, nextDirtyClipping; // Embedded linked list for dirty updates
         internal RenderChainCommand firstCommand, lastCommand; // Sequential for the same owner
         internal RenderChainCommand firstClosingCommand, lastClosingCommand; // Optional, sequential for the same owner, the presence of closing commands requires starting commands too, otherwise certain optimizations will become invalid
         internal bool isInChain, isStencilClipped, isHierarchyHidden;
         internal bool usesText, usesAtlas, disableNudging;
         internal byte dirtiedVisuals; // 0, 1 is for self, and 2 is hierarchical
-        internal bool dirtiedClipping, dirtiedTransform;
+        internal bool dirtiedClipping;
+        internal RenderDataDirtyTypes dirtiedValues;
         internal Implementation.ClipMethod clipMethod;
         internal MeshHandle data, closingData;
         internal Alloc transformID;

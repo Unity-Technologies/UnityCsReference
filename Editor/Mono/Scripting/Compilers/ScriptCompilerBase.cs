@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnityEditor.Scripting.ScriptCompilation;
+using UnityEditor.Compilation;
 using UnityEngine;
 using UnityEditor.Utils;
 
@@ -14,15 +14,6 @@ namespace UnityEditor.Scripting.Compilers
 {
     internal abstract class ScriptCompilerBase : IDisposable
     {
-        public class ResponseFileData
-        {
-            public string[] Defines;
-            public string[] FullPathReferences;
-            public bool Unsafe;
-            public string[] Errors;
-            public string[] OtherArguments;
-        }
-
         public class CompilerOption
         {
             public string Arg;
@@ -115,7 +106,7 @@ namespace UnityEditor.Scripting.Compilers
         {
             var responseFileData = ParseResponseFileFromFile(
                 responseFileName,
-                Application.dataPath,
+                Directory.GetParent(Application.dataPath).FullName.ConvertSeparatorsToUnity(),
                 GetSystemReferenceDirectories());
             foreach (var error in responseFileData.Errors)
             {
@@ -328,18 +319,16 @@ namespace UnityEditor.Scripting.Compilers
                             continue;
                         }
 
-                        var responseReference = reference;
-
                         int index = reference.IndexOf('=');
-                        if (index > -1)
+                        var responseReference = index > -1 ? reference.Substring(index + 1) : reference;
+
+                        string fullPathReference = "";
+                        var referencePath = responseReference;
+                        if (Path.IsPathRooted(referencePath))
                         {
-                            var assembly = reference.Substring(index + 1);
-
-                            responseReference = assembly;
+                            fullPathReference = referencePath;
                         }
-
-                        var fullPathReference = responseReference;
-                        if (!Path.IsPathRooted(responseReference))
+                        else
                         {
                             foreach (var directory in systemReferenceDirectories)
                             {

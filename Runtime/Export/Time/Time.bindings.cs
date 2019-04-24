@@ -64,8 +64,21 @@ namespace UnityEngine
         [NativeProperty("Realtime")]
         public static extern float realtimeSinceStartup { get; }
 
-        // If /captureFramerate/ is set to a value larger than 0, time will advance in
-        public static extern int captureFramerate { get; set; }
+        // If /captureDeltaTime/ is set to a value larger than 0, time will advance by that increment.
+        public static extern float captureDeltaTime { get; set; }
+
+        // /captureFramerate/ is a convenience (and backwards compatible) accessor for the reciprocal of /captureDeltaTime/ rounded to the nearest integer.
+        public static int captureFramerate
+        {
+            get
+            {
+                return captureDeltaTime == 0.0f ? 0 : (int)Mathf.Round(1.0f / captureDeltaTime);
+            }
+            set
+            {
+                captureDeltaTime = value == 0 ? 0.0f : 1.0f / value;
+            }
+        }
 
         // Returns true if inside a fixed time step callback such as FixedUpdate, otherwise false.
         public static extern bool inFixedTimeStep

@@ -1058,7 +1058,7 @@ namespace UnityEditor
                                 info.instanceObject = go;
                                 info.assetPath = AssetDatabase.GetAssetPath(sourceGo);
                                 GameObject rootGo = PrefabUtility.GetRootGameObject(sourceGo);
-                                if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootGo))
+                                if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootGo) || EditorUtility.IsPersistent(parentTransform))
                                     menu.AddDisabledItem(menuItemContent);
                                 else
                                     menu.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabAddedGameObject, info);

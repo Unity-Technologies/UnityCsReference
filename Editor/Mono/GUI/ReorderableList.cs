@@ -31,6 +31,7 @@ namespace UnityEditorInternal
         public delegate void ChangedCallbackDelegate(ReorderableList list);
         public delegate bool CanRemoveCallbackDelegate(ReorderableList list);
         public delegate bool CanAddCallbackDelegate(ReorderableList list);
+        public delegate void DragCallbackDelegate(ReorderableList list);
 
 
         // draw callbacks
@@ -51,6 +52,7 @@ namespace UnityEditorInternal
         public AddCallbackDelegate onAddCallback;
         public AddDropdownCallbackDelegate onAddDropdownCallback;
         public RemoveCallbackDelegate onRemoveCallback;
+        public DragCallbackDelegate onMouseDragCallback;
         public SelectCallbackDelegate onMouseUpCallback;
         public CanRemoveCallbackDelegate onCanRemoveCallback;
         public CanAddCallbackDelegate onCanAddCallback;
@@ -706,6 +708,8 @@ namespace UnityEditorInternal
 
                     // Set m_Dragging state on first MouseDrag event after we got hotcontrol (to prevent animating elements when deleting elements by context menu)
                     m_Dragging = true;
+
+                    onMouseDragCallback(this);
 
                     // if we are dragging, update the position
                     UpdateDraggedY(listRect);

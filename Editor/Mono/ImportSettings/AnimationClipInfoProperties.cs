@@ -62,6 +62,11 @@ namespace UnityEditor
         public SerializedProperty bodyMaskProperty { get { return Get("bodyMask"); } }
         public SerializedProperty transformMaskProperty { get { return Get("transformMask"); } }
 
+        public void ApplyModifiedProperties()
+        {
+            m_Property.serializedObject.ApplyModifiedProperties();
+        }
+
         public bool MaskNeedsUpdating()
         {
             AvatarMask mask = maskSource;

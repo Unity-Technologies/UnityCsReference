@@ -10,6 +10,7 @@ using System.Reflection;
 using UnityEngine.Bindings;
 using UnityEditor.Scripting.ScriptCompilation;
 using System.Globalization;
+using Unity.CodeEditor;
 using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 
 namespace UnityEditorInternal
@@ -731,9 +732,10 @@ namespace UnityEditorInternal
         [FreeFunction("OpenScriptFile")]
         extern public static bool OpenFileAtLineExternal(string filename, int line, int column);
 
+        [Obsolete("Use CodeEditorUtility.Editor.Current.OpenProject()", false)]
         public static bool OpenFileAtLineExternal(string filename, int line)
         {
-            return OpenFileAtLineExternal(filename, line, 0);
+            return CodeEditor.Editor.Current.OpenProject(filename, line);
         }
 
         [FreeFunction("AssetDatabaseDeprecated::CanConnectToCacheServer")]

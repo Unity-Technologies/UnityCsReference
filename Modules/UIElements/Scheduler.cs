@@ -111,14 +111,6 @@ namespace UnityEngine.UIElements
 
         public virtual bool ShouldUnschedule()
         {
-            if (endTimeMs > 0)
-            {
-                if (Panel.TimeSinceStartupMs() > endTimeMs)
-                {
-                    return true;
-                }
-            }
-
             if (timerUpdateStopCondition != null)
             {
                 return timerUpdateStopCondition();
@@ -335,22 +327,32 @@ namespace UnityEngine.UIElements
 
                     ScheduledItem scheduledItem = m_ScheduledItems[index];
 
+                    bool unscheduleItem = false;
+
                     if (currentTime - scheduledItem.delayMs >= scheduledItem.startMs)
                     {
                         TimerState timerState = new TimerState { start = scheduledItem.startMs, now = currentTime };
 
-                        if (!m_UnscheduleTransactions.Contains(scheduledItem)) // Don't execute items that have been amrker for future removal
+                        if (!m_UnscheduleTransactions.Contains(scheduledItem)) // Don't execute items that have been marked for future removal
                             scheduledItem.PerformTimerUpdate(timerState);
 
                         scheduledItem.startMs = currentTime;
                         scheduledItem.delayMs = scheduledItem.intervalMs;
+
+                        if (scheduledItem.ShouldUnschedule())
+                        {
+                            unscheduleItem = true;
+                        }
                     }
 
-                    if (scheduledItem.ShouldUnschedule() && !m_UnscheduleTransactions.Contains(scheduledItem))
-                    // if the scheduledItem has been unscheduled explicitly in PerformTimerUpdate then it will be in m_UnscheduleTransactions and we shouldn't
-                    // unschedule it again
+                    if (unscheduleItem || (scheduledItem.endTimeMs > 0 && currentTime > scheduledItem.endTimeMs))
                     {
-                        Unschedule(scheduledItem);
+                        // if the scheduledItem has been unscheduled explicitly in PerformTimerUpdate then
+                        // it will be in m_UnscheduleTransactions and we shouldn't unschedule it again
+                        if (!m_UnscheduleTransactions.Contains(scheduledItem))
+                        {
+                            Unschedule(scheduledItem);
+                        }
                     }
 
                     m_LastUpdatedIndex = index;

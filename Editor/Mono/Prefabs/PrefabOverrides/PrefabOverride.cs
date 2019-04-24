@@ -49,7 +49,9 @@ namespace UnityEditor.SceneManagement
                         menu.AddDisabledItem(menuItemContent);
                     else
                         menu.AddItem(menuItemContent, false, applyAction, prefabAssetPath);
-                });
+                },
+                false,
+                true);
         }
     }
 

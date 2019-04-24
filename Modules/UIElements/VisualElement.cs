@@ -263,10 +263,7 @@ namespace UnityEngine.UIElements
                 if (m_Scale == value)
                     return;
                 m_Scale = value;
-                IncrementVersion(VersionChangeType.Transform);
-
-                // This will change how we measure text
-                IncrementVersion(VersionChangeType.Layout);
+                IncrementVersion(VersionChangeType.Transform | VersionChangeType.Layout /*This will change how we measure text*/);
             }
         }
 
@@ -320,6 +317,13 @@ namespace UnityEngine.UIElements
                 if (isLayoutManual && m_Layout == value)
                     return;
 
+                Rect lastLayout = layout;
+                VersionChangeType changeType = 0;
+                if (!Mathf.Approximately(lastLayout.x, value.x) || !Mathf.Approximately(lastLayout.y, value.y))
+                    changeType |= VersionChangeType.Transform;
+                if (!Mathf.Approximately(lastLayout.width, value.width) || !Mathf.Approximately(lastLayout.height, value.height))
+                    changeType |= VersionChangeType.Size;
+
                 // set results so we can read straight back in get without waiting for a pass
                 m_Layout = value;
                 isLayoutManual = true;
@@ -338,7 +342,8 @@ namespace UnityEngine.UIElements
                 styleAccess.width = value.width;
                 styleAccess.height = value.height;
 
-                IncrementVersion(VersionChangeType.Transform);
+                if (changeType != 0)
+                    IncrementVersion(changeType);
             }
         }
 

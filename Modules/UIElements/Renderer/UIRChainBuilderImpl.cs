@@ -20,7 +20,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
     struct RemovalInfo
     {
         public bool anyDirtiedClipping;
-        public bool anyDirtiedTransform;
+        public bool anyDirtiedTransformOrSize;
         public bool anyDirtiedVisuals;
     }
 
@@ -75,10 +75,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 renderChain.OnClippingChanged(ve);
         }
 
-        internal static void OnTransformChanged(RenderChain renderChain, VisualElement ve)
+        internal static void OnTransformOrSizeChanged(RenderChain renderChain, VisualElement ve, bool transformChanged, bool sizeChanged)
         {
-            if (ve.renderChainData.isInChain && !ve.renderChainData.dirtiedTransform)
-                renderChain.OnTransformChanged(ve);
+            if (ve.renderChainData.isInChain)
+                renderChain.OnTransformOrSizeChanged(ve, transformChanged, sizeChanged);
         }
 
         internal static void OnRestoreTransformIDs(VisualElement ve, UIRenderDevice device)
@@ -116,10 +116,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
             DepthFirstOnClippingChanged(renderChain, ve.hierarchy.parent, ve, dirtyID, false, device, ref stats);
         }
 
-        internal static void ProcessOnTransformChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, UIRenderDevice device, ref ChainBuilderStats stats)
+        internal static void ProcessOnTransformOrSizeChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, UIRenderDevice device, ref ChainBuilderStats stats)
         {
             stats.recursiveTransformUpdates++;
-            DepthFirstOnTransformChanged(renderChain, ve.hierarchy.parent, ve, dirtyID, device, false, ref stats);
+            DepthFirstOnTransformOrSizeChanged(renderChain, ve.hierarchy.parent, ve, dirtyID, device, false, false, ref stats);
         }
 
         internal static void ProcessOnVisualsChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
@@ -253,8 +253,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 }
                 if (ve.renderChainData.dirtiedClipping)
                     removalInfo.anyDirtiedClipping = true;
-                if (ve.renderChainData.dirtiedTransform)
-                    removalInfo.anyDirtiedTransform = true;
+                if ((ve.renderChainData.dirtiedValues & (RenderDataDirtyTypes.Transform | RenderDataDirtyTypes.Size)) != 0)
+                    removalInfo.anyDirtiedTransformOrSize = true;
                 if (ve.renderChainData.dirtiedVisuals > 0)
                     removalInfo.anyDirtiedVisuals = true;
             }
@@ -333,12 +333,14 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 DepthFirstOnClippingChanged(renderChain, ve, ve.hierarchy[i], dirtyID, evenIfUpToDate, device, ref stats);
         }
 
-        static void DepthFirstOnTransformChanged(RenderChain renderChain, VisualElement parent, VisualElement ve, uint dirtyID, UIRenderDevice device, bool isAncestorOfChangeSkinned, ref ChainBuilderStats stats)
+        static void  DepthFirstOnTransformOrSizeChanged(RenderChain renderChain, VisualElement parent, VisualElement ve, uint dirtyID, UIRenderDevice device, bool isAncestorOfChangeSkinned, bool transformChanged, ref ChainBuilderStats stats)
         {
             if (dirtyID == ve.renderChainData.dirtyID)
                 return;
 
             stats.recursiveTransformUpdatesExpanded++;
+
+            transformChanged |= (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.Transform) != 0;
 
             bool dirtyHasBeenResolved = true;
             if (ve.renderChainData.allocatedTransformID)
@@ -346,6 +348,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 device.UpdateTransform(ve.renderChainData.transformID, GetTransformIDTransformInfo(ve), GetTransformIDClipInfo(ve));
                 isAncestorOfChangeSkinned = true;
                 stats.boneTransformed++;
+            }
+            else if (!transformChanged)
+            {
+                // Only the clip info had to be updated, we can skip the other cases which are for transform changes only.
             }
             else if ((ve.renderHint & RenderHint.GroupTransform) != 0)
             {
@@ -378,7 +384,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 // Recurse on children
                 int childrenCount = ve.hierarchy.childCount;
                 for (int i = 0; i < childrenCount; i++)
-                    DepthFirstOnTransformChanged(renderChain, ve, ve.hierarchy[i], dirtyID, device, isAncestorOfChangeSkinned, ref stats);
+                    DepthFirstOnTransformOrSizeChanged(renderChain, ve, ve.hierarchy[i], dirtyID, device, isAncestorOfChangeSkinned, transformChanged, ref stats);
             }
             else
                 renderChain.OnGroupTransformElementChangedTransform(ve); // Hack until UIE moves to TMP

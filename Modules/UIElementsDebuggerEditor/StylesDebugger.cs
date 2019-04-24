@@ -203,7 +203,6 @@ namespace UnityEditor.UIElements.Debugger
             GUILayout.EndHorizontal();
 
             var customProperties = m_SelectedElement.specifiedStyle.m_CustomProperties;
-            bool anyChanged = false;
 
             if (customProperties != null && customProperties.Any())
             {
@@ -345,7 +344,6 @@ namespace UnityEditor.UIElements.Debugger
 
                 if (EditorGUI.EndChangeCheck())
                 {
-                    anyChanged = true;
                     string propertyName = field.Name;
                     var inlineStyle = typeof(IStyle).GetProperty(propertyName);
                     inlineStyle.SetValue(m_SelectedElement.style, val, null);
@@ -372,12 +370,6 @@ namespace UnityEditor.UIElements.Debugger
                 }
 
                 EditorGUILayout.EndHorizontal();
-            }
-
-            if (anyChanged)
-            {
-                m_PanelDebug.visualTree.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet |
-                    VersionChangeType.Layout | VersionChangeType.Transform | VersionChangeType.Repaint);
             }
         }
 

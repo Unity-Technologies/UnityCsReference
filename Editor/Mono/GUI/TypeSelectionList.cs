@@ -23,6 +23,9 @@ namespace UnityEditor
             foreach (Object o in objects)
             {
                 string typeName = ObjectNames.GetTypeName(o);
+                if (o is GameObject && EditorUtility.IsPersistent(o))
+                    typeName = "Prefab";
+
                 if (!types.ContainsKey(typeName))
                     types[typeName] = new List<Object>();
                 types[typeName].Add(o);
@@ -48,7 +51,10 @@ namespace UnityEditor
             System.Diagnostics.Debug.Assert(objects != null && objects.Length >= 1);
             this.objects = objects;
             label = new GUIContent(objects.Length + " " + ObjectNames.NicifyVariableName(typeName) + (objects.Length > 1 ? "s" : ""));
-            label.image = AssetPreview.GetMiniTypeThumbnail(objects[0]);
+            if (objects[0] is GameObject)
+                label.image = EditorUtility.IsPersistent(objects[0]) ? PrefabUtility.GameObjectStyles.prefabIcon : PrefabUtility.GameObjectStyles.gameObjectIcon;
+            else
+                label.image = AssetPreview.GetMiniTypeThumbnail(objects[0]);
         }
 
         public int CompareTo(object o)

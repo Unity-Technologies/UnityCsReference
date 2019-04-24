@@ -616,12 +616,6 @@
     <Compile Include="..\..\Editor\Mono\StaticOcclusionCulling.bindings.cs">
       <Link>Editor\Mono\StaticOcclusionCulling.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\SyncProject.cs">
-      <Link>Editor\Mono\SyncProject.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\SyncRiderProject.cs">
-      <Link>Editor\Mono\SyncRiderProject.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\TagManager.bindings.cs">
       <Link>Editor\Mono\TagManager.bindings.cs</Link>
     </Compile>
@@ -1209,6 +1203,21 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\CloudBuild\CloudBuild.cs">
       <Link>Editor\Mono\CloudBuild\CloudBuild.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\CodeEditor\CodeEditor.cs">
+      <Link>Editor\Mono\CodeEditor\CodeEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\CodeEditor\CodeEditorProjectSync.cs">
+      <Link>Editor\Mono\CodeEditor\CodeEditorProjectSync.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\CodeEditor\DefaultExternalCodeEditor.cs">
+      <Link>Editor\Mono\CodeEditor\DefaultExternalCodeEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\CodeEditor\IExternalCodeEditor.cs">
+      <Link>Editor\Mono\CodeEditor\IExternalCodeEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\CodeEditor\SyncVS.cs">
+      <Link>Editor\Mono\CodeEditor\SyncVS.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Collab\AssetAccess.cs">
       <Link>Editor\Mono\Collab\AssetAccess.cs</Link>
@@ -3555,15 +3564,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\VersionControl\VCTask.bindings.cs">
       <Link>Editor\Mono\VersionControl\VCTask.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\VisualStudioIntegration\SolutionSynchronizationSettings.cs">
-      <Link>Editor\Mono\VisualStudioIntegration\SolutionSynchronizationSettings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\VisualStudioIntegration\SolutionSynchronizer.cs">
-      <Link>Editor\Mono\VisualStudioIntegration\SolutionSynchronizer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\VisualStudioIntegration\UnityVSSupport.cs">
-      <Link>Editor\Mono\VisualStudioIntegration\UnityVSSupport.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\WebViewEditorWindow\WebViewEditorStaticWindow.cs">
       <Link>Editor\Mono\WebViewEditorWindow\WebViewEditorStaticWindow.cs</Link>

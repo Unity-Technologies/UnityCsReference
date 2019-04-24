@@ -3,11 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
 using UnityEditor.Animations;
-using UnityEditor.AnimatedValues;
 using System;
-using System.Reflection;
 using System.Collections.Generic;
 using System.Linq;
 using Object = UnityEngine.Object;
@@ -1674,6 +1671,7 @@ namespace UnityEditor
             EventModificationContextMenuObject context = (EventModificationContextMenuObject)obj;
 
             context.m_Info.AddEvent(context.m_Time);
+            context.m_Info.ApplyModifiedProperties();
             SelectEvent(context.m_Info.GetEvents(), context.m_Info.GetEventCount() - 1, context.m_Info);
         }
 
@@ -1693,6 +1691,7 @@ namespace UnityEditor
             {
                 context.m_Info.RemoveEvent(context.m_Index);
             }
+            context.m_Info.ApplyModifiedProperties();
         }
 
         private void CheckRectsOnMouseMove(Rect eventLineRect, AnimationEvent[] events, Rect[] hitRects)
