@@ -17,8 +17,7 @@ namespace UnityEngine.UIElements
         }
 
         private readonly HashSet<VisualElement> m_ElementsWithBindings = new HashSet<VisualElement>();
-        private readonly HashSet<VisualElement> m_ElementsToAdd = new HashSet<VisualElement>();
-        private readonly HashSet<VisualElement> m_ElementsToRemove = new HashSet<VisualElement>();
+        private readonly Dictionary<VisualElement,bool> m_ElementsToTrack = new Dictionary<VisualElement,bool>();
         private const int kMinUpdateDelay = 100;
         private long m_LastUpdateTime = 0;
 
@@ -27,24 +26,12 @@ namespace UnityEngine.UIElements
             return (ve as IBindable)?.binding;
         }
 
-        void StartTracking(VisualElement ve)
-        {
-            m_ElementsToAdd.Add(ve);
-            m_ElementsToRemove.Remove(ve);
-        }
-
-        void StopTracking(VisualElement ve)
-        {
-            m_ElementsToRemove.Add(ve);
-            m_ElementsToAdd.Remove(ve);
-        }
-
         void StartTrackingRecursive(VisualElement ve)
         {
             var u = GetUpdaterFromElement(ve);
             if (u != null)
             {
-                StartTracking(ve);
+                m_ElementsToTrack[ve]	= true;
             }
 
             int count = ve.hierarchy.childCount;
@@ -57,7 +44,7 @@ namespace UnityEngine.UIElements
 
         void StopTrackingRecursive(VisualElement ve)
         {
-            StopTracking(ve);
+            m_ElementsToTrack[ve]	= false;
 
             int count = ve.hierarchy.childCount;
             for (int i = 0; i < count; i++)
@@ -73,14 +60,7 @@ namespace UnityEngine.UIElements
 
             if ((versionChangeType & VersionChangeType.Bindings) == VersionChangeType.Bindings)
             {
-                if (GetUpdaterFromElement(ve) != null)
-                {
-                    StartTracking(ve);
-                }
-                else
-                {
-                    StopTracking(ve);
-                }
+				m_ElementsToTrack[ve]	= GetUpdaterFromElement(ve) != null;
             }
         }
 
@@ -106,24 +86,19 @@ namespace UnityEngine.UIElements
 
         public void PerformTrackingOperations()
         {
-            foreach (var element in m_ElementsToAdd)
+            foreach (var pair in m_ElementsToTrack)
             {
-                var updater = GetUpdaterFromElement(element);
-                if (updater != null)
-                {
-                    m_ElementsWithBindings.Add(element);
-                }
+				if(!pair.Value)
+				{
+	                m_ElementsWithBindings.Remove(pair.Key);
+				}
+				else if(GetUpdaterFromElement(pair.Key) != null)
+				{
+                    m_ElementsWithBindings.Add(pair.Key);
+				}
             }
 
-            m_ElementsToAdd.Clear();
-
-
-            foreach (var element in m_ElementsToRemove)
-            {
-                m_ElementsWithBindings.Remove(element);
-            }
-
-            m_ElementsToRemove.Clear();
+            m_ElementsToTrack.Clear();
         }
 
         public override void Update()
@@ -154,7 +129,7 @@ namespace UnityEngine.UIElements
                 if (updater == null || element.elementPanel != panel)
                 {
                     updater?.Release();
-                    StopTracking(element);
+                    m_ElementsToTrack[element]	= false;
                 }
                 else
                 {
@@ -191,7 +166,7 @@ namespace UnityEngine.UIElements
                     if (updater == null || element.elementPanel != panel)
                     {
                         updater?.Release();
-                        StopTracking(element);
+                        m_ElementsToTrack[element]	= false;
                     }
                     else
                     {
