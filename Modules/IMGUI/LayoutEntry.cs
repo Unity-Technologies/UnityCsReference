@@ -38,7 +38,12 @@ namespace UnityEngine
         internal static Rect kDummyRect = new Rect(0, 0, 1, 1);
 
         // The margins of this element.
-        public virtual RectOffset margin  { get { return style.margin; } }
+        public virtual int marginLeft => style.margin.left;
+        public virtual int marginRight => style.margin.right;
+        public virtual int marginTop => style.margin.top;
+        public virtual int marginBottom => style.margin.bottom;
+        public int marginHorizontal => marginLeft + marginRight;
+        public int marginVertical => marginBottom + marginTop;
 
         public GUILayoutEntry(float _minWidth, float _maxWidth, float _minHeight, float _maxHeight, GUIStyle _style)
         {

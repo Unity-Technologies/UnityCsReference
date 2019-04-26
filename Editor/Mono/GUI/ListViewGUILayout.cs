@@ -148,8 +148,8 @@ namespace UnityEditor
 
                 base.CalcHeight();
 
-                margin.top = 0;
-                margin.bottom = 0;
+                m_MarginTop = 0;
+                m_MarginBottom = 0;
 
                 if (minHeight == 0) // empty lv?
                 {

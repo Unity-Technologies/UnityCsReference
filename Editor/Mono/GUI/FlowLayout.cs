@@ -75,7 +75,7 @@ namespace UnityEditor
                     if (i.rect.xMax - pulledOffset > x + width)
                     {
                         // TODO: When we move a line back, we should re-expand
-                        pulledOffset = i.rect.x - i.margin.left;
+                        pulledOffset = i.rect.x - i.marginLeft;
                         m_Lines++;
                     }
                     i.SetHorizontal(i.rect.x - pulledOffset, i.rect.width);
@@ -114,8 +114,8 @@ namespace UnityEditor
                     int j = (int)i.rect.y;
                     m_LineInfo[j].minSize = Mathf.Max(i.minHeight, m_LineInfo[j].minSize);
                     m_LineInfo[j].maxSize = Mathf.Max(i.maxHeight, m_LineInfo[j].maxSize);
-                    m_LineInfo[j].topBorder = Mathf.Min(i.margin.top, m_LineInfo[j].topBorder);
-                    m_LineInfo[j].bottomBorder = Mathf.Min(i.margin.bottom, m_LineInfo[j].bottomBorder);
+                    m_LineInfo[j].topBorder = Mathf.Min(i.marginTop, m_LineInfo[j].topBorder);
+                    m_LineInfo[j].bottomBorder = Mathf.Min(i.marginBottom, m_LineInfo[j].bottomBorder);
                 }
 
                 for (int i = 0; i < m_Lines; i++)
@@ -138,8 +138,8 @@ namespace UnityEditor
             // Do the dance between children & parent for haggling over how many empty pixels to have
             float firstPadding, lastPadding;
 
-            margin.top = _topMarginMin;
-            margin.bottom = _bottomMarginMin;
+            m_MarginTop = _topMarginMin;
+            m_MarginBottom = _bottomMarginMin;
             firstPadding = lastPadding = 0;
 
             minHeight = Mathf.Max(minHeight, m_ChildMinHeight + firstPadding + lastPadding);
@@ -173,8 +173,8 @@ namespace UnityEditor
                     y = 0;
 
                 float clientY, clientHeight;
-                clientY = y - margin.top;
-                clientHeight = y + margin.vertical;
+                clientY = y - marginTop;
+                clientHeight = y + marginVertical;
 
                 // Figure out how to distribute the elements between the different lines
                 float heightToDistribute = clientHeight - spacing * (m_Lines - 1);
@@ -197,9 +197,9 @@ namespace UnityEditor
                 {
                     LineInfo li = m_LineInfo[(int)i.rect.y];
                     if (i.stretchHeight != 0)
-                        i.SetVertical(li.start + i.margin.top, li.size - i.margin.vertical);
+                        i.SetVertical(li.start + i.marginTop, li.size - i.marginVertical);
                     else
-                        i.SetVertical(li.start + i.margin.top, Mathf.Clamp(li.size - i.margin.vertical, i.minHeight, i.maxHeight));
+                        i.SetVertical(li.start + i.marginTop, Mathf.Clamp(li.size - i.marginVertical, i.minHeight, i.maxHeight));
                 }
             }
         }

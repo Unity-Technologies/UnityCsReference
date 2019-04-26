@@ -16,10 +16,8 @@ using UnityEditor.Scripting.ScriptCompilation;
 using Object = UnityEngine.Object;
 using Event = UnityEngine.Event;
 using UnityEditor.Build;
-using UnityEditor.StyleSheets;
 using UnityEngine.Internal;
 using UnityEngine.Rendering;
-using DescriptionAttribute = System.ComponentModel.DescriptionAttribute;
 
 namespace UnityEditor
 {
@@ -3164,12 +3162,12 @@ namespace UnityEditor
 
         private static string EnumNameFromEnumField(FieldInfo field)
         {
-            var description = field.GetCustomAttributes(typeof(DescriptionAttribute), false);
+            var description = field.GetCustomAttributes(typeof(InspectorNameAttribute), false);
             if (description.Length > 0)
             {
-                return ((DescriptionAttribute)description.First()).Description;
+                return ((InspectorNameAttribute)description.First()).displayName;
             }
-            else if (field.IsDefined(typeof(ObsoleteAttribute), false))
+            if (field.IsDefined(typeof(ObsoleteAttribute), false))
             {
                 return string.Format("{0} (Obsolete)", ObjectNames.NicifyVariableName(field.Name));
             }
