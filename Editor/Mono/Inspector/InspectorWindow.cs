@@ -1079,7 +1079,7 @@ namespace UnityEditor
             bool showImportedObjectBarNext = false;
             Rect importedObjectBarRect = new Rect();
 
-            if (editors.Length > 0 && editors[0].GetInstanceID() != m_LastInitialEditorInstanceID)
+            if ((editors.Length > 0 && editors[0].GetInstanceID() != m_LastInitialEditorInstanceID) || m_RemovedComponents == null)
                 OnTrackerRebuilt();
             int prefabComponentIndex = -1;
             for (int editorIndex = 0; editorIndex < editors.Length; editorIndex++)

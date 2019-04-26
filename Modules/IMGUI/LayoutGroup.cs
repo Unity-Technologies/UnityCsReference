@@ -40,9 +40,14 @@ namespace UnityEngine
         //  enum Align { start, middle, end, justify }
         //  Align align;
 
-        readonly RectOffset m_Margin = new RectOffset();
-        public override RectOffset margin { get { return m_Margin; }}
-
+        protected int m_MarginLeft;
+        protected int m_MarginRight;
+        protected int m_MarginTop;
+        protected int m_MarginBottom;
+        public override int marginLeft => m_MarginLeft;
+        public override int marginRight => m_MarginRight;
+        public override int marginTop => m_MarginTop;
+        public override int marginBottom => m_MarginBottom;
 
         public GUILayoutGroup() : base(0, 0, 0, 0, GUIStyle.none) {}
 
@@ -50,10 +55,10 @@ namespace UnityEngine
         {
             if (options != null)
                 ApplyOptions(options);
-            m_Margin.left  = _style.margin.left;
-            m_Margin.right  = _style.margin.right;
-            m_Margin.top  = _style.margin.top;
-            m_Margin.bottom  = _style.margin.bottom;
+            m_MarginLeft = _style.margin.left;
+            m_MarginRight = _style.margin.right;
+            m_MarginTop = _style.margin.top;
+            m_MarginBottom = _style.margin.bottom;
         }
 
         public override void ApplyOptions(GUILayoutOption[] options)
@@ -90,10 +95,10 @@ namespace UnityEngine
         {
             base.ApplyStyleSettings(style);
             RectOffset mar = style.margin;
-            m_Margin.left = mar.left;
-            m_Margin.right = mar.right;
-            m_Margin.top = mar.top;
-            m_Margin.bottom = mar.bottom;
+            m_MarginLeft = mar.left;
+            m_MarginRight = mar.right;
+            m_MarginTop = mar.top;
+            m_MarginBottom = mar.bottom;
         }
 
         public void ResetCursor() { m_Cursor = 0; }
@@ -165,22 +170,21 @@ namespace UnityEngine
                 foreach (GUILayoutEntry i in entries)
                 {
                     i.CalcWidth();
-                    RectOffset margins = i.margin;
                     if (i.consideredForMargin)
                     {
                         if (!first)
                         {
-                            leftMarginMin = Mathf.Min(margins.left, leftMarginMin);
-                            rightMarginMin = Mathf.Min(margins.right, rightMarginMin);
+                            leftMarginMin = Mathf.Min(i.marginLeft, leftMarginMin);
+                            rightMarginMin = Mathf.Min(i.marginRight, rightMarginMin);
                         }
                         else
                         {
-                            leftMarginMin = margins.left;
-                            rightMarginMin = margins.right;
+                            leftMarginMin = i.marginLeft;
+                            rightMarginMin = i.marginRight;
                             first = false;
                         }
-                        m_ChildMinWidth = Mathf.Max(i.minWidth + margins.horizontal, m_ChildMinWidth);
-                        m_ChildMaxWidth = Mathf.Max(i.maxWidth + margins.horizontal, m_ChildMaxWidth);
+                        m_ChildMinWidth = Mathf.Max(i.minWidth + i.marginHorizontal, m_ChildMinWidth);
+                        m_ChildMaxWidth = Mathf.Max(i.maxWidth + i.marginHorizontal, m_ChildMaxWidth);
                     }
                     m_StretchableCountX += i.stretchWidth;
                 }
@@ -194,13 +198,11 @@ namespace UnityEngine
                 foreach (GUILayoutEntry i in entries)
                 {
                     i.CalcWidth();
-                    RectOffset m = i.margin;
                     int margin;
-
                     if (i.consideredForMargin)
                     {
                         if (!first)
-                            margin = lastMargin > m.left ? lastMargin : m.left;
+                            margin = lastMargin > i.marginLeft ? lastMargin : i.marginLeft;
                         else
                         {
                             // the first element's margins are handles _leftMarginMin and should not be added to the children's sizes
@@ -209,7 +211,7 @@ namespace UnityEngine
                         }
                         m_ChildMinWidth += i.minWidth + spacing + margin;
                         m_ChildMaxWidth += i.maxWidth + spacing + margin;
-                        lastMargin = m.right;
+                        lastMargin = i.marginRight;
                         m_StretchableCountX += i.stretchWidth;
                     }
                     else
@@ -223,7 +225,7 @@ namespace UnityEngine
                 m_ChildMaxWidth -= spacing;
                 if (entries.Count != 0)
                 {
-                    leftMarginMin = entries[0].margin.left;
+                    leftMarginMin = entries[0].marginLeft;
                     rightMarginMin = lastMargin;
                 }
                 else
@@ -247,8 +249,8 @@ namespace UnityEngine
             else
             {
                 // If we don't have a GUIStyle, we pop the min of margins outward from children on to us.
-                m_Margin.left = leftMarginMin;
-                m_Margin.right = rightMarginMin;
+                m_MarginLeft = leftMarginMin;
+                m_MarginRight = rightMarginMin;
                 leftPadding = rightPadding = 0;
             }
 
@@ -293,9 +295,9 @@ namespace UnityEngine
                     foreach (GUILayoutEntry i in entries)
                     {
                         // NOTE: we can't use .horizontal here (As that could make things like right button margin getting eaten by large left padding - so we need to split up in left and right
-                        float leftMar = Mathf.Max(i.margin.left, padding.left);
+                        float leftMar = Mathf.Max(i.marginLeft, padding.left);
                         float thisX = x + leftMar;
-                        float thisWidth = width - Mathf.Max(i.margin.right, padding.right) - leftMar;
+                        float thisWidth = width - Mathf.Max(i.marginRight, padding.right) - leftMar;
                         if (i.stretchWidth != 0)
                             i.SetHorizontal(thisX, thisWidth);
                         else
@@ -305,16 +307,16 @@ namespace UnityEngine
                 else
                 {
                     // If not, PART of the subelements' margins have already been propagated upwards to this group, so we need to subtract that  from what we apply
-                    float thisX = x - margin.left;
-                    float thisWidth = width + margin.horizontal;
+                    float thisX = x - marginLeft;
+                    float thisWidth = width + marginHorizontal;
                     foreach (GUILayoutEntry i in entries)
                     {
                         if (i.stretchWidth != 0)
                         {
-                            i.SetHorizontal(thisX + i.margin.left, thisWidth - i.margin.horizontal);
+                            i.SetHorizontal(thisX + i.marginLeft, thisWidth - i.marginHorizontal);
                         }
                         else
-                            i.SetHorizontal(thisX + i.margin.left, Mathf.Clamp(thisWidth - i.margin.horizontal, i.minWidth, i.maxWidth));
+                            i.SetHorizontal(thisX + i.marginLeft, Mathf.Clamp(thisWidth - i.marginHorizontal, i.minWidth, i.maxWidth));
                     }
                 }
             }
@@ -327,8 +329,8 @@ namespace UnityEngine
                     float leftMar = padding.left, rightMar = padding.right;
                     if (entries.Count != 0)
                     {
-                        leftMar = Mathf.Max(leftMar, entries[0].margin.left);
-                        rightMar = Mathf.Max(rightMar, entries[entries.Count - 1].margin.right);
+                        leftMar = Mathf.Max(leftMar, entries[0].marginLeft);
+                        rightMar = Mathf.Max(rightMar, entries[entries.Count - 1].marginRight);
                     }
                     x += leftMar;
                     width -= rightMar + leftMar;
@@ -365,7 +367,7 @@ namespace UnityEngine
 
                     if (i.consideredForMargin) // Skip margins on spaces.
                     {
-                        int leftMargin = i.margin.left;
+                        int leftMargin = i.marginLeft;
                         if (firstMargin)
                         {
                             leftMargin = 0;
@@ -373,7 +375,7 @@ namespace UnityEngine
                         }
                         int margin = lastMargin > leftMargin ? lastMargin : leftMargin;
                         x += margin;
-                        lastMargin = i.margin.right;
+                        lastMargin = i.marginRight;
                     }
 
                     i.SetHorizontal(Mathf.Round(x), Mathf.Round(thisWidth));
@@ -404,13 +406,12 @@ namespace UnityEngine
                 foreach (GUILayoutEntry i in entries)
                 {
                     i.CalcHeight();
-                    RectOffset m = i.margin;
                     int margin;
 
                     if (i.consideredForMargin)
                     {
                         if (!first)
-                            margin = Mathf.Max(lastMargin, m.top);
+                            margin = Mathf.Max(lastMargin, i.marginTop);
                         else
                         {
                             margin = 0;
@@ -419,7 +420,7 @@ namespace UnityEngine
 
                         m_ChildMinHeight += i.minHeight + spacing + margin;
                         m_ChildMaxHeight += i.maxHeight + spacing + margin;
-                        lastMargin = m.bottom;
+                        lastMargin = i.marginBottom;
                         m_StretchableCountY += i.stretchHeight;
                     }
                     else
@@ -434,7 +435,7 @@ namespace UnityEngine
                 m_ChildMaxHeight -= spacing;
                 if (entries.Count != 0)
                 {
-                    topMarginMin = entries[0].margin.top;
+                    topMarginMin = entries[0].marginTop;
                     bottomMarginMin = lastMargin;
                 }
                 else
@@ -448,18 +449,17 @@ namespace UnityEngine
                 foreach (GUILayoutEntry i in entries)
                 {
                     i.CalcHeight();
-                    RectOffset margins = i.margin;
                     if (i.consideredForMargin)
                     {
                         if (!first)
                         {
-                            topMarginMin = Mathf.Min(margins.top, topMarginMin);
-                            bottomMarginMin = Mathf.Min(margins.bottom, bottomMarginMin);
+                            topMarginMin = Mathf.Min(i.marginTop, topMarginMin);
+                            bottomMarginMin = Mathf.Min(i.marginBottom, bottomMarginMin);
                         }
                         else
                         {
-                            topMarginMin = margins.top;
-                            bottomMarginMin = margins.bottom;
+                            topMarginMin = i.marginTop;
+                            bottomMarginMin = i.marginBottom;
                             first = false;
                         }
                         m_ChildMinHeight = Mathf.Max(i.minHeight, m_ChildMinHeight);
@@ -481,8 +481,8 @@ namespace UnityEngine
             else
             {
                 // If we don't have a GUIStyle, we bubble the margins outward from children on to us.
-                m_Margin.top = topMarginMin;
-                m_Margin.bottom = bottomMarginMin;
+                m_MarginTop = topMarginMin;
+                m_MarginBottom = bottomMarginMin;
                 firstPadding = lastPadding = 0;
             }
             //Debug.Log ("Margins: " + _topMarginMin + ", " + _bottomMarginMin + "          childHeights:" + childMinHeight + ", " + childMaxHeight);
@@ -530,8 +530,8 @@ namespace UnityEngine
                     float topMar = padding.top, bottomMar = padding.bottom;
                     if (entries.Count != 0)
                     {
-                        topMar = Mathf.Max(topMar, entries[0].margin.top);
-                        bottomMar = Mathf.Max(bottomMar, entries[entries.Count - 1].margin.bottom);
+                        topMar = Mathf.Max(topMar, entries[0].marginTop);
+                        bottomMar = Mathf.Max(bottomMar, entries[entries.Count - 1].marginBottom);
                     }
                     y += topMar;
                     height -= bottomMar + topMar;
@@ -563,7 +563,7 @@ namespace UnityEngine
 
                     if (i.consideredForMargin)
                     {   // Skip margins on spaces.
-                        int topMargin = i.margin.top;
+                        int topMargin = i.marginTop;
                         if (firstMargin)
                         {
                             topMargin = 0;
@@ -571,7 +571,7 @@ namespace UnityEngine
                         }
                         int margin = lastMargin > topMargin ? lastMargin : topMargin;
                         y += margin;
-                        lastMargin = i.margin.bottom;
+                        lastMargin = i.marginBottom;
                     }
                     i.SetVertical(Mathf.Round(y), Mathf.Round(thisHeight));
                     y += thisHeight + spacing;
@@ -584,9 +584,9 @@ namespace UnityEngine
                 {
                     foreach (GUILayoutEntry i in entries)
                     {
-                        float topMar = Mathf.Max(i.margin.top, padding.top);
+                        float topMar = Mathf.Max(i.marginTop, padding.top);
                         float thisY = y + topMar;
-                        float thisHeight = height - Mathf.Max(i.margin.bottom, padding.bottom) - topMar;
+                        float thisHeight = height - Mathf.Max(i.marginBottom, padding.bottom) - topMar;
 
                         if (i.stretchHeight != 0)
                             i.SetVertical(thisY, thisHeight);
@@ -597,14 +597,14 @@ namespace UnityEngine
                 else
                 {
                     // If not, the subelements' margins have already been propagated upwards to this group, so we can safely ignore them
-                    float thisY = y - margin.top;
-                    float thisHeight = height + margin.vertical;
+                    float thisY = y - marginTop;
+                    float thisHeight = height + marginVertical;
                     foreach (GUILayoutEntry i in entries)
                     {
                         if (i.stretchHeight != 0)
-                            i.SetVertical(thisY + i.margin.top, thisHeight - i.margin.vertical);
+                            i.SetVertical(thisY + i.marginTop, thisHeight - i.marginVertical);
                         else
-                            i.SetVertical(thisY + i.margin.top, Mathf.Clamp(thisHeight - i.margin.vertical, i.minHeight, i.maxHeight));
+                            i.SetVertical(thisY + i.marginTop, Mathf.Clamp(thisHeight - i.marginVertical, i.minHeight, i.maxHeight));
                     }
                 }
             }
