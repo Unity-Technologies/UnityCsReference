@@ -143,9 +143,12 @@ namespace UnityEngine.UIElements.UIR.Implementation
         static Matrix4x4 GetTransformIDTransformInfo(VisualElement ve)
         {
             Debug.Assert(ve.renderChainData.allocatedTransformID || (ve.renderHint & (RenderHint.GroupTransform)) != 0);
+            Matrix4x4 transform;
             if (ve.renderChainData.groupTransformAncestor != null)
-                return ve.renderChainData.groupTransformAncestor.worldTransform.inverse * ve.worldTransform;
-            return ve.worldTransform;
+                transform = ve.renderChainData.groupTransformAncestor.worldTransform.inverse * ve.worldTransform;
+            else transform = ve.worldTransform;
+            transform.m22 = transform.m33 = 1.0f; // Once world-space mode is introduced, this should become conditional
+            return transform;
         }
 
         static Vector4 GetTransformIDClipInfo(VisualElement ve)
@@ -171,6 +174,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             else if (ve.renderChainData.groupTransformAncestor != null)
                 transform = ve.renderChainData.groupTransformAncestor.worldTransform.inverse * ve.worldTransform;
             else transform = ve.worldTransform;
+            transform.m22 = transform.m33 = 1.0f; // Once world-space mode is introduced, this should become conditional
             transformID = ve.renderChainData.transformID.start;
         }
 

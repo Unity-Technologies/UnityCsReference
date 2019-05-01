@@ -24,7 +24,7 @@ namespace UnityEditor
             public static readonly GUIContent flipYLabel = EditorGUIUtility.TrTextContent("Y", "Sprite vertical flipping");
             public static readonly int flipToggleHash = "FlipToggleHash".GetHashCode();
 
-            public static readonly GUIContent fullTileLabel = EditorGUIUtility.TrTextContent("Tile Mode", "Specify the 9 slice tiling behaviour");
+            public static readonly GUIContent fullTileLabel = EditorGUIUtility.TrTextContent("Tile Mode", "Specify the 9-slice tiling behaviour");
             public static readonly GUIContent fullTileThresholdLabel = EditorGUIUtility.TrTextContent("Stretch Value", "This value defines how much the center portion will stretch before it tiles.");
             public static readonly GUIContent drawModeLabel = EditorGUIUtility.TrTextContent("Draw Mode", "Specify the draw mode for the sprite");
             public static readonly GUIContent widthLabel = EditorGUIUtility.TrTextContent("Width", "The width dimension value for the sprite");

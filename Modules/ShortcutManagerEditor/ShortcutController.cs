@@ -165,9 +165,6 @@ namespace UnityEditor.ShortcutManagement
             if (shortcutProfiles == null || shortcutProfiles.Count == 0)
                 return;
 
-            // Rebuild shortcuts so all shortcuts bound to invisible menu items are removed.
-            RebuildShortcuts();
-
             string defaultMode = null;
             try
             {
@@ -255,7 +252,7 @@ namespace UnityEditor.ShortcutManagement
 
         static bool TryParseUniquePrefKeyString(string prefString, out string name, out Event keyboardEvent, out string shortcut)
         {
-            int i = prefString.IndexOf(";");
+            int i = prefString.IndexOf(";", StringComparison.Ordinal);
             if (i < 0)
             {
                 name = null;

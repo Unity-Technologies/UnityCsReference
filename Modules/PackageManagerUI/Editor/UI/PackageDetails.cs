@@ -630,15 +630,25 @@ namespace UnityEditor.PackageManager.UI
                 }
             }
 
-            var result = 1;    // Cancel
-            if (!PackageManagerPrefs.SkipRemoveConfirmation)
+            var result = 0;
+            if (DisplayPackage.IsBuiltIn)
             {
-                result = EditorUtility.DisplayDialogComplex("Removing Package",
-                    "Are you sure you wanted to remove this package?",
-                    "Remove", "Cancel", "Remove and do not ask again");
+                if (!PackageManagerPrefs.SkipDisableConfirmation)
+                {
+                    result = EditorUtility.DisplayDialogComplex("Disable Built-In Package",
+                        "Are you sure you want to disable this built-in package?",
+                        "Disable", "Cancel", "Disable and don't ask again");
+                }
             }
             else
-                result = 0;
+            {
+                if (!PackageManagerPrefs.SkipRemoveConfirmation)
+                {
+                    result = EditorUtility.DisplayDialogComplex("Removing Package",
+                        "Are you sure you want to remove this package?",
+                        "Remove", "Cancel", "Remove and don't ask again");
+                }
+            }
 
             // Cancel
             if (result == 1)
@@ -646,7 +656,12 @@ namespace UnityEditor.PackageManager.UI
 
             // Do not ask again
             if (result == 2)
-                PackageManagerPrefs.SkipRemoveConfirmation = true;
+            {
+                if (DisplayPackage.IsBuiltIn)
+                    PackageManagerPrefs.SkipDisableConfirmation = true;
+                else
+                    PackageManagerPrefs.SkipRemoveConfirmation = true;
+            }
 
             // Remove
             DetailError.ClearError();

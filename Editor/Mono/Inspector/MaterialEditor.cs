@@ -1542,25 +1542,31 @@ namespace UnityEditor
 
         static Renderer[] GetAssociatedRenderersFromInspector()
         {
-            List<Renderer> renderers = new List<Renderer>();
             var imguicontainer = UIElementsUtility.GetCurrentIMGUIContainer();
             if (imguicontainer != null)
             {
                 var editorElement = imguicontainer.GetFirstAncestorOfType<EditorElement>();
                 if (editorElement != null)
                 {
-                    foreach (var editor in editorElement.Editors)
-                    {
-                        foreach (Object target in editor.targets)
-                        {
-                            var renderer = target as Renderer;
-                            if (renderer)
-                                renderers.Add(renderer);
-                        }
-                    }
+                    return GetAssociatedRenderersFromEditors(editorElement.Editors);
                 }
             }
 
+            return new Renderer[0];
+        }
+
+        internal static Renderer[] GetAssociatedRenderersFromEditors(IEnumerable<Editor> editors)
+        {
+            List<Renderer> renderers = new List<Renderer>();
+            foreach (var editor in editors)
+            {
+                foreach (Object target in editor.targets)
+                {
+                    var renderer = target as Renderer;
+                    if (renderer)
+                        renderers.Add(renderer);
+                }
+            }
             return renderers.ToArray();
         }
 

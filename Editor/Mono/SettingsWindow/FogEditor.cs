@@ -16,7 +16,7 @@ namespace UnityEditor
             public static readonly GUIContent FogLinearStart = EditorGUIUtility.TrTextContent("Start", "Controls the distance from the camera where the fog will start in the Scene.");
             public static readonly GUIContent FogLinearEnd = EditorGUIUtility.TrTextContent("End", "Controls the distance from the camera where the fog will completely obscure objects in the Scene.");
             public static readonly GUIContent FogEnable = EditorGUIUtility.TrTextContent("Fog", "Specifies whether fog is used in the Scene or not.");
-            public static readonly GUIContent FogColor = EditorGUIUtility.TrTextContent("Color", "Controls the color of that fog drawn in the Scene.");
+            public static readonly GUIContent FogColor = EditorGUIUtility.TrTextContent("Color", "Controls the color of the fog drawn in the Scene.");
             public static readonly GUIContent FogMode = EditorGUIUtility.TrTextContent("Mode", "Controls the mathematical function determining the way fog accumulates with distance from the camera. Options are Linear, Exponential, and Exponential Squared.");
         }
 

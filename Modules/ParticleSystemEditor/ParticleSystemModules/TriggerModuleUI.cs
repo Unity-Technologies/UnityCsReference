@@ -30,8 +30,8 @@ namespace UnityEditor
             public GUIContent createCollisionShape = EditorGUIUtility.TrTextContent("", "Create a GameObject containing a sphere collider and assigns it to the list.");
             public GUIContent inside = EditorGUIUtility.TrTextContent("Inside", "What to do for particles that are inside the collision volume.");
             public GUIContent outside = EditorGUIUtility.TrTextContent("Outside", "What to do for particles that are outside the collision volume.");
-            public GUIContent enter = EditorGUIUtility.TrTextContent("Enter", "Triggered once when particles enter the collison volume.");
-            public GUIContent exit = EditorGUIUtility.TrTextContent("Exit", "Triggered once when particles leave the collison volume.");
+            public GUIContent enter = EditorGUIUtility.TrTextContent("Enter", "Triggered once when particles enter the collision volume.");
+            public GUIContent exit = EditorGUIUtility.TrTextContent("Exit", "Triggered once when particles leave the collision volume.");
             public GUIContent radiusScale = EditorGUIUtility.TrTextContent("Radius Scale", "Scale particle bounds by this amount to get more precise collisions.");
             public GUIContent visualizeBounds = EditorGUIUtility.TrTextContent("Visualize Bounds", "Render the collision bounds of the particles.");
 

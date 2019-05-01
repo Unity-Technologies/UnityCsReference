@@ -24,7 +24,9 @@ namespace UnityEditor
             public readonly GUIStyle preBackground = "preBackground";
             public readonly GUIStyle pivotdotactive = "U2D.pivotDotActive";
             public readonly GUIStyle pivotdot = "U2D.pivotDot";
-
+            public static readonly GUIContent noSpriteEditorWindowTitle = EditorGUIUtility.TrTextContent("Sprite Editor Window");
+            public static readonly GUIContent noSpriteEditorWindow = EditorGUIUtility.TrTextContent("No Sprite Editor Window registered. Please download 2D Sprite package from Package Manager.");
+            public static readonly GUIContent okText = EditorGUIUtility.TrTextContent("OK");
             public readonly GUIStyle dragBorderdot = new GUIStyle();
             public readonly GUIStyle dragBorderDotActive = new GUIStyle();
 
@@ -392,7 +394,7 @@ namespace UnityEditor
 
         static Func<bool> showSpriteEditorWindow = () =>
         {
-            Debug.Log("No Sprite Editor Window is registered.");
+            EditorUtility.DisplayDialog(Styles.noSpriteEditorWindowTitle.text, Styles.noSpriteEditorWindow.text, Styles.okText.text);
             return false;
         };
     } // class

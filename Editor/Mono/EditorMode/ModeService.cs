@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEngine.Internal;
 using UnityEngine.UIElements;
@@ -205,7 +206,13 @@ namespace UnityEditor
         internal static void RaiseModeChanged(int prevIndex, int nextIndex)
         {
             modeChanged?.Invoke(new ModeChangedArgs { prevIndex = prevIndex, nextIndex = nextIndex });
-            EditorUtility.Internal_UpdateAllMenus();
+
+            // Not required when you start the editor in the default mode.
+            if (prevIndex != -1 || nextIndex != 0)
+            {
+                EditorUtility.Internal_UpdateAllMenus();
+                ShortcutIntegration.instance.RebuildShortcuts();
+            }
         }
 
         internal static bool IsValidModeId(string id)
@@ -216,7 +223,9 @@ namespace UnityEditor
         private static void ScanModes()
         {
             var modesData = new Dictionary<string, object> { [k_DefaultModeId] = new Dictionary<string, object> { [k_LabelSectionName] = "Default" } };
-            var modeFilePaths = AssetDatabase.GetAllAssetPaths().Where(IsEditorModeDescriptor).OrderBy(path => - new FileInfo(path).Length);
+            var modeFilePaths = AssetDatabase.FindAssets("t:DefaultAsset")
+                .Select(AssetDatabase.GUIDToAssetPath)
+                .Where(IsEditorModeDescriptor).OrderBy(path => - new FileInfo(path).Length);
             foreach (var modeFilePath in modeFilePaths)
             {
                 var json = SJSON.Load(modeFilePath);
@@ -224,16 +233,17 @@ namespace UnityEditor
                 foreach (var rawModeId in json.Keys)
                 {
                     var modeId = ((string)rawModeId).ToLower();
-                    if (!IsValidModeId(modeId))
+                    if (IsValidModeId(modeId))
                     {
-                        Debug.Log($"Invalid Mode Id: {modeId} contains non alphanumeric characters.");
-                        continue;
+                        if (modesData.ContainsKey(modeId))
+                            modesData[modeId] = JsonUtils.DeepMerge(modesData[modeId] as JSONObject, json[modeId] as JSONObject);
+                        else
+                            modesData[modeId] = json[modeId];
                     }
-
-                    if (modesData.ContainsKey(modeId))
-                        modesData[modeId] = JsonUtils.DeepMerge(modesData[modeId] as JSONObject, json[modeId] as JSONObject);
                     else
-                        modesData[modeId] = json[modeId];
+                    {
+                        Debug.LogWarning($"Invalid Mode Id: {modeId} contains non alphanumeric characters.");
+                    }
                 }
             }
 

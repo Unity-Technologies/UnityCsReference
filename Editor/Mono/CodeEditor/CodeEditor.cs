@@ -41,6 +41,11 @@ namespace Unity.CodeEditor
             var selected = EditorUtility.InstanceIDToObject(instanceID);
             var assetPath = AssetDatabase.GetAssetPath(selected);
 
+            if (string.IsNullOrEmpty(assetPath))
+            {
+                return false;
+            }
+
             var assetFilePath = Path.GetFullPath(assetPath);
             if (!(selected.GetType().ToString() == "UnityEditor.MonoScript" ||
                   selected.GetType().ToString() == "UnityEngine.Shader" ||
@@ -52,11 +57,7 @@ namespace Unity.CodeEditor
                 return false;
             }
 
-            if (string.IsNullOrEmpty(assetPath))
-            {
-                return false;
-            }
-            return Editor.Current.OpenProject(assetPath, line, column);
+            return Editor.Current.OpenProject(assetFilePath, line, column);
         }
 
         static List<string> GetExtensionStrings()
