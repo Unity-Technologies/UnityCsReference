@@ -21,7 +21,6 @@ namespace UnityEditor.Experimental
         static EditorResources()
         {
             styleCatalog = new StyleCatalog();
-            styleCatalog.Load(GetDefaultStyleCatalogPaths());
         }
 
         private static bool CanEnableExtendedStyles()
@@ -57,7 +56,7 @@ namespace UnityEditor.Experimental
         {
             styleCatalog = new StyleCatalog();
             var paths = GetDefaultStyleCatalogPaths();
-            foreach (var editorUssPath in AssetDatabase.GetAllAssetPaths().Where(IsEditorStyleSheet))
+            foreach (var editorUssPath in AssetDatabase.FindAssets("t:StyleSheet").Select(AssetDatabase.GUIDToAssetPath).Where(IsEditorStyleSheet))
                 paths.Add(editorUssPath);
 
             styleCatalog.Load(paths);
@@ -67,7 +66,9 @@ namespace UnityEditor.Experimental
                 var skin = GUIUtility.GetDefaultSkin();
                 if (skin != null)
                 {
-                    ConverterUtils.ResetSkinToPristine(skin, EditorGUIUtility.isProSkin ? SkinTarget.Dark : SkinTarget.Light);
+                    // TODO: Emit OnStyleCatalogLoaded
+                    if (Path.GetFileName(Path.GetDirectoryName(Application.dataPath)) == "editor_resources")
+                        ConverterUtils.ResetSkinToPristine(skin, EditorGUIUtility.isProSkin ? SkinTarget.Dark : SkinTarget.Light);
                     UpdateGUIStyleProperties(skin);
                 }
             }

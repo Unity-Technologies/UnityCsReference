@@ -37,7 +37,7 @@ namespace UnityEditor
             public static GUIContent assetPipeline = EditorGUIUtility.TrTextContent("Asset Pipeline (experimental)");
             public static GUIContent cacheServer = EditorGUIUtility.TrTextContent("Cache Server");
             public static GUIContent assetSerialization = EditorGUIUtility.TrTextContent("Asset Serialization");
-            public static GUIContent defaultBehaviorMode = EditorGUIUtility.TrTextContent("Default Behavior Mode");
+            public static GUIContent defaultBehaviorMode = EditorGUIUtility.TrTextContent("Default Behaviour Mode");
 
             public static GUIContent graphics = EditorGUIUtility.TrTextContent("Graphics");
             public static GUIContent showLightmapResolutionOverlay = EditorGUIUtility.TrTextContent("Show Lightmap Resolution Overlay");
@@ -49,7 +49,7 @@ namespace UnityEditor
             public static GUIContent rootNamespace = EditorGUIUtility.TrTextContent("Root namespace");
 
             public static GUIContent etcTextureCompressor = EditorGUIUtility.TrTextContent("ETC Texture Compressor");
-            public static GUIContent behavior = EditorGUIUtility.TrTextContent("Behavior");
+            public static GUIContent behavior = EditorGUIUtility.TrTextContent("Behaviour");
             public static GUIContent fast = EditorGUIUtility.TrTextContent("Fast");
             public static GUIContent normal = EditorGUIUtility.TrTextContent("Normal");
             public static GUIContent best = EditorGUIUtility.TrTextContent("Best");

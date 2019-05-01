@@ -32,7 +32,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             public readonly GUIContent description = EditorGUIUtility.TrTextContent("Left click to stamp the brush onto the terrain.\n\nHold control and mousewheel to adjust height.\nHold shift to invert the stamp.");
             public readonly GUIContent height = EditorGUIUtility.TrTextContent("Stamp Height", "You can set the Stamp Height manually or you can hold shift and mouse wheel on the terrain to adjust it.");
             public readonly GUIContent down = EditorGUIUtility.TrTextContent("Subtract", "Subtract the stamp from the terrain.");
-            public readonly GUIContent maxadd = EditorGUIUtility.TrTextContent("Max <--> Add", "Blend between adding the heights, and taking the maximum.");
+            public readonly GUIContent maxadd = EditorGUIUtility.TrTextContent("Max <--> Add", "Blend between adding the heights and taking the maximum.");
         }
 
         private static Styles m_styles;

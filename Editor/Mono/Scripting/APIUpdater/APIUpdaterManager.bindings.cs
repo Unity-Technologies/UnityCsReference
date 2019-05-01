@@ -233,7 +233,7 @@ namespace UnityEditorInternal.APIUpdating
 
         private static void ReportIgnoredAssembliesDueToPreviousErrors(StringBuilder sb, IEnumerable<AssemblyUpdaterUpdateTask> completedSuccessfully)
         {
-            sb.AppendFormat(L10n.Tr("Following assemblies were successfully updated but due to the failled ones above they were ignored (not copied to the destination folder)."));
+            sb.AppendFormat(L10n.Tr("Following assemblies were successfully updated but due to the failed ones above they were ignored (not copied to the destination folder)."));
             foreach (var updaterTask in completedSuccessfully)
             {
                 sb.AppendFormat("{1} (Result = {2}) (Output: {3}){0}{4}{0}", Environment.NewLine, updaterTask.Candidate.Path, updaterTask.Result, updaterTask.OutputPath, updaterTask.StdOut);

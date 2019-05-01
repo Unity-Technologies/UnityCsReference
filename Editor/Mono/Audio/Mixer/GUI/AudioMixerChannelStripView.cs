@@ -1286,7 +1286,7 @@ namespace UnityEditor
             GUI.Label(rect, string.Format(CultureInfo.InvariantCulture.NumberFormat, "{0:F1} dB", vu_level), styles.totalVULevel);
         }
 
-        GUIContent addText = EditorGUIUtility.TrTextContent("Add..");
+        GUIContent addText = EditorGUIUtility.TrTextContent("Add...");
         void DoEffectList(ChannelStripParams p, bool selected, ref int highlightEffectIndex, ref Dictionary<AudioMixerEffectController, PatchSlot> patchslots, bool showBusConnectionsOfSelection)
         {
             Event evt = Event.current;

@@ -21,7 +21,7 @@ namespace UnityEditor
 
         class Styles
         {
-            public GUIContent header = EditorGUIUtility.TrTextContent("Views", "A view is the saved visiblity state of the current Mixer Groups. Use views to setup often used combinations of Mixer Groups.");
+            public GUIContent header = EditorGUIUtility.TrTextContent("Views", "A view is the saved visibility state of the current Mixer Groups. Use views to setup often used combinations of Mixer Groups.");
             public GUIContent addButton = new GUIContent("+");
             public Texture2D viewsIcon = EditorGUIUtility.FindTexture("AudioMixerView Icon");
         }

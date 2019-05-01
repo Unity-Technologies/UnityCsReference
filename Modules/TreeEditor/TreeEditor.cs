@@ -163,9 +163,9 @@ namespace TreeEditor
 
         private static string weldLengthString = L10n.Tr("Weld Length|Defines how far up the branch the weld spread starts.");
 
-        private static string spreadTopString = L10n.Tr("Spread Top|Weld's spread factor on the top-side of the branch, relative to it's parent branch. Zero means no spread.");
+        private static string spreadTopString = L10n.Tr("Spread Top|Weld's spread factor on the top-side of the branch, relative to its parent branch. Zero means no spread.");
 
-        private static string spreadBottomString = L10n.Tr("Spread Bottom|Weld's spread factor on the bottom-side of the branch, relative to it's parent branch. Zero means no spread.");
+        private static string spreadBottomString = L10n.Tr("Spread Bottom|Weld's spread factor on the bottom-side of the branch, relative to its parent branch. Zero means no spread.");
 
         private static string breakChanceString = L10n.Tr("Break Chance|Chance of a branch breaking, i.e. 0 = no branches are broken, 0.5 = half of the branches are broken, 1.0 = all the branches are broken.");
 
@@ -2558,7 +2558,7 @@ namespace TreeEditor
                 int ms = renderer.sharedMaterials.Length;
                 Rect labelrect = new Rect(hierachyDisplayRect.xMax - 80 - 4, hierachyDisplayRect.yMax + offset.y - 40 - 4, 80, 40);
 
-                string text = TreeEditorHelper.GetGUIContent("Hierachy Stats").text;
+                string text = TreeEditorHelper.GetGUIContent("Hierarchy Stats").text;
                 text = text.Replace("[v]", vs.ToString());
                 text = text.Replace("[t]", ts.ToString());
                 text = text.Replace("[m]", ms.ToString());

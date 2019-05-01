@@ -136,6 +136,11 @@ namespace UnityEditor.Experimental.GraphView
             {
                 e.StopPropagation();
             });
+
+            RegisterCallback<WheelEvent>(e =>
+            {
+                e.StopPropagation();
+            });
         }
     }
 }

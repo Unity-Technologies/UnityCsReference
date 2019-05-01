@@ -25,7 +25,7 @@ namespace UnityEditorInternal.VR
             public static readonly GUIContent singlepassAndroidWarning2 = EditorGUIUtility.TrTextContent("Multi Pass will be used on Android devices that don't support Single Pass.");
             public static readonly GUIContent singlepassAndroidWarning3 = EditorGUIUtility.TrTextContent("When using a Scriptable Render Pipeline, Single Pass Double Wide will be used on Android devices that don't support Single Pass Instancing or Multi-view.");
             public static readonly GUIContent singlePassInstancedWarning = EditorGUIUtility.TrTextContent("Single Pass Instanced is only supported on Windows. Multi Pass will be used on other platforms.");
-            public static readonly GUIContent multiPassNotSupportedWithSRP = EditorGUIUtility.TrTextContent("Multi Pass is only supported using the legacy render pipelies.  Stereo Rendering Mode is set to the fallback mode of Single Pass.");
+            public static readonly GUIContent multiPassNotSupportedWithSRP = EditorGUIUtility.TrTextContent("Multi Pass is only supported using the legacy render pipelines. Stereo Rendering Mode is set to the fallback mode of Single Pass.");
 
             public static readonly GUIContent[] kDefaultStereoRenderingPaths =
             {

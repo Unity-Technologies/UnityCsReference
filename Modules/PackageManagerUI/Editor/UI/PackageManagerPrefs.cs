@@ -10,6 +10,7 @@ namespace UnityEditor.PackageManager.UI
     internal static class PackageManagerPrefs
     {
         private const string kSkipRemoveConfirmationPrefs = "PackageManager.SkipRemoveConfirmation";
+        private const string kSkipDisableConfirmationPrefs = "PackageManager.SkipDisableConfirmation";
         private const string kShowPackageDependenciesPrefs = "PackageManager.ShowPackageDependencies";
         private const string kShowPreviewPackagesPrefKeyPrefix = "PackageManager.ShowPreviewPackages_";
         private const string kShowPreviewPackagesWarningPrefs = "PackageManager.ShowPreviewPackagesWarning";
@@ -25,6 +26,12 @@ namespace UnityEditor.PackageManager.UI
         {
             get { return EditorPrefs.GetBool(kSkipRemoveConfirmationPrefs, false); }
             set { EditorPrefs.SetBool(kSkipRemoveConfirmationPrefs, value); }
+        }
+
+        public static bool SkipDisableConfirmation
+        {
+            get { return EditorPrefs.GetBool(kSkipDisableConfirmationPrefs, false); }
+            set { EditorPrefs.SetBool(kSkipDisableConfirmationPrefs, value); }
         }
 
         public static bool ShowPackageDependencies

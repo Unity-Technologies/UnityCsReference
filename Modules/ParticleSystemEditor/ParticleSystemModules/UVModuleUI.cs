@@ -29,7 +29,7 @@ namespace UnityEditor
             public GUIContent mode = EditorGUIUtility.TrTextContent("Mode", "Animation frames can either be specified on a regular grid texture, or as a list of Sprites.");
             public GUIContent timeMode = EditorGUIUtility.TrTextContent("Time Mode", "Play frames either based on the lifetime of the particle, the speed of the particle, or at a constant FPS, regardless of particle lifetime.");
             public GUIContent fps = EditorGUIUtility.TrTextContent("FPS", "Specify the Frames Per Second of the animation.");
-            public GUIContent frameOverTime = EditorGUIUtility.TrTextContent("Frame over Time", "Controls the uv animation frame of each particle over its lifetime. On the horisontal axis you will find the lifetime. On the vertical axis you will find the sheet index.");
+            public GUIContent frameOverTime = EditorGUIUtility.TrTextContent("Frame over Time", "Controls the uv animation frame of each particle over its lifetime. On the horizontal axis you will find the lifetime. On the vertical axis you will find the sheet index.");
             public GUIContent startFrame = EditorGUIUtility.TrTextContent("Start Frame", "Phase the animation, so it starts on a frame other than 0.");
             public GUIContent speedRange = EditorGUIUtility.TrTextContent("Speed Range", "Remaps speed in the defined range to a 0-1 value through the animation.");
             public GUIContent tiles = EditorGUIUtility.TrTextContent("Tiles", "Defines the tiling of the texture.");

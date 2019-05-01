@@ -58,8 +58,8 @@ namespace UnityEditor
             public GUIContent enforceTPose = EditorGUIUtility.TrTextContent("Enforce T-Pose");
             public GUIContent bipedPose = EditorGUIUtility.TrTextContent("Biped Pose");
 
-            public GUIContent ShowError = EditorGUIUtility.TrTextContent("Show Error (s)...");
-            public GUIContent CloseError = EditorGUIUtility.TrTextContent("Close Error (s)");
+            public GUIContent ShowError = EditorGUIUtility.TrTextContent("Show Error(s)...");
+            public GUIContent CloseError = EditorGUIUtility.TrTextContent("Close Error(s)");
 
             public GUIContent dotFill = EditorGUIUtility.IconContent("AvatarInspector/DotFill");
             public GUIContent dotFrame = EditorGUIUtility.IconContent("AvatarInspector/DotFrame");
