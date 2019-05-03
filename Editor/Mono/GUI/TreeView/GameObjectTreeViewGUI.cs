@@ -10,6 +10,7 @@ using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Assertions.Comparers;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
@@ -76,6 +77,7 @@ namespace UnityEditor
             dataSource.beforeReloading += SubSceneGUI.FetchSubSceneInfo;
             m_PrevScollPos = m_TreeView.state.scrollPos.y;
             m_PrevTotalHeight = m_TreeView.GetTotalRect().height;
+            k_BaseIndent = SceneVisibilityHierarchyGUI.utilityBarWidth;
         }
 
         private void SceneVisibilityManagerOnHiddenContentChanged()
@@ -333,11 +335,8 @@ namespace UnityEditor
                 useBoldFont = (goItem.scene == SceneManager.GetActiveScene()) || IsPrefabStageHeader(goItem);
             }
 
-            SceneVisibilityHierarchyGUI.DoItemGUI(rect, goItem, selected && !IsRenaming(item.id), m_TreeView.hoveredItem == goItem, focused, isDragging);
-
-            rect.xMin += SceneVisibilityHierarchyGUI.utilityBarWidth;
-
             base.DoItemGUI(rect, row, item, selected, focused, useBoldFont);
+            SceneVisibilityHierarchyGUI.DoItemGUI(rect, goItem, selected && !IsRenaming(item.id), m_TreeView.hoveredItem == goItem, focused, isDragging);
 
             if (goItem.isSceneHeader)
             {
@@ -356,7 +355,7 @@ namespace UnityEditor
 
         protected override Rect GetDropTargetRect(Rect rect)
         {
-            rect.xMin -= SceneVisibilityHierarchyGUI.utilityBarWidth;
+            rect.xMin += SceneVisibilityHierarchyGUI.utilityBarWidth;
 
             return rect;
         }
@@ -367,7 +366,9 @@ namespace UnityEditor
             const float optionsButtonWidth = 16f;
             const float optionsButtonHeight = 6f;
             const float margin = 4f;
+
             Rect buttonRect = new Rect(rect.width - optionsButtonWidth - margin, rect.y + (rect.height - optionsButtonHeight) * 0.5f, optionsButtonWidth, rect.height);
+
             if (Event.current.type == EventType.Repaint)
                 GameObjectStyles.optionsButtonStyle.Draw(buttonRect, false, false, false, false);
 

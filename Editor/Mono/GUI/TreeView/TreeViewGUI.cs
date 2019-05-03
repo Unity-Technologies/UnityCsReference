@@ -257,8 +257,7 @@ namespace UnityEditor.IMGUI.Controls
                 // Draw drop marker
                 if (isDropTarget)
                 {
-                    GetDropTargetRect(rect);
-                    Styles.lineStyle.Draw(rect, GUIContent.none, true, true, false, false);
+                    Styles.lineStyle.Draw(GetDropTargetRect(rect), GUIContent.none, true, true, false, false);
                 }
 
                 // Show insertion marker below this item (rendered end of rows)
@@ -398,6 +397,7 @@ namespace UnityEditor.IMGUI.Controls
                     topPixelOfRow,
                     k_IconWidth + k_SpaceBetweenIconAndText + contentSize.x + iconTotalPadding,
                     contentSize.y);
+
                 m_Ping.m_AvailableWidth = availableWidth;
 
                 int row = m_TreeView.data.GetRow(item.id);

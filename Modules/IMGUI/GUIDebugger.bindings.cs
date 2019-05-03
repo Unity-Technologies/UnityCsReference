@@ -13,10 +13,10 @@ namespace UnityEngine
     {
         //TODO: We could skip the trip to native if we check here if the current GUIVIew is being debugged.
         [NativeConditional("UNITY_EDITOR")]
-        public static extern void LogLayoutEntry(Rect rect, RectOffset margins, GUIStyle style);
+        public static extern void LogLayoutEntry(Rect rect, int left, int right, int top, int bottom, GUIStyle style);
 
         [NativeConditional("UNITY_EDITOR")]
-        public static extern void LogLayoutGroupEntry(Rect rect, RectOffset margins, GUIStyle style, bool isVertical);
+        public static extern void LogLayoutGroupEntry(Rect rect, int left, int right, int top, int bottom, GUIStyle style, bool isVertical);
 
         [NativeConditional("UNITY_EDITOR")]
         [StaticAccessor("GetGUIDebuggerManager()", StaticAccessorType.Dot)]

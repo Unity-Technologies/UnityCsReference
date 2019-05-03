@@ -1499,6 +1499,10 @@ namespace UnityEditor
 
             Object currentTarget = editors[editorIndex].target;
 
+            // Editors that should always be hidden
+            if (currentTarget is ParticleSystemRenderer)
+                return true;
+
             // Hide regular AssetImporters (but not inherited types)
             if (currentTarget != null && currentTarget.GetType() == typeof(AssetImporter))
                 return true;
