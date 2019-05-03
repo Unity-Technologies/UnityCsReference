@@ -661,11 +661,23 @@ namespace UnityEditor
 
         public void OnEnable()
         {
-            // Acquire active inspector ownership if there is no other inspector active.
-            if (s_activeTerrainInspector == 0)
-                s_activeTerrainInspector = GetInstanceID();
-            if (s_activeTerrainInspectorInstance == null)
-                s_activeTerrainInspectorInstance = this;
+            if (s_activeTerrainInspector == 0 || s_activeTerrainInspectorInstance == null)
+            {
+                var inspectors = InspectorWindow.GetInspectors();
+                foreach (var inspector in inspectors)
+                {
+                    var editors = inspector.tracker.activeEditors;
+                    foreach (var editor in editors)
+                    {
+                        if (editor == this)
+                        {
+                            // Acquire active inspector ownership if there is no other inspector active.
+                            s_activeTerrainInspector = GetInstanceID();
+                            s_activeTerrainInspectorInstance = this;
+                        }
+                    }
+                }
+            }
 
             EditorApplication.update += ForceRepaintOnHotkeys;
             m_ShowBuiltinSpecularSettings.valueChanged.AddListener(Repaint);
