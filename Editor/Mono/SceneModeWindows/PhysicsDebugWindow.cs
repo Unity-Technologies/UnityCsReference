@@ -121,7 +121,7 @@ namespace UnityEditor
         {
             RemovePicker();
 
-            if (!m_SceneViewListenerAdded)
+            if (m_SceneViewListenerAdded)
             {
                 SceneView.duringSceneGui -= OnSceneViewGUI;
                 PhysicsVisualizationSettings.DeinitDebugDraw();

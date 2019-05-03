@@ -51,7 +51,7 @@ namespace UnityEditor
             {
                 var clampedMinScale = Mathf.Min(kMinScale, ScaleThatFitsTargetInView(targetSize, viewInWindow.size));
                 if (m_LowResolutionForAspectRatios[(int)currentSizeGroupType] && currentGameViewSize.sizeType == GameViewSizeType.AspectRatio)
-                    clampedMinScale = Mathf.Max(clampedMinScale, EditorGUIUtility.pixelsPerPoint);
+                    clampedMinScale = Mathf.Max(clampedMinScale, Mathf.Floor(EditorGUIUtility.pixelsPerPoint));
                 return clampedMinScale;
             }
         }

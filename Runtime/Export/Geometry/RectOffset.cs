@@ -38,7 +38,7 @@ namespace UnityEngine
         ~RectOffset()
         {
             if (m_SourceStyle == null)
-                Dispose();
+                Destroy();
         }
 
         // Creates a new rectangle with offsets.
@@ -56,15 +56,13 @@ namespace UnityEngine
             return UnityString.Format("RectOffset (l:{0} r:{1} t:{2} b:{3})", left, right, top, bottom);
         }
 
-        private void Dispose()
+        private void Destroy()
         {
             if (m_Ptr != IntPtr.Zero)
             {
                 InternalDestroy(m_Ptr);
                 m_Ptr = IntPtr.Zero;
             }
-
-            GC.SuppressFinalize(this);
         }
     }
 }

@@ -314,7 +314,7 @@ namespace UnityEngine
                     if (g == null)
                         throw new ArgumentException("GUILayout: Mismatched LayoutGroup." + Event.current.type);
                     g.ResetCursor();
-                    GUIDebugger.LogLayoutGroupEntry(g.rect, g.margin, g.style, g.isVertical);
+                    GUIDebugger.LogLayoutGroupEntry(g.rect, g.marginLeft, g.marginRight, g.marginTop, g.marginBottom, g.style, g.isVertical);
                     break;
             }
             current.layoutGroups.Push(g);
@@ -360,7 +360,7 @@ namespace UnityEngine
                     if (g == null)
                         throw new ArgumentException("GUILayout: Mismatched LayoutGroup." + Event.current.type);
                     g.ResetCursor();
-                    GUIDebugger.LogLayoutGroupEntry(g.rect, g.margin, g.style, g.isVertical);
+                    GUIDebugger.LogLayoutGroupEntry(g.rect, g.marginLeft, g.marginRight, g.marginTop, g.marginBottom, g.style, g.isVertical);
                     break;
             }
             current.layoutGroups.Push(g);
@@ -422,7 +422,7 @@ namespace UnityEngine
                     return kDummyRect;
                 default:
                     var entry = current.topLevel.GetNext();
-                    GUIDebugger.LogLayoutEntry(entry.rect, entry.margin, entry.style);
+                    GUIDebugger.LogLayoutEntry(entry.rect, entry.marginLeft, entry.marginRight, entry.marginTop, entry.marginBottom, entry.style);
                     return entry.rect;
             }
         }

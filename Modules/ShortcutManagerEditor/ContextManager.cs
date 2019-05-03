@@ -113,7 +113,7 @@ namespace UnityEditor.ShortcutManagement
             if (context == null)
                 return;
 
-            if (IsPriorityContext(context))
+            if (m_PriorityContexts.Contains(context))
                 DeregisterPriorityContext(context);
             else
             {

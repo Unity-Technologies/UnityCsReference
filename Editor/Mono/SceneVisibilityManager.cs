@@ -162,6 +162,7 @@ namespace UnityEditor
             HiddenContentChanged();
         }
 
+        [Shortcut("Scene Visibility/Show All")]
         internal static void ShowAll()
         {
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Show All");

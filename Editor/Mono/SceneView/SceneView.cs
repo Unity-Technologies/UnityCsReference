@@ -749,7 +749,7 @@ namespace UnityEditor
             public static GUIContent isolationModeOverlayContent = EditorGUIUtility.TrTextContent("Isolation View", "");
             public static GUIContent isolationModeExitButton = EditorGUIUtility.TrTextContent("Exit", "Exit isolation mode");
             public static GUIContent renderDocContent;
-            public static GUIContent sceneVisToolbarButtonContent = EditorGUIUtility.TrIconContent("SceneViewVisibility", "Number of hidden objects, click to toggle scene visibility");
+            public static GUIContent sceneVisToolbarButtonContent = EditorGUIUtility.TrIconContent("scenevis_hidden", "Number of hidden objects, click to toggle scene visibility");
             public static GUIStyle gizmoButtonStyle;
             public static GUIStyle fxDropDownStyle;
             public static GUIContent sceneViewCameraContent = EditorGUIUtility.TrIconContent("SceneViewCamera", "Settings for the Scene view camera.");
