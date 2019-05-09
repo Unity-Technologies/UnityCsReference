@@ -482,8 +482,8 @@ namespace UnityEditor
                         }
                     }
                 }
-                Profiler.EndSample();
             }
+            Profiler.EndSample();
         }
 
         private static bool IsEditable(Object target)

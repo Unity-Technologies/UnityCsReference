@@ -766,9 +766,14 @@ namespace UnityEditor
         // So the background doesn't stop if we don't have enough item to fill the entire tree view rect, we draw the background in the unused space.
         private void DoSceneVisibilityBackgroundOverflow(float reservedFooterSpace)
         {
-            Vector2 sizeTaken = treeView.gui.GetTotalSize();
+            float treeViewHeight = treeView.gui.GetTotalSize().y;
             Rect rectWithNoRows = treeViewRect;
-            rectWithNoRows.yMin += sizeTaken.y;
+
+            //If the tree view already covers the entire rect, we don't need to fill the overflow
+            if (rectWithNoRows.height <= treeViewHeight)
+                return;
+
+            rectWithNoRows.yMin += treeViewHeight;
             rectWithNoRows.height -= reservedFooterSpace;
 
             SceneVisibilityHierarchyGUI.DrawBackground(rectWithNoRows);

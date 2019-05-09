@@ -210,15 +210,18 @@ namespace UnityEngine.UIElements
             VisualElement previousTopElementUnderMouse = topElementUnderMouse;
             topElementUnderMouse = newElementUnderMouse;
 
-            if (triggerEvent == null)
+            IMouseEvent mouseEvent = triggerEvent == null ? null : triggerEvent as IMouseEvent;
+            var mousePosition = mouseEvent == null
+                ? MousePositionTracker.mousePosition
+                : mouseEvent?.mousePosition ?? Vector2.zero;
+
+            // mouse enter/leave must be dispatched *any* time the element under mouse changes
+            using (new EventDispatcherGate(dispatcher))
             {
-                using (new EventDispatcherGate(dispatcher))
-                {
-                    MouseEventsHelper.SendEnterLeave<MouseLeaveEvent, MouseEnterEvent>(previousTopElementUnderMouse, topElementUnderMouse, null, MousePositionTracker.mousePosition);
-                    MouseEventsHelper.SendMouseOverMouseOut(previousTopElementUnderMouse, topElementUnderMouse, null, MousePositionTracker.mousePosition);
-                }
+                MouseEventsHelper.SendEnterLeave<MouseLeaveEvent, MouseEnterEvent>(previousTopElementUnderMouse, topElementUnderMouse, mouseEvent, mousePosition);
             }
-            else if (
+
+            if (triggerEvent == null ||
                 triggerEvent.eventTypeId == MouseMoveEvent.TypeId() ||
                 triggerEvent.eventTypeId == MouseDownEvent.TypeId() ||
                 triggerEvent.eventTypeId == MouseUpEvent.TypeId() ||
@@ -226,20 +229,17 @@ namespace UnityEngine.UIElements
                 triggerEvent.eventTypeId == MouseLeaveWindowEvent.TypeId() ||
                 triggerEvent.eventTypeId == WheelEvent.TypeId())
             {
-                IMouseEvent mouseEvent = triggerEvent as IMouseEvent;
                 using (new EventDispatcherGate(dispatcher))
                 {
-                    MouseEventsHelper.SendEnterLeave<MouseLeaveEvent, MouseEnterEvent>(previousTopElementUnderMouse, topElementUnderMouse, mouseEvent, mouseEvent?.mousePosition ?? Vector2.zero);
-                    MouseEventsHelper.SendMouseOverMouseOut(previousTopElementUnderMouse, topElementUnderMouse, mouseEvent, mouseEvent?.mousePosition ?? Vector2.zero);
+                    MouseEventsHelper.SendMouseOverMouseOut(previousTopElementUnderMouse, topElementUnderMouse, mouseEvent, mousePosition);
                 }
             }
             else if (triggerEvent.eventTypeId == DragUpdatedEvent.TypeId() ||
                      triggerEvent.eventTypeId == DragExitedEvent.TypeId())
             {
-                IMouseEvent mouseEvent = triggerEvent as IMouseEvent;
                 using (new EventDispatcherGate(dispatcher))
                 {
-                    MouseEventsHelper.SendEnterLeave<DragLeaveEvent, DragEnterEvent>(previousTopElementUnderMouse, topElementUnderMouse, mouseEvent, mouseEvent?.mousePosition ?? Vector2.zero);
+                    MouseEventsHelper.SendEnterLeave<DragLeaveEvent, DragEnterEvent>(previousTopElementUnderMouse, topElementUnderMouse, mouseEvent, mousePosition);
                 }
             }
         }

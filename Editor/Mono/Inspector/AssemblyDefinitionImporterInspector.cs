@@ -547,7 +547,7 @@ namespace UnityEditor
 
             // If the .asmdef has no references (true for newly created .asmdef), then use GUIDs.
             // Otherwise do not use GUIDs. This value might be changed below if any reference is a GUID.
-            state.useGUIDs = (data.references != null && data.references.Length > 0);
+            state.useGUIDs = (data.references == null || data.references.Length == 0);
 
             if (data.versionDefines != null)
             {

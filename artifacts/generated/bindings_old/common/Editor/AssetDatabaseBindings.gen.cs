@@ -517,45 +517,6 @@ public string[] GetAssetBundleNames()
         ExportPackage ( assetPathNames, fileName, flags );
     }
 
-    public static void ImportPackage(string packagePath, bool interactive)
-        {
-            if (string.IsNullOrEmpty(packagePath))
-                throw new ArgumentException("Path can not be empty or null", "packagePath");
-
-            string packageIconPath;
-            bool canPerformReInstall;
-            ImportPackageItem[] items = PackageUtility.ExtractAndPrepareAssetList(packagePath, out packageIconPath, out canPerformReInstall);
-
-            if (items == null)
-                return;
-
-            if (interactive)
-                PackageImport.ShowImportPackage(packagePath, items, packageIconPath, canPerformReInstall);
-            else
-            {
-                string packageName = System.IO.Path.GetFileNameWithoutExtension(packagePath);
-                PackageUtility.ImportPackageAssets(packageName, items, false);
-            }
-        }
-    
-    
-    internal static void ImportPackageImmediately(string packagePath)
-        {
-            if (string.IsNullOrEmpty(packagePath))
-                throw new ArgumentException("Path can not be empty or null", "packagePath");
-
-            string packageIconPath;
-            bool canPerformReInstall;
-            ImportPackageItem[] items = PackageUtility.ExtractAndPrepareAssetList(packagePath, out packageIconPath, out canPerformReInstall);
-
-            if (items == null || items.Length == 0)
-                return;
-
-            string packageName = System.IO.Path.GetFileNameWithoutExtension(packagePath);
-            PackageUtility.ImportPackageAssetsImmediately(packageName, items, false);
-        }
-    
-    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  string GetUniquePathNameAtSelectedPath (string fileName) ;

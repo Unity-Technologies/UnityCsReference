@@ -70,7 +70,7 @@ namespace UnityEditor
             }
         }
 
-        private const int k_VisibilityIconPadding = 4;
+        private const int k_VisibilityIconPadding = 0;
         private const int k_IconWidth = 16;
         private static readonly float k_sceneHeaderOverflow = GameObjectTreeViewGUI.GameObjectStyles.sceneHeaderBg.fixedHeight - EditorGUIUtility.singleLineHeight;
         private static bool m_PrevItemWasScene;
@@ -108,7 +108,7 @@ namespace UnityEditor
                 if (m_PrevItemWasScene && !isSelected && !isHovered)
                     rect.yMin += k_sceneHeaderOverflow;
 
-                DrawItemBackground(rect, isSelected, isHovered, isFocused);
+                DrawItemBackground(rect, false, isSelected, isHovered, isFocused);
                 DrawGameObjectItem(iconRect, gameObject, isHovered, isIconHovered);
                 m_PrevItemWasScene = false;
             }
@@ -117,21 +117,41 @@ namespace UnityEditor
                 Scene scene = goItem.scene;
                 if (scene.IsValid())
                 {
+                    DrawItemBackground(rect, true, isSelected, isHovered, isFocused);
                     DrawSceneItem(iconRect, scene, isHovered, isIconHovered);
                     m_PrevItemWasScene = true;
                 }
             }
         }
 
-        private static void DrawItemBackground(Rect rect, bool isSelected, bool isHovered, bool isFocused)
+        private static void DrawItemBackground(Rect rect, bool isScene, bool isSelected, bool isHovered, bool isFocused)
         {
             if (Event.current.type == EventType.Repaint)
             {
                 rect.width = utilityBarWidth;
 
-                using (new GUI.BackgroundColorScope(Styles.GetItemBackgroundColor(isHovered, isSelected, isFocused)))
+                if (isScene)
                 {
-                    GUI.Label(rect, GUIContent.none, GameObjectTreeViewGUI.GameObjectStyles.hoveredItemBackgroundStyle);
+                    if (isSelected)
+                    {
+                        TreeViewGUI.Styles.selectionStyle.Draw(rect, false, false, true, isFocused);
+                    }
+                    else if (isHovered)
+                    {
+                        using (new GUI.BackgroundColorScope(GameObjectTreeViewGUI.GameObjectStyles.hoveredBackgroundColor))
+                        {
+                            GUI.Label(rect, GUIContent.none, GameObjectTreeViewGUI.GameObjectStyles.hoveredItemBackgroundStyle);
+                        }
+                    }
+                }
+                else
+                {
+                    using (new GUI.BackgroundColorScope(Styles.GetItemBackgroundColor(isHovered, isSelected, isFocused))
+                    )
+                    {
+                        GUI.Label(rect, GUIContent.none,
+                            GameObjectTreeViewGUI.GameObjectStyles.hoveredItemBackgroundStyle);
+                    }
                 }
             }
         }
@@ -168,28 +188,23 @@ namespace UnityEditor
         {
             var isHidden = SceneVisibilityManager.instance.AreAllDescendantsHidden(scene);
             bool shouldDisplayIcon = true;
+            Styles.IconState iconState = isIconHovered ? Styles.iconHovered : Styles.iconNormal;
 
             GUIContent icon;
-            if (!isIconHovered)
+            if (isHidden)
             {
-                if (isHidden)
-                {
-                    icon = Styles.iconNormal.hiddenAll;
-                }
-                else if (SceneVisibilityManager.instance.AreAnyDescendantsHidden(scene))
-                {
-                    icon = Styles.iconNormal.hiddenMixed;
-                }
-                else
-                {
-                    icon = Styles.iconNormal.visibleAll;
-                    shouldDisplayIcon = isItemHovered;
-                }
+                icon = iconState.hiddenAll;
+            }
+            else if (SceneVisibilityManager.instance.AreAnyDescendantsHidden(scene))
+            {
+                icon = iconState.visibleMixed;
             }
             else
             {
-                icon = Styles.iconSceneHovered;
+                icon = iconState.visibleAll;
+                shouldDisplayIcon = isItemHovered;
             }
+
 
             if (shouldDisplayIcon && GUI.Button(rect, icon, Styles.sceneVisibilityStyle))
             {

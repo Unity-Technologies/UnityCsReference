@@ -30,18 +30,18 @@ namespace UnityEditor
         readonly SceneView m_SceneView;
 
         GUIContent m_CameraSpeedSliderContent;
+        GUIContent m_AccelerationEnabled;
         GUIContent m_CameraSpeedMin;
         GUIContent m_CameraSpeedMax;
         GUIContent m_FieldOfView;
         GUIContent m_DynamicClip;
         GUIContent m_OcclusionCulling;
         GUIContent m_EasingEnabled;
-        GUIContent m_EasingDuration;
 
         const int kFieldCount = 12;
         const int kWindowWidth = 290;
         const int kWindowHeight = ((int)EditorGUI.kSingleLineHeight) * kFieldCount + kFrameWidth * 2;
-        const int kFrameWidth = 10;
+        const int kFrameWidth = 11;
         const float kPrefixLabelWidth = 120f;
         const float kMinSpeedLabelWidth = 25f;
         const float kMaxSpeedLabelWidth = 29f;
@@ -61,13 +61,13 @@ namespace UnityEditor
             m_SceneView = sceneView;
 
             m_CameraSpeedSliderContent = EditorGUIUtility.TrTextContent("Camera Speed", "The current speed of the camera in the Scene view.");
+            m_AccelerationEnabled = EditorGUIUtility.TrTextContent("Camera Acceleration", "Check this to enable acceleration when moving the camera. When enabled, camera speed is evaluated as a modifier. With acceleration disabled, the camera is accelerated to the Camera Speed.");
             m_CameraSpeedMin = EditorGUIUtility.TrTextContent("Min", "The minimum speed of the camera in the Scene view. Valid values are between [0.01, 98].");
             m_CameraSpeedMax = EditorGUIUtility.TrTextContent("Max", "The maximum speed of the camera in the Scene view. Valid values are between [0.02, 99].");
             m_FieldOfView = EditorGUIUtility.TrTextContent("Field of View", "The height of the camera's view angle. Measured in degrees vertically, or along the local Y axis.");
             m_DynamicClip = EditorGUIUtility.TrTextContent("Dynamic Clipping", "Check this to enable camera's near and far clipping planes to be calculated relative to the viewport size of the Scene.");
             m_OcclusionCulling = EditorGUIUtility.TrTextContent("Occlusion Culling", "Check this to enable occlusion culling in the Scene view. Occlusion culling disables rendering of objects when they\'re not currently seen by the camera because they\'re hidden (occluded) by other objects.");
             m_EasingEnabled = EditorGUIUtility.TrTextContent("Camera Easing", "Check this to enable camera movement easing. This makes the camera ease in when it starts moving and ease out when it stops.");
-            m_EasingDuration = EditorGUIUtility.TrTextContent("Duration", "How long it takes for the speed of the camera to accelerate to its initial full speed. Measured in seconds.");
         }
 
         public override void OnGUI(Rect rect)
@@ -133,12 +133,7 @@ namespace UnityEditor
 
             settings.easingEnabled = EditorGUILayout.Toggle(m_EasingEnabled, settings.easingEnabled);
 
-            using (new EditorGUI.DisabledScope(!settings.easingEnabled))
-            {
-                EditorGUI.indentLevel += 1;
-                settings.easingDuration = EditorGUILayout.Slider(m_EasingDuration, settings.easingDuration, .1f, 2f);
-                EditorGUI.indentLevel -= 1;
-            }
+            settings.accelerationEnabled = EditorGUILayout.Toggle(m_AccelerationEnabled, settings.accelerationEnabled);
 
             settings.speed = EditorGUILayout.Slider(m_CameraSpeedSliderContent, settings.speed, settings.speedMin, settings.speedMax);
 

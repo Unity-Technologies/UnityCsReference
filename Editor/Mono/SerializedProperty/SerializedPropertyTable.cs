@@ -135,7 +135,10 @@ namespace UnityEditor
                 r = GUILayoutUtility.GetRect(0, float.MaxValue, 0, float.MaxValue);
 
             if (Event.current.type == EventType.Layout)
+            {
+                Profiler.EndSample();
                 return;
+            }
 
             float windowWidth = r.width;
             float tableHeight = r.height - m_FilterHeight - (dragHandleEnabled ? m_DragHeight : 0);

@@ -215,25 +215,25 @@ namespace UnityEngine
         }
 
         public RenderTexture(int width, int height, int depth, [uei.DefaultValue("RenderTextureFormat.Default")] RenderTextureFormat format, [uei.DefaultValue("RenderTextureReadWrite.Default")] RenderTextureReadWrite readWrite)
-            : this(width, height, depth, GraphicsFormatUtility.GetGraphicsFormat(format, readWrite))
+            : this(width, height, depth, GetCompatibleFormat(format, readWrite))
         {
         }
 
         [uei.ExcludeFromDocs]
         public RenderTexture(int width, int height, int depth, RenderTextureFormat format)
-            : this(width, height, depth, GraphicsFormatUtility.GetGraphicsFormat(format, RenderTextureReadWrite.Default))
+            : this(width, height, depth, GetCompatibleFormat(format, RenderTextureReadWrite.Default))
         {
         }
 
         [uei.ExcludeFromDocs]
         public RenderTexture(int width, int height, int depth)
-            : this(width, height, depth, GraphicsFormatUtility.GetGraphicsFormat(RenderTextureFormat.Default, RenderTextureReadWrite.Default))
+            : this(width, height, depth, GetCompatibleFormat(RenderTextureFormat.Default, RenderTextureReadWrite.Default))
         {
         }
 
         [uei.ExcludeFromDocs]
         public RenderTexture(int width, int height, int depth, RenderTextureFormat format, int mipCount)
-            : this(width, height, depth, GraphicsFormatUtility.GetGraphicsFormat(format, RenderTextureReadWrite.Default), mipCount)
+            : this(width, height, depth, GetCompatibleFormat(format, RenderTextureReadWrite.Default), mipCount)
         {
         }
 

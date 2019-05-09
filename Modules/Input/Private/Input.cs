@@ -128,13 +128,10 @@ namespace UnityEngineInternal.Input
         }
 
         [RequiredByNativeCode]
-        internal static bool ShouldRunUpdate(NativeInputUpdateType updateType)
+        internal static void ShouldRunUpdate(NativeInputUpdateType updateType, out bool retval)
         {
             NativeShouldRunUpdateCallback callback = onShouldRunUpdate;
-            if (callback != null)
-                return callback(updateType);
-
-            return false;
+            retval = callback != null ? callback(updateType) : false;
         }
     }
 }

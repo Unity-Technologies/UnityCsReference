@@ -211,9 +211,9 @@ namespace UnityEditor.Compilation
             switch (assembliesType)
             {
                 case AssembliesType.Editor:
-                    return GetEditorAssemblies(EditorCompilationInterface.Instance, options);
+                    return GetEditorAssemblies(EditorCompilationInterface.Instance, options, null);
                 case AssembliesType.Player:
-                    return GetPlayerAssemblies(EditorCompilationInterface.Instance, options);
+                    return GetPlayerAssemblies(EditorCompilationInterface.Instance, options, null);
                 default:
                     throw new ArgumentOutOfRangeException("assembliesType");
             }
@@ -343,21 +343,23 @@ namespace UnityEditor.Compilation
             return null;
         }
 
-        internal static Assembly[] GetEditorAssemblies(EditorCompilation editorCompilation, EditorScriptCompilationOptions additionalOptions)
+        internal static Assembly[] GetEditorAssemblies(EditorCompilation editorCompilation, EditorScriptCompilationOptions additionalOptions, string[] defines)
         {
-            var scriptAssemblies = editorCompilation.GetAllEditorScriptAssemblies(additionalOptions);
+            var scriptAssemblies = editorCompilation.GetAllEditorScriptAssemblies(additionalOptions, defines);
             return ToAssemblies(scriptAssemblies);
         }
 
-        internal static Assembly[] GetPlayerAssemblies(EditorCompilation editorCompilation, EditorScriptCompilationOptions options)
+        internal static Assembly[] GetPlayerAssemblies(EditorCompilation editorCompilation, EditorScriptCompilationOptions options, string[] defines)
         {
+            options |= EditorScriptCompilationOptions.BuildingIncludingTestAssemblies;
+
             var group = EditorUserBuildSettings.activeBuildTargetGroup;
             var target = EditorUserBuildSettings.activeBuildTarget;
 
             PrecompiledAssembly[] unityAssemblies = InternalEditorUtility.GetUnityAssemblies(false, group, target);
             PrecompiledAssembly[] precompiledAssemblies = InternalEditorUtility.GetPrecompiledAssemblies(false, group, target);
 
-            var scriptAssemblies = editorCompilation.GetAllScriptAssemblies(options, unityAssemblies, precompiledAssemblies);
+            var scriptAssemblies = editorCompilation.GetAllScriptAssemblies(options, unityAssemblies, precompiledAssemblies, defines);
             return ToAssemblies(scriptAssemblies);
         }
 
