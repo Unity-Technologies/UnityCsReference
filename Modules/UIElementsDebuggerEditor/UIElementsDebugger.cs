@@ -121,7 +121,20 @@ namespace UnityEditor.UIElements.Debugger
 
             m_PickToggle = new ToolbarToggle() { name = "pickToggle" };
             m_PickToggle.text = "Pick Element";
-            m_PickToggle.RegisterValueChangedCallback((e) => m_PickElement = e.newValue);
+            m_PickToggle.RegisterValueChangedCallback((e) =>
+            {
+                m_PickElement = e.newValue;
+                // On OSX, as focus-follow-mouse is not supported,
+                // we explicitly focus the EditorWindow when enabling picking
+                if (Application.platform == RuntimePlatform.OSXEditor)
+                {
+                    Panel p = m_DebuggerSelection.panel as Panel;
+                    if (p != null)
+                    {
+                        TryFocusCorrespondingWindow(p);
+                    }
+                }
+            });
 
             m_Toolbar.Add(m_PickToggle);
 

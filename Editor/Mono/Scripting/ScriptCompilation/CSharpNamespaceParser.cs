@@ -66,26 +66,29 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var builder = new StringBuilder(source.Length);
             var buildingNode = false;
             var buildingClass = false;
-            var currentNode = parent;
             var level = 0;
             var resNamespace = "";
             foreach (var token in split)
+            {
                 switch (token)
                 {
                     case "{":
                         if (buildingNode)
                         {
-                            currentNode = AddCurrent(level, builder.ToString(), parent);
+                            parent = AddCurrent(level, builder.ToString(), parent);
                             builder = new StringBuilder();
                             buildingNode = false;
                         }
 
                         level++;
-                        parent = currentNode;
 
                         break;
                     case "}":
-                        if (parent.Level > --level) parent = parent.Parent;
+                        if (parent.Level > --level)
+                        {
+                            parent = parent.Parent;
+                            builder.Clear();
+                        }
                         break;
                     case "class":
                         buildingClass = true;
@@ -100,7 +103,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                             var strippedClassname = StripClassName(token);
                             if (buildingClass && strippedClassname.Equals(className))
                             {
-                                buildingNode = false;
+                                buildingClass = false;
                                 resNamespace = CollectNamespace(parent);
                             }
                             else
@@ -111,6 +114,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                         break;
                 }
+            }
 
             return resNamespace;
         }

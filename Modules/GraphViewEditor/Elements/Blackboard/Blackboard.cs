@@ -137,7 +137,16 @@ namespace UnityEditor.Experimental.GraphView
                 e.StopPropagation();
             });
 
+            // event interception to prevent GraphView manipulators from being triggered
+            // when working with the blackboard
+
+            // prevent Zoomer manipulator
             RegisterCallback<WheelEvent>(e =>
+            {
+                e.StopPropagation();
+            });
+            // prevent ContentDragger manipulator
+            RegisterCallback<MouseDownEvent>(e =>
             {
                 e.StopPropagation();
             });

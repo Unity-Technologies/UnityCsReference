@@ -423,9 +423,7 @@ namespace UnityEditorInternal
                 arguments.Add("--mono-runtime");
 
             // Working around gcc bug 41091
-            if (m_PlatformProvider.target == BuildTarget.StandaloneLinux ||
-                m_PlatformProvider.target == BuildTarget.StandaloneLinux64 ||
-                m_PlatformProvider.target == BuildTarget.StandaloneLinuxUniversal)
+            if (m_PlatformProvider.target == BuildTarget.StandaloneLinux64)
             {
                 arguments.Add("--disable-aggressive-inlining");
             }

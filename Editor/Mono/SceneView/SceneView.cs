@@ -465,6 +465,7 @@ namespace UnityEditor
         [Serializable]
         public class CameraSettings
         {
+            const float defaultEasingDuration = .4f;
             const float kAbsoluteSpeedMin = .01f;
             const float kAbsoluteSpeedMax = 99f;
             const float kAbsoluteEasingDurationMin = .1f;
@@ -482,6 +483,8 @@ namespace UnityEditor
             bool m_EasingEnabled;
             [SerializeField]
             float m_EasingDuration;
+            [SerializeField]
+            bool m_AccelerationEnabled;
 
             [SerializeField]
             float m_FieldOfView;
@@ -501,12 +504,13 @@ namespace UnityEditor
                 m_SpeedMin = .01f;
                 m_SpeedMax = 2f;
                 m_EasingEnabled = true;
-                m_EasingDuration = .4f;
+                m_EasingDuration = defaultEasingDuration;
                 fieldOfView = kPerspectiveFov;
                 m_DynamicClip = true;
                 m_OcclusionCulling = false;
                 m_NearClip = .03f;
                 m_FarClip = 10000f;
+                m_AccelerationEnabled = true;
             }
 
             public float speed
@@ -563,6 +567,8 @@ namespace UnityEditor
                 }
             }
 
+            // Easing is applied when starting and stopping movement. When enabled, the camera will lerp from it's
+            // current speed to the target speed over the course of `CameraSettings.easingDuration` seconds.
             public bool easingEnabled
             {
                 get { return m_EasingEnabled; }
@@ -582,6 +588,14 @@ namespace UnityEditor
                     // Clamp and round to 1 decimal point
                     m_EasingDuration = (float)(Math.Round((double)Mathf.Clamp(value, kAbsoluteEasingDurationMin, kAbsoluteEasingDurationMax), 1));
                 }
+            }
+
+            // When acceleration is enabled, camera speed is continuously increased while in motion. When acceleration
+            // is disabled, speed is a constant value defined by `CameraSettings.speed`
+            public bool accelerationEnabled
+            {
+                get { return m_AccelerationEnabled; }
+                set { m_AccelerationEnabled = value; }
             }
 
             internal void SetSpeedMinMax(float[] floatValues)
@@ -749,7 +763,7 @@ namespace UnityEditor
             public static GUIContent isolationModeOverlayContent = EditorGUIUtility.TrTextContent("Isolation View", "");
             public static GUIContent isolationModeExitButton = EditorGUIUtility.TrTextContent("Exit", "Exit isolation mode");
             public static GUIContent renderDocContent;
-            public static GUIContent sceneVisToolbarButtonContent = EditorGUIUtility.TrIconContent("SceneViewVisibility", "Number of hidden objects, click to toggle scene visibility");
+            public static GUIContent sceneVisToolbarButtonContent = EditorGUIUtility.TrIconContent("scenevis_hidden", "Number of hidden objects, click to toggle scene visibility");
             public static GUIStyle gizmoButtonStyle;
             public static GUIStyle fxDropDownStyle;
             public static GUIContent sceneViewCameraContent = EditorGUIUtility.TrIconContent("SceneViewCamera", "Settings for the Scene view camera.");

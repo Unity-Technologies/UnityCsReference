@@ -53,8 +53,7 @@ namespace UnityEditor
         // was NaCl = 16,
 
         // Build a Linux standalone (i386 only).
-        // TODO: Uncomment this attribute once HDRP plugin is updated in 2019.2.
-        // [System.Obsolete("StandaloneLinux has been removed in 2019.2")]
+        [System.Obsolete("StandaloneLinux has been removed in 2019.2")]
         StandaloneLinux = 17,
 
         // Build a Windows x86_64 standalone.
@@ -70,8 +69,7 @@ namespace UnityEditor
         StandaloneLinux64 = 24,
 
         // Build a Linux standalone (i386/x86_64 universal).
-        // TODO: Uncomment this attribute once HDRP plugin is updated in 2019.2.
-        // [System.Obsolete("StandaloneLinuxUniversal has been removed in 2019.2")]
+        [System.Obsolete("StandaloneLinuxUniversal has been removed in 2019.2")]
         StandaloneLinuxUniversal = 25,
 
         [System.Obsolete("Use WSAPlayer with Windows Phone 8.1 selected")]

@@ -1034,7 +1034,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                         if (references.Count() != references.Distinct().Count())
                         {
-                            var duplicateRefs = references.GroupBy(r => r).Where(g => g.Count() > 0).Select(g => g.Key)
+                            var duplicateRefs = references.GroupBy(r => r).Where(g => g.Count() > 1).Select(g => g.Key)
                                 .ToArray();
                             var duplicateRefsString = string.Join(",", duplicateRefs);
 
@@ -1774,7 +1774,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public ScriptAssembly[] GetAllScriptAssembliesForLanguage<T>(EditorScriptCompilationOptions additionalOptions) where T : SupportedLanguage
         {
-            var assemblies = GetAllScriptAssemblies(EditorScriptCompilationOptions.BuildingForEditor).Where(a => a.Language.GetType() == typeof(T)).ToArray();
+            var assemblies = GetAllScriptAssemblies(EditorScriptCompilationOptions.BuildingForEditor, null).Where(a => a.Language.GetType() == typeof(T)).ToArray();
             return assemblies;
         }
 
@@ -1821,17 +1821,27 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public ScriptAssembly[] GetAllEditorScriptAssemblies(EditorScriptCompilationOptions additionalOptions)
         {
-            return GetAllScriptAssemblies(EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingIncludingTestAssemblies | additionalOptions);
+            return GetAllScriptAssemblies(EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingIncludingTestAssemblies | additionalOptions, null);
         }
 
-        public ScriptAssembly[] GetAllScriptAssemblies(EditorScriptCompilationOptions options)
+        public ScriptAssembly[] GetAllEditorScriptAssemblies(EditorScriptCompilationOptions additionalOptions, string[] defines)
         {
-            return GetAllScriptAssemblies(options, unityAssemblies, precompiledAssemblies);
+            return GetAllScriptAssemblies(EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingIncludingTestAssemblies | additionalOptions, defines);
         }
 
-        public ScriptAssembly[] GetAllScriptAssemblies(EditorScriptCompilationOptions options, PrecompiledAssembly[] unityAssembliesArg, PrecompiledAssembly[] precompiledAssembliesArg)
+        public ScriptAssembly[] GetAllScriptAssemblies(EditorScriptCompilationOptions options, string[] defines)
+        {
+            return GetAllScriptAssemblies(options, unityAssemblies, precompiledAssemblies, defines);
+        }
+
+        public ScriptAssembly[] GetAllScriptAssemblies(EditorScriptCompilationOptions options, PrecompiledAssembly[] unityAssembliesArg, PrecompiledAssembly[] precompiledAssembliesArg, string[] defines)
         {
             ScriptAssemblySettings settings = CreateEditorScriptAssemblySettings(options);
+
+            if (defines != null)
+            {
+                settings.ExtraGeneralDefines = defines;
+            }
 
             UpdateAllTargetAssemblyDefines(customTargetAssemblies, EditorBuildRules.GetPredefinedTargetAssemblies(), m_AllDistinctVersionMetaDatas, settings);
 
@@ -1967,7 +1977,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public MonoIsland[] GetAllMonoIslands(PrecompiledAssembly[] unityAssembliesArg, PrecompiledAssembly[] precompiledAssembliesArg, EditorScriptCompilationOptions options)
         {
-            var scriptAssemblies = GetAllScriptAssemblies(options, unityAssembliesArg, precompiledAssembliesArg);
+            var scriptAssemblies = GetAllScriptAssemblies(options, unityAssembliesArg, precompiledAssembliesArg, null);
             var monoIslands = new MonoIsland[scriptAssemblies.Length];
 
             for (int i = 0; i < scriptAssemblies.Length; ++i)

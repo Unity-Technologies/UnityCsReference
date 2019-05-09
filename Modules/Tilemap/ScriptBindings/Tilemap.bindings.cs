@@ -114,7 +114,7 @@ namespace UnityEngine.Tilemaps
         }
 
         internal extern Object GetTileAsset(Vector3Int position);
-        public TileBase GetTile(Vector3Int position) { return (TileBase)GetTileAsset(position); }
+        public TileBase GetTile(Vector3Int position) { return GetTileAsset(position) as TileBase; }
         public T GetTile<T>(Vector3Int position) where T : TileBase { return GetTileAsset(position) as T; }
 
         internal extern Object[] GetTileAssetsBlock(Vector3Int position, Vector3Int blockDimensions);
@@ -408,6 +408,12 @@ namespace UnityEngine.Tilemaps
     public sealed partial class TilemapCollider2D : Collider2D
     {
         public extern uint maximumTileChangeCount
+        {
+            get;
+            set;
+        }
+
+        public extern float extrusionFactor
         {
             get;
             set;
