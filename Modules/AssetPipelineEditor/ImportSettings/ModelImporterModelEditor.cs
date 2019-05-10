@@ -132,8 +132,7 @@ namespace UnityEditor
             public static GUIContent secondaryUVHardAngle          = EditorGUIUtility.TrTextContent("Hard Angle", "Angle between neighbor triangles that will generate seam.");
             public static GUIContent secondaryUVPackMargin         = EditorGUIUtility.TrTextContent("Pack Margin", "Measured in pixels, assuming mesh will cover an entire 1024x1024 lightmap.");
 
-            public static GUIContent LegacyBlendShapeNormalsWarning = EditorGUIUtility.TrTextContent("This Model was originally imported in an earlier version of Unity. If your Mesh has Blend Shapes, you may notice some artifacts or missing normals, and options for Blend Shape Normals and Smoothness Source will not be shown.");
-            public static GUIContent UpgradeButtonLabel = EditorGUIUtility.TrTextContent("Fix Now");
+            public static GUIContent LegacyComputeNormalsFromSmoothingGroupsWhenMeshHasBlendShapes = EditorGUIUtility.TrTextContent("Legacy Blend Shape Normals", "Compute normals from smoothing groups when the mesh has BlendShapes.");
         }
 
         public override void OnInspectorGUI()
@@ -141,26 +140,6 @@ namespace UnityEditor
             SceneGUI();
             MeshesGUI();
             GeometryGUI();
-        }
-
-        bool HelpBoxWithButton(GUIContent messageContent, GUIContent buttonContent, MessageType type)
-        {
-            const float kButtonWidth = 60f;
-            const float kSpacing = 5f;
-            const float kButtonHeight = 20f;
-
-            // Reserve size of wrapped text
-            Rect contentRect = GUILayoutUtility.GetRect(messageContent, EditorStyles.helpBox);
-            // Reserve size of button
-            GUILayoutUtility.GetRect(1, kButtonHeight + kSpacing);
-
-            // Render background box with text at full height
-            contentRect.height += kButtonHeight + kSpacing;
-            GUI.Label(contentRect, EditorGUIUtility.TempContent(messageContent.text, EditorGUIUtility.GetHelpIcon(type)), EditorStyles.helpBox);
-
-            // Button (align lower right)
-            Rect buttonRect = new Rect(contentRect.xMax - kButtonWidth - 4f, contentRect.yMax - kButtonHeight - 4f, kButtonWidth, kButtonHeight);
-            return GUI.Button(buttonRect, buttonContent);
         }
 
         void MeshesGUI()
@@ -253,16 +232,27 @@ namespace UnityEditor
 
         void NormalsTangentsGUI()
         {
+            EditorGUI.BeginChangeCheck();
+            EditorGUI.showMixedValue = m_LegacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes.hasMultipleDifferentValues;
+            var legacyComputeFromSmoothingGroups = EditorGUILayout.Toggle(Styles.LegacyComputeNormalsFromSmoothingGroupsWhenMeshHasBlendShapes, m_LegacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes.boolValue);
+            EditorGUI.showMixedValue = false;
+            if (EditorGUI.EndChangeCheck())
+            {
+                m_LegacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes.boolValue = legacyComputeFromSmoothingGroups;
+            }
+
             using (var horizontal = new EditorGUILayout.HorizontalScope())
             {
                 using (var property = new EditorGUI.PropertyScope(horizontal.rect, Styles.NormalsLabel, m_NormalImportMode))
                 {
                     EditorGUI.BeginChangeCheck();
+                    EditorGUI.showMixedValue = m_NormalImportMode.hasMultipleDifferentValues;
                     var newValue = (int)(ModelImporterNormals)EditorGUILayout.EnumPopup(property.content, (ModelImporterNormals)m_NormalImportMode.intValue);
+                    EditorGUI.showMixedValue = false;
                     if (EditorGUI.EndChangeCheck())
                     {
                         m_NormalImportMode.intValue = newValue;
-                        // This check is made in CheckConcistency, but because AssetImporterEditor does not serialize the object each update,
+                        // This check is made in CheckConsistency, but because AssetImporterEditor does not serialize the object each update,
                         // We need to double check here for UI consistency.
                         if (m_NormalImportMode.intValue == (int)ModelImporterNormals.None)
                             m_TangentImportMode.intValue = (int)ModelImporterTangents.None;
@@ -285,7 +275,14 @@ namespace UnityEditor
             {
                 using (new EditorGUI.DisabledScope(m_NormalImportMode.intValue == (int)ModelImporterNormals.None))
                 {
-                    m_BlendShapeNormalCalculationMode.intValue = (int)(ModelImporterNormals)EditorGUILayout.EnumPopup(Styles.BlendShapeNormalsLabel, (ModelImporterNormals)m_BlendShapeNormalCalculationMode.intValue);
+                    EditorGUI.BeginChangeCheck();
+                    EditorGUI.showMixedValue = m_BlendShapeNormalCalculationMode.hasMultipleDifferentValues;
+                    var blendShapeNormalCalculationMode = (int)(ModelImporterNormals)EditorGUILayout.EnumPopup(Styles.BlendShapeNormalsLabel, (ModelImporterNormals)m_BlendShapeNormalCalculationMode.intValue);
+                    EditorGUI.showMixedValue = false;
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        m_BlendShapeNormalCalculationMode.intValue = blendShapeNormalCalculationMode;
+                    }
                 }
             }
 
@@ -297,10 +294,12 @@ namespace UnityEditor
                     using (var property = new EditorGUI.PropertyScope(horizontal.rect, Styles.RecalculateNormalsLabel, m_NormalCalculationMode))
                     {
                         EditorGUI.BeginChangeCheck();
-                        var newValue = (int)(ModelImporterNormalCalculationMode)EditorGUILayout.EnumPopup(property.content, (ModelImporterNormalCalculationMode)m_NormalCalculationMode.intValue);
+                        EditorGUI.showMixedValue = m_NormalCalculationMode.hasMultipleDifferentValues;
+                        var normalCalculationMode = (int)(ModelImporterNormalCalculationMode)EditorGUILayout.EnumPopup(property.content, (ModelImporterNormalCalculationMode)m_NormalCalculationMode.intValue);
+                        EditorGUI.showMixedValue = false;
                         if (EditorGUI.EndChangeCheck())
                         {
-                            m_NormalCalculationMode.intValue = newValue;
+                            m_NormalCalculationMode.intValue = normalCalculationMode;
                         }
                     }
                 }
@@ -308,7 +307,18 @@ namespace UnityEditor
                 // Normal smoothness
                 if (!m_LegacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes.boolValue)
                 {
-                    m_NormalSmoothingSource.intValue = (int)(ModelImporterNormalSmoothingSource)EditorGUILayout.EnumPopup(Styles.NormalSmoothingSourceLabel, (ModelImporterNormalSmoothingSource)m_NormalSmoothingSource.intValue);
+                    using (var horizontal = new EditorGUILayout.HorizontalScope())
+                    using (var property = new EditorGUI.PropertyScope(horizontal.rect, Styles.NormalSmoothingSourceLabel, m_NormalSmoothingSource))
+                    {
+                        EditorGUI.BeginChangeCheck();
+                        EditorGUI.showMixedValue = m_NormalSmoothingSource.hasMultipleDifferentValues;
+                        var normalSmoothingSource = (int)(ModelImporterNormalSmoothingSource)EditorGUILayout.EnumPopup(property.content, (ModelImporterNormalSmoothingSource)m_NormalSmoothingSource.intValue);
+                        EditorGUI.showMixedValue = false;
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            m_NormalSmoothingSource.intValue = normalSmoothingSource;
+                        }
+                    }
                 }
 
                 // Normal split angle
@@ -320,14 +330,6 @@ namespace UnityEditor
                     // Property is serialized as float but we want to show it as an int so we round the value when changed
                     if (EditorGUI.EndChangeCheck())
                         m_NormalSmoothAngle.floatValue = Mathf.Round(m_NormalSmoothAngle.floatValue);
-                }
-
-                if (m_LegacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes.boolValue)
-                {
-                    if (HelpBoxWithButton(Styles.LegacyBlendShapeNormalsWarning, Styles.UpgradeButtonLabel, MessageType.Warning))
-                    {
-                        m_LegacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes.boolValue = false;
-                    }
                 }
             }
 

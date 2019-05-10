@@ -1457,21 +1457,27 @@ namespace UnityEditor
 
         static Renderer[] GetAssociatedRenderersFromInspector()
         {
-            List<Renderer> renderers = new List<Renderer>();
             if (InspectorWindow.s_CurrentInspectorWindow != null)
             {
                 Editor[] editors = InspectorWindow.s_CurrentInspectorWindow.tracker.activeEditors;
-                foreach (var editor in editors)
-                {
-                    foreach (Object target in editor.targets)
-                    {
-                        var renderer = target as Renderer;
-                        if (renderer)
-                            renderers.Add(renderer);
-                    }
-                }
+                return GetAssociatedRenderersFromEditors(editors);
             }
 
+            return new Renderer[0];
+        }
+
+        internal static Renderer[] GetAssociatedRenderersFromEditors(IEnumerable<Editor> editors)
+        {
+            List<Renderer> renderers = new List<Renderer>();
+            foreach (var editor in editors)
+            {
+                foreach (Object target in editor.targets)
+                {
+                    var renderer = target as Renderer;
+                    if (renderer)
+                        renderers.Add(renderer);
+                }
+            }
             return renderers.ToArray();
         }
 

@@ -113,7 +113,7 @@ namespace UnityEditorInternal
                 }
 
                 args.Add($"--platform={compilerPlatform}");
-                if (platformProvider.target != BuildTarget.Android)
+                if (!string.IsNullOrEmpty(compilerArchitecture))
                     args.Add($"--architecture={compilerArchitecture}");
             }
 

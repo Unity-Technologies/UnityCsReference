@@ -113,7 +113,7 @@ namespace UnityEditor.Scripting.Compilers
         {
             var responseFileData = ParseResponseFileFromFile(
                 responseFileName,
-                Application.dataPath,
+                Directory.GetParent(Application.dataPath).FullName,
                 GetSystemReferenceDirectories());
             foreach (var error in responseFileData.Errors)
             {
@@ -136,6 +136,9 @@ namespace UnityEditor.Scripting.Compilers
             string projectDirectory,
             string[] systemReferenceDirectories)
         {
+            responseFilePath = Paths.ConvertSeparatorsToUnity(responseFilePath);
+            projectDirectory = Paths.ConvertSeparatorsToUnity(projectDirectory);
+
             var relativeResponseFilePath = GetRelativePath(responseFilePath, projectDirectory);
             var responseFile = AssetDatabase.LoadAssetAtPath<TextAsset>(relativeResponseFilePath);
 
@@ -174,7 +177,7 @@ namespace UnityEditor.Scripting.Compilers
         {
             if (Path.IsPathRooted(responseFilePath) && responseFilePath.Contains(projectDirectory))
             {
-                responseFilePath = responseFilePath.Substring(Directory.GetParent(Application.dataPath).FullName.Length + 1);
+                responseFilePath = responseFilePath.Substring(projectDirectory.Length + 1);
             }
             return responseFilePath;
         }
@@ -338,7 +341,8 @@ namespace UnityEditor.Scripting.Compilers
                         }
 
                         var fullPathReference = responseReference;
-                        if (!Path.IsPathRooted(responseReference))
+                        bool isRooted = Path.IsPathRooted(responseReference);
+                        if (!isRooted)
                         {
                             foreach (var directory in systemReferenceDirectories)
                             {
@@ -346,6 +350,7 @@ namespace UnityEditor.Scripting.Compilers
                                 if (File.Exists(systemReferencePath))
                                 {
                                     fullPathReference = systemReferencePath;
+                                    isRooted = true;
                                     break;
                                 }
                             }
@@ -354,10 +359,11 @@ namespace UnityEditor.Scripting.Compilers
                             if (File.Exists(userPath))
                             {
                                 fullPathReference = userPath;
+                                isRooted = true;
                             }
                         }
 
-                        if (fullPathReference == "")
+                        if (!isRooted)
                         {
                             errors.Add($"{fileName}: not parsed correctly: {responseReference} could not be found as a system library.\n" +
                                 "If this was meant as a user reference please provide the relative path from project root (parent of the Assets folder) in the response file.");

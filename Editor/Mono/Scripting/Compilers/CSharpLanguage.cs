@@ -132,7 +132,7 @@ namespace UnityEditor.Scripting.Compilers
             {
                 var responseFileData = ScriptCompilerBase.ParseResponseFileFromFile(
                     responseFilePath,
-                    Application.dataPath,
+                    Directory.GetParent(Application.dataPath).FullName,
                     GetSystemReferenceDirectories(ApiCompatibilityLevel.NET_4_6));
                 return GetNamespaceNewRuntime(filePath, definedSymbols, responseFileData.Defines);
             }
@@ -140,7 +140,7 @@ namespace UnityEditor.Scripting.Compilers
             {
                 var responseFileData = ScriptCompilerBase.ParseResponseFileFromFile(
                     responseFilePath,
-                    Application.dataPath,
+                    Directory.GetParent(Application.dataPath).FullName,
                     GetSystemReferenceDirectories(ApiCompatibilityLevel.NET_2_0));
                 return GetNamespaceOldRuntime(filePath, definedSymbols, responseFileData.Defines);
             }
