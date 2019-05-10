@@ -3,16 +3,15 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEditor.UIElements;
 
 namespace UnityEditor.PackageManager.UI
 {
     internal class PackageManagerToolbar : VisualElement
     {
         internal new class UxmlFactory : UxmlFactory<PackageManagerToolbar> {}
-        private readonly VisualElement root;
 
         public event Action<PackageFilter> OnFilterChange = delegate {};
         public event Action OnTogglePreviewChange = delegate {};
@@ -21,29 +20,34 @@ namespace UnityEditor.PackageManager.UI
         [SerializeField]
         private PackageFilter selectedFilter;
 
+        public event Action<string> OnSearchChange = delegate {};
+
         public PackageManagerToolbar()
         {
-            root = Resources.GetTemplate("PackageManagerToolbar.uxml");
+            var root = Resources.GetTemplate("PackageManagerToolbar.uxml");
             Add(root);
             root.StretchToParentSize();
             Cache = new VisualElementCache(root);
 
-            AddButton.RegisterCallback<MouseDownEvent>(OnAddButtonMouseDown);
-            FilterButton.RegisterCallback<MouseDownEvent>(OnFilterButtonMouseDown);
-            AdvancedButton.RegisterCallback<MouseDownEvent>(OnAdvancedButtonMouseDown);
+            SetupAddMenu();
+            SetupFilterMenu();
+            SetupAdvancedMenu();
+            SetupSearchToolbar();
+        }
+
+        private void SetupSearchToolbar()
+        {
+            SearchToolbar.RegisterValueChangedCallback(OnSearchTextChanged);
+        }
+
+        private void OnSearchTextChanged(ChangeEvent<string> evt)
+        {
+            OnSearchChange(evt.newValue);
         }
 
         public void GrabFocus()
         {
-            SearchToolbar.GrabFocus();
-        }
-
-        public new void SetEnabled(bool enable)
-        {
-            base.SetEnabled(enable);
-            FilterButton.SetEnabled(enable);
-            AdvancedButton.SetEnabled(enable);
-            SearchToolbar.SetEnabled(enable);
+            SearchToolbar.Focus();
         }
 
         private static string GetFilterDisplayName(PackageFilter filter)
@@ -65,74 +69,62 @@ namespace UnityEditor.PackageManager.UI
         {
             var previouSelectedFilter = selectedFilter;
             selectedFilter = (PackageFilter)obj;
-            FilterButton.text = string.Format("{0} ▾", GetFilterDisplayName(selectedFilter));
+            FilterMenu.text = GetFilterDisplayName(selectedFilter);
 
             if (selectedFilter != previouSelectedFilter)
                 OnFilterChange(selectedFilter);
         }
 
-        private void OnAddButtonMouseDown(MouseDownEvent evt)
+        private void SetupAddMenu()
         {
-            if (evt.propagationPhase != PropagationPhase.AtTarget)
-                return;
-
-            var menu = new GenericMenu();
-            var addPackageFromDiskItem = new GUIContent("Add package from disk...");
-            menu.AddItem(addPackageFromDiskItem, false, delegate
+            AddMenu.menu.AppendAction("Add package from disk...", a =>
             {
                 var path = EditorUtility.OpenFilePanelWithFilters("Select package on disk", "", new[] { "package.json file", "json" });
                 if (!string.IsNullOrEmpty(path) && !Package.AddRemoveOperationInProgress)
                     Package.AddFromLocalDisk(path);
-            });
+            }, a => DropdownMenuAction.Status.Normal);
 
-            if (Unsupported.IsDeveloperMode())
+            AddMenu.menu.AppendAction("Add package from git URL...", a =>
             {
-                var addPackageFromIdItem = new GUIContent("Add package from package ID...");
-                menu.AddItem(addPackageFromIdItem, false, delegate { AddFromIdField.Show(true); });
-            }
-
-            var menuPosition = new Vector2(AddButton.layout.xMin, AddButton.layout.center.y);
-            menuPosition = this.LocalToWorld(menuPosition);
-            var menuRect = new Rect(menuPosition, Vector2.zero);
-            menu.DropDown(menuRect);
+                PackageAddFromUrlField.Show(parent);
+            }, a => DropdownMenuAction.Status.Normal);
         }
 
-        private void OnFilterButtonMouseDown(MouseDownEvent evt)
+        private void SetupFilterMenu()
         {
-            if (evt.propagationPhase != PropagationPhase.AtTarget)
-                return;
+            FilterMenu.menu.AppendAction(GetFilterDisplayName(PackageFilter.All), a =>
+            {
+                SetFilter(PackageFilter.All);
+            }, a => selectedFilter == PackageFilter.All ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
 
-            var menu = new GenericMenu();
-            menu.AddItem(new GUIContent(GetFilterDisplayName(PackageFilter.All)),
-                selectedFilter == PackageFilter.All,
-                SetFilter, PackageFilter.All);
-            menu.AddItem(new GUIContent(GetFilterDisplayName(PackageFilter.Local)),
-                selectedFilter == PackageFilter.Local,
-                SetFilter, PackageFilter.Local);
-            menu.AddSeparator("");
-            menu.AddItem(new GUIContent(GetFilterDisplayName(PackageFilter.Modules)),
-                selectedFilter == PackageFilter.Modules,
-                SetFilter, PackageFilter.Modules);
-            var menuPosition = new Vector2(FilterButton.layout.xMin, FilterButton.layout.center.y);
-            menuPosition = this.LocalToWorld(menuPosition);
-            var menuRect = new Rect(menuPosition, Vector2.zero);
-            menu.DropDown(menuRect);
+            FilterMenu.menu.AppendAction(GetFilterDisplayName(PackageFilter.Local), a =>
+            {
+                SetFilter(PackageFilter.Local);
+            }, a => selectedFilter == PackageFilter.Local ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+
+            FilterMenu.menu.AppendSeparator();
+            FilterMenu.menu.AppendAction(GetFilterDisplayName(PackageFilter.Modules), a =>
+            {
+                SetFilter(PackageFilter.Modules);
+            }, a => selectedFilter == PackageFilter.Modules ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
         }
 
-        private void OnAdvancedButtonMouseDown(MouseDownEvent evt)
+        private void SetupAdvancedMenu()
         {
-            if (evt.propagationPhase != PropagationPhase.AtTarget)
-                return;
+            AdvancedMenu.menu.AppendAction("Reset Packages to defaults", a =>
+            {
+                EditorApplication.ExecuteMenuItem(ApplicationUtil.ResetPackagesMenuPath);
+            }, a => DropdownMenuAction.Status.Normal);
 
-            var menu = new GenericMenu();
-            menu.AddItem(new GUIContent("Reset Packages to defaults"), false, () => EditorApplication.ExecuteMenuItem(ApplicationUtil.ResetPackagesMenuPath));
-            menu.AddItem(new GUIContent("Show dependencies"), PackageManagerPrefs.ShowPackageDependencies, ToggleDependencies);
-            menu.AddItem(new GUIContent("Show preview packages"), PackageManagerPrefs.ShowPreviewPackages, TogglePreviewPackages);
+            AdvancedMenu.menu.AppendAction("Show dependencies", a =>
+            {
+                ToggleDependencies();
+            }, a => PackageManagerPrefs.ShowPackageDependencies ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
 
-            var menuPosition = new Vector2(AdvancedButton.layout.xMax + 30, AdvancedButton.layout.center.y);
-            menuPosition = this.LocalToWorld(menuPosition);
-            var menuRect = new Rect(menuPosition, Vector2.zero);
-            menu.DropDown(menuRect);
+            AdvancedMenu.menu.AppendAction("Show preview packages", a =>
+            {
+                TogglePreviewPackages();
+            }, a => PackageManagerPrefs.ShowPreviewPackages ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
         }
 
         private void ToggleDependencies()
@@ -157,12 +149,9 @@ namespace UnityEditor.PackageManager.UI
 
         private VisualElementCache Cache { get; set; }
 
-        private Label AddButton { get { return Cache.Get<Label>("toolbarAddButton"); }}
-        private Label FilterButton { get { return Cache.Get<Label>("toolbarFilterButton"); } }
-        private Label AdvancedButton { get { return Cache.Get<Label>("toolbarAdvancedButton"); } }
-        internal PackageSearchToolbar SearchToolbar { get { return Cache.Get<PackageSearchToolbar>("toolbarSearch"); } }
-
-        private PackageAddFromIdField _addFromIdField;
-        private PackageAddFromIdField AddFromIdField { get { return _addFromIdField ?? (_addFromIdField = parent.Q<PackageAddFromIdField>("packageAddFromIdField")); } }
+        private ToolbarMenu AddMenu { get { return Cache.Get<ToolbarMenu>("toolbarAddMenu"); }}
+        private ToolbarMenu FilterMenu { get { return Cache.Get<ToolbarMenu>("toolbarFilterMenu"); } }
+        private ToolbarMenu AdvancedMenu { get { return Cache.Get<ToolbarMenu>("toolbarAdvancedMenu"); } }
+        internal ToolbarSearchField SearchToolbar { get { return Cache.Get<ToolbarSearchField>("toolbarSearch"); } }
     }
 }

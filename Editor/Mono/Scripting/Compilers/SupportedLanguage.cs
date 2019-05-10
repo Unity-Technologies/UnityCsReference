@@ -16,7 +16,7 @@ namespace UnityEditor.Scripting.Compilers
         public abstract string GetExtensionICanCompile();
         public abstract string GetLanguageName();
 
-        public abstract ScriptCompilerBase CreateCompiler(ScriptAssembly scriptAssembly, MonoIsland island, bool buildingForEditor, BuildTarget targetPlatform, bool runUpdater);
+        public abstract ScriptCompilerBase CreateCompiler(ScriptAssembly scriptAssembly, EditorScriptCompilationOptions options, string tempOutputDirectory);
         public virtual string GetNamespace(string fileName, string definedSymbols)
         {
             return string.Empty;
@@ -27,8 +27,7 @@ namespace UnityEditor.Scripting.Compilers
             return false;
         }
 
-        public virtual string[] GetCompilerDefines(BuildTarget targetPlatform, bool buildingForEditor,
-            ScriptAssembly scriptAssembly)
+        public virtual string[] GetCompilerDefines()
         {
             return new string[0];
         }

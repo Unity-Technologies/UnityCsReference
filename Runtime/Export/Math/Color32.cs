@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
@@ -70,6 +71,36 @@ namespace UnityEngine
                 (byte)(a.b + (b.b - a.b) * t),
                 (byte)(a.a + (b.a - a.a) * t)
             );
+        }
+
+        // Access the r, g, b,a components using [0], [1], [2], [3] respectively.
+        public byte this[int index]
+        {
+            get
+            {
+                switch (index)
+                {
+                    case 0: return r;
+                    case 1: return g;
+                    case 2: return b;
+                    case 3: return a;
+                    default:
+                        throw new IndexOutOfRangeException("Invalid Color32 index(" + index + ")!");
+                }
+            }
+
+            set
+            {
+                switch (index)
+                {
+                    case 0: r = value; break;
+                    case 1: g = value; break;
+                    case 2: b = value; break;
+                    case 3: a = value; break;
+                    default:
+                        throw new IndexOutOfRangeException("Invalid Color32 index(" + index + ")!");
+                }
+            }
         }
 
         public override string ToString()

@@ -1177,11 +1177,21 @@ namespace UnityEditorInternal
             }
         }
 
-        public void DoGUI(HierarchyFrameDataView frameDataView, float width, float ypos, float height)
+        public void DoGUI(int frameIndex, float width, float ypos, float height)
         {
+            var iter = new ProfilerFrameDataIterator();
+            int threadCount = iter.GetThreadCount(frameIndex);
+            iter.SetRoot(frameIndex, 0);
+
+            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+
+            DrawToolbar(iter);
+
+            EditorGUILayout.EndHorizontal();
+
             using (m_DoGUIMarker.Auto())
             {
-                if (frameDataView == null || !frameDataView.valid)
+                if (threadCount == 0)
                 {
                     GUILayout.Label(BaseStyles.noData, BaseStyles.label);
                     return;
@@ -1242,10 +1252,7 @@ namespace UnityEditorInternal
                     NativeProfilerTimeline.Initialize(ref args);
                 }
                 // Prepare group and Thread Info
-                var iter = new ProfilerFrameDataIterator();
-                int threadCount = iter.GetThreadCount(frameDataView.frameIndex);
-                iter.SetRoot(frameDataView.frameIndex, 0);
-                UpdateGroupAndThreadInfo(ref iter, frameDataView.frameIndex);
+                UpdateGroupAndThreadInfo(ref iter, frameIndex);
                 MarkDeadOrClearThread();
 
                 HandleFrameSelected(iter.frameTimeMS);
@@ -1286,7 +1293,7 @@ namespace UnityEditorInternal
                 fullThreadsRectWithoutSidebar.width -= sideWidth;
 
                 // The splitters need to be handled after the time area so that they don't interfere with the input for panning/scrolling the ZoomableArea
-                DoThreadSplitters(fullThreadsRect, fullThreadsRectWithoutSidebar, frameDataView.frameIndex, ThreadSplitterCommand.HandleThreadSplitter);
+                DoThreadSplitters(fullThreadsRect, fullThreadsRectWithoutSidebar, frameIndex, ThreadSplitterCommand.HandleThreadSplitter);
 
                 Rect barsUIRect = m_TimeArea.drawRect;
 
@@ -1317,7 +1324,7 @@ namespace UnityEditorInternal
                 // Walk backwards to find how many previous frames we need to show.
                 int maxContextFramesToShow = m_Window.IsRecording() ? 1 : 3;
                 int numContextFramesToShow = maxContextFramesToShow;
-                int currentFrame = frameDataView.frameIndex;
+                int currentFrame = frameIndex;
                 float currentTime = 0;
                 do
                 {
@@ -1332,7 +1339,7 @@ namespace UnityEditorInternal
                 while (currentTime > m_TimeArea.shownArea.x && numContextFramesToShow > 0);
 
                 // Draw previous frames
-                while (currentFrame != -1 && currentFrame != frameDataView.frameIndex)
+                while (currentFrame != -1 && currentFrame != frameIndex)
                 {
                     iter.SetRoot(currentFrame, 0);
                     DoProfilerFrame(currentFrame, shownBarsUIRect, true, threadCount, currentTime, scaleForThreadHeight);
@@ -1342,11 +1349,11 @@ namespace UnityEditorInternal
 
                 // Draw next frames
                 numContextFramesToShow = maxContextFramesToShow;
-                currentFrame = frameDataView.frameIndex;
+                currentFrame = frameIndex;
                 currentTime = 0;
                 while (currentTime < m_TimeArea.shownArea.x + m_TimeArea.shownArea.width && numContextFramesToShow >= 0)
                 {
-                    if (frameDataView.frameIndex != currentFrame)
+                    if (frameIndex != currentFrame)
                         DoProfilerFrame(currentFrame, shownBarsUIRect, true, threadCount, currentTime, scaleForThreadHeight);
                     iter.SetRoot(currentFrame, 0);
                     currentFrame = ProfilerDriver.GetNextFrameIndex(currentFrame);
@@ -1360,15 +1367,15 @@ namespace UnityEditorInternal
 
                 // Draw center frame last to get on top
                 threadCount = 0;
-                DoProfilerFrame(frameDataView.frameIndex, shownBarsUIRect, false, threadCount, 0, scaleForThreadHeight);
+                DoProfilerFrame(frameIndex, shownBarsUIRect, false, threadCount, 0, scaleForThreadHeight);
 
                 GUI.EndClip();
 
                 // Draw Foldout Buttons on top of natively drawn bars
-                DoThreadSplitters(fullThreadsRect, fullThreadsRectWithoutSidebar, frameDataView.frameIndex, ThreadSplitterCommand.HandleThreadSplitterFoldoutButtons);
+                DoThreadSplitters(fullThreadsRect, fullThreadsRectWithoutSidebar, frameIndex, ThreadSplitterCommand.HandleThreadSplitterFoldoutButtons);
 
                 // Draw tooltips on top of clip to be able to extend outside of timeline area
-                DoSelectionTooltip(frameDataView.frameIndex, m_TimeArea.drawRect);
+                DoSelectionTooltip(frameIndex, m_TimeArea.drawRect);
 
                 if (Event.current.type == EventType.Repaint)
                 {
@@ -1456,15 +1463,15 @@ namespace UnityEditorInternal
             }
         }
 
-        internal void DrawToolbar(HierarchyFrameDataView frameDataView)
+        internal void DrawToolbar(ProfilerFrameDataIterator frameDataIterator)
         {
-            if (frameDataView != null)
+            if (frameDataIterator != null)
                 DrawViewTypePopup(ProfilerViewType.Timeline);
 
             GUILayout.FlexibleSpace();
 
-            if (frameDataView != null)
-                DrawCPUGPUTime(frameDataView.frameTimeMs, frameDataView.frameGpuTimeMs);
+            if (frameDataIterator != null)
+                DrawCPUGPUTime(frameDataIterator.frameTimeMS, frameDataIterator.frameGpuTimeMS);
 
             GUILayout.FlexibleSpace();
         }

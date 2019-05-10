@@ -216,7 +216,7 @@ namespace UnityEditor
             if (gameObjectOrSceneInstanceID == 0)
                 return DragAndDropVisualMode.Rejected;
 
-            if (SubSceneGUI.IsUsingSubScenes() && !IsValidSubSceneDropTarget(gameObjectOrSceneInstanceID, dropPos, DragAndDrop.objectReferences))
+            if (perform && SubSceneGUI.IsUsingSubScenes() && !IsValidSubSceneDropTarget(gameObjectOrSceneInstanceID, dropPos, DragAndDrop.objectReferences))
                 return DragAndDropVisualMode.Rejected;
 
             return DragAndDropService.Drop(DragAndDropService.kHierarchyDropDstId, gameObjectOrSceneInstanceID, option, null, perform);

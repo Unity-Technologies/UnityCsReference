@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-
 using System;
 using System.Collections;
 using UnityEngine.Internal;
@@ -21,7 +20,11 @@ namespace UnityEngine
         public int characterLimit;
     }
 
-    public partial class TouchScreenKeyboard
+    // Interface into the native iPhone, Android, UWP, PS4 and Switch on-screen keyboards - stubbed on other platforms.
+    [NativeConditional("ENABLE_ONSCREEN_KEYBOARD")]
+    [NativeHeader("Runtime/Export/TouchScreenKeyboard/TouchScreenKeyboard.bindings.h")]
+    [NativeHeader("Runtime/Input/KeyboardOnScreen.h")]
+    public class TouchScreenKeyboard
     {
         // The status of the on-screen keyboard
         public enum Status
@@ -35,13 +38,7 @@ namespace UnityEngine
             // The on-screen keyboard was closed by touching outside of the keyboard.
             LostFocus = 3,
         };
-    }
 
-    // Interface into the native iPhone, Android, Windows Phone and Switch on-screen keyboards - it is not available on other platforms.
-    [NativeHeader("Runtime/Export/TouchScreenKeyboard/TouchScreenKeyboard.bindings.h")]
-    [NativeHeader("Runtime/Input/KeyboardOnScreen.h")]
-    public partial class TouchScreenKeyboard
-    {
         // We are matching the KeyboardOnScreen class here so we can directly
         // access it.
         [System.NonSerialized]
@@ -82,7 +79,6 @@ namespace UnityEngine
 
         [FreeFunction("TouchScreenKeyboard_InternalConstructorHelper")]
         private static extern IntPtr TouchScreenKeyboard_InternalConstructorHelper(ref TouchScreenKeyboard_InternalConstructorHelperArguments arguments, string text, string textPlaceholder);
-
 
         public static bool isSupported
         {
@@ -195,8 +191,8 @@ namespace UnityEngine
             return Open(text, keyboardType, autocorrection, multiline, secure, alert, textPlaceholder, characterLimit);
         }
 
-        // Returns the text displayed by the input field of the keyboard. This
-        extern public string text
+        // Returns the text displayed by the input field of the keyboard.
+        public extern string text
         {
             [NativeName("GetText")]
             get;
@@ -204,8 +200,8 @@ namespace UnityEngine
             set;
         }
 
-        // Specifies if text input field above the keyboard will be hidden when
-        extern public static bool hideInput
+        // Specifies if text input field above the keyboard will be hidden when the keyboard is on screen.
+        public static extern bool hideInput
         {
             [NativeName("IsInputHidden")]
             get;
@@ -213,8 +209,8 @@ namespace UnityEngine
             set;
         }
 
-        // Specifies if the keyboard is visible or is sliding into the position on
-        extern public bool active
+        // Specifies if the keyboard is visible or is sliding into the position on screen.
+        public extern bool active
         {
             [NativeName("IsActive")]
             get;
@@ -223,7 +219,7 @@ namespace UnityEngine
         }
 
         [FreeFunction("TouchScreenKeyboard_GetDone")]
-        extern private static bool GetDone(IntPtr ptr);
+        private static extern bool GetDone(IntPtr ptr);
 
         // Specifies if input process was finished (RO)
         [Obsolete("Property done is deprecated, use status instead")]
@@ -233,7 +229,7 @@ namespace UnityEngine
         }
 
         [FreeFunction("TouchScreenKeyboard_GetWasCanceled")]
-        extern private static bool GetWasCanceled(IntPtr ptr);
+        private static extern bool GetWasCanceled(IntPtr ptr);
 
         // Specifies if input process was canceled (RO)
         [Obsolete("Property wasCanceled is deprecated, use status instead.")]
@@ -243,14 +239,14 @@ namespace UnityEngine
         }
 
         // Returns the status of the touch screen keyboard (RO). See [[TouchScreenKeyboard.Status]] enumeration for possible values.
-        extern public Status status
+        public extern Status status
         {
             [NativeName("GetKeyboardStatus")]
             get;
         }
 
         // Set character limit for keyboard input
-        extern public int characterLimit
+        public extern int characterLimit
         {
             [NativeName("GetCharacterLimit")]
             get;
@@ -286,9 +282,9 @@ namespace UnityEngine
             }
         }
 
-        extern private static void GetSelection(out int start, out int length);
+        private static extern void GetSelection(out int start, out int length);
 
-        extern private static void SetSelection(int start, int length);
+        private static extern void SetSelection(int start, int length);
 
         // Returns the type of keyboard being displayed. (RO)
         public TouchScreenKeyboardType type
@@ -303,15 +299,16 @@ namespace UnityEngine
             set {}
         }
 
-        // Returns portion of the screen which is covered by the keyboard. Returns
-        extern public static Rect area
+        // Returns portion of the screen which is covered by the keyboard.
+        [NativeConditional("ENABLE_ONSCREEN_KEYBOARD", "RectT<float>()")]
+        public static extern Rect area
         {
             [NativeName("GetRect")]
             get;
         }
 
         // Returns true whenever any keyboard is completely visible on the screen.
-        extern public static bool visible
+        public static extern bool visible
         {
             [NativeName("IsVisible")]
             get;

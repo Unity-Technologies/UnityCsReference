@@ -331,9 +331,7 @@ namespace UnityEngine.UIElements
                 return null;
 
             string path = m_Usings[index].path;
-            return Panel.loadResourceFunc == null
-                ? null
-                : Panel.loadResourceFunc(path, typeof(VisualTreeAsset)) as VisualTreeAsset;
+            return Panel.LoadResource(path, typeof(VisualTreeAsset)) as VisualTreeAsset;
         }
 
         internal bool TemplateExists(string templateName)

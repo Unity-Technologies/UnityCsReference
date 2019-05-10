@@ -34,6 +34,8 @@ namespace UnityEditor.Experimental.TerrainAPI
         Vector2 uv { get; }
         float brushStrength { get; }
         float brushSize { get; }
+        bool hitValidTerrain { get; }
+        RaycastHit raycastHit { get;  }
 
         [Obsolete("IOnPaint.RepaintAllInspectors has been deprecated. Use IOnPaint.Repaint instead")]
         void RepaintAllInspectors();
@@ -113,6 +115,8 @@ namespace UnityEditor.Experimental.TerrainAPI
         public Vector2 uv { get { return m_UV; } }
         public float brushStrength { get { return m_BrushStrength; } }
         public float brushSize { get { return m_BrushSize; } }
+        public bool hitValidTerrain { get { return m_HitValidTerrain; } }
+        public RaycastHit raycastHit { get { return m_RaycastHit; } }
 
         public void RepaintAllInspectors()
         {

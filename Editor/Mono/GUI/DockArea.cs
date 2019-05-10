@@ -118,6 +118,20 @@ namespace UnityEditor
             s_GUIContents.Clear();
         }
 
+        internal override void DoWindowDecorationStart()
+        {
+            // On windows, we want both close window and side resizes.
+            // Titlebar dragging is done at the end, so we can drag next to tabs.
+            if (window != null)
+                window.HandleWindowDecorationStart(windowPosition);
+        }
+
+        internal override void DoWindowDecorationEnd()
+        {
+            if (window != null)
+                window.HandleWindowDecorationEnd(windowPosition);
+        }
+
         protected override void OnDestroy()
         {
             // Prevents double-destroy that may be indirectly caused if Close() is called by OnLostFocus()
@@ -136,6 +150,8 @@ namespace UnityEditor
                 // Avoid destroying a window that has already being destroyed (case 967778)
                 if (w == null)
                     continue;
+
+                Invoke("OnDestroy", w);
                 UnityEngine.Object.DestroyImmediate(w, true);
             }
 
@@ -366,8 +382,6 @@ namespace UnityEditor
 
         private void DrawView(Rect viewRect, Rect dockAreaRect, bool floatingWindow, bool isBottomTab)
         {
-            if (m_Panes.Count <= 0)
-                return;
             if (floatingWindow && isBottomTab)
                 dockAreaRect.height += 2; // Hide floating window bottom border
 
@@ -672,12 +686,15 @@ namespace UnityEditor
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Close Tab"));
             menu.AddSeparator("");
 
-            System.Type[] types = GetPaneTypes();
+            IEnumerable<Type> types = GetPaneTypes();
             GUIContent baseContent = EditorGUIUtility.TrTextContent("Add Tab");
-            foreach (System.Type t in types)
+            foreach (Type t in types)
             {
                 if (t == null)
+                {
+                    menu.AddSeparator(baseContent.text + "/");
                     continue;
+                }
 
                 GUIContent entry = new GUIContent(EditorWindow.GetLocalizedTitleContentFromType(t)); // make a copy since we modify the text below
                 entry.text = baseContent.text + "/" + entry.text;
@@ -908,6 +925,7 @@ namespace UnityEditor
                             // Try to tell the current DPZ
                             if (s_DropInfo?.dropArea != null)
                             {
+                                Invoke("OnTabDetached", s_DragPane);
                                 s_DropInfo.dropArea.PerformDrop(s_DragPane, s_DropInfo, screenMousePos);
                             }
                             else
@@ -967,7 +985,7 @@ namespace UnityEditor
                         Rect r = new Rect(xPos, tabAreaRect.yMin, Styles.tabDragWidth, tabAreaRect.height);
                         float roundR = Mathf.Round(r.x);
                         Rect r2 = new Rect(roundR, r.y, Mathf.Round(r.x + r.width) - roundR, r.height);
-                        tabStyle.Draw(r2, "Failed to load", false, false, true, false);
+                        tabStyle.Draw(r2, "Failed to load", false, true, true, false);
                     }
                     break;
             }
@@ -1113,13 +1131,16 @@ namespace UnityEditor
             menu.AddItem(EditorGUIUtility.TrTextContent("Maximize"), !(parent is SplitView), Unmaximize, window);
             menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Close Tab"));
             menu.AddSeparator("");
-            System.Type[] types = GetPaneTypes();
+            IEnumerable<Type> types = GetPaneTypes();
 
             GUIContent baseContent = EditorGUIUtility.TrTextContent("Add Tab");
-            foreach (System.Type t in types)
+            foreach (Type t in types)
             {
                 if (t == null)
+                {
+                    menu.AddSeparator(baseContent.text + "/");
                     continue;
+                }
 
                 GUIContent entry = new GUIContent(EditorWindow.GetLocalizedTitleContentFromType(t)); // make a copy since we modify the text below
                 entry.text = baseContent.text + "/" + entry.text;

@@ -6,10 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-using UnityEngine.Scripting;
 using Attribute = System.Attribute;
 using Event = UnityEngine.Event;
-using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor.ShortcutManagement
 {
@@ -45,18 +43,27 @@ namespace UnityEditor.ShortcutManagement
             }
         }
 
-        public static ShortcutController instance { get; private set; }
+        private static ShortcutController s_Instance;
+        public static ShortcutController instance
+        {
+            get
+            {
+                EnsureShortcutControllerCreated();
+                return s_Instance;
+            }
+        }
 
         static ShortcutIntegration()
         {
-            InitializeController();
-            EditorApplication.globalEventHandler += EventHandler;
-            EditorApplication.doPressedKeysTriggerAnyShortcut += HasAnyEntriesHandler;
+            // There is cases where the ShortcutIntegration was not requested even after the project was initialized, such as running tests.
+            EditorApplication.delayCall += EnsureShortcutControllerCreated;
+        }
 
-            // Need to reinitialize after project load if we want menu items
-            EditorApplication.projectWasLoaded += InitializeController;
-
-            EditorApplication.focusChanged += OnFocusChanged;
+        static void EnsureShortcutControllerCreated()
+        {
+            if (s_Instance == null)
+                InitializeController();
+            Debug.Assert(s_Instance != null);
         }
 
         static bool HasAnyEntriesHandler()
@@ -86,19 +93,19 @@ namespace UnityEditor.ShortcutManagement
             var shortcutProviders = new IDiscoveryShortcutProvider[]
             {
                 new ShortcutAttributeDiscoveryProvider(),
-                new ShortcutMenuItemDiscoveryProvider(),
+                new ShortcutMenuItemDiscoveryProvider()
             };
             var bindingValidator = new BindingValidator();
             var invalidContextReporter = new DiscoveryInvalidShortcutReporter();
             var discovery = new Discovery(shortcutProviders, bindingValidator, invalidContextReporter);
-            instance = new ShortcutController(discovery, bindingValidator, new ShortcutProfileStore(), new LastUsedProfileIdProvider());
-            instance.trigger.invokingAction += OnInvokingAction;
-        }
+            IContextManager contextManager = new ContextManager();
 
-        [RequiredByNativeCode]
-        static void RebuildShortcuts()
-        {
-            instance.RebuildShortcuts();
+            s_Instance = new ShortcutController(discovery, contextManager, bindingValidator, new ShortcutProfileStore(), new LastUsedProfileIdProvider());
+            s_Instance.trigger.invokingAction += OnInvokingAction;
+
+            EditorApplication.globalEventHandler += EventHandler;
+            EditorApplication.doPressedKeysTriggerAnyShortcut += HasAnyEntriesHandler;
+            EditorApplication.focusChanged += OnFocusChanged;
         }
     }
 
@@ -114,15 +121,12 @@ namespace UnityEditor.ShortcutManagement
         public IDirectory directory => m_Directory;
         public IBindingValidator bindingValidator { get; }
         public Trigger trigger { get; }
-
-        ContextManager m_ContextManager = new ContextManager();
-
-        public IContextManager contextManager => m_ContextManager;
+        public IContextManager contextManager { get; }
         ILastUsedProfileIdProvider m_LastUsedProfileIdProvider;
 
         public event Action availableShortcutsChanged;
 
-        public ShortcutController(IDiscovery discovery, IBindingValidator bindingValidator, IShortcutProfileStore profileStore, ILastUsedProfileIdProvider lastUsedProfileIdProvider)
+        public ShortcutController(IDiscovery discovery, IContextManager contextManager, IBindingValidator bindingValidator, IShortcutProfileStore profileStore, ILastUsedProfileIdProvider lastUsedProfileIdProvider)
         {
             m_Discovery = discovery;
             this.bindingValidator = bindingValidator;
@@ -136,6 +140,7 @@ namespace UnityEditor.ShortcutManagement
             var conflictResolverView = new ConflictResolverView();
             var conflictResolver = new ConflictResolver(profileManager, contextManager, conflictResolverView);
 
+            this.contextManager = contextManager;
 
             m_Directory = new Directory(profileManager.GetAllShortcuts());
             trigger = new Trigger(m_Directory, conflictResolver);
@@ -164,9 +169,6 @@ namespace UnityEditor.ShortcutManagement
             var shortcutProfiles = ModeService.GetModeDataSection(args.nextIndex, ModeService.k_ShortcutSectionName) as System.Collections.IList;
             if (shortcutProfiles == null || shortcutProfiles.Count == 0)
                 return;
-
-            // Rebuild shortcuts so all shortcuts bound to invisible menu items are removed.
-            RebuildShortcuts();
 
             string defaultMode = null;
             try
@@ -255,7 +257,7 @@ namespace UnityEditor.ShortcutManagement
 
         static bool TryParseUniquePrefKeyString(string prefString, out string name, out Event keyboardEvent, out string shortcut)
         {
-            int i = prefString.IndexOf(";");
+            int i = prefString.IndexOf(";", StringComparison.Ordinal);
             if (i < 0)
             {
                 name = null;

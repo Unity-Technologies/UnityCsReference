@@ -108,6 +108,15 @@ namespace UnityEditor.Experimental.GraphView
         public delegate void ViewTransformChanged(GraphView graphView);
         public ViewTransformChanged viewTransformChanged { get; set; }
 
+        // BE AWARE: This is just a stopgap measure to get the minimap notified and should not be used outside of it.
+        // This should also get ripped once the minimap is re-written.
+        internal Action redrawn { get; set; }
+
+        public virtual bool supportsWindowedBlackboard
+        {
+            get { return false; }
+        }
+
         [Serializable]
         class PersistedSelection : IGraphViewSelection, ISerializationCallbackReceiver
         {
@@ -901,7 +910,7 @@ namespace UnityEditor.Experimental.GraphView
             return EventPropagation.Stop;
         }
 
-        void OnValidateCommand(ValidateCommandEvent evt)
+        internal void OnValidateCommand(ValidateCommandEvent evt)
         {
             if (MouseCaptureController.IsMouseCaptured())
                 return;
@@ -934,7 +943,7 @@ namespace UnityEditor.Experimental.GraphView
             DontAskUser
         }
 
-        void OnExecuteCommand(ExecuteCommandEvent evt)
+        internal void OnExecuteCommand(ExecuteCommandEvent evt)
         {
             if (MouseCaptureController.IsMouseCaptured())
                 return;
@@ -1518,6 +1527,12 @@ namespace UnityEditor.Experimental.GraphView
             // Set global graph view shader properties (used by UIR)
             mat.SetFloat(s_EditorPixelsPerPointId, EditorGUIUtility.pixelsPerPoint);
             mat.SetFloat(s_GraphViewScaleId, scale);
+            redrawn?.Invoke();
+        }
+
+        public virtual Blackboard CreateBlackboard()
+        {
+            return new Blackboard();
         }
     }
 }

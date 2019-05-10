@@ -5,11 +5,13 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Scripting;
+using UnityEngine.Scripting.APIUpdating;
 using UnityEngine.Bindings;
 
-namespace UnityEngine.Experimental.PlayerLoop
+namespace UnityEngine.PlayerLoop
 {
     [RequiredByNativeCode]
+    [MovedFrom("UnityEngine.Experimental.PlayerLoop")]
     public struct Initialization
     {
         [RequiredByNativeCode]
@@ -25,6 +27,7 @@ namespace UnityEngine.Experimental.PlayerLoop
     }
 
     [RequiredByNativeCode]
+    [MovedFrom("UnityEngine.Experimental.PlayerLoop")]
     public struct EarlyUpdate
     {
         [RequiredByNativeCode]
@@ -93,6 +96,7 @@ namespace UnityEngine.Experimental.PlayerLoop
         public struct PerformanceAnalyticsUpdate {}
     }
     [RequiredByNativeCode]
+    [MovedFrom("UnityEngine.Experimental.PlayerLoop")]
     public struct FixedUpdate
     {
         [RequiredByNativeCode]
@@ -121,6 +125,7 @@ namespace UnityEngine.Experimental.PlayerLoop
         public struct NewInputFixedUpdate {}
     }
     [RequiredByNativeCode]
+    [MovedFrom("UnityEngine.Experimental.PlayerLoop")]
     public struct PreUpdate
     {
         [RequiredByNativeCode]
@@ -143,6 +148,7 @@ namespace UnityEngine.Experimental.PlayerLoop
         public struct NewInputUpdate {}
     }
     [RequiredByNativeCode]
+    [MovedFrom("UnityEngine.Experimental.PlayerLoop")]
     public struct Update
     {
         [RequiredByNativeCode]
@@ -155,6 +161,7 @@ namespace UnityEngine.Experimental.PlayerLoop
         public struct ScriptRunDelayedTasks {}
     }
     [RequiredByNativeCode]
+    [MovedFrom("UnityEngine.Experimental.PlayerLoop")]
     public struct PreLateUpdate
     {
         [RequiredByNativeCode]
@@ -183,6 +190,7 @@ namespace UnityEngine.Experimental.PlayerLoop
         public struct ConstraintManagerUpdate {}
     }
     [RequiredByNativeCode]
+    [MovedFrom("UnityEngine.Experimental.PlayerLoop")]
     public struct PostLateUpdate
     {
         [RequiredByNativeCode]
@@ -272,11 +280,11 @@ namespace UnityEngine.Experimental.PlayerLoop
     }
 }
 
-namespace UnityEngine.Experimental.LowLevel
+namespace UnityEngine.LowLevel
 {
     [NativeType(Header = "Runtime/Misc/PlayerLoop.h")]
     [RequiredByNativeCode]
-
+    [MovedFrom("UnityEngine.Experimental.LowLevel")]
     struct PlayerLoopSystemInternal
     {
         public Type type;
@@ -286,6 +294,7 @@ namespace UnityEngine.Experimental.LowLevel
         public int numSubSystems;
     }
 
+    [MovedFrom("UnityEngine.Experimental.LowLevel")]
     public struct PlayerLoopSystem
     {
         public Type type;
@@ -297,11 +306,19 @@ namespace UnityEngine.Experimental.LowLevel
         public delegate void UpdateFunction();
     }
 
+    [MovedFrom("UnityEngine.Experimental.LowLevel")]
     public class PlayerLoop
     {
         public static PlayerLoopSystem GetDefaultPlayerLoop()
         {
             var intSys = GetDefaultPlayerLoopInternal();
+            var offset = 0;
+            return InternalToPlayerLoopSystem(intSys, ref offset);
+        }
+
+        public static PlayerLoopSystem GetCurrentPlayerLoop()
+        {
+            var intSys = GetCurrentPlayerLoopInternal();
             var offset = 0;
             return InternalToPlayerLoopSystem(intSys, ref offset);
         }
@@ -361,6 +378,8 @@ namespace UnityEngine.Experimental.LowLevel
 
         [NativeMethod(IsFreeFunction = true)]
         private static extern PlayerLoopSystemInternal[] GetDefaultPlayerLoopInternal();
+        [NativeMethod(IsFreeFunction = true)]
+        private static extern PlayerLoopSystemInternal[] GetCurrentPlayerLoopInternal();
         [NativeMethod(IsFreeFunction = true)]
         private static extern void SetPlayerLoopInternal(PlayerLoopSystemInternal[] loop);
     }

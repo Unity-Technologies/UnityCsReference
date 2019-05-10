@@ -17,23 +17,24 @@ namespace UnityEngine.UIElements
     [Flags]
     internal enum VersionChangeType
     {
-        //Some data was bound
+        // Some data was bound
         Bindings = 1 << 8,
         // persistent data ready
         ViewData = 1 << 7,
         // changes to hierarchy
         Hierarchy = 1 << 6,
-        // changes to layout
+        // changes to properties that may have an impact on layout
         Layout = 1 << 5,
         // changes to StyleSheet, USS class
         StyleSheet = 1 << 4,
         // changes to styles, colors and other render properties
         Styles = 1 << 3,
-        // transforms are invalid
+        // changes that may impact the world transform (e.g. laid out position, local transform)
         Transform = 1 << 2,
-        // clips (rect position or size) are invalid
-        Clip = 1 << 1,
-        // pixels in the target have been changed, just repaint, only makes sense on the Panel
+        // changes to the size of the element after layout has been performed, without taking the local transform into account
+        Size = 1 << 1,
+        // The visuals of the element have changed
+        // TODO: Rename to visuals
         Repaint = 1 << 0,
     }
 
@@ -77,6 +78,7 @@ namespace UnityEngine.UIElements
     internal interface IPanelDebug
     {
         IPanel panel { get; }
+
         VisualElement visualTree { get; }
 
         void AttachDebugger(IPanelDebugger debugger);
@@ -93,6 +95,13 @@ namespace UnityEngine.UIElements
         void PostProcessEvent(EventBase ev);
     }
 
+    // This is the required interface to IPanel for Runtime game components.
+    internal interface IRuntimePanel
+    {
+        void Update(Vector2 size);
+        void Repaint(Event e);
+    }
+
     // Passed-in to every element of the visual tree
     public interface IPanel : IDisposable
     {
@@ -105,7 +114,7 @@ namespace UnityEngine.UIElements
         VisualElement PickAll(Vector2 point, List<VisualElement> picked);
     }
 
-    abstract class BaseVisualElementPanel : IPanel
+    abstract class BaseVisualElementPanel : IPanel, IRuntimePanel
     {
         public abstract EventInterests IMGUIEventInterests { get; set; }
         public abstract ScriptableObject ownerObject { get; protected set; }
@@ -202,44 +211,35 @@ namespace UnityEngine.UIElements
         internal void SetElementUnderMouse(VisualElement newElementUnderMouse, EventBase triggerEvent)
         {
             if (newElementUnderMouse == topElementUnderMouse)
-            {
                 return;
-            }
 
             VisualElement previousTopElementUnderMouse = topElementUnderMouse;
             topElementUnderMouse = newElementUnderMouse;
 
-            if (triggerEvent == null)
-            {
-                using (new EventDispatcherGate(dispatcher))
-                {
-                    MouseEventsHelper.SendEnterLeave<MouseLeaveEvent, MouseEnterEvent>(previousTopElementUnderMouse, topElementUnderMouse, null, MousePositionTracker.mousePosition);
-                    MouseEventsHelper.SendMouseOverMouseOut(previousTopElementUnderMouse, topElementUnderMouse, null, MousePositionTracker.mousePosition);
-                }
-            }
-            else if (
+            IMouseEvent mouseEvent = triggerEvent == null ? null : triggerEvent as IMouseEvent;
+            var mousePosition = mouseEvent == null
+                ? MousePositionTracker.mousePosition
+                : mouseEvent?.mousePosition ?? Vector2.zero;
+
+            var sendMouseOverOut = (triggerEvent == null ||
                 triggerEvent.eventTypeId == MouseMoveEvent.TypeId() ||
                 triggerEvent.eventTypeId == MouseDownEvent.TypeId() ||
                 triggerEvent.eventTypeId == MouseUpEvent.TypeId() ||
                 triggerEvent.eventTypeId == MouseEnterWindowEvent.TypeId() ||
                 triggerEvent.eventTypeId == MouseLeaveWindowEvent.TypeId() ||
-                triggerEvent.eventTypeId == WheelEvent.TypeId())
+                triggerEvent.eventTypeId == WheelEvent.TypeId());
+
+            var sendDragEnterLeave = triggerEvent != null && (triggerEvent.eventTypeId == DragUpdatedEvent.TypeId() || triggerEvent.eventTypeId == DragExitedEvent.TypeId());
+
+            using (new EventDispatcherGate(dispatcher))
             {
-                IMouseEvent mouseEvent = triggerEvent as IMouseEvent;
-                using (new EventDispatcherGate(dispatcher))
-                {
-                    MouseEventsHelper.SendEnterLeave<MouseLeaveEvent, MouseEnterEvent>(previousTopElementUnderMouse, topElementUnderMouse, mouseEvent, mouseEvent?.mousePosition ?? Vector2.zero);
-                    MouseEventsHelper.SendMouseOverMouseOut(previousTopElementUnderMouse, topElementUnderMouse, mouseEvent, mouseEvent?.mousePosition ?? Vector2.zero);
-                }
-            }
-            else if (triggerEvent.eventTypeId == DragUpdatedEvent.TypeId() ||
-                     triggerEvent.eventTypeId == DragExitedEvent.TypeId())
-            {
-                IMouseEvent mouseEvent = triggerEvent as IMouseEvent;
-                using (new EventDispatcherGate(dispatcher))
-                {
-                    MouseEventsHelper.SendEnterLeave<DragLeaveEvent, DragEnterEvent>(previousTopElementUnderMouse, topElementUnderMouse, mouseEvent, mouseEvent?.mousePosition ?? Vector2.zero);
-                }
+                // mouse enter/leave must be dispatched *any* time the element under mouse changes
+                MouseEventsHelper.SendEnterLeave<MouseLeaveEvent, MouseEnterEvent>(previousTopElementUnderMouse, topElementUnderMouse, mouseEvent, mousePosition);
+
+                if (sendMouseOverOut)
+                    MouseEventsHelper.SendMouseOverMouseOut(previousTopElementUnderMouse, topElementUnderMouse, mouseEvent, mousePosition);
+                if (sendDragEnterLeave)
+                    MouseEventsHelper.SendEnterLeave<DragLeaveEvent, DragEnterEvent>(previousTopElementUnderMouse, topElementUnderMouse, mouseEvent, mousePosition);
             }
         }
 
@@ -257,6 +257,19 @@ namespace UnityEngine.UIElements
         }
 
         public IPanelDebug panelDebug { get; set; }
+
+        public void Update(Vector2 size)
+        {
+            scheduler.UpdateScheduledEvents();
+
+            if (size != visualTree.layout.size)
+            {
+                visualTree.SetSize(size);
+            }
+
+            ValidateLayout();
+            UpdateBindings();
+        }
     }
 
     // Strategy to load assets must be provided in the context of Editor or Runtime
@@ -319,7 +332,29 @@ namespace UnityEngine.UIElements
 
         public override EventInterests IMGUIEventInterests { get; set; }
 
-        internal static LoadResourceFunction loadResourceFunc = null;
+        internal static LoadResourceFunction loadResourceFunc { private get; set; }
+
+        internal static Object LoadResource(string pathName, Type type)
+        {
+            // TODO make the LoadResource function non-static.
+            // if (panel.contextType = ContextType.Player)
+            //    obj = Resources.Load(pathName, type);
+            // else
+            //    ...
+
+            Object obj = null;
+
+            if (loadResourceFunc != null)
+            {
+                obj = loadResourceFunc(pathName, type);
+            }
+            else
+            {
+                obj = Resources.Load(pathName, type);
+            }
+
+            return obj;
+        }
 
         private Focusable m_SavedFocusedElement;
 
@@ -563,13 +598,24 @@ namespace UnityEngine.UIElements
             return PickAll(visualTree, point);
         }
 
+        private bool m_ValidatingLayout = false;
         public override void ValidateLayout()
         {
-            Profiler.BeginSample(m_ProfileLayoutName);
-            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Styles);
-            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Layout);
-            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.TransformClip);
-            Profiler.EndSample();
+            // Reentrancy proofing: ValidateLayout() could be in the code path of updaters.
+            // Actual case: TransformClip update phase recomputes elements under mouse, which does a pick, which validates layout.
+            // Updaters use version numbers for early exit, but it may happen that an updater invalidates a subsequent updater.
+            if (!m_ValidatingLayout)
+            {
+                m_ValidatingLayout = true;
+
+                Profiler.BeginSample(m_ProfileLayoutName);
+                m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Styles);
+                m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Layout);
+                m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.TransformClip);
+                Profiler.EndSample();
+
+                m_ValidatingLayout = false;
+            }
         }
 
         public override void UpdateBindings()
@@ -634,12 +680,5 @@ namespace UnityEngine.UIElements
         {
             return m_VisualTreeUpdater.GetUpdater(phase);
         }
-    }
-
-    // internal data used to cache render state
-    internal class RenderData
-    {
-        public RenderTexture pixelCache;
-        public Rect lastLayout;
     }
 }

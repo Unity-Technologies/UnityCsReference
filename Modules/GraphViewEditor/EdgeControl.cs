@@ -60,11 +60,12 @@ namespace UnityEditor.Experimental.GraphView
             m_ToCap = null;
 
             pickingMode = PickingMode.Ignore;
+
+            generateVisualContent += OnGenerateVisualContent;
         }
 
         private bool m_ControlPointsDirty = true;
         private bool m_RenderPointsDirty = true;
-        private bool m_MeshDirty = true;
 
         Mesh m_Mesh;
         public const float k_MinEdgeWidth = 1.75f;
@@ -198,7 +199,6 @@ namespace UnityEditor.Experimental.GraphView
                 if (m_EdgeWidth == value)
                     return;
                 m_EdgeWidth = value;
-                m_MeshDirty = true;
                 UpdateLayout(); // The layout depends on the edges width
                 MarkDirtyRepaint();
             }
@@ -320,11 +320,10 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
-        internal override void DoRepaint(IStylePainter painter)
+        private void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
             UnityEngine.Profiling.Profiler.BeginSample("DrawEdge");
-            // Edges do NOT call base.DoRepaint. It would create a visual artifact.
-            DrawEdge(painter);
+            DrawEdge(mgc);
             UnityEngine.Profiling.Profiler.EndSample();
         }
 
@@ -484,7 +483,6 @@ namespace UnityEditor.Experimental.GraphView
             lastLocalControlPoints.Add(p3);
             lastLocalControlPoints.Add(p4);
             m_RenderPointsDirty = false;
-            m_MeshDirty = true;
 
             m_RenderPoints.Clear();
 
@@ -818,65 +816,15 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
-        internal virtual void DrawEdge(IStylePainter painter)
-        {
-            var stylePainter = (IStylePainterInternal)painter;
-            if (!DrawUsingUIVertices(stylePainter))
-                stylePainter.DrawImmediate(Draw);
-        }
 
-        void Draw()
+        void DrawEdge(MeshGenerationContext mgc)
         {
             if (edgeWidth <= 0)
                 return;
 
             UpdateRenderPoints();
-
-            Vector2[] points = controlPoints;
-
-            Color inputColor = this.inputColor;
-            Color outputColor = this.outputColor;
-
-            inputColor *= UIElementsUtility.editorPlayModeTintColor;
-            outputColor *= UIElementsUtility.editorPlayModeTintColor;
-
-            float realWidth = edgeWidth;
-            if (realWidth * m_GraphView.scale < k_MinEdgeWidth)
-            {
-                realWidth = k_MinEdgeWidth / m_GraphView.scale;
-
-                // make up for bigger edge by fading it.
-                inputColor.a = outputColor.a = edgeWidth / realWidth;
-            }
-
-            if (m_MeshDirty || m_Mesh == null)
-            {
-                m_MeshDirty = false;
-
-                RecomputeMesh();
-            }
-
-            // Send the view zoom factor so that the antialias width do not grow when zooming in.
-            lineMat.SetFloat("_ZoomFactor", m_GraphView.scale * realWidth / edgeWidth * EditorGUIUtility.pixelsPerPoint);
-
-            // Send the view zoom correction so that the vertex shader can scale the edge triangles when below m_MinWidth.
-            lineMat.SetFloat("_ZoomCorrection", realWidth / edgeWidth);
-
-            lineMat.SetColor("_InputColor", (QualitySettings.activeColorSpace == ColorSpace.Linear) ? inputColor.gamma : inputColor);
-            lineMat.SetColor("_OutputColor", (QualitySettings.activeColorSpace == ColorSpace.Linear) ? outputColor.gamma : outputColor);
-
-            lineMat.SetPass(0);
-            Graphics.DrawMeshNow(m_Mesh, Matrix4x4.identity);
-        }
-
-        bool DrawUsingUIVertices(IStylePainterInternal painter)
-        {
-            if (edgeWidth <= 0)
-                return true;
-
-            UpdateRenderPoints();
             if (m_RenderPoints.Count == 0)
-                return true; // Don't draw anything
+                return; // Don't draw anything
 
             Color inColor = this.inputColor;
             Color outColor = this.outputColor;
@@ -887,13 +835,10 @@ namespace UnityEditor.Experimental.GraphView
             uint cpt = (uint)m_RenderPoints.Count;
             uint wantedLength = (cpt) * 2;
             uint indexCount = (wantedLength - 2) * 3;
-            NativeSlice<Vertex> vertices;
-            NativeSlice<UInt16> indices;
-            var meshParams = MeshStylePainterParameters.GetDefault(null, wantedLength, indexCount);
-            meshParams.uvIsDisplacement = true; // We store displacement data in the UV channel
-            painter.DrawMesh(MeshStylePainterParameters.GetDefault(null, wantedLength, indexCount), out vertices, out indices);
-            if (vertices.Length == 0)
-                return false;
+
+            var md = mgc.Allocate((int)wantedLength, (int)indexCount, null, MeshGenerationContext.MeshFlags.UVisDisplacement);
+            if (md.vertexCount == 0)
+                return;
 
             float polyLineLength = 0;
             for (int i = 1; i < cpt; ++i)
@@ -934,16 +879,9 @@ namespace UnityEditor.Experimental.GraphView
                 Vector2 pos = m_RenderPoints[i];
                 Vector2 uv = new Vector2(dir.y * halfWidth, -dir.x * halfWidth); // Normal scaled by half width
                 Color32 tint = Color.LerpUnclamped(outColor, inColor, currentLength / polyLineLength);
-                int index = i * 2;
 
-                vertices[index] = new Vertex()
-                {
-                    position = new Vector3(pos.x, pos.y, 1), uv = uv, tint = tint, flags = flags
-                };
-                vertices[index + 1] = new Vertex()
-                {
-                    position = new Vector3(pos.x, pos.y, -1), uv = uv, tint = tint, flags = flags
-                };
+                md.SetNextVertex(new Vertex() { position = new Vector3(pos.x, pos.y, 1), uv = uv, tint = tint, flags = flags });
+                md.SetNextVertex(new Vertex() { position = new Vector3(pos.x, pos.y, -1), uv = uv, tint = tint, flags = flags });
 
                 if (i < cpt - 2)
                 {
@@ -960,21 +898,19 @@ namespace UnityEditor.Experimental.GraphView
             // Fill triangle indices as it is a triangle strip
             for (uint i = 0; i < wantedLength - 2; ++i)
             {
-                int index = (int)(i * 3);
                 if ((i & 0x01) == 0)
                 {
-                    indices[index] = (UInt16)i;
-                    indices[index + 1] = (UInt16)(i + 1);
-                    indices[index + 2] = (UInt16)(i + 2);
+                    md.SetNextIndex((UInt16)i);
+                    md.SetNextIndex((UInt16)(i + 1));
+                    md.SetNextIndex((UInt16)(i + 2));
                 }
                 else
                 {
-                    indices[index] = (UInt16)(i + 1);
-                    indices[index + 1] = (UInt16)i;
-                    indices[index + 2] = (UInt16)(i + 2);
+                    md.SetNextIndex((UInt16)(i + 1));
+                    md.SetNextIndex((UInt16)i);
+                    md.SetNextIndex((UInt16)(i + 2));
                 }
             }
-            return true;
         }
 
         private void RecomputeMesh()

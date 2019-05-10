@@ -333,6 +333,7 @@ namespace UnityEngine
     {
         public Rect screenRect, sourceRect;
         public int leftBorder, rightBorder, topBorder, bottomBorder;
+        public Color leftBorderColor, rightBorderColor, topBorderColor, bottomBorderColor;
         public Color color;
         public Vector4 borderWidths;
         public Vector4 cornerRadiuses;
@@ -350,6 +351,10 @@ namespace UnityEngine
             args.screenRect = screenRect; args.sourceRect = sourceRect;
             args.leftBorder = leftBorder; args.rightBorder = rightBorder; args.topBorder = topBorder; args.bottomBorder = bottomBorder;
             args.color = color;
+            args.leftBorderColor = Color.black;
+            args.topBorderColor = Color.black;
+            args.rightBorderColor = Color.black;
+            args.bottomBorderColor = Color.black;
             args.pass = pass;
             args.texture = texture;
             args.mat = mat;

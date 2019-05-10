@@ -70,7 +70,6 @@ namespace UnityEditor
         const float kDisabledValue = float.MaxValue;
 
         static Texture2D s_ColorTexture = null;
-        static bool s_BrushCreated = false;
 
         public static PrefColor s_BrushColor = new PrefColor("Cloth/Brush Color 2", 0.0f / 255.0f, 0.0f / 255.0f, 0.0f / 255.0f, 51.0f / 255.0f);
         public static PrefColor s_SelfAndInterCollisionParticleColor = new PrefColor("Cloth/Self or Inter Collision Particle Color 2", 145.0f / 255.0f, 244.0f / 255.0f, 139.0f / 255.0f, 0.5f);
@@ -89,8 +88,6 @@ namespace UnityEditor
         int m_NumSelection = 0;
 
         SkinnedMeshRenderer m_SkinnedMeshRenderer;
-        const HideFlags kMeshColliderHideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector | HideFlags.DontSaveInEditor | HideFlags.NotEditable;
-        const HideFlags kRequiredHideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
 
         private static class Styles
         {
@@ -174,13 +171,7 @@ namespace UnityEditor
             }
         }
 
-        ClothInspectorState state
-        {
-            get
-            {
-                return ClothInspectorState.instance;
-            }
-        }
+        ClothInspectorState state => ClothInspectorState.instance;
 
         DrawMode drawMode
         {
@@ -198,23 +189,11 @@ namespace UnityEditor
             }
         }
 
-        Cloth cloth
-        {
-            get
-            {
-                return (Cloth)target;
-            }
-        }
+        Cloth cloth => (Cloth)target;
 
-        public bool editingConstraints
-        {
-            get { return EditMode.editMode == EditMode.SceneViewEditMode.ClothConstraints && EditMode.IsOwner(this); }
-        }
+        public bool editingConstraints => EditMode.editMode == EditMode.SceneViewEditMode.ClothConstraints && EditMode.IsOwner(this);
 
-        public bool editingSelfAndInterCollisionParticles
-        {
-            get { return EditMode.editMode == EditMode.SceneViewEditMode.ClothSelfAndInterCollisionParticles && EditMode.IsOwner(this); }
-        }
+        public bool editingSelfAndInterCollisionParticles => EditMode.editMode == EditMode.SceneViewEditMode.ClothSelfAndInterCollisionParticles && EditMode.IsOwner(this);
 
         GUIContent GetDrawModeString(DrawMode mode)
         {
@@ -323,31 +302,22 @@ namespace UnityEditor
                 Debug.LogWarning("MeshRenderer will not work with a cloth component! Use only SkinnedMeshRenderer. Any MeshRenderer's attached to a cloth component will be deleted at runtime.");
         }
 
-        public bool Raycast(out Vector3 pos, out Vector3 norm, out int face)
+        void UpdatePreviewBrush()
         {
             Ray mouseRay = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
 
-            GameObject go = cloth.gameObject;
-            MeshCollider meshCollider = go.GetComponent<MeshCollider>();
-
             RaycastHit hit;
-            if (meshCollider.Raycast(mouseRay, out hit, Mathf.Infinity))
+            bool hasHit = cloth.Raycast(mouseRay, out hit, Mathf.Infinity);
+
+            if (!hasHit)
             {
-                norm = hit.normal;
-                pos = hit.point;
-                face = hit.triangleIndex;
-                return true;
+                m_BrushFace = -1; // set invalid face index in case of no hit
+                return;
             }
 
-            norm = Vector2.zero;
-            pos = Vector3.zero;
-            face = -1;
-            return false;
-        }
-
-        void UpdatePreviewBrush()
-        {
-            Raycast(out m_BrushPos, out m_BrushNorm, out m_BrushFace);
+            m_BrushPos = hit.point;
+            m_BrushNorm = hit.normal;
+            m_BrushFace = hit.triangleIndex;
         }
 
         void DrawBrush()
@@ -510,7 +480,6 @@ namespace UnityEditor
         {
             m_NumVerts = cloth.vertices.Length;
 
-            InitBrushCollider();
             InitSelfAndInterCollisionSelection();
             InitClothParticlesInWorldSpace();
             InitClothNormalsInWorldSpace();
@@ -533,62 +502,9 @@ namespace UnityEditor
             SceneView.beforeSceneGui += OnPreSceneGUICallback;
         }
 
-        void InitBrushCollider()
-        {
-            if (cloth != null)
-            {
-                GameObject go = cloth.gameObject;
-                MeshCollider colliderToUse = GetMeshCollidersChecked(go);
-
-                MeshCollider meshCollider = (colliderToUse != null) ? colliderToUse : Undo.AddComponent<MeshCollider>(go);
-                meshCollider.hideFlags = kMeshColliderHideFlags;
-
-                meshCollider.sharedMesh = m_SkinnedMeshRenderer.sharedMesh;
-
-                s_BrushCreated = true;
-            }
-        }
-
         public void OnDestroy()
         {
             SceneView.beforeSceneGui -= OnPreSceneGUICallback;
-
-            if (s_BrushCreated == true)
-            {
-                if (cloth != null)
-                {
-                    GameObject go = cloth.gameObject;
-
-                    MeshCollider meshCollider = GetMeshCollidersChecked(go);
-                    if (meshCollider)
-                    {
-                        Undo.DestroyObjectImmediate(meshCollider);
-                    }
-
-                    s_BrushCreated = false;
-                }
-            }
-        }
-
-        private MeshCollider GetMeshCollidersChecked(GameObject go)
-        {
-            MeshCollider[] meshColliders = go.GetComponents<MeshCollider>();
-            MeshCollider targetCollider = null;
-
-            int colliderCount = 0;
-            for (int i = 0; i < meshColliders.Length; ++i)
-            {
-                MeshCollider meshCollider = meshColliders[i];
-
-                if ((meshCollider.hideFlags & kRequiredHideFlags) != 0)
-                {
-                    colliderCount++;
-                    targetCollider = meshCollider;
-                }
-            }
-
-            Assert.IsTrue(colliderCount < 2, "There should never be more than 1 mesh collider in this Cloth component");
-            return targetCollider;
         }
 
         float GetCoefficient(ClothSkinningCoefficient coefficient)

@@ -87,6 +87,7 @@ namespace UnityEditor
             public GUIContent speedScale = EditorGUIUtility.TrTextContent("Speed Scale", "Defines the length of the particle compared to its speed.");
             public GUIContent lengthScale = EditorGUIUtility.TrTextContent("Length Scale", "Defines the length of the particle compared to its width.");
             public GUIContent sortingFudge = EditorGUIUtility.TrTextContent("Sorting Fudge", "Lower the number and most likely these particles will appear in front of other transparent objects, including other particles.");
+            public GUIContent sortingFudgeDisabledDueToSortingGroup = EditorGUIUtility.TrTextContent("Sorting Fudge", "This is disabled as the Sorting Group component handles the sorting for this Renderer.");
             public GUIContent sortMode = EditorGUIUtility.TrTextContent("Sort Mode", "The draw order of particles can be sorted by distance, oldest in front, or youngest in front.");
             public GUIContent rotation = EditorGUIUtility.TrTextContent("Rotation", "Set whether the rotation of the particles is defined in Screen or World space.");
             public GUIContent castShadows = EditorGUIUtility.TrTextContent("Cast Shadows", "Only opaque materials cast shadows");
@@ -245,6 +246,8 @@ namespace UnityEditor
 
         override public void OnInspectorGUI(InitialModuleUI initial)
         {
+            var renderer = serializedObject.targetObject as Renderer;
+
             EditorGUI.BeginChangeCheck();
             RenderMode renderMode = (RenderMode)GUIPopup(s_Texts.renderMode, m_RenderMode, s_Texts.particleTypes);
             bool renderModeChanged = EditorGUI.EndChangeCheck();
@@ -290,7 +293,15 @@ namespace UnityEditor
                 if (!m_RenderMode.hasMultipleDifferentValues)
                 {
                     GUIPopup(s_Texts.sortMode, m_SortMode, s_Texts.sortTypes);
-                    GUIFloat(s_Texts.sortingFudge, m_SortingFudge);
+                    if (renderer != null && SortingGroup.invalidSortingGroupID != renderer.sortingGroupID)
+                    {
+                        using (new EditorGUI.DisabledScope(true))
+                            GUIFloat(s_Texts.sortingFudgeDisabledDueToSortingGroup, m_SortingFudge);
+                    }
+                    else
+                    {
+                        GUIFloat(s_Texts.sortingFudge, m_SortingFudge);
+                    }
 
                     if (renderMode != RenderMode.Mesh)
                     {
@@ -379,7 +390,7 @@ namespace UnityEditor
             var renderersArray = renderers.ToArray();
             m_Probes.OnGUI(renderersArray, renderers.FirstOrDefault(), true);
 
-            RendererEditorBase.DrawRenderingLayer(m_RenderingLayerMask, serializedObject.targetObject as Renderer, renderersArray, true);
+            RendererEditorBase.DrawRenderingLayer(m_RenderingLayerMask, renderer, renderersArray, true);
             RendererEditorBase.DrawRendererPriority(m_RendererPriority, true);
         }
 

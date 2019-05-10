@@ -37,7 +37,6 @@ namespace UnityEngine.UIElements
                     evt.StopPropagation();
                     evt.PreventDefault();
                     evt.stopDispatch = true;
-                    return;
                 }
             }
         }

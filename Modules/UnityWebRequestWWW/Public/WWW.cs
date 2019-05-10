@@ -167,7 +167,6 @@ namespace UnityEngine
             }
         }
 
-        // Returns a [[MovieTexture]] generated from the downloaded data (RO).
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Obsolete msg (UnityUpgradable) -> * UnityEngine.WWW.GetMovieTexture()", true)]
         public Object movie { get { return null; } }
@@ -323,13 +322,6 @@ namespace UnityEngine
             return WebRequestWWW.InternalCreateAudioClipUsingDH(_uwr.downloadHandler, _uwr.url, stream, compressed, audioType);
         }
 
-        [System.Obsolete("MovieTexture is deprecated. Use VideoPlayer instead.", false)]
-        internal object GetMovieTextureInternal()
-        {
-            return WebRequestWWW.InternalCreateMovieTextureUsingDH(_uwr.downloadHandler);
-        }
-
-
         public AudioClip GetAudioClip()
         {
             return GetAudioClip(true, false, AudioType.UNKNOWN);
@@ -365,10 +357,11 @@ namespace UnityEngine
             return (AudioClip)GetAudioClipInternal(threeD, false, true, audioType);
         }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Obsolete("MovieTexture is deprecated. Use VideoPlayer instead.", false)]
         public MovieTexture GetMovieTexture()
         {
-            return (MovieTexture)GetMovieTextureInternal();
+            throw new Exception("MovieTexture has been removed from Unity. Use VideoPlayer instead.");
         }
 
 

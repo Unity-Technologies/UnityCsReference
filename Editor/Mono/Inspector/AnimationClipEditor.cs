@@ -3,11 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
 using UnityEditor.Animations;
-using UnityEditor.AnimatedValues;
 using System;
-using System.Reflection;
 using System.Collections.Generic;
 using System.Linq;
 using Object = UnityEngine.Object;
@@ -48,7 +45,7 @@ namespace UnityEditor
 
             public static GUIContent HasAdditiveReferencePose = EditorGUIUtility.TrTextContent("Additive Reference Pose", "Enable to define the additive reference pose frame.");
             public static GUIContent AdditiveReferencePoseFrame = EditorGUIUtility.TrTextContent("Pose Frame", "Pose Frame.");
-            public static GUIContent LoopTime = EditorGUIUtility.TrTextContent("Loop Time", "Enable to make the animation plays through and then restarts when the end is reached.");
+            public static GUIContent LoopTime = EditorGUIUtility.TrTextContent("Loop Time", "Enable to make the animation play through and then restart when the end is reached.");
             public static GUIContent LoopPose = EditorGUIUtility.TrTextContent("Loop Pose", "Enable to make the animation loop seamlessly.");
             public static GUIContent LoopCycleOffset = EditorGUIUtility.TrTextContent("Cycle Offset", "Offset to the cycle of a looping animation, if we want to start it at a different time.");
             public static GUIContent RootTransformRotation = EditorGUIUtility.TrTextContent("Root Transform Rotation");
@@ -1674,6 +1671,7 @@ namespace UnityEditor
             EventModificationContextMenuObject context = (EventModificationContextMenuObject)obj;
 
             context.m_Info.AddEvent(context.m_Time);
+            context.m_Info.ApplyModifiedProperties();
             SelectEvent(context.m_Info.GetEvents(), context.m_Info.GetEventCount() - 1, context.m_Info);
         }
 
@@ -1693,6 +1691,7 @@ namespace UnityEditor
             {
                 context.m_Info.RemoveEvent(context.m_Index);
             }
+            context.m_Info.ApplyModifiedProperties();
         }
 
         private void CheckRectsOnMouseMove(Rect eventLineRect, AnimationEvent[] events, Rect[] hitRects)

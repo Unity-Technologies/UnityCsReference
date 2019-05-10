@@ -205,12 +205,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private RenderData m_RenderData;
-        internal RenderData renderData
-        {
-            get { return m_RenderData ?? (m_RenderData = new RenderData()); }
-        }
-
+        internal Rect lastLayout;
         internal RenderChainVEData renderChainData;
 
         Vector3 m_Position = Vector3.zero;
@@ -263,10 +258,7 @@ namespace UnityEngine.UIElements
                 if (m_Scale == value)
                     return;
                 m_Scale = value;
-                IncrementVersion(VersionChangeType.Transform);
-
-                // This will change how we measure text
-                IncrementVersion(VersionChangeType.Layout);
+                IncrementVersion(VersionChangeType.Transform | VersionChangeType.Layout /*This will change how we measure text*/);
             }
         }
 
@@ -320,6 +312,13 @@ namespace UnityEngine.UIElements
                 if (isLayoutManual && m_Layout == value)
                     return;
 
+                Rect lastLayout = layout;
+                VersionChangeType changeType = 0;
+                if (!Mathf.Approximately(lastLayout.x, value.x) || !Mathf.Approximately(lastLayout.y, value.y))
+                    changeType |= VersionChangeType.Transform;
+                if (!Mathf.Approximately(lastLayout.width, value.width) || !Mathf.Approximately(lastLayout.height, value.height))
+                    changeType |= VersionChangeType.Size;
+
                 // set results so we can read straight back in get without waiting for a pass
                 m_Layout = value;
                 isLayoutManual = true;
@@ -338,7 +337,8 @@ namespace UnityEngine.UIElements
                 styleAccess.width = value.width;
                 styleAccess.height = value.height;
 
-                IncrementVersion(VersionChangeType.Transform);
+                if (changeType != 0)
+                    IncrementVersion(changeType);
             }
         }
 
@@ -941,28 +941,21 @@ namespace UnityEngine.UIElements
             IncrementVersion(VersionChangeType.Repaint);
         }
 
-        internal void Repaint(IStylePainter painter)
-        {
-            if (visible == false)
-            {
-                return;
-            }
-            var stylePainter = (IStylePainterInternal)painter;
-            stylePainter.DrawBackground();
-            stylePainter.DrawBorder();
-            try
-            {
-                DoRepaint(stylePainter);
-            }
-            catch (Exception e)
-            {
-                Debug.LogException(e);
-            }
-        }
+        public Action<MeshGenerationContext> generateVisualContent { get; set; }
 
-        internal virtual void DoRepaint(IStylePainter painter)
+        internal void InvokeGenerateVisualContent(MeshGenerationContext mgc)
         {
-            // Implemented by subclasses
+            if (generateVisualContent != null)
+            {
+                try
+                {
+                    generateVisualContent(mgc);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+            }
         }
 
         internal void GetFullHierarchicalViewDataKey(StringBuilder key)
@@ -1512,6 +1505,27 @@ namespace UnityEngine.UIElements
             {
                 manipulator.target = null;
             }
+        }
+    }
+
+    internal static class VisualElementDebugExtensions
+    {
+        public static string GetDisplayName(this VisualElement ve, bool withHashCode = true)
+        {
+            if (ve == null) return String.Empty;
+
+            string objectName = ve.GetType().Name;
+            if (!String.IsNullOrEmpty(ve.name))
+            {
+                objectName += "#" + ve.name;
+            }
+
+            if (withHashCode)
+            {
+                objectName += " (" + ve.GetHashCode().ToString("x8") + ")";
+            }
+
+            return objectName;
         }
     }
 }

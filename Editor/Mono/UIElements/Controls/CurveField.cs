@@ -145,6 +145,8 @@ namespace UnityEditor.UIElements
             visualInput.Add(borderElement);
 
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
+
+            generateVisualContent += OnGenerateVisualContent;
         }
 
         void OnDetach()
@@ -470,7 +472,7 @@ namespace UnityEditor.UIElements
 
         Mesh m_Mesh = null;
 
-        internal override void DoRepaint(IStylePainter painter)
+        private void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
             if (renderMode == RenderMode.Mesh)
             {

@@ -149,8 +149,9 @@ namespace UnityEngine.UIElements
                 }
             }
             internal TextInput()
-                : base()
             {
+                generateVisualContent = null; // Wipe base class's handler
+                generateVisualContent += OnOnGenerateVisualContentTextInput;
             }
 
             public void SelectRange(int cursorIndex, int selectionIndex)
@@ -173,9 +174,8 @@ namespace UnityEngine.UIElements
                 base.SyncTextEngine();
             }
 
-            internal override void DoRepaint(IStylePainter painter)
+            private void OnOnGenerateVisualContentTextInput(MeshGenerationContext mgc)
             {
-                var stylePainter = (IStylePainterInternal)painter;
                 if (isPasswordField)
                 {
                     // if we use system keyboard we will have normal text returned (hiding symbols is done inside os)
@@ -186,19 +186,19 @@ namespace UnityEngine.UIElements
                         // We don't have the focus, don't draw the selection and cursor
                         if (!string.IsNullOrEmpty(drawText) && contentRect.width > 0.0f && contentRect.height > 0.0f)
                         {
-                            var textParams = TextStylePainterParameters.GetDefault(this, text);
+                            var textParams = MeshGenerationContextUtils.TextParams.MakeStyleBased(this, text);
                             textParams.text = drawText;
-                            stylePainter.DrawText(textParams);
+                            mgc.Text(textParams);
                         }
                     }
                     else
                     {
-                        DrawWithTextSelectionAndCursor(stylePainter, drawText);
+                        DrawWithTextSelectionAndCursor(mgc, drawText);
                     }
                 }
                 else
                 {
-                    base.DoRepaint(painter);
+                    base.OnGenerateVisualContent(mgc);
                 }
             }
 

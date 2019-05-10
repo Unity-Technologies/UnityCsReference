@@ -39,7 +39,7 @@ namespace UnityEditor
             menuItems.Add(new MenuItem(content, false, on, null));
         }
 
-        // Add a seperator item to the menu
+        // Add a separator item to the menu
         public void AddSeparator(string path)
         {
             menuItems.Add(new MenuItem(new GUIContent(path), true, false, null));

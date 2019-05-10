@@ -130,6 +130,16 @@ namespace UnityEditor.StyleSheets
                         }
 
                         break;
+
+                    case StyleValueType.Dimension:
+                        var d1 = s1Cache.sheet.ReadDimension(v1);
+                        var d2 = s2Cache.sheet.ReadDimension(v2);
+                        if (d1 != d2)
+                        {
+                            return false;
+                        }
+
+                        break;
                     case StyleValueType.Keyword:
                         var k1 = s1Cache.sheet.ReadKeyword(v1);
                         var k2 = s2Cache.sheet.ReadKeyword(v2);

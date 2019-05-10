@@ -23,8 +23,6 @@ namespace UnityEditor.PackageManager.UI
                 new Alert.UxmlFactory(),
                 new ArrowToggle.UxmlFactory(),
                 new LoadingSpinner.UxmlFactory(),
-                new PackageAddFromIdField.UxmlFactory(),
-                new PackageAddFromUrlField.UxmlFactory(),
                 new PackageDependencies.UxmlFactory(),
                 new PackageDetails.UxmlFactory(),
                 new PackageGroup.UxmlFactory(),
@@ -32,7 +30,6 @@ namespace UnityEditor.PackageManager.UI
                 new PackageList.UxmlFactory(),
                 new PackageManagerToolbar.UxmlFactory(),
                 new PackageSampleList.UxmlFactory(),
-                new PackageSearchToolbar.UxmlFactory(),
                 new PackageStatusBar.UxmlFactory(),
                 new PackageToolbar.UxmlFactory(),
             };

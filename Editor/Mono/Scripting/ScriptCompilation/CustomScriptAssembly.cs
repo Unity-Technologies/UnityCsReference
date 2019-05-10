@@ -151,7 +151,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public CustomScriptAssemblyPlatform[] ExcludePlatforms { get; set;  }
 
         public AssetPathMetaData AssetPathMetaData { get; set; }
-        public ScriptCompilerOptions CompilerOptions { get; set; }
+        public ScriptCompilerOptions CompilerOptions { get; set; } = new ScriptCompilerOptions();
 
         public bool OverrideReferences { get; set; }
         public string[] PrecompiledReferences { get; set; }

@@ -62,7 +62,15 @@ namespace UnityEditor
         {
             m_CurrentSkin = EditorGUIUtility.skinIndex;
             m_IsDocked = docked;
-            webView.Reload();
+            if (m_IsOffline)
+            {
+                m_IsOffline = false;
+                webView.LoadFile(AssetStoreUtils.GetLoaderPath());
+            }
+            else
+            {
+                webView.Reload();
+            }
         }
 
         public void OnLoadError(string url)

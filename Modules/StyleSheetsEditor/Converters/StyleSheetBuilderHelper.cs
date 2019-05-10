@@ -117,11 +117,6 @@ namespace UnityEditor.StyleSheets
             return StyleSheetToUss.ToUssString(sheet, options);
         }
 
-        public static Vector2 ReadVector2(StyleSheet sheet, StyleProperty property)
-        {
-            return new Vector2(sheet.ReadFloat(property.values[0]), sheet.ReadFloat(property.values[1]));
-        }
-
         #region StyleSheetManipulation
         public static void CopyProperty(StyleSheet sheet, UssComments comments, StyleProperty property, StyleSheetBuilderHelper helper)
         {
@@ -140,6 +135,9 @@ namespace UnityEditor.StyleSheets
                         break;
                     case StyleValueType.Float:
                         helper.builder.AddValue(sheet.ReadFloat(value));
+                        break;
+                    case StyleValueType.Dimension:
+                        helper.builder.AddValue(sheet.ReadDimension(value));
                         break;
                     case StyleValueType.Keyword:
                         helper.builder.AddValue(sheet.ReadKeyword(value));

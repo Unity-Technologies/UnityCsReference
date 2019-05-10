@@ -116,8 +116,12 @@ namespace UnityEditor
             // that we have the most recent status
             if (Provider.enabled)
             {
-                if (Provider.PromptAndCheckoutIfNeeded(assets, ""))
+                var editableAssets = new string[assets.Length];
+                if (Provider.MakeEditable(assets, editableAssets))
+                {
+                    // TODO: handle partial results from MakeEditable i.e. editableassets
                     Provider.SetFileMode(assets, mode);
+                }
             }
         }
 
@@ -168,12 +172,16 @@ namespace UnityEditor
             }
             assets = assetsNotOpened.ToArray();
 
-            // Try to checkout if needed. This may fail but is catched below.
-            if (assets.Length != 0 && !Provider.PromptAndCheckoutIfNeeded(assets, ""))
+            // Try to checkout if needed. This may fail but is caught below.
+            var editableAssets = new string[assets.Length];
+            if (assets.Length != 0 && !Provider.MakeEditable(assets, editableAssets))
             {
-                Debug.LogError("Could not check out the following files in version control before saving: " +
-                    string.Join(", ", assets));
-                assetsThatShouldBeSaved = new string[0];
+                // TODO: fix this behaviour to make save asset honour version control result
+                // keep previous behaviour which is save all assets even if checkout fails
+                // TODO: this needs to consider and handle saving assets which have not been
+                // added to version control. They have to be added to version control before
+                // calling MakeEditable.
+                //assetsThatShouldBeSaved = editableAssets;
                 return;
             }
         }

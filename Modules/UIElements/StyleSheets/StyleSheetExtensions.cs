@@ -19,6 +19,9 @@ namespace UnityEngine.UIElements.StyleSheets
                 case StyleValueType.Float:
                     value = sheet.ReadFloat(handle).ToString(CultureInfo.InvariantCulture.NumberFormat);
                     break;
+                case StyleValueType.Dimension:
+                    value = sheet.ReadDimension(handle).ToString();
+                    break;
                 case StyleValueType.Color:
                     value = sheet.ReadColor(handle).ToString();
                     break;
@@ -68,7 +71,17 @@ namespace UnityEngine.UIElements.StyleSheets
 
         public static StyleColor ReadStyleColor(this StyleSheet sheet, StyleValueHandle handle, int specificity)
         {
-            return new StyleColor(sheet.ReadColor(handle)) {specificity = specificity};
+            Color c = Color.clear;
+            if (handle.valueType == StyleValueType.Enum)
+            {
+                var colorName = sheet.ReadAsString(handle);
+                StyleSheetColor.TryGetColor(colorName.ToLower(), out c);
+            }
+            else
+            {
+                c = sheet.ReadColor(handle);
+            }
+            return new StyleColor(c) {specificity = specificity};
         }
 
         public static StyleLength ReadStyleLength(this StyleSheet sheet, StyleValueHandle handle, int specificity)
@@ -78,14 +91,8 @@ namespace UnityEngine.UIElements.StyleSheets
             StyleLength styleLength = new StyleLength(keyword) {specificity = specificity};
             if (keyword == StyleKeyword.Undefined)
             {
-                if (handle.valueType == StyleValueType.Float)
-                {
-                    styleLength.value = sheet.ReadFloat(handle);
-                }
-                else
-                {
-                    Debug.LogError($"Unexpected Length value of type {handle.valueType.ToString()}");
-                }
+                var dimension = sheet.ReadDimension(handle);
+                styleLength.value = dimension.ToLength();
             }
 
             return styleLength;

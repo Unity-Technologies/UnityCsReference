@@ -40,6 +40,7 @@ namespace UnityEngine.UIElements.StyleSheets.Syntax
         Number, // <number>
         Integer, // <integer>
         Length, // <length>
+        Percentage, // <percentage>
         Color, // <color>
         Resource, // <resource>
         Url // <url>

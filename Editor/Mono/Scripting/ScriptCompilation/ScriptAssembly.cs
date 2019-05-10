@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Scripting.Compilers;
@@ -15,7 +16,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public BuildTarget BuildTarget { get; set; }
         public BuildTargetGroup BuildTargetGroup { get; set; }
         public string OutputDirectory { get; set; }
-        public ApiCompatibilityLevel ApiCompatibilityLevel { get; set; }
         public EditorScriptCompilationOptions CompilationOptions { get; set; }
         public ScriptCompilerOptions PredefinedAssembliesCompilerOptions { get; set; }
 
@@ -47,7 +47,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public AssemblyFlags Flags { get; set; }
         public BuildTarget BuildTarget { get; set; }
         public SupportedLanguage Language { get; set; }
-        public ApiCompatibilityLevel ApiCompatibilityLevel { get; set; }
         public string Filename { get; set; }
         public string OutputDirectory { get; set; }
 
@@ -60,11 +59,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
         ///References to dependencies that that will *not* be built.
         /// </summary>
         public string[] References { get; set; }
-        public string[] AdditionalReferences { get; set; }
         public string[] Defines { get; set; }
         public string[] Files { get; set; }
-        public bool RunUpdater { get; set; }
+        public bool CallOnBeforeCompilationStarted { get; set; }
         public ScriptCompilerOptions CompilerOptions { get; set; }
+        public string GeneratedResponseFile { get; set; }
 
         public string FullPath { get { return AssetPath.Combine(OutputDirectory, Filename); } }
 
@@ -96,12 +95,22 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 buildingForEditor,
                 developmentBuild,
                 CompilerOptions.AllowUnsafeCode,
-                ApiCompatibilityLevel,
+                CompilerOptions.ApiCompatibilityLevel,
                 Files,
                 referencesArray,
                 Defines,
                 outputPath,
                 reposeFiles.ToArray());
+        }
+
+        public string[] GetResponseFiles()
+        {
+            if (Language == null)
+            {
+                throw new ArgumentException("Language: not set on ScriptAssembly. Cannot resolve responsefiles");
+            }
+            var responseFileProvider = Language.CreateResponseFileProvider();
+            return responseFileProvider.Get(OriginPath).ToArray();
         }
     }
 }

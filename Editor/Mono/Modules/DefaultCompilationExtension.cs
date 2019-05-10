@@ -13,13 +13,6 @@ namespace UnityEditor.Modules
     internal class DefaultCompilationExtension
         : ICompilationExtension
     {
-        public virtual CSharpCompiler GetCsCompiler(bool buildingForEditor, ScriptAssembly scriptAssemly)
-        {
-            if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
-                return CSharpCompiler.Microsoft;
-            return CSharpCompiler.Mono;
-        }
-
         public virtual string[] GetCompilerExtraAssemblyPaths(bool isEditor, string assemblyPathName)
         {
             return new string[] {};

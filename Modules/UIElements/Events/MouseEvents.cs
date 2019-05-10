@@ -34,6 +34,7 @@ namespace UnityEngine.UIElements
         public Vector2 mouseDelta { get; protected set; }
         public int clickCount { get; protected set; }
         public int button { get; protected set; }
+        public int pointerId { get; protected set; }
 
         public bool shiftKey
         {
@@ -89,6 +90,7 @@ namespace UnityEngine.UIElements
             mouseDelta = Vector2.zero;
             clickCount = 0;
             button = 0;
+            pointerId = -1;
             ((IMouseEventInternal)this).triggeredByOS = false;
             ((IMouseEventInternal)this).recomputeTopElementUnderMouse = true;
         }
@@ -126,6 +128,30 @@ namespace UnityEngine.UIElements
             return e;
         }
 
+        public static T GetPooled(Vector2 position, int button, int clickCount, Vector2 delta,
+            EventModifiers modifiers = EventModifiers.None, int pointerId = -1)
+        {
+            return GetPooled(position, button, clickCount, delta, modifiers, pointerId, fromOS: false);
+        }
+
+        internal static T GetPooled(Vector2 position, int button, int clickCount, Vector2 delta,
+            EventModifiers modifiers = EventModifiers.None, int pointerId = -1, bool fromOS = false)
+        {
+            T e = GetPooled();
+
+            e.modifiers = EventModifiers.None;
+            e.mousePosition = position;
+            e.localMousePosition = position;
+            e.mouseDelta = delta;
+            e.button = 0;
+            e.clickCount = clickCount;
+            e.pointerId = pointerId;
+            ((IMouseEventInternal)e).triggeredByOS = fromOS;
+            ((IMouseEventInternal)e).recomputeTopElementUnderMouse = true;
+
+            return e;
+        }
+
         internal static T GetPooled(IMouseEvent triggerEvent, Vector2 mousePosition, bool recomputeTopElementUnderMouse)
         {
             if (triggerEvent != null)
@@ -141,7 +167,7 @@ namespace UnityEngine.UIElements
 
         public static T GetPooled(IMouseEvent triggerEvent)
         {
-            T e = GetPooled();
+            T e = EventBase<T>.GetPooled(triggerEvent as EventBase);
             if (triggerEvent != null)
             {
                 e.modifiers = triggerEvent.modifiers;
@@ -308,7 +334,7 @@ namespace UnityEngine.UIElements
 
         public static ContextualMenuPopulateEvent GetPooled(EventBase triggerEvent, DropdownMenu menu, IEventHandler target, ContextualMenuManager menuManager)
         {
-            ContextualMenuPopulateEvent e = GetPooled();
+            ContextualMenuPopulateEvent e = GetPooled(triggerEvent);
             if (triggerEvent != null)
             {
                 triggerEvent.Acquire();

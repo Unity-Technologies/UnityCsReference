@@ -264,6 +264,9 @@ namespace UnityEngine.UIElements.StyleSheets
                     case DataType.Length:
                         result = MatchLength(exp, context.current);
                         break;
+                    case DataType.Percentage:
+                        result = MatchPercent(exp, context.current);
+                        break;
                     case DataType.Color:
                         result = MatchColor(exp, context.current);
                         break;
@@ -298,11 +301,25 @@ namespace UnityEngine.UIElements.StyleSheets
             return match.Success;
         }
 
-        static readonly Regex s_LengthRegex = new Regex(@"^[+-]?\d+(?:\.\d+)?(?:px)$", RegexOptions.Compiled);
         static readonly Regex s_ZeroRegex = new Regex(@"^0(?:\.0+)?$", RegexOptions.Compiled); // Zero is accepted without any unit
+        static readonly Regex s_LengthRegex = new Regex(@"^[+-]?\d+(?:\.\d+)?(?:px)$", RegexOptions.Compiled);
         private static bool MatchLength(Expression exp, string value)
         {
             Match match = s_LengthRegex.Match(value);
+            if (match.Success)
+                return true;
+
+            match = s_ZeroRegex.Match(value);
+            if (match.Success)
+                return true;
+
+            return false;
+        }
+
+        static readonly Regex s_PercentRegex = new Regex(@"^[+-]?\d+(?:\.\d+)?(?:%)$", RegexOptions.Compiled);
+        private static bool MatchPercent(Expression exp, string value)
+        {
+            Match match = s_PercentRegex.Match(value);
             if (match.Success)
                 return true;
 
@@ -328,6 +345,10 @@ namespace UnityEngine.UIElements.StyleSheets
 
             match = s_RgbaRegex.Match(value);
             if (match.Success)
+                return true;
+
+            Color c = Color.clear;
+            if (StyleSheetColor.TryGetColor(value, out c))
                 return true;
 
             return false;

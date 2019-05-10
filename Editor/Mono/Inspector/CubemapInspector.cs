@@ -109,7 +109,7 @@ namespace UnityEditor
             bool streamingMipmaps = TextureUtil.GetCubemapStreamingMipmaps(c);
             if (useMipMap)
             {
-                streamingMipmaps = EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Streaming Mip Maps", "Don't load image data immediately, but wait till image data is requested from script."), streamingMipmaps);
+                streamingMipmaps = EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Streaming Mipmaps", "Don't load image data immediately but wait till image data is requested from script."), streamingMipmaps);
             }
 
             bool linear = TextureUtil.GetLinearSampled(c);

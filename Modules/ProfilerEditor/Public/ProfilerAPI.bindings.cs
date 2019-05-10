@@ -201,6 +201,14 @@ namespace UnityEditorInternal
             return new HierarchyFrameDataView(frameIndex, threadIndex, viewMode, sortColumn, sortAscending);
         }
 
+        public static event Action<int, int> NewProfilerFrameRecorded;
+
+        [RequiredByNativeCode]
+        static void InvokeNewProfilerFrameRecorded(int connectionId, int newFrameIndex)
+        {
+            NewProfilerFrameRecorded?.Invoke(connectionId, newFrameIndex);
+        }
+
         [Obsolete("ResetHistory is deprecated, use ClearAllFrames instead.")]
         static public void ResetHistory()
         {

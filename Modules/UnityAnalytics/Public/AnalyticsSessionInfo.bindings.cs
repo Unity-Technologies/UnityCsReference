@@ -18,7 +18,7 @@ namespace UnityEngine.Analytics
 
     [RequiredByNativeCode]
     [NativeHeader("UnityAnalyticsScriptingClasses.h")]
-    [NativeHeader("Modules/UnityAnalytics/CoreStats/AnalyticsCoreStats.h")]
+    [NativeHeader("Modules/UnityAnalytics/Public/UnityAnalytics.h")]
     public static class AnalyticsSessionInfo
     {
         public delegate void SessionStateChanged(AnalyticsSessionState sessionState, long sessionId, long sessionElapsedTime, bool sessionChanged);
@@ -67,6 +67,54 @@ namespace UnityEngine.Analytics
         {
             [NativeMethod("GetUserId")]
             get;
+        }
+
+        public static string customUserId
+        {
+            get
+            {
+                if (!Analytics.IsInitialized())
+                    return null;
+                return customUserIdInternal;
+            }
+            set
+            {
+                if (Analytics.IsInitialized())
+                    customUserIdInternal = value;
+            }
+        }
+
+        public static string customDeviceId
+        {
+            get
+            {
+                if (!Analytics.IsInitialized())
+                    return null;
+                return customDeviceIdInternal;
+            }
+            set
+            {
+                if (Analytics.IsInitialized())
+                    customDeviceIdInternal = value;
+            }
+        }
+
+        [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
+        private extern static string customUserIdInternal
+        {
+            [NativeMethod("GetCustomUserId")]
+            get;
+            [NativeMethod("SetCustomUserId")]
+            set;
+        }
+
+        [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
+        private extern static string customDeviceIdInternal
+        {
+            [NativeMethod("GetCustomDeviceId")]
+            get;
+            [NativeMethod("SetCustomDeviceId")]
+            set;
         }
     }
 }

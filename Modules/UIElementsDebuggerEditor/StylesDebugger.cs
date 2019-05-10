@@ -24,6 +24,7 @@ namespace UnityEditor.UIElements.Debugger
         private ScrollView m_ScrollView;
         private BoxModelView m_BoxModelView;
         private IMGUIContainer m_IMGUIStylesDebugger;
+        private StylePropertyDebugger m_StylePropertyDebugger;
 
         private IPanelDebug m_PanelDebug;
         private VisualElement selectedElement
@@ -40,6 +41,7 @@ namespace UnityEditor.UIElements.Debugger
                 m_SelectedElement = value;
 
                 m_BoxModelView.selectedElement = m_SelectedElement;
+                m_StylePropertyDebugger.selectedElement = m_SelectedElement;
                 m_SelectedElementUxml = null;
                 m_ClassList = null;
 
@@ -64,6 +66,10 @@ namespace UnityEditor.UIElements.Debugger
 
             m_IMGUIStylesDebugger = new IMGUIContainer(OnGUI);
             m_ScrollView.Add(m_IMGUIStylesDebugger);
+
+            m_StylePropertyDebugger = new StylePropertyDebugger(selectedElement);
+            m_ScrollView.Add(m_StylePropertyDebugger);
+
             Add(m_ScrollView);
         }
 
@@ -77,14 +83,7 @@ namespace UnityEditor.UIElements.Debugger
         private bool m_NewLineOnAttributes;
         private bool m_AutoNameElements;
 
-        private string m_DetailFilter = string.Empty;
         private VisualElement m_SelectedElement;
-
-        private bool m_ShowAll;
-        private bool m_Sort;
-
-        private static readonly PropertyInfo[] k_FieldInfos = typeof(ComputedStyle).GetProperties(BindingFlags.Instance | BindingFlags.Public);
-        private static readonly PropertyInfo[] k_SortedFieldInfos = k_FieldInfos.OrderBy(f => f.Name).ToArray();
 
         public void OnGUI()
         {
@@ -97,6 +96,7 @@ namespace UnityEditor.UIElements.Debugger
         public void Refresh()
         {
             m_BoxModelView.Refresh();
+            m_StylePropertyDebugger.Refresh();
         }
 
         private void DrawSelection()
@@ -141,7 +141,7 @@ namespace UnityEditor.UIElements.Debugger
             }
         }
 
-        private static MatchedRulesExtractor s_MatchedRulesExtractor = new MatchedRulesExtractor();
+        private MatchedRulesExtractor m_MatchedRulesExtractor = new MatchedRulesExtractor();
         private string m_SelectedElementUxml;
         private ReorderableList m_ClassList;
         private string m_NewClass;
@@ -150,9 +150,9 @@ namespace UnityEditor.UIElements.Debugger
         {
             if (m_SelectedElement == null || m_SelectedElement.elementPanel == null)
                 return;
-            s_MatchedRulesExtractor.selectedElementRules.Clear();
-            s_MatchedRulesExtractor.selectedElementStylesheets.Clear();
-            s_MatchedRulesExtractor.FindMatchingRules(m_SelectedElement);
+            m_MatchedRulesExtractor.selectedElementRules.Clear();
+            m_MatchedRulesExtractor.selectedElementStylesheets.Clear();
+            m_MatchedRulesExtractor.FindMatchingRules(m_SelectedElement);
         }
 
         private void DrawProperties()
@@ -195,190 +195,6 @@ namespace UnityEditor.UIElements.Debugger
             if (m_ClassList == null)
                 InitClassList();
             m_ClassList.DoLayoutList();
-
-            GUILayout.BeginHorizontal(EditorStyles.toolbar);
-            m_DetailFilter = EditorGUILayout.ToolbarSearchField(m_DetailFilter);
-            m_ShowAll = GUILayout.Toggle(m_ShowAll, Styles.showAllContent, EditorStyles.toolbarButton);
-            m_Sort = GUILayout.Toggle(m_Sort, Styles.sortContent, EditorStyles.toolbarButton);
-            GUILayout.EndHorizontal();
-
-            var customProperties = m_SelectedElement.specifiedStyle.m_CustomProperties;
-            bool anyChanged = false;
-
-            if (customProperties != null && customProperties.Any())
-            {
-                foreach (KeyValuePair<string, CustomPropertyHandle> customProperty in customProperties)
-                {
-                    foreach (StyleValueHandle handle in customProperty.Value.handles)
-                    {
-                        EditorGUILayout.LabelField(customProperty.Key, customProperty.Value.data.ReadAsString(handle));
-                    }
-                }
-            }
-
-            foreach (PropertyInfo field in m_Sort ? k_SortedFieldInfos : k_FieldInfos)
-            {
-                if (!string.IsNullOrEmpty(m_DetailFilter) &&
-                    field.Name.IndexOf(m_DetailFilter, StringComparison.InvariantCultureIgnoreCase) == -1)
-                    continue;
-
-                object val = field.GetValue(m_SelectedElement.computedStyle, null);
-                EditorGUILayout.BeginHorizontal();
-                EditorGUI.BeginChangeCheck();
-                int specificity;
-
-                if (val is StyleFloat)
-                {
-                    StyleFloat style = (StyleFloat)val;
-                    specificity = style.specificity;
-                    if (m_ShowAll || specificity != StyleValueExtensions.UndefinedSpecificity)
-                    {
-                        style.specificity = Int32.MaxValue;
-                        style.value = EditorGUILayout.FloatField(field.Name, ((StyleFloat)val).value);
-                        val = style;
-                    }
-                }
-                else if (val is StyleInt)
-                {
-                    StyleInt style = (StyleInt)val;
-                    specificity = style.specificity;
-                    if (m_ShowAll || specificity != StyleValueExtensions.UndefinedSpecificity)
-                    {
-                        style.specificity = Int32.MaxValue;
-                        style.value = EditorGUILayout.IntField(field.Name, ((StyleInt)val).value);
-                        val = style;
-                    }
-                }
-                else if (val is StyleLength)
-                {
-                    StyleLength style = (StyleLength)val;
-                    specificity = style.specificity;
-                    if (m_ShowAll || specificity != StyleValueExtensions.UndefinedSpecificity)
-                    {
-                        style.specificity = Int32.MaxValue;
-                        style.value = EditorGUILayout.FloatField(field.Name, ((StyleLength)val).value.value);
-                        val = style;
-                    }
-                }
-                else if (val is StyleColor)
-                {
-                    StyleColor style = (StyleColor)val;
-                    specificity = style.specificity;
-                    if (m_ShowAll || specificity != StyleValueExtensions.UndefinedSpecificity)
-                    {
-                        style.specificity = Int32.MaxValue;
-                        style.value = EditorGUILayout.ColorField(field.Name, ((StyleColor)val).value);
-                        val = style;
-                    }
-                }
-                else if (val is StyleFont)
-                {
-                    specificity = HandleReferenceProperty<Font>(field, ref val);
-                }
-                else if (val is StyleBackground)
-                {
-                    StyleBackground style = (StyleBackground)val;
-                    specificity = style.specificity;
-                    if (m_ShowAll || specificity != StyleValueExtensions.UndefinedSpecificity)
-                    {
-                        style.specificity = Int32.MaxValue;
-                        Texture2D t = EditorGUILayout.ObjectField(field.Name, style.value.texture, typeof(Texture2D), false) as Texture2D;
-                        style.value = new Background(t);
-                        val = style;
-                    }
-                }
-                else if (val is StyleCursor)
-                {
-                    StyleCursor style = (StyleCursor)val;
-                    specificity = style.specificity;
-                    if (m_ShowAll || specificity != StyleValueExtensions.UndefinedSpecificity)
-                    {
-                        if (style.value.texture != null)
-                        {
-                            style.specificity = Int32.MaxValue;
-                            var texture = EditorGUILayout.ObjectField(field.Name + "'s texture2D", style.value.texture, typeof(Texture2D), false) as Texture2D;
-                            EditorGUILayout.EndHorizontal();
-
-                            EditorGUILayout.BeginHorizontal();
-                            EditorGUIUtility.wideMode = true;
-                            var hotspot = EditorGUILayout.Vector2Field(field.Name + "'s hotspot", style.value.hotspot);
-
-                            style.value = new Cursor() { texture = texture, hotspot = hotspot };
-                            val = style;
-                        }
-                        else
-                        {
-                            int mouseId = style.value.defaultCursorId;
-                            Enum newEnumValue = EditorGUILayout.EnumPopup(field.Name, (MouseCursor)mouseId);
-
-                            int toCompare = Convert.ToInt32(newEnumValue);
-                            if (!Equals(mouseId, toCompare))
-                            {
-                                style.specificity = Int32.MaxValue;
-                                style.value = new Cursor() { defaultCursorId = toCompare };
-                                val = style;
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    Type type = val.GetType();
-                    if (type.IsGenericType && type.GetGenericArguments()[0].IsEnum)
-                    {
-                        specificity = (int)type.GetProperty("specificity", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(val, null);
-                        if (m_ShowAll || specificity != StyleValueExtensions.UndefinedSpecificity)
-                        {
-                            var propInfo = type.GetProperty("value");
-                            Enum enumValue = propInfo.GetValue(val, null) as Enum;
-                            Enum newEnumValue = EditorGUILayout.EnumPopup(field.Name, enumValue);
-                            if (!Equals(enumValue, newEnumValue))
-                                propInfo.SetValue(val, newEnumValue, null);
-                        }
-                    }
-                    else
-                    {
-                        EditorGUILayout.LabelField(field.Name, val == null ? "null" : val.ToString());
-                        specificity = StyleValueExtensions.UndefinedSpecificity;
-                    }
-                }
-
-                if (EditorGUI.EndChangeCheck())
-                {
-                    anyChanged = true;
-                    string propertyName = field.Name;
-                    var inlineStyle = typeof(IStyle).GetProperty(propertyName);
-                    inlineStyle.SetValue(m_SelectedElement.style, val, null);
-                }
-
-                if (m_ShowAll || specificity != StyleValueExtensions.UndefinedSpecificity)
-                {
-                    string specificityString = "";
-                    switch (specificity)
-                    {
-                        case StyleValueExtensions.UnitySpecificity:
-                            specificityString = "unity stylesheet";
-                            break;
-                        case StyleValueExtensions.InlineSpecificity:
-                            specificityString = "inline";
-                            break;
-                        case StyleValueExtensions.UndefinedSpecificity:
-                            break;
-                        default:
-                            specificityString = specificity.ToString();
-                            break;
-                    }
-                    GUILayout.Label(specificityString, GUILayout.MinWidth(200), GUILayout.ExpandWidth(false));
-                }
-
-                EditorGUILayout.EndHorizontal();
-            }
-
-            if (anyChanged)
-            {
-                m_PanelDebug.visualTree.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet |
-                    VersionChangeType.Layout | VersionChangeType.Transform | VersionChangeType.Repaint);
-            }
         }
 
         private void InitClassList()
@@ -406,36 +222,23 @@ namespace UnityEditor.UIElements.Debugger
             };
         }
 
-        private int HandleReferenceProperty<T>(PropertyInfo field, ref object val) where T : UnityEngine.Object
-        {
-            IStyleValue<T> style = (IStyleValue<T>)val;
-            int specificity = style.specificity;
-            if (m_ShowAll || specificity != StyleValueExtensions.UndefinedSpecificity)
-            {
-                style.specificity = Int32.MaxValue;
-                style.value = EditorGUILayout.ObjectField(field.Name, ((IStyleValue<T>)val).value, typeof(T), false) as T;
-                val = style;
-            }
-            return specificity;
-        }
-
         private void DrawMatchingRules()
         {
-            if (s_MatchedRulesExtractor.selectedElementStylesheets != null && s_MatchedRulesExtractor.selectedElementStylesheets.Count > 0)
+            if (m_MatchedRulesExtractor.selectedElementStylesheets != null && m_MatchedRulesExtractor.selectedElementStylesheets.Count > 0)
             {
                 EditorGUILayout.LabelField(Styles.stylesheetsContent, Styles.KInspectorTitle);
-                foreach (string sheet in s_MatchedRulesExtractor.selectedElementStylesheets)
+                foreach (string sheet in m_MatchedRulesExtractor.selectedElementStylesheets)
                 {
                     if (GUILayout.Button(sheet) && CanOpenStyleSheet(sheet))
                         InternalEditorUtility.OpenFileAtLineExternal(sheet, 0, 0);
                 }
             }
 
-            if (s_MatchedRulesExtractor.selectedElementRules != null && s_MatchedRulesExtractor.selectedElementRules.Count > 0)
+            if (m_MatchedRulesExtractor.selectedElementRules != null && m_MatchedRulesExtractor.selectedElementRules.Count > 0)
             {
                 EditorGUILayout.LabelField(Styles.selectorsContent, Styles.KInspectorTitle);
                 int i = 0;
-                foreach (MatchedRulesExtractor.MatchedRule rule in s_MatchedRulesExtractor.selectedElementRules)
+                foreach (MatchedRulesExtractor.MatchedRule rule in m_MatchedRulesExtractor.selectedElementRules)
                 {
                     StringBuilder builder = new StringBuilder();
                     for (int j = 0; j < rule.matchRecord.complexSelector.selectors.Length; j++)
@@ -517,8 +320,6 @@ namespace UnityEditor.UIElements.Debugger
             public static GUIStyle KInspectorTitle = "WhiteLargeCenterLabel";
 
             public static readonly GUIContent elementStylesContent = EditorGUIUtility.TrTextContent("Element styles");
-            public static readonly GUIContent showAllContent = EditorGUIUtility.TrTextContent("Show all");
-            public static readonly GUIContent sortContent = EditorGUIUtility.TrTextContent("Sort");
             public static readonly GUIContent uxmlContent = EditorGUIUtility.TrTextContent("UXML Dump");
             public static readonly GUIContent stylesheetsContent = EditorGUIUtility.TrTextContent("Stylesheets");
             public static readonly GUIContent selectorsContent = EditorGUIUtility.TrTextContent("Matching Selectors");

@@ -615,19 +615,6 @@ namespace UnityEditor
                 SetCurrentFrame(nextFrame);
         }
 
-        void DrawCPUTimelineViewToolbar(ProfilerTimelineGUI timelineView, HierarchyFrameDataView frameDataView)
-        {
-            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-
-            timelineView.DrawToolbar(frameDataView);
-
-            EditorGUILayout.EndHorizontal();
-
-            HandleCommandEvents();
-        }
-
-        void HandleCommandEvents() {}
-
         private static bool CheckFrameData(ProfilerProperty property)
         {
             return property != null && property.frameDataReady;
@@ -641,33 +628,49 @@ namespace UnityEditor
 
             if (timelinePane != null && m_ViewType == ProfilerViewType.Timeline)
             {
-                var frameDataView = GetFrameDataView(viewMode | timelinePane.GetFilteringMode(), hierarchyView.sortedProfilerColumn, hierarchyView.sortedProfilerColumnAscending);
-                DrawCPUTimelineViewToolbar(timelinePane, frameDataView);
-
+                int frameIndex = GetActiveVisibleFrameIndex();
                 float lowerPaneSize = m_VertSplit.realSizes[1];
                 lowerPaneSize -= EditorStyles.toolbar.CalcHeight(GUIContent.none, 10.0f) + 2.0f;
-                timelinePane.DoGUI(frameDataView, position.width, position.height - lowerPaneSize, lowerPaneSize);
+                timelinePane.DoGUI(frameIndex, position.width, position.height - lowerPaneSize, lowerPaneSize);
             }
             else
             {
-                var frameDataView = GetFrameDataView(viewMode | hierarchyView.GetFilteringMode(), hierarchyView.sortedProfilerColumn, hierarchyView.sortedProfilerColumnAscending);
+                var frameDataView = GetFrameDataView(hierarchyView.threadName, viewMode | hierarchyView.GetFilteringMode(), hierarchyView.sortedProfilerColumn, hierarchyView.sortedProfilerColumnAscending);
                 hierarchyView.DoGUI(frameDataView);
             }
         }
 
-        public HierarchyFrameDataView GetFrameDataView(HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
+        public HierarchyFrameDataView GetFrameDataView(string threadName, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
         {
             var frameIndex = GetActiveVisibleFrameIndex();
+            var threadIndex = 0;
+            using (var frameIterator = new ProfilerFrameDataIterator())
+            {
+                var threadCount = frameIterator.GetThreadCount(frameIndex);
+                for (var i = 0; i < threadCount; ++i)
+                {
+                    frameIterator.SetRoot(frameIndex, i);
+                    var grp = frameIterator.GetGroupName();
+                    var thrd = frameIterator.GetThreadName();
+                    var name = string.IsNullOrEmpty(grp) ? thrd : grp + "." + thrd;
+                    if (threadName == name)
+                    {
+                        threadIndex = i;
+                        break;
+                    }
+                }
+            }
+
             if (m_FrameDataView != null && m_FrameDataView.valid)
             {
-                if (m_FrameDataView.frameIndex == frameIndex && m_FrameDataView.viewMode == viewMode)
+                if (m_FrameDataView.frameIndex == frameIndex && m_FrameDataView.threadIndex == threadIndex && m_FrameDataView.viewMode == viewMode)
                     return m_FrameDataView;
             }
 
             if (m_FrameDataView != null)
                 m_FrameDataView.Dispose();
 
-            m_FrameDataView = new HierarchyFrameDataView(frameIndex, 0, viewMode, profilerSortColumn, sortAscending);
+            m_FrameDataView = new HierarchyFrameDataView(frameIndex, threadIndex, viewMode, profilerSortColumn, sortAscending);
             return m_FrameDataView;
         }
 

@@ -7,6 +7,35 @@ using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
+    // This is the required interface to UIElementsUtility for Runtime game components.
+    internal static class UIElementsRuntimeUtility
+    {
+        public static EventBase CreateEvent(Event systemEvent)
+        {
+            return UIElementsUtility.CreateEvent(systemEvent, systemEvent.type);
+        }
+
+        public static IPanel CreateRuntimePanel(ScriptableObject ownerObject)
+        {
+            EventDispatcher dispatcher = EventDispatcher.instance;
+            var panel = new Panel(ownerObject, ContextType.Player, dispatcher)
+            {
+                IMGUIEventInterests = new EventInterests { wantsMouseMove = true, wantsMouseEnterLeaveWindow = true }
+            };
+            return panel;
+        }
+
+        public static void RegisterCachedPanel(int instanceID, IPanel panel)
+        {
+            UIElementsUtility.RegisterCachedPanel(instanceID, panel as Panel);
+        }
+
+        public static void RemoveCachedPanel(int instanceID)
+        {
+            UIElementsUtility.RemoveCachedPanel(instanceID);
+        }
+    }
+
     internal static class UIElementsUtility
     {
         private static Stack<IMGUIContainer> s_ContainerStack = new Stack<IMGUIContainer>();
@@ -81,6 +110,11 @@ namespace UnityEngine.UIElements
             }
 
             return false;
+        }
+
+        public static void RegisterCachedPanel(int instanceID, Panel panel)
+        {
+            s_UIElementsCache.Add(instanceID, panel);
         }
 
         public static void RemoveCachedPanel(int instanceID)
@@ -283,7 +317,7 @@ namespace UnityEngine.UIElements
             if (!s_UIElementsCache.TryGetValue(ownerObject.GetInstanceID(), out panel))
             {
                 panel = new Panel(ownerObject, contextType);
-                s_UIElementsCache.Add(ownerObject.GetInstanceID(), panel);
+                RegisterCachedPanel(ownerObject.GetInstanceID(), panel);
             }
             else
             {

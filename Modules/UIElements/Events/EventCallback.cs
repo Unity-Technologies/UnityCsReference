@@ -63,7 +63,10 @@ namespace UnityEngine.UIElements
 
             if (PhaseMatches(evt))
             {
-                m_Callback(evt as TEventType);
+                using (new EventDebuggerLogCall(m_Callback, evt))
+                {
+                    m_Callback(evt as TEventType);
+                }
             }
         }
 
@@ -97,7 +100,10 @@ namespace UnityEngine.UIElements
 
             if (PhaseMatches(evt))
             {
-                m_Callback(evt as TEventType, userArgs);
+                using (new EventDebuggerLogCall(m_Callback, evt))
+                {
+                    m_Callback(evt as TEventType, userArgs);
+                }
             }
         }
 

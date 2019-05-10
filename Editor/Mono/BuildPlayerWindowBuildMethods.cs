@@ -242,8 +242,6 @@ namespace UnityEditor
                 bool developmentBuild = EditorUserBuildSettings.development;
                 if (developmentBuild)
                     options.options |= BuildOptions.Development;
-                if (EditorUserBuildSettings.datalessPlayer && developmentBuild)
-                    options.options |= BuildOptionsExperimental.DatalessPlayer;
                 if (EditorUserBuildSettings.allowDebugging && developmentBuild)
                     options.options |= BuildOptions.AllowDebugging;
                 if (EditorUserBuildSettings.symlinkLibraries)

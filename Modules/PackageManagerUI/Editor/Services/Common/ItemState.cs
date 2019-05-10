@@ -10,10 +10,10 @@ namespace UnityEditor.PackageManager.UI
     [Serializable]
     internal class ItemState
     {
-        [SerializeField] public string PackageId;
-        [SerializeField] public bool Expanded;
-        [SerializeField] public bool SeeAllVersions;
-        [SerializeField] public bool Selected;
+        public string PackageId;
+        public bool Expanded;
+        public bool SeeAllVersions;
+        public bool Selected;
 
         public ItemState(string packageId, bool selected = false)
         {

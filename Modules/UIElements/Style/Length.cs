@@ -3,18 +3,24 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Globalization;
 
 namespace UnityEngine.UIElements
 {
     public enum LengthUnit
     {
         Pixel,
-        // Percent,
+        Percent,
         // Em
     }
 
     public struct Length : IEquatable<Length>
     {
+        public static Length Percent(float value)
+        {
+            return new Length(value, LengthUnit.Percent);
+        }
+
         public float value
         {
             get { return m_Value; }
@@ -79,8 +85,22 @@ namespace UnityEngine.UIElements
 
         public override string ToString()
         {
-            string unitStr = unit == LengthUnit.Pixel ? "px" : "";
-            return $"{value}{unitStr}";
+            string unitStr = string.Empty;
+            if (!Mathf.Approximately(0, value))
+            {
+                switch (unit)
+                {
+                    case LengthUnit.Pixel:
+                        unitStr = "px";
+                        break;
+                    case LengthUnit.Percent:
+                        unitStr = "%";
+                        break;
+                    default:
+                        break;
+                }
+            }
+            return $"{value.ToString(CultureInfo.InvariantCulture.NumberFormat)}{unitStr}";
         }
     }
 }

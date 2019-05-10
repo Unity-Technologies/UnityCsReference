@@ -12,10 +12,10 @@ namespace UnityEngine.UIElements
         string text { get; set; }
     }
 
-    public class TextElement : VisualElement, ITextElement
+    public class TextElement : BindableElement, ITextElement, INotifyValueChanged<string>
     {
         public new class UxmlFactory : UxmlFactory<TextElement, UxmlTraits> {}
-        public new class UxmlTraits : VisualElement.UxmlTraits
+        public new class UxmlTraits : BindableElement.UxmlTraits
         {
             UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
 
@@ -37,30 +37,23 @@ namespace UnityEngine.UIElements
         {
             requireMeasureFunction = true;
             AddToClassList(ussClassName);
+            generateVisualContent += OnGenerateVisualContent;
         }
 
         [SerializeField]
         private string m_Text;
         public virtual string text
         {
-            get { return m_Text ?? String.Empty; }
+            get { return ((INotifyValueChanged<string>) this).value; }
             set
             {
-                if (m_Text == value)
-                    return;
-
-                m_Text = value;
-                IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
-
-                if (!string.IsNullOrEmpty(viewDataKey))
-                    SaveViewData();
+                ((INotifyValueChanged<string>) this).value = value;
             }
         }
 
-        internal override void DoRepaint(IStylePainter painter)
+        private void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
-            var stylePainter = (IStylePainterInternal)painter;
-            stylePainter.DrawText(text);
+            mgc.Text(MeshGenerationContextUtils.TextParams.MakeStyleBased(this, this.text));
         }
 
         public Vector2 MeasureTextSize(string textToMeasure, float width, MeasureMode widthMode, float height,
@@ -89,15 +82,12 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                var textParams = TextStylePainterParameters.GetDefault(ve, textToMeasure);
-                textParams.text = textToMeasure;
-                textParams.font = usedFont;
-                textParams.wordWrapWidth = 0.0f;
-                textParams.wordWrap = false;
-                textParams.richText = true;
+                var textSettings = GetTextNativeSettings(ve, textToMeasure, scaling);
+                textSettings.wordWrapWidth = 0.0f;
+                textSettings.wordWrap = false;
 
                 //we make sure to round up as yoga could decide to round down and text would start wrapping
-                measuredWidth = Mathf.Ceil(TextNative.ComputeTextWidth(textParams.GetTextNativeSettings(scaling)));
+                measuredWidth = Mathf.Ceil(TextNative.ComputeTextWidth(textSettings));
 
                 if (widthMode == MeasureMode.AtMost)
                 {
@@ -111,13 +101,9 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                var textParams = TextStylePainterParameters.GetDefault(ve, textToMeasure);
-                textParams.text = textToMeasure;
-                textParams.font = usedFont;
-                textParams.wordWrapWidth = measuredWidth;
-                textParams.richText = true;
-
-                measuredHeight = Mathf.Ceil(TextNative.ComputeTextHeight(textParams.GetTextNativeSettings(scaling)));
+                var textSettings = GetTextNativeSettings(ve, textToMeasure, scaling);
+                textSettings.wordWrapWidth = measuredWidth;
+                measuredHeight = Mathf.Ceil(TextNative.ComputeTextHeight(textSettings));
 
                 if (heightMode == MeasureMode.AtMost)
                 {
@@ -128,10 +114,68 @@ namespace UnityEngine.UIElements
             return new Vector2(measuredWidth, measuredHeight);
         }
 
-        protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight,
-            MeasureMode heightMode)
+        protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight, MeasureMode heightMode)
         {
             return MeasureTextSize(text, desiredWidth, widthMode, desiredHeight, heightMode);
+        }
+
+        private static TextNativeSettings GetTextNativeSettings(VisualElement ve, string text, float scaling)
+        {
+            ComputedStyle style = ve.computedStyle;
+            return new TextNativeSettings
+            {
+                text = text,
+                font = style.unityFont.value,
+                size = (int)style.fontSize.value.value,
+                scaling = scaling,
+                style = style.unityFontStyleAndWeight.value,
+                color = style.color.value,
+                anchor = style.unityTextAlign.value,
+                wordWrap = style.whiteSpace.value == WhiteSpace.Normal,
+                wordWrapWidth = style.whiteSpace.value == WhiteSpace.Normal ? ve.contentRect.width : 0.0f,
+                richText = true
+            };
+        }
+
+        //INotifyValueChange
+        string INotifyValueChanged<string>.value
+        {
+            get
+            {
+                return m_Text ?? String.Empty;
+            }
+
+            set
+            {
+                if (m_Text != value)
+                {
+                    if (panel != null)
+                    {
+                        using (ChangeEvent<string> evt = ChangeEvent<string>.GetPooled(this.text, value))
+                        {
+                            evt.target = this;
+                            ((INotifyValueChanged<string>) this).SetValueWithoutNotify(value);
+                            SendEvent(evt);
+                        }
+                    }
+                    else
+                    {
+                        ((INotifyValueChanged<string>) this).SetValueWithoutNotify(value);
+                    }
+                }
+            }
+        }
+
+        void INotifyValueChanged<string>.SetValueWithoutNotify(string newValue)
+        {
+            if (m_Text != newValue)
+            {
+                m_Text = newValue;
+                IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
+
+                if (!string.IsNullOrEmpty(viewDataKey))
+                    SaveViewData();
+            }
         }
     }
 }

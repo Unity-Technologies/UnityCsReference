@@ -14,7 +14,7 @@ namespace UnityEngine.UIElements
             return evt is IMouseEvent;
         }
 
-        public virtual void DispatchEvent(EventBase evt, IPanel panel)
+        public void DispatchEvent(EventBase evt, IPanel panel)
         {
             IMouseEvent mouseEvent = evt as IMouseEvent;
 

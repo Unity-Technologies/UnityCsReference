@@ -9,20 +9,7 @@ namespace UnityEditor.PackageManager.UI
 {
     internal class LoadingSpinner : VisualElement
     {
-        internal new class UxmlFactory : UxmlFactory<LoadingSpinner, UxmlTraits>
-        {
-        }
-
-        // This works around an issue with UXML instantiation
-        // See https://fogbugz.unity3d.com/f/cases/1046459/
-        internal new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                UIUtils.SetElementDisplay(ve, false);
-            }
-        }
+        internal new class UxmlFactory : UxmlFactory<LoadingSpinner> {}
 
         public bool InvertColor { get; set; }
         public bool Started { get; private set; }
@@ -34,14 +21,16 @@ namespace UnityEditor.PackageManager.UI
             InvertColor = false;
             Started = false;
             UIUtils.SetElementDisplay(this, false);
+
+            // add child elements to set up centered spinner rotation
+            var innerElement = new VisualElement();
+            innerElement.AddToClassList("image");
+            Add(innerElement);
         }
 
         private void UpdateProgress()
         {
-            if (parent == null)
-                return;
-
-            parent.transform.rotation = Quaternion.Euler(0, 0, rotation);
+            transform.rotation = Quaternion.Euler(0, 0, rotation);
             rotation += 3;
             if (rotation > 360)
                 rotation -= 360;
@@ -52,14 +41,6 @@ namespace UnityEditor.PackageManager.UI
             if (Started)
                 return;
 
-            // Weird hack to make sure loading spinner doesn't generate an error every frame.
-            // Cannot put in constructor as it give really strange result.
-            if (parent != null && parent.parent != null)
-            {
-                // TODO the "hack" has been upgraded according to UIElements API, but we should make sure it still is necessary
-                parent.parent.cacheAsBitmap = true;
-                parent.parent.style.overflow = Overflow.Hidden;
-            }
             rotation = 0;
 
             EditorApplication.update += UpdateProgress;

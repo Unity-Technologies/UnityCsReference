@@ -85,7 +85,7 @@ namespace UnityEditor
         }
 
         // Call into C++ here to move the underlying NSViews around
-        protected override void SetWindow(ContainerWindow win)
+        internal override void SetWindow(ContainerWindow win)
         {
             base.SetWindow(win);
             Internal_Init(m_DepthBufferBits, m_AntiAliasing);
@@ -277,18 +277,12 @@ namespace UnityEditor
         }
 
         // Draw resize handles, etc.
-        internal void DoWindowDecorationStart()
+        internal virtual void DoWindowDecorationStart()
         {
-            // On windows, we want both close window and side resizes.
-            // Titlebar dragging is done at the end, so we can drag next to tabs.
-            if (window != null)
-                window.HandleWindowDecorationStart(windowPosition);
         }
 
-        internal void DoWindowDecorationEnd()
+        internal virtual void DoWindowDecorationEnd()
         {
-            if (window != null)
-                window.HandleWindowDecorationEnd(windowPosition);
         }
 
         [RequiredByNativeCode]

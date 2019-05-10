@@ -85,6 +85,8 @@ namespace UnityEditor.EditorTools
 
                 Tools.SyncToolEnum();
 
+                Tools.InvalidateHandlePosition();
+
                 s_ChangingActiveTool = false;
             }
         }

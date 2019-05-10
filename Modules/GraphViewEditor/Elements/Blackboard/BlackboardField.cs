@@ -39,6 +39,12 @@ namespace UnityEditor.Experimental.GraphView
             set { m_Pill.highlighted = value; }
         }
 
+        Blackboard m_Blackboard;
+        public Blackboard blackboard
+        {
+            get { return m_Blackboard ?? (m_Blackboard = GetFirstAncestorOfType<Blackboard>()); }
+        }
+
         public BlackboardField() : this(null, "", "") {}
         public BlackboardField(Texture icon, string text, string typeText)
         {
@@ -88,7 +94,7 @@ namespace UnityEditor.Experimental.GraphView
 
             if (evt.eventTypeId == AttachToPanelEvent.TypeId())
             {
-                var graphView = GetFirstAncestorOfType<GraphView>();
+                var graphView = blackboard?.graphView;
                 if (graphView != null)
                     graphView.RestorePersitentSelectionForElement(this);
             }
@@ -101,9 +107,7 @@ namespace UnityEditor.Experimental.GraphView
 
             if (text != m_TextField.text)
             {
-                Blackboard blackboard = GetFirstAncestorOfType<Blackboard>();
-
-                if (blackboard.editTextRequested != null)
+                if (blackboard?.editTextRequested != null)
                 {
                     blackboard.editTextRequested(blackboard, this, m_TextField.text);
                 }

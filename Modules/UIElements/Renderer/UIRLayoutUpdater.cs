@@ -63,21 +63,27 @@ namespace UnityEngine.UIElements
         private void UpdateSubTree(VisualElement ve, int currentLayoutPass)
         {
             Rect yogaRect = new Rect(ve.yogaNode.LayoutX, ve.yogaNode.LayoutY, ve.yogaNode.LayoutWidth, ve.yogaNode.LayoutHeight);
-            Rect lastRect = ve.renderData.lastLayout;
+            Rect lastRect = ve.lastLayout;
             bool rectChanged = false;
+
+            VersionChangeType changeType = 0;
 
             // If the last layout rect is different than the current one we must dirty transform on children
             if ((lastRect.width != yogaRect.width) || (lastRect.height != yogaRect.height))
             {
-                ve.IncrementVersion(VersionChangeType.Clip | VersionChangeType.Repaint); // Layout change require a clip update + repaint
+                changeType |= VersionChangeType.Size | VersionChangeType.Repaint;
                 rectChanged = true;
             }
             if (yogaRect.position != lastRect.position)
             {
-                ve.IncrementVersion(VersionChangeType.Transform);
+                changeType |= VersionChangeType.Transform;
                 rectChanged = true;
             }
-            ve.renderData.lastLayout = yogaRect;
+
+            if (changeType != 0)
+                ve.IncrementVersion(changeType);
+
+            ve.lastLayout = yogaRect;
 
             // ignore clean sub trees
             bool hasNewLayout = ve.yogaNode.HasNewLayout;

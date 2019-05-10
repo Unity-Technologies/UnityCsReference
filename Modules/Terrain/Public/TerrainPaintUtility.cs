@@ -196,6 +196,11 @@ namespace UnityEngine.Experimental.TerrainAPI
 
         internal static void DrawQuad(RectInt destinationPixels, RectInt sourcePixels, Texture sourceTexture)
         {
+            DrawQuad2(destinationPixels, sourcePixels, sourceTexture, sourcePixels, sourceTexture);
+        }
+
+        internal static void DrawQuad2(RectInt destinationPixels, RectInt sourcePixels, Texture sourceTexture, RectInt sourcePixels2, Texture sourceTexture2)
+        {
             if ((destinationPixels.width > 0) && (destinationPixels.height > 0))
             {
                 Rect sourceUVs = new Rect(
@@ -204,15 +209,25 @@ namespace UnityEngine.Experimental.TerrainAPI
                     (sourcePixels.width) / (float)sourceTexture.width,
                     (sourcePixels.height) / (float)sourceTexture.height);
 
+                Rect sourceUVs2 = new Rect(
+                    (sourcePixels2.x) / (float)sourceTexture2.width,
+                    (sourcePixels2.y) / (float)sourceTexture2.height,
+                    (sourcePixels2.width) / (float)sourceTexture2.width,
+                    (sourcePixels2.height) / (float)sourceTexture2.height);
+
                 GL.Begin(GL.QUADS);
                 GL.Color(new Color(1.0f, 1.0f, 1.0f, 1.0f));
-                GL.TexCoord2(sourceUVs.x, sourceUVs.y);
+                GL.MultiTexCoord2(0, sourceUVs.x, sourceUVs.y);
+                GL.MultiTexCoord2(1, sourceUVs2.x, sourceUVs2.y);
                 GL.Vertex3(destinationPixels.x, destinationPixels.y, 0.0f);
-                GL.TexCoord2(sourceUVs.x, sourceUVs.yMax);
+                GL.MultiTexCoord2(0, sourceUVs.x, sourceUVs.yMax);
+                GL.MultiTexCoord2(1, sourceUVs2.x, sourceUVs2.yMax);
                 GL.Vertex3(destinationPixels.x, destinationPixels.yMax, 0.0f);
-                GL.TexCoord2(sourceUVs.xMax, sourceUVs.yMax);
+                GL.MultiTexCoord2(0, sourceUVs.xMax, sourceUVs.yMax);
+                GL.MultiTexCoord2(1, sourceUVs2.xMax, sourceUVs2.yMax);
                 GL.Vertex3(destinationPixels.xMax, destinationPixels.yMax, 0.0f);
-                GL.TexCoord2(sourceUVs.xMax, sourceUVs.y);
+                GL.MultiTexCoord2(0, sourceUVs.xMax, sourceUVs.y);
+                GL.MultiTexCoord2(1, sourceUVs2.xMax, sourceUVs2.y);
                 GL.Vertex3(destinationPixels.xMax, destinationPixels.y, 0.0f);
                 GL.End();
             }

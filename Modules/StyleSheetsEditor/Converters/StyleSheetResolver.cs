@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEditor.StyleSheets
 {
@@ -48,7 +49,15 @@ namespace UnityEditor.StyleSheets
 
             public float AsFloat()
             {
+                if (ValueType == StyleValueType.Dimension)
+                    return ((Dimension)Obj).value;
+
                 return (float)Obj;
+            }
+
+            public Dimension AsDimension()
+            {
+                return (Dimension)Obj;
             }
 
             public string AsString()
@@ -66,6 +75,11 @@ namespace UnityEditor.StyleSheets
                 return Obj.ToString();
             }
 
+            public bool IsFloat()
+            {
+                return ValueType == StyleValueType.Float || ValueType == StyleValueType.Dimension;
+            }
+
             public bool CompareTo(Value v)
             {
                 if (ValueType != v.ValueType)
@@ -77,6 +91,8 @@ namespace UnityEditor.StyleSheets
                         return GUISkinCompare.CompareTo(v.AsColor(), AsColor());
                     case StyleValueType.Float:
                         return GUISkinCompare.CompareTo(v.AsFloat(), AsFloat());
+                    case StyleValueType.Dimension:
+                        return v.AsDimension() == AsDimension();
                     case StyleValueType.Keyword:
                         return v.AsKeyword() == AsKeyword();
                     case StyleValueType.Enum:
@@ -735,6 +751,9 @@ namespace UnityEditor.StyleSheets
                 case StyleValueType.Float:
                     value = srcSheet.ReadFloat(valueHandle);
                     break;
+                case StyleValueType.Dimension:
+                    value = srcSheet.ReadDimension(valueHandle);
+                    break;
                 case StyleValueType.AssetReference:
                     value = srcSheet.ReadAssetReference(valueHandle);
                     break;
@@ -758,6 +777,9 @@ namespace UnityEditor.StyleSheets
                         break;
                     case StyleValueType.Float:
                         helper.builder.AddValue(value.AsFloat());
+                        break;
+                    case StyleValueType.Dimension:
+                        helper.builder.AddValue(value.AsDimension());
                         break;
                     case StyleValueType.Enum:
                     case StyleValueType.String:

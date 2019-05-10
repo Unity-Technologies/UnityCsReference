@@ -14,6 +14,7 @@ namespace UnityEngine.UIElements
 
         public new static readonly string ussClassName = "unity-label";
 
+
         public Label() : this(String.Empty) {}
         public Label(string text)
         {

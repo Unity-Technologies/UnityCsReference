@@ -2406,7 +2406,7 @@ namespace UnityEditor
                         info.properties = properties;
                         info.assetPath = AssetDatabase.GetAssetPath(sourceObject);
                         GameObject rootObject = PrefabUtility.GetRootGameObject(sourceObject);
-                        if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject))
+                        if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject) || EditorUtility.IsPersistent(targetObject))
                             pm.AddDisabledItem(menuItemContent);
                         else
                             pm.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabPropertyOverride, info);
@@ -2926,49 +2926,52 @@ namespace UnityEditor
 
         internal static void SortingLayerField(Rect position, GUIContent label, SerializedProperty layerID, GUIStyle style, GUIStyle labelStyle)
         {
-            int id = GUIUtility.GetControlID(s_SortingLayerFieldHash, FocusType.Keyboard, position);
-            position = PrefixLabel(position, id, label, labelStyle);
-
-            Event evt = Event.current;
-            int selected = PopupCallbackInfo.GetSelectedValueForControl(id, -1);
-            if (selected != -1)
+            using (new PropertyScope(position, null, layerID))
             {
-                int[] layerIDs = InternalEditorUtility.sortingLayerUniqueIDs;
-                if (selected >= layerIDs.Length)
-                {
-                    TagManagerInspector.ShowWithInitialExpansion(TagManagerInspector.InitialExpansionState.SortingLayers);
-                }
-                else
-                {
-                    layerID.intValue = layerIDs[selected];
-                }
-            }
+                int id = GUIUtility.GetControlID(s_SortingLayerFieldHash, FocusType.Keyboard, position);
+                position = PrefixLabel(position, id, label, labelStyle);
 
-            if (evt.type == EventType.MouseDown && position.Contains(evt.mousePosition) || evt.MainActionKeyForControl(id))
-            {
-                int i = 0;
-                int[] layerIDs = InternalEditorUtility.sortingLayerUniqueIDs;
-                string[] layerNames = InternalEditorUtility.sortingLayerNames;
-                for (i = 0; i < layerIDs.Length; i++)
+                Event evt = Event.current;
+                int selected = PopupCallbackInfo.GetSelectedValueForControl(id, -1);
+                if (selected != -1)
                 {
-                    if (layerIDs[i] == layerID.intValue)
-                        break;
+                    int[] layerIDs = InternalEditorUtility.sortingLayerUniqueIDs;
+                    if (selected >= layerIDs.Length)
+                    {
+                        TagManagerInspector.ShowWithInitialExpansion(TagManagerInspector.InitialExpansionState.SortingLayers);
+                    }
+                    else
+                    {
+                        layerID.intValue = layerIDs[selected];
+                    }
                 }
-                ArrayUtility.Add(ref layerNames, "");
-                ArrayUtility.Add(ref layerNames, "Add Sorting Layer...");
 
-                DoPopup(position, id, i, EditorGUIUtility.TempContent(layerNames), style);
-            }
-            else if (Event.current.type == EventType.Repaint)
-            {
-                var layerName = layerID.hasMultipleDifferentValues ?
-                    mixedValueContent :
-                    EditorGUIUtility.TempContent(InternalEditorUtility.GetSortingLayerNameFromUniqueID(layerID.intValue));
-                showMixedValue = layerID.hasMultipleDifferentValues;
-                BeginHandleMixedValueContentColor();
-                style.Draw(position, layerName, id, false);
-                EndHandleMixedValueContentColor();
-                showMixedValue = false;
+                if (evt.type == EventType.MouseDown && position.Contains(evt.mousePosition) || evt.MainActionKeyForControl(id))
+                {
+                    int i = 0;
+                    int[] layerIDs = InternalEditorUtility.sortingLayerUniqueIDs;
+                    string[] layerNames = InternalEditorUtility.sortingLayerNames;
+                    for (i = 0; i < layerIDs.Length; i++)
+                    {
+                        if (layerIDs[i] == layerID.intValue)
+                            break;
+                    }
+                    ArrayUtility.Add(ref layerNames, "");
+                    ArrayUtility.Add(ref layerNames, "Add Sorting Layer...");
+
+                    DoPopup(position, id, i, EditorGUIUtility.TempContent(layerNames), style);
+                }
+                else if (Event.current.type == EventType.Repaint)
+                {
+                    var layerName = layerID.hasMultipleDifferentValues ?
+                        mixedValueContent :
+                        EditorGUIUtility.TempContent(InternalEditorUtility.GetSortingLayerNameFromUniqueID(layerID.intValue));
+                    showMixedValue = layerID.hasMultipleDifferentValues;
+                    BeginHandleMixedValueContentColor();
+                    style.Draw(position, layerName, id, false);
+                    EndHandleMixedValueContentColor();
+                    showMixedValue = false;
+                }
             }
         }
 
@@ -5056,16 +5059,20 @@ namespace UnityEditor
                 GenericMenu menu = new GenericMenu();
                 PrefabUtility.HandleApplyRevertMenuItems(
                     "Removed Component",
-                    sourceComponent,
+                    instanceGo,
                     (menuItemContent, sourceObject) =>
                     {
                         TargetChoiceHandler.ObjectInstanceAndSourceInfo info = new TargetChoiceHandler.ObjectInstanceAndSourceInfo();
                         info.instanceObject = instanceGo;
                         Component componentToRemove = sourceComponent;
-                        while (componentToRemove != sourceObject)
+                        while (componentToRemove.gameObject != sourceObject)
+                        {
                             componentToRemove = PrefabUtility.GetCorrespondingObjectFromSource(componentToRemove);
+                            if (componentToRemove == null)
+                                return;
+                        }
                         info.correspondingObjectInSource = componentToRemove;
-                        if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(componentToRemove))
+                        if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(componentToRemove) || EditorUtility.IsPersistent(instanceGo))
                             menu.AddDisabledItem(menuItemContent);
                         else
                             menu.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabRemovedComponent, info);
@@ -9422,25 +9429,20 @@ This warning only shows up in development builds.", helpTopic, pageName);
         {
             GUILayoutFadeGroup g = (GUILayoutFadeGroup)GUILayoutUtility.BeginLayoutGroup(GUIStyle.none, null, typeof(GUILayoutFadeGroup));
             g.isVertical = true;
-            g.resetCoords = false;
+            g.resetCoords = true;
             g.fadeValue = value;
             g.wasGUIEnabled = GUI.enabled;
             g.guiColor = GUI.color;
             g.consideredForMargin = value > 0;
 
-            if (value != 0.0f && value != 1.0f)
+            if (value != 0.0f && value != 1.0f && Event.current.type == EventType.MouseDown)
             {
-                g.resetCoords = true;
-                GUI.BeginGroup(g.rect);
-
-                if (Event.current.type == EventType.MouseDown)
-                {
-                    Event.current.Use();
-                }
+                Event.current.Use();
             }
 
             // We don't want the fade group gui clip to be used for calculating the label width of controls in this fade group, so we lock the context width.
             EditorGUIUtility.LockContextWidth();
+            GUI.BeginGroup(g.rect);
 
             return value != 0;
         }
@@ -9457,10 +9459,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
                 return;
             }
 
-            if (g.fadeValue != 0.0f && g.fadeValue != 1.0f)
-            {
-                GUI.EndGroup();
-            }
+            GUI.EndGroup();
 
             EditorGUIUtility.UnlockContextWidth();
             GUI.enabled = g.wasGUIEnabled;

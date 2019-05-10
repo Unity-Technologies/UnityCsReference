@@ -7,27 +7,12 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Profiling.LowLevel;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 namespace Unity.Profiling
 {
-    [NativeHeader("Runtime/Profiler/ScriptBindings/ProfilerMarker.bindings.h")]
-    [Flags]
-    internal enum MarkerFlags
-    {
-        Default = 0,
-
-        AvailabilityEditor = 1 << 2,
-        AvailabilityNonDevelopment = 1 << 3,
-
-        Warning = 1 << 4,
-
-        VerbosityDebug = 1 << 10,
-        VerbosityInternal = 1 << 11,
-        VerbosityAdvanced = 1 << 12
-    }
-
     [NativeHeader("Runtime/Profiler/ScriptBindings/ProfilerMarker.bindings.h")]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]

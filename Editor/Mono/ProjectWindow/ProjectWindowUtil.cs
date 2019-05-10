@@ -747,9 +747,9 @@ namespace UnityEditor
             {
                 string title;
                 if (paths.Count > 1)
-                    title = L10n.Tr("Delete selected assets ?");
+                    title = L10n.Tr("Delete selected assets?");
                 else
-                    title = L10n.Tr("Delete selected asset ?");
+                    title = L10n.Tr("Delete selected asset?");
 
                 int maxCount = 3;
                 var infotext = new StringBuilder();

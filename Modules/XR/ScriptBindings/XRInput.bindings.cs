@@ -85,6 +85,13 @@ namespace UnityEngine.XR
         kUnityXRInputFeatureTypeInvalid = UInt32.MaxValue
     };
 
+    internal enum ConnectionChangeType : UInt32
+    {
+        Connected,
+        Disconnected,
+        ConfigChange,
+    };
+
     public enum InputDeviceRole : UInt32
     {
         Unknown = 0,
@@ -95,6 +102,23 @@ namespace UnityEngine.XR
         TrackingReference,
         HardwareTracker,
         LegacyController
+    };
+
+    [Flags]
+    public enum InputDeviceCharacteristics: UInt32
+    {
+        None = 0,
+        HeadMounted = 1 << 0,
+        Camera = 1 << 1,
+        HeldInHand = 1 << 2,
+        HandTracking = 1 << 3,
+        EyeTracking = 1 << 4,
+        TrackedDevice = 1 << 5,
+        Controller = 1 << 6,
+        TrackingReference = 1 << 7,
+        Left = 1 << 8,
+        Right = 1 << 9,
+        Simulated6DOF = 1 << 10
     };
 
     [Flags]
@@ -297,8 +321,9 @@ namespace UnityEngine.XR
 
         public bool isValid { get { return InputDevices.IsDeviceValid(m_DeviceId); } }
         public string name { get { return InputDevices.GetDeviceName(m_DeviceId); } }
+        [Obsolete("This API has been marked as deprecated and will be removed in future versions. Please use InputDevice.characteristics instead.")]
         public InputDeviceRole role { get { return InputDevices.GetDeviceRole(m_DeviceId); } }
-
+        public InputDeviceCharacteristics characteristics { get { return InputDevices.GetDeviceCharacteristics(m_DeviceId); } }
         // Haptics
         public bool SendHapticImpulse(uint channel, float amplitude, float duration = 1.0f)
         {
@@ -673,29 +698,66 @@ namespace UnityEngine.XR
             GetDevices_Internal(inputDevices);
         }
 
+        [Obsolete("This API has been marked as deprecated and will be removed in future versions. Please use InputDevices.GetDevicesWithCharacteristics instead.")]
         public static void GetDevicesWithRole(InputDeviceRole role, List<InputDevice> inputDevices)
         {
             if (null == inputDevices)
                 throw new ArgumentNullException("inputDevices");
 
-            List<InputDevice> allDevices = new List<InputDevice>();
-            GetDevices_Internal(allDevices);
+            if (s_InputDeviceList == null)
+                s_InputDeviceList = new List<InputDevice>();
+            GetDevices_Internal(s_InputDeviceList);
 
             inputDevices.Clear();
-            foreach (var device in allDevices)
+            foreach (var device in s_InputDeviceList)
                 if (device.role == role)
+                    inputDevices.Add(device);
+        }
+
+        /// Used to avoid creating garbage when getting all devices from native.  Do not use without first calling GetDevices_Internal in order to keep it up to date.
+        static List<InputDevice> s_InputDeviceList;
+        public static void GetDevicesWithCharacteristics(InputDeviceCharacteristics desiredCharacteristics, List<InputDevice> inputDevices)
+        {
+            if (null == inputDevices)
+                throw new ArgumentNullException("inputDevices");
+
+            if (s_InputDeviceList == null)
+                s_InputDeviceList = new List<InputDevice>();
+            GetDevices_Internal(s_InputDeviceList);
+
+            inputDevices.Clear();
+            foreach (var device in s_InputDeviceList)
+                if ((device.characteristics & desiredCharacteristics) == desiredCharacteristics)
                     inputDevices.Add(device);
         }
 
         public static event Action<InputDevice> deviceConnected;
         public static event Action<InputDevice> deviceDisconnected;
+        public static event Action<InputDevice> deviceConfigChanged;
 
-        private static void InvokeConnectionEvent(UInt64 m_DeviceId, bool connected)
+        private static void InvokeConnectionEvent(UInt64 deviceId, ConnectionChangeType change)
         {
-            if (connected && deviceConnected != null)
-                deviceConnected(new InputDevice(m_DeviceId));
-            else if (deviceDisconnected != null)
-                deviceDisconnected(new InputDevice(m_DeviceId));
+            switch (change)
+            {
+                case ConnectionChangeType.Connected:
+                {
+                    if (deviceConnected != null)
+                        deviceConnected(new InputDevice(deviceId));
+                    break;
+                }
+                case ConnectionChangeType.Disconnected:
+                {
+                    if (deviceDisconnected != null)
+                        deviceDisconnected(new InputDevice(deviceId));
+                    break;
+                }
+                case ConnectionChangeType.ConfigChange:
+                {
+                    if (deviceConfigChanged != null)
+                        deviceConfigChanged(new InputDevice(deviceId));
+                    break;
+                }
+            }
         }
 
         private static extern void GetDevices_Internal([NotNull] List<InputDevice> inputDevices);
@@ -727,7 +789,32 @@ namespace UnityEngine.XR
 
         internal static extern bool IsDeviceValid(UInt64 deviceId);
         internal static extern string GetDeviceName(UInt64 deviceId);
-        internal static extern InputDeviceRole GetDeviceRole(UInt64 deviceId);
+        internal static extern InputDeviceCharacteristics GetDeviceCharacteristics(UInt64 deviceId);
+
+        internal static InputDeviceRole GetDeviceRole(UInt64 deviceId)
+        {
+            InputDeviceCharacteristics flags = GetDeviceCharacteristics(deviceId);
+
+            const InputDeviceCharacteristics genericCharacteristics = InputDeviceCharacteristics.HeadMounted | InputDeviceCharacteristics.TrackedDevice;
+            const InputDeviceCharacteristics leftHandedCharacteristics = InputDeviceCharacteristics.Left | InputDeviceCharacteristics.HeldInHand | InputDeviceCharacteristics.TrackedDevice;
+            const InputDeviceCharacteristics rightHandedCharacteristics = InputDeviceCharacteristics.Right | InputDeviceCharacteristics.HeldInHand | InputDeviceCharacteristics.TrackedDevice;
+            const InputDeviceCharacteristics trackingReferenceCharacteristics = InputDeviceCharacteristics.TrackingReference | InputDeviceCharacteristics.TrackedDevice;
+
+            if ((flags & genericCharacteristics) == genericCharacteristics)
+                return InputDeviceRole.Generic;
+            else if ((flags & leftHandedCharacteristics) == leftHandedCharacteristics)
+                return InputDeviceRole.LeftHanded;
+            else if ((flags & rightHandedCharacteristics) == rightHandedCharacteristics)
+                return InputDeviceRole.RightHanded;
+            else if ((flags & InputDeviceCharacteristics.Controller) == InputDeviceCharacteristics.Controller)
+                return InputDeviceRole.GameController;
+            else if ((flags & trackingReferenceCharacteristics) == trackingReferenceCharacteristics)
+                return InputDeviceRole.TrackingReference;
+            else if ((flags & InputDeviceCharacteristics.TrackedDevice) == InputDeviceCharacteristics.TrackedDevice)
+                return InputDeviceRole.HardwareTracker;
+
+            return InputDeviceRole.Unknown;
+        }
     }
 
     [NativeHeader("Modules/XR/Subsystems/Input/Public/XRInputTrackingFacade.h")]

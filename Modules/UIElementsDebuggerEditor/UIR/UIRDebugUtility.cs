@@ -3,9 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.UIR;
 
@@ -19,27 +17,6 @@ namespace UnityEditor.UIElements
 
     internal static class UIRDebugUtility
     {
-        public static void SwitchPanelRepaintMode(IPanel panel, RepaintMode newMode)
-        {
-            if (GetPanelRepaintMode(panel) != newMode)
-            {
-                var p = panel as Panel;
-                if (newMode == RepaintMode.UIR)
-                {
-                    p.SetUpdater(new UIRRepaintUpdater(), VisualTreeUpdatePhase.Repaint);
-                    p.SetUpdater(new UIRLayoutUpdater(), VisualTreeUpdatePhase.Layout);
-                }
-                else
-                {
-                    // Put back the standard updater
-                    p.SetUpdater(new VisualTreeRepaintUpdater(), VisualTreeUpdatePhase.Repaint);
-                    p.SetUpdater(new VisualTreeLayoutUpdater(), VisualTreeUpdatePhase.Layout);
-                }
-
-                panel.visualTree.MarkDirtyRepaint();
-            }
-        }
-
         public static UIRenderDevice GetUIRenderDevice(IPanel panel)
         {
             UIRRepaintUpdater updater = GetUIRRepaintUpdater(panel);

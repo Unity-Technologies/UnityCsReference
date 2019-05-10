@@ -41,6 +41,9 @@ namespace UnityEditor.PackageManager.UI
 
             StatusLabel.RegisterCallback<MouseDownEvent>(e =>
             {
+                // only react to left mouse button
+                if (e.button != 0)
+                    return;
                 if (!EditorApplication.isPlaying)
                 {
                     collection.FetchListOfflineCache(true);
@@ -111,13 +114,11 @@ namespace UnityEditor.PackageManager.UI
         {
             if (status == StatusType.Loading)
             {
-                LoadingSpinnerContainer.AddToClassList("loading");
                 LoadingSpinner.Start();
             }
             else
             {
                 LoadingSpinner.Stop();
-                LoadingSpinnerContainer.RemoveFromClassList("loading");
             }
 
 
@@ -127,8 +128,7 @@ namespace UnityEditor.PackageManager.UI
 
         private VisualElementCache Cache { get; set; }
 
-        private VisualElement LoadingSpinnerContainer { get { return Cache.Get<VisualElement>("loadingSpinnerContainer"); }}
-        private LoadingSpinner LoadingSpinner { get { return Cache.Get<LoadingSpinner>("packageSpinner"); }}
+        private LoadingSpinner LoadingSpinner { get { return Cache.Get<LoadingSpinner>("loadingSpinner"); }}
         private Label ErrorIcon { get { return Cache.Get<Label>("errorIcon"); }}
         private Label StatusLabel { get { return Cache.Get<Label>("statusLabel"); }}
     }

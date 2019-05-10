@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor.UIElements.Debugger;
 using UnityEngine.UIElements;
@@ -86,7 +87,7 @@ namespace UnityEditor
             }
         }
 
-        protected override void SetWindow(ContainerWindow win)
+        internal override void SetWindow(ContainerWindow win)
         {
             base.SetWindow(win);
             if (m_ActualView != null)
@@ -190,23 +191,39 @@ namespace UnityEditor
             base.OnDestroy();
         }
 
-        protected Type[] GetPaneTypes()
+        private static readonly Type[] k_PaneTypes =
+        {
+            typeof(SceneView),
+            typeof(GameView),
+            typeof(InspectorWindow),
+            typeof(SceneHierarchyWindow),
+            typeof(ProjectBrowser),
+            typeof(ProfilerWindow),
+            typeof(AnimationWindow)
+        };
+
+        private static IEnumerable<Type> GetDefaultPaneTypes()
         {
             const string k_PaneTypesSectionName = "pane_types";
             if (!ModeService.HasSection(ModeService.currentIndex, k_PaneTypesSectionName))
-                return new[]
-                {
-                    typeof(SceneView),
-                    typeof(GameView),
-                    typeof(InspectorWindow),
-                    typeof(SceneHierarchyWindow),
-                    typeof(ProjectBrowser),
-                    typeof(ProfilerWindow),
-                    typeof(AnimationWindow)
-                };
+                return k_PaneTypes;
 
-            var modePaneTypes = ModeService.GetModeDataSectionList<string>(ModeService.currentIndex, k_PaneTypesSectionName).ToArray();
-            return EditorAssemblies.SubclassesOf(typeof(EditorWindow)).Where(t => modePaneTypes.Any(mpt => t.Name.EndsWith(mpt))).ToArray();
+            var modePaneTypes = ModeService.GetModeDataSectionList<string>(ModeService.currentIndex, k_PaneTypesSectionName).ToList();
+            return TypeCache.GetTypesDerivedFrom<EditorWindow>().Where(t => modePaneTypes.Any(mpt => t.Name.EndsWith(mpt))).ToArray();
+        }
+
+        protected IEnumerable<Type> GetPaneTypes()
+        {
+            foreach (var paneType in GetDefaultPaneTypes())
+                yield return paneType;
+
+            var extraPaneTypes = m_ActualView.GetExtraPaneTypes().ToList();
+            if (extraPaneTypes.Count > 0)
+            {
+                yield return null; // for spacer
+                foreach (var paneType in extraPaneTypes)
+                    yield return paneType;
+            }
         }
 
         // Messages sent by Unity to editor windows today.

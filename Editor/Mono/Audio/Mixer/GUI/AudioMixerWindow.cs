@@ -120,10 +120,10 @@ namespace UnityEditor
             public GUIContents()
             {
                 rms = EditorGUIUtility.TrTextContent("RMS", "Switches between RMS (Root Mean Square) metering and peak metering. RMS is closer to the energy level and perceived loudness of the sound (hence lower than the peak meter), while peak-metering is useful for monitoring spikes in the signal that can cause clipping.");
-                editSnapShots = EditorGUIUtility.TrTextContent("Edit in Play Mode", "Edit in playmode and your changes are automatically saved. Note when editting is disabled then live values are shown.", EditorGUIUtility.TrIconContent("Animation.Record", "Are scene and inspector changes recorded into the animation curves?").image);
+                editSnapShots = EditorGUIUtility.TrTextContent("Edit in Play Mode", "Edit in playmode and your changes are automatically saved. Note when editing is disabled, live values are shown.", EditorGUIUtility.TrIconContent("Animation.Record", "Are scene and inspector changes recorded into the animation curves?").image);
                 infoText = EditorGUIUtility.TrTextContent("Create an AudioMixer asset from the Project Browser to get started");
                 selectAudioMixer = EditorGUIUtility.TrTextContent("", "Select an Audio Mixer");
-                output = EditorGUIUtility.TrTextContent("Output", "Select an Audio Mixer Group from another Audio Mixer to output to. If 'None' is selected then output is routed directly to the Audio Listener.");
+                output = EditorGUIUtility.TrTextContent("Output", "Select an Audio Mixer Group from another Audio Mixer to output to. If 'None' is selected, then output is routed directly to the Audio Listener.");
             }
         }
         private static GUIContents s_GuiContents;

@@ -588,7 +588,7 @@ namespace UnityEditor
             }
 
             var showAgentNeighbours = NavMeshVisualizationSettings.showAgentNeighbours;
-            if (showAgentNeighbours != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show Neighbours", "Show the agent neighbours cosidered during simulation."), showAgentNeighbours))
+            if (showAgentNeighbours != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show Neighbours", "Show the agent neighbours considered during simulation."), showAgentNeighbours))
             {
                 NavMeshVisualizationSettings.showAgentNeighbours = !showAgentNeighbours;
                 bRepaint = true;

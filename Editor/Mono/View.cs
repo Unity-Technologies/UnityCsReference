@@ -227,7 +227,7 @@ namespace UnityEditor
             ChildrenMinMaxChanged();
         }
 
-        protected virtual void SetWindow(ContainerWindow win)
+        internal virtual void SetWindow(ContainerWindow win)
         {
             m_Window = win;
         }

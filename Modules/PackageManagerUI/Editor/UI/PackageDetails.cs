@@ -630,15 +630,25 @@ namespace UnityEditor.PackageManager.UI
                 }
             }
 
-            var result = 1;    // Cancel
-            if (!PackageManagerPrefs.SkipRemoveConfirmation)
+            var result = 0;
+            if (DisplayPackage.IsBuiltIn)
             {
-                result = EditorUtility.DisplayDialogComplex("Removing Package",
-                    "Are you sure you wanted to remove this package?",
-                    "Remove", "Cancel", "Remove and do not ask again");
+                if (!PackageManagerPrefs.SkipDisableConfirmation)
+                {
+                    result = EditorUtility.DisplayDialogComplex("Disable Built-In Package",
+                        "Are you sure you want to disable this built-in package?",
+                        "Disable", "Cancel", "Disable and don't ask again");
+                }
             }
             else
-                result = 0;
+            {
+                if (!PackageManagerPrefs.SkipRemoveConfirmation)
+                {
+                    result = EditorUtility.DisplayDialogComplex("Removing Package",
+                        "Are you sure you want to remove this package?",
+                        "Remove", "Cancel", "Remove and don't ask again");
+                }
+            }
 
             // Cancel
             if (result == 1)
@@ -646,7 +656,12 @@ namespace UnityEditor.PackageManager.UI
 
             // Do not ask again
             if (result == 2)
-                PackageManagerPrefs.SkipRemoveConfirmation = true;
+            {
+                if (DisplayPackage.IsBuiltIn)
+                    PackageManagerPrefs.SkipDisableConfirmation = true;
+                else
+                    PackageManagerPrefs.SkipRemoveConfirmation = true;
+            }
 
             // Remove
             DetailError.ClearError();
@@ -721,15 +736,15 @@ namespace UnityEditor.PackageManager.UI
         private Button ViewLicenses { get { return Cache.Get<Button>("viewLicenses"); } }
         private VisualElement ViewLicensesContainer { get { return Cache.Get<VisualElement>("viewLicensesContainer"); } }
         private Alert DetailError { get { return Cache.Get<Alert>("detailError"); } }
-        private ScrollView DetailScrollView { get { return Cache.Get<ScrollView>("detailView"); } }
+        private ScrollView DetailScrollView { get { return Cache.Get<ScrollView>("detailScrollView"); } }
         private VisualElement DetailContainer { get { return Cache.Get<VisualElement>("detail"); } }
         private Label DetailModuleReference { get { return Cache.Get<Label>("detailModuleReference"); } }
         private Label DetailVersion { get { return Cache.Get<Label>("detailVersion"); } }
         private Label DetailAuthor { get { return Cache.Get<Label>("detailAuthor"); } }
-        private Label VerifyLabel { get { return Cache.Get<Label>("tagVerify"); } }
+        private Label VerifyLabel { get { return Cache.Get<Label>("verifiedTag"); } }
         private VisualElement CustomContainer { get { return Cache.Get<VisualElement>("detailCustomContainer"); } }
         private PackageSampleList SampleList { get { return Cache.Get<PackageSampleList>("detailSampleList"); } }
-        internal VisualElement GetTag(PackageTag tag) {return Cache.Get<VisualElement>("tag-" + tag); }
+        internal VisualElement GetTag(PackageTag tag) {return Cache.Get<VisualElement>(tag + "Tag"); }
         private PackageDependencies Dependencies { get {return Cache.Get<PackageDependencies>("detailDependencies");} }
         private VisualElement PackageToolbarContainer { get {return Cache.Get<VisualElement>("toolbarContainer");} }
         internal Button UpdateBuiltIn { get { return Cache.Get<Button>("updateBuiltIn"); } }

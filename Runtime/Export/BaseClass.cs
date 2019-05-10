@@ -123,7 +123,7 @@ namespace UnityEngine
         // Lumin
         Lumin = 33,
         // BJM
-        BJM = 34
+        Stadia = 34
     }
 
     // The language the user's operating system is running in. Returned by Application.systemLanguage.

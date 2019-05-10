@@ -94,7 +94,7 @@ namespace UnityEngine.UIElements
 
         internal void AddStyleSheetPath(string sheetPath)
         {
-            StyleSheet sheetAsset = Panel.loadResourceFunc(sheetPath, typeof(StyleSheet)) as StyleSheet;
+            StyleSheet sheetAsset = Panel.LoadResource(sheetPath, typeof(StyleSheet)) as StyleSheet;
 
             if (sheetAsset == null)
             {
@@ -107,7 +107,7 @@ namespace UnityEngine.UIElements
 
         internal bool HasStyleSheetPath(string sheetPath)
         {
-            StyleSheet sheetAsset = Panel.loadResourceFunc(sheetPath, typeof(StyleSheet)) as StyleSheet;
+            StyleSheet sheetAsset = Panel.LoadResource(sheetPath, typeof(StyleSheet)) as StyleSheet;
 
             if (sheetAsset == null)
             {
@@ -120,7 +120,7 @@ namespace UnityEngine.UIElements
 
         internal void RemoveStyleSheetPath(string sheetPath)
         {
-            StyleSheet sheetAsset = Panel.loadResourceFunc(sheetPath, typeof(StyleSheet)) as StyleSheet;
+            StyleSheet sheetAsset = Panel.LoadResource(sheetPath, typeof(StyleSheet)) as StyleSheet;
 
             if (sheetAsset == null)
             {

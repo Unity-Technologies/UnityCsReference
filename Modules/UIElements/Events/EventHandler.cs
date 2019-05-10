@@ -2,9 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Collections.Generic;
-
 namespace UnityEngine.UIElements
 {
     public interface IEventHandler
@@ -30,6 +27,7 @@ namespace UnityEngine.UIElements
             }
 
             m_CallbackRegistry.RegisterCallback<TEventType>(callback, useTrickleDown);
+            GlobalCallbackRegistry.RegisterListeners<TEventType>(this, callback, useTrickleDown);
         }
 
         public void RegisterCallback<TEventType, TUserArgsType>(EventCallback<TEventType, TUserArgsType> callback, TUserArgsType userArgs, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
@@ -40,6 +38,7 @@ namespace UnityEngine.UIElements
             }
 
             m_CallbackRegistry.RegisterCallback<TEventType, TUserArgsType>(callback, userArgs, useTrickleDown);
+            GlobalCallbackRegistry.RegisterListeners<TEventType>(this, callback, useTrickleDown);
         }
 
         public void UnregisterCallback<TEventType>(EventCallback<TEventType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
@@ -48,6 +47,8 @@ namespace UnityEngine.UIElements
             {
                 m_CallbackRegistry.UnregisterCallback(callback, useTrickleDown);
             }
+
+            GlobalCallbackRegistry.UnregisterListeners<TEventType>(this, callback);
         }
 
         public void UnregisterCallback<TEventType, TUserArgsType>(EventCallback<TEventType, TUserArgsType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
@@ -56,6 +57,8 @@ namespace UnityEngine.UIElements
             {
                 m_CallbackRegistry.UnregisterCallback(callback, useTrickleDown);
             }
+
+            GlobalCallbackRegistry.UnregisterListeners<TEventType>(this, callback);
         }
 
         internal bool TryGetUserArgs<TEventType, TCallbackArgs>(EventCallback<TEventType, TCallbackArgs> callback, TrickleDown useTrickleDown, out TCallbackArgs userData) where TEventType : EventBase<TEventType>, new()
@@ -86,12 +89,18 @@ namespace UnityEngine.UIElements
 
                 if (evt.propagationPhase == PropagationPhase.AtTarget && !evt.isDefaultPrevented)
                 {
-                    ExecuteDefaultActionAtTarget(evt);
+                    using (new EventDebuggerLogExecuteDefaultAction(evt))
+                    {
+                        ExecuteDefaultActionAtTarget(evt);
+                    }
                 }
             }
             else if (!evt.isDefaultPrevented)
             {
-                ExecuteDefaultAction(evt);
+                using (new EventDebuggerLogExecuteDefaultAction(evt))
+                {
+                    ExecuteDefaultAction(evt);
+                }
             }
         }
 

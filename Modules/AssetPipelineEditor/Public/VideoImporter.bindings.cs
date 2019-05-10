@@ -95,16 +95,17 @@ namespace UnityEditor
     [NativeHeader("Modules/AssetPipelineEditor/Public/VideoClipImporter.bindings.h")]
     public partial class VideoClipImporter : AssetImporter
     {
-        // Quality setting to use when importing the movie. This is a float value from 0 to 1.
-        public extern float quality { get; set; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("VideoClipImporter.quality has no effect anymore (was only used for MovieTexture which is removed)", false)]
+        public float quality { get { return 1.0f; } set {} }
 
-        // Is this a linear texture or an sRGB texture (Only used when performing linear rendering)
-        [NativeProperty("ColorLinear")]
-        public extern bool linearColor { get; set; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("VideoClipImporter.linearColor has no effect anymore (was only used for MovieTexture which is removed)", false)]
+        public bool linearColor { get { return false; } set {} }
 
-        // Import a MovieTexture
-        [NativeProperty("LegacyImporter")]
-        public extern bool useLegacyImporter { get; set; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("VideoClipImporter.useLegacyImporter has no effect anymore (was only used for MovieTexture which is removed)", false)]
+        public bool useLegacyImporter { get { return false; } set {} }
 
         public extern ulong sourceFileSize { get; }
         public extern ulong outputFileSize { get; }

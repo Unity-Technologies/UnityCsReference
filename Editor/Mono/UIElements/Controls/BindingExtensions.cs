@@ -311,6 +311,12 @@ namespace UnityEditor.UIElements
             return EqualityComparer<TValue>.Default.Equals(value, propVal);
         }
 
+        internal static bool OneWayStringValueEquals(string value, SerializedProperty p, Func<SerializedProperty, string> propertyReadFunc)
+        {
+            var propVal = propertyReadFunc(p);
+            return String.CompareOrdinal(value, propVal) == 0;
+        }
+
         internal static bool ValueEquals(string value, SerializedProperty p, Func<SerializedProperty, string> propertyReadFunc)
         {
             if (p.propertyType == SerializedPropertyType.Enum)
@@ -341,7 +347,14 @@ namespace UnityEditor.UIElements
         {
             var field = element as INotifyValueChanged<TValue>;
 
-            if (field != null)
+            if (element is INotifyValueChanged<string> && typeof(TValue) != typeof(string))
+            {
+                //One Way Binding here with string conversions
+
+                SerializedObjectStringConversionBinding<TValue>.CreateBind(element as INotifyValueChanged<string>, objWrapper, prop, propertyReadFunc,
+                    propertyWriteFunc, valueComparerFunc);
+            }
+            else if (field != null)
             {
                 SerializedObjectBinding<TValue>.CreateBind(field, objWrapper, prop, propertyReadFunc,
                     propertyWriteFunc, valueComparerFunc);
@@ -368,6 +381,26 @@ namespace UnityEditor.UIElements
             SerializedObjectBindingBase.UpdateElementStyle(element, binding.boundProperty);
         }
 
+        private static void CreateEnumBindingObject(VisualElement element, SerializedObjectUpdateWrapper objWrapper, SerializedProperty prop)
+        {
+            if (element is PopupField<string>)
+            {
+                EnumBind((PopupField<string>)element, objWrapper, prop);
+            }
+            else
+            {
+                DefaultBind(element, objWrapper, prop, GetEnumPropertyValueAsString, SetEnumPropertyValueFromString, SlowEnumValueEquals);
+            }
+        }
+
+        private static void OneWayStringBind<TValue>(VisualElement element, SerializedObjectUpdateWrapper objWrapper, SerializedProperty prop,
+            Func<SerializedProperty, TValue> propertyReadFunc)
+        {
+            Func<SerializedProperty, string> readToString =  (SerializedProperty p) => $"{propertyReadFunc(p)}";
+
+            DefaultBind<string>(element, objWrapper, prop, readToString, (p, s) => {}, OneWayStringValueEquals);
+        }
+
         private static void CreateBindingObjectForProperty(VisualElement element, SerializedObjectUpdateWrapper objWrapper, SerializedProperty prop)
         {
             if (element is Foldout)
@@ -385,7 +418,7 @@ namespace UnityEditor.UIElements
             switch (prop.propertyType)
             {
                 case SerializedPropertyType.Integer:
-                    if (element is INotifyValueChanged<int>)
+                    if (element is INotifyValueChanged<int> || element is  INotifyValueChanged<string>)
                     {
                         DefaultBind(element, objWrapper, prop, GetIntPropertyValue, SetIntPropertyValue, ValueEquals);
                     }
@@ -436,15 +469,7 @@ namespace UnityEditor.UIElements
                     DefaultBind(element, objWrapper, prop, GetLayerMaskPropertyValue, SetLayerMaskPropertyValue, ValueEquals);
                     break;
                 case SerializedPropertyType.Enum:
-                    if (element is PopupField<string>)
-                    {
-                        EnumBind((PopupField<string>)element, objWrapper, prop);
-                    }
-                    else
-                    {
-                        DefaultBind(element, objWrapper, prop, GetEnumPropertyValueAsString, SetEnumPropertyValueFromString, SlowEnumValueEquals);
-                    }
-
+                    CreateEnumBindingObject(element, objWrapper, prop);
                     break;
                 case SerializedPropertyType.Vector2:
                     DefaultBind(element, objWrapper, prop, GetVector2PropertyValue, SetVector2PropertyValue, ValueEquals);
@@ -957,17 +982,65 @@ namespace UnityEditor.UIElements
             protected abstract void SyncPropertyToField(TField c, SerializedProperty p);
         }
 
-        private class SerializedObjectBinding<TValue> : SerializedObjectBindingToBaseField<TValue, INotifyValueChanged<TValue>>
+        private abstract class SerializedObjectBindingPropertyToBaseField<TProperty, TValue> : SerializedObjectBindingToBaseField<TValue, INotifyValueChanged<TValue>>
         {
-            private Func<SerializedProperty, TValue> propGetValue;
-            private Action<SerializedProperty, TValue> propSetValue;
-            private Func<TValue, SerializedProperty, Func<SerializedProperty, TValue>, bool> propCompareValues;
-
-            public static ObjectPool<SerializedObjectBinding<TValue>> s_Pool =
-                new ObjectPool<SerializedObjectBinding<TValue>>(32);
+            protected Func<SerializedProperty, TProperty> propGetValue;
+            protected Action<SerializedProperty, TProperty> propSetValue;
+            protected Func<TProperty, SerializedProperty, Func<SerializedProperty, TProperty>, bool> propCompareValues;
 
             //we need to keep a copy of the last value since some fields will allocate when getting the value
-            private TValue lastFieldValue;
+            protected TProperty lastFieldValue;
+
+            protected override void SyncPropertyToField(INotifyValueChanged<TValue> c, SerializedProperty p)
+            {
+                if (c == null)
+                {
+                    throw new ArgumentNullException(nameof(c));
+                }
+
+                if (!propCompareValues(lastFieldValue, p, propGetValue))
+                {
+                    lastFieldValue = propGetValue(p);
+                    AssignValueToField(lastFieldValue);
+                }
+            }
+
+            protected override bool SyncFieldValueToProperty()
+            {
+                if (!propCompareValues(lastFieldValue, boundProperty, propGetValue))
+                {
+                    propSetValue(boundProperty, lastFieldValue);
+                    boundProperty.m_SerializedObject.ApplyModifiedProperties();
+                    return true;
+                }
+                return false;
+            }
+
+            protected abstract void AssignValueToField(TProperty lastValue);
+
+            public override void Release()
+            {
+                if (isReleased)
+                    return;
+
+                if (FieldBinding == this)
+                {
+                    FieldBinding = null;
+                }
+
+                boundObject = null;
+                boundProperty = null;
+                field = null;
+                propGetValue = null;
+                propSetValue = null;
+                propCompareValues = null;
+                isReleased = true;
+            }
+        }
+        private class SerializedObjectBinding<TValue> : SerializedObjectBindingPropertyToBaseField<TValue, TValue>
+        {
+            public static ObjectPool<SerializedObjectBinding<TValue>> s_Pool =
+                new ObjectPool<SerializedObjectBinding<TValue>>(32);
 
             public static void CreateBind(INotifyValueChanged<TValue> field,
                 SerializedObjectUpdateWrapper objWrapper,
@@ -1001,18 +1074,11 @@ namespace UnityEditor.UIElements
                 Update();
             }
 
-            protected override void SyncPropertyToField(INotifyValueChanged<TValue> c, SerializedProperty p)
+            public override void Release()
             {
-                if (c == null)
-                {
-                    throw new ArgumentNullException(nameof(c));
-                }
-
-                if (!propCompareValues(lastFieldValue, p, propGetValue))
-                {
-                    lastFieldValue = propGetValue(p);
-                    c.value = lastFieldValue;
-                }
+                base.Release();
+                lastFieldValue = default(TValue);
+                s_Pool.Release(this);
             }
 
             protected override void UpdateLastFieldValue()
@@ -1025,39 +1091,16 @@ namespace UnityEditor.UIElements
                 lastFieldValue = field.value;
             }
 
-            protected override bool SyncFieldValueToProperty()
+            protected override void AssignValueToField(TValue lastValue)
             {
-                if (!propCompareValues(lastFieldValue, boundProperty, propGetValue))
+                if (field == null)
                 {
-                    propSetValue(boundProperty, lastFieldValue);
-                    boundProperty.m_SerializedObject.ApplyModifiedProperties();
-                    return true;
-                }
-                return false;
-            }
-
-            public override void Release()
-            {
-                if (isReleased)
                     return;
-
-                if (FieldBinding == this)
-                {
-                    FieldBinding = null;
                 }
 
-                boundObject = null;
-                boundProperty = null;
-                field = null;
-                propGetValue = null;
-                propSetValue = null;
-                propCompareValues = null;
-                lastFieldValue = default(TValue);
-                isReleased = true;
-                s_Pool.Release(this);
+                field.value = lastValue;
             }
         }
-
         // specific enum version that binds on the index property of the PopupField<string>
         private class SerializedEnumBinding : SerializedObjectBindingToBaseField<string, PopupField<string>>
         {
@@ -1158,6 +1201,72 @@ namespace UnityEditor.UIElements
                 lastFieldValueIndex = -1;
                 isReleased = true;
                 s_Pool.Release(this);
+            }
+        }
+
+
+        //One-way binding
+        private class SerializedObjectStringConversionBinding<TValue> : SerializedObjectBindingPropertyToBaseField<TValue, string>
+        {
+            public static ObjectPool<SerializedObjectStringConversionBinding<TValue>> s_Pool =
+                new ObjectPool<SerializedObjectStringConversionBinding<TValue>>(32);
+
+            public static void CreateBind(INotifyValueChanged<string> field,
+                SerializedObjectUpdateWrapper objWrapper,
+                SerializedProperty property,
+                Func<SerializedProperty, TValue> propGetValue,
+                Action<SerializedProperty, TValue> propSetValue,
+                Func<TValue, SerializedProperty, Func<SerializedProperty, TValue>, bool> propCompareValues)
+            {
+                var newBinding = s_Pool.Get();
+                newBinding.isReleased = false;
+                newBinding.SetBinding(field, objWrapper, property, propGetValue, propSetValue, propCompareValues);
+            }
+
+            private void SetBinding(INotifyValueChanged<string> c,
+                SerializedObjectUpdateWrapper objWrapper,
+                SerializedProperty property,
+                Func<SerializedProperty, TValue> getValue,
+                Action<SerializedProperty, TValue> setValue,
+                Func<TValue, SerializedProperty, Func<SerializedProperty, TValue>, bool> compareValues)
+            {
+                property.unsafeMode = true;
+                this.boundPropertyPath = property.propertyPath;
+                this.boundObject = objWrapper;
+                this.boundProperty = property;
+                this.propGetValue = getValue;
+                this.propSetValue = setValue;
+                this.propCompareValues = compareValues;
+                this.field = c;
+                this.lastFieldValue = default(TValue);
+                Update();
+            }
+
+            protected override void UpdateLastFieldValue()
+            {
+                if (field == null)
+                {
+                    return;
+                }
+
+                lastFieldValue = propGetValue(boundProperty);
+            }
+
+            public override void Release()
+            {
+                base.Release();
+                lastFieldValue = default(TValue);
+                s_Pool.Release(this);
+            }
+
+            protected override void AssignValueToField(TValue lastValue)
+            {
+                if (field == null)
+                {
+                    return;
+                }
+
+                field.value = $"{lastFieldValue}";
             }
         }
     }

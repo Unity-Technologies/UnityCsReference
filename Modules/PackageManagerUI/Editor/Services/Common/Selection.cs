@@ -12,9 +12,11 @@ namespace UnityEditor.PackageManager.UI
     [Serializable]
     internal class Selection
     {
-        [SerializeField] public List<ItemState> States;
-        [NonSerialized] private IEnumerable<PackageVersion> Cache;
-        [NonSerialized] private PackageCollection Collection;
+        internal List<ItemState> States;
+        private List<PackageVersion> Cache;
+
+        [NonSerialized]
+        private PackageCollection Collection;
 
         public IEnumerable<PackageInfo> Selected
         {
@@ -26,8 +28,9 @@ namespace UnityEditor.PackageManager.UI
             get
             {
                 if (Cache == null)
-                    Cache = States.Where(s => s.Selected).Select(GetVersion)
-                        .Where(p => p != null);    // Ignore packages that are not found
+                {
+                    Cache = States.Where(s => s.Selected).Select(GetVersion).Where(p => p != null).ToList(); // Ignore packages that are not found
+                }
 
                 return Cache;
             }
@@ -37,12 +40,13 @@ namespace UnityEditor.PackageManager.UI
 
         public Selection()
         {
-            States = new List<ItemState>();
+            if (States == null)
+                States = new List<ItemState>();
         }
 
         private PackageVersion GetVersion(ItemState state)
         {
-            return Collection.GetPackageVersion(state.PackageId);
+            return Collection?.GetPackageVersion(state.PackageId);
         }
 
         public void ClearSelection()
@@ -99,8 +103,8 @@ namespace UnityEditor.PackageManager.UI
 
         public void SetSelection(Package package)
         {
-            var packgeVersion = package != null ? package.VersionToDisplay : null;
-            SetSelection(packgeVersion);
+            var packageVersion = package != null ? package.VersionToDisplay : null;
+            SetSelection(packageVersion);
         }
 
         public PackageVersion FirstSelected

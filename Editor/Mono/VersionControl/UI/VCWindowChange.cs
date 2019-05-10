@@ -69,7 +69,7 @@ namespace UnityEditor.VersionControl
             if (Provider.GetActivePlugin() != null && Provider.GetActivePlugin().name != "Perforce")
                 return desc;
 
-            // The format of the desc is "on 2013/02/03 by foo@bar *pending* 'The real description'"
+            // The format of the desc is "327: on 2013/02/03 by foo@bar *pending* 'The real description'"
             // Extract the part between ' and '
             int idx = desc.IndexOf('\'');
             if (idx == -1)

@@ -126,7 +126,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
                     if (!string.IsNullOrEmpty(path))
                     {
-                        font = Panel.loadResourceFunc(path, typeof(Font)) as Font;
+                        font = Panel.LoadResource(path, typeof(Font)) as Font;
                     }
 
                     if (font == null)
@@ -178,7 +178,7 @@ namespace UnityEngine.UIElements.StyleSheets
             else if (TryGetSourceFromHandle(sheet, handle, out source) == false)
             {
                 // Load a stand-in picture to make it easier to identify which image element is missing its picture
-                source = Panel.loadResourceFunc("d_console.warnicon", typeof(Texture2D)) as Texture2D;
+                source = Panel.LoadResource("d_console.warnicon", typeof(Texture2D)) as Texture2D;
             }
             var value = new StyleBackground(source) {specificity = specificity};
             property.Apply(value, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
@@ -234,7 +234,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
                     if (!string.IsNullOrEmpty(path))
                     {
-                        source = Panel.loadResourceFunc(path, typeof(Texture2D)) as Texture2D;
+                        source = Panel.LoadResource(path, typeof(Texture2D)) as Texture2D;
                     }
 
                     if (source == null)
@@ -446,70 +446,86 @@ namespace UnityEngine.UIElements.StyleSheets
         private static bool CompileFlexShorthand(StyleSheet sheet, StyleValueHandle[] handles, int specificity, out StyleFloat grow, out StyleFloat shrink, out StyleLength basis)
         {
             grow = 0f;
-            shrink = 0f;
+            shrink = 1f;
             basis = StyleKeyword.Auto;
 
             bool valid = false;
 
-            if (handles.Length == 1 && handles[0].valueType == StyleValueType.Keyword && handles[0].valueIndex == (int)StyleValueKeyword.Unset)
+            if (handles.Length == 1 && handles[0].valueType == StyleValueType.Keyword)
             {
-                valid = true;
-                grow = 0f;
-                shrink = 1f;
-                basis = StyleKeyword.Auto;
-            }
-            else if (handles.Length == 1 && handles[0].valueType == StyleValueType.Keyword && handles[0].valueIndex == (int)StyleValueKeyword.None)
-            {
-                valid = true;
-                grow = 0f;
-                shrink = 0f;
-                basis = StyleKeyword.Auto;
-            }
-            else if (handles.Length <= 3 && handles[0].valueType == StyleValueType.Keyword && handles[0].valueIndex == (int)StyleValueKeyword.Auto)
-            {
-                valid = true;
-                basis = StyleKeyword.Auto;
-                grow = 1f;
-                shrink = 1f;
-
-                if (handles.Length > 1)
+                // Handle none | auto
+                if (handles[0].valueIndex == (int)StyleValueKeyword.None)
                 {
-                    grow = sheet.ReadFloat(handles[1]);
-                    if (handles.Length > 2)
-                    {
-                        shrink = sheet.ReadFloat(handles[2]);
-                    }
+                    valid = true;
+                    grow = 0f;
+                    shrink = 0f;
+                    basis = StyleKeyword.Auto;
+                }
+                else if (handles[0].valueIndex == (int)StyleValueKeyword.Auto)
+                {
+                    valid = true;
+                    grow = 1f;
+                    shrink = 1f;
+                    basis = StyleKeyword.Auto;
                 }
             }
-            else if (handles.Length <= 3 && handles[0].valueType == StyleValueType.Float)
+            else if (handles.Length <= 3)
             {
+                // Handle [ <'flex-grow'> <'flex-shrink'>? || <'flex-basis'> ]
                 valid = true;
 
-                // TODO: when support for units is implemented, basis must have units, grow and shrink are unitless.
-                // This will remove ambiguities. For now we assume (when all values are number)
-                //
-                // flex: grow               (could be flex: basis)
-                // flex: grow shrink        (could be flex: basis grow; or flex: grow basis)
-                // flex: grow shrink basis  (could be flex: basis grow shrink)
-
-                grow = sheet.ReadFloat(handles[0]);
+                grow = 0f;
                 shrink = 1f;
                 basis = 0f;
 
-                if (handles.Length > 1)
+                bool growFound = false;
+                bool basisFound = false;
+                for (int i = 0; i < handles.Length && valid; i++)
                 {
-                    if (handles[1].valueType == StyleValueType.Float)
+                    var handle = handles[i];
+                    var valueType = handle.valueType;
+                    if (valueType == StyleValueType.Dimension || valueType == StyleValueType.Keyword)
                     {
-                        shrink = sheet.ReadFloat(handles[1]);
-
-                        if (handles.Length > 2)
+                        // Basis
+                        if (basisFound)
                         {
-                            basis = sheet.ReadStyleLength(handles[2], specificity);
+                            valid = false;
+                            break;
+                        }
+
+                        basisFound = true;
+                        if (valueType == StyleValueType.Keyword)
+                        {
+                            if (handle.valueIndex == (int)StyleValueKeyword.Auto)
+                                basis = StyleKeyword.Auto;
+                        }
+                        else if (valueType == StyleValueType.Dimension)
+                        {
+                            basis = sheet.ReadStyleLength(handle, specificity);
+                        }
+
+                        if (growFound && i != handles.Length - 1)
+                        {
+                            // If grow is already processed basis must be the last value
+                            valid = false;
                         }
                     }
-                    else if (handles[1].valueType == StyleValueType.Keyword && handles[1].valueIndex == (int)StyleValueKeyword.Auto)
+                    else if (valueType == StyleValueType.Float)
                     {
-                        basis = StyleKeyword.Auto;
+                        var value = sheet.ReadFloat(handle);
+                        if (!growFound)
+                        {
+                            growFound = true;
+                            grow = value;
+                        }
+                        else
+                        {
+                            shrink = value;
+                        }
+                    }
+                    else
+                    {
+                        valid = false;
                     }
                 }
             }

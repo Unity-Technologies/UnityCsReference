@@ -71,7 +71,6 @@ namespace UnityEditor
         [FreeFunction(Name = "GetAudioManager().GetCPUUsage")]
         extern public static float GetFMODCPUUsage();
 
-        extern public static bool IsMovieAudio(AudioClip clip);
         extern public static bool IsTrackerFile(AudioClip clip);
         extern public static int GetMusicChannelCount(AudioClip clip);
 

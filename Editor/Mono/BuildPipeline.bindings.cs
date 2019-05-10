@@ -99,10 +99,6 @@ namespace UnityEditor
         // Will forces the buildGUID to all zeros
         NoUniqueIdentifier = 1 << 23,
 
-        // Don't add assets to the build. Assets will be downloaded on-demand from the editor.
-        // Reserve this flag as it's used in the experimental namespace
-        Reserved1 = 1 << 24, // DatalessPlayer
-
         // Wait for player connection on start
         WaitForPlayerConnection = 1 << 25,
 
@@ -522,9 +518,6 @@ namespace UnityEditor
 
         [FreeFunction(IsThreadSafe = true)]
         internal static extern string GetBuildToolsDirectory(BuildTarget target);
-
-        [FreeFunction]
-        internal static extern string GetMonoBinDirectory(BuildTarget target);
 
         [FreeFunction]
         internal static extern string GetMonoRuntimeLibDirectory(BuildTarget target);

@@ -23,9 +23,7 @@ namespace UnityEditor.Scripting.Compilers
 
         public override ResponseFileProvider CreateResponseFileProvider()
         {
-            if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
-                return new MicrosoftCSharpResponseFileProvider();
-            return new MonoCSharpResponseFileProvider();
+            return new MicrosoftCSharpResponseFileProvider();
         }
 
         public override string GetExtensionICanCompile()
@@ -38,24 +36,9 @@ namespace UnityEditor.Scripting.Compilers
             return "CSharp";
         }
 
-        public static CSharpCompiler GetCSharpCompiler(BuildTarget targetPlatform, bool buildingForEditor,
-            ScriptAssembly scriptAssembly)
+        public override ScriptCompilerBase CreateCompiler(ScriptAssembly scriptAssembly, EditorScriptCompilationOptions options, string tempOutputDirectory)
         {
-            var target = ModuleManager.GetTargetStringFromBuildTarget(targetPlatform);
-            var extension = ModuleManager.GetCompilationExtension(target);
-            return extension.GetCsCompiler(buildingForEditor, scriptAssembly);
-        }
-
-        public override ScriptCompilerBase CreateCompiler(ScriptAssembly scriptAssembly, MonoIsland island, bool buildingForEditor, BuildTarget targetPlatform, bool runUpdater)
-        {
-            switch (GetCSharpCompiler(targetPlatform, buildingForEditor, scriptAssembly))
-            {
-                case CSharpCompiler.Microsoft:
-                    return new MicrosoftCSharpCompiler(island, runUpdater);
-                case CSharpCompiler.Mono:
-                default:
-                    return new MonoCSharpCompiler(island, runUpdater);
-            }
+            return new MicrosoftCSharpCompiler(scriptAssembly, options, tempOutputDirectory);
         }
 
         public override bool CompilerRequiresAdditionalReferences()
@@ -63,23 +46,15 @@ namespace UnityEditor.Scripting.Compilers
             return true;
         }
 
-        public override string[] GetCompilerDefines(BuildTarget targetPlatform, bool buildingForEditor,
-            ScriptAssembly scriptAssembly)
+        public override string[] GetCompilerDefines()
         {
-            var compiler = GetCSharpCompiler(targetPlatform, buildingForEditor, scriptAssembly);
-
-            if (compiler == CSharpCompiler.Microsoft)
+            var defines = new string[]
             {
-                var defines = new string[]
-                {
-                    "CSHARP_7_OR_LATER", // Incremental Compiler adds this.
-                    "CSHARP_7_3_OR_NEWER",
-                };
+                "CSHARP_7_OR_LATER", // Incremental Compiler adds this.
+                "CSHARP_7_3_OR_NEWER",
+            };
 
-                return defines;
-            }
-
-            return new string[0];
+            return defines;
         }
 
         static string[] GetSystemReferenceDirectories(ApiCompatibilityLevel apiCompatibilityLevel)
@@ -127,23 +102,12 @@ namespace UnityEditor.Scripting.Compilers
 
         public override string GetNamespace(string filePath, string definedSymbols)
         {
-            var responseFilePath = Path.Combine("Assets", MonoCSharpCompiler.ResponseFilename);
-            if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
-            {
-                var responseFileData = ScriptCompilerBase.ParseResponseFileFromFile(
-                    responseFilePath,
-                    Application.dataPath,
-                    GetSystemReferenceDirectories(ApiCompatibilityLevel.NET_4_6));
-                return GetNamespaceNewRuntime(filePath, definedSymbols, responseFileData.Defines);
-            }
-            else
-            {
-                var responseFileData = ScriptCompilerBase.ParseResponseFileFromFile(
-                    responseFilePath,
-                    Application.dataPath,
-                    GetSystemReferenceDirectories(ApiCompatibilityLevel.NET_2_0));
-                return GetNamespaceOldRuntime(filePath, definedSymbols, responseFileData.Defines);
-            }
+            var responseFilePath = Path.Combine("Assets", MicrosoftCSharpCompiler.ResponseFilename);
+            var responseFileData = ScriptCompilerBase.ParseResponseFileFromFile(
+                responseFilePath,
+                Directory.GetParent(Application.dataPath).FullName,
+                GetSystemReferenceDirectories(ApiCompatibilityLevel.NET_4_6));
+            return GetNamespaceNewRuntime(filePath, definedSymbols, responseFileData.Defines);
         }
 
         // TODO: Revisit this code and switch to version 5.5.1 (or Roslyn if possible) when Editor switches to newer runtime version (on going work expected

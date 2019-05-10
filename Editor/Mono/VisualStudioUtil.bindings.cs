@@ -18,14 +18,14 @@ namespace UnityEditorInternal
             public readonly string DevEnvPath;
             public readonly string Edition;
             public readonly Version Version;
-            public readonly string[] Workloads;
+            public readonly string[] WorkloadsAndComponents;
 
-            internal VisualStudio(string devEnvPath, string edition, Version version, string[] workloads)
+            internal VisualStudio(string devEnvPath, string edition, Version version, string[] workloadsAndComponents)
             {
                 DevEnvPath = devEnvPath;
                 Edition = edition;
                 Version = version;
-                Workloads = workloads;
+                WorkloadsAndComponents = workloadsAndComponents;
             }
         }
 
@@ -39,13 +39,31 @@ namespace UnityEditorInternal
                         devEnvPath: rawDevEnvPaths[i * 4],
                         edition: rawDevEnvPaths[i * 4 + 1],
                         version: new Version(rawDevEnvPaths[i * 4 + 2]),
-                        workloads: rawDevEnvPaths[i * 4 + 3].Split('|'));
+                        workloadsAndComponents: rawDevEnvPaths[i * 4 + 3].Split('|'));
                 }
+            }
+        }
+
+        public static string GetVSVersionYear(Version vsVersion)
+        {
+            switch (vsVersion.Major)
+            {
+                case 14:
+                    return "2015";
+
+                case 15:
+                    return "2017";
+
+                case 16:
+                    return "2019";
+
+                default:
+                    return vsVersion.ToString();
             }
         }
 
         [FreeFunction("VisualStudioUtilities::FindVisualStudioDevEnvPaths")]
         [NativeConditional("UNITY_WIN")]
-        internal extern static string[] FindVisualStudioDevEnvPaths(int visualStudioVersion, string[] requiredWorkloads);
+        internal extern static string[] FindVisualStudioDevEnvPaths(int visualStudioVersion, string[] requiredWorkloadsAndComponents);
     }
 }

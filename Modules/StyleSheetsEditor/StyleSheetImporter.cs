@@ -12,7 +12,7 @@ namespace UnityEditor.StyleSheets
 {
     // Make sure style sheets importer after allowed dependent assets: textures, fonts and json
     // Has to be higher then AssetImportOrder.kImportOrderLate
-    [ScriptedImporter(version: 7, ext: "uss", importQueueOffset: 1100)]
+    [ScriptedImporter(version: 8, ext: "uss", importQueueOffset: 1100)]
     class StyleSheetImporter : ScriptedImporter
     {
         #pragma warning disable 649

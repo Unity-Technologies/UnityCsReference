@@ -94,7 +94,8 @@ namespace UnityEditor.UIElements
                 clips--;
             }
 
-            var desc = new RenderTextureDescriptor((int)r.width, (int)r.height, RenderTextureFormat.ARGB32, 16);
+            float pixelsPerPoint = EditorGUIUtility.pixelsPerPoint;
+            var desc = new RenderTextureDescriptor((int)(r.width * pixelsPerPoint), (int)(r.height * pixelsPerPoint), RenderTextureFormat.ARGB32, 16);
             var rt = RenderTexture.GetTemporary(desc);
             var oldRt = RenderTexture.active;
             RenderTexture.active = rt;

@@ -134,9 +134,9 @@ namespace UnityEngine.UIElements
             m_TextInputBase.SyncTextEngine();
         }
 
-        internal void DrawWithTextSelectionAndCursor(IStylePainterInternal painter, string newText)
+        internal void DrawWithTextSelectionAndCursor(MeshGenerationContext mgc, string newText)
         {
-            m_TextInputBase.DrawWithTextSelectionAndCursor(painter, newText);
+            m_TextInputBase.DrawWithTextSelectionAndCursor(mgc, newText);
         }
 
         protected TextInputBaseField(int maxLength, char maskChar, TextInputBase textInputBase)
@@ -312,6 +312,7 @@ namespace UnityEngine.UIElements
                 editorEngine.style = new GUIStyle(editorEngine.style);
 
                 RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
+                this.generateVisualContent += OnGenerateVisualContent;
             }
 
             DropdownMenuAction.Status CutCopyActionStatus(DropdownMenuAction a)
@@ -360,7 +361,7 @@ namespace UnityEngine.UIElements
                 if (customStyle.TryGetValue(s_CursorColorProperty, out cursorValue))
                     m_CursorColor = cursorValue;
 
-                ComputedStyle.WriteToGUIStyle(computedStyle, editorEngine.style);
+                SyncGUIStyle(this, editorEngine.style);
             }
 
             internal virtual void SyncTextEngine()
@@ -381,10 +382,8 @@ namespace UnityEngine.UIElements
                 return s;
             }
 
-            internal override void DoRepaint(IStylePainter painter)
+            internal void OnGenerateVisualContent(MeshGenerationContext mgc)
             {
-                var stylePainter = (IStylePainterInternal)painter;
-
                 // When this is used, we can get rid of the content.text trick and use mask char directly in the text to print
                 if (touchScreenTextField)
                 {
@@ -412,16 +411,16 @@ namespace UnityEngine.UIElements
                 {
                     if (!hasFocus)
                     {
-                        stylePainter.DrawText(text);
+                        mgc.Text(MeshGenerationContextUtils.TextParams.MakeStyleBased(this, text));
                     }
                     else
                     {
-                        DrawWithTextSelectionAndCursor(stylePainter, text);
+                        DrawWithTextSelectionAndCursor(mgc, text);
                     }
                 }
             }
 
-            internal void DrawWithTextSelectionAndCursor(IStylePainterInternal painter, string newText)
+            internal void DrawWithTextSelectionAndCursor(MeshGenerationContext mgc, string newText)
             {
                 var keyboardTextEditor = editorEventHandler as KeyboardTextEditorEventHandler;
                 if (keyboardTextEditor == null)
@@ -436,12 +435,12 @@ namespace UnityEngine.UIElements
 
                 float textScaling = TextNative.ComputeTextScaling(worldTransform, GUIUtility.pixelsPerPoint);
 
-                var textParams = TextStylePainterParameters.GetDefault(this, text);
+                var textParams = MeshGenerationContextUtils.TextParams.MakeStyleBased(this, text);
                 textParams.text = " ";
                 textParams.wordWrapWidth = 0.0f;
                 textParams.wordWrap = false;
 
-                var textNativeSettings = textParams.GetTextNativeSettings(textScaling);
+                var textNativeSettings = MeshGenerationContextUtils.TextParams.GetTextNativeSettings(textParams, textScaling);
                 float lineHeight = TextNative.ComputeTextHeight(textNativeSettings);
 
                 float wordWrapWidth = 0.0f;
@@ -450,6 +449,7 @@ namespace UnityEngine.UIElements
                 if (editorEngine.multiline && (resolvedStyle.whiteSpace == WhiteSpace.Normal))
                 {
                     wordWrapWidth = contentRect.width;
+
                     // Since the wrapping is enabled, there is no need to offset the text... It will always fit the space on screen !
                     scrollOffset = Vector2.zero;
                 }
@@ -468,11 +468,6 @@ namespace UnityEngine.UIElements
                 // Draw highlighted section, if any
                 if ((cursorIndex != selectionEndIndex) && !isDragging)
                 {
-                    var painterParams = RectStylePainterParameters.GetDefault(this);
-                    painterParams.color = selectionColor;
-                    painterParams.border.SetWidth(0.0f);
-                    painterParams.border.SetRadius(0.0f);
-
                     int min = cursorIndex < selectionEndIndex ? cursorIndex : selectionEndIndex;
                     int max = cursorIndex > selectionEndIndex ? cursorIndex : selectionEndIndex;
 
@@ -490,28 +485,40 @@ namespace UnityEngine.UIElements
 
                     if (Mathf.Approximately(minPos.y, maxPos.y))
                     {
-                        painterParams.rect = new Rect(minPos.x, minPos.y, maxPos.x - minPos.x, lineHeight);
-                        painter.DrawRect(painterParams);
+                        mgc.Rectangle(new MeshGenerationContextUtils.RectangleParams()
+                        {
+                            rect = new Rect(minPos.x, minPos.y, maxPos.x - minPos.x, lineHeight),
+                            color = selectionColor
+                        });
                     }
                     else
                     {
                         // Draw first line
-                        painterParams.rect = new Rect(minPos.x, minPos.y, contentRect.xMax - minPos.x, lineHeight);
-                        painter.DrawRect(painterParams);
+                        mgc.Rectangle(new MeshGenerationContextUtils.RectangleParams()
+                        {
+                            rect = new Rect(minPos.x, minPos.y, contentRect.xMax - minPos.x, lineHeight),
+                            color = selectionColor
+                        });
 
                         var inbetweenHeight = (maxPos.y - minPos.y) - lineHeight;
                         if (inbetweenHeight > 0f)
                         {
                             // Draw all lines in-between
-                            painterParams.rect = new Rect(contentRect.xMin, minPos.y + lineHeight, contentRect.width, inbetweenHeight);
-                            painter.DrawRect(painterParams);
+                            mgc.Rectangle(new MeshGenerationContextUtils.RectangleParams()
+                            {
+                                rect = new Rect(contentRect.xMin, minPos.y + lineHeight, contentRect.width, inbetweenHeight),
+                                color = selectionColor
+                            });
                         }
 
                         // Draw last line if not empty
                         if (maxPos.x != contentRect.x)
                         {
-                            painterParams.rect = new Rect(contentRect.xMin, maxPos.y, maxPos.x, lineHeight);
-                            painter.DrawRect(painterParams);
+                            mgc.Rectangle(new MeshGenerationContextUtils.RectangleParams()
+                            {
+                                rect = new Rect(contentRect.xMin, maxPos.y, maxPos.x, lineHeight),
+                                color = selectionColor
+                            });
                         }
                     }
                 }
@@ -519,11 +526,11 @@ namespace UnityEngine.UIElements
                 // Draw the text with the scroll offset
                 if (!string.IsNullOrEmpty(editorEngine.text) && contentRect.width > 0.0f && contentRect.height > 0.0f)
                 {
-                    textParams = TextStylePainterParameters.GetDefault(this, text);
+                    textParams = MeshGenerationContextUtils.TextParams.MakeStyleBased(this, text);
                     textParams.rect = new Rect(contentRect.x - scrollOffset.x, contentRect.y - scrollOffset.y, contentRect.width + scrollOffset.x, contentRect.height + scrollOffset.y);
                     textParams.text = editorEngine.text;
 
-                    painter.DrawText(textParams);
+                    mgc.Text(textParams);
                 }
 
                 // Draw the cursor
@@ -539,12 +546,11 @@ namespace UnityEngine.UIElements
                         textNativeSettings = cursorParams.GetTextNativeSettings(textScaling);
                         Vector2 cursorPosition = TextNative.GetCursorPosition(textNativeSettings, cursorParams.rect, cursorParams.cursorIndex);
                         cursorPosition -= scrollOffset;
-                        var painterParams = new RectStylePainterParameters
+                        mgc.Rectangle(new MeshGenerationContextUtils.RectangleParams
                         {
                             rect = new Rect(cursorPosition.x, cursorPosition.y, 1f, lineHeight),
                             color = drawCursorColor
-                        };
-                        painter.DrawRect(painterParams);
+                        });
                     }
 
                     // Draw alternate cursor, if any
@@ -558,13 +564,11 @@ namespace UnityEngine.UIElements
                         textNativeSettings = cursorParams.GetTextNativeSettings(textScaling);
                         Vector2 altCursorPosition = TextNative.GetCursorPosition(textNativeSettings, cursorParams.rect, cursorParams.cursorIndex);
                         altCursorPosition -= scrollOffset;
-
-                        var painterParams = new RectStylePainterParameters
+                        mgc.Rectangle(new MeshGenerationContextUtils.RectangleParams
                         {
                             rect = new Rect(altCursorPosition.x, altCursorPosition.y, 1f, lineHeight),
                             color = drawCursorColor
-                        };
-                        painter.DrawRect(painterParams);
+                        });
                     }
                 }
 
@@ -611,6 +615,7 @@ namespace UnityEngine.UIElements
                 {
                     textToUse = " ";
                 }
+
                 return TextElement.MeasureVisualElementTextSize(this, textToUse, desiredWidth, widthMode, desiredHeight, heightMode);
             }
 
@@ -679,6 +684,103 @@ namespace UnityEngine.UIElements
             void ITextInputField.UpdateText(string value)
             {
                 UpdateText(value);
+            }
+
+            private void DeferGUIStyleRectSync()
+            {
+                RegisterCallback<GeometryChangedEvent>(OnPercentResolved);
+            }
+
+            private void OnPercentResolved(GeometryChangedEvent evt)
+            {
+                UnregisterCallback<GeometryChangedEvent>(OnPercentResolved);
+
+                var guiStyle = editorEngine.style;
+                int left = (int)resolvedStyle.marginLeft;
+                int top = (int)resolvedStyle.marginTop;
+                int right = (int)resolvedStyle.marginRight;
+                int bottom = (int)resolvedStyle.marginBottom;
+                AssignRect(guiStyle.margin, left, top, right, bottom);
+
+                left = (int)resolvedStyle.paddingLeft;
+                top = (int)resolvedStyle.paddingTop;
+                right = (int)resolvedStyle.paddingRight;
+                bottom = (int)resolvedStyle.paddingBottom;
+                AssignRect(guiStyle.padding, left, top, right, bottom);
+            }
+
+            private static void SyncGUIStyle(TextInputBase textInput, GUIStyle style)
+            {
+                var computedStyle = textInput.computedStyle;
+                style.alignment = computedStyle.unityTextAlign.GetSpecifiedValueOrDefault(style.alignment);
+                style.wordWrap = computedStyle.whiteSpace.specificity != StyleValueExtensions.UndefinedSpecificity
+                    ? computedStyle.whiteSpace.value == WhiteSpace.Normal
+                    : style.wordWrap;
+                bool overflowVisible = computedStyle.overflow.specificity != StyleValueExtensions.UndefinedSpecificity
+                    ? computedStyle.overflow.value == Overflow.Visible
+                    : style.clipping == TextClipping.Overflow;
+                style.clipping = overflowVisible ? TextClipping.Overflow : TextClipping.Clip;
+                if (computedStyle.unityFont.value != null)
+                {
+                    style.font = computedStyle.unityFont.value;
+                }
+
+                style.fontSize = (int)computedStyle.fontSize.GetSpecifiedValueOrDefault((float)style.fontSize);
+                style.fontStyle = computedStyle.unityFontStyleAndWeight.GetSpecifiedValueOrDefault(style.fontStyle);
+
+                int left = computedStyle.unitySliceLeft.value;
+                int top = computedStyle.unitySliceTop.value;
+                int right = computedStyle.unitySliceRight.value;
+                int bottom = computedStyle.unitySliceBottom.value;
+                AssignRect(style.border, left, top, right, bottom);
+
+                if (IsLayoutUsingPercent(textInput))
+                {
+                    textInput.DeferGUIStyleRectSync();
+                }
+                else
+                {
+                    left = (int)computedStyle.marginLeft.value.value;
+                    top = (int)computedStyle.marginTop.value.value;
+                    right = (int)computedStyle.marginRight.value.value;
+                    bottom = (int)computedStyle.marginBottom.value.value;
+                    AssignRect(style.margin, left, top, right, bottom);
+
+                    left = (int)computedStyle.paddingLeft.value.value;
+                    top = (int)computedStyle.paddingTop.value.value;
+                    right = (int)computedStyle.paddingRight.value.value;
+                    bottom = (int)computedStyle.paddingBottom.value.value;
+                    AssignRect(style.padding, left, top, right, bottom);
+                }
+            }
+
+            private static bool IsLayoutUsingPercent(VisualElement ve)
+            {
+                var computedStyle = ve.computedStyle;
+
+                // Margin
+                if (computedStyle.marginLeft.value.unit == LengthUnit.Percent ||
+                    computedStyle.marginTop.value.unit == LengthUnit.Percent ||
+                    computedStyle.marginRight.value.unit == LengthUnit.Percent ||
+                    computedStyle.marginBottom.value.unit == LengthUnit.Percent)
+                    return true;
+
+                // Padding
+                if (computedStyle.paddingLeft.value.unit == LengthUnit.Percent ||
+                    computedStyle.paddingTop.value.unit == LengthUnit.Percent ||
+                    computedStyle.paddingRight.value.unit == LengthUnit.Percent ||
+                    computedStyle.paddingBottom.value.unit == LengthUnit.Percent)
+                    return true;
+
+                return false;
+            }
+
+            private static void AssignRect(RectOffset rect, int left, int top, int right, int bottom)
+            {
+                rect.left = left;
+                rect.top = top;
+                rect.right = right;
+                rect.bottom = bottom;
             }
         }
     }

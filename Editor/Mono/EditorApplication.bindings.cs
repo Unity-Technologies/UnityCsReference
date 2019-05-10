@@ -104,14 +104,11 @@ namespace UnityEditor
             set;
         }
 
+        [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
+        internal static extern bool IsInitialized();
+
         // Is editor currently compiling scripts? (RO)
-        public static bool isCompiling
-        {
-            get
-            {
-                return EditorCompilationInterface.IsCompiling();
-            }
-        }
+        public static bool isCompiling => EditorCompilationInterface.IsCompiling();
 
         // Is editor currently updating? (RO)
         public static extern bool isUpdating
@@ -131,10 +128,11 @@ namespace UnityEditor
             get;
         }
 
-        [StaticAccessor("ScriptingManager", StaticAccessorType.DoubleColon)]
-        public static extern ScriptingRuntimeVersion scriptingRuntimeVersion
+        // TODO: Obsolete/Uncomment when managed mono removal is complete
+        // [Obsolete("ScriptingRuntimeVersion has been deprecated in 2019.3 due to the removal of legacy mono")]
+        public static ScriptingRuntimeVersion scriptingRuntimeVersion
         {
-            get;
+            get { return ScriptingRuntimeVersion.Latest; }
         }
 
         [StaticAccessor("ScriptingManager", StaticAccessorType.DoubleColon)]

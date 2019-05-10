@@ -172,7 +172,7 @@ namespace UnityEditor
             var flagEndIndex = flagStartIndex + flagCount;
 
             // Button text
-            buttonText = "Mixed ...";
+            buttonText = "Mixed...";
             if (mask == 0)
                 buttonText = nothingName;
             else if (mask == ~0)

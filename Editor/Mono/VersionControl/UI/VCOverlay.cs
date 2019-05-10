@@ -16,6 +16,7 @@ namespace UnityEditorInternal.VersionControl
         private static Texture2D s_BlueRightParan;
         private static Texture2D s_RedLeftParan;
         private static Texture2D s_RedRightParan;
+        private static Texture2D s_DisconnectedIcon;
 
         public static Rect GetOverlayRect(Rect itemRect)
         {
@@ -111,8 +112,17 @@ namespace UnityEditorInternal.VersionControl
 
             bool keepFolderMetaParans = asset.isFolder && Provider.isVersioningFolders;
 
+            bool providerActive = Provider.isActive;
+
             // Local state overlay
-            if (Asset.IsState(assetState, Asset.States.AddedLocal))
+            if (!providerActive)
+            {
+                Rect disconnectedRect = itemRect;
+                disconnectedRect.width = s_DisconnectedIcon.width;
+                disconnectedRect.height = s_DisconnectedIcon.height;
+                GUI.DrawTexture(disconnectedRect, s_DisconnectedIcon);
+            }
+            else if (Asset.IsState(assetState, Asset.States.AddedLocal))
             {
                 DrawOverlay(Asset.States.AddedLocal, topLeft);
 
@@ -188,11 +198,16 @@ namespace UnityEditorInternal.VersionControl
             if (Asset.IsState(assetState, Asset.States.Conflicted) || (metaAsset != null && Asset.IsState(metaState, Asset.States.Conflicted)))
                 DrawOverlay(Asset.States.Conflicted, bottomLeft);
 
-            if ((asset.isFolder == false && Asset.IsState(assetState, Asset.States.Updating)) || (metaAsset != null && Asset.IsState(metaState, Asset.States.Updating)))
-                DrawOverlay(Asset.States.Updating, bottomRight);
+            if (providerActive)
+                if ((asset.isFolder == false && Asset.IsState(assetState, Asset.States.Updating)) || (metaAsset != null && Asset.IsState(metaState, Asset.States.Updating)))
+                    DrawOverlay(Asset.States.Updating, bottomRight);
 
             // Remote state overlay
-            if (Asset.IsState(assetState, Asset.States.AddedRemote))
+            if (!providerActive)
+            {
+                // nothing; disconnected icon was already drawn for local overlay above
+            }
+            else if (Asset.IsState(assetState, Asset.States.AddedRemote))
             {
                 DrawOverlay(Asset.States.AddedRemote, topRight);
 
@@ -269,6 +284,9 @@ namespace UnityEditorInternal.VersionControl
 
                 s_RedRightParan = EditorGUIUtility.LoadIcon("P4_RedRightParenthesis");
                 s_RedRightParan.hideFlags = HideFlags.HideAndDontSave;
+
+                s_DisconnectedIcon = EditorGUIUtility.LoadIcon("CollabError");
+                s_DisconnectedIcon.hideFlags = HideFlags.HideAndDontSave;
             }
         }
     }

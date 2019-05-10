@@ -440,6 +440,10 @@ namespace UnityEngine
         {
             get { return SupportsAsyncGPUReadback(); }
         }
+        public static bool supportsRayTracing
+        {
+            get { return SupportsRayTracing(); }
+        }
 
         public static bool supportsSetConstantBuffer
         {
@@ -648,6 +652,9 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsAsyncGPUReadback")]
         static extern bool SupportsAsyncGPUReadback();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsRayTracing")]
+        static extern bool SupportsRayTracing();
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsSetConstantBuffer")]
         static extern bool SupportsSetConstantBuffer();

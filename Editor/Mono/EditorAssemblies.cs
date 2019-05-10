@@ -54,7 +54,7 @@ namespace UnityEditor
             get { return loadedAssemblies.SelectMany(assembly => AssemblyHelper.GetTypesFromAssembly(assembly)); }
         }
 
-        //[Obsolete("Use public TypeCache.GetTypesDerivedFrom<> API instead.")]
+        [Obsolete("Use public TypeCache.GetTypesDerivedFrom<> API instead.")]
         static internal IEnumerable<Type> SubclassesOf(Type parent)
         {
             return parent.IsInterface ?
@@ -62,7 +62,7 @@ namespace UnityEditor
                 SubclassesOfClass(parent);
         }
 
-        //[Obsolete("Use public TypeCache.GetTypesDerivedFrom<> API instead.")]
+        [Obsolete("Use public TypeCache.GetTypesDerivedFrom<> API instead.")]
         static internal IEnumerable<Type> SubclassesOfClass(Type parent)
         {
             Type[] types;

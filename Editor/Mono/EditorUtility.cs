@@ -189,7 +189,7 @@ namespace UnityEditor
 
         public static string[] CompileCSharp(string[] sources, string[] references, string[] defines, string outputFile)
         {
-            return Scripting.Compilers.MonoCSharpCompiler.Compile(sources, references, defines, outputFile, PlayerSettings.allowUnsafeCode);
+            return Scripting.Compilers.MicrosoftCSharpCompiler.Compile(sources, references, defines, outputFile, PlayerSettings.allowUnsafeCode);
         }
 
         [Obsolete("Use PrefabUtility.InstantiatePrefab", false)]
@@ -347,7 +347,7 @@ namespace UnityEditor
                             info.instanceObject = targetComponent;
                             info.assetPath = AssetDatabase.GetAssetPath(sourceGo);
                             GameObject rootObject = PrefabUtility.GetRootGameObject(sourceGo);
-                            if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject))
+                            if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject) || EditorUtility.IsPersistent(instanceGo))
                                 pm.AddDisabledItem(menuItemContent);
                             else
                                 pm.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabAddedComponent, info);
@@ -387,7 +387,7 @@ namespace UnityEditor
                                 info.instanceObject = targetObject;
                                 info.assetPath = AssetDatabase.GetAssetPath(sourceObject);
                                 GameObject rootObject = PrefabUtility.GetRootGameObject(sourceObject);
-                                if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject))
+                                if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject) || EditorUtility.IsPersistent(targetObject))
                                     pm.AddDisabledItem(menuItemContent);
                                 else
                                     pm.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabObjectOverride, info);

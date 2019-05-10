@@ -340,6 +340,42 @@ namespace UnityEngine
 
         [NativeMethod(Name = "AudioSettings::SetAmbisonicName", IsFreeFunction = true)]
         extern static internal void SetAmbisonicDecoderPluginName(string name);
+
+        public static class Mobile
+        {
+            static public bool muteState
+            {
+                get { return false; }
+            }
+
+            static public bool stopAudioOutputOnMute
+            {
+                get { return false; }
+                set
+                {
+                    Debug.LogWarning("Setting AudioSettings.Mobile.stopAudioOutputOnMute is possible on iOS and Android only");
+                }
+            }
+
+            static public bool audioOutputStarted
+            {
+                get { return true; }
+            }
+
+#pragma warning disable 0067
+            static public event Action<bool> OnMuteStateChanged;
+#pragma warning restore 0067
+
+            static public void StartAudioOutput()
+            {
+                Debug.LogWarning("AudioSettings.Mobile.StartAudioOutput is implemented for iOS and Android only");
+            }
+
+            static public void StopAudioOutput()
+            {
+                Debug.LogWarning("AudioSettings.Mobile.StopAudioOutput is implemented for iOS and Android only");
+            }
+        }
     }
 
     // A container for audio data.

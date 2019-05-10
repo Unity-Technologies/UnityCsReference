@@ -122,7 +122,7 @@ namespace UnityEditor
 
         Lumin = 39,
 
-        BJM = 40,
+        Stadia = 40,
 
         // obsolete identifiers. We're using different values so that ToString() works.
         [System.Obsolete("Use iOS instead (UnityUpgradable) -> iOS", true)]

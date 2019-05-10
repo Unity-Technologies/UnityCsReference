@@ -79,7 +79,22 @@ namespace UnityEngine.UIElements
         // Inherited properties
         public StyleColor color => stylesData.color.specificity != StyleValueExtensions.UndefinedSpecificity ? stylesData.color : inheritedStylesData.color;
         public StyleFont unityFont => stylesData.unityFont.specificity != StyleValueExtensions.UndefinedSpecificity ? stylesData.unityFont : inheritedStylesData.font;
-        public StyleLength fontSize => stylesData.fontSize.specificity != StyleValueExtensions.UndefinedSpecificity ? stylesData.fontSize : inheritedStylesData.fontSize;
+
+        public StyleLength fontSize
+        {
+            get
+            {
+                int specificity = stylesData.fontSize.specificity;
+                if (specificity != StyleValueExtensions.UndefinedSpecificity)
+                {
+                    // If it's a relative length (percentage) the computed value needs to be absolute
+                    float pixelSize = CalculatePixelFontSize(m_Element);
+                    return new StyleLength(pixelSize) {specificity = specificity};
+                }
+
+                return inheritedStylesData.fontSize;
+            }
+        }
 
         public StyleEnum<FontStyle> unityFontStyleAndWeight
         {
@@ -117,62 +132,17 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal static void WriteToGUIStyle(ComputedStyle computedStyle, GUIStyle style)
+        public static float CalculatePixelFontSize(VisualElement ve)
         {
-            style.alignment = computedStyle.unityTextAlign.GetSpecifiedValueOrDefault(style.alignment);
-            style.wordWrap = computedStyle.whiteSpace.specificity != StyleValueExtensions.UndefinedSpecificity
-                ? computedStyle.whiteSpace.value == WhiteSpace.Normal
-                : style.wordWrap;
-            bool overflowVisible = computedStyle.overflow.specificity != StyleValueExtensions.UndefinedSpecificity
-                ? computedStyle.overflow.value == Overflow.Visible
-                : style.clipping == TextClipping.Overflow;
-            style.clipping = overflowVisible ? TextClipping.Overflow : TextClipping.Clip;
-            if (computedStyle.unityFont.value != null)
+            var fontSize = ve.specifiedStyle.fontSize.value;
+            if (fontSize.unit == LengthUnit.Percent)
             {
-                style.font = computedStyle.unityFont.value;
+                var parent = ve.hierarchy.parent;
+                float parentSize = parent != null ? parent.resolvedStyle.fontSize : 0f;
+                float computedSize = parentSize * fontSize.value / 100;
+                fontSize = new Length(computedSize);
             }
-
-            style.fontSize = (int)computedStyle.fontSize.GetSpecifiedValueOrDefault((float)style.fontSize);
-            style.fontStyle = computedStyle.unityFontStyleAndWeight.GetSpecifiedValueOrDefault(style.fontStyle);
-
-            AssignRect(style.margin, computedStyle.marginLeft, computedStyle.marginTop, computedStyle.marginRight, computedStyle.marginBottom);
-            AssignRect(style.padding, computedStyle.paddingLeft, computedStyle.paddingTop, computedStyle.paddingRight, computedStyle.paddingBottom);
-            AssignRect(style.border, computedStyle.unitySliceLeft, computedStyle.unitySliceTop, computedStyle.unitySliceRight, computedStyle.unitySliceBottom);
-            AssignState(computedStyle, style.normal);
-            AssignState(computedStyle, style.focused);
-            AssignState(computedStyle, style.hover);
-            AssignState(computedStyle, style.active);
-            AssignState(computedStyle, style.onNormal);
-            AssignState(computedStyle, style.onFocused);
-            AssignState(computedStyle, style.onHover);
-            AssignState(computedStyle, style.onActive);
-        }
-
-        private static void AssignState(ComputedStyle computedStyle, GUIStyleState state)
-        {
-            state.textColor = computedStyle.color.GetSpecifiedValueOrDefault(state.textColor);
-            if (computedStyle.backgroundImage.value.texture != null)
-            {
-                state.background = computedStyle.backgroundImage.value.texture;
-                if (state.scaledBackgrounds == null || state.scaledBackgrounds.Length < 1 || state.scaledBackgrounds[0] != computedStyle.backgroundImage.value.texture)
-                    state.scaledBackgrounds = new Texture2D[1] { computedStyle.backgroundImage.value.texture };
-            }
-        }
-
-        private static void AssignRect(RectOffset rect, StyleLength left, StyleLength top, StyleLength right, StyleLength bottom)
-        {
-            rect.left = (int)left.GetSpecifiedValueOrDefault((float)rect.left);
-            rect.top = (int)top.GetSpecifiedValueOrDefault((float)rect.top);
-            rect.right = (int)right.GetSpecifiedValueOrDefault((float)rect.right);
-            rect.bottom = (int)bottom.GetSpecifiedValueOrDefault((float)rect.bottom);
-        }
-
-        private static void AssignRect(RectOffset rect, StyleInt left, StyleInt top, StyleInt right, StyleInt bottom)
-        {
-            rect.left = left.GetSpecifiedValueOrDefault(rect.left);
-            rect.top = top.GetSpecifiedValueOrDefault(rect.top);
-            rect.right = right.GetSpecifiedValueOrDefault(rect.right);
-            rect.bottom = bottom.GetSpecifiedValueOrDefault(rect.bottom);
+            return fontSize.value;
         }
     }
 }

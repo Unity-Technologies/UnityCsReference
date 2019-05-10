@@ -49,7 +49,7 @@ namespace UnityEngine.Analytics
         }
 
         [ThreadSafe]
-        private static extern bool IsInitialized();
+        internal static extern bool IsInitialized();
 
         [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
         private extern static bool enabledInternal

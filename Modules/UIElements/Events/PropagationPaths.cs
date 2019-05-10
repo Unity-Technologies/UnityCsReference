@@ -36,6 +36,12 @@ namespace UnityEngine.UIElements
             targetAndBubblePath = new List<PropagationPathElement>(k_DefaultPropagationDepth);
         }
 
+        public PropagationPaths(PropagationPaths paths)
+        {
+            trickleDownPath = new List<VisualElement>(paths.trickleDownPath);
+            targetAndBubblePath = new List<PropagationPathElement>(paths.targetAndBubblePath);
+        }
+
         public static PropagationPaths Build(VisualElement elem, Type pathTypesRequested)
         {
             if (elem == null || pathTypesRequested == Type.None)

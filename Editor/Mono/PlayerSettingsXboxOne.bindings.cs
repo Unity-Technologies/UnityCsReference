@@ -30,6 +30,7 @@ namespace UnityEditor
         ErrorsOnly = 1
     }
 
+    [Obsolete("Mono script compiler is no longer supported.")]
     public enum ScriptCompiler
     {
         Mono = 0,
@@ -276,13 +277,16 @@ namespace UnityEditor
             extern public static int monoLoggingLevel { get; set; }
 
             // Compiler to use for user script
-            [NativeProperty("XboxOneScriptCompiler")]
-            extern public static ScriptCompiler scriptCompiler
+            [Obsolete("Mono script compiler is no longer supported.")]
+            public static ScriptCompiler scriptCompiler
             {
-                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
-                get;
-                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
-                set;
+                get
+                {
+                    return ScriptCompiler.Roslyn;
+                }
+                set
+                {
+                }
             }
         }
     }

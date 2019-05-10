@@ -15,7 +15,28 @@ namespace UnityEditor
 {
     public class SceneVisibilityManager : ScriptableSingleton<SceneVisibilityManager>
     {
+        internal class ShortcutContext : IShortcutToolContext
+        {
+            public bool active
+            {
+                get
+                {
+                    var focusedWindow = EditorWindow.focusedWindow;
+                    if (focusedWindow != null)
+                    {
+                        return (focusedWindow.GetType() == typeof(SceneView) ||
+                            focusedWindow.GetType() == typeof(SceneHierarchyWindow));
+                    }
+
+                    return false;
+                }
+            }
+        }
+
+        private static ShortcutContext s_ShortcutContext;
+
         public static event Action visibilityChanged;
+
         internal static event Action currentStageIsolated;
 
         private readonly static List<GameObject> m_RootBuffer = new List<GameObject>();
@@ -40,7 +61,10 @@ namespace UnityEditor
             StageNavigationManager.instance.stageChanged += StageNavigationManagerOnStageChanging;
             SceneVisibilityState.internalStructureChanged += InternalStructureChanged;
             PrefabStage stage = StageNavigationManager.instance.GetCurrentPrefabStage();
-            SceneVisibilityState.SetPrefabStageScene(stage == null ? default(Scene) : stage.scene);
+            SceneVisibilityState.SetPrefabStageScene(stage?.scene ?? default(Scene));
+
+            s_ShortcutContext = new ShortcutContext();
+            EditorApplication.delayCall += () => ShortcutIntegration.instance.contextManager.RegisterToolContext(s_ShortcutContext);
         }
 
         private static void InternalStructureChanged()
@@ -169,6 +193,12 @@ namespace UnityEditor
             VisibilityChanged();
         }
 
+        [Shortcut("Scene Visibility/Show All")]
+        internal static void ShowAllShortcut()
+        {
+            instance.ShowAll();
+        }
+
         public void ShowAll()
         {
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Show All");
@@ -259,6 +289,22 @@ namespace UnityEditor
             return SceneVisibilityState.HasHiddenGameObjects(scene);
         }
 
+        internal enum SceneState
+        {
+            AllHidden,
+            AllVisible,
+            Mixed
+        }
+
+        internal SceneState GetSceneState(Scene scene)
+        {
+            if (AreAllDescendantsHidden(scene))
+                return SceneState.AllHidden;
+            if (AreAnyDescendantsHidden(scene))
+                return SceneState.Mixed;
+            return SceneState.AllVisible;
+        }
+
         public void Show(GameObject[] gameObjects, bool includeDescendants)
         {
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Show GameObjects");
@@ -317,7 +363,7 @@ namespace UnityEditor
 
         //SHORTCUTS
         [Shortcut("Scene Visibility/Toggle Selection Visibility")]
-        static void ToggleSelectionVisibility()
+        private static void ToggleSelectionVisibility()
         {
             if (Selection.gameObjects.Length > 0)
             {
@@ -337,8 +383,8 @@ namespace UnityEditor
             }
         }
 
-        [Shortcut("Scene Visibility/Toggle Selection And Descendants Visibility")]
-        static void ToggleSelectionAndDescendantsVisibility()
+        [Shortcut("Scene Visibility/Toggle Selection And Descendants Visibility", typeof(ShortcutContext), KeyCode.H)]
+        private static void ToggleSelectionAndDescendantsVisibility()
         {
             if (Selection.gameObjects.Length > 0)
             {
@@ -419,12 +465,12 @@ namespace UnityEditor
         }
 
         [Shortcut("Scene Visibility/Exit Isolation")]
-        static void ExitIsolationShortcut()
+        private static void ExitIsolationShortcut()
         {
             instance.ExitIsolation();
         }
 
-        [Shortcut("Scene Visibility/Toggle Selection And Descendants")]
+        [Shortcut("Scene Visibility/Toggle Isolation On Selection And Descendants", typeof(ShortcutContext), KeyCode.H, ShortcutModifiers.Shift)]
         static void ToggleIsolateSelectionAndDescendantsShortcut()
         {
             instance.ToggleIsolateSelectionAndDescendants();
@@ -479,6 +525,18 @@ namespace UnityEditor
             {
                 RevertIsolationCurrentStage();
                 VisibilityChanged();
+            }
+        }
+
+        internal void ToggleScene(Scene scene, SceneState state)
+        {
+            if (state == SceneState.AllVisible)
+            {
+                Hide(scene);
+            }
+            else
+            {
+                Show(scene);
             }
         }
     }

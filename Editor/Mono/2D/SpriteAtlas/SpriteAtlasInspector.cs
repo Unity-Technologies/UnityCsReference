@@ -64,7 +64,7 @@ namespace UnityEditor.U2D
             public readonly GUIContent packButton = EditorGUIUtility.TrTextContent("Pack Preview", "Pack this atlas.");
 
             public readonly GUIContent disabledPackLabel = EditorGUIUtility.TrTextContent("Sprite Atlas packing is disabled. Enable it in Edit > Settings > Editor.", null, EditorGUIUtility.GetHelpIcon(MessageType.Info));
-            public readonly GUIContent packableListLabel = EditorGUIUtility.TrTextContent("Objects for Packing", "Only accept Folder, Sprite Sheet(Texture) and Sprite.");
+            public readonly GUIContent packableListLabel = EditorGUIUtility.TrTextContent("Objects for Packing", "Only accept Folder, Sprite Sheet (Texture) and Sprite.");
 
             public readonly GUIContent notPowerOfTwoWarning = EditorGUIUtility.TrTextContent("This scale will produce a Sprite Atlas variant with a packed texture that is NPOT (non - power of two). This may cause visual artifacts in certain compression/texture formats.");
 
@@ -95,6 +95,15 @@ namespace UnityEditor.U2D
         }
 
         private static Styles s_Styles;
+
+        private static Styles styles
+        {
+            get
+            {
+                s_Styles = s_Styles ?? new Styles();
+                return s_Styles;
+            }
+        }
 
         private enum AtlasType { Undefined = -1, Master = 0, Variant = 1 }
 
@@ -231,7 +240,7 @@ namespace UnityEditor.U2D
         {
             ObjectSelector.get.Show(null, typeof(Object), null, false);
             ObjectSelector.get.searchFilter = "t:sprite t:texture2d t:folder";
-            ObjectSelector.get.objectSelectorID = s_Styles.packableSelectorHash;
+            ObjectSelector.get.objectSelectorID = styles.packableSelectorHash;
         }
 
         void RemovePackable(ReorderableList list)
@@ -244,7 +253,7 @@ namespace UnityEditor.U2D
         void DrawPackableElement(Rect rect, int index, bool selected, bool focused)
         {
             var property = m_Packables.GetArrayElementAtIndex(index);
-            var controlID = EditorGUIUtility.GetControlID(s_Styles.packableElementHash, FocusType.Passive);
+            var controlID = EditorGUIUtility.GetControlID(styles.packableElementHash, FocusType.Passive);
             var previousObject = property.objectReferenceValue;
 
             var changedObject = EditorGUI.DoObjectField(rect, rect, controlID, previousObject, typeof(Object), null, ValidateObjectForPackableFieldAssignment, false);
@@ -263,8 +272,6 @@ namespace UnityEditor.U2D
 
         public override void OnInspectorGUI()
         {
-            s_Styles = s_Styles ?? new Styles();
-
             // Ensure changes done through script are reflected immediately in Inspector by Syncing m_TempPlatformSettings with Actual Settings.
             SyncPlatformSettings();
 
@@ -295,7 +302,7 @@ namespace UnityEditor.U2D
                 || EditorSettings.spritePackerMode == SpritePackerMode.AlwaysOnAtlas);
             if (spriteAtlasPackignEnabled)
             {
-                if (GUILayout.Button(s_Styles.packButton, GUILayout.ExpandWidth(false)))
+                if (GUILayout.Button(styles.packButton, GUILayout.ExpandWidth(false)))
                 {
                     SpriteAtlas[] spriteAtlases = new SpriteAtlas[targets.Length];
                     for (int i = 0; i < spriteAtlases.Length; ++i)
@@ -311,7 +318,7 @@ namespace UnityEditor.U2D
             }
             else
             {
-                if (GUILayout.Button(s_Styles.disabledPackLabel, EditorStyles.helpBox))
+                if (GUILayout.Button(styles.disabledPackLabel, EditorStyles.helpBox))
                 {
                     SettingsService.OpenProjectSettings("Project/Editor");
                 }
@@ -330,7 +337,7 @@ namespace UnityEditor.U2D
 
             EditorGUI.BeginChangeCheck();
             EditorGUI.showMixedValue = atlasType == AtlasType.Undefined;
-            atlasType = (AtlasType)EditorGUILayout.IntPopup(s_Styles.atlasTypeLabel, (int)atlasType, s_Styles.atlasTypeOptions, s_Styles.atlasTypeValues);
+            atlasType = (AtlasType)EditorGUILayout.IntPopup(styles.atlasTypeLabel, (int)atlasType, styles.atlasTypeOptions, styles.atlasTypeValues);
             EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
             {
@@ -345,7 +352,7 @@ namespace UnityEditor.U2D
             if (atlasType == AtlasType.Variant)
             {
                 EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(m_MasterAtlas, s_Styles.masterAtlasLabel);
+                EditorGUILayout.PropertyField(m_MasterAtlas, styles.masterAtlasLabel);
                 if (EditorGUI.EndChangeCheck())
                 {
                     // Apply modified properties here to have latest master atlas reflected in native codes.
@@ -359,17 +366,17 @@ namespace UnityEditor.U2D
                 }
             }
 
-            EditorGUILayout.PropertyField(m_BindAsDefault, s_Styles.bindAsDefaultLabel);
+            EditorGUILayout.PropertyField(m_BindAsDefault, styles.bindAsDefaultLabel);
         }
 
         private void HandleVariantSettingUI()
         {
-            EditorGUILayout.LabelField(s_Styles.variantSettingLabel, EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(m_VariantScale, s_Styles.variantMultiplierLabel);
+            EditorGUILayout.LabelField(styles.variantSettingLabel, EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(m_VariantScale, styles.variantMultiplierLabel);
 
             // Test if the multiplier scale a power of two size (1024) into another power of 2 size.
             if (!Mathf.IsPowerOfTwo((int)(m_VariantScale.floatValue * 1024)))
-                EditorGUILayout.HelpBox(s_Styles.notPowerOfTwoWarning.text, MessageType.Warning, true);
+                EditorGUILayout.HelpBox(styles.notPowerOfTwoWarning.text, MessageType.Warning, true);
         }
 
         private void HandleBoolToIntPropertyField(SerializedProperty prop, GUIContent content)
@@ -385,22 +392,22 @@ namespace UnityEditor.U2D
 
         private void HandleMasterSettingUI()
         {
-            EditorGUILayout.LabelField(s_Styles.packingParametersLabel, EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(styles.packingParametersLabel, EditorStyles.boldLabel);
 
-            HandleBoolToIntPropertyField(m_EnableRotation, s_Styles.enableRotationLabel);
-            HandleBoolToIntPropertyField(m_EnableTightPacking, s_Styles.enableTightPackingLabel);
-            EditorGUILayout.IntPopup(m_Padding, s_Styles.paddingOptions, s_Styles.paddingValues, s_Styles.paddingLabel);
+            HandleBoolToIntPropertyField(m_EnableRotation, styles.enableRotationLabel);
+            HandleBoolToIntPropertyField(m_EnableTightPacking, styles.enableTightPackingLabel);
+            EditorGUILayout.IntPopup(m_Padding, styles.paddingOptions, styles.paddingValues, styles.paddingLabel);
 
             GUILayout.Space(EditorGUI.kSpacing);
         }
 
         private void HandleTextureSettingUI()
         {
-            EditorGUILayout.LabelField(s_Styles.textureSettingLabel, EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(styles.textureSettingLabel, EditorStyles.boldLabel);
 
-            HandleBoolToIntPropertyField(m_Readable, s_Styles.readWrite);
-            HandleBoolToIntPropertyField(m_GenerateMipMaps, s_Styles.generateMipMapLabel);
-            HandleBoolToIntPropertyField(m_UseSRGB, s_Styles.sRGBLabel);
+            HandleBoolToIntPropertyField(m_Readable, styles.readWrite);
+            HandleBoolToIntPropertyField(m_GenerateMipMaps, styles.generateMipMapLabel);
+            HandleBoolToIntPropertyField(m_UseSRGB, styles.sRGBLabel);
             EditorGUILayout.PropertyField(m_FilterMode);
 
             var showAniso = !m_FilterMode.hasMultipleDifferentValues && !m_GenerateMipMaps.hasMultipleDifferentValues
@@ -415,7 +422,7 @@ namespace UnityEditor.U2D
 
         private void HandlePlatformSettingUI()
         {
-            int shownTextureFormatPage = EditorGUILayout.BeginPlatformGrouping(m_ValidPlatforms.ToArray(), s_Styles.defaultPlatformLabel);
+            int shownTextureFormatPage = EditorGUILayout.BeginPlatformGrouping(m_ValidPlatforms.ToArray(), styles.defaultPlatformLabel);
             var defaultPlatformSettings = m_TempPlatformSettings[TextureImporterInspector.s_DefaultPlatformName];
             if (shownTextureFormatPage == -1)
             {
@@ -515,11 +522,11 @@ namespace UnityEditor.U2D
                     }
                     break;
                 case EventType.ValidateCommand:
-                    if (currentEvent.commandName == ObjectSelector.ObjectSelectorClosedCommand && ObjectSelector.get.objectSelectorID == s_Styles.packableSelectorHash)
+                    if (currentEvent.commandName == ObjectSelector.ObjectSelectorClosedCommand && ObjectSelector.get.objectSelectorID == styles.packableSelectorHash)
                         usedEvent = true;
                     break;
                 case EventType.ExecuteCommand:
-                    if (currentEvent.commandName == ObjectSelector.ObjectSelectorClosedCommand && ObjectSelector.get.objectSelectorID == s_Styles.packableSelectorHash)
+                    if (currentEvent.commandName == ObjectSelector.ObjectSelectorClosedCommand && ObjectSelector.get.objectSelectorID == styles.packableSelectorHash)
                     {
                         var obj = ObjectSelector.GetCurrentObject();
                         if (IsPackable(obj))
@@ -534,7 +541,7 @@ namespace UnityEditor.U2D
             }
 
             // Handle Foldout after we handle the current event because Foldout might process the drag and drop event and used it.
-            m_PackableListExpanded = EditorGUI.Foldout(rect, m_PackableListExpanded, s_Styles.packableListLabel, true);
+            m_PackableListExpanded = EditorGUI.Foldout(rect, m_PackableListExpanded, styles.packableListLabel, true);
 
             if (usedEvent)
                 currentEvent.Use();
@@ -593,7 +600,7 @@ namespace UnityEditor.U2D
         {
             // Do not allow changing of pages when multiple atlases is selected.
             if (targets.Length == 1 && m_OptionDisplays != null && m_OptionValues != null && m_TotalPages > 1)
-                m_PreviewPage = EditorGUILayout.IntPopup(m_PreviewPage, m_OptionDisplays, m_OptionValues, s_Styles.preDropDown, GUILayout.MaxWidth(50));
+                m_PreviewPage = EditorGUILayout.IntPopup(m_PreviewPage, m_OptionDisplays, m_OptionValues, styles.preDropDown, GUILayout.MaxWidth(50));
             else
                 m_PreviewPage = 0;
 
@@ -602,14 +609,14 @@ namespace UnityEditor.U2D
                 Texture2D t = m_PreviewTextures[m_PreviewPage];
 
                 if (TextureUtil.HasAlphaTextureFormat(t.format) || (m_PreviewAlphaTextures != null && m_PreviewAlphaTextures.Length > 0))
-                    m_ShowAlpha = GUILayout.Toggle(m_ShowAlpha, m_ShowAlpha ? s_Styles.alphaIcon : s_Styles.RGBIcon, s_Styles.previewButton);
+                    m_ShowAlpha = GUILayout.Toggle(m_ShowAlpha, m_ShowAlpha ? styles.alphaIcon : styles.RGBIcon, styles.previewButton);
 
                 int mipCount = Mathf.Max(1, TextureUtil.GetMipmapCount(t));
                 if (mipCount > 1)
                 {
-                    GUILayout.Box(s_Styles.smallZoom, s_Styles.previewLabel);
-                    m_MipLevel = Mathf.Round(GUILayout.HorizontalSlider(m_MipLevel, mipCount - 1, 0, s_Styles.previewSlider, s_Styles.previewSliderThumb, GUILayout.MaxWidth(64)));
-                    GUILayout.Box(s_Styles.largeZoom, s_Styles.previewLabel);
+                    GUILayout.Box(styles.smallZoom, styles.previewLabel);
+                    m_MipLevel = Mathf.Round(GUILayout.HorizontalSlider(m_MipLevel, mipCount - 1, 0, styles.previewSlider, styles.previewSliderThumb, GUILayout.MaxWidth(64)));
+                    GUILayout.Box(styles.largeZoom, styles.previewLabel);
                 }
             }
         }

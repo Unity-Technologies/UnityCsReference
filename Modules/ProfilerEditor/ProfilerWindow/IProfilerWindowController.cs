@@ -21,7 +21,7 @@ namespace UnityEditorInternal
         void SetClearOnPlay(bool enabled);
         bool GetClearOnPlay();
 
-        HierarchyFrameDataView GetFrameDataView(HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending);
+        HierarchyFrameDataView GetFrameDataView(string threadName, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending);
         int GetActiveVisibleFrameIndex();
         bool IsRecording();
         void Repaint();

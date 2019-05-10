@@ -22,6 +22,9 @@ namespace UnityEditorInternal.Profiling
             CallersAndCallees,
         }
 
+        static readonly string kMainThreadName = "Main Thread";
+        static readonly string kRenderThreadName = "Render Thread";
+
         static readonly GUIContent[] kDetailedViewTypeNames =
         {
             EditorGUIUtility.TrTextContent("No Details"),
@@ -49,18 +52,27 @@ namespace UnityEditorInternal.Profiling
 
         private const string k_CpuProfilerHierarchyViewOptionsPrefKey = "CPUHierarchyView." + nameof(m_CpuProfilerOptions);
 
-        [SerializeField]
-        int m_CpuProfilerOptions = (int)CpuProfilerOptions.CollapseEditorBoundarySamples;
-
 
         [NonSerialized]
         bool m_Initialized;
+
+        [NonSerialized]
+        int m_FrameIndex = -1;
 
         [SerializeField]
         TreeViewState m_TreeViewState;
 
         [SerializeField]
         MultiColumnHeaderState m_MultiColumnHeaderState;
+
+        [SerializeField]
+        int m_ThreadIndex = 0;
+
+        [NonSerialized]
+        string[] m_ThreadNames;
+
+        [NonSerialized]
+        int[] m_ThreadIndices;
 
         [SerializeField]
         DetailedViewType m_DetailedViewType = DetailedViewType.None;
@@ -77,10 +89,14 @@ namespace UnityEditorInternal.Profiling
         [SerializeField]
         ProfilerDetailedCallsView m_DetailedCallsView;
 
+        [SerializeField]
+        int m_CpuProfilerOptions = (int)CpuProfilerOptions.CollapseEditorBoundarySamples;
+
         public ProfilerFrameDataTreeView treeView
         {
             get { return m_TreeView; }
         }
+
         public ProfilerDetailedObjectsView detailedObjectsView
         {
             get { return m_DetailedObjectsView; }
@@ -89,6 +105,21 @@ namespace UnityEditorInternal.Profiling
         public ProfilerDetailedCallsView detailedCallsView
         {
             get { return m_DetailedCallsView; }
+        }
+
+        [SerializeField]
+        string m_ThreadName;
+
+        public string threadName
+        {
+            get
+            {
+                return m_ThreadName;
+            }
+            set
+            {
+                m_ThreadName = value;
+            }
         }
 
         public int sortedProfilerColumn
@@ -118,6 +149,7 @@ namespace UnityEditorInternal.Profiling
         public ProfilerFrameDataHierarchyView()
         {
             m_Initialized = false;
+            m_ThreadName = kMainThreadName;
         }
 
         void InitIfNeeded()
@@ -234,7 +266,9 @@ namespace UnityEditorInternal.Profiling
                     headerContent = columns[i].headerLabel,
                     headerTextAlignment = TextAlignment.Left,
                     sortingArrowAlignment = TextAlignment.Right,
-                    width = width, minWidth = minWidth, maxWidth = maxWidth,
+                    width = width,
+                    minWidth = minWidth,
+                    maxWidth = maxWidth,
                     autoResize = autoResize,
                     allowToggleVisibility = allowToggleVisibility,
                     sortedAscending = i == 0
@@ -296,9 +330,6 @@ namespace UnityEditorInternal.Profiling
                 var isSearchAllowed = string.IsNullOrEmpty(treeView.searchString) || !(collectingSamples && ProfilerDriver.deepProfiling);
 
                 var isDataAvailable = frameDataView != null && frameDataView.valid;
-                if (isDataAvailable && isSearchAllowed)
-                    if (isDataAvailable)
-                        m_TreeView.SetFrameDataView(frameDataView);
 
                 var showDetailedView = isDataAvailable && m_DetailedViewType != DetailedViewType.None;
                 if (showDetailedView)
@@ -320,6 +351,7 @@ namespace UnityEditorInternal.Profiling
                 else
                 {
                     var rect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandHeight(true), GUILayout.ExpandHeight(true));
+                    m_TreeView.SetFrameDataView(frameDataView);
                     m_TreeView.OnGUI(rect);
                 }
 
@@ -370,6 +402,11 @@ namespace UnityEditorInternal.Profiling
             if (frameDataView != null)
                 DrawViewTypePopup((frameDataView.viewMode & HierarchyFrameDataView.ViewModes.MergeSamplesWithTheSameName) != 0 ? ProfilerViewType.Hierarchy : ProfilerViewType.RawHierarchy);
 
+            using (new EditorGUI.DisabledScope(!frameDataView.valid))
+            {
+                DrawThreadPopup(frameDataView);
+            }
+
             GUILayout.FlexibleSpace();
 
             if (frameDataView != null)
@@ -386,6 +423,81 @@ namespace UnityEditorInternal.Profiling
             }
 
             EditorGUILayout.EndHorizontal();
+        }
+
+        struct ThreadComparer : IComparer<string>
+        {
+            static int GetGroupOrder(string s)
+            {
+                if (s.StartsWith("Job"))
+                    return 2;
+                if (s.StartsWith("Loading"))
+                    return 3;
+                if (s.StartsWith("Scripting Thread"))
+                    return 4;
+                if (s.StartsWith(kMainThreadName))
+                    return 0;
+                if (s.StartsWith(kRenderThreadName))
+                    return 1;
+                return 10;
+            }
+
+            public int Compare(string x, string y)
+            {
+                int groupX = GetGroupOrder(x);
+                int groupY = GetGroupOrder(y);
+                if (groupX != groupY)
+                    return groupX < groupY ? -1 : 1;
+                return string.Compare(x, y);
+            }
+        }
+
+        private void DrawThreadPopup(HierarchyFrameDataView frameDataView)
+        {
+            if (!frameDataView.valid)
+            {
+                var disabledValues = new string[] { m_ThreadName };
+                EditorGUILayout.AdvancedPopup(0, disabledValues, BaseStyles.detailedViewTypeToolbarDropDown, GUILayout.Width(BaseStyles.detailedViewTypeToolbarDropDown.fixedWidth));
+                return;
+            }
+
+            if (m_FrameIndex != frameDataView.frameIndex)
+            {
+                m_FrameIndex = frameDataView.frameIndex;
+                m_ThreadIndex = 0;
+
+                using (var frameIterator = new ProfilerFrameDataIterator())
+                {
+                    var threadCount = frameIterator.GetThreadCount(m_FrameIndex);
+                    m_ThreadNames = new string[threadCount];
+                    m_ThreadIndices = new int[threadCount];
+                    for (var i = 0; i < threadCount; ++i)
+                    {
+                        frameIterator.SetRoot(m_FrameIndex, i);
+                        var groupName = frameIterator.GetGroupName();
+                        var threadName = frameIterator.GetThreadName();
+                        var name = string.IsNullOrEmpty(groupName) ? threadName : groupName + "." + threadName;
+                        m_ThreadNames[i] = name;
+                        m_ThreadIndices[i] = i;
+                        if (m_ThreadName == name)
+                            m_ThreadIndex = i;
+                    }
+
+                    Array.Sort(m_ThreadNames, m_ThreadIndices, new ThreadComparer());
+                    for (var i = 0; i < threadCount; ++i)
+                    {
+                        if (m_ThreadName == m_ThreadNames[i])
+                            m_ThreadIndex = i;
+                    }
+                }
+            }
+
+            var newThreadIndex = EditorGUILayout.AdvancedPopup(m_ThreadIndex, m_ThreadNames, BaseStyles.detailedViewTypeToolbarDropDown, GUILayout.Width(BaseStyles.detailedViewTypeToolbarDropDown.fixedWidth));
+            if (newThreadIndex != m_ThreadIndex)
+            {
+                m_ThreadIndex = newThreadIndex;
+                m_ThreadName = m_ThreadNames[m_ThreadIndex];
+            }
         }
 
         void DrawDetailedViewPopup()

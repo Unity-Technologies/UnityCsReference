@@ -194,13 +194,16 @@ namespace UnityEditor.PackageManager.UI
             Add(Latest);
         }
 
-        internal static void AddFromId(string packageId)
+        internal static void AddFromUrl(string url)
         {
             if (AddRemoveOperationInProgress)
                 return;
             var operation = OperationFactory.Instance.CreateAddOperation();
             addRemoveOperationInstance = operation;
-            operation.AddPackageAsync(packageId);
+            // convert SCP-like syntax to SSH URL as currently UPM doesn't support it
+            if (url.ToLower().StartsWith("git@"))
+                url = "ssh://" + url.Replace(':', '/');
+            operation.AddPackageAsync(url);
         }
 
         internal static void AddFromLocalDisk(string path)

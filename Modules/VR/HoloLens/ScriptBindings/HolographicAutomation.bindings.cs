@@ -93,6 +93,11 @@ namespace UnityEngine.XR.WSA
 
         internal static extern void SetHandPosition(Handedness hand, Vector3 position);
 
+        [NativeConditional("ENABLE_HOLOLENS_MODULE", StubReturnStatement = "Quaternionf::identity()")]
+        internal static extern Quaternion GetHandOrientation(Handedness hand);
+
+        internal static extern bool TrySetHandOrientation(Handedness hand, Quaternion orientation);
+
         internal static extern bool GetHandActivated(Handedness hand);
 
         internal static extern void SetHandActivated(Handedness hand, bool activated);

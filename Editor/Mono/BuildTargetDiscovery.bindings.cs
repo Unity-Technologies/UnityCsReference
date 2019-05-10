@@ -39,11 +39,10 @@ namespace UnityEditor
             HideInUI                        = (1 << 14),
             GPUSkinningNotSupported         = (1 << 15),
             StrippingNotSupported           = (1 << 16),
-            Il2CPPRequiresLatestScripting   = (1 << 17),
-            DisableNativeHDRLightmaps       = (1 << 18),
-            UsesNativeHDR                   = (1 << 19),
-            ProtectedGraphicsMem            = (1 << 20),
-            IsMTRenderingDisabledByDefault  = (1 << 21)
+            DisableNativeHDRLightmaps       = (1 << 17),
+            UsesNativeHDR                   = (1 << 18),
+            ProtectedGraphicsMem            = (1 << 19),
+            IsMTRenderingDisabledByDefault  = (1 << 20)
         }
 
         [Flags]

@@ -112,7 +112,7 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Once", "The animation plays through to the end once and then stops."),
                 EditorGUIUtility.TrTextContent("Loop", "The animation plays through and then restarts when the end is reached."),
                 EditorGUIUtility.TrTextContent("PingPong", "The animation plays through and then plays in reverse from the end to the start, and so on."),
-                EditorGUIUtility.TrTextContent("ClampForever", "The animation plays through but the last frame is repeated indefinitely. This is not the same as Once mode because playback does not technically stop at the last frame (which is useful when blending animations).")
+                EditorGUIUtility.TrTextContent("ClampForever", "The animation plays through, but the last frame is repeated indefinitely. This is not the same as Once mode because playback does not technically stop at the last frame (which is useful when blending animations).")
             };
 
             public GUIContent BakeIK = EditorGUIUtility.TrTextContent("Bake Animations", "Enable this when using IK or simulation in your animation package. Unity will convert to forward kinematics on import. This option is available only for Maya, 3dsMax and Cinema4D files.");

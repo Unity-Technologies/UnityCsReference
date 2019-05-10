@@ -33,6 +33,7 @@ namespace UnityEditor.ShortcutManagement
         List<IShortcutToolContext> m_PriorityContexts = new List<IShortcutToolContext>();
 
         List<IShortcutToolContext> m_ToolContexts = new List<IShortcutToolContext>();
+        static Dictionary<Type, bool> s_IsPriorityContextCache = new Dictionary<Type, bool>();
 
         public int activeContextCount => 1 + ((focusedWindow != null) ? 1 : 0) + m_PriorityContexts.Count(c => c.active) + m_ToolContexts.Count(c => c.active);
 
@@ -60,7 +61,14 @@ namespace UnityEditor.ShortcutManagement
 
         static bool IsPriorityContext(Type context)
         {
-            return Attribute.GetCustomAttribute(context, typeof(PriorityContextAttribute)) != null;
+            bool result;
+            if (!s_IsPriorityContextCache.TryGetValue(context, out result))
+            {
+                result = Attribute.GetCustomAttribute(context, typeof(PriorityContextAttribute)) != null;
+                s_IsPriorityContextCache[context] = result;
+            }
+
+            return result;
         }
 
         public bool DoContextsConflict(Type context1, Type context2)
@@ -113,7 +121,7 @@ namespace UnityEditor.ShortcutManagement
             if (context == null)
                 return;
 
-            if (IsPriorityContext(context))
+            if (m_PriorityContexts.Contains(context))
                 DeregisterPriorityContext(context);
             else
             {

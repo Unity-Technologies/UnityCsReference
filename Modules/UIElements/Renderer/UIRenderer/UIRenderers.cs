@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Collections;
 
 namespace UnityEngine.UIElements.UIR
 {
@@ -13,23 +14,13 @@ namespace UnityEngine.UIElements.UIR
         // These values are like enum values, they are mutually exclusive. Only one may be specified on a vertex.
         IsSolid = 0,
         IsText = 1,
-        IsTextured = 2,
-        IsCustom = 3,
-        IsEdge = 4,
-        IsSVGGradients = 5,
+        IsAtlasTexturedPoint = 2,
+        IsAtlasTexturedBilinear = 3,
+        IsCustomTextured = 4,
+        IsEdge = 5,
+        IsSVGGradients = 6,
 
-        LastType = 6,
-    }
-
-    internal struct Vertex
-    {
-        public Vector3 position;
-        public Color32 tint;
-        public Vector2 uv;
-        public float transformID;   // Allocator gives an int, but we only take floats, so set to ((float)transformID)
-        public float clipRectID;    // Comes from the same pool as transformIDs
-        public float flags;         // Solid,Font,AtlasTextured,CustomTextured,Edge,SVG with gradients,...
-        // Winding order of vertices matters. CCW is for clipped meshes.
+        LastType = 7,
     }
 
     internal struct State

@@ -26,8 +26,8 @@ namespace UnityEditor
     {
         class Styles
         {
-            public GUIContent invalidColorSpaceMessage = EditorGUIUtility.TrTextContent("In order to build a player go to 'Player Settings...' to resolve the incompatibility between the Color Space and the current settings.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
-            public GUIContent invalidLightmapEncodingMessage = EditorGUIUtility.TrTextContent("In order to build a player go to 'Player Settings...' to resolve the incompatibility between the selected Lightmap Encoding and the current settings.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+            public GUIContent invalidColorSpaceMessage = EditorGUIUtility.TrTextContent("In order to build a player, go to 'Player Settings...' to resolve the incompatibility between the Color Space and the current settings.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+            public GUIContent invalidLightmapEncodingMessage = EditorGUIUtility.TrTextContent("In order to build a player, go to 'Player Settings...' to resolve the incompatibility between the selected Lightmap Encoding and the current settings.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
             public GUIStyle selected = "OL SelectedRow";
             public GUIStyle box = "OL Box";
             public GUIStyle title = EditorStyles.boldLabel;
@@ -71,7 +71,6 @@ namespace UnityEditor
 
             // string and matching enum values for standalone subtarget dropdowm
             public GUIContent debugBuild = EditorGUIUtility.TrTextContent("Development Build");
-            public GUIContent datalessBuild = EditorGUIUtility.TrTextContent("Dataless Build");
             public GUIContent profileBuild = EditorGUIUtility.TrTextContent("Autoconnect Profiler");
             public GUIContent vrRemoteStremaing = EditorGUIUtility.TrTextContent("VR Remote Streaming");
             public GUIContent allowDebugging = EditorGUIUtility.TrTextContent("Script Debugging");

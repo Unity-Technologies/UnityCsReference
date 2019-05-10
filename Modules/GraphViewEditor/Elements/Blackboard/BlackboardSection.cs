@@ -17,6 +17,12 @@ namespace UnityEditor.Experimental.GraphView
         private VisualElement m_RowsContainer;
         private int m_InsertIndex;
 
+        Blackboard m_Blackboard;
+        Blackboard blackboard
+        {
+            get { return m_Blackboard ?? (m_Blackboard = GetFirstAncestorOfType<Blackboard>()); }
+        }
+
         public delegate bool CanAcceptDropDelegate(ISelectable selected);
 
         public CanAcceptDropDelegate canAcceptDrop { get; set; }
@@ -262,8 +268,6 @@ namespace UnityEditor.Experimental.GraphView
 
                     if (!((indexOfDraggedElement == insertIndex) || ((insertIndex - 1) == indexOfDraggedElement)))
                     {
-                        Blackboard blackboard = GetFirstAncestorOfType<Blackboard>();
-
                         if (blackboard.moveItemRequested != null)
                         {
                             blackboard.moveItemRequested(blackboard, m_InsertIndex, draggedElement.Item2);

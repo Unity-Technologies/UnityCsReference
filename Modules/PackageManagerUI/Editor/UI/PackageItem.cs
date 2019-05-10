@@ -235,18 +235,14 @@ namespace UnityEditor.PackageManager.UI
 
         private void StartSpinner()
         {
-            UIUtils.SetElementDisplay(SpinnerContainer, true);
             Spinner.Start();
-            StateLabel.AddToClassList("no-icon");
             UIUtils.SetElementDisplay(StateLabel, false);
         }
 
         private void StopSpinner()
         {
             Spinner.Stop();
-            StateLabel.RemoveFromClassList("no-icon");
             UIUtils.SetElementDisplay(StateLabel, true);
-            UIUtils.SetElementDisplay(SpinnerContainer, false);
         }
 
         public IEnumerable<IPackageSelection> GetSelectionList()
@@ -268,7 +264,6 @@ namespace UnityEditor.PackageManager.UI
         private VisualElement PackageContainer { get { return Cache.Get<VisualElement>("packageContainer"); } }
         private VisualElement ItemLabel { get { return Cache.Get<VisualElement>("itemLabel"); } }
         private LoadingSpinner Spinner { get { return Cache.Get<LoadingSpinner>("packageSpinner"); } }
-        private VisualElement SpinnerContainer { get { return Cache.Get<VisualElement>("loadingSpinnerContainer"); } }
         private ArrowToggle Expander { get { return Cache.Get<ArrowToggle>("expander"); } }
         private Label ExpanderHidden { get { return Cache.Get<Label>("expanderHidden"); } }
         private VisualElement ItemVersions { get { return Cache.Get<VisualElement>("itemVersions"); } }

@@ -3,9 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-//using TableType=System.Collections.Generic.SortedList<string, UnityEngine.UIElements.StyleComplexSelector>;
 using TableType = System.Collections.Generic.Dictionary<string, UnityEngine.UIElements.StyleComplexSelector>;
-using UnityEngine.Bindings;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
@@ -42,6 +41,9 @@ namespace UnityEngine.UIElements
         // Normal usage should only go through ReadXXX methods
         [SerializeField]
         internal float[] floats;
+
+        [SerializeField]
+        internal Dimension[] dimensions;
 
         [SerializeField]
         internal Color[] colors;
@@ -183,12 +185,48 @@ namespace UnityEngine.UIElements
 
         internal float ReadFloat(StyleValueHandle handle)
         {
+            // Handle dimension for properties with optional unit
+            if (handle.valueType == StyleValueType.Dimension)
+            {
+                Dimension dimension = CheckAccess(dimensions, StyleValueType.Dimension, handle);
+                return dimension.value;
+            }
             return CheckAccess(floats, StyleValueType.Float, handle);
         }
 
         internal bool TryReadFloat(StyleValueHandle[] handles, int index, out float value)
         {
-            return TryCheckAccess(floats, StyleValueType.Float, handles, index, out value);
+            if (TryCheckAccess(floats, StyleValueType.Float, handles, index, out value))
+                return true;
+
+            // Handle dimension for properties with optional unit
+            Dimension dimensionValue;
+            bool isDimension = TryCheckAccess(dimensions, StyleValueType.Float, handles, index, out dimensionValue);
+            value = dimensionValue.value;
+            return isDimension;
+        }
+
+        internal Dimension ReadDimension(StyleValueHandle handle)
+        {
+            // If the value is 0 (without unit) it's stored as a float
+            if (handle.valueType == StyleValueType.Float)
+            {
+                float value = CheckAccess(floats, StyleValueType.Float, handle);
+                return new Dimension(value, Dimension.Unit.Unitless);
+            }
+            return CheckAccess(dimensions, StyleValueType.Dimension, handle);
+        }
+
+        internal bool TryReadDimension(StyleValueHandle[] handles, int index, out Dimension value)
+        {
+            if (TryCheckAccess(dimensions, StyleValueType.Dimension, handles, index, out value))
+                return true;
+
+            // If the value is 0 (without unit) it's stored as a float
+            float floatValue = 0f;
+            bool isFloat = TryCheckAccess(floats, StyleValueType.Float, handles, index, out floatValue);
+            value = new Dimension(floatValue, Dimension.Unit.Unitless);
+            return isFloat;
         }
 
         internal Color ReadColor(StyleValueHandle handle)

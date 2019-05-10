@@ -208,7 +208,8 @@ namespace UnityEditor.StyleSheets
             // Draw border
             if (border.any)
             {
-                GUI.DrawTexture(drawRect, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, true, 0f, border.color * colorTint, border.widths, border.radius);
+                GUI.DrawTexture(drawRect, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, true, 0f, border.borderLeftColor * colorTint,
+                    border.borderTopColor * colorTint, border.borderRightColor * colorTint, border.borderBottomColor * colorTint, border.widths, border.radius);
             }
 
             if (block.GetKeyword(k_EnableHovering) == StyleValue.Keyword.True)
@@ -298,8 +299,7 @@ namespace UnityEditor.StyleSheets
             // borderRadiuses The radiuses for rounded corners (top-left, top-right, bottom-right and bottom-left). If Vector4.zero, corners will not be rounded.
             public StyleBorder(StyleBlock block)
             {
-                color = block.GetColor(StyleCatalogKeyword.borderColor);
-
+                var defaultColor = block.GetColor(StyleCatalogKeyword.borderColor);
                 var defaultRadius = block.GetFloat(StyleCatalogKeyword.borderRadius);
                 var borderWidth = block.GetFloat(StyleCatalogKeyword.borderWidth);
                 widths = new Vector4(
@@ -312,6 +312,11 @@ namespace UnityEditor.StyleSheets
                     block.GetFloat(k_BorderTopRightRadiusKey, defaultRadius),
                     block.GetFloat(k_BorderBottomRightRadiusKey, defaultRadius),
                     block.GetFloat(k_BorderBottomLeftRadiusKey, defaultRadius));
+
+                borderLeftColor = block.GetColor(StyleCatalogKeyword.borderLeftColor, defaultColor);
+                borderTopColor = block.GetColor(StyleCatalogKeyword.borderTopColor, defaultColor);
+                borderRightColor = block.GetColor(StyleCatalogKeyword.borderRightColor, defaultColor);
+                borderBottomColor = block.GetColor(StyleCatalogKeyword.borderBottomColor, defaultColor);
             }
 
             public bool any
@@ -328,7 +333,10 @@ namespace UnityEditor.StyleSheets
                 }
             }
 
-            public readonly Color color;
+            public readonly Color borderLeftColor;
+            public readonly Color borderTopColor;
+            public readonly Color borderRightColor;
+            public readonly Color borderBottomColor;
             public readonly Vector4 widths;
             public readonly Vector4 radius;
         }

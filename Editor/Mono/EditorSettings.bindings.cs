@@ -5,7 +5,6 @@
 using System;
 using System.Linq;
 using System.Runtime.InteropServices;
-using UnityEditor.VisualStudioIntegration;
 using UnityEngine.Bindings;
 using Object = UnityEngine.Object;
 
@@ -38,6 +37,14 @@ namespace UnityEditor
         OSNative = 0,
         Unix = 1,
         Windows = 2
+    }
+
+    [Flags]
+    public enum EnterPlayModeOptions
+    {
+        None                = 0,
+        DisableDomainReload = 1 << 0,
+        DisableSceneReload  = 1 << 1
     }
 
     // Must be a struct in order to have correct comparison behaviour
@@ -193,7 +200,7 @@ namespace UnityEditor
 
         public static string[] projectGenerationBuiltinExtensions
         {
-            get { return SolutionSynchronizer.BuiltinSupportedExtensions.Keys.ToArray(); }
+            get { return new[] { "cs", "uxml", "uss", "shader", "compute", "cginc", "hlsl", "glslinc", "template" }; }
         }
 
         internal static extern string Internal_ProjectGenerationUserExtensions
@@ -220,5 +227,11 @@ namespace UnityEditor
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         internal static extern void SetEtcTextureCompressorDefaultBehavior();
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern bool enterPlayModeOptionsEnabled { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern EnterPlayModeOptions enterPlayModeOptions { get; set; }
     }
 }

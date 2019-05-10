@@ -16,7 +16,7 @@ namespace UnityEditor
         static bool s_Initialized;
         static SceneView s_SceneView;
         static Vector3 s_Motion;
-        static float k_FlySpeed = 9f;
+        internal static float k_FlySpeed = 9f;
         static float s_FlySpeedTarget = 0f;
         const float k_FlySpeedAcceleration = 1.8f;
         static float s_StartZoom = 0f, s_ZoomSpeed = 0f;
@@ -24,6 +24,11 @@ namespace UnityEditor
         static float s_FPSScrollWheelMultiplier = .01f;
         static bool s_Moving;
         static AnimVector3 s_FlySpeed = new AnimVector3(Vector3.zero);
+
+        internal static Vector3 cameraSpeed
+        {
+            get { return s_FlySpeed.value; }
+        }
 
         enum MotionState
         {
@@ -113,9 +118,16 @@ namespace UnityEditor
                 speedModifier *= 5f;
 
             if (s_Moving)
-                s_FlySpeedTarget = s_FlySpeedTarget < Mathf.Epsilon ? k_FlySpeed : s_FlySpeedTarget * Mathf.Pow(k_FlySpeedAcceleration, deltaTime);
+            {
+                if (s_SceneView.cameraSettings.accelerationEnabled)
+                    s_FlySpeedTarget = s_FlySpeedTarget < Mathf.Epsilon ? k_FlySpeed : s_FlySpeedTarget * Mathf.Pow(k_FlySpeedAcceleration, deltaTime);
+                else
+                    s_FlySpeedTarget = k_FlySpeed;
+            }
             else
+            {
                 s_FlySpeedTarget = 0f;
+            }
 
             if (s_SceneView.cameraSettings.easingEnabled)
             {
@@ -377,16 +389,18 @@ namespace UnityEditor
 
         private static void HandleScrollWheel(SceneView view, bool zoomTowardsCenter)
         {
-            if (Tools.s_LockedViewTool == ViewTool.FPS && s_Moving)
+            if (Tools.s_LockedViewTool == ViewTool.FPS)
             {
                 float scrollWheelDelta = Event.current.delta.y * s_FPSScrollWheelMultiplier;
                 view.cameraSettings.speedNormalized -= scrollWheelDelta;
 
-                float cameraSpeed = view.cameraSettings.speed;
-                string cameraSpeedDisplayValue = cameraSpeed.ToString(cameraSpeed < 0.1f ? "F2" : cameraSpeed < 10f ? "F1" : "F0");
-                if (cameraSpeed < 0.1f)
+                float cameraSettingsSpeed = view.cameraSettings.speed;
+                string cameraSpeedDisplayValue = cameraSettingsSpeed.ToString(cameraSettingsSpeed < 0.1f ? "F2" : cameraSettingsSpeed < 10f ? "F1" : "F0");
+                if (cameraSettingsSpeed < 0.1f)
                     cameraSpeedDisplayValue = cameraSpeedDisplayValue.TrimStart(new Char[] {'0'});
-                GUIContent cameraSpeedContent = EditorGUIUtility.TempContent(string.Format("{0}x", cameraSpeedDisplayValue));
+                GUIContent cameraSpeedContent = EditorGUIUtility.TempContent(string.Format("{0}{1}",
+                    cameraSpeedDisplayValue,
+                    s_SceneView.cameraSettings.accelerationEnabled ? "x" : ""));
 
                 view.ShowNotification(cameraSpeedContent, .5f);
             }

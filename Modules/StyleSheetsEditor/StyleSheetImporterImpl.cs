@@ -170,10 +170,17 @@ namespace UnityEditor.StyleSheets
 
                 switch (primitiveTerm.PrimitiveType)
                 {
-                    case UnitType.Pixel:
                     case UnitType.Number:
                         float? floatValue = primitiveTerm.GetFloatValue(UnitType.Pixel);
                         m_Builder.AddValue(floatValue.Value);
+                        break;
+                    case UnitType.Pixel:
+                        float? pixelValue = primitiveTerm.GetFloatValue(UnitType.Pixel);
+                        m_Builder.AddValue(new Dimension(pixelValue.Value, Dimension.Unit.Pixel));
+                        break;
+                    case UnitType.Percentage:
+                        float? percentValue = primitiveTerm.GetFloatValue(UnitType.Pixel);
+                        m_Builder.AddValue(new Dimension(percentValue.Value, Dimension.Unit.Percent));
                         break;
                     case UnitType.Ident:
                         StyleValueKeyword keyword;

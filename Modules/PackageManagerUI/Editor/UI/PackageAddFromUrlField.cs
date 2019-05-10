@@ -9,71 +9,39 @@ namespace UnityEditor.PackageManager.UI
 {
     internal class PackageAddFromUrlField : VisualElement
     {
-        internal new class UxmlFactory : UxmlFactory<PackageAddFromUrlField> {}
-        private string urlText;
+        private static PackageAddFromUrlField instance;
 
-        private readonly VisualElement root;
+        public static void Show(VisualElement root)
+        {
+            if (instance == null)
+                instance = new PackageAddFromUrlField();
+            if (instance.parent == null)
+                root.Add(instance);
+
+            instance.Show();
+        }
 
         public PackageAddFromUrlField()
         {
-            root = Resources.GetTemplate("PackageAddFromUrlField.uxml");
+            var root = Resources.GetTemplate("PackageAddFromUrlField.uxml");
             Add(root);
             Cache = new VisualElementCache(root);
 
-            UrlTextField.value = urlText;
-
-            AddButton.SetEnabled(!string.IsNullOrEmpty(urlText));
             AddButton.clickable.clicked += OnAddButtonClick;
 
-            RegisterCallback<AttachToPanelEvent>(OnEnterPanel);
-            RegisterCallback<DetachFromPanelEvent>(OnLeavePanel);
+            RegisterCallback<MouseDownEvent>(evt => Hide());
+            AddFromUrlFieldContainer.RegisterCallback<MouseDownEvent>(evt =>
+            {
+                EditorApplication.delayCall += () => { UrlTextField.visualInput.Focus(); };
+                evt.StopPropagation();
+            });
+
+            UrlTextField.RegisterCallback<ChangeEvent<string>>(OnUrlTextFieldChange);
         }
 
         private void OnUrlTextFieldChange(ChangeEvent<string> evt)
         {
-            urlText = evt.newValue;
-            AddButton.SetEnabled(!string.IsNullOrEmpty(urlText));
-        }
-
-        private void OnUrlTextFieldFocus(FocusEvent evt)
-        {
-            Show();
-        }
-
-        private void OnUrlTextFieldFocusOut(FocusOutEvent evt)
-        {
-            Hide();
-        }
-
-        private void OnContainerFocus(FocusEvent evt)
-        {
-            UrlTextField.Focus();
-        }
-
-        private void OnContainerFocusOut(FocusOutEvent evt)
-        {
-            Hide();
-        }
-
-        private void OnEnterPanel(AttachToPanelEvent evt)
-        {
-            AddFromUrlFieldContainer.RegisterCallback<FocusEvent>(OnContainerFocus);
-            AddFromUrlFieldContainer.RegisterCallback<FocusOutEvent>(OnContainerFocusOut);
-            UrlTextField.visualInput.RegisterCallback<FocusEvent>(OnUrlTextFieldFocus);
-            UrlTextField.visualInput.RegisterCallback<FocusOutEvent>(OnUrlTextFieldFocusOut);
-            UrlTextField.RegisterCallback<ChangeEvent<string>>(OnUrlTextFieldChange);
-            UrlTextField.visualInput.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);
-            Hide();
-        }
-
-        private void OnLeavePanel(DetachFromPanelEvent evt)
-        {
-            AddFromUrlFieldContainer.UnregisterCallback<FocusEvent>(OnContainerFocus);
-            AddFromUrlFieldContainer.UnregisterCallback<FocusOutEvent>(OnContainerFocusOut);
-            UrlTextField.visualInput.UnregisterCallback<FocusEvent>(OnUrlTextFieldFocus);
-            UrlTextField.visualInput.UnregisterCallback<FocusOutEvent>(OnUrlTextFieldFocusOut);
-            UrlTextField.UnregisterCallback<ChangeEvent<string>>(OnUrlTextFieldChange);
-            UrlTextField.visualInput.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
+            AddButton.SetEnabled(!string.IsNullOrEmpty(UrlTextField.value));
         }
 
         private void OnKeyDownShortcut(KeyDownEvent evt)
@@ -92,32 +60,40 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnAddButtonClick()
         {
-            var path = urlText;
-            if (!string.IsNullOrEmpty(path) && !Package.AddRemoveOperationInProgress)
+            var urlText = UrlTextField.value;
+            if (!string.IsNullOrEmpty(urlText) && !Package.AddRemoveOperationInProgress)
             {
-                Package.AddFromLocalDisk(path);
+                Package.AddFromUrl(urlText);
                 Hide();
             }
         }
 
+        internal void Show()
+        {
+            if (parent == null)
+                return;
+
+            UrlTextField.value = string.Empty;
+            UrlTextField.visualInput.Focus();
+            UrlTextField.visualInput.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);
+
+            AddButton.SetEnabled(false);
+
+            foreach (var element in parent.Children())
+                if (element != this)
+                    element.SetEnabled(false);
+        }
+
         internal void Hide()
         {
-            UIUtils.SetElementDisplay(this, false);
-        }
+            if (parent == null)
+                return;
 
-        internal void Show(bool reset = false)
-        {
-            if (reset)
-                Reset();
-            UIUtils.SetElementDisplay(this, true);
-        }
+            UrlTextField.visualInput.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
 
-        private void Reset()
-        {
-            UrlTextField.value = string.Empty;
-            urlText = string.Empty;
-            AddButton.SetEnabled(false);
-            UrlTextField.Focus();
+            foreach (var element in parent.Children())
+                element.SetEnabled(true);
+            parent.Remove(this);
         }
 
         private VisualElementCache Cache { get; set; }

@@ -120,7 +120,7 @@ namespace UnityEngine.UIElements
                     return;
                 }
 
-                if (imContainer.HandleIMGUIEvent(evt.imguiEvent))
+                if (imContainer.SendEventToIMGUI(evt))
                 {
                     evt.StopPropagation();
                     evt.PreventDefault();

@@ -412,11 +412,6 @@ namespace UnityEditor.Experimental.VFX
         static extern public void DeleteAtPath(string path);
         public extern void SetAssetPath(string path);
 
-        public static extern VisualEffectAsset CreateNewAsset(string path);
-        public static extern VisualEffectSubgraphOperator CreateNewSubgraphOperator(string path);
-        public static extern VisualEffectSubgraphBlock CreateNewSubgraphBlock(string path);
-
-
         public extern UnityObject[] GetContents();
         public extern void SetContents(UnityObject[] dependencies);
 

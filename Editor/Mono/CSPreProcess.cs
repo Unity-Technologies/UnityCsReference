@@ -52,7 +52,7 @@ namespace UnityEditor
             var lines = text.Split(kNewlineChars, StringSplitOptions.RemoveEmptyEntries);
             var prefix = Unsupported.GetBaseUnityDeveloperFolder();
 
-            var msgs = new MonoCSharpCompilerOutputParser().Parse(lines, false, "n/a").ToList();
+            var msgs = new MicrosoftCSharpCompilerOutputParser().Parse(lines, false, "n/a").ToList();
             for (var index = 0; index < msgs.Count; index++)
             {
                 var msg = msgs[index];

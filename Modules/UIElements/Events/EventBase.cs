@@ -39,8 +39,19 @@ namespace UnityEngine.UIElements
             Dispatched = 512,
         }
 
+        static ulong s_NextEventId = 0;
+
         // Read-only state
         public long timestamp { get; private set; }
+
+        internal ulong eventId { get; private set; }
+
+        internal ulong triggerEventId { get; private set; }
+
+        internal void SetTriggerEventId(ulong id)
+        {
+            triggerEventId = id;
+        }
 
         internal EventPropagation propagation { get; set; }
 
@@ -54,6 +65,7 @@ namespace UnityEngine.UIElements
                     PropagationPaths.Type pathTypesRequested = (tricklesDown ? PropagationPaths.Type.TrickleDown : PropagationPaths.Type.None);
                     pathTypesRequested |= (bubbles ? PropagationPaths.Type.BubbleUp : PropagationPaths.Type.None);
                     m_Path = PropagationPaths.Build(leafTarget as VisualElement, pathTypesRequested);
+                    EventDebugger.LogPropagationPaths(this, m_Path);
                 }
 
                 return m_Path;
@@ -262,6 +274,7 @@ namespace UnityEngine.UIElements
         }
 
         private Event m_ImguiEvent;
+
         bool imguiEventIsValid
         {
             get { return (lifeCycleStatus & LifeCycleStatus.IMGUIEventIsValid) != LifeCycleStatus.None; }
@@ -304,6 +317,10 @@ namespace UnityEngine.UIElements
 
         public Vector2 originalMousePosition { get; private set; }
 
+        internal EventDebugger eventLogger { get; set; }
+
+        internal bool log => eventLogger != null;
+
         protected virtual void Init()
         {
             LocalInit();
@@ -312,6 +329,9 @@ namespace UnityEngine.UIElements
         void LocalInit()
         {
             timestamp = (long)(Time.realtimeSinceStartup * 1000.0f);
+
+            triggerEventId = 0;
+            eventId = s_NextEventId++;
 
             propagation = EventPropagation.None;
 
@@ -338,6 +358,8 @@ namespace UnityEngine.UIElements
             dispatched = false;
             imguiEventIsValid = false;
             pooled = false;
+
+            eventLogger = null;
         }
 
         protected EventBase()
@@ -400,6 +422,16 @@ namespace UnityEngine.UIElements
             t.Init();
             t.pooled = true;
             t.Acquire();
+            return t;
+        }
+
+        internal static T GetPooled(EventBase e)
+        {
+            T t = GetPooled();
+            if (e != null)
+            {
+                t.SetTriggerEventId(e.eventId);
+            }
             return t;
         }
 

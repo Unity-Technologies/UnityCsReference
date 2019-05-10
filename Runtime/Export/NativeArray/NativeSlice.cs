@@ -45,7 +45,6 @@ namespace Unity.Collections
         }
     }
 
-
     [StructLayout(LayoutKind.Sequential)]
     [NativeContainer]
     [NativeContainerSupportsMinMaxWriteRestriction]
@@ -227,9 +226,16 @@ namespace Unity.Collections
         {
             if (Length != array.Length)
                 throw new ArgumentException($"array.Length ({array.Length}) does not match the Length of this instance ({Length}).", nameof(array));
+            unsafe
+            {
+                GCHandle handle = GCHandle.Alloc(array, GCHandleType.Pinned);
+                IntPtr addr = handle.AddrOfPinnedObject();
 
-            for (var i = 0; i != m_Length; i++)
-                this[i] = array[i];
+                var sizeOf = UnsafeUtility.SizeOf<T>();
+                UnsafeUtility.MemCpyStride(this.GetUnsafePtr(), Stride, (byte*)addr, sizeOf, sizeOf, m_Length);
+
+                handle.Free();
+            }
         }
 
         public void CopyTo(NativeArray<T> array)
@@ -245,9 +251,16 @@ namespace Unity.Collections
         {
             if (Length != array.Length)
                 throw new ArgumentException($"array.Length ({array.Length}) does not match the Length of this instance ({Length}).", nameof(array));
+            unsafe
+            {
+                GCHandle handle = GCHandle.Alloc(array, GCHandleType.Pinned);
+                IntPtr addr = handle.AddrOfPinnedObject();
 
-            for (var i = 0; i != m_Length; i++)
-                array[i] = this[i];
+                var sizeOf = UnsafeUtility.SizeOf<T>();
+                UnsafeUtility.MemCpyStride((byte*)addr, sizeOf, this.GetUnsafeReadOnlyPtr(), Stride, sizeOf, m_Length);
+
+                handle.Free();
+            }
         }
 
         public T[] ToArray()

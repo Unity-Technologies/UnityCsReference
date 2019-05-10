@@ -182,7 +182,15 @@ namespace UnityEngine
         }
 
         // Draw a texture within a rectangle.
-        public static void DrawTexture(Rect position, Texture image, ScaleMode scaleMode, bool alphaBlend, float imageAspect, Color color, Vector4 borderWidths, Vector4 borderRadiuses)
+        public static void DrawTexture(Rect position, Texture image, ScaleMode scaleMode, bool alphaBlend
+            , float imageAspect, Color color, Vector4 borderWidths, Vector4 borderRadiuses)
+        {
+            DrawTexture(position, image, scaleMode, alphaBlend, imageAspect, color, color, color, color
+                , borderWidths, borderRadiuses);
+        }
+
+        // Draw a texture within a rectangle.
+        internal static void DrawTexture(Rect position, Texture image, ScaleMode scaleMode, bool alphaBlend, float imageAspect, Color leftColor, Color topColor, Color rightColor, Color bottomColor, Vector4 borderWidths, Vector4 borderRadiuses)
         {
             GUIUtility.CheckOnGUI();
             if (Event.current.type == EventType.Repaint)
@@ -197,7 +205,18 @@ namespace UnityEngine
                     imageAspect = (float)image.width / image.height;
 
                 Material mat = null;
-                if (borderWidths != Vector4.zero || borderRadiuses != Vector4.zero)
+                if (borderWidths != Vector4.zero)
+                {
+                    if ((leftColor != topColor) || (leftColor != rightColor) || (leftColor != bottomColor))
+                    {
+                        mat = roundedRectWithColorPerBorderMaterial;
+                    }
+                    else
+                    {
+                        mat = roundedRectMaterial;
+                    }
+                }
+                else if (borderRadiuses != Vector4.zero)
                 {
                     mat = roundedRectMaterial;
                 }
@@ -212,7 +231,11 @@ namespace UnityEngine
                     rightBorder = 0,
                     topBorder = 0,
                     bottomBorder = 0,
-                    color = color,
+                    color = leftColor,
+                    leftBorderColor = leftColor,
+                    topBorderColor = topColor,
+                    rightBorderColor = rightColor,
+                    bottomBorderColor = bottomColor,
                     borderWidths = borderWidths,
                     cornerRadiuses = borderRadiuses,
                     texture = image,
@@ -293,6 +316,10 @@ namespace UnityEngine
                 arguments.mat = mat;
                 arguments.leftBorder = 0; arguments.rightBorder = 0; arguments.topBorder = 0; arguments.bottomBorder = 0;
                 arguments.color = GUI.color;
+                arguments.leftBorderColor = GUI.color;
+                arguments.topBorderColor = GUI.color;
+                arguments.rightBorderColor = GUI.color;
+                arguments.bottomBorderColor = GUI.color;
                 arguments.screenRect = position;
                 arguments.sourceRect = texCoords;
                 Graphics.Internal_DrawTexture(ref arguments);

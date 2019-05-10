@@ -17,6 +17,8 @@ namespace UnityEditor.Experimental.AssetImporters
         [FreeFunction]
         private static extern bool ReleaseInspectorCopy(int instanceID);
         [FreeFunction]
+        private static extern void FixCacheCount(int instanceID, int count);
+        [FreeFunction]
         private static extern int GetInspectorCopyCount(int instanceID);
         [FreeFunction("IsMetaDataSerializationEqual")]
         private static extern bool IsSerializedDataEqual([NotNull] Object source);

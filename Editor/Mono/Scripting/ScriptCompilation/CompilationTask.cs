@@ -41,6 +41,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public event Action<object> OnCompilationTaskStarted;
         public event Action<object> OnCompilationTaskFinished;
+        public event Action<ScriptAssembly, int> OnBeforeCompilationStarted;
         public event Action<ScriptAssembly, int> OnCompilationStarted;
         public event Action<ScriptAssembly, List<CompilerMessage>> OnCompilationFinished;
 
@@ -275,14 +276,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return;
             }
 
-            bool buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;
-
             // Begin compiling any queued assemblies
             foreach (var assembly in assemblyCompileQueue)
             {
                 pendingAssemblies.Remove(assembly);
-                var island = assembly.ToMonoIsland(options, buildOutputDirectory);
-                var compiler = ScriptCompilers.CreateCompilerInstance(assembly, island, buildingForEditor, island._target, assembly.RunUpdater);
+
+                if (assembly.CallOnBeforeCompilationStarted && OnBeforeCompilationStarted != null)
+                    OnBeforeCompilationStarted(assembly, compilePhase);
+
+                var compiler = ScriptCompilers.CreateCompilerInstance(assembly, options, buildOutputDirectory);
 
                 compilerTasks.Add(assembly, compiler);
 

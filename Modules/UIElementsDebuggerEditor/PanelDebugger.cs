@@ -19,9 +19,10 @@ namespace UnityEditor.UIElements.Debugger
 
             public override string ToString()
             {
-                return name;
+                return name ?? panel.visualTree.name;
             }
         }
+
 
         [SerializeField]
         private string m_LastVisualTreeName;
@@ -29,11 +30,22 @@ namespace UnityEditor.UIElements.Debugger
         private EditorWindow m_WindowToDebug;
 
         private PanelChoice m_SelectedPanel;
-        protected Toolbar m_Toolbar;
+        protected VisualElement m_Toolbar;
         private ToolbarMenu m_PanelSelect;
         private List<PanelChoice> m_PanelChoices;
         private IVisualElementScheduledItem m_ConnectWindowScheduledItem;
         private IVisualElementScheduledItem m_RestoreSelectionScheduledItem;
+
+        private Dictionary<Panel, EditorWindow> m_PanelToEditorWindow;
+
+        protected void TryFocusCorrespondingWindow(Panel panel)
+        {
+            EditorWindow window;
+            if (m_PanelToEditorWindow.TryGetValue(panel, out window))
+            {
+                window.Focus();
+            }
+        }
 
         public IPanelDebug panelDebug { get; set; }
 
@@ -51,7 +63,12 @@ namespace UnityEditor.UIElements.Debugger
 
         public void OnEnable()
         {
-            m_Toolbar = new Toolbar();
+            OnEnable(null);
+        }
+
+        protected void OnEnable(VisualElement toolbar)
+        {
+            m_Toolbar = toolbar ?? new Toolbar();
 
             // Register panel choice refresh on the toolbar so the event
             // is received before the ToolbarPopup clickable handle it.
@@ -61,11 +78,12 @@ namespace UnityEditor.UIElements.Debugger
                     RefreshPanelChoices();
             }, TrickleDown.TrickleDown);
 
+            m_PanelToEditorWindow = new Dictionary<Panel, EditorWindow>();
             m_PanelChoices = new List<PanelChoice>();
             m_PanelSelect = new ToolbarMenu() { name = "panelSelectPopup", variant = ToolbarMenu.Variant.Popup};
             m_PanelSelect.text = "Select a panel";
 
-            m_Toolbar.Add(m_PanelSelect);
+            m_Toolbar.Insert(0, m_PanelSelect);
 
             if (!string.IsNullOrEmpty(m_LastVisualTreeName))
                 m_RestoreSelectionScheduledItem = m_Toolbar.schedule.Execute(RestorePanelSelection).Every(500);
@@ -128,23 +146,22 @@ namespace UnityEditor.UIElements.Debugger
         private void RefreshPanelChoices()
         {
             m_PanelChoices.Clear();
-
+            m_PanelToEditorWindow.Clear();
             List<GUIView> guiViews = new List<GUIView>();
             GUIViewDebuggerHelper.GetViews(guiViews);
             var it = UIElementsUtility.GetPanelsIterator();
             while (it.MoveNext())
             {
-                GUIView view = guiViews.FirstOrDefault(v => v.GetInstanceID() == it.Current.Key);
-                if (view == null)
-                    continue;
-
                 // Skip this window
+                GUIView view = guiViews.FirstOrDefault(v => v.GetInstanceID() == it.Current.Key);
                 HostView hostView = view as HostView;
                 if (hostView != null && hostView.actualView == this)
                     continue;
 
                 var p = it.Current.Value;
                 m_PanelChoices.Add(new PanelChoice { panel = p, name = p.name });
+                if (hostView != null && hostView.actualView != null)
+                    m_PanelToEditorWindow.Add(p, hostView.actualView);
             }
 
             var menu = m_PanelSelect.menu;

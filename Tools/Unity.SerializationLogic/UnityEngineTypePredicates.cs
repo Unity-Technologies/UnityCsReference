@@ -38,6 +38,7 @@ namespace Unity.SerializationLogic
         protected const string Matrix4x4 = "UnityEngine.Matrix4x4";
         protected const string Color32 = "UnityEngine.Color32";
         private const string SerializeFieldAttribute = "UnityEngine.SerializeField";
+        private const string SerializeReferenceAttribute = "UnityEngine.SerializeReference";
 
         private static string[] serializableClasses = new[]
         {
@@ -154,6 +155,11 @@ namespace Unity.SerializationLogic
         public static bool IsSerializeFieldAttribute(TypeReference attributeType)
         {
             return attributeType.FullName == SerializeFieldAttribute;
+        }
+
+        public static bool IsSerializeReferenceAttribute(TypeReference attributeType)
+        {
+            return attributeType.FullName == SerializeReferenceAttribute;
         }
     }
 }

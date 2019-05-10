@@ -829,6 +829,14 @@ namespace UnityEngine.UIElements
             return query.First() as T;
         }
 
+        internal static T MandatoryQ<T>(this VisualElement e, string name, string className = null) where T : VisualElement
+        {
+            var element = e.Q<T>(name, className);
+            if (element == null)
+                throw new MissingVisualElementException("Element not found: " + name);
+            return element;
+        }
+
         public static VisualElement Q(this VisualElement e, string name = null, string className = null)
         {
             UQueryState<VisualElement> query;
@@ -858,6 +866,14 @@ namespace UnityEngine.UIElements
             return query.First();
         }
 
+        internal static VisualElement MandatoryQ(this VisualElement e, string name, string className = null)
+        {
+            var element = e.Q<VisualElement>(name, className);
+            if (element == null)
+                throw new MissingVisualElementException("Element not found: " + name);
+            return element;
+        }
+
         public static UQueryBuilder<VisualElement> Query(this VisualElement e, string name = null, params string[] classes)
         {
             return e.Query<VisualElement>(name, classes);
@@ -883,6 +899,18 @@ namespace UnityEngine.UIElements
         public static UQueryBuilder<VisualElement> Query(this VisualElement e)
         {
             return new UQueryBuilder<VisualElement>(e);
+        }
+
+        class MissingVisualElementException : Exception
+        {
+            public MissingVisualElementException()
+            {
+            }
+
+            public MissingVisualElementException(string message)
+                : base(message)
+            {
+            }
         }
     }
 }

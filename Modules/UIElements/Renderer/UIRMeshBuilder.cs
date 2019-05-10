@@ -5,14 +5,13 @@
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
-using UnityEngine.UIElements.UIR;
 
-namespace UnityEngine.UIElements
+namespace UnityEngine.UIElements.UIR
 {
     /// <summary>
     /// Utility class that facilitates mesh allocation and building according to the provided settings
     /// </summary>
-    internal static class UIRMeshBuilder
+    internal static class MeshBuilder
     {
         // IL2CPP doesn't support out parameters of unsafe containers yet, so we return a struct instead.
         internal struct MeshOutput
@@ -22,25 +21,34 @@ namespace UnityEngine.UIElements
         }
         internal delegate MeshOutput AllocMeshData(uint vertexCount, uint indexCount);
 
-        internal static void MakeRect(RectStylePainterParameters rectParams, float posZ, AllocMeshData meshAlloc)
+        internal static void MakeBorder(MeshGenerationContextUtils.BorderParams borderParams, float posZ, AllocMeshData meshAlloc)
         {
-            if (IsSimpleRect(rectParams.border))
-                MakeQuad(rectParams.rect, Rect.zero, rectParams.color, posZ, VertexFlags.IsSolid, meshAlloc);
-            else UIRTessellation.TessellateBorderedRect(rectParams.rect, Rect.zero, rectParams.color, rectParams.border, posZ, VertexFlags.IsSolid, meshAlloc);
+            Tessellation.TessellateBorder(borderParams, posZ, meshAlloc);
         }
 
-        internal static void MakeTexture(TextureStylePainterParameters textureParams, float posZ, VertexFlags vertexFlags, AllocMeshData meshAlloc)
+        internal static void MakeRect(MeshGenerationContextUtils.RectangleParams rectParams, float posZ, AllocMeshData meshAlloc)
         {
-            if (textureParams.sliceLeft <= Mathf.Epsilon &&
-                textureParams.sliceTop <= Mathf.Epsilon &&
-                textureParams.sliceRight <= Mathf.Epsilon &&
-                textureParams.sliceBottom <= Mathf.Epsilon)
+            if (!rectParams.HasRadius(Tessellation.kEpsilon))
+                MakeQuad(rectParams.rect, Rect.zero, rectParams.color, posZ, VertexFlags.IsSolid, meshAlloc);
+            else Tessellation.TessellateRect(rectParams, posZ, VertexFlags.IsSolid, meshAlloc);
+        }
+
+        internal static void MakeTexture(MeshGenerationContextUtils.RectangleParams rectParams, float posZ, VertexFlags vertexFlags, AllocMeshData meshAlloc)
+        {
+            if (rectParams.leftSlice <= Mathf.Epsilon &&
+                rectParams.topSlice <= Mathf.Epsilon &&
+                rectParams.rightSlice <= Mathf.Epsilon &&
+                rectParams.bottomSlice <= Mathf.Epsilon)
             {
-                if (IsSimpleRect(textureParams.border))
-                    MakeQuad(textureParams.rect, textureParams.uv, textureParams.color, posZ, vertexFlags, meshAlloc);
-                else UIRTessellation.TessellateBorderedRect(textureParams.rect, textureParams.uv, textureParams.color, textureParams.border, posZ, vertexFlags, meshAlloc);
+                if (!rectParams.HasRadius(Tessellation.kEpsilon))
+                    MakeQuad(rectParams.rect, rectParams.uv, rectParams.color, posZ, vertexFlags, meshAlloc);
+                else Tessellation.TessellateRect(rectParams, posZ, vertexFlags, meshAlloc);
             }
-            else MakeSlicedQuad(textureParams, posZ, vertexFlags, meshAlloc);
+            else if (rectParams.texture == null)
+            {
+                MakeQuad(rectParams.rect, rectParams.uv, rectParams.color, posZ, vertexFlags, meshAlloc);
+            }
+            else MakeSlicedQuad(ref rectParams, posZ, vertexFlags, meshAlloc);
         }
 
         private static Vertex ConvertTextVertexToUIRVertex(TextVertex textVertex, Vector2 offset)
@@ -175,53 +183,45 @@ namespace UnityEngine.UIElements
         static readonly float[] k_PositionSlicesX = new float[4];
         static readonly float[] k_PositionSlicesY = new float[4];
 
-        private static void MakeSlicedQuad(TextureStylePainterParameters texParams, float posZ, VertexFlags vertexFlags, AllocMeshData meshAlloc)
+        private static void MakeSlicedQuad(ref MeshGenerationContextUtils.RectangleParams rectParams, float posZ, VertexFlags vertexFlags, AllocMeshData meshAlloc)
         {
-            var texture = texParams.texture;
-            if (texture == null)
-            {
-                // Early exit without slicing.
-                MakeQuad(texParams.rect, texParams.uv, texParams.color, posZ, vertexFlags, meshAlloc);
-                return;
-            }
-
             var mesh = meshAlloc(16, 9 * 6);
 
             float pixelsPerPoint = 1;
-            var texture2D = texParams.texture as Texture2D;
+            var texture2D = rectParams.texture as Texture2D;
             if (texture2D != null)
                 pixelsPerPoint = texture2D.pixelsPerPoint;
 
             // The following offsets are in texels (not normalized).
-            float uvSliceLeft = texParams.sliceLeft * pixelsPerPoint;
-            float uvSliceTop = texParams.sliceTop * pixelsPerPoint;
-            float uvSliceRight = texParams.sliceRight * pixelsPerPoint;
-            float uvSliceBottom = texParams.sliceBottom * pixelsPerPoint;
+            float uvSliceLeft = rectParams.leftSlice * pixelsPerPoint;
+            float uvSliceTop = rectParams.topSlice * pixelsPerPoint;
+            float uvSliceRight = rectParams.rightSlice * pixelsPerPoint;
+            float uvSliceBottom = rectParams.bottomSlice * pixelsPerPoint;
 
             // When an atlas is used, relative coordinates must not be used.
-            bool isAtlassed = vertexFlags == VertexFlags.IsTextured;
-            float uConversion = isAtlassed ? 1 : 1f / texture.width;
-            float vConversion = isAtlassed ? 1 : 1f / texture.height;
+            bool isAtlassed = vertexFlags == VertexFlags.IsAtlasTexturedPoint || vertexFlags == VertexFlags.IsAtlasTexturedBilinear;
+            float uConversion = isAtlassed ? 1 : 1f / rectParams.texture.width;
+            float vConversion = isAtlassed ? 1 : 1f / rectParams.texture.height;
 
-            k_TexCoordSlicesX[0] = texParams.uv.min.x;
-            k_TexCoordSlicesX[1] = texParams.uv.min.x + uvSliceLeft * uConversion;
-            k_TexCoordSlicesX[2] = texParams.uv.max.x - uvSliceRight * uConversion;
-            k_TexCoordSlicesX[3] = texParams.uv.max.x;
+            k_TexCoordSlicesX[0] = rectParams.uv.min.x;
+            k_TexCoordSlicesX[1] = rectParams.uv.min.x + uvSliceLeft * uConversion;
+            k_TexCoordSlicesX[2] = rectParams.uv.max.x - uvSliceRight * uConversion;
+            k_TexCoordSlicesX[3] = rectParams.uv.max.x;
 
-            k_TexCoordSlicesY[0] = texParams.uv.max.y;
-            k_TexCoordSlicesY[1] = texParams.uv.max.y - uvSliceBottom * vConversion;
-            k_TexCoordSlicesY[2] = texParams.uv.min.y + uvSliceTop * vConversion;
-            k_TexCoordSlicesY[3] = texParams.uv.min.y;
+            k_TexCoordSlicesY[0] = rectParams.uv.max.y;
+            k_TexCoordSlicesY[1] = rectParams.uv.max.y - uvSliceBottom * vConversion;
+            k_TexCoordSlicesY[2] = rectParams.uv.min.y + uvSliceTop * vConversion;
+            k_TexCoordSlicesY[3] = rectParams.uv.min.y;
 
-            k_PositionSlicesX[0] = texParams.rect.x;
-            k_PositionSlicesX[1] = texParams.rect.x + texParams.sliceLeft;
-            k_PositionSlicesX[2] = texParams.rect.xMax - texParams.sliceRight;
-            k_PositionSlicesX[3] = texParams.rect.xMax;
+            k_PositionSlicesX[0] = rectParams.rect.x;
+            k_PositionSlicesX[1] = rectParams.rect.x + rectParams.leftSlice;
+            k_PositionSlicesX[2] = rectParams.rect.xMax - rectParams.rightSlice;
+            k_PositionSlicesX[3] = rectParams.rect.xMax;
 
-            k_PositionSlicesY[0] = texParams.rect.yMax;
-            k_PositionSlicesY[1] = texParams.rect.yMax - texParams.sliceBottom;
-            k_PositionSlicesY[2] = texParams.rect.y + texParams.sliceTop;
-            k_PositionSlicesY[3] = texParams.rect.y;
+            k_PositionSlicesY[0] = rectParams.rect.yMax;
+            k_PositionSlicesY[1] = rectParams.rect.yMax - rectParams.bottomSlice;
+            k_PositionSlicesY[2] = rectParams.rect.y + rectParams.topSlice;
+            k_PositionSlicesY[3] = rectParams.rect.y;
 
             for (int i = 0; i < 16; ++i)
             {
@@ -229,29 +229,12 @@ namespace UnityEngine.UIElements
                 int y = i / 4;
                 mesh.vertices[i] = new Vertex() {
                     position = new Vector3(k_PositionSlicesX[x], k_PositionSlicesY[y], posZ),
-                    uv = new Vector2(k_TexCoordSlicesX[x], texParams.uv.min.y + texParams.uv.max.y - k_TexCoordSlicesY[y]),
-                    tint = texParams.color,
+                    uv = new Vector2(k_TexCoordSlicesX[x], rectParams.uv.min.y + rectParams.uv.max.y - k_TexCoordSlicesY[y]),
+                    tint = rectParams.color,
                     flags = (float)vertexFlags
                 };
             }
             mesh.indices.CopyFrom(slicedQuadIndices);
-        }
-
-        private static bool IsSimpleRect(BorderParameters border)
-        {
-            return border.topLeftRadius < Mathf.Epsilon &&
-                border.topRightRadius < Mathf.Epsilon &&
-                border.bottomRightRadius < Mathf.Epsilon &&
-                border.bottomLeftRadius < Mathf.Epsilon &&
-                !IsBorder(border);
-        }
-
-        public static bool IsBorder(BorderParameters border)
-        {
-            return border.leftWidth >= Mathf.Epsilon ||
-                border.topWidth >= Mathf.Epsilon ||
-                border.rightWidth >= Mathf.Epsilon ||
-                border.bottomWidth >= Mathf.Epsilon;
         }
     }
 }

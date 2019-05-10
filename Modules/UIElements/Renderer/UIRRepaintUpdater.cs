@@ -33,8 +33,10 @@ namespace UnityEngine.UIElements
             if (renderChain == null)
                 return;
 
-            if ((versionChangeType & (VersionChangeType.Transform | VersionChangeType.Clip)) != 0)
-                renderChain.UIEOnTransformChanged(ve);
+            bool transformChanged = (versionChangeType & VersionChangeType.Transform) != 0;
+            bool sizeChanged = (versionChangeType & VersionChangeType.Size) != 0;
+            if (transformChanged || sizeChanged)
+                renderChain.UIEOnTransformOrSizeChanged(ve, transformChanged, sizeChanged);
 
             if ((versionChangeType & VersionChangeType.Repaint) != 0)
                 renderChain.UIEOnVisualsChanged(ve, false);

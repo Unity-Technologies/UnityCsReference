@@ -109,7 +109,7 @@ namespace UnityEditor
         internal static bool HasCurrentWindowKeyFocus()
         {
             CheckOnGUI();
-            return GUIView.current != null ? GUIView.current.hasFocus : false;
+            return GUIView.current != null && GUIView.current.hasFocus;
         }
 
         public static Rect PointsToPixels(Rect rect)
@@ -242,9 +242,9 @@ namespace UnityEditor
                 }
             }
 
-            foreach (HeaderItemDelegate dele in s_EditorHeaderItemsMethods)
+            foreach (HeaderItemDelegate @delegate in s_EditorHeaderItemsMethods)
             {
-                if (dele(rectangle, targetObjs))
+                if (@delegate(rectangle, targetObjs))
                     rectangle.x -= rectangle.width;
             }
 
@@ -1091,7 +1091,7 @@ namespace UnityEditor
             }
         }
 
-        public static float currentViewWidth => GUIView.current.position.width;
+        public static float currentViewWidth => GUIView.current ? GUIView.current.position.width : 0;
 
         public static float labelWidth
         {

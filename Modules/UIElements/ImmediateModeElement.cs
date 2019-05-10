@@ -10,12 +10,12 @@ namespace UnityEngine.UIElements
     {
         public ImmediateModeElement()
         {
+            generateVisualContent += OnGenerateVisualContent;
         }
 
-        internal override void DoRepaint(IStylePainter painter)
+        private void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
-            var stylePainter = (IStylePainterInternal)painter;
-            stylePainter.DrawImmediate(ImmediateRepaint);
+            mgc.painter.DrawImmediate(ImmediateRepaint);
         }
 
         protected abstract void ImmediateRepaint();

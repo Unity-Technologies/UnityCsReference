@@ -41,7 +41,7 @@ namespace UnityEditor.StyleSheets
         public void Dispose()
         {
             m_Timer.Stop();
-            Debug.Log(msg + " - " + m_Timer.ElapsedMilliseconds + "ms");
+            Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, msg + " - " + m_Timer.ElapsedMilliseconds + "ms");
         }
     }
 

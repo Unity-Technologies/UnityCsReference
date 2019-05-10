@@ -5,9 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.IO;
 using UnityEngine;
-using UnityEngine.Experimental.AssetBundlePatching;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.Experimental.AssetImporters
@@ -39,8 +37,19 @@ namespace UnityEditor.Experimental.AssetImporters
         // if they want to modify data outside the Importer serialization in the ImporterInspector.
         // This allow support for multiple inspectors, multiple selections and assembly reload.
         // See an example usage in AssemblyDefinitionImporterInspector.
-        protected Object[] extraDataTargets { get; private set; }
-        protected Object extraDataTarget => extraDataTargets[referenceTargetIndex];
+        Object[] m_ExtraDataTargets;
+        protected Object[] extraDataTargets
+        {
+            get
+            {
+                if (!m_AllowMultiObjectAccess)
+                    Debug.LogError("The targets array should not be used inside OnSceneGUI or OnPreviewGUI. Use the single target property instead.");
+                return m_ExtraDataTargets;
+            }
+        }
+
+        protected Object extraDataTarget => m_ExtraDataTargets[referenceTargetIndex];
+
         SerializedObject m_ExtraDataSerializedObject;
         protected SerializedObject extraDataSerializedObject
         {
@@ -48,7 +57,7 @@ namespace UnityEditor.Experimental.AssetImporters
             {
                 if (m_ExtraDataSerializedObject == null && extraDataType != null)
                 {
-                    m_ExtraDataSerializedObject = new SerializedObject(extraDataTargets);
+                    m_ExtraDataSerializedObject = new SerializedObject(m_ExtraDataTargets);
                 }
                 return m_ExtraDataSerializedObject;
             }
@@ -63,6 +72,7 @@ namespace UnityEditor.Experimental.AssetImporters
         // we need to keep a list of unreleased instances in case the user cancel the de-selection
         // we are using these instances to keep the same apply/revert status with the forced re-selection
         static List<int> s_UnreleasedInstances;
+        List<int> m_TargetsInstanceID;
         // Check to make sure Users implemented their Inspector correctly for the Cancel deselection mechanism.
         bool m_ApplyRevertGUICalled;
         // Adding a check on OnEnable to make sure users call the base class, as it used to do nothing.
@@ -93,25 +103,25 @@ namespace UnityEditor.Experimental.AssetImporters
                 if (!typeof(ScriptableObject).IsAssignableFrom(extraDataType))
                 {
                     Debug.LogError("Custom Data objects needs to be ScriptableObject to support assembly reloads and Undo/Redo");
-                    extraDataTargets = null;
+                    m_ExtraDataTargets = null;
                 }
                 else
                 {
-                    extraDataTargets = new Object[t.Length];
+                    m_ExtraDataTargets = new Object[t.Length];
                 }
             }
             else
             {
-                extraDataTargets = null;
+                m_ExtraDataTargets = null;
             }
 
             if (m_CopySaved) // coming back from an assembly reload or asset re-import
             {
-                if (extraDataTargets != null) // we need to recreate the user custom array
+                if (m_ExtraDataTargets != null) // we need to recreate the user custom array
                 {
                     // just get back the data from customSerializedData array, it gets serialized and reconstructed properly
                     extraDataSerializedObject.SetIsDifferentCacheDirty();
-                    extraDataTargets = extraDataSerializedObject.targetObjects;
+                    m_ExtraDataTargets = extraDataSerializedObject.targetObjects;
                 }
                 foreach (var index in AssetWasUpdated())
                 {
@@ -127,39 +137,42 @@ namespace UnityEditor.Experimental.AssetImporters
                     int instanceID = t[i].GetInstanceID();
                     loadedIds.Add(instanceID);
                     var extraData = CreateOrReloadInspectorCopy(instanceID);
-                    if (extraDataTargets != null)
+                    if (m_ExtraDataTargets != null)
                     {
                         // we got the data from another instance
                         if (extraData != null)
-                            extraDataTargets[i] = extraData;
+                            m_ExtraDataTargets[i] = extraData;
                         else
                         {
-                            extraDataTargets[i] = ScriptableObject.CreateInstance(extraDataType);
-                            InitializeExtraDataInstance(extraDataTargets[i], i);
-                            SaveUserData(instanceID, extraDataTargets[i]);
+                            m_ExtraDataTargets[i] = ScriptableObject.CreateInstance(extraDataType);
+                            m_ExtraDataTargets[i].hideFlags = HideFlags.DontUnloadUnusedAsset | HideFlags.DontSaveInEditor;
+                            InitializeExtraDataInstance(m_ExtraDataTargets[i], i);
+                            SaveUserData(instanceID, m_ExtraDataTargets[i]);
                         }
                     }
 
                     // proceed to an editor count check to make sure we have the proper number of instances saved.
                     // If it is not the case, then a dispose was not done properly.
-                    var editors = Resources.FindObjectsOfTypeAll<AssetImporterEditor>();
+                    var editors = Resources.FindObjectsOfTypeAll(this.GetType()).Cast<AssetImporterEditor>();
                     int count = editors.Count(e => e.targets.Contains(t[i]));
-                    if (s_UnreleasedInstances != null && s_UnreleasedInstances.Contains(instanceID))
-                        count++;
+                    if (s_UnreleasedInstances != null)
+                    {
+                        count += s_UnreleasedInstances.Count(id => id == instanceID);
+                    }
                     var instances = GetInspectorCopyCount(instanceID);
                     if (count != instances)
                     {
-                        // Preemptively dispose the extra instance of the object so we fall back in a correct state.
-                        if (count == instances - 1)
-                            ReleaseInspectorCopy(instanceID);
                         if (!CanEditorSurviveAssemblyReload())
                         {
-                            Debug.LogError($"The previous instance of {GetType()} has not been disposed correctly. Make sure {GetType()} is a valid MonoScript.");
+                            Debug.LogError($"The previous instance of {GetType()} was not un-loaded properly. The script has to be declared in a file with the same name.");
                         }
                         else
                         {
                             Debug.LogError($"The previous instance of {GetType()} has not been disposed correctly. Make sure you are calling base.OnDisable() in your AssetImporterEditor implementation.");
                         }
+
+                        // Fix the cache count so it does not fail anymore.
+                        FixCacheCount(instanceID, count);
                     }
                 }
 
@@ -177,6 +190,7 @@ namespace UnityEditor.Experimental.AssetImporters
                     }
                 }
 
+                m_TargetsInstanceID = loadedIds;
                 m_CopySaved = true;
             }
         }
@@ -198,8 +212,8 @@ namespace UnityEditor.Experimental.AssetImporters
         {
             for (int i = 0; i < targets.Length; i++)
             {
-                var importer = (AssetImporter)targets[i];
-                if (importer.assetPath == arg1)
+                var importer = targets[i] as AssetImporter;
+                if (importer != null && importer.assetPath == arg1)
                 {
                     FixSavedAssetbundleSettings(importer.GetInstanceID(), new PropertyModification[]
                     {
@@ -338,22 +352,16 @@ namespace UnityEditor.Experimental.AssetImporters
                     {
                         s_UnreleasedInstances = new List<int>();
                     }
-                    foreach (var t in targets)
+                    foreach (var t in m_TargetsInstanceID)
                     {
-                        if (t != null)
-                        {
-                            s_UnreleasedInstances.Add(t.GetInstanceID());
-                        }
+                        s_UnreleasedInstances.Add(t);
                     }
                 }
                 else
                 {
-                    foreach (var t in targets)
+                    foreach (var t in m_TargetsInstanceID)
                     {
-                        if (t != null)
-                        {
-                            ReleaseInspectorCopy(t.GetInstanceID());
-                        }
+                        ReleaseInspectorCopy(t);
                     }
                 }
             }
@@ -470,7 +478,7 @@ namespace UnityEditor.Experimental.AssetImporters
             if (extraDataSerializedObject != null)
             {
                 extraDataSerializedObject.SetIsDifferentCacheDirty();
-                InitializeExtraDataInstance(extraDataTargets[index], index);
+                InitializeExtraDataInstance(m_ExtraDataTargets[index], index);
                 extraDataSerializedObject.Update();
             }
             UpdateSavedData(targets[index]);

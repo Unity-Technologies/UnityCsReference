@@ -49,12 +49,26 @@ namespace UnityEditor.Scripting.Compilers
             }
         }
 
-        public static void UpdateScripts(string responseFile, string sourceExtension, string pathMappingsFilePath)
+        public static void UpdateScripts(string responseFile, string sourceExtension, string[] sourceFiles)
         {
             if (!APIUpdaterManager.WaitForVCSServerConnection(true))
             {
                 return;
             }
+
+            var pathMappingsFilePath = Path.GetTempFileName();
+
+            var filePathMappings = new List<string>(sourceFiles.Length);
+            foreach (var source in sourceFiles)
+            {
+                var f = CommandLineFormatter.PrepareFileName(source);
+                f = Paths.UnifyDirectorySeparator(f);
+
+                if (f != source)
+                    filePathMappings.Add(f + " => " + source);
+            }
+
+            File.WriteAllLines(pathMappingsFilePath, filePathMappings.ToArray());
 
             var tempOutputPath = "Library/Temp/ScriptUpdater/" + new System.Random().Next() + "/";
 

@@ -465,6 +465,7 @@ namespace UnityEditor
         [Serializable]
         public class CameraSettings
         {
+            const float defaultEasingDuration = .4f;
             const float kAbsoluteSpeedMin = .01f;
             const float kAbsoluteSpeedMax = 99f;
             const float kAbsoluteEasingDurationMin = .1f;
@@ -482,6 +483,8 @@ namespace UnityEditor
             bool m_EasingEnabled;
             [SerializeField]
             float m_EasingDuration;
+            [SerializeField]
+            bool m_AccelerationEnabled;
 
             [SerializeField]
             float m_FieldOfView;
@@ -501,12 +504,13 @@ namespace UnityEditor
                 m_SpeedMin = .01f;
                 m_SpeedMax = 2f;
                 m_EasingEnabled = true;
-                m_EasingDuration = .4f;
+                m_EasingDuration = defaultEasingDuration;
                 fieldOfView = kPerspectiveFov;
                 m_DynamicClip = true;
                 m_OcclusionCulling = false;
                 m_NearClip = .03f;
                 m_FarClip = 10000f;
+                m_AccelerationEnabled = true;
             }
 
             public float speed
@@ -563,6 +567,8 @@ namespace UnityEditor
                 }
             }
 
+            // Easing is applied when starting and stopping movement. When enabled, the camera will lerp from it's
+            // current speed to the target speed over the course of `CameraSettings.easingDuration` seconds.
             public bool easingEnabled
             {
                 get { return m_EasingEnabled; }
@@ -582,6 +588,14 @@ namespace UnityEditor
                     // Clamp and round to 1 decimal point
                     m_EasingDuration = (float)(Math.Round((double)Mathf.Clamp(value, kAbsoluteEasingDurationMin, kAbsoluteEasingDurationMax), 1));
                 }
+            }
+
+            // When acceleration is enabled, camera speed is continuously increased while in motion. When acceleration
+            // is disabled, speed is a constant value defined by `CameraSettings.speed`
+            public bool accelerationEnabled
+            {
+                get { return m_AccelerationEnabled; }
+                set { m_AccelerationEnabled = value; }
             }
 
             internal void SetSpeedMinMax(float[] floatValues)
@@ -749,7 +763,7 @@ namespace UnityEditor
             public static GUIContent isolationModeOverlayContent = EditorGUIUtility.TrTextContent("Isolation View", "");
             public static GUIContent isolationModeExitButton = EditorGUIUtility.TrTextContent("Exit", "Exit isolation mode");
             public static GUIContent renderDocContent;
-            public static GUIContent sceneVisToolbarButtonContent = EditorGUIUtility.TrIconContent("SceneViewVisibility", "Number of hidden objects, click to toggle scene visibility");
+            public static GUIContent sceneVisToolbarButtonContent = EditorGUIUtility.TrIconContent("scenevis_hidden", "Number of hidden objects, click to toggle scene visibility");
             public static GUIStyle gizmoButtonStyle;
             public static GUIStyle fxDropDownStyle;
             public static GUIContent sceneViewCameraContent = EditorGUIUtility.TrIconContent("SceneViewCamera", "Settings for the Scene view camera.");
@@ -1812,6 +1826,11 @@ namespace UnityEditor
                 UpdateAlbedoSwatch();
             }
 
+            if (renderMode == DrawCameraMode.ValidateAlbedo || renderMode == DrawCameraMode.ValidateMetalSpecular)
+            {
+                UpdatePBRColorLegend();
+            }
+
             if ((renderMode == DrawCameraMode.ValidateAlbedo || renderMode == DrawCameraMode.ValidateMetalSpecular) &&
                 lastRenderMode != DrawCameraMode.ValidateAlbedo && lastRenderMode != DrawCameraMode.ValidateMetalSpecular)
             {
@@ -1934,16 +1953,22 @@ namespace UnityEditor
         private float m_AlbedoSwatchSaturationTolerance = 0.2f;
         private ColorSpace m_LastKnownColorSpace = ColorSpace.Uninitialized;
 
-        GUIStyle CreateSwatchStyleForColor(Color c)
+
+        void UpdateSwatchTexture(Texture2D t, Color c)
         {
-            Texture2D t = new Texture2D(1, 1);
             if (PlayerSettings.colorSpace == ColorSpace.Linear)
             {
                 c = c.gamma; // offset linear to gamma correction that happens in IMGUI, by doing the inverse beforehand
             }
             t.SetPixel(0, 0, c);
             t.Apply();
+        }
+
+        GUIStyle CreateSwatchStyleForColor(Color c)
+        {
             GUIStyle s = new GUIStyle();
+            Texture2D t = new Texture2D(1, 1);
+            UpdateSwatchTexture(t, c);
             s.normal.background = t;
             return s;
         }
@@ -2086,9 +2111,19 @@ namespace UnityEditor
 
         void UpdatePBRColorLegend()
         {
-            m_TooLowColorStyle = CreateSwatchStyleForColor(kSceneViewMaterialValidateLow.Color);
-            m_TooHighColorStyle = CreateSwatchStyleForColor(kSceneViewMaterialValidateHigh.Color);
-            m_PureMetalColorStyle = CreateSwatchStyleForColor(kSceneViewMaterialValidatePureMetal.Color);
+            if (m_TooLowColorStyle == null)
+            {
+                m_TooLowColorStyle = CreateSwatchStyleForColor(kSceneViewMaterialValidateLow.Color);
+                m_TooHighColorStyle = CreateSwatchStyleForColor(kSceneViewMaterialValidateHigh.Color);
+                m_PureMetalColorStyle = CreateSwatchStyleForColor(kSceneViewMaterialValidatePureMetal.Color);
+            }
+            else
+            {
+                UpdateSwatchTexture(m_TooLowColorStyle.normal.background, kSceneViewMaterialValidateLow.Color);
+                UpdateSwatchTexture(m_TooHighColorStyle.normal.background, kSceneViewMaterialValidateHigh.Color);
+                UpdateSwatchTexture(m_PureMetalColorStyle.normal.background, kSceneViewMaterialValidatePureMetal.Color);
+            }
+
             Shader.SetGlobalColor("unity_MaterialValidateLowColor", kSceneViewMaterialValidateLow.Color.linear);
             Shader.SetGlobalColor("unity_MaterialValidateHighColor", kSceneViewMaterialValidateHigh.Color.linear);
             Shader.SetGlobalColor("unity_MaterialValidatePureMetalColor", kSceneViewMaterialValidatePureMetal.Color.linear);
@@ -2161,7 +2196,6 @@ namespace UnityEditor
                 }
             }
 
-            UpdatePBRColorLegend();
             EditorGUILayout.LabelField("Color Legend:");
             EditorGUI.indentLevel++;
             string modeString;
@@ -2207,6 +2241,7 @@ namespace UnityEditor
             {
                 UpdateAlbedoSwatchGUI();
                 UpdateAlbedoSwatch();
+                UpdatePBRColorLegend();
             }
         }
 
@@ -2250,6 +2285,7 @@ namespace UnityEditor
             if (evt.type == EventType.Repaint)
             {
                 s_MouseRects.Clear();
+                Tools.InvalidateHandlePosition(); // Some cases that should invalidate the cached position are not handled correctly yet so we refresh it once per frame
                 Profiler.BeginSample("SceneView.Repaint");
             }
 
@@ -2282,7 +2318,7 @@ namespace UnityEditor
             // Use custom scene RenderSettings (if currently showing a custom scene)
             bool restoreOverrideRenderSettings = false;
             if (m_CustomScene.IsValid())
-                restoreOverrideRenderSettings = Unsupported.SetOverrideRenderSettings(m_CustomScene);
+                restoreOverrideRenderSettings = Unsupported.SetOverrideLightingSettings(m_CustomScene);
 
             SetupCustomSceneLighting();
 
@@ -2318,7 +2354,7 @@ namespace UnityEditor
             CleanupCustomSceneLighting();
 
             if (restoreOverrideRenderSettings)
-                Unsupported.RestoreOverrideRenderSettings();
+                Unsupported.RestoreOverrideLightingSettings();
 
             //Ensure that the target texture is clamped [0-1]
             //This is needed because otherwise gizmo rendering gets all

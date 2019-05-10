@@ -1063,6 +1063,9 @@
     <Compile Include="..\..\Runtime\Profiler\ScriptBindings\ProfilerMarker.bindings.cs">
       <Link>Runtime\Profiler\ScriptBindings\ProfilerMarker.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Profiler\ScriptBindings\ProfilerMarkerUtils.cs">
+      <Link>Runtime\Profiler\ScriptBindings\ProfilerMarkerUtils.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Profiler\ScriptBindings\Recorder.bindings.cs">
       <Link>Runtime\Profiler\ScriptBindings\Recorder.bindings.cs</Link>
     </Compile>
@@ -1933,6 +1936,18 @@
     <Compile Include="..\..\Modules\UIElements\Events\EventCallbackRegistry.cs">
       <Link>Modules\UIElements\Events\EventCallbackRegistry.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Events\EventDebugger\EventDebugger.cs">
+      <Link>Modules\UIElements\Events\EventDebugger\EventDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Events\EventDebugger\EventDebuggerEventRecord.cs">
+      <Link>Modules\UIElements\Events\EventDebugger\EventDebuggerEventRecord.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Events\EventDebugger\EventDebuggerTrace.cs">
+      <Link>Modules\UIElements\Events\EventDebugger\EventDebuggerTrace.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Events\EventDebugger\GlobalCallbackRegistry.cs">
+      <Link>Modules\UIElements\Events\EventDebugger\GlobalCallbackRegistry.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Events\EventHandler.cs">
       <Link>Modules\UIElements\Events\EventHandler.cs</Link>
     </Compile>
@@ -2017,9 +2032,6 @@
     <Compile Include="..\..\Modules\UIElements\ImmediateStylePainter.bindings.cs">
       <Link>Modules\UIElements\ImmediateStylePainter.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\ImmediateStylePainter.cs">
-      <Link>Modules\UIElements\ImmediateStylePainter.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIElements\InteractionEnums.cs">
       <Link>Modules\UIElements\InteractionEnums.cs</Link>
     </Compile>
@@ -2074,6 +2086,9 @@
     <Compile Include="..\..\Modules\UIElements\Renderer\UIRMeshBuilder.cs">
       <Link>Modules\UIElements\Renderer\UIRMeshBuilder.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Renderer\UIRMeshGenerationContext.cs">
+      <Link>Modules\UIElements\Renderer\UIRMeshGenerationContext.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Renderer\UIRRepaintUpdater.cs">
       <Link>Modules\UIElements\Renderer\UIRRepaintUpdater.cs</Link>
     </Compile>
@@ -2125,6 +2140,9 @@
     <Compile Include="..\..\Modules\UIElements\StylePainter.cs">
       <Link>Modules\UIElements\StylePainter.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\StyleSheets\Dimension.cs">
+      <Link>Modules\UIElements\StyleSheets\Dimension.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\StyleSheets\InheritedStylesData.cs">
       <Link>Modules\UIElements\StyleSheets\InheritedStylesData.cs</Link>
     </Compile>
@@ -2160,6 +2178,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleSheetCache.cs">
       <Link>Modules\UIElements\StyleSheets\StyleSheetCache.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleSheetColor.cs">
+      <Link>Modules\UIElements\StyleSheets\StyleSheetColor.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleSheetExtensions.cs">
       <Link>Modules\UIElements\StyleSheets\StyleSheetExtensions.cs</Link>
@@ -2322,12 +2343,6 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\VisualTreeHierarchyTracker.cs">
       <Link>Modules\UIElements\VisualTreeHierarchyTracker.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\VisualTreeLayoutUpdater.cs">
-      <Link>Modules\UIElements\VisualTreeLayoutUpdater.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\VisualTreeRepaintUpdater.cs">
-      <Link>Modules\UIElements\VisualTreeRepaintUpdater.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\VisualTreeStyleUpdater.cs">
       <Link>Modules\UIElements\VisualTreeStyleUpdater.cs</Link>
@@ -2662,6 +2677,9 @@
     <Compile Include="..\..\Modules\XR\XRSubsystemManager.bindings.cs">
       <Link>Modules\XR\XRSubsystemManager.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Video\ScriptBindings\MovieTexture.deprecated.cs">
+      <Link>Runtime\Video\ScriptBindings\MovieTexture.deprecated.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Video\ScriptBindings\UnityEngineWebCamTexture.bindings.cs">
       <Link>Runtime\Video\ScriptBindings\UnityEngineWebCamTexture.bindings.cs</Link>
     </Compile>
@@ -2676,9 +2694,6 @@
     </Compile>
     <Compile Include="..\..\artifacts\generated\bindings_old\common\Audio\AudioMixerSnapshotBindings.gen.cs">
       <Link>artifacts\generated\bindings_old\common\Audio\AudioMixerSnapshotBindings.gen.cs</Link>
-    </Compile>
-    <Compile Include="..\..\artifacts\generated\bindings_old\common\Audio\MovieTextureBindings.gen.cs">
-      <Link>artifacts\generated\bindings_old\common\Audio\MovieTextureBindings.gen.cs</Link>
     </Compile>
     <Compile Include="..\..\artifacts\generated\bindings_old\common\Audio\UnityEngineWebCamTextureBindings.gen.cs">
       <Link>artifacts\generated\bindings_old\common\Audio\UnityEngineWebCamTextureBindings.gen.cs</Link>

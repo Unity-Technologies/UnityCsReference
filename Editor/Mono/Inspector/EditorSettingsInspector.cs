@@ -7,6 +7,8 @@ using UnityEditorInternal;
 using UnityEngine;
 using UnityEditor.Hardware;
 using UnityEditor.VersionControl;
+using UnityEngine.SceneManagement;
+using UnityEditor.SceneManagement;
 using UnityEditor.Collaboration;
 using UnityEditor.Web;
 
@@ -37,7 +39,7 @@ namespace UnityEditor
             public static GUIContent assetPipeline = EditorGUIUtility.TrTextContent("Asset Pipeline (experimental)");
             public static GUIContent cacheServer = EditorGUIUtility.TrTextContent("Cache Server");
             public static GUIContent assetSerialization = EditorGUIUtility.TrTextContent("Asset Serialization");
-            public static GUIContent defaultBehaviorMode = EditorGUIUtility.TrTextContent("Default Behavior Mode");
+            public static GUIContent defaultBehaviorMode = EditorGUIUtility.TrTextContent("Default Behaviour Mode");
 
             public static GUIContent graphics = EditorGUIUtility.TrTextContent("Graphics");
             public static GUIContent showLightmapResolutionOverlay = EditorGUIUtility.TrTextContent("Show Lightmap Resolution Overlay");
@@ -49,7 +51,7 @@ namespace UnityEditor
             public static GUIContent rootNamespace = EditorGUIUtility.TrTextContent("Root namespace");
 
             public static GUIContent etcTextureCompressor = EditorGUIUtility.TrTextContent("ETC Texture Compressor");
-            public static GUIContent behavior = EditorGUIUtility.TrTextContent("Behavior");
+            public static GUIContent behavior = EditorGUIUtility.TrTextContent("Behaviour");
             public static GUIContent fast = EditorGUIUtility.TrTextContent("Fast");
             public static GUIContent normal = EditorGUIUtility.TrTextContent("Normal");
             public static GUIContent best = EditorGUIUtility.TrTextContent("Best");
@@ -69,6 +71,11 @@ namespace UnityEditor
 
             public static GUIContent shaderCompilation = EditorGUIUtility.TrTextContent("Shader Compilation");
             public static GUIContent asyncShaderCompilation = EditorGUIUtility.TrTextContent("Asynchronous Shader Compilation", "Enables async shader compilation in Game and Scene view. Async compilation for custom editor tools can be achieved via script API and is not affected by this option.");
+
+            public static readonly GUIContent enterPlayModeSettings = EditorGUIUtility.TrTextContent("Enter Play Mode Settings");
+            public static readonly GUIContent enterPlayModeOptionsEnabled = EditorGUIUtility.TrTextContent("Enter Play Mode Options (Experimental)", "Enables options when Entering Play Mode");
+            public static readonly GUIContent enterPlayModeOptionsEnableDomainReload = EditorGUIUtility.TrTextContent("Reload Domain", "Enables Domain Reload when Entering Play Mode. Domain reload reinitializes game completely making loading behavior very close to the Player");
+            public static readonly GUIContent enterPlayModeOptionsEnableSceneReload = EditorGUIUtility.TrTextContent("Reload Scene", "Enables Scene Reload when Entering Play Mode. Scene reload makes loading behavior and performance characteristics very close to the Player");
         }
 
         struct PopupElement
@@ -259,28 +266,7 @@ namespace UnityEditor
 
             m_AsyncShaderCompilation = serializedObject.FindProperty("m_AsyncShaderCompilation");
 
-
             LoadEditorUserSettings();
-
-            m_AssetPipelineMode = m_EditorUserSettings.FindProperty("m_AssetPipelineMode");
-            m_CacheServerMode = m_EditorUserSettings.FindProperty("m_CacheServerMode");
-            m_CacheServers = m_EditorUserSettings.FindProperty("m_CacheServers");
-
-
-            m_CacheServerConnectionState = CacheServerConnectionState.Unknown;
-            s_ForcedAssetPipelineWarning = null;
-
-            if (m_CacheServerList == null)
-            {
-                m_CacheServerList = new ReorderableList(serializedObject, m_CacheServers, true, false, true, true);
-                m_CacheServerList.onReorderCallback = (ReorderableList list) => { serializedObject.ApplyModifiedProperties(); };
-                m_CacheServerList.onAddCallback = (ReorderableList list) => { m_CacheServers.arraySize += 1; serializedObject.ApplyModifiedProperties(); };
-                m_CacheServerList.onRemoveCallback = (ReorderableList list) => { ReorderableList.defaultBehaviours.DoRemoveButton(list); serializedObject.ApplyModifiedProperties(); };
-                m_CacheServerList.onCanRemoveCallback = (ReorderableList list) => { return list.index < m_CacheServers.arraySize && list.index >= 0; };
-                m_CacheServerList.drawElementCallback = DrawCacheServerListElement;
-                m_CacheServerList.elementHeight = EditorGUIUtility.singleLineHeight + 2;
-                m_CacheServerList.headerHeight = 3;
-            }
         }
 
         public void OnDisable()
@@ -345,6 +331,11 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
+            if (m_EditorUserSettings != null && !m_EditorUserSettings.targetObject)
+            {
+                LoadEditorUserSettings();
+            }
+
             serializedObject.Update();
 
             // GUI.enabled hack because we don't want some controls to be disabled if the EditorSettings.asset is locked
@@ -573,6 +564,7 @@ namespace UnityEditor
             DoLineEndingsSettings();
             DoStreamingSettings();
             DoShaderCompilationSettings();
+            DoEnterPlayModeSettings();
 
             serializedObject.ApplyModifiedProperties();
             m_EditorUserSettings.ApplyModifiedProperties();
@@ -587,6 +579,25 @@ namespace UnityEditor
                 {
                     m_EditorUserSettings = new SerializedObject(o);
                 }
+            }
+
+            m_AssetPipelineMode = m_EditorUserSettings.FindProperty("m_AssetPipelineMode2");
+            m_CacheServerMode = m_EditorUserSettings.FindProperty("m_CacheServerMode");
+            m_CacheServers = m_EditorUserSettings.FindProperty("m_CacheServers");
+
+            m_CacheServerConnectionState = CacheServerConnectionState.Unknown;
+            s_ForcedAssetPipelineWarning = null;
+
+            if (m_CacheServerList == null)
+            {
+                m_CacheServerList = new ReorderableList(serializedObject, m_CacheServers, true, false, true, true);
+                m_CacheServerList.onReorderCallback = (ReorderableList list) => { serializedObject.ApplyModifiedProperties(); };
+                m_CacheServerList.onAddCallback = (ReorderableList list) => { m_CacheServers.arraySize += 1; serializedObject.ApplyModifiedProperties(); };
+                m_CacheServerList.onRemoveCallback = (ReorderableList list) => { ReorderableList.defaultBehaviours.DoRemoveButton(list); serializedObject.ApplyModifiedProperties(); };
+                m_CacheServerList.onCanRemoveCallback = (ReorderableList list) => { return list.index < m_CacheServers.arraySize && list.index >= 0; };
+                m_CacheServerList.drawElementCallback = DrawCacheServerListElement;
+                m_CacheServerList.elementHeight = EditorGUIUtility.singleLineHeight + 2;
+                m_CacheServerList.headerHeight = 3;
             }
         }
 
@@ -760,6 +771,24 @@ namespace UnityEditor
             GUILayout.Label(Content.shaderCompilation, EditorStyles.boldLabel);
 
             EditorGUILayout.PropertyField(m_AsyncShaderCompilation, Content.asyncShaderCompilation);
+        }
+
+        private void DoEnterPlayModeSettings()
+        {
+            GUILayout.Space(10);
+            GUILayout.Label(Content.enterPlayModeSettings, EditorStyles.boldLabel);
+
+            EditorSettings.enterPlayModeOptionsEnabled = EditorGUILayout.Toggle(Content.enterPlayModeOptionsEnabled, EditorSettings.enterPlayModeOptionsEnabled);
+
+            EditorGUI.indentLevel++;
+            using (new EditorGUI.DisabledScope(!EditorSettings.enterPlayModeOptionsEnabled))
+            {
+                EnterPlayModeOptions options = EditorSettings.enterPlayModeOptions;
+                options = ToggleEnterPlayModeOptions(options, EnterPlayModeOptions.DisableDomainReload, Content.enterPlayModeOptionsEnableDomainReload);
+                options = ToggleEnterPlayModeOptions(options, EnterPlayModeOptions.DisableSceneReload, Content.enterPlayModeOptionsEnableSceneReload);
+                EditorSettings.enterPlayModeOptions = options;
+            }
+            EditorGUI.indentLevel--;
         }
 
         static int GetIndexById(DevDevice[] elements, string id, int defaultIndex)
@@ -1049,6 +1078,23 @@ namespace UnityEditor
             int popupIndex = (int)data;
 
             EditorSettings.lineEndingsForNewScripts = (LineEndingsMode)popupIndex;
+        }
+
+        private EnterPlayModeOptions ToggleEnterPlayModeOptions(EnterPlayModeOptions options, EnterPlayModeOptions flag, GUIContent content)
+        {
+            bool isSet = ((options & flag) == flag);
+            isSet = EditorGUILayout.Toggle(content, !isSet);
+
+            if (isSet)
+            {
+                options &= ~flag;
+            }
+            else
+            {
+                options |= flag;
+            }
+
+            return options;
         }
 
         [SettingsProvider]

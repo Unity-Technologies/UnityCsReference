@@ -313,7 +313,7 @@ namespace UnityEditor
 
         private void DoPrefabButtons()
         {
-            if (!m_IsPrefabInstanceAnyRoot)
+            if (!m_IsPrefabInstanceAnyRoot || m_IsAsset)
                 return;
 
             using (new EditorGUI.DisabledScope(m_PlayModeObjects))
@@ -851,7 +851,9 @@ namespace UnityEditor
                 DoRenderPreview();
                 previewUtility.EndAndDrawPreview(r);
                 var copy = new RenderTexture(previewUtility.renderTexture);
-                Graphics.CopyTexture(previewUtility.renderTexture, copy);
+                var previous = RenderTexture.active;
+                Graphics.Blit(previewUtility.renderTexture, copy);
+                RenderTexture.active = previous;
                 m_PreviewCache.Add(referenceTargetIndex, copy);
             }
         }

@@ -252,6 +252,12 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
                     ProcessIl2CppOutputForBinary(args);
                 }
             }
+            else
+            {
+                var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(args.target);
+                var managedStrippingLevel = PlayerSettings.GetManagedStrippingLevel(buildTargetGroup);
+                AssemblyStripper.StripForMonoBackend(args.target, args.usedClassRegistry, managedStrippingLevel, args.report);
+            }
 
             RenameFilesInStagingArea(args);
         }
@@ -451,15 +457,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
     protected static string GetMonoFolderName(ScriptingRuntimeVersion scriptingRuntimeVersion)
     {
-        switch (scriptingRuntimeVersion)
-        {
-            case ScriptingRuntimeVersion.Legacy:
-                return "Mono";
-            case ScriptingRuntimeVersion.Latest:
-                return "MonoBleedingEdge";
-            default:
-                throw new ArgumentOutOfRangeException("scriptingRuntimeVersion", "Unknown scripting runtime version");
-        }
+        return "MonoBleedingEdge";
     }
 
     protected static bool UseMono => !UseIl2Cpp || IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildTargetGroup.Standalone);
@@ -467,15 +465,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
     protected static void DeleteUnusedMono(string dataFolder, BuildReport report)
     {
         // Mono is built by the il2cpp builder, so we dont need the libs copied
-        bool deleteBoth = !UseMono;
-
-        if (deleteBoth || EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
-        {
-            var monoPath = Path.Combine(dataFolder, GetMonoFolderName(ScriptingRuntimeVersion.Legacy));
-            FileUtil.DeleteFileOrDirectory(monoPath);
-            report.RecordFilesDeletedRecursive(monoPath);
-        }
-        if (deleteBoth || EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy)
+        if (!UseMono)
         {
             var monoPath = Path.Combine(dataFolder, GetMonoFolderName(ScriptingRuntimeVersion.Latest));
             FileUtil.DeleteFileOrDirectory(monoPath);

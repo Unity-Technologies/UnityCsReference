@@ -20,7 +20,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
     struct RemovalInfo
     {
         public bool anyDirtiedClipping;
-        public bool anyDirtiedTransform;
+        public bool anyDirtiedTransformOrSize;
         public bool anyDirtiedVisuals;
     }
 
@@ -75,10 +75,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 renderChain.OnClippingChanged(ve);
         }
 
-        internal static void OnTransformChanged(RenderChain renderChain, VisualElement ve)
+        internal static void OnTransformOrSizeChanged(RenderChain renderChain, VisualElement ve, bool transformChanged, bool sizeChanged)
         {
-            if (ve.renderChainData.isInChain && !ve.renderChainData.dirtiedTransform)
-                renderChain.OnTransformChanged(ve);
+            if (ve.renderChainData.isInChain)
+                renderChain.OnTransformOrSizeChanged(ve, transformChanged, sizeChanged);
         }
 
         internal static void OnRestoreTransformIDs(VisualElement ve, UIRenderDevice device)
@@ -116,10 +116,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
             DepthFirstOnClippingChanged(renderChain, ve.hierarchy.parent, ve, dirtyID, false, device, ref stats);
         }
 
-        internal static void ProcessOnTransformChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, UIRenderDevice device, ref ChainBuilderStats stats)
+        internal static void ProcessOnTransformOrSizeChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, UIRenderDevice device, ref ChainBuilderStats stats)
         {
             stats.recursiveTransformUpdates++;
-            DepthFirstOnTransformChanged(renderChain, ve.hierarchy.parent, ve, dirtyID, device, false, ref stats);
+            DepthFirstOnTransformOrSizeChanged(renderChain, ve.hierarchy.parent, ve, dirtyID, device, false, false, ref stats);
         }
 
         internal static void ProcessOnVisualsChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
@@ -136,16 +136,19 @@ namespace UnityEngine.UIElements.UIR.Implementation
         {
             stats.textUpdates++;
             painter.Begin(ve, device);
-            ve.Repaint(painter);
+            ve.InvokeGenerateVisualContent(painter.meshGenerationContext);
             painter.End();
         }
 
         static Matrix4x4 GetTransformIDTransformInfo(VisualElement ve)
         {
             Debug.Assert(ve.renderChainData.allocatedTransformID || (ve.renderHint & (RenderHint.GroupTransform)) != 0);
+            Matrix4x4 transform;
             if (ve.renderChainData.groupTransformAncestor != null)
-                return ve.renderChainData.groupTransformAncestor.worldTransform.inverse * ve.worldTransform;
-            return ve.worldTransform;
+                transform = ve.renderChainData.groupTransformAncestor.worldTransform.inverse * ve.worldTransform;
+            else transform = ve.worldTransform;
+            transform.m22 = transform.m33 = 1.0f; // Once world-space mode is introduced, this should become conditional
+            return transform;
         }
 
         static Vector4 GetTransformIDClipInfo(VisualElement ve)
@@ -171,6 +174,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             else if (ve.renderChainData.groupTransformAncestor != null)
                 transform = ve.renderChainData.groupTransformAncestor.worldTransform.inverse * ve.worldTransform;
             else transform = ve.worldTransform;
+            transform.m22 = transform.m33 = 1.0f; // Once world-space mode is introduced, this should become conditional
             transformID = ve.renderChainData.transformID.start;
         }
 
@@ -253,8 +257,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 }
                 if (ve.renderChainData.dirtiedClipping)
                     removalInfo.anyDirtiedClipping = true;
-                if (ve.renderChainData.dirtiedTransform)
-                    removalInfo.anyDirtiedTransform = true;
+                if ((ve.renderChainData.dirtiedValues & (RenderDataDirtyTypes.Transform | RenderDataDirtyTypes.Size)) != 0)
+                    removalInfo.anyDirtiedTransformOrSize = true;
                 if (ve.renderChainData.dirtiedVisuals > 0)
                     removalInfo.anyDirtiedVisuals = true;
             }
@@ -333,12 +337,14 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 DepthFirstOnClippingChanged(renderChain, ve, ve.hierarchy[i], dirtyID, evenIfUpToDate, device, ref stats);
         }
 
-        static void DepthFirstOnTransformChanged(RenderChain renderChain, VisualElement parent, VisualElement ve, uint dirtyID, UIRenderDevice device, bool isAncestorOfChangeSkinned, ref ChainBuilderStats stats)
+        static void  DepthFirstOnTransformOrSizeChanged(RenderChain renderChain, VisualElement parent, VisualElement ve, uint dirtyID, UIRenderDevice device, bool isAncestorOfChangeSkinned, bool transformChanged, ref ChainBuilderStats stats)
         {
             if (dirtyID == ve.renderChainData.dirtyID)
                 return;
 
             stats.recursiveTransformUpdatesExpanded++;
+
+            transformChanged |= (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.Transform) != 0;
 
             bool dirtyHasBeenResolved = true;
             if (ve.renderChainData.allocatedTransformID)
@@ -346,6 +352,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 device.UpdateTransform(ve.renderChainData.transformID, GetTransformIDTransformInfo(ve), GetTransformIDClipInfo(ve));
                 isAncestorOfChangeSkinned = true;
                 stats.boneTransformed++;
+            }
+            else if (!transformChanged)
+            {
+                // Only the clip info had to be updated, we can skip the other cases which are for transform changes only.
             }
             else if ((ve.renderHint & RenderHint.GroupTransform) != 0)
             {
@@ -378,7 +388,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 // Recurse on children
                 int childrenCount = ve.hierarchy.childCount;
                 for (int i = 0; i < childrenCount; i++)
-                    DepthFirstOnTransformChanged(renderChain, ve, ve.hierarchy[i], dirtyID, device, isAncestorOfChangeSkinned, ref stats);
+                    DepthFirstOnTransformOrSizeChanged(renderChain, ve, ve.hierarchy[i], dirtyID, device, isAncestorOfChangeSkinned, transformChanged, ref stats);
             }
             else
                 renderChain.OnGroupTransformElementChangedTransform(ve); // Hack until UIE moves to TMP
@@ -532,7 +542,13 @@ namespace UnityEngine.UIElements.UIR.Implementation
             var painter = renderChain.painter;
             painter.currentElement = ve;
             painter.Begin();
-            ve.Repaint(painter);
+            if (ve.visible)
+            {
+                painter.DrawVisualElementBackground();
+                painter.DrawVisualElementBorder();
+                painter.ApplyVisualElementClipping();
+                ve.InvokeGenerateVisualContent(painter.meshGenerationContext);
+            }
             var entries = painter.entries;
 
             if (ve.renderChainData.allocatedTransformID)
@@ -1080,7 +1096,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
         }
     }
 
-    internal class UIRStylePainter : IStylePainterInternal, IDisposable
+    internal class UIRStylePainter : IStylePainter, IDisposable
     {
         internal struct Entry
         {
@@ -1172,19 +1188,20 @@ namespace UnityEngine.UIElements.UIR.Implementation
         ClosingInfo m_ClosingInfo;
         bool m_StencilClip = false;
         float m_ClipRectID = 0;
+        float m_ElementOpacity = 1.0f;
         TempDataAlloc<Vertex> m_VertsPool = new TempDataAlloc<Vertex>(8192);
         TempDataAlloc<UInt16> m_IndicesPool = new TempDataAlloc<UInt16>(8192 << 1);
 
         // The delegate must be stored to avoid allocations.
-        UIRMeshBuilder.AllocMeshData m_AllocDelegate;
+        MeshBuilder.AllocMeshData m_AllocDelegate;
 
-        UIRMeshBuilder.MeshOutput Alloc(uint vertexCount, uint indexCount)
+        MeshBuilder.MeshOutput Alloc(uint vertexCount, uint indexCount)
         {
             m_CurrentEntry.vertices = m_VertsPool.Alloc(vertexCount);
             m_CurrentEntry.indices = m_IndicesPool.Alloc(indexCount);
             Debug.Assert(m_CurrentEntry.vertices.Length == vertexCount);
             Debug.Assert(m_CurrentEntry.indices.Length == indexCount);
-            return new UIRMeshBuilder.MeshOutput()
+            return new MeshBuilder.MeshOutput()
             {
                 vertices = m_CurrentEntry.vertices,
                 indices = m_CurrentEntry.indices
@@ -1194,20 +1211,20 @@ namespace UnityEngine.UIElements.UIR.Implementation
         public UIRStylePainter(RenderChain renderChain)
         {
             m_Owner = renderChain;
+            meshGenerationContext = new MeshGenerationContext(this);
             device = renderChain.device;
             m_AtlasManager = renderChain.atlasManager;
-            opacity = 1.0f;
+            m_ElementOpacity = 1.0f;
             m_AllocDelegate = Alloc;
         }
 
+        public MeshGenerationContext meshGenerationContext { get; }
         public VisualElement currentElement { get; set; }
         public UIRenderDevice device { get; }
         public List<Entry> entries { get { return m_Entries; } }
         public ClosingInfo closingInfo { get { return m_ClosingInfo; } }
         public int totalVertices { get; private set; }
         public int totalIndices { get; private set; }
-
-        public float opacity { get; set; }
 
         #region Dispose Pattern
 
@@ -1240,7 +1257,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         public void Begin()
         {
-            opacity = currentElement.resolvedStyle.opacity;
+            m_ElementOpacity = currentElement.resolvedStyle.opacity;
             currentElement.renderChainData.usesText = currentElement.renderChainData.usesAtlas = currentElement.renderChainData.disableNudging = false;
             currentElement.renderChainData.displacementUVStart = currentElement.renderChainData.displacementUVEnd = 0;
             bool isGroupTransform = (currentElement.renderHint & RenderHint.GroupTransform) != 0;
@@ -1278,41 +1295,49 @@ namespace UnityEngine.UIElements.UIR.Implementation
             m_ClosingInfo.clipperRegisterIndexOffset = indexOffset;
         }
 
-        public void DrawMesh(MeshStylePainterParameters painterParameters, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData)
+        public MeshWriteData DrawMesh(int vertexCount, int indexCount, Material material, MeshGenerationContext.MeshFlags flags)
         {
-            if (painterParameters.vertexCount == 0 || painterParameters.indexCount == 0)
-            {
-                vertexData = new NativeSlice<Vertex>();
-                indexData = new NativeSlice<UInt16>();
-                return;
-            }
+            if (vertexCount == 0 || indexCount == 0)
+                return new MeshWriteData();
 
             m_CurrentEntry = new Entry()
             {
                 drawType = VertexFlags.IsSolid,
-                material = painterParameters.material,
-                uvIsDisplacement = painterParameters.uvIsDisplacement,
+                material = material,
+                uvIsDisplacement = flags == MeshGenerationContext.MeshFlags.UVisDisplacement,
                 clipRectID = m_ClipRectID,
                 isStencilClipped = m_StencilClip
             };
 
-            var mesh = Alloc(painterParameters.vertexCount, painterParameters.indexCount);
-            vertexData = mesh.vertices;
-            indexData = mesh.indices;
-
+            var mesh = Alloc((uint)vertexCount, (uint)indexCount);
             m_Entries.Add(m_CurrentEntry);
             totalVertices += m_CurrentEntry.vertices.Length;
             totalIndices += m_CurrentEntry.indices.Length;
             m_CurrentEntry = new Entry();
+            return new MeshWriteData()
+            {
+                m_Vertices = mesh.vertices,
+                m_Indices = mesh.indices
+            };
         }
 
-        public void DrawRect(RectStylePainterParameters painterParams) { DrawRectImpl(painterParams, UIRUtility.k_MeshPosZ, false); }
-
-        public void DrawText(TextStylePainterParameters painterParams)
+        public void DrawText(MeshGenerationContextUtils.TextParams textParams)
         {
             float scaling = TextNative.ComputeTextScaling(currentElement.worldTransform, GUIUtility.pixelsPerPoint);
-            TextNativeSettings textSettings = painterParams.GetTextNativeSettings(scaling);
-            textSettings.color.a *= opacity;
+            var textSettings = new TextNativeSettings()
+            {
+                text = textParams.text,
+                font = textParams.font,
+                size = textParams.fontSize,
+                scaling = scaling,
+                style = textParams.fontStyle,
+                color = textParams.fontColor,
+                anchor = textParams.anchor,
+                wordWrap = textParams.wordWrap,
+                wordWrapWidth = textParams.wordWrapWidth,
+                richText = textParams.richText
+            };
+            textSettings.color.a *= m_ElementOpacity;
 
             textSettings.color *= UIElementsUtility.editorPlayModeTintColor;
 
@@ -1320,12 +1345,12 @@ namespace UnityEngine.UIElements.UIR.Implementation
             {
                 if (textVertices.Length == 0)
                     return;
-                Vector2 localOffset = TextNative.GetOffset(textSettings, painterParams.rect);
+                Vector2 localOffset = TextNative.GetOffset(textSettings, textParams.rect);
                 m_CurrentEntry.drawType = VertexFlags.IsText;
                 m_CurrentEntry.clipRectID = m_ClipRectID;
                 m_CurrentEntry.isStencilClipped = m_StencilClip;
-                UIRMeshBuilder.MakeText(textVertices, localOffset, m_AllocDelegate);
-                m_CurrentEntry.font = painterParams.font.material.mainTexture;
+                MeshBuilder.MakeText(textVertices, localOffset, m_AllocDelegate);
+                m_CurrentEntry.font = textParams.font.material.mainTexture;
                 m_Entries.Add(m_CurrentEntry);
                 totalVertices += m_CurrentEntry.vertices.Length;
                 totalIndices += m_CurrentEntry.indices.Length;
@@ -1335,84 +1360,68 @@ namespace UnityEngine.UIElements.UIR.Implementation
             }
         }
 
-        public void DrawTexture(TextureStylePainterParameters painterParams)
+        public void DrawRectangle(MeshGenerationContextUtils.RectangleParams rectParams)
         {
-            painterParams.color.a *= opacity;
+            rectParams.color.a *= m_ElementOpacity;
 
-            painterParams.color *= UIElementsUtility.editorPlayModeTintColor;
+            rectParams.color *= UIElementsUtility.editorPlayModeTintColor;
 
-            // Handle scaling mode
-            Rect screenRect = painterParams.rect;
-            Rect sourceRect = painterParams.uv != Rect.zero ? painterParams.uv : new Rect(0, 0, 1, 1);
-            Texture texture = painterParams.texture;
-            ScaleMode scaleMode = painterParams.scaleMode;
-            Rect textureRect = screenRect;
-
-            /// Comparing aspects ratio is error-prone because the <c>screenRect</c> may end up being scaled by the
-            /// transform and the corners will end up being pixel aligned, possibly resulting in blurriness.
-            float srcAspect = (texture.width * sourceRect.width) / (texture.height * sourceRect.height);
-            float destAspect = screenRect.width / screenRect.height;
-            switch (scaleMode)
-            {
-                case ScaleMode.StretchToFill:
-                    break;
-
-                case ScaleMode.ScaleAndCrop:
-                    if (destAspect > srcAspect)
-                    {
-                        float stretch = sourceRect.height * (srcAspect / destAspect);
-                        float crop = (sourceRect.height - stretch) * 0.5f;
-                        sourceRect = new Rect(sourceRect.x, sourceRect.y + crop, sourceRect.width, stretch);
-                    }
-                    else
-                    {
-                        float stretch = sourceRect.width * (destAspect / srcAspect);
-                        float crop = (sourceRect.width - stretch) * 0.5f;
-                        sourceRect = new Rect(sourceRect.x + crop, sourceRect.y, stretch, sourceRect.height);
-                    }
-                    break;
-
-                case ScaleMode.ScaleToFit:
-                    if (destAspect > srcAspect)
-                    {
-                        float stretch = srcAspect / destAspect;
-                        textureRect = new Rect(screenRect.xMin + screenRect.width * (1.0f - stretch) * .5f, screenRect.yMin, stretch * screenRect.width, screenRect.height);
-                    }
-                    else
-                    {
-                        float stretch = destAspect / srcAspect;
-                        textureRect = new Rect(screenRect.xMin, screenRect.yMin + screenRect.height * (1.0f - stretch) * .5f, screenRect.width, stretch * screenRect.height);
-                    }
-                    break;
-            }
-
-            // Attempt to override with an atlas.
-            VertexFlags vertexFlags;
-            RectInt atlasRect;
-            if (m_AtlasManager != null && m_AtlasManager.TryGetLocation(texture as Texture2D, out atlasRect))
-            {
-                vertexFlags = VertexFlags.IsTextured;
-                sourceRect = new Rect(
-                    sourceRect.x * texture.width + atlasRect.x,
-                    sourceRect.y * texture.height + atlasRect.y,
-                    sourceRect.width * atlasRect.width,
-                    sourceRect.height * atlasRect.height);
-                currentElement.renderChainData.usesAtlas = true;
-            }
-            else vertexFlags = VertexFlags.IsCustom;
-
-            painterParams.texture = texture;
-            painterParams.rect = textureRect;
-            painterParams.uv = sourceRect;
-
-            m_CurrentEntry.drawType = vertexFlags;
             m_CurrentEntry.clipRectID = m_ClipRectID;
             m_CurrentEntry.isStencilClipped = m_StencilClip;
-            m_CurrentEntry.custom = vertexFlags == VertexFlags.IsCustom ? texture : null;
-            UIRMeshBuilder.MakeTexture(painterParams, UIRUtility.k_MeshPosZ, vertexFlags, m_AllocDelegate);
-            m_Entries.Add(m_CurrentEntry);
-            totalVertices += m_CurrentEntry.vertices.Length;
-            totalIndices += m_CurrentEntry.indices.Length;
+
+            if (rectParams.texture != null)
+            {
+                // Attempt to override with an atlas.
+                VertexFlags vertexFlags;
+                RectInt atlasRect;
+                if (m_AtlasManager != null && m_AtlasManager.TryGetLocation(rectParams.texture as Texture2D, out atlasRect))
+                {
+                    vertexFlags = rectParams.texture.filterMode == FilterMode.Point ? VertexFlags.IsAtlasTexturedPoint : VertexFlags.IsAtlasTexturedBilinear;
+                    rectParams.uv = new Rect(
+                        rectParams.uv.x * rectParams.texture.width + atlasRect.x,
+                        rectParams.uv.y * rectParams.texture.height + atlasRect.y,
+                        rectParams.uv.width * atlasRect.width,
+                        rectParams.uv.height * atlasRect.height);
+                    currentElement.renderChainData.usesAtlas = true;
+                }
+                else vertexFlags = VertexFlags.IsCustomTextured;
+
+                m_CurrentEntry.drawType = vertexFlags;
+                m_CurrentEntry.custom = vertexFlags == VertexFlags.IsCustomTextured ? rectParams.texture : null;
+                MeshBuilder.MakeTexture(rectParams, UIRUtility.k_MeshPosZ, vertexFlags, m_AllocDelegate);
+            }
+            else
+            {
+                m_CurrentEntry.drawType = VertexFlags.IsSolid;
+                MeshBuilder.MakeRect(rectParams, UIRUtility.k_MeshPosZ, m_AllocDelegate);
+            }
+            if (m_CurrentEntry.vertices.Length > 0 && m_CurrentEntry.indices.Length > 0)
+            {
+                m_Entries.Add(m_CurrentEntry);
+                totalVertices += m_CurrentEntry.vertices.Length;
+                totalIndices += m_CurrentEntry.indices.Length;
+            }
+            m_CurrentEntry = new Entry();
+        }
+
+        public void DrawBorder(MeshGenerationContextUtils.BorderParams borderParams)
+        {
+            borderParams.color.a *= m_ElementOpacity;
+
+            borderParams.color *= UIElementsUtility.editorPlayModeTintColor;
+
+            m_CurrentEntry.clipRectID = m_ClipRectID;
+            m_CurrentEntry.isStencilClipped = m_StencilClip;
+            m_CurrentEntry.uvIsDisplacement = true;
+            m_CurrentEntry.drawType = VertexFlags.IsEdge;
+            MeshBuilder.MakeBorder(borderParams, UIRUtility.k_MeshPosZ, m_AllocDelegate);
+
+            if (m_CurrentEntry.vertices.Length > 0 && m_CurrentEntry.indices.Length > 0)
+            {
+                m_Entries.Add(m_CurrentEntry);
+                totalVertices += m_CurrentEntry.vertices.Length;
+                totalIndices += m_CurrentEntry.indices.Length;
+            }
             m_CurrentEntry = new Entry();
         }
 
@@ -1425,7 +1434,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             m_Entries.Add(new Entry() { drawType = VertexFlags.LastType, customCommand = cmd });
         }
 
-        public void DrawBackground()
+        public void DrawVisualElementBackground()
         {
             if (currentElement.layout.width <= Mathf.Epsilon || currentElement.layout.height <= Mathf.Epsilon)
                 return;
@@ -1433,41 +1442,143 @@ namespace UnityEngine.UIElements.UIR.Implementation
             var style = currentElement.computedStyle;
             if (style.backgroundColor != Color.clear)
             {
-                var painterParams = RectStylePainterParameters.GetDefault(currentElement);
-                painterParams.border.SetWidth(0.0f);
-                DrawRect(painterParams);
+                var parent = currentElement.hierarchy.parent;
+                DrawRectangle(new MeshGenerationContextUtils.RectangleParams
+                {
+                    rect = GUIUtility.AlignRectToDevice(currentElement.rect),
+                    color = style.backgroundColor.value,
+                    topLeftRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderTopLeftRadius.value, parent),
+                    topRightRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderTopRightRadius.value, parent),
+                    bottomRightRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderBottomRightRadius.value, parent),
+                    bottomLeftRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderBottomLeftRadius.value, parent)
+                });
             }
 
             if (style.backgroundImage.value.texture != null)
             {
-                var painterParams = TextureStylePainterParameters.GetDefault(currentElement);
+                var parent = currentElement.hierarchy.parent;
+                var rectParams = MeshGenerationContextUtils.RectangleParams.MakeTextured(
+                    GUIUtility.AlignRectToDevice(currentElement.rect),
+                    new Rect(0, 0, 1, 1),
+                    style.backgroundImage.value.texture,
+                    style.unityBackgroundScaleMode.value);
+                rectParams.topLeftRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderTopLeftRadius.value, parent);
+                rectParams.topRightRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderTopRightRadius.value, parent);
+                rectParams.bottomRightRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderBottomRightRadius.value, parent);
+                rectParams.bottomLeftRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderBottomLeftRadius.value, parent);
+                rectParams.leftSlice = style.unitySliceLeft.value;
+                rectParams.topSlice = style.unitySliceTop.value;
+                rectParams.rightSlice = style.unitySliceRight.value;
+                rectParams.bottomSlice = style.unitySliceBottom.value;
                 if (style.unityBackgroundImageTintColor != Color.clear)
-                    painterParams.color = style.unityBackgroundImageTintColor.value;
-                painterParams.border.SetWidth(0.0f);
-                DrawTexture(painterParams);
+                    rectParams.color = style.unityBackgroundImageTintColor.value;
+                DrawRectangle(rectParams);
             }
         }
 
-        public void DrawBorder()
+        public void DrawVisualElementBorder()
         {
             if (currentElement.layout.width >= Mathf.Epsilon && currentElement.layout.height >= Mathf.Epsilon)
             {
                 var style = currentElement.computedStyle;
                 if (style.borderColor != Color.clear && (style.borderLeftWidth.value > 0.0f || style.borderTopWidth.value > 0.0f || style.borderRightWidth.value > 0.0f || style.borderBottomWidth.value > 0.0f))
                 {
-                    var painterParams = RectStylePainterParameters.GetDefault(currentElement);
-                    painterParams.color = style.borderColor.value;
-                    DrawRect(painterParams);
+                    var parent = currentElement.hierarchy.parent;
+                    DrawBorder(new MeshGenerationContextUtils.BorderParams
+                    {
+                        rect = GUIUtility.AlignRectToDevice(currentElement.rect),
+                        color = style.borderColor.value,
+                        topLeftRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderTopLeftRadius.value, parent),
+                        topRightRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderTopRightRadius.value, parent),
+                        bottomRightRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderBottomRightRadius.value, parent),
+                        bottomLeftRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderBottomLeftRadius.value, parent),
+                        leftWidth = style.borderLeftWidth.value,
+                        topWidth = style.borderTopWidth.value,
+                        rightWidth = style.borderRightWidth.value,
+                        bottomWidth = style.borderBottomWidth.value
+                    });
                 }
             }
-            ApplyClipping(); // Right after border drawing
         }
 
-        public void DrawText(string text)
+        public void ApplyVisualElementClipping()
+        {
+            if (currentElement.renderChainData.clipMethod == ClipMethod.Scissor)
+            {
+                var cmd = m_Owner.AllocCommand();
+                cmd.type = CommandType.PushScissor;
+                cmd.owner = currentElement;
+                m_Entries.Add(new Entry() { drawType = VertexFlags.LastType, customCommand = cmd });
+                m_ClosingInfo.needsClosing = m_ClosingInfo.popScissorClip = true;
+            }
+            else if (currentElement.renderChainData.clipMethod == ClipMethod.Stencil)
+            {
+                var parent = currentElement.hierarchy.parent;
+                ComputedStyle style = currentElement.computedStyle;
+                Vector2 radTL = MeshGenerationContextUtils.GetVisualElementRadius(style.borderTopLeftRadius.value.value, parent);
+                Vector2 radTR = MeshGenerationContextUtils.GetVisualElementRadius(style.borderTopRightRadius.value.value, parent);
+                Vector2 radBL = MeshGenerationContextUtils.GetVisualElementRadius(style.borderBottomLeftRadius.value.value, parent);
+                Vector2 radBR = MeshGenerationContextUtils.GetVisualElementRadius(style.borderBottomRightRadius.value.value, parent);
+                float widthT = style.borderTopWidth.value;
+                float widthL = style.borderLeftWidth.value;
+                float widthB = style.borderBottomWidth.value;
+                float widthR = style.borderRightWidth.value;
+
+                var rp = new MeshGenerationContextUtils.RectangleParams()
+                {
+                    rect = GUIUtility.AlignRectToDevice(currentElement.rect),
+                    color = Color.white,
+
+                    // Adjust the radius of the inner masking shape
+                    topLeftRadius = Vector2.Max(Vector2.zero, radTL - new Vector2(widthL, widthT)),
+                    topRightRadius = Vector2.Max(Vector2.zero, radTR - new Vector2(widthR, widthT)),
+                    bottomLeftRadius = Vector2.Max(Vector2.zero, radBL - new Vector2(widthL, widthB)),
+                    bottomRightRadius = Vector2.Max(Vector2.zero, radBR - new Vector2(widthR, widthB))
+                };
+
+                // Only clip the interior shape, skipping the border
+                rp.rect.x += widthL;
+                rp.rect.y += widthT;
+                rp.rect.width -= widthL + widthR;
+                rp.rect.height -= widthT + widthB;
+
+                m_CurrentEntry.drawType = VertexFlags.IsSolid;
+                m_CurrentEntry.clipRectID = m_ClipRectID;
+                m_CurrentEntry.isStencilClipped = m_StencilClip;
+                m_CurrentEntry.isClipRegisterEntry = true;
+
+                MeshBuilder.MakeRect(rp, UIRUtility.k_MaskPosZ, m_AllocDelegate);
+                if (m_CurrentEntry.vertices.Length > 0 && m_CurrentEntry.indices.Length > 0)
+                {
+                    m_Entries.Add(m_CurrentEntry);
+                    totalVertices += m_CurrentEntry.vertices.Length;
+                    totalIndices += m_CurrentEntry.indices.Length;
+                    m_StencilClip = true; // Draw operations following this one should be clipped if not already
+                    m_ClosingInfo.needsClosing = true;
+                }
+                m_CurrentEntry = new Entry();
+            }
+            m_ClipRectID = currentElement.renderChainData.transformID.start;
+        }
+
+        public void DrawVisualElementText(string text)
         {
             if (!string.IsNullOrEmpty(text) && currentElement.contentRect.width > 0.0f && currentElement.contentRect.height > 0.0f)
             {
-                DrawText(TextStylePainterParameters.GetDefault(currentElement, text));
+                ComputedStyle style = currentElement.computedStyle;
+                DrawText(new MeshGenerationContextUtils.TextParams
+                {
+                    rect = currentElement.contentRect,
+                    text = text,
+                    font = style.unityFont.value,
+                    fontSize = (int)style.fontSize.value.value,
+                    fontStyle = style.unityFontStyleAndWeight.value,
+                    fontColor = style.color.value,
+                    anchor = style.unityTextAlign.value,
+                    wordWrap = style.whiteSpace.value == WhiteSpace.Normal,
+                    wordWrapWidth = style.whiteSpace.value == WhiteSpace.Normal ? currentElement.contentRect.width : 0.0f,
+                    richText = false
+                });
             }
         }
 
@@ -1483,97 +1594,27 @@ namespace UnityEngine.UIElements.UIR.Implementation
             m_VertsPool.SessionDone();
             m_IndicesPool.SessionDone();
             m_ClosingInfo = new ClosingInfo();
-            opacity = 1.0f;
+            m_ElementOpacity = 1.0f;
             currentElement = null;
             totalVertices = totalIndices = 0;
         }
-
-        bool DrawRectImpl(RectStylePainterParameters painterParams, float posZ, bool isClipRegisterEntry)
-        {
-            painterParams.color.a *= opacity;
-            m_CurrentEntry.drawType = VertexFlags.IsSolid;
-            m_CurrentEntry.clipRectID = m_ClipRectID;
-            m_CurrentEntry.isStencilClipped = m_StencilClip;
-            m_CurrentEntry.isClipRegisterEntry = isClipRegisterEntry;
-
-            painterParams.color *= UIElementsUtility.editorPlayModeTintColor;
-
-            bool generatedData = false;
-            UIRMeshBuilder.MakeRect(painterParams, posZ, m_AllocDelegate);
-            if (m_CurrentEntry.vertices.Length > 0 && m_CurrentEntry.indices.Length > 0)
-            {
-                m_CurrentEntry.uvIsDisplacement = UIRMeshBuilder.IsBorder(painterParams.border);
-
-                m_Entries.Add(m_CurrentEntry);
-                totalVertices += m_CurrentEntry.vertices.Length;
-                totalIndices += m_CurrentEntry.indices.Length;
-                generatedData = true;
-            }
-            m_CurrentEntry = new Entry();
-            return generatedData;
-        }
-
-        void ApplyClipping()
-        {
-            if (currentElement.renderChainData.clipMethod == ClipMethod.Scissor)
-            {
-                var cmd = m_Owner.AllocCommand();
-                cmd.type = CommandType.PushScissor;
-                cmd.owner = currentElement;
-                m_Entries.Add(new Entry() { drawType = VertexFlags.LastType, customCommand = cmd });
-                m_ClosingInfo.needsClosing = m_ClosingInfo.popScissorClip = true;
-            }
-            else if (currentElement.renderChainData.clipMethod == ClipMethod.Stencil)
-            {
-                if (DrawRectImpl(GetClipRectangleParameters(currentElement), UIRUtility.k_MaskPosZ, true))
-                {
-                    m_StencilClip = true; // Draw operations following this one should be clipped if not already
-                    m_ClosingInfo.needsClosing = true;
-                }
-            }
-            m_ClipRectID = currentElement.renderChainData.transformID.start;
-        }
-
-        static RectStylePainterParameters GetClipRectangleParameters(VisualElement ve)
-        {
-            var rectParams = RectStylePainterParameters.GetDefault(ve);
-
-            // Only clip the interior shape, skipping the border
-            rectParams.rect.x += rectParams.border.leftWidth;
-            rectParams.rect.y += rectParams.border.topWidth;
-            rectParams.rect.width -= (rectParams.border.leftWidth + rectParams.border.rightWidth);
-            rectParams.rect.height -= (rectParams.border.topWidth + rectParams.border.bottomWidth);
-
-            rectParams.rect.width = Mathf.Max(0.0f, rectParams.rect.width);
-            rectParams.rect.height = Mathf.Max(0.0f, rectParams.rect.height);
-
-            // Adjust the radius of the inner masking shape.  Unfortunately, the inner corner can have
-            // an ellipse shape if the border widths aren't uniform across the shape.  Since we cannot express
-            // different x/y radius for the outer shape, we take the mean of the two adjacent widths instead.
-            rectParams.border.topLeftRadius -= (rectParams.border.leftWidth + rectParams.border.topWidth) / 2.0f;
-            rectParams.border.topRightRadius -= (rectParams.border.rightWidth + rectParams.border.topWidth) / 2.0f;
-            rectParams.border.bottomRightRadius -= (rectParams.border.rightWidth + rectParams.border.bottomWidth) / 2.0f;
-            rectParams.border.bottomLeftRadius -= (rectParams.border.leftWidth + rectParams.border.bottomWidth) / 2.0f;
-
-            rectParams.border.topLeftRadius = Mathf.Max(0.0f, rectParams.border.topLeftRadius);
-            rectParams.border.topRightRadius = Mathf.Max(0.0f, rectParams.border.topRightRadius);
-            rectParams.border.bottomRightRadius = Mathf.Max(0.0f, rectParams.border.bottomRightRadius);
-            rectParams.border.bottomLeftRadius = Mathf.Max(0.0f, rectParams.border.bottomLeftRadius);
-
-            rectParams.border.SetWidth(0);
-
-            return rectParams;
-        }
     }
 
-    internal class UIRTextUpdatePainter : IStylePainterInternal, IDisposable
+    internal class UIRTextUpdatePainter : IStylePainter, IDisposable
     {
         VisualElement m_CurrentElement;
         int m_TextEntryIndex;
         NativeArray<Vertex> m_DudVerts;
         NativeArray<UInt16> m_DudIndices;
         NativeSlice<Vertex> m_MeshDataVerts;
-        float m_TransformID, m_ClippingRectID;
+        float m_TransformID, m_ClippingRectID, m_ElementOpacity;
+
+        public MeshGenerationContext meshGenerationContext { get; }
+
+        public UIRTextUpdatePainter()
+        {
+            meshGenerationContext = new MeshGenerationContext(this);
+        }
 
         public void Begin(VisualElement ve, UIRenderDevice device)
         {
@@ -1587,7 +1628,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 m_MeshDataVerts.CopyFrom(oldVertexData); // Preserve old data because we're not just updating the text vertices, but the entire mesh surrounding it though we won't touch but the text vertices
             m_TransformID = oldVertexData[0].transformID;
             m_ClippingRectID = oldVertexData[0].clipRectID;
-            opacity = ve.resolvedStyle.opacity;
+            m_ElementOpacity = ve.resolvedStyle.opacity;
         }
 
         public void End()
@@ -1595,8 +1636,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
             Debug.Assert(m_TextEntryIndex == m_CurrentElement.renderChainData.textEntries.Count); // Or else element repaint logic diverged for some reason
             m_CurrentElement = null;
         }
-
-        public float opacity { get; set; }
 
         public void Dispose()
         {
@@ -1606,36 +1645,45 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 m_DudIndices.Dispose();
         }
 
-        public void DrawBackground() {}
-        public void DrawBorder() {}
+        public void DrawRectangle(MeshGenerationContextUtils.RectangleParams rectParams) {}
+        public void DrawBorder(MeshGenerationContextUtils.BorderParams borderParams) {}
         public void DrawImmediate(Action callback) {}
-        public void DrawMesh(MeshStylePainterParameters painterParameters, out NativeSlice<Vertex> vertexData, out NativeSlice<ushort> indexData)
+
+        public MeshWriteData DrawMesh(int vertexCount, int indexCount, Material material, MeshGenerationContext.MeshFlags flags)
         {
             // Ideally we should allow returning 0 here and the client would handle that properly
-            if (m_DudVerts.Length < painterParameters.vertexCount)
+            if (m_DudVerts.Length < vertexCount)
             {
                 if (m_DudVerts.IsCreated)
                     m_DudVerts.Dispose();
-                m_DudVerts = new NativeArray<Vertex>((int)painterParameters.vertexCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+                m_DudVerts = new NativeArray<Vertex>(vertexCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             }
-            vertexData = m_DudVerts.Slice(0, (int)painterParameters.vertexCount);
-
-            if (m_DudIndices.Length < painterParameters.indexCount)
+            if (m_DudIndices.Length < indexCount)
             {
                 if (m_DudIndices.IsCreated)
                     m_DudIndices.Dispose();
-                m_DudIndices = new NativeArray<UInt16>((int)painterParameters.indexCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+                m_DudIndices = new NativeArray<UInt16>(indexCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             }
-            indexData = m_DudIndices.Slice(0, (int)painterParameters.vertexCount);
+            return new MeshWriteData() { m_Vertices = m_DudVerts.Slice(0, vertexCount), m_Indices = m_DudIndices.Slice(0, indexCount) };
         }
 
-        public void DrawRect(RectStylePainterParameters painterParams) {}
-
-        public void DrawText(TextStylePainterParameters painterParams)
+        public void DrawText(MeshGenerationContextUtils.TextParams textParams)
         {
             float scaling = TextNative.ComputeTextScaling(m_CurrentElement.worldTransform, GUIUtility.pixelsPerPoint);
-            TextNativeSettings textSettings = painterParams.GetTextNativeSettings(scaling);
-            textSettings.color.a *= opacity;
+            var textSettings = new TextNativeSettings()
+            {
+                text = textParams.text,
+                font = textParams.font,
+                size = textParams.fontSize,
+                scaling = scaling,
+                style = textParams.fontStyle,
+                color = textParams.fontColor,
+                anchor = textParams.anchor,
+                wordWrap = textParams.wordWrap,
+                wordWrapWidth = textParams.wordWrapWidth,
+                richText = textParams.richText
+            };
+            textSettings.color.a *= m_ElementOpacity;
 
             textSettings.color *= UIElementsUtility.editorPlayModeTintColor;
 
@@ -1643,20 +1691,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
             {
                 var textEntry = m_CurrentElement.renderChainData.textEntries[m_TextEntryIndex++];
 
-                Vector2 localOffset = TextNative.GetOffset(textSettings, painterParams.rect);
-                UIRMeshBuilder.UpdateText(textVertices, localOffset, m_CurrentElement.renderChainData.verticesSpace, m_TransformID, m_ClippingRectID, m_MeshDataVerts.Slice(textEntry.firstVertex, textEntry.vertexCount));
-                textEntry.command.state.font = painterParams.font.material.mainTexture;
+                Vector2 localOffset = TextNative.GetOffset(textSettings, textParams.rect);
+                MeshBuilder.UpdateText(textVertices, localOffset, m_CurrentElement.renderChainData.verticesSpace, m_TransformID, m_ClippingRectID, m_MeshDataVerts.Slice(textEntry.firstVertex, textEntry.vertexCount));
+                textEntry.command.state.font = textParams.font.material.mainTexture;
             }
         }
-
-        public void DrawText(string text)
-        {
-            if (!string.IsNullOrEmpty(text) && m_CurrentElement.contentRect.width > 0.0f && m_CurrentElement.contentRect.height > 0.0f)
-            {
-                DrawText(TextStylePainterParameters.GetDefault(m_CurrentElement, text));
-            }
-        }
-
-        public void DrawTexture(TextureStylePainterParameters painterParams) {}
     }
 }

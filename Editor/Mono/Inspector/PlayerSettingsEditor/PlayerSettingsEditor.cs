@@ -60,7 +60,7 @@ namespace UnityEditor
             public static readonly GUIContent cursorHotspot = EditorGUIUtility.TrTextContent("Cursor Hotspot");
             public static readonly GUIContent defaultCursor = EditorGUIUtility.TrTextContent("Default Cursor");
             public static readonly GUIContent defaultIcon = EditorGUIUtility.TrTextContent("Default Icon");
-            public static readonly GUIContent vertexChannelCompressionMask = EditorGUIUtility.TrTextContent("Vertex Compression*", "Select which vertex channels should be compressed. Compression can save memory and bandwidth but precision will be lower.");
+            public static readonly GUIContent vertexChannelCompressionMask = EditorGUIUtility.TrTextContent("Vertex Compression*", "Select which vertex channels should be compressed. Compression can save memory and bandwidth, but precision will be lower.");
 
             public static readonly GUIContent iconTitle = EditorGUIUtility.TrTextContent("Icon");
             public static readonly GUIContent resolutionPresentationTitle = EditorGUIUtility.TrTextContent("Resolution and Presentation");
@@ -144,8 +144,8 @@ namespace UnityEditor
             public static readonly GUIContent graphicsJobsMode = EditorGUIUtility.TrTextContent("Graphics Jobs Mode*");
             public static readonly GUIContent applicationBuildNumber = EditorGUIUtility.TrTextContent("Build");
             public static readonly GUIContent appleDeveloperTeamID = EditorGUIUtility.TrTextContent("iOS Developer Team ID", "Developers can retrieve their Team ID by visiting the Apple Developer site under Account > Membership.");
-            public static readonly GUIContent useOnDemandResources = EditorGUIUtility.TrTextContent("Use on demand resources*");
-            public static readonly GUIContent gcIncremental = EditorGUIUtility.TrTextContent("Use incremental GC (Experimental)", "With incremental Garbage Collection, the Garbage Collector will try to time-slice the collection task into multiple steps, to avoid long GC times preventing content from running smoothly.");
+            public static readonly GUIContent useOnDemandResources = EditorGUIUtility.TrTextContent("Use on-demand resources*");
+            public static readonly GUIContent gcIncremental = EditorGUIUtility.TrTextContent("Use incremental GC", "With incremental Garbage Collection, the Garbage Collector will try to time-slice the collection task into multiple steps, to avoid long GC times preventing content from running smoothly.");
             public static readonly GUIContent accelerometerFrequency = EditorGUIUtility.TrTextContent("Accelerometer Frequency*");
             public static readonly GUIContent cameraUsageDescription = EditorGUIUtility.TrTextContent("Camera Usage Description*", "String shown to the user when requesting permission to use the device camera. Written to the NSCameraUsageDescription field in Xcode project's info.plist file");
             public static readonly GUIContent locationUsageDescription = EditorGUIUtility.TrTextContent("Location Usage Description*", "String shown to the user when requesting permission to access the device location. Written to the NSLocationWhenInUseUsageDescription field in Xcode project's info.plist file.");
@@ -189,11 +189,10 @@ namespace UnityEditor
             public static readonly GUIContent[] activeInputHandlingOptions = new GUIContent[] { EditorGUIUtility.TrTextContent("Input Manager"), EditorGUIUtility.TrTextContent("Input System (Preview)"), EditorGUIUtility.TrTextContent("Both") };
             public static readonly GUIContent lightmapEncodingLabel = EditorGUIUtility.TrTextContent("Lightmap Encoding", "Affects the encoding scheme and compression format of the lightmaps.");
             public static readonly GUIContent[] lightmapEncodingNames = { EditorGUIUtility.TrTextContent("Low Quality"), EditorGUIUtility.TrTextContent("Normal Quality"), EditorGUIUtility.TrTextContent("High Quality")};
-            public static readonly GUIContent lightmapStreamingEnabled = EditorGUIUtility.TrTextContent("Lightmap Streaming Enabled", "Only load larger lightmap mip maps as needed to render the current game cameras. Requires texture streaming to be enabled in quality settings. This value is applied to the light map textures as they are generated.");
-            public static readonly GUIContent lightmapStreamingPriority = EditorGUIUtility.TrTextContent("Streaming Priority", "Lightmap mip map streaming priority when there's contention for resources. Positive numbers represent higher priority. Valid range is -128 to 127. This value is applied to the light map textures as they are generated.");
+            public static readonly GUIContent lightmapStreamingEnabled = EditorGUIUtility.TrTextContent("Lightmap Streaming Enabled", "Only load larger lightmap mipmaps as needed to render the current game cameras. Requires texture streaming to be enabled in quality settings. This value is applied to the light map textures as they are generated.");
+            public static readonly GUIContent lightmapStreamingPriority = EditorGUIUtility.TrTextContent("Streaming Priority", "Lightmap mipmap streaming priority when there's contention for resources. Positive numbers represent higher priority. Valid range is -128 to 127. This value is applied to the light map textures as they are generated.");
             public static readonly GUIContent lightmapQualityAndroidWarning = EditorGUIUtility.TrTextContent("The selected Lightmap Encoding requires OpenGL ES 3.0 or Vulkan. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2 API. Additionally, 'Minimum API Level' must be at least Android 4.3");
             public static readonly GUIContent lightmapQualityIOSWarning = EditorGUIUtility.TrTextContent("The selected Lightmap Encoding requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES APIs.");
-            public static readonly GUIContent monoNotSupportediOS11WarningGUIContent = EditorGUIUtility.TrTextContent("Mono is not supported on iOS11 and above.");
             public static readonly GUIContent legacyClampBlendShapeWeights = EditorGUIUtility.TrTextContent("Clamp BlendShapes (Deprecated)*", "If set, the range of BlendShape weights in SkinnedMeshRenderers will be clamped.");
             public static string undoChangedBundleIdentifierString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS bundleIdentifier"); } }
             public static string undoChangedBuildNumberString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS build number"); } }
@@ -1899,37 +1898,6 @@ namespace UnityEditor
             // scripting runtime settings in play mode are not supported
             using (new EditorGUI.DisabledScope(EditorApplication.isPlaying))
             {
-                // If the user somehow managed to start the editor with legacy settings we need to provide a way out
-                if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy
-                    || PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy)
-                {
-                    EditorGUILayout.HelpBox(SettingsContent.scriptingRuntimeVersionDeprecationWarning.text, MessageType.Warning);
-
-                    var newScriptingRuntimeVersion = PlayerSettings.scriptingRuntimeVersion;
-                    var scriptingRuntimeVersions = new[] {ScriptingRuntimeVersion.Legacy, ScriptingRuntimeVersion.Latest};
-                    var scriptingRuntimeVersionNames = new[] {SettingsContent.scriptingRuntimeVersionLegacy, SettingsContent.scriptingRuntimeVersionLatest};
-                    newScriptingRuntimeVersion = BuildEnumPopup(SettingsContent.scriptingRuntimeVersion, PlayerSettings.scriptingRuntimeVersion, scriptingRuntimeVersions, scriptingRuntimeVersionNames);
-
-                    if (newScriptingRuntimeVersion != PlayerSettings.scriptingRuntimeVersion)
-                    {
-                        if (newScriptingRuntimeVersion == EditorApplication.scriptingRuntimeVersion)
-                        {
-                            PlayerSettings.scriptingRuntimeVersion = newScriptingRuntimeVersion;
-                        }
-                        else
-                        {
-                            var currentScriptingRuntimeVersion = PlayerSettings.scriptingRuntimeVersion;
-                            PlayerSettings.scriptingRuntimeVersion = newScriptingRuntimeVersion;
-
-                            if (!PlayerSettings.RelaunchProjectIfScriptRuntimeVersionHasChanged())
-                            {
-                                PlayerSettings.scriptingRuntimeVersion = currentScriptingRuntimeVersion;
-                            }
-                        }
-                    }
-                }
-
-
                 // Scripting back-end
                 IScriptingImplementations scripting = ModuleManager.GetScriptingImplementations(targetGroup);
                 bool allowCompilerConfigurationSelection;

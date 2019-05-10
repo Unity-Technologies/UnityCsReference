@@ -491,6 +491,7 @@ namespace UnityEditor
             [NativeMethod("SetSelectedWSAUWPVSVersion")]
             set;
         }
+
         public static extern string windowsDevicePortalAddress
         {
             [NativeMethod("GetWindowsDevicePortalAddress")]
@@ -562,9 +563,6 @@ namespace UnityEditor
 
         // Enables a development build.
         public static extern bool development { get; set; }
-
-        // Enables a development build with no assets bundled.
-        internal static extern bool datalessPlayer { get; set; }
 
         [Obsolete("Building with pre-built Engine option is no longer supported.", true)]
         public static bool webGLUsePreBuiltUnityEngine

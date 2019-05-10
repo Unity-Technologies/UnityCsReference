@@ -302,9 +302,9 @@ namespace UnityEngine.UIElements
                     evt.target = evt.leafTarget;
                 }
 
-                m_DebuggerEventDispatchingStrategy.PostDispatch(evt, panel);
-
                 evt.PostDispatch();
+
+                m_DebuggerEventDispatchingStrategy.PostDispatch(evt, panel);
 
                 Debug.Assert(imguiEventIsInitiallyUsed || evt.isPropagationStopped || e == null || e.type != EventType.Used, "Event is used but not stopped.");
             }

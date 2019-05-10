@@ -30,16 +30,6 @@ namespace UnityEngine
         Windowed = 3,
     }
 
-    public enum TextureCompressionQuality
-    {
-        // Fast compression
-        Fast = 0,
-        // Normal compression (default)
-        Normal = 50,
-        // Best compression
-        Best = 100
-    }
-
     public sealed partial class SleepTimeout
     {
         public const int NeverSleep = -1;
@@ -601,6 +591,17 @@ namespace UnityEngine.Experimental.Rendering
         EndFrame = 1
     }
 
+    // Tries to follow naming from https://unity3d.com/learn/tutorials/topics/best-practices/multithreaded-rendering-graphics-jobs
+    public enum RenderingThreadingMode
+    {
+        Direct = 0,
+        SingleThreaded = 1,
+        MultiThreaded = 2,
+        LegacyJobified = 3,
+        NativeGraphicsJobs = 4,
+        NativeGraphicsJobsWithoutRenderThread = 5,
+    };
+
     public enum GraphicsJobsSyncPoint
     {
         EndOfFrame = 0,
@@ -613,7 +614,10 @@ namespace UnityEngine.Experimental.Rendering
     {
         [StaticAccessor("GetGfxDevice()", StaticAccessorType.Dot)]
         extern public static WaitForPresentSyncPoint waitForPresentSyncPoint { get; set; }
+
         [StaticAccessor("GetGfxDevice()", StaticAccessorType.Dot)]
         extern public static GraphicsJobsSyncPoint graphicsJobsSyncPoint { get; set; }
+
+        extern public static RenderingThreadingMode renderingThreadingMode { [FreeFunction("GetGfxThreadingMode")] get; }
     }
 }

@@ -331,7 +331,11 @@ namespace UnityEngine.UIElements
 
             if (specifiedStyle.fontSize.specificity != StyleValueExtensions.UndefinedSpecificity)
             {
-                m_ResolveInheritData.fontSize = specifiedStyle.fontSize;
+                // Only calculated value can be inherited
+                // Thus if it's a percentage the real value needs to be propagated
+                // See: https://developer.mozilla.org/en-US/docs/Web/CSS/percentage
+                m_ResolveInheritData.fontSize = new StyleLength(ComputedStyle.CalculatePixelFontSize(element));
+                m_ResolveInheritData.fontSize.specificity = specifiedStyle.fontSize.specificity;
             }
 
             if (specifiedStyle.unityFontStyleAndWeight.specificity != StyleValueExtensions.UndefinedSpecificity)

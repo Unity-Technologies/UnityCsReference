@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -28,13 +29,15 @@ namespace UnityEditor.Experimental.GraphView
 
         int titleBarOffset { get { return (int)resolvedStyle.paddingTop; } }
 
+        public Action<string> zoomFactorTextChanged;
+
         private bool m_Anchored;
         public bool anchored
         {
             get { return m_Anchored; }
             set
             {
-                if (m_Anchored == value)
+                if (windowed || m_Anchored == value)
                     return;
 
                 m_Anchored = value;
@@ -55,6 +58,31 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
+        bool m_Windowed;
+        public bool windowed
+        {
+            get { return m_Windowed; }
+            set
+            {
+                if (m_Windowed == value) return;
+
+                if (value)
+                {
+                    anchored = false; // Can't be anchored and windowed
+                    capabilities &= ~Capabilities.Movable;
+                    AddToClassList("windowed");
+                    this.RemoveManipulator(m_Dragger);
+                }
+                else
+                {
+                    capabilities |= Capabilities.Movable;
+                    RemoveFromClassList("windowed");
+                    this.AddManipulator(m_Dragger);
+                }
+                m_Windowed = value;
+            }
+        }
+
         public MiniMap()
         {
             capabilities = Capabilities.Movable;
@@ -65,7 +93,7 @@ namespace UnityEditor.Experimental.GraphView
             anchored = false;
 
             maxWidth = 200;
-            maxHeight = 180;
+            maxHeight = 200;
 
             m_Label = new Label("Floating Minimap");
 
@@ -76,15 +104,25 @@ namespace UnityEditor.Experimental.GraphView
 
             this.AddManipulator(new ContextualMenuManipulator(BuildContextualMenu));
             AddStyleSheetPath("StyleSheets/GraphView/Minimap.uss");
+
+            this.generateVisualContent += OnGenerateVisualContent;
         }
 
         private GraphView m_GraphView;
-        private GraphView graphView
+        public GraphView graphView
         {
             get
             {
-                if (m_GraphView == null) m_GraphView = GetFirstAncestorOfType<GraphView>();
+                if (!windowed && m_GraphView == null)
+                    m_GraphView = GetFirstAncestorOfType<GraphView>();
                 return m_GraphView;
+            }
+
+            set
+            {
+                if (!windowed)
+                    return;
+                m_GraphView = value;
             }
         }
 
@@ -95,7 +133,8 @@ namespace UnityEditor.Experimental.GraphView
 
         public virtual void BuildContextualMenu(ContextualMenuPopulateEvent evt)
         {
-            evt.menu.AppendAction(anchored ? "Make floating" : "Anchor", ToggleAnchorState, DropdownMenuAction.AlwaysEnabled);
+            if (!windowed)
+                evt.menu.AppendAction(anchored ? "Make floating" : "Anchor", ToggleAnchorState, DropdownMenuAction.AlwaysEnabled);
         }
 
         public void OnResized()
@@ -105,7 +144,7 @@ namespace UnityEditor.Experimental.GraphView
 
         void Resize()
         {
-            if (parent == null)
+            if (windowed || parent == null)
                 return;
 
             style.width = maxWidth;
@@ -147,8 +186,20 @@ namespace UnityEditor.Experimental.GraphView
             rect.y += translation.y;
         }
 
+        void SetZoomFactorText(string zoomFactorText)
+        {
+            m_Label.text = "MiniMap  " + zoomFactorText;
+            zoomFactorTextChanged?.Invoke(zoomFactorText);
+        }
+
         void CalculateRects(VisualElement container)
         {
+            if (graphView == null)
+            {
+                // Nothing to do in this case.
+                return;
+            }
+
             m_ContentRect = graphView.CalculateRectToFitAll(container);
             m_ContentRectLocal = m_ContentRect;
 
@@ -157,25 +208,27 @@ namespace UnityEditor.Experimental.GraphView
             Vector4 containerInvTranslation = containerInvTransform.GetColumn(3);
             var containerInvScale = new Vector2(containerInvTransform.m00, containerInvTransform.m11);
 
-            m_ViewportRect = parent.rect;
+            m_ViewportRect = graphView.rect;
 
             // Bring back viewport coordinates to (0,0), scale 1:1
             m_ViewportRect.x += containerInvTranslation.x;
             m_ViewportRect.y += containerInvTranslation.y;
-            m_ViewportRect.x += (parent.worldBound.x * containerInvScale.x);
-            m_ViewportRect.y += (parent.worldBound.y * containerInvScale.y);
+            m_ViewportRect.x += graphView.worldBound.x * containerInvScale.x;
+            m_ViewportRect.y += graphView.worldBound.y * containerInvScale.y;
             m_ViewportRect.width *= containerInvScale.x;
             m_ViewportRect.height *= containerInvScale.y;
 
             // Update label with new value
             var containerZoomFactor = container.worldTransform.m00;
-            m_Label.text = "MiniMap  " + UnityString.Format("{0:F2}", containerZoomFactor) + "x";
+            SetZoomFactorText(UnityString.Format("{0:F2}", containerZoomFactor) + "x");
 
             // Adjust rects for MiniMap
+            float effectiveWidth = layout.width - 1;
+            float effectiveHeight = layout.height - 1;
 
             // Encompass viewport rectangle (as if zoom and pan were inactive)
             var totalRect = RectUtils.Encompass(m_ContentRect, m_ViewportRect);
-            var minimapFactor = layout.width / totalRect.width;
+            var minimapFactor = effectiveWidth / totalRect.width;
 
             // Transform each rect to MiniMap coordinates
             ChangeToMiniMapCoords(ref totalRect, minimapFactor, Vector3.zero);
@@ -185,10 +238,10 @@ namespace UnityEditor.Experimental.GraphView
             ChangeToMiniMapCoords(ref m_ContentRect, minimapFactor, minimapTranslation);
 
             // Diminish and center everything to fit vertically
-            if (totalRect.height > (layout.height - titleBarOffset))
+            if (totalRect.height > (effectiveHeight - titleBarOffset))
             {
-                float totalRectFactor = (layout.height - titleBarOffset) / totalRect.height;
-                float totalRectOffsetX = (layout.width - (totalRect.width * totalRectFactor)) / 2.0f;
+                float totalRectFactor = (effectiveHeight - titleBarOffset) / totalRect.height;
+                float totalRectOffsetX = (effectiveWidth - (totalRect.width * totalRectFactor)) / 2.0f;
                 float totalRectOffsetY = titleBarOffset - ((totalRect.y + minimapTranslation.y) * totalRectFactor);
 
                 m_ContentRect.width *= totalRectFactor;
@@ -225,7 +278,7 @@ namespace UnityEditor.Experimental.GraphView
             // Clip using a minimal 2 pixel wide frame around edges
             // (except yMin since we already have the titleBar offset which is enough for clipping)
             var xMin = 2;
-            var yMin = 0;
+            var yMin = windowed ? 2 : 0;
             var xMax = layout.width - 2;
             var yMax = layout.height - 2;
 
@@ -263,19 +316,29 @@ namespace UnityEditor.Experimental.GraphView
         }
 
         private static Vector3[] s_CachedRect = new Vector3[4];
-        internal override void DoRepaint(IStylePainter painter)
+
+        private void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
-            var stylePainter = (IStylePainterInternal)painter;
-            stylePainter.DrawImmediate(DrawContent);
+            // This control begs to be fully rewritten and it shouldn't use immediate
+            // mode rendering at all. It should maintain its vertex/index lists and only
+            // update affected vertices when their respective elements are changed. This
+            // way the cost of GenerateVisualContent becomes effectively only two memcpys.
+            mgc.painter.DrawImmediate(DrawMinimapContent);
         }
 
-        void DrawContent()
+        void DrawMinimapContent()
         {
-            var gView = graphView;
-            VisualElement container = gView.contentViewContainer;
+            if (graphView == null)
+            {
+                // Just need to draw the minimum rect.
+                Resize();
+                return;
+            }
+
+            VisualElement container = graphView.contentViewContainer;
 
             // Retrieve all container relative information
-            Matrix4x4 containerTransform = gView.viewTransform.matrix;
+            Matrix4x4 containerTransform = graphView.viewTransform.matrix;
             var containerScale = new Vector2(containerTransform.m00, containerTransform.m11);
             float containerWidth = parent.layout.width / containerScale.x;
             float containerHeight = parent.layout.height / containerScale.y;
@@ -291,11 +354,10 @@ namespace UnityEditor.Experimental.GraphView
             // Refresh MiniMap rects
             CalculateRects(container);
 
-
             // Display elements in the MiniMap
             Color darken = UIElementsUtility.editorPlayModeTintColor;
             Color currentColor = Handles.color;
-            gView.graphElements.ForEach(elem =>
+            graphView.graphElements.ForEach(elem =>
             {
                 if (elem is Edge || elem is Port)
                     return;
@@ -348,14 +410,18 @@ namespace UnityEditor.Experimental.GraphView
 
         private void OnMouseDown(MouseDownEvent e)
         {
-            var gView = graphView;
+            if (graphView == null)
+            {
+                // Nothing to do if we're not attached to a GraphView!
+                return;
+            }
 
             // Refresh MiniMap rects
-            CalculateRects(gView.contentViewContainer);
+            CalculateRects(graphView.contentViewContainer);
 
             var mousePosition = e.localMousePosition;
 
-            gView.graphElements.ForEach(child =>
+            graphView.graphElements.ForEach(child =>
             {
                 if (child == null)
                     return;
@@ -365,9 +431,9 @@ namespace UnityEditor.Experimental.GraphView
 
                 if (CalculateElementRect(child).Contains(mousePosition))
                 {
-                    gView.ClearSelection();
-                    gView.AddToSelection(selectable);
-                    gView.FrameSelection();
+                    graphView.ClearSelection();
+                    graphView.AddToSelection(selectable);
+                    graphView.FrameSelection();
                     e.StopPropagation();
                 }
             });

@@ -185,6 +185,10 @@ namespace UnityEditor
                 }
             }
 
+            // If this is a polygon collider being used by a composite then draw the polygon paths.
+            if ((m_ActiveCollider is PolygonCollider2D) && m_ActiveCollider.usedByComposite)
+                DrawPolygonCollider(transform);
+
             bool applyToCollider = false;
 
             // Edge handle
@@ -298,6 +302,36 @@ namespace UnityEditor
         private bool DeleteCommandEvent(Event evt)
         {
             return (evt.type == EventType.ExecuteCommand || evt.type == EventType.ValidateCommand) && (evt.commandName == EventCommandNames.Delete || evt.commandName == EventCommandNames.SoftDelete);
+        }
+
+        private void DrawPolygonCollider(Transform transform)
+        {
+            // Fetch the collider offset.
+            var colliderOffset = m_ActiveCollider.offset;
+
+            int pathCount = PolygonEditor.GetPathCount();
+            for (int pathIndex = 0; pathIndex < pathCount; ++pathIndex)
+            {
+                int pointCount = PolygonEditor.GetPointCount(pathIndex);
+
+                // Draw the points.
+                for (int i = 0, j = pointCount - 1; i < pointCount; j = i++)
+                {
+                    Vector2 p0;
+                    Vector2 p1;
+                    PolygonEditor.GetPoint(pathIndex, i, out p0);
+                    PolygonEditor.GetPoint(pathIndex, j, out p1);
+                    p0 += colliderOffset;
+                    p1 += colliderOffset;
+
+                    Vector3 worldPosV0 = transform.TransformPoint(p0);
+                    Vector3 worldPosV1 = transform.TransformPoint(p1);
+                    worldPosV0.z = worldPosV1.z = transform.position.z;
+
+                    Handles.color = Color.green;
+                    Handles.DrawAAPolyLine(1.0f, new Vector3[] { worldPosV0, worldPosV1 });
+                }
+            }
         }
 
         private void DrawEdgesForSelectedPoint(Vector3 worldPos, Transform transform, bool leftIntersect, bool rightIntersect, bool loop)

@@ -4,11 +4,6 @@
 
 namespace UnityEditor.Experimental
 {
-    public static class BuildOptionsExperimental
-    {
-        public static readonly BuildOptions DatalessPlayer = BuildOptions.Reserved1;
-    }
-
     public static class BuildPipelineExperimental
     {
         public static string GetSessionIdForBuildTarget(BuildTarget target)

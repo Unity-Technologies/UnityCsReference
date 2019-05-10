@@ -6,6 +6,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEditor.StyleSheets
 {
@@ -36,6 +37,7 @@ namespace UnityEditor.StyleSheets
         BuilderState m_BuilderState;
 
         List<float> m_Floats = new List<float>();
+        List<Dimension> m_Dimensions = new List<Dimension>();
         List<Color> m_Colors = new List<Color>();
         List<string> m_Strings = new List<string>();
         List<StyleRule> m_Rules = new List<StyleRule>();
@@ -120,6 +122,11 @@ namespace UnityEditor.StyleSheets
             RegisterValue(m_Floats, StyleValueType.Float, value);
         }
 
+        public void AddValue(Dimension value)
+        {
+            RegisterValue(m_Dimensions, StyleValueType.Dimension, value);
+        }
+
         public void AddValue(StyleValueKeyword keyword)
         {
             // for keyword we use the index to store the enum value
@@ -172,6 +179,7 @@ namespace UnityEditor.StyleSheets
             Debug.Assert(m_BuilderState == BuilderState.Init);
 
             writeTo.floats = m_Floats.ToArray();
+            writeTo.dimensions = m_Dimensions.ToArray();
             writeTo.colors = m_Colors.ToArray();
             writeTo.strings = m_Strings.ToArray();
             writeTo.rules = m_Rules.ToArray();

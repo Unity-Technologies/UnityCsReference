@@ -149,6 +149,8 @@ namespace UnityEditor
     }
 
     // Scripting runtime version
+    // TODO: Obsolete/Uncomment below when managed mono removal cleanup is complete
+    // [Obsolete("ScriptingRuntimeVersion has been deprecated in 2019.3 now that legacy mono has been removed")]
     public enum ScriptingRuntimeVersion
     {
         // .NET 3.5
@@ -783,14 +785,13 @@ namespace UnityEditor
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         public static extern void SetAdditionalIl2CppArgs(string additionalArgs);
 
-        [NativeProperty(TargetType = TargetType.Field)]
-        public static extern ScriptingRuntimeVersion scriptingRuntimeVersion
+        // TODO: Obsolete/Uncomment below when managed mono removal is complete
+        // [Obsolete("ScriptingRuntimeVersion has been deprecated in 2019.3 due to the removal of legacy mono")]
+        public static ScriptingRuntimeVersion scriptingRuntimeVersion
         {
-            [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
-            get;
+            get { return ScriptingRuntimeVersion.Latest; }
 
-            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
-            set;
+            set {}
         }
 
         public static extern bool allowUnsafeCode
@@ -1135,8 +1136,5 @@ namespace UnityEditor
 
         [FreeFunction("GetPlayerSettings().SetLightmapStreamingPriority")]
         internal static extern void SetLightmapStreamingPriorityForPlatformGroup(BuildTargetGroup platformGroup, int lightmapStreamingPriority);
-
-        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
-        internal static extern bool RelaunchProjectIfScriptRuntimeVersionHasChanged();
     }
 }

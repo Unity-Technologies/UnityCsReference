@@ -5,11 +5,10 @@
 using System;
 using Unity.Collections;
 using UnityEngine.Profiling;
-using UnityEngine.UIElements.UIR;
 
-namespace UnityEngine.UIElements
+namespace UnityEngine.UIElements.UIR
 {
-    internal static class UIRTessellation
+    internal static class Tessellation
     {
         internal static float kEpsilon = 0.001f;
         internal static UInt16 kSubdivisions = 6;
@@ -20,242 +19,320 @@ namespace UnityEngine.UIElements
         /// Otherwise we tessellate ONLY the content.
         /// </summary>
         /// <param name="vertexFlags">Flags are only used for content, not for a border.</param>
-        public static void TessellateBorderedRect(Rect rect, Rect texCoords, Color color, BorderParameters border, float posZ, VertexFlags vertexFlags, UIRMeshBuilder.AllocMeshData meshAlloc)
+        public static void TessellateRect(MeshGenerationContextUtils.RectangleParams rectParams, float posZ, VertexFlags vertexFlags, MeshBuilder.AllocMeshData meshAlloc)
         {
-            if (rect.width < kEpsilon || rect.height < kEpsilon)
+            if (rectParams.rect.width < kEpsilon || rectParams.rect.height < kEpsilon)
                 return;
 
-            Profiler.BeginSample("TessellateBorderedRect");
+            Profiler.BeginSample("TessellateRect");
 
-            border = AdjustBorderParameters(rect, border);
+            var halfSize = new Vector2(rectParams.rect.width * 0.5f, rectParams.rect.height * 0.5f);
+            rectParams.topLeftRadius = Vector2.Min(rectParams.topLeftRadius, halfSize);
+            rectParams.topRightRadius = Vector2.Min(rectParams.topRightRadius, halfSize);
+            rectParams.bottomRightRadius = Vector2.Min(rectParams.bottomRightRadius, halfSize);
+            rectParams.bottomLeftRadius = Vector2.Min(rectParams.bottomLeftRadius, halfSize);
 
             UInt16 vertexCount = 0, indexCount = 0;
-            CountBorderedRectTriangles(rect, border, ref vertexCount, ref indexCount);
+            CountRectTriangles(ref rectParams, ref vertexCount, ref indexCount);
 
             var mesh = meshAlloc(vertexCount, indexCount);
 
             vertexCount = 0;
             indexCount = 0;
-            TessellateBorderedRectInternal(rect, color, posZ, vertexFlags, border, mesh.vertices, mesh.indices, ref vertexCount, ref indexCount);
-            if (!HasBorder(border) && ((vertexFlags == VertexFlags.IsTextured) || (vertexFlags == VertexFlags.IsCustom)))
+            TessellateRectInternal(ref rectParams, posZ, vertexFlags, mesh.vertices, mesh.indices, ref vertexCount, ref indexCount);
+            if ((vertexFlags == VertexFlags.IsAtlasTexturedPoint) || (vertexFlags == VertexFlags.IsAtlasTexturedBilinear) || (vertexFlags == VertexFlags.IsCustomTextured))
             {
-                ComputeUVs(rect, texCoords, mesh.vertices);
+                ComputeUVs(rectParams.rect, rectParams.uv, mesh.vertices);
             }
 
             Profiler.EndSample();
         }
 
-        private static void CountBorderedRectTriangles(Rect rect, BorderParameters border, ref UInt16 vertexCount, ref UInt16 indexCount)
+        public static void TessellateBorder(MeshGenerationContextUtils.BorderParams borderParams, float posZ, MeshBuilder.AllocMeshData meshAlloc)
+        {
+            if (borderParams.rect.width < kEpsilon || borderParams.rect.height < kEpsilon)
+                return;
+
+            Profiler.BeginSample("TessellateBorder");
+
+            var halfSize = new Vector2(borderParams.rect.width * 0.5f, borderParams.rect.height * 0.5f);
+            borderParams.topLeftRadius = Vector2.Min(borderParams.topLeftRadius, halfSize);
+            borderParams.topRightRadius = Vector2.Min(borderParams.topRightRadius, halfSize);
+            borderParams.bottomRightRadius = Vector2.Min(borderParams.bottomRightRadius, halfSize);
+            borderParams.bottomLeftRadius = Vector2.Min(borderParams.bottomLeftRadius, halfSize);
+
+            borderParams.leftWidth = Mathf.Min(borderParams.leftWidth, halfSize.x);
+            borderParams.topWidth = Mathf.Min(borderParams.topWidth, halfSize.y);
+            borderParams.rightWidth = Mathf.Min(borderParams.rightWidth, halfSize.x);
+            borderParams.bottomWidth = Mathf.Min(borderParams.bottomWidth, halfSize.y);
+
+            UInt16 vertexCount = 0, indexCount = 0;
+            CountBorderTriangles(ref borderParams, ref vertexCount, ref indexCount);
+
+            var mesh = meshAlloc(vertexCount, indexCount);
+
+            vertexCount = 0;
+            indexCount = 0;
+            TessellateBorderInternal(ref borderParams, posZ, mesh.vertices, mesh.indices, ref vertexCount, ref indexCount);
+            Profiler.EndSample();
+        }
+
+        private static void CountRectTriangles(ref MeshGenerationContextUtils.RectangleParams rectParams, ref UInt16 vertexCount, ref UInt16 indexCount)
         {
             // To count the required triangles, we call the tessellation method with a "countOnly=true" flag, which skips
             // tessellation and only update the vertex and index counts.
-            TessellateBorderedRectInternal(rect, Color.white, 0, VertexFlags.IsSolid, border, null, null, ref vertexCount, ref indexCount, true);
+            TessellateRectInternal(ref rectParams, 0, VertexFlags.IsSolid, null, null, ref vertexCount, ref indexCount, true);
         }
 
-        private static void TessellateBorderedRectInternal(Rect rect, Color color, float posZ, VertexFlags vertexFlags, BorderParameters border, NativeSlice<Vertex>? vertices, NativeSlice<UInt16>? indices, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly = false)
+        private static void CountBorderTriangles(ref MeshGenerationContextUtils.BorderParams border, ref UInt16 vertexCount, ref UInt16 indexCount)
         {
-            if (IsSimpleRectangle(border))
+            // To count the required triangles, we call the tessellation method with a "countOnly=true" flag, which skips
+            // tessellation and only update the vertex and index counts.
+            TessellateBorderInternal(ref border, 0, null, null, ref vertexCount, ref indexCount, true);
+        }
+
+        private static void TessellateRectInternal(ref MeshGenerationContextUtils.RectangleParams rectParams, float posZ, VertexFlags vertexFlags, NativeSlice<Vertex>? vertices, NativeSlice<UInt16>? indices, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly = false)
+        {
+            if (!rectParams.HasRadius(kEpsilon))
             {
                 UInt16 indexOffset = 0;
-                TessellateQuad(rect, TessellationType.Content, color, posZ, vertexFlags, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
+                TessellateQuad(rectParams.rect, TessellationType.Content, rectParams.color, posZ, vertexFlags, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
             }
             else
             {
-                TessellateRoundBorders(rect, color, posZ, vertexFlags, border, vertices, indices, ref vertexCount, ref indexCount, countOnly);
+                TessellateRoundedCorners(ref rectParams, posZ, vertexFlags, vertices, indices, ref vertexCount, ref indexCount, countOnly);
             }
         }
 
-        private static void TessellateRoundBorders(Rect rect, Color color, float posZ, VertexFlags vertexFlags, BorderParameters border, NativeSlice<Vertex>? vertices, NativeSlice<UInt16>? indices, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
+        private static void TessellateBorderInternal(ref MeshGenerationContextUtils.BorderParams border, float posZ, NativeSlice<Vertex>? vertices, NativeSlice<UInt16>? indices, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly = false)
+        {
+            TessellateRoundedBorders(ref border, posZ, vertices, indices, ref vertexCount, ref indexCount, countOnly);
+        }
+
+        private static void TessellateRoundedCorners(ref MeshGenerationContextUtils.RectangleParams rectParams, float posZ, VertexFlags vertexFlags, NativeSlice<Vertex>? vertices, NativeSlice<UInt16>? indices, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
         {
             // To tessellate the 4 corners, the rect is divided in 4 quadrants and every quadrant is computed as if they were the top-left corner.
             // The quadrants are then mirrored and the triangles winding flipped as necessary.
             UInt16 indexOffset = 0;
             UInt16 startVc = 0, startIc = 0;
-            bool hasBorder = HasBorder(border);
-            var halfSize = new Vector2(rect.width / 2.0f, rect.height / 2.0f);
-            var quarterRect = new Rect(rect.x, rect.y, halfSize.x, halfSize.y);
+            var halfSize = new Vector2(rectParams.rect.width * 0.5f, rectParams.rect.height * 0.5f);
+            var quarterRect = new Rect(rectParams.rect.x, rectParams.rect.y, halfSize.x, halfSize.y);
 
             // Top-left
-            TessellateRoundedCorner(quarterRect, color, posZ, vertexFlags, border.topLeftRadius, border.leftWidth, border.topWidth, hasBorder, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
+            TessellateRoundedCorner(quarterRect, rectParams.color, posZ, vertexFlags, rectParams.topLeftRadius, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
 
             // Top-right
             startVc = vertexCount;
             startIc = indexCount;
-            TessellateRoundedCorner(quarterRect, color, posZ, vertexFlags, border.topRightRadius, border.rightWidth, border.topWidth, hasBorder, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
+            TessellateRoundedCorner(quarterRect, rectParams.color, posZ, vertexFlags, rectParams.topRightRadius, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
             MirrorVertices(quarterRect, vertices, startVc, vertexCount - startVc, true);
             FlipWinding(indices, startIc, indexCount - startIc);
 
             // Bottom-right
             startVc = vertexCount;
             startIc = indexCount;
-            TessellateRoundedCorner(quarterRect, color, posZ, vertexFlags, border.bottomRightRadius, border.rightWidth, border.bottomWidth, hasBorder, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
+            TessellateRoundedCorner(quarterRect, rectParams.color, posZ, vertexFlags, rectParams.bottomRightRadius, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
             MirrorVertices(quarterRect, vertices, startVc, vertexCount - startVc, true);
             MirrorVertices(quarterRect, vertices, startVc, vertexCount - startVc, false);
 
             // Bottom-left
             startVc = vertexCount;
             startIc = indexCount;
-            TessellateRoundedCorner(quarterRect, color, posZ, vertexFlags, border.bottomLeftRadius, border.leftWidth, border.bottomWidth, hasBorder, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
+            TessellateRoundedCorner(quarterRect, rectParams.color, posZ, vertexFlags, rectParams.bottomLeftRadius, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
             MirrorVertices(quarterRect, vertices, startVc, vertexCount - startVc, false);
             FlipWinding(indices, startIc, indexCount - startIc);
         }
 
-        private static void TessellateRoundedCorner(Rect rect, Color color, float posZ, VertexFlags vertexFlags, float radius, float leftWidth, float topWidth, bool hasBorder, NativeSlice<Vertex>? vertices, NativeSlice<UInt16>? indices, ref UInt16 indexOffset, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
+        private static void TessellateRoundedBorders(ref MeshGenerationContextUtils.BorderParams border, float posZ, NativeSlice<Vertex>? vertices, NativeSlice<UInt16>? indices, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
         {
-            var cornerCenter = rect.position + new Vector2(radius, radius);
+            // To tessellate the 4 corners, the rect is divided in 4 quadrants and every quadrant is computed as if they were the top-left corner.
+            // The quadrants are then mirrored and the triangles winding flipped as necessary.
+            UInt16 indexOffset = 0;
+            UInt16 startVc = 0, startIc = 0;
+            var halfSize = new Vector2(border.rect.width * 0.5f, border.rect.height * 0.5f);
+            var quarterRect = new Rect(border.rect.x, border.rect.y, halfSize.x, halfSize.y);
+
+            // Top-left
+            TessellateRoundedBorder(quarterRect, border.color, posZ, border.topLeftRadius, border.leftWidth, border.topWidth, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
+
+            // Top-right
+            startVc = vertexCount;
+            startIc = indexCount;
+            TessellateRoundedBorder(quarterRect, border.color, posZ, border.topRightRadius, border.rightWidth, border.topWidth, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
+            MirrorVertices(quarterRect, vertices, startVc, vertexCount - startVc, true);
+            FlipWinding(indices, startIc, indexCount - startIc);
+
+            // Bottom-right
+            startVc = vertexCount;
+            startIc = indexCount;
+            TessellateRoundedBorder(quarterRect, border.color, posZ, border.bottomRightRadius, border.rightWidth, border.bottomWidth, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
+            MirrorVertices(quarterRect, vertices, startVc, vertexCount - startVc, true);
+            MirrorVertices(quarterRect, vertices, startVc, vertexCount - startVc, false);
+
+            // Bottom-left
+            startVc = vertexCount;
+            startIc = indexCount;
+            TessellateRoundedBorder(quarterRect, border.color, posZ, border.bottomLeftRadius, border.leftWidth, border.bottomWidth, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
+            MirrorVertices(quarterRect, vertices, startVc, vertexCount - startVc, false);
+            FlipWinding(indices, startIc, indexCount - startIc);
+        }
+
+        private static void TessellateRoundedCorner(Rect rect, Color color, float posZ, VertexFlags vertexFlags, Vector2 radius, NativeSlice<Vertex>? vertices, NativeSlice<UInt16>? indices, ref UInt16 indexOffset, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
+        {
+            var cornerCenter = rect.position + radius;
             var subRect = Rect.zero;
 
-            if (radius < kEpsilon)
+            if (radius == Vector2.zero)
             {
-                if (!hasBorder)
+                // Without radius, we use a single quad to fill the section
+                // -------
+                // |     |
+                // |     |
+                // -------
+                TessellateQuad(rect, TessellationType.Content, color, posZ, vertexFlags, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
+                return;
+            }
+
+            // Just fill the corner with radius, plus up to 2 quads to fill the remainder of the section
+            //   _-------
+            //  *\ |    |
+            // *__\| A  |
+            // |   |    |
+            // | B |    |
+            // |   |    |
+            // ----------
+            TessellateFilledFan(TessellationType.Content, cornerCenter, radius, color, posZ, vertexFlags, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
+            if (radius.x < rect.width)
+            {
+                // A
+                subRect = new Rect(rect.x + radius.x, rect.y, rect.width - radius.x, rect.height);
+                TessellateQuad(subRect, TessellationType.Content, color, posZ, vertexFlags, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
+            }
+            if (radius.y < rect.height)
+            {
+                // B
+                subRect = new Rect(rect.x, rect.y + radius.y, radius.x < rect.width ? radius.x : rect.width, rect.height - radius.y);
+                TessellateQuad(subRect, TessellationType.Content, color, posZ, vertexFlags, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
+            }
+        }
+
+        private static void TessellateRoundedBorder(Rect rect, Color color, float posZ, Vector2 radius, float leftWidth, float topWidth, NativeSlice<Vertex>? vertices, NativeSlice<UInt16>? indices, ref UInt16 indexOffset, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
+        {
+            var cornerCenter = rect.position + radius;
+            var subRect = Rect.zero;
+
+            if (radius == Vector2.zero)
+            {
+                // Without radius, we use two quads for the outlines
+                // ------------
+                // |   |  B   |
+                // | A |-------
+                // |   |
+                // |   |
+                // -----
+                if (leftWidth > kEpsilon)
                 {
-                    // Without radius and no borders, we use a single quad to fill the section
-                    // -------
-                    // |     |
-                    // |     |
-                    // -------
-                    TessellateQuad(rect, TessellationType.Content, color, posZ, vertexFlags, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
+                    // A
+                    subRect = new Rect(rect.x, rect.y, leftWidth, rect.height);
+                    TessellateQuad(subRect, TessellationType.EdgeVertical, color, posZ, VertexFlags.IsSolid, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
                 }
-                else
+                if (topWidth > kEpsilon)
                 {
-                    // Without radius with borders, we use two quads for the outlines
-                    // ------------
-                    // |   |  B   |
-                    // | A |-------
-                    // |   |
-                    // |   |
-                    // -----
-                    if (leftWidth > kEpsilon)
-                    {
-                        // A
-                        subRect = new Rect(rect.x, rect.y, leftWidth, rect.height);
-                        TessellateQuad(subRect, TessellationType.EdgeVertical, color, posZ, vertexFlags, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
-                    }
-                    if (topWidth > kEpsilon)
-                    {
-                        // B
-                        subRect = new Rect(rect.x + leftWidth, rect.y, rect.width - leftWidth, topWidth);
-                        TessellateQuad(subRect, TessellationType.EdgeHorizontal, color, posZ, vertexFlags, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
-                    }
+                    // B
+                    subRect = new Rect(rect.x + leftWidth, rect.y, rect.width - leftWidth, topWidth);
+                    TessellateQuad(subRect, TessellationType.EdgeHorizontal, color, posZ, VertexFlags.IsSolid, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
                 }
                 return;
             }
 
-            if (!hasBorder)
+            // With radius, we have to create a fan-shaped outline, plus up to 2 quads for the straight outlines
+            // If the radius is smaller than the border width, we create a filled fan plus the required quads instead.
+            if (radius.x < leftWidth || radius.y < topWidth)
             {
-                // Without borders, we can just fill the corner with radius, plus up to 2 quads to fill the remainder of the section
-                //   _-------
-                //  *\ |    |
-                // *__\| A  |
-                // |   |    |
-                // | B |    |
-                // |   |    |
-                // ----------
-                TessellateFilledFan(TessellationType.Content, cornerCenter, radius, color, posZ, vertexFlags, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
-                if (radius < rect.width)
+                // A
+                TessellateFilledFan(TessellationType.EdgeCorner, cornerCenter, radius, color, posZ, VertexFlags.IsSolid, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
+                if (radius.x < leftWidth && radius.y < topWidth)
                 {
-                    // A
-                    subRect = new Rect(rect.x + radius, rect.y, rect.width - radius, rect.height);
-                    TessellateQuad(subRect, TessellationType.Content, color, posZ, vertexFlags, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
-                }
-                if (radius < rect.height)
-                {
+                    //      _______________
+                    //   -*  |  |          |
+                    //  * A\ | C|          |
+                    // *____\|__|    F     |
+                    // |    B   |          |
+                    // |________|__________|
+                    // |        |
+                    // |   E    |
+                    // |        |
+                    // |________|
+
                     // B
-                    subRect = new Rect(rect.x, rect.y + radius, radius < rect.width ? radius : rect.width, rect.height - radius);
-                    TessellateQuad(subRect, TessellationType.Content, color, posZ, vertexFlags, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
+                    subRect = new Rect(rect.x, rect.y + radius.y, leftWidth, topWidth - radius.x);
+                    TessellateQuad(subRect, TessellationType.EdgeCorner, color, posZ, VertexFlags.IsSolid, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
+
+                    // C
+                    subRect = new Rect(rect.x + radius.x, rect.y, leftWidth - radius.x, radius.y);
+                    TessellateQuad(subRect, TessellationType.EdgeCorner, color, posZ, VertexFlags.IsSolid, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
                 }
-            }
-            else
-            {
-                // With borders, we have to create a fan-shaped outline, plus up to 2 quads for the straight outlines
-                // If the radius is smaller than the border width, we create a filled fan plus the required quads instead.
-                if (radius < leftWidth || radius < topWidth)
+                else if (radius.x < leftWidth)
                 {
-                    // A
-                    TessellateFilledFan(TessellationType.EdgeCorner, cornerCenter, radius, color, posZ, vertexFlags, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
-                    if (radius < leftWidth && radius < topWidth)
-                    {
-                        //      _______________
-                        //   -*  |  |          |
-                        //  * A\ | C|          |
-                        // *____\|__|    F     |
-                        // |    B   |          |
-                        // |________|__________|
-                        // |        |
-                        // |   E    |
-                        // |        |
-                        // |________|
+                    //      ____________
+                    //   -*  |  |  F    |
+                    //  * A\ | B|_______|
+                    // *____\|__|
+                    // |        |
+                    // |        |
+                    // |   E    |
+                    // |        |
+                    // |        |
+                    // |________|
 
-                        // B
-                        subRect = new Rect(rect.x, rect.y + radius, leftWidth, topWidth - radius);
-                        TessellateQuad(subRect, TessellationType.EdgeCorner, color, posZ, vertexFlags, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
-
-                        // C
-                        subRect = new Rect(rect.x + radius, rect.y, leftWidth - radius, radius);
-                        TessellateQuad(subRect, TessellationType.EdgeCorner, color, posZ, vertexFlags, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
-                    }
-                    else if (radius < leftWidth)
-                    {
-                        //      ____________
-                        //   -*  |  |  F    |
-                        //  * A\ | B|_______|
-                        // *____\|__|
-                        // |        |
-                        // |        |
-                        // |   E    |
-                        // |        |
-                        // |        |
-                        // |________|
-
-                        // B
-                        subRect = new Rect(rect.x + radius, rect.y, leftWidth - radius, Mathf.Max(radius, topWidth));
-                        TessellateQuad(subRect, TessellationType.EdgeCorner, color, posZ, vertexFlags, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
-                    }
-                    else
-                    {
-                        //      ____________
-                        //   -*  |          |
-                        //  * A\ |          |
-                        // *____\|    F     |
-                        // |  B  |          |
-                        // |_____|__________|
-                        // |  |
-                        // |E |
-                        // |  |
-                        // |__|
-
-                        // B
-                        subRect = new Rect(rect.x, rect.y + radius, Mathf.Max(radius, leftWidth), topWidth - radius);
-                        TessellateQuad(subRect, TessellationType.EdgeCorner, color, posZ, vertexFlags, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
-                    }
+                    // B
+                    subRect = new Rect(rect.x + radius.x, rect.y, leftWidth - radius.x, Mathf.Max(radius.y, topWidth));
+                    TessellateQuad(subRect, TessellationType.EdgeCorner, color, posZ, VertexFlags.IsSolid, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
                 }
                 else
                 {
-                    //      _________
-                    //   -*  |   F   |
-                    //  * A\_|_______|
-                    // *__/
-                    // |  |
+                    //      ____________
+                    //   -*  |          |
+                    //  * A\ |          |
+                    // *____\|    F     |
+                    // |  B  |          |
+                    // |_____|__________|
                     // |  |
                     // |E |
                     // |  |
                     // |__|
 
-                    // A
-                    TessellateBorderedFan(TessellationType.EdgeCorner, cornerCenter, radius, leftWidth, topWidth, color, posZ, vertexFlags, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
+                    // B
+                    subRect = new Rect(rect.x, rect.y + radius.y, Mathf.Max(radius.x, leftWidth), topWidth - radius.y);
+                    TessellateQuad(subRect, TessellationType.EdgeCorner, color, posZ, VertexFlags.IsSolid, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
                 }
-
-                // Tessellate the straight outlines
-                // E
-                float cornerSize = Mathf.Max(radius, topWidth);
-                subRect = new Rect(rect.x, rect.y + cornerSize, leftWidth, rect.height - cornerSize);
-                TessellateQuad(subRect, TessellationType.EdgeVertical, color, posZ, vertexFlags, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
-
-                // F
-                cornerSize = Mathf.Max(radius, leftWidth);
-                subRect = new Rect(rect.x + cornerSize, rect.y, rect.width - cornerSize, topWidth);
-                TessellateQuad(subRect, TessellationType.EdgeHorizontal, color, posZ, vertexFlags, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
             }
+            else
+            {
+                //      _________
+                //   -*  |   F   |
+                //  * A\_|_______|
+                // *__/
+                // |  |
+                // |  |
+                // |E |
+                // |  |
+                // |__|
+
+                // A
+                TessellateBorderedFan(TessellationType.EdgeCorner, cornerCenter, radius, leftWidth, topWidth, color, posZ, VertexFlags.IsSolid, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
+            }
+
+            // Tessellate the straight outlines
+            // E
+            float cornerSize = Mathf.Max(radius.y, topWidth);
+            subRect = new Rect(rect.x, rect.y + cornerSize, leftWidth, rect.height - cornerSize);
+            TessellateQuad(subRect, TessellationType.EdgeVertical, color, posZ, VertexFlags.IsSolid, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
+
+            // F
+            cornerSize = Mathf.Max(radius.x, leftWidth);
+            subRect = new Rect(rect.x + cornerSize, rect.y, rect.width - cornerSize, topWidth);
+            TessellateQuad(subRect, TessellationType.EdgeHorizontal, color, posZ, VertexFlags.IsSolid, vertices, indices, ref indexOffset, ref vertexCount, ref indexCount, countOnly);
         }
 
         enum TessellationType { EdgeHorizontal, EdgeVertical, EdgeCorner, Content }
@@ -328,7 +405,7 @@ namespace UnityEngine.UIElements
             indexOffset += 4;
         }
 
-        private static void TessellateFilledFan(TessellationType tessellationType, Vector2 center, float radius, Color color, float posZ, VertexFlags vertexFlags, NativeSlice<Vertex>? vertices, NativeSlice<UInt16>? indices, ref UInt16 indexOffset, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
+        private static void TessellateFilledFan(TessellationType tessellationType, Vector2 center, Vector2 radius, Color color, float posZ, VertexFlags vertexFlags, NativeSlice<Vertex>? vertices, NativeSlice<UInt16>? indices, ref UInt16 indexOffset, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
         {
             VertexFlags innerVertexFlags, outerVertexFlags;
             if (tessellationType == TessellationType.EdgeCorner)
@@ -349,7 +426,7 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            var p = new Vector2(center.x - radius, center.y);
+            var p = new Vector2(center.x - radius.x, center.y);
 
             var verts = vertices.GetValueOrDefault();
             var inds = indices.GetValueOrDefault();
@@ -359,7 +436,7 @@ namespace UnityEngine.UIElements
 
             for (int k = 1; k < kSubdivisions; ++k)
             {
-                float angle = (Mathf.PI / 2.0f) * ((float)k) / (kSubdivisions - 1);
+                float angle = (Mathf.PI * 0.5f) * ((float)k) / (kSubdivisions - 1);
                 p = center + new Vector2(-Mathf.Cos(angle), -Mathf.Sin(angle)) * radius;
                 verts[vertexCount++] = new Vertex() { position = new Vector3(p.x, p.y, posZ), uv = center, tint = color, flags = (float)outerVertexFlags };
 
@@ -371,7 +448,7 @@ namespace UnityEngine.UIElements
             indexOffset += (UInt16)(kSubdivisions + 1);
         }
 
-        private static void TessellateBorderedFan(TessellationType tessellationType, Vector2 center, float radius, float leftWidth, float topWidth, Color color, float posZ, VertexFlags vertexFlags, NativeSlice<Vertex>? vertices, NativeSlice<UInt16>? indices, ref UInt16 indexOffset, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
+        private static void TessellateBorderedFan(TessellationType tessellationType, Vector2 center, Vector2 radius, float leftWidth, float topWidth, Color color, float posZ, VertexFlags vertexFlags, NativeSlice<Vertex>? vertices, NativeSlice<UInt16>? indices, ref UInt16 indexOffset, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
         {
             VertexFlags innerVertexFlags, outerVertexFlags;
             if (tessellationType == TessellationType.EdgeCorner)
@@ -392,9 +469,9 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            var a = radius - leftWidth;
-            var b = radius - topWidth;
-            var p = new Vector2(center.x - radius, center.y);
+            var a = radius.x - leftWidth;
+            var b = radius.y - topWidth;
+            var p = new Vector2(center.x - radius.x, center.y);
             var q = new Vector2(center.x - a, center.y);
 
             var verts = vertices.GetValueOrDefault();
@@ -406,7 +483,7 @@ namespace UnityEngine.UIElements
             for (int k = 1; k < kSubdivisions; ++k)
             {
                 float percent = ((float)k) / (kSubdivisions - 1);
-                float angle = (Mathf.PI / 2.0f) * percent;
+                float angle = (Mathf.PI * 0.5f) * percent;
                 p = center + new Vector2(-Mathf.Cos(angle), -Mathf.Sin(angle)) * radius;
                 q = center + new Vector2(-a * Mathf.Cos(angle), -b * Mathf.Sin(angle));
                 verts[vertexCount++] = new Vertex { position = new Vector3(q.x, q.y, posZ), uv = q - p, tint = color, flags = (float)innerVertexFlags };
@@ -486,44 +563,6 @@ namespace UnityEngine.UIElements
                 vertex.uv = uv;
                 vertices[i] = vertex;
             }
-        }
-
-        private static bool HasBorder(BorderParameters border)
-        {
-            return
-                border.leftWidth > kEpsilon ||
-                border.topWidth > kEpsilon ||
-                border.rightWidth > kEpsilon ||
-                border.bottomWidth > kEpsilon;
-        }
-
-        private static bool IsSimpleRectangle(BorderParameters border)
-        {
-            return
-                border.leftWidth < kEpsilon &&
-                border.topWidth < kEpsilon &&
-                border.rightWidth < kEpsilon &&
-                border.bottomWidth < kEpsilon &&
-                border.topLeftRadius < kEpsilon &&
-                border.topRightRadius < kEpsilon &&
-                border.bottomRightRadius < kEpsilon &&
-                border.bottomLeftRadius < kEpsilon;
-        }
-
-        private static BorderParameters AdjustBorderParameters(Rect rect, BorderParameters border)
-        {
-            var halfSize = new Vector2(rect.width / 2.0f, rect.height / 2.0f);
-            var minHalfSize = Mathf.Min(halfSize.x, halfSize.y);
-            return new BorderParameters() {
-                leftWidth = Mathf.Min(border.leftWidth, halfSize.x),
-                topWidth = Mathf.Min(border.topWidth, halfSize.y),
-                rightWidth = Mathf.Min(border.rightWidth, halfSize.x),
-                bottomWidth = Mathf.Min(border.bottomWidth, halfSize.y),
-                topLeftRadius = Mathf.Min(border.topLeftRadius, minHalfSize),
-                topRightRadius = Mathf.Min(border.topRightRadius, minHalfSize),
-                bottomRightRadius = Mathf.Min(border.bottomRightRadius, minHalfSize),
-                bottomLeftRadius = Mathf.Min(border.bottomLeftRadius, minHalfSize),
-            };
         }
     }
 }

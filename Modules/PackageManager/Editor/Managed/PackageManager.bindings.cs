@@ -28,6 +28,8 @@ namespace UnityEditor.PackageManager
 
         public static extern NativeStatusCode ResetToEditorDefaults([Out] out long operationId);
 
+        public static extern NativeStatusCode Pack([Out] out long operationId, string packageFolder, string targetFolder);
+
         public static extern NativeStatusCode GetOperationStatus(long operationId);
 
         [ThreadAndSerializationSafe]
@@ -42,6 +44,8 @@ namespace UnityEditor.PackageManager
         extern public static PackageInfo GetEmbedOperationData(long operationId);
 
         public static extern PackageInfo[] GetSearchOperationData(long operationId);
+
+        public static extern PackOperationResult GetPackOperationData(long operationId);
     }
 
     [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]

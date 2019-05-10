@@ -22,19 +22,17 @@ namespace UnityEngine
     }
 
     /// <summary>
-    /// What is this : Instruct the Unity serialization backend to serialize field as a reference type, as oppose to SerializeField
-    ///                 that serializes the data in place (as if it where a value type).
+    /// What is this : Instruct the Unity serialization backend to serialize field as a reference type, as opposed to SerializeField
+    ///                 that serializes the data in place (as if it where a Value type).
     /// Motivation(s):
     ///  - Polymorphic serialization of plain old C# classes.
     ///  - Representing graph like structures without having to resort to ScriptableObjects.
-    ///  - express null fields.
-    ///
-    /// Notes:
-    ///  - internal for now, until feature is fully implemented/tested.
+    ///  - Express null fields.
     /// </summary>
     [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Field)]
-    internal sealed partial class SerializeReference : Attribute
+    [UnityEngine.Internal.ExcludeFromDocs]
+    public sealed partial class SerializeReference : Attribute
     {
     }
 

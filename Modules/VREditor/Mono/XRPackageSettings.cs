@@ -148,9 +148,11 @@ namespace UnityEditorInternal.VR
                 lock (m_SettingsLock)
                 {
                     int index = m_SettingKeys.IndexOf(key);
-                    m_SettingKeys[index] = key;
-                    m_SettingValues[index] = value;
-                    m_IsDirty = true;
+                    if (m_SettingValues[index] != value)
+                    {
+                        m_SettingValues[index] = value;
+                        m_IsDirty = true;
+                    }
                 }
             }
         }

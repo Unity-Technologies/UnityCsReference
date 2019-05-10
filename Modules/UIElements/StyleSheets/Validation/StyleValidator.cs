@@ -80,9 +80,9 @@ namespace UnityEngine.UIElements.StyleSheets
                     case MatchResultErrorCode.Syntax:
                         result.status = StyleValidationStatus.Error;
                         if (IsUnitMissing(propertyInfo.syntax, value))
-                            result.hint = "Property expects a unit. Did you forget to add px?";
+                            result.hint = "Property expects a unit. Did you forget to add px or %?";
                         else if (IsUnsupportedColor(propertyInfo.syntax))
-                            result.hint = $"Unsupported color '{value}'. Supported values are rgb(), rgba() or #hexcode";
+                            result.hint = $"Unsupported color '{value}'.";
                         result.message = $"Expected ({propertyInfo.syntax}) but found '{matchResult.errorValue}'";
                         break;
                     case MatchResultErrorCode.EmptyValue:
@@ -106,7 +106,7 @@ namespace UnityEngine.UIElements.StyleSheets
         private bool IsUnitMissing(string propertySyntax, string propertyValue)
         {
             float val;
-            return propertySyntax.Contains("<length>") && float.TryParse(propertyValue, out val);
+            return float.TryParse(propertyValue, out val) && (propertySyntax.Contains("<length>") || propertySyntax.Contains("<percentage>"));
         }
 
         private bool IsUnsupportedColor(string propertySyntax)

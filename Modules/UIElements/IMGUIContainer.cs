@@ -128,17 +128,16 @@ namespace UnityEngine.UIElements
             focusable = true;
 
             requireMeasureFunction = true;
-
-            m_DrawImmediateAction = HandleIMGUIEvent;
+            generateVisualContent += OnGenerateVisualContent;
         }
 
-        readonly Action m_DrawImmediateAction;
-
-        internal override void DoRepaint(IStylePainter painter)
+        private void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
             lastWorldClip = elementPanel.repaintData.currentWorldClip;
-            var stylePainter = (IStylePainterInternal)painter;
-            stylePainter.DrawImmediate(m_DrawImmediateAction);
+
+            // Access to the painter is internal and is not exposed to public
+            // The IStylePainter is kept as an interface rather than a concrete class for now to support tests
+            mgc.painter.DrawImmediate(DoIMGUIRepaint);
         }
 
         // global GUI values.
@@ -448,7 +447,7 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            if (HandleIMGUIEvent(evt.imguiEvent))
+            if (SendEventToIMGUI(evt))
             {
                 evt.StopPropagation();
                 evt.PreventDefault();
@@ -456,13 +455,23 @@ namespace UnityEngine.UIElements
         }
 
         // This is the IStylePainterInternal.DrawImmediate callback
-        private void HandleIMGUIEvent()
+        private void DoIMGUIRepaint()
         {
             var offset = elementPanel.repaintData.currentOffset;
             HandleIMGUIEvent(elementPanel.repaintData.repaintEvent, offset * worldTransform, ComputeAAAlignedBound(worldClip, offset));
         }
 
-        internal bool HandleIMGUIEvent(Event e)
+        internal bool SendEventToIMGUI(EventBase evt)
+        {
+            bool result;
+            using (new EventDebuggerLogIMGUICall(evt))
+            {
+                result = HandleIMGUIEvent(evt.imguiEvent);
+            }
+            return result;
+        }
+
+        private bool HandleIMGUIEvent(Event e)
         {
             Matrix4x4 currentTransform;
             GetCurrentTransformAndClip(this, e, out currentTransform, out m_CachedClippingRect);

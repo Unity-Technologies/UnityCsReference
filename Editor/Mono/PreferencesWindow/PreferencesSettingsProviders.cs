@@ -9,8 +9,10 @@ using System.Collections.Generic;
 using System;
 using System.IO;
 using System.Linq;
+using Unity.CodeEditor;
 using UnityEditor.Connect;
 using UnityEngine.UIElements;
+using UnityEngine.TestTools;
 using UnityEditor.Collaboration;
 
 namespace UnityEditor
@@ -58,11 +60,11 @@ namespace UnityEditor
             public static readonly GUIContent[] editorSkinOptions = { EditorGUIUtility.TrTextContent("Personal"), EditorGUIUtility.TrTextContent("Professional") };
             public static readonly GUIContent enableAlphaNumericSorting = EditorGUIUtility.TrTextContent("Enable Alpha Numeric Sorting");
             public static readonly GUIContent asyncShaderCompilation = EditorGUIUtility.TrTextContent("Asynchronous Shader Compilation");
+            public static readonly GUIContent codeCoverageEnabled = EditorGUIUtility.TrTextContent("Enable Code Coverage", "Check this to enable Code Coverage.");
         }
 
         internal class ExternalProperties
         {
-            public static readonly GUIContent addUnityProjeToSln = EditorGUIUtility.TrTextContent("Add .unityproj's to .sln");
             public static readonly GUIContent editorAttaching = EditorGUIUtility.TrTextContent("Editor Attaching");
             public static readonly GUIContent changingThisSettingRequiresRestart = EditorGUIUtility.TrTextContent("Changing this setting requires a restart to take effect.");
             public static readonly GUIContent revisionControlDiffMerge = EditorGUIUtility.TrTextContent("Revision Control Diff/Merge");
@@ -95,7 +97,7 @@ namespace UnityEditor
 
         internal class LanguageProperties
         {
-            public static readonly GUIContent editorLanguageExperimental = EditorGUIUtility.TrTextContent("Editor Language(Experimental)");
+            public static readonly GUIContent editorLanguageExperimental = EditorGUIUtility.TrTextContent("Editor Language (Experimental)");
             public static readonly GUIContent editorLanguage = EditorGUIUtility.TrTextContent("Editor language");
         }
 
@@ -126,7 +128,6 @@ namespace UnityEditor
         private GICacheSettings m_GICacheSettings;
 
         private RefString m_ScriptEditorPath = new RefString("");
-        private string m_ScriptEditorArgs = "";
         private bool m_ExternalEditorSupportsUnityProj;
         private RefString m_ImageAppPath = new RefString("");
         private int m_DiffToolIndex;
@@ -141,6 +142,7 @@ namespace UnityEditor
         private static SystemLanguage[] m_stableLanguages = { SystemLanguage.English };
 
         private bool m_AllowAlphaNumericHierarchy = false;
+        private bool m_EnableCodeCoverage = false;
 
         private string[] m_ScriptApps;
         private string[] m_ScriptAppsEditions;
@@ -153,12 +155,6 @@ namespace UnityEditor
         private string[] m_ImageAppDisplayNames;
         private const string kRecentScriptAppsKey = "RecentlyUsedScriptApp";
         private const string kRecentImageAppsKey = "RecentlyUsedImageApp";
-
-        private static readonly string k_ExpressNotSupportedMessage = L10n.Tr(
-            "Unfortunately Visual Studio Express does not allow itself to be controlled by external applications. " +
-            "You can still use it by manually opening the Visual Studio project file, but Unity cannot automatically open files for you when you doubleclick them. " +
-            "\n(This does work with Visual Studio Pro)"
-        );
 
         private const int kRecentAppsCount = 10;
 
@@ -307,17 +303,7 @@ namespace UnityEditor
             // Applications
             FilePopup(ExternalProperties.externalScriptEditor, m_ScriptEditorPath, ref m_ScriptAppDisplayNames, ref m_ScriptApps, m_ScriptEditorPath, "internal", OnScriptEditorChanged);
 
-            var scriptEditor = GetSelectedScriptEditor();
-
-            if (scriptEditor == ScriptEditorUtility.ScriptEditor.Other)
-            {
-                string oldEditorArgs = m_ScriptEditorArgs;
-                m_ScriptEditorArgs = EditorGUILayout.TextField("External Script Editor Args", m_ScriptEditorArgs);
-                if (oldEditorArgs != m_ScriptEditorArgs)
-                    OnScriptEditorArgsChanged();
-            }
-
-            DoUnityProjCheckbox();
+            CodeEditor.Editor.Current.OnGUI();
 
             bool oldValue = m_AllowAttachedDebuggingOfEditor;
             m_AllowAttachedDebuggingOfEditor = EditorGUILayout.Toggle(ExternalProperties.editorAttaching, m_AllowAttachedDebuggingOfEditor);
@@ -327,14 +313,6 @@ namespace UnityEditor
 
             if (m_AllowAttachedDebuggingOfEditorStateChangedThisSession)
                 GUILayout.Label(ExternalProperties.changingThisSettingRequiresRestart, EditorStyles.helpBox);
-
-            if (GetSelectedScriptEditor() == ScriptEditorUtility.ScriptEditor.VisualStudioExpress)
-            {
-                GUILayout.BeginHorizontal(EditorStyles.helpBox);
-                GUILayout.Label("", Constants.warningIcon);
-                GUILayout.Label(k_ExpressNotSupportedMessage, Constants.errorLabel);
-                GUILayout.EndHorizontal();
-            }
 
             GUILayout.Space(10f);
 
@@ -369,43 +347,9 @@ namespace UnityEditor
             ApplyChangesToPrefs();
         }
 
-        private void DoUnityProjCheckbox()
-        {
-            bool isConfigurable = false;
-            bool value = false;
-
-            ScriptEditorUtility.ScriptEditor scriptEditor = GetSelectedScriptEditor();
-
-            if (scriptEditor == ScriptEditorUtility.ScriptEditor.MonoDevelop)
-            {
-                isConfigurable = true;
-                value = m_ExternalEditorSupportsUnityProj;
-            }
-
-            using (new EditorGUI.DisabledScope(!isConfigurable))
-            {
-                value = EditorGUILayout.Toggle(ExternalProperties.addUnityProjeToSln, value);
-            }
-
-            if (isConfigurable)
-                m_ExternalEditorSupportsUnityProj = value;
-        }
-
-        private ScriptEditorUtility.ScriptEditor GetSelectedScriptEditor()
-        {
-            return ScriptEditorUtility.GetScriptEditorFromPath(m_ScriptEditorPath.str);
-        }
-
         private void OnScriptEditorChanged()
         {
-            ScriptEditorUtility.SetExternalScriptEditor(m_ScriptEditorPath);
-            m_ScriptEditorArgs = ScriptEditorUtility.GetExternalScriptEditorArgs();
-            UnityEditor.VisualStudioIntegration.UnityVSSupport.ScriptEditorChanged(m_ScriptEditorPath.str);
-        }
-
-        private void OnScriptEditorArgsChanged()
-        {
-            ScriptEditorUtility.SetExternalScriptEditorArgs(m_ScriptEditorArgs);
+            CodeEditor.SetExternalScriptEditor(m_ScriptEditorPath);
         }
 
         private void ShowUnityConnectPrefs(string searchContext)
@@ -499,6 +443,11 @@ namespace UnityEditor
                     InternalEditorUtility.SetGpuDeviceAndRecreateGraphics(newGpuDeviceIndex - 1, m_GpuDevice);
                 }
             }
+
+            m_EnableCodeCoverage = EditorGUILayout.Toggle(GeneralProperties.codeCoverageEnabled, m_EnableCodeCoverage);
+            if (m_EnableCodeCoverage != Coverage.enabled)
+                EditorGUILayout.HelpBox((m_EnableCodeCoverage ? "Enabling " : "Disabling ") + "Code Coverage will not take effect until Unity is restarted.", MessageType.Warning);
+
             ApplyChangesToPrefs();
 
             if (oldAlphaNumeric != m_AllowAlphaNumericHierarchy)
@@ -744,8 +693,7 @@ namespace UnityEditor
 
         private void WritePreferences()
         {
-            ScriptEditorUtility.SetExternalScriptEditor(m_ScriptEditorPath);
-            ScriptEditorUtility.SetExternalScriptEditorArgs(m_ScriptEditorArgs);
+            CodeEditor.SetExternalScriptEditor(m_ScriptEditorPath);
             EditorPrefs.SetBool("kExternalEditorSupportsUnityProj", m_ExternalEditorSupportsUnityProj);
 
             EditorPrefs.SetString("kImagesDefaultApp", m_ImageAppPath);
@@ -782,6 +730,7 @@ namespace UnityEditor
             EditorPrefs.SetString("Editor.kEditorLocale", m_SelectedLanguage);
 
             EditorPrefs.SetBool("AllowAlphaNumericHierarchy", m_AllowAlphaNumericHierarchy);
+            EditorPrefs.SetBool("CodeCoverageEnabled", m_EnableCodeCoverage);
             EditorPrefs.SetString("GpuDeviceName", m_GpuDevice);
 
             EditorPrefs.SetBool("GICacheEnableCustomPath", m_GICacheSettings.m_EnableCustomPath);
@@ -811,8 +760,7 @@ namespace UnityEditor
 
         private void ReadPreferences()
         {
-            m_ScriptEditorPath.str = ScriptEditorUtility.GetExternalScriptEditor();
-            m_ScriptEditorArgs = ScriptEditorUtility.GetExternalScriptEditorArgs();
+            m_ScriptEditorPath.str = CodeEditor.Editor.EditorInstallation.Path;
 
             m_ExternalEditorSupportsUnityProj = EditorPrefs.GetBool("kExternalEditorSupportsUnityProj", false);
             m_ImageAppPath.str = EditorPrefs.GetString("kImagesDefaultApp");
@@ -820,25 +768,7 @@ namespace UnityEditor
             m_ScriptApps = BuildAppPathList(m_ScriptEditorPath, kRecentScriptAppsKey, "internal");
             m_ScriptAppsEditions = new string[m_ScriptApps.Length];
 
-            if (Application.platform == RuntimePlatform.WindowsEditor)
-            {
-                foreach (var vsPaths in SyncVS.InstalledVisualStudios.Values)
-                    foreach (var vsPath in vsPaths)
-                    {
-                        int index = Array.IndexOf(m_ScriptApps, vsPath.Path);
-                        if (index == -1)
-                        {
-                            ArrayUtility.Add(ref m_ScriptApps, vsPath.Path);
-                            ArrayUtility.Add(ref m_ScriptAppsEditions, vsPath.Edition);
-                        }
-                        else
-                        {
-                            m_ScriptAppsEditions[index] = vsPath.Edition;
-                        }
-                    }
-            }
-
-            var foundScriptEditorPaths = ScriptEditorUtility.GetFoundScriptEditorPaths(Application.platform);
+            var foundScriptEditorPaths = CodeEditor.Editor.GetFoundScriptEditorPaths();
 
             foreach (var scriptEditorPath in foundScriptEditorPaths.Keys)
             {
@@ -889,6 +819,7 @@ namespace UnityEditor
             m_EnableEditorLocalization = EditorPrefs.GetBool("Editor.kEnableEditorLocalization", true);
             m_SelectedLanguage = EditorPrefs.GetString("Editor.kEditorLocale", LocalizationDatabase.GetDefaultEditorLanguage().ToString());
             m_AllowAlphaNumericHierarchy = EditorPrefs.GetBool("AllowAlphaNumericHierarchy", false);
+            m_EnableCodeCoverage = EditorPrefs.GetBool("CodeCoverageEnabled", false);
 
             m_CompressAssetsOnImport = Unsupported.GetApplicationSettingCompressAssetsOnImport();
             m_GpuDevice = EditorPrefs.GetString("GpuDeviceName");

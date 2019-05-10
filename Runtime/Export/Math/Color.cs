@@ -212,7 +212,7 @@ namespace UnityEngine
                     case 2: return b;
                     case 3: return a;
                     default:
-                        throw new IndexOutOfRangeException("Invalid Vector3 index!");
+                        throw new IndexOutOfRangeException("Invalid Color index(" + index + ")!");
                 }
             }
 
@@ -225,7 +225,7 @@ namespace UnityEngine
                     case 2: b = value; break;
                     case 3: a = value; break;
                     default:
-                        throw new IndexOutOfRangeException("Invalid Vector3 index!");
+                        throw new IndexOutOfRangeException("Invalid Color index(" + index + ")!");
                 }
             }
         }

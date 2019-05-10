@@ -234,7 +234,8 @@ namespace Unity.SerializationLogic
             // The field must have correct visibility/decoration to be serialized.
             if (!fieldDefinition.IsPublic &&
                 !ShouldHaveHadAllFieldsPublic(fieldDefinition) &&
-                !HasSerializeFieldAttribute(fieldDefinition))
+                !HasSerializeFieldAttribute(fieldDefinition) &&
+                !HasSerializeReferenceAttribute(fieldDefinition))
                 return false;
 
             // Don't try to resolve types that come from Windows assembly,
@@ -260,7 +261,7 @@ namespace Unity.SerializationLogic
             if (typeReference is ArrayType || CecilUtils.IsGenericList(typeReference))
                 return IsSupportedCollection(typeReference);
 
-            if (!IsReferenceTypeSerializable(typeReference))
+            if (!IsReferenceTypeSerializable(typeReference) && !HasSerializeReferenceAttribute(fieldDefinition))
                 return false;
 
             if (IsDelegate(typeReference))
@@ -356,6 +357,14 @@ namespace Unity.SerializationLogic
             //return FieldAttributes(field).Any(UnityEngineTypePredicates.IsSerializeFieldAttribute);
             foreach (var attribute in FieldAttributes(field))
                 if (UnityEngineTypePredicates.IsSerializeFieldAttribute(attribute))
+                    return true;
+            return false;
+        }
+
+        public static bool HasSerializeReferenceAttribute(FieldDefinition field)
+        {
+            foreach (var attribute in FieldAttributes(field))
+                if (UnityEngineTypePredicates.IsSerializeReferenceAttribute(attribute))
                     return true;
             return false;
         }

@@ -3,12 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Experimental.GraphView
 {
-    public class Blackboard : GraphElement
+    public class Blackboard : GraphElement, ISelection
     {
         private const int k_DefaultWidth = 200;
         private const float k_DefaultHeight = 400;
@@ -21,11 +22,40 @@ namespace UnityEditor.Experimental.GraphView
         private VisualElement m_HeaderItem;
         private Button m_AddButton;
         private bool m_Scrollable = true;
+
+        private Dragger m_Dragger;
+        private GraphView m_GraphView;
+        public GraphView graphView
+        {
+            get
+            {
+                if (!windowed && m_GraphView == null)
+                    m_GraphView = GetFirstAncestorOfType<GraphView>();
+                return m_GraphView;
+            }
+
+            set
+            {
+                if (!windowed)
+                    return;
+                m_GraphView = value;
+            }
+        }
+
         internal static readonly string StyleSheetPath = "StyleSheets/GraphView/Blackboard.uss";
 
         public Action<Blackboard> addItemRequested { get; set; }
         public Action<Blackboard, int, VisualElement> moveItemRequested { get; set; }
         public Action<Blackboard, VisualElement, string> editTextRequested { get; set; }
+
+        // ISelection implementation
+        public List<ISelectable> selection
+        {
+            get
+            {
+                return graphView?.selection;
+            }
+        }
 
         public override string title
         {
@@ -37,6 +67,32 @@ namespace UnityEditor.Experimental.GraphView
         {
             get { return m_SubTitleLabel.text; }
             set { m_SubTitleLabel.text = value; }
+        }
+
+        bool m_Windowed;
+        public bool windowed
+        {
+            get { return m_Windowed; }
+            set
+            {
+                if (m_Windowed == value) return;
+
+                if (value)
+                {
+                    capabilities &= ~Capabilities.Movable;
+                    AddToClassList("windowed");
+                    this.RemoveManipulator(m_Dragger);
+                    style.width = StyleKeyword.Null;
+                    style.height = StyleKeyword.Null;
+                }
+                else
+                {
+                    capabilities |= Capabilities.Movable;
+                    RemoveFromClassList("windowed");
+                    this.AddManipulator(m_Dragger);
+                }
+                m_Windowed = value;
+            }
         }
 
         public override VisualElement contentContainer { get { return m_ContentContainer; } }
@@ -54,7 +110,6 @@ namespace UnityEditor.Experimental.GraphView
 
                 m_Scrollable = value;
 
-                style.position = Position.Absolute;
                 if (m_Scrollable)
                 {
                     if (m_ScrollView == null)
@@ -92,10 +147,9 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
-        public Blackboard()
+        public Blackboard(GraphView associatedGraphView = null)
         {
-            var tpl = EditorGUIUtility.Load("UXML/GraphView/Blackboard.uxml") as VisualTreeAsset;
-            AddStyleSheetPath(StyleSheetPath);
+            var tpl = EditorGUIUtility.Load("UXML/GraphView/Blackboard.uxml") as VisualTreeAsset; AddStyleSheetPath(StyleSheetPath);
 
             m_MainContainer = tpl.CloneTree();
             m_MainContainer.AddToClassList("mainContainer");
@@ -126,7 +180,8 @@ namespace UnityEditor.Experimental.GraphView
             ClearClassList();
             AddToClassList("blackboard");
 
-            this.AddManipulator(new Dragger { clampToParentEdges = true });
+            m_Dragger = new Dragger { clampToParentEdges = true };
+            this.AddManipulator(m_Dragger);
 
             scrollable = false;
 
@@ -136,6 +191,54 @@ namespace UnityEditor.Experimental.GraphView
             {
                 e.StopPropagation();
             });
+
+            // event interception to prevent GraphView manipulators from being triggered
+            // when working with the blackboard
+
+            // prevent Zoomer manipulator
+            RegisterCallback<WheelEvent>(e =>
+            {
+                e.StopPropagation();
+            });
+
+            RegisterCallback<MouseDownEvent>(e =>
+            {
+                if (e.button == (int)MouseButton.LeftMouse)
+                    ClearSelection();
+                // prevent ContentDragger manipulator
+                e.StopPropagation();
+            });
+
+            RegisterCallback<ValidateCommandEvent>(OnValidateCommand);
+            RegisterCallback<ExecuteCommandEvent>(OnExecuteCommand);
+
+            m_GraphView = associatedGraphView;
+            focusable = true;
+        }
+
+        public virtual void AddToSelection(ISelectable selectable)
+        {
+            graphView?.AddToSelection(selectable);
+        }
+
+        public virtual void RemoveFromSelection(ISelectable selectable)
+        {
+            graphView?.RemoveFromSelection(selectable);
+        }
+
+        public virtual void ClearSelection()
+        {
+            graphView?.ClearSelection();
+        }
+
+        private void OnValidateCommand(ValidateCommandEvent evt)
+        {
+            graphView?.OnValidateCommand(evt);
+        }
+
+        private void OnExecuteCommand(ExecuteCommandEvent evt)
+        {
+            graphView?.OnExecuteCommand(evt);
         }
     }
 }

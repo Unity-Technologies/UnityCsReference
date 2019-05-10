@@ -10,6 +10,16 @@ using StyleSheetCache = UnityEngine.UIElements.StyleSheets.StyleSheetCache;
 
 namespace UnityEditor.UIElements
 {
+    // This is the required interface to UIElementsEditorUtility for Runtime game components.
+    internal static class UIElementsEditorRuntimeUtility
+    {
+        public static void CreateRuntimePanelDebug(IPanel panel)
+        {
+            var panelDebug = new PanelDebug(panel);
+            (panel as Panel).panelDebug = panelDebug;
+        }
+    }
+
     internal static class UIElementsEditorUtility
     {
         internal static readonly string s_DefaultCommonDarkStyleSheetPath = "StyleSheets/Generated/DefaultCommonDark.uss.asset";

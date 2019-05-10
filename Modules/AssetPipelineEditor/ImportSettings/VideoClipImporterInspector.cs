@@ -43,7 +43,7 @@ namespace UnityEditor
         public override bool HasPreviewGUI()
         {
             var importer = target as VideoClipImporter;
-            return importer != null && !importer.useLegacyImporter;
+            return importer != null;
         }
 
         public override void OnPreviewGUI(Rect r, GUIStyle background)
@@ -176,10 +176,6 @@ namespace UnityEditor
             public VideoImporterTargetSettings settings;
         }
 
-        SerializedProperty m_UseLegacyImporter;
-        SerializedProperty m_Quality;
-        SerializedProperty m_IsColorLinear;
-
         SerializedProperty m_EncodeAlpha;
         SerializedProperty m_Deinterlace;
         SerializedProperty m_FlipVertical;
@@ -230,13 +226,6 @@ namespace UnityEditor
                 "Bitrate Mode|Higher bit rates give a better quality, but impose higher load on network connections or storage.");
             public GUIContent spatialQualityContent = EditorGUIUtility.TextContent(
                 "Spatial Quality|Adds a downsize during import to reduce bitrate using resolution.");
-            public GUIContent importerVersionContent = EditorGUIUtility.TextContent(
-                "Importer Version|Selects the type of video asset produced.");
-            public GUIContent[] importerVersionOptions =
-            {
-                EditorGUIUtility.TrTextContent("VideoClip", "Produce VideoClip asset (for use with VideoPlayer)"),
-                EditorGUIUtility.TrTextContent("MovieTexture (Deprecated)", "Produce MovieTexture asset (deprecated in factor of VideoClip)"),
-            };
             public GUIContent transcodeWarning = EditorGUIUtility.TextContent(
                 "Not all platforms transcoded. Clip is not guaranteed to be compatible on platforms without transcoding.");
             public GUIContent transcodeSkippedWarning = EditorGUIUtility.TextContent(
@@ -248,9 +237,6 @@ namespace UnityEditor
         };
 
         static Styles s_Styles;
-
-        // Taken in MovieImporter.cpp.
-        static string[] s_LegacyFileTypes = { ".ogg", ".ogv", ".mov", ".asf", ".mpg", ".mpeg", ".mp4" };
 
         const int kNarrowLabelWidth = 42;
         const int kToggleButtonWidth = 16;
@@ -326,9 +312,6 @@ namespace UnityEditor
             if (s_Styles == null)
                 s_Styles = new Styles();
 
-            m_UseLegacyImporter = serializedObject.FindProperty("m_UseLegacyImporter");
-            m_Quality = serializedObject.FindProperty("m_Quality");
-            m_IsColorLinear = serializedObject.FindProperty("m_IsColorLinear");
             m_EncodeAlpha = serializedObject.FindProperty("m_EncodeAlpha");
             m_Deinterlace = serializedObject.FindProperty("m_Deinterlace");
             m_FlipVertical = serializedObject.FindProperty("m_FlipVertical");
@@ -718,35 +701,6 @@ namespace UnityEditor
 
         internal override void OnHeaderControlsGUI()
         {
-            serializedObject.UpdateIfRequiredOrScript();
-
-            bool supportsLegacy = true;
-            for (int i = 0; supportsLegacy && i < targets.Length; ++i)
-            {
-                VideoClipImporter importer = (VideoClipImporter)targets[i];
-                supportsLegacy &= IsFileSupportedByLegacy(importer.assetPath);
-            }
-
-            if (!supportsLegacy)
-            {
-                base.OnHeaderControlsGUI();
-                return;
-            }
-
-            EditorGUI.showMixedValue = m_UseLegacyImporter.hasMultipleDifferentValues;
-            EditorGUI.BeginChangeCheck();
-            var originalLabelWidth = EditorGUIUtility.labelWidth;
-            EditorGUIUtility.labelWidth = 100;
-            int selectionIndex = EditorGUILayout.Popup(
-                s_Styles.importerVersionContent, m_UseLegacyImporter.boolValue ? 1 : 0,
-                s_Styles.importerVersionOptions, EditorStyles.popup, GUILayout.MaxWidth(230));
-            EditorGUIUtility.labelWidth = originalLabelWidth;
-            EditorGUI.showMixedValue = false;
-            if (EditorGUI.EndChangeCheck())
-                m_UseLegacyImporter.boolValue = selectionIndex == 1;
-
-            serializedObject.ApplyModifiedProperties();
-
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("Open", EditorStyles.miniButton))
             {
@@ -759,15 +713,6 @@ namespace UnityEditor
         {
             serializedObject.Update();
 
-            if (m_UseLegacyImporter.boolValue)
-            {
-#pragma warning disable 0618
-                EditorGUILayout.PropertyField(
-                    m_IsColorLinear, MovieImporterInspector.linearTextureContent);
-                EditorGUILayout.Slider(m_Quality, 0.0f, 1.0f);
-#pragma warning restore 0618
-            }
-            else
             {
                 OnCrossTargetInspectorGUI();
                 EditorGUILayout.Space();
@@ -853,7 +798,7 @@ namespace UnityEditor
         public override void OnPreviewSettings()
         {
             VideoClipImporter importer = (VideoClipImporter)target;
-            EditorGUI.BeginDisabledGroup(Application.isPlaying || importer.useLegacyImporter);
+            EditorGUI.BeginDisabledGroup(Application.isPlaying);
             m_IsPlaying = PreviewGUI.CycleButton(m_IsPlaying ? 1 : 0, s_Styles.playIcons) != 0;
             EditorGUI.EndDisabledGroup();
         }
@@ -915,12 +860,6 @@ namespace UnityEditor
 
             if (m_IsPlaying && Event.current.type == EventType.Repaint)
                 GUIView.current.Repaint();
-        }
-
-        private bool IsFileSupportedByLegacy(string assetPath)
-        {
-            return System.Array.IndexOf(
-                s_LegacyFileTypes, Path.GetExtension(assetPath).ToLower()) != -1;
         }
     }
 }

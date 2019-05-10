@@ -1542,25 +1542,31 @@ namespace UnityEditor
 
         static Renderer[] GetAssociatedRenderersFromInspector()
         {
-            List<Renderer> renderers = new List<Renderer>();
             var imguicontainer = UIElementsUtility.GetCurrentIMGUIContainer();
             if (imguicontainer != null)
             {
                 var editorElement = imguicontainer.GetFirstAncestorOfType<EditorElement>();
                 if (editorElement != null)
                 {
-                    foreach (var editor in editorElement.Editors)
-                    {
-                        foreach (Object target in editor.targets)
-                        {
-                            var renderer = target as Renderer;
-                            if (renderer)
-                                renderers.Add(renderer);
-                        }
-                    }
+                    return GetAssociatedRenderersFromEditors(editorElement.Editors);
                 }
             }
 
+            return new Renderer[0];
+        }
+
+        internal static Renderer[] GetAssociatedRenderersFromEditors(IEnumerable<Editor> editors)
+        {
+            List<Renderer> renderers = new List<Renderer>();
+            foreach (var editor in editors)
+            {
+                foreach (Object target in editor.targets)
+                {
+                    var renderer = target as Renderer;
+                    if (renderer)
+                        renderers.Add(renderer);
+                }
+            }
             return renderers.ToArray();
         }
 
@@ -1610,19 +1616,15 @@ namespace UnityEditor
         {
             string unityEditorFullName = "UnityEditor." + customEditorName; // for convenience: adding UnityEditor namespace is not needed in the shader
 
-            foreach (var assembly in EditorAssemblies.loadedAssemblies)
+            foreach (var type in TypeCache.GetTypesDerivedFrom<MaterialEditor>())
             {
-                Type[] types = AssemblyHelper.GetTypesFromAssembly(assembly);
-                foreach (var type in types)
+                if (type.FullName.Equals(customEditorName, StringComparison.Ordinal) ||
+                    type.FullName.Equals(unityEditorFullName, StringComparison.Ordinal))
                 {
-                    if (type.FullName.Equals(customEditorName, StringComparison.Ordinal) ||
-                        type.FullName.Equals(unityEditorFullName, StringComparison.Ordinal))
-                    {
-                        if (typeof(MaterialEditor).IsAssignableFrom(type))
-                            return true;
-                    }
+                    return true;
                 }
             }
+
             return false;
         }
 

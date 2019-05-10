@@ -6,23 +6,15 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UnityEditor.Compilation;
 using UnityEditor.Scripting.ScriptCompilation;
-using UnityEngine;
 using UnityEditor.Utils;
+using UnityEngine;
 
 namespace UnityEditor.Scripting.Compilers
 {
     internal abstract class ScriptCompilerBase : IDisposable
     {
-        public class ResponseFileData
-        {
-            public string[] Defines;
-            public string[] FullPathReferences;
-            public bool Unsafe;
-            public string[] Errors;
-            public string[] OtherArguments;
-        }
-
         public class CompilerOption
         {
             public string Arg;
@@ -32,19 +24,20 @@ namespace UnityEditor.Scripting.Compilers
         static readonly char[] CompilerOptionArgumentSeperators = { ';', ',' };
 
         private Program process;
-        private bool _runAPIUpdater;
 
-        // ToDo: would be nice to move MonoIsland to MonoScriptCompilerBase
-        protected MonoIsland m_Island;
+        protected ScriptAssembly assembly;
+        protected EditorScriptCompilationOptions options;
+        protected string tempOutputDirectory;
 
         protected abstract Program StartCompiler();
 
         protected abstract CompilerOutputParserBase CreateOutputParser();
 
-        protected ScriptCompilerBase(MonoIsland island, bool runAPIUpdater)
+        protected ScriptCompilerBase(ScriptAssembly assembly, EditorScriptCompilationOptions options, string tempOutputDirectory)
         {
-            m_Island = island;
-            _runAPIUpdater = runAPIUpdater;
+            this.assembly = assembly;
+            this.options = options;
+            this.tempOutputDirectory = tempOutputDirectory;
         }
 
         protected string[] GetErrorOutput()
@@ -86,37 +79,14 @@ namespace UnityEditor.Scripting.Compilers
             process.WaitForExit();
         }
 
-        protected string GetMonoProfileLibDirectory()
+        internal static void AddResponseFileToArguments(List<string> arguments, string responseFileName, ApiCompatibilityLevel apiCompatibilityLevel)
         {
-            var profile = BuildPipeline.CompatibilityProfileToClassLibFolder(m_Island._api_compatibility_level);
+            var systemReferencesDirectories = MonoLibraryHelpers.GetSystemReferenceDirectories(apiCompatibilityLevel);
 
-            var monoInstall = PlayerSettingsEditor.IsLatestApiCompatibility(m_Island._api_compatibility_level)
-                ? MonoInstallationFinder.MonoBleedingEdgeInstallation
-                : MonoInstallationFinder.MonoInstallation;
-
-            return MonoInstallationFinder.GetProfileDirectory(profile, monoInstall);
-        }
-
-        protected abstract string[] GetSystemReferenceDirectories();
-
-        protected bool AddCustomResponseFileIfPresent(List<string> arguments, string responseFileName)
-        {
-            var relativeCustomResponseFilePath = Path.Combine("Assets", responseFileName);
-
-            if (!File.Exists(relativeCustomResponseFilePath))
-                return false;
-
-            AddResponseFileToArguments(arguments, relativeCustomResponseFilePath);
-
-            return true;
-        }
-
-        protected void AddResponseFileToArguments(List<string> arguments, string responseFileName)
-        {
             var responseFileData = ParseResponseFileFromFile(
                 responseFileName,
-                Application.dataPath,
-                GetSystemReferenceDirectories());
+                Directory.GetParent(Application.dataPath).FullName,
+                systemReferencesDirectories);
             foreach (var error in responseFileData.Errors)
             {
                 Debug.LogError($"{responseFileName} Parse Error : {error}");
@@ -137,6 +107,9 @@ namespace UnityEditor.Scripting.Compilers
             string projectDirectory,
             string[] systemReferenceDirectories)
         {
+            responseFilePath = Paths.ConvertSeparatorsToUnity(responseFilePath);
+            projectDirectory = Paths.ConvertSeparatorsToUnity(projectDirectory);
+
             var relativeResponseFilePath = GetRelativePath(responseFilePath, projectDirectory);
             var responseFile = AssetDatabase.LoadAssetAtPath<TextAsset>(relativeResponseFilePath);
 
@@ -175,7 +148,7 @@ namespace UnityEditor.Scripting.Compilers
         {
             if (Path.IsPathRooted(responseFilePath) && responseFilePath.Contains(projectDirectory))
             {
-                responseFilePath = responseFilePath.Substring(Directory.GetParent(Application.dataPath).FullName.Length + 1);
+                responseFilePath = responseFilePath.Substring(projectDirectory.Length + 1);
             }
             return responseFilePath;
         }
@@ -328,18 +301,12 @@ namespace UnityEditor.Scripting.Compilers
                             continue;
                         }
 
-                        var responseReference = reference;
-
                         int index = reference.IndexOf('=');
-                        if (index > -1)
-                        {
-                            var assembly = reference.Substring(index + 1);
-
-                            responseReference = assembly;
-                        }
+                        var responseReference = index > -1 ? reference.Substring(index + 1) : reference;
 
                         var fullPathReference = responseReference;
-                        if (!Path.IsPathRooted(responseReference))
+                        bool isRooted = Path.IsPathRooted(responseReference);
+                        if (!isRooted)
                         {
                             foreach (var directory in systemReferenceDirectories)
                             {
@@ -347,6 +314,7 @@ namespace UnityEditor.Scripting.Compilers
                                 if (File.Exists(systemReferencePath))
                                 {
                                     fullPathReference = systemReferencePath;
+                                    isRooted = true;
                                     break;
                                 }
                             }
@@ -355,10 +323,11 @@ namespace UnityEditor.Scripting.Compilers
                             if (File.Exists(userPath))
                             {
                                 fullPathReference = userPath;
+                                isRooted = true;
                             }
                         }
 
-                        if (fullPathReference == "")
+                        if (!isRooted)
                         {
                             errors.Add($"{fileName}: not parsed correctly: {responseReference} could not be found as a system library.\n" +
                                 "If this was meant as a user reference please provide the relative path from project root (parent of the Assets folder) in the response file.");
@@ -417,12 +386,14 @@ namespace UnityEditor.Scripting.Compilers
                 return new CompilerMessage[0];
             }
 
-            DumpStreamOutputToLog();
+            var outputFile = AssetPath.Combine(tempOutputDirectory, assembly.Filename);
+
+            DumpStreamOutputToLog(outputFile);
 
             return CreateOutputParser().Parse(
                 GetStreamContainingCompilerMessages(),
                 CompilationHadFailure(),
-                Path.GetFileName(m_Island._output)
+                assembly.Filename
                 ).ToArray();
         }
 
@@ -440,7 +411,7 @@ namespace UnityEditor.Scripting.Compilers
             return errors.ToArray();
         }
 
-        private void DumpStreamOutputToLog()
+        private void DumpStreamOutputToLog(string outputFile)
         {
             bool hadCompilationFailure = CompilationHadFailure();
 
@@ -457,7 +428,7 @@ namespace UnityEditor.Scripting.Compilers
                 Console.WriteLine(
                     "-----CompilerOutput:-stdout--exitcode: " + process.ExitCode
                     + "--compilationhadfailure: " + hadCompilationFailure
-                    + "--outfile: " + m_Island._output
+                    + "--outfile: " + outputFile
                 );
                 foreach (string line in stdOutput)
                     Console.WriteLine(line);
@@ -467,23 +438,6 @@ namespace UnityEditor.Scripting.Compilers
                     Console.WriteLine(line);
                 Console.WriteLine("-----EndCompilerOutput---------------");
             }
-        }
-
-        protected void RunAPIUpdaterIfRequired(string responseFile, IList<string> pathMappings)
-        {
-            if (!_runAPIUpdater)
-                return;
-
-            var pathMappingsFilePath = Path.GetTempFileName();
-
-            if (pathMappings != null)
-                File.WriteAllLines(pathMappingsFilePath, pathMappings.ToArray());
-
-            APIUpdaterHelper.UpdateScripts(
-                responseFile,
-                m_Island.GetExtensionOfSourceFiles(),
-                PrepareFileName(pathMappingsFilePath)
-            );
         }
     }
 

@@ -11,18 +11,18 @@ namespace UnityEditor
     internal class AudioClipInspector : Editor
     {
         private PreviewRenderUtility m_PreviewUtility;
-
-        // Any number of AudioClip inspectors can be docked in addition to the object browser, and they are all showing and modifying the same shared state.
-        static AudioClipInspector m_PlayingInspector;
-        static AudioClip m_PlayingClip;
-        static bool playing { get { return m_PlayingClip != null && AudioUtil.IsClipPlaying(m_PlayingClip); } }
-        static bool m_bAutoPlay;
-        static bool m_bLoop;
-
+        private AudioClip m_Clip;
+        private bool playing => s_PlayingInstance == this && AudioUtil.IsClipPlaying(m_Clip);
         Vector2 m_Position = Vector2.zero;
-        Rect m_wantedRect;
+        private bool m_MultiEditing;
 
         static GUIStyle s_PreButton;
+
+        static Rect s_WantedRect;
+        static bool s_AutoPlay;
+        static bool s_Loop;
+        static bool s_PlayFirst;
+        static AudioClipInspector s_PlayingInstance;
 
         static GUIContent[] s_PlayIcons = {null, null};
         static GUIContent[] s_AutoPlayIcons = {null, null};
@@ -32,8 +32,10 @@ namespace UnityEditor
 
         private Material m_HandleLinesMaterial;
 
-        override public void OnInspectorGUI()
+        public override void OnInspectorGUI()
         {
+            // We can't always check this from preview methods
+            m_MultiEditing = targets.Length > 1;
             // Override with inspector that doesn't show anything
         }
 
@@ -43,7 +45,8 @@ namespace UnityEditor
                 return;
             s_PreButton = "preButton";
 
-            m_bAutoPlay = EditorPrefs.GetBool("AutoPlayAudio", false);
+            s_AutoPlay = EditorPrefs.GetBool("AutoPlayAudio", false);
+            s_Loop = false;
 
             s_AutoPlayIcons[0] = EditorGUIUtility.TrIconContent("preAudioAutoPlayOff", "Turn Auto Play on");
             s_AutoPlayIcons[1] = EditorGUIUtility.TrIconContent("preAudioAutoPlayOn", "Turn Auto Play off");
@@ -57,14 +60,13 @@ namespace UnityEditor
 
         public void OnDisable()
         {
-            // This check is necessary because the order of OnEnable/OnDisable varies depending on whether the inspector is embedded in the project browser or object selector.
-            if (m_PlayingInspector == this)
+            if (s_PlayingInstance == this)
             {
                 AudioUtil.StopAllClips();
-                m_PlayingClip = null;
+                s_PlayingInstance = null;
             }
 
-            EditorPrefs.SetBool("AutoPlayAudio", m_bAutoPlay);
+            EditorPrefs.SetBool("AutoPlayAudio", s_AutoPlay);
 
             if (m_PreviewUtility != null)
             {
@@ -77,11 +79,9 @@ namespace UnityEditor
 
         public void OnEnable()
         {
-            AudioUtil.StopAllClips();
-            m_PlayingClip = null;
-            m_PlayingInspector = this;
-
-            m_bAutoPlay = EditorPrefs.GetBool("AutoPlayAudio", false);
+            s_AutoPlay = EditorPrefs.GetBool("AutoPlayAudio", false);
+            if (s_AutoPlay)
+                s_PlayFirst = true;
 
             m_HandleLinesMaterial = EditorGUIUtility.LoadRequired("SceneView/HandleLines.mat") as Material;
         }
@@ -119,64 +119,41 @@ namespace UnityEditor
             if (s_DefaultIcon == null) Init();
 
             AudioClip clip = target as AudioClip;
+            m_MultiEditing = targets.Length > 1;
 
-            bool isEditingMultipleObjects = targets.Length > 1;
-
-            using (new EditorGUI.DisabledScope(AudioUtil.IsMovieAudio(clip)))
             {
-                bool oldAutoPlay = m_bAutoPlay;
-                bool newAutoPlay = PreviewGUI.CycleButton(oldAutoPlay ? 1 : 0, s_AutoPlayIcons) != 0;
-                if (oldAutoPlay != newAutoPlay)
+                using (new EditorGUI.DisabledScope(m_MultiEditing))
                 {
-                    m_bAutoPlay = newAutoPlay;
-                    InspectorWindow.RepaintAllInspectors();
+                    s_AutoPlay = s_AutoPlay && !m_MultiEditing;
+                    s_AutoPlay = PreviewGUI.CycleButton(s_AutoPlay ? 1 : 0, s_AutoPlayIcons) != 0;
                 }
 
-                bool oldLoop = m_bLoop;
-                bool newLoop = PreviewGUI.CycleButton(oldLoop ? 1 : 0, s_LoopIcons) != 0;
-                if (oldLoop != newLoop)
-                {
-                    m_bLoop = newLoop;
-                    if (playing)
-                        AudioUtil.LoopClip(clip, newLoop);
-                    InspectorWindow.RepaintAllInspectors();
-                }
+                bool loop = s_Loop;
+                s_Loop = PreviewGUI.CycleButton(s_Loop ? 1 : 0, s_LoopIcons) != 0;
+                if ((loop != s_Loop) && playing)
+                    AudioUtil.LoopClip(clip, s_Loop);
 
-                using (new EditorGUI.DisabledScope(isEditingMultipleObjects && !playing && m_PlayingInspector != this))
+                using (new EditorGUI.DisabledScope(m_MultiEditing && !playing))
                 {
-                    bool curPlaying = m_PlayingInspector == this && playing;
-                    bool newPlaying = PreviewGUI.CycleButton(curPlaying ? 1 : 0, s_PlayIcons) != 0;
+                    bool newPlaying = PreviewGUI.CycleButton(playing ? 1 : 0, s_PlayIcons) != 0;
 
-                    if (newPlaying != curPlaying)
+                    if (newPlaying != playing)
                     {
-                        AudioUtil.StopAllClips();
-                        m_PlayingClip = null;
-                        m_PlayingInspector = null;
-
-                        if (newPlaying && !isEditingMultipleObjects)
-                        {
-                            AudioUtil.PlayClip(clip, 0, m_bLoop);
-                            m_PlayingClip = clip;
-                            m_PlayingInspector = this;
-                        }
+                        if (newPlaying)
+                            PlayClip(clip, 0, s_Loop);
+                        else
+                            m_Clip = null;
                     }
                 }
             }
+        }
 
-            // autoplay start?
-            if (m_bAutoPlay && m_PlayingClip != clip && m_PlayingInspector == this && !isEditingMultipleObjects)
-            {
-                AudioUtil.StopAllClips();
-                m_PlayingClip = null;
-                m_PlayingInspector = null;
-
-                if (!isEditingMultipleObjects)
-                {
-                    AudioUtil.PlayClip(clip, 0, m_bLoop);
-                    m_PlayingClip = clip;
-                    m_PlayingInspector = this;
-                }
-            }
+        void PlayClip(AudioClip clip, int startSample = 0, bool loop = false)
+        {
+            AudioUtil.StopAllClips();
+            AudioUtil.PlayClip(clip, startSample, loop);
+            m_Clip = clip;
+            s_PlayingInstance = this;
         }
 
         // Passing in clip and importer separately as we're not completely done with the asset setup at the time we're asked to generate the preview.
@@ -228,23 +205,18 @@ namespace UnityEditor
             Event evt = Event.current;
             if (evt.type != EventType.Repaint && evt.type != EventType.Layout && evt.type != EventType.Used)
             {
-                int px2sample = (AudioUtil.GetSampleCount(clip) / (int)r.width);
-
                 switch (evt.type)
                 {
                     case EventType.MouseDrag:
                     case EventType.MouseDown:
                     {
-                        if (r.Contains(evt.mousePosition) && !AudioUtil.IsMovieAudio(clip))
+                        if (r.Contains(evt.mousePosition))
                         {
-                            if (m_PlayingClip != clip || !AudioUtil.IsClipPlaying(clip))
-                            {
-                                AudioUtil.StopAllClips();
-                                AudioUtil.PlayClip(clip, 0, m_bLoop);
-                                m_PlayingClip = clip;
-                                m_PlayingInspector = this;
-                            }
-                            AudioUtil.SetClipSamplePosition(clip, px2sample * (int)evt.mousePosition.x);
+                            var startSample = (int)(evt.mousePosition.x * (AudioUtil.GetSampleCount(clip) / (int)r.width));
+                            if (!AudioUtil.IsClipPlaying(clip) || clip != m_Clip)
+                                PlayClip(clip, startSample, s_Loop);
+                            else
+                                AudioUtil.SetClipSamplePosition(clip, startSample);
                             evt.Use();
                         }
                     }
@@ -257,10 +229,10 @@ namespace UnityEditor
                 background.Draw(r, false, false, false, false);
 
             int c = AudioUtil.GetChannelCount(clip);
-            m_wantedRect = new Rect(r.x, r.y , r.width, r.height);
-            float sec2px = ((float)m_wantedRect.width / clip.length);
+            s_WantedRect = new Rect(r.x, r.y , r.width, r.height);
+            float sec2px = ((float)s_WantedRect.width / clip.length);
 
-            bool previewAble = AudioUtil.HasPreview(clip) || !(AudioUtil.IsTrackerFile(clip) || AudioUtil.IsMovieAudio(clip));
+            bool previewAble = AudioUtil.HasPreview(clip) || !(AudioUtil.IsTrackerFile(clip));
             if (!previewAble)
             {
                 float labelY = (r.height > 150) ? r.y + (r.height / 2) - 10 :  r.y +  (r.height / 2) - 25;
@@ -270,62 +242,59 @@ namespace UnityEditor
                     {
                         EditorGUI.DropShadowLabel(new Rect(r.x, labelY, r.width, 20), string.Format("Module file with " + AudioUtil.GetMusicChannelCount(clip) + " channels."));
                     }
-                    else if (AudioUtil.IsMovieAudio(clip))
-                    {
-                        if (r.width > 450)
-                            EditorGUI.DropShadowLabel(new Rect(r.x, labelY, r.width, 20), "Audio is attached to a movie. To audition the sound, play the movie.");
-                        else
-                        {
-                            EditorGUI.DropShadowLabel(new Rect(r.x, labelY, r.width, 20), "Audio is attached to a movie.");
-                            EditorGUI.DropShadowLabel(new Rect(r.x, labelY + 10, r.width, 20), "To audition the sound, play the movie.");
-                        }
-                    }
                     else
                         EditorGUI.DropShadowLabel(new Rect(r.x, labelY, r.width, 20), "Can not show PCM data for this file");
                 }
 
-                if (m_PlayingInspector == this && m_PlayingClip == clip)
+                if (m_Clip == clip)
                 {
                     float t = AudioUtil.GetClipPosition(clip);
 
                     System.TimeSpan ts = new System.TimeSpan(0, 0, 0, 0, (int)(t * 1000.0f));
 
-                    EditorGUI.DropShadowLabel(new Rect(m_wantedRect.x, m_wantedRect.y, m_wantedRect.width, 20), string.Format("Playing - {0:00}:{1:00}.{2:000}", ts.Minutes, ts.Seconds, ts.Milliseconds));
+                    EditorGUI.DropShadowLabel(new Rect(s_WantedRect.x, s_WantedRect.y, s_WantedRect.width, 20), string.Format("Playing - {0:00}:{1:00}.{2:000}", ts.Minutes, ts.Seconds, ts.Milliseconds));
                 }
             }
             else
             {
-                PreviewGUI.BeginScrollView(m_wantedRect, m_Position, m_wantedRect, "PreHorizontalScrollbar", "PreHorizontalScrollbarThumb");
+                PreviewGUI.BeginScrollView(s_WantedRect, m_Position, s_WantedRect, "PreHorizontalScrollbar", "PreHorizontalScrollbarThumb");
 
                 if (Event.current.type == EventType.Repaint)
                 {
-                    DoRenderPreview(true, clip, AudioUtil.GetImporterFromClip(clip), m_wantedRect, 1.0f);
+                    DoRenderPreview(true, clip, AudioUtil.GetImporterFromClip(clip), s_WantedRect, 1.0f);
                 }
 
                 for (int i = 0; i < c; ++i)
                 {
                     if (c > 1 && r.width > 64)
                     {
-                        var labelRect = new Rect(m_wantedRect.x + 5, m_wantedRect.y + (m_wantedRect.height / c) * i, 30, 20);
+                        var labelRect = new Rect(s_WantedRect.x + 5, s_WantedRect.y + (s_WantedRect.height / c) * i, 30, 20);
                         EditorGUI.DropShadowLabel(labelRect, "ch " + (i + 1).ToString());
                     }
                 }
 
-                if (m_PlayingInspector == this && m_PlayingClip == clip)
+                if (m_Clip == clip)
                 {
                     float t = AudioUtil.GetClipPosition(clip);
 
                     System.TimeSpan ts = new System.TimeSpan(0, 0, 0, 0, (int)(t * 1000.0f));
 
-                    GUI.DrawTexture(new Rect(m_wantedRect.x + (int)(sec2px * t), m_wantedRect.y, 2, m_wantedRect.height), EditorGUIUtility.whiteTexture);
+                    GUI.DrawTexture(new Rect(s_WantedRect.x + (int)(sec2px * t), s_WantedRect.y, 2, s_WantedRect.height), EditorGUIUtility.whiteTexture);
                     if (r.width > 64)
-                        EditorGUI.DropShadowLabel(new Rect(m_wantedRect.x, m_wantedRect.y, m_wantedRect.width, 20), string.Format("{0:00}:{1:00}.{2:000}", ts.Minutes, ts.Seconds, ts.Milliseconds));
+                        EditorGUI.DropShadowLabel(new Rect(s_WantedRect.x, s_WantedRect.y, s_WantedRect.width, 20), string.Format("{0:00}:{1:00}.{2:000}", ts.Minutes, ts.Seconds, ts.Milliseconds));
                     else
-                        EditorGUI.DropShadowLabel(new Rect(m_wantedRect.x, m_wantedRect.y, m_wantedRect.width, 20), string.Format("{0:00}:{1:00}", ts.Minutes, ts.Seconds));
+                        EditorGUI.DropShadowLabel(new Rect(s_WantedRect.x, s_WantedRect.y, s_WantedRect.width, 20), string.Format("{0:00}:{1:00}", ts.Minutes, ts.Seconds));
                 }
 
-
                 PreviewGUI.EndScrollView();
+            }
+
+
+            if (!m_MultiEditing && (s_PlayFirst || (s_AutoPlay && m_Clip != clip)))
+            {
+                // Autoplay preview
+                PlayClip(clip, 0, s_Loop);
+                s_PlayFirst = false;
             }
 
             // force update GUI

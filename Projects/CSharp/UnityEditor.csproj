@@ -259,9 +259,6 @@
     <Compile Include="..\..\Editor\Mono\EditorUserBuildSettings.deprecated.cs">
       <Link>Editor\Mono\EditorUserBuildSettings.deprecated.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\EditorUserBuildSettingsExperimental.cs">
-      <Link>Editor\Mono\EditorUserBuildSettingsExperimental.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\EditorUserBuildSettingsUtils.cs">
       <Link>Editor\Mono\EditorUserBuildSettingsUtils.cs</Link>
     </Compile>
@@ -615,12 +612,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\StaticOcclusionCulling.bindings.cs">
       <Link>Editor\Mono\StaticOcclusionCulling.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\SyncProject.cs">
-      <Link>Editor\Mono\SyncProject.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\SyncRiderProject.cs">
-      <Link>Editor\Mono\SyncRiderProject.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\TagManager.bindings.cs">
       <Link>Editor\Mono\TagManager.bindings.cs</Link>
@@ -1209,6 +1200,21 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\CloudBuild\CloudBuild.cs">
       <Link>Editor\Mono\CloudBuild\CloudBuild.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\CodeEditor\CodeEditor.cs">
+      <Link>Editor\Mono\CodeEditor\CodeEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\CodeEditor\CodeEditorProjectSync.cs">
+      <Link>Editor\Mono\CodeEditor\CodeEditorProjectSync.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\CodeEditor\DefaultExternalCodeEditor.cs">
+      <Link>Editor\Mono\CodeEditor\DefaultExternalCodeEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\CodeEditor\IExternalCodeEditor.cs">
+      <Link>Editor\Mono\CodeEditor\IExternalCodeEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\CodeEditor\SyncVS.cs">
+      <Link>Editor\Mono\CodeEditor\SyncVS.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Collab\AssetAccess.cs">
       <Link>Editor\Mono\Collab\AssetAccess.cs</Link>
@@ -2281,9 +2287,6 @@
     <Compile Include="..\..\Editor\Mono\Inspector\MonoScriptInspector.cs">
       <Link>Editor\Mono\Inspector\MonoScriptInspector.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\MovieTextureInspector.cs">
-      <Link>Editor\Mono\Inspector\MovieTextureInspector.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\NavMeshAgentInspector.cs">
       <Link>Editor\Mono\Inspector\NavMeshAgentInspector.cs</Link>
     </Compile>
@@ -2962,18 +2965,6 @@
     <Compile Include="..\..\Editor\Mono\Scripting\Compilers\MicrosoftCSharpResponseFileProvider.cs">
       <Link>Editor\Mono\Scripting\Compilers\MicrosoftCSharpResponseFileProvider.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\Compilers\MonoCSharpCompiler.cs">
-      <Link>Editor\Mono\Scripting\Compilers\MonoCSharpCompiler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\Compilers\MonoCSharpCompilerOutputParser.cs">
-      <Link>Editor\Mono\Scripting\Compilers\MonoCSharpCompilerOutputParser.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\Compilers\MonoCSharpResponseFileProvider.cs">
-      <Link>Editor\Mono\Scripting\Compilers\MonoCSharpResponseFileProvider.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\Compilers\MonoScriptCompilerBase.cs">
-      <Link>Editor\Mono\Scripting\Compilers\MonoScriptCompilerBase.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\Compilers\ResponseFileProvider.cs">
       <Link>Editor\Mono\Scripting\Compilers\ResponseFileProvider.cs</Link>
     </Compile>
@@ -3556,15 +3547,6 @@
     <Compile Include="..\..\Editor\Mono\VersionControl\VCTask.bindings.cs">
       <Link>Editor\Mono\VersionControl\VCTask.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\VisualStudioIntegration\SolutionSynchronizationSettings.cs">
-      <Link>Editor\Mono\VisualStudioIntegration\SolutionSynchronizationSettings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\VisualStudioIntegration\SolutionSynchronizer.cs">
-      <Link>Editor\Mono\VisualStudioIntegration\SolutionSynchronizer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\VisualStudioIntegration\UnityVSSupport.cs">
-      <Link>Editor\Mono\VisualStudioIntegration\UnityVSSupport.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\WebViewEditorWindow\WebViewEditorStaticWindow.cs">
       <Link>Editor\Mono\WebViewEditorWindow\WebViewEditorStaticWindow.cs</Link>
     </Compile>
@@ -3688,9 +3670,6 @@
     <Compile Include="..\..\Modules\AssetPipelineEditor\ImportSettings\ModelImporterRigEditor.cs">
       <Link>Modules\AssetPipelineEditor\ImportSettings\ModelImporterRigEditor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\AssetPipelineEditor\ImportSettings\MovieImporterInspector.cs">
-      <Link>Modules\AssetPipelineEditor\ImportSettings\MovieImporterInspector.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\AssetPipelineEditor\ImportSettings\PluginImporterInspector.cs">
       <Link>Modules\AssetPipelineEditor\ImportSettings\PluginImporterInspector.cs</Link>
     </Compile>
@@ -3709,8 +3688,8 @@
     <Compile Include="..\..\Modules\AssetPipelineEditor\Public\MonoImporter.bindings.cs">
       <Link>Modules\AssetPipelineEditor\Public\MonoImporter.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\AssetPipelineEditor\Public\MovieImporter.bindings.cs">
-      <Link>Modules\AssetPipelineEditor\Public\MovieImporter.bindings.cs</Link>
+    <Compile Include="..\..\Modules\AssetPipelineEditor\Public\MovieImporter.deprecated.cs">
+      <Link>Modules\AssetPipelineEditor\Public\MovieImporter.deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\AssetPipelineEditor\Public\NativeFormatImporterUtility.bindings.cs">
       <Link>Modules\AssetPipelineEditor\Public\NativeFormatImporterUtility.bindings.cs</Link>
@@ -3988,6 +3967,18 @@
     <Compile Include="..\..\Modules\GraphViewEditor\Views\GraphView.cs">
       <Link>Modules\GraphViewEditor\Views\GraphView.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\GraphViewEditor\Windows\GraphViewBlackboardWindow.cs">
+      <Link>Modules\GraphViewEditor\Windows\GraphViewBlackboardWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphViewEditor\Windows\GraphViewEditorWindow.cs">
+      <Link>Modules\GraphViewEditor\Windows\GraphViewEditorWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphViewEditor\Windows\GraphViewMinimapWindow.cs">
+      <Link>Modules\GraphViewEditor\Windows\GraphViewMinimapWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphViewEditor\Windows\GraphViewToolWindow.cs">
+      <Link>Modules\GraphViewEditor\Windows\GraphViewToolWindow.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\GridEditor\Managed\GridEditor.cs">
       <Link>Modules\GridEditor\Managed\GridEditor.cs</Link>
     </Compile>
@@ -3999,6 +3990,9 @@
     </Compile>
     <Compile Include="..\..\Modules\LicensingLegacy\LicenseManagementWindow.cs">
       <Link>Modules\LicensingLegacy\LicenseManagementWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\Public\LicensingUtility.bindings.cs">
+      <Link>Modules\Licensing\Public\LicensingUtility.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\LocalizationEditor\LocalizationDatabase.bindings.cs">
       <Link>Modules\LocalizationEditor\LocalizationDatabase.bindings.cs</Link>
@@ -4156,14 +4150,8 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\UIUtils.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\UIUtils.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\VersionItem.cs">
-      <Link>Modules\PackageManagerUI\Editor\UI\Common\VersionItem.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerExtension.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerExtension.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageAddFromIdField.cs">
-      <Link>Modules\PackageManagerUI\Editor\UI\PackageAddFromIdField.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageAddFromUrlField.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageAddFromUrlField.cs</Link>
@@ -4206,9 +4194,6 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageSampleList.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageSampleList.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageSearchToolbar.cs">
-      <Link>Modules\PackageManagerUI\Editor\UI\PackageSearchToolbar.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageStatusBar.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageStatusBar.cs</Link>
@@ -4255,6 +4240,9 @@
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\OperationStatus.cs">
       <Link>Modules\PackageManager\Editor\Managed\OperationStatus.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackOperationResult.cs">
+      <Link>Modules\PackageManager\Editor\Managed\PackOperationResult.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageCollection.cs">
       <Link>Modules\PackageManager\Editor\Managed\PackageCollection.cs</Link>
     </Compile>
@@ -4299,6 +4287,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\ListRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\ListRequest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\PackRequest.cs">
+      <Link>Modules\PackageManager\Editor\Managed\Requests\PackRequest.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\RemoveRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\RemoveRequest.cs</Link>
@@ -4978,11 +4969,32 @@
     <Compile Include="..\..\Modules\UIElementsDebuggerEditor\DebuggerTreeView.cs">
       <Link>Modules\UIElementsDebuggerEditor\DebuggerTreeView.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\Events\CodeLine.cs">
+      <Link>Modules\UIElementsDebuggerEditor\Events\CodeLine.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\Events\EventLog.cs">
+      <Link>Modules\UIElementsDebuggerEditor\Events\EventLog.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\Events\EventLogLine.cs">
+      <Link>Modules\UIElementsDebuggerEditor\Events\EventLogLine.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\Events\EventTypeSelectField.cs">
+      <Link>Modules\UIElementsDebuggerEditor\Events\EventTypeSelectField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\Events\UIElementsEventDebugger.cs">
+      <Link>Modules\UIElementsDebuggerEditor\Events\UIElementsEventDebugger.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElementsDebuggerEditor\OverlayPainter.cs">
       <Link>Modules\UIElementsDebuggerEditor\OverlayPainter.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElementsDebuggerEditor\PanelDebugger.cs">
       <Link>Modules\UIElementsDebuggerEditor\PanelDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\StyleLengthField.cs">
+      <Link>Modules\UIElementsDebuggerEditor\StyleLengthField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\StylePropertyDebugger.cs">
+      <Link>Modules\UIElementsDebuggerEditor\StylePropertyDebugger.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElementsDebuggerEditor\StylesDebugger.cs">
       <Link>Modules\UIElementsDebuggerEditor\StylesDebugger.cs</Link>
@@ -4995,9 +5007,6 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElementsDebuggerEditor\UIR\Debugger\UIRDebugger.cs">
       <Link>Modules\UIElementsDebuggerEditor\UIR\Debugger\UIRDebugger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\UIR\PainterSwitcherWindow.cs">
-      <Link>Modules\UIElementsDebuggerEditor\UIR\PainterSwitcherWindow.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElementsDebuggerEditor\UIR\UIRDebugUtility.cs">
       <Link>Modules\UIElementsDebuggerEditor\UIR\UIRDebugUtility.cs</Link>
@@ -5043,6 +5052,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\LayerMaskFieldSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\Snippets\LayerMaskFieldSnippet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\ListViewSnippet.cs">
+      <Link>Modules\UIElementsSamplesEditor\Snippets\ListViewSnippet.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\LongFieldSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\Snippets\LongFieldSnippet.cs</Link>
@@ -5106,6 +5118,18 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\UIElementsSnippetAsset.cs">
       <Link>Modules\UIElementsSamplesEditor\UIElementsSnippetAsset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UMPE\Editor\DataService.cs">
+      <Link>Modules\UMPE\Editor\DataService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UMPE\Editor\EventService.cs">
+      <Link>Modules\UMPE\Editor\EventService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UMPE\Editor\RoleProviderAttribute.cs">
+      <Link>Modules\UMPE\Editor\RoleProviderAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UMPE\Editor\UMPE.bindings.cs">
+      <Link>Modules\UMPE\Editor\UMPE.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UnityEditorAnalyticsEditor\BuildEventsHandler.cs">
       <Link>Modules\UnityEditorAnalyticsEditor\BuildEventsHandler.cs</Link>

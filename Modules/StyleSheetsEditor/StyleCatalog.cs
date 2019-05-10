@@ -14,6 +14,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor.Experimental;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 using Debug = UnityEngine.Debug;
 
 namespace UnityEditor.StyleSheets
@@ -1228,21 +1229,21 @@ namespace UnityEditor.StyleSheets
             }
 
             if (values.Count == 2 &&
-                values[0].ValueType == StyleValueType.Float &&
-                values[1].ValueType == StyleValueType.Float)
+                values[0].IsFloat() &&
+                values[1].IsFloat())
                 return CompileRect(property.Name, values, stateFlags, rects, 0, 1, 0, 1);
 
             if (values.Count == 3 &&
-                values[0].ValueType == StyleValueType.Float &&
-                values[1].ValueType == StyleValueType.Float &&
-                values[2].ValueType == StyleValueType.Float)
+                values[0].IsFloat() &&
+                values[1].IsFloat() &&
+                values[2].IsFloat())
                 return CompileRect(property.Name, values, stateFlags, rects, 0, 1, 2, 1);
 
             if (values.Count == 4 &&
-                values[0].ValueType == StyleValueType.Float &&
-                values[1].ValueType == StyleValueType.Float &&
-                values[2].ValueType == StyleValueType.Float &&
-                values[3].ValueType == StyleValueType.Float)
+                values[0].IsFloat() &&
+                values[1].IsFloat() &&
+                values[2].IsFloat() &&
+                values[3].IsFloat())
                 return CompileRect(property.Name, values, stateFlags, rects, 0, 1, 2, 3);
 
             // Compile list of primitive values
@@ -1311,6 +1312,8 @@ namespace UnityEditor.StyleSheets
                 case StyleValueType.Float:
                 case StyleValueType.Keyword:
                     return (StyleValue.Type)value.ValueType;
+                case StyleValueType.Dimension:
+                    return StyleValue.Type.Number;
                 case StyleValueType.AssetReference:
                 case StyleValueType.ResourcePath:
                 case StyleValueType.Enum:
@@ -1343,6 +1346,8 @@ namespace UnityEditor.StyleSheets
                     return (int)StyleValue.ConvertKeyword(value.AsKeyword());
                 case StyleValueType.Float:
                     return SetIndex(numbers, value.AsFloat());
+                case StyleValueType.Dimension:
+                    return SetIndex(numbers, value.AsDimension().value);
                 case StyleValueType.Color:
                     return SetIndex(colors, value.AsColor());
                 case StyleValueType.ResourcePath:

@@ -10,6 +10,7 @@ namespace UnityEngine.UIElements
     {
         Keyword,
         Float,
+        Dimension,
         Color,
         ResourcePath, // When using resource("...")
         AssetReference,

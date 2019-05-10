@@ -11,11 +11,8 @@ namespace UnityEditor.PackageManager.UI
 {
     internal class PackageManagerWindow : EditorWindow
     {
-        [SerializeField]
         internal PackageCollection Collection;
-        [SerializeField]
         private PackageSearchFilter SearchFilter;
-        [SerializeField]
         internal SelectionManager SelectionManager;
 
         private VisualElement root;
@@ -24,6 +21,9 @@ namespace UnityEditor.PackageManager.UI
         private string PackageToSelectAfterLoad;
 
         internal static bool SkipFetchCacheForAllWindows;
+
+        [SerializeField]
+        private PackageFilter LastUsedPackageFilter;
 
         public void OnEnable()
         {
@@ -51,10 +51,13 @@ namespace UnityEditor.PackageManager.UI
 
                 SelectionManager.SetCollection(Collection);
                 Collection.OnFilterChanged += filter => SetupSelection();
-                Collection.SetFilter(PackageManagerPrefs.LastUsedPackageFilter);
+                if (collectionWasNull)
+                {
+                    LastUsedPackageFilter = PackageManagerPrefs.LastUsedPackageFilter;
+                }
 
-                if (!collectionWasNull)
-                    Collection.UpdatePackageCollection(true);
+                Collection.SetFilter(LastUsedPackageFilter);
+                Collection.UpdatePackageCollection(true);
 
                 SetupPackageDetails();
                 SetupPackageList();
@@ -70,9 +73,9 @@ namespace UnityEditor.PackageManager.UI
 
                 if (!EditorApplication.isPlayingOrWillChangePlaymode)
                 {
-                    Collection.FetchListOfflineCache(!Collection.listOperationOfflineOngoing);
-                    Collection.FetchListCache(!Collection.listOperationOngoing);
-                    Collection.FetchSearchCache(!Collection.searchOperationOngoing);
+                    Collection.FetchListOfflineCache(true);
+                    Collection.FetchListCache(collectionWasNull);
+                    Collection.FetchSearchCache(collectionWasNull);
                 }
                 Collection.TriggerPackagesChanged();
             }
@@ -80,7 +83,7 @@ namespace UnityEditor.PackageManager.UI
 
         public void OnDisable()
         {
-            PackageManagerPrefs.LastUsedPackageFilter = Collection.Filter;
+            PackageManagerPrefs.LastUsedPackageFilter = LastUsedPackageFilter;
         }
 
         private void SetupCollection()
@@ -110,9 +113,8 @@ namespace UnityEditor.PackageManager.UI
 
         private void SetupSearchToolbar()
         {
-            PackageManagerToolbar.SearchToolbar.OnSearchChange += OnSearchChange;
-            PackageManagerToolbar.SearchToolbar.OnFocusChange += OnToolbarFocusChange;
-            PackageManagerToolbar.SearchToolbar.SetSearchText(SearchFilter.SearchText);
+            PackageManagerToolbar.OnSearchChange += OnSearchChange;
+            PackageManagerToolbar.SearchToolbar.SetValueWithoutNotify(SearchFilter.SearchText);
         }
 
         private void SetupPackageList()
@@ -156,6 +158,7 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnFilterChange(PackageFilter filter)
         {
+            LastUsedPackageFilter = filter;
             Collection.SetFilter(filter);
         }
 
@@ -168,11 +171,6 @@ namespace UnityEditor.PackageManager.UI
         private void OnListFocusChange()
         {
             PackageManagerToolbar.GrabFocus();
-        }
-
-        private void OnToolbarFocusChange()
-        {
-            PackageList.GrabFocus();
         }
 
         private void OnSearchChange(string searchText)
@@ -193,8 +191,8 @@ namespace UnityEditor.PackageManager.UI
         private VisualElementCache Cache { get; set; }
 
         private PackageList PackageList { get { return Cache.Get<PackageList>("packageList"); } }
-        private PackageDetails PackageDetails { get { return Cache.Get<PackageDetails>("detailsGroup"); } }
-        private PackageManagerToolbar PackageManagerToolbar { get {return Cache.Get<PackageManagerToolbar>("toolbarContainer");} }
+        private PackageDetails PackageDetails { get { return Cache.Get<PackageDetails>("packageDetails"); } }
+        private PackageManagerToolbar PackageManagerToolbar { get {return Cache.Get<PackageManagerToolbar>("topMenuToolbar");} }
         private PackageStatusBar PackageStatusbar { get {return Cache.Get<PackageStatusBar>("packageStatusBar");} }
 
         internal static void FetchListOfflineCacheForAllWindows()
@@ -224,7 +222,6 @@ namespace UnityEditor.PackageManager.UI
                 if (window.Collection != null && window.Collection.LatestListPackages.Any())
                 {
                     window.SelectionManager.SetSelection(item.context.name);
-                    window.PackageManagerToolbar.SetFilter(window.Collection.Filter);
                     window.PackageList.EnsureSelectionIsVisible();
                 }
                 else

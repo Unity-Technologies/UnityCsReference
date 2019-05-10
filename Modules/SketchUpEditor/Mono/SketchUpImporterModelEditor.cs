@@ -177,7 +177,7 @@ namespace UnityEditor
             static public readonly GUIContent fileUnitLabel = EditorGUIUtility.TrTextContent("Unit conversion", "Length measurement to unit conversion. The value in Scale Factor is calculated based on the value here");
             static public readonly GUIContent longitudeLabel = EditorGUIUtility.TrTextContent("Longitude", "Longitude Geo-location");
             static public readonly GUIContent latitudeLabel = EditorGUIUtility.TrTextContent("Latitude", "Latitude Geo-location");
-            static public readonly GUIContent northCorrectionLabel = EditorGUIUtility.TrTextContent("North Correction", "The angle which will rotate the north direction to the z-axis for a the model");
+            static public readonly GUIContent northCorrectionLabel = EditorGUIUtility.TrTextContent("North Correction", "The angle which will rotate the north direction to the z-axis for the model");
             static public readonly GUIContent[] measurementOptions =
             {
                 EditorGUIUtility.TrTextContent("Meters"),

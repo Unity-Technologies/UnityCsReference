@@ -86,7 +86,19 @@ namespace UnityEngine.UIElements
                 return float.NaN;
 
             if (styleValue.specificity != UndefinedSpecificity)
-                return styleValue.value.value;
+            {
+                var length = styleValue.value;
+                switch (length.unit)
+                {
+                    case LengthUnit.Pixel:
+                        return YogaValue.Point(length.value);
+                    case LengthUnit.Percent:
+                        return YogaValue.Percent(length.value);
+                    default:
+                        Debug.LogAssertion($"Unexpected unit '{length.unit}'");
+                        return float.NaN;
+                }
+            }
 
             return float.NaN;
         }

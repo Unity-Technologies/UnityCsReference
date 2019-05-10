@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEditor.UIElements.Debugger;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -76,6 +77,8 @@ namespace UnityEditor.UIElements
                 new BoundsIntField.UxmlFactory(),
 
                 new ProgressBar.UxmlFactory(),
+
+                new EventTypeSelectField.UxmlFactory()
             };
 
             foreach (IUxmlFactory factory in factories)

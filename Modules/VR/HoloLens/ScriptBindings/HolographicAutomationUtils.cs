@@ -17,6 +17,12 @@ namespace UnityEngine.XR.WSA
             m_ControllerHandednss = controller;
         }
 
+        public Quaternion orientation
+        {
+            get { return HolographicAutomation.GetHandOrientation(m_ControllerHandednss); }
+            set { HolographicAutomation.TrySetHandOrientation(m_ControllerHandednss, value); }
+        }
+
         public Vector3 position
         {
             get { return HolographicAutomation.GetControllerPosition(m_ControllerHandednss); }

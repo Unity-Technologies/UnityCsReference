@@ -247,7 +247,7 @@ namespace UnityEditor.UIElements
                     }
                     else
                     {
-                        newValueToShowUser = L10n.Tr("Mixed ...");
+                        newValueToShowUser = L10n.Tr("Mixed...");
                     }
                     break;
             }

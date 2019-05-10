@@ -42,7 +42,7 @@ namespace UnityEditor
             }
         }
 
-        const string kAssetPipelineVersionForNewProjects = "AssetPipelineVersion";
+        const string kAssetPipelineVersionForNewProjects = "AssetPipelineVersionForNewProjects";
         const string kIPAddress2Key = "CacheServer2IPAddress";
         const string kMode2Key = "CacheServer2Mode";
 
@@ -89,7 +89,7 @@ namespace UnityEditor
 
         public static void ReadPreferences()
         {
-            s_AssetPipelineVersionForNewProjects = (AssetPipelineVersion)EditorPrefs.GetInt(kAssetPipelineVersionForNewProjects, (int)AssetPipelineVersion.Version1);
+            s_AssetPipelineVersionForNewProjects = (AssetPipelineVersion)EditorPrefs.GetInt(kAssetPipelineVersionForNewProjects, (int)AssetPipelineVersion.Version2);
             s_CacheServer2IPAddress = EditorPrefs.GetString(kIPAddress2Key, s_CacheServer2IPAddress);
             s_CacheServer2Mode = (CacheServer2Mode)EditorPrefs.GetInt(kMode2Key, (int)CacheServer2Mode.Disabled);
             s_CacheServerIPAddress = EditorPrefs.GetString(kIPAddressKey, s_CacheServerIPAddress);
@@ -229,7 +229,7 @@ namespace UnityEditor
                 bool allowCacheServerChanges = overrideAddress == null;
 
                 if (GetEnvironmentAssetPipelineOverride())
-                    EditorGUILayout.HelpBox("Asset pipeline currently forced enviroment variable UNITY_ASSETS_V2_KATANA_TESTS", MessageType.Info, true);
+                    EditorGUILayout.HelpBox("Asset pipeline currently forced environment variable UNITY_ASSETS_V2_KATANA_TESTS", MessageType.Info, true);
                 else if (GetCommandLineAssetPipelineOverride() != 0)
                     EditorGUILayout.HelpBox("Asset pipeline currently forced by command line argument", MessageType.Info, true);
                 else if (GetMagicFileAssetPipelineOverride())

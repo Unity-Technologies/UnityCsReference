@@ -96,6 +96,6 @@ namespace UnityEditor
 
         Lumin = 28,
 
-        BJM = 29
+        Stadia = 29
     }
 }

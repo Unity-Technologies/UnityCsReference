@@ -19,7 +19,7 @@ namespace UnityEngine.UIElements
 
                 if (imguiContainer != null)
                 {
-                    if (!evt.Skip(imguiContainer) && imguiContainer.HandleIMGUIEvent(evt.imguiEvent))
+                    if (!evt.Skip(imguiContainer) && imguiContainer.SendEventToIMGUI(evt))
                     {
                         evt.StopPropagation();
                         evt.PreventDefault();

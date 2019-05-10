@@ -71,18 +71,18 @@ namespace UnityEditor.Experimental.GraphView
 
             if (CanStartManipulation(e) && graphElement.IsSelectable() && graphElement.HitTest(e.localMousePosition) && !WasSelectableDescendantHitByMouse(graphElement, e))
             {
-                var gv = graphElement.GetFirstAncestorOfType<GraphView>();
+                var selection = graphElement.GetFirstAncestorOfType<ISelection>();
 
-                if (graphElement.IsSelected(gv))
+                if (graphElement.IsSelected((VisualElement)selection))
                 {
                     if (e.actionKey)
                     {
-                        graphElement.Unselect(gv);
+                        graphElement.Unselect((VisualElement)selection);
                     }
                 }
                 else
                 {
-                    graphElement.Select(gv, e.actionKey);
+                    graphElement.Select((VisualElement)selection, e.actionKey);
                 }
                 // Do not stop the propagation as it is common case for a parent start to move the selection on a mouse down.
             }

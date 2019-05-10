@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Profiling.LowLevel;
 using UnityEngine.Bindings;
 
 namespace UnityEditor.Profiling
@@ -114,6 +115,8 @@ namespace UnityEditor.Profiling
 
         public extern int GetItemMarkerID(int id);
 
+        public extern MarkerFlags GetItemMarkerFlags(int id);
+
         public extern int GetItemDepth(int id);
 
         public extern bool HasItemChildren(int id);
@@ -135,7 +138,20 @@ namespace UnityEditor.Profiling
 
         public extern string GetItemColumnData(int id, int column);
 
-        public extern float GetItemColumnDataAsSingle(int id, int column);
+        public float GetItemColumnDataAsSingle(int id, int column)
+        {
+            return GetItemColumnDataAsFloat(id, column);
+        }
+
+        public extern float GetItemColumnDataAsFloat(int id, int column);
+
+        public extern int GetItemMetadataCount(int id);
+
+        public extern string GetItemMetadata(int id, int index);
+
+        public extern float GetItemMetadataAsFloat(int id, int index);
+
+        public extern long GetItemMetadataAsLong(int id, int index);
 
         internal extern string GetItemTooltip(int id, int column);
 

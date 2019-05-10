@@ -268,6 +268,18 @@ namespace UnityEditor.VersionControl
             PopulateListControl(pendingList, task, changeIcon);
         }
 
+        internal string FormatChangeSetDescription(ChangeSet changeSet)
+        {
+            switch (EditorSettings.externalVersionControl)
+            {
+                case "Perforce":
+                    return changeSet.id + ": " + changeSet.description.Trim(' ');
+
+                default:
+                    return changeSet.description;
+            }
+        }
+
         internal void PopulateListControl(ListControl list, Task task, Texture2D icon)
         {
             // We try to correct the existing list by removing/adding entries.
@@ -301,14 +313,15 @@ namespace UnityEditor.VersionControl
             foreach (ChangeSet change in css)
             {
                 ListItem changeItem = list.GetChangeSetItem(change);
+
                 if (changeItem != null)
                 {
                     changeItem.Item = change;
-                    changeItem.Name = change.description;
+                    changeItem.Name = FormatChangeSetDescription(change);
                 }
                 else
                 {
-                    changeItem = list.Add(null, change.description, change);
+                    changeItem = list.Add(null, FormatChangeSetDescription(change), change);
                 }
                 changeItem.Exclusive = true;  // Single selection only
                 changeItem.CanAccept = true;  // Accept drag and drop
@@ -316,7 +329,7 @@ namespace UnityEditor.VersionControl
             }
 
             // Refresh here will trigger the expand events to ensure the same change lists
-            // are kept open.  This will in turn trigger change list contents update requests
+            // are kept open. This will in turn trigger change list contents update requests
             list.Refresh();
             Repaint();
         }

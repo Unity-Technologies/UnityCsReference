@@ -14,6 +14,9 @@ namespace UnityEngine.Rendering
     [NativeType(Header = "Runtime/2D/Sorting/SortingGroup.h")]
     public sealed partial class SortingGroup : Behaviour
     {
+        [StaticAccessor("SortingGroup", StaticAccessorType.DoubleColon)]
+        internal extern static int invalidSortingGroupID { get; }
+
         public extern string sortingLayerName { get; set; }
         public extern int sortingLayerID { get; set; }
         public extern int sortingOrder { get; set; }

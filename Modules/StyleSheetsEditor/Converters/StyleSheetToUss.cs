@@ -189,6 +189,9 @@ namespace UnityEditor.StyleSheets
                 case StyleValueType.Float:
                     str = sheet.ReadFloat(handle).ToString(CultureInfo.InvariantCulture.NumberFormat);
                     break;
+                case StyleValueType.Dimension:
+                    str = sheet.ReadDimension(handle).ToString();
+                    break;
                 case StyleValueType.Color:
                     UnityEngine.Color color = sheet.ReadColor(handle);
                     str = ToUssString(color, options.useColorCode);

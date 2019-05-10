@@ -362,15 +362,20 @@ namespace UnityEngine.UIElements
                 return false;
 
             // When in linear color space, the atlas will have sRGB read/write enabled. This means we can't store
-            // linear data without potentially causing some potentially bad banding.
+            // linear data without potentially causing banding.
             if (m_ColorSpace == ColorSpace.Linear && image.activeTextureColorSpace != ColorSpace.Gamma)
                 return false;
 
-            // TODO: Add support for bilinear filtering. On modern APIs, we should switch between two samplers. On
-            // older APIs, we could set the default atlas manager sampler to bilinear, and round to the center of the
-            // pixels to when sampling with Point.
-            if (image.filterMode != FilterMode.Point)
-                return false;
+            if (SystemInfo.graphicsShaderLevel >= 35)
+            {
+                if (image.filterMode != FilterMode.Bilinear && image.filterMode != FilterMode.Point)
+                    return false;
+            }
+            else
+            {
+                if (image.filterMode != FilterMode.Bilinear)
+                    return false;
+            }
 
             if (image.wrapMode != TextureWrapMode.Clamp)
                 return false;
@@ -444,7 +449,7 @@ namespace UnityEngine.UIElements
             return new RenderTexture(m_Allocator.physicalWidth, m_Allocator.physicalHeight, 0, RenderTextureFormat.ARGB32)
             {
                 name = "UIR Atlas " + Random.Range(int.MinValue, int.MaxValue),
-                filterMode = FilterMode.Point
+                filterMode = FilterMode.Bilinear
             };
         }
 

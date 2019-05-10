@@ -108,6 +108,7 @@ namespace UnityEngine.UIElements
             requireMeasureFunction = true;
 
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
+            generateVisualContent += OnGenerateVisualContent;
         }
 
         protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight, MeasureMode heightMode)
@@ -138,24 +139,15 @@ namespace UnityEngine.UIElements
             return new Vector2(measuredWidth, measuredHeight);
         }
 
-        internal override void DoRepaint(IStylePainter painter)
+        private void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
             Texture current = image;
             if (current == null)
-            {
                 return;
-            }
 
-            var painterParams = new TextureStylePainterParameters
-            {
-                rect = contentRect,
-                uv = uv,
-                texture = current,
-                color = tintColor,
-                scaleMode = scaleMode
-            };
-            var stylePainter = (IStylePainterInternal)painter;
-            stylePainter.DrawTexture(painterParams);
+            var rectParams = MeshGenerationContextUtils.RectangleParams.MakeTextured(contentRect, uv, current, scaleMode);
+            rectParams.color = tintColor;
+            mgc.Rectangle(rectParams);
         }
 
         static CustomStyleProperty<Texture2D> s_ImageProperty = new CustomStyleProperty<Texture2D>("--unity-image");

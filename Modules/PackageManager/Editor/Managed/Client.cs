@@ -3,7 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 using UnityEditor.PackageManager.Requests;
+using UnityEngine;
 
 namespace UnityEditor.PackageManager
 {
@@ -35,6 +37,12 @@ namespace UnityEditor.PackageManager
 
         public static EmbedRequest Embed(string packageName)
         {
+            var packageInfo = PackageInfo.GetAll().FirstOrDefault(p => p.name == packageName);
+            if (packageInfo == null)
+                throw new InvalidOperationException($"Cannot embed package [{packageName}] because it is not registered in the Asset Database.");
+
+            Debug.Assert(packageInfo.entitlements.isAllowed, "Expected [entitlements.isAllowed] flag to be true.");
+
             long operationId;
             var status = NativeClient.Embed(out operationId, packageName);
             return new EmbedRequest(operationId, status);
@@ -79,6 +87,13 @@ namespace UnityEditor.PackageManager
             long operationId;
             var status = NativeClient.ResetToEditorDefaults(out operationId);
             return new ResetToEditorDefaultsRequest(operationId, status);
+        }
+
+        public static PackRequest Pack(string packageFolder, string targetFolder)
+        {
+            long operationId;
+            var status = NativeClient.Pack(out operationId, packageFolder, targetFolder);
+            return new PackRequest(operationId, status);
         }
     }
 }

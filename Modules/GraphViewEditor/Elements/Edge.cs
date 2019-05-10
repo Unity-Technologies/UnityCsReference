@@ -170,6 +170,8 @@ namespace UnityEditor.Experimental.GraphView
 
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             AddStyleSheetPath("StyleSheets/GraphView/Edge.uss");
+
+            this.generateVisualContent += OnGenerateVisualContent;
         }
 
         public override bool Overlaps(Rect rectangle)
@@ -221,9 +223,12 @@ namespace UnityEditor.Experimental.GraphView
             return true;
         }
 
-        internal override void DoRepaint(IStylePainter painter)
+        // This control is actually changing styles during drawing which is a bad habit
+        // The entire control should be reconstructed to assume the control as immutable
+        // during GenerateVisualContent. Would be good if this can be enforced by means of an exception,
+        // much like preventing adding controls during control removal callbacks
+        private void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
-            // Edges do NOT call base.DoRepaint. It would create a visual artifact.
             DrawEdge();
         }
 

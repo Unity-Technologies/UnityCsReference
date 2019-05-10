@@ -16,7 +16,7 @@ namespace UnityEditor
         protected class Styles
         {
             public static readonly GUIContent s_ColliderEditDisableHelp = EditorGUIUtility.TrTextContent("Collider cannot be edited because it is driven by SpriteRenderer's tiling properties.");
-            public static readonly GUIContent s_AutoTilingLabel = EditorGUIUtility.TrTextContent("Auto Tiling ", " When enabled, the collider's shape will update automaticaly based on the SpriteRenderer's tiling properties");
+            public static readonly GUIContent s_AutoTilingLabel = EditorGUIUtility.TrTextContent("Auto Tiling ", " When enabled, the collider's shape will update automatically based on the SpriteRenderer's tiling properties");
         }
 
         private SerializedProperty m_Density;
@@ -198,16 +198,6 @@ namespace UnityEditor
             }
             EditorGUILayout.EndFadeGroup();
             EditorGUI.indentLevel--;
-        }
-
-        internal override void OnForceReloadInspector()
-        {
-            base.OnForceReloadInspector();
-
-            // Whenever inspector get reloaded (reset, move up/down), quit the edit mode if was in editing mode.
-            // Not sure why this pattern is used here but not for any other editors that implement edit mode button
-            if (editingCollider)
-                EditMode.QuitEditMode();
         }
 
         protected void CheckColliderErrorState()

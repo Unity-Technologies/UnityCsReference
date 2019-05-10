@@ -51,6 +51,11 @@ namespace UnityEditorInternal.VersionControl
             if (!Provider.enabled || EditorUserSettings.WorkOffline)
                 return AssetMoveResult.DidNotMove;
 
+            if (InternalEditorUtility.isHumanControllingUs && Directory.Exists(from) && !EditorUtility.DisplayDialog("Confirm version control operation", L10n.Tr($"You are about to move or rename a folder that is under version control.\n\nFrom:\t{from}\nTo:\t{to}\n\nAre you sure you want to perform this action?"), "Yes", "No"))
+            {
+                return AssetMoveResult.FailedMove;
+            }
+
             Asset asset = GetStatusCachedIfPossible(from, CachedStatusMode.Sync);
 
             if (asset == null || !asset.IsUnderVersionControl)

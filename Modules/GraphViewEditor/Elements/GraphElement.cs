@@ -211,37 +211,37 @@ namespace UnityEditor.Experimental.GraphView
 
         public virtual void Select(VisualElement selectionContainer, bool additive)
         {
-            var gView = selectionContainer as GraphView;
-            if (gView != null && selectionContainer.Contains(this))
+            var selection = selectionContainer as ISelection;
+            if (selection != null)
             {
-                if (!gView.selection.Contains(this))
+                if (!selection.selection.Contains(this))
                 {
                     if (!additive)
-                        gView.ClearSelection();
+                        selection.ClearSelection();
 
-                    gView.AddToSelection(this);
+                    selection.AddToSelection(this);
                 }
             }
         }
 
         public virtual void Unselect(VisualElement  selectionContainer)
         {
-            var gView = selectionContainer as GraphView;
-            if (gView != null && selectionContainer.Contains(this))
+            var selection = selectionContainer as ISelection;
+            if (selection != null)
             {
-                if (gView.selection.Contains(this))
+                if (selection.selection.Contains(this))
                 {
-                    gView.RemoveFromSelection(this);
+                    selection.RemoveFromSelection(this);
                 }
             }
         }
 
         public virtual bool IsSelected(VisualElement selectionContainer)
         {
-            var gView = selectionContainer as GraphView;
-            if (gView != null && selectionContainer.Contains(this))
+            var selection = selectionContainer as ISelection;
+            if (selection != null)
             {
-                if (gView.selection.Contains(this))
+                if (selection.selection.Contains(this))
                 {
                     return true;
                 }

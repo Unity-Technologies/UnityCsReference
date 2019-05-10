@@ -25,7 +25,7 @@ namespace UnityEditorInternal.VR
             public static readonly GUIContent singlepassAndroidWarning2 = EditorGUIUtility.TrTextContent("Multi Pass will be used on Android devices that don't support Single Pass.");
             public static readonly GUIContent singlepassAndroidWarning3 = EditorGUIUtility.TrTextContent("When using a Scriptable Render Pipeline, Single Pass Double Wide will be used on Android devices that don't support Single Pass Instancing or Multi-view.");
             public static readonly GUIContent singlePassInstancedWarning = EditorGUIUtility.TrTextContent("Single Pass Instanced is only supported on Windows. Multi Pass will be used on other platforms.");
-            public static readonly GUIContent multiPassNotSupportedWithSRP = EditorGUIUtility.TrTextContent("Multi Pass is only supported using the legacy render pipelies.  Stereo Rendering Mode is set to the fallback mode of Single Pass.");
+            public static readonly GUIContent multiPassNotSupportedWithSRP = EditorGUIUtility.TrTextContent("Multi Pass is only supported using the legacy render pipelines. Stereo Rendering Mode is set to the fallback mode of Single Pass.");
 
             public static readonly GUIContent[] kDefaultStereoRenderingPaths =
             {
@@ -516,16 +516,6 @@ namespace UnityEditorInternal.VR
             return list.elementHeight + customOptionsHeight;
         }
 
-        private void SelectVRDeviceElement(BuildTargetGroup target, ReorderableList list)
-        {
-            string name = (string)m_VRDeviceActiveUI[target].list[list.index];
-            VRCustomOptions customOptions;
-            if (m_CustomOptions.TryGetValue(name, out customOptions))
-            {
-                customOptions.IsExpanded = false;
-            }
-        }
-
         private bool GetVRDeviceElementIsInList(BuildTargetGroup target, string deviceName)
         {
             var enabledDevices = VREditor.GetVREnabledDevicesOnTargetGroup(target);
@@ -534,6 +524,16 @@ namespace UnityEditorInternal.VR
                 return true;
 
             return false;
+        }
+
+        private void DragVRDeviceElement(BuildTargetGroup target, ReorderableList list)
+        {
+            string name = (string)m_VRDeviceActiveUI[target].list[list.index];
+            VRCustomOptions customOptions;
+            if (m_CustomOptions.TryGetValue(name, out customOptions))
+            {
+                customOptions.IsExpanded = false;
+            }
         }
 
         private void VRDevicesGUIOneBuildTarget(BuildTargetGroup targetGroup)
@@ -548,7 +548,7 @@ namespace UnityEditorInternal.VR
                 rlist.drawElementCallback = (rect, index, isActive, isFocused) => DrawVRDeviceElement(targetGroup, rect, index, isActive, isFocused);
                 rlist.drawHeaderCallback = (rect) => GUI.Label(rect, Styles.listHeader, EditorStyles.label);
                 rlist.elementHeightCallback = (index) => GetVRDeviceElementHeight(targetGroup, index);
-                rlist.onSelectCallback = (list) => SelectVRDeviceElement(targetGroup, list);
+                rlist.onMouseDragCallback = (list) => DragVRDeviceElement(targetGroup, list);
                 m_VRDeviceActiveUI.Add(targetGroup, rlist);
             }
 

@@ -13,9 +13,9 @@ namespace UnityEditor.PackageManager.UI
     [Serializable]
     internal class SelectionManager
     {
-        [SerializeField] private Selection ListSelection = new Selection();
-        [SerializeField] private Selection SearchSelection = new Selection();
-        [SerializeField] private Selection BuiltInSelection = new Selection();
+        private Selection ListSelection;
+        private Selection SearchSelection;
+        private Selection BuiltInSelection;
 
         private PackageCollection Collection { get; set; }
 
@@ -32,6 +32,16 @@ namespace UnityEditor.PackageManager.UI
                     return ListSelection;
                 return BuiltInSelection;
             }
+        }
+
+        public SelectionManager()
+        {
+            if (ListSelection == null)
+                ListSelection = new Selection();
+            if (SearchSelection == null)
+                SearchSelection = new Selection();
+            if (BuiltInSelection == null)
+                BuiltInSelection = new Selection();
         }
 
         public void SetCollection(PackageCollection collection)

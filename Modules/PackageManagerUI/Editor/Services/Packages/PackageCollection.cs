@@ -37,41 +37,25 @@ namespace UnityEditor.PackageManager.UI
 
         private static readonly Dictionary<string, PackageInfo> latestInfos = new Dictionary<string, PackageInfo>();
 
-        [SerializeField]
         private PackageFilter filter;
 
-        [SerializeField]
         internal string lastUpdateTime;
 
-        [SerializeField]
         internal List<PackageInfo> listPackagesOffline;
-        [SerializeField]
         internal List<PackageInfo> listPackages;
-        [SerializeField]
         internal List<PackageInfo> searchPackages;
-        [SerializeField]
         private List<PackageInfo> latestInfoListCache;
+        private List<PackageError> packageErrors;
 
-        [SerializeField]
-        private readonly List<PackageError> packageErrors;
-
-        [SerializeField]
         private int listPackagesVersion;
-        [SerializeField]
         private int listPackagesOfflineVersion;
 
-        [SerializeField]
         public bool searchOperationOngoing;
-        [SerializeField]
         public bool listOperationOngoing;
-        [SerializeField]
         public bool listOperationOfflineOngoing;
 
-        [SerializeField]
         private IListOperation listOperationOffline;
-        [SerializeField]
         private IListOperation listOperation;
-        [SerializeField]
         private ISearchOperation searchOperation;
 
         public readonly OperationSignal<ISearchOperation> SearchSignal = new OperationSignal<ISearchOperation>();

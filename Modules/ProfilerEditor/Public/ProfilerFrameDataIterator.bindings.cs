@@ -104,6 +104,11 @@ namespace UnityEditorInternal
             get;
         }
 
+        public extern float frameGpuTimeMS
+        {
+            get;
+        }
+
         public extern float startTimeMS
         {
             get;
