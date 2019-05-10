@@ -17,6 +17,7 @@ namespace UnityEditor
 
     // Exposed as internal, editor-only, because we only need it do make a custom inspector
     [NativeClass(null)]
+    [ExcludeFromPreset]
     internal sealed class AudioManager : ProjectSettingsBase
     {
         private AudioManager() {}

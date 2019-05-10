@@ -175,8 +175,10 @@ namespace UnityEditor
                             // Go over all the points and add them if they are inside the rect
                             for (int i = 0; i < points.Count; i++)
                             {
-                                var point = HandleUtility.WorldToGUIPoint(points.GetPosition(i));
-                                if (r.Contains(point))
+                                var point = HandleUtility.WorldToGUIPointWithDepth(points.GetPosition(i));
+
+                                // the point has to be within the selection and in front of the camera
+                                if (r.Contains(point) && point.z > 0.0f)
                                 {
                                     if (EditorGUI.actionKey)
                                     {

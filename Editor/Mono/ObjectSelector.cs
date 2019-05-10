@@ -702,7 +702,7 @@ namespace UnityEditor
             GUI.changed = false;
 
             // Handle preview size
-            m_PreviewSize = m_PreviewResizer.ResizeHandle(position, kPreviewExpandedAreaHeight + kPreviewMargin * 2 - 20, kMinTopSize + 20, 20) + 20;
+            m_PreviewSize = m_PreviewResizer.ResizeHandle(position, kPreviewExpandedAreaHeight + kPreviewMargin * 2 - 20, kMinTopSize + 20, m_PreviewSize + 20) + 20;
             m_TopSize = position.height - m_PreviewSize;
 
             bool open = PreviewIsOpen();

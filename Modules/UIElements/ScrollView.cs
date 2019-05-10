@@ -348,10 +348,10 @@ namespace UnityEngine.UIElements
             }
         }
 
-        // TODO: Same behaviour as IMGUI Scroll view; it would probably be nice to show same behaviour
-        // as Web browsers, which give back event to parent if not consumed
+        // TODO: Same behaviour as IMGUI Scroll view
         void OnScrollWheel(WheelEvent evt)
         {
+            var oldValue = verticalScroller.value;
             if (contentContainer.layout.height - layout.height > 0)
             {
                 if (evt.delta.y < 0)
@@ -360,7 +360,10 @@ namespace UnityEngine.UIElements
                     verticalScroller.ScrollPageDown(Mathf.Abs(evt.delta.y));
             }
 
-            evt.StopPropagation();
+            if (verticalScroller.value != oldValue)
+            {
+                evt.StopPropagation();
+            }
         }
     }
 }
