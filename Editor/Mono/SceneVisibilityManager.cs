@@ -15,7 +15,28 @@ namespace UnityEditor
 {
     public class SceneVisibilityManager : ScriptableSingleton<SceneVisibilityManager>
     {
+        internal class ShortcutContext : IShortcutToolContext
+        {
+            public bool active
+            {
+                get
+                {
+                    var focusedWindow = EditorWindow.focusedWindow;
+                    if (focusedWindow != null)
+                    {
+                        return (focusedWindow.GetType() == typeof(SceneView) ||
+                            focusedWindow.GetType() == typeof(SceneHierarchyWindow));
+                    }
+
+                    return false;
+                }
+            }
+        }
+
+        private static ShortcutContext s_ShortcutContext;
+
         public static event Action visibilityChanged;
+
         internal static event Action currentStageIsolated;
 
         private readonly static List<GameObject> m_RootBuffer = new List<GameObject>();
@@ -41,6 +62,8 @@ namespace UnityEditor
             SceneVisibilityState.internalStructureChanged += InternalStructureChanged;
             PrefabStage stage = StageNavigationManager.instance.GetCurrentPrefabStage();
             SceneVisibilityState.SetPrefabStageScene(stage == null ? default(Scene) : stage.scene);
+            s_ShortcutContext = new ShortcutContext();
+            ShortcutIntegration.instance.contextManager.RegisterToolContext(s_ShortcutContext);
         }
 
         private static void InternalStructureChanged()
@@ -322,8 +345,8 @@ namespace UnityEditor
         }
 
         //SHORTCUTS
-        [Shortcut("Scene Visibility/Toggle Selection Visibility")]
-        static void ToggleSelectionVisibility()
+        [Shortcut("Scene Visibility/Toggle Visibility for Selection")]
+        private static void ToggleSelectionVisibility()
         {
             if (Selection.gameObjects.Length > 0)
             {
@@ -337,14 +360,14 @@ namespace UnityEditor
 
                     shouldHide = false;
                 }
-                Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Selection Visibility");
+                Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Visibility for Selection");
                 SceneVisibilityState.SetGameObjectsHidden(Selection.gameObjects, shouldHide, false);
                 instance.VisibilityChanged();
             }
         }
 
-        [Shortcut("Scene Visibility/Toggle Selection And Descendants Visibility")]
-        static void ToggleSelectionAndDescendantsVisibility()
+        [Shortcut("Scene Visibility/Toggle Visibility for Selection and Children", typeof(ShortcutContext), KeyCode.H)]
+        private static void ToggleSelectionAndDescendantsVisibility()
         {
             if (Selection.gameObjects.Length > 0)
             {
@@ -358,7 +381,7 @@ namespace UnityEditor
 
                     shouldHide = false;
                 }
-                Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Visibility And Children");
+                Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Visibility for Selection and Children");
                 SceneVisibilityState.SetGameObjectsHidden(Selection.gameObjects, shouldHide, true);
                 instance.VisibilityChanged();
             }
@@ -425,12 +448,12 @@ namespace UnityEditor
         }
 
         [Shortcut("Scene Visibility/Exit Isolation")]
-        static void ExitIsolationShortcut()
+        private static void ExitIsolationShortcut()
         {
             instance.ExitIsolation();
         }
 
-        [Shortcut("Scene Visibility/Toggle Selection And Descendants")]
+        [Shortcut("Scene Visibility/Toggle Isolation for Selection and Children", typeof(ShortcutContext), KeyCode.H, ShortcutModifiers.Shift)]
         static void ToggleIsolateSelectionAndDescendantsShortcut()
         {
             instance.ToggleIsolateSelectionAndDescendants();
@@ -438,7 +461,7 @@ namespace UnityEditor
 
         internal void ToggleIsolateSelectionAndDescendants()
         {
-            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Isolation on Selection And Children");
+            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Isolation for Selection and Children");
 
             if (!IsCurrentStageIsolated())
             {
@@ -459,7 +482,7 @@ namespace UnityEditor
             }
         }
 
-        [Shortcut("Scene Visibility/Toggle Isolation on Selection")]
+        [Shortcut("Scene Visibility/Toggle Isolation for Selection")]
         static void ToggleIsolateSelectionShortcut()
         {
             instance.ToggleIsolateSelection();
@@ -467,7 +490,7 @@ namespace UnityEditor
 
         internal void ToggleIsolateSelection()
         {
-            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Isolation on Selection");
+            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Isolation for Selection");
 
             if (!IsCurrentStageIsolated())
             {

@@ -13,7 +13,7 @@ namespace UnityEditor.SceneManagement
 {
     public static partial class StageUtility
     {
-        [Shortcut("Stage/Go Back", KeyCode.H)]
+        [Shortcut("Stage/Go Back")]
         static void GoBackShortcut()
         {
             StageUtility.GoBackToPreviousStage();

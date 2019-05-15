@@ -17,6 +17,16 @@ namespace UnityEditor
     [StructLayout(LayoutKind.Sequential)]
     internal partial class GUIView : View
     {
+        [InitializeOnLoad]
+        static class EditorShaderLoader
+        {
+            static EditorShaderLoader()
+            {
+                // TODO: Remove this once case 1148851 has been fixed.
+                UnityEngine.UIElements.UIR.UIRenderDevice.editorShader = EditorShader;
+            }
+        }
+
         internal static event Action<GUIView> positionChanged = null;
 
         Panel m_Panel = null;

@@ -37,21 +37,5 @@ namespace UnityEngine.UIElements
             else
                 Object.DestroyImmediate(obj);
         }
-
-        public static bool GetOpenGLCoreVersion(out int major, out int minor)
-        {
-            var version = SystemInfo.graphicsDeviceVersion;
-            var rx = new Regex(@"OpenGL( *)[0-9].[0-9]");
-            var matches = rx.Matches(version);
-            if (matches.Count == 0)
-            {
-                major = minor = -1;
-                return false;
-            }
-            var match = matches[0].Value;
-            major = match[match.Length - 3] - '0';
-            minor = match[match.Length - 1] - '0';
-            return true;
-        }
     }
 }

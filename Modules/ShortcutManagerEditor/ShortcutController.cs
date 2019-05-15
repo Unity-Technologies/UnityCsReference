@@ -91,7 +91,19 @@ namespace UnityEditor.ShortcutManagement
             var bindingValidator = new BindingValidator();
             var invalidContextReporter = new DiscoveryInvalidShortcutReporter();
             var discovery = new Discovery(shortcutProviders, bindingValidator, invalidContextReporter);
-            instance = new ShortcutController(discovery, bindingValidator, new ShortcutProfileStore(), new LastUsedProfileIdProvider());
+            IContextManager contextManager = null;
+
+            if (instance != null)
+            {
+                contextManager = instance.contextManager;
+            }
+
+            if (contextManager == null)
+            {
+                contextManager = new ContextManager();
+            }
+
+            instance = new ShortcutController(discovery, contextManager, bindingValidator, new ShortcutProfileStore(), new LastUsedProfileIdProvider());
             instance.trigger.invokingAction += OnInvokingAction;
         }
 
@@ -115,14 +127,14 @@ namespace UnityEditor.ShortcutManagement
         public IBindingValidator bindingValidator { get; }
         public Trigger trigger { get; }
 
-        ContextManager m_ContextManager = new ContextManager();
+        IContextManager m_ContextManager;
 
         public IContextManager contextManager => m_ContextManager;
         ILastUsedProfileIdProvider m_LastUsedProfileIdProvider;
 
         public event Action availableShortcutsChanged;
 
-        public ShortcutController(IDiscovery discovery, IBindingValidator bindingValidator, IShortcutProfileStore profileStore, ILastUsedProfileIdProvider lastUsedProfileIdProvider)
+        public ShortcutController(IDiscovery discovery, IContextManager contextManager, IBindingValidator bindingValidator, IShortcutProfileStore profileStore, ILastUsedProfileIdProvider lastUsedProfileIdProvider)
         {
             m_Discovery = discovery;
             this.bindingValidator = bindingValidator;
@@ -136,6 +148,7 @@ namespace UnityEditor.ShortcutManagement
             var conflictResolverView = new ConflictResolverView();
             var conflictResolver = new ConflictResolver(profileManager, contextManager, conflictResolverView);
 
+            m_ContextManager = contextManager;
 
             m_Directory = new Directory(profileManager.GetAllShortcuts());
             trigger = new Trigger(m_Directory, conflictResolver);
