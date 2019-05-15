@@ -311,14 +311,14 @@ namespace UnityEditor.Experimental.SceneManagement
         static Scene CreateDefaultPreviewScene()
         {
             Scene previewScene = EditorSceneManager.NewPreviewScene();
-            Unsupported.SetOverrideRenderSettings(previewScene);
+            Unsupported.SetOverrideLightingSettings(previewScene);
 
             // Setup default render settings for this preview scene
             UnityEngine.RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Custom;
             UnityEngine.RenderSettings.customReflection = GetDefaultReflection();   // ensure chrome materials do not render balck
             UnityEngine.RenderSettings.skybox = null;                               // do not use skybox for the default previewscene, we want the flat Prefab Mode background color to let it stand out from normal scenes
             UnityEngine.RenderSettings.ambientMode = AmbientMode.Trilight;          // do not use skybox ambient but simple trilight ambient for simplicity
-            Unsupported.RestoreOverrideRenderSettings();
+            Unsupported.RestoreOverrideLightingSettings();
 
             return previewScene;
         }
