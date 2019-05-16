@@ -238,6 +238,30 @@ namespace UnityEngine
         [StructLayout(LayoutKind.Sequential)]
         public partial struct EmitParams
         {
+            public Particle particle
+            {
+                get
+                {
+                    return m_Particle;
+                }
+
+                set
+                {
+                    m_Particle = value;
+
+                    m_PositionSet = true;
+                    m_VelocitySet = true;
+                    m_AxisOfRotationSet = true;
+                    m_RotationSet = true;
+                    m_AngularVelocitySet = true;
+                    m_StartSizeSet = true;
+                    m_StartColorSet = true;
+                    m_RandomSeedSet = true;
+                    m_StartLifetimeSet = true;
+                    m_MeshIndexSet = true;
+                }
+            }
+
             public Vector3 position { get { return m_Particle.position; } set { m_Particle.position = value; m_PositionSet = true; } }
             public bool applyShapeToPosition { get { return m_ApplyShapeToPosition; } set { m_ApplyShapeToPosition = value; } }
             public Vector3 velocity { get { return m_Particle.velocity; } set { m_Particle.velocity = value; m_VelocitySet = true; } }

@@ -46,6 +46,7 @@ namespace UnityEditor
             StageNavigationManager.instance.prefabStageReloaded += OnPrefabStageReloaded;
             StageNavigationManager.instance.prefabStageToBeDestroyed += OnPrefabStageBeingDestroyed;
             PrefabStage.prefabIconChanged += OnPrefabStageIconChanged;
+            PrefabStage.prefabRootTransformChanged += OnPrefabStageRootTransformChanged;
 
             // To support expanded state of new unsaved GameObject in Prefab Mode across domain reloading we do not load the
             // last saved expanded state here but instead rely on the fact that the Hierarchy serializes its own expanded state already.
@@ -61,6 +62,7 @@ namespace UnityEditor
             StageNavigationManager.instance.prefabStageReloaded -= OnPrefabStageReloaded;
             StageNavigationManager.instance.prefabStageToBeDestroyed -= OnPrefabStageBeingDestroyed;
             PrefabStage.prefabIconChanged -= OnPrefabStageIconChanged;
+            PrefabStage.prefabRootTransformChanged -= OnPrefabStageRootTransformChanged;
         }
 
         void OnPrefabStageBeingDestroyed(StageNavigationItem prefabStage)
@@ -220,6 +222,11 @@ namespace UnityEditor
                 m_PrefabHeaderContent.image = prefabStage.prefabFileIcon;
         }
 
+        void OnPrefabStageRootTransformChanged(PrefabStage prefabStage)
+        {
+            m_SceneHierarchy.customParentForNewGameObjects = prefabStage.prefabContentsRoot.transform;
+        }
+
         void CachePrefabHeaderText(StageNavigationItem stage)
         {
             if (!stage.isPrefabStage)
@@ -310,7 +317,11 @@ namespace UnityEditor
                 overlayRect.width = 16;
                 overlayRect.y += (overlayRect.height - 16) / 2;
                 overlayRect.height = 16;
-                AssetsTreeViewGUI.OnIconOverlayGUI(AssetDatabase.LoadMainAssetAtPath(currentItem.prefabAssetPath).GetInstanceID(), overlayRect, true);
+
+                // The source prefab can have been deleted while open in Prefab Mode so the library object can be null here (case 1086613)
+                var prefabAsset = AssetDatabase.LoadMainAssetAtPath(currentItem.prefabAssetPath);
+                if (prefabAsset != null)
+                    AssetsTreeViewGUI.OnIconOverlayGUI(prefabAsset.GetInstanceID(), overlayRect, true);
             }
         }
     }

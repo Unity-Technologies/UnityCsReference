@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.IO;
 
 using UnityEngine;
+using UnityEditor.VersionControl;
+using UnityEditorInternal;
 
 namespace UnityEditorInternal.VR
 {
@@ -100,6 +102,15 @@ namespace UnityEditorInternal.VR
                 return;
 
             string packageInitPath = GetStorageFilePath();
+            if (!Provider.PromptAndCheckoutIfNeeded(
+                new string[] { packageInitPath },
+                String.Format("Unity needs to update a file ({0}) that is currently under source control.", packageInitPath)))
+                return;
+
+            FileInfo info = new FileInfo(packageInitPath);
+            if (info.Exists && info.IsReadOnly)
+                return;
+
             using (StreamWriter sw = new StreamWriter(packageInitPath))
             {
                 string settings = JsonUtility.ToJson(this, true);

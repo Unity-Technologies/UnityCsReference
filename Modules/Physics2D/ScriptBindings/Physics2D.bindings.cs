@@ -3725,6 +3725,9 @@ namespace UnityEngine
         // extern public radius of the edge(s).
         extern public float edgeRadius { get; set; }
 
+        // Controls the distance in which vertices are offset and clipped if within this distance
+        extern public float offsetDistance { get; set; }
+
         // Generates the geometry if using manual generation type.
         extern public void GenerateGeometry();
 

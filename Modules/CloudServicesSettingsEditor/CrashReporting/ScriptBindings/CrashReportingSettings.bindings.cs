@@ -25,6 +25,8 @@ namespace UnityEditor.CrashReporting
 
         internal static extern string GetEventUrl();
         internal static extern void SetEventUrl(string eventUrl);
+
+        internal static extern void EnsureConnectReady();
     }
 
 }

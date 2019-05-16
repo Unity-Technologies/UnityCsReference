@@ -17,6 +17,7 @@ namespace UnityEditor
         private SerializedProperty m_GenerationType;
         private SerializedProperty m_VertexDistance;
         private SerializedProperty m_EdgeRadius;
+        private SerializedProperty m_OffsetDistance;
         readonly AnimBool m_ShowEdgeRadius = new AnimBool();
         readonly AnimBool m_ShowManualGenerationButton = new AnimBool();
 
@@ -28,6 +29,7 @@ namespace UnityEditor
             m_GenerationType = serializedObject.FindProperty("m_GenerationType");
             m_VertexDistance = serializedObject.FindProperty("m_VertexDistance");
             m_EdgeRadius = serializedObject.FindProperty("m_EdgeRadius");
+            m_OffsetDistance = serializedObject.FindProperty("m_OffsetDistance");
             m_ShowEdgeRadius.value = targets.Where(x => (x as CompositeCollider2D).geometryType == CompositeCollider2D.GeometryType.Polygons).Count() == 0;
             m_ShowEdgeRadius.valueChanged.AddListener(Repaint);
             m_ShowManualGenerationButton.value = targets.Where(x => (x as CompositeCollider2D).generationType != CompositeCollider2D.GenerationType.Manual).Count() == 0;
@@ -49,6 +51,7 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_GeometryType);
             EditorGUILayout.PropertyField(m_GenerationType);
             EditorGUILayout.PropertyField(m_VertexDistance);
+            EditorGUILayout.PropertyField(m_OffsetDistance);
 
             m_ShowManualGenerationButton.target = targets.Where(x => (x as CompositeCollider2D).generationType != CompositeCollider2D.GenerationType.Manual).Count() == 0;
             if (EditorGUILayout.BeginFadeGroup(m_ShowManualGenerationButton.faded))

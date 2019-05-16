@@ -483,6 +483,11 @@ namespace UnityEditor
             {
                 case EditMode.SceneViewEditMode.LineRendererEdit:
                     m_PointEditor.EditSceneGUI();
+
+                    // We need to wait for m_Positions to be updated next frame or we risk calling SetSelection with invalid indexes.
+                    if (m_PointEditor.Count != m_Positions.arraySize)
+                        break;
+
                     if (m_Positions.arraySize != m_PositionsView.GetRows().Count)
                     {
                         m_PositionsView.Reload();

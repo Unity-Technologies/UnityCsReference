@@ -26,6 +26,7 @@ namespace UnityEditor.Experimental.SceneManagement
         public static event Action<GameObject> prefabSaving;
         public static event Action<GameObject> prefabSaved;
         internal static event Action<PrefabStage> prefabIconChanged;
+        internal static event Action<PrefabStage> prefabRootTransformChanged;
         internal static event Action<PrefabStage> prefabStageSavedAsNewPrefab;
 
         GameObject m_PrefabContentsRoot; // Prefab asset being edited
@@ -39,6 +40,7 @@ namespace UnityEditor.Experimental.SceneManagement
         Texture2D m_PrefabFileIcon;
         bool m_TemporarilyDisableAutoSave;
         float m_LastSavingDuration = 0f;
+        Transform m_LastRootTransform;
         const float kDurationBeforeShowingSavingBadge = 1.0f;
 
         bool m_AnalyticsDidUserModify;
@@ -146,6 +148,7 @@ namespace UnityEditor.Experimental.SceneManagement
             {
                 PrefabStageUtility.HandleReparentingIfNeeded(m_PrefabContentsRoot, isUIPrefab);
                 m_PrefabFileIcon = DeterminePrefabFileIconFromInstanceRootGameObject();
+                m_LastRootTransform = m_PrefabContentsRoot.transform;
                 m_InitialSceneDirtyID = m_PreviewScene.dirtyID;
                 UpdateEnvironmentHideFlags();
             }
@@ -239,6 +242,15 @@ namespace UnityEditor.Experimental.SceneManagement
             HandlePrefabChangedOnDisk();
             DetectSceneDirtinessChange();
             DetectPrefabFileIconChange();
+            DetectPrefabRootTransformChange();
+        }
+
+        void DetectPrefabRootTransformChange()
+        {
+            var currentTransform = m_PrefabContentsRoot.transform;
+            if (currentTransform != m_LastRootTransform)
+                prefabRootTransformChanged?.Invoke(this);
+            m_LastRootTransform = currentTransform;
         }
 
         void DetectPrefabFileIconChange()
