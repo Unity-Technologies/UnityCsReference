@@ -72,6 +72,10 @@ namespace UnityEngine.XR
         [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static UnityEngine.RenderTextureDescriptor eyeTextureDesc { get; }
 
+        [NativeName("DeviceEyeTextureDimension")]
+        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        extern public static TextureDimension deviceEyeTextureDimension { get; }
+
         public static float renderViewportScale
         {
             get
@@ -169,6 +173,10 @@ namespace UnityEngine.XR
         [NativeName("DisableAutoVRCameraTracking")]
         [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static void DisableAutoXRCameraTracking([NotNull] Camera camera, bool disabled);
+
+        [NativeName("UpdateEyeTextureMSAASetting")]
+        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        extern public static void UpdateEyeTextureMSAASetting();
 
         extern public static float fovZoomFactor
         {

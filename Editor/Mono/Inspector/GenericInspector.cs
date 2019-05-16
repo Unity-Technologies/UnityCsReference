@@ -82,6 +82,8 @@ namespace UnityEditor
 
         internal override bool OnOptimizedInspectorGUI(Rect contentRect)
         {
+            m_SerializedObject.UpdateIfRequiredOrScript();
+
             bool childrenAreExpanded = true;
             bool wasEnabled = GUI.enabled;
             var visibleRect = GUIClip.visibleRect;

@@ -1800,7 +1800,7 @@ namespace UnityEditor
                     continue;
                 }
 
-                if (ed.GetType() != currentEd.editor.GetType())
+                if (ed.target != currentEd.editor.target)
                 {
                     // We won't have an EditorElement for editors that are normally culled so we should skip this
                     if (ShouldCullEditor(editors, newEditorsIndex))
