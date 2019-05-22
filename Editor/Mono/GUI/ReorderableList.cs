@@ -709,7 +709,8 @@ namespace UnityEditorInternal
                     // Set m_Dragging state on first MouseDrag event after we got hotcontrol (to prevent animating elements when deleting elements by context menu)
                     m_Dragging = true;
 
-                    onMouseDragCallback(this);
+                    if (onMouseUpCallback != null)
+                        onMouseDragCallback(this);
 
                     // if we are dragging, update the position
                     UpdateDraggedY(listRect);

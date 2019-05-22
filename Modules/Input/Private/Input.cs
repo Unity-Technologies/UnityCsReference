@@ -4,19 +4,20 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.Scripting;
 
-
+[assembly: InternalsVisibleTo("Unity.InputSystem")]
 namespace UnityEngineInternal.Input
 {
     using NativeBeforeUpdateCallback = System.Action<NativeInputUpdateType>;
     using NativeDeviceDiscoveredCallback = System.Action<int, string>;
     using NativeShouldRunUpdateCallback = System.Func<NativeInputUpdateType, bool>;
-    public unsafe delegate void NativeUpdateCallback(NativeInputUpdateType updateType, NativeInputEventBuffer* buffer);
+    internal unsafe delegate void NativeUpdateCallback(NativeInputUpdateType updateType, NativeInputEventBuffer* buffer);
 
     // C# doesn't support multi-character literals, so we do it by hand here...
-    public enum NativeInputEventType
+    internal enum NativeInputEventType
     {
         DeviceRemoved = 0x4452454D,
         DeviceConfigChanged = 0x44434647,
@@ -28,7 +29,7 @@ namespace UnityEngineInternal.Input
 
     // We pass this as a struct to make it less painful to change the OnUpdate() API if need be.
     [StructLayout(LayoutKind.Explicit, Size = structSize, Pack = 1)]
-    public unsafe struct NativeInputEventBuffer
+    internal unsafe struct NativeInputEventBuffer
     {
         public const int structSize = 20;
         // NOTE: Keep this as the first field in the struct. This avoids alignment/packing issues
@@ -40,7 +41,7 @@ namespace UnityEngineInternal.Input
     }
 
     [StructLayout(LayoutKind.Explicit, Size = structSize, Pack = 1)]
-    public struct NativeInputEvent
+    internal struct NativeInputEvent
     {
         public const int structSize = 20;
 
@@ -61,7 +62,7 @@ namespace UnityEngineInternal.Input
     }
 
     [Flags]
-    public enum NativeInputUpdateType
+    internal enum NativeInputUpdateType
     {
         Dynamic = 1 << 0,
         Fixed = 1 << 1,
@@ -71,11 +72,16 @@ namespace UnityEngineInternal.Input
     }
 
 
-    public partial class NativeInputSystem
+    internal partial class NativeInputSystem
     {
+        // This generates warnings that these are not used. They are used, but only by the input system package
+        // (which can access these via InternalsVisibleTo). But since that is not available during unity build time,
+        // and since these are marked as internal, we'd get the warning. So we suppress these.
+        #pragma warning disable 649
         public static NativeUpdateCallback onUpdate;
         public static NativeBeforeUpdateCallback onBeforeUpdate;
         public static NativeShouldRunUpdateCallback onShouldRunUpdate;
+        #pragma warning restore 649
 
         static NativeDeviceDiscoveredCallback s_OnDeviceDiscoveredCallback;
         public static NativeDeviceDiscoveredCallback onDeviceDiscovered

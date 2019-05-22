@@ -2396,10 +2396,6 @@ namespace UnityEditor
             // Calling OnSceneGUI before DefaultHandles, so users can use events before the Default Handles
             HandleSelectionAndOnSceneGUI();
 
-            // Handle commands
-            if (evt.type == EventType.ExecuteCommand || evt.type == EventType.ValidateCommand)
-                CommandsGUI();
-
             Handles.SetCameraFilterMode(Camera.current, UseSceneFiltering() ? Handles.CameraFilterMode.ShowFiltered : Handles.CameraFilterMode.Off);
 
             // Handle scene view motion when this scene view is active
@@ -2413,6 +2409,10 @@ namespace UnityEditor
 
             // Draw default scene manipulation tools (Move/Rotate/...)
             DefaultHandles();
+
+            // Handle scene commands after EditorTool.OnSceneGUI so that tools can handle commands
+            if (evt.type == EventType.ExecuteCommand || evt.type == EventType.ValidateCommand)
+                CommandsGUI();
 
             Handles.SetCameraFilterMode(Camera.current, Handles.CameraFilterMode.Off);
             Handles.SetCameraFilterMode(m_Camera, Handles.CameraFilterMode.Off);
