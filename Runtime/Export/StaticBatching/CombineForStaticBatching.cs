@@ -7,6 +7,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace UnityEngine
 {
@@ -14,12 +15,12 @@ namespace UnityEngine
     {
         static public void Combine(GameObject staticBatchRoot)
         {
-            InternalStaticBatchingUtility.CombineRoot(staticBatchRoot);
+            InternalStaticBatchingUtility.CombineRoot(staticBatchRoot, null);
         }
 
         static public void Combine(GameObject[] gos, GameObject staticBatchRoot)
         {
-            InternalStaticBatchingUtility.CombineGameObjects(gos, staticBatchRoot, false);
+            InternalStaticBatchingUtility.CombineGameObjects(gos, staticBatchRoot, false, null);
         }
     }
 
@@ -29,12 +30,12 @@ namespace UnityEngine
         const int MaxVerticesInBatch = 64000; // a little bit less than 64K - just in case
         const string CombinedMeshPrefix = "Combined Mesh";
 
-        static public void CombineRoot(UnityEngine.GameObject staticBatchRoot)
+        public static void CombineRoot(UnityEngine.GameObject staticBatchRoot, StaticBatcherGOSorter sorter)
         {
-            Combine(staticBatchRoot, false, false);
+            Combine(staticBatchRoot, false, false, sorter);
         }
 
-        static public void Combine(UnityEngine.GameObject staticBatchRoot, bool combineOnlyStatic, bool isEditorPostprocessScene)
+        static public void Combine(UnityEngine.GameObject staticBatchRoot, bool combineOnlyStatic, bool isEditorPostprocessScene, StaticBatcherGOSorter sorter)
         {
             GameObject[] gos = (GameObject[])UnityEngine.Object.FindObjectsOfType(typeof(GameObject));
 
@@ -53,10 +54,28 @@ namespace UnityEngine
 
             gos = filteredGos.ToArray();
 
-            CombineGameObjects(gos, staticBatchRoot, isEditorPostprocessScene);
+            CombineGameObjects(gos, staticBatchRoot, isEditorPostprocessScene, sorter);
         }
 
-        static public void CombineGameObjects(GameObject[] gos, UnityEngine.GameObject staticBatchRoot, bool isEditorPostprocessScene)
+        public static GameObject[] SortGameObjectsForStaticbatching(GameObject[] gos, StaticBatcherGOSorter sorter)
+        {
+            gos = gos.OrderBy(x =>
+            {
+                Renderer aRenderer = StaticBatcherGOSorter.GetRenderer(x as GameObject);
+                return sorter.GetMaterialId(aRenderer);
+            }).ThenBy(y =>
+                {
+                    Renderer aRenderer = StaticBatcherGOSorter.GetRenderer(y as GameObject);
+                    return sorter.GetLightmapIndex(aRenderer);
+                }).ThenBy(z =>
+                {
+                    Renderer aRenderer = StaticBatcherGOSorter.GetRenderer(z as GameObject);
+                    return sorter.GetRendererId(aRenderer);
+                }).ToArray();
+            return gos;
+        }
+
+        static public void CombineGameObjects(GameObject[] gos, UnityEngine.GameObject staticBatchRoot, bool isEditorPostprocessScene, StaticBatcherGOSorter sorter)
         {
             Matrix4x4 staticBatchInverseMatrix = Matrix4x4.identity;
             Transform staticBatchRootTransform = null;
@@ -70,7 +89,7 @@ namespace UnityEngine
             int verticesInBatch = 0;
             List<MeshSubsetCombineUtility.MeshContainer> meshes = new List<MeshSubsetCombineUtility.MeshContainer>();
 
-            Array.Sort(gos, new SortGO());
+            gos = SortGameObjectsForStaticbatching(gos, sorter ?? new StaticBatcherGOSorter());
 
             foreach (GameObject go in gos)
             {
@@ -220,37 +239,24 @@ namespace UnityEngine
             }
         }
 
-        internal class SortGO : IComparer
+        public class StaticBatcherGOSorter
         {
-            int IComparer.Compare(object a, object b)
-            {
-                if (a == b)
-                    return 0;
-
-                Renderer aRenderer = GetRenderer(a as GameObject);
-                Renderer bRenderer = GetRenderer(b as GameObject);
-
-                int compare = GetMaterialId(aRenderer).CompareTo(GetMaterialId(bRenderer));
-                if (compare == 0)
-                    compare = GetLightmapIndex(aRenderer).CompareTo(GetLightmapIndex(bRenderer));
-                return compare;
-            }
-
-            static private int GetMaterialId(Renderer renderer)
+            public virtual long GetMaterialId(Renderer renderer)
             {
                 if (renderer == null || renderer.sharedMaterial == null)
                     return 0;
+
                 return renderer.sharedMaterial.GetInstanceID();
             }
 
-            static private int GetLightmapIndex(Renderer renderer)
+            public int GetLightmapIndex(Renderer renderer)
             {
                 if (renderer == null)
                     return -1;
                 return renderer.lightmapIndex;
             }
 
-            static private Renderer GetRenderer(GameObject go)
+            public static Renderer GetRenderer(GameObject go)
             {
                 if (go == null)
                     return null;
@@ -259,6 +265,13 @@ namespace UnityEngine
                     return null;
 
                 return filter.GetComponent<Renderer>();
+            }
+
+            public virtual long GetRendererId(Renderer renderer)
+            {
+                if (renderer == null)
+                    return -1;
+                return renderer.GetInstanceID();
             }
         }
     }

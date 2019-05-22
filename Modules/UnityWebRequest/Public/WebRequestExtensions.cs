@@ -304,7 +304,7 @@ namespace UnityEngine.Networking
             if (e == null)
                 return null;
 
-            var bytes = Encoding.UTF8.GetBytes(s);
+            var bytes = e.GetBytes(s);
             var decodedBytes = WWWTranscoder.URLEncode(bytes);
             return e.GetString(decodedBytes);
         }
@@ -322,7 +322,7 @@ namespace UnityEngine.Networking
             if (s.IndexOf('%') == -1 && s.IndexOf('+') == -1)
                 return s;
 
-            var bytes = Encoding.UTF8.GetBytes(s);
+            var bytes = e.GetBytes(s);
             var decodedBytes = WWWTranscoder.URLDecode(bytes);
             return e.GetString(decodedBytes);
         }
