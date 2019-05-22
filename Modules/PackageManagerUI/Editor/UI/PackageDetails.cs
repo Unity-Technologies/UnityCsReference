@@ -5,9 +5,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UIElements;
+using Button = UnityEngine.UIElements.Button;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -71,8 +73,29 @@ namespace UnityEditor.PackageManager.UI
             ViewChangelogButton.clickable.clicked += ViewChangelogClick;
             ViewLicenses.clickable.clicked += ViewLicensesClick;
 
+            var editManifestIconButton = new IconButton(Resources.GetIconPath("edit"));
+            editManifestIconButton.clickable.clicked += EditPackageManifestClick;
+            EditPackageManifestButton.Add(editManifestIconButton);
+
             RegisterCallback<AttachToPanelEvent>(OnEnterPanel);
             RegisterCallback<DetachFromPanelEvent>(OnLeavePanel);
+
+            UnityEditor.Selection.selectionChanged += OnEditorSelectionChanged;
+        }
+
+        private void OnEditorSelectionChanged()
+        {
+            if (DisplayPackage == null || DisplayPackage.PackageManifestAsset == null)
+                return;
+
+            var onlyContainsCurrentPackageManifest = UnityEditor.Selection.count == 1 &&
+                UnityEditor.Selection.Contains(DisplayPackage.PackageManifestAsset);
+            EditPackageManifestButton.SetEnabled(!onlyContainsCurrentPackageManifest);
+        }
+
+        private void EditPackageManifestClick()
+        {
+            DisplayPackage.SelectPackageManifestAsset();
         }
 
         private void SetContentVisibility(bool visible)
@@ -100,6 +123,12 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnSelectionChanged(IEnumerable<PackageVersion> selected)
         {
+            if (!Selection.SelectedVersions.Any())
+            {
+                SetContentVisibility(false);
+                return;
+            }
+
             var main = selected.FirstOrDefault();
             if (main != null)
                 SetPackage(main.Package, main.Version);
@@ -133,6 +162,15 @@ namespace UnityEditor.PackageManager.UI
             UIUtils.SetElementDisplay(UpdateButton, value);
         }
 
+        void RefreshExtensions(PackageInfo packageInfo)
+        {
+            foreach (var extension in PackageManagerExtensions.Extensions)
+                extension.OnPackageSelectionChange(packageInfo?.Info);
+
+            foreach (var extension in PackageManagerExtensions.ToolbarExtensions)
+                extension.OnPackageSelectionChange(packageInfo, PackageToolbarLeftArea);
+        }
+
         private void SetDisplayPackage(PackageInfo packageInfo, Error packageError = null)
         {
             DisplayPackage = packageInfo;
@@ -142,8 +180,7 @@ namespace UnityEditor.PackageManager.UI
             var detailVisible = package != null && DisplayPackage != null;
             if (!detailVisible)
             {
-                foreach (var extension in PackageManagerExtensions.Extensions)
-                    extension.OnPackageSelectionChange(null);
+                RefreshExtensions(null);
             }
             else
             {
@@ -181,6 +218,7 @@ namespace UnityEditor.PackageManager.UI
                 UIUtils.SetElementDisplay(GetTag(PackageTag.local), DisplayPackage.IsLocal);
                 UIUtils.SetElementDisplay(GetTag(PackageTag.git), DisplayPackage.IsGit);
                 UIUtils.SetElementDisplay(GetTag(PackageTag.preview), DisplayPackage.IsPreview);
+                UIUtils.SetElementDisplay(EditPackageManifestButton, DisplayPackage.IsInstalled && !package.IsBuiltIn);
 
                 UIUtils.SetElementDisplay(DocumentationContainer, true);
                 UIUtils.SetElementDisplay(ChangelogContainer, DisplayPackage.HasChangelog);
@@ -198,10 +236,31 @@ namespace UnityEditor.PackageManager.UI
                 if (!string.IsNullOrEmpty(DisplayPackage.Author))
                     DetailAuthor.text = string.Format("Author: {0}", DisplayPackage.Author);
 
+                // If the package details is not enabled, don't update the date yet as we are fetching new information
+                if (enabledSelf)
+                {
+                    DetailDate.text = "";
+
+                    // In Development packages are not published, so we do not show any published date
+                    if (DisplayPackage.Info != null && !DisplayPackage.IsInDevelopment)
+                    {
+                        if (DisplayPackage.Info.datePublished != null)
+                            DetailDate.text = $"Published Date: {DisplayPackage.Info.datePublished.Value:MMMM dd,  yyyy}";
+                        else if (DisplayPackage.IsCore || DisplayPackage.IsInstalled)
+                        {
+                            // For core packages, or installed packages that are bundled with Unity without being published, use Unity's build date
+                            var unityBuildDate = new DateTime(1970, 1, 1, 0, 0, 0, 0);
+                            unityBuildDate = unityBuildDate.AddSeconds(InternalEditorUtility.GetUnityVersionDate());
+                            DetailDate.text = $"Published Date: {unityBuildDate:MMMM dd, yyyy}";
+                        }
+                    }
+                }
+
                 UIUtils.SetElementDisplay(DetailDesc, !isBuiltIn);
                 UIUtils.SetElementDisplay(DetailVersion, !isBuiltIn);
                 UIUtils.SetElementDisplayNonEmpty(DetailModuleReference);
                 UIUtils.SetElementDisplayNonEmpty(DetailAuthor);
+                UIUtils.SetElementDisplayNonEmpty(DetailDate);
 
                 if (DisplayPackage.Errors.Count > 0)
                     error = DisplayPackage.Errors.First();
@@ -212,11 +271,11 @@ namespace UnityEditor.PackageManager.UI
 
                 package.AddSignal.OnOperation += OnAddOperation;
                 package.RemoveSignal.OnOperation += OnRemoveOperation;
-                foreach (var extension in PackageManagerExtensions.Extensions)
-                    extension.OnPackageSelectionChange(DisplayPackage.Info);
+                RefreshExtensions(DisplayPackage);
 
                 ShowDependencies();
             }
+            OnEditorSelectionChanged();
 
             // Set visibility
             SetContentVisibility(detailVisible);
@@ -256,7 +315,12 @@ namespace UnityEditor.PackageManager.UI
                 }
                 this.package.RemoveSignal.ResetEvents();
             }
+
+            SetContentVisibility(true);
+
             this.package = package;
+            if (displayPackage == null)
+                displayPackage = package != null ? package.VersionToDisplay : null;
 
             ShowDisplayPackage(displayPackage);
         }
@@ -265,20 +329,21 @@ namespace UnityEditor.PackageManager.UI
         {
             if (DisplayPackage == null || DisplayPackage.PackageId != fetched.PackageId)
                 return;
-            SetDisplayPackage(fetched);
             SetEnabled(true);
+            SetDisplayPackage(fetched);
         }
 
         private void ShowDisplayPackage(PackageInfo displayPackage)
         {
             SetEnabled(true);
-            SetDisplayPackage(displayPackage);
 
             if (Collection.NeedsFetchLatest(displayPackage))
             {
                 SetEnabled(false);
                 Collection.FetchLatestPackageInfo(displayPackage);
             }
+
+            SetDisplayPackage(displayPackage);
         }
 
         private void SetError(Error error)
@@ -403,20 +468,26 @@ namespace UnityEditor.PackageManager.UI
                 if (isBuiltIn)
                 {
                     action = PackageAction.Enable;
+                    inprogress = true;
+                    enableButton = false;
                 }
                 else
                 {
+                    var addOperationVersion = package.AddSignal.Operation.PackageInfo.Version;
                     if (package.Current == null)
                     {
                         action = PackageAction.Add;
+                        inprogress = true;
                     }
                     else
                     {
-                        action = addOperation.PackageInfo.Version.CompareByPrecedence(package.Current.Version) >= 0
+                        action = addOperationVersion.CompareByPrecedence(package.Current.Version) >= 0
                             ? PackageAction.Update : PackageAction.Downgrade;
+                        inprogress = true;
                     }
+
+                    enableButton = false;
                 }
-                enableButton = false;
             }
             else
             {
@@ -637,7 +708,7 @@ namespace UnityEditor.PackageManager.UI
                 {
                     result = EditorUtility.DisplayDialogComplex("Disable Built-In Package",
                         "Are you sure you want to disable this built-in package?",
-                        "Disable", "Cancel", "Disable and don't ask again");
+                        "Disable", "Cancel", "Never ask");
                 }
             }
             else
@@ -646,7 +717,7 @@ namespace UnityEditor.PackageManager.UI
                 {
                     result = EditorUtility.DisplayDialogComplex("Removing Package",
                         "Are you sure you want to remove this package?",
-                        "Remove", "Cancel", "Remove and don't ask again");
+                        "Remove", "Cancel", "Never ask");
                 }
             }
 
@@ -741,12 +812,15 @@ namespace UnityEditor.PackageManager.UI
         private Label DetailModuleReference { get { return Cache.Get<Label>("detailModuleReference"); } }
         private Label DetailVersion { get { return Cache.Get<Label>("detailVersion"); } }
         private Label DetailAuthor { get { return Cache.Get<Label>("detailAuthor"); } }
+        private Label DetailDate { get { return Cache.Get<Label>("detailDate"); } }
         private Label VerifyLabel { get { return Cache.Get<Label>("verifiedTag"); } }
         private VisualElement CustomContainer { get { return Cache.Get<VisualElement>("detailCustomContainer"); } }
         private PackageSampleList SampleList { get { return Cache.Get<PackageSampleList>("detailSampleList"); } }
         internal VisualElement GetTag(PackageTag tag) {return Cache.Get<VisualElement>(tag + "Tag"); }
         private PackageDependencies Dependencies { get {return Cache.Get<PackageDependencies>("detailDependencies");} }
         private VisualElement PackageToolbarContainer { get {return Cache.Get<VisualElement>("toolbarContainer");} }
+        private VisualElement PackageToolbarLeftArea { get {return Cache.Get<VisualElement>("leftItems");} }
         internal Button UpdateBuiltIn { get { return Cache.Get<Button>("updateBuiltIn"); } }
+        private VisualElement EditPackageManifestButton { get { return Cache.Get<VisualElement>("editPackageManifest"); } }
     }
 }

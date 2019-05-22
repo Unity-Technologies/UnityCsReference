@@ -1184,6 +1184,17 @@ namespace UnityEngine.Rendering
         Tier3 = 2,
     }
 
+    // Keep in sync with C++ FormatSwizzle in Runtime/Graphics/Format.h
+    public enum FormatSwizzle
+    {
+        FormatSwizzleR,
+        FormatSwizzleG,
+        FormatSwizzleB,
+        FormatSwizzleA,
+        FormatSwizzle0,
+        FormatSwizzle1
+    };
+
     // Note: match layout of C++ MonoRenderTargetIdentifier!
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public struct RenderTargetIdentifier : IEquatable<RenderTargetIdentifier>

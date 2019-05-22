@@ -249,6 +249,9 @@ namespace UnityEngine.Yoga
         public static extern YogaValueType YGNodeStyleGetFlexBasis(IntPtr node);
 
         [FreeFunction]
+        public static extern float YGNodeGetComputedFlexBasis(IntPtr node);
+
+        [FreeFunction]
         public static extern void YGNodeStyleSetWidth(IntPtr node, float width);
 
         [FreeFunction]

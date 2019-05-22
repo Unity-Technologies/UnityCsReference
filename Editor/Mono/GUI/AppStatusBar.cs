@@ -57,10 +57,10 @@ namespace UnityEditor
 
         protected override void OldOnGUI()
         {
+            const int spacing = 4;
             const int statusWheelWidth = 24;
-            const int progressBarStatusWheelSpacing = 3;
             const int progressBarWidth = 185;
-            const int lightingBakeModeBarWidth = 140;
+            float lightingBakeModeBarWidth = EditorStyles.progressBarText.CalcSize(EditorGUIUtility.TempContent(m_BakeModeString)).x;
             const int barHeight = 19;
 
             ConsoleWindow.LoadIcons();
@@ -79,7 +79,7 @@ namespace UnityEditor
             GUILayout.BeginHorizontal();
             GUILayout.Space(2);
 
-            int statusBarItemsWidth = statusWheelWidth + (AsyncProgressBar.isShowing ? (progressBarWidth + progressBarStatusWheelSpacing) : 0) + (showBakeMode ? lightingBakeModeBarWidth : 0);
+            float statusBarItemsWidth = statusWheelWidth + (AsyncProgressBar.isShowing ? (progressBarWidth + spacing) : 0) + (showBakeMode ? (lightingBakeModeBarWidth + spacing) : 0);
 
             if (Event.current.type == EventType.MouseDown)
             {
@@ -104,7 +104,7 @@ namespace UnityEditor
 
                 GUILayout.Space(2);
                 GUILayout.BeginVertical();
-                GUILayout.Space(2);
+                GUILayout.Space(1);
 
                 GUILayout.Label(statusText, errorStyle, GUILayout.MaxWidth(GUIView.current.position.width - statusBarItemsWidth - (icon != null ? icon.width : 0)));
 
@@ -129,14 +129,14 @@ namespace UnityEditor
 
                 if (AsyncProgressBar.isShowing)
                 {
-                    progressBarHorizontalPosition -= progressBarWidth + progressBarStatusWheelSpacing;
+                    progressBarHorizontalPosition -= progressBarWidth + spacing;
                     EditorGUI.ProgressBar(new Rect(progressBarHorizontalPosition, 0, progressBarWidth, barHeight), AsyncProgressBar.progress, AsyncProgressBar.progressInfo);
                 }
 
                 if (showBakeMode)
                 {
-                    GUI.Label(new Rect(progressBarHorizontalPosition - lightingBakeModeBarWidth, 0, lightingBakeModeBarWidth, barHeight), m_BakeModeString, EditorStyles.progressBarText);
-                    progressBarHorizontalPosition -= lightingBakeModeBarWidth;
+                    GUI.Label(new Rect(progressBarHorizontalPosition - lightingBakeModeBarWidth - spacing, 0, lightingBakeModeBarWidth, barHeight), m_BakeModeString, EditorStyles.progressBarText);
+                    progressBarHorizontalPosition -= lightingBakeModeBarWidth + spacing;
                 }
 
                 if (compiling)
@@ -156,12 +156,12 @@ namespace UnityEditor
                 {
                     var backup = GUI.color;
                     GUI.color = Color.yellow;
-                    GUI.Label(new Rect(progressBarHorizontalPosition - 310, 0, 310, barHeight), "THIS IS AN UNTESTED BLEEDINGEDGE UNITY BUILD");
+                    GUI.Label(new Rect(progressBarHorizontalPosition - 310 - spacing, 0, 310, barHeight), "THIS IS AN UNTESTED BLEEDINGEDGE UNITY BUILD");
                     GUI.color = backup;
                 }
                 else if (Unsupported.IsDeveloperMode())
                 {
-                    GUI.Label(new Rect(progressBarHorizontalPosition - 200, 0, 200, barHeight), m_MiniMemoryOverview, EditorStyles.progressBarText);
+                    GUI.Label(new Rect(progressBarHorizontalPosition - 200 - spacing, 0, 200, barHeight), m_MiniMemoryOverview, EditorStyles.progressBarText);
                     EditorGUIUtility.CleanCache(m_MiniMemoryOverview);
                 }
             }

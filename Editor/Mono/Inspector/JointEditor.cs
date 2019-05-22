@@ -101,6 +101,8 @@ namespace UnityEditor
 
         protected virtual void OnSceneGUI()
         {
+            if (!target)
+                return;
             if (editingAngularLimits)
             {
                 T joint = (T)target;

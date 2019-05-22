@@ -14,6 +14,7 @@ namespace UnityEngine.UIElements
     {
         ViewData,
         Bindings,
+        Animation,
         Styles,
         Layout,
         TransformClip,
@@ -136,6 +137,7 @@ namespace UnityEngine.UIElements
         {
             SetUpdater<VisualTreeViewDataUpdater>(VisualTreeUpdatePhase.ViewData);
             SetUpdater<VisualTreeBindingsUpdater>(VisualTreeUpdatePhase.Bindings);
+            SetUpdater<VisualElementAnimationSystem>(VisualTreeUpdatePhase.Animation);
             SetUpdater<VisualTreeStyleUpdater>(VisualTreeUpdatePhase.Styles);
             SetUpdater<UIRLayoutUpdater>(VisualTreeUpdatePhase.Layout);
             SetUpdater<VisualTreeTransformClipUpdater>(VisualTreeUpdatePhase.TransformClip);

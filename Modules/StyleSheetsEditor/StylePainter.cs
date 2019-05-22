@@ -26,7 +26,7 @@ namespace UnityEditor.StyleSheets
             if (!GUIClip.visibleRect.Overlaps(position))
                 return true;
 
-            var styleName = gs.name.Replace(' ', '-');
+            var styleName = GUIStyleExtensions.StyleNameToBlockName(gs.name, false);
             StyleBlock block = FindBlock(styleName.GetHashCode(), states);
             if (!block.IsValid())
                 return false;
@@ -152,6 +152,8 @@ namespace UnityEditor.StyleSheets
                 right = block.GetFloat(StyleCatalogKeyword.right)
             };
 
+            var userRect = drawRect;
+
             drawRect.xMin += offset.left;
             drawRect.yMin += offset.top;
             drawRect.yMax += offset.bottom;
@@ -213,7 +215,14 @@ namespace UnityEditor.StyleSheets
             }
 
             if (block.GetKeyword(k_EnableHovering) == StyleValue.Keyword.True)
-                GUIView.current.MarkHotRegion(GUIClip.UnclipToWindow(drawRect));
+            {
+                var currentView = GUIView.current;
+
+                if (currentView != null)
+                {
+                    currentView.MarkHotRegion(GUIClip.UnclipToWindow(userRect));
+                }
+            }
         }
 
         private static bool DrawGradient(StyleBlock block, string funcName, List<StyleSheetResolver.Value[]> args, GradientParams gp)

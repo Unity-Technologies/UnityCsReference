@@ -388,13 +388,15 @@ namespace UnityEngine.UIElements
             LocalInit();
         }
 
-        protected internal override void PostDispatch()
+        protected internal override void PostDispatch(IPanel panel)
         {
             if (!isDefaultPrevented && m_ContextualMenuManager != null)
             {
                 menu.PrepareForDisplay(triggerEvent);
                 m_ContextualMenuManager.DoDisplayMenu(menu, triggerEvent);
             }
+
+            base.PostDispatch(panel);
         }
     }
 }

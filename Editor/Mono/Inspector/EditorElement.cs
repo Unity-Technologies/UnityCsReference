@@ -276,8 +276,8 @@ namespace UnityEditor.UIElements
 
                 if (inspectorWindow.editorsWithImportedObjectLabel.Contains(m_EditorIndex))
                 {
-                    var importedObjectBarRect = GUILayoutUtility.GetRect(16, 16);
-                    importedObjectBarRect.height = 17;
+                    var importedObjectBarRect = GUILayoutUtility.GetRect(16, 20);
+                    importedObjectBarRect.height = 21;
 
                     var headerText = m_Editors[0] is PrefabImporterEditor ? "Root in Prefab Asset" : "Imported Object";
                     GUILayout.Label(headerText, Styles.importedObjectsHeaderStyle, GUILayout.ExpandWidth(true));

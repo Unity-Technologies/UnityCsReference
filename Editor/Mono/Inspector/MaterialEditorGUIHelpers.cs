@@ -102,6 +102,7 @@ namespace UnityEditor
             popupRect.width -= EditorGUIUtility.fieldWidth + 2;
             Rect numberRect = r;
             numberRect.xMin = numberRect.xMax - EditorGUIUtility.fieldWidth;
+            numberRect.height = EditorGUI.kSingleLineHeight;
 
             // Queues popup
             int curPopupValue = curRawQueue;

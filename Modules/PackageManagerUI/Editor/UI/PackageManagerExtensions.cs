@@ -12,7 +12,10 @@ namespace UnityEditor.PackageManager.UI
     public static class PackageManagerExtensions
     {
         internal static List<IPackageManagerExtension> Extensions { get { return extensions ?? (extensions = new List<IPackageManagerExtension>()); } }
-        private static List<IPackageManagerExtension> extensions;
+        static List<IPackageManagerExtension> extensions;
+
+        internal static List<IPackageManagerToolbarExtension> ToolbarExtensions { get { return toolbarExtensions ?? (toolbarExtensions = new List<IPackageManagerToolbarExtension>()); } }
+        static List<IPackageManagerToolbarExtension> toolbarExtensions;
 
         /// <summary>
         /// Registers a new Package Manager UI extension
@@ -24,6 +27,18 @@ namespace UnityEditor.PackageManager.UI
                 return;
 
             Extensions.Add(extension);
+        }
+
+        /// <summary>
+        /// Registers a new Package Manager UI toolbar extension
+        /// </summary>
+        /// <param name="extension">A Package Manager UI toolbar extension</param>
+        internal static void RegisterExtension(IPackageManagerToolbarExtension extension)
+        {
+            if (extension == null)
+                return;
+
+            ToolbarExtensions.Add(extension);
         }
     }
 }

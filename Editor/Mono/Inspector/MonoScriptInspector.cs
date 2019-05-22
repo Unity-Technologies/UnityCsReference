@@ -53,7 +53,11 @@ namespace UnityEditor
                     m_TargetObject = new SerializedObject(assetTargets);
                     m_Icon = m_TargetObject.FindProperty("m_Icon");
                 }
-                EditorGUI.ObjectIconDropDown(iconRect, assetTargets, true, null, m_Icon);
+
+                Rect dropDownRect = iconRect;
+
+                dropDownRect.size = EditorGUI.GetObjectIconDropDownSize(iconRect.width, iconRect.height);
+                EditorGUI.ObjectIconDropDown(dropDownRect, assetTargets, true, null, m_Icon);
             }
             else
             {

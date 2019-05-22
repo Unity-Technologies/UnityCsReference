@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.Experimental;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEditor.Experimental.GraphView
@@ -23,8 +24,8 @@ namespace UnityEditor.Experimental.GraphView
 
         private bool m_InstantAdd = false; // Temporarily set to true right after an item is detached from the stack to show its preview right away (instead of being animated)
 
-        private List<ValueAnimation<Rect>> m_AddAnimations;
-        private List<ValueAnimation<Rect>> m_RemoveAnimations;
+        private List<IValueAnimation> m_AddAnimations;
+        private List<IValueAnimation> m_RemoveAnimations;
         private int m_AnimationDuration = 40;
         private static CustomStyleProperty<int> s_AnimationDuration = new CustomStyleProperty<int>("--animation-duration");
         private int animationDuration => m_AnimationDuration;
@@ -80,7 +81,7 @@ namespace UnityEditor.Experimental.GraphView
 
             if (animated)
             {
-                m_AddAnimations = new List<ValueAnimation<Rect>>(m_CurrentPreviews.Count);
+                m_AddAnimations = new List<IValueAnimation>(m_CurrentPreviews.Count);
 
                 foreach (VisualElement preview in m_CurrentPreviews)
                 {
@@ -90,14 +91,8 @@ namespace UnityEditor.Experimental.GraphView
 
                     startRect.height = 0f;
 
-                    var addAnimation = new ValueAnimation<Rect>(this)
-                    {
-                        from = startRect,
-                        to = endRect,
-                        duration = animationDuration
-                    };
-                    addAnimation.valueUpdated += value => UpdatePreviewLayout(preview, value);
-                    addAnimation.Start();
+                    var addAnimation = preview.experimental.animation.Start(startRect, endRect, animationDuration, UpdatePreviewLayout).KeepAlive();
+
                     m_AddAnimations.Add(addAnimation);
                 }
             }
@@ -117,9 +112,10 @@ namespace UnityEditor.Experimental.GraphView
 
             if (m_AddAnimations != null)
             {
-                foreach (ValueAnimation<Rect> addAnimation in m_AddAnimations)
+                foreach (var addAnimation in m_AddAnimations)
                 {
                     addAnimation.Stop();
+                    addAnimation.Recycle();
                 }
                 m_AddAnimations = null;
             }
@@ -128,7 +124,7 @@ namespace UnityEditor.Experimental.GraphView
 
             if (animated)
             {
-                m_RemoveAnimations = new List<ValueAnimation<Rect>>(m_CurrentPreviews.Count);
+                m_RemoveAnimations = new List<IValueAnimation>(m_CurrentPreviews.Count);
 
                 foreach (VisualElement preview in m_RemovedPreviews)
                 {
@@ -137,15 +133,8 @@ namespace UnityEditor.Experimental.GraphView
 
                     endRect.height = 0f;
 
-                    var removeAnimations = new ValueAnimation<Rect>(this)
-                    {
-                        from = startRect,
-                        to = endRect,
-                        duration = animationDuration
-                    };
-                    removeAnimations.valueUpdated += value => UpdatePreviewLayout(preview, value);
-                    removeAnimations.finished += OnRemoveAnimationFinished;
-                    removeAnimations.Start();
+                    var removeAnimations = preview.experimental.animation.Start(startRect, endRect, animationDuration, UpdatePreviewLayout).KeepAlive();
+                    removeAnimations.onAnimationCompleted = OnRemoveAnimationFinished;
                     m_RemoveAnimations.Add(removeAnimations);
                 }
             }
@@ -182,6 +171,10 @@ namespace UnityEditor.Experimental.GraphView
         private void OnRemoveAnimationFinished()
         {
             RemovePreviewHelper();
+            foreach (var a in m_RemoveAnimations)
+            {
+                a.Recycle();
+            }
             m_RemoveAnimations = null;
 
             // If a new preview was added while another one was been removed and that a drag exit occurred
@@ -192,8 +185,8 @@ namespace UnityEditor.Experimental.GraphView
 
         private void HandleDragAndDropEvent(IMouseEvent evt)
         {
-            if ((m_AddAnimations != null && m_AddAnimations.Any(a => a.running)) ||
-                (m_RemoveAnimations != null && m_RemoveAnimations.Any(a => a.running)))
+            if ((m_AddAnimations != null && m_AddAnimations.Any(a => a.isRunning)) ||
+                (m_RemoveAnimations != null && m_RemoveAnimations.Any(a => a.isRunning)))
                 return;
 
             // Nothing interesting to do if nothing is dragged.

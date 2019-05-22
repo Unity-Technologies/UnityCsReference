@@ -28,7 +28,7 @@ namespace UnityEditor
                 }
 
                 const float spaceBetweenIconAndText = 3f;
-                const float spaceBetweenIconAndTop = 1f;
+                const float spaceBetweenIconAndTop = 3f;
                 Rect iconRect = new Rect(rect.x + style.padding.left - spaceBetweenIconAndText - iconSize.x, rect.y + style.padding.top + spaceBetweenIconAndTop, iconSize.x, iconSize.y);
                 if (iconAngle == 0f)
                 {

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.Experimental;
 using UnityEditor.StyleSheets;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -20,10 +21,10 @@ namespace UnityEditor.UIElements
 
         static Toolbar()
         {
-            s_ToolbarDarkStyleSheet = EditorGUIUtility.Load(s_ToolbarDarkStyleSheetPath) as StyleSheet;
+            s_ToolbarDarkStyleSheet = EditorGUIUtility.Load(UIElementsEditorUtility.GetStyleSheetPathForCurrentFont(s_ToolbarDarkStyleSheetPath)) as StyleSheet;
             s_ToolbarDarkStyleSheet.isUnityStyleSheet = true;
 
-            s_ToolbarLightStyleSheet = EditorGUIUtility.Load(s_ToolbarLightStyleSheetPath) as StyleSheet;
+            s_ToolbarLightStyleSheet = EditorGUIUtility.Load(UIElementsEditorUtility.GetStyleSheetPathForCurrentFont(s_ToolbarLightStyleSheetPath)) as StyleSheet;
             s_ToolbarLightStyleSheet.isUnityStyleSheet = true;
         }
 

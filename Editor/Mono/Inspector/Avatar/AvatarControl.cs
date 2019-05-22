@@ -126,10 +126,10 @@ namespace UnityEditor
 
             // Body view buttons
             Rect buttonsRect = GUILayoutUtility.GetLastRect();
-            const float buttonHeight = 16;
+            const float buttonHeight = 18;
             string[] labels = new string[] { "Body", "Head", "Left Hand", "Right Hand"};
             buttonsRect.x += 5;
-            buttonsRect.width = 70;
+            buttonsRect.width = 80;
             buttonsRect.yMin = buttonsRect.yMax - (buttonHeight * 4 + 5);
             buttonsRect.height = buttonHeight;
             for (int i = 0; i < labels.Length; i++)

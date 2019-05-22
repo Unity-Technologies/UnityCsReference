@@ -458,8 +458,8 @@ namespace UnityEditor
             public const float sliderModeFieldWidth = hexFieldWidth;
             public const float channelSliderLabelWidth = 14f;
             public const float sliderTextFieldWidth = 45f;
-            public const float extraVerticalSpacing = 8f - EditorGUI.kControlVerticalSpacing;
             public const float highLuminanceThreshold = 0.5f;
+            public const float extraVerticalSpacing = 8f - EditorGUI.kControlVerticalSpacingLegacy;
 
             public static readonly float hueDialThumbSize;
 
@@ -542,7 +542,7 @@ namespace UnityEditor
                 m_ColorLibraryEditor.settingsMenuRightMargin = 2f;
                 m_ColorLibraryEditor.useOnePixelOverlappedGrid = true;
                 m_ColorLibraryEditor.alwaysShowScrollAreaHorizontalLines = false;
-                m_ColorLibraryEditor.marginsForGrid = new RectOffset(0, 0, 0, 0);
+                m_ColorLibraryEditor.marginsForGrid = new RectOffset(0, 0, 2, 2);
                 m_ColorLibraryEditor.marginsForList = new RectOffset(0, 5, 2, 2);
                 m_ColorLibraryEditor.InitializeGrid(Styles.fixedWindowWidth - (Styles.background.padding.left + Styles.background.padding.right));
             }

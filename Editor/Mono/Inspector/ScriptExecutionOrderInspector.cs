@@ -352,7 +352,7 @@ namespace UnityEditor
             bool[] enabled = new bool[length];
             for (int c = 0; c < length; c++)
             {
-                names[c] = m_DefaultTimeScripts[c].GetClass().FullName;
+                names[c] = m_DefaultTimeScripts[c].GetClass().FullName; // TODO: localization with a proper database.
                 enabled[c] = true;
             }
             EditorUtility.DisplayCustomMenu(r, names, enabled, null, MenuSelection, null);

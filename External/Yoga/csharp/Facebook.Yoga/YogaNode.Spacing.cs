@@ -549,5 +549,13 @@ namespace UnityEngine.Yoga
                 return Native.YGNodeLayoutGetPadding(_ygNode, YogaEdge.End);
             }
         }
+
+        public float ComputedFlexBasis
+        {
+            get
+            {
+                return Native.YGNodeGetComputedFlexBasis(_ygNode);
+            }
+        }
     }
 }

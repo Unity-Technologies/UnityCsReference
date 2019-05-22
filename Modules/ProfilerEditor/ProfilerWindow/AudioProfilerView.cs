@@ -474,7 +474,7 @@ namespace UnityEditorInternal
                 if (Event.current.type != EventType.Repaint)
                     return;
 
-                GUIStyle lineStyle = useBoldFont ? Styles.lineBoldStyle : Styles.lineStyle;
+                lineStyle = useBoldFont ? Styles.lineBoldStyle : Styles.lineStyle;
                 var orgAlignment = lineStyle.alignment;
 
                 lineStyle.alignment = TextAnchor.MiddleLeft;
@@ -1098,7 +1098,7 @@ namespace UnityEditorInternal
                 if (Event.current.type != EventType.Repaint)
                     return;
 
-                GUIStyle lineStyle = useBoldFont ? Styles.lineBoldStyle : Styles.lineStyle;
+                lineStyle = useBoldFont ? Styles.lineBoldStyle : Styles.lineStyle;
                 lineStyle.alignment = TextAnchor.MiddleLeft;
                 lineStyle.padding.left = 0;
 

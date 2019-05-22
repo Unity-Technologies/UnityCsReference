@@ -15,7 +15,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
     public class PackedMemorySnapshot : IDisposable
     {
         static readonly UInt32 kMinSupportedVersion = 7;
-        static readonly UInt32 kCurrentVersion = 8;
+        static readonly UInt32 kCurrentVersion = 9;
 
         public static PackedMemorySnapshot Load(string path)
         {
@@ -235,7 +235,6 @@ namespace UnityEditor.Profiling.Memory.Experimental
                 return m_Reader.GetDataSingle(EntryType.Metadata_Version, ConversionFunctions.ToUInt32);
             }
         }
-
         public MetaData metadata
         {
             get
@@ -282,9 +281,12 @@ namespace UnityEditor.Profiling.Memory.Experimental
                     offset = ReadIntFromByteArray(array, offset, out height);
                     offset = ReadIntFromByteArray(array, offset, out format);
 
+                    //Suppress compiler warning about member
+#pragma warning disable 618
                     data.screenshot = new Texture2D(width, height, (TextureFormat)format, false);
                     data.screenshot.LoadRawTextureData(screenshot);
                     data.screenshot.Apply();
+#pragma warning restore 618
                 }
 
                 UnityEngine.Assertions.Assert.AreEqual(array.Length, offset);

@@ -155,14 +155,6 @@ namespace UnityEditor
             get { return type == "PPtr<MonoScript>"; }
         }
 
-        private bool isUnityAssembly
-        {
-            get
-            {
-                return EditorUtility.IsUnityAssembly(m_SerializedObject.targetObject);
-            }
-        }
-
         internal string localizedDisplayName
         {
             get
@@ -181,13 +173,13 @@ namespace UnityEditor
             get
             {
                 string[] names = enumDisplayNames;
-                if (!isUnityAssembly)
-                    return names;
-
                 var res = new string[names.Length];
-                for (var i = 0; i < res.Length; ++i)
+                using (new UnityEditor.Localization.Editor.LocalizationGroup(m_SerializedObject.targetObject))
                 {
-                    res[i] = L10n.Tr(names[i]);
+                    for (var i = 0; i < res.Length; ++i)
+                    {
+                        res[i] = L10n.Tr(names[i]);
+                    }
                 }
                 return res;
             }

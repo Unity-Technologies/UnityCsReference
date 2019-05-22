@@ -231,16 +231,22 @@ namespace UnityEngine.UIElements
 
         public static Vector2 GetVisualElementRadius(Length length, VisualElement parent)
         {
+            float x = length.value;
+            float y = length.value;
             if (length.unit == LengthUnit.Percent)
             {
                 if (parent == null)
                     return Vector2.zero;
 
-                float x = parent.resolvedStyle.width * length.value / 100;
-                float y = parent.resolvedStyle.height * length.value / 100;
-                return new Vector2(x, y);
+                x = parent.resolvedStyle.width * length.value / 100;
+                y = parent.resolvedStyle.height * length.value / 100;
             }
-            return new Vector2(length.value, length.value);
+
+            // Make sure to not return negative radius
+            x = Mathf.Max(x, 0);
+            y = Mathf.Max(y, 0);
+
+            return new Vector2(x, y);
         }
     }
 

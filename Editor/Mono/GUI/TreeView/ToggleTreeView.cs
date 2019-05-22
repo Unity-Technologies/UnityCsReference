@@ -18,14 +18,11 @@ internal class ToggleTreeView<T> : TreeView where T : ToggleTreeViewItem, new()
 {
     static class Styles
     {
-        public static GUIContent toggleAll = EditorGUIUtility.TrTextContent("Toggle All");
-        public static GUIContent expandAll = EditorGUIUtility.TrTextContent("Expand All");
-        public static GUIContent collapseAll = EditorGUIUtility.TrTextContent("Collapse All");
-        public static GUIContent toggle = EditorGUIUtility.TrTextContent("", "Maintain Alt/Option key to enable or disable all children");
-
-        public static GUIContent filterSelected = new GUIContent(EditorGUIUtility.FindTexture("FilterSelectedOnly"), "Filter selected only");
-
-        public static GUIStyle searchEnabledButton = "ToolbarButtonFlat";
+        public static readonly GUIContent toggleAll = EditorGUIUtility.TrTextContent("Toggle All");
+        public static readonly GUIContent expandAll = EditorGUIUtility.TrTextContent("Expand All");
+        public static readonly GUIContent collapseAll = EditorGUIUtility.TrTextContent("Collapse All");
+        public static readonly GUIContent toggle = EditorGUIUtility.TrTextContent("", "Maintain Alt/Option key to enable or disable all children");
+        public static readonly GUIContent filterSelected = new GUIContent(EditorGUIUtility.FindTexture("FilterSelectedOnly"), "Filter selected only");
     }
 
     static string s_Regex = "(?:(.*) |^)(s:)(false|true)(?: (.*)|$)";
@@ -120,21 +117,17 @@ internal class ToggleTreeView<T> : TreeView where T : ToggleTreeViewItem, new()
 
     public override void OnGUI(Rect rect)
     {
-        var searchFieldRect = DrawSearchField(rect);
-
-        var baseGUIRect = rect;
-        baseGUIRect.yMin = searchFieldRect.yMax;
-        baseGUIRect.yMax = baseGUIRect.yMin + totalHeight;
-        DrawTreeViewGUI(baseGUIRect);
-
-        var bottomRect = rect;
-        bottomRect.yMin = bottomRect.yMax - EditorGUI.kSingleLineHeight + 3f;
-        BottomGUI(EditorGUI.IndentedRect(bottomRect));
+        using (new EditorGUILayout.VerticalScope())
+        {
+            DrawSearchField();
+            DrawTreeViewGUI();
+            BottomGUI();
+        }
     }
 
-    void DrawTreeViewGUI(Rect rect)
+    void DrawTreeViewGUI()
     {
-        base.OnGUI(EditorGUI.IndentedRect(rect));
+        base.OnGUI(GUILayoutUtility.GetRect(0, totalHeight));
         if (HasFocus() && Event.current.type == EventType.KeyDown
             && (Event.current.keyCode == KeyCode.Space || Event.current.keyCode == KeyCode.Return || Event.current.keyCode == KeyCode.KeypadEnter))
         {
@@ -154,81 +147,48 @@ internal class ToggleTreeView<T> : TreeView where T : ToggleTreeViewItem, new()
         }
     }
 
-    Rect DrawSearchField(Rect rect)
+    void DrawSearchField()
     {
-        var fieldRect = rect;
-        fieldRect.yMax = fieldRect.yMin + 20f;
-        fieldRect = EditorGUI.IndentedRect(fieldRect);
-        if (Event.current.type == EventType.Repaint)
-            EditorStyles.helpBox.Draw(fieldRect, GUIContent.none, 0);
-
-        var buttonRect = fieldRect;
-        buttonRect.xMin = buttonRect.xMax - 22f - 6f;
-        buttonRect.xMax = buttonRect.xMin + 22f;
-        using (new EditorGUI.DisabledScope(Regex.IsMatch(searchString, s_Regex)))
+        using (new EditorGUILayout.HorizontalScope(EditorStyles.helpBox, GUILayout.MaxHeight(EditorGUI.kWindowToolbarHeight)))
         {
-            if (GUI.Button(buttonRect, Styles.filterSelected, Styles.searchEnabledButton))
+            EditorGUI.BeginChangeCheck();
+            var search = EditorGUILayout.ToolbarSearchField(searchString);
+            if (EditorGUI.EndChangeCheck())
             {
-                searchString = "s:true " + searchString;
-            }
-        }
-
-        EditorGUI.BeginChangeCheck();
-        var searchRect = fieldRect;
-        searchRect.y += 3f;
-        searchRect.height -= 2f;
-        searchRect.xMin += 7f;
-        searchRect.xMax = buttonRect.xMin - 2f;
-        var search = EditorGUI.ToolbarSearchField(searchRect, searchString, false);
-        if (EditorGUI.EndChangeCheck())
-        {
-            bool wasSearching = hasSearch;
-            searchString = search;
-            if (wasSearching && !hasSearch)
-            {
-                foreach (var item in GetSelection())
+                bool wasSearching = hasSearch;
+                searchString = search;
+                if (wasSearching && !hasSearch)
                 {
-                    FrameItem(item);
+                    foreach (var item in GetSelection())
+                    {
+                        FrameItem(item);
+                    }
                 }
             }
-        }
 
-        fieldRect.yMax -= 2f;
-        return fieldRect;
+            using (new EditorGUI.DisabledScope(Regex.IsMatch(searchString, s_Regex)))
+            {
+                if (GUILayout.Button(Styles.filterSelected, EditorStyles.miniButton, GUILayout.MaxWidth(24f)))
+                    searchString = "s:true " + searchString;
+            }
+        }
     }
 
-    protected virtual void BottomGUI(Rect rect)
+    protected virtual void BottomGUI()
     {
+        using (new EditorGUILayout.HorizontalScope())
         using (new EditorGUI.DisabledScope(!hasNodes))
         {
-            var buttonRect = rect;
-            var buttonSize = EditorStyles.miniButton.CalcSize(Styles.toggleAll);
-            buttonRect.yMin = buttonRect.yMax - buttonSize.y;
-            buttonRect.xMax = buttonRect.xMin + buttonSize.x;
-            buttonRect.y += 2f;
-            if (GUI.Button(buttonRect, Styles.toggleAll, EditorStyles.miniButton))
-            {
+            if (GUILayout.Button(Styles.toggleAll, EditorStyles.miniButton))
                 ToggleAll();
-            }
 
-            // lets make sure expand and collapse buttons are always enabled when there is any node.
             var enabledGUI = GUI.enabled;
             GUI.enabled = hasNodes;
-            buttonSize = EditorStyles.miniButton.CalcSize(Styles.collapseAll);
-            buttonRect.xMax = rect.xMax;
-            buttonRect.xMin = buttonRect.xMax - buttonSize.x;
-            if (GUI.Button(buttonRect, Styles.collapseAll, EditorStyles.miniButton))
-            {
+            if (GUILayout.Button(Styles.collapseAll, EditorStyles.miniButton))
                 CollapseAll();
-            }
 
-            buttonSize = EditorStyles.miniButton.CalcSize(Styles.expandAll);
-            buttonRect.xMax = buttonRect.xMin - 2f;
-            buttonRect.xMin = buttonRect.xMax - buttonSize.x;
-            if (GUI.Button(buttonRect, Styles.expandAll, EditorStyles.miniButton))
-            {
+            if (GUILayout.Button(Styles.expandAll, EditorStyles.miniButton))
                 ExpandAll();
-            }
 
             GUI.enabled = enabledGUI;
         }

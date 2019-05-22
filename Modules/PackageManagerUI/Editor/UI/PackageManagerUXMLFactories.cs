@@ -32,6 +32,7 @@ namespace UnityEditor.PackageManager.UI
                 new PackageSampleList.UxmlFactory(),
                 new PackageStatusBar.UxmlFactory(),
                 new PackageToolbar.UxmlFactory(),
+                new DropdownButton.UxmlFactory(),
             };
 
             foreach (IUxmlFactory factory in factories)

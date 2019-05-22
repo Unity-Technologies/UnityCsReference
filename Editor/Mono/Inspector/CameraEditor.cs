@@ -842,6 +842,8 @@ namespace UnityEditor
         private static Vector2 s_PreviousMainGameViewTargetSize;
         public virtual void OnSceneGUI()
         {
+            if (!target)
+                return;
             var c = (Camera)target;
 
             if (!CameraEditorUtils.IsViewportRectValidToRender(c.rect))

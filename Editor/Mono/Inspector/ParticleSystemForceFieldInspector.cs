@@ -196,6 +196,8 @@ namespace UnityEditor
 
         void OnSceneGUI()
         {
+            if (!target)
+                return;
             EditorGUI.BeginChangeCheck();
 
             ParticleSystemForceField ff = (ParticleSystemForceField)target;

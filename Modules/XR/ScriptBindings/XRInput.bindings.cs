@@ -323,6 +323,8 @@ namespace UnityEngine.XR
         public string name { get { return InputDevices.GetDeviceName(m_DeviceId); } }
         [Obsolete("This API has been marked as deprecated and will be removed in future versions. Please use InputDevice.characteristics instead.")]
         public InputDeviceRole role { get { return InputDevices.GetDeviceRole(m_DeviceId); } }
+        public string manufacturer { get { return InputDevices.GetDeviceManufacturer(m_DeviceId); } }
+        public string serialNumber { get { return InputDevices.GetDeviceSerialNumber(m_DeviceId); } }
         public InputDeviceCharacteristics characteristics { get { return InputDevices.GetDeviceCharacteristics(m_DeviceId); } }
         // Haptics
         public bool SendHapticImpulse(uint channel, float amplitude, float duration = 1.0f)
@@ -354,6 +356,7 @@ namespace UnityEngine.XR
         public bool TryGetFeatureValue(InputFeatureUsage<Hand> usage, out Hand value)              { return InputDevices.TryGetFeatureValue_XRHand(m_DeviceId, usage.name, out value); }
         public bool TryGetFeatureValue(InputFeatureUsage<Bone> usage, out Bone value)              { return InputDevices.TryGetFeatureValue_XRBone(m_DeviceId, usage.name, out value); }
         public bool TryGetFeatureValue(InputFeatureUsage<Eyes> usage, out Eyes value)              { return InputDevices.TryGetFeatureValue_XREyes(m_DeviceId, usage.name, out value); }
+        public bool TryGetFeatureValue(InputFeatureUsage<byte[]> usage, byte[] value)              { return InputDevices.TryGetFeatureValue_Custom(m_DeviceId, usage.name, value); }
 
         public bool TryGetFeatureValue(InputFeatureUsage<InputTrackingState> usage, out InputTrackingState value)
         {
@@ -775,6 +778,7 @@ namespace UnityEngine.XR
         internal static extern bool TryGetFeatureValue_Vector2f(UInt64 deviceId, string usage, out Vector2 value);
         internal static extern bool TryGetFeatureValue_Vector3f(UInt64 deviceId, string usage, out Vector3 value);
         internal static extern bool TryGetFeatureValue_Quaternionf(UInt64 deviceId, string usage, out Quaternion value);
+        internal static extern bool TryGetFeatureValue_Custom(UInt64 deviceId, string usage, [Out] byte[] value);
 
         internal static extern bool TryGetFeatureValueAtTime_bool(UInt64 deviceId, string usage, Int64 time, out bool value);
         internal static extern bool TryGetFeatureValueAtTime_UInt32(UInt64 deviceId, string usage, Int64 time, out uint value);
@@ -789,6 +793,8 @@ namespace UnityEngine.XR
 
         internal static extern bool IsDeviceValid(UInt64 deviceId);
         internal static extern string GetDeviceName(UInt64 deviceId);
+        internal static extern string GetDeviceManufacturer(UInt64 deviceId);
+        internal static extern string GetDeviceSerialNumber(UInt64 deviceId);
         internal static extern InputDeviceCharacteristics GetDeviceCharacteristics(UInt64 deviceId);
 
         internal static InputDeviceRole GetDeviceRole(UInt64 deviceId)

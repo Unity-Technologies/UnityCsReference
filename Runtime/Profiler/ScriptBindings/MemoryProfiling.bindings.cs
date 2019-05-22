@@ -3,8 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Runtime.CompilerServices;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
+using UnityEngine.Profiling.Experimental;
 using UnityEngine.Scripting;
 
 namespace UnityEngine.Profiling.Memory.Experimental
@@ -21,15 +23,21 @@ namespace UnityEngine.Profiling.Memory.Experimental
 
     public class MetaData
     {
+        [NonSerialized]
         public string    content;
+        [NonSerialized]
         public string    platform;
-        public Texture2D screenshot;
+
+        [Obsolete("Starting with version 9 of the snapshot format screenshots are no longer part of the snapshot, but separate files. Use the appropriate TakeSnapshot overload to also capture screenshots.", false)]
+        public Texture2D screenshot { get; internal set;} //keep screenshot here short term to maintain backwards compatibility
     }
 
-    [NativeHeader("Modules/ProfilerEditor/Public/EditorProfilerConnection.h")]
+    [NativeHeader("Modules/Profiler/Runtime/MemorySnapshotManager.h")]
     public sealed class MemoryProfiler
     {
-        private static event Action<string, bool> snapshotFinished;
+        private static event Action<string, bool> m_SnapshotFinished;
+        private static event Action<string, bool, DebugScreenCapture> m_SaveScreenshotToDisk;
+
         public static event Action<MetaData>     createMetaData;
 
         static bool isCompiling = false;
@@ -44,12 +52,18 @@ namespace UnityEngine.Profiling.Memory.Experimental
         }
 
 
-        [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
-        [NativeMethod("TakeMemorySnapshot")]
-        [NativeConditional("ENABLE_PLAYERCONNECTION")]
-        private static extern void TakeSnapshotInternal(string path, uint captureFlag);
+
+        [StaticAccessor("profiling::memory::GetMemorySnapshotManager()", StaticAccessorType.Dot)]
+        [NativeMethod("StartOperation")]
+        [NativeConditional("ENABLE_PROFILER")]
+        private static extern void StartOperation(uint captureFlag, bool requestScreenshot, string path);
 
         public static void TakeSnapshot(string path, Action<string, bool> finishCallback, CaptureFlags captureFlags = CaptureFlags.NativeObjects | CaptureFlags.ManagedObjects)
+        {
+            TakeSnapshot(path, finishCallback, null, captureFlags);
+        }
+
+        public static void TakeSnapshot(string path, Action<string, bool> finishCallback, Action<string, bool, DebugScreenCapture> screenshotCallback, CaptureFlags captureFlags = CaptureFlags.NativeObjects | CaptureFlags.ManagedObjects)
         {
             if (isCompiling)
             {
@@ -57,15 +71,16 @@ namespace UnityEngine.Profiling.Memory.Experimental
                 return;
             }
 
-            if (snapshotFinished != null)
+            if (m_SnapshotFinished != null)
             {
                 Debug.LogWarning("Canceling snapshot, there is another snapshot in progress.");
                 finishCallback(path, false);
             }
             else
             {
-                snapshotFinished += finishCallback;
-                TakeSnapshotInternal(path, (uint)captureFlags);
+                m_SnapshotFinished += finishCallback;
+                m_SaveScreenshotToDisk += screenshotCallback;
+                StartOperation((uint)captureFlags, m_SaveScreenshotToDisk != null, path);
             }
         }
 
@@ -94,15 +109,7 @@ namespace UnityEngine.Profiling.Memory.Experimental
             int contentLength = sizeof(char) * data.content.Length;
             int platformLength = sizeof(char) * data.platform.Length;
 
-            int metaDataSize = contentLength + platformLength + sizeof(int) * 3 /*ScreenshotDataSize + content.Length + data.platform.Length*/;
-
-            byte[] screenshotRaw = null;
-
-            if (data.screenshot != null)
-            {
-                screenshotRaw = data.screenshot.GetRawTextureData();
-                metaDataSize += screenshotRaw.Length + sizeof(int) * 3 /*width, height, format*/;
-            }
+            int metaDataSize = contentLength + platformLength + sizeof(int) * 3 /*content.Length + data.platform.Length*/;
 
             byte[] metaDataBytes = new byte[metaDataSize];
             // encoded as
@@ -110,11 +117,6 @@ namespace UnityEngine.Profiling.Memory.Experimental
             //   content_data
             //   platform_data_length
             //   platform_data
-            //   screenshot_data_length
-            //     [opt: screenshot_data ]
-            //     [opt: screenshot_width ]
-            //     [opt: screenshot_height ]
-            //     [opt: screenshot_format ]
 
             int offset = 0;
             offset = WriteIntToByteArray(metaDataBytes, offset, data.content.Length);
@@ -123,20 +125,8 @@ namespace UnityEngine.Profiling.Memory.Experimental
             offset = WriteIntToByteArray(metaDataBytes, offset, data.platform.Length);
             offset = WriteStringToByteArray(metaDataBytes, offset, data.platform);
 
-            if (data.screenshot != null)
-            {
-                offset = WriteIntToByteArray(metaDataBytes, offset, screenshotRaw.Length);
-                Array.Copy(screenshotRaw, 0, metaDataBytes, offset, screenshotRaw.Length);
-                offset += screenshotRaw.Length;
-
-                offset = WriteIntToByteArray(metaDataBytes, offset, data.screenshot.width);
-                offset = WriteIntToByteArray(metaDataBytes, offset, data.screenshot.height);
-                offset = WriteIntToByteArray(metaDataBytes, offset, (int)data.screenshot.format);
-            }
-            else
-            {
-                offset = WriteIntToByteArray(metaDataBytes, offset, 0);
-            }
+            //keep this byte here to enable backwards compatibility with prev versions snapshots
+            offset = WriteIntToByteArray(metaDataBytes, offset, 0);
 
             Assertions.Assert.AreEqual(metaDataBytes.Length, offset);
 
@@ -187,13 +177,39 @@ namespace UnityEngine.Profiling.Memory.Experimental
         [RequiredByNativeCode]
         static void FinalizeSnapshot(string path, bool result)
         {
-            if (snapshotFinished != null)
+            if (m_SnapshotFinished != null)
             {
-                var onSnapshotFinished = snapshotFinished;
+                var onSnapshotFinished = m_SnapshotFinished;
 
-                snapshotFinished = null;
+                m_SnapshotFinished = null;
 
                 onSnapshotFinished(path, result);
+            }
+        }
+
+        [RequiredByNativeCode]
+        static void SaveScreenshotToDisk(string path, bool result, IntPtr pixelsPtr, int pixelsCount, TextureFormat format, int width, int height)
+        {
+            if (m_SaveScreenshotToDisk != null)
+            {
+                var saveScreenshotToDisk = m_SaveScreenshotToDisk;
+                m_SaveScreenshotToDisk = null;
+                DebugScreenCapture debugScreenCapture = default(DebugScreenCapture);
+
+                if (result)
+                {
+                    unsafe
+                    {
+                        var nonOwningNativeArray = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<byte>(pixelsPtr.ToPointer(), pixelsCount, Allocator.Persistent);
+                        debugScreenCapture.rawImageDataReference = nonOwningNativeArray;
+                    }
+
+                    debugScreenCapture.height = height;
+                    debugScreenCapture.width = width;
+                    debugScreenCapture.imageFormat = format;
+                }
+
+                saveScreenshotToDisk(path, result, debugScreenCapture);
             }
         }
     }

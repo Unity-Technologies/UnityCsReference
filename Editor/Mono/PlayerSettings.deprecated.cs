@@ -19,8 +19,7 @@ namespace UnityEditor
         //Emulator = 2,
         [Obsolete("Use AndroidArchitecture.ARMv7 instead. (UnityUpgradable) -> AndroidArchitecture.ARMv7", false)]
         ARMv7      = 3,
-        [Obsolete("Use AndroidArchitecture.X86 instead. (UnityUpgradable) -> AndroidArchitecture.X86", false)]
-        x86        = 4,
+        //x86      = 4,
     }
     // deprecated in 5.1.
     [Obsolete("TargetGlesGraphics is ignored, use SetGraphicsAPIs/GetGraphicsAPIs APIs", false)]
@@ -128,26 +127,13 @@ namespace UnityEditor
                     {
                         case AndroidArchitecture.ARMv7:
                             return AndroidTargetDevice.ARMv7;
-                        case AndroidArchitecture.X86:
-                            return AndroidTargetDevice.x86;
                         default:
                             return AndroidTargetDevice.FAT;
                     }
                 }
                 set
                 {
-                    switch (value)
-                    {
-                        case AndroidTargetDevice.ARMv7:
-                            targetArchitectures = AndroidArchitecture.ARMv7;
-                            break;
-                        case AndroidTargetDevice.x86:
-                            targetArchitectures = AndroidArchitecture.X86;
-                            break;
-                        default:
-                            targetArchitectures = AndroidArchitecture.ARMv7 | AndroidArchitecture.X86;
-                            break;
-                    }
+                    targetArchitectures = AndroidArchitecture.ARMv7;
                 }
             }
         }

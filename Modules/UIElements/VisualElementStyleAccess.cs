@@ -36,11 +36,11 @@ namespace UnityEngine.UIElements
 
         float IResolvedStyle.width => yogaNode.LayoutWidth;
         float IResolvedStyle.height => yogaNode.LayoutHeight;
-        StyleFloat IResolvedStyle.maxWidth => computedStyle.maxWidth.ToStyleFloat();
-        StyleFloat IResolvedStyle.maxHeight => computedStyle.maxHeight.ToStyleFloat();
-        StyleFloat IResolvedStyle.minWidth => computedStyle.minWidth.ToStyleFloat();
-        StyleFloat IResolvedStyle.minHeight => computedStyle.minHeight.ToStyleFloat();
-        StyleFloat IResolvedStyle.flexBasis => computedStyle.flexBasis.ToStyleFloat();
+        StyleFloat IResolvedStyle.maxWidth => ResolveLengthValue(computedStyle.maxWidth, true);
+        StyleFloat IResolvedStyle.maxHeight => ResolveLengthValue(computedStyle.maxHeight, false);
+        StyleFloat IResolvedStyle.minWidth => ResolveLengthValue(computedStyle.minWidth, true);
+        StyleFloat IResolvedStyle.minHeight => ResolveLengthValue(computedStyle.minHeight, false);
+        StyleFloat IResolvedStyle.flexBasis => new StyleFloat(yogaNode.ComputedFlexBasis);
         float IResolvedStyle.flexGrow => computedStyle.flexGrow.value;
         float IResolvedStyle.flexShrink => computedStyle.flexShrink.value;
         FlexDirection IResolvedStyle.flexDirection => computedStyle.flexDirection.value;
@@ -128,6 +128,23 @@ namespace UnityEngine.UIElements
                 return;
             }
             styleSheets.Remove(sheetAsset);
+        }
+
+        private StyleFloat ResolveLengthValue(StyleLength styleLength, bool isRow)
+        {
+            if (styleLength.keyword != StyleKeyword.Undefined)
+                return styleLength.ToStyleFloat();
+
+            var length = styleLength.value;
+            if (length.unit != LengthUnit.Percent)
+                return styleLength.ToStyleFloat();
+
+            var parent = hierarchy.parent;
+            if (parent == null)
+                return 0f;
+
+            float parentSize = isRow ? parent.resolvedStyle.width : parent.resolvedStyle.height;
+            return length.value * parentSize / 100;
         }
     }
 }

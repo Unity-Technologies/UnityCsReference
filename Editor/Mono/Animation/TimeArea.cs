@@ -211,7 +211,7 @@ namespace UnityEditor
 
                     float labelpos = Mathf.Floor(FrameToPixel(frame, frameRate, position));
                     string label = FormatTickTime(m_TickCache[i], frameRate, timeFormat);
-                    GUI.Label(new Rect(labelpos + 3, -3, 40, 20), label, timeAreaStyles.timelineTick);
+                    GUI.Label(new Rect(labelpos + 3, -1, 40, 20), label, timeAreaStyles.timelineTick);
                 }
             }
             GUI.EndGroup();

@@ -148,6 +148,8 @@ namespace UnityEditor
 
         public void OnSceneGUI()
         {
+            if (!target)
+                return;
             SkinnedMeshRenderer renderer = (SkinnedMeshRenderer)target;
 
             if (renderer.updateWhenOffscreen)

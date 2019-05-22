@@ -74,9 +74,25 @@ namespace UnityEngine.UIElements
 
         LifeCycleStatus lifeCycleStatus { get; set; }
 
-        protected internal virtual void PreDispatch() {}
+        [Obsolete("Override PreDispatch(IPanel panel) instead.")]
+        protected virtual void PreDispatch() {}
 
-        protected internal virtual void PostDispatch() {}
+        protected internal virtual void PreDispatch(IPanel panel)
+        {
+#pragma warning disable 618
+            PreDispatch();
+#pragma warning restore 618
+        }
+
+        [Obsolete("Override PostDispatch(IPanel panel) instead.")]
+        protected virtual void PostDispatch() {}
+
+        protected internal virtual void PostDispatch(IPanel panel)
+        {
+#pragma warning disable 618
+            PostDispatch();
+#pragma warning restore 618
+        }
 
         public bool bubbles
         {

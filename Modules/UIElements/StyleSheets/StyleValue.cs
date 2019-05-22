@@ -26,7 +26,6 @@ namespace UnityEngine.UIElements.StyleSheets
         public Color color;
         [FieldOffset(8)]
         public GCHandle resource;
-
         public static StyleValue Create(StylePropertyID id)
         {
             return new StyleValue() { id = id };
@@ -110,6 +109,7 @@ namespace UnityEngine.UIElements.StyleSheets
         BackgroundColor,
         BorderColor,
         BackgroundImageTintColor,
+        // OtherValues
         SliceLeft,
         SliceTop,
         SliceRight,

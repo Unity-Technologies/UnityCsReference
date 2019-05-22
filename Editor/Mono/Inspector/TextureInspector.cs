@@ -68,8 +68,16 @@ namespace UnityEditor
         class Styles
         {
             public GUIContent smallZoom, largeZoom;
-            public GUIStyle previewButton, previewSlider, previewSliderThumb, previewLabel;
-            public GUIStyle previewButtonRed, previewButtonGreen, previewButtonBlue;
+            public GUIStyle toolbarButton, previewSlider, previewSliderThumb, previewLabel;
+
+            public readonly GUIContent[] previewButtonContents =
+            {
+                EditorGUIUtility.TrIconContent("PreTexRGB"),
+                EditorGUIUtility.TrIconContent("PreTexR"),
+                EditorGUIUtility.TrIconContent("PreTexG"),
+                EditorGUIUtility.TrIconContent("PreTexB"),
+                EditorGUIUtility.TrIconContent("PreTexA")
+            };
 
             public readonly GUIContent wrapModeLabel = EditorGUIUtility.TrTextContent("Wrap Mode");
             public readonly GUIContent wrapU = EditorGUIUtility.TrTextContent("U axis");
@@ -98,10 +106,7 @@ namespace UnityEditor
                 smallZoom = EditorGUIUtility.IconContent("PreTextureMipMapLow");
                 largeZoom = EditorGUIUtility.IconContent("PreTextureMipMapHigh");
 
-                previewButton = "preButton";
-                previewButtonRed = "preButtonRed";
-                previewButtonGreen = "preButtonGreen";
-                previewButtonBlue = "preButtonBlue";
+                toolbarButton = "toolbarbutton";
                 previewSlider = "preSlider";
                 previewSliderThumb = "preSliderThumb";
                 previewLabel = "preLabelUpper";
@@ -557,23 +562,23 @@ namespace UnityEditor
                     selectedIndex = 0;
 
                 if (previewCandidates.Contains(PreviewMode.RGB))
-                    m_PreviewMode = GUILayout.Toggle(m_PreviewMode == PreviewMode.RGB, "RGB", s_Styles.previewButton)
+                    m_PreviewMode = GUILayout.Toggle(m_PreviewMode == PreviewMode.RGB, s_Styles.previewButtonContents[0], s_Styles.toolbarButton)
                         ? PreviewMode.RGB
                         : m_PreviewMode;
                 if (previewCandidates.Contains(PreviewMode.R))
-                    m_PreviewMode = GUILayout.Toggle(m_PreviewMode == PreviewMode.R, "R", s_Styles.previewButtonRed)
+                    m_PreviewMode = GUILayout.Toggle(m_PreviewMode == PreviewMode.R, s_Styles.previewButtonContents[1], s_Styles.toolbarButton)
                         ? PreviewMode.R
                         : m_PreviewMode;
                 if (previewCandidates.Contains(PreviewMode.G))
-                    m_PreviewMode = GUILayout.Toggle(m_PreviewMode == PreviewMode.G, "G", s_Styles.previewButtonGreen)
+                    m_PreviewMode = GUILayout.Toggle(m_PreviewMode == PreviewMode.G, s_Styles.previewButtonContents[2], s_Styles.toolbarButton)
                         ? PreviewMode.G
                         : m_PreviewMode;
                 if (previewCandidates.Contains(PreviewMode.B))
-                    m_PreviewMode = GUILayout.Toggle(m_PreviewMode == PreviewMode.B, "B", s_Styles.previewButtonBlue)
+                    m_PreviewMode = GUILayout.Toggle(m_PreviewMode == PreviewMode.B, s_Styles.previewButtonContents[3], s_Styles.toolbarButton)
                         ? PreviewMode.B
                         : m_PreviewMode;
                 if (previewCandidates.Contains(PreviewMode.A))
-                    m_PreviewMode = GUILayout.Toggle(m_PreviewMode == PreviewMode.A, "A", s_Styles.previewButton)
+                    m_PreviewMode = GUILayout.Toggle(m_PreviewMode == PreviewMode.A, s_Styles.previewButtonContents[4], s_Styles.toolbarButton)
                         ? PreviewMode.A
                         : m_PreviewMode;
             }
@@ -888,7 +893,7 @@ class PreviewGUI
         public static GUIStyle preButton;
         public static void Init()
         {
-            preButton = "preButton";
+            preButton = "toolbarbutton";
         }
     }
 

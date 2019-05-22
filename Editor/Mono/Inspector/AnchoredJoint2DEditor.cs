@@ -16,6 +16,8 @@ namespace UnityEditor
 
         public void OnSceneGUI()
         {
+            if (!target)
+                return;
             anchorJoint2D = (AnchoredJoint2D)target;
 
             // Ignore disabled joint.

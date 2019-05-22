@@ -87,6 +87,8 @@ namespace UnityEditor
 
         public void OnSceneGUI()
         {
+            if (!target)
+                return;
             var effector = (BuoyancyEffector2D)target;
 
             // Ignore disabled effector.

@@ -43,6 +43,10 @@ namespace UnityEngine.Networking.PlayerConnection
 
         void RegisterDisconnection(UnityAction<int> callback);
 
+        void UnregisterConnection(UnityAction<int> callback);
+
+        void UnregisterDisconnection(UnityAction<int> callback);
+
         void Send(Guid messageId, byte[] data);
     }
 }

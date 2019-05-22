@@ -30,8 +30,8 @@ namespace UnityEditor
                 {
                     var scriptClassName = behaviour.GetScriptClassName();
                     if (scriptClassName == "InvalidStateMachineBehaviour")
-                        return behaviour.name + " (Script)";
-                    return scriptClassName + " (Script)";
+                        return behaviour.name + L10n.Tr(" (Script)");
+                    return scriptClassName + L10n.Tr(" (Script)");
                 }
 
                 var meshfilter = o as MeshFilter;
@@ -58,7 +58,7 @@ namespace UnityEditor
                 {
                     var script = MonoScript.FromScriptedObject(o);
                     if (script != null)
-                        return script.GetClass().Name + " (Script)";
+                        return script.GetClass().Name + L10n.Tr(" (Script)");
                 }
 
                 return o.GetType().Name;
@@ -71,15 +71,15 @@ namespace UnityEditor
         public static string GetInspectorTitle(Object obj)
         {
             if (obj == null && (object)obj != null && (obj is MonoBehaviour || obj is ScriptableObject))
-                return " (Script)";
+                return L10n.Tr(" (Script)");
 
             if (obj == null)
-                return "Nothing Selected";
+                return L10n.Tr("Nothing Selected");
 
             var title = ObjectNames.NicifyVariableName(GetObjectTypeName(obj));
 
             if (Attribute.IsDefined(obj.GetType(), typeof(ObsoleteAttribute)))
-                title += " (Deprecated)";
+                title += L10n.Tr(" (Deprecated)");
 
             return title;
         }

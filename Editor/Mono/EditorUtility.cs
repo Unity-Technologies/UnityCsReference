@@ -4,6 +4,7 @@
 
 using System;
 using System.Linq;
+using UnityEditor.Experimental;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -66,6 +67,50 @@ namespace UnityEditor
         private static void CompressCubemapTexture(Cubemap texture, TextureFormat format)
         {
             CompressCubemapTexture(texture, format, TextureCompressionQuality.Normal);
+        }
+
+        static bool IsBuiltinResource(Texture icon)
+        {
+            return AssetDatabase.GetAssetPath(icon) != EditorResources.GetAssetPath(icon);
+        }
+
+        internal static Texture GetIconInActiveState(Texture icon)
+        {
+            if (icon != null)
+            {
+                string path = "";
+                bool isBuilding = IsBuiltinResource(icon);
+                string iconText = isBuilding ? " icon" : " Icon";
+                string onText = isBuilding ? " on" : " On";
+
+                if (isBuilding)
+                {
+                    path = EditorResources.GetAssetPath(icon);
+                }
+                else
+                {
+                    path = AssetDatabase.GetAssetPath(icon);
+                }
+
+                string selectedIconPath = "";
+
+                if (path.Contains(iconText))
+                {
+                    selectedIconPath = path.Replace(iconText, onText + iconText);
+                }
+                else if (path.Contains("@"))
+                {
+                    selectedIconPath = path.Replace("@", onText + "@");
+                }
+                else if (path.Contains(".png"))
+                {
+                    selectedIconPath = path.Replace(".png", onText + ".png");
+                }
+
+                return EditorResources.Load<Texture>(selectedIconPath, false);
+            }
+
+            return null;
         }
 
         public static string SaveFilePanelInProject(string title, string defaultName, string extension, string message)
@@ -460,26 +505,6 @@ namespace UnityEditor
                 throw new ArgumentException("The Prefab you want to instantiate is null.");
 
             return Internal_InstantiateRemoveAllNonAnimationComponentsSingle(original, position, rotation);
-        }
-
-        internal static bool IsUnityAssembly(Object target)
-        {
-            if (target == null)
-                return false;
-            Type type = target.GetType();
-            return IsUnityAssembly(type);
-        }
-
-        internal static bool IsUnityAssembly(Type type)
-        {
-            if (type == null)
-                return false;
-            string assemblyName = type.Assembly.GetName().Name;
-            if (assemblyName.StartsWith("UnityEditor"))
-                return true;
-            if (assemblyName.StartsWith("UnityEngine"))
-                return true;
-            return false;
         }
 
         private static void Internal_DisplayCustomMenu(Rect screenPosition, string[] options, bool[] enabled, bool[] separator, int[] selected, SelectMenuItemFunction callback, object userData, bool showHotkey, bool allowDisplayNames = false)

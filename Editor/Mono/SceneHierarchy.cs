@@ -25,7 +25,7 @@ namespace UnityEditor
             const string kWarningMessage = "The current sorting method is taking a lot of time. Consider using 'Transform Sort' in playmode for better performance.";
 
             public static GUIContent defaultSortingContent = new GUIContent(EditorGUIUtility.FindTexture(kCustomSorting));
-            public static GUIContent createContent = EditorGUIUtility.TrTextContent("Create");
+            public static GUIContent createContent = EditorGUIUtility.IconContent("CreateAddNew");
             public static GUIContent fetchWarning = new GUIContent("", EditorGUIUtility.FindTexture(kWarningSymbol), kWarningMessage);
 
             public static GUIStyle lockButton = "IN LockButton";
@@ -833,11 +833,12 @@ namespace UnityEditor
 
         public void GameObjectCreateDropdownButton()
         {
-            Rect rect = GUILayoutUtility.GetRect(Styles.createContent, EditorStyles.toolbarDropDown, null);
+            Rect rect = GUILayoutUtility.GetRect(Styles.createContent, EditorStyles.toolbarCreateAddNewDropDown, null);
+            bool mouseOver = rect.Contains(Event.current.mousePosition);
             if (Event.current.type == EventType.Repaint)
-                EditorStyles.toolbarDropDown.Draw(rect, Styles.createContent, false, false, false, false);
+                EditorStyles.toolbarCreateAddNewDropDown.Draw(rect, Styles.createContent, mouseOver, false, false, false);
 
-            if (Event.current.type == EventType.MouseDown && rect.Contains(Event.current.mousePosition))
+            if (Event.current.type == EventType.MouseDown && mouseOver)
             {
                 GUIUtility.hotControl = 0;
 
@@ -863,8 +864,8 @@ namespace UnityEditor
                     content.tooltip = currentSortingName;
                 }
 
-                Rect r = GUILayoutUtility.GetRect(content, EditorStyles.toolbarButton);
-                if (EditorGUI.DropdownButton(r, content, FocusType.Passive, EditorStyles.toolbarButton))
+                Rect r = GUILayoutUtility.GetRect(content, EditorStyles.toolbarButtonRight);
+                if (EditorGUI.DropdownButton(r, content, FocusType.Passive, EditorStyles.toolbarButtonRight))
                 {
                     // Build list items
                     var sortFunctionItems = new List<SceneHierarchySortingWindow.InputData>();

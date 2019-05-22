@@ -26,8 +26,8 @@ namespace UnityEditor
         Avatar m_Avatar;
 
         SerializedProperty m_AnimationType;
+        SerializedProperty m_AvatarSetup;
         SerializedProperty m_AvatarSource;
-        SerializedProperty m_CopyAvatar;
         SerializedProperty m_LegacyGenerateAnimations;
         SerializedProperty m_AnimationCompression;
         SerializedProperty m_SkinWeightsMode;
@@ -79,6 +79,8 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Humanoid", "Humanoid Mecanim animation system.")
             };
 
+            public static GUIContent SaveAvatar = EditorGUIUtility.TrTextContent("Save Avatar", "Saves the generated Avatar as a sub-asset.");
+
             public static GUIContent AnimLabel = EditorGUIUtility.TrTextContent("Generation", "Controls how animations are imported.");
             public static GUIContent[] AnimationsOpt =
             {
@@ -100,12 +102,6 @@ namespace UnityEditor
             public static GUIContent RootNode = EditorGUIUtility.TrTextContent("Root node", "Specify the root node used to extract the animation translation.");
 
             public static GUIContent AvatarDefinition = EditorGUIUtility.TrTextContent("Avatar Definition", "Choose between Create From This Model or Copy From Other Avatar. The first one creates an Avatar for this file and the second one uses an Avatar from another file to import animation.");
-
-            public static GUIContent[] AvatarDefinitionOpt =
-            {
-                EditorGUIUtility.TrTextContent("Create From This Model", "Create an Avatar based on the model from this file."),
-                EditorGUIUtility.TrTextContent("Copy From Other Avatar", "Copy an Avatar from another file to import muscle clip. No avatar will be created.")
-            };
 
             public static GUIContent SkinWeightsMode = EditorGUIUtility.TrTextContent("Skin Weights", "Control how many bone weights are imported.");
             public static GUIContent[] SkinWeightsModeOpt =
@@ -129,6 +125,7 @@ namespace UnityEditor
         internal override void OnEnable()
         {
             m_AnimationType = serializedObject.FindProperty("m_AnimationType");
+            m_AvatarSetup = serializedObject.FindProperty("m_AvatarSetup");
             m_AvatarSource = serializedObject.FindProperty("m_LastHumanDescriptionAvatarSource");
 
             // Generic bone setup
@@ -151,7 +148,6 @@ namespace UnityEditor
             m_DstHasExtraRoot = serializedObject.FindProperty("m_HumanDescription.m_HasExtraRoot");
 
             // Animation
-            m_CopyAvatar = serializedObject.FindProperty("m_CopyAvatar");
             m_LegacyGenerateAnimations = serializedObject.FindProperty("m_LegacyGenerateAnimations");
             m_AnimationCompression = serializedObject.FindProperty("m_AnimationCompression");
 
@@ -254,25 +250,27 @@ namespace UnityEditor
                 EditorGUILayout.HelpBox("The animation import setting \"" + Styles.AnimationsOpt[m_LegacyGenerateAnimations.intValue].text + "\" is deprecated.", MessageType.Warning);
         }
 
-        // Show copy avatar bool as a dropdown
-        void AvatarSourceGUI()
-        {
-            EditorGUI.BeginChangeCheck();
-            int copyValue = m_CopyAvatar.boolValue ? 1 : 0;
-            EditorGUI.showMixedValue = m_CopyAvatar.hasMultipleDifferentValues;
-            copyValue = EditorGUILayout.Popup(Styles.AvatarDefinition, copyValue, Styles.AvatarDefinitionOpt);
-            EditorGUI.showMixedValue = false;
-            if (EditorGUI.EndChangeCheck())
-                m_CopyAvatar.boolValue = (copyValue == 1);
-        }
-
         void GenericGUI()
         {
-            AvatarSourceGUI();
-
-            if (!m_CopyAvatar.hasMultipleDifferentValues)
+            using (var horizontal = new EditorGUILayout.HorizontalScope())
             {
-                if (!m_CopyAvatar.boolValue)
+                using (var propertyField = new EditorGUI.PropertyScope(horizontal.rect, Styles.AvatarDefinition, m_AvatarSetup))
+                {
+                    EditorGUI.showMixedValue = m_AvatarSetup.hasMultipleDifferentValues;
+                    using (var change = new EditorGUI.ChangeCheckScope())
+                    {
+                        var value = (ModelImporterAvatarSetup)EditorGUILayout.EnumPopup(propertyField.content, (ModelImporterAvatarSetup)m_AvatarSetup.intValue);
+                        if (change.changed)
+                            m_AvatarSetup.intValue = (int)value;
+                    }
+
+                    EditorGUI.showMixedValue = false;
+                }
+            }
+
+            if (!m_AvatarSetup.hasMultipleDifferentValues)
+            {
+                if (m_AvatarSetup.intValue == (int)ModelImporterAvatarSetup.CreateFromThisModel)
                 {
                     // Do not allow multi edit of root node if all rigs doesn't match
                     EditorGUI.BeginChangeCheck();
@@ -302,18 +300,33 @@ namespace UnityEditor
                         }
                     }
                 }
-                else
+                else if (m_AvatarSetup.intValue == (int)ModelImporterAvatarSetup.CopyFromOther)
                     CopyAvatarGUI();
             }
         }
 
         void HumanoidGUI()
         {
-            AvatarSourceGUI();
-
-            if (!m_CopyAvatar.hasMultipleDifferentValues)
+            using (var horizontal = new EditorGUILayout.HorizontalScope())
             {
-                if (!m_CopyAvatar.boolValue)
+                using (var propertyField = new EditorGUI.PropertyScope(horizontal.rect, Styles.AvatarDefinition, m_AvatarSetup))
+                {
+                    EditorGUI.showMixedValue = m_AvatarSetup.hasMultipleDifferentValues;
+                    using (var change = new EditorGUI.ChangeCheckScope())
+                    {
+                        Rect r = EditorGUILayout.GetControlRect(true, EditorGUI.kSingleLineHeight, EditorStyles.popup);
+                        var value = (ModelImporterAvatarSetup)EditorGUI.EnumPopup(r, propertyField.content, (ModelImporterAvatarSetup)m_AvatarSetup.intValue, e => (ModelImporterAvatarSetup)e != ModelImporterAvatarSetup.NoAvatar);
+                        if (change.changed)
+                            m_AvatarSetup.intValue = (int)value;
+                    }
+
+                    EditorGUI.showMixedValue = false;
+                }
+            }
+
+            if (!m_AvatarSetup.hasMultipleDifferentValues)
+            {
+                if (m_AvatarSetup.intValue == (int)ModelImporterAvatarSetup.CreateFromThisModel)
                     ConfigureAvatarGUI();
                 else
                     CopyAvatarGUI();
@@ -370,7 +383,7 @@ namespace UnityEditor
             }
 
             Rect r = EditorGUILayout.GetControlRect();
-            const int buttonWidth = 75;
+            const int buttonWidth = 80;
             GUI.Label(new Rect(r.xMax - buttonWidth - 18, r.y, 18, r.height), validationContent, EditorStyles.label);
 
             // Configure button
@@ -478,7 +491,7 @@ With this option, this model will not create any avatar but only import animatio
 
         void ShowUpdateReferenceClip()
         {
-            if (targets.Length > 1 || m_CopyAvatar.boolValue || !m_Avatar || !m_Avatar.isValid)
+            if (targets.Length > 1 || m_AvatarSetup.intValue == (int)ModelImporterAvatarSetup.CopyFromOther || !m_Avatar || !m_Avatar.isValid)
                 return;
 
             string[] paths = new string[0];
@@ -569,15 +582,8 @@ With this option, this model will not create any avatar but only import animatio
 
             ShowUpdateReferenceClip();
 
-            bool canOptimizeGameObjects = true;
-            if (animationType != ModelImporterAnimationType.Human && animationType != ModelImporterAnimationType.Generic)
-                canOptimizeGameObjects = false;
-            if (m_CopyAvatar.boolValue == true)
-                // If you have already created an Avatar for another model with a rig identical to this one, you can copy its Avatar definition.
-                // With this option, this model will not create any avatar but only import animations.
-                canOptimizeGameObjects = false;
-
-            if (canOptimizeGameObjects)
+            // OptimizeGameObject is only supported on our own avatar when animation type is not Legacy.
+            if (m_AvatarSetup.intValue == (int)ModelImporterAvatarSetup.CreateFromThisModel && animationType != ModelImporterAnimationType.Legacy)
             {
                 EditorGUILayout.PropertyField(m_OptimizeGameObjects);
                 if (m_OptimizeGameObjects.boolValue &&

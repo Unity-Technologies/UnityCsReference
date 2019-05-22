@@ -92,6 +92,10 @@ namespace UnityEditor
         public static GUIStyle textField  { get { return s_Current.m_TextField; } }
         internal GUIStyle m_TextField;
 
+        // Style used for bold text field
+        internal static GUIStyle boldTextField { get { return s_Current.m_BoldTextField; } }
+        private GUIStyle m_BoldTextField;
+
         // Style used for EditorGUI::ref::TextArea
         public static GUIStyle textArea  { get { return s_Current.m_TextArea; } }
         internal GUIStyle m_TextArea;
@@ -115,6 +119,9 @@ namespace UnityEditor
         // Style used for headings for object fields.
         public static GUIStyle objectField  { get { return s_Current.m_ObjectField; }  }
         private GUIStyle m_ObjectField;
+
+        internal static GUIStyle objectFieldButton { get { return s_Current.m_ObjectFieldButton; } }
+        private GUIStyle m_ObjectFieldButton;
 
         // Style used for headings for the Select button in object fields.
         public static GUIStyle objectFieldThumb { get { return s_Current.m_ObjectFieldThumb; }  }
@@ -191,6 +198,9 @@ namespace UnityEditor
         public static GUIStyle toolbarButton { get { return s_Current.m_ToolbarButton; } }
         private GUIStyle m_ToolbarButton;
 
+        internal static GUIStyle toolbarButtonRight { get { return s_Current.m_ToolbarButtonRight; } }
+        private GUIStyle m_ToolbarButtonRight;
+
         // Toolbar Popup
         public static GUIStyle toolbarPopup { get { return s_Current.m_ToolbarPopup; } }
         private GUIStyle m_ToolbarPopup;
@@ -198,6 +208,14 @@ namespace UnityEditor
         // Toolbar Dropdown
         public static GUIStyle toolbarDropDown { get { return s_Current.m_ToolbarDropDown; } }
         private GUIStyle m_ToolbarDropDown;
+
+        // Toolbar Dropdown Toggle
+        internal static GUIStyle toolbarDropDownToggle { get { return s_Current.m_ToolbarDropDownToggle; } }
+        private GUIStyle m_ToolbarDropDownToggle;
+
+        // Toolbar Dropdown
+        internal static GUIStyle toolbarCreateAddNewDropDown { get { return s_Current.m_ToolbarCreateAddNewDropDown; } }
+        private GUIStyle m_ToolbarCreateAddNewDropDown;
 
         // Toolbar text field
         public static GUIStyle toolbarTextField { get { return s_Current.m_ToolbarTextField; } }
@@ -226,6 +244,9 @@ namespace UnityEditor
 
         internal static GUIStyle colorPickerBox { get { return s_Current.m_ColorPickerBox; } }
         private GUIStyle m_ColorPickerBox;
+
+        internal static GUIStyle viewBackground { get { return s_Current.m_ViewBg; } }
+        private GUIStyle m_ViewBg;
 
         internal static GUIStyle inspectorBig { get { return s_Current.m_InspectorBig; } }
         private GUIStyle m_InspectorBig;
@@ -289,6 +310,9 @@ namespace UnityEditor
         internal static GUIStyle progressBarText { get { return s_Current.m_ProgressBarText; } }
         private GUIStyle m_ProgressBarBar, m_ProgressBarText, m_ProgressBarBack;
 
+        internal static GUIStyle scrollViewAlt { get { return s_Current.m_ScrollViewAlt; } }
+        private GUIStyle m_ScrollViewAlt;
+
         internal static Vector2 knobSize {get {return s_Current.m_KnobSize; }}
         internal static Vector2 miniKnobSize {get {return s_Current.m_MiniKnobSize; }}
         private Vector2 m_KnobSize = new Vector2(40, 40);
@@ -337,8 +361,10 @@ namespace UnityEditor
         private void InitSharedStyles()
         {
             m_ColorPickerBox = GetStyle("ColorPickerBox");
+            m_ViewBg = GetStyle("TabWindowBackground");
+
             m_InspectorBig = GetStyle("In BigTitle");
-            m_MiniLabel = GetStyle("miniLabel");
+            m_MiniLabel = GetStyle("MiniLabel");
             m_LargeLabel = GetStyle("LargeLabel");
             m_BoldLabel = GetStyle("BoldLabel");
             m_MiniBoldLabel = GetStyle("MiniBoldLabel");
@@ -357,8 +383,11 @@ namespace UnityEditor
             m_MiniPullDown = GetStyle("MiniPullDown");
             m_Toolbar = GetStyle("toolbar");
             m_ToolbarButton = GetStyle("toolbarbutton");
+            m_ToolbarButtonRight = GetStyle("toolbarbuttonRight");
             m_ToolbarPopup = GetStyle("toolbarPopup");
             m_ToolbarDropDown = GetStyle("toolbarDropDown");
+            m_ToolbarDropDownToggle = GetStyle("toolbarDropDownToggle");
+            m_ToolbarCreateAddNewDropDown = GetStyle("ToolbarCreateAddNewDropDown");
             m_ToolbarTextField = GetStyle("toolbarTextField");
             m_ToolbarSearchField = GetStyle("ToolbarSeachTextField");
             m_ToolbarSearchFieldPopup = GetStyle("ToolbarSeachTextFieldPopup");
@@ -391,13 +420,16 @@ namespace UnityEditor
             m_Tooltip = GetStyle("Tooltip");
             m_NotificationText = GetStyle("NotificationText");
             m_NotificationBackground = GetStyle("NotificationBackground");
+            m_ScrollViewAlt = GetStyle("ScrollViewAlt");
 
             // Former LookLikeControls styles
             m_Popup = m_LayerMaskField = GetStyle("MiniPopup");
-            m_TextField = m_NumberField = GetStyle("textField");
+            m_TextField = m_NumberField = GetStyle("TextField");
+            m_BoldTextField = GetStyle("BoldTextFIeld");
             m_Label = GetStyle("ControlLabel");
             m_ObjectField = GetStyle("ObjectField");
             m_ObjectFieldThumb = GetStyle("ObjectFieldThumb");
+            m_ObjectFieldButton = GetStyle("ObjectFieldButton");
             m_ObjectFieldMiniThumb = GetStyle("ObjectFieldMiniThumb");
             m_Toggle = GetStyle("Toggle");
             m_ToggleMixed = GetStyle("ToggleMixed");
@@ -409,12 +441,7 @@ namespace UnityEditor
             m_TextFieldDropDownText = GetStyle("TextFieldDropDownText");
 
             m_OverrideMargin = GetStyle("OverrideMargin");
-
-            m_LinkLabel = new GUIStyle(m_Label)
-            {
-                normal = {textColor = new Color(0.25f, 0.5f, 0.9f, 1f)},
-                stretchWidth = false
-            };
+            m_LinkLabel = GetStyle("LinkLabel");
 
             // Match selection color which works nicely for both light and dark skins
 
@@ -444,7 +471,7 @@ namespace UnityEditor
             };
         }
 
-        private GUIStyle GetStyle(string styleName)
+        internal GUIStyle GetStyle(string styleName)
         {
             GUIStyle s = GUI.skin.FindStyle(styleName) ?? EditorGUIUtility.GetBuiltinSkin(EditorSkin.Inspector).FindStyle(styleName);
             if (s == null)

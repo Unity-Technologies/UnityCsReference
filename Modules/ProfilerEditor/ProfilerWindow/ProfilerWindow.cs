@@ -272,6 +272,7 @@ namespace UnityEditor
             m_ProfilerWindows.Add(this);
             EditorApplication.playModeStateChanged += OnPlaymodeStateChanged;
             UserAccessiblitySettings.colorBlindConditionChanged += Initialize;
+            ProfilerUserSettings.settingsChanged += OnSettingsChanged;
         }
 
         void InitializeIfNeeded()
@@ -288,7 +289,7 @@ namespace UnityEditor
             if (m_AttachProfilerState == null)
                 m_AttachProfilerState = ConnectionUtility.GetAttachToPlayerState(this, (player) => ClearFramesCallback());
 
-            int historySize = ProfilerDriver.maxHistoryLength - 1;
+            int historySize = ProfilerUserSettings.frameCount;
 
             m_Charts = new ProfilerChart[Profiler.areaCount];
 
@@ -357,6 +358,11 @@ namespace UnityEditor
                 chart.LoadAndBindSettings();
 
             m_Initialized = true;
+        }
+
+        void OnSettingsChanged()
+        {
+            Initialize();
         }
 
         void OnToggleCPUChartSeries(bool wasToggled)
@@ -461,6 +467,7 @@ namespace UnityEditor
             m_UISystemProfiler.CurrentAreaChanged(null);
             EditorApplication.playModeStateChanged -= OnPlaymodeStateChanged;
             UserAccessiblitySettings.colorBlindConditionChanged -= Initialize;
+            ProfilerUserSettings.settingsChanged -= OnSettingsChanged;
         }
 
         void Awake()
@@ -1250,7 +1257,7 @@ namespace UnityEditor
                 var enabled = new bool[length];
                 for (int c = 0; c < length; ++c)
                 {
-                    names[c] = ((ProfilerArea)c).ToString();
+                    names[c] = L10n.Tr(((ProfilerArea)c).ToString());
                     enabled[c] = !m_Charts[c].active;
                 }
                 EditorUtility.DisplayCustomMenu(popupRect, names, enabled, null, AddAreaClick, null);
@@ -1323,13 +1330,13 @@ namespace UnityEditor
             {
                 string[] names = new string[]
                 {
-                    "None", "Managed Allocations"
+                    L10n.Tr("None"), L10n.Tr("Managed Allocations")
                 };
                 if (Unsupported.IsDeveloperMode())
                 {
                     names = new string[]
                     {
-                        "None", "Managed Allocations", "All Allocations (fast)", "All Allocations (full)"
+                        L10n.Tr("None"), L10n.Tr("Managed Allocations"), L10n.Tr("All Allocations (fast)"), L10n.Tr("All Allocations (full)")
                     };
                 }
 

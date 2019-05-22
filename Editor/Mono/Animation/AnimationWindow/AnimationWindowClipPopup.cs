@@ -171,7 +171,7 @@ namespace UnityEditor
             if (state.selection.canChangeAnimationClip)
             {
                 EditorGUI.BeginChangeCheck();
-                var newClip = DoClipPopup(state.activeAnimationClip, EditorStyles.toolbarPopup);
+                var newClip = DoClipPopup(state.activeAnimationClip, AnimationWindowStyles.animClipToolbarPopup);
                 if (EditorGUI.EndChangeCheck())
                 {
                     state.activeAnimationClip = newClip;

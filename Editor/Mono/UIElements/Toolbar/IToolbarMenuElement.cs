@@ -24,10 +24,7 @@ namespace UnityEditor.UIElements
             if (ve == null)
                 return;
 
-            Vector2 pos = new Vector2(ve.layout.xMin, ve.layout.yMax);
-            pos = ve.parent.LocalToWorld(pos);
-
-            tbe.menu.DoDisplayEditorMenu(pos);
+            tbe.menu.DoDisplayEditorMenu(ve.worldBound);
         }
     }
 }

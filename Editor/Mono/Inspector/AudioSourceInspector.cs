@@ -686,6 +686,8 @@ namespace UnityEditor
 
         void OnSceneGUI()
         {
+            if (!target)
+                return;
             AudioSource source = (AudioSource)target;
 
             Color tempColor = Handles.color;

@@ -286,7 +286,7 @@ namespace UnityEditor.UIAutomation
         }
 
         // These are not public so hardcoded here
-        const float kDockAreaTopMarginAndTabHeight = 5f + 17f;
+        const float kDockAreaTopMarginAndTabHeight = DockArea.kFloatingWindowTopBorderWidth + DockArea.kTabHeight + 1;
 
         public static Vector2 ConvertEditorWindowCoordsToGuiViewCoords(Vector2 editorWindowPosition)
         {

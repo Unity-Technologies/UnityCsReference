@@ -338,7 +338,7 @@ namespace UnityEditor
 
                 // 0. Selection row rect
                 if (selected && repainting)
-                    Styles.selectionStyle.Draw(rowRect, false, false, true, focused);
+                    selectionStyle.Draw(rowRect, false, false, true, focused);
 
                 bool validItem    = (item != null);
                 bool isFolder     = (item != null) ? item.isFolder     : true;
@@ -467,7 +467,7 @@ namespace UnityEditor
             void DoIconAndText(TreeViewItem item, Rect contentRect, bool selected, bool focused)
             {
                 EditorGUIUtility.SetIconSize(new Vector2(k_IconWidth, k_IconWidth)); // If not set we see icons scaling down if text is being cropped
-                GUIStyle lineStyle = Styles.lineStyle;
+                lineStyle = Styles.lineStyle;
                 lineStyle.padding.left = 0; // padding could have been set by other tree views
                 contentRect.height += 5; // with the default row height, underscore and lower parts of characters like g, p, etc. were not visible
                 if (Event.current.type == EventType.Repaint)
@@ -540,7 +540,7 @@ namespace UnityEditor
 
                 ImportPackageItem[] items = m_PackageImportView.packageItems;
 
-                Dictionary<string, PackageImportTreeViewItem> treeViewFolders = new Dictionary<string, PackageImportTreeViewItem>();
+                Dictionary<string, TreeViewItem> treeViewFolders = new Dictionary<string, TreeViewItem>();
                 for (int i = 0; i < items.Length; i++)
                 {
                     var item = items[i];
@@ -552,7 +552,14 @@ namespace UnityEditor
                     string folderPath = Path.GetDirectoryName(item.destinationAssetPath).ConvertSeparatorsToUnity();
 
                     // Ensure folders. This is for when installed packages have been moved to other folders.
-                    TreeViewItem targetFolder = EnsureFolderPath(folderPath, treeViewFolders, initExpandedState);
+
+                    TreeViewItem targetFolder;
+                    treeViewFolders.TryGetValue(folderPath, out targetFolder);
+
+                    if (targetFolder == null)
+                    {
+                        targetFolder = EnsureFolderPath(folderPath, treeViewFolders, initExpandedState);
+                    }
 
                     // Add file to folder
                     if (targetFolder != null)
@@ -575,7 +582,7 @@ namespace UnityEditor
                     m_TreeView.state.expandedIDs.Sort();
             }
 
-            TreeViewItem EnsureFolderPath(string folderPath, Dictionary<string, PackageImportTreeViewItem> treeViewFolders, bool initExpandedState)
+            TreeViewItem EnsureFolderPath(string folderPath, Dictionary<string, TreeViewItem> treeViewFolders, bool initExpandedState)
             {
                 //We're in the root folder, so just return the root item as the parent.
                 if (folderPath == "")
@@ -586,7 +593,9 @@ namespace UnityEditor
                 TreeViewItem item = TreeViewUtility.FindItem(id, m_RootItem);
 
                 if (item != null)
+                {
                     return item;
+                }
 
                 // Add folders as needed
                 string[] splitPath = folderPath.Split('/');
@@ -611,7 +620,7 @@ namespace UnityEditor
 
                     id = currentPath.GetHashCode();
 
-                    PackageImportTreeViewItem foundItem;
+                    TreeViewItem foundItem;
                     if (treeViewFolders.TryGetValue(currentPath, out foundItem))
                     {
                         currentItem = foundItem;

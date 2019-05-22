@@ -20,8 +20,8 @@ namespace UnityEditorInternal
         private GUIStyle m_AnimationRowEvenStyle;
         private GUIStyle m_AnimationRowOddStyle;
         private GUIStyle m_AnimationSelectionTextField;
-        private GUIStyle m_AnimationLineStyle;
         private GUIStyle m_AnimationCurveDropdown;
+        private bool m_StyleInitialized;
         private AnimationWindowHierarchyNode m_RenamedNode;
         private Color m_LightSkinPropertyTextColor = new Color(.35f, .35f, .35f);
         private Color m_PhantomCurveColor = new Color(0f, 153f / 255f, 153f / 255f);
@@ -56,19 +56,19 @@ namespace UnityEditorInternal
 
         protected void InitStyles()
         {
-            if (m_AnimationRowEvenStyle == null)
-                m_AnimationRowEvenStyle = "AnimationRowEven";
-            if (m_AnimationRowOddStyle == null)
-                m_AnimationRowOddStyle = "AnimationRowOdd";
-            if (m_AnimationSelectionTextField == null)
-                m_AnimationSelectionTextField = "AnimationSelectionTextField";
-            if (m_AnimationLineStyle == null)
+            if (!m_StyleInitialized)
             {
-                m_AnimationLineStyle = Styles.lineStyle;
-                m_AnimationLineStyle.padding.left = 0;
-            }
-            if (m_AnimationCurveDropdown == null)
+                m_AnimationRowEvenStyle = "AnimationRowEven";
+                m_AnimationRowOddStyle = "AnimationRowOdd";
+                m_AnimationSelectionTextField = "AnimationSelectionTextField";
+
+                lineStyle = Styles.lineStyle;
+                lineStyle.padding.left = 0;
+
                 m_AnimationCurveDropdown = "AnimPropDropdown";
+
+                m_StyleInitialized = true;
+            }
         }
 
         protected void DoNodeGUI(Rect rect, AnimationWindowHierarchyNode node, bool selected, bool focused, int row)
@@ -190,9 +190,9 @@ namespace UnityEditorInternal
             {
                 Rect toggleRect = rect;
                 toggleRect.x = indent;
-                toggleRect.width = Styles.foldoutWidth;
+                toggleRect.width = foldoutStyleWidth;
                 EditorGUI.BeginChangeCheck();
-                bool newExpandedValue = GUI.Toggle(toggleRect, m_HierarchyItemFoldControlIDs[row], m_TreeView.data.IsExpanded(node), GUIContent.none, Styles.foldout);
+                bool newExpandedValue = GUI.Toggle(toggleRect, m_HierarchyItemFoldControlIDs[row], m_TreeView.data.IsExpanded(node), GUIContent.none, foldoutStyle);
                 if (EditorGUI.EndChangeCheck())
                 {
                     if (Event.current.alt)
@@ -210,11 +210,11 @@ namespace UnityEditorInternal
                 {
                     Rect toggleRect = rect;
                     toggleRect.x = indent;
-                    toggleRect.width = Styles.foldoutWidth;
+                    toggleRect.width = foldoutStyleWidth;
 
                     EditorGUI.BeginChangeCheck();
                     bool tallMode = hierarchyState.GetTallMode(hierarchyPropertyNode);
-                    tallMode = GUI.Toggle(toggleRect, m_HierarchyItemFoldControlIDs[row], tallMode, GUIContent.none, Styles.foldout);
+                    tallMode = GUI.Toggle(toggleRect, m_HierarchyItemFoldControlIDs[row], tallMode, GUIContent.none, foldoutStyle);
                     if (EditorGUI.EndChangeCheck())
                         hierarchyState.SetTallMode(hierarchyPropertyNode, tallMode);
                 }
@@ -229,7 +229,7 @@ namespace UnityEditorInternal
             if (Event.current.type == EventType.Repaint)
             {
                 if (selected)
-                    Styles.selectionStyle.Draw(rect, false, false, true, focused);
+                    selectionStyle.Draw(rect, false, false, true, focused);
 
                 // Leave some space for the value field that comes after.
                 if (node is AnimationWindowHierarchyPropertyNode)
@@ -257,7 +257,7 @@ namespace UnityEditorInternal
                     tooltipText = "Target for curve is ambiguous since there are multiple GameObjects with same name (" + node.path + ")";
                 }
 
-                Color oldColor = m_AnimationLineStyle.normal.textColor;
+                Color oldColor = lineStyle.normal.textColor;
                 Color textColor = oldColor;
                 if (node.depth == 0)
                 {
@@ -283,12 +283,12 @@ namespace UnityEditorInternal
                     textColor = isPhantom ? phantomColor : textColor;
                 }
                 textColor = isLeftOverCurve || isAmbiguous ? k_LeftoverCurveColor : textColor;
-                SetStyleTextColor(m_AnimationLineStyle, textColor);
+                SetStyleTextColor(lineStyle, textColor);
 
-                rect.xMin += (int)(indent + Styles.foldoutWidth + m_AnimationLineStyle.margin.left);
-                GUI.Label(rect, Styles.content, m_AnimationLineStyle);
+                rect.xMin += (int)(indent + foldoutStyleWidth + lineStyle.margin.left);
+                GUI.Label(rect, Styles.content, lineStyle);
 
-                SetStyleTextColor(m_AnimationLineStyle, oldColor);
+                SetStyleTextColor(lineStyle, oldColor);
             }
 
             if (IsRenaming(node.id) && Event.current.type != EventType.Layout)

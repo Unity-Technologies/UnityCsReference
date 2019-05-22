@@ -4,7 +4,6 @@
 
 using UnityEngine.UIElements;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -136,6 +135,9 @@ namespace UnityEditor.PackageManager.UI
             var stateClass = GetIconStateId(displayPackage);
             if (displayPackage.State == PackageState.Outdated && package.LatestUpdate == package.Current)
                 stateClass = GetIconStateId(PackageState.UpToDate);
+            if (displayPackage.IsInDevelopment)
+                stateClass = "development";
+            // Error state should be last as it should supercede other states
             if (package.Error != null)
                 stateClass = GetIconStateId(PackageState.Error);
             if (stateClass ==  GetIconStateId(PackageState.UpToDate) && package.Current != null)

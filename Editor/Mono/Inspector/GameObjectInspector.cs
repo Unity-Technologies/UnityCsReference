@@ -33,10 +33,11 @@ namespace UnityEditor
             public static GUIContent layerContent = EditorGUIUtility.TrTextContent("Layer", "The layer that this GameObject is in.\n\nChoose Add Layer... to edit the list of available layers.");
             public static GUIContent tagContent = EditorGUIUtility.TrTextContent("Tag", "The tag that this GameObject has.\n\nChoose Untagged to remove the current tag.\n\nChoose Add Tag... to edit the list of available tags.");
 
-            public static float tagFieldWidth;
-            public static float layerFieldWidth;
+            public static float tagFieldWidth => EditorGUI.CalcPrefixLabelWidth(Styles.tagContent, EditorStyles.boldLabel);
+            public static float layerFieldWidth => EditorGUI.CalcPrefixLabelWidth(Styles.layerContent, EditorStyles.boldLabel);
 
             public static GUIStyle staticDropdown = "StaticDropdown";
+            public static GUIStyle tagPopup = new GUIStyle(EditorStyles.popup);
             public static GUIStyle layerPopup = new GUIStyle(EditorStyles.popup);
             public static GUIStyle overridesDropdown = new GUIStyle("MiniPullDown");
             public static GUIStyle prefabButtonsHorizontalLayout = new GUIStyle { fixedHeight = 17, margin = new RectOffset { top = 1, bottom = 1 } };
@@ -56,7 +57,7 @@ namespace UnityEditor
             // Columns correspond to PrefabTypeUtility.PrefabAssetType (see comments above rows).
             // Rows correspond to PrefabTypeUtility.PrefabInstanceStatus (None, Connected, Disconnected, Missing).
             // If missing, both enums will be "Missing".
-            public static GUIContent[,] goTypeLabel =
+            static public GUIContent[,] goTypeLabel =
             {
                 // None
                 { null, null, null, null },
@@ -72,9 +73,6 @@ namespace UnityEditor
 
             static Styles()
             {
-                tagFieldWidth = EditorStyles.boldLabel.CalcSize(tagContent).x;
-                layerFieldWidth = EditorStyles.boldLabel.CalcSize(layerContent).x;
-
                 // Seems to be a bug in the way controls with margin internal to layout groups with padding calculate position. We'll work around it here.
                 layerPopup.margin.right = 0;
                 overridesDropdown.margin.right = 0;
@@ -161,8 +159,9 @@ namespace UnityEditor
             PrefabAssetType firstType = PrefabUtility.GetPrefabAssetType(targets[0]);
             PrefabInstanceStatus firstStatus = PrefabUtility.GetPrefabInstanceStatus(targets[0]);
 
-            foreach (GameObject go in targets)
+            foreach (var o in targets)
             {
+                var go = (GameObject)o;
                 PrefabAssetType type = PrefabUtility.GetPrefabAssetType(go);
                 PrefabInstanceStatus status = PrefabUtility.GetPrefabInstanceStatus(go);
                 if (type != firstType || status != firstStatus)
@@ -188,7 +187,7 @@ namespace UnityEditor
             }
         }
 
-        void OnDisable()
+        internal void OnDisable()
         {
             foreach (var previewData in m_PreviewInstances.Values)
                 previewData.Dispose();
@@ -255,7 +254,8 @@ namespace UnityEditor
             }
 
             EditorGUILayout.BeginHorizontal();
-            EditorGUI.ObjectIconDropDown(GUILayoutUtility.GetRect(kIconSize, kIconSize, GUILayout.ExpandWidth(false)), targets, true, icon, m_Icon);
+            Vector2 dropDownSize = EditorGUI.GetObjectIconDropDownSize(kIconSize, kIconSize);
+            EditorGUI.ObjectIconDropDown(GUILayoutUtility.GetRect(dropDownSize.x, dropDownSize.y, GUILayout.ExpandWidth(false)), targets, true, icon, m_Icon);
             DrawPostIconContent();
 
             using (new EditorGUI.DisabledScope(m_ImmutableSelf))
@@ -276,7 +276,7 @@ namespace UnityEditor
                         EditorGUILayout.EndHorizontal();
 
                         // Name
-                        EditorGUILayout.DelayedTextField(m_Name, GUIContent.none);
+                        EditorGUILayout.DelayedTextField(m_Name, GUIContent.none, EditorStyles.boldTextField);
 
                         // Static flags toggle
                         DoStaticToggleField(go);
@@ -286,10 +286,14 @@ namespace UnityEditor
                     }
                     EditorGUILayout.EndHorizontal();
 
+                    EditorGUILayout.Space(EditorGUI.kControlVerticalSpacing);
+
                     EditorGUILayout.BeginHorizontal();
                     {
                         // Tag
                         DoTagsField(go);
+
+                        EditorGUILayout.Space(EditorGUI.kDefaultSpacing, false);
 
                         // Layer
                         DoLayerField(go);
@@ -303,12 +307,23 @@ namespace UnityEditor
             // Prefab Toolbar
             if (EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None)
             {
+                EditorGUILayout.Space(EditorGUI.kControlVerticalSpacing);
+
                 DoPrefabButtons();
             }
 
             serializedObject.ApplyModifiedProperties();
 
             return true;
+        }
+
+        void DoPrefixLabel(GUIContent label, GUIStyle style)
+        {
+            var rect = GUILayoutUtility.GetRect(label, style, GUILayout.ExpandWidth(false));
+
+            rect.height = Math.Max(EditorGUI.kSingleLineHeight, rect.height);
+
+            GUI.Label(rect, label, style);
         }
 
         private void DoPrefabButtons()
@@ -340,11 +355,13 @@ namespace UnityEditor
                     if (m_IsDisconnected || m_IsMissing)
                     {
                         GUI.contentColor = GUI.skin.GetStyle("CN StatusWarn").normal.textColor;
-                        GUILayout.Label(prefixLabel, EditorStyles.whiteLabel, GUILayout.ExpandWidth(false));
+                        DoPrefixLabel(prefixLabel, EditorStyles.whiteLabel);
                         GUI.contentColor = Color.white;
                     }
                     else
-                        GUILayout.Label(prefixLabel, GUILayout.ExpandWidth(false));
+                    {
+                        DoPrefixLabel(prefixLabel, EditorStyles.label);
+                    }
                     EditorGUILayout.EndHorizontal();
                 }
 
@@ -446,17 +463,9 @@ namespace UnityEditor
 
         private void DoTagsField(GameObject go)
         {
-            string tagName = null;
-            try
-            {
-                tagName = go.tag;
-            }
-            catch (System.Exception)
-            {
-                tagName = "Undefined";
-            }
+            string tagName = go.tag ?? "Undefined";
             EditorGUIUtility.labelWidth = Styles.tagFieldWidth;
-            Rect tagRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.popup);
+            Rect tagRect = GUILayoutUtility.GetRect(GUIContent.none, Styles.tagPopup);
             EditorGUI.BeginProperty(tagRect, GUIContent.none, m_Tag);
             EditorGUI.BeginChangeCheck();
             string tag = EditorGUI.TagField(tagRect, Styles.tagContent, tagName);
@@ -476,8 +485,11 @@ namespace UnityEditor
             EditorGUI.showMixedValue = m_StaticEditorFlags.hasMultipleDifferentValues;
             int changedFlags;
             bool changedToValue;
+            var rect = GUILayoutUtility.GetRect(GUIContent.none, Styles.staticDropdown, GUILayout.ExpandWidth(false));
+
+            rect.height = Math.Max(EditorGUIUtility.singleLineHeight, rect.height);
             EditorGUI.EnumFlagsField(
-                GUILayoutUtility.GetRect(GUIContent.none, Styles.staticDropdown, GUILayout.ExpandWidth(false)),
+                rect,
                 GUIContent.none,
                 GameObjectUtility.GetStaticEditorFlags(go),
                 false,
@@ -498,6 +510,8 @@ namespace UnityEditor
         private void DoStaticToggleField(GameObject go)
         {
             var staticRect = GUILayoutUtility.GetRect(Styles.staticContent, EditorStyles.toggle, GUILayout.ExpandWidth(false));
+
+            staticRect.height = Math.Max(EditorGUIUtility.singleLineHeight, staticRect.height);
             EditorGUI.BeginProperty(staticRect, GUIContent.none, m_StaticEditorFlags);
             EditorGUI.BeginChangeCheck();
             var toggleRect = staticRect;
@@ -532,8 +546,11 @@ namespace UnityEditor
         {
             UnityObject[] objects = GetObjects(includeChildren);
             Undo.RecordObjects(objects, "Change Layer of " + targetTitle);
-            foreach (GameObject go in objects)
+            foreach (var o in objects)
+            {
+                var go = (GameObject)o;
                 go.layer = layer;
+            }
         }
 
         public override void ReloadPreviewInstances()

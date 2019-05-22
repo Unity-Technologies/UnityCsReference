@@ -426,6 +426,8 @@ namespace UnityEditor
                     osState = "Connecting...";
                 else if (Provider.onlineState == OnlineState.Offline)
                     osState = "Disconnected";
+                else if (EditorUserSettings.WorkOffline)
+                    osState = "Work Offline";
 
                 EditorGUILayout.LabelField(Content.status.text, osState);
 

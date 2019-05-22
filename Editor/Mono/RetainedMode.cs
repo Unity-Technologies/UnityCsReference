@@ -29,8 +29,6 @@ namespace UnityEditor
             set { EditorPrefs.SetBool(k_UielementsUxmllivereloadPrefsKey, value); }
         }
 
-        static bool s_FontInitialized = false;
-
         static RetainedMode()
         {
             UIElementsUtility.s_BeginContainerCallback = OnBeginContainer;
@@ -43,11 +41,7 @@ namespace UnityEditor
 
         static void OnBeginContainer(IMGUIContainer c)
         {
-            if (!s_FontInitialized)
-            {
-                s_FontInitialized = true;
-                LocalizedEditorFontManager.LocalizeEditorFonts();
-            }
+            LocalizedEditorFontManager.LocalizeEditorFonts();
             HandleUtility.BeginHandles();
         }
 
@@ -72,6 +66,7 @@ namespace UnityEditor
 
                 // Dispatch all timer update messages to each scheduled item
                 panel.timerEventScheduler.UpdateScheduledEvents();
+                panel.UpdateAnimations();
                 panel.UpdateBindings();
             }
         }

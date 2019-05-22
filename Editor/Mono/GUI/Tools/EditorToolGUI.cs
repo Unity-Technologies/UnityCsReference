@@ -9,6 +9,8 @@ using System.Linq;
 using UnityEngine;
 using UObject = UnityEngine.Object;
 using UnityEditor.EditorTools;
+using UnityEditor.StyleSheets;
+using UnityEditor.Experimental;
 
 namespace UnityEditor
 {
@@ -123,25 +125,31 @@ namespace UnityEditor
         };
 
         static readonly List<EditorTool> s_EditorToolModes = new List<EditorTool>(8);
+        public static readonly StyleRect s_ButtonRect = EditorResources.GetStyle("AppToolbar-Button").GetRect(StyleCatalogKeyword.size, StyleRect.Size(22, 22));
 
         internal static Rect GetThinArea(Rect pos)
         {
-            return new Rect(pos.x, 7, pos.width, 18);
+            return new Rect(pos.x, 4, pos.width, s_ButtonRect.height);
         }
 
         internal static Rect GetThickArea(Rect pos)
         {
-            return new Rect(pos.x, 5, pos.width, 24);
+            return new Rect(pos.x, 4, pos.width, s_ButtonRect.height);
         }
 
         internal static void DoBuiltinToolSettings(Rect rect)
         {
+            DoBuiltinToolSettings(rect, "ButtonLeft", "ButtonRight");
+        }
+
+        internal static void DoBuiltinToolSettings(Rect rect, GUIStyle buttonLeftStyle, GUIStyle buttonRightStyle)
+        {
             GUI.SetNextControlName("ToolbarToolPivotPositionButton");
-            Tools.pivotMode = (PivotMode)EditorGUI.CycleButton(new Rect(rect.x, rect.y, rect.width / 2, rect.height), (int)Tools.pivotMode, s_PivotIcons, "ButtonLeft");
+            Tools.pivotMode = (PivotMode)EditorGUI.CycleButton(new Rect(rect.x, rect.y, rect.width / 2, rect.height), (int)Tools.pivotMode, s_PivotIcons, buttonLeftStyle);
             if (Tools.current == Tool.Scale && Selection.transforms.Length < 2)
                 GUI.enabled = false;
             GUI.SetNextControlName("ToolbarToolPivotOrientationButton");
-            PivotRotation tempPivot = (PivotRotation)EditorGUI.CycleButton(new Rect(rect.x + rect.width / 2, rect.y, rect.width / 2, rect.height), (int)Tools.pivotRotation, s_PivotRotation, "ButtonRight");
+            PivotRotation tempPivot = (PivotRotation)EditorGUI.CycleButton(new Rect(rect.x + rect.width / 2, rect.y, rect.width / 2, rect.height), (int)Tools.pivotRotation, s_PivotRotation, buttonRightStyle);
             if (Tools.pivotRotation != tempPivot)
             {
                 Tools.pivotRotation = tempPivot;

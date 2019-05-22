@@ -109,8 +109,6 @@ namespace UnityEditor
                 GUILayout.Space(k_WindowPadding + paddingOffset);
                 paddingOffset = 0f;
                 EditorGUIUtility.ResetGUIState();
-                GUI.skin = EditorGUIUtility.GetBuiltinSkin(EditorSkin.Scene);
-                EditorStyles.UpdateSkinCache(1);              // EditorResources.h defines this as the index for the dark skin
                 GUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
                 GUILayout.BeginVertical(win.m_Title, GUI.skin.window);
@@ -118,7 +116,6 @@ namespace UnityEditor
                 GUILayout.EndVertical();
                 GUILayout.EndHorizontal();
             }
-            EditorStyles.UpdateSkinCache();              // Sets the cache back according to the user selected skin
             GUILayout.EndVertical();
             Rect inputEaterRect = GUILayoutUtility.GetLastRect();
             EatMouseInput(inputEaterRect);
@@ -178,13 +175,15 @@ namespace UnityEditor
                     return;
             }
 
-            OverlayWindow newWindow = new OverlayWindow();
-            newWindow.m_Title = title;
-            newWindow.m_SceneViewFunc = sceneViewFunc;
-            newWindow.m_PrimaryOrder = order;
-            newWindow.m_SecondaryOrder = m_Windows.Count; // just use a value that is unique across overlays
-            newWindow.m_Target = target;
-            newWindow.m_EditorWindow = window;
+            OverlayWindow newWindow = new OverlayWindow
+            {
+                m_Title = title,
+                m_SceneViewFunc = sceneViewFunc,
+                m_PrimaryOrder = order,
+                m_SecondaryOrder = m_Windows.Count,
+                m_Target = target,
+                m_EditorWindow = window
+            };
 
             m_Windows.Add(newWindow);
         }

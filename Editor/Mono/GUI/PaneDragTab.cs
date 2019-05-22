@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor.AnimatedValues;
 using UnityEngine;
-using UnityEditor;
+using UnityEditor.StyleSheets;
+using UnityEditor.Experimental;
 
 namespace UnityEditor
 {
@@ -13,31 +13,32 @@ namespace UnityEditor
     {
         const float kMaxArea = 50000.0f;
 
-        [SerializeField]
 #pragma warning disable 169
-        bool m_Shadow;
 
-        static PaneDragTab s_Get;
-        const float kTopThumbnailOffset = 10;
-        [SerializeField]
-        Vector2 m_FullWindowSize = new Vector2(80, 60);
+        private static PaneDragTab s_Get;
+        private const float kTopThumbnailOffset = 1;
+        private float m_TargetAlpha = 1.0f;
+        private DropInfo.Type m_Type = (DropInfo.Type)(-1);
+        private GUIContent m_Content;
 
-        [SerializeField]
-        Rect m_TargetRect;
-        [SerializeField]
-        static GUIStyle s_PaneStyle, s_TabStyle;
+        [SerializeField] bool m_Shadow;
+        [SerializeField] Vector2 m_FullWindowSize = new Vector2(80, 60);
+        [SerializeField] Rect m_TargetRect;
+        [SerializeField] internal ContainerWindow m_Window;
+        [SerializeField] ContainerWindow m_InFrontOfWindow = null;
 
-        bool m_TabVisible;
+        private static class Styles
+        {
+            private static readonly StyleBlock tab = EditorResources.GetStyle("tab");
+            public static readonly float tabMinWidth = tab.GetFloat(StyleCatalogKeyword.minWidth, 50.0f);
+            public static readonly float tabMaxWidth = tab.GetFloat(StyleCatalogKeyword.maxWidth, 150.0f);
+            public static readonly float tabWidthPadding = tab.GetFloat(StyleCatalogKeyword.paddingRight);
 
-        float m_TargetAlpha = 1.0f;
-
-        DropInfo.Type m_Type = (DropInfo.Type)(-1);
-
-        GUIContent m_Content;
-        [SerializeField]
-        internal ContainerWindow m_Window;
-        [SerializeField]
-        ContainerWindow m_InFrontOfWindow = null;
+            public static GUIStyle dragtab = "dragtab";
+            public static GUIStyle background = "dockarea";
+            public static GUIStyle view = "TabWindowBackground";
+            public static readonly GUIStyle tabLabel = new GUIStyle("dragtab") { name = "dragtab-label" };
+        }
 
         static public PaneDragTab get
         {
@@ -87,8 +88,6 @@ namespace UnityEditor
                     m_TargetRect = di.rect;
                     break;
             }
-
-            m_TabVisible = di.type == DropInfo.Type.Tab;
 
             m_TargetRect.x = Mathf.Round(m_TargetRect.x);
             m_TargetRect.y = Mathf.Round(m_TargetRect.y);
@@ -145,25 +144,31 @@ namespace UnityEditor
 
         protected override void OldOnGUI()
         {
-            if (s_PaneStyle == null)
-            {
-                s_PaneStyle = "dragtabdropwindow";
-                s_TabStyle = "dragtab";
-            }
+            if (Event.current.type != EventType.Repaint)
+                return;
 
-            if (Event.current.type == EventType.Repaint)
-            {
-                Color oldGUIColor = GUI.color;
-                GUI.color = Color.white;
-                s_PaneStyle.Draw(new Rect(0, 0, position.width, position.height), m_TabVisible ? GUIContent.none : m_Content, false,  false, true, true);
-                if (m_TabVisible)
-                {
-                    s_TabStyle.Draw(new Rect(0, 0, position.width, position.height), m_Content, false,  false, true, true);
-                }
-                GUI.color = oldGUIColor;
+            const float dragTabOffsetX = 2f;
+            const float dragTabOffsetY = 2f;
+            const float dragTabHeight = 18f;
 
-                m_Window.SetAlpha(m_TargetAlpha);  //We currently only support this on macOS
-            }
+            float minWidth, expectedWidth;
+            Styles.dragtab.CalcMinMaxWidth(m_Content, out minWidth, out expectedWidth);
+            float tabWidth = Mathf.Max(Mathf.Min(expectedWidth, Styles.tabMaxWidth), Styles.tabMinWidth) + Styles.tabWidthPadding;
+            Rect windowRect = new Rect(0, 0, position.width, position.height);
+            Rect tabPositionRect = new Rect(dragTabOffsetX, dragTabOffsetY, tabWidth, dragTabHeight);
+            float roundedPosX = Mathf.Round(tabPositionRect.x);
+            float roundedWidth = Mathf.Round(tabPositionRect.x + tabPositionRect.width) - roundedPosX;
+            Rect tabContentRect = new Rect(roundedPosX, tabPositionRect.y, roundedWidth, tabPositionRect.height);
+            Rect viewRect = new Rect(dragTabOffsetX, tabContentRect.yMax - 2f,
+                position.width - dragTabOffsetX * 2, position.height - tabContentRect.yMax - dragTabOffsetY + 2f);
+
+            Styles.background.Draw(windowRect, GUIContent.none, false, false, true, true);
+            Styles.dragtab.Draw(tabContentRect, false, true, false, false);
+            Styles.view.Draw(viewRect, GUIContent.none, false, false, true, true);
+            GUI.Label(tabPositionRect, m_Content, Styles.tabLabel);
+
+            // We currently only support this on macOS
+            m_Window.SetAlpha(m_TargetAlpha);
         }
     }
 } // namespace

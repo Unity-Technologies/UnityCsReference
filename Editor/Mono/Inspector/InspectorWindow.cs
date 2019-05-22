@@ -13,6 +13,7 @@ using UnityEngine;
 using UnityEditorInternal;
 using UnityEditorInternal.VersionControl;
 using UnityEditor.UIElements;
+using UnityEditor.StyleSheets;
 using UnityEngine.Assertions.Comparers;
 using UnityEngine.Scripting;
 
@@ -46,7 +47,7 @@ namespace UnityEditor
 
         protected const float kBottomToolbarHeight = 17f;
         const float kAddComponentButtonHeight = 45f;
-        internal const int kInspectorPaddingLeft = 4 + 10;
+        internal const int kInspectorPaddingLeft = 8 + 10;
         internal const int kInspectorPaddingRight = 4;
         internal const float kEditorElementPaddingBottom = 2f;
 
@@ -149,6 +150,9 @@ namespace UnityEditor
             public static readonly string objectDisabledModuleWithDependencyWarningFormat = L10n.Tr(
                 "The built-in package '{0}', which is required by the package '{1}', which implements this component type, has been disabled in Package Manager. This object will be removed in play mode and from any builds you make."
             );
+
+            public static SVC<float> lineSeparatorOffset = new SVC<float>("AC-Button", "--separator-line-top-offset");
+            public static SVC<Color> lineSeparatorColor = new SVC<Color>("--theme-line-separator-color", Color.red);
         }
 
 
@@ -1512,6 +1516,8 @@ namespace UnityEditor
                 return false;
             if (!m_RemovedComponents.Contains(comp))
                 return false;
+            if (comp.IsCoupledComponent())
+                return false;
 
             return true;
         }
@@ -1705,9 +1711,9 @@ namespace UnityEditor
 
         private void DrawSplitLine(float y)
         {
-            Rect position = new Rect(0, y, m_Pos.width + 1, 1);
-            Rect uv = new Rect(0, 1f, 1, 1f - 1f / EditorStyles.inspectorTitlebar.normal.background.height);
-            GUI.DrawTextureWithTexCoords(position, EditorStyles.inspectorTitlebar.normal.background, uv);
+            Rect position = new Rect(0, y - Styles.lineSeparatorOffset, m_Pos.width + 1, 1);
+            using (new GUI.ColorScope(Styles.lineSeparatorColor * GUI.color))
+                GUI.DrawTexture(position, EditorGUIUtility.whiteTexture);
         }
 
         // Invoked from C++
@@ -1882,15 +1888,15 @@ namespace UnityEditor
                     continue;
                 }
 
+                // We won't have an EditorElement for editors that are normally culled so we should skip this
+                if (ShouldCullEditor(editors, newEditorsIndex))
+                {
+                    ++newEditorsIndex;
+                    continue;
+                }
+
                 if (ed.target != currentEd.editor.target)
                 {
-                    // We won't have an EditorElement for editors that are normally culled so we should skip this
-                    if (ShouldCullEditor(editors, newEditorsIndex))
-                    {
-                        ++newEditorsIndex;
-                        continue;
-                    }
-
                     return null;
                 }
 

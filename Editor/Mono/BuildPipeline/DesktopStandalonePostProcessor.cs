@@ -79,6 +79,8 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
         if (PlayerSettings.forceSingleInstance)
             config.AddKey("single-instance");
+        if (!PlayerSettings.useFlipModelSwapchain)
+            config.AddKey("force-d3d11-bltblt-mode");
         if (IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildPipeline.GetBuildTargetGroup(target)))
             config.Set("mono-codegen", "il2cpp");
         if ((options & BuildOptions.EnableHeadlessMode) != 0)

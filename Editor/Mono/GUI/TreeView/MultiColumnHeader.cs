@@ -312,8 +312,8 @@ namespace UnityEditor.IMGUI.Controls
 
             GUIStyle style = GetStyle(column.headerTextAlignment);
 
-            float labelHeight = EditorGUIUtility.singleLineHeight;
-            Rect labelRect = new Rect(headerRect.x, headerRect.yMax - labelHeight - DefaultGUI.labelSpaceFromBottom, headerRect.width, labelHeight);
+            float labelHeight = EditorGUI.kWindowToolbarHeight;
+            Rect labelRect = new Rect(headerRect.x, headerRect.yMax - labelHeight, headerRect.width, labelHeight);
             GUI.Label(labelRect, column.headerContent, style);
         }
 

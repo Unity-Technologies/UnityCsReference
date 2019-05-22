@@ -12,5 +12,6 @@ namespace UnityEditor.PackageManager
         Embedded,
         Local,
         Git,
+        LocalTarball,
     }
 }

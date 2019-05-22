@@ -24,25 +24,29 @@ namespace UnityEditor.PackageManager
         [SerializeField]
         [NativeName("compatible")]
         private string[] m_Compatible;
+
         [SerializeField]
-        [NativeName("recommended")]
-        private string m_Recommended;
+        [NativeName("verified")]
+        private string m_Verified;
 
         private VersionsInfo() {}
 
         internal VersionsInfo(
             IEnumerable<string> all,
             IEnumerable<string> compatible,
-            string recommended)
+            string verified)
         {
             m_All = (all ?? new string[] {}).ToArray();
             m_Compatible = (compatible ?? new string[] {}).ToArray();
-            m_Recommended = recommended ?? string.Empty;
+            m_Verified = verified ?? string.Empty;
         }
 
         public string[] all { get { return m_All; } }
         public string[] compatible { get { return m_Compatible; } }
-        public string recommended { get { return m_Recommended; } }
+        public string verified { get { return m_Verified; } }
+
+        [Obsolete("'recommended' is obsolete; use 'verified' instead. (UnityUpgradable) -> verified", false)]
+        public string recommended { get { return m_Verified; } }
 
         public string latest
         {

@@ -113,7 +113,11 @@ namespace UnityEditor
                 GUI.DrawTexture(iconRect, args.item.icon);
             }
 
-            EditorGUI.LabelField(labelRect, args.item.displayName, m_ListViewMode ? Styles.listItem : Styles.treeItem);
+            if (Event.current.type == EventType.Repaint)
+            {
+                var elementStyle = m_ListViewMode ? Styles.listItem : Styles.treeItem;
+                elementStyle.Draw(labelRect, args.item.displayName, args.rowRect.Contains(Event.current.mousePosition), HasFocus(), args.selected, false);
+            }
         }
 
         protected override bool DoesItemMatchSearch(TreeViewItem item, string search)

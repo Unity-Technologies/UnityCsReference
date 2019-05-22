@@ -231,19 +231,6 @@ namespace UnityEditor
             }
 
             InitPreview(r);
-
-            if (previewBackground == null || previewBackground == GUIStyle.none)
-                return;
-
-            Graphics.DrawTexture(
-                previewBackground.overflow.Add(new Rect(0, 0, m_RenderTexture.width, m_RenderTexture.height)),
-                previewBackground.normal.background,
-                new Rect(0, 0, 1, 1),
-                previewBackground.border.left, previewBackground.border.right, previewBackground.border.top,
-                previewBackground.border.bottom,
-                new Color(.5f, .5f, .5f, 0.5f),
-                null
-            );
         }
 
         public void BeginStaticPreview(Rect r)

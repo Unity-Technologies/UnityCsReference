@@ -83,6 +83,7 @@ namespace UnityEditor.IMGUI.Controls
         public TreeViewState state { get; set; }                        // State that persists script reloads
         public GUIStyle horizontalScrollbarStyle { get; set; }
         public GUIStyle verticalScrollbarStyle { get; set; }
+        public GUIStyle scrollViewStyle { get; set; }
         public TreeViewItemExpansionAnimator expansionAnimator { get { return m_ExpansionAnimator; } }
         readonly TreeViewItemExpansionAnimator m_ExpansionAnimator = new TreeViewItemExpansionAnimator();
         AnimFloat m_FramingAnimFloat;
@@ -553,9 +554,9 @@ namespace UnityEditor.IMGUI.Controls
 
             if (m_UseScrollView)
             {
-                state.scrollPos = GUI.BeginScrollView(m_TotalRect, state.scrollPos, m_ContentRect,
+                state.scrollPos = GUI.BeginScrollView(m_TotalRect, state.scrollPos, m_ContentRect, false, false,
                     horizontalScrollbarStyle != null ? horizontalScrollbarStyle : GUI.skin.horizontalScrollbar,
-                    verticalScrollbarStyle != null ? verticalScrollbarStyle : GUI.skin.verticalScrollbar);
+                    verticalScrollbarStyle != null ? verticalScrollbarStyle : GUI.skin.verticalScrollbar, scrollViewStyle != null ? scrollViewStyle : EditorStyles.scrollViewAlt);
             }
             else
                 GUI.BeginClip(m_TotalRect);

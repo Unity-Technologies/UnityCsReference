@@ -48,14 +48,10 @@ namespace UnityEditor
             {
                 switch (scale)
                 {
-                    case WSAImageScale._80:
                     case WSAImageScale._100:
                     case WSAImageScale._125:
-                    case WSAImageScale._140:
                     case WSAImageScale._150:
-                    case WSAImageScale._180:
                     case WSAImageScale._200:
-                    case WSAImageScale._240:
                     case WSAImageScale._400:
                     case WSAImageScale.Target16:
                     case WSAImageScale.Target24:

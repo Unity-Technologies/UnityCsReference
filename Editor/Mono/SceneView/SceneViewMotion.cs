@@ -702,18 +702,15 @@ namespace UnityEditor
             }
             else if (selected == 10)
             {
-                // Unity default point of view
-                view.LookAt(view.pivot, Quaternion.LookRotation(new Vector3(-1, -.7f, -1)), view.size, view.orthographic);
+                ViewSetUnityDefault(view);
             }
             else if (selected == 11)
             {
-                // Maya default point of view
-                view.LookAt(view.pivot, Quaternion.LookRotation(new Vector3(1, -.7f, -1)), view.size, view.orthographic);
+                ViewSetMayaDefault(view);
             }
             else if (selected == 12)
             {
-                // 3DSMax default point of view
-                view.LookAt(view.pivot, Quaternion.LookRotation(new Vector3(1, -.7f, 1)), view.size, view.orthographic);
+                ViewSetMaxDefault(view);
             }
         }
 
@@ -967,7 +964,14 @@ namespace UnityEditor
                 Profiler.EndSample();
         }
 
-        private void ViewAxisDirection(SceneView view, int dir)
+        internal void ViewAxisDirection(SceneView view, int dir, bool ortho)
+        {
+            view.LookAt(view.pivot, kDirectionRotations[dir] , view.size, ortho);
+            // Set label to according direction
+            SwitchDirNameVisible(dir);
+        }
+
+        internal void ViewAxisDirection(SceneView view, int dir)
         {
             // If holding shift or clicking with middle mouse button, orthographic is enforced, otherwise not altered.
             // Note: This function can also be called from a context menu where Event.current is null.
@@ -975,14 +979,30 @@ namespace UnityEditor
             if (Event.current != null && (Event.current.shift || Event.current.button == 2))
                 ortho = true;
 
-            view.LookAt(view.pivot, kDirectionRotations[dir] , view.size, ortho);
-            // Set label to according direction
-            SwitchDirNameVisible(dir);
+            ViewAxisDirection(view, dir, ortho);
         }
 
-        private void ViewSetOrtho(SceneView view, bool ortho)
+        internal void ViewSetOrtho(SceneView view, bool ortho)
         {
             view.LookAt(view.pivot, view.rotation, view.size, ortho);
+        }
+
+        internal void ViewSetUnityDefault(SceneView view)
+        {
+            // Unity default point of view
+            view.LookAt(view.pivot, Quaternion.LookRotation(new Vector3(-1, -.7f, -1)), view.size, view.orthographic);
+        }
+
+        internal void ViewSetMayaDefault(SceneView view)
+        {
+            // Maya default point of view
+            view.LookAt(view.pivot, Quaternion.LookRotation(new Vector3(1, -.7f, -1)), view.size, view.orthographic);
+        }
+
+        internal void ViewSetMaxDefault(SceneView view)
+        {
+            // 3DSMax default point of view
+            view.LookAt(view.pivot, Quaternion.LookRotation(new Vector3(1, -.7f, 1)), view.size, view.orthographic);
         }
 
         internal void UpdateGizmoLabel(SceneView view, Vector3 direction, bool ortho)
@@ -1006,7 +1026,7 @@ namespace UnityEditor
             return 8; // 2D mode
         }
 
-        private void ViewFromNiceAngle(SceneView view, bool forcePerspective)
+        internal void ViewFromNiceAngle(SceneView view, bool forcePerspective)
         {
             // Use dir that's the same as the current one in the x-z plane, but placed a bit above middle vertically.
             // (Same as old dir except it had the x-z dir fixed.)

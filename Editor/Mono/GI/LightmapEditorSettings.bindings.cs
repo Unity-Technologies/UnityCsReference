@@ -198,7 +198,7 @@ namespace UnityEditor
         // How many samples to use for environment sampling
         [StaticAccessor("GetLightmapEditorSettings()")]
         [NativeName("PVREnvironmentSampleCount")]
-        internal extern static int environmentSampleCount { get; set; }
+        public extern static int environmentSampleCount { get; set; }
 
         // How many reference points to generate when using MIS
         [StaticAccessor("GetLightmapEditorSettings()")]

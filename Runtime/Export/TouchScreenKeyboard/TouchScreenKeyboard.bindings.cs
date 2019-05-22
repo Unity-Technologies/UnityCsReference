@@ -92,6 +92,7 @@ namespace UnityEngine
                     case RuntimePlatform.Android:
                     case RuntimePlatform.Switch:
                     case RuntimePlatform.PS4:
+                    case RuntimePlatform.Stadia:
 
                     // The OnScreen keyboard is ALWAYS supported in UWP
                     // Whether or not it can be used is determined automatically by the OS at runtime
@@ -254,13 +255,13 @@ namespace UnityEngine
             set;
         }
 
-        public bool canGetSelection
+        public extern bool canGetSelection
         {
             [NativeName("CanGetSelection")]
             get;
         }
 
-        public bool canSetSelection
+        public extern bool canSetSelection
         {
             [NativeName("CanSetSelection")]
             get;
@@ -287,7 +288,7 @@ namespace UnityEngine
         private static extern void SetSelection(int start, int length);
 
         // Returns the type of keyboard being displayed. (RO)
-        public TouchScreenKeyboardType type
+        public extern TouchScreenKeyboardType type
         {
             [NativeName("GetKeyboardType")]
             get;

@@ -167,7 +167,7 @@ namespace UnityEditorInternal
             fieldRect.width -= EditorGUI.kSpacingSubLabel;
 
             float oldLabelWidth = EditorGUIUtility.labelWidth;
-            EditorGUIUtility.labelWidth = EditorGUI.kMiniLabelW;
+            EditorGUIUtility.labelWidth = EditorGUI.CalcPrefixLabelWidth(labelX);
 
             GUI.SetNextControlName("FourIntFields_x");
             x = EditorGUI.IntField(fieldRect, labelX, x);

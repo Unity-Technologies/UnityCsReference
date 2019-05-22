@@ -31,7 +31,7 @@ namespace UnityEditor.UIElements
         bool m_IsUssEnable = true;
         bool m_IsUxmlEnable = true;
 
-        [MenuItem("Assets/Create/UIElements Editor Window")]
+        [MenuItem("Assets/Create/UIElements/Editor Window", false, 701, false)]
         public static void CreateTemplateMenuItem()
         {
             UIElementsEditorWindowCreator editorWindow = GetWindow<UIElementsEditorWindowCreator>(true, "UIElements Editor Window Creator");
@@ -209,13 +209,13 @@ namespace UnityEditor.UIElements
                 if (m_IsUxmlEnable)
                 {
                     var uxmlPath = Path.Combine(m_Folder, m_UxmlName + ".uxml");
-                    File.WriteAllText(uxmlPath, UIElementsTemplate.CreateUXMLTemplate(m_Folder));
+                    File.WriteAllText(uxmlPath, UIElementsTemplate.CreateUXMLTemplate(m_Folder, "<engine:Label text=\"Hello World! From UXML\" />"));
                 }
 
                 if (m_IsUssEnable)
                 {
                     var ussPath = Path.Combine(m_Folder, m_UssName + ".uss");
-                    File.WriteAllText(ussPath, UIElementsTemplate.CreateUssTemplate());
+                    File.WriteAllText(ussPath, GetUssTemplateContent());
                 }
 
                 if (m_IsUssEnable || m_IsUxmlEnable)
@@ -241,6 +241,15 @@ namespace UnityEditor.UIElements
             {
                 ShowErrorMessage();
             }
+        }
+
+        internal static string GetUssTemplateContent()
+        {
+            return @"Label {
+    font-size: 20px;
+    -unity-font-style: bold;
+    color: rgb(68, 138, 255);
+}";
         }
 
         void OnReturnKey(KeyDownEvent evt)
@@ -321,22 +330,22 @@ namespace UnityEditor.UIElements
             return isAtLeastOneFileCreated;
         }
 
-        bool Validate(string name, string extension)
+        bool Validate(string fileName, string extension)
         {
             bool isValid = true;
-            if (name.Length <= 0)
+            if (fileName.Length <= 0)
             {
                 m_ErrorMessage = "Filename fields cannot be blank.";
                 isValid = false;
             }
-            else if (!System.CodeDom.Compiler.CodeGenerator.IsValidLanguageIndependentIdentifier(name))
+            else if (!System.CodeDom.Compiler.CodeGenerator.IsValidLanguageIndependentIdentifier(fileName))
             {
                 m_ErrorMessage = "Filename is invalid.";
                 isValid = false;
             }
-            else if (File.Exists(Path.Combine(m_Folder, name + extension)))
+            else if (File.Exists(Path.Combine(m_Folder, fileName + extension)))
             {
-                m_ErrorMessage = "Filename " + name + " already exists.";
+                m_ErrorMessage = "Filename " + fileName + " already exists.";
                 isValid = false;
             }
 

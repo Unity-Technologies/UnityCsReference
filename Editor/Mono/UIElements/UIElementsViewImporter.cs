@@ -558,10 +558,12 @@ namespace UnityEditor.UIElements
                 switch (attrName)
                 {
                     case "class":
+                        res.AddProperty(xattr.Name.LocalName, xattr.Value);
                         res.classes = xattr.Value.Split(' ');
                         continue;
                     case "content-container":
                     case "contentContainer":
+                        res.AddProperty(xattr.Name.LocalName, xattr.Value);
                         if (attrName == "contentContainer")
                         {
                         }
@@ -595,6 +597,8 @@ namespace UnityEditor.UIElements
                         templateAsset.AddSlotUsage(xattr.Value, res.id);
                         continue;
                     case "style":
+                        res.AddProperty(xattr.Name.LocalName, xattr.Value);
+
                         ExCSS.StyleSheet parsed = new Parser().Parse("* { " + xattr.Value + " }");
                         if (parsed.Errors.Count != 0)
                         {

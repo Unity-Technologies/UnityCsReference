@@ -63,6 +63,8 @@ namespace UnityEngine
         extern public ShadowCastingMode shadowCastingMode { get; set; }
         extern public bool              receiveShadows { get; set; }
 
+        extern public bool              forceRenderingOff { get; set; }
+
         extern public MotionVectorGenerationMode motionVectorGenerationMode { get; set; }
         extern public LightProbeUsage            lightProbeUsage { get; set; }
         extern public ReflectionProbeUsage       reflectionProbeUsage { get; set; }

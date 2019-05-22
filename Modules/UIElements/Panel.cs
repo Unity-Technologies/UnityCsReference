@@ -153,7 +153,7 @@ namespace UnityEngine.UIElements
 
         public abstract void Repaint(Event e);
         public abstract void ValidateLayout();
-
+        public abstract void UpdateAnimations();
         public abstract void UpdateBindings();
         public abstract void ApplyStyles();
 
@@ -293,6 +293,7 @@ namespace UnityEngine.UIElements
         private string m_ProfileUpdateName;
         private string m_ProfileLayoutName;
         private string m_ProfileBindingsName;
+        private string m_ProfileAnimationsName;
         private uint m_Version = 0;
         private uint m_RepaintVersion = 0;
 
@@ -386,12 +387,14 @@ namespace UnityEngine.UIElements
                     m_ProfileUpdateName = $"PanelUpdate.{m_PanelName}";
                     m_ProfileLayoutName = $"PanelLayout.{m_PanelName}";
                     m_ProfileBindingsName = $"PanelBindings.{m_PanelName}";
+                    m_ProfileAnimationsName = $"PanelAnimations.{m_PanelName}";
                 }
                 else
                 {
                     m_ProfileUpdateName = "PanelUpdate";
                     m_ProfileLayoutName = "PanelLayout";
                     m_ProfileBindingsName = "PanelBindings";
+                    m_ProfileAnimationsName = "PanelAnimations";
                 }
             }
         }
@@ -483,6 +486,7 @@ namespace UnityEngine.UIElements
             m_ProfileUpdateName = "PanelUpdate";
             m_ProfileLayoutName = "PanelLayout";
             m_ProfileBindingsName = "PanelBindings";
+            m_ProfileAnimationsName = "PanelAnimations";
 
             allowPixelCaching = true;
             InvokeHierarchyChanged(visualTree, HierarchyChangeType.Add);
@@ -616,6 +620,13 @@ namespace UnityEngine.UIElements
 
                 m_ValidatingLayout = false;
             }
+        }
+
+        public override void UpdateAnimations()
+        {
+            Profiler.BeginSample(m_ProfileAnimationsName);
+            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Animation);
+            Profiler.EndSample();
         }
 
         public override void UpdateBindings()

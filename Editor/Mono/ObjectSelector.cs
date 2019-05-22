@@ -80,7 +80,7 @@ namespace UnityEditor
         const float kMinWidth = 200;
         const float kPreviewMargin = 5;
         const float kPreviewExpandedAreaHeight = 75;
-        float m_ToolbarHeight = 44;
+        float m_ToolbarHeight = 40;
         float           m_PreviewSize = 0;
         float           m_TopSize = 0;
         AnimBool m_ShowWidePreview = new AnimBool();
@@ -486,14 +486,14 @@ namespace UnityEditor
         // This is our search field
         void SearchArea()
         {
-            GUI.Label(new Rect(0, 0, position.width, m_ToolbarHeight), GUIContent.none, Styles.toolbarBack);
+            GUI.Label(new Rect(0, 0, position.width, m_ToolbarHeight / 2), GUIContent.none, EditorStyles.toolbar);// Styles.toolbarBack);
 
             // ESC clears search field and removes it's focus. But if we get an esc event we only want to clear search field.
             // So we need special handling afterwards.
             bool wasEscape = Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape;
 
             GUI.SetNextControlName("SearchFilter");
-            string searchFilter = EditorGUI.SearchField(new Rect(5, 5, position.width - 10, 15), m_SearchFilter);
+            string searchFilter = EditorGUI.SearchField(new Rect(5, 1, position.width - 10, 15), m_SearchFilter);
 
             if (wasEscape && Event.current.type == EventType.Used)
             {
@@ -520,8 +520,10 @@ namespace UnityEditor
 
             GUI.changed = false;
 
+            GUI.Label(new Rect(0, m_ToolbarHeight / 2, position.width, m_ToolbarHeight / 2), GUIContent.none, EditorStyles.toolbar);
+
             // TAB BAR
-            GUILayout.BeginArea(new Rect(0, 26, position.width, m_ToolbarHeight - 26));
+            GUILayout.BeginArea(new Rect(4, m_ToolbarHeight / 2, position.width - 4, m_ToolbarHeight / 2));
             GUILayout.BeginHorizontal();
 
             // Asset Tab
@@ -566,7 +568,7 @@ namespace UnityEditor
             if (m_ListArea.CanShowThumbnails())
             {
                 EditorGUI.BeginChangeCheck();
-                var newGridSize = (int)GUI.HorizontalSlider(new Rect(position.width - (60 + size.x), 26, 55, m_ToolbarHeight - 28), m_ListArea.gridSize, m_ListArea.minGridSize, m_ListArea.maxGridSize);
+                var newGridSize = (int)GUI.HorizontalSlider(new Rect(position.width - (60 + size.x), m_ToolbarHeight / 2, 55, m_ToolbarHeight / 2), m_ListArea.gridSize, m_ListArea.minGridSize, m_ListArea.maxGridSize);
                 if (EditorGUI.EndChangeCheck())
                 {
                     m_ListArea.gridSize = newGridSize;
@@ -576,7 +578,7 @@ namespace UnityEditor
             if (m_IsShowingAssets)
             {
                 EditorGUI.BeginChangeCheck();
-                var skipHiddenPackages = GUI.Toggle(new Rect(position.width - size.x, 26, size.x, m_ToolbarHeight - 28), m_SkipHiddenPackages, Styles.packagesVisibilityContent, EditorStyles.toolbarButton);
+                var skipHiddenPackages = GUI.Toggle(new Rect(position.width - size.x, m_ToolbarHeight / 2 + 1, size.x, EditorStyles.toolbarButton.fixedHeight), m_SkipHiddenPackages, Styles.packagesVisibilityContent, EditorStyles.toolbarButtonRight);
                 if (EditorGUI.EndChangeCheck())
                 {
                     m_SkipHiddenPackages = skipHiddenPackages;

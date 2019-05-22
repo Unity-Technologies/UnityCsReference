@@ -11,7 +11,8 @@ namespace UnityEngine
         AfterSceneLoad  = 0,
         BeforeSceneLoad,
         AfterAssembliesLoaded,
-        BeforeSplashScreen
+        BeforeSplashScreen,
+        SubsystemRegistration
     };
 
     [Scripting.RequiredByNativeCode]

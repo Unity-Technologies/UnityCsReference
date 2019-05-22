@@ -3,9 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.InteropServices;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 
 namespace Unity.MPE
 {
@@ -34,6 +36,38 @@ namespace Unity.MPE
         UMP_CAP_MASTER = 1,
         UMP_CAP_SLAVE = 2
     };
+
+    [NativeType("Modules/UMPE/EventService.h")]
+    [Serializable]
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct ConnectionInfo
+    {
+        [NativeName("endPoint")]
+        string m_EndPoint;
+
+        [NativeName("connectionId")]
+        int m_ConnectionId;
+
+        public string endPoint
+        {
+            get { return m_EndPoint; }
+        }
+
+        public int connectionId
+        {
+            get { return m_ConnectionId; }
+        }
+    };
+
+    [NativeHeader("Modules/UMPE/EventService.h"),
+     StaticAccessor("Unity::MPE::EventServer", StaticAccessorType.DoubleColon)]
+    internal partial class EventServer
+    {
+        public static extern void Start();
+        public static extern void Stop();
+        public static extern bool IsRunning();
+        public static extern ConnectionInfo[] GetConnectionList();
+    }
 
     [NativeHeader("Modules/UMPE/EventService.h"),
      StaticAccessor("Unity::MPE::EventService", StaticAccessorType.DoubleColon)]

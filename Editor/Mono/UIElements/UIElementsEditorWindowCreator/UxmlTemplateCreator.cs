@@ -4,12 +4,49 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
     static partial class UIElementsTemplate
     {
-        public static string CreateUXMLTemplate(string folder)
+        private static string GetCurrentFolder()
+        {
+            string filePath;
+            if (Selection.assetGUIDs.Length == 0)
+            {
+                // No asset selected.
+                filePath = "Assets";
+            }
+            else
+            {
+                // Get the path of the selected folder or asset.
+                filePath = AssetDatabase.GUIDToAssetPath(Selection.assetGUIDs[0]);
+
+                // Get the file extension of the selected asset as it might need to be removed.
+                string fileExtension = Path.GetExtension(filePath);
+                if (fileExtension != "")
+                {
+                    filePath = Path.GetDirectoryName(filePath);
+                }
+            }
+
+            return filePath;
+        }
+
+        [MenuItem("Assets/Create/UIElements/UXML Template", false, 610, false)]
+        public static void CreateUXMLTemplate()
+        {
+            var folder = GetCurrentFolder();
+            var path = AssetDatabase.GenerateUniqueAssetPath(folder + "/NewUXMLTemplate.uxml");
+            var contents = CreateUXMLTemplate(folder);
+            var icon = EditorGUIUtility.IconContent<VisualTreeAsset>().image as Texture2D;
+            ProjectWindowUtil.CreateAssetWithContent(path, contents, icon);
+        }
+
+        public static string CreateUXMLTemplate(string folder, string uxmlContent = "")
         {
             UxmlSchemaGenerator.UpdateSchemaFiles();
 
@@ -34,7 +71,6 @@ namespace UnityEditor.UIElements
             string schemaDirectory = string.Join("/", backDots.ToArray());
 
             string xmlnsList = String.Empty;
-            string schemaLocationList = String.Empty;
             Dictionary<string, string> namespacePrefix = UxmlSchemaGenerator.GetNamespacePrefixDictionary();
 
             foreach (var prefix in namespacePrefix)
@@ -46,22 +82,15 @@ namespace UnityEditor.UIElements
                 {
                     xmlnsList += "    xmlns:" + prefix.Value + "=\"" + prefix.Key + "\"\n";
                 }
-                schemaLocationList += "                        " + prefix.Key + " " + schemaDirectory + "/" +
-                    UxmlSchemaGenerator.GetFileNameForNamespace(prefix.Key) + "\n";
             }
 
-            // The noNamespaceSchemaLocation attribute should be sufficient to reference all namespaces
-            // but Rider does not support it very well, so we add schemaLocation to make it happy.
             string uxmlTemplate = String.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 <engine:{0}
-xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
-{1}
-xsi:noNamespaceSchemaLocation=""{2}/UIElements.xsd""
-xsi:schemaLocation=""
-{3}""
+    xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
+{1}    xsi:noNamespaceSchemaLocation=""{2}/UIElements.xsd""
 >
-    <engine:Label text=""Hello World! From UXML"" />
-</engine:{0}>", UnityEditor.UIElements.UXMLImporterImpl.k_RootNode, xmlnsList, schemaDirectory, schemaLocationList);
+    {3}
+</engine:{0}>", UXMLImporterImpl.k_RootNode, xmlnsList, schemaDirectory, uxmlContent);
 
             return uxmlTemplate;
         }

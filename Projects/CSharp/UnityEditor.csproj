@@ -592,6 +592,9 @@
     <Compile Include="..\..\Editor\Mono\ShaderUtil.bindings.cs">
       <Link>Editor\Mono\ShaderUtil.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\ShaderUtil.bindings.deprecated.cs">
+      <Link>Editor\Mono\ShaderUtil.bindings.deprecated.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\ShaderUtil.cs">
       <Link>Editor\Mono\ShaderUtil.cs</Link>
     </Compile>
@@ -3961,9 +3964,6 @@
     <Compile Include="..\..\Modules\GraphViewEditor\Utils\VisualElementAttacher.cs">
       <Link>Modules\GraphViewEditor\Utils\VisualElementAttacher.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphViewEditor\ValueAnimation.cs">
-      <Link>Modules\GraphViewEditor\ValueAnimation.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\GraphViewEditor\Views\GraphView.cs">
       <Link>Modules\GraphViewEditor\Views\GraphView.cs</Link>
     </Compile>
@@ -3993,6 +3993,9 @@
     </Compile>
     <Compile Include="..\..\Modules\Licensing\Public\LicensingUtility.bindings.cs">
       <Link>Modules\Licensing\Public\LicensingUtility.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationEditor\LocalizationAttribute.cs">
+      <Link>Modules\LocalizationEditor\LocalizationAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\LocalizationEditor\LocalizationDatabase.bindings.cs">
       <Link>Modules\LocalizationEditor\LocalizationDatabase.bindings.cs</Link>
@@ -4135,11 +4138,17 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\ArrowToggle.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\ArrowToggle.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\DropdownButton.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\Common\DropdownButton.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\ElementSelection.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\ElementSelection.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\IOUtils.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\IOUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\IconButton.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\Common\IconButton.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\LoadingSpinner.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\LoadingSpinner.cs</Link>
@@ -4152,6 +4161,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerExtension.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerExtension.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerToolbarExtension.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerToolbarExtension.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageAddFromUrlField.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageAddFromUrlField.cs</Link>
@@ -4224,6 +4236,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\ErrorCode.cs">
       <Link>Modules\PackageManager\Editor\Managed\ErrorCode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\GitInfo.cs">
+      <Link>Modules\PackageManager\Editor\Managed\GitInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\IShouldIncludeInBuildCallback.cs">
       <Link>Modules\PackageManager\Editor\Managed\IShouldIncludeInBuildCallback.cs</Link>
@@ -4551,6 +4566,12 @@
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\Public\ProfilerProperty.bindings.cs">
       <Link>Modules\ProfilerEditor\Public\ProfilerProperty.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\Public\ProfilerSettings.cs">
+      <Link>Modules\ProfilerEditor\Public\ProfilerSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\Public\ProfilerSettingsProvider.cs">
+      <Link>Modules\ProfilerEditor\Public\ProfilerSettingsProvider.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\RestService\AssetRestHandler.cs">
       <Link>Modules\RestService\AssetRestHandler.cs</Link>

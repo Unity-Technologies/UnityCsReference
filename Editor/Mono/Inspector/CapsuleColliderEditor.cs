@@ -86,6 +86,8 @@ namespace UnityEditor
 
         protected override void OnSceneGUI()
         {
+            if (!target)
+                return;
             // prevent possibility that user increases height if radius scale is zero and user drags (non-moving) radius handles to exceed height extents
             CapsuleCollider collider = (CapsuleCollider)target;
             float radiusScaleFactor;

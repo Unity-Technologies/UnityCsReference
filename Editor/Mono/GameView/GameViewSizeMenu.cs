@@ -25,7 +25,9 @@ namespace UnityEditor
 
         public override Vector2 GetWindowSize()
         {
+            var lowAspectRatiosContentSize = EditorStyles.toggle.CalcSize(GameView.Styles.lowResAspectRatiosContextMenuContent);
             var size = CalcSize();
+            size.x = Mathf.Max(size.x, lowAspectRatiosContentSize.x + kMargin * 2);
             size.y += frameHeight + EditorGUI.kControlVerticalSpacing;
             return size;
         }
@@ -33,7 +35,7 @@ namespace UnityEditor
         public override void OnGUI(Rect rect)
         {
             var frameRect = new Rect(rect.x, rect.y, rect.width, frameHeight);
-            GUI.Label(frameRect, "", EditorStyles.inspectorBig);
+            GUI.Label(frameRect, "", EditorStyles.viewBackground);
 
             GUI.enabled = !m_GameView.forceLowResolutionAspectRatios;
 

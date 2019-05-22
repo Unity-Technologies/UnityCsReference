@@ -196,10 +196,12 @@ namespace UnityEditor
         private static Enum DoEnumPopup(Rect rect, Enum selected, GUIStyle style, params GUILayoutOption[] options)
         {
             var enumType = selected.GetType();
-            bool localize = EditorUtility.IsUnityAssembly(enumType);
             var enumData = EditorGUI.GetCachedEnumData(enumType);
             var i = Array.IndexOf(enumData.values, selected);
-            i = DoPopup(rect, i, localize ? EditorGUIUtility.TrTempContent(enumData.displayNames, enumData.tooltip) : EditorGUIUtility.TempContent(enumData.displayNames, enumData.tooltip));
+            using (new UnityEditor.Localization.Editor.LocalizationGroup(enumType))
+            {
+                i = DoPopup(rect, i, EditorGUIUtility.TrTempContent(enumData.displayNames, enumData.tooltip));
+            }
             return (i < 0 || i >= enumData.flagValues.Length) ? selected : enumData.values[i];
         }
 

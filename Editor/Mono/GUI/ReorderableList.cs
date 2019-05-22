@@ -83,9 +83,9 @@ namespace UnityEditorInternal
             public GUIContent iconToolbarPlusMore = EditorGUIUtility.TrIconContent("Toolbar Plus More", "Choose to add to list");
             public GUIContent iconToolbarMinus = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove selection from list");
             public readonly GUIStyle draggingHandle = "RL DragHandle";
-            public readonly GUIStyle headerBackground = "RL Header";
-            public readonly GUIStyle footerBackground = "RL Footer";
-            public readonly GUIStyle boxBackground = "RL Background";
+            public readonly GUIStyle headerBackground = "IN BigTitle";//""RL Header";
+            public readonly GUIStyle footerBackground = "button";//""RL Footer";
+            public readonly GUIStyle boxBackground = "box"; //"RL Background";
             public readonly GUIStyle preButton = "RL FooterButton";
             public readonly GUIStyle elementBackground = "RL Element";
             public const int padding = 6;
@@ -709,7 +709,8 @@ namespace UnityEditorInternal
                     // Set m_Dragging state on first MouseDrag event after we got hotcontrol (to prevent animating elements when deleting elements by context menu)
                     m_Dragging = true;
 
-                    onMouseDragCallback(this);
+                    if (onMouseUpCallback != null)
+                        onMouseDragCallback(this);
 
                     // if we are dragging, update the position
                     UpdateDraggedY(listRect);

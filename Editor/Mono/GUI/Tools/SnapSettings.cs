@@ -82,7 +82,7 @@ namespace UnityEditor
         [MenuItem("Edit/Snap Settings...")]
         static void ShowSnapSettings()
         {
-            EditorWindow.GetWindowWithRect<SnapSettings>(new Rect(100, 100, 230, 130), true, "Snap settings");
+            EditorWindow.GetWindowWithRect<SnapSettings>(new Rect(100, 100, 230, 140), true, "Snap settings");
         }
 
         class Styles

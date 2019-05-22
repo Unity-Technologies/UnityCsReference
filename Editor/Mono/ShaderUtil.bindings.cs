@@ -291,20 +291,3 @@ namespace UnityEditor
         extern public static void CompilePass([NotNull] Material material, int pass, bool forceSync = false);
     }
 }
-
-
-namespace UnityEditor
-{
-    public partial class ShaderUtil
-    {
-        [System.Obsolete("Use UnityEngine.Rendering.TextureDimension instead.")]
-        public enum ShaderPropertyTexDim
-        {
-            TexDimNone = 0, // no texture
-            TexDim2D = 2,
-            TexDim3D = 3,
-            TexDimCUBE = 4,
-            TexDimAny = 6,
-        };
-    }
-}

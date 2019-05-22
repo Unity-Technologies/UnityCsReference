@@ -26,6 +26,7 @@ namespace UnityEditor
             private static int ms_logStyleLineCount;
             public static GUIStyle Box;
             public static GUIStyle MiniButton;
+            public static GUIStyle MiniButtonRight;
             public static GUIStyle LogStyle;
             public static GUIStyle WarningStyle;
             public static GUIStyle ErrorStyle;
@@ -46,6 +47,7 @@ namespace UnityEditor
             public static GUIStyle IconLogSmallStyle;
             public static GUIStyle IconWarningSmallStyle;
             public static GUIStyle IconErrorSmallStyle;
+
             public static readonly string ClearLabel = L10n.Tr("Clear");
             public static readonly string ClearOnPlayLabel = L10n.Tr("Clear on Play");
             public static readonly string ErrorPauseLabel = L10n.Tr("Error Pause");
@@ -78,6 +80,7 @@ namespace UnityEditor
 
 
                 MiniButton = "ToolbarButton";
+                MiniButtonRight = "ToolbarButtonRight";
                 Toolbar = "Toolbar";
                 LogStyle = "CN EntryInfo";
                 LogSmallStyle = "CN EntryInfoSmall";
@@ -261,7 +264,7 @@ namespace UnityEditor
             /*iconInfoMono = EditorGUIUtility.LoadIcon("console.infoicon.mono");
             iconWarnMono = EditorGUIUtility.LoadIcon("console.warnicon.mono");
             iconErrorMono = EditorGUIUtility.LoadIcon("console.erroricon.mono");*/
-            iconInfoMono = EditorGUIUtility.LoadIcon("console.infoicon.sml");
+            iconInfoMono = EditorGUIUtility.LoadIcon("console.infoicon.inactive.sml");
             iconWarnMono = EditorGUIUtility.LoadIcon("console.warnicon.inactive.sml");
             iconErrorMono = EditorGUIUtility.LoadIcon("console.erroricon.inactive.sml");
             Constants.Init();
@@ -310,7 +313,7 @@ namespace UnityEditor
                 ms_ConsoleWindow = null;
         }
 
-        private int RowHeight => (Constants.LogStyleLineCount * m_LineHeight) + m_BorderHeight;
+        private int RowHeight => (Constants.LogStyleLineCount > 1 ? Mathf.Max(32, (Constants.LogStyleLineCount * m_LineHeight)) : m_LineHeight) + m_BorderHeight;
 
         private static bool HasMode(int mode, Mode modeToCheck) { return (mode & (int)modeToCheck) != 0; }
         private static bool HasFlag(ConsoleFlags flags) { return (LogEntries.consoleFlags & (int)flags) != 0; }
@@ -527,7 +530,7 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
             bool setLogFlag = GUILayout.Toggle(HasFlag(ConsoleFlags.LogLevelLog), new GUIContent((logCount <= 999 ? logCount.ToString() : "999+"), logCount > 0 ? iconInfoSmall : iconInfoMono), Constants.MiniButton);
             bool setWarningFlag = GUILayout.Toggle(HasFlag(ConsoleFlags.LogLevelWarning), new GUIContent((warningCount <= 999 ? warningCount.ToString() : "999+"), warningCount > 0 ? iconWarnSmall : iconWarnMono), Constants.MiniButton);
-            bool setErrorFlag = GUILayout.Toggle(HasFlag(ConsoleFlags.LogLevelError), new GUIContent((errorCount <= 999 ? errorCount.ToString() : "999+"), errorCount > 0 ? iconErrorSmall : iconErrorMono), Constants.MiniButton);
+            bool setErrorFlag = GUILayout.Toggle(HasFlag(ConsoleFlags.LogLevelError), new GUIContent((errorCount <= 999 ? errorCount.ToString() : "999+"), errorCount > 0 ? iconErrorSmall : iconErrorMono), Constants.MiniButtonRight);
             // Active entry index may no longer be valid
             if (EditorGUI.EndChangeCheck())
                 SetActiveEntry(null);
@@ -540,8 +543,7 @@ namespace UnityEditor
 
             // Console entries
             SplitterGUILayout.BeginVerticalSplit(spl);
-            int rowHeight = RowHeight;
-            EditorGUIUtility.SetIconSize(new Vector2(rowHeight, rowHeight));
+
             GUIContent tempContent = new GUIContent();
             int id = GUIUtility.GetControlID(0);
             int rowDoubleClicked = -1;
@@ -566,27 +568,36 @@ namespace UnityEditor
                         string text = null;
                         LogEntries.GetLinesAndModeFromEntryInternal(el.row, Constants.LogStyleLineCount, ref mode, ref text);
 
+                        // offset value in x for icon and text
+                        var offset = Constants.LogStyleLineCount == 1 ? 4 : 8;
+
                         // Draw the background
                         GUIStyle s = el.row % 2 == 0 ? Constants.OddBackground : Constants.EvenBackground;
                         s.Draw(el.position, false, false, m_ListView.row == el.row, false);
 
                         // Draw the icon
                         GUIStyle iconStyle = GetStyleForErrorMode(mode, true, Constants.LogStyleLineCount == 1);
-                        iconStyle.Draw(el.position, false, false, m_ListView.row == el.row, false);
+                        Rect iconRect = el.position;
+                        iconRect.x += offset;
+                        iconRect.y += 2;
+
+                        iconStyle.Draw(iconRect, false, false, m_ListView.row == el.row, false);
 
                         // Draw the text
                         tempContent.text = text;
                         GUIStyle errorModeStyle =
                             GetStyleForErrorMode(mode, false, Constants.LogStyleLineCount == 1);
+                        var textRect = el.position;
+                        textRect.x += offset;
 
                         if (string.IsNullOrEmpty(m_SearchText))
-                            errorModeStyle.Draw(el.position, tempContent, id, m_ListView.row == el.row);
+                            errorModeStyle.Draw(textRect, tempContent, id, m_ListView.row == el.row);
                         else
                         {
                             //the whole text contains the searchtext, we have to know where it is
                             int startIndex = text.IndexOf(m_SearchText, StringComparison.OrdinalIgnoreCase);
                             if (startIndex == -1) // the searchtext is not in the visible text, we don't show the selection
-                                errorModeStyle.Draw(el.position, tempContent, id, m_ListView.row == el.row);
+                                errorModeStyle.Draw(textRect, tempContent, id, m_ListView.row == el.row);
                             else // the searchtext is visible, we show the selection
                             {
                                 int endIndex = startIndex + m_SearchText.Length;
@@ -596,7 +607,7 @@ namespace UnityEditor
                                 const bool drawAsComposition = false;
                                 Color selectionColor = GUI.skin.settings.selectionColor;
 
-                                errorModeStyle.DrawWithTextSelection(el.position, tempContent, isActive, hasKeyboardFocus, startIndex, endIndex, drawAsComposition, selectionColor);
+                                errorModeStyle.DrawWithTextSelection(textRect, tempContent, isActive, hasKeyboardFocus, startIndex, endIndex, drawAsComposition, selectionColor);
                             }
                         }
 
@@ -606,6 +617,9 @@ namespace UnityEditor
                             tempContent.text = LogEntries.GetEntryCount(el.row)
                                 .ToString(CultureInfo.InvariantCulture);
                             Vector2 badgeSize = Constants.CountBadge.CalcSize(tempContent);
+
+                            if (Constants.CountBadge.fixedHeight > 0)
+                                badgeSize.y = Constants.CountBadge.fixedHeight;
                             badgeRect.xMin = badgeRect.xMax - badgeSize.x;
                             badgeRect.yMin += ((badgeRect.yMax - badgeRect.yMin) - badgeSize.y) * 0.5f;
                             badgeRect.x -= 5f;
@@ -663,15 +677,13 @@ namespace UnityEditor
             if (rowDoubleClicked != -1)
                 LogEntries.RowGotDoubleClicked(rowDoubleClicked);
 
-            EditorGUIUtility.SetIconSize(Vector2.zero);
 
             // Display active text (We want word wrapped text with a vertical scrollbar)
             m_TextScroll = GUILayout.BeginScrollView(m_TextScroll, Constants.Box);
 
             string stackWithHyperlinks = StacktraceWithHyperlinks(m_ActiveText);
             float height = Constants.MessageStyle.CalcHeight(GUIContent.Temp(stackWithHyperlinks), position.width);
-            EditorGUILayout.SelectableLabel(stackWithHyperlinks, Constants.MessageStyle, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true), GUILayout.MinHeight(height));
-
+            EditorGUILayout.SelectableLabel(stackWithHyperlinks, Constants.MessageStyle, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true), GUILayout.MinHeight(height + 10));
 
             GUILayout.EndScrollView();
 

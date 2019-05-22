@@ -403,14 +403,30 @@ namespace UnityEditor.UIElements
 
         private static void CreateBindingObjectForProperty(VisualElement element, SerializedObjectUpdateWrapper objWrapper, SerializedProperty prop)
         {
+            // A bound Foldout (a PropertyField with child properties) is special.
             if (element is Foldout)
             {
+                // We bind to the given propertyPath but we only bind to its 'isExpanded' state, not its value.
                 var foldout = element as Foldout;
                 SerializedObjectBinding<bool>.CreateBind(
                     foldout, objWrapper, prop,
                     p => p.isExpanded,
                     (p, v) => p.isExpanded = v,
                     ValueEquals<bool>);
+
+                return;
+            }
+            else if (element is Label && element.GetProperty(PropertyField.foldoutTitleBoundLabelProperty) != null)
+            {
+                // We bind to the given propertyPath but we only bind to its 'localizedDisplayName' state, not its value.
+                // This is a feature from IMGUI where the title of a Foldout will change if one of the child
+                // properties is named "Name" and its value changes.
+                var label = element as Label;
+                SerializedObjectBinding<string>.CreateBind(
+                    label, objWrapper, prop,
+                    p => p.localizedDisplayName,
+                    (p, v) => {},
+                    ValueEquals<string>);
 
                 return;
             }

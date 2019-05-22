@@ -467,6 +467,7 @@ namespace UnityEngine.Networking
         private extern bool GetChunked();
         private extern UnityWebRequestError SetChunked(bool chunked);
 
+        [Obsolete("HTTP/2 and many HTTP/1.1 servers don't support this; we recommend leaving it set to false (default).", false)]
         public bool chunkedTransfer
         {
             get { return GetChunked(); }

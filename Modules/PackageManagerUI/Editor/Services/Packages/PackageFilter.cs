@@ -11,6 +11,7 @@ namespace UnityEditor.PackageManager.UI
     {
         All,
         Local,
-        Modules
+        Modules,
+        InDevelopment
     }
 }

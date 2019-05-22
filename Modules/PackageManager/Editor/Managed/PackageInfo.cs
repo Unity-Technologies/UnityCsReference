@@ -113,6 +113,10 @@ namespace UnityEditor.PackageManager
         [NativeName("datePublishedTicks")]
         private long m_DatePublishedTicks;
 
+        [SerializeField]
+        [NativeName("git")]
+        private GitInfo m_Git = new GitInfo();
+
         internal PackageInfo() {}
 
         public string packageId { get { return m_PackageId;  } }
@@ -149,6 +153,14 @@ namespace UnityEditor.PackageManager
             get
             {
                 return m_DatePublishedTicks == 0 ? (DateTime?)null : new DateTime(m_DatePublishedTicks, DateTimeKind.Utc);
+            }
+        }
+
+        public GitInfo git
+        {
+            get
+            {
+                return m_Source  == PackageSource.Git ? m_Git : null;
             }
         }
 

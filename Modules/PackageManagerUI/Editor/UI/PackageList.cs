@@ -277,6 +277,10 @@ namespace UnityEditor.PackageManager.UI
             {
                 packages = packages.Where(pkg => !pkg.IsBuiltIn && pkg.IsDiscoverable);
             }
+            else if (filter == PackageFilter.InDevelopment)
+            {
+                packages = packages.Where(pkg => pkg.AnyInDevelopment);
+            }
             else
             {
                 packages = packages.Where(pkg => !pkg.IsBuiltIn);

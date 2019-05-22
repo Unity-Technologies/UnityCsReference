@@ -33,7 +33,7 @@ namespace UnityEditor
         private static Texture2D s_Preview;
         private static string    s_LastPreviewPath;
 
-        readonly static char[]   s_InvalidPathChars = System.IO.Path.GetInvalidPathChars();
+        readonly static HashSet<char> s_InvalidPathChars = new HashSet<char>(System.IO.Path.GetInvalidPathChars());
 
         internal class Constants
         {

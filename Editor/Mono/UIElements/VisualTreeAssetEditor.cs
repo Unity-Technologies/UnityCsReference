@@ -101,16 +101,6 @@ namespace UnityEditor.UIElements
             RenderTexture.active = rt;
             GL.LoadPixelMatrix(0, rt.width, rt.height, 0);
 
-            Graphics.DrawTexture(
-                background.overflow.Add(new Rect(0, 0, rt.width, rt.height)),
-                background.normal.background,
-                new Rect(0, 0, 1, 1),
-                background.border.left, background.border.right, background.border.top,
-                background.border.bottom,
-                new Color(.5f, .5f, .5f, 0.5f),
-                null
-            );
-
             m_Panel.Repaint(Event.current);
 
             RenderTexture.active = oldRt;

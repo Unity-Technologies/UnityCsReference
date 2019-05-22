@@ -101,9 +101,10 @@ namespace UnityEditor
 
             EditorGUI.BeginChangeCheck();
 
-            EditorGUIUtility.labelWidth = kPrefixLabelWidth;
+            var sceneCameraContent = EditorGUIUtility.TrTextContent("Scene Camera");
+            EditorGUIUtility.labelWidth = Mathf.Max(kPrefixLabelWidth, EditorGUI.CalcPrefixLabelWidth(sceneCameraContent, EditorStyles.boldLabel));
 
-            GUILayout.Label(EditorGUIUtility.TrTextContent("Scene Camera"), EditorStyles.boldLabel);
+            GUILayout.Label(sceneCameraContent, EditorStyles.boldLabel);
 
             // fov isn't applicable in orthographic mode, and orthographic size is controlled by the user zoom
             using (new EditorGUI.DisabledScope(m_SceneView.orthographic))
@@ -170,7 +171,7 @@ namespace UnityEditor
         void DrawClipPlanesField(GUIContent label, ref float near, ref float far, float propertyLabelsWidth, params GUILayoutOption[] options)
         {
             bool hasLabel = EditorGUI.LabelHasContent(label);
-            const float height = EditorGUI.kSingleLineHeight * 2 + EditorGUI.kVerticalSpacingMultiField;
+            float height = EditorGUI.kSingleLineHeight * 2 + EditorGUI.kVerticalSpacingMultiField;
             Rect r = EditorGUILayout.GetControlRect(hasLabel, height, EditorStyles.numberField, options);
 
             Rect fieldPosition = EditorGUI.PrefixLabel(r, label);

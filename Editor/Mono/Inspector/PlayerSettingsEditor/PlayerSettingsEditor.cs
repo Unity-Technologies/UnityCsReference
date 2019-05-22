@@ -119,6 +119,7 @@ namespace UnityEditor
             public static readonly GUIContent displayResolutionDialogDeprecationWarning = EditorGUIUtility.TrTextContent("The Display Resolution Dialog has been deprecated and will be removed in a future version.");
             public static readonly GUIContent visibleInBackground = EditorGUIUtility.TrTextContent("Visible In Background");
             public static readonly GUIContent allowFullscreenSwitch = EditorGUIUtility.TrTextContent("Allow Fullscreen Switch");
+            public static readonly GUIContent useFlipModelSwapChain = EditorGUIUtility.TrTextContent("Use DXGI Flip Model Swapchain for D3D11", "Flip model ensures the best performance. Disable this to fallback to Windows 7-style BltBlt model. This setting affects only D3D11 graphics API.");
             public static readonly GUIContent use32BitDisplayBuffer = EditorGUIUtility.TrTextContent("Use 32-bit Display Buffer*", "If set Display Buffer will be created to hold 32-bit color values. Use it only if you see banding, as it has performance implications.");
             public static readonly GUIContent disableDepthAndStencilBuffers = EditorGUIUtility.TrTextContent("Disable Depth and Stencil*");
             public static readonly GUIContent preserveFramebufferAlpha = EditorGUIUtility.TrTextContent("Render Over Native UI*", "Enable this option ONLY if you want Unity to render on top of the native Android or iOS UI.");
@@ -162,7 +163,7 @@ namespace UnityEditor
             public static readonly GUIContent requireAEP = EditorGUIUtility.TrTextContent("Require ES3.1+AEP");
             public static readonly GUIContent require32 = EditorGUIUtility.TrTextContent("Require ES3.2");
             public static readonly GUIContent skinOnGPU = EditorGUIUtility.TrTextContent("GPU Skinning*", "Use DX11/ES3 GPU Skinning");
-            public static readonly GUIContent skinOnGPUPS4 = EditorGUIUtility.TrTextContent("Compute Skinning*", "Use Compute pipeline for Skinning");
+            public static readonly GUIContent skinOnGPUCompute = EditorGUIUtility.TrTextContent("Compute Skinning*", "Use Compute pipeline for Skinning");
             public static readonly GUIContent disableStatistics = EditorGUIUtility.TrTextContent("Disable HW Statistics*", "Disables HW Statistics");
             public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TrTextContent("Scripting Define Symbols");
             public static readonly GUIContent scriptingRuntimeVersionDeprecationWarning = EditorGUIUtility.TrTextContent("The .NET 3.5 scripting runtime has been removed. Please select .NET 4.x Equivalent.");
@@ -321,6 +322,7 @@ namespace UnityEditor
         SerializedProperty m_VisibleInBackground;
         SerializedProperty m_AllowFullscreenSwitch;
         SerializedProperty m_ForceSingleInstance;
+        SerializedProperty m_UseFlipModelSwapchain;
 
         SerializedProperty m_RunInBackground;
         SerializedProperty m_CaptureSingleScreen;
@@ -480,6 +482,7 @@ namespace UnityEditor
             m_SkinOnGPU                     = FindPropertyAssert("gpuSkinning");
             m_GraphicsJobs                  = FindPropertyAssert("graphicsJobs");
             m_ForceSingleInstance           = FindPropertyAssert("forceSingleInstance");
+            m_UseFlipModelSwapchain         = FindPropertyAssert("useFlipModelSwapchain");
 
             m_RequireES31                   = FindPropertyAssert("openGLRequireES31");
             m_RequireES31AEP                = FindPropertyAssert("openGLRequireES31AEP");
@@ -497,10 +500,8 @@ namespace UnityEditor
             }
 
             for (int i = 0; i < m_SectionAnimators.Length; i++)
-                m_SectionAnimators[i] = new AnimBool(m_SelectedSection.value == i, Repaint);
-
-            m_ShowDefaultIsNativeResolution.valueChanged.AddListener(Repaint);
-            m_ShowResolution.valueChanged.AddListener(Repaint);
+                m_SectionAnimators[i] = new AnimBool(m_SelectedSection.value == i);
+            SetValueChangeListeners(Repaint);
 
             m_VRSettings = new VR.PlayerSettingsEditorVR(this);
 
@@ -511,13 +512,19 @@ namespace UnityEditor
             s_GraphicsDeviceLists.Clear();
         }
 
-        public void SetSectionOpenListener(UnityAction action)
+        public void SetValueChangeListeners(UnityAction action)
         {
             for (int i = 0; i < m_SectionAnimators.Length; i++)
             {
                 m_SectionAnimators[i].valueChanged.RemoveAllListeners();
                 m_SectionAnimators[i].valueChanged.AddListener(action);
             }
+
+            m_ShowDefaultIsNativeResolution.valueChanged.RemoveAllListeners();
+            m_ShowDefaultIsNativeResolution.valueChanged.AddListener(action);
+
+            m_ShowResolution.valueChanged.RemoveAllListeners();
+            m_ShowResolution.valueChanged.AddListener(action);
         }
 
         public override bool UseDefaultMargins()
@@ -947,6 +954,7 @@ namespace UnityEditor
                         EditorGUILayout.PropertyField(m_AllowFullscreenSwitch, SettingsContent.allowFullscreenSwitch);
 
                         EditorGUILayout.PropertyField(m_ForceSingleInstance);
+                        EditorGUILayout.PropertyField(m_UseFlipModelSwapchain, SettingsContent.useFlipModelSwapChain);
                         EditorGUILayout.PropertyField(m_SupportedAspectRatios, true);
 
                         EditorGUILayout.Space();
@@ -1009,7 +1017,7 @@ namespace UnityEditor
             var enabled = new bool[availableDevices.Length];
             for (int i = 0; i < availableDevices.Length; ++i)
             {
-                names[i] = availableDevices[i].ToString();
+                names[i] = L10n.Tr(availableDevices[i].ToString());
                 enabled[i] = !list.list.Contains(availableDevices[i]);
             }
 
@@ -1252,7 +1260,7 @@ namespace UnityEditor
         {
             string name = gamut.ToString();
             if (!IsColorGamutSupportedOnTargetGroup(targetGroup, gamut))
-                name += " (not supported on this platform)";
+                name += L10n.Tr(" (not supported on this platform)");
             return name;
         }
 
@@ -1626,9 +1634,13 @@ namespace UnityEditor
             // GPU Skinning toggle (only show on relevant platforms)
             if (targetGroup != BuildTargetGroup.Facebook && !BuildTargetDiscovery.PlatformHasFlag(platform.defaultTarget, TargetAttributes.GPUSkinningNotSupported))
             {
+                GraphicsDeviceType[] gfxAPIs = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
+                bool computeSkinningOnly =
+                    gfxAPIs[0] != GraphicsDeviceType.XboxOneD3D12 &&
+                    gfxAPIs[0] != GraphicsDeviceType.Direct3D11 &&
+                    gfxAPIs[0] != GraphicsDeviceType.Direct3D12;
                 EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(m_SkinOnGPU,
-                    targetGroup != BuildTargetGroup.PS4 && targetGroup != BuildTargetGroup.Switch ? SettingsContent.skinOnGPU : SettingsContent.skinOnGPUPS4);
+                EditorGUILayout.PropertyField(m_SkinOnGPU, computeSkinningOnly ? SettingsContent.skinOnGPUCompute : SettingsContent.skinOnGPU);
                 if (EditorGUI.EndChangeCheck())
                 {
                     ShaderUtil.RecreateSkinnedMeshResources();
@@ -2507,7 +2519,7 @@ namespace UnityEditor
                 SettingsProvider.GetSearchKeywordsFromGUIContentProperties<SettingsContent>());
             provider.activateHandler = (searchContext, rootElement) =>
             {
-                (provider.settingsEditor as PlayerSettingsEditor)?.SetSectionOpenListener(provider.Repaint);
+                (provider.settingsEditor as PlayerSettingsEditor)?.SetValueChangeListeners(provider.Repaint);
             };
             return provider;
         }

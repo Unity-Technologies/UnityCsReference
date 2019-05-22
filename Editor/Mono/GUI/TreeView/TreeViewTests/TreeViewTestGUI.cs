@@ -23,8 +23,8 @@ namespace UnityEditor.TreeViewExamples
     {
         private Texture2D m_FolderIcon = EditorGUIUtility.FindTexture(EditorResources.folderIconName);
         private Texture2D m_Icon = EditorGUIUtility.FindTexture("boo Script Icon");
-        private GUIStyle m_LabelStyle;
         private GUIStyle m_LabelStyleRightAlign;
+        private bool m_StyleInitialized;
 
         public TestGUI(TreeViewController treeView)
             : base(treeView)
@@ -51,18 +51,20 @@ namespace UnityEditor.TreeViewExamples
             if (Event.current.rawType != EventType.Repaint)
                 return;
 
-            if (m_LabelStyle == null)
+            if (!m_StyleInitialized)
             {
-                m_LabelStyle = new GUIStyle(Styles.lineStyle);
-                m_LabelStyle.padding.left = m_LabelStyle.padding.right = 6;
+                lineStyle = new GUIStyle(Styles.lineStyle);
+                lineStyle.padding.left = lineStyle.padding.right = 6;
 
                 m_LabelStyleRightAlign = new GUIStyle(Styles.lineStyle);
                 m_LabelStyleRightAlign.padding.right = m_LabelStyleRightAlign.padding.left = 6;
                 m_LabelStyleRightAlign.alignment = TextAnchor.MiddleRight;
+
+                m_StyleInitialized = true;
             }
 
             if (selected)
-                Styles.selectionStyle.Draw(rect, false, false, true, focused);
+                selectionStyle.Draw(rect, false, false, true, focused);
 
             // If pinging just render main label and icon (not columns)
             if (isPinging || columnWidths == null || columnWidths.Length == 0)
@@ -78,7 +80,7 @@ namespace UnityEditor.TreeViewExamples
                 if (i == 0)
                     base.OnContentGUI(columnRect, row, item, label, selected, focused, useBoldFont, isPinging);
                 else
-                    GUI.Label(columnRect, "Zksdf SDFS DFASDF ", (i % 2 == 0) ? m_LabelStyle : m_LabelStyleRightAlign);
+                    GUI.Label(columnRect, "Zksdf SDFS DFASDF ", (i % 2 == 0) ? lineStyle : m_LabelStyleRightAlign);
                 columnRect.x += columnRect.width;
             }
         }

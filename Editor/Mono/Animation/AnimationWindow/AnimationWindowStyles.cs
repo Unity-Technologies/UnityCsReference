@@ -42,6 +42,11 @@ namespace UnityEditor
 
         public static GUIStyle playHead = "AnimationPlayHead";
 
+        public static GUIStyle animPlayToolBar = "AnimPlayToolbar";
+        public static GUIStyle animClipToolBar = "AnimClipToolbar";
+        public static GUIStyle animClipToolbarButton = "AnimClipToolbarButton";
+        public static GUIStyle animClipToolbarPopup = "AnimClipToolbarPopup";
+        public static GUIStyle timeRulerBackground = "TimeRulerBackground";
         public static GUIStyle curveEditorBackground = "CurveEditorBackground";
         public static GUIStyle curveEditorLabelTickmarks = "CurveEditorLabelTickmarks";
         public static GUIStyle eventBackground = "AnimationEventBackground";
@@ -56,15 +61,13 @@ namespace UnityEditor
         public static GUIStyle popupCurveEditorSwatch = "PopupCurveEditorSwatch";
         public static GUIStyle popupCurveSwatchBackground = "PopupCurveSwatchBackground";
 
-        public static GUIStyle miniToolbar = EditorStyles.toolbar;
+        public static GUIStyle miniToolbar = "PreToolbar";
         public static GUIStyle miniToolbarButton = new GUIStyle(EditorStyles.toolbarButton);
-        public static GUIStyle toolbarLabel = new GUIStyle(EditorStyles.toolbarPopup);
+        public static GUIStyle toolbarLabel = new GUIStyle(AnimationWindowStyles.animClipToolbarPopup);
 
         public static void Initialize()
         {
             toolbarLabel.normal.background = null;
-            miniToolbarButton.padding.top = 0;
-            miniToolbarButton.padding.bottom = 3;
         }
     }
 }

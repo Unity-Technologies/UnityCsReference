@@ -1170,36 +1170,46 @@ namespace UnityEngine
 
         public static float HorizontalSlider(Rect position, float value, float leftValue, float rightValue)
         {
-            return Slider(position, value, 0, leftValue, rightValue, skin.horizontalSlider, skin.horizontalSliderThumb, true, 0);
+            return Slider(position, value, 0, leftValue, rightValue, skin.horizontalSlider, skin.horizontalSliderThumb, true, 0, skin.horizontalSliderThumbExtent);
         }
 
         // A horizontal slider the user can drag to change a value between a min and a max.
         public static float HorizontalSlider(Rect position, float value, float leftValue, float rightValue, GUIStyle slider, GUIStyle thumb)
         {
-            return Slider(position, value, 0, leftValue, rightValue, slider, thumb, true, 0);
+            return Slider(position, value, 0, leftValue, rightValue, slider, thumb, true, 0, null);
+        }
+
+        public static float HorizontalSlider(Rect position, float value, float leftValue, float rightValue, GUIStyle slider, GUIStyle thumb, GUIStyle thumbExtent)
+        {
+            return Slider(position, value, 0, leftValue, rightValue, slider, thumb, true, 0, (thumbExtent == null && thumb == GUI.skin.horizontalSliderThumb) ? GUI.skin.horizontalSliderThumbExtent : thumbExtent);
         }
 
         public static float VerticalSlider(Rect position, float value, float topValue, float bottomValue)
         {
-            return Slider(position, value, 0, topValue, bottomValue, skin.verticalSlider, skin.verticalSliderThumb, false, 0);
+            return Slider(position, value, 0, topValue, bottomValue, skin.verticalSlider, skin.verticalSliderThumb, false, 0, skin.verticalSliderThumbExtent);
         }
 
         // A vertical slider the user can drag to change a value between a min and a max.
         public static float VerticalSlider(Rect position, float value, float topValue, float bottomValue, GUIStyle slider, GUIStyle thumb)
         {
-            return Slider(position, value, 0, topValue, bottomValue, slider, thumb, false, 0);
+            return Slider(position, value, 0, topValue, bottomValue, slider, thumb, false, 0, null);
+        }
+
+        public static float VerticalSlider(Rect position, float value, float topValue, float bottomValue, GUIStyle slider, GUIStyle thumb, GUIStyle thumbExtent)
+        {
+            return Slider(position, value, 0, topValue, bottomValue, slider, thumb, false, 0, (thumbExtent == null && thumb == GUI.skin.verticalSliderThumb) ? GUI.skin.verticalSliderThumbExtent : thumbExtent);
         }
 
         // Main slider function.
         // Handles scrollbars & sliders in both horizontal & vertical directions.
-        public static float Slider(Rect position, float value, float size, float start, float end, GUIStyle slider, GUIStyle thumb, bool horiz, int id)
+        public static float Slider(Rect position, float value, float size, float start, float end, GUIStyle slider, GUIStyle thumb, bool horiz, int id, GUIStyle thumbExtent = null)
         {
             GUIUtility.CheckOnGUI();
             if (id == 0)
             {
                 id = GUIUtility.GetControlID(s_SliderHash, FocusType.Passive, position);
             }
-            return new SliderHandler(position, value, size, start, end, slider, thumb, horiz, id).Handle();
+            return new SliderHandler(position, value, size, start, end, slider, thumb, horiz, id, thumbExtent).Handle();
         }
 
         public static float HorizontalScrollbar(Rect position, float value, float size, float leftValue, float rightValue)
@@ -1361,7 +1371,7 @@ namespace UnityEngine
             GUIClip.Pop();
         }
 
-        private static readonly UnityEngineInternal.GenericStack s_ScrollViewStates = new UnityEngineInternal.GenericStack();
+        internal static readonly UnityEngineInternal.GenericStack scrollViewStates = new UnityEngineInternal.GenericStack();
 
         public static Vector2 BeginScrollView(Rect position, Vector2 scrollPosition, Rect viewRect)
         {
@@ -1419,7 +1429,7 @@ namespace UnityEngine
             state.visibleRect = state.viewRect = viewRect;
             state.visibleRect.width = position.width;
             state.visibleRect.height = position.height;
-            s_ScrollViewStates.Push(state);
+            scrollViewStates.Push(state);
 
             Rect clipRect = new Rect(position);
             switch (Event.current.type)
@@ -1503,11 +1513,11 @@ namespace UnityEngine
         public static void EndScrollView(bool handleScrollWheel)
         {
             GUIUtility.CheckOnGUI();
-            ScrollViewState state = (ScrollViewState)s_ScrollViewStates.Peek();
+            ScrollViewState state = (ScrollViewState)scrollViewStates.Peek();
 
             GUIClip.Pop();
 
-            s_ScrollViewStates.Pop();
+            scrollViewStates.Pop();
 
             // This is the mac way of handling things: if the mouse is over a scrollview, the scrollview gets the event.
             if (handleScrollWheel && Event.current.type == EventType.ScrollWheel && state.position.Contains(Event.current.mousePosition)
@@ -1532,8 +1542,8 @@ namespace UnityEngine
 
         internal static ScrollViewState GetTopScrollView()
         {
-            if (s_ScrollViewStates.Count != 0)
-                return (ScrollViewState)s_ScrollViewStates.Peek();
+            if (scrollViewStates.Count != 0)
+                return (ScrollViewState)scrollViewStates.Peek();
             return null;
         }
 

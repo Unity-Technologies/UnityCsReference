@@ -221,7 +221,7 @@ namespace UnityEngine.UIElements
 
                     if (multiline)
                     {
-                        if (kde?.character == '\t')
+                        if (kde?.character == '\t' && kde.modifiers == EventModifiers.None)
                         {
                             kde?.StopPropagation();
                             kde?.PreventDefault();

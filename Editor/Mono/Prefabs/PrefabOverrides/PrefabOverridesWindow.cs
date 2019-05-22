@@ -14,11 +14,11 @@ namespace UnityEditor
     internal class PrefabOverridesWindow : PopupWindowContent
     {
         RectOffset k_TreeViewPadding = new RectOffset(0, 0, 4, 4);
-        const float k_HeaderHeight = 32f;
+        const float k_HeaderHeight = 40f;
         const float k_ButtonWidth = 120;
         const float k_HeaderLeftMargin = 6;
         const float k_NoOverridesLabelHeight = 26f;
-        const float k_ApplyButtonHeight = 32f;
+        const float k_ApplyButtonHeight = 36f;
         const float k_HelpBoxHeight = 40f;
 
         GameObject[] m_SelectedGameObjects = null;

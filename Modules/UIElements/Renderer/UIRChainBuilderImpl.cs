@@ -1339,6 +1339,11 @@ namespace UnityEngine.UIElements.UIR.Implementation
             };
             textSettings.color.a *= m_ElementOpacity;
 
+            if (textSettings.font == null)
+            {
+                return;
+            }
+
             textSettings.color *= UIElementsUtility.editorPlayModeTintColor;
 
             using (NativeArray<TextVertex> textVertices = TextNative.GetVertices(textSettings))
@@ -1684,6 +1689,12 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 richText = textParams.richText
             };
             textSettings.color.a *= m_ElementOpacity;
+
+            if (textSettings.font == null)
+            {
+                return;
+            }
+
 
             textSettings.color *= UIElementsUtility.editorPlayModeTintColor;
 

@@ -95,11 +95,15 @@ namespace UnityEditor
         }
 
         internal const int kSliderThickness = 15;
-        internal const int kLayoutRowHeight = EditorGUI.kWindowToolbarHeight + 1;
         internal const int kIntFieldWidth = 35;
         internal const int kHierarchyMinWidth = 300;
         internal const int kToggleButtonWidth = 80;
         internal const float kDisabledRulerAlpha = 0.12f;
+
+        private int layoutRowHeight
+        {
+            get { return (int)EditorGUI.kWindowToolbarHeight + 1; }
+        }
 
         internal struct FrameRateMenuEntry
         {
@@ -205,12 +209,12 @@ namespace UnityEditor
                 GUILayout.BeginVertical();
 
                 // First row of controls
-                GUILayout.BeginHorizontal(EditorStyles.toolbarButton);
+                GUILayout.BeginHorizontal(AnimationWindowStyles.animPlayToolBar);
                 PlayControlsOnGUI();
                 GUILayout.EndHorizontal();
 
                 // Second row of controls
-                GUILayout.BeginHorizontal(EditorStyles.toolbarButton);
+                GUILayout.BeginHorizontal(AnimationWindowStyles.animClipToolBar);
                 LinkOptionsOnGUI();
                 ClipSelectionDropDownOnGUI();
                 GUILayout.FlexibleSpace();
@@ -233,8 +237,8 @@ namespace UnityEditor
                 GUILayout.BeginVertical();
 
                 // Acquire Rects
-                Rect timerulerRect = GUILayoutUtility.GetRect(contentWidth, kLayoutRowHeight);
-                Rect eventsRect = GUILayoutUtility.GetRect(contentWidth, kLayoutRowHeight);
+                Rect timerulerRect = GUILayoutUtility.GetRect(contentWidth, layoutRowHeight);
+                Rect eventsRect = GUILayoutUtility.GetRect(contentWidth, layoutRowHeight - 1);
                 Rect contentLayoutRect = GUILayoutUtility.GetRect(contentWidth, contentWidth, 0f, float.MaxValue, GUILayout.ExpandHeight(true));
 
                 // MainContent must be done first since it resizes the Zoomable area.
@@ -567,7 +571,7 @@ namespace UnityEditor
 
             using (new EditorGUI.DisabledScope(!selection.animationIsEditable))
             {
-                GUILayout.Label(AnimationWindowStyles.samples, AnimationWindowStyles.toolbarLabel);
+                GUILayout.Label(AnimationWindowStyles.samples, EditorStyles.miniLabel);
 
                 EditorGUI.BeginChangeCheck();
                 int clipFrameRate = EditorGUILayout.DelayedIntField((int)m_State.clipFrameRate, EditorStyles.toolbarTextField, GUILayout.Width(kIntFieldWidth));
@@ -660,8 +664,10 @@ namespace UnityEditor
         private void TimeRulerOnGUI(Rect timeRulerRect)
         {
             Rect timeRulerRectNoScrollbar = new Rect(timeRulerRect.xMin, timeRulerRect.yMin, timeRulerRect.width - kSliderThickness, timeRulerRect.height);
+            Rect timeRulerBackgroundRect = timeRulerRectNoScrollbar;
 
-            GUI.Box(timeRulerRect, GUIContent.none, EditorStyles.toolbarButton);
+            timeRulerBackgroundRect.y += 2;
+            GUI.Box(timeRulerBackgroundRect, GUIContent.none, AnimationWindowStyles.timeRulerBackground);
 
             if (!m_State.disabled)
             {
@@ -711,7 +717,7 @@ namespace UnityEditor
 
         private void OptionsOnGUI(int controlID)
         {
-            Rect layoutRect = new Rect(hierarchyWidth - 1f, -1f, contentWidth, kLayoutRowHeight);
+            Rect layoutRect = new Rect(hierarchyWidth - 1f, 1f, contentWidth, layoutRowHeight);
 
             GUI.BeginGroup(layoutRect);
 
@@ -758,7 +764,7 @@ namespace UnityEditor
         {
             using (new EditorGUI.DisabledScope(!selection.animationIsEditable))
             {
-                if (GUILayout.Button(AnimationWindowStyles.addEventContent, EditorStyles.toolbarButton))
+                if (GUILayout.Button(AnimationWindowStyles.addEventContent, AnimationWindowStyles.animClipToolbarButton))
                     m_Events.AddEvent(m_State.currentTime, selection.rootGameObject, selection.animationClip);
             }
         }
@@ -768,7 +774,7 @@ namespace UnityEditor
             bool canAddKey = selection.animationIsEditable && m_State.allCurves.Count != 0;
             using (new EditorGUI.DisabledScope(!canAddKey))
             {
-                if (GUILayout.Button(AnimationWindowStyles.addKeyframeContent, EditorStyles.toolbarButton))
+                if (GUILayout.Button(AnimationWindowStyles.addKeyframeContent, AnimationWindowStyles.animClipToolbarButton))
                 {
                     SaveCurveEditorKeySelection();
                     var keyTime = AnimationKeyTime.Time(m_State.currentTime, m_State.frameRate);

@@ -277,11 +277,25 @@ namespace UnityEditor
             r.y += 1;
             bool valid = BuildPipeline.LicenseCheck(bp.defaultTarget);
             GUI.contentColor = new Color(1, 1, 1, valid ? 1 : .7f);
-            bool enabled = EditorUserBuildSettings.selectedBuildTargetGroup == bp.targetGroup;
+            bool selected = EditorUserBuildSettings.selectedBuildTargetGroup == bp.targetGroup;
+
             if (Event.current.type == EventType.Repaint)
             {
-                background.Draw(r, GUIContent.none, false, false, enabled, false);
-                GUI.Label(new Rect(r.x + 3, r.y + 3, 32, 32), title.image, GUIStyle.none);
+                background.Draw(r, GUIContent.none, false, false, selected, false);
+
+                Texture image = null;
+
+                if (selected && title.image)
+                {
+                    image = EditorUtility.GetIconInActiveState(title.image);
+                }
+
+                if (image == null)
+                {
+                    image = title.image;
+                }
+
+                GUI.Label(new Rect(r.x + 3, r.y + 3, 32, 32), image, GUIStyle.none);
 
                 if (EditorUserBuildSettings.activeBuildTargetGroup == bp.targetGroup)
                     GUI.Label(new Rect(r.xMax - styles.activePlatformIcon.width - 8, r.y + 3 + (32 - styles.activePlatformIcon.height) / 2,
@@ -289,7 +303,7 @@ namespace UnityEditor
                         styles.activePlatformIcon, GUIStyle.none);
             }
 
-            if (GUI.Toggle(r, enabled, title.text, styles.platformSelector))
+            if (GUI.Toggle(r, selected, title.text, styles.platformSelector))
             {
                 if (EditorUserBuildSettings.selectedBuildTargetGroup != bp.targetGroup)
                 {

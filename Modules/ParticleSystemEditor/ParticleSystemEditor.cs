@@ -114,7 +114,7 @@ namespace UnityEditor
             }
         }
 
-        void ShowEdiorButtonGUI()
+        void ShowEditorButtonGUI()
         {
             GUILayout.BeginHorizontal();
             {
@@ -190,7 +190,7 @@ namespace UnityEditor
         {
             EditorGUILayout.BeginVertical(EditorStyles.inspectorDefaultMargins);
 
-            ShowEdiorButtonGUI();
+            ShowEditorButtonGUI();
 
             if (ShouldShowInspector())
             {

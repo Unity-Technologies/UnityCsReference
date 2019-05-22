@@ -48,9 +48,10 @@ namespace UnityEditor
             public static readonly GUIStyle tabLabel = new GUIStyle("dragtab") { name = "dragtab-label" };
         }
 
-        internal const float kTabHeight = 20;
+        internal const int kFloatingWindowTopBorderWidth = 2;
+        internal const float kTabHeight = 19;
         internal const float kDockHeight = 39;
-        internal const float kSideBorders = 2.0f;
+        internal const float kSideBorders = 1.0f;
         internal const float kBottomBorders = 2.0f;
 
         // Which pane window would we drop the currently dragged pane over
@@ -75,6 +76,8 @@ namespace UnityEditor
         [SerializeField] internal int m_LastSelected;
 
         [NonSerialized] internal GUIStyle tabStyle = null;
+        [NonSerialized] internal GUIStyle firstTabStyle = null;
+        [NonSerialized] internal GUIStyle dockTitleBarStyle = null;
 
         private bool m_IsBeingDestroyed;
         private Rect m_ScrollLeftRect;
@@ -83,7 +86,6 @@ namespace UnityEditor
         private float m_ScrollOffset;
         private float m_HoldScrollOffset;
         private double m_HoldScrollTimestamp;
-        private Rect m_SelectedTabRect;
 
         public int selected
         {
@@ -282,11 +284,11 @@ namespace UnityEditor
                     s_PlaceholderPos = mPos;
                 }
 
-                var dragTopOffset = this.window.showMode != ShowMode.MainWindow ? 0 : -1;
+                var dragTopOffset = this.window.showMode != ShowMode.MainWindow ? 3 : -1;
                 DropInfo di = new DropInfo(this)
                 {
                     type = DropInfo.Type.Tab,
-                    rect = new Rect(pos.x - Styles.tabDragWidth * .25f + scr.x, tr.y + scr.y + dragTopOffset, Styles.tabDragWidth, tr.height - 3f)
+                    rect = new Rect(pos.x - Styles.tabDragWidth * .25f + scr.x, tr.y + scr.y + dragTopOffset, Styles.tabDragWidth, tr.height - 2f)
                 };
 
                 return di;
@@ -310,11 +312,12 @@ namespace UnityEditor
             {
                 if (window == null || window.rootView == null)
                     return false;
-                return window.rootView.GetType() != typeof(MainView);
+                return window.showMode != ShowMode.MainWindow;
             }
         }
 
-        protected bool isTopRightPane => windowPosition.xMax >= Mathf.FloorToInt(window.position.width) && windowPosition.yMin <= 0;
+        bool isTop => windowPosition.yMin <= 0;
+        protected bool isTopRightPane => windowPosition.xMax >= Mathf.FloorToInt(window.position.width) && isTop;
 
         protected override void OldOnGUI()
         {
@@ -325,26 +328,26 @@ namespace UnityEditor
             if (window == null)
                 return;
 
+            var borderSize = GetBorderSize();
             HandleSplitView();
 
             background = "dockarea";
-            Rect dockAreaRect = background.margin.Remove(new Rect(0, 0, position.width, position.height));
-            dockAreaRect.x = background.margin.left;
+
+            Rect dockAreaRect = new Rect(0, 0, position.width, position.height);
             Rect wPos = windowPosition;
             Rect containerWindowPosition = window.position;
             containerWindowPosition.width = Mathf.Ceil(containerWindowPosition.width);
             containerWindowPosition.height = Mathf.Ceil(containerWindowPosition.height);
 
-            bool customBorder = floatingWindow && windowPosition.y == 0;
-            bool isBottomTab = wPos.yMax == containerWindowPosition.height;
+            DrawDockAreaBackground(dockAreaRect);
 
-            UpdateDockAreaFromLocation(wPos, containerWindowPosition, ref dockAreaRect);
-            DrawDockAreaBackground(customBorder, dockAreaRect);
-            FixDockAreaRectBorders(customBorder, ref dockAreaRect);
+            // FixDockAreaRectBorders(customBorder, ref dockAreaRect);
 
-            var viewRect = UpdateViewRect(dockAreaRect, isBottomTab, customBorder, floatingWindow);
-            var tabAreaRect = new Rect(dockAreaRect.x + 1, dockAreaRect.y - 1f, dockAreaRect.width - GetExtraButtonsWidth(), kTabHeight);
+            var viewRect = UpdateViewRect(dockAreaRect);
+            var titleBarRect = new Rect(viewRect.x, dockAreaRect.y, viewRect.width, borderSize.top);
+            var tabAreaRect = new Rect(titleBarRect.x, viewRect.y - kTabHeight, titleBarRect.width - GetExtraButtonsWidth(), kTabHeight);
 
+            DrawDockTitleBarBackground(titleBarRect);
             HandleTabScrolling(tabAreaRect);
 
             float genericMenuLeftOffset = Styles.genericMenuLeftOffset;
@@ -357,8 +360,7 @@ namespace UnityEditor
             ShowGenericMenu(position.width - genericMenuLeftOffset, tabAreaRect.y + genericMenuTopOffset);
 
             DrawTabs(tabAreaRect);
-            DrawView(viewRect, dockAreaRect, floatingWindow, isBottomTab);
-
+            DrawView(viewRect, dockAreaRect);
 
             DrawTabScrollers(tabAreaRect);
 
@@ -366,7 +368,17 @@ namespace UnityEditor
             Highlighter.ControlHighlightGUI(this);
         }
 
-        private void UpdateDockAreaFromLocation(Rect windowPosition, Rect containerPosition, ref Rect dockAreaRect)
+        private float GetViewMarginTopOffset(bool isBottomTab, bool customBorder)
+        {
+            float viewMarginTopOffset = 3f;
+            if (isBottomTab)
+                viewMarginTopOffset = 2f;
+            if (customBorder)
+                viewMarginTopOffset = 0f;
+            return viewMarginTopOffset;
+        }
+
+        internal void UpdateDockAreaFromLocation(Rect windowPosition, Rect containerPosition, ref Rect dockAreaRect)
         {
             float sideBorder = kSideBorders;
             if (windowPosition.x == 0)
@@ -380,49 +392,43 @@ namespace UnityEditor
             }
         }
 
-        private void DrawView(Rect viewRect, Rect dockAreaRect, bool floatingWindow, bool isBottomTab)
+        private void DrawView(Rect viewRect, Rect dockAreaRect)
         {
-            if (floatingWindow && isBottomTab)
-                dockAreaRect.height += 2; // Hide floating window bottom border
-
             InvokeOnGUI(dockAreaRect, viewRect);
             RenderToHMDIfNecessary();
         }
 
         private void DrawTabs(Rect tabAreaRect)
         {
-            using (new GUI.ClipScope(tabAreaRect, new Vector2(-m_ScrollOffset, 0)))
+            Rect clipRect = tabAreaRect;
+
+            if (floatingWindow && isTop)
+                clipRect.yMin = 0;
+
+            using (new GUI.ClipScope(clipRect, new Vector2(-m_ScrollOffset - 1f, 0)))
             {
                 if (tabStyle == null)
                     tabStyle = "dragtab";
 
-                var totalTabWidth = DragTab(tabAreaRect, m_ScrollOffset, tabStyle);
+                if (firstTabStyle == null)
+                    firstTabStyle = EditorStyles.s_Current.GetStyle("dragtab first");
+
+                var totalTabWidth = DragTab(tabAreaRect, m_ScrollOffset, tabStyle, firstTabStyle);
                 if (totalTabWidth > 0f)
                     m_TotalTabWidth = totalTabWidth;
                 tabStyle = "dragtab";
             }
         }
 
-        private void DrawSelectedTabLineConnection(Rect tabAreaRect)
+        private Rect UpdateViewRect(Rect dockAreaRect)
         {
-            if (m_SelectedTabRect.width == 0)
-                return;
+            var border = GetBorderSize();
 
-            Rect connectionLineRect = m_SelectedTabRect;
-            connectionLineRect.xMax = Mathf.Min(connectionLineRect.xMax, tabAreaRect.xMax);
-            connectionLineRect.height = floatingWindow ? Styles.tabConnectionLineHeightFloating : Styles.tabConnectionLineHeight;
-            connectionLineRect.y = tabAreaRect.yMax - (floatingWindow ? Styles.tabConnectionLineBottomOffsetFloating : Styles.tabConnectionLineBottomOffset);
-            using (new GUI.ColorScope(Styles.tabConnectionLineColor * GUI.color))
-                GUI.DrawTexture(connectionLineRect, EditorGUIUtility.whiteTexture);
-        }
-
-        private Rect UpdateViewRect(Rect dockAreaRect, bool isBottomTab, bool customBorder, bool floatingWindow)
-        {
-            const float viewMarginLeftOffset = 2f;
-            float viewMarginTopOffset = customBorder ? 1f : 2f;
-            float x = dockAreaRect.x + viewMarginLeftOffset;
-            float y = dockAreaRect.y + kTabHeight - viewMarginTopOffset - 1f;
-            var viewRect = new Rect(x, y, position.width - x, position.height - y);
+            var viewRect = new Rect(
+                dockAreaRect.x + border.left,
+                dockAreaRect.y + border.top,
+                dockAreaRect.width - (border.left + border.right),
+                dockAreaRect.height - (border.top + border.bottom));
 
             if (selected >= 0 && selected < m_Panes.Count)
                 m_Panes[selected].m_Pos = new Rect(GUIUtility.GUIToScreenPoint(Vector2.zero), viewRect.size);
@@ -430,16 +436,23 @@ namespace UnityEditor
             return viewRect;
         }
 
-        private void DrawDockAreaBackground(bool customBorder, Rect dockAreaRect)
+        private void DrawDockAreaBackground(Rect dockAreaRect)
         {
             if (Event.current.type == EventType.Repaint)
             {
                 var backgroundRect = dockAreaRect;
-                var b = background.fixedHeight;
                 backgroundRect.y = 0;
-                background.fixedHeight = 17 + (customBorder ? 1f : 0f) + dockAreaRect.y;
                 background.Draw(backgroundRect, GUIContent.none, 0);
-                background.fixedHeight = b;
+            }
+        }
+
+        private void DrawDockTitleBarBackground(Rect titleBarRect)
+        {
+            if (Event.current.type == EventType.Repaint)
+            {
+                if (dockTitleBarStyle == null)
+                    dockTitleBarStyle = "dockHeader";
+                dockTitleBarStyle.Draw(titleBarRect, GUIContent.none, 0);
             }
         }
 
@@ -702,7 +715,7 @@ namespace UnityEditor
             }
 
             menu.AddSeparator("");
-            menu.AddItem(EditorGUIUtility.TextContent("UIElements Debugger _%f5"), false, DebugWindow, view);
+            AddUIElementsDebuggerToMenu(menu);
         }
 
         void AddTabToHere(object userData)
@@ -746,7 +759,7 @@ namespace UnityEditor
                 float tabWidth = GetTabWidth(tabStyle, i);
                 if (xPos <= mousePos.x && mousePos.x < xPos + tabWidth)
                 {
-                    tabRect = new Rect(xPos, tabAreaRect.yMin, tabWidth, tabAreaRect.height);
+                    tabRect = new Rect(xPos, tabAreaRect.yMin + tabStyle.margin.top, tabWidth, tabAreaRect.height);
                     return i;
                 }
 
@@ -777,7 +790,7 @@ namespace UnityEditor
             }
         }
 
-        private float DragTab(Rect tabAreaRect, float scrollOffset, GUIStyle tabStyle)
+        private float DragTab(Rect tabAreaRect, float scrollOffset, GUIStyle tabStyle, GUIStyle firstTabStyle)
         {
             Event evt = Event.current;
             int id = GUIUtility.GetControlID(FocusType.Passive);
@@ -972,11 +985,16 @@ namespace UnityEditor
                             if (s_DragPane == m_Panes[i])
                                 continue;
 
+                            var style = tabStyle;
+
+                            if (i == 0)
+                                style = firstTabStyle;
+
                             // If we need space for inserting a tab here, skip some horizontal
                             if (s_DropInfo != null && ReferenceEquals(s_DropInfo.dropArea, this) && s_PlaceholderPos == drawNum)
                                 xPos += Styles.tabDragWidth;
 
-                            xPos += DrawTab(tabAreaRect, tabStyle, i, xPos);
+                            xPos += DrawTab(tabAreaRect, style, i, xPos);
                             drawNum++;
                         }
                     }
@@ -1019,28 +1037,33 @@ namespace UnityEditor
         private float DrawTab(Rect tabRegionRect, GUIStyle tabStyle, int tabIndex, float xPos)
         {
             float tabWidth = GetTabWidth(tabStyle, tabIndex);
-            Rect tabPositionRect = new Rect(xPos, tabRegionRect.yMin, tabWidth, tabRegionRect.height);
+            Rect tabPositionRect = new Rect(xPos, tabRegionRect.yMin + tabStyle.margin.top, tabWidth, tabRegionRect.height);
             float roundedPosX = Mathf.Round(tabPositionRect.x);
             float roundedWidth = Mathf.Round(tabPositionRect.x + tabPositionRect.width) - roundedPosX;
 
             bool isActive = m_Panes[tabIndex] == EditorWindow.focusedWindow;
             Rect tabContentRect = new Rect(roundedPosX, tabPositionRect.y, roundedWidth, tabPositionRect.height);
-            StylePainter.DrawStyle(tabStyle, tabContentRect, null, new DrawStates(false, isActive, tabIndex == selected, false));
+            tabStyle.Draw(tabContentRect, tabContentRect.Contains(Event.current.mousePosition), isActive, tabIndex == selected, false);
             GUI.Label(tabPositionRect, GetTruncatedTabContent(tabIndex), Styles.tabLabel);
 
             var unclippedContentRect = GUIClip.UnclipToWindow(tabContentRect);
-            if (tabIndex == selected)
-                m_SelectedTabRect = unclippedContentRect;
 
             MarkHotRegion(unclippedContentRect);
 
             return tabWidth;
         }
 
-        protected override RectOffset GetBorderSize()
+        internal RectOffset GetBorderSizeInternal()
         {
             if (!window)
                 return m_BorderSize;
+
+            Rect containerWindowPosition = window.position;
+            containerWindowPosition.width = Mathf.FloorToInt(containerWindowPosition.width);
+            containerWindowPosition.height = Mathf.FloorToInt(containerWindowPosition.height);
+
+            bool customBorder = floatingWindow && windowPosition.y == 0;
+            bool isBottomTab = windowPosition.yMax == containerWindowPosition.height;
 
             // Reset
             m_BorderSize.left = m_BorderSize.right = m_BorderSize.top = m_BorderSize.bottom = 0;
@@ -1051,10 +1074,15 @@ namespace UnityEditor
             if (r.xMax != Mathf.FloorToInt(window.position.width))
                 m_BorderSize.right += (int)kSideBorders;
 
-            m_BorderSize.top = (int)kTabHeight;
-            m_BorderSize.bottom = (window != null && window.showMode != ShowMode.MainWindow ? 0 : (int)kBottomBorders);
+            m_BorderSize.top = (int)kTabHeight + (customBorder ? kFloatingWindowTopBorderWidth : 0);
+            m_BorderSize.bottom = isBottomTab ? 0 : (int)kBottomBorders;
 
             return m_BorderSize;
+        }
+
+        protected override RectOffset GetBorderSize()
+        {
+            return GetBorderSizeInternal();
         }
 
         private static void ResetDragVars()
@@ -1148,7 +1176,7 @@ namespace UnityEditor
             }
 
             menu.AddSeparator("");
-            menu.AddItem(EditorGUIUtility.TextContent("UIElements Debugger _%f5"), false, DebugWindow, window);
+            AddUIElementsDebuggerToMenu(menu);
         }
     }
 }

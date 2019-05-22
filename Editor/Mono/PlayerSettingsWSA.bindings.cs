@@ -91,14 +91,10 @@ namespace UnityEditor
 
         public enum WSAImageScale
         {
-            _80 = 80,
             _100 = 100,
             _125 = 125,
-            _140 = 140,
             _150 = 150,
-            _180 = 180,
             _200 = 200,
-            _240 = 240,
             _400 = 400,
 
             Target16 = 16,
@@ -106,6 +102,15 @@ namespace UnityEditor
             Target32 = 32,
             Target48 = 48,
             Target256 = 256,
+
+            [Obsolete("Image scale 80 is not used in Universal Windows Platform", false)]
+            _80 = 80,
+            [Obsolete("Image scale 140 is not used in Universal Windows Platform", false)]
+            _140 = 140,
+            [Obsolete("Image scale 180 is not used in Universal Windows Platform", false)]
+            _180 = 180,
+            [Obsolete("Image scale 240 is not used in Universal Windows Platform", false)]
+            _240 = 240,
         }
 
         public enum WSAImageType

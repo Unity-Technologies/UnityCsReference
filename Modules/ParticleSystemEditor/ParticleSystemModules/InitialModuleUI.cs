@@ -123,7 +123,13 @@ namespace UnityEditor
 
         public override bool DrawHeader(Rect rect, GUIContent label)
         {
+            // When displaying prefab overrides, the whole UI is disabled, but we still need to be able to expand the modules to see the settings - this doesn't modify the asset
+            bool wasEnabled = GUI.enabled;
+            GUI.enabled = true;
+
             var toggleState = GUI.Toggle(rect, foldout, label, ParticleSystemStyles.Get().emitterHeaderStyle);
+
+            GUI.enabled = wasEnabled;
             return toggleState;
         }
 

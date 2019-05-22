@@ -427,7 +427,7 @@ namespace UnityEditorInternal
                 float y = rectBottom - (cdata.grid[i] - cdata.series[0].rangeAxis.x) * rangeScale;
                 if (y > r.y)
                 {
-                    DoLabel(r.x + 5, y - 8, cdata.gridLabels[i], 0.0f);
+                    DoLabel(r.x + 5, y - 12, cdata.gridLabels[i], 0.0f);
                 }
             }
         }

@@ -331,7 +331,7 @@ namespace UnityEditor
 
         void ShowMessage(string msg)
         {
-            TooltipView.Show(msg, GetScreenRect());
+            TooltipView.Show(msg, GetScreenRect(), null);
         }
 
         void RemoveMessage()

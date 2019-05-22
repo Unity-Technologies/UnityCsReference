@@ -6,7 +6,6 @@ using System;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
-using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -80,38 +79,21 @@ namespace UnityEditor
 
     internal class SceneRenderModeWindow : PopupWindowContent
     {
-        class Styles
+        static class Styles
         {
-            public static GUIStyle s_MenuItem;
-            public static GUIStyle s_Separator;
+            private static GUIStyle s_MenuItem;
+            private static GUIStyle s_Separator;
 
-            public static GUIStyle sMenuItem
-            {
-                get
-                {
-                    if (s_MenuItem == null)
-                        s_MenuItem = "MenuItem";
-                    return s_MenuItem;
-                }
-            }
+            public static GUIStyle sMenuItem => s_MenuItem ?? (s_MenuItem = "MenuItem");
+            public static GUIStyle sSeparator => s_Separator ?? (s_Separator = "sv_iconselector_sep");
 
-            public static GUIStyle sSeparator
-            {
-                get
-                {
-                    if (s_Separator == null)
-                        s_Separator = "sv_iconselector_sep";
-                    return s_Separator;
-                }
-            }
-
-            public static readonly string kShadingMode = "Shading Mode";
-            public static readonly string kMiscellaneous = "Miscellaneous";
-            public static readonly string kDeferred = "Deferred";
-            public static readonly string kGlobalIllumination = "Global Illumination";
-            public static readonly string kRealtimeGI = "Realtime Global Illumination";
-            public static readonly string kBakedGI = "Baked Global Illumination";
-            public static readonly string kMaterialValidation = "Material Validation";
+            private static readonly string kShadingMode = "Shading Mode";
+            private static readonly string kMiscellaneous = "Miscellaneous";
+            private static readonly string kDeferred = "Deferred";
+            private static readonly string kGlobalIllumination = "Global Illumination";
+            private static readonly string kRealtimeGI = "Realtime Global Illumination";
+            private static readonly string kBakedGI = "Baked Global Illumination";
+            private static readonly string kMaterialValidation = "Material Validation";
 
             public static readonly GUIContent sResolutionToggle =
                 EditorGUIUtility.TrTextContent("Show Lightmap Resolution");
@@ -182,7 +164,7 @@ namespace UnityEditor
                 else
                 {
                     headers = Styles.sBuiltinCameraModes.Select(mode => mode.section).Distinct().Count() + SceneView.userDefinedModes.Where(mode => m_SceneView.IsCameraDrawModeEnabled(mode)).Select(mode => mode.section).Distinct().Count();
-                    modes = Styles.sBuiltinCameraModes.Count() + SceneView.userDefinedModes.Count(mode => m_SceneView.IsCameraDrawModeEnabled(mode));
+                    modes = Styles.sBuiltinCameraModes.Length + SceneView.userDefinedModes.Count(mode => m_SceneView.IsCameraDrawModeEnabled(mode));
                 }
 
                 int separators = headers - 2;
@@ -190,14 +172,14 @@ namespace UnityEditor
             }
         }
 
-        float windowWidth { get { return 205; } }
-
+        const float windowWidth = 205;
         const float kSeparatorHeight = 3;
         const float kFrameWidth = 1f;
         const float kHeaderHorizontalPadding = 5f;
-        const float kHeaderVerticalPadding = 1f;
-        static readonly float kShowLightmapResolutionHeight = EditorGUI.kSingleLineHeight + kSeparatorHeight * 2;
+        const float kHeaderVerticalPadding = 3f;
         const float kTogglePadding = 7f;
+
+        static readonly float kShowLightmapResolutionHeight = EditorGUI.kSingleLineHeight + kSeparatorHeight * 2;
 
         readonly SceneView m_SceneView;
 
@@ -220,7 +202,7 @@ namespace UnityEditor
             if (Event.current.type == EventType.Layout)
                 return;
 
-            Draw(editorWindow, rect.width);
+            Draw(rect.width);
 
             // Use mouse move so we get hover state correctly in the menu item rows
             if (Event.current.type == EventType.MouseMove)
@@ -257,7 +239,7 @@ namespace UnityEditor
             rect.y += EditorGUI.kSingleLineHeight;
         }
 
-        private void Draw(EditorWindow caller, float listElementWidth)
+        private void Draw(float listElementWidth)
         {
             var drawPos = new Rect(0, 0, listElementWidth, EditorGUI.kSingleLineHeight);
             bool usingScriptableRenderPipeline = (GraphicsSettings.renderPipelineAsset != null);
@@ -282,7 +264,7 @@ namespace UnityEditor
 
                 using (new EditorGUI.DisabledScope(!m_SceneView.IsCameraDrawModeEnabled(mode)))
                 {
-                    DoBuiltinMode(caller, ref drawPos, mode);
+                    DoBuiltinMode(ref drawPos, mode);
                 }
             }
 
@@ -316,7 +298,7 @@ namespace UnityEditor
             }
         }
 
-        void DoBuiltinMode(EditorWindow caller, ref Rect rect, SceneView.CameraMode mode)
+        void DoBuiltinMode(ref Rect rect, SceneView.CameraMode mode)
         {
             using (new EditorGUI.DisabledScope(!m_SceneView.CheckDrawModeForRenderingPath(mode.drawMode)))
             {

@@ -46,6 +46,18 @@ namespace UnityEngine
             return h.t;
         }
 
+        [TypeInferenceRule(TypeInferenceRules.TypeReferencedByFirstArgument)]
+        public bool TryGetComponent(Type type, out Component component)
+        {
+            return gameObject.TryGetComponent(type, out component);
+        }
+
+        [System.Security.SecuritySafeCritical]
+        public unsafe bool TryGetComponent<T>(out T component)
+        {
+            return gameObject.TryGetComponent(out component);
+        }
+
         [FreeFunction(HasExplicitThis = true)]
         extern public Component GetComponent(string type);
 
@@ -173,6 +185,12 @@ namespace UnityEngine
         {
             return gameObject.CompareTag(tag);
         }
+
+        [FreeFunction(HasExplicitThis = true)]
+        extern internal Component GetCoupledComponent();
+
+        [FreeFunction(HasExplicitThis = true)]
+        extern internal bool IsCoupledComponent();
 
         [FreeFunction(HasExplicitThis = true)]
         extern public void SendMessageUpwards(string methodName, [DefaultValue("null")] object value, [DefaultValue("SendMessageOptions.RequireReceiver")] SendMessageOptions options);

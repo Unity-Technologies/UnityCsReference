@@ -118,25 +118,22 @@ namespace UnityEditor
         public static void GenerateDependencies2(string strippedAssemblyDir, bool doStripping, out HashSet<UnityType> nativeClasses,
             out HashSet<string> nativeModules)
         {
-            if (!doStripping)
-            {
-                nativeClasses = null;
-                nativeModules = GetAllStrippableModules();
-                return;
-            }
-
             var dataFromLinker = AssemblyStripper.ReadLinkerToEditorData(strippedAssemblyDir);
-            nativeClasses = new HashSet<UnityType>();
+            nativeClasses = doStripping ? new HashSet<UnityType>() : null;
             nativeModules = new HashSet<string>();
             foreach (var module in dataFromLinker.report.modules)
             {
                 nativeModules.Add(module.name);
-                foreach (var dependency in module.dependencies)
-                {
-                    var unityType = UnityType.FindTypeByName(dependency.name);
 
-                    if (unityType != null)
-                        nativeClasses.Add(unityType);
+                if (doStripping)
+                {
+                    foreach (var dependency in module.dependencies)
+                    {
+                        var unityType = UnityType.FindTypeByName(dependency.name);
+
+                        if (unityType != null)
+                            nativeClasses.Add(unityType);
+                    }
                 }
             }
         }
@@ -552,7 +549,7 @@ namespace UnityEditor
                     // UnityEngine.UI references UnityEngine.Collider, which causes the inclusion of Physics and Physics2D modules if
                     // UnityEngine.UI is referenced. UnityEngine.UI code is designed to only actually access Colliders if these modules
                     // are used, so don't include references from UnityEngine.UI here.
-                    if (fileNames[i] == "UnityEngine.UI.dll")
+                    if (fileNames[i] == "Unity.ugui.dll")
                         unityEngineUIAssemblyDefinition = assemblies[i];
                 }
 

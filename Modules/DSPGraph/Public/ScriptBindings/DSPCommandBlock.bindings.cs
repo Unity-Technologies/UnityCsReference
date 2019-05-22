@@ -8,7 +8,7 @@ using UnityEngine.Bindings;
 
 namespace Unity.Audio
 {
-    [NativeType(Header = "Modules/Audio/Public/csas/DSPCommandBlock.bindings.h")]
+    [NativeType(Header = "Modules/DSPGraph/Public/DSPCommandBlock.bindings.h")]
     internal struct DSPCommandBlockInternal
     {
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]

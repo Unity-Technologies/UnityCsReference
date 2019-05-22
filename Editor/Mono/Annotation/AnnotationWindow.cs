@@ -12,8 +12,8 @@ namespace UnityEditor
     {
         class Styles
         {
-            public GUIStyle toggle = "OL Toggle";
-            public GUIStyle toggleMixed = "OL ToggleMixed";
+            public GUIStyle toggle = "Toggle";
+            public GUIStyle toggleMixed = "ToggleMixed";
             public GUIStyle listEvenBg = "ObjectPickerResultsOdd";//"ObjectPickerResultsEven";//
             public GUIStyle listOddBg = "ObjectPickerResultsEven";//"ObjectPickerResultsEven";//
             public GUIStyle background = "grey_border";
@@ -55,8 +55,11 @@ namespace UnityEditor
         const float kWindowWidth = 270;
         const float scrollBarWidth = 14;
         const float listElementHeight = 18;
-        const float gizmoRightAlign = 23;
-        const float iconRightAlign = 64;
+        float iconSize = 16;
+        float gizmoRightAlign;
+        float gizmoTextRightAlign;
+        float iconRightAlign;
+        float iconTextRightAlign;
         const float frameWidth = 1f;
 
         static bool s_Debug = false;
@@ -141,7 +144,7 @@ namespace UnityEditor
 
         float GetTopSectionHeight()
         {
-            const int numberOfControls = 5;
+            const int numberOfControls = 4;
             return EditorGUI.kSingleLineHeight * numberOfControls + EditorGUI.kControlVerticalSpacing * numberOfControls;
         }
 
@@ -325,9 +328,10 @@ namespace UnityEditor
             float topmargin = 7;
             float margin = 11;
             float curY = topmargin;
-            float labelWidth = 120;
-            //Extra spacing looks good here
-            float rowHeight = EditorGUI.kSingleLineHeight + 2 * EditorGUI.kControlVerticalSpacing;
+
+
+            float labelWidth = m_Styles.listHeaderStyle.CalcSize(showOutlineContent).x + GUI.skin.toggle.CalcSize(GUIContent.none).x + 1;
+            float rowHeight = 18;
 
             // Toggle 3D gizmos
             Rect toggleRect = new Rect(margin, curY, labelWidth, rowHeight);
@@ -380,9 +384,9 @@ namespace UnityEditor
         {
             // Calc sizes
             const float barHeight = 1;
-            Rect scrollViewRect = new Rect(frameWidth,
+            Rect scrollViewRect = new Rect(0,
                 startY + barHeight,
-                position.width - 2 * frameWidth,
+                position.width - 4,
                 height - barHeight - frameWidth);
             float totalContentHeight = DrawNormalList(false, 0, 0, 100000);
             Rect contentRect = new Rect(0, 0, 1, totalContentHeight);
@@ -392,7 +396,7 @@ namespace UnityEditor
                 listElementWidth -= scrollBarWidth;
 
             // Scrollview
-            m_ScrollPosition = GUI.BeginScrollView(scrollViewRect, m_ScrollPosition, contentRect);
+            m_ScrollPosition = GUI.BeginScrollView(scrollViewRect, m_ScrollPosition, contentRect, false, false, GUI.skin.horizontalScrollbar, GUI.skin.verticalScrollbar, EditorStyles.scrollViewAlt);
             {
                 DrawNormalList(true, listElementWidth, m_ScrollPosition.y - listElementHeight, m_ScrollPosition.y + totalContentHeight);
             }
@@ -420,7 +424,7 @@ namespace UnityEditor
         float DrawListSection(float y, string sectionHeader, List<AInfo> listElements, bool doDraw, float listElementWidth, float startY, float endY, ref bool even, bool useSeperator, ref bool headerDrawn)
         {
             float curY = y;
-            const float extraHeader = 10;
+            const float extraHeader = 15;
             const float headerHeight = 20;
 
             if (listElements.Count > 0)
@@ -495,6 +499,16 @@ namespace UnityEditor
                 }
             }
 
+            var gizmoText = "gizmo";
+            var gizmoTextSize = m_Styles.columnHeaderStyle.CalcSize(new GUIContent(gizmoText));
+            gizmoTextRightAlign = gizmoTextSize.x;
+            gizmoRightAlign = gizmoTextRightAlign - (gizmoTextSize.x * 0.5f - m_Styles.toggle.CalcSize(GUIContent.none).x*0.5f);
+            var iconText = "icon";
+            var iconTextSize = m_Styles.columnHeaderStyle.CalcSize(new GUIContent(iconText));
+            iconTextRightAlign = iconTextSize.x + gizmoTextRightAlign + 10;
+            iconRightAlign = iconTextRightAlign - (iconTextSize.x * 0.5f - iconSize * 0.5f);
+
+
             GUIStyle style = m_Styles.toggle;
             bool enabled = enabledState > EnabledState.None;
 
@@ -502,7 +516,7 @@ namespace UnityEditor
             if (setMixed)
                 style = m_Styles.toggleMixed;
 
-            Rect toggleRect = new Rect(rect.width - gizmoRightAlign - 2, rect.y + (rect.height - toggleSize) * 0.5f, toggleSize, toggleSize);
+            Rect toggleRect = new Rect(rect.width - gizmoRightAlign, rect.y + (rect.height - toggleSize) * 0.5f, toggleSize, toggleSize);
 
             bool newEnabled = GUI.Toggle(toggleRect, enabled, GUIContent.none, style);
 
@@ -527,12 +541,12 @@ namespace UnityEditor
 
                 //  Column headers
                 Rect columnRect = rect;
-                columnRect.y += -10;
-                columnRect.x = rect.width - 32;
-                GUI.Label(columnRect, "gizmo", m_Styles.columnHeaderStyle);
+                columnRect.y -= gizmoTextSize.y - 3;
+                columnRect.x = rect.width - gizmoTextRightAlign;
+                GUI.Label(columnRect, gizmoText, m_Styles.columnHeaderStyle);
 
-                columnRect.x = rect.width - iconRightAlign;
-                GUI.Label(columnRect, "icon", m_Styles.columnHeaderStyle);
+                columnRect.x = rect.width - iconTextRightAlign;
+                GUI.Label(columnRect, iconText, m_Styles.columnHeaderStyle);
 
                 GUI.color = Color.white;
             }
@@ -570,8 +584,7 @@ namespace UnityEditor
 
 
             // Icon toggle
-            float iconSize = 16;
-            Rect iconRect = new Rect(rect.width - iconRightAlign, rect.y + (rect.height - iconSize) * 0.5f, iconSize, iconSize);
+            Rect iconRect = new Rect(rect.width - iconRightAlign + 2, rect.y + (rect.height - iconSize) * 0.5f, iconSize, iconSize); // +2 because the given rect is shortened by 2px before this method call
             Texture thumb = null;
             if (ainfo.m_ScriptClass != "")
             {
@@ -650,7 +663,7 @@ namespace UnityEditor
             {
                 tooltip = textGizmoVisible;
 
-                Rect togglerRect = new Rect(rect.width - gizmoRightAlign, rect.y + (rect.height - togglerSize) * 0.5f, togglerSize, togglerSize);
+                Rect togglerRect = new Rect(rect.width - gizmoRightAlign + 2, rect.y + (rect.height - togglerSize) * 0.5f, togglerSize, togglerSize); // +2 because the given rect is shortened by 2px before this method call
                 ainfo.m_GizmoEnabled = GUI.Toggle(togglerRect, ainfo.m_GizmoEnabled, new GUIContent("", tooltip), m_Styles.toggle);
                 if (GUI.changed)
                 {

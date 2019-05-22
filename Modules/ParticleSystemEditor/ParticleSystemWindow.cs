@@ -248,7 +248,7 @@ namespace UnityEditor
 
                 // Lock toggle
                 GUILayout.BeginVertical();
-                GUILayout.Space(3);
+                GUILayout.Space(2);
                 ParticleSystem lockedParticleSystem = ParticleSystemEditorUtils.lockedParticleSystem;
                 bool isLocked = lockedParticleSystem != null;
                 bool newLocked = GUILayout.Toggle(isLocked, s_Texts.lockParticleSystem, "IN LockButton");

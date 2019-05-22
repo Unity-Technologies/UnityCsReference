@@ -244,26 +244,27 @@ namespace UnityEngine.UIElements.StyleSheets
                 if (handles[0].valueType == StyleValueType.Keyword && handles[0].valueIndex == (int)StyleValueKeyword.Initial)
                 {
                     ApplyInitialStyleValue(propertyID, specificity);
-                    return;
                 }
-
-                switch (propertyID)
+                else
                 {
-                    case StylePropertyID.Unknown:
-                        break;
-                    case StylePropertyID.Custom:
-                        ApplyCustomStyleProperty(sheet, styleProperty, specificity);
-                        break;
-                    case StylePropertyID.BorderRadius:
-                    case StylePropertyID.BorderWidth:
-                    case StylePropertyID.Flex:
-                    case StylePropertyID.Margin:
-                    case StylePropertyID.Padding:
-                        ApplyShorthandProperty(sheet, propertyID, styleProperty.values, specificity);
-                        break;
-                    default:
-                        ApplyStyleProperty(s_StyleSheetApplicator, sheet, propertyID, handles, specificity);
-                        break;
+                    switch (propertyID)
+                    {
+                        case StylePropertyID.Unknown:
+                            break;
+                        case StylePropertyID.Custom:
+                            ApplyCustomStyleProperty(sheet, styleProperty, specificity);
+                            break;
+                        case StylePropertyID.BorderRadius:
+                        case StylePropertyID.BorderWidth:
+                        case StylePropertyID.Flex:
+                        case StylePropertyID.Margin:
+                        case StylePropertyID.Padding:
+                            ApplyShorthandProperty(sheet, propertyID, styleProperty.values, specificity);
+                            break;
+                        default:
+                            ApplyStyleProperty(s_StyleSheetApplicator, sheet, propertyID, handles, specificity);
+                            break;
+                    }
                 }
             }
         }

@@ -122,22 +122,32 @@ namespace UnityEngine
         GUIStyle m_horizontalSlider;
         [SerializeField]
         GUIStyle m_horizontalSliderThumb;
+        [NonSerialized]
+        GUIStyle m_horizontalSliderThumbExtent;
         [SerializeField]
         GUIStyle m_verticalSlider;
         [SerializeField]
         GUIStyle m_verticalSliderThumb;
+        [NonSerialized]
+        GUIStyle m_verticalSliderThumbExtent;
 
         // Style used by default for the background part of GUI::ref::HorizontalSlider controls.
         public GUIStyle horizontalSlider { get { return m_horizontalSlider; } set { m_horizontalSlider = value; Apply(); } }
 
-        // Style used by default for the thumb that is dragged in GUI::ref::HorizontalSlider controls.
+        // Style used by default for the thumb extent in GUI::ref::HorizontalSlider controls.
         public GUIStyle horizontalSliderThumb { get { return m_horizontalSliderThumb; } set { m_horizontalSliderThumb = value; Apply(); } }
+
+        // Style used by default for the extended region around the thumb in GUI::ref::HorizontalSlider controls.
+        internal GUIStyle horizontalSliderThumbExtent { get { return m_horizontalSliderThumbExtent; } set { m_horizontalSliderThumbExtent = value; Apply(); } }
 
         // Style used by default for the background part of GUI::ref::VerticalSlider controls.
         public GUIStyle verticalSlider { get { return m_verticalSlider; } set { m_verticalSlider = value; Apply(); } }
 
         // Style used by default for the thumb that is dragged in GUI::ref::VerticalSlider controls.
         public GUIStyle verticalSliderThumb { get { return m_verticalSliderThumb; } set { m_verticalSliderThumb = value; Apply(); } }
+
+        // Style used by default for the extended region around the thumb in GUI::ref::VerticalSlider controls.
+        internal GUIStyle verticalSliderThumbExtent { get { return m_verticalSliderThumbExtent; } set { m_verticalSliderThumbExtent = value; Apply(); } }
 
         [SerializeField]
         GUIStyle m_horizontalScrollbar;
@@ -314,6 +324,21 @@ namespace UnityEngine
                     m_Styles[m_CustomStyles[i].name] = m_CustomStyles[i];
                 }
             }
+
+            if (!m_Styles.TryGetValue("HorizontalSliderThumbExtent", out m_horizontalSliderThumbExtent))
+            {
+                m_horizontalSliderThumbExtent = new GUIStyle();
+                m_horizontalSliderThumbExtent.name = "horizontalsliderthumbextent";
+                m_Styles["HorizontalSliderThumbExtent"] = m_horizontalSliderThumbExtent;
+            }
+
+            if (!m_Styles.TryGetValue("VerticalSliderThumbExtent", out m_verticalSliderThumbExtent))
+            {
+                m_verticalSliderThumbExtent = new GUIStyle();
+                m_Styles["VerticalSliderThumbExtent"] = m_verticalSliderThumbExtent;
+                m_verticalSliderThumbExtent.name = "verticalsliderthumbextent";
+            }
+
             error.stretchHeight = true;
             error.normal.textColor = Color.red;
         }

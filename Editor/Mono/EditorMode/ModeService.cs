@@ -380,6 +380,7 @@ namespace UnityEditor
                     var menuName = JsonUtils.JsonReadString(menu, k_MenuKeyName);
                     var fullMenuName = prefix + menuName;
                     var platform = JsonUtils.JsonReadString(menu, k_MenuKeyPlatform);
+                    var hasExplicitPriority = menu.Contains(k_MenuKeyPriority);
                     priority = JsonUtils.JsonReadInt(menu, k_MenuKeyPriority, priority + 1);
 
                     // Check the menu item platform
@@ -396,7 +397,7 @@ namespace UnityEditor
                             var whitelistedItems = Menu.ExtractSubmenus(fullMenuName);
                             var renamedTo = prefix + JsonUtils.JsonReadString(menu, k_MenuKeyRename, menuName);
                             foreach (var wi in whitelistedItems)
-                                Menu.AddExistingMenuItem(wi.Replace(fullMenuName, renamedTo), wi, priority);
+                                Menu.AddExistingMenuItem(wi.Replace(fullMenuName, renamedTo), wi, hasExplicitPriority ? priority : -1);
                         }
                     }
                     else

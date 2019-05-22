@@ -5,6 +5,7 @@
 //#define ENABLE_CAPTURE_DEBUG
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Text;
 using UnityEngine.Yoga;
 using UnityEngine.UIElements.StyleSheets;
@@ -80,6 +81,13 @@ namespace UnityEngine.UIElements
             UxmlIntAttributeDescription m_TabIndex = new UxmlIntAttributeDescription { name = "tabindex", defaultValue = 0 };
             protected UxmlBoolAttributeDescription focusable { get; set; } = new UxmlBoolAttributeDescription { name = "focusable", defaultValue = false };
 
+#pragma warning disable 414
+            // These variables are used by reflection.
+            UxmlStringAttributeDescription m_Class = new UxmlStringAttributeDescription { name = "class" };
+            UxmlStringAttributeDescription m_ContentContainer = new UxmlStringAttributeDescription { name = "content-container", obsoleteNames = new[] { "contentContainer" } };
+            UxmlStringAttributeDescription m_Style = new UxmlStringAttributeDescription { name = "style" };
+#pragma warning restore
+
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
                 get { yield return new UxmlChildElementDescription(typeof(VisualElement)); }
@@ -119,6 +127,10 @@ namespace UnityEngine.UIElements
                 }
 
                 ve.tooltip = m_Tooltip.GetValueFromBag(bag, cc);
+
+                // We ignore m_Class, it was processed in UIElementsViewImporter.
+                // We ignore m_ContentContainer, it was processed in UIElementsViewImporter.
+                // We ignore m_Style, it was processed in UIElementsViewImporter.
             }
         }
 
@@ -842,6 +854,7 @@ namespace UnityEngine.UIElements
                     e.target = this;
                     elementPanel.SendEvent(e, DispatchMode.Immediate);
                 }
+                UnregisterRunningAnimations();
             }
 
             IPanel prevPanel = panel;
@@ -849,6 +862,7 @@ namespace UnityEngine.UIElements
 
             if (panel != null)
             {
+                RegisterRunningAnimations();
                 using (var e = AttachToPanelEvent.GetPooled(prevPanel, p))
                 {
                     e.target = this;
@@ -1229,8 +1243,7 @@ namespace UnityEngine.UIElements
             return GetType().Name + " " + name + " " + layout + " world rect: " + worldBound;
         }
 
-        // WARNING returning the HashSet means it could be modified, be careful
-        internal IEnumerable<string> GetClasses()
+        public IEnumerable<string> GetClasses()
         {
             return m_ClassList;
         }

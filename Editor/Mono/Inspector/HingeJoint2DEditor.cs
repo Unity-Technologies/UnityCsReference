@@ -73,6 +73,8 @@ namespace UnityEditor
 
         new public void OnSceneGUI()
         {
+            if (!target)
+                return;
             var hingeJoint2D = (HingeJoint2D)target;
 
             // Ignore disabled joint.

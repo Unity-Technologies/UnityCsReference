@@ -13,7 +13,7 @@ namespace UnityEngineInternal.Input
     [NativeHeader("Modules/Input/Private/InputModuleBindings.h")]
     [NativeHeader("Modules/Input/Private/InputInternal.h")]
     [NativeConditional("ENABLE_NEW_INPUT_SYSTEM")]
-    public partial class NativeInputSystem
+    internal partial class NativeInputSystem
     {
         internal static extern bool hasDeviceDiscoveredCallback { set; }
 

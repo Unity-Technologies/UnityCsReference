@@ -2,24 +2,33 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI
 {
     internal class PackageAssetPostprocessor : AssetPostprocessor
     {
-        static bool IsPackageJsonAsset(string path)
-        {
-            var pathComponents = (path ?? "").Split('/');
-            return pathComponents.Length == 3 && pathComponents[0] == "Packages" && pathComponents[2] == "package.json";
-        }
-
         static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
         {
-            if (!importedAssets.Any(IsPackageJsonAsset) && !deletedAssets.Any(IsPackageJsonAsset) && !movedAssets.Any(IsPackageJsonAsset))
-                return;
+            var allUpdatedAssets = importedAssets.Concat(deletedAssets).Concat(movedAssets).Concat(movedFromAssetPaths);
+            var packageJsonsUpdated = false;
 
-            PackageManagerWindow.FetchListOfflineCacheForAllWindows();
+            foreach (var asset in allUpdatedAssets)
+            {
+                var pathComponents = asset.Split('/');
+                if (pathComponents[0] != "Packages")
+                    continue;
+                if (!packageJsonsUpdated && pathComponents.Length == 3 && pathComponents[2] == "package.json")
+                {
+                    packageJsonsUpdated = true;
+                    break;
+                }
+            }
+
+            if (packageJsonsUpdated)
+                PackageManagerWindow.FetchListOfflineCacheForAllWindows();
         }
     }
 }

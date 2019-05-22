@@ -400,7 +400,7 @@ namespace UnityEditor
             if (mixerItem == null)
                 return;
 
-            GUIStyle lineStyle = useBoldFont ? Styles.lineBoldStyle : Styles.lineStyle;
+            lineStyle = useBoldFont ? Styles.lineBoldStyle : Styles.lineStyle;
 
             // Draw text
             lineStyle.padding.left = (int)(k_IconWidth + iconTotalPadding + k_SpaceBetweenIconAndText);

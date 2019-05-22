@@ -68,6 +68,18 @@ namespace UnityEditor.Experimental
 
         public extern static AssetDatabaseCounters counters { get; }
 
+        [FreeFunction("IsConnectedToCacheServerV2")]
+        public extern static bool IsConnectedToCacheServer();
+        [FreeFunction("ReconnectToCacheServerV2")]
+        public extern static void ReconnectToCacheServer();
+        [FreeFunction()]
+        public extern static string GetCacheServerAddress();
+        [FreeFunction()]
+        public extern static UInt16 GetCacheServerPort();
+
+        public extern static bool onlyUploadToCacheServer { get; set; }
+        public extern static int minReliabilityIndex { get; set; }
+
         [FreeFunction("CacheServerCountersResetDeltas")]
         private extern static void CacheServerCountersResetDeltas();
 

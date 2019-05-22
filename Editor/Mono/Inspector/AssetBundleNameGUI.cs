@@ -21,20 +21,11 @@ namespace UnityEditor
 
         static private readonly int kAssetBundleVariantFieldIdHash = "AssetBundleVariantFieldHash".GetHashCode();
 
-        private class Styles
+        private static class Styles
         {
-            private static GUISkin s_DarkSkin = EditorGUIUtility.GetBuiltinSkin(EditorSkin.Scene);
-
-            public static GUIStyle label = GetStyle("ControlLabel");
-            public static GUIStyle popup = GetStyle("MiniPopup");
-            public static GUIStyle textField = GetStyle("textField");
-
-            public static Color cursorColor = s_DarkSkin.settings.cursorColor;
-
-            private static GUIStyle GetStyle(string name)
-            {
-                return new GUIStyle(s_DarkSkin.GetStyle(name));
-            }
+            public static GUIStyle label = "ControlLabel";
+            public static GUIStyle popup = "MiniPopup";
+            public static GUIStyle textField = "textField";
         }
 
         private bool m_ShowAssetBundleNameTextField = false;
@@ -77,11 +68,6 @@ namespace UnityEditor
 
         private void AssetBundleTextField(Rect rect, int id, IEnumerable<Object> assets, bool isVariant)
         {
-            // CursorColor is stored at the GUISkin level, but the styles we are using don't necessarily match the GUI.skin.
-            // TextField assumes that the style matches the current GUI.skin, this is wrong and should be fixed. We'll workaround for now.
-            Color oldCursorColor = GUI.skin.settings.cursorColor;
-            GUI.skin.settings.cursorColor = Styles.cursorColor;
-
             EditorGUI.BeginChangeCheck();
             string temp = EditorGUI.DelayedTextFieldInternal(rect, id, GUIContent.none, "", null, Styles.textField);
             if (EditorGUI.EndChangeCheck())
@@ -89,8 +75,6 @@ namespace UnityEditor
                 SetAssetBundleForAssets(assets, temp, isVariant);
                 ShowAssetBundlePopup();
             }
-
-            GUI.skin.settings.cursorColor = oldCursorColor;
 
             // editing was cancelled
             if (EditorGUI.IsEditingTextField() == false && Event.current.type != EventType.Layout)

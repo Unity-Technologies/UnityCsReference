@@ -72,6 +72,20 @@ namespace UnityEditor
             return assigned;
         }
 
+        static private Rect GetButtonRect(ObjectFieldVisualType visualType, Rect position)
+        {
+            switch (visualType)
+            {
+                case ObjectFieldVisualType.IconAndText:
+                case ObjectFieldVisualType.MiniPreview:
+                    return new Rect(position.xMax - 19, position.y, 19, position.height);
+                case ObjectFieldVisualType.LargePreview:
+                    return new Rect(position.xMax - 36, position.yMax - 14, 36, 14);
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
         internal static Object DoObjectField(Rect position, Rect dropRect, int id, Object obj, System.Type objType, SerializedProperty property, ObjectFieldValidator validator, bool allowSceneObjects, GUIStyle style)
         {
             if (validator == null)
@@ -149,19 +163,7 @@ namespace UnityEditor
                     if (position.Contains(Event.current.mousePosition))
                     {
                         // Get button rect for Object Selector
-                        Rect buttonRect;
-                        switch (visualType)
-                        {
-                            case ObjectFieldVisualType.IconAndText:
-                            case ObjectFieldVisualType.MiniPreview:
-                                buttonRect = new Rect(position.xMax - 15, position.y, 15, position.height);
-                                break;
-                            case ObjectFieldVisualType.LargePreview:
-                                buttonRect = new Rect(position.xMax - 36, position.yMax - 14, 36, 14);
-                                break;
-                            default:
-                                throw new ArgumentOutOfRangeException();
-                        }
+                        Rect buttonRect = GetButtonRect(visualType, position);
 
                         EditorGUIUtility.editingTextField = false;
 
@@ -281,6 +283,9 @@ namespace UnityEditor
                         case ObjectFieldVisualType.IconAndText:
                             BeginHandleMixedValueContentColor();
                             style.Draw(position, temp, id, DragAndDrop.activeControlID == id, position.Contains(Event.current.mousePosition));
+
+                            Rect buttonRect = EditorStyles.objectFieldButton.margin.Remove(GetButtonRect(visualType, position));
+                            EditorStyles.objectFieldButton.Draw(buttonRect, GUIContent.none, id, DragAndDrop.activeControlID == id, buttonRect.Contains(Event.current.mousePosition));
                             EndHandleMixedValueContentColor();
                             break;
                         case ObjectFieldVisualType.LargePreview:

@@ -79,6 +79,7 @@ namespace UnityEngine.UIElements
         {
             int vertexCount = 0;
             GetVertices(settings, IntPtr.Zero, UnsafeUtility.SizeOf<TextVertex>(), ref vertexCount);
+
             var array = new NativeArray<TextVertex>(vertexCount, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
             if (vertexCount > 0)
             {

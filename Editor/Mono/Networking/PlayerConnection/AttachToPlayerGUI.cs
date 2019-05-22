@@ -70,6 +70,7 @@ namespace UnityEditor.Experimental.Networking.PlayerConnection
 
             var size = style.CalcSize(Styles.dropdownButton);
             Rect connectRect = GUILayoutUtility.GetRect(size.x, size.y);
+            connectRect.x -= 1;
             EditorGUI.AttachToPlayerDropdown(connectRect, state, style);
         }
     }

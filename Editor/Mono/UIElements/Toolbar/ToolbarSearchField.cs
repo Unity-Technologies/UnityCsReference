@@ -60,25 +60,25 @@ namespace UnityEditor.UIElements
         public ToolbarSearchField()
         {
             Toolbar.SetToolbarStyleSheet(this);
-
             m_CurrentText = String.Empty;
 
             AddToClassList(ussClassName);
 
-            m_SearchButton = new Button(() => {}) { name = "unity-search" };
-            m_SearchButton.AddToClassList(searchButtonUssClassName);
-            hierarchy.Add(m_SearchButton);
-
             m_TextField = new TextField();
             m_TextField.AddToClassList(textUssClassName);
-            m_SearchButton.hierarchy.Add(m_TextField);
+            hierarchy.Add(m_TextField);
             m_TextField.RegisterValueChangedCallback(OnTextChanged);
             m_TextField.Q(TextField.textInputUssName).RegisterCallback<KeyDownEvent>(OnTextFieldKeyDown);
+
+            m_SearchButton = new Button(() => {}) { name = "unity-search" };
+            m_SearchButton.AddToClassList(searchButtonUssClassName);
+            m_TextField.hierarchy.Add(m_SearchButton);
+
 
             m_CancelButton = new Button(() => {}) { name = "unity-cancel" };
             m_CancelButton.AddToClassList(cancelButtonUssClassName);
             m_CancelButton.AddToClassList(cancelButtonOffVariantUssClassName);
-            hierarchy.Add(m_CancelButton);
+            m_TextField.hierarchy.Add(m_CancelButton);
         }
 
         void OnTextChanged(ChangeEvent<string> change)

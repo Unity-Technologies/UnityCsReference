@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using UnityEngine;
 
@@ -149,6 +148,11 @@ namespace UnityEditor.PackageManager.UI
         public bool IsPackageManagerUI
         {
             get { return Name == packageManagerUIName; }
+        }
+
+        public bool AnyInDevelopment
+        {
+            get { return Current != null && Current.IsInDevelopment; }
         }
 
         public bool Equals(Package other)

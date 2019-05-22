@@ -8,7 +8,7 @@ using UnityEngine.Bindings;
 
 namespace Unity.Audio
 {
-    [NativeType(Header = "Modules/Audio/Public/csas/DSPGraph.bindings.h")]
+    [NativeType(Header = "Modules/DSPGraph/Public/DSPGraph.bindings.h")]
     internal struct DSPGraphInternal
     {
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
@@ -36,14 +36,17 @@ namespace Unity.Audio
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
         public static extern ulong Internal_GetDSPClock(ref Handle graph);
 
-        [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
+        [NativeMethod(IsFreeFunction = true, ThrowsException = true, IsThreadSafe = true)]
         public static extern void Internal_BeginMix(ref Handle graph);
 
-        [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
+        [NativeMethod(IsFreeFunction = true, ThrowsException = true, IsThreadSafe = true)]
         public static extern unsafe void Internal_ReadMix(ref Handle graph, void* buffer, int length);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
         public static extern unsafe void Internal_Update(ref Handle graph);
+
+        [NativeMethod(IsFreeFunction = true, ThrowsException = true, IsThreadSafe = true)]
+        public static extern bool Internal_AssertMixerThread(ref Handle graph);
     }
 }
 

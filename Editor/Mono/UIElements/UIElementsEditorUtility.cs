@@ -2,7 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.IO;
+using System.Linq;
+using UnityEditor.Experimental;
 using UnityEditor.StyleSheets;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -28,12 +29,26 @@ namespace UnityEditor.UIElements
         internal static readonly StyleSheet s_DefaultCommonDarkStyleSheet;
         internal static readonly StyleSheet s_DefaultCommonLightStyleSheet;
 
+        internal static string GetStyleSheetPathForCurrentFont(string sheetPath)
+        {
+            // Load the stylesheet of the current font
+            if (LocalizationDatabase.currentEditorLanguage == SystemLanguage.English)
+            {
+                return sheetPath.Replace(".uss", "_" + EditorResources.GetCurrentFont().ToLower() + ".uss");
+            }
+            else
+            {
+                return sheetPath;
+            }
+        }
+
         static UIElementsEditorUtility()
         {
-            s_DefaultCommonDarkStyleSheet = EditorGUIUtility.Load(s_DefaultCommonDarkStyleSheetPath) as StyleSheet;
+            // Load the stylesheet of the current font
+            s_DefaultCommonDarkStyleSheet = EditorGUIUtility.Load(GetStyleSheetPathForCurrentFont(s_DefaultCommonDarkStyleSheetPath)) as StyleSheet;
             s_DefaultCommonDarkStyleSheet.isUnityStyleSheet = true;
 
-            s_DefaultCommonLightStyleSheet = EditorGUIUtility.Load(s_DefaultCommonLightStyleSheetPath) as StyleSheet;
+            s_DefaultCommonLightStyleSheet = EditorGUIUtility.Load(GetStyleSheetPathForCurrentFont(s_DefaultCommonLightStyleSheetPath)) as StyleSheet;
             s_DefaultCommonLightStyleSheet.isUnityStyleSheet = true;
         }
 

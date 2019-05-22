@@ -11,10 +11,95 @@ using UnityEngine.Yoga;
 
 namespace UnityEngine.UIElements
 {
-    internal class InlineStyleAccess : IStyle
+    internal class StyleValueCollection
     {
-        private List<StyleValue> m_InlineStyleValues = new List<StyleValue>();
+        internal List<StyleValue> m_Values = new List<StyleValue>();
 
+        public StyleLength GetStyleLength(StylePropertyID id)
+        {
+            var inline = new StyleValue();
+            if (TryGetStyleValue(id, ref inline))
+                return new StyleLength(inline.number, inline.keyword);
+            return StyleKeyword.Null;
+        }
+
+        public StyleFloat GetStyleFloat(StylePropertyID id)
+        {
+            var inline = new StyleValue();
+            if (TryGetStyleValue(id, ref inline))
+                return new StyleFloat(inline.number, inline.keyword);
+            return StyleKeyword.Null;
+        }
+
+        public StyleInt GetStyleInt(StylePropertyID id)
+        {
+            var inline = new StyleValue();
+            if (TryGetStyleValue(id, ref inline))
+                return new StyleInt((int)inline.number, inline.keyword);
+            return StyleKeyword.Null;
+        }
+
+        public StyleColor GetStyleColor(StylePropertyID id)
+        {
+            var inline = new StyleValue();
+            if (TryGetStyleValue(id, ref inline))
+                return new StyleColor(inline.color, inline.keyword);
+            return StyleKeyword.Null;
+        }
+
+        public StyleBackground GetStyleBackground(StylePropertyID id)
+        {
+            var inline = new StyleValue();
+            if (TryGetStyleValue(id, ref inline))
+            {
+                var texture = inline.resource.IsAllocated ? inline.resource.Target as Texture2D : null;
+                return new StyleBackground(texture, inline.keyword);
+            }
+            return StyleKeyword.Null;
+        }
+
+        public StyleFont GetStyleFont(StylePropertyID id)
+        {
+            var inline = new StyleValue();
+            if (TryGetStyleValue(id, ref inline))
+            {
+                var font = inline.resource.IsAllocated ? inline.resource.Target as Font : null;
+                return new StyleFont(font, inline.keyword);
+            }
+            return StyleKeyword.Null;
+        }
+
+        public bool TryGetStyleValue(StylePropertyID id, ref StyleValue value)
+        {
+            value.id = StylePropertyID.Unknown;
+            foreach (var inlineStyle in m_Values)
+            {
+                if (inlineStyle.id == id)
+                {
+                    value = inlineStyle;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public void SetStyleValue(StyleValue value)
+        {
+            for (int i = 0; i < m_Values.Count; i++)
+            {
+                if (m_Values[i].id == value.id)
+                {
+                    m_Values[i] = value;
+                    return;
+                }
+            }
+
+            m_Values.Add(value);
+        }
+    }
+
+    internal class InlineStyleAccess : StyleValueCollection, IStyle
+    {
         private VisualElement ve { get; set; }
 
         private bool m_HasInlineCursor;
@@ -35,12 +120,12 @@ namespace UnityEngine.UIElements
         ~InlineStyleAccess()
         {
             StyleValue inlineValue = new StyleValue();
-            if (TryGetInlineStyleValue(StylePropertyID.BackgroundImage, ref inlineValue))
+            if (TryGetStyleValue(StylePropertyID.BackgroundImage, ref inlineValue))
             {
                 if (inlineValue.resource.IsAllocated)
                     inlineValue.resource.Free();
             }
-            if (TryGetInlineStyleValue(StylePropertyID.Font, ref inlineValue))
+            if (TryGetStyleValue(StylePropertyID.Font, ref inlineValue))
             {
                 if (inlineValue.resource.IsAllocated)
                     inlineValue.resource.Free();
@@ -49,10 +134,10 @@ namespace UnityEngine.UIElements
 
         StyleLength IStyle.width
         {
-            get { return GetInlineStyleLength(StylePropertyID.Width); }
+            get { return GetStyleLength(StylePropertyID.Width); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.Width, value, ve.sharedStyle.width))
+                if (SetStyleValue(StylePropertyID.Width, value, ve.sharedStyle.width))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.Width = ve.computedStyle.width.ToYogaValue();
@@ -62,10 +147,10 @@ namespace UnityEngine.UIElements
 
         StyleLength IStyle.height
         {
-            get { return GetInlineStyleLength(StylePropertyID.Height); }
+            get { return GetStyleLength(StylePropertyID.Height); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.Height, value, ve.sharedStyle.height))
+                if (SetStyleValue(StylePropertyID.Height, value, ve.sharedStyle.height))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.Height = ve.computedStyle.height.ToYogaValue();
@@ -75,10 +160,10 @@ namespace UnityEngine.UIElements
 
         StyleLength IStyle.maxWidth
         {
-            get { return GetInlineStyleLength(StylePropertyID.MaxWidth); }
+            get { return GetStyleLength(StylePropertyID.MaxWidth); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.MaxWidth, value, ve.sharedStyle.maxWidth))
+                if (SetStyleValue(StylePropertyID.MaxWidth, value, ve.sharedStyle.maxWidth))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.MaxWidth = ve.computedStyle.maxWidth.ToYogaValue();
@@ -88,10 +173,10 @@ namespace UnityEngine.UIElements
 
         StyleLength IStyle.maxHeight
         {
-            get { return GetInlineStyleLength(StylePropertyID.MaxHeight); }
+            get { return GetStyleLength(StylePropertyID.MaxHeight); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.MaxHeight, value, ve.sharedStyle.maxHeight))
+                if (SetStyleValue(StylePropertyID.MaxHeight, value, ve.sharedStyle.maxHeight))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.MaxHeight = ve.computedStyle.maxHeight.ToYogaValue();
@@ -101,10 +186,10 @@ namespace UnityEngine.UIElements
 
         StyleLength IStyle.minWidth
         {
-            get { return GetInlineStyleLength(StylePropertyID.MinWidth); }
+            get { return GetStyleLength(StylePropertyID.MinWidth); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.MinWidth, value, ve.sharedStyle.minWidth))
+                if (SetStyleValue(StylePropertyID.MinWidth, value, ve.sharedStyle.minWidth))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.MinWidth = ve.computedStyle.minWidth.ToYogaValue();
@@ -114,10 +199,10 @@ namespace UnityEngine.UIElements
 
         StyleLength IStyle.minHeight
         {
-            get { return GetInlineStyleLength(StylePropertyID.MinHeight); }
+            get { return GetStyleLength(StylePropertyID.MinHeight); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.MinHeight, value, ve.sharedStyle.minHeight))
+                if (SetStyleValue(StylePropertyID.MinHeight, value, ve.sharedStyle.minHeight))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.MinHeight = ve.computedStyle.minHeight.ToYogaValue();
@@ -127,10 +212,10 @@ namespace UnityEngine.UIElements
 
         StyleLength IStyle.flexBasis
         {
-            get { return GetInlineStyleLength(StylePropertyID.FlexBasis); }
+            get { return GetStyleLength(StylePropertyID.FlexBasis); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.FlexBasis, value, ve.sharedStyle.flexBasis))
+                if (SetStyleValue(StylePropertyID.FlexBasis, value, ve.sharedStyle.flexBasis))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.FlexBasis = ve.computedStyle.flexBasis.ToYogaValue();
@@ -140,10 +225,10 @@ namespace UnityEngine.UIElements
 
         StyleFloat IStyle.flexGrow
         {
-            get { return GetInlineStyleFloat(StylePropertyID.FlexGrow); }
+            get { return GetStyleFloat(StylePropertyID.FlexGrow); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.FlexGrow, value, ve.sharedStyle.flexGrow))
+                if (SetStyleValue(StylePropertyID.FlexGrow, value, ve.sharedStyle.flexGrow))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.FlexGrow = ve.computedStyle.flexGrow.value;
@@ -153,10 +238,10 @@ namespace UnityEngine.UIElements
 
         StyleFloat IStyle.flexShrink
         {
-            get { return GetInlineStyleFloat(StylePropertyID.FlexShrink); }
+            get { return GetStyleFloat(StylePropertyID.FlexShrink); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.FlexShrink, value, ve.sharedStyle.flexShrink))
+                if (SetStyleValue(StylePropertyID.FlexShrink, value, ve.sharedStyle.flexShrink))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.FlexShrink = ve.computedStyle.flexShrink.value;
@@ -168,12 +253,12 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                var tmp = GetInlineStyleInt(StylePropertyID.Overflow);
+                var tmp = GetStyleInt(StylePropertyID.Overflow);
                 return new StyleEnum<Overflow>((Overflow)tmp.value, tmp.keyword);
             }
             set
             {
-                if (SetInlineStyle(StylePropertyID.Overflow, value, ve.sharedStyle.overflow))
+                if (SetStyleValue(StylePropertyID.Overflow, value, ve.sharedStyle.overflow))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.Overflow = (YogaOverflow)ve.computedStyle.overflow.value;
@@ -183,10 +268,10 @@ namespace UnityEngine.UIElements
 
         StyleLength IStyle.left
         {
-            get { return GetInlineStyleLength(StylePropertyID.PositionLeft); }
+            get { return GetStyleLength(StylePropertyID.PositionLeft); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.PositionLeft, value, ve.sharedStyle.left))
+                if (SetStyleValue(StylePropertyID.PositionLeft, value, ve.sharedStyle.left))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.Left = ve.computedStyle.left.ToYogaValue();
@@ -196,10 +281,10 @@ namespace UnityEngine.UIElements
 
         StyleLength IStyle.top
         {
-            get { return GetInlineStyleLength(StylePropertyID.PositionTop); }
+            get { return GetStyleLength(StylePropertyID.PositionTop); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.PositionTop, value, ve.sharedStyle.top))
+                if (SetStyleValue(StylePropertyID.PositionTop, value, ve.sharedStyle.top))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.Top = ve.computedStyle.top.ToYogaValue();
@@ -209,10 +294,10 @@ namespace UnityEngine.UIElements
 
         StyleLength IStyle.right
         {
-            get { return GetInlineStyleLength(StylePropertyID.PositionRight); }
+            get { return GetStyleLength(StylePropertyID.PositionRight); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.PositionRight, value, ve.sharedStyle.right))
+                if (SetStyleValue(StylePropertyID.PositionRight, value, ve.sharedStyle.right))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.Right = ve.computedStyle.right.ToYogaValue();
@@ -222,10 +307,10 @@ namespace UnityEngine.UIElements
 
         StyleLength IStyle.bottom
         {
-            get { return GetInlineStyleLength(StylePropertyID.PositionBottom); }
+            get { return GetStyleLength(StylePropertyID.PositionBottom); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.PositionBottom, value, ve.sharedStyle.bottom))
+                if (SetStyleValue(StylePropertyID.PositionBottom, value, ve.sharedStyle.bottom))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.Bottom = ve.computedStyle.bottom.ToYogaValue();
@@ -235,10 +320,10 @@ namespace UnityEngine.UIElements
 
         StyleLength IStyle.marginLeft
         {
-            get { return GetInlineStyleLength(StylePropertyID.MarginLeft); }
+            get { return GetStyleLength(StylePropertyID.MarginLeft); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.MarginLeft, value, ve.sharedStyle.marginLeft))
+                if (SetStyleValue(StylePropertyID.MarginLeft, value, ve.sharedStyle.marginLeft))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.MarginLeft = ve.computedStyle.marginLeft.ToYogaValue();
@@ -248,10 +333,10 @@ namespace UnityEngine.UIElements
 
         StyleLength IStyle.marginTop
         {
-            get { return GetInlineStyleLength(StylePropertyID.MarginTop); }
+            get { return GetStyleLength(StylePropertyID.MarginTop); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.MarginTop, value, ve.sharedStyle.marginTop))
+                if (SetStyleValue(StylePropertyID.MarginTop, value, ve.sharedStyle.marginTop))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.MarginTop = ve.computedStyle.marginTop.ToYogaValue();
@@ -261,10 +346,10 @@ namespace UnityEngine.UIElements
 
         StyleLength IStyle.marginRight
         {
-            get { return GetInlineStyleLength(StylePropertyID.MarginRight); }
+            get { return GetStyleLength(StylePropertyID.MarginRight); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.MarginRight, value, ve.sharedStyle.marginRight))
+                if (SetStyleValue(StylePropertyID.MarginRight, value, ve.sharedStyle.marginRight))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.MarginRight = ve.computedStyle.marginRight.ToYogaValue();
@@ -274,10 +359,10 @@ namespace UnityEngine.UIElements
 
         StyleLength IStyle.marginBottom
         {
-            get { return GetInlineStyleLength(StylePropertyID.MarginBottom); }
+            get { return GetStyleLength(StylePropertyID.MarginBottom); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.MarginBottom, value, ve.sharedStyle.marginBottom))
+                if (SetStyleValue(StylePropertyID.MarginBottom, value, ve.sharedStyle.marginBottom))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.MarginBottom = ve.computedStyle.marginBottom.ToYogaValue();
@@ -287,10 +372,10 @@ namespace UnityEngine.UIElements
 
         StyleFloat IStyle.borderLeftWidth
         {
-            get { return GetInlineStyleFloat(StylePropertyID.BorderLeftWidth); }
+            get { return GetStyleFloat(StylePropertyID.BorderLeftWidth); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.BorderLeftWidth, value, ve.sharedStyle.borderLeftWidth))
+                if (SetStyleValue(StylePropertyID.BorderLeftWidth, value, ve.sharedStyle.borderLeftWidth))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.BorderLeftWidth = ve.computedStyle.borderLeftWidth.value;
@@ -300,10 +385,10 @@ namespace UnityEngine.UIElements
 
         StyleFloat IStyle.borderTopWidth
         {
-            get { return GetInlineStyleFloat(StylePropertyID.BorderTopWidth); }
+            get { return GetStyleFloat(StylePropertyID.BorderTopWidth); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.BorderTopWidth, value, ve.sharedStyle.borderTopWidth))
+                if (SetStyleValue(StylePropertyID.BorderTopWidth, value, ve.sharedStyle.borderTopWidth))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.BorderTopWidth = ve.computedStyle.borderTopWidth.value;
@@ -313,10 +398,10 @@ namespace UnityEngine.UIElements
 
         StyleFloat IStyle.borderRightWidth
         {
-            get { return GetInlineStyleFloat(StylePropertyID.BorderRightWidth); }
+            get { return GetStyleFloat(StylePropertyID.BorderRightWidth); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.BorderRightWidth, value, ve.sharedStyle.borderRightWidth))
+                if (SetStyleValue(StylePropertyID.BorderRightWidth, value, ve.sharedStyle.borderRightWidth))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.BorderRightWidth = ve.computedStyle.borderRightWidth.value;
@@ -326,10 +411,10 @@ namespace UnityEngine.UIElements
 
         StyleFloat IStyle.borderBottomWidth
         {
-            get { return GetInlineStyleFloat(StylePropertyID.BorderBottomWidth); }
+            get { return GetStyleFloat(StylePropertyID.BorderBottomWidth); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.BorderBottomWidth, value, ve.sharedStyle.borderBottomWidth))
+                if (SetStyleValue(StylePropertyID.BorderBottomWidth, value, ve.sharedStyle.borderBottomWidth))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.BorderBottomWidth = ve.computedStyle.borderBottomWidth.value;
@@ -339,10 +424,10 @@ namespace UnityEngine.UIElements
 
         StyleLength IStyle.borderTopLeftRadius
         {
-            get { return GetInlineStyleLength(StylePropertyID.BorderTopLeftRadius); }
+            get { return GetStyleLength(StylePropertyID.BorderTopLeftRadius); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.BorderTopLeftRadius, value, ve.sharedStyle.borderTopLeftRadius))
+                if (SetStyleValue(StylePropertyID.BorderTopLeftRadius, value, ve.sharedStyle.borderTopLeftRadius))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
@@ -351,10 +436,10 @@ namespace UnityEngine.UIElements
 
         StyleLength IStyle.borderTopRightRadius
         {
-            get { return GetInlineStyleLength(StylePropertyID.BorderTopRightRadius); }
+            get { return GetStyleLength(StylePropertyID.BorderTopRightRadius); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.BorderTopRightRadius, value, ve.sharedStyle.borderTopRightRadius))
+                if (SetStyleValue(StylePropertyID.BorderTopRightRadius, value, ve.sharedStyle.borderTopRightRadius))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
@@ -363,10 +448,10 @@ namespace UnityEngine.UIElements
 
         StyleLength IStyle.borderBottomRightRadius
         {
-            get { return GetInlineStyleLength(StylePropertyID.BorderBottomRightRadius); }
+            get { return GetStyleLength(StylePropertyID.BorderBottomRightRadius); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.BorderBottomRightRadius, value, ve.sharedStyle.borderBottomRightRadius))
+                if (SetStyleValue(StylePropertyID.BorderBottomRightRadius, value, ve.sharedStyle.borderBottomRightRadius))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
@@ -375,10 +460,10 @@ namespace UnityEngine.UIElements
 
         StyleLength IStyle.borderBottomLeftRadius
         {
-            get { return GetInlineStyleLength(StylePropertyID.BorderBottomLeftRadius); }
+            get { return GetStyleLength(StylePropertyID.BorderBottomLeftRadius); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.BorderBottomLeftRadius, value, ve.sharedStyle.borderBottomLeftRadius))
+                if (SetStyleValue(StylePropertyID.BorderBottomLeftRadius, value, ve.sharedStyle.borderBottomLeftRadius))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
@@ -387,10 +472,10 @@ namespace UnityEngine.UIElements
 
         StyleLength IStyle.paddingLeft
         {
-            get { return GetInlineStyleLength(StylePropertyID.PaddingLeft); }
+            get { return GetStyleLength(StylePropertyID.PaddingLeft); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.PaddingLeft, value, ve.sharedStyle.paddingLeft))
+                if (SetStyleValue(StylePropertyID.PaddingLeft, value, ve.sharedStyle.paddingLeft))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.PaddingLeft = ve.computedStyle.paddingLeft.ToYogaValue();
@@ -400,10 +485,10 @@ namespace UnityEngine.UIElements
 
         StyleLength IStyle.paddingTop
         {
-            get { return GetInlineStyleLength(StylePropertyID.PaddingTop); }
+            get { return GetStyleLength(StylePropertyID.PaddingTop); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.PaddingTop, value, ve.sharedStyle.paddingTop))
+                if (SetStyleValue(StylePropertyID.PaddingTop, value, ve.sharedStyle.paddingTop))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.PaddingTop = ve.computedStyle.paddingTop.ToYogaValue();
@@ -413,10 +498,10 @@ namespace UnityEngine.UIElements
 
         StyleLength IStyle.paddingRight
         {
-            get { return GetInlineStyleLength(StylePropertyID.PaddingRight); }
+            get { return GetStyleLength(StylePropertyID.PaddingRight); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.PaddingRight, value, ve.sharedStyle.paddingRight))
+                if (SetStyleValue(StylePropertyID.PaddingRight, value, ve.sharedStyle.paddingRight))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.PaddingRight = ve.computedStyle.paddingRight.ToYogaValue();
@@ -426,10 +511,10 @@ namespace UnityEngine.UIElements
 
         StyleLength IStyle.paddingBottom
         {
-            get { return GetInlineStyleLength(StylePropertyID.PaddingBottom); }
+            get { return GetStyleLength(StylePropertyID.PaddingBottom); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.PaddingBottom, value, ve.sharedStyle.paddingBottom))
+                if (SetStyleValue(StylePropertyID.PaddingBottom, value, ve.sharedStyle.paddingBottom))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.PaddingBottom = ve.computedStyle.paddingBottom.ToYogaValue();
@@ -441,12 +526,12 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                var tmp = GetInlineStyleInt(StylePropertyID.Position);
+                var tmp = GetStyleInt(StylePropertyID.Position);
                 return new StyleEnum<Position>((Position)tmp.value, tmp.keyword);
             }
             set
             {
-                if (SetInlineStyle(StylePropertyID.Position, value, ve.sharedStyle.position))
+                if (SetStyleValue(StylePropertyID.Position, value, ve.sharedStyle.position))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.PositionType = (YogaPositionType)ve.computedStyle.position.value;
@@ -458,12 +543,12 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                var tmp = GetInlineStyleInt(StylePropertyID.AlignSelf);
+                var tmp = GetStyleInt(StylePropertyID.AlignSelf);
                 return new StyleEnum<Align>((Align)tmp.value, tmp.keyword);
             }
             set
             {
-                if (SetInlineStyle(StylePropertyID.AlignSelf, value, ve.sharedStyle.alignSelf))
+                if (SetStyleValue(StylePropertyID.AlignSelf, value, ve.sharedStyle.alignSelf))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.AlignSelf = (YogaAlign)ve.computedStyle.alignSelf.value;
@@ -475,12 +560,12 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                var tmp = GetInlineStyleInt(StylePropertyID.UnityTextAlign);
+                var tmp = GetStyleInt(StylePropertyID.UnityTextAlign);
                 return new StyleEnum<TextAnchor>((TextAnchor)tmp.value, tmp.keyword);
             }
             set
             {
-                if (SetInlineStyle(StylePropertyID.UnityTextAlign, value, ve.sharedStyle.unityTextAlign))
+                if (SetStyleValue(StylePropertyID.UnityTextAlign, value, ve.sharedStyle.unityTextAlign))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles |  VersionChangeType.StyleSheet | VersionChangeType.Repaint);
                 }
@@ -491,12 +576,12 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                var tmp = GetInlineStyleInt(StylePropertyID.FontStyleAndWeight);
+                var tmp = GetStyleInt(StylePropertyID.FontStyleAndWeight);
                 return new StyleEnum<FontStyle>((FontStyle)tmp.value, tmp.keyword);
             }
             set
             {
-                if (SetInlineStyle(StylePropertyID.FontStyleAndWeight, value, ve.sharedStyle.unityFontStyleAndWeight))
+                if (SetStyleValue(StylePropertyID.FontStyleAndWeight, value, ve.sharedStyle.unityFontStyleAndWeight))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles |  VersionChangeType.StyleSheet | VersionChangeType.Layout);
                 }
@@ -505,10 +590,10 @@ namespace UnityEngine.UIElements
 
         StyleFont IStyle.unityFont
         {
-            get { return GetInlineStyleFont(StylePropertyID.Font); }
+            get { return GetStyleFont(StylePropertyID.Font); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.Font, value, ve.sharedStyle.unityFont))
+                if (SetStyleValue(StylePropertyID.Font, value, ve.sharedStyle.unityFont))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout);
                 }
@@ -517,10 +602,10 @@ namespace UnityEngine.UIElements
 
         StyleLength IStyle.fontSize
         {
-            get { return GetInlineStyleLength(StylePropertyID.FontSize); }
+            get { return GetStyleLength(StylePropertyID.FontSize); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.FontSize, value, ve.sharedStyle.fontSize))
+                if (SetStyleValue(StylePropertyID.FontSize, value, ve.sharedStyle.fontSize))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout);
                 }
@@ -531,12 +616,12 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                var tmp = GetInlineStyleInt(StylePropertyID.WhiteSpace);
+                var tmp = GetStyleInt(StylePropertyID.WhiteSpace);
                 return new StyleEnum<WhiteSpace>((WhiteSpace)tmp.value, tmp.keyword);
             }
             set
             {
-                if (SetInlineStyle(StylePropertyID.WhiteSpace, value, ve.sharedStyle.whiteSpace))
+                if (SetStyleValue(StylePropertyID.WhiteSpace, value, ve.sharedStyle.whiteSpace))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout);
                 }
@@ -545,10 +630,10 @@ namespace UnityEngine.UIElements
 
         StyleColor IStyle.color
         {
-            get { return GetInlineStyleColor(StylePropertyID.Color); }
+            get { return GetStyleColor(StylePropertyID.Color); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.Color, value, ve.sharedStyle.color))
+                if (SetStyleValue(StylePropertyID.Color, value, ve.sharedStyle.color))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Repaint);
                 }
@@ -559,12 +644,12 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                var tmp = GetInlineStyleInt(StylePropertyID.FlexDirection);
+                var tmp = GetStyleInt(StylePropertyID.FlexDirection);
                 return new StyleEnum<FlexDirection>((FlexDirection)tmp.value, tmp.keyword);
             }
             set
             {
-                if (SetInlineStyle(StylePropertyID.FlexDirection, value, ve.sharedStyle.flexDirection))
+                if (SetStyleValue(StylePropertyID.FlexDirection, value, ve.sharedStyle.flexDirection))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                     ve.yogaNode.FlexDirection = (YogaFlexDirection)ve.computedStyle.flexDirection.value;
@@ -574,10 +659,10 @@ namespace UnityEngine.UIElements
 
         StyleColor IStyle.backgroundColor
         {
-            get { return GetInlineStyleColor(StylePropertyID.BackgroundColor); }
+            get { return GetStyleColor(StylePropertyID.BackgroundColor); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.BackgroundColor, value, ve.sharedStyle.backgroundColor))
+                if (SetStyleValue(StylePropertyID.BackgroundColor, value, ve.sharedStyle.backgroundColor))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
@@ -586,10 +671,10 @@ namespace UnityEngine.UIElements
 
         StyleColor IStyle.borderColor
         {
-            get { return GetInlineStyleColor(StylePropertyID.BorderColor); }
+            get { return GetStyleColor(StylePropertyID.BorderColor); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.BorderColor, value, ve.sharedStyle.borderColor))
+                if (SetStyleValue(StylePropertyID.BorderColor, value, ve.sharedStyle.borderColor))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
@@ -598,10 +683,10 @@ namespace UnityEngine.UIElements
 
         StyleBackground IStyle.backgroundImage
         {
-            get { return GetInlineStyleBackground(StylePropertyID.BackgroundImage); }
+            get { return GetStyleBackground(StylePropertyID.BackgroundImage); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.BackgroundImage, value, ve.sharedStyle.backgroundImage))
+                if (SetStyleValue(StylePropertyID.BackgroundImage, value, ve.sharedStyle.backgroundImage))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
@@ -612,12 +697,12 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                var tmp = GetInlineStyleInt(StylePropertyID.BackgroundScaleMode);
+                var tmp = GetStyleInt(StylePropertyID.BackgroundScaleMode);
                 return new StyleEnum<ScaleMode>((ScaleMode)tmp.value, tmp.keyword);
             }
             set
             {
-                if (SetInlineStyle(StylePropertyID.BackgroundScaleMode, value, ve.sharedStyle.unityBackgroundScaleMode))
+                if (SetStyleValue(StylePropertyID.BackgroundScaleMode, value, ve.sharedStyle.unityBackgroundScaleMode))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
@@ -626,10 +711,10 @@ namespace UnityEngine.UIElements
 
         StyleColor IStyle.unityBackgroundImageTintColor
         {
-            get { return GetInlineStyleColor(StylePropertyID.BackgroundImageTintColor); }
+            get { return GetStyleColor(StylePropertyID.BackgroundImageTintColor); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.BackgroundImageTintColor, value, ve.sharedStyle.unityBackgroundImageTintColor))
+                if (SetStyleValue(StylePropertyID.BackgroundImageTintColor, value, ve.sharedStyle.unityBackgroundImageTintColor))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
@@ -641,12 +726,12 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                var tmp = GetInlineStyleInt(StylePropertyID.AlignItems);
+                var tmp = GetStyleInt(StylePropertyID.AlignItems);
                 return new StyleEnum<Align>((Align)tmp.value, tmp.keyword);
             }
             set
             {
-                if (SetInlineStyle(StylePropertyID.AlignItems, value, ve.sharedStyle.alignItems))
+                if (SetStyleValue(StylePropertyID.AlignItems, value, ve.sharedStyle.alignItems))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.AlignItems = (YogaAlign)ve.computedStyle.alignItems.value;
@@ -658,12 +743,12 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                var tmp = GetInlineStyleInt(StylePropertyID.AlignContent);
+                var tmp = GetStyleInt(StylePropertyID.AlignContent);
                 return new StyleEnum<Align>((Align)tmp.value, tmp.keyword);
             }
             set
             {
-                if (SetInlineStyle(StylePropertyID.AlignContent, value, ve.sharedStyle.alignContent))
+                if (SetStyleValue(StylePropertyID.AlignContent, value, ve.sharedStyle.alignContent))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.AlignContent = (YogaAlign)ve.computedStyle.alignContent.value;
@@ -675,12 +760,12 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                var tmp = GetInlineStyleInt(StylePropertyID.JustifyContent);
+                var tmp = GetStyleInt(StylePropertyID.JustifyContent);
                 return new StyleEnum<Justify>((Justify)tmp.value, tmp.keyword);
             }
             set
             {
-                if (SetInlineStyle(StylePropertyID.JustifyContent, value, ve.sharedStyle.justifyContent))
+                if (SetStyleValue(StylePropertyID.JustifyContent, value, ve.sharedStyle.justifyContent))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.JustifyContent = (YogaJustify)ve.computedStyle.justifyContent.value;
@@ -692,12 +777,12 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                var tmp = GetInlineStyleInt(StylePropertyID.FlexWrap);
+                var tmp = GetStyleInt(StylePropertyID.FlexWrap);
                 return new StyleEnum<Wrap>((Wrap)tmp.value, tmp.keyword);
             }
             set
             {
-                if (SetInlineStyle(StylePropertyID.FlexWrap, value, ve.sharedStyle.flexWrap))
+                if (SetStyleValue(StylePropertyID.FlexWrap, value, ve.sharedStyle.flexWrap))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.Wrap = (YogaWrap)ve.computedStyle.flexWrap.value;
@@ -707,10 +792,10 @@ namespace UnityEngine.UIElements
 
         StyleInt IStyle.unitySliceLeft
         {
-            get { return GetInlineStyleInt(StylePropertyID.SliceLeft); }
+            get { return GetStyleInt(StylePropertyID.SliceLeft); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.SliceLeft, value, ve.sharedStyle.unitySliceLeft))
+                if (SetStyleValue(StylePropertyID.SliceLeft, value, ve.sharedStyle.unitySliceLeft))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
@@ -719,10 +804,10 @@ namespace UnityEngine.UIElements
 
         StyleInt IStyle.unitySliceTop
         {
-            get { return GetInlineStyleInt(StylePropertyID.SliceTop); }
+            get { return GetStyleInt(StylePropertyID.SliceTop); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.SliceTop, value, ve.sharedStyle.unitySliceTop))
+                if (SetStyleValue(StylePropertyID.SliceTop, value, ve.sharedStyle.unitySliceTop))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
@@ -731,10 +816,10 @@ namespace UnityEngine.UIElements
 
         StyleInt IStyle.unitySliceRight
         {
-            get { return GetInlineStyleInt(StylePropertyID.SliceRight); }
+            get { return GetStyleInt(StylePropertyID.SliceRight); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.SliceRight, value, ve.sharedStyle.unitySliceRight))
+                if (SetStyleValue(StylePropertyID.SliceRight, value, ve.sharedStyle.unitySliceRight))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
@@ -743,10 +828,10 @@ namespace UnityEngine.UIElements
 
         StyleInt IStyle.unitySliceBottom
         {
-            get { return GetInlineStyleInt(StylePropertyID.SliceBottom); }
+            get { return GetStyleInt(StylePropertyID.SliceBottom); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.SliceBottom, value, ve.sharedStyle.unitySliceBottom))
+                if (SetStyleValue(StylePropertyID.SliceBottom, value, ve.sharedStyle.unitySliceBottom))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
@@ -755,10 +840,10 @@ namespace UnityEngine.UIElements
 
         StyleFloat IStyle.opacity
         {
-            get { return GetInlineStyleFloat(StylePropertyID.Opacity); }
+            get { return GetStyleFloat(StylePropertyID.Opacity); }
             set
             {
-                if (SetInlineStyle(StylePropertyID.Opacity, value, ve.sharedStyle.opacity))
+                if (SetStyleValue(StylePropertyID.Opacity, value, ve.sharedStyle.opacity))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
@@ -769,12 +854,12 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                var tmp = GetInlineStyleInt(StylePropertyID.Visibility);
+                var tmp = GetStyleInt(StylePropertyID.Visibility);
                 return new StyleEnum<Visibility>((Visibility)tmp.value, tmp.keyword);
             }
             set
             {
-                if (SetInlineStyle(StylePropertyID.Visibility, value, ve.sharedStyle.visibility))
+                if (SetStyleValue(StylePropertyID.Visibility, value, ve.sharedStyle.visibility))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles |  VersionChangeType.StyleSheet | VersionChangeType.Repaint);
                 }
@@ -803,12 +888,12 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                var tmp = GetInlineStyleInt(StylePropertyID.Display);
+                var tmp = GetStyleInt(StylePropertyID.Display);
                 return new StyleEnum<DisplayStyle>((DisplayStyle)tmp.value, tmp.keyword);
             }
             set
             {
-                if (SetInlineStyle(StylePropertyID.Display, value, ve.sharedStyle.display))
+                if (SetStyleValue(StylePropertyID.Display, value, ve.sharedStyle.display))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.Display = (YogaDisplay)ve.computedStyle.display.value;
@@ -816,64 +901,11 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private StyleLength GetInlineStyleLength(StylePropertyID id)
-        {
-            var inline = new StyleValue();
-            if (TryGetInlineStyleValue(id, ref inline))
-                return new StyleLength(inline.number, inline.keyword);
-            return StyleKeyword.Null;
-        }
 
-        private StyleFloat GetInlineStyleFloat(StylePropertyID id)
-        {
-            var inline = new StyleValue();
-            if (TryGetInlineStyleValue(id, ref inline))
-                return new StyleFloat(inline.number, inline.keyword);
-            return StyleKeyword.Null;
-        }
-
-        private StyleInt GetInlineStyleInt(StylePropertyID id)
-        {
-            var inline = new StyleValue();
-            if (TryGetInlineStyleValue(id, ref inline))
-                return new StyleInt((int)inline.number, inline.keyword);
-            return StyleKeyword.Null;
-        }
-
-        private StyleColor GetInlineStyleColor(StylePropertyID id)
-        {
-            var inline = new StyleValue();
-            if (TryGetInlineStyleValue(id, ref inline))
-                return new StyleColor(inline.color, inline.keyword);
-            return StyleKeyword.Null;
-        }
-
-        private StyleBackground GetInlineStyleBackground(StylePropertyID id)
-        {
-            var inline = new StyleValue();
-            if (TryGetInlineStyleValue(id, ref inline))
-            {
-                var texture = inline.resource.IsAllocated ? inline.resource.Target as Texture2D : null;
-                return new StyleBackground(texture, inline.keyword);
-            }
-            return StyleKeyword.Null;
-        }
-
-        private StyleFont GetInlineStyleFont(StylePropertyID id)
-        {
-            var inline = new StyleValue();
-            if (TryGetInlineStyleValue(id, ref inline))
-            {
-                var font = inline.resource.IsAllocated ? inline.resource.Target as Font : null;
-                return new StyleFont(font, inline.keyword);
-            }
-            return StyleKeyword.Null;
-        }
-
-        private bool SetInlineStyle(StylePropertyID id, StyleLength inlineValue, StyleLength sharedValue)
+        private bool SetStyleValue(StylePropertyID id, StyleLength inlineValue, StyleLength sharedValue)
         {
             var sv = new StyleValue();
-            if (TryGetInlineStyleValue(id, ref sv))
+            if (TryGetStyleValue(id, ref sv))
             {
                 if (sv.length == inlineValue.value && sv.keyword == inlineValue.keyword)
                     return false;
@@ -883,7 +915,7 @@ namespace UnityEngine.UIElements
             sv.keyword = inlineValue.keyword;
             sv.length = inlineValue.value;
 
-            SetInlineStyle(sv);
+            SetStyleValue(sv);
 
             int specificity = StyleValueExtensions.InlineSpecificity;
             if (inlineValue.keyword == StyleKeyword.Null)
@@ -897,10 +929,10 @@ namespace UnityEngine.UIElements
             return true;
         }
 
-        private bool SetInlineStyle(StylePropertyID id, StyleFloat inlineValue, StyleFloat sharedValue)
+        private bool SetStyleValue(StylePropertyID id, StyleFloat inlineValue, StyleFloat sharedValue)
         {
             var sv = new StyleValue();
-            if (TryGetInlineStyleValue(id, ref sv))
+            if (TryGetStyleValue(id, ref sv))
             {
                 if (sv.number == inlineValue.value && sv.keyword == inlineValue.keyword)
                     return false;
@@ -910,7 +942,7 @@ namespace UnityEngine.UIElements
             sv.keyword = inlineValue.keyword;
             sv.number = inlineValue.value;
 
-            SetInlineStyle(sv);
+            SetStyleValue(sv);
 
             int specificity = StyleValueExtensions.InlineSpecificity;
             if (inlineValue.keyword == StyleKeyword.Null)
@@ -924,10 +956,10 @@ namespace UnityEngine.UIElements
             return true;
         }
 
-        private bool SetInlineStyle(StylePropertyID id, StyleInt inlineValue, StyleInt sharedValue)
+        private bool SetStyleValue(StylePropertyID id, StyleInt inlineValue, StyleInt sharedValue)
         {
             var sv = new StyleValue();
-            if (TryGetInlineStyleValue(id, ref sv))
+            if (TryGetStyleValue(id, ref sv))
             {
                 if (sv.number == inlineValue.value && sv.keyword == inlineValue.keyword)
                     return false;
@@ -937,7 +969,7 @@ namespace UnityEngine.UIElements
             sv.keyword = inlineValue.keyword;
             sv.number = inlineValue.value;
 
-            SetInlineStyle(sv);
+            SetStyleValue(sv);
 
             int specificity = StyleValueExtensions.InlineSpecificity;
             if (inlineValue.keyword == StyleKeyword.Null)
@@ -951,10 +983,10 @@ namespace UnityEngine.UIElements
             return true;
         }
 
-        private bool SetInlineStyle(StylePropertyID id, StyleColor inlineValue, StyleColor sharedValue)
+        private bool SetStyleValue(StylePropertyID id, StyleColor inlineValue, StyleColor sharedValue)
         {
             var sv = new StyleValue();
-            if (TryGetInlineStyleValue(id, ref sv))
+            if (TryGetStyleValue(id, ref sv))
             {
                 if (sv.color == inlineValue.value && sv.keyword == inlineValue.keyword)
                     return false;
@@ -964,7 +996,7 @@ namespace UnityEngine.UIElements
             sv.keyword = inlineValue.keyword;
             sv.color = inlineValue.value;
 
-            SetInlineStyle(sv);
+            SetStyleValue(sv);
 
             int specificity = StyleValueExtensions.InlineSpecificity;
             if (inlineValue.keyword == StyleKeyword.Null)
@@ -978,11 +1010,11 @@ namespace UnityEngine.UIElements
             return true;
         }
 
-        private bool SetInlineStyle<T>(StylePropertyID id, StyleEnum<T> inlineValue, StyleInt sharedValue) where T : struct, IConvertible
+        private bool SetStyleValue<T>(StylePropertyID id, StyleEnum<T> inlineValue, StyleInt sharedValue) where T : struct, IConvertible
         {
             var sv = new StyleValue();
             int intValue = inlineValue.value.ToInt32(CultureInfo.InvariantCulture);
-            if (TryGetInlineStyleValue(id, ref sv))
+            if (TryGetStyleValue(id, ref sv))
             {
                 if (sv.number == intValue && sv.keyword == inlineValue.keyword)
                     return false;
@@ -992,7 +1024,7 @@ namespace UnityEngine.UIElements
             sv.keyword = inlineValue.keyword;
             sv.number = intValue;
 
-            SetInlineStyle(sv);
+            SetStyleValue(sv);
 
             int specificity = StyleValueExtensions.InlineSpecificity;
             if (inlineValue.keyword == StyleKeyword.Null)
@@ -1006,10 +1038,10 @@ namespace UnityEngine.UIElements
             return true;
         }
 
-        private bool SetInlineStyle(StylePropertyID id, StyleBackground inlineValue, StyleBackground sharedValue)
+        private bool SetStyleValue(StylePropertyID id, StyleBackground inlineValue, StyleBackground sharedValue)
         {
             var sv = new StyleValue();
-            if (TryGetInlineStyleValue(id, ref sv))
+            if (TryGetStyleValue(id, ref sv))
             {
                 var texture = sv.resource.IsAllocated ? sv.resource.Target as Texture2D : null;
                 if (texture == inlineValue.value.texture && sv.keyword == inlineValue.keyword)
@@ -1023,7 +1055,7 @@ namespace UnityEngine.UIElements
             sv.keyword = inlineValue.keyword;
             sv.resource = inlineValue.value.texture != null ? GCHandle.Alloc(inlineValue.value.texture) : new GCHandle();
 
-            SetInlineStyle(sv);
+            SetStyleValue(sv);
 
             int specificity = StyleValueExtensions.InlineSpecificity;
             if (inlineValue.keyword == StyleKeyword.Null)
@@ -1037,10 +1069,10 @@ namespace UnityEngine.UIElements
             return true;
         }
 
-        private bool SetInlineStyle(StylePropertyID id, StyleFont inlineValue, StyleFont sharedValue)
+        private bool SetStyleValue(StylePropertyID id, StyleFont inlineValue, StyleFont sharedValue)
         {
             var sv = new StyleValue();
-            if (TryGetInlineStyleValue(id, ref sv))
+            if (TryGetStyleValue(id, ref sv))
             {
                 if (sv.resource.IsAllocated)
                 {
@@ -1057,7 +1089,7 @@ namespace UnityEngine.UIElements
             sv.keyword = inlineValue.keyword;
             sv.resource = inlineValue.value != null ? GCHandle.Alloc(inlineValue.value) : new GCHandle();
 
-            SetInlineStyle(sv);
+            SetStyleValue(sv);
 
             int specificity = StyleValueExtensions.InlineSpecificity;
             if (inlineValue.keyword == StyleKeyword.Null)
@@ -1102,20 +1134,6 @@ namespace UnityEngine.UIElements
             ve.specifiedStyle.ApplyStyleValue(value.id, value, specificity);
         }
 
-        public bool TryGetInlineStyleValue(StylePropertyID id, ref StyleValue value)
-        {
-            value.id = StylePropertyID.Unknown;
-            foreach (var inlineStyle in m_InlineStyleValues)
-            {
-                if (inlineStyle.id == id)
-                {
-                    value = inlineStyle;
-                    return true;
-                }
-            }
-            return false;
-        }
-
         public bool TryGetInlineCursor(ref StyleCursor value)
         {
             if (m_HasInlineCursor)
@@ -1124,20 +1142,6 @@ namespace UnityEngine.UIElements
                 return true;
             }
             return false;
-        }
-
-        public void SetInlineStyle(StyleValue value)
-        {
-            for (int i = 0; i < m_InlineStyleValues.Count; i++)
-            {
-                if (m_InlineStyleValues[i].id == value.id)
-                {
-                    m_InlineStyleValues[i] = value;
-                    return;
-                }
-            }
-
-            m_InlineStyleValues.Add(value);
         }
 
         public void SetInlineCursor(StyleCursor value)

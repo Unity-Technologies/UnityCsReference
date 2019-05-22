@@ -49,16 +49,20 @@ namespace UnityEditor
             return false;
         }
 
-        internal override void DrawHeaderHelpAndSettingsGUI(Rect r)
+        internal override Rect DrawHeaderHelpAndSettingsGUI(Rect r)
         {
             if (m_EffectView == null)
-                return;
+                return new Rect(r.xMax, r.y, 0, r.height);
 
             AudioMixerGroupController group = target as AudioMixerGroupController;
 
-            base.DrawHeaderHelpAndSettingsGUI(r);
-            Rect rect = new Rect(r.x + 44f, r.yMax - 20f, r.width - 50f, 15f);
+            var helpAndSettingsRect = base.DrawHeaderHelpAndSettingsGUI(r);
+            float rectX = r.x + 44f;
+            float rectWidth = (helpAndSettingsRect.x - r.x) - 44f;
+            Rect rect = new Rect(rectX, r.yMax - 20f, rectWidth, 15f);
             GUI.Label(rect, GUIContent.Temp(group.controller.name), EditorStyles.miniLabel);
+
+            return helpAndSettingsRect; // Return the helpAndSettings part, not the label under
         }
 
         // Add item to the context menu of the AudioMixerGroupController inspector header

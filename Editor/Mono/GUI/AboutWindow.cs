@@ -100,7 +100,7 @@ namespace UnityEditor
                 }
                 EditorGUILayout.SelectableLabel(
                     string.Format("Version {0}{1}{2}\n{3:r}\n{4}", InternalEditorUtility.GetFullUnityVersion(), licenseTypeString, extensionVersion, dt.AddSeconds(t), branchString),
-                    GUILayout.Width(550), GUILayout.Height(42));
+                    GUILayout.Width(550), GUILayout.Height(50));
 
                 m_TextInitialYPos = 120 - 12;
             }

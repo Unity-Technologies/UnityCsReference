@@ -12,6 +12,8 @@ namespace UnityEditor.UIElements
 {
     public class PropertyField : VisualElement, IBindable
     {
+        internal static readonly string foldoutTitleBoundLabelProperty = "unity-foldout-bound-title";
+
         public new class UxmlFactory : UxmlFactory<PropertyField, UxmlTraits> {}
 
         public new class UxmlTraits : VisualElement.UxmlTraits
@@ -159,15 +161,32 @@ namespace UnityEditor.UIElements
             // number of them).
             if (parentSerializedObject != null)
                 parentPropertyField.Bind(parentSerializedObject);
+
+            // Very important that we stop immediate propagation here. If we don't,
+            // the next handler will be FieldValueChanged() in the IBinding which
+            // will be operating on a stale [this target] field
+            // (we just killed it in our Unbind()/Bind() above).
+            // In turn, because we share the IBinding, this event handling will
+            // essentially call Unbind() one more time on the array size field
+            // [this.target] and the array size field will no longer work.
+            // See: case 1141787
+            changeEvent.StopImmediatePropagation();
         }
 
         private VisualElement CreateFoldout(SerializedProperty property)
         {
             property = property.Copy();
-            var foldout = new Foldout() { text = property.localizedDisplayName };
+            var foldout = new Foldout();
+            foldout.text = property.localizedDisplayName;
             foldout.value = property.isExpanded;
             foldout.bindingPath = property.propertyPath;
             foldout.name = "unity-foldout-" + property.propertyPath;
+
+            // Get Foldout label.
+            var foldoutToggle = foldout.Q<Toggle>(className: Foldout.toggleUssClassName);
+            var foldoutLabel = foldoutToggle.Q<Label>(className: Toggle.textUssClassName);
+            foldoutLabel.bindingPath = property.propertyPath;
+            foldoutLabel.SetProperty(foldoutTitleBoundLabelProperty, true);
 
             var endProperty = property.GetEndProperty();
             property.NextVisible(true); // Expand the first child.

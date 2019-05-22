@@ -14,7 +14,7 @@ namespace UnityEngine.Rendering
     {
         private void ComputeSliceAndMask(ShaderKeyword keyword, out uint slice, out uint mask)
         {
-            int index = keyword.GetKeywordIndex();
+            int index = keyword.index;
             slice = (uint)(index / k_SizeInBits);
             mask = (uint)(1 << (index % k_SizeInBits));
         }

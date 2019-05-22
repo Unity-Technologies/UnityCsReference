@@ -46,18 +46,9 @@ namespace UnityEditor
 
             static Styles()
             {
-                saveToggle = new GUIStyle(EditorStyles.toggle);
-                saveToggle.font = EditorStyles.miniLabel.font;
-                saveToggle.fontSize = EditorStyles.miniLabel.fontSize;
-                saveToggle.fontStyle = EditorStyles.miniLabel.fontStyle;
-                saveToggle.alignment = TextAnchor.MiddleLeft;
-                saveToggle.padding.top = 3;
-                saveToggle.padding.bottom = 0;
-                saveToggle.margin.top = 0;
-                saveToggle.margin.bottom = 2;
+                saveToggle = EditorStyles.toggle;
 
-                button = new GUIStyle(EditorStyles.miniButton);
-                button.padding.top = 3;
+                button = EditorStyles.miniButton;
                 button.margin.top = button.margin.bottom = 0;
             }
         }
@@ -213,7 +204,7 @@ namespace UnityEditor
 
         public void BreadcrumbGUI()
         {
-            float breadcrumbsHeight = 18f;
+            float breadcrumbsHeight = 17f;
             float verticalOffset = Mathf.Floor((BreadcrumbBar.DefaultStyles.background.fixedHeight - breadcrumbsHeight) / 2f);
             SetupBreadCrumbBarIfNeeded();
             using (new GUILayout.VerticalScope(BreadcrumbBar.DefaultStyles.background))

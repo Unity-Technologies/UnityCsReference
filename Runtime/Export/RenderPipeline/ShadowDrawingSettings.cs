@@ -51,6 +51,7 @@ namespace UnityEngine.Rendering
             m_LightIndex = lightIndex;
             m_UseRenderingLayerMaskTest = 0;
             m_SplitData = default(ShadowSplitData);
+            m_SplitData.shadowCascadeBlendCullingFactor = 1f;
         }
 
         public bool Equals(ShadowDrawingSettings other)

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor.StyleSheets;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Internal;
 
@@ -21,14 +22,16 @@ namespace UnityEditor.Experimental
         static EditorResources()
         {
             styleCatalog = new StyleCatalog();
+
+            if (CanEnableExtendedStyles())
+                GUIStyle.onDraw = StylePainter.DrawStyle;
         }
 
         private static bool CanEnableExtendedStyles()
         {
             var rootBlock = styleCatalog.GetStyle(StyleCatalogKeyword.root, StyleState.root);
             var styleExtensionDisabled = rootBlock.GetBool("-unity-disable-style-extensions");
-            var runningTests = Application.isTestRun || Application.isBatchMode;
-            if (!styleExtensionDisabled && !runningTests)
+            if (!styleExtensionDisabled)
                 return true;
             return false;
         }
@@ -40,14 +43,92 @@ namespace UnityEditor.Experimental
                 pathLowerCased.EndsWith(EditorGUIUtility.isProSkin ? "dark.uss" : "light.uss"));
         }
 
+        internal static string GetDefaultFont()
+        {
+            if (Application.platform == RuntimePlatform.WindowsEditor)
+                return "Verdana";
+            else
+                return "Roboto";
+        }
+
+        internal static string GetCurrentFont()
+        {
+            return EditorPrefs.GetString("user_editor_font", GetDefaultFont());
+        }
+
+        private static List<string> s_SupportedFonts = null;
+
+        internal static List<string> GetSupportedFonts()
+        {
+            if (s_SupportedFonts == null)
+            {
+                s_SupportedFonts = new List<string>();
+
+                if (Application.platform == RuntimePlatform.WindowsEditor)
+                {
+                    s_SupportedFonts.Add("Segoe UI");
+                }
+
+                foreach (var builtinFont in EditorResources.builtInFonts.Keys)
+                {
+                    s_SupportedFonts.Add(builtinFont);
+                }
+
+                s_SupportedFonts.Add(EditorResources.GetDefaultFont());
+            }
+
+            return s_SupportedFonts;
+        }
+
+        private static Dictionary<string, string> s_BuiltInFonts = null;
+
+        internal static Dictionary<string, string> builtInFonts
+        {
+            get
+            {
+                if (s_BuiltInFonts == null)
+                {
+                    s_BuiltInFonts = new Dictionary<string, string>();
+
+                    if (Application.platform == RuntimePlatform.WindowsEditor)
+                    {
+                        s_BuiltInFonts["Roboto"] = "Fonts/roboto/Roboto-Regular.ttf";
+                    }
+                    else
+                    {
+                        s_BuiltInFonts["Lucida Grande"] = "Fonts/Lucida Grande.ttf";
+                    }
+                }
+
+                return s_BuiltInFonts;
+            }
+        }
+
+        internal static bool IsSystemFont(string font)
+        {
+            // TODO: Can be better
+            if (builtInFonts.ContainsKey(font))
+                return false;
+            return true;
+        }
+
         private static List<string> GetDefaultStyleCatalogPaths()
         {
             bool useDarkTheme = EditorGUIUtility.isProSkin;
             var catalogFiles = new List<string>
             {
-                "StyleSheets/Extensions/common.uss",
-                useDarkTheme ? "StyleSheets/Extensions/dark.uss" : "StyleSheets/Extensions/light.uss"
+                "StyleSheets/Extensions/base/common.uss",
+                "StyleSheets/Northstar/common.uss"
             };
+
+            if (LocalizationDatabase.currentEditorLanguage == SystemLanguage.English)
+            {
+                string currentFontStyleSheet = "StyleSheets/Extensions/fonts/" + GetCurrentFont().ToLower() + ".uss";
+
+                catalogFiles.Add(currentFontStyleSheet);
+            }
+
+            catalogFiles.Add(useDarkTheme ? "StyleSheets/Extensions/base/dark.uss" : "StyleSheets/Extensions/base/light.uss");
 
             return catalogFiles;
         }
@@ -76,6 +157,8 @@ namespace UnityEditor.Experimental
 
         internal static void UpdateGUIStyleProperties(GUISkin skin)
         {
+            LocalizedEditorFontManager.LocalizeEditorFonts();
+
             skin.ForEachGUIStyleProperty(UpdateGUIStyleProperties);
             foreach (var style in skin.customStyles)
                 UpdateGUIStyleProperties(style.name, style);
@@ -107,8 +190,53 @@ namespace UnityEditor.Experimental
                 state.scaledBackgrounds[0] = null;
         }
 
+        /* ONLY NEEDED BY STYLING DEVS AND DESIGNERS.
+        [MenuItem("Theme/Refresh Styles &r", priority = 420)]
+        internal static void RefreshStyles()
+        {
+            Unsupported.ClearSkinCache();
+            InternalEditorUtility.RequestScriptReload();
+            InternalEditorUtility.RepaintAllViews();
+            Debug.Log($"Style refreshed {DateTime.Now}");
+        }
+
+        [MenuItem("Theme/Switch Theme And Repaint", priority = 420)]
+        internal static void SwitchTheme()
+        {
+            AssetPreview.ClearTemporaryAssetPreviews();
+            InternalEditorUtility.SwitchSkinAndRepaintAllViews();
+        }*/
+
         private static void UpdateGUIStyleProperties(string name, GUIStyle style)
         {
+            if (LocalizationDatabase.currentEditorLanguage == SystemLanguage.English)
+            {
+                var rootBlock = styleCatalog.GetStyle(StyleCatalogKeyword.root, StyleState.root);
+                var systemSmallFont = EditorGUIUtility.LoadRequired("Fonts/System/System Small.ttf") as Font;
+                var systemNormalFont = EditorGUIUtility.LoadRequired("Fonts/System/System Normal.ttf") as Font;
+                var currentFont = GetCurrentFont();
+
+                if (IsSystemFont(currentFont))
+                {
+                    var defaultSmallFontSize = rootBlock.GetInt("--unity-font-size-small", 11);
+                    var systemFont = style.fontSize == defaultSmallFontSize ? systemSmallFont : systemNormalFont;
+                    systemFont.fontNames = new[] { currentFont };
+                    style.font = systemFont;
+                }
+                else
+                {
+                    if ((currentFont == "Roboto") && (style.fontStyle == FontStyle.Bold))
+                    {
+                        style.font = EditorGUIUtility.LoadRequired("Fonts/roboto/Roboto-Medium.ttf") as Font;
+                        style.fontStyle = FontStyle.Normal;
+                    }
+                    else
+                    {
+                        style.font = EditorGUIUtility.LoadRequired(builtInFonts[currentFont]) as Font;
+                    }
+                }
+            }
+
             var sname = GUIStyleExtensions.StyleNameToBlockName(style.name, false);
             var block = styleCatalog.GetStyle(sname);
             if (!block.IsValid())

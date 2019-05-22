@@ -29,6 +29,8 @@ namespace UnityEditor
 
         void OnSceneGUI()
         {
+            if (!target)
+                return;
             m_Object.Update();
 
             OcclusionArea area = (OcclusionArea)target;

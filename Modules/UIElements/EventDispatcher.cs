@@ -264,7 +264,7 @@ namespace UnityEngine.UIElements
 
             using (new EventDispatcherGate(this))
             {
-                evt.PreDispatch();
+                evt.PreDispatch(panel);
 
                 IMouseEvent mouseEvent = evt as IMouseEvent;
                 IMouseEventInternal mouseEventInternal = evt as IMouseEventInternal;
@@ -302,7 +302,7 @@ namespace UnityEngine.UIElements
                     evt.target = evt.leafTarget;
                 }
 
-                evt.PostDispatch();
+                evt.PostDispatch(panel);
 
                 m_DebuggerEventDispatchingStrategy.PostDispatch(evt, panel);
 

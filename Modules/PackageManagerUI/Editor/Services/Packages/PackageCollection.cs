@@ -33,6 +33,20 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
+        public IEnumerable<PackageInfo> InstalledPackages
+        {
+            get
+            {
+                var allPackageInfos = new List<PackageInfo>(LatestListPackages);
+                return allPackageInfos.Where(p => p.IsInstalled);
+            }
+        }
+
+        public bool AnyPackageInDevelopment
+        {
+            get { return InstalledPackages.Any(p => p.IsInDevelopment); }
+        }
+
         internal static readonly Dictionary<string, Package> packages = new Dictionary<string, Package>();
 
         private static readonly Dictionary<string, PackageInfo> latestInfos = new Dictionary<string, PackageInfo>();
@@ -54,9 +68,9 @@ namespace UnityEditor.PackageManager.UI
         public bool listOperationOngoing;
         public bool listOperationOfflineOngoing;
 
-        private IListOperation listOperationOffline;
-        private IListOperation listOperation;
-        private ISearchOperation searchOperation;
+        internal IListOperation listOperationOffline;
+        internal IListOperation listOperation;
+        internal ISearchOperation searchOperation;
 
         public readonly OperationSignal<ISearchOperation> SearchSignal = new OperationSignal<ISearchOperation>();
         public readonly OperationSignal<IListOperation> ListSignal = new OperationSignal<IListOperation>();
@@ -152,7 +166,14 @@ namespace UnityEditor.PackageManager.UI
 
         public void TriggerPackagesChanged()
         {
-            OnPackagesChanged(Filter, OrderedPackages());
+            var packages = OrderedPackages();
+
+            // If we have the in-development filter set and no packages are in development,
+            // reset the filter to local packages.
+            if (Filter == PackageFilter.InDevelopment && !AnyPackageInDevelopment)
+                SetFilter(PackageFilter.Local);
+            else
+                OnPackagesChanged(Filter, packages);
         }
 
         internal void FetchListOfflineCache(bool forceRefetch = false)

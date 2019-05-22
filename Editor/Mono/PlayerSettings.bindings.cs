@@ -526,6 +526,8 @@ namespace UnityEditor
         // Restrict standalone players to a single concurrent running instance.
         public static extern bool forceSingleInstance { get; set; }
 
+        public static extern bool useFlipModelSwapchain { get; set; }
+
         [NativeProperty(TargetType = TargetType.Field)]
         public static extern bool openGLRequireES31
         {
@@ -951,11 +953,22 @@ namespace UnityEditor
 
         public static extern GraphicsJobMode graphicsJobMode { get; set; }
 
-        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        [Obsolete("GetPlatformVuforiaEnabled(BuildTargetGroup targetGroup) has been deprecated. Use vuforiaEnabled instead.")]
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         public static extern bool GetPlatformVuforiaEnabled(BuildTargetGroup targetGroup);
 
-        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+        [Obsolete("SetPlatformVuforiaEnabled(BuildTargetGroup targetGroup, bool enabled) has been deprecated. Use vuforiaEnabled instead.")]
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         public static extern void SetPlatformVuforiaEnabled(BuildTargetGroup targetGroup, bool enabled);
+
+        public static extern bool vuforiaEnabled
+        {
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+            get;
+
+            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+            set;
+        }
 
         [StaticAccessor("GetPlayerSettings()")]
         public static extern bool GetWsaHolographicRemotingEnabled();

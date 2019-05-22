@@ -71,13 +71,10 @@ namespace UnityEditor.PackageManager.UI
 
         public static void FilterPackageList(PackageList packageList)
         {
-            var packageItems = packageList.Query<PackageItem>().ToList();
-            if (!packageItems.Any())
-                return;
-
             PackageItem firstItem = null;
             var selectedItemInFilter = false;
             var selectedItem = packageList.SelectedItem;
+            var packageItems = packageList.Query<PackageItem>().ToList();
             foreach (var item in packageItems)
             {
                 if (FilterByText(item, packageList.searchFilter.SearchText))
@@ -93,10 +90,11 @@ namespace UnityEditor.PackageManager.UI
                     UIUtils.SetElementDisplay(item, false);
             }
 
-            if (firstItem == null)
-                packageList.ShowNoResults();
-            else
-                packageList.ShowResults(selectedItemInFilter ? selectedItem : firstItem);
+            if (packageItems.Any())
+                if (firstItem == null)
+                    packageList.ShowNoResults();
+                else
+                    packageList.ShowResults(selectedItemInFilter ? selectedItem : firstItem);
         }
     }
 }

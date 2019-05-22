@@ -36,7 +36,7 @@ namespace UnityEditor.IMGUI.Controls
                 labelBoldMissing = new GUIStyle(labelMissing);
                 labelBoldMissing.fontStyle = FontStyle.Bold;
 
-                background = new GUIStyle("ProjectBrowserTopBarBg");
+                background = new GUIStyle("SceneTopBarBg");
                 background.padding = new RectOffset(4, 4, 0, 0);
                 background.border = new RectOffset(3, 3, 3, 3);
                 background.fixedHeight = 25f;

@@ -20,6 +20,11 @@ namespace UnityEditor.VersionControl
         {
             public GUIStyle box = "CN Box";
             public GUIStyle bottomBarBg = "ProjectBrowserBottomBarBg";
+            public static readonly GUIContent connectingLabel = EditorGUIUtility.TrTextContent("CONNECTING...");
+            public static readonly GUIContent offlineLabel = EditorGUIUtility.TrTextContent("OFFLINE");
+            public static readonly GUIContent workOfflineLabel = EditorGUIUtility.TrTextContent("WORK OFFLINE is enabled in Editor Settings. Unity will behave as if version control is disabled.");
+            public static readonly GUIContent disabledLabel = EditorGUIUtility.TrTextContent("Disabled");
+            public static readonly GUIContent editorSettingsLabel = EditorGUIUtility.TrTextContent("Editor Settings");
         }
         static Styles s_Styles = null;
 
@@ -165,7 +170,6 @@ namespace UnityEditor.VersionControl
             if (!Provider.isActive)
             {
                 pendingList.Clear();
-                Provider.UpdateSettings(); // Try to resend the settings if we by chance has become online again
                 Repaint();
                 return;
             }
@@ -443,7 +447,8 @@ namespace UnityEditor.VersionControl
             }
 
             bool showSettingsButton = Mathf.FloorToInt(position.width - s_ToolbarButtonsWidth - s_SettingsButtonWidth) > 0;
-            if (showSettingsButton && GUILayout.Button("Settings", EditorStyles.toolbarButton))
+
+            if (showSettingsButton && GUILayout.Button(Styles.editorSettingsLabel, EditorStyles.toolbarButton))
             {
                 SettingsService.OpenProjectSettings("Project/Editor");
                 EditorWindow.FocusWindowIfItsOpen<InspectorWindow>();
@@ -459,7 +464,10 @@ namespace UnityEditor.VersionControl
             if (refresh)
             {
                 if (refreshButtonClicked)
+                {
                     Provider.InvalidateCache();
+                    Provider.UpdateSettings();
+                }
                 UpdateWindow();
             }
 
@@ -471,8 +479,7 @@ namespace UnityEditor.VersionControl
 
             GUILayout.EndHorizontal();
 
-            // Disabled Window view
-            if (!Provider.isActive)
+            if (EditorUserSettings.WorkOffline)
             {
                 Color tmpColor = GUI.color;
                 GUI.color = new Color(0.8f, 0.5f, 0.5f);
@@ -481,19 +488,37 @@ namespace UnityEditor.VersionControl
 
                 GUILayout.BeginHorizontal(EditorStyles.toolbar);
                 GUILayout.FlexibleSpace();
-                string msg = "DISABLED";
+
+                GUILayout.Label(Styles.workOfflineLabel, EditorStyles.miniLabel);
+
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+                GUILayout.EndArea();
+            }
+            // Disabled Window view
+            else if (!Provider.isActive)
+            {
+                Color tmpColor = GUI.color;
+                GUI.color = new Color(0.8f, 0.5f, 0.5f);
+                rect.height = toolBarHeight;
+                GUILayout.BeginArea(rect);
+
+                GUILayout.BeginHorizontal(EditorStyles.toolbar);
+                GUILayout.FlexibleSpace();
+
                 if (Provider.enabled)
                 {
                     if (Provider.onlineState == OnlineState.Updating)
                     {
                         GUI.color = new Color(0.8f, 0.8f, 0.5f);
-                        msg = "CONNECTING...";
+                        GUILayout.Label(Styles.connectingLabel, EditorStyles.miniLabel);
                     }
                     else
-                        msg = "OFFLINE";
+                        GUILayout.Label(Styles.offlineLabel, EditorStyles.miniLabel);
                 }
+                else
+                    GUILayout.Label(Styles.disabledLabel, EditorStyles.miniLabel);
 
-                GUILayout.Label(msg, EditorStyles.miniLabel);
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
                 GUILayout.EndArea();
@@ -635,7 +660,7 @@ namespace UnityEditor.VersionControl
                 s_ToolbarButtonsWidth += EditorStyles.toolbarButton.CalcSize(EditorGUIUtility.TrTextContent("Outgoing")).x;
                 s_ToolbarButtonsWidth += EditorStyles.toolbarButton.CalcSize(new GUIContent(refreshIcon)).x;
 
-                s_SettingsButtonWidth = EditorStyles.toolbarButton.CalcSize(EditorGUIUtility.TrTextContent("Settings")).x;
+                s_SettingsButtonWidth = EditorStyles.toolbarButton.CalcSize(Styles.editorSettingsLabel).x;
                 s_DeleteChangesetsButtonWidth = EditorStyles.toolbarButton.CalcSize(EditorGUIUtility.TrTextContent("Delete Empty Changesets")).x;
             }
         }

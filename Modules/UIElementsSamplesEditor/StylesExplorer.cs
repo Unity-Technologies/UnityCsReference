@@ -44,8 +44,8 @@ namespace UnityEditor.UIElements.Samples
             leftPanel.AddToClassList(s_StylePanelDarkClassName);
             rightPanel.AddToClassList(s_StylePanelLightClassName);
 
-            leftPanel.AddStyleSheetPath(UIElementsEditorUtility.s_DefaultCommonDarkStyleSheetPath);
-            rightPanel.AddStyleSheetPath(UIElementsEditorUtility.s_DefaultCommonLightStyleSheetPath);
+            leftPanel.styleSheets.Add(UIElementsEditorUtility.s_DefaultCommonDarkStyleSheet);
+            rightPanel.styleSheets.Add(UIElementsEditorUtility.s_DefaultCommonLightStyleSheet);
 
             innerContainer.Add(leftPanel);
             innerContainer.Add(rightPanel);

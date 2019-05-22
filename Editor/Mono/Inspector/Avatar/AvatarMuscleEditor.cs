@@ -416,7 +416,7 @@ namespace UnityEditor
 
         const float kPreviewWidth = 80;
         const float kNumberWidth = 38;
-        const float kLineHeight = 16;
+        const float kLineHeight = 18;
 
         private readonly Handles.BoneRenderer m_BoneRenderer = new Handles.BoneRenderer();
 

@@ -169,7 +169,7 @@ namespace UnityEditor
 
             public override Vector2 GetWindowSize()
             {
-                return new Vector2(170, EditorGUI.kSingleLineHeight * 3);
+                return new Vector2(170, EditorGUI.kSingleLineHeight * 3f + 2f);
             }
 
             public void OnEnable()
@@ -845,7 +845,7 @@ namespace UnityEditor
         // Using GUILayout
         public void TextureScaleOffsetProperty(MaterialProperty property)
         {
-            Rect rect = EditorGUILayout.GetControlRect(true, 2 * kLineHeight, EditorStyles.layerMaskField);
+            Rect rect = EditorGUILayout.GetControlRect(true, 2 * (kLineHeight + EditorGUI.kVerticalSpacingMultiField), EditorStyles.layerMaskField);
             TextureScaleOffsetProperty(rect, property, false);
         }
 
@@ -1056,8 +1056,8 @@ namespace UnityEditor
             tiling = EditorGUI.Vector2Field(valueRect, GUIContent.none, tiling);
 
             // Offset
-            labelRect.y += kLineHeight;
-            valueRect.y += kLineHeight;
+            labelRect.y += kLineHeight + EditorGUI.kVerticalSpacingMultiField;
+            valueRect.y += kLineHeight + EditorGUI.kVerticalSpacingMultiField;
             EditorGUI.PrefixLabel(labelRect, s_OffsetText);
             offset = EditorGUI.Vector2Field(valueRect, GUIContent.none, offset);
 
@@ -1853,17 +1853,17 @@ namespace UnityEditor
                     }
                 }
 
-                s_MeshIcons[0] = EditorGUIUtility.IconContent("PreMatSphere");
-                s_MeshIcons[1] = EditorGUIUtility.IconContent("PreMatCube");
-                s_MeshIcons[2] = EditorGUIUtility.IconContent("PreMatCylinder");
-                s_MeshIcons[3] = EditorGUIUtility.IconContent("PreMatTorus");
-                s_MeshIcons[4] = EditorGUIUtility.IconContent("PreMatQuad");
+                s_MeshIcons[0] = EditorGUIUtility.TrIconContent("PreMatSphere");
+                s_MeshIcons[1] = EditorGUIUtility.TrIconContent("PreMatCube");
+                s_MeshIcons[2] = EditorGUIUtility.TrIconContent("PreMatCylinder");
+                s_MeshIcons[3] = EditorGUIUtility.TrIconContent("PreMatTorus");
+                s_MeshIcons[4] = EditorGUIUtility.TrIconContent("PreMatQuad");
 
-                s_LightIcons[0] = EditorGUIUtility.IconContent("PreMatLight0");
-                s_LightIcons[1] = EditorGUIUtility.IconContent("PreMatLight1");
+                s_LightIcons[0] = EditorGUIUtility.TrIconContent("PreMatLight0");
+                s_LightIcons[1] = EditorGUIUtility.TrIconContent("PreMatLight1");
 
-                s_TimeIcons[0] = EditorGUIUtility.IconContent("PlayButton");
-                s_TimeIcons[1] = EditorGUIUtility.IconContent("PauseButton");
+                s_TimeIcons[0] = EditorGUIUtility.TrIconContent("PlayButton");
+                s_TimeIcons[1] = EditorGUIUtility.TrIconContent("PauseButton");
 
                 Mesh quadMesh = Resources.GetBuiltinResource(typeof(Mesh), "Quad.fbx") as Mesh;
                 s_Meshes[4] = quadMesh;
@@ -1884,7 +1884,7 @@ namespace UnityEditor
             buttonRect = GUILayoutUtility.GetRect(14, 24, 14, 20);
 
             const float iconWidth = 16f;
-            const float iconHeight = 6f;
+            const float iconHeight = 16f;
             Rect iconRect = new Rect(buttonRect.x + (buttonRect.width - iconWidth) / 2, buttonRect.y + (buttonRect.height - iconHeight) / 2, iconWidth, iconHeight);
 
             if (Event.current.type == EventType.Repaint)

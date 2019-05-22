@@ -118,7 +118,7 @@ namespace UnityEditorInternal
                 }
 
                 args.Add($"--platform={compilerPlatform}");
-                if (platformProvider.target != BuildTarget.Android)
+                if (!string.IsNullOrEmpty(compilerArchitecture))
                     args.Add($"--architecture={compilerArchitecture}");
             }
 
@@ -145,11 +145,11 @@ namespace UnityEditorInternal
 
                 if (UnityEditorInternal.VR.VRModule.ShouldInjectVRDependenciesForBuildTarget(platformProvider.target))
                     args.Add("--engine-stripping-flag=EnableVR");
-
-                var modulesAssetPath = Path.Combine(platformProvider.moduleStrippingInformationFolder, "../modules.asset");
-                if (File.Exists(modulesAssetPath))
-                    args.Add($"--engine-modules-asset-file={CommandLineFormatter.PrepareFileName(modulesAssetPath)}");
             }
+
+            var modulesAssetPath = Path.Combine(platformProvider.moduleStrippingInformationFolder, "../modules.asset");
+            if (File.Exists(modulesAssetPath))
+                args.Add($"--engine-modules-asset-file={CommandLineFormatter.PrepareFileName(modulesAssetPath)}");
 
             var additionalArgs = System.Environment.GetEnvironmentVariable("UNITYLINKER_ADDITIONAL_ARGS");
             if (!string.IsNullOrEmpty(additionalArgs))
@@ -343,7 +343,7 @@ namespace UnityEditorInternal
 
             string editorToLinkerDataPath = WriteEditorData(managedAssemblyFolderPath, rcr);
 
-            if (!performEngineStripping)
+            if (!performEngineStripping && !UseUnityLinkerEngineModuleStripping)
             {
                 // if we don't do stripping, add all modules blacklists.
                 foreach (var file in Directory.GetFiles(platformProvider.moduleStrippingInformationFolder, "*.xml"))
@@ -395,7 +395,7 @@ namespace UnityEditorInternal
                     }
                 }
 
-                if (UseUnityLinkerEngineModuleStripping)
+                if (performEngineStripping && UseUnityLinkerEngineModuleStripping)
                     UpdateBuildReport(ReadLinkerToEditorData(tempStripPath), platformProvider);
 
                 // If we had to add more whitelists, we need to run AssemblyStripper again with the added whitelists.
@@ -430,7 +430,7 @@ namespace UnityEditorInternal
 
         public static bool UseUnityLinkerEngineModuleStripping
         {
-            get { return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("UNITYLINKER_ENABLE_EMS")); }
+            get { return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("UNITYLINKER_DISABLE_EMS")); }
         }
 
         private static string WriteTypesInScenesBlacklist(string managedAssemblyDirectory, RuntimeClassRegistry rcr)

@@ -164,12 +164,20 @@ namespace UnityEditor.IMGUI.Controls
                     {
                         scaleAxis = 2;
                     }
-                    float scaleFactor = Mathf.Approximately(m_BoundsOnClick.size[scaleAxis], 0f) ?
-                        1f : size[scaleAxis] / m_BoundsOnClick.size[scaleAxis];
-                    int nextAxis = s_NextAxis[scaleAxis];
-                    size[nextAxis] = scaleFactor * m_BoundsOnClick.size[nextAxis];
-                    nextAxis = s_NextAxis[nextAxis];
-                    size[nextAxis] = scaleFactor * m_BoundsOnClick.size[nextAxis];
+
+                    if (Mathf.Approximately(m_BoundsOnClick.size[scaleAxis], 0f))
+                    {
+                        if (m_BoundsOnClick.size == Vector3.zero)
+                            size = Vector3.one * size[scaleAxis];
+                    }
+                    else
+                    {
+                        var scaleFactor = size[scaleAxis] / m_BoundsOnClick.size[scaleAxis];
+                        var nextAxis = s_NextAxis[scaleAxis];
+                        size[nextAxis] = scaleFactor * m_BoundsOnClick.size[nextAxis];
+                        nextAxis = s_NextAxis[nextAxis];
+                        size[nextAxis] = scaleFactor * m_BoundsOnClick.size[nextAxis];
+                    }
                     m_Bounds.size = size;
                 }
 

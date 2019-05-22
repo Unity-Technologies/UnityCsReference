@@ -20,7 +20,7 @@ namespace UnityEditorInternal
 
         private static class Styles
         {
-            public static readonly GUIStyle multiButtonStyle = "Command";
+            public static readonly GUIStyle multiButtonStyle = "Button";
             public static readonly GUIStyle singleButtonStyle = "EditModeSingleButton";
         }
 

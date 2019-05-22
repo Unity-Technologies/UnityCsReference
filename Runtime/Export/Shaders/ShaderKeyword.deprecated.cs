@@ -6,12 +6,15 @@ using System;
 
 namespace UnityEngine.Rendering
 {
-    public partial class ShaderKeyword
+    public partial struct ShaderKeyword
     {
-        [Obsolete("GetName() has been deprecated. Use GetKeywordName() instead (UnityUpgradable) -> GetKeywordName()")]
-        public string GetName()
-        {
-            return GetKeywordName();
-        }
+        [Obsolete(@"GetKeywordType is deprecated. Use Shader.GetGlobalKeywordType instead.")]
+        public ShaderKeywordType GetKeywordType() { return GetGlobalKeywordType(this); }
+
+        [Obsolete(@"GetKeywordName is deprecated. Use Shader.GetGlobalKeywordName instead.")]
+        public string GetKeywordName() { return GetGlobalKeywordName(this); }
+
+        [Obsolete(@"GetName() has been deprecated. Use Shader.GetGlobalKeywordName instead.")]
+        public string GetName() { return GetKeywordName(); }
     }
 }

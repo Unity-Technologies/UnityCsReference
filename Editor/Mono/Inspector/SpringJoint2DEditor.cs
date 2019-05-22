@@ -13,6 +13,8 @@ namespace UnityEditor
     {
         new public void OnSceneGUI()
         {
+            if (!target)
+                return;
             var springJoint2D = (SpringJoint2D)target;
 
             // Ignore disabled joint.

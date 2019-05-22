@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -53,6 +54,8 @@ namespace UnityEditor.UIElements.Debugger
         const string k_DefaultStyleSheetPath = "StyleSheets/UIElementsDebugger/UIElementsDebugger.uss";
         const string k_DefaultDarkStyleSheetPath = "StyleSheets/UIElementsDebugger/UIElementsDebuggerDark.uss";
         const string k_DefaultLightStyleSheetPath = "StyleSheets/UIElementsDebugger/UIElementsDebuggerLight.uss";
+        public const string k_WindowPath = "Window/Analysis/UIElements Debugger";
+        public static readonly string WindowName = L10n.Tr("UIElements Debugger");
 
         private ToolbarToggle m_PickToggle;
         private ToolbarToggle m_ShowLayoutToggle;
@@ -74,11 +77,17 @@ namespace UnityEditor.UIElements.Debugger
         private bool m_ShowLayoutBound = false;
         private bool m_ShowRepaintOverlay = false;
 
-        [MenuItem("Window/Analysis/UIElements Debugger", false, 101, false)]
-        public static void Open()
+        [MenuItem(k_WindowPath, false, 101, false)]
+        private static void Open()
         {
             var window = CreateDebuggerWindow();
             window.Show();
+        }
+
+        [Shortcut(k_WindowPath, KeyCode.F5, ShortcutModifiers.Action)]
+        private static void DebugWindowShortcut()
+        {
+            OpenAndInspectWindow(EditorWindow.focusedWindow);
         }
 
         public static void OpenAndInspectWindow(EditorWindow window)
@@ -91,7 +100,7 @@ namespace UnityEditor.UIElements.Debugger
         private static UIElementsDebugger CreateDebuggerWindow()
         {
             var window = CreateInstance<UIElementsDebugger>();
-            window.titleContent = new GUIContent("UIElements Debugger");
+            window.titleContent = EditorGUIUtility.TextContent(WindowName);
             return window;
         }
 

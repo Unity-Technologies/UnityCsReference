@@ -84,13 +84,16 @@ namespace UnityEditorInternal
                     state = new State();
 
                 SerializedProperty listenersArray = prop.FindPropertyRelative("m_PersistentCalls.m_Calls");
-                state.m_ReorderableList = new ReorderableList(prop.serializedObject, listenersArray, false, true, true, true);
-                state.m_ReorderableList.drawHeaderCallback = DrawEventHeader;
-                state.m_ReorderableList.drawElementCallback = DrawEvent;
-                state.m_ReorderableList.onSelectCallback = OnSelectEvent;
-                state.m_ReorderableList.onReorderCallback = OnReorderEvent;
-                state.m_ReorderableList.onAddCallback = OnAddEvent;
-                state.m_ReorderableList.onRemoveCallback = OnRemoveEvent;
+                state.m_ReorderableList =
+                    new ReorderableList(prop.serializedObject, listenersArray, false, true, true, true)
+                {
+                    drawHeaderCallback = DrawEventHeader,
+                    drawElementCallback = DrawEvent,
+                    onSelectCallback = OnSelectEvent,
+                    onReorderCallback = OnReorderEvent,
+                    onAddCallback = OnAddEvent,
+                    onRemoveCallback = OnRemoveEvent
+                };
                 SetupReorderableList(state.m_ReorderableList);
 
                 m_States[key] = state;
@@ -124,7 +127,7 @@ namespace UnityEditorInternal
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
             //TODO: Also we need to have a constructor or initializer called for this property Drawer, before OnGUI or GetPropertyHeight
-            //otherwise, we get Restore the State twice, once here and agai in OnGUI. Maybe we should only do it here?
+            //otherwise, we get Restore the State twice, once here and again in OnGUI. Maybe we should only do it here?
             RestoreState(property);
 
             float height = 0f;
@@ -161,8 +164,7 @@ namespace UnityEditorInternal
 
         protected virtual void DrawEventHeader(Rect headerRect)
         {
-            headerRect.height = 16;
-
+            headerRect.height = EditorGUI.kSingleLineHeight;
             string text = (string.IsNullOrEmpty(m_Text) ? "Event" : m_Text) + GetEventParams(m_DummyEvent);
             GUI.Label(headerRect, text);
         }
@@ -442,9 +444,11 @@ namespace UnityEditorInternal
                 // valid method
                 if (paramatersMatch)
                 {
-                    var vmm = new ValidMethodMap();
-                    vmm.target = target;
-                    vmm.methodInfo = componentMethod;
+                    var vmm = new ValidMethodMap
+                    {
+                        target = target,
+                        methodInfo = componentMethod
+                    };
                     validMethods.Add(vmm);
                 }
             }

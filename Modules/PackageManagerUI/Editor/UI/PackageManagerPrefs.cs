@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -16,11 +15,17 @@ namespace UnityEditor.PackageManager.UI
         private const string kShowPreviewPackagesWarningPrefs = "PackageManager.ShowPreviewPackagesWarning";
         private const string kLastUsedFilterPrefix = "PackageManager.Filter_";
 
-        private static string GetProjectIdentifier()
+        private static string GetProjectIdentifier
         {
-            // PlayerSettings.productGUID is already used as LocalProjectID by Analytics, so we use it too
-            return PlayerSettings.productGUID.ToString();
+            get
+            {
+                // PlayerSettings.productGUID is already used as LocalProjectID by Analytics, so we use it too
+                return PlayerSettings.productGUID.ToString();
+            }
         }
+
+        private static string LastUsedFilterPrefixForProject { get { return kLastUsedFilterPrefix + GetProjectIdentifier; } }
+        private static string kShowPreviewPackagesPrefKeyPrefixForProject { get { return kShowPreviewPackagesPrefKeyPrefix + GetProjectIdentifier; } }
 
         public static bool SkipRemoveConfirmation
         {
@@ -44,10 +49,8 @@ namespace UnityEditor.PackageManager.UI
         {
             get
             {
-                var key = kShowPreviewPackagesPrefKeyPrefix + GetProjectIdentifier();
-
                 // If user manually choose to show or not preview packages, use this value
-                return EditorPrefs.HasKey(key);
+                return EditorPrefs.HasKey(kShowPreviewPackagesPrefKeyPrefixForProject);
             }
         }
 
@@ -57,7 +60,7 @@ namespace UnityEditor.PackageManager.UI
         {
             get
             {
-                var key = kShowPreviewPackagesPrefKeyPrefix + GetProjectIdentifier();
+                var key = kShowPreviewPackagesPrefKeyPrefixForProject;
 
                 // If user manually choose to show or not preview packages, use this value
                 if (EditorPrefs.HasKey(key))
@@ -68,7 +71,7 @@ namespace UnityEditor.PackageManager.UI
             }
             set
             {
-                EditorPrefs.SetBool(kShowPreviewPackagesPrefKeyPrefix + GetProjectIdentifier(), value);
+                EditorPrefs.SetBool(kShowPreviewPackagesPrefKeyPrefixForProject, value);
             }
         }
 
@@ -82,11 +85,21 @@ namespace UnityEditor.PackageManager.UI
         {
             get
             {
-                return (PackageFilter)Enum.Parse(typeof(PackageFilter), EditorPrefs.GetString(kLastUsedFilterPrefix + GetProjectIdentifier(), PackageFilter.All.ToString()));
+                PackageFilter result;
+                try
+                {
+                    result = (PackageFilter)(Enum.Parse(typeof(PackageFilter), EditorPrefs.GetString(LastUsedFilterPrefixForProject, PackageFilter.All.ToString())));
+                }
+                catch (Exception)
+                {
+                    result = PackageFilter.All;
+                }
+
+                return result;
             }
             set
             {
-                EditorPrefs.SetString(kLastUsedFilterPrefix + GetProjectIdentifier(), value.ToString());
+                EditorPrefs.SetString(LastUsedFilterPrefixForProject, value.ToString());
             }
         }
     }

@@ -277,7 +277,7 @@ namespace UnityEditor
             position.height = EditorGUIUtility.singleLineHeight;
             SerializedProperty cur = property.Copy();
             cur.NextVisible(true);
-            EditorGUI.MultiPropertyField(position, s_XYZLabels, cur, EditorGUI.PropertyVisibility.OnlyVisible, EditorGUI.kMiniLabelW, disabledMask);
+            EditorGUI.MultiPropertyFieldInternal(position, s_XYZLabels, cur, EditorGUI.PropertyVisibility.OnlyVisible, disabledMask);
 
             EditorGUI.EndProperty();
         }
@@ -484,7 +484,9 @@ namespace UnityEditor
                 m_AnchorMin,
                 styles.anchorMinContent);
 
-            anchorRect.y += EditorGUIUtility.singleLineHeight;
+            EditorGUILayout.Space(EditorGUI.kVerticalSpacingMultiField);
+
+            anchorRect.y += EditorGUIUtility.singleLineHeight + EditorGUI.kVerticalSpacingMultiField;
             Vector2Field(anchorRect,
                 rectTransform => rectTransform.anchorMax.x,
                 (rectTransform, val) => SetAnchorSmart(rectTransform, val, 0, true, !m_RawEditMode, true),
@@ -569,7 +571,7 @@ namespace UnityEditor
             int l = EditorGUI.indentLevel;
             Rect r0 = GetColumnRect(position, 0);
             Rect r1 = GetColumnRect(position, 1);
-            EditorGUIUtility.labelWidth = EditorGUI.kMiniLabelW;
+            EditorGUIUtility.labelWidth = EditorGUI.CalcPrefixLabelWidth(s_XYLabels[0]);
             EditorGUI.indentLevel = 0;
 
             EditorGUI.BeginProperty(r0, s_XYLabels[0], xProperty);
@@ -637,6 +639,8 @@ namespace UnityEditor
 
         void OnSceneGUI()
         {
+            if (!target)
+                return;
             RectTransform gui = target as RectTransform;
 
             Rect rectInOwnSpace = gui.rect;

@@ -36,7 +36,7 @@ namespace UnityEditor
 
         protected virtual void OnSceneGUI()
         {
-            if (EditMode.editMode != EditMode.SceneViewEditMode.Collider || !EditMode.IsOwner(this))
+            if (EditMode.editMode != EditMode.SceneViewEditMode.Collider || !EditMode.IsOwner(this) || !target)
                 return;
 
             OcclusionPortal portal = target as OcclusionPortal;

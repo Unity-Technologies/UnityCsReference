@@ -3,8 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
-using System.Collections;
 using System;
 using System.Text;
 using UnityEngine.Scripting;
@@ -30,18 +28,7 @@ namespace UnityEditor
         private static float m_ClientFrameTime = 0.0f;
         private static float m_RenderFrameTime = 0.0f;
         private static float m_MaxFrameTime = 0.0f;
-
-        // Cache bold style of scene skin
-        private static GUIStyle s_SectionHeaderStyle;
-        private static GUIStyle sectionHeaderStyle
-        {
-            get
-            {
-                if (s_SectionHeaderStyle == null)
-                    s_SectionHeaderStyle = EditorGUIUtility.GetBuiltinSkin(EditorSkin.Scene).GetStyle("BoldLabel");
-                return s_SectionHeaderStyle;
-            }
-        }
+        private static GUIContent s_GraphicsText = EditorGUIUtility.TextContent("Graphics:");
 
         // Create label style from scene skin; add rich text support
         private static GUIStyle s_LabelStyle;
@@ -51,7 +38,7 @@ namespace UnityEditor
             {
                 if (s_LabelStyle == null)
                 {
-                    s_LabelStyle = new GUIStyle(EditorGUIUtility.GetBuiltinSkin(EditorSkin.Scene).label);
+                    s_LabelStyle = new GUIStyle("label");
                     s_LabelStyle.richText = true;
                 }
                 return s_LabelStyle;
@@ -99,15 +86,12 @@ namespace UnityEditor
         [RequiredByNativeCode]
         public static void GameViewStatsGUI()
         {
-            GUI.skin = EditorGUIUtility.GetBuiltinSkin(EditorSkin.Scene);
-
-            GUI.color = new Color(1, 1, 1, .75f);
             float w = 300, h = 204;
 
             GUILayout.BeginArea(new Rect(GUIView.current.position.width - w - 10, 27, w, h), "Statistics", GUI.skin.window);
 
             // Audio stats
-            GUILayout.Label("Audio:", sectionHeaderStyle);
+            GUILayout.Label("Audio:", EditorStyles.boldLabel);
             StringBuilder audioStats = new StringBuilder(400);
             float audioLevel = UnityStats.audioLevel;
             audioStats.Append("  Level: " + FormatDb(audioLevel) + (EditorUtility.audioMasterMute ? " (MUTED)\n" : "\n"));
@@ -117,15 +101,18 @@ namespace UnityEditor
             GUI.Label(new Rect(170, 40, 120, 20), UnityString.Format("DSP load: {0:F1}%", 100.0f * UnityStats.audioDSPLoad));
             GUI.Label(new Rect(170, 53, 120, 20), UnityString.Format("Stream load: {0:F1}%", 100.0f * UnityStats.audioStreamLoad));
 
+            EditorGUILayout.Space();
+
             // Graphics stats
-            GUILayout.Label("Graphics:", sectionHeaderStyle);
+            Rect graphicsLabelRect = GUILayoutUtility.GetRect(s_GraphicsText, EditorStyles.boldLabel);
+            GUI.Label(graphicsLabelRect, s_GraphicsText, EditorStyles.boldLabel);
 
             // Time stats
             UpdateFrameTime();
 
             string timeStats = UnityString.Format("{0:F1} FPS ({1:F1}ms)",
                 1.0f / Mathf.Max(m_MaxFrameTime, 1.0e-5f), m_MaxFrameTime * 1000.0f);
-            GUI.Label(new Rect(170, 75, 120, 20), timeStats);
+            GUI.Label(new Rect(170, graphicsLabelRect.y, 120, 20), timeStats);
 
             int screenBytes = UnityStats.screenBytes;
             int batchesSavedByDynamicBatching = UnityStats.dynamicBatchedDrawCalls - UnityStats.dynamicBatches;

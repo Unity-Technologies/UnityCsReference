@@ -11,6 +11,8 @@ namespace UnityEditor
     // internal class to manage localized editor fonts
     internal class LocalizedEditorFontManager
     {
+        static bool s_FontInitialized = false;
+
         private class FontSetting
         {
             private string[] m_fontNames;
@@ -123,6 +125,11 @@ namespace UnityEditor
 
         public static void LocalizeEditorFonts()
         {
+            if (s_FontInitialized)
+                return;
+
+            s_FontInitialized = true;
+
             ReadFontSettings();
 
             var dict = GetFontDictionary(LocalizationDatabase.currentEditorLanguage);

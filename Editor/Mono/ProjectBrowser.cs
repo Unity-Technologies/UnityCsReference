@@ -15,6 +15,7 @@ using UnityEditor.TreeViewExamples;
 using UnityEditorInternal;
 using UnityEngine.Scripting;
 using Object = UnityEngine.Object;
+using UnityEditor.StyleSheets;
 
 namespace UnityEditor
 {
@@ -68,10 +69,10 @@ namespace UnityEditor
             public GUIStyle lockButton = "IN LockButton";
             public GUIStyle separator = "ArrowNavigationRight";
 
-            public GUIContent m_FilterByLabel = new GUIContent(EditorGUIUtility.FindTexture("FilterByLabel"), "Search by Label");
-            public GUIContent m_FilterByType = new GUIContent(EditorGUIUtility.FindTexture("FilterByType"), "Search by Type");
-            public GUIContent m_CreateDropdownContent = EditorGUIUtility.TrTextContent("Create");
-            public GUIContent m_SaveFilterContent = new GUIContent(EditorGUIUtility.FindTexture("Favorite"), "Save search");
+            public GUIContent m_FilterByLabel = EditorGUIUtility.TrIconContent("FilterByLabel", "Search by Label");
+            public GUIContent m_FilterByType = EditorGUIUtility.TrIconContent("FilterByType", "Search by Type");
+            public GUIContent m_CreateDropdownContent = EditorGUIUtility.IconContent("CreateAddNew");
+            public GUIContent m_SaveFilterContent = EditorGUIUtility.TrIconContent("Favorite", "Save search");
             public GUIContent m_PackagesVisibilityContent = EditorGUIUtility.TrIconContent("SceneViewVisibility", "Number of hidden packages, click to toggle hidden packages visibility");
             public GUIContent m_EmptyFolderText = EditorGUIUtility.TrTextContent("This folder is empty");
             public GUIContent m_SearchIn = EditorGUIUtility.TrTextContent("Search:");
@@ -166,7 +167,7 @@ namespace UnityEditor
         const float     k_MinWidthOneColumn = 230f;// could be 205 with special handling
         const float     k_MinWidthTwoColumns = 230f;
         float           m_ToolbarHeight;
-        const float     k_BottomBarHeight = EditorGUI.kWindowToolbarHeight;
+        static readonly SVC<float> k_BottomBarHeight = EditorGUI.kWindowToolbarHeight;
         float           k_MinDirectoriesAreaWidth = 110;
         [SerializeField]
         float           m_DirectoriesAreaWidth = k_MinWidthTwoColumns / 2;
@@ -1857,7 +1858,7 @@ namespace UnityEditor
 
         float GetListHeaderHeight()
         {
-            return m_SearchFilter.GetState() == SearchFilter.State.EmptySearchFilter ? 0f : EditorGUI.kWindowToolbarHeight + 1;
+            return m_SearchFilter.GetState() == SearchFilter.State.EmptySearchFilter ? 0f : EditorGUI.kWindowToolbarHeight;
         }
 
         void CalculateRects()
@@ -1976,11 +1977,11 @@ namespace UnityEditor
                 // Folders
                 m_FolderTree.OnGUI(m_TreeViewRect, m_TreeViewKeyboardControlID);
 
-                // Vertical splitter line between folders and content (drawn before listarea so listarea ping is drawn on top of line)
-                EditorGUIUtility.DrawHorizontalSplitter(new Rect(m_ListAreaRect.x, m_ToolbarHeight, 1, m_TreeViewRect.height));
-
                 // List Content
                 m_ListArea.OnGUI(m_ListAreaRect, m_ListKeyboardControlID);
+
+                // Vertical splitter line between folders and content (drawn before listarea so listarea ping is drawn on top of line)
+                EditorGUIUtility.DrawHorizontalSplitter(new Rect(m_ListAreaRect.x + 1f, m_ToolbarHeight, 1, m_TreeViewRect.height));
 
                 if (m_SearchFilter.GetState() == SearchFilter.State.FolderBrowsing  && m_ListArea.numItemsDisplayed == 0)
                 {
@@ -2140,8 +2141,6 @@ namespace UnityEditor
         // This is our search field
         void TopToolbar()
         {
-            GUILayout.BeginArea(new Rect(0, -1, position.width, m_ToolbarHeight + 1));
-
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
             {
                 float listWidth = position.width - m_DirectoriesAreaWidth;
@@ -2168,7 +2167,6 @@ namespace UnityEditor
                 ToggleHiddenPackagesVisibility();
             }
             GUILayout.EndHorizontal();
-            GUILayout.EndArea();
         }
 
         void SetOneColumn()
@@ -2249,7 +2247,7 @@ namespace UnityEditor
             // Only show when we have a active filter
             using (new EditorGUI.DisabledScope(!m_SearchFilter.IsSearching()))
             {
-                if (GUILayout.Button(s_Styles.m_SaveFilterContent, EditorStyles.toolbarButton))
+                if (GUILayout.Button(s_Styles.m_SaveFilterContent, EditorStyles.toolbarButtonRight))
                 {
                     ProjectBrowserColumnOneTreeViewGUI ProjectBrowserTreeViewGUI = m_FolderTree.gui as ProjectBrowserColumnOneTreeViewGUI;
                     if (ProjectBrowserTreeViewGUI != null)
@@ -2295,8 +2293,8 @@ namespace UnityEditor
             if (!isInReadOnlyContext)
                 isInReadOnlyContext = SelectionIsPackagesRootFolder();
             EditorGUI.BeginDisabledGroup(isInReadOnlyContext);
-            Rect r = GUILayoutUtility.GetRect(s_Styles.m_CreateDropdownContent, EditorStyles.toolbarDropDown);
-            if (EditorGUI.DropdownButton(r, s_Styles.m_CreateDropdownContent, FocusType.Passive, EditorStyles.toolbarDropDown))
+            Rect r = GUILayoutUtility.GetRect(s_Styles.m_CreateDropdownContent, EditorStyles.toolbarCreateAddNewDropDown);
+            if (EditorGUI.DropdownButton(r, s_Styles.m_CreateDropdownContent, FocusType.Passive, EditorStyles.toolbarCreateAddNewDropDown))
             {
                 GUIUtility.hotControl = 0;
                 EditorUtility.DisplayPopupMenu(r, "Assets/Create", null);
@@ -2327,7 +2325,7 @@ namespace UnityEditor
         private void ToggleHiddenPackagesVisibility()
         {
             s_Styles.m_PackagesVisibilityContent.text = PackageManagerUtilityInternal.HiddenPackagesCount.ToString();
-            var skipHiddenPackage = GUILayout.Toggle(m_SkipHiddenPackages, s_Styles.m_PackagesVisibilityContent, EditorStyles.toolbarButton);
+            var skipHiddenPackage = GUILayout.Toggle(m_SkipHiddenPackages, s_Styles.m_PackagesVisibilityContent, EditorStyles.toolbarButtonRight);
             if (skipHiddenPackage != m_SkipHiddenPackages)
             {
                 m_SkipHiddenPackages = skipHiddenPackage;
@@ -2512,9 +2510,8 @@ namespace UnityEditor
 
             const float kMargin = 5f;
             Rect rect = m_ListHeaderRect;
-            rect.x += kMargin;
+            rect.x += kMargin; rect.y += 1;
             rect.width -= 2 * kMargin;
-            rect.y += 1;
 
             GUIStyle style = EditorStyles.boldLabel;
 
@@ -2525,6 +2522,7 @@ namespace UnityEditor
             rect.x += m_SearchAreaMenuOffset + 7f;
             rect.width -= m_SearchAreaMenuOffset + 7f;
 
+            rect.y += 1;
             rect.width = m_SearchAreaMenu.OnGUI(rect);
         }
 
@@ -2607,8 +2605,8 @@ namespace UnityEditor
 
             // Folders
             Rect rect = m_ListHeaderRect;
-            rect.y += 1;
-            rect.x += 4;
+            rect.y += s_Styles.topBarBg.padding.top;
+            rect.x += s_Styles.topBarBg.padding.left;
             if (m_SearchFilter.folders.Length == 1)
             {
                 for (int i = 0; i < m_BreadCrumbs.Count; ++i)
@@ -2627,7 +2625,7 @@ namespace UnityEditor
                     rect.x += size.x;
                     if (!lastElement || m_BreadCrumbLastFolderHasSubFolders)
                     {
-                        Rect buttonRect = new Rect(rect.x, rect.y, s_Styles.separator.fixedWidth, s_Styles.separator.fixedHeight);
+                        Rect buttonRect = new Rect(rect.x, rect.y + (rect.height - s_Styles.separator.fixedHeight) / 2, s_Styles.separator.fixedWidth, s_Styles.separator.fixedHeight);
                         if (EditorGUI.DropdownButton(buttonRect, GUIContent.none, FocusType.Passive, s_Styles.separator))
                         {
                             string currentSubFolder = "";
@@ -2655,7 +2653,8 @@ namespace UnityEditor
             // Background
             GUI.Label(rect, GUIContent.none, s_Styles.bottomBarBg);
 
-            Rect sliderRect = new Rect(rect.x + rect.width - k_SliderWidth - 16f, rect.y + rect.height - 17f, k_SliderWidth, 17f);
+            Rect sliderRect = new Rect(rect.x + rect.width - k_SliderWidth - 16f
+                , rect.y + rect.height - m_BottomBarRect.height, k_SliderWidth, m_BottomBarRect.height);
             IconSizeSlider(sliderRect);
 
             // File path

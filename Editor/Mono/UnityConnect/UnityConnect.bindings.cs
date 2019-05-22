@@ -73,11 +73,14 @@ namespace UnityEditor.Connect
         int m_MoveLock;
     }
 
-    //*undocumented*
-    [NativeType(CodegenOptions.Custom, "MonoUnityUserInfo")]
-    internal struct UserInfo
+    [Serializable]
+    [StructLayout(LayoutKind.Sequential)]
+    [RequiredByNativeCode]
+    [NativeAsStruct]
+    [NativeType(IntermediateScriptingStructName = "Connect_UserInfo")]
+    internal partial class UserInfo
     {
-        public bool valid { get { return m_Valid != 0; } }
+        public bool valid { get { return m_Valid; } }
         public string userId { get { return m_UserId; } }
         public string userName { get { return m_UserName; } }
         public string displayName { get { return m_DisplayName; } }
@@ -85,17 +88,28 @@ namespace UnityEditor.Connect
         public bool whitelisted { get { return m_Whitelisted != 0; } }
         public string organizationForeignKeys { get { return m_OrganizationForeignKeys; } }
         public string accessToken { get { return m_AccessToken; } }
-        public int accessTokenValiditySeconds { get { return m_AccessTokenValiditySeconds; } }
+        public string[] organizationNames { get { return m_OrganizationNames;  } }
 
-        int m_Valid;
+
+        [NativeName("valid")]
+        bool m_Valid;
+        [NativeName("id")]
         string m_UserId;
+        [NativeName("name")]
         string m_UserName;
+        [NativeName("displayName")]
         string m_DisplayName;
+        [NativeName("primaryOrg")]
         string m_PrimaryOrg;
-        int m_Whitelisted;
+        [NativeName("organizationForeignKeys")]
         string m_OrganizationForeignKeys;
+        [NativeName("organizationNames")]
+        string[] m_OrganizationNames;
+        [NativeName("accessToken")]
         string m_AccessToken;
-        int m_AccessTokenValiditySeconds;
+
+        [Ignore]
+        int m_Whitelisted = 1;
     }
 
     //*undocumented*

@@ -102,9 +102,7 @@ namespace UnityEditorInternal.VR
                 return;
 
             string packageInitPath = GetStorageFilePath();
-            if (!Provider.PromptAndCheckoutIfNeeded(
-                new string[] { packageInitPath },
-                String.Format("Unity needs to update a file ({0}) that is currently under source control.", packageInitPath)))
+            if (!Provider.PromptAndCheckoutIfNeeded(new string[] { packageInitPath }, String.Empty))
                 return;
 
             FileInfo info = new FileInfo(packageInitPath);

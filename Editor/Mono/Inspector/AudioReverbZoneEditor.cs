@@ -85,6 +85,8 @@ namespace UnityEditor
 
         void OnSceneGUI()
         {
+            if (!target)
+                return;
             AudioReverbZone zone = (AudioReverbZone)target;
 
             Color tempColor = Handles.color;

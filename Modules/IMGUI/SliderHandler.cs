@@ -28,10 +28,11 @@ namespace UnityEngine
         readonly float end;
         readonly GUIStyle slider;
         readonly GUIStyle thumb;
+        readonly GUIStyle thumbExtent;
         readonly bool horiz;
         readonly int id;
 
-        public SliderHandler(Rect position, float currentValue, float size, float start, float end, GUIStyle slider, GUIStyle thumb, bool horiz, int id)
+        public SliderHandler(Rect position, float currentValue, float size, float start, float end, GUIStyle slider, GUIStyle thumb, bool horiz, int id, GUIStyle thumbExtent = null)
         {
             this.position = position;
             this.currentValue = currentValue;
@@ -40,6 +41,7 @@ namespace UnityEngine
             this.end = end;
             this.slider = slider;
             this.thumb = thumb;
+            this.thumbExtent = thumbExtent;
             this.horiz = horiz;
             this.id = id;
         }
@@ -68,18 +70,27 @@ namespace UnityEngine
 
         private float OnMouseDown()
         {
+            var mousePosition = CurrentEvent().mousePosition;
+
+            Rect thumbZone = ThumbSelectionRect();
+            var mouseOverThumb = thumbZone.Contains(mousePosition);
+
+            Rect clickableZone = thumbZone;
+            clickableZone.x = position.x;
+            clickableZone.width = position.width;
+
             // if the click is outside this control, just bail out...
-            if (!position.Contains(CurrentEvent().mousePosition) || IsEmptySlider())
+            if (IsEmptySlider() || (!mouseOverThumb && !clickableZone.Contains(mousePosition)))
                 return currentValue;
 
             GUI.scrollTroughSide = 0;
             GUIUtility.hotControl = id;
             CurrentEvent().Use();
 
-            if (ThumbSelectionRect().Contains(CurrentEvent().mousePosition))
+            if (mouseOverThumb)
             {
                 // We have a mousedown on the thumb
-                // Record where we're draging from, so the user can get back.
+                // Record where we're dragging from, so the user can get back.
                 StartDraggingWithValue(ClampedCurrentValue());
                 return currentValue;
             }
@@ -134,11 +145,17 @@ namespace UnityEngine
 
         private float OnRepaint()
         {
-            slider.Draw(position, GUIContent.none, id);
-            if (!IsEmptySlider() && currentValue >= Mathf.Min(start, end) && currentValue <= Mathf.Max(start, end))
-                thumb.Draw(ThumbRect(), GUIContent.none, id);
+            bool hover = position.Contains(CurrentEvent().mousePosition);
 
-            if (GUIUtility.hotControl != id || !position.Contains(CurrentEvent().mousePosition) || IsEmptySlider())
+            slider.Draw(position, GUIContent.none, id, false, hover);
+            if (!IsEmptySlider() && currentValue >= Mathf.Min(start, end) && currentValue <= Mathf.Max(start, end))
+            {
+                if (thumbExtent != null)
+                    thumbExtent.Draw(ThumbExtRect(), GUIContent.none, id, false, hover);
+                thumb.Draw(ThumbRect(), GUIContent.none, id, false, hover);
+            }
+
+            if (GUIUtility.hotControl != id || !hover || IsEmptySlider())
                 return currentValue;
 
             if (ThumbRect().Contains(CurrentEvent().mousePosition))
@@ -247,6 +264,15 @@ namespace UnityEngine
             return (SliderState)GUIUtility.GetStateObject(typeof(SliderState), id);
         }
 
+        private Rect ThumbExtRect()
+        {
+            var rect = new Rect(0, 0, thumbExtent.fixedWidth, thumbExtent.fixedHeight);
+
+            rect.center = ThumbRect().center;
+
+            return rect;
+        }
+
         private Rect ThumbRect()
         {
             return horiz ? HorizontalThumbRect() : VerticalThumbRect();
@@ -254,36 +280,47 @@ namespace UnityEngine
 
         private Rect VerticalThumbRect()
         {
+            Rect contentRect = thumb.margin.Remove(slider.padding.Remove(position));
+            float thumbWidth = (thumb.fixedWidth != 0 ? thumb.fixedWidth : contentRect.width);
+            var thumbSize = ThumbSize();
             var valuesPerPixel = ValuesPerPixel();
-            if (start < end)
-                return new Rect(
-                    position.x + slider.padding.left,
-                    (ClampedCurrentValue() - start) * valuesPerPixel + position.y + slider.padding.top,
-                    position.width - slider.padding.horizontal,
-                    size * valuesPerPixel + ThumbSize());
 
-            return new Rect(
-                position.x + slider.padding.left,
-                (ClampedCurrentValue() + size - start) * valuesPerPixel + position.y + slider.padding.top,
-                position.width - slider.padding.horizontal,
-                size * -valuesPerPixel + ThumbSize());
+            if (start < end)
+            {
+                return new Rect(
+                    contentRect.x,
+                    (ClampedCurrentValue() - start) * valuesPerPixel + contentRect.y,
+                    thumbWidth,
+                    size * valuesPerPixel + thumbSize);
+            }
+            else
+            {
+                return new Rect(
+                    contentRect.x,
+                    (ClampedCurrentValue() + size - start) * valuesPerPixel + contentRect.y,
+                    thumbWidth,
+                    size * -valuesPerPixel + thumbSize);
+            }
         }
 
         private Rect HorizontalThumbRect()
         {
+            Rect contentRect = thumb.margin.Remove(slider.padding.Remove(position));
+            float thumbHeight = (thumb.fixedHeight != 0 ? thumb.fixedHeight : contentRect.height);
+            var thumbSize = ThumbSize();
             var valuesPerPixel = ValuesPerPixel();
             if (start < end)
                 return new Rect(
-                    (ClampedCurrentValue() - start) * valuesPerPixel + position.x + slider.padding.left,
-                    position.y + slider.padding.top,
-                    size * valuesPerPixel + ThumbSize(),
-                    position.height - slider.padding.vertical);
+                    (ClampedCurrentValue() - start) * valuesPerPixel + contentRect.x,
+                    contentRect.y,
+                    size * valuesPerPixel + thumbSize,
+                    thumbHeight);
 
             return new Rect(
-                (ClampedCurrentValue() + size - start) * valuesPerPixel + position.x + slider.padding.left,
-                position.y,
-                size * -valuesPerPixel + ThumbSize(),
-                position.height);
+                (ClampedCurrentValue() + size - start) * valuesPerPixel + contentRect.x,
+                contentRect.y,
+                size * -valuesPerPixel + thumbSize,
+                thumbHeight);
         }
 
         private float ClampedCurrentValue()

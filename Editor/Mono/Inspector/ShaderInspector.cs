@@ -63,7 +63,7 @@ namespace UnityEditor
         public virtual void OnEnable()
         {
             var s = target as Shader;
-            ShaderUtil.FetchCachedErrors(s);
+            ShaderUtil.FetchCachedMessages(s);
         }
 
         private static string GetPropertyType(Shader s, int index)

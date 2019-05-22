@@ -254,7 +254,7 @@ namespace UnityEditor
 
                 // 0. Selection row rect
                 if (selected && repainting)
-                    Styles.selectionStyle.Draw(rowRect, false, false, true, focused);
+                    selectionStyle.Draw(rowRect, false, false, true, focused);
 
                 // 1. Foldout
                 if (m_TreeView.data.IsExpandable(tvItem))
@@ -310,7 +310,7 @@ namespace UnityEditor
             void DoIconAndText(PackageExportTreeViewItem item, Rect contentRect, bool selected, bool focused)
             {
                 EditorGUIUtility.SetIconSize(new Vector2(k_IconWidth, k_IconWidth)); // If not set we see icons scaling down if text is being cropped
-                GUIStyle lineStyle = Styles.lineStyle;
+                lineStyle = Styles.lineStyle;
                 lineStyle.padding.left = 0; // padding could have been set by other tree views
                 contentRect.height += 5; // with the default row height, underscore and lower parts of characters like g, p, etc. were not visible
                 if (Event.current.type == EventType.Repaint)

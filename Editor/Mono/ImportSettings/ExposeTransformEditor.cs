@@ -55,7 +55,7 @@ namespace UnityEditor
 
         public void OnGUI()
         {
-            var listRect = GUILayoutUtility.GetRect(10, m_ExposeTransformEditor.totalHeightIncludingSearchBarAndBottomBar, GUILayout.ExpandWidth(true));
+            var listRect = GUILayoutUtility.GetRect(0, 0, GUILayout.ExpandWidth(true));
             m_ExposeTransformEditor.OnGUI(listRect);
         }
 

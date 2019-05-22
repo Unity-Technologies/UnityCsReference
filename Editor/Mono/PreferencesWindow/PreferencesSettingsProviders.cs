@@ -12,6 +12,8 @@ using System.Linq;
 using Unity.CodeEditor;
 using UnityEditor.Connect;
 using UnityEngine.UIElements;
+using UnityEditor.Experimental;
+using UnityEditor.StyleSheets;
 using UnityEngine.TestTools;
 using UnityEditor.Collaboration;
 
@@ -56,9 +58,10 @@ namespace UnityEditor
             public static readonly GUIContent showAssetStoreSearchHits = EditorGUIUtility.TrTextContent("Show Asset Store search hits");
             public static readonly GUIContent verifySavingAssets = EditorGUIUtility.TrTextContent("Verify Saving Assets");
             public static readonly GUIContent scriptChangesDuringPlay = EditorGUIUtility.TrTextContent("Script Changes While Playing");
-            public static readonly GUIContent editorSkin = EditorGUIUtility.TrTextContent("Editor Skin");
+            public static readonly GUIContent editorFont = EditorGUIUtility.TrTextContent("Editor Font");
+            public static readonly GUIContent editorSkin = EditorGUIUtility.TrTextContent("Editor Theme");
             public static readonly GUIContent[] editorSkinOptions = { EditorGUIUtility.TrTextContent("Personal"), EditorGUIUtility.TrTextContent("Professional") };
-            public static readonly GUIContent enableAlphaNumericSorting = EditorGUIUtility.TrTextContent("Enable Alpha Numeric Sorting");
+            public static readonly GUIContent enableAlphaNumericSorting = EditorGUIUtility.TrTextContent("Enable Alphanumeric Sorting");
             public static readonly GUIContent asyncShaderCompilation = EditorGUIUtility.TrTextContent("Asynchronous Shader Compilation");
             public static readonly GUIContent codeCoverageEnabled = EditorGUIUtility.TrTextContent("Enable Code Coverage", "Check this to enable Code Coverage.");
         }
@@ -70,6 +73,14 @@ namespace UnityEditor
             public static readonly GUIContent revisionControlDiffMerge = EditorGUIUtility.TrTextContent("Revision Control Diff/Merge");
             public static readonly GUIContent externalScriptEditor = EditorGUIUtility.TrTextContent("External Script Editor");
             public static readonly GUIContent imageApplication = EditorGUIUtility.TrTextContent("Image application");
+        }
+
+        internal class UIScalingProperties
+        {
+            public static readonly GUIContent editorContentScaling = EditorGUIUtility.TrTextContent("Editor icons and text scaling");
+            public static readonly GUIContent defaultContentScaling = EditorGUIUtility.TrTextContent("Use default desktop setting");
+            public static readonly GUIContent currentContentScaling = EditorGUIUtility.TrTextContent("Current scaling");
+            public static readonly GUIContent customContentScaling = EditorGUIUtility.TrTextContent("Use custom scaling value");
         }
 
         internal class ColorsProperties
@@ -117,6 +128,12 @@ namespace UnityEditor
         private bool m_AllowAttachedDebuggingOfEditorStateChangedThisSession;
         private string m_GpuDevice;
         private string[] m_CachedGpuDevices;
+        private bool m_ContentScaleChangedThisSession;
+        private int m_ContentScalePercentValue;
+        private string[] m_CustomScalingLabels = {"100%", "125%", "150%", "175%", "200%", "225%", "250%", "300%", "350%"};
+        private int[] m_CustomScalingValues = { 100, 125, 150, 175, 200, 225, 250, 300, 350 };
+
+        private readonly string kContentScalePrefKey = "CustomEditorUIScale";
 
         private struct GICacheSettings
         {
@@ -164,6 +181,7 @@ namespace UnityEditor
         private static int kMinSpriteCacheSizeInGigabytes = 1;
         private static int kMaxSpriteCacheSizeInGigabytes = 200;
 
+        private List<GUIContent> m_SystemFonts = new List<GUIContent>();
 
         class RefString
         {
@@ -193,6 +211,7 @@ namespace UnityEditor
         {
             var settings = new PreferencesProvider("Preferences/_General", GetSearchKeywordsFromGUIContentProperties<GeneralProperties>()) { label = "General" };
             settings.guiHandler = searchContext => { OnGUI(searchContext, settings.ShowGeneral); };
+            settings.activateHandler = (searchContext, rootElement) => { settings.EnableGeneral(); };
             return settings;
         }
 
@@ -280,6 +299,19 @@ namespace UnityEditor
         }
 
         [SettingsProvider]
+        internal static SettingsProvider CreateUIScalingProvider()
+        {
+            if (Application.platform == RuntimePlatform.WindowsEditor)
+            {
+                var settings = new PreferencesProvider("Preferences/UIScaling", GetSearchKeywordsFromGUIContentProperties<UIScalingProperties>()) { label = "UI Scaling" };
+                settings.guiHandler = searchContext => { OnGUI(searchContext, settings.ShowUIScaling); };
+                return settings;
+            }
+
+            return null;
+        }
+
+        [SettingsProvider]
         internal static SettingsProvider CreateUnityServicesProvider()
         {
             if (Unsupported.IsDeveloperMode() || UnityConnect.preferencesEnabled)
@@ -358,6 +390,22 @@ namespace UnityEditor
             ApplyChangesToPrefs();
         }
 
+        private void EnableGeneral()
+        {
+            var fontNames = new List<string>(EditorResources.GetSupportedFonts());
+
+            fontNames.Sort();
+
+            // Remove the default font and prepend it with the '(Default)' suffix
+            fontNames.Remove(EditorResources.GetDefaultFont());
+            fontNames.Insert(0, EditorResources.GetDefaultFont() + " (Default)");
+
+            foreach (var fontName in fontNames)
+            {
+                m_SystemFonts.Add(new GUIContent(fontName));
+            }
+        }
+
         private void ShowGeneral(string searchContext)
         {
             // Options
@@ -415,6 +463,32 @@ namespace UnityEditor
                 int newSkin = EditorGUILayout.Popup(GeneralProperties.editorSkin, !EditorGUIUtility.isProSkin ? 0 : 1, GeneralProperties.editorSkinOptions);
                 if ((!EditorGUIUtility.isProSkin ? 0 : 1) != newSkin)
                     InternalEditorUtility.SwitchSkinAndRepaintAllViews();
+            }
+
+            if (LocalizationDatabase.currentEditorLanguage == SystemLanguage.English)
+            {
+                EditorGUI.BeginChangeCheck();
+                var userFontName = EditorPrefs.GetString("user_editor_font", null);
+                int selectedFontIndex = Math.Max(0, m_SystemFonts.FindIndex(f => f.text == userFontName));
+                selectedFontIndex = EditorGUILayout.Popup(GeneralProperties.editorFont, selectedFontIndex, m_SystemFonts.ToArray());
+                if (EditorGUI.EndChangeCheck())
+                {
+                    if (selectedFontIndex == 0)
+                    {
+                        EditorPrefs.DeleteKey("user_editor_font");
+                    }
+                    else
+                    {
+                        var selectedFontName = m_SystemFonts[selectedFontIndex].text;
+                        EditorPrefs.SetString("user_editor_font", selectedFontName);
+                    }
+
+                    // Refresh skin to get new font
+                    Unsupported.ClearSkinCache();
+                    EditorResources.BuildCatalog();
+                    InternalEditorUtility.RequestScriptReload();
+                    InternalEditorUtility.RepaintAllViews();
+                }
             }
 
             bool oldAlphaNumeric = m_AllowAlphaNumericHierarchy;
@@ -561,6 +635,7 @@ namespace UnityEditor
 
         private void ShowGICache(string searchContext)
         {
+            EditorGUI.BeginChangeCheck();
             {
                 // Show Gigabytes to the user.
                 const int kMinSizeInGigabytes = 5;
@@ -568,7 +643,6 @@ namespace UnityEditor
 
                 // Write size in GigaBytes.
                 m_GICacheSettings.m_MaximumSize = EditorGUILayout.IntSlider(GICacheProperties.maxCacheSize, m_GICacheSettings.m_MaximumSize, kMinSizeInGigabytes, kMaxSizeInGigabytes);
-                WritePreferences();
             }
             GUILayout.BeginHorizontal();
             {
@@ -599,7 +673,6 @@ namespace UnityEditor
                         if (!string.IsNullOrEmpty(path))
                         {
                             m_GICacheSettings.m_CachePath = path;
-                            WritePreferences();
                         }
                     }
                     GUILayout.EndHorizontal();
@@ -627,6 +700,9 @@ namespace UnityEditor
                 GUILayout.Label(GICacheProperties.cacheFolderLocation.text + ":");
                 GUILayout.Label(UnityEditor.Lightmapping.diskCachePath, Constants.cacheFolderLocation);
             }
+
+            if (EditorGUI.EndChangeCheck())
+                WritePreferences();
         }
 
         private void ShowLanguage(string searchContext)
@@ -668,6 +744,66 @@ namespace UnityEditor
             ApplyChangesToPrefs();
         }
 
+        private void ShowUIScaling(string searchContext)
+        {
+            EditorGUI.BeginChangeCheck();
+            if (Application.platform == RuntimePlatform.WindowsEditor)
+            {
+                GUILayout.Label(UIScalingProperties.editorContentScaling, EditorStyles.boldLabel);
+
+                GUILayout.Space(5);
+
+                GUILayout.BeginVertical();
+                var currentScaling = CurrentEditorScalingValue;
+
+                bool customScaling = EditorPrefs.HasKey(kContentScalePrefKey) && m_ContentScalePercentValue > 0;
+                bool useDesktopScaling = EditorGUILayout.Toggle(UIScalingProperties.defaultContentScaling, !customScaling);
+
+                if ((!customScaling) != useDesktopScaling)
+                {
+                    m_ContentScaleChangedThisSession = true;
+
+                    if (useDesktopScaling)
+                    {
+                        EditorPrefs.DeleteKey(kContentScalePrefKey);
+                        m_ContentScalePercentValue = -1;
+                    }
+                    else
+                    {
+                        if (m_ContentScalePercentValue < 0)
+                            m_ContentScalePercentValue = currentScaling;
+                    }
+                }
+
+                using (new EditorGUI.DisabledScope(useDesktopScaling))
+                {
+                    int displayedScaleValue = (m_ContentScalePercentValue > 0) ? m_ContentScalePercentValue : currentScaling;
+
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label(UIScalingProperties.currentContentScaling, GUILayout.Width(EditorGUIUtility.labelWidth));
+                    GUILayout.Label(currentScaling + "%");
+                    GUILayout.EndHorizontal();
+
+                    displayedScaleValue = EditorGUILayout.IntPopup(UIScalingProperties.customContentScaling.text, displayedScaleValue, m_CustomScalingLabels, m_CustomScalingValues);
+                    if (m_ContentScalePercentValue != displayedScaleValue && m_ContentScalePercentValue >= 0)
+                    {
+                        m_ContentScaleChangedThisSession = true;
+                        m_ContentScalePercentValue = displayedScaleValue;
+                    }
+                }
+
+
+                if (m_ContentScaleChangedThisSession)
+                    EditorGUILayout.HelpBox(ExternalProperties.changingThisSettingRequiresRestart.text, MessageType.Warning);
+
+                GUILayout.EndVertical();
+            }
+            if (EditorGUI.EndChangeCheck())
+                WritePreferences();
+
+            ApplyChangesToPrefs();
+        }
+
         private void WriteRecentAppsList(string[] paths, string path, string prefsKey)
         {
             int appIndex = 0;
@@ -703,6 +839,11 @@ namespace UnityEditor
             WriteRecentAppsList(m_ImageApps, m_ImageAppPath, kRecentImageAppsKey);
 
             EditorPrefs.SetBool("kAutoRefresh", m_AutoRefresh);
+
+            if (m_ContentScaleChangedThisSession)
+            {
+                EditorPrefs.SetInt(kContentScalePrefKey, m_ContentScalePercentValue);
+            }
 
             if (Unsupported.IsDeveloperMode() || UnityConnect.preferencesEnabled)
                 UnityConnectPrefs.StorePanelPrefs();
@@ -756,6 +897,11 @@ namespace UnityEditor
             string result = Environment.GetEnvironmentVariable("ProgramFiles(x86)");
             if (result != null) return result;
             return Environment.GetEnvironmentVariable("ProgramFiles");
+        }
+
+        private int CurrentEditorScalingValue
+        {
+            get {return Mathf.RoundToInt(GUIUtility.pixelsPerPoint * 100); }
         }
 
         private void ReadPreferences()
@@ -823,6 +969,17 @@ namespace UnityEditor
 
             m_CompressAssetsOnImport = Unsupported.GetApplicationSettingCompressAssetsOnImport();
             m_GpuDevice = EditorPrefs.GetString("GpuDeviceName");
+
+            if (EditorPrefs.HasKey(kContentScalePrefKey))
+            {
+                m_ContentScalePercentValue = EditorPrefs.GetInt(kContentScalePrefKey, CurrentEditorScalingValue);
+                m_ContentScaleChangedThisSession = m_ContentScalePercentValue != CurrentEditorScalingValue;
+            }
+            else
+            {
+                m_ContentScalePercentValue  = CurrentEditorScalingValue;
+                m_ContentScaleChangedThisSession = false;
+            }
 
             foreach (IPreferenceWindowExtension extension in prefWinExtensions)
             {

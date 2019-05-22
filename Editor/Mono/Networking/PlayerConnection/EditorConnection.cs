@@ -136,6 +136,16 @@ namespace UnityEditor.Networking.PlayerConnection
             m_PlayerEditorConnectionEvents.disconnectionEvent.AddPersistentListener(callback, UnityEventCallState.EditorAndRuntime);
         }
 
+        public void UnregisterConnection(UnityAction<int> callback)
+        {
+            m_PlayerEditorConnectionEvents.connectionEvent.RemovePersistentListener((UnityEngine.Object)callback.Target, callback.Method);
+        }
+
+        public void UnregisterDisconnection(UnityAction<int> callback)
+        {
+            m_PlayerEditorConnectionEvents.disconnectionEvent.RemovePersistentListener((UnityEngine.Object)callback.Target, callback.Method);
+        }
+
         public void Send(Guid messageId, byte[] data, int playerId)
         {
             if (messageId == Guid.Empty)

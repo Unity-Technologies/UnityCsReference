@@ -45,12 +45,15 @@ namespace UnityEditor.PackageManager.UI
             styleSheet.isUnityStyleSheet = true;
 
             var packageManagerThemeVariablesSheetPath = isDarkTheme ? PackageManagerDarkVariablesSheetPath : PackageManagerLightVariablesSheetPath;
+            var variablesThemeStyleSheetPath = isDarkTheme ? UIElementsEditorUtility.s_DefaultCommonDarkStyleSheetPath : UIElementsEditorUtility.s_DefaultCommonLightStyleSheetPath;
 
             var packageManagerCommon = EditorGUIUtility.Load(PackageManagerCommonStyleSheetPath) as StyleSheet;
             var packageManagerTheme = EditorGUIUtility.Load(packageManagerThemeVariablesSheetPath) as StyleSheet;
 
+            var variableThemeSheet = EditorGUIUtility.Load(UIElementsEditorUtility.GetStyleSheetPathForCurrentFont(variablesThemeStyleSheetPath)) as StyleSheet;
+
             var resolver = new StyleSheets.StyleSheetResolver();
-            resolver.AddStyleSheets(packageManagerCommon, packageManagerTheme);
+            resolver.AddStyleSheets(variableThemeSheet, packageManagerCommon, packageManagerTheme);
             resolver.ResolveTo(styleSheet);
 
             return styleSheet;
@@ -69,6 +72,11 @@ namespace UnityEditor.PackageManager.UI
         public static VisualElement GetTemplate(string templateFilename)
         {
             return GetVisualTreeAsset(templateFilename)?.CloneTree();
+        }
+
+        public static string GetIconPath(string iconName)
+        {
+            return $"Icons/PackageManager/{(EditorGUIUtility.isProSkin ? "Dark" : "Light")}/{iconName}.png";
         }
 
         public static StyleSheet GetStyleSheet()

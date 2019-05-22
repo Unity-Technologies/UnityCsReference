@@ -106,7 +106,7 @@ namespace UnityEditor
                 ? EditorGUIUtility.DragZoneRect(position)
                 : default(Rect);         // Ensure dragzone is empty when we have no label
             return DoSlider(
-                controlRect, dragZone, id, sliderValue, sliderMin, sliderMax, formatString, textFieldMin, textFieldMax, power, "ColorPickerSliderBackground", "ColorPickerHorizThumb", sliderBackground
+                controlRect, dragZone, id, sliderValue, sliderMin, sliderMax, formatString, textFieldMin, textFieldMax, power, "ColorPickerSliderBackground", "ColorPickerHorizThumb", sliderBackground, null
             );
         }
     }

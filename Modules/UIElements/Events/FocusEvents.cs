@@ -70,8 +70,10 @@ namespace UnityEngine.UIElements
 
     public class BlurEvent : FocusEventBase<BlurEvent>
     {
-        protected internal override void PreDispatch()
+        protected internal override void PreDispatch(IPanel panel)
         {
+            base.PreDispatch(panel);
+
             if (relatedTarget == null)
             {
                 focusController.DoFocusChange(null);
@@ -100,8 +102,9 @@ namespace UnityEngine.UIElements
 
     public class FocusEvent : FocusEventBase<FocusEvent>
     {
-        protected internal override void PreDispatch()
+        protected internal override void PreDispatch(IPanel panel)
         {
+            base.PreDispatch(panel);
             focusController.DoFocusChange(target as Focusable);
         }
     }

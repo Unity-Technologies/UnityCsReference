@@ -61,9 +61,8 @@ namespace UnityEditorInternal.VR
         private SerializedProperty m_AndroidEnableTango;
         private SerializedProperty m_Enable360StereoCapture;
 
-        private bool m_InstallsRequired = false;
-        private bool m_VuforiaInstalled = false;
         private bool m_ShowMultiPassSRPInfoBox = false;
+        private bool m_SharedSettingShown = false;
 
         internal int GUISectionIndex { get; set; }
 
@@ -145,11 +144,10 @@ namespace UnityEditorInternal.VR
                 }
             }
 
-            // Check to see if any devices require an install and need their GUI hidden
-            CheckDevicesRequireInstall(targetGroup);
-
             if (m_Settings.BeginSettingsBox(sectionIndex, Styles.xrSettingsTitle))
             {
+                m_SharedSettingShown = false;
+
                 if (EditorApplication.isPlaying)
                 {
                     EditorGUILayout.HelpBox("Changing XR Settings is not allowed in play mode.", MessageType.Info);
@@ -190,7 +188,11 @@ namespace UnityEditorInternal.VR
                     WarnOnGraphicsAPIIncompatibility(targetGroup);
                 }
 
-                InstallGUI(targetGroup);
+                if (m_SharedSettingShown)
+                {
+                    EditorGUILayout.Space();
+                    m_Settings.ShowSharedNote();
+                }
             }
             m_Settings.EndSettingsBox();
         }
@@ -217,51 +219,6 @@ namespace UnityEditorInternal.VR
             if (vrSupported)
             {
                 VRDevicesGUIOneBuildTarget(targetGroup);
-            }
-        }
-
-        private void InstallGUI(BuildTargetGroup targetGroup)
-        {
-            if (!m_InstallsRequired)
-                return;
-
-            EditorGUILayout.Space();
-            GUILayout.Label("XR Support Installers", EditorStyles.boldLabel);
-            EditorGUI.indentLevel++;
-
-            if (!m_VuforiaInstalled)
-            {
-                if (EditorGUILayout.LinkLabel("Vuforia Augmented Reality"))
-                {
-                    string downloadUrl = BuildPlayerWindow.GetPlaybackEngineDownloadURL("Vuforia-AR");
-                    Application.OpenURL(downloadUrl);
-                }
-            }
-
-            EditorGUI.indentLevel--;
-            EditorGUILayout.Space();
-        }
-
-        private void CheckDevicesRequireInstall(BuildTargetGroup targetGroup)
-        {
-            // Reset
-            m_InstallsRequired = false;
-
-            if (!m_VuforiaInstalled)
-            {
-                VRDeviceInfoEditor[] deviceInfos = VREditor.GetAllVRDeviceInfo(targetGroup);
-
-                for (int i = 0; i < deviceInfos.Length; ++i)
-                {
-                    if (deviceInfos[i].deviceNameKey.ToLower() == "vuforia")
-                    {
-                        m_VuforiaInstalled = true;
-                        break;
-                    }
-                }
-
-                if (!m_VuforiaInstalled)
-                    m_InstallsRequired = true;
             }
         }
 
@@ -418,7 +375,7 @@ namespace UnityEditorInternal.VR
 
             var enabledDevices = VREditor.GetVREnabledDevicesOnTargetGroup(target).ToList();
 
-            var names = allDevices.Select(d => d.deviceNameUI).ToArray();
+            var names = allDevices.Select(d => L10n.Tr(d.deviceNameUI)).ToArray();
             var enabled = allDevices.Select(d => !enabledDevices.Any(enabledDeviceName => d.deviceNameKey == enabledDeviceName)).ToArray();
 
             EditorUtility.DisplayCustomMenu(rect, names, enabled, null, AddVRDeviceMenuSelected, target);
@@ -579,7 +536,7 @@ namespace UnityEditorInternal.VR
         {
             if (targetGroup == BuildTargetGroup.Android)
             {
-                if (PlayerSettings.Android.ARCoreEnabled && PlayerSettings.GetPlatformVuforiaEnabled(targetGroup))
+                if (PlayerSettings.Android.ARCoreEnabled && PlayerSettings.vuforiaEnabled)
                 {
                     EditorGUILayout.HelpBox("Both ARCore and Vuforia XR Device support cannot be selected at the same time. Please select only one XR Device that will manage the Android device.", MessageType.Error);
                 }
@@ -590,7 +547,7 @@ namespace UnityEditorInternal.VR
         {
             if (targetGroup == BuildTargetGroup.Android && PlayerSettings.GetGraphicsAPIs(BuildTarget.Android).Contains(UnityEngine.Rendering.GraphicsDeviceType.Vulkan))
             {
-                if (PlayerSettings.Android.ARCoreEnabled || PlayerSettings.GetPlatformVuforiaEnabled(targetGroup) || PlayerSettings.virtualRealitySupported)
+                if (PlayerSettings.Android.ARCoreEnabled || PlayerSettings.vuforiaEnabled || PlayerSettings.virtualRealitySupported)
                 {
                     EditorGUILayout.HelpBox("XR is currently not supported when using the Vulkan Graphics API.\nPlease go to 'Other Settings' and remove 'Vulkan' from the list of Graphics APIs.", MessageType.Warning);
                 }
@@ -608,25 +565,30 @@ namespace UnityEditorInternal.VR
 
         internal void VuforiaGUI(BuildTargetGroup targetGroup)
         {
-            if (!BuildTargetDiscovery.PlatformGroupHasVRFlag(targetGroup, VRAttributes.SupportVuforia)
-                || !m_VuforiaInstalled)
+            // Vuforia is not supported in the Linux Editor
+            if (Application.platform == RuntimePlatform.LinuxEditor)
                 return;
+
+            if (!BuildTargetDiscovery.PlatformGroupHasVRFlag(targetGroup, VRAttributes.SupportVuforia))
+                return;
+
+            m_SharedSettingShown = true;
 
             // Disable toggle when Vuforia is in the VRDevice list and VR Supported == true
             bool vuforiaEnabled;
             var shouldDisableScope = VREditor.GetVREnabledOnTargetGroup(targetGroup) && GetVRDeviceElementIsInList(targetGroup, "Vuforia");
             using (new EditorGUI.DisabledScope(shouldDisableScope))
             {
-                if (shouldDisableScope && !PlayerSettings.GetPlatformVuforiaEnabled(targetGroup)) // Force Vuforia AR on if Vuforia is in the VRDevice List
-                    PlayerSettings.SetPlatformVuforiaEnabled(targetGroup, true);
+                if (shouldDisableScope && !PlayerSettings.vuforiaEnabled) // Force Vuforia AR on if Vuforia is in the VRDevice List
+                    PlayerSettings.vuforiaEnabled = true;
 
-                vuforiaEnabled = PlayerSettings.GetPlatformVuforiaEnabled(targetGroup);
+                vuforiaEnabled = PlayerSettings.vuforiaEnabled;
 
                 EditorGUI.BeginChangeCheck();
-                vuforiaEnabled = EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Vuforia Augmented Reality Supported"), vuforiaEnabled);
+                vuforiaEnabled = EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Vuforia Augmented Reality Supported*"), vuforiaEnabled);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    PlayerSettings.SetPlatformVuforiaEnabled(targetGroup, vuforiaEnabled);
+                    PlayerSettings.vuforiaEnabled = vuforiaEnabled;
                 }
             }
 

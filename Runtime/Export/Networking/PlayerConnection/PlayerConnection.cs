@@ -105,6 +105,16 @@ namespace UnityEngine.Networking.PlayerConnection
             m_PlayerEditorConnectionEvents.disconnectionEvent.AddListener(callback);
         }
 
+        public void UnregisterConnection(UnityAction<int> callback)
+        {
+            m_PlayerEditorConnectionEvents.connectionEvent.RemoveListener(callback);
+        }
+
+        public void UnregisterDisconnection(UnityAction<int> callback)
+        {
+            m_PlayerEditorConnectionEvents.disconnectionEvent.RemoveListener(callback);
+        }
+
         public void Send(Guid messageId, byte[] data)
         {
             if (messageId == Guid.Empty)

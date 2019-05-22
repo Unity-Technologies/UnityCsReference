@@ -55,6 +55,8 @@ namespace UnityEditor
 
         public void OnSceneGUI()
         {
+            if (!target)
+                return;
             bool dragging = GUIUtility.hotControl == m_HandleControlID;
 
             CharacterController cc = (CharacterController)target;

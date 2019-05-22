@@ -31,7 +31,7 @@ namespace UnityEditor
 
         protected virtual void OnSceneGUI()
         {
-            if (!editingCollider)
+            if (!editingCollider || !target)
                 return;
 
             Collider2D collider = (Collider2D)target;

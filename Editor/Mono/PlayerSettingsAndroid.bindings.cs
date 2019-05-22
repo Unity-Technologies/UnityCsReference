@@ -23,7 +23,7 @@ namespace UnityEditor
         ARM64 = 1 << 1,
 
         // x86
-        X86 = 1 << 2,
+        // X86 = 1 << 2,
 
         // All architectures
         All = 0xffffffff,

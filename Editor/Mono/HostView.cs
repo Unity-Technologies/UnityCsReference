@@ -9,6 +9,7 @@ using System.Reflection;
 using UnityEditor.UIElements.Debugger;
 using UnityEngine.UIElements;
 using System.Linq;
+using UnityEditor.ShortcutManagement;
 
 namespace UnityEditor
 {
@@ -306,18 +307,6 @@ namespace UnityEditor
 
         public void InvokeOnGUI(Rect onGUIPosition, Rect viewRect)
         {
-            // Handle window reloading.
-            if (Unsupported.IsDeveloperMode() &&
-                actualView != null &&
-                Event.current.type == EventType.KeyUp && Event.current.keyCode == KeyCode.F5)
-            {
-                if (Event.current.control)
-                    DebugWindow(actualView);
-                else
-                    Reload(actualView);
-                return;
-            }
-
             DoWindowDecorationStart();
 
             BeginOffsetArea(viewRect, GUIContent.none, "TabWindowBackground");
@@ -502,7 +491,7 @@ namespace UnityEditor
             if (mi != null)
             {
                 const float rightOffset = 16f;
-                object[] lockButton = { new Rect(leftOffset - rightOffset, topOffset - 4f, 16, 16) };
+                object[] lockButton = { new Rect(leftOffset - rightOffset, topOffset - 1f, 16, 16) };
                 mi.Invoke(m_ActualView, lockButton);
             }
 
@@ -541,15 +530,6 @@ namespace UnityEditor
         private void Inspect(object userData)
         {
             Selection.activeObject = (UnityEngine.Object)userData;
-        }
-
-        internal void DebugWindow(object userData)
-        {
-            EditorWindow window = userData as EditorWindow;
-            if (window == null)
-                return;
-
-            UIElementsDebugger.OpenAndInspectWindow(window);
         }
 
         internal void Reload(object userData)
@@ -667,6 +647,25 @@ namespace UnityEditor
                 EditorGUIUtility.kViewBackgroundColor * kPlayModeDarken.Color :
                 EditorGUIUtility.kViewBackgroundColor);
             backgroundValid = true;
+        }
+
+        protected void AddUIElementsDebuggerToMenu(GenericMenu menu)
+        {
+            var itemContent = UIElementsDebugger.WindowName;
+            var shortcut = ShortcutIntegration.instance.directory.FindShortcutEntry(UIElementsDebugger.k_WindowPath);
+            if (shortcut != null && shortcut.combinations.Any())
+                itemContent += $" {KeyCombination.SequenceToMenuString(shortcut.combinations)}";
+
+            menu.AddItem(EditorGUIUtility.TextContent(itemContent), false, DebugWindow, actualView);
+        }
+
+        private void DebugWindow(object userData)
+        {
+            EditorWindow window = userData as EditorWindow;
+            if (window == null)
+                return;
+
+            UIElementsDebugger.OpenAndInspectWindow(window);
         }
     }
 }

@@ -22,7 +22,7 @@ namespace UnityEngine.UIElements
                 if (s_GlobalPanelDebug.InterceptMouseEvent(panel, mouseEvent))
                 {
                     evt.StopPropagation();
-                    evt.PostDispatch();
+                    evt.PostDispatch(panel);
                     evt.PreventDefault();
                     evt.stopDispatch = true;
                     return;

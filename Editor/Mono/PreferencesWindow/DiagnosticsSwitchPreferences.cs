@@ -57,6 +57,8 @@ namespace UnityEditor
                 for (var i = 0; i < switches.Count; ++i)
                 {
                     m_HasAnyUnappliedSwitches |= DisplaySwitch(switches[i]);
+
+                    EditorGUILayout.Space(EditorGUI.kControlVerticalSpacing);
                 }
             }
         }

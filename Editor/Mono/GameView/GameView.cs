@@ -99,7 +99,6 @@ namespace UnityEditor
             public static GUIContent clearEveryFrameContextMenuContent = EditorGUIUtility.TrTextContent("Clear Every Frame in Edit Mode");
             public static GUIContent lowResAspectRatiosContextMenuContent = EditorGUIUtility.TrTextContent("Low Resolution Aspect Ratios");
             public static GUIContent renderdocContent;
-            public static GUIStyle gizmoButtonStyle;
             public static GUIStyle gameViewBackgroundStyle;
 
             // The ordering here must correspond with ordering in UnityEngine.XR.GameViewRenderMode
@@ -108,7 +107,6 @@ namespace UnityEditor
             static Styles()
             {
                 gameViewBackgroundStyle = (GUIStyle)"GameViewBackground";
-                gizmoButtonStyle = (GUIStyle)"GV Gizmo DropDown";
                 renderdocContent = EditorGUIUtility.TrIconContent("renderdoc", UnityEditor.RenderDocUtil.openInRenderDocLabel);
             }
         };
@@ -579,7 +577,6 @@ namespace UnityEditor
                 if (ModuleManager.ShouldShowMultiDisplayOption())
                 {
                     int display = EditorGUILayout.Popup(m_TargetDisplay, DisplayUtility.GetDisplayNames(), EditorStyles.toolbarPopup, GUILayout.Width(80));
-                    EditorGUILayout.Space();
                     if (display != m_TargetDisplay)
                     {
                         m_TargetDisplay = display;
@@ -640,9 +637,7 @@ namespace UnityEditor
 
                 m_Stats = GUILayout.Toggle(m_Stats, Styles.statsContent, EditorStyles.toolbarButton);
 
-                Rect r = GUILayoutUtility.GetRect(Styles.gizmosContent, Styles.gizmoButtonStyle);
-                Rect rightRect = new Rect(r.xMax - Styles.gizmoButtonStyle.border.right, r.y, Styles.gizmoButtonStyle.border.right, r.height);
-                if (EditorGUI.DropdownButton(rightRect, GUIContent.none, FocusType.Passive, GUIStyle.none))
+                if (EditorGUILayout.DropDownToggle(ref m_Gizmos, Styles.gizmosContent, EditorStyles.toolbarDropDownToggle))
                 {
                     Rect rect = GUILayoutUtility.topLevel.GetLast();
                     if (AnnotationWindow.ShowAtPosition(rect, true))
@@ -650,7 +645,6 @@ namespace UnityEditor
                         GUIUtility.ExitGUI();
                     }
                 }
-                m_Gizmos = GUI.Toggle(r, m_Gizmos, Styles.gizmosContent, Styles.gizmoButtonStyle);
             }
             GUILayout.EndHorizontal();
         }

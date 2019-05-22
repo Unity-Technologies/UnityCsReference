@@ -129,7 +129,7 @@ namespace UnityEditor
             return mod.value;
         }
 
-        void BuildPrefabOverridesPerObject(GameObject prefabAssetRoot, out Dictionary<int, PrefabOverrides> instanceIDToPrefabOverridesMap)
+        void BuildPrefabOverridesPerObject(out Dictionary<int, PrefabOverrides> instanceIDToPrefabOverridesMap)
         {
             instanceIDToPrefabOverridesMap = new Dictionary<int, PrefabOverrides>();
 
@@ -184,7 +184,7 @@ namespace UnityEditor
             m_AllModifications = GetPrefabOverrides(m_PrefabInstanceRoot, false);
 
             Dictionary<int, PrefabOverrides> instanceIDToPrefabOverridesMap;
-            BuildPrefabOverridesPerObject(m_PrefabAssetRoot, out instanceIDToPrefabOverridesMap);
+            BuildPrefabOverridesPerObject(out instanceIDToPrefabOverridesMap);
 
             var hiddenRoot = new TreeViewItem { id = 0, depth = -1, displayName = "Hidden Root" };
             var idSequence = new IdSequence();
@@ -222,6 +222,7 @@ namespace UnityEditor
                 gameObject.name
                 );
             gameObjectItem.obj = gameObject;
+
             // We don't know yet if this item should be added to the parent.
             bool shouldAddGameObjectItemToParent = false;
 
@@ -254,6 +255,10 @@ namespace UnityEditor
                 // Added components and component modifications
                 foreach (var component in gameObject.GetComponents(typeof(Component)))
                 {
+                    // Skip coupled components (they are merged into the display of their owning component)
+                    if (component.IsCoupledComponent())
+                        continue;
+
                     var componentItem = new PrefabOverridesTreeViewItem
                         (
                         idSequence.get(),
@@ -265,6 +270,10 @@ namespace UnityEditor
                     AddedComponent addedComponentData = objectModifications.addedComponents.Find(x => x.instanceComponent == component);
                     if (addedComponentData != null)
                     {
+                        // Skip coupled components (they are merged into the display of their owning component)
+                        if (addedComponentData.instanceComponent.IsCoupledComponent())
+                            continue;
+
                         componentItem.singleModification = addedComponentData;
                         componentItem.type = ItemType.ADDED_OBJECT;
                         gameObjectItem.AddChild(componentItem);
@@ -272,9 +281,20 @@ namespace UnityEditor
                     }
                     else
                     {
+                        var coupledComponent = component.GetCoupledComponent();
                         ObjectOverride modifiedObjectData = objectModifications.objectOverrides.Find(x => x.instanceObject == component);
+                        ObjectOverride modifiedCoupledObjectData = (coupledComponent != null) ? objectModifications.objectOverrides.Find(x => x.instanceObject == coupledComponent) : null;
+
+                        if (modifiedObjectData == null)
+                        {
+                            modifiedObjectData = modifiedCoupledObjectData;
+                            modifiedCoupledObjectData = null;
+                        }
+
                         if (modifiedObjectData != null)
                         {
+                            modifiedObjectData.coupledOverride = modifiedCoupledObjectData;
+
                             componentItem.singleModification = modifiedObjectData;
                             componentItem.type = ItemType.PREFAB_OBJECT;
                             gameObjectItem.AddChild(componentItem);
@@ -286,6 +306,10 @@ namespace UnityEditor
                 // Removed components
                 foreach (var removedComponent in objectModifications.removedComponents)
                 {
+                    // Skip coupled components (they are merged into the display of their owning component)
+                    if (removedComponent.assetComponent.IsCoupledComponent())
+                        continue;
+
                     var removedComponentItem = new PrefabOverridesTreeViewItem
                         (
                         idSequence.get(),
@@ -517,7 +541,7 @@ namespace UnityEditor
             readonly Editor m_InstanceEditor;
             readonly bool m_Unappliable;
 
-            const float k_HeaderHeight = 20f;
+            const float k_HeaderHeight = 24f;
             const float k_ScrollbarWidth = 15;
             Vector2 m_PreviewSize = new Vector2(600f, 0);
             Vector2 m_Scroll;
@@ -596,6 +620,9 @@ namespace UnityEditor
                 EditorGUIUtility.wideMode = true;
                 EditorGUIUtility.labelWidth = 100;
                 int middleCol = Mathf.RoundToInt(rect.width * 0.5f);
+
+                if (Event.current.type == EventType.Repaint)
+                    EditorStyles.viewBackground.Draw(rect, GUIContent.none, 0);
 
                 if (m_Modification == null)
                 {
@@ -762,7 +789,7 @@ namespace UnityEditor
 
             public override Vector2 GetWindowSize()
             {
-                return new Vector2(m_PreviewSize.x, m_PreviewSize.y + k_HeaderHeight);
+                return new Vector2(m_PreviewSize.x, m_PreviewSize.y + k_HeaderHeight + 1f);
             }
 
             public override void OnClose()

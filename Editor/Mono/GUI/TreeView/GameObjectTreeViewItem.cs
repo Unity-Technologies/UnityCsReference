@@ -18,6 +18,7 @@ namespace UnityEditor
         bool m_LazyInitializationDone;
         bool m_ShowPrefabModeButton;
         Texture2D m_OverlayIcon;
+        Texture2D m_SelectedIcon;
 
         public GameObjectTreeViewItem(int id, int depth, TreeViewItem parent, string displayName)
             : base(id, depth, parent, displayName)
@@ -56,6 +57,7 @@ namespace UnityEditor
         virtual public bool lazyInitializationDone { get { return m_LazyInitializationDone; } set { m_LazyInitializationDone = value; } }
         virtual public bool showPrefabModeButton { get { return m_ShowPrefabModeButton; } set { m_ShowPrefabModeButton = value; } }
         virtual public Texture2D overlayIcon { get { return m_OverlayIcon; } set { m_OverlayIcon = value; } }
+        virtual public Texture2D selectedIcon { get { return m_SelectedIcon; } set { m_SelectedIcon = value; } }
 
         public bool isSceneHeader { get; set; }
         public Scene scene

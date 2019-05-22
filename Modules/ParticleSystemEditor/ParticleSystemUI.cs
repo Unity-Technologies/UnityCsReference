@@ -318,7 +318,7 @@ namespace UnityEditor
                     if (!initialModule)
                     {
                         EditorGUI.showMixedValue = module.enabledHasMultipleDifferentValues;
-                        GUIStyle style = EditorGUI.showMixedValue ? ParticleSystemStyles.Get().checkmarkMixed : ParticleSystemStyles.Get().checkmark;
+                        GUIStyle style = EditorGUI.showMixedValue ? ParticleSystemStyles.Get().toggleMixed : ParticleSystemStyles.Get().toggle;
                         GUI.Toggle(checkMarkRect, module.enabled, GUIContent.none, style);
                         EditorGUI.showMixedValue = false;
                     }

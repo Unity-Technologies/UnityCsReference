@@ -184,6 +184,32 @@ namespace UnityEditor.PackageManager.UI
             return string.Empty;
         }
 
+        public string AssetPath { get { return Info != null ? Info.assetPath : ""; } }
+
+        public UnityEngine.Object PackageManifestAsset
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(AssetPath))
+                    return null;
+
+                var path = Path.Combine(AssetPath, "package.json");
+                return AssetDatabase.LoadMainAssetAtPath(path);
+            }
+        }
+
+        public void SelectPackageManifestAsset()
+        {
+            var asset = PackageManifestAsset;
+            if (asset == null)
+            {
+                Debug.LogWarning("Could not find package.json asset for package: " + DisplayName);
+                return;
+            }
+
+            UnityEditor.Selection.activeObject = asset;
+        }
+
         public string GetChangelogUrl(bool offline = false)
         {
             if (offline)

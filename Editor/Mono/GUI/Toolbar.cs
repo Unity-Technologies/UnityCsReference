@@ -106,10 +106,12 @@ namespace UnityEditor
         {
             public static readonly GUIStyle dropdown = "Dropdown";
             public static readonly GUIStyle appToolbar = "AppToolbar";
-            public static readonly GUIStyle command = "Command";
-            public static readonly GUIStyle commandLeft = "CommandLeft";
-            public static readonly GUIStyle commandMid = "CommandMid";
-            public static readonly GUIStyle commandRight = "CommandRight";
+            public static readonly GUIStyle command = "AppCommand";
+            public static readonly GUIStyle buttonLeft = "AppToolbarButtonLeft";
+            public static readonly GUIStyle buttonRight = "AppToolbarButtonRight";
+            public static readonly GUIStyle commandLeft = "AppCommandLeft";
+            public static readonly GUIStyle commandMid = "AppCommandMid";
+            public static readonly GUIStyle commandRight = "AppCommandRight";
         }
 
         protected override void OnEnable()
@@ -153,6 +155,8 @@ namespace UnityEditor
             }
             set
             {
+                if (!get)
+                    return;
                 get.m_LastLoadedLayoutName = value;
                 get.Repaint();
             }
@@ -262,8 +266,8 @@ namespace UnityEditor
 
             ReserveWidthLeft(space, ref pos);
 
-            ReserveWidthLeft(32, ref pos);
-            if (GUI.Button(EditorToolGUI.GetThinArea(pos), s_CloudIcon))
+            ReserveWidthLeft(standardButtonWidth, ref pos);
+            if (GUI.Button(EditorToolGUI.GetThinArea(pos), s_CloudIcon, Styles.command))
                 UnityConnectServiceCollection.instance.ShowService(HubAccess.kServiceName, true, "cloud_icon"); // Should show hub when it's done
 
             foreach (SubToolbar subToolbar in s_SubToolbars)
@@ -390,7 +394,7 @@ namespace UnityEditor
             const float pivotButtonsWidth = 128;
             rect.width = pivotButtonsWidth;
             rect = EditorToolGUI.GetThinArea(rect);
-            EditorToolGUI.DoBuiltinToolSettings(rect);
+            EditorToolGUI.DoBuiltinToolSettings(rect, Styles.buttonLeft, Styles.buttonRight);
         }
 
         void DoPlayButtons(bool isOrWillEnterPlaymode)
@@ -415,6 +419,7 @@ namespace UnityEditor
             // Pause game
             GUI.changed = false;
 
+            buttonOffset = EditorApplication.isPaused ? 4 : 0;
             GUI.SetNextControlName("ToolbarPlayModePauseButton");
             bool isPaused = GUILayout.Toggle(EditorApplication.isPaused, s_PlayIcons[buttonOffset + 1], Styles.commandMid);
             if (GUI.changed)

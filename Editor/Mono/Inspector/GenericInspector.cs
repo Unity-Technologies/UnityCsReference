@@ -91,23 +91,28 @@ namespace UnityEditor
             if (Event.current.type == EventType.ScrollWheel)
                 GUIUtility.keyboardControl = 0;
 
+            var behaviour = target as MonoBehaviour;
             var property = m_SerializedObject.GetIterator();
             var isInspectorModeNormal = inspectorMode == InspectorMode.Normal;
-            while (property.NextVisible(childrenAreExpanded))
+
+            using (new UnityEditor.Localization.Editor.LocalizationGroup(behaviour))
             {
-                var handler = ScriptAttributeUtility.GetHandler(property);
-                contentRect.height = handler.GetHeight(property, null, false);
-
-                if (contentRect.Overlaps(visibleRect))
+                while (property.NextVisible(childrenAreExpanded))
                 {
-                    EditorGUI.indentLevel = property.depth;
-                    using (new EditorGUI.DisabledScope(isInspectorModeNormal && "m_Script" == property.propertyPath))
-                        childrenAreExpanded = handler.OnGUI(contentRect, property, null, false, visibleRect) && property.isExpanded;
-                }
-                else
-                    childrenAreExpanded = property.isExpanded && EditorGUI.HasVisibleChildFields(property);
+                    var handler = ScriptAttributeUtility.GetHandler(property);
+                    contentRect.height = handler.GetHeight(property, null, false);
 
-                contentRect.y += contentRect.height + EditorGUI.kControlVerticalSpacing;
+                    if (contentRect.Overlaps(visibleRect))
+                    {
+                        EditorGUI.indentLevel = property.depth;
+                        using (new EditorGUI.DisabledScope(isInspectorModeNormal && "m_Script" == property.propertyPath))
+                            childrenAreExpanded = handler.OnGUI(contentRect, property, null, false, visibleRect) && property.isExpanded;
+                    }
+                    else
+                        childrenAreExpanded = property.isExpanded && EditorGUI.HasVisibleChildFields(property);
+
+                    contentRect.y += contentRect.height + EditorGUI.kControlVerticalSpacing;
+                }
             }
 
             // Fix new height

@@ -12,6 +12,7 @@ namespace UnityEditor.PackageManager.UI
     internal class PackageManagerToolbar : VisualElement
     {
         internal new class UxmlFactory : UxmlFactory<PackageManagerToolbar> {}
+        private PackageCollection Collection;
 
         public event Action<PackageFilter> OnFilterChange = delegate {};
         public event Action OnTogglePreviewChange = delegate {};
@@ -50,6 +51,11 @@ namespace UnityEditor.PackageManager.UI
             SearchToolbar.Focus();
         }
 
+        public void OnPackagesChanged()
+        {
+            SetupFilterMenu();
+        }
+
         private static string GetFilterDisplayName(PackageFilter filter)
         {
             switch (filter)
@@ -60,9 +66,16 @@ namespace UnityEditor.PackageManager.UI
                     return "In Project";
                 case PackageFilter.Modules:
                     return "Built-in packages";
+                case PackageFilter.InDevelopment:
+                    return "In Development";
                 default:
                     return filter.ToString();
             }
+        }
+
+        public void SetCollection(PackageCollection collection)
+        {
+            Collection = collection;
         }
 
         public void SetFilter(object obj)
@@ -92,6 +105,8 @@ namespace UnityEditor.PackageManager.UI
 
         private void SetupFilterMenu()
         {
+            FilterMenu.menu.MenuItems().Clear();
+
             FilterMenu.menu.AppendAction(GetFilterDisplayName(PackageFilter.All), a =>
             {
                 SetFilter(PackageFilter.All);
@@ -107,6 +122,14 @@ namespace UnityEditor.PackageManager.UI
             {
                 SetFilter(PackageFilter.Modules);
             }, a => selectedFilter == PackageFilter.Modules ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+            if (Collection != null && Collection.AnyPackageInDevelopment)
+            {
+                FilterMenu.menu.AppendSeparator();
+                FilterMenu.menu.AppendAction(GetFilterDisplayName(PackageFilter.InDevelopment), a =>
+                {
+                    SetFilter(PackageFilter.InDevelopment);
+                }, a => selectedFilter == PackageFilter.InDevelopment ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+            }
         }
 
         private void SetupAdvancedMenu()

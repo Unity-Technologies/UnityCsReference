@@ -21,7 +21,7 @@ namespace UnityEditor
 
             static Styles()
             {
-                prefabHeaderBg = new GUIStyle("ProjectBrowserTopBarBg");
+                prefabHeaderBg = new GUIStyle("SceneTopBarBg");
                 prefabHeaderBg.fixedHeight = 0;
                 prefabHeaderBg.border = new RectOffset(3, 3, 3, 3);
             }

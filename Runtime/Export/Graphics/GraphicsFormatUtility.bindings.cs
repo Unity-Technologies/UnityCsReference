@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine.Bindings;
+using UnityEngine.Rendering;
 
 namespace UnityEngine
 {
@@ -11,6 +12,7 @@ namespace UnityEngine
     {
         namespace Rendering
         {
+            [NativeHeader("Runtime/Graphics/Format.h")]
             [NativeHeader("Runtime/Graphics/TextureFormat.h")]
             [NativeHeader("Runtime/Graphics/GraphicsFormatUtility.bindings.h")]
             public class GraphicsFormatUtility
@@ -23,7 +25,7 @@ namespace UnityEngine
                     return GetGraphicsFormat_Native_TextureFormat(format, isSRGB);
                 }
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern private static GraphicsFormat GetGraphicsFormat_Native_TextureFormat(TextureFormat format, bool isSRGB);
 
                 public static TextureFormat GetTextureFormat(GraphicsFormat format)
@@ -31,7 +33,7 @@ namespace UnityEngine
                     return GetTextureFormat_Native_GraphicsFormat(format);
                 }
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern private static TextureFormat GetTextureFormat_Native_GraphicsFormat(GraphicsFormat format);
 
                 public static GraphicsFormat GetGraphicsFormat(RenderTextureFormat format, bool isSRGB)
@@ -49,121 +51,121 @@ namespace UnityEngine
                     return GetGraphicsFormat(format, sRGB);
                 }
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsSRGBFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsSwizzleFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static GraphicsFormat GetSRGBFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static GraphicsFormat GetLinearFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static RenderTextureFormat GetRenderTextureFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static UInt32 GetColorComponentCount(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static UInt32 GetAlphaComponentCount(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static UInt32 GetComponentCount(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static string GetFormatString(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsCompressedFormat(GraphicsFormat format);
 
-                [FreeFunction("IsAnyCompressedTextureFormat")]
+                [FreeFunction("IsAnyCompressedTextureFormat", true)]
                 extern internal static bool IsCompressedTextureFormat(TextureFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsPackedFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool Is16BitPackedFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static GraphicsFormat ConvertToAlphaFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsAlphaOnlyFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsAlphaTestFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool HasAlphaChannel(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsDepthFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsStencilFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsIEEE754Format(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsFloatFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsHalfFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsUnsignedFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsSignedFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsNormFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsUNormFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsSNormFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsIntegerFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsUIntFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsSIntFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsXRFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsDXTCFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsRGTCFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsBPTCFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsBCFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsPVRTCFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsETCFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsEACFormat(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsASTCFormat(GraphicsFormat format);
 
                 public static bool IsCrunchFormat(TextureFormat format)
@@ -171,13 +173,25 @@ namespace UnityEngine
                     return format == TextureFormat.DXT1Crunched || format == TextureFormat.DXT5Crunched || format == TextureFormat.ETC_RGB4Crunched || format == TextureFormat.ETC2_RGBA8Crunched;
                 }
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
+                extern public static FormatSwizzle GetSwizzleR(GraphicsFormat format);
+
+                [FreeFunction(IsThreadSafe = true)]
+                extern public static FormatSwizzle GetSwizzleG(GraphicsFormat format);
+
+                [FreeFunction(IsThreadSafe = true)]
+                extern public static FormatSwizzle GetSwizzleB(GraphicsFormat format);
+
+                [FreeFunction(IsThreadSafe = true)]
+                extern public static FormatSwizzle GetSwizzleA(GraphicsFormat format);
+
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static UInt32 GetBlockSize(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static UInt32 GetBlockWidth(GraphicsFormat format);
 
-                [FreeFunction]
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static UInt32 GetBlockHeight(GraphicsFormat format);
 
                 public static UInt32 ComputeMipmapSize(int width, int height, GraphicsFormat format)

@@ -310,25 +310,11 @@ namespace UnityEditor
         bool m_isRotationLocked = false;
         public bool isRotationLocked
         {
-            get
-            {
-                return m_isRotationLocked;
-            }
-            set
-            {
-                if (m_isRotationLocked != value)
-                {
-                    m_isRotationLocked = value;
-                }
-            }
+            get { return m_isRotationLocked; }
+            set { m_isRotationLocked = value; }
         }
 
-        private static List<CameraMode> s_UserDefinedModes = new List<CameraMode>();
-
-        internal static List<CameraMode> userDefinedModes
-        {
-            get { return s_UserDefinedModes; }
-        }
+        internal static List<CameraMode> userDefinedModes { get; } = new List<CameraMode>();
 
         internal Object m_OneClickDragObject;
 
@@ -765,13 +751,11 @@ namespace UnityEditor
             public static GUIContent renderDocContent;
             public static GUIContent sceneVisToolbarButtonContent = EditorGUIUtility.TrIconContent("scenevis_hidden", "Number of hidden objects, click to toggle scene visibility");
             public static GUIStyle gizmoButtonStyle;
-            public static GUIStyle fxDropDownStyle;
             public static GUIContent sceneViewCameraContent = EditorGUIUtility.TrIconContent("SceneViewCamera", "Settings for the Scene view camera.");
 
             static Styles()
             {
                 gizmoButtonStyle = (GUIStyle)"GV Gizmo DropDown";
-                fxDropDownStyle = (GUIStyle)"GV Gizmo DropDown";
                 renderDocContent = EditorGUIUtility.TrIconContent("renderdoc", UnityEditor.RenderDocUtil.openInRenderDocLabel);
             }
         }
@@ -956,7 +940,7 @@ namespace UnityEditor
             if (m_2DMode)
                 LookAt(pivot, Quaternion.identity, size, true, true);
 
-            if (m_CameraMode.drawMode == DrawCameraMode.UserDefined && !s_UserDefinedModes.Contains(m_CameraMode))
+            if (m_CameraMode.drawMode == DrawCameraMode.UserDefined && !userDefinedModes.Contains(m_CameraMode))
                 AddCameraMode(m_CameraMode.name, m_CameraMode.section);
 
             base.OnEnable();
@@ -1139,25 +1123,21 @@ namespace UnityEditor
                 audioPlay = GUILayout.Toggle(audioPlay, Styles.audioPlayContent, EditorStyles.toolbarButton);
             }
 
-            Rect fxRect = GUILayoutUtility.GetRect(Styles.fx, Styles.fxDropDownStyle);
-            Rect fxRightRect = new Rect(fxRect.xMax - Styles.fxDropDownStyle.border.right, fxRect.y, Styles.fxDropDownStyle.border.right, fxRect.height);
-            if (EditorGUI.DropdownButton(fxRightRect, GUIContent.none, FocusType.Passive, GUIStyle.none))
+            var allOn = sceneViewState.allEnabled;
+            if (EditorGUILayout.DropDownToggle(ref allOn, Styles.fx, EditorStyles.toolbarDropDownToggle))
             {
                 Rect rect = GUILayoutUtility.topLevel.GetLast();
                 PopupWindow.Show(rect, new SceneFXWindow(this));
                 GUIUtility.ExitGUI();
             }
-
-            var allOn = GUI.Toggle(fxRect, sceneViewState.allEnabled, Styles.fx, Styles.fxDropDownStyle);
-            if (allOn != sceneViewState.allEnabled)
+            else if (allOn != sceneViewState.allEnabled)
                 sceneViewState.SetAllEnabled(allOn);
         }
 
         void ToolbarGizmosDropdownGUI()
         {
-            Rect r = GUILayoutUtility.GetRect(Styles.gizmosContent, GameView.Styles.gizmoButtonStyle);
-            Rect rightRect = new Rect(r.xMax - GameView.Styles.gizmoButtonStyle.border.right, r.y, GameView.Styles.gizmoButtonStyle.border.right, r.height);
-            if (EditorGUI.DropdownButton(rightRect, Styles.gizmosDropDownContent, FocusType.Passive, GUIStyle.none))
+            bool toggled = drawGizmos;
+            if (EditorGUILayout.DropDownToggle(ref toggled, Styles.gizmosContent, EditorStyles.toolbarDropDownToggle))
             {
                 Rect rect = GUILayoutUtility.topLevel.GetLast();
                 if (AnnotationWindow.ShowAtPosition(rect, false))
@@ -1165,7 +1145,10 @@ namespace UnityEditor
                     GUIUtility.ExitGUI();
                 }
             }
-            drawGizmos = GUI.Toggle(r, drawGizmos, Styles.gizmosContent, GameView.Styles.gizmoButtonStyle);
+            else
+            {
+                drawGizmos = toggled;
+            }
         }
 
         void ToolbarRenderDocGUI()
@@ -1457,8 +1440,7 @@ namespace UnityEditor
         {
             if (s_MipColorsTexture)
                 return;
-            s_MipColorsTexture = new Texture2D(32, 32, TextureFormat.RGBA32, true);
-            s_MipColorsTexture.hideFlags = HideFlags.HideAndDontSave;
+            s_MipColorsTexture = new Texture2D(32, 32, TextureFormat.RGBA32, true) {hideFlags = HideFlags.HideAndDontSave};
             Color[] colors = new Color[6];
             colors[0] = new Color(0.0f, 0.0f, 1.0f, 0.8f);
             colors[1] = new Color(0.0f, 0.5f, 1.0f, 0.4f);
@@ -1966,11 +1948,9 @@ namespace UnityEditor
 
         GUIStyle CreateSwatchStyleForColor(Color c)
         {
-            GUIStyle s = new GUIStyle();
             Texture2D t = new Texture2D(1, 1);
             UpdateSwatchTexture(t, c);
-            s.normal.background = t;
-            return s;
+            return new GUIStyle {normal = {background = t}};
         }
 
         String CreateSwatchDescriptionForName(float minLum, float maxLum)
@@ -2418,10 +2398,6 @@ namespace UnityEditor
             // Calling OnSceneGUI before DefaultHandles, so users can use events before the Default Handles
             HandleSelectionAndOnSceneGUI();
 
-            // Handle commands
-            if (evt.type == EventType.ExecuteCommand || evt.type == EventType.ValidateCommand)
-                CommandsGUI();
-
             Handles.SetCameraFilterMode(Camera.current, UseSceneFiltering() ? Handles.CameraFilterMode.ShowFiltered : Handles.CameraFilterMode.Off);
 
             // Handle scene view motion when this scene view is active
@@ -2435,6 +2411,10 @@ namespace UnityEditor
 
             // Draw default scene manipulation tools (Move/Rotate/...)
             DefaultHandles();
+
+            // Handle scene commands after EditorTool.OnSceneGUI so that tools can handle commands
+            if (evt.type == EventType.ExecuteCommand || evt.type == EventType.ValidateCommand)
+                CommandsGUI();
 
             Handles.SetCameraFilterMode(Camera.current, Handles.CameraFilterMode.Off);
             Handles.SetCameraFilterMode(m_Camera, Handles.CameraFilterMode.Off);
@@ -2481,6 +2461,160 @@ namespace UnityEditor
             var window = args.context as SceneView;
             if (window != null)
                 window.in2DMode = !window.in2DMode;
+        }
+
+        [Shortcut("Scene View/Toggle Orthographic Projection", typeof(SceneView))]
+        static void ToggleOrthoView(ShortcutArguments args)
+        {
+            var view = args.context as SceneView;
+            if (view != null)
+            {
+                if (!view.isRotationLocked)
+                    view.svRot.ViewSetOrtho(view, !view.orthographic);
+            }
+        }
+
+        [Shortcut("Scene View/Set Orthographic Right View", typeof(SceneView))]
+        static void SetOrthoRightView(ShortcutArguments args)
+        {
+            var view = args.context as SceneView;
+            if (view != null)
+            {
+                if (!view.isRotationLocked)
+                    view.svRot.ViewAxisDirection(view, 0, true);
+            }
+        }
+
+        [Shortcut("Scene View/Set Right View", typeof(SceneView))]
+        static void SetRightView(ShortcutArguments args)
+        {
+            var view = args.context as SceneView;
+            if (view != null)
+            {
+                if (!view.isRotationLocked)
+                    view.svRot.ViewAxisDirection(view, 0, view.orthographic);
+            }
+        }
+
+        [Shortcut("Scene View/Set Top View", typeof(SceneView))]
+        static void SetTopView(ShortcutArguments args)
+        {
+            var view = args.context as SceneView;
+            if (view != null)
+            {
+                if (!view.isRotationLocked)
+                    view.svRot.ViewAxisDirection(view, 1, view.orthographic);
+            }
+        }
+
+        [Shortcut("Scene View/Set Orthographic Top View", typeof(SceneView))]
+        static void SetOrthoTopView(ShortcutArguments args)
+        {
+            var view = args.context as SceneView;
+            if (view != null)
+            {
+                if (!view.isRotationLocked)
+                    view.svRot.ViewAxisDirection(view, 1, true);
+            }
+        }
+
+        [Shortcut("Scene View/Set Front View", typeof(SceneView))]
+        static void SetFrontView(ShortcutArguments args)
+        {
+            var view = args.context as SceneView;
+            if (view != null)
+            {
+                if (!view.isRotationLocked)
+                    view.svRot.ViewAxisDirection(view, 2, view.orthographic);
+            }
+        }
+
+        [Shortcut("Scene View/Set Orthographic Front View", typeof(SceneView))]
+        static void SetOrthoFrontView(ShortcutArguments args)
+        {
+            var view = args.context as SceneView;
+            if (view != null)
+            {
+                if (!view.isRotationLocked)
+                    view.svRot.ViewAxisDirection(view, 2, true);
+            }
+        }
+
+        [Shortcut("Scene View/Set Left View", typeof(SceneView))]
+        static void SetLeftView(ShortcutArguments args)
+        {
+            var view = args.context as SceneView;
+            if (view != null)
+            {
+                if (!view.isRotationLocked)
+                    view.svRot.ViewAxisDirection(view, 3, view.orthographic);
+            }
+        }
+
+        [Shortcut("Scene View/Set Orthographic Left View", typeof(SceneView))]
+        static void SetOrthoLeftView(ShortcutArguments args)
+        {
+            var view = args.context as SceneView;
+            if (view != null)
+            {
+                if (!view.isRotationLocked)
+                    view.svRot.ViewAxisDirection(view, 3, true);
+            }
+        }
+
+        [Shortcut("Scene View/Set Bottom View", typeof(SceneView))]
+        static void SetBottomView(ShortcutArguments args)
+        {
+            var view = args.context as SceneView;
+            if (view != null)
+            {
+                if (!view.isRotationLocked)
+                    view.svRot.ViewAxisDirection(view, 4, view.orthographic);
+            }
+        }
+
+        [Shortcut("Scene View/Set Orthographic Bottom View", typeof(SceneView))]
+        static void SetOrthoBottomView(ShortcutArguments args)
+        {
+            var view = args.context as SceneView;
+            if (view != null)
+            {
+                if (!view.isRotationLocked)
+                    view.svRot.ViewAxisDirection(view, 4, true);
+            }
+        }
+
+        [Shortcut("Scene View/Set Back View", typeof(SceneView))]
+        static void SetBackView(ShortcutArguments args)
+        {
+            var view = args.context as SceneView;
+            if (view != null)
+            {
+                if (!view.isRotationLocked)
+                    view.svRot.ViewAxisDirection(view, 5, view.orthographic);
+            }
+        }
+
+        [Shortcut("Scene View/Set Orthographic Back View", typeof(SceneView))]
+        static void SetOrthoBackView(ShortcutArguments args)
+        {
+            var view = args.context as SceneView;
+            if (view != null)
+            {
+                if (!view.isRotationLocked)
+                    view.svRot.ViewAxisDirection(view, 5, true);
+            }
+        }
+
+        [Shortcut("Scene View/Set Free View", typeof(SceneView))]
+        static void SetFreeView(ShortcutArguments args)
+        {
+            var view = args.context as SceneView;
+            if (view != null)
+            {
+                if (!view.isRotationLocked)
+                    view.svRot.ViewFromNiceAngle(view, false);
+            }
         }
 
         void HandleMouseCursor()
@@ -3443,7 +3577,6 @@ namespace UnityEditor
                     break;
 
                 default: // Default to 3D mode (BUGFIX:569204)
-                case EditorBehaviorMode.Mode3D:
                     m_2DMode = false;
                     m_Rotation.value = kDefaultRotation;
                     m_Position.value = kDefaultPivot;
@@ -3488,9 +3621,9 @@ namespace UnityEditor
             if (string.IsNullOrEmpty(section))
                 throw new ArgumentException("Cannot be null or empty", "section");
             var newMode = new CameraMode(DrawCameraMode.UserDefined, name, section);
-            if (s_UserDefinedModes.Contains(newMode))
+            if (userDefinedModes.Contains(newMode))
                 throw new InvalidOperationException(string.Format("A mode named {0} already exists in section {1}", name, section));
-            s_UserDefinedModes.Add(newMode);
+            userDefinedModes.Add(newMode);
             return newMode;
         }
 
@@ -3504,7 +3637,7 @@ namespace UnityEditor
                 }
             }
 
-            foreach (var tempCameraMode in s_UserDefinedModes)
+            foreach (var tempCameraMode in userDefinedModes)
             {
                 if (tempCameraMode == cameraMode)
                 {
@@ -3516,7 +3649,7 @@ namespace UnityEditor
 
         public static void ClearUserDefinedCameraModes()
         {
-            s_UserDefinedModes.Clear();
+            userDefinedModes.Clear();
         }
 
         public static CameraMode GetBuiltinCameraMode(DrawCameraMode mode)

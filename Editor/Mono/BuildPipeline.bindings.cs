@@ -536,13 +536,13 @@ namespace UnityEditor
         [FreeFunction]
         internal static extern bool SupportsReflectionEmit(BuildTarget target);
 
-        internal static string[] GetReferencingPlayerAssembliesForDLL(string dllPath)
+        internal static string[] GetReferencingPlayerAssembliesForDLL(string dllPath, string assembliesOutputPath)
         {
             DefaultAssemblyResolver resolverRoot = new DefaultAssemblyResolver();
             resolverRoot.AddSearchDirectory(Path.GetDirectoryName(dllPath));
             AssemblyDefinition assemblyRoot = AssemblyDefinition.ReadAssembly(dllPath, new ReaderParameters { AssemblyResolver = resolverRoot });
 
-            string[] assemblyPaths = BuildPipeline.GetManagedPlayerDllPaths();
+            string[] assemblyPaths = BuildPipeline.GetManagedPlayerDllPaths(assembliesOutputPath);
             List<string> referencingAssemblies = new List<string>();
 
             // determine whether there is an assembly that is referencing the assembly path
@@ -564,6 +564,6 @@ namespace UnityEditor
             return referencingAssemblies.ToArray();
         }
 
-        internal static extern string[] GetManagedPlayerDllPaths();
+        internal static extern string[] GetManagedPlayerDllPaths(string assembliesOutputPath);
     }
 }

@@ -158,7 +158,7 @@ namespace Unity.MPE
         [RequiredByNativeCode]
         public static void IncomingEvent(string eventMsg)
         {
-            Debug.Log("eventService: " + eventMsg);
+            Console.WriteLine("[EventService] " + eventMsg);
             var msg = Json.Deserialize(eventMsg) as Dictionary<string, object>;
             if (msg == null)
             {

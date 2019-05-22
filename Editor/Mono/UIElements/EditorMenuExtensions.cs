@@ -53,9 +53,9 @@ namespace UnityEditor.UIElements
             return genericMenu;
         }
 
-        public static void DoDisplayEditorMenu(this DropdownMenu menu, Vector2 position)
+        public static void DoDisplayEditorMenu(this DropdownMenu menu, Rect rect)
         {
-            PrepareMenu(menu, null).DropDown(new Rect(position, Vector2.zero));
+            PrepareMenu(menu, null).DropDown(rect);
         }
 
         public static void DoDisplayEditorMenu(this DropdownMenu menu, EventBase triggerEvent)

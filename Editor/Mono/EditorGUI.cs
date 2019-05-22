@@ -18,6 +18,7 @@ using UnityEditor.Scripting.ScriptCompilation;
 using Object = UnityEngine.Object;
 using Event = UnityEngine.Event;
 using UnityEditor.Build;
+using UnityEditor.StyleSheets;
 using UnityEngine.Internal;
 
 namespace UnityEditor
@@ -82,14 +83,16 @@ namespace UnityEditor
         private static double s_DragStartValue = 0;
         private static long s_DragStartIntValue = 0;
         private static double s_DragSensitivity = 0;
-        internal const float kMiniLabelW = 13;
+        private static readonly GUIContent s_LargerChar = EditorGUIUtility.TextContent("W");
+        internal static float kMiniLabelW => EditorGUI.CalcPrefixLabelWidth(s_LargerChar);
+        internal const float kPrefixPaddingRight = 2;
         internal const float kLabelW = 80;
         internal const float kSpacing = 5;
-        internal const float kSpacingSubLabel = 2;
+        internal const float kSpacingSubLabel = 4;
         internal const float kSliderMinW = 50;
         internal const float kSliderMaxW = 100;
-        internal const float kSingleLineHeight = 16f;
-        internal const float kStructHeaderLineHeight = 16;
+        internal const float kSingleLineHeight = 18f;
+        internal const float kStructHeaderLineHeight = 18;
         internal const float kObjectFieldThumbnailHeight = 64;
         internal const float kObjectFieldMiniThumbnailHeight = 18f;
         internal const float kObjectFieldMiniThumbnailWidth = 32f;
@@ -98,13 +101,20 @@ namespace UnityEditor
         internal static string kIntFieldFormatString = "#######0";
         internal static int ms_IndentLevel = 0;
         private const float kIndentPerLevel = 15;
-        internal const int kControlVerticalSpacing = 2;
-        internal const int kVerticalSpacingMultiField = 0;
+        internal const int kControlVerticalSpacingLegacy =  2;
+        internal const int kDefaultSpacing = 6;
+        internal static readonly SVC<float> kControlVerticalSpacing = new SVC<float>("--theme-control-vertical-spacing", 2.0f);
+        internal static readonly SVC<float> kVerticalSpacingMultiField = new SVC<float>("--theme-multifield-vertical-spacing", 0.0f);
+
         internal static string s_UnitString = "";
         internal const int kInspTitlebarIconWidth = 16;
-        internal const int kWindowToolbarHeight = 17;
+        internal const int kInspTitlebarFoldoutIconWidth = 13;
+        internal static readonly SVC<float> kWindowToolbarHeight = new SVC<float>("--window-toolbar-height", 20f);
         private const string kEnabledPropertyName = "m_Enabled";
         private const string k_MultiEditValueString = "<multi>";
+        private const float kDropDownArrowMargin = -2;
+        private const float kDropDownArrowWidth = 12;
+        private const float kDropDownArrowHeight = 12;
 
         private static readonly float[] s_Vector2Floats = {0, 0};
         private static readonly int[] s_Vector2Ints = { 0, 0 };
@@ -139,7 +149,7 @@ namespace UnityEditor
         private static Color k_OverrideMarginColor = new Color(1f / 255f, 153f / 255f, 235f / 255f, 0.75f);
 
         private const int kInspTitlebarToggleWidth = 16;
-        private const int kInspTitlebarSpacing = 2;
+        private const int kInspTitlebarSpacing = 4;
         private static readonly GUIContent s_PropertyFieldTempContent = new GUIContent();
         private static GUIContent s_IconDropDown;
         private static Material s_IconTextureInactive;
@@ -1328,7 +1338,7 @@ namespace UnityEditor
 
         internal static Rect GetInspectorTitleBarObjectFoldoutRenderRect(Rect rect)
         {
-            return new Rect(rect.x + 3f, rect.y + 3f, 16f, 16f);
+            return new Rect(rect.x + EditorStyles.foldout.margin.left + 1f, rect.y + (rect.height - kInspTitlebarFoldoutIconWidth) / 2 , kInspTitlebarFoldoutIconWidth, kInspTitlebarFoldoutIconWidth);
         }
 
         [SuppressMessage("ReSharper", "RedundantCast.0")]
@@ -1564,7 +1574,9 @@ namespace UnityEditor
             int id = GUIUtility.GetControlID(s_ToggleHash, FocusType.Keyboard, position);
             Rect toggleRect = IndentedRect(position);
             Rect labelRect = IndentedRect(position);
+            var topOffset = (EditorStyles.toggle.margin.top - EditorStyles.toggle.margin.bottom) / 2;
             labelRect.xMin += EditorStyles.toggle.padding.left;
+            labelRect.yMin -= topOffset; labelRect.yMax -= topOffset;
             HandlePrefixLabel(position, labelRect, label, id, labelStyle);
             return EditorGUIInternal.DoToggleForward(toggleRect, id, value, GUIContent.none, EditorStyles.toggle);
         }
@@ -1609,18 +1621,23 @@ namespace UnityEditor
             bool dummy;
             Rect textRect = position;
             const float k_CancelButtonWidth = 14f;
-            textRect.width -= k_CancelButtonWidth;
-
-            text = DoTextField(s_RecycledEditor, id, textRect, text, showWithPopupArrow ? EditorStyles.toolbarSearchFieldPopup : EditorStyles.toolbarSearchField, null, out dummy, false, false, false);
 
             Rect buttonRect = position;
             buttonRect.x += position.width - k_CancelButtonWidth;
             buttonRect.width = k_CancelButtonWidth;
-            if (GUI.Button(buttonRect, GUIContent.none, text != "" ? EditorStyles.toolbarSearchFieldCancelButton : EditorStyles.toolbarSearchFieldCancelButtonEmpty) && text != "")
+
+            if (!String.IsNullOrEmpty(text))
+                EditorGUIUtility.AddCursorRect(buttonRect, MouseCursor.Arrow);
+            if (Event.current.type == EventType.MouseUp && buttonRect.Contains(Event.current.mousePosition))
             {
                 s_RecycledEditor.text = text = "";
                 GUIUtility.keyboardControl = 0;
+                GUI.changed = true;
+                Event.current.Use();
             }
+            text = DoTextField(s_RecycledEditor, id, textRect, text, showWithPopupArrow ? EditorStyles.toolbarSearchFieldPopup : EditorStyles.toolbarSearchField, null, out dummy, false, false, false);
+            GUI.Button(buttonRect, GUIContent.none,
+                text != "" ? EditorStyles.toolbarSearchFieldCancelButton : EditorStyles.toolbarSearchFieldCancelButtonEmpty);
 
             return text;
         }
@@ -1657,8 +1674,6 @@ namespace UnityEditor
 
             if (hasPopup && text == "" && !s_RecycledEditor.IsEditingControl(id) && Event.current.type == EventType.Repaint)
             {
-                const float k_CancelButtonWidth = 14f;
-                position.width -= k_CancelButtonWidth;
                 using (new DisabledScope(true))
                 {
                     bool hovered = position.Contains(Event.current.mousePosition);
@@ -2196,12 +2211,12 @@ namespace UnityEditor
             return value;
         }
 
-        internal static void DelayedTextFieldInternal(Rect position, int id, SerializedProperty property, string allowedLetters, GUIContent label)
+        internal static void DelayedTextFieldInternal(Rect position, int id, SerializedProperty property, string allowedLetters, GUIContent label, GUIStyle style)
         {
             label = BeginProperty(position, label, property);
 
             BeginChangeCheck();
-            string newValue = DelayedTextFieldInternal(position, id, label, property.stringValue, allowedLetters, EditorStyles.textField);
+            string newValue = DelayedTextFieldInternal(position, id, label, property.stringValue, allowedLetters, style);
             if (EndChangeCheck())
                 property.stringValue = newValue;
 
@@ -2336,7 +2351,7 @@ namespace UnityEditor
             var id = GUIUtility.GetControlID(s_SliderHash, FocusType.Keyboard, position);
             var controlRect = PrefixLabel(position, id, label);
             var dragZone = LabelHasContent(label) ? EditorGUIUtility.DragZoneRect(position) : new Rect(); // Ensure dragzone is empty when we have no label
-            return DoSlider(controlRect, dragZone, id, value, sliderMin, sliderMax, kFloatFieldFormatString, textFieldMin, textFieldMax, 1f, GUI.skin.horizontalSlider, GUI.skin.horizontalSliderThumb, null);
+            return DoSlider(controlRect, dragZone, id, value, sliderMin, sliderMax, kFloatFieldFormatString, textFieldMin, textFieldMax, 1f, GUI.skin.horizontalSlider, GUI.skin.horizontalSliderThumb, null, GUI.skin.horizontalSliderThumbExtent);
         }
 
         internal static float PowerSlider(Rect position, string label, float sliderValue, float leftValue, float rightValue, float power)
@@ -2584,16 +2599,17 @@ namespace UnityEditor
 
         private static float DoSlider(Rect position, Rect dragZonePosition, int id, float value, float left, float right, string formatString, float power = 1f)
         {
-            return DoSlider(position, dragZonePosition, id, value, left, right, formatString, power, GUI.skin.horizontalSlider, GUI.skin.horizontalSliderThumb, null);
+            return DoSlider(position, dragZonePosition, id, value, left, right, formatString, power, GUI.skin.horizontalSlider, GUI.skin.horizontalSliderThumb, null, GUI.skin.horizontalSliderThumbExtent);
         }
 
-        private static float DoSlider(Rect position, Rect dragZonePosition, int id, float value, float left, float right, string formatString, float power, GUIStyle sliderStyle, GUIStyle thumbStyle, Texture2D sliderBackground)
+        private static float DoSlider(Rect position, Rect dragZonePosition, int id, float value, float left, float right, string formatString, float power, GUIStyle sliderStyle, GUIStyle thumbStyle, Texture2D sliderBackground, GUIStyle thumbStyleExtent)
         {
-            return DoSlider(position, dragZonePosition, id, value, left, right, formatString, left, right, power, sliderStyle, thumbStyle, sliderBackground);
+            return DoSlider(position, dragZonePosition, id, value, left, right, formatString, left, right, power, sliderStyle, thumbStyle, sliderBackground, thumbStyleExtent);
         }
 
         private static float DoSlider(
-            Rect position, Rect dragZonePosition, int id, float value, float sliderMin, float sliderMax, string formatString, float textFieldMin, float textFieldMax, float power, GUIStyle sliderStyle, GUIStyle thumbStyle, Texture2D sliderBackground
+            Rect position, Rect dragZonePosition, int id, float value, float sliderMin, float sliderMax, string formatString, float textFieldMin
+            , float textFieldMax, float power, GUIStyle sliderStyle, GUIStyle thumbStyle, Texture2D sliderBackground, GUIStyle thumbStyleExtent
         )
         {
             int sliderId = GUIUtility.GetControlID(s_SliderKnobHash, FocusType.Passive, position);
@@ -2633,7 +2649,7 @@ namespace UnityEditor
                     Graphics.DrawTexture(bgRect, sliderBackground, new Rect(.5f / sliderBackground.width, .5f / sliderBackground.height, 1 - 1f / sliderBackground.width, 1 - 1f / sliderBackground.height), 0, 0, 0, 0, new Color(0.5f, 0.5f, 0.5f, 0.5f));
                 }
 
-                newSliderValue = GUI.Slider(sliderRect, newSliderValue, 0, remapLeft, remapRight, sliderStyle, showMixedValue ? "SliderMixed" : thumbStyle, true, sliderId);
+                newSliderValue = GUI.Slider(sliderRect, newSliderValue, 0, remapLeft, remapRight, sliderStyle, showMixedValue ? "SliderMixed" : thumbStyle, true, sliderId, thumbStyleExtent);
                 if (power != 1f)
                 {
                     newSliderValue = PowPreserveSign(newSliderValue, power);
@@ -2704,7 +2720,7 @@ namespace UnityEditor
                 }
 
                 BeginChangeCheck();
-                var newTextFieldValue = DoFloatField(s_RecycledEditor, new Rect(position.x + sWidth + kSpacing, position.y, EditorGUIUtility.fieldWidth, position.height), dragZonePosition, id, value, formatString, EditorStyles.numberField, true);
+                var newTextFieldValue = DoFloatField(s_RecycledEditor, new Rect(position.x + sWidth + kSpacing, position.y, EditorGUIUtility.fieldWidth - 2, position.height), dragZonePosition, id, value, formatString, EditorStyles.numberField, true);
                 if (EndChangeCheck())
                 {
                     value = Mathf.Clamp(newTextFieldValue, Mathf.Min(textFieldMin, textFieldMax), Mathf.Max(textFieldMin, textFieldMax));
@@ -2852,7 +2868,11 @@ namespace UnityEditor
 
             var enumData = GetCachedEnumData(enumType, !includeObsolete);
             var i = Array.IndexOf(enumData.values, selected);
-            GUIContent[] options = EditorUtility.IsUnityAssembly(enumType) ? EditorGUIUtility.TrTempContent(enumData.displayNames, enumData.tooltip) : EditorGUIUtility.TempContent(enumData.displayNames, enumData.tooltip);
+            GUIContent[] options;
+            using (new UnityEditor.Localization.Editor.LocalizationGroup(enumType))
+            {
+                options = EditorGUIUtility.TrTempContent(enumData.displayNames, enumData.tooltip);
+            }
             s_CurrentCheckEnumEnabled = checkEnabled;
             s_CurrentEnumData = enumData;
             i = PopupInternal(position, label, i, options, checkEnabled == null ? (Func<int, bool>)null : CheckCurrentEnumTypeEnabled, style);
@@ -2869,7 +2889,11 @@ namespace UnityEditor
 
             var enumData = GetCachedEnumData(enumType, !includeObsolete);
             var i = Array.IndexOf(enumData.flagValues, flagValue);
-            GUIContent[] options = EditorUtility.IsUnityAssembly(enumType) ? EditorGUIUtility.TrTempContent(enumData.displayNames, enumData.tooltip) : EditorGUIUtility.TempContent(enumData.displayNames, enumData.tooltip);
+            GUIContent[] options;
+            using (new UnityEditor.Localization.Editor.LocalizationGroup(enumType))
+            {
+                options = EditorGUIUtility.TrTempContent(enumData.displayNames, enumData.tooltip);
+            }
             s_CurrentCheckEnumEnabled = checkEnabled;
             s_CurrentEnumData = enumData;
             i = PopupInternal(position, label, i, options, checkEnabled == null ? (Func<int, bool>)null : CheckCurrentEnumTypeEnabled, style);
@@ -3783,7 +3807,7 @@ namespace UnityEditor
             position.height = kSingleLineHeight;
             SerializedProperty cur = property.Copy();
             cur.Next(true);
-            MultiPropertyField(position, s_XYLabels, cur, PropertyVisibility.All);
+            MultiPropertyFieldInternal(position, s_XYLabels, cur, PropertyVisibility.All);
         }
 
         // Make an X, Y and Z field - not public (use PropertyField instead)
@@ -3794,7 +3818,7 @@ namespace UnityEditor
             position.height = kSingleLineHeight;
             SerializedProperty cur = property.Copy();
             cur.Next(true);
-            MultiPropertyField(position, s_XYZLabels, cur, PropertyVisibility.All);
+            MultiPropertyFieldInternal(position, s_XYZLabels, cur, PropertyVisibility.All);
         }
 
         // Make an X, Y, Z and W field - not public (use PropertyField instead)
@@ -3805,7 +3829,7 @@ namespace UnityEditor
             position.height = kSingleLineHeight;
             SerializedProperty cur = property.Copy();
             cur.Next(true);
-            MultiPropertyField(position, s_XYZWLabels, cur, PropertyVisibility.All);
+            MultiPropertyFieldInternal(position, s_XYZWLabels, cur, PropertyVisibility.All);
         }
 
         // Make an X, Y, Z & W field for entering a [[Vector4]].
@@ -3881,7 +3905,7 @@ namespace UnityEditor
             position.height = kSingleLineHeight;
             SerializedProperty cur = property.Copy();
             cur.Next(true);
-            MultiPropertyField(position, s_XYLabels, cur, PropertyVisibility.All);
+            MultiPropertyFieldInternal(position, s_XYLabels, cur, PropertyVisibility.All);
         }
 
         // Make an X, Y and Z int field for entering a [[Vector3Int]].
@@ -3925,7 +3949,7 @@ namespace UnityEditor
             position.height = kSingleLineHeight;
             SerializedProperty cur = property.Copy();
             cur.Next(true);
-            MultiPropertyField(position, s_XYZLabels, cur, PropertyVisibility.All);
+            MultiPropertyFieldInternal(position, s_XYZLabels, cur, PropertyVisibility.All);
         }
 
         public static Rect RectField(Rect position, Rect value)
@@ -3980,10 +4004,15 @@ namespace UnityEditor
 
             SerializedProperty cur = property.Copy();
             cur.Next(true);
-            MultiPropertyField(position, s_XYLabels, cur, PropertyVisibility.All);
+
+            // Right align the text
+            var oldAlignment = EditorStyles.label.alignment;
+            EditorStyles.label.alignment = TextAnchor.MiddleRight;
+            MultiPropertyFieldInternal(position, s_XYLabels, cur, PropertyVisibility.All, null, kMiniLabelW);
             position.y += kSingleLineHeight + kVerticalSpacingMultiField;
 
-            MultiPropertyField(position, s_WHLabels, cur, PropertyVisibility.All);
+            MultiPropertyFieldInternal(position, s_WHLabels, cur, PropertyVisibility.All, null, kMiniLabelW);
+            EditorStyles.label.alignment = oldAlignment;
         }
 
         public static RectInt RectIntField(Rect position, RectInt value)
@@ -4034,10 +4063,10 @@ namespace UnityEditor
 
             SerializedProperty cur = property.Copy();
             cur.Next(true);
-            MultiPropertyField(position, s_XYLabels, cur, PropertyVisibility.All);
+            MultiPropertyFieldInternal(position, s_XYLabels, cur, PropertyVisibility.All, null, kMiniLabelW);
             position.y += kSingleLineHeight + kVerticalSpacingMultiField;
 
-            MultiPropertyField(position, s_WHLabels, cur, PropertyVisibility.All);
+            MultiPropertyFieldInternal(position, s_WHLabels, cur, PropertyVisibility.All, null, kMiniLabelW);
         }
 
         private static Rect DrawBoundsFieldLabelsAndAdjustPositionForValues(Rect position, bool drawOutside, GUIContent firstContent, GUIContent secondContent)
@@ -4109,10 +4138,10 @@ namespace UnityEditor
             SerializedProperty cur = property.Copy();
             cur.Next(true);
             cur.Next(true);
-            MultiPropertyField(position, s_XYZLabels, cur, PropertyVisibility.All);
+            MultiPropertyFieldInternal(position, s_XYZLabels, cur, PropertyVisibility.All, null, kMiniLabelW);
             cur.Next(true);
             position.y += kSingleLineHeight + kVerticalSpacingMultiField;
-            MultiPropertyField(position, s_XYZLabels, cur, PropertyVisibility.All);
+            MultiPropertyFieldInternal(position, s_XYZLabels, cur, PropertyVisibility.All, null, kMiniLabelW);
         }
 
         public static BoundsInt BoundsIntField(Rect position, BoundsInt value)
@@ -4166,10 +4195,10 @@ namespace UnityEditor
             SerializedProperty cur = property.Copy();
             cur.Next(true);
             cur.Next(true);
-            MultiPropertyField(position, s_XYZLabels, cur, PropertyVisibility.All);
+            MultiPropertyFieldInternal(position, s_XYZLabels, cur, PropertyVisibility.All);
             cur.Next(true);
             position.y += kSingleLineHeight + kVerticalSpacingMultiField;
-            MultiPropertyField(position, s_XYZLabels, cur, PropertyVisibility.All);
+            MultiPropertyFieldInternal(position, s_XYZLabels, cur, PropertyVisibility.All);
         }
 
         public static void MultiFloatField(Rect position, GUIContent label, GUIContent[] subLabels, float[] values)
@@ -4182,20 +4211,20 @@ namespace UnityEditor
 
         public static void MultiFloatField(Rect position, GUIContent[] subLabels, float[] values)
         {
-            MultiFloatField(position, subLabels, values, kMiniLabelW);
+            MultiFloatFieldInternal(position, subLabels, values);
         }
 
-        internal static void MultiFloatField(Rect position, GUIContent[] subLabels, float[] values, float labelWidth)
+        internal static void MultiFloatFieldInternal(Rect position, GUIContent[] subLabels, float[] values)
         {
             int eCount = values.Length;
             float w = (position.width - (eCount - 1) * kSpacingSubLabel) / eCount;
             Rect nr = new Rect(position) {width = w};
             float t = EditorGUIUtility.labelWidth;
             int l = indentLevel;
-            EditorGUIUtility.labelWidth = labelWidth;
             indentLevel = 0;
             for (int i = 0; i < values.Length; i++)
             {
+                EditorGUIUtility.labelWidth = EditorGUI.CalcPrefixLabelWidth(subLabels[i]);
                 values[i] = FloatField(nr, subLabels[i], values[i]);
                 nr.x += w + kSpacingSubLabel;
             }
@@ -4205,20 +4234,20 @@ namespace UnityEditor
 
         public static void MultiIntField(Rect position, GUIContent[] subLabels, int[] values)
         {
-            MultiIntField(position, subLabels, values, kMiniLabelW);
+            MultiIntFieldInternal(position, subLabels, values);
         }
 
-        internal static void MultiIntField(Rect position, GUIContent[] subLabels, int[] values, float labelWidth)
+        internal static void MultiIntFieldInternal(Rect position, GUIContent[] subLabels, int[] values)
         {
             int eCount = values.Length;
             float w = (position.width - (eCount - 1) * kSpacingSubLabel) / eCount;
             Rect nr = new Rect(position) {width = w};
             float t = EditorGUIUtility.labelWidth;
             int l = indentLevel;
-            EditorGUIUtility.labelWidth = labelWidth;
             indentLevel = 0;
             for (int i = 0; i < values.Length; i++)
             {
+                EditorGUIUtility.labelWidth = EditorGUI.CalcPrefixLabelWidth(subLabels[i]);
                 values[i] = IntField(nr, subLabels[i], values[i]);
                 nr.x += w + kSpacingSubLabel;
             }
@@ -4236,7 +4265,7 @@ namespace UnityEditor
 
         public static void MultiPropertyField(Rect position, GUIContent[] subLabels, SerializedProperty valuesIterator)
         {
-            MultiPropertyField(position, subLabels, valuesIterator, PropertyVisibility.OnlyVisible);
+            MultiPropertyFieldInternal(position, subLabels, valuesIterator, PropertyVisibility.OnlyVisible);
         }
 
         internal enum PropertyVisibility
@@ -4245,17 +4274,18 @@ namespace UnityEditor
             OnlyVisible
         }
 
-        internal static void MultiPropertyField(Rect position, GUIContent[] subLabels, SerializedProperty valuesIterator, PropertyVisibility visibility, float labelWidth = kMiniLabelW, bool[] disabledMask = null)
+        internal static void MultiPropertyFieldInternal(Rect position, GUIContent[] subLabels, SerializedProperty valuesIterator, PropertyVisibility visibility, bool[] disabledMask = null, float prefixLabelWidth = -1)
         {
             int eCount = subLabels.Length;
             float w = (position.width - (eCount - 1) * kSpacingSubLabel) / eCount;
             Rect nr = new Rect(position) {width = w};
             float t = EditorGUIUtility.labelWidth;
             int l = indentLevel;
-            EditorGUIUtility.labelWidth = labelWidth;
             indentLevel = 0;
             for (int i = 0; i < subLabels.Length; i++)
             {
+                EditorGUIUtility.labelWidth = prefixLabelWidth > 0 ? prefixLabelWidth : EditorGUI.CalcPrefixLabelWidth(subLabels[i]);
+
                 if (disabledMask != null)
                     BeginDisabled(disabledMask[i]);
                 PropertyField(nr, valuesIterator, subLabels[i]);
@@ -4400,7 +4430,7 @@ namespace UnityEditor
                                 // See ExecuteCommand section below to see handling for copy & paste
                                 GUIUtility.keyboardControl = id;
 
-                                var names = new[] {"Copy", "Paste"};
+                                var names = new[] { L10n.Tr("Copy"), L10n.Tr("Paste") };
                                 var enabled = new[] {true, ColorClipboard.HasColor()};
                                 var currentView = GUIView.current;
 
@@ -4442,6 +4472,15 @@ namespace UnityEditor
                     Rect position2;
                     position2 = showEyedropper ? style.padding.Remove(position) : position;
 
+                    if (showEyedropper)
+                    {
+                        style.Draw(position, GUIContent.none, id, false, hovered); // Draw box outline and eyedropper icon
+                    }
+                    else
+                    {
+                        EditorStyles.colorPickerBox.Draw(position, GUIContent.none, id, false, hovered); // Draw box outline
+                    }
+
                     // Draw color field
                     if (showEyedropper && s_ColorPickID == id)
                     {
@@ -4454,15 +4493,6 @@ namespace UnityEditor
                     else
                     {
                         EditorGUIUtility.DrawColorSwatch(position2, value, showAlpha, hdr);
-                    }
-
-                    if (showEyedropper)
-                    {
-                        style.Draw(position, GUIContent.none, id, false, hovered); // Draw box outline and eyedropper icon
-                    }
-                    else
-                    {
-                        EditorStyles.colorPickerBox.Draw(position, GUIContent.none, id, false, hovered); // Draw box outline
                     }
 
                     break;
@@ -4722,15 +4752,23 @@ namespace UnityEditor
             CurveEditorWindow.instance.Show(GUIView.current, settings);
         }
 
+        internal static Vector2 GetObjectIconDropDownSize(float width, float height)
+        {
+            return new Vector2(width, height + kDropDownArrowMargin + kDropDownArrowHeight);
+        }
+
         internal static void ObjectIconDropDown(Rect position, Object[] targets, bool showLabelIcons, Texture2D nullIcon, SerializedProperty iconProperty)
         {
             if (s_IconTextureInactive == null)
             {
                 s_IconTextureInactive = (Material)EditorGUIUtility.LoadRequired("Inspectors/InactiveGUI.mat");
             }
+
             if (Event.current.type == EventType.Repaint)
             {
+                Rect arrowRect = new Rect(position.x + (position.width - kDropDownArrowWidth) / 2, position.y + position.height - kDropDownArrowHeight, kDropDownArrowWidth, kDropDownArrowHeight);
                 Texture2D icon = null;
+
                 if (!iconProperty.hasMultipleDifferentValues)
                 {
                     icon = AssetPreview.GetMiniThumbnail(targets[0]);
@@ -4739,13 +4777,19 @@ namespace UnityEditor
                 {
                     icon = nullIcon;
                 }
-                Vector2 iconSize = new Vector2(position.width, position.height);
+
+                Rect remainingRect = position;
+
+                remainingRect.yMax = arrowRect.yMin - kDropDownArrowMargin;
+
+                Vector2 iconSize = remainingRect.size;
+
                 if (icon)
                 {
                     iconSize.x = Mathf.Min(icon.width, iconSize.x);
                     iconSize.y = Mathf.Min(icon.height, iconSize.y);
                 }
-                Rect iconRect = new Rect(position.x + position.width / 2 - iconSize.x / 2, position.y + position.height / 2 - iconSize.y / 2 , iconSize.x, iconSize.y);
+                Rect iconRect = new Rect(remainingRect.x + remainingRect.width / 2 - iconSize.x / 2, remainingRect.y + remainingRect.height / 2 - iconSize.y / 2 , iconSize.x, iconSize.y);
                 GameObject obj = targets[0] as GameObject;
 
                 bool isInactive = obj && (!EditorUtility.IsPersistent(targets[0]) && (!obj.activeSelf || !obj.activeInHierarchy));
@@ -4767,7 +4811,7 @@ namespace UnityEditor
                 {
                     s_IconDropDown = EditorGUIUtility.IconContent("Icon Dropdown");
                 }
-                GUIStyle.none.Draw(new Rect(Mathf.Max(position.x + 2, iconRect.x - 6), iconRect.yMax - iconRect.height * 0.2f, 13, 8), s_IconDropDown, false, false, false, false);
+                GUIStyle.none.Draw(arrowRect, s_IconDropDown, false, false, false, false);
             }
 
             if (DropdownButton(position, GUIContent.none, FocusType.Passive, GUIStyle.none))
@@ -4830,19 +4874,35 @@ namespace UnityEditor
             return foldout;
         }
 
+        static Rect GetIconRect(Rect position, GUIStyle baseStyle)
+        {
+            return new Rect(position.x + baseStyle.padding.left, position.y + (baseStyle.fixedHeight - kInspTitlebarIconWidth) / 2 + baseStyle.padding.top, kInspTitlebarIconWidth, kInspTitlebarIconWidth);
+        }
+
+        static Rect GetTextRect(Rect position, Rect iconRect, Rect settingsRect, GUIStyle baseStyle, GUIStyle textStyle)
+        {
+            return new Rect(iconRect.xMax + kInspTitlebarSpacing + kInspTitlebarSpacing + kInspTitlebarIconWidth,
+                position.y + (baseStyle.fixedHeight - textStyle.fixedHeight) / 2 + baseStyle.padding.top, 100, textStyle.fixedHeight)
+            { xMax = settingsRect.xMin - kInspTitlebarSpacing };
+        }
+
+        static Rect GetSettingsRect(Rect position, GUIStyle baseStyle, GUIStyle iconButtonStyle)
+        {
+            Vector2 settingsElementSize = iconButtonStyle.CalcSize(GUIContents.titleSettingsIcon);
+
+            return new Rect(position.xMax - baseStyle.padding.right - kInspTitlebarSpacing - kInspTitlebarIconWidth
+                , position.y + (baseStyle.fixedHeight - settingsElementSize.y) / 2 + baseStyle.padding.top, settingsElementSize.x, settingsElementSize.y);
+        }
+
         // Make an inspector-window-like titlebar.
         internal static void DoInspectorTitlebar(Rect position, int id, bool foldout, Object[] targetObjs, SerializedProperty enabledProperty, GUIStyle baseStyle)
         {
             GUIStyle textStyle = EditorStyles.inspectorTitlebarText;
             GUIStyle iconButtonStyle = EditorStyles.iconButton;
 
-            Vector2 settingsElementSize = iconButtonStyle.CalcSize(GUIContents.titleSettingsIcon);
-
-            Rect iconRect = new Rect(position.x + baseStyle.padding.left, position.y + baseStyle.padding.top, kInspTitlebarIconWidth, kInspTitlebarIconWidth);
-            Rect settingsRect = new Rect(position.xMax - baseStyle.padding.right - kInspTitlebarSpacing - kInspTitlebarIconWidth, iconRect.y, settingsElementSize.x, settingsElementSize.y);
-            Rect textRect =
-                new Rect(iconRect.xMax + kInspTitlebarSpacing + kInspTitlebarSpacing + kInspTitlebarIconWidth,
-                    iconRect.y, 100, iconRect.height) {xMax = settingsRect.xMin - kInspTitlebarSpacing};
+            Rect iconRect = GetIconRect(position, baseStyle);
+            Rect settingsRect = GetSettingsRect(position, baseStyle, iconButtonStyle);
+            Rect textRect = GetTextRect(position, iconRect, settingsRect, baseStyle, textStyle);
 
             Event evt = Event.current;
 
@@ -4944,7 +5004,7 @@ namespace UnityEditor
 
             Rect headerItemRect = settingsRect;
             headerItemRect.x -= kInspTitlebarIconWidth + kInspTitlebarSpacing;
-            headerItemRect = EditorGUIUtility.DrawEditorHeaderItems(headerItemRect, targetObjs);
+            headerItemRect = EditorGUIUtility.DrawEditorHeaderItems(headerItemRect, targetObjs, kInspTitlebarSpacing);
             textRect.xMax = headerItemRect.xMin - kInspTitlebarSpacing;
 
             if (evt.type == EventType.Repaint)
@@ -4999,11 +5059,10 @@ namespace UnityEditor
             GUIStyle textStyle = EditorStyles.inspectorTitlebarText;
             GUIStyle iconButtonStyle = EditorStyles.iconButton;
 
-            Vector2 settingsElementSize = iconButtonStyle.CalcSize(GUIContents.titleSettingsIcon);
+            Rect iconRect = GetIconRect(position, baseStyle);
+            Rect settingsRect = GetSettingsRect(position, baseStyle, iconButtonStyle);
+            Rect textRect = GetTextRect(position, iconRect, settingsRect, baseStyle, textStyle);
 
-            Rect iconRect = new Rect(position.x + baseStyle.padding.left, position.y + baseStyle.padding.top, kInspTitlebarIconWidth, kInspTitlebarIconWidth);
-            Rect settingsRect = new Rect(position.xMax - baseStyle.padding.right - kInspTitlebarSpacing - kInspTitlebarIconWidth, iconRect.y, settingsElementSize.x, settingsElementSize.y);
-            Rect textRect = new Rect(iconRect.xMax + kInspTitlebarSpacing + kInspTitlebarSpacing + kInspTitlebarIconWidth, iconRect.y, 100, iconRect.height);
             textRect.xMax = settingsRect.xMin - kInspTitlebarSpacing;
 
             Event evt = Event.current;
@@ -5200,6 +5259,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
         internal static bool FoldoutInternal(Rect position, bool foldout, GUIContent content, bool toggleOnLabelClick, GUIStyle style)
         {
             Rect origPosition = position;
+            position = style.margin.Remove(position);
             if (EditorGUIUtility.hierarchyMode)
             {
                 int offset = (EditorStyles.foldout.padding.left - EditorStyles.label.padding.left);
@@ -5428,6 +5488,10 @@ This warning only shows up in development builds.", helpTopic, pageName);
                     labelPosition.width += 1;
 
                     int startHighlight, endHighlight;
+                    Color oldColor = GUI.backgroundColor;
+
+                    GUI.backgroundColor = Color.white;
+
                     if (IsLabelHighlightEnabled() && SearchUtils.MatchSearchGroups(s_LabelHighlightContext, label.text, out startHighlight, out endHighlight))
                     {
                         const bool isActive = false;
@@ -5444,7 +5508,10 @@ This warning only shows up in development builds.", helpTopic, pageName);
                     {
                         style.DrawPrefixLabel(labelPosition, label, id);
                     }
+
+                    GUI.backgroundColor = oldColor;
                     break;
+
                 case EventType.MouseDown:
                     if (Event.current.button == 0 && labelPosition.Contains(Event.current.mousePosition))
                     {
@@ -5483,7 +5550,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
             }
 
             Rect labelPosition = new Rect(totalPosition.x + indent, totalPosition.y, EditorGUIUtility.labelWidth - indent, kSingleLineHeight);
-            Rect fieldPosition = new Rect(totalPosition.x + EditorGUIUtility.labelWidth, totalPosition.y, totalPosition.width - EditorGUIUtility.labelWidth, totalPosition.height);
+            Rect fieldPosition = new Rect(totalPosition.x + EditorGUIUtility.labelWidth + kPrefixPaddingRight, totalPosition.y, totalPosition.width - EditorGUIUtility.labelWidth - kPrefixPaddingRight, totalPosition.height);
             HandlePrefixLabel(totalPosition, labelPosition, label, id, style);
             return fieldPosition;
         }
@@ -6003,19 +6070,19 @@ This warning only shows up in development builds.", helpTopic, pageName);
             if (type == SerializedPropertyType.Vector3 || type == SerializedPropertyType.Vector2 || type == SerializedPropertyType.Vector4 ||
                 type == SerializedPropertyType.Vector3Int || type == SerializedPropertyType.Vector2Int)
             {
-                return (!LabelHasContent(label) || EditorGUIUtility.wideMode ? 0f : kStructHeaderLineHeight) + kSingleLineHeight;
+                return (!LabelHasContent(label) || EditorGUIUtility.wideMode ? 0f : kStructHeaderLineHeight) + kSingleLineHeight + kVerticalSpacingMultiField;
             }
 
             if (type == SerializedPropertyType.Rect || type == SerializedPropertyType.RectInt)
             {
-                return (!LabelHasContent(label) || EditorGUIUtility.wideMode ? 0f : kStructHeaderLineHeight) + kSingleLineHeight * 2 + kVerticalSpacingMultiField;
+                return (!LabelHasContent(label) || EditorGUIUtility.wideMode ? 0f : kStructHeaderLineHeight) + kSingleLineHeight * 2 + kVerticalSpacingMultiField * 2;
             }
 
             // Bounds field has label on its own line even in wide mode because the words "center" and "extends"
             // would otherwise eat too much of the label space.
             if (type == SerializedPropertyType.Bounds || type == SerializedPropertyType.BoundsInt)
             {
-                return (!LabelHasContent(label) ? 0f : kStructHeaderLineHeight) + kSingleLineHeight * 2 + kVerticalSpacingMultiField;
+                return (!LabelHasContent(label) ? 0f : kStructHeaderLineHeight) + kSingleLineHeight * 2 + kVerticalSpacingMultiField * 2;
             }
 
             return kSingleLineHeight;
@@ -6726,8 +6793,13 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
         public static void DelayedTextField(Rect position, SerializedProperty property, [DefaultValue("null")] GUIContent label)
         {
+            DelayedTextFieldHelper(position, property, label, EditorStyles.textField);
+        }
+
+        internal static void DelayedTextFieldHelper(Rect position, SerializedProperty property, GUIContent label, GUIStyle style)
+        {
             int id = GUIUtility.GetControlID(s_TextFieldHash, FocusType.Keyboard, position);
-            DelayedTextFieldInternal(position, id, property, null, label);
+            DelayedTextFieldInternal(position, id, property, null, label, style);
         }
 
         [ExcludeFromDocs]
@@ -7367,6 +7439,13 @@ This warning only shows up in development builds.", helpTopic, pageName);
             HandlePrefixLabel(totalPosition, labelPosition, label, 0, EditorStyles.label);
         }
 
+        internal static float CalcPrefixLabelWidth(GUIContent label, GUIStyle style = null)
+        {
+            if (style == null)
+                style = EditorStyles.label;
+            return style.CalcSize(label).x;
+        }
+
         public static void HandlePrefixLabel(Rect totalPosition, Rect labelPosition, GUIContent label, [DefaultValue("0")] int id, [DefaultValue("EditorStyles.label")] GUIStyle style)
         {
             HandlePrefixLabelInternal(totalPosition, labelPosition, label, id, style);
@@ -7724,10 +7803,15 @@ This warning only shows up in development builds.", helpTopic, pageName);
         }
 
         // Make a delayed text field.
-        public static void DelayedTextField(SerializedProperty property, GUIContent label, params GUILayoutOption[] options)
+        internal static void DelayedTextField(SerializedProperty property, GUIContent label, GUIStyle style, params GUILayoutOption[] options)
         {
             Rect r = s_LastRect = GetControlRect(EditorGUI.LabelHasContent(label), EditorGUI.kSingleLineHeight, EditorStyles.textField, options);
-            EditorGUI.DelayedTextField(r, property, label);
+            EditorGUI.DelayedTextFieldHelper(r, property, label, style);
+        }
+
+        public static void DelayedTextField(SerializedProperty property, GUIContent label, params GUILayoutOption[] options)
+        {
+            DelayedTextField(property, label, EditorStyles.textField, options);
         }
 
         internal static string ToolbarSearchField(string text, params GUILayoutOption[] options)
@@ -8975,7 +9059,17 @@ This warning only shows up in development builds.", helpTopic, pageName);
         // Make a small space between the previous control and the following.
         public static void Space()
         {
-            GUILayoutUtility.GetRect(6, 6);
+            Space(EditorGUI.kDefaultSpacing, true);
+        }
+
+        public static void Space(float width)
+        {
+            Space(width, true);
+        }
+
+        public static void Space(float width, bool expand)
+        {
+            GUILayoutUtility.GetRect(width, width, GUILayout.ExpandWidth(expand));
         }
 
         //[System.Obsolete ("Use Space() instead")]
@@ -9661,6 +9755,21 @@ This warning only shows up in development builds.", helpTopic, pageName);
         {
             s_LastRect = GUILayoutUtility.GetRect(content, style, options);
             return EditorGUI.DropdownButton(s_LastRect, content, focusType, style);
+        }
+
+        // A toggle that returns true on mouse down - like a popup button and returns true if checked
+        internal static bool DropDownToggle(ref bool toggled, GUIContent content, GUIStyle toggleButtonStyle)
+        {
+            Rect toggleRect = GUILayoutUtility.GetRect(content, toggleButtonStyle);
+            Rect arrowRightRect = new Rect(toggleRect.xMax - toggleButtonStyle.padding.right, toggleRect.y, toggleButtonStyle.padding.right, toggleRect.height);
+            bool clicked = EditorGUI.DropdownButton(arrowRightRect, GUIContent.none, FocusType.Passive, GUIStyle.none);
+
+            if (!clicked)
+            {
+                toggled = GUI.Toggle(toggleRect, toggled, content, toggleButtonStyle);
+            }
+
+            return clicked;
         }
 
         internal static int AdvancedPopup(int selectedIndex, string[] displayedOptions, params GUILayoutOption[] options)

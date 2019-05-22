@@ -344,6 +344,17 @@ namespace UnityEditor
         X8 = 8
     }
 
+    [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
+    public enum ModelImporterAvatarSetup
+    {
+        NoAvatar = 0,
+        [Tooltip("Create an Avatar based on the model from this file.")]
+        CreateFromThisModel = 1,
+        [Tooltip("Copy an Avatar from another file to import muscle clip. No avatar will be created.")]
+        [InspectorName("Copy From Other Avatar")]
+        CopyFromOther = 2,
+    }
+
     public enum ModelImporterSkinWeights
     {
         Standard = 0,
@@ -888,6 +899,12 @@ namespace UnityEditor
         }
 
         public extern string motionNodeName
+        {
+            get;
+            set;
+        }
+
+        public extern ModelImporterAvatarSetup avatarSetup
         {
             get;
             set;

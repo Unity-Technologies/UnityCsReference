@@ -634,7 +634,7 @@ internal class ParticleSystemCurveEditor
     void DoOptimizeCurveButton(Rect rect)
     {
         bool optimizeButtonShown = false;
-        Vector2 buttonSize = new Vector2(64, 14);
+        Vector2 buttonSize = new Vector2(64, 18);
         Rect buttonRect = new Rect(rect.xMax - 80 - buttonSize.x, rect.y + (rect.height - buttonSize.y) * 0.5f, buttonSize.x, buttonSize.y);
 
         if (!m_CurveEditor.IsDraggingCurveOrRegion())
@@ -710,7 +710,7 @@ internal class ParticleSystemCurveEditor
     {
         using (new EditorGUI.DisabledScope(m_CurveEditor.animationCurves.Length == 0))
         {
-            Vector2 buttonSize = new Vector2(64, 14);
+            Vector2 buttonSize = new Vector2(64, 18);
             Rect clearCurvesRect = new Rect(rect.x + rect.width - buttonSize.x - 10, rect.y + (rect.height - buttonSize.y) * 0.5f, buttonSize.x, buttonSize.y);
             if (GUI.Button(clearCurvesRect, s_Styles.removeCurveText))
             {

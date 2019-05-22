@@ -214,7 +214,7 @@ namespace UnityEditor
 
         private delegate bool HeaderItemDelegate(Rect rectangle, UnityObject[] targets);
         private static List<HeaderItemDelegate> s_EditorHeaderItemsMethods = null;
-        internal static Rect DrawEditorHeaderItems(Rect rectangle, UnityObject[] targetObjs)
+        internal static Rect DrawEditorHeaderItems(Rect rectangle, UnityObject[] targetObjs, float spacing = 0)
         {
             if (targetObjs.Length == 0 || (targetObjs.Length == 1 && targetObjs[0].GetType() == typeof(System.Object)))
                 return rectangle;
@@ -242,11 +242,16 @@ namespace UnityEditor
                 }
             }
 
+            float spacingToRemove = 0;
             foreach (HeaderItemDelegate @delegate in s_EditorHeaderItemsMethods)
             {
                 if (@delegate(rectangle, targetObjs))
-                    rectangle.x -= rectangle.width;
+                {
+                    rectangle.x -= rectangle.width + spacing;
+                    spacingToRemove = rectangle.width + spacing;
+                }
             }
+            rectangle.x += spacingToRemove; // the spacing after a delegate is used to position the next element to draw but the last one is not used so we must remove it before exiting the method
 
             return rectangle;
         }

@@ -283,19 +283,17 @@ namespace UnityEditor.UIElements
                 {
                     var field = new PropertyField(property);
                     field.name = "PropertyField:" + property.propertyPath;
+
+                    if (property.propertyPath == "m_Script" && serializedObject.targetObject != null)
+                        field.SetEnabled(false);
+
                     hierarchy.Add(field);
                 }
                 while (property.NextVisible(false));
             }
 
             if (serializedObject.targetObject == null)
-            {
                 AddMissingScriptLabel(serializedObject);
-            }
-            else
-            {
-                SetEnabled(false);
-            }
 
             AddToClassList(uIEDefaultVariantUssClassName);
             AddToClassList(uIEInspectorVariantUssClassName);

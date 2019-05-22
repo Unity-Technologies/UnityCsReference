@@ -2,25 +2,30 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.StyleSheets;
 using UnityEngine;
 
 namespace UnityEditor
 {
     internal class GameViewSizesMenuModifyItemUI : FlexibleMenuModifyItemUI
     {
-        private class Styles
+        private static class Styles
         {
-            public GUIContent headerAdd = EditorGUIUtility.TrTextContent("Add");
-            public GUIContent headerEdit = EditorGUIUtility.TrTextContent("Edit");
-            public GUIContent typeName = EditorGUIUtility.TrTextContent("Type");
-            public GUIContent widthHeightText = EditorGUIUtility.TrTextContent("Width & Height");
-            public GUIContent optionalText = EditorGUIUtility.TrTextContent("Label");
-            public GUIContent ok = EditorGUIUtility.TrTextContent("OK");
-            public GUIContent cancel = EditorGUIUtility.TrTextContent("Cancel");
-            public GUIContent[] typeNames = new[] {EditorGUIUtility.TrTextContent("Aspect Ratio"), EditorGUIUtility.TrTextContent("Fixed Resolution")};
+            public static GUIContent headerAdd = EditorGUIUtility.TrTextContent("Add");
+            public static GUIContent headerEdit = EditorGUIUtility.TrTextContent("Edit");
+            public static GUIContent typeName = EditorGUIUtility.TrTextContent("Type");
+            public static GUIContent widthHeightText = EditorGUIUtility.TrTextContent("Width & Height");
+            public static GUIContent optionalText = EditorGUIUtility.TrTextContent("Label");
+            public static GUIContent ok = EditorGUIUtility.TrTextContent("OK");
+            public static GUIContent cancel = EditorGUIUtility.TrTextContent("Cancel");
+            public static GUIContent[] typeNames = new[] {EditorGUIUtility.TrTextContent("Aspect Ratio"), EditorGUIUtility.TrTextContent("Fixed Resolution")};
+
+            public static SVC<float> windowWidth = new SVC<float>("GameView", "--sizes-menu-modify-item-window-width", 230f);
+            public static SVC<float> windowHeight = new SVC<float>("GameView", "--sizes-menu-modify-item-window-height", 140f);
+            public static SVC<float> windowBottomPadding = new SVC<float>("GameView", "--window-bottom-padding");
+            public static SVC<float> spaceBetweenOkCancelButtons = new SVC<float>("GameView", "--space-between-ok-cancel-buttons", 10f);
         }
 
-        private static Styles s_Styles;
         private GameViewSize m_GameViewSize;
 
         public override void OnClose()
@@ -31,14 +36,11 @@ namespace UnityEditor
 
         override public Vector2 GetWindowSize()
         {
-            return new Vector2(230, 140);
+            return new Vector2(Styles.windowWidth, Styles.windowHeight);
         }
 
         override public void OnGUI(Rect rect)
         {
-            if (s_Styles == null)
-                s_Styles = new Styles();
-
             GameViewSize gameViewSizeState = m_Object as GameViewSize;
             if (gameViewSizeState == null)
             {
@@ -55,7 +57,7 @@ namespace UnityEditor
             const float kSpacing = 10f;
 
             GUILayout.Space(3);
-            GUILayout.Label(m_MenuType == MenuType.Add ? s_Styles.headerAdd : s_Styles.headerEdit,
+            GUILayout.Label(m_MenuType == MenuType.Add ? Styles.headerAdd : Styles.headerEdit,
                 EditorStyles.boldLabel);
 
             Rect seperatorRect = GUILayoutUtility.GetRect(1, 1);
@@ -67,28 +69,28 @@ namespace UnityEditor
 
             // Optional text
             GUILayout.BeginHorizontal();
-            GUILayout.Label(s_Styles.optionalText, GUILayout.Width(kColumnWidth));
+            GUILayout.Label(Styles.optionalText, GUILayout.Width(kColumnWidth));
             GUILayout.Space(kSpacing);
             m_GameViewSize.baseText = EditorGUILayout.TextField(m_GameViewSize.baseText);
             GUILayout.EndHorizontal();
 
             // Drop list (aspect / fixed res)
             GUILayout.BeginHorizontal();
-            GUILayout.Label(s_Styles.typeName, GUILayout.Width(kColumnWidth));
+            GUILayout.Label(Styles.typeName, GUILayout.Width(kColumnWidth));
             GUILayout.Space(kSpacing);
-            m_GameViewSize.sizeType = (GameViewSizeType)EditorGUILayout.Popup((int)m_GameViewSize.sizeType, s_Styles.typeNames);
+            m_GameViewSize.sizeType = (GameViewSizeType)EditorGUILayout.Popup((int)m_GameViewSize.sizeType, Styles.typeNames);
             GUILayout.EndHorizontal();
 
             // Width Height
             GUILayout.BeginHorizontal();
-            GUILayout.Label(s_Styles.widthHeightText, GUILayout.Width(kColumnWidth));
+            GUILayout.Label(Styles.widthHeightText, GUILayout.Width(kColumnWidth));
             GUILayout.Space(kSpacing);
             m_GameViewSize.width = EditorGUILayout.IntField(m_GameViewSize.width);
             GUILayout.Space(5);
             m_GameViewSize.height = EditorGUILayout.IntField(m_GameViewSize.height);
             GUILayout.EndHorizontal();
 
-            GUILayout.Space(10f);
+            GUILayout.Space(Styles.spaceBetweenOkCancelButtons);
 
             // Displayed text
             float margin = 10f;
@@ -114,14 +116,14 @@ namespace UnityEditor
             // Cancel, Ok
             GUILayout.BeginHorizontal();
             GUILayout.Space(10);
-            if (GUILayout.Button(s_Styles.cancel))
+            if (GUILayout.Button(Styles.cancel))
             {
                 editorWindow.Close();
             }
 
             using (new EditorGUI.DisabledScope(!validSettings))
             {
-                if (GUILayout.Button(s_Styles.ok))
+                if (GUILayout.Button(Styles.ok))
                 {
                     gameViewSizeState.Set(m_GameViewSize);
                     Accepted();
@@ -130,6 +132,8 @@ namespace UnityEditor
             }
             GUILayout.Space(10);
             GUILayout.EndHorizontal();
+
+            GUILayout.Space(Styles.windowBottomPadding);
         }
 
         string GetCroppedText(string fullText, float cropWidth, GUIStyle style)

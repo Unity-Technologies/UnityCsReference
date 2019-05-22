@@ -19,6 +19,7 @@ namespace UnityEngine.Rendering
         // can't make fixed types private, because then the compiler generates different code which BindingsGenerator does not handle yet.
         internal fixed byte m_CullingPlanes[k_MaximumCullingPlaneCount * Plane.size];
         Vector4 m_CullingSphere;
+        float m_ShadowCascadeBlendCullingFactor;
 
         public int cullingPlaneCount
         {
@@ -35,6 +36,17 @@ namespace UnityEngine.Rendering
         {
             get { return m_CullingSphere; }
             set { m_CullingSphere = value; }
+        }
+
+        public float shadowCascadeBlendCullingFactor
+        {
+            get { return m_ShadowCascadeBlendCullingFactor; }
+            set
+            {
+                if (value < 0f || value > 1f)
+                    throw new ArgumentException($"Value should range from {0} to {1}, but was {value}.");
+                m_ShadowCascadeBlendCullingFactor = value;
+            }
         }
 
         public Plane GetCullingPlane(int index)

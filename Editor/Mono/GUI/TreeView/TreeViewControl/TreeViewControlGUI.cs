@@ -47,7 +47,7 @@ namespace UnityEditor.IMGUI.Controls
 
             public float foldoutWidth
             {
-                get { return Styles.foldoutWidth; }
+                get { return foldoutStyleWidth; }
             }
 
             public int columnIndexForTreeFoldouts { get; set; } // column 0 is the default column for the tree foldouts

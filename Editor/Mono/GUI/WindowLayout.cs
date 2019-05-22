@@ -985,16 +985,18 @@ namespace UnityEditor
             InternalEditorUtility.SaveToSerializedFileAndForget(all.ToArray(typeof(UnityObject)) as UnityObject[], path, true);
         }
 
-        internal static MainView FindMainView()
+        internal static View FindMainView()
         {
-            var mainViews = Resources.FindObjectsOfTypeAll<MainView>();
-            if (mainViews.Length == 0)
+            UnityEngine.Object[] containers = Resources.FindObjectsOfTypeAll(typeof(ContainerWindow));
+            foreach (ContainerWindow window in containers)
             {
-                Debug.LogError("No Main View found!");
-                return null;
+                if (window.showMode == ShowMode.MainWindow)
+                    return window.rootView;
             }
 
-            return mainViews[0];
+
+            Debug.LogError("No Main View found!");
+            return null;
         }
 
         public static void SaveGUI()

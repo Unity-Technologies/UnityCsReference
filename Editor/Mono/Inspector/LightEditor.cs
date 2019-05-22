@@ -809,6 +809,8 @@ namespace UnityEditor
 
         protected virtual void OnSceneGUI()
         {
+            if (!target)
+                return;
             Light t = target as Light;
 
             Color temp = Handles.color;

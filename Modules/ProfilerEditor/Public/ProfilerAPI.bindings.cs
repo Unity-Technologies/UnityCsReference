@@ -116,7 +116,13 @@ namespace UnityEditorInternal
         static public extern int lastFrameIndex {[NativeMethod("GetLastFrameIndex")] get; }
 
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
-        static public extern int maxHistoryLength {[NativeMethod("GetMaxFrameHistoryLength")] get; }
+        static public extern int maxHistoryLength
+        {
+            [NativeMethod("GetMaxFrameHistoryLength")]
+            get;
+            [NativeMethod("SetMaxFrameHistoryLength")]
+            set;
+        }
 
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
         static public extern string selectedPropertyPath

@@ -21,20 +21,22 @@ namespace UnityEngine.Rendering
 
     [StructLayout(LayoutKind.Sequential)]
     [UsedByNativeCode]
+    [NativeHeader("Runtime/Graphics/ShaderScriptBindings.h")]
     [NativeHeader("Runtime/Shaders/ShaderKeywords.h")]
-    public partial class ShaderKeyword
+    public partial struct ShaderKeyword
     {
-        [NativeMethod("GetDefaultGlobalKeywordMap().Find", true)]
-        extern internal static int GetShaderKeywordIndex(string keywordName);
-
-        [NativeMethod("GetDefaultGlobalKeywordMap().GetName", true)]
-        extern internal static string GetShaderKeywordName(int keywordIndex);
-
-        [NativeMethod("GetDefaultGlobalKeywordMap().GetKeywordType", true)]
-        extern internal static ShaderKeywordType GetShaderKeywordType(int keywordIndex);
-
-        internal const int k_MaxShaderKeywords = 256; // Keep in sync with kMaxShaderKeywords in ShaderKeywordSet.h
+        internal const int k_MaxShaderKeywords = 320; // Keep in sync with kMaxShaderKeywords in ShaderKeywordSet.h
         private const int k_InvalidKeyword = -1; // Keep in sync with keywords::kInvalidKeyword in ShaderKeywords.h
+
+        [FreeFunction("ShaderScripting::GetGlobalKeywordIndex")] extern internal static int GetGlobalKeywordIndex(string keyword);
+        [FreeFunction("ShaderScripting::GetKeywordIndex")]       extern internal static int GetKeywordIndex(Shader shader, string keyword);
+
+        [FreeFunction("ShaderScripting::GetGlobalKeywordName")] extern public static string GetGlobalKeywordName(ShaderKeyword index);
+        [FreeFunction("ShaderScripting::GetGlobalKeywordType")] extern public static ShaderKeywordType GetGlobalKeywordType(ShaderKeyword index);
+        [FreeFunction("ShaderScripting::IsKeywordLocal")]       extern public static bool IsKeywordLocal(ShaderKeyword index);
+
+        [FreeFunction("ShaderScripting::GetKeywordName")] extern public static string GetKeywordName(Shader shader, ShaderKeyword index);
+        [FreeFunction("ShaderScripting::GetKeywordType")] extern public static ShaderKeywordType GetKeywordType(Shader shader, ShaderKeyword index);
 
         internal ShaderKeyword(int keywordIndex)
         {
@@ -43,7 +45,12 @@ namespace UnityEngine.Rendering
 
         public ShaderKeyword(string keywordName)
         {
-            m_KeywordIndex = GetShaderKeywordIndex(keywordName);
+            m_KeywordIndex = GetGlobalKeywordIndex(keywordName);
+        }
+
+        public ShaderKeyword(Shader shader, string keywordName)
+        {
+            m_KeywordIndex = GetKeywordIndex(shader, keywordName);
         }
 
         public bool IsValid()
@@ -51,20 +58,7 @@ namespace UnityEngine.Rendering
             return m_KeywordIndex >= 0 && m_KeywordIndex < k_MaxShaderKeywords && m_KeywordIndex != k_InvalidKeyword;
         }
 
-        public ShaderKeywordType GetKeywordType()
-        {
-            return GetShaderKeywordType(m_KeywordIndex);
-        }
-
-        public string GetKeywordName()
-        {
-            return GetShaderKeywordName(m_KeywordIndex);
-        }
-
-        internal int GetKeywordIndex()
-        {
-            return m_KeywordIndex;
-        }
+        public int index { get { return m_KeywordIndex; } }
 
         internal int m_KeywordIndex;
     }

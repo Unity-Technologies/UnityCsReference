@@ -138,7 +138,7 @@ namespace UnityEditor
             if (isScrollbarVisible)
                 listElementWidth -= kScrollBarWidth;
 
-            m_ScrollPosition = GUI.BeginScrollView(scrollViewRect, m_ScrollPosition, contentRect);
+            m_ScrollPosition = GUI.BeginScrollView(scrollViewRect, m_ScrollPosition, contentRect, false, false, GUI.skin.horizontalScrollbar, GUI.skin.verticalScrollbar, EditorStyles.scrollViewAlt);
             Draw(listElementWidth);
             GUI.EndScrollView();
 
@@ -286,15 +286,10 @@ namespace UnityEditor
             visibleChanged = false;
             if (showVisible)
             {
-                var oldColor = GUI.color;
-                var newColor = oldColor;
-                newColor.a = visible ? 0.6f : 0.4f;
-                GUI.color = newColor;
                 var iconRect = toggleRect;
                 iconRect.y += 3;
                 var gc = new GUIContent(string.Empty, visible ? s_Styles.visibleOn : s_Styles.visibleOff, kLayerVisible);
                 GUI.Toggle(iconRect, visible, gc, GUIStyle.none);
-                GUI.color = oldColor;
                 visibleChanged = EditorGUI.EndChangeCheck();
             }
 
@@ -304,13 +299,7 @@ namespace UnityEditor
             {
                 toggleRect.x += kToggleSize;
                 EditorGUI.BeginChangeCheck();
-                var oldColor = GUI.backgroundColor;
-                var newColor = oldColor;
-                if (!locked)
-                    newColor.a *= 0.4f;
-                GUI.backgroundColor = newColor;
                 GUI.Toggle(toggleRect, locked, new GUIContent(string.Empty, kLayerLocked), s_Styles.lockButton);
-                GUI.backgroundColor = oldColor;
                 lockedChanged = EditorGUI.EndChangeCheck();
             }
         }

@@ -216,13 +216,19 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                // Ignore tab & shift-tab in text fields
-                if (!editorEngine.multiline && (evt.keyCode == KeyCode.Tab || evt.character == '\t'))
+                char c = evt.character;
+
+                // Ignore tab & shift-tab in single-line text fields
+                if (!editorEngine.multiline && (evt.keyCode == KeyCode.Tab || c == '\t'))
                     return;
 
-                evt.StopPropagation();
+                // Ignore modifier+tab in multiline text fields
+                if (editorEngine.multiline && (evt.keyCode == KeyCode.Tab || c == '\t') && evt.modifiers != EventModifiers.None)
+                {
+                    return;
+                }
 
-                char c = evt.character;
+                evt.StopPropagation();
 
                 if (c == '\n' && !editorEngine.multiline && !evt.altKey)
                 {

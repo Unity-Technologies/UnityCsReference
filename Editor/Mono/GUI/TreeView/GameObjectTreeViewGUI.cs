@@ -37,7 +37,7 @@ namespace UnityEditor
             public static GUIContent unloadSceneGUIContent = new GUIContent(EditorGUIUtility.FindTexture("SceneLoadOut"), "Unload scene");
             public static GUIContent saveSceneGUIContent = new GUIContent(EditorGUIUtility.FindTexture("SceneSave"), "Save scene");
             public static GUIStyle optionsButtonStyle = "PaneOptions";
-            public static GUIStyle sceneHeaderBg = new GUIStyle("ProjectBrowserTopBarBg") {fixedHeight = 17, };
+            public static GUIStyle sceneHeaderBg = "SceneTopBarBg";
             public static GUIStyle rightArrow = "ArrowNavigationRight";
             public static GUIStyle hoveredItemBackgroundStyle = "WhiteBackground";
             public static Color hoveredBackgroundColor =
@@ -364,10 +364,10 @@ namespace UnityEditor
         {
             // Options button
             const float optionsButtonWidth = 16f;
-            const float optionsButtonHeight = 6f;
+            const float optionsButtonHeight = 16f;
             const float margin = 4f;
 
-            Rect buttonRect = new Rect(rect.width - optionsButtonWidth - margin, rect.y + (rect.height - optionsButtonHeight) * 0.5f, optionsButtonWidth, rect.height);
+            Rect buttonRect = new Rect(rect.xMax - optionsButtonWidth - margin, rect.y + (rect.height - optionsButtonHeight) * 0.5f, optionsButtonWidth, rect.height);
 
             if (Event.current.type == EventType.Repaint)
                 GameObjectStyles.optionsButtonStyle.Draw(buttonRect, false, false, false, false);
@@ -414,6 +414,7 @@ namespace UnityEditor
                 item.lazyInitializationDone = true;
 
                 SetItemIcon(item);
+                SetItemSelectedIcon(item);
                 SetItemOverlayIcon(item);
                 SetPrefabModeButtonVisibility(item);
             }
@@ -441,6 +442,26 @@ namespace UnityEditor
                 else
                     item.icon = PrefabUtility.GetIconForGameObject(go);
             }
+        }
+
+        void SetItemSelectedIcon(GameObjectTreeViewItem item)
+        {
+            if (item.icon != null)
+            {
+                item.selectedIcon = EditorUtility.GetIconInActiveState(item.icon) as Texture2D;
+            }
+        }
+
+        internal override Texture GetIconForSelectedItem(TreeViewItem item)
+        {
+            GameObjectTreeViewItem goItem = item as GameObjectTreeViewItem;
+
+            if (goItem != null)
+            {
+                return goItem.selectedIcon;
+            }
+
+            return item.icon;
         }
 
         void SetItemOverlayIcon(GameObjectTreeViewItem item)
@@ -525,7 +546,7 @@ namespace UnityEditor
 
             int colorCode = goItem.colorCode;
 
-            GUIStyle lineStyle = Styles.lineStyle;
+            lineStyle = Styles.lineStyle;
 
             if (SubSceneGUI.IsUsingSubScenes())
                 useBoldFont = SubSceneGUI.UseBoldFontForGameObject((GameObject)goItem.objectPPTR);
@@ -545,7 +566,9 @@ namespace UnityEditor
             }
 
             lineStyle.padding.left = 0;
-            if (goItem.icon != null)
+            Texture icon = GetEffectiveIcon(goItem);
+
+            if (icon != null)
             {
                 Rect iconRect = rect;
                 iconRect.width = k_IconWidth;
@@ -553,7 +576,7 @@ namespace UnityEditor
                 Color col = GUI.color;
                 if (renderDisabled)
                     col = new Color(1f, 1f, 1f, 0.5f);
-                GUI.DrawTexture(iconRect, goItem.icon, ScaleMode.ScaleToFit, true, 0, col, 0, 0);
+                GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit, true, 0, col, 0, 0);
 
                 if (goItem.overlayIcon != null)
                     GUI.DrawTexture(iconRect, goItem.overlayIcon, ScaleMode.ScaleToFit, true, 0, col, 0, 0);

@@ -33,14 +33,14 @@ namespace UnityEditor
 
     public class ObjectPreview : IPreviewable
     {
-        class Styles
+        static class Styles
         {
-            public GUIStyle preBackground = "PreBackground";
-            public GUIStyle preBackgroundSolid = "PreBackgroundSolid";
-            public GUIStyle previewMiniLabel = "PreMiniLabel";
-            public GUIStyle dropShadowLabelStyle = "PreOverlayLabel";
+            public static readonly GUIStyle preBackground = "PreBackground";
+            public static readonly GUIStyle preBackgroundSolid = "PreBackgroundSolid";
+            public static readonly GUIStyle previewMiniLabel = "PreMiniLabel";
+            public static readonly GUIStyle dropShadowLabelStyle = "PreOverlayLabel";
+            public static readonly GUIStyle preOverlayLabel = "PreOverlayLabel";
         }
-        static Styles s_Styles;
 
         const int kPreviewLabelHeight = 12;
         const int kPreviewMinSize = 55;
@@ -132,9 +132,6 @@ namespace UnityEditor
 
         internal static void DrawPreview(IPreviewable defaultPreview, Rect previewArea, UnityObject[] targets)
         {
-            if (s_Styles == null)
-                s_Styles = new Styles();
-
             string text = string.Empty;
             Event evt = Event.current;
 
@@ -207,14 +204,14 @@ namespace UnityEditor
                     // @TODO: Make style with solid color that doesn't have overdraw
                     GUI.BeginGroup(rSquare);
                     Editor.m_AllowMultiObjectAccess = false;
-                    defaultPreview.OnInteractivePreviewGUI(new Rect(0, 0, previewSize, previewSize), s_Styles.preBackgroundSolid);
+                    defaultPreview.OnInteractivePreviewGUI(new Rect(0, 0, previewSize, previewSize), Styles.preBackgroundSolid);
                     Editor.m_AllowMultiObjectAccess = true;
                     GUI.EndGroup();
 
                     // Draw the name of the object
                     r.y = rSquare.yMax;
                     r.height = 16;
-                    GUI.Label(r, targets[i].name, s_Styles.previewMiniLabel);
+                    GUI.Label(r, targets[i].name, Styles.previewMiniLabel);
                     defaultPreview.MoveNextTarget();
                 }
                 defaultPreview.ResetTarget();  // Remember to reset referenceTargetIndex to prevent following calls to 'editor.target' will return a different target which breaks all sorts of places. Fix for case 600235
@@ -225,7 +222,7 @@ namespace UnityEditor
             // If only a single target, just draw that one
             else
             {
-                defaultPreview.OnInteractivePreviewGUI(previewArea, s_Styles.preBackground);
+                defaultPreview.OnInteractivePreviewGUI(previewArea, Styles.preBackground);
 
                 if (Event.current.type == EventType.Repaint)
                 {
@@ -242,8 +239,8 @@ namespace UnityEditor
             // Draw the asset info.
             if (Event.current.type == EventType.Repaint && text != string.Empty)
             {
-                var textHeight = s_Styles.dropShadowLabelStyle.CalcHeight(GUIContent.Temp(text), previewArea.width);
-                EditorGUI.DropShadowLabel(new Rect(previewArea.x, previewArea.yMax - textHeight - kPreviewLabelPadding, previewArea.width, textHeight), text);
+                var textHeight = Styles.dropShadowLabelStyle.CalcHeight(GUIContent.Temp(text), previewArea.width);
+                EditorGUI.LabelField(new Rect(previewArea.x, previewArea.yMax - textHeight - kPreviewLabelPadding, previewArea.width, textHeight), text, Styles.preOverlayLabel);
             }
         }
 
@@ -347,7 +344,7 @@ namespace UnityEditor
         }
 
 
-        internal const float kLineHeight = 16;
+        internal static float kLineHeight = EditorGUI.kSingleLineHeight;
 
         internal bool hideInspector = false;
 
@@ -668,7 +665,12 @@ namespace UnityEditor
 
         internal bool DoDrawDefaultInspector()
         {
-            return DoDrawDefaultInspector(serializedObject);
+            bool res;
+            using (new UnityEditor.Localization.Editor.LocalizationGroup(target))
+            {
+                res = DoDrawDefaultInspector(serializedObject);
+            }
+            return res;
         }
 
         // Repaint any inspectors that shows this editor.
@@ -818,7 +820,9 @@ namespace UnityEditor
             GUI.Label(titleRect, header, EditorStyles.largeLabel);
         }
 
-        internal virtual void DrawHeaderHelpAndSettingsGUI(Rect r)
+        // Draws the help and settings part of the header.
+        // Returns a Rect to know where to draw the rest of the header.
+        internal virtual Rect DrawHeaderHelpAndSettingsGUI(Rect r)
         {
             // Help
             var settingsSize = EditorStyles.iconButton.CalcSize(EditorGUI.GUIContents.titleSettingsIcon);
@@ -834,7 +838,7 @@ namespace UnityEditor
             currentOffset += settingsSize.x;
 
             // Show Editor Header Items.
-            EditorGUIUtility.DrawEditorHeaderItems(new Rect(r.xMax - currentOffset, r.y + kTopMargin, settingsSize.x, settingsSize.y), targets);
+            return EditorGUIUtility.DrawEditorHeaderItems(new Rect(r.xMax - currentOffset, r.y + kTopMargin, settingsSize.x, settingsSize.y), targets);
         }
 
         // If we call DrawHeaderGUI from inside an an editor's OnInspectorGUI call, we have to do special handling.
@@ -886,16 +890,22 @@ namespace UnityEditor
             if (editor)
                 editor.DrawPostIconContent(iconRect);
 
+            // Help and Settings
+            Rect titleRect;
+            if (editor)
+            {
+                Rect helpAndSettingsRect = editor.DrawHeaderHelpAndSettingsGUI(r);
+                float rectX = r.x + kImageSectionWidth;
+                titleRect = new Rect(rectX, r.y + 6, (helpAndSettingsRect.x - rectX) - 4, 16);
+            }
+            else
+                titleRect = new Rect(r.x + kImageSectionWidth, r.y + 6, r.width - kImageSectionWidth, 16);
+
             // Title
-            Rect titleRect = new Rect(r.x + kImageSectionWidth, r.y + 6, r.width - kImageSectionWidth - 38 - 4, 16);
             if (editor)
                 editor.OnHeaderTitleGUI(titleRect, header);
             else
                 GUI.Label(titleRect, header, EditorStyles.largeLabel);
-
-            // Help and Settings
-            if (editor)
-                editor.DrawHeaderHelpAndSettingsGUI(r);
 
             // Context Menu
             Event evt = Event.current;

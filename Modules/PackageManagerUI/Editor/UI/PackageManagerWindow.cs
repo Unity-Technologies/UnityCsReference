@@ -86,12 +86,19 @@ namespace UnityEditor.PackageManager.UI
             PackageManagerPrefs.LastUsedPackageFilter = LastUsedPackageFilter;
         }
 
+        private void OnDestroy()
+        {
+            foreach (var extension in PackageManagerExtensions.ToolbarExtensions)
+                extension.OnWindowDestroy();
+        }
+
         private void SetupCollection()
         {
             Collection.OnPackagesChanged += (filter, packages) =>
             {
                 PackageList.SetPackages(filter, packages);
                 SelectionManager.Selection.TriggerNewSelection();
+                PackageManagerToolbar.OnPackagesChanged();
             };
             Collection.OnUpdateTimeChange += PackageStatusbar.SetUpdateTimeMessage;
             Collection.ListSignal.WhenOperation(PackageStatusbar.OnListOrSearchOperation);
@@ -109,6 +116,7 @@ namespace UnityEditor.PackageManager.UI
             PackageManagerToolbar.OnFilterChange += OnFilterChange;
             PackageManagerToolbar.OnTogglePreviewChange += OnTogglePreviewChange;
             PackageManagerToolbar.SetFilter(Collection.Filter);
+            PackageManagerToolbar.SetCollection(Collection);
         }
 
         private void SetupSearchToolbar()

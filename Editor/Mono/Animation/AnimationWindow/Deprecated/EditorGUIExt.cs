@@ -194,6 +194,13 @@ namespace UnityEditor
             DoMinMaxSlider(position, GUIUtility.GetControlID(s_MinMaxSliderHash, FocusType.Passive), ref value, ref size, visualStart, visualEnd, startLimit, endLimit, slider, thumb, horiz);
         }
 
+        private static float ThumbSize(bool horiz, GUIStyle thumb)
+        {
+            if (horiz)
+                return thumb.fixedWidth != 0 ? thumb.fixedWidth : thumb.padding.horizontal;
+            return thumb.fixedHeight != 0 ? thumb.fixedHeight : thumb.padding.vertical;
+        }
+
         internal static void DoMinMaxSlider(Rect position, int id, ref float value, ref float size, float visualStart, float visualEnd, float startLimit, float endLimit, GUIStyle slider, GUIStyle thumb, bool horiz)
         {
             Event evt = Event.current;
@@ -230,27 +237,32 @@ namespace UnityEditor
             float mousePosition;
             Rect thumbRect;
             Rect thumbMinRect, thumbMaxRect;
+            Rect contentRect = thumb.margin.Remove(slider.padding.Remove(position));
+            float thumbSize = ThumbSize(horiz, thumb);
+
             if (horiz)
             {
-                float thumbSize = thumb.fixedWidth != 0 ? thumb.fixedWidth : thumb.padding.horizontal;
+                float thumbHeight = (thumb.fixedHeight != 0 ? thumb.fixedHeight : contentRect.height);
+
                 pixelsPerValue = (position.width - slider.padding.horizontal - thumbSize) / (maxVisual - minVisual);
                 thumbRect = new Rect(
-                    (displayValue - minVisual) * pixelsPerValue + position.x + slider.padding.left,
-                    position.y + slider.padding.top,
+                    (displayValue - minVisual) * pixelsPerValue + contentRect.x,
+                    contentRect.y,
                     displaySize * pixelsPerValue + thumbSize,
-                    position.height - slider.padding.vertical);
+                    thumbHeight);
                 thumbMinRect = new Rect(thumbRect.x, thumbRect.y, thumb.padding.left, thumbRect.height);
                 thumbMaxRect = new Rect(thumbRect.xMax - thumb.padding.right, thumbRect.y, thumb.padding.right, thumbRect.height);
                 mousePosition = evt.mousePosition.x - position.x;
             }
             else
             {
-                float thumbSize = thumb.fixedHeight != 0 ? thumb.fixedHeight : thumb.padding.vertical;
+                float thumbWidth = (thumb.fixedWidth != 0 ? thumb.fixedWidth : contentRect.width);
+
                 pixelsPerValue = (position.height - slider.padding.vertical - thumbSize) / (maxVisual - minVisual);
                 thumbRect = new Rect(
-                    position.x + slider.padding.left,
-                    (displayValue - minVisual) * pixelsPerValue + position.y + slider.padding.top,
-                    position.width - slider.padding.horizontal,
+                    contentRect.x,
+                    (displayValue - minVisual) * pixelsPerValue + contentRect.y,
+                    thumbWidth,
                     displaySize * pixelsPerValue + thumbSize);
                 thumbMinRect = new Rect(thumbRect.x, thumbRect.y, thumbRect.width, thumb.padding.top);
                 thumbMaxRect = new Rect(thumbRect.x, thumbRect.yMax - thumb.padding.bottom, thumbRect.width, thumb.padding.bottom);
