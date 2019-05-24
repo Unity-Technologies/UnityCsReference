@@ -16,6 +16,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
         public static void InjectCompileGuard()
         {
             CompilationPipeline.compilationStarted +=  ExperimentalMemoryProfiler.StartedCompilationCallback;
+            CompilationPipeline.compilationFinished += ExperimentalMemoryProfiler.FinishedCompilationCallback;
         }
     }
 }

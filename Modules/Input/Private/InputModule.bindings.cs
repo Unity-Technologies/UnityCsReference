@@ -13,6 +13,7 @@ namespace UnityEngineInternal.Input
     [NativeHeader("Modules/Input/Private/InputModuleBindings.h")]
     [NativeHeader("Modules/Input/Private/InputInternal.h")]
     [NativeConditional("ENABLE_NEW_INPUT_SYSTEM")]
+    #pragma warning disable 618 // These APIs are marked obsolete in 19.1, because they are becoming internal in 19.2
     public partial class NativeInputSystem
     {
         internal static extern bool hasDeviceDiscoveredCallback { set; }
@@ -44,4 +45,5 @@ namespace UnityEngineInternal.Input
 
         public static extern void SetUpdateMask(NativeInputUpdateType mask);
     }
+    #pragma warning restore
 }

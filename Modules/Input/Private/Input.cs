@@ -13,9 +13,11 @@ namespace UnityEngineInternal.Input
     using NativeBeforeUpdateCallback = System.Action<NativeInputUpdateType>;
     using NativeDeviceDiscoveredCallback = System.Action<int, string>;
     using NativeShouldRunUpdateCallback = System.Func<NativeInputUpdateType, bool>;
+    [System.Obsolete("These APIs are meant to be used internally by the new Input System package, and will be removed from the public API in Unity 2019.2")]
     public unsafe delegate void NativeUpdateCallback(NativeInputUpdateType updateType, NativeInputEventBuffer* buffer);
 
     // C# doesn't support multi-character literals, so we do it by hand here...
+    [System.Obsolete("These APIs are meant to be used internally by the new Input System package, and will be removed from the public API in Unity 2019.2")]
     public enum NativeInputEventType
     {
         DeviceRemoved = 0x4452454D,
@@ -27,6 +29,7 @@ namespace UnityEngineInternal.Input
     }
     // We pass this as a struct to make it less painful to change the OnUpdate() API if need be.
     [StructLayout(LayoutKind.Explicit, Size = 20, Pack = 1)]
+    [System.Obsolete("These APIs are meant to be used internally by the new Input System package, and will be removed from the public API in Unity 2019.2")]
     public unsafe struct NativeInputEventBuffer
     {
         // NOTE: Keep this as the first field in the struct. This avoids alignment/packing issues
@@ -38,6 +41,7 @@ namespace UnityEngineInternal.Input
         [FieldOffset(16)] public int capacityInBytes;
     }
     [StructLayout(LayoutKind.Explicit, Size = 20, Pack = 1)]
+    [System.Obsolete("These APIs are meant to be used internally by the new Input System package, and will be removed from the public API in Unity 2019.2")]
     public struct NativeInputEvent
     {
         [FieldOffset(0)] public NativeInputEventType type;
@@ -57,6 +61,7 @@ namespace UnityEngineInternal.Input
     }
 
     [Flags]
+    [System.Obsolete("These APIs are meant to be used internally by the new Input System package, and will be removed from the public API in Unity 2019.2")]
     public enum NativeInputUpdateType
     {
         Dynamic = 1 << 0,
@@ -66,7 +71,7 @@ namespace UnityEngineInternal.Input
         IgnoreFocus = 1 << 31,
     }
 
-
+    [System.Obsolete("These APIs are meant to be used internally by the new Input System package, and will be removed from the public API in Unity 2019.2")]
     public partial class NativeInputSystem
     {
         public static NativeUpdateCallback onUpdate;
