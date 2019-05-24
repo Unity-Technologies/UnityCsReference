@@ -16,8 +16,8 @@ namespace UnityEditor
         }
 
         private AudioFilterGUI m_AudioFilterGUI;
-
         private float m_LastHeight;
+        private Rect m_LastVisibleRect;
         private OptimizedBlockState m_OptimizedBlockState = OptimizedBlockState.CheckOptimizedBlock;
 
         internal override bool GetOptimizedGUIBlock(bool isDirty, bool isVisible, out float height)
@@ -61,22 +61,18 @@ namespace UnityEditor
 
             height = 0;
             SerializedProperty property = m_SerializedObject.GetIterator();
-            while (property.NextVisible(height <= 0))
+            bool childrenAreExpanded = true;
+            while (property.NextVisible(childrenAreExpanded))
             {
                 var handler = ScriptAttributeUtility.GetHandler(property);
-                if (!handler.CanCacheInspectorGUI(property))
-                    return ResetOptimizedBlock(OptimizedBlockState.NoOptimizedBlock);
+                height += handler.GetHeight(property, null, false) + EditorGUI.kControlVerticalSpacing;
 
-                // Allocate height for control plus spacing below it
-                height += handler.GetHeight(property, null, true) + EditorGUI.kControlVerticalSpacing;
+                childrenAreExpanded = property.isExpanded;
             }
-
-            // Allocate height for spacing above first control
-            if (height > 0)
-                height += EditorGUI.kControlVerticalSpacing;
 
             m_LastHeight = height;
             m_OptimizedBlockState = OptimizedBlockState.HasOptimizedBlock;
+
             return true;
         }
 
@@ -88,7 +84,13 @@ namespace UnityEditor
             bool wasEnabled = GUI.enabled;
             var visibleRect = GUIClip.visibleRect;
             var contentOffset = contentRect.y;
-            contentRect.y += EditorGUI.kControlVerticalSpacing;
+            if (Event.current.type != EventType.Repaint)
+                visibleRect = m_LastVisibleRect;
+
+            // Release keyboard focus before scrolling so that the virtual scrolling focus wrong control.
+            if (Event.current.type == EventType.ScrollWheel)
+                GUIUtility.keyboardControl = 0;
+
 
             var property = m_SerializedObject.GetIterator();
             var isInspectorModeNormal = inspectorMode == InspectorMode.Normal;
@@ -101,7 +103,7 @@ namespace UnityEditor
                 {
                     EditorGUI.indentLevel = property.depth;
                     using (new EditorGUI.DisabledScope(isInspectorModeNormal && "m_Script" == property.propertyPath))
-                        childrenAreExpanded = handler.OnGUI(contentRect, property, null, false, visibleRect);
+                        childrenAreExpanded = handler.OnGUI(contentRect, property, null, false, visibleRect) && property.isExpanded;
                 }
                 else
                     childrenAreExpanded = property.isExpanded;
@@ -109,7 +111,18 @@ namespace UnityEditor
                 contentRect.y += contentRect.height + EditorGUI.kControlVerticalSpacing;
             }
 
-            m_LastHeight = contentRect.y - contentOffset;
+            // Fix new height
+            if (Event.current.type == EventType.Repaint)
+            {
+                m_LastVisibleRect = visibleRect;
+                var newHeight = contentRect.y - contentOffset;
+                if (newHeight != m_LastHeight)
+                {
+                    m_LastHeight = contentRect.y - contentOffset;
+                    Repaint();
+                }
+            }
+
             GUI.enabled = wasEnabled;
             return m_SerializedObject.ApplyModifiedProperties();
         }
@@ -165,11 +178,10 @@ namespace UnityEditor
             }
         }
 
-        private bool ResetOptimizedBlock(OptimizedBlockState resetState = OptimizedBlockState.CheckOptimizedBlock)
+        private void ResetOptimizedBlock(OptimizedBlockState resetState = OptimizedBlockState.CheckOptimizedBlock)
         {
             m_LastHeight = -1;
             m_OptimizedBlockState = resetState;
-            return m_OptimizedBlockState == OptimizedBlockState.HasOptimizedBlock;
         }
 
         internal void OnDisableINTERNAL()

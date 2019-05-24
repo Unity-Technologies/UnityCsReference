@@ -15,6 +15,26 @@ namespace UnityEditor
 {
     internal class SceneVisibilityManager : ScriptableSingleton<SceneVisibilityManager>
     {
+        internal class ShortcutContext : IShortcutToolContext
+        {
+            public bool active
+            {
+                get
+                {
+                    var focusedWindow = EditorWindow.focusedWindow;
+                    if (focusedWindow != null)
+                    {
+                        return (focusedWindow.GetType() == typeof(SceneView) ||
+                            focusedWindow.GetType() == typeof(SceneHierarchyWindow));
+                    }
+
+                    return false;
+                }
+            }
+        }
+
+        private static ShortcutContext s_ShortcutContext;
+
         internal static event Action hiddenContentChanged;
         internal static event Action currentStageIsolated;
 
@@ -41,6 +61,8 @@ namespace UnityEditor
             SceneVisibilityState.internalStructureChanged += InternalStructureChanged;
             PrefabStage stage = StageNavigationManager.instance.GetCurrentPrefabStage();
             SceneVisibilityState.SetPrefabStageScene(stage == null ? default(Scene) : stage.scene);
+            s_ShortcutContext = new ShortcutContext();
+            ShortcutIntegration.instance.contextManager.RegisterToolContext(s_ShortcutContext);
         }
 
         private static void InternalStructureChanged()
@@ -336,7 +358,7 @@ namespace UnityEditor
         }
 
         //SHORTCUTS
-        [Shortcut("Scene Visibility/Toggle Visibility")]
+        [Shortcut("Scene Visibility/Toggle Visibility for Selection")]
         internal static void ToggleSelectionGameObjectVisibility()
         {
             if (Selection.gameObjects.Length > 0)
@@ -351,13 +373,13 @@ namespace UnityEditor
 
                     shouldHide = false;
                 }
-                Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Visibility");
+                Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Visibility for Selection");
                 SceneVisibilityState.SetGameObjectsHidden(Selection.gameObjects, shouldHide, false);
                 HiddenContentChanged();
             }
         }
 
-        [Shortcut("Scene Visibility/Toggle Visibility And Children")]
+        [Shortcut("Scene Visibility/Toggle Visibility for Selection and Children", typeof(ShortcutContext), KeyCode.H)]
         internal static void ToggleSelectionHierarchyVisibility()
         {
             if (Selection.gameObjects.Length > 0)
@@ -372,7 +394,7 @@ namespace UnityEditor
 
                     shouldHide = false;
                 }
-                Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Visibility And Children");
+                Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Visibility for Selection and Children");
                 SceneVisibilityState.SetGameObjectsHidden(Selection.gameObjects, shouldHide, true);
                 HiddenContentChanged();
             }
@@ -446,10 +468,10 @@ namespace UnityEditor
             }
         }
 
-        [Shortcut("Scene Visibility/Toggle Isolation on Selection And Children")]
+        [Shortcut("Scene Visibility/Toggle Isolation for Selection and Children", typeof(ShortcutContext), KeyCode.H, ShortcutModifiers.Shift)]
         internal static void ToggleSelectionHierarchyIsolation()
         {
-            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Isolation on Selection And Children");
+            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Isolation for Selection and Children");
 
             if (!IsCurrentStageIsolated())
             {
@@ -470,10 +492,10 @@ namespace UnityEditor
             }
         }
 
-        [Shortcut("Scene Visibility/Toggle Isolation on Selection")]
+        [Shortcut("Scene Visibility/Toggle Isolation for Selection")]
         internal static void ToggleSelectionGameObjectIsolation()
         {
-            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Isolation on Selection");
+            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Isolation for Selection");
 
             if (!IsCurrentStageIsolated())
             {
