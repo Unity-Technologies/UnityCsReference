@@ -123,7 +123,7 @@ namespace UnityEditor.Scripting
 
         private static string AssemblySearchPathArgument()
         {
-            var searchPath = Path.Combine(MonoInstallationFinder.GetFrameWorksFolder(), "Managed") + ","
+            var searchPath = "+" + Path.Combine(MonoInstallationFinder.GetFrameWorksFolder(), "Managed") + ","
                 + "+" + Path.Combine(EditorApplication.applicationContentsPath, "UnityExtensions/Unity") + ","
                 + "+" + Application.dataPath;
 

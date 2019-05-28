@@ -197,6 +197,9 @@ namespace UnityEditor.Experimental.SceneManagement
             // Fast path (most common): check all roots first
             foreach (var prefabRoot in rootsAfterLoadingPrefab)
             {
+                if (prefabRoot == null)
+                    continue;
+
                 UInt64 id = GetPrefabOrVariantFileID(prefabRoot);
                 if (id == prefabAssetRootFileID)
                     return prefabRoot;
@@ -205,6 +208,9 @@ namespace UnityEditor.Experimental.SceneManagement
             // If not found in list of roots then check descendants
             foreach (var root in rootsAfterLoadingPrefab)
             {
+                if (root == null)
+                    continue;
+
                 var prefabRoot = FindFirstGameObjectThatMatchesFileID(root.transform, prefabAssetRootFileID);
                 if (prefabRoot != null)
                     return prefabRoot;

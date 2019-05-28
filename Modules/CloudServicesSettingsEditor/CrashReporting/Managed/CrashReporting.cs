@@ -21,7 +21,7 @@ namespace UnityEditor.CrashReporting
         {
             get
             {
-                string configUrl = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudPerfEvents);
+                string configUrl = CrashReportingSettings.GetEventUrl();
                 if (!string.IsNullOrEmpty(configUrl))
                 {
                     return configUrl;
@@ -69,6 +69,8 @@ namespace UnityEditor.CrashReporting
                 {
                     return environmentValue;
                 }
+
+                CrashReportingSettings.EnsureConnectReady();
 
                 string accessToken = UnityConnect.instance.GetAccessToken();
                 if (string.IsNullOrEmpty(accessToken))
