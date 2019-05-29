@@ -8,7 +8,7 @@ using UnityEngine.Bindings;
 
 namespace Unity.Audio
 {
-    [NativeType(Header = "Modules/Audio/Public/csas/ExecuteContext.bindings.h")]
+    [NativeType(Header = "Modules/DSPGraph/Public/ExecuteContext.bindings.h")]
     internal unsafe struct ExecuteContextInternal
     {
         [NativeMethod(IsThreadSafe = true, IsFreeFunction = true)]

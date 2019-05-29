@@ -561,6 +561,7 @@ namespace UnityEditor
 
         private void ShowGICache(string searchContext)
         {
+            EditorGUI.BeginChangeCheck();
             {
                 // Show Gigabytes to the user.
                 const int kMinSizeInGigabytes = 5;
@@ -568,7 +569,6 @@ namespace UnityEditor
 
                 // Write size in GigaBytes.
                 m_GICacheSettings.m_MaximumSize = EditorGUILayout.IntSlider(GICacheProperties.maxCacheSize, m_GICacheSettings.m_MaximumSize, kMinSizeInGigabytes, kMaxSizeInGigabytes);
-                WritePreferences();
             }
             GUILayout.BeginHorizontal();
             {
@@ -599,7 +599,6 @@ namespace UnityEditor
                         if (!string.IsNullOrEmpty(path))
                         {
                             m_GICacheSettings.m_CachePath = path;
-                            WritePreferences();
                         }
                     }
                     GUILayout.EndHorizontal();
@@ -627,6 +626,9 @@ namespace UnityEditor
                 GUILayout.Label(GICacheProperties.cacheFolderLocation.text + ":");
                 GUILayout.Label(UnityEditor.Lightmapping.diskCachePath, Constants.cacheFolderLocation);
             }
+
+            if (EditorGUI.EndChangeCheck())
+                WritePreferences();
         }
 
         private void ShowLanguage(string searchContext)

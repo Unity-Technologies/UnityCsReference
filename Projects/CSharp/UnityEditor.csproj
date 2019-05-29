@@ -5044,6 +5044,9 @@
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\LayerMaskFieldSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\Snippets\LayerMaskFieldSnippet.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\ListViewSnippet.cs">
+      <Link>Modules\UIElementsSamplesEditor\Snippets\ListViewSnippet.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\LongFieldSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\Snippets\LongFieldSnippet.cs</Link>
     </Compile>

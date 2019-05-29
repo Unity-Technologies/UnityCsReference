@@ -240,6 +240,7 @@ namespace UnityEngine
             GUI.skin = null;
             guiIsExiting = false;
             GUI.changed = false;
+            GUI.scrollViewStates.Clear();
         }
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]

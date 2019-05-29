@@ -23,7 +23,7 @@ namespace UnityEditor
             static EditorShaderLoader()
             {
                 // TODO: Remove this once case 1148851 has been fixed.
-                UnityEngine.UIElements.UIR.UIRenderDevice.editorShader = EditorShader;
+                UnityEngine.UIElements.UIR.UIRenderDevice.getEditorShader = () => EditorShader;
             }
         }
 

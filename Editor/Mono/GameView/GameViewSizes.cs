@@ -269,7 +269,7 @@ namespace UnityEditor
                 case BuildTarget.StandaloneOSX:
                     return !PlayerSettings.macRetinaSupport; // if retina support enabled -> expecting LowRes setting disabled by default
                 default:
-                    return true;
+                    return GUIUtility.pixelsPerPoint <= 1.0f;
             }
         }
 

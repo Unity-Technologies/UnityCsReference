@@ -1334,7 +1334,7 @@ namespace UnityEngine
             GUIClip.Pop();
         }
 
-        private static readonly UnityEngineInternal.GenericStack s_ScrollViewStates = new UnityEngineInternal.GenericStack();
+        internal static UnityEngineInternal.GenericStack scrollViewStates { get; set; } = new UnityEngineInternal.GenericStack();
 
         public static Vector2 BeginScrollView(Rect position, Vector2 scrollPosition, Rect viewRect)
         {
@@ -1392,7 +1392,7 @@ namespace UnityEngine
             state.visibleRect = state.viewRect = viewRect;
             state.visibleRect.width = position.width;
             state.visibleRect.height = position.height;
-            s_ScrollViewStates.Push(state);
+            scrollViewStates.Push(state);
 
             Rect clipRect = new Rect(position);
             switch (Event.current.type)
@@ -1476,11 +1476,11 @@ namespace UnityEngine
         public static void EndScrollView(bool handleScrollWheel)
         {
             GUIUtility.CheckOnGUI();
-            ScrollViewState state = (ScrollViewState)s_ScrollViewStates.Peek();
+            ScrollViewState state = (ScrollViewState)scrollViewStates.Peek();
 
             GUIClip.Pop();
 
-            s_ScrollViewStates.Pop();
+            scrollViewStates.Pop();
 
             // This is the mac way of handling things: if the mouse is over a scrollview, the scrollview gets the event.
             if (handleScrollWheel && Event.current.type == EventType.ScrollWheel && state.position.Contains(Event.current.mousePosition)
@@ -1505,8 +1505,8 @@ namespace UnityEngine
 
         internal static ScrollViewState GetTopScrollView()
         {
-            if (s_ScrollViewStates.Count != 0)
-                return (ScrollViewState)s_ScrollViewStates.Peek();
+            if (scrollViewStates.Count != 0)
+                return (ScrollViewState)scrollViewStates.Peek();
             return null;
         }
 

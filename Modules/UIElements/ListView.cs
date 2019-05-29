@@ -26,7 +26,11 @@ namespace UnityEngine.UIElements
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
-                ((ListView)ve).itemHeight = m_ItemHeight.GetValueFromBag(bag, cc);
+                int itemHeight = 0;
+                if (m_ItemHeight.TryGetValueFromBag(bag, cc, ref itemHeight))
+                {
+                    ((ListView)ve).itemHeight = itemHeight;
+                }
             }
         }
 

@@ -1390,6 +1390,12 @@
     <Compile Include="..\..\Modules\Audio\Public\Managed\Audio.deprecated.cs">
       <Link>Modules\Audio\Public\Managed\Audio.deprecated.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\Managed\IHandle.cs">
+      <Link>Modules\Audio\Public\Managed\IHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\Managed\IValidatable.cs">
+      <Link>Modules\Audio\Public\Managed\IValidatable.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\Audio.bindings.cs">
       <Link>Modules\Audio\Public\ScriptBindings\Audio.bindings.cs</Link>
     </Compile>
@@ -1420,26 +1426,8 @@
     <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioSourceExtensions.bindings.cs">
       <Link>Modules\Audio\Public\ScriptBindings\AudioSourceExtensions.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Audio\Public\csas\ScriptBindings\AudioHandle.bindings.cs">
-      <Link>Modules\Audio\Public\csas\ScriptBindings\AudioHandle.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Audio\Public\csas\ScriptBindings\DSPCommandBlock.bindings.cs">
-      <Link>Modules\Audio\Public\csas\ScriptBindings\DSPCommandBlock.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Audio\Public\csas\ScriptBindings\DSPGraph.bindings.cs">
-      <Link>Modules\Audio\Public\csas\ScriptBindings\DSPGraph.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Audio\Public\csas\ScriptBindings\DSPNodeUpdateRequest.bindings.cs">
-      <Link>Modules\Audio\Public\csas\ScriptBindings\DSPNodeUpdateRequest.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Audio\Public\csas\ScriptBindings\DSPSampleProvider.bindings.cs">
-      <Link>Modules\Audio\Public\csas\ScriptBindings\DSPSampleProvider.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Audio\Public\csas\ScriptBindings\ExecuteContext.bindings.cs">
-      <Link>Modules\Audio\Public\csas\ScriptBindings\ExecuteContext.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Audio\Public\csas\ScriptBindings\ExposeDSPGraph.cs">
-      <Link>Modules\Audio\Public\csas\ScriptBindings\ExposeDSPGraph.cs</Link>
+    <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\ExposeDSPGraph.cs">
+      <Link>Modules\Audio\Public\ScriptBindings\ExposeDSPGraph.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Cloth\Cloth.bindings.cs">
       <Link>Modules\Cloth\Cloth.bindings.cs</Link>
@@ -1449,6 +1437,27 @@
     </Compile>
     <Compile Include="..\..\Modules\CrashReporting\CrashReporter.bindings.cs">
       <Link>Modules\CrashReporting\CrashReporter.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\DSPGraph\Public\ScriptBindings\AudioHandle.bindings.cs">
+      <Link>Modules\DSPGraph\Public\ScriptBindings\AudioHandle.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\DSPGraph\Public\ScriptBindings\DSPCommandBlock.bindings.cs">
+      <Link>Modules\DSPGraph\Public\ScriptBindings\DSPCommandBlock.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\DSPGraph\Public\ScriptBindings\DSPGraph.bindings.cs">
+      <Link>Modules\DSPGraph\Public\ScriptBindings\DSPGraph.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\DSPGraph\Public\ScriptBindings\DSPNodeUpdateRequest.bindings.cs">
+      <Link>Modules\DSPGraph\Public\ScriptBindings\DSPNodeUpdateRequest.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\DSPGraph\Public\ScriptBindings\DSPSampleProvider.bindings.cs">
+      <Link>Modules\DSPGraph\Public\ScriptBindings\DSPSampleProvider.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\DSPGraph\Public\ScriptBindings\ExecuteContext.bindings.cs">
+      <Link>Modules\DSPGraph\Public\ScriptBindings\ExecuteContext.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\DSPGraph\Public\ScriptBindings\ExposeDSPGraph.cs">
+      <Link>Modules\DSPGraph\Public\ScriptBindings\ExposeDSPGraph.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Director\ScriptBindings\PlayableDirector.bindings.cs">
       <Link>Modules\Director\ScriptBindings\PlayableDirector.bindings.cs</Link>

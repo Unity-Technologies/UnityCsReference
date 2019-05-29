@@ -9,7 +9,7 @@ using UnityEngine.Bindings;
 
 namespace Unity.Audio
 {
-    [NativeType(Header = "Modules/Audio/Public/csas/DSPNodeUpdateRequest.bindings.h")]
+    [NativeType(Header = "Modules/DSPGraph/Public/DSPNodeUpdateRequest.bindings.h")]
     internal struct DSPNodeUpdateRequestHandleInternal
     {
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]

@@ -126,20 +126,7 @@ namespace UnityEditor
 
             EditorGUILayout.PropertyField(m_MaskInteraction, Styles.maskInteractionLabel);
             EditorGUILayout.PropertyField(m_SpriteSortPoint, Styles.spriteSortPointLabel);
-
-            // material
-            Rect r = GUILayoutUtility.GetRect(
-                EditorGUILayout.kLabelFloatMinW, EditorGUILayout.kLabelFloatMaxW,
-                EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight);
-
-            EditorGUI.showMixedValue = m_Material.hasMultipleDifferentValues;
-            Object currentMaterialRef = m_Material.GetArrayElementAtIndex(0).objectReferenceValue;
-            Object returnedMaterialRef = EditorGUI.ObjectField(r, Styles.materialLabel, currentMaterialRef, typeof(Material), false);
-            if (returnedMaterialRef != currentMaterialRef)
-            {
-                m_Material.GetArrayElementAtIndex(0).objectReferenceValue = returnedMaterialRef;
-            }
-            EditorGUI.showMixedValue = false;
+            EditorGUILayout.PropertyField(m_Material.GetArrayElementAtIndex(0), Styles.materialLabel, true);
 
             ShowMaterialError();
 
