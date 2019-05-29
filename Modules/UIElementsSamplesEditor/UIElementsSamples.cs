@@ -86,6 +86,7 @@ namespace UnityEditor.UIElements.Samples
                 new SampleTreeItem("Label", LabelSnippet.Create),
                 new SampleTreeItem("Text Field", TextFieldSnippet.Create),
                 new SampleTreeItem("Object Field", ObjectFieldSnippet.Create),
+                new SampleTreeItem("List View", ListViewSnippet.Create),
                 new SampleTreeItem("Numeric Fields", MakeNumericFieldsPanel, new List<TreeViewItem<string>>()
                 {
                     new SampleTreeItem("Integer", IntegerFieldSnippet.Create),

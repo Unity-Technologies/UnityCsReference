@@ -261,26 +261,6 @@ namespace UnityEditor
 
 
             LoadEditorUserSettings();
-
-            m_AssetPipelineMode = m_EditorUserSettings.FindProperty("m_AssetPipelineMode");
-            m_CacheServerMode = m_EditorUserSettings.FindProperty("m_CacheServerMode");
-            m_CacheServers = m_EditorUserSettings.FindProperty("m_CacheServers");
-
-
-            m_CacheServerConnectionState = CacheServerConnectionState.Unknown;
-            s_ForcedAssetPipelineWarning = null;
-
-            if (m_CacheServerList == null)
-            {
-                m_CacheServerList = new ReorderableList(serializedObject, m_CacheServers, true, false, true, true);
-                m_CacheServerList.onReorderCallback = (ReorderableList list) => { serializedObject.ApplyModifiedProperties(); };
-                m_CacheServerList.onAddCallback = (ReorderableList list) => { m_CacheServers.arraySize += 1; serializedObject.ApplyModifiedProperties(); };
-                m_CacheServerList.onRemoveCallback = (ReorderableList list) => { ReorderableList.defaultBehaviours.DoRemoveButton(list); serializedObject.ApplyModifiedProperties(); };
-                m_CacheServerList.onCanRemoveCallback = (ReorderableList list) => { return list.index < m_CacheServers.arraySize && list.index >= 0; };
-                m_CacheServerList.drawElementCallback = DrawCacheServerListElement;
-                m_CacheServerList.elementHeight = EditorGUIUtility.singleLineHeight + 2;
-                m_CacheServerList.headerHeight = 3;
-            }
         }
 
         public void OnDisable()
@@ -345,6 +325,11 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
+            if (m_EditorUserSettings != null && !m_EditorUserSettings.targetObject)
+            {
+                LoadEditorUserSettings();
+            }
+
             serializedObject.Update();
 
             // GUI.enabled hack because we don't want some controls to be disabled if the EditorSettings.asset is locked
@@ -587,6 +572,25 @@ namespace UnityEditor
                 {
                     m_EditorUserSettings = new SerializedObject(o);
                 }
+            }
+
+            m_AssetPipelineMode = m_EditorUserSettings.FindProperty("m_AssetPipelineMode");
+            m_CacheServerMode = m_EditorUserSettings.FindProperty("m_CacheServerMode");
+            m_CacheServers = m_EditorUserSettings.FindProperty("m_CacheServers");
+
+            m_CacheServerConnectionState = CacheServerConnectionState.Unknown;
+            s_ForcedAssetPipelineWarning = null;
+
+            if (m_CacheServerList == null)
+            {
+                m_CacheServerList = new ReorderableList(serializedObject, m_CacheServers, true, false, true, true);
+                m_CacheServerList.onReorderCallback = (ReorderableList list) => { serializedObject.ApplyModifiedProperties(); };
+                m_CacheServerList.onAddCallback = (ReorderableList list) => { m_CacheServers.arraySize += 1; serializedObject.ApplyModifiedProperties(); };
+                m_CacheServerList.onRemoveCallback = (ReorderableList list) => { ReorderableList.defaultBehaviours.DoRemoveButton(list); serializedObject.ApplyModifiedProperties(); };
+                m_CacheServerList.onCanRemoveCallback = (ReorderableList list) => { return list.index < m_CacheServers.arraySize && list.index >= 0; };
+                m_CacheServerList.drawElementCallback = DrawCacheServerListElement;
+                m_CacheServerList.elementHeight = EditorGUIUtility.singleLineHeight + 2;
+                m_CacheServerList.headerHeight = 3;
             }
         }
 

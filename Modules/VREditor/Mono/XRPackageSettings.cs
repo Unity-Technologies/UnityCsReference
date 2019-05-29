@@ -102,9 +102,7 @@ namespace UnityEditorInternal.VR
                 return;
 
             string packageInitPath = GetStorageFilePath();
-            if (!Provider.PromptAndCheckoutIfNeeded(
-                new string[] { packageInitPath },
-                String.Format("Unity needs to update a file ({0}) that is currently under source control.", packageInitPath)))
+            if (!Provider.PromptAndCheckoutIfNeeded(new string[] { packageInitPath }, String.Empty))
                 return;
 
             FileInfo info = new FileInfo(packageInitPath);
@@ -148,9 +146,11 @@ namespace UnityEditorInternal.VR
                 lock (m_SettingsLock)
                 {
                     int index = m_SettingKeys.IndexOf(key);
-                    m_SettingKeys[index] = key;
-                    m_SettingValues[index] = value;
-                    m_IsDirty = true;
+                    if (m_SettingValues[index] != value)
+                    {
+                        m_SettingValues[index] = value;
+                        m_IsDirty = true;
+                    }
                 }
             }
         }
