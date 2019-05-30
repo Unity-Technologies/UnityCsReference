@@ -79,31 +79,10 @@ namespace UnityEngine
         }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Property guiText has been deprecated. Use GetComponent<GUIText>() instead. (UnityUpgradable)", true)]
-        public Component guiText
-        {
-            get { throw new NotSupportedException("guiText property has been deprecated"); }
-        }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Property networkView has been deprecated. Use GetComponent<NetworkView>() instead. (UnityUpgradable)", true)]
         public Component networkView
         {
             get { throw new NotSupportedException("networkView property has been deprecated"); }
-        }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Property guiElement has been deprecated. Use GetComponent<GUIElement>() instead. (UnityUpgradable)", true)]
-        public Component guiElement
-        {
-            get { throw new NotSupportedException("guiElement property has been deprecated"); }
-        }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Property guiTexture has been deprecated. Use GetComponent<GUITexture>() instead. (UnityUpgradable)", true)]
-        public Component guiTexture
-        {
-            get { throw new NotSupportedException("guiTexture property has been deprecated"); }
         }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]

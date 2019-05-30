@@ -274,9 +274,22 @@ namespace UnityEditor
 
             if (Provider.enabled)
             {
-                var task = Provider.Checkout(changedScripts.ToArray(), CheckoutMode.Meta);
-                task.Wait();
-                editable = task.success;
+                var needToCheckout = new AssetList();
+                foreach (var s in changedScripts)
+                {
+                    var asset = Provider.GetAssetByPath(AssetDatabase.GetAssetPath(s));
+                    if (asset == null) // script might be outside of the project (e.g. in a package)
+                        continue;
+                    if (AssetDatabase.IsMetaFileOpenForEdit(s, StatusQueryOptions.UseCachedIfPossible))
+                        continue; // might not need a checkout (not connected, etc.)
+                    needToCheckout.Add(asset);
+                }
+                if (needToCheckout.Any())
+                {
+                    var task = Provider.Checkout(needToCheckout, CheckoutMode.Meta);
+                    task.Wait();
+                    editable = task.success;
+                }
             }
 
             if (editable)

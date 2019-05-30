@@ -75,6 +75,7 @@ namespace UnityEngine.UIElements
             UxmlStringAttributeDescription m_ViewDataKey = new UxmlStringAttributeDescription { name = "view-data-key" };
             UxmlEnumAttributeDescription<PickingMode> m_PickingMode = new UxmlEnumAttributeDescription<PickingMode> { name = "picking-mode", obsoleteNames = new[] { "pickingMode" }};
             UxmlStringAttributeDescription m_Tooltip = new UxmlStringAttributeDescription { name = "tooltip" };
+            UxmlEnumAttributeDescription<UsageHints> m_UsageHints = new UxmlEnumAttributeDescription<UsageHints> { name = "usage-hints" };
 
             // focusIndex is obsolete. It has been replaced by tabIndex and focusable.
             protected UxmlIntAttributeDescription focusIndex { get; set; } = new UxmlIntAttributeDescription { name = null, obsoleteNames = new[] { "focus-index", "focusIndex" }, defaultValue = -1 };
@@ -105,6 +106,7 @@ namespace UnityEngine.UIElements
                 ve.name = m_Name.GetValueFromBag(bag, cc);
                 ve.viewDataKey = m_ViewDataKey.GetValueFromBag(bag, cc);
                 ve.pickingMode = m_PickingMode.GetValueFromBag(bag, cc);
+                ve.usageHints = m_UsageHints.GetValueFromBag(bag, cc);
 
                 int index = 0;
                 if (focusIndex.TryGetValueFromBag(bag, cc, ref index))
@@ -205,15 +207,39 @@ namespace UnityEngine.UIElements
             get { return panel?.focusController; }
         }
 
-        private RenderHint m_RenderHint;
-        internal RenderHint renderHint
+        public UsageHints usageHints
         {
-            get { return m_RenderHint; }
+            get
+            {
+                return
+                    (((m_RenderHints & RenderHints.GroupTransform) != 0) ? UsageHints.GroupTransform : 0) |
+                    (((m_RenderHints & RenderHints.BoneTransform) != 0) ? UsageHints.DynamicTransform : 0);
+            }
             set
             {
                 if (panel != null)
-                    throw new InvalidOperationException("renderHint cannot be changed once the VisualElement is part of an active visual tree");
-                m_RenderHint = value;
+                    throw new InvalidOperationException("usageHints cannot be changed once the VisualElement is part of an active visual tree");
+
+                // Preserve hints not exposed through UsageHints
+                if ((value & UsageHints.GroupTransform) != 0)
+                    m_RenderHints |= RenderHints.GroupTransform;
+                else m_RenderHints &= ~RenderHints.GroupTransform;
+
+                if ((value & UsageHints.DynamicTransform) != 0)
+                    m_RenderHints |= RenderHints.BoneTransform;
+                else m_RenderHints &= ~RenderHints.BoneTransform;
+            }
+        }
+
+        private RenderHints m_RenderHints;
+        internal RenderHints renderHints
+        {
+            get { return m_RenderHints; }
+            set
+            {
+                if (panel != null)
+                    throw new InvalidOperationException("renderHints cannot be changed once the VisualElement is part of an active visual tree");
+                m_RenderHints = value;
             }
         }
 
@@ -755,7 +781,7 @@ namespace UnityEngine.UIElements
             name = string.Empty;
             yogaNode = new YogaNode();
 
-            renderHint = RenderHint.None;
+            renderHints = RenderHints.None;
         }
 
         protected override void ExecuteDefaultAction(EventBase evt)

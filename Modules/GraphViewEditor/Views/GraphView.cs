@@ -230,7 +230,7 @@ namespace UnityEditor.Experimental.GraphView
         {
             AddToClassList("graphView");
 
-            renderHint = RenderHint.ClipWithScissors;
+            renderHints = RenderHints.ClipWithScissors;
 
             selection = new List<ISelectable>();
             style.overflow = Overflow.Hidden;
@@ -247,7 +247,7 @@ namespace UnityEditor.Experimental.GraphView
             {
                 name = "contentViewContainer",
                 pickingMode = PickingMode.Ignore,
-                renderHint = RenderHint.GroupTransform
+                usageHints = UsageHints.GroupTransform
             };
 
             // make it absolute and 0 sized so it acts as a transform to move children to and fro

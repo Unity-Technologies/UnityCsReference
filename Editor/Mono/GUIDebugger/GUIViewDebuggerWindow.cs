@@ -117,7 +117,7 @@ namespace UnityEditor
 
         public void ClearInstructionHighlighter()
         {
-            if (!m_StylePicker.IsPicking)
+            if (m_StylePicker != null && !m_StylePicker.IsPicking)
                 m_Highlighter.ClearElement();
         }
 
@@ -203,8 +203,11 @@ namespace UnityEditor
 
         void OnDestroy()
         {
-            m_StylePicker.StopExploreStyle();
-            m_StylePicker = null;
+            if (m_StylePicker != null)
+            {
+                m_StylePicker.StopExploreStyle();
+                m_StylePicker = null;
+            }
         }
 
         void OnDisable()
@@ -212,7 +215,8 @@ namespace UnityEditor
             GUIViewDebuggerHelper.onViewInstructionsChanged -= OnInspectedViewChanged;
             GUIViewDebuggerHelper.onDebuggingViewchanged -= OnDebuggedViewChanged;
             inspected = null;
-            m_StylePicker.StopExploreStyle();
+            if (m_StylePicker != null)
+                m_StylePicker.StopExploreStyle();
         }
 
         void OnBecameVisible()

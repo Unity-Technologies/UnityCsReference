@@ -149,8 +149,7 @@ namespace UnityEditor
     }
 
     // Scripting runtime version
-    // TODO: Obsolete/Uncomment below when managed mono removal cleanup is complete
-    // [Obsolete("ScriptingRuntimeVersion has been deprecated in 2019.3 now that legacy mono has been removed")]
+    [Obsolete("ScriptingRuntimeVersion has been deprecated in 2019.3 now that legacy mono has been removed")]
     public enum ScriptingRuntimeVersion
     {
         // .NET 3.5
@@ -787,8 +786,7 @@ namespace UnityEditor
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         public static extern void SetAdditionalIl2CppArgs(string additionalArgs);
 
-        // TODO: Obsolete/Uncomment below when managed mono removal is complete
-        // [Obsolete("ScriptingRuntimeVersion has been deprecated in 2019.3 due to the removal of legacy mono")]
+        [Obsolete("ScriptingRuntimeVersion has been deprecated in 2019.3 due to the removal of legacy mono")]
         public static ScriptingRuntimeVersion scriptingRuntimeVersion
         {
             get { return ScriptingRuntimeVersion.Latest; }

@@ -14,6 +14,13 @@ namespace UnityEditor
     {
         static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromPath)
         {
+            if (AssetDatabase.IsOnDemandModeEnabled())
+            {
+                // This PostProcessAllAssets will forcefully import everything in on-demand mode
+                // We need to find a better way of filtering on asset type without forcing an import
+                return;
+            }
+
             List<Object> loadedAssets = new List<Object>();
             try
             {

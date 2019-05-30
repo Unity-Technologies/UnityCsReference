@@ -37,6 +37,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="netstandard">
+      <HintPath>..\..\External\MonoBleedingEdge\builds\monodistribution\lib\mono\4.5\Facades\netstandard.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.Cecil">
       <HintPath>..\..\External\Unity.Cecil\builds\lib\net35\Unity.Cecil.dll</HintPath>
     </Reference>

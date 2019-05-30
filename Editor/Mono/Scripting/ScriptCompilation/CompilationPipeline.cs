@@ -303,8 +303,7 @@ namespace UnityEditor.Compilation
             sc.AssemblyFlags flags = sc.AssemblyFlags.None;
             if ((precompiledAssemblySources & PrecompiledAssemblySources.SystemAssembly) != 0)
             {
-                var apiCompat = (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest) ? ApiCompatibilityLevel.NET_4_6 : ApiCompatibilityLevel.NET_2_0;
-                foreach (var a in MonoLibraryHelpers.GetSystemLibraryReferences(apiCompat, Scripting.ScriptCompilers.CSharpSupportedLanguage))
+                foreach (var a in MonoLibraryHelpers.GetSystemLibraryReferences(ApiCompatibilityLevel.NET_4_6, Scripting.ScriptCompilers.CSharpSupportedLanguage))
                 {
                     assemblyNames.Add(a);
                 }

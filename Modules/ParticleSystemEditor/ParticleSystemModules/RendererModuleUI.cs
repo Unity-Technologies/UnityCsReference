@@ -506,7 +506,7 @@ namespace UnityEditor
                     int numMeshes = renderer.GetMeshes(meshes);
                     for (int i = 0; i < numMeshes; i++)
                     {
-                        if (meshes[i].HasChannel(VertexAttribute.TexCoord2))
+                        if (meshes[i].HasVertexAttribute(VertexAttribute.TexCoord2))
                         {
                             if (errors != "")
                                 errors += "\n\n";

@@ -3,8 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngineInternal;
 
 namespace UnityEditor
 {
@@ -17,6 +19,7 @@ namespace UnityEditor
         internal Rect renderManagerRect;
         internal GUISkin skin;
         internal int instanceID;
+        internal GenericStack scrollViewStates;
 
         static private extern void Internal_SetupSavedGUIState(out IntPtr state, out Vector2 screenManagerSize);
 
@@ -32,6 +35,12 @@ namespace UnityEditor
                 state.skin = GUI.skin;
                 state.layoutCache = new GUILayoutUtility.LayoutCache(GUILayoutUtility.current);
                 state.instanceID = GUIUtility.s_OriginalID;
+                if (GUI.scrollViewStates.Count != 0)
+                {
+                    state.scrollViewStates = GUI.scrollViewStates;
+                    GUI.scrollViewStates = new GenericStack();
+                }
+
                 Internal_SetupSavedGUIState(out state.guiState, out state.screenManagerSize);
             }
             return state;
@@ -44,6 +53,12 @@ namespace UnityEditor
                 GUILayoutUtility.current = layoutCache;
                 GUI.skin = skin;
                 GUIUtility.s_OriginalID = instanceID;
+
+                if (scrollViewStates != null)
+                {
+                    GUI.scrollViewStates = scrollViewStates;
+                }
+
                 Internal_ApplySavedGUIState(guiState, screenManagerSize);
                 GUIClip.Reapply();
             }

@@ -39,7 +39,15 @@ namespace UnityEngine.UIElements
     }
 
     [Flags]
-    internal enum RenderHint
+    public enum UsageHints
+    {
+        None = 0,
+        DynamicTransform = 1 << 0,
+        GroupTransform = 1 << 1
+    }
+
+    [Flags]
+    internal enum RenderHints
     {
         None = 0,
         GroupTransform = 1 << 0, // Use uniform matrix to transform children

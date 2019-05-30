@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
 
@@ -29,18 +28,18 @@ namespace UnityEditor
             public static readonly GUIStyle centeredLabel = "IN CenteredLabel";
         }
 
-        protected ListViewState listViewState { get { return m_ListViewState; } }
+        protected ListViewState listViewState => m_ListViewState;
+
         [NonSerialized]
         readonly ListViewState m_ListViewState = new ListViewState();
-        protected GUIViewDebuggerWindow debuggerWindow { get { return m_DebuggerWindow; } }
-        GUIViewDebuggerWindow m_DebuggerWindow;
+        protected GUIViewDebuggerWindow debuggerWindow => m_DebuggerWindow;
+        private readonly GUIViewDebuggerWindow m_DebuggerWindow;
         Vector2 m_InstructionDetailsScrollPos = new Vector2();
         readonly SplitterState m_InstructionDetailStacktraceSplitter = new SplitterState(new float[] { 80, 20 }, new int[] { 100, 100 }, null);
 
-        public BaseInspectView(GUIViewDebuggerWindow guiViewDebuggerWindow)
+        protected BaseInspectView(GUIViewDebuggerWindow guiViewDebuggerWindow)
         {
             m_DebuggerWindow = guiViewDebuggerWindow;
-            EditorGUI.hyperLinkClicked += EditorGUI_HyperLinkClicked;
         }
 
         public abstract void UpdateInstructions();
@@ -119,7 +118,8 @@ namespace UnityEditor
         protected abstract void DoDrawInstruction(ListViewElement el, int controlId);
         protected abstract void DrawInspectedStacktrace(float availableWidth);
 
-        protected virtual bool isInstructionSelected { get { return m_ListViewState.row >= 0 && m_ListViewState.row < GetInstructionCount(); } }
+        protected virtual bool isInstructionSelected => m_ListViewState.row >= 0 && m_ListViewState.row < GetInstructionCount();
+
         protected void DrawStackFrameList(StackFrame[] stackframes, float availableWidth)
         {
             if (stackframes != null)
@@ -143,16 +143,6 @@ namespace UnityEditor
             }
         }
 
-        private void EditorGUI_HyperLinkClicked(object sender, EventArgs e)
-        {
-            EditorGUILayout.HyperLinkClickedEventArgs args = (EditorGUILayout.HyperLinkClickedEventArgs)e;
-
-            int line = Int32.Parse(args.hyperlinkInfos["line"]);
-            int column = -1;
-
-            LogEntries.OpenFileOnSpecificLineAndColumn(args.hyperlinkInfos["href"], line, column);
-        }
-
         protected void DrawInspectedRect(Rect instructionRect)
         {
             var totalRect = GUILayoutUtility.GetRect(0, 100);
@@ -172,10 +162,7 @@ namespace UnityEditor
             visualRect.width = Mathf.Max(80, visualRect.width);
             visualRect.height = Mathf.Max(EditorGUI.kSingleLineHeight + 10, visualRect.height);
 
-            var startPointFieldRect = new Rect();
-            startPointFieldRect.height = EditorGUI.kSingleLineHeight;
-            startPointFieldRect.width = fieldsArea.left * 2;
-            startPointFieldRect.y = visualRect.y - fieldsArea.top;
+            var startPointFieldRect = new Rect {height = EditorGUI.kSingleLineHeight, width = fieldsArea.left * 2, y = visualRect.y - fieldsArea.top};
             startPointFieldRect.x = visualRect.x - startPointFieldRect.width / 2f;
 
             var endPointFieldRect = new Rect
@@ -228,7 +215,7 @@ namespace UnityEditor
             endP.x = widthMarkersArea.xMax;
             Handles.DrawLine(startP, endP);
 
-            GUI.Label(widthFieldRect, instructionRect.width.ToString(), Styles.centeredLabel);
+            GUI.Label(widthFieldRect, instructionRect.width.ToString(CultureInfo.InvariantCulture), Styles.centeredLabel);
 
             //Draw Height markers and value
             startP = new Vector3(heightMarkerArea.x, heightMarkerArea.y);
@@ -247,7 +234,7 @@ namespace UnityEditor
             endP.y = heightMarkerArea.yMax;
             Handles.DrawLine(startP, endP);
 
-            GUI.Label(heightFieldRect, instructionRect.height.ToString());
+            GUI.Label(heightFieldRect, instructionRect.height.ToString(CultureInfo.InvariantCulture));
 
             GUI.Label(endPointFieldRect, UnityString.Format("({0},{1})", instructionRect.xMax, instructionRect.yMax), Styles.centeredLabel);
 

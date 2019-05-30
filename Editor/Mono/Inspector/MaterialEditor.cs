@@ -1666,7 +1666,7 @@ namespace UnityEditor
             // thus we draw the VC status bar
             if (!firstInspectedEditor)
             {
-                InspectorWindow.DrawVCSShortInfo(EditorWindow.focusedWindow, this);
+                InspectorWindow.VersionControlBar(this);
             }
 
             GUI.enabled = wasGUIEnabled;

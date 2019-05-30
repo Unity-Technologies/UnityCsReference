@@ -316,8 +316,8 @@ namespace UnityEditor.Experimental.SceneManagement
             // Setup default render settings for this preview scene
             UnityEngine.RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Custom;
             UnityEngine.RenderSettings.customReflection = GetDefaultReflection();   // ensure chrome materials do not render balck
-            UnityEngine.RenderSettings.skybox = null;                               // do not use skybox for the default previewscene, we want the flat Prefab Mode background color to let it stand out from normal scenes
-            UnityEngine.RenderSettings.ambientMode = AmbientMode.Trilight;          // do not use skybox ambient but simple trilight ambient for simplicity
+            UnityEngine.RenderSettings.skybox = AssetDatabase.GetBuiltinExtraResource<Material>("Default-Skybox.mat") as Material;
+            UnityEngine.RenderSettings.ambientMode = AmbientMode.Skybox;
             Unsupported.RestoreOverrideLightingSettings();
 
             return previewScene;
@@ -365,7 +365,12 @@ namespace UnityEditor.Experimental.SceneManagement
             if (root == null)
                 return false;
 
-            return root.GetComponent<RectTransform>() != null && root.GetComponentInChildren<CanvasRenderer>(true) != null;
+            // In principle, RectTransforms can be used for other things than UI,
+            // so only treat as UI Prefab if it has both a RectTransform on the root
+            // AND either a Canvas on the root or a CanvasRenderer somewhere in the hierarchy.
+            bool rectTransformOnRoot = root.GetComponent<RectTransform>() != null;
+            bool uiSpecificComponentPresent = (root.GetComponent<Canvas>() != null || root.GetComponentInChildren<CanvasRenderer>(true) != null);
+            return rectTransformOnRoot && uiSpecificComponentPresent;
         }
 
         static void HandleUIReparentingIfNeeded(GameObject instanceRoot)

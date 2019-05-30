@@ -70,7 +70,7 @@ namespace UnityEditor
             m_fontDictionaries.Clear();
 
             string filepath = null;
-            if (filepath == null || !System.IO.File.Exists(filepath))
+            if (!System.IO.File.Exists(filepath))
             {
                 filepath = EditorApplication.applicationContentsPath + "/Resources/fontsettings.txt";
             }

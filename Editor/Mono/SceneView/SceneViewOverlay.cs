@@ -109,7 +109,7 @@ namespace UnityEditor
                 GUILayout.Space(k_WindowPadding + paddingOffset);
                 paddingOffset = 0f;
                 EditorGUIUtility.ResetGUIState();
-                GUILayout.BeginHorizontal();
+                GUILayout.BeginHorizontal(GUILayout.Width(210));
                 GUILayout.FlexibleSpace();
                 GUILayout.BeginVertical(win.m_Title, GUI.skin.window);
                 win.m_SceneViewFunc(win.m_Target, m_SceneView);

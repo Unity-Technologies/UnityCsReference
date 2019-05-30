@@ -47,7 +47,6 @@ namespace UnityEditor
         {
             s_BuiltinAttributes = new Dictionary<string, List<PropertyAttribute>>();
 
-            AddBuiltinAttribute("GUIText", "m_Text", new MultilineAttribute());
             AddBuiltinAttribute("TextMesh", "m_Text", new MultilineAttribute());
             // Example: Make Orthographic Size in Camera component be in range between 0 and 1000
             //AddBuiltinAttribute ("Camera", "m_OrthographicSize", new RangeAttribute (0, 1000));

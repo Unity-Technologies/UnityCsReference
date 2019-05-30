@@ -28,6 +28,7 @@ namespace UnityEditor
         [FreeFunction(Name = "GetAllMethodsWithAttribute")]
         extern static object[] Internal_GetAllMethodsWithAttribute(Type attrType, BindingFlags staticness);
 
+        [Obsolete("Use public TypeCache.GetTypesWithAttribute<> API instead.")]
         internal static IEnumerable<Type> GetAllTypesWithAttribute<T>() where T : Attribute
         {
             return Internal_GetAllTypesWithAttribute(typeof(T));

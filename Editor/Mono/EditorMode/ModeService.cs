@@ -309,7 +309,8 @@ namespace UnityEditor
         private static bool IsEditorModeDescriptor(string path)
         {
             var pathLowerCased = path.ToLower();
-            return pathLowerCased.EndsWith(".mode");
+            // Limit the authoring of editor modes to Unity packages for now.
+            return pathLowerCased.StartsWith("packages/com.unity") && pathLowerCased.EndsWith(".mode");
         }
 
         private static void SetModeIndex(int modeIndex)

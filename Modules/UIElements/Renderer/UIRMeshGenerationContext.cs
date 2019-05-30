@@ -21,10 +21,13 @@ namespace UnityEngine.UIElements
         // Winding order of vertices matters. CCW is for clipped meshes.
     }
 
-    public struct MeshWriteData
+    public class MeshWriteData
     {
+        internal MeshWriteData() {}  // Don't want users to instatiate this class themselves
+
         public int vertexCount { get { return m_Vertices.Length; } }
         public int indexCount { get { return m_Indices.Length; } }
+        public Rect uvRegion { get { return m_UVRegion;  } }
         public void SetNextVertex(Vertex vertex) { m_Vertices[currentVertex++] = vertex; }
         public void SetNextIndex(UInt16 index) { m_Indices[currentIndex++] = index; }
         public void SetAllVertices(Vertex[] vertices)
@@ -47,8 +50,28 @@ namespace UnityEngine.UIElements
             else throw new InvalidOperationException("SetAllIndices may not be called after using SetNextIndex");
         }
 
+        internal void Reset(NativeSlice<Vertex> vertices, NativeSlice<UInt16> indices)
+        {
+            m_Vertices = vertices;
+            m_Indices = indices;
+            m_UVRegion = new Rect(0, 0, 1, 1);
+            m_Flags = UIR.VertexFlags.IsSolid;
+            currentIndex = currentVertex = 0;
+        }
+
+        internal void Reset(NativeSlice<Vertex> vertices, NativeSlice<UInt16> indices, Rect uvRegion, UIR.VertexFlags flags)
+        {
+            m_Vertices = vertices;
+            m_Indices = indices;
+            m_UVRegion = uvRegion;
+            m_Flags = flags;
+            currentIndex = currentVertex = 0;
+        }
+
         internal NativeSlice<Vertex> m_Vertices;
         internal NativeSlice<UInt16> m_Indices;
+        internal Rect m_UVRegion;
+        internal UIR.VertexFlags m_Flags;
         int currentIndex, currentVertex;
     }
 
@@ -255,16 +278,18 @@ namespace UnityEngine.UIElements
         [Flags]
         internal enum MeshFlags { None, UVisDisplacement };
 
+        public VisualElement visualElement { get { return painter.visualElement; } }
+
         internal MeshGenerationContext(IStylePainter painter) { this.painter = painter; }
 
-        public MeshWriteData Allocate(int vertexCount, int indexCount)
+        public MeshWriteData Allocate(int vertexCount, int indexCount, Texture texture = null)
         {
-            return painter.DrawMesh(vertexCount, indexCount, null, MeshFlags.None);
+            return painter.DrawMesh(vertexCount, indexCount, texture, null, MeshFlags.None);
         }
 
-        internal MeshWriteData Allocate(int vertexCount, int indexCount, Material material, MeshFlags flags)
+        internal MeshWriteData Allocate(int vertexCount, int indexCount, Texture texture, Material material, MeshFlags flags)
         {
-            return painter.DrawMesh(vertexCount, indexCount, material, flags);
+            return painter.DrawMesh(vertexCount, indexCount, texture, material, flags);
         }
 
         internal IStylePainter painter;

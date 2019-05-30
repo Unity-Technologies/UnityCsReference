@@ -4,13 +4,12 @@
 
 using UnityEditor;
 using UnityEditor.ShortcutManagement;
-using UnityEngine;
 using UnityEditor.VersionControl;
 
 namespace UnityEditorInternal.VersionControl
 {
-    // Menu popup for the main unity project window.  Items are greyed out when not available to help with usability.
-    public class ProjectContextMenu
+    // Top-level VCS menu; set up and invoked from native code when VCS integration is turned on
+    class ProjectContextMenu
     {
         // Called from native class VCSAssetMenuHandler as "Assets/Version Control/Get Latest" menu handler
         static bool GetLatestTest(MenuCommand cmd)

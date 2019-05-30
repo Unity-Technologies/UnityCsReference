@@ -600,7 +600,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 scriptAssembly.BuildTarget = settings.BuildTarget;
                 scriptAssembly.Language = targetAssembly.Language;
                 scriptAssembly.OriginPath = targetAssembly.PathPrefix;
-
                 scriptAssembly.Filename = targetAssembly.Filename;
 
                 if (runUpdaterAssemblies != null && runUpdaterAssemblies.Contains(scriptAssembly.Filename))
@@ -620,7 +619,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 var editorOnlyTargetAssembly = (targetAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
 
                 if (editorOnlyTargetAssembly || buildingForEditor && settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6)
-                    scriptAssembly.CompilerOptions.ApiCompatibilityLevel = EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest ? ApiCompatibilityLevel.NET_4_6 : ApiCompatibilityLevel.NET_2_0;
+                    scriptAssembly.CompilerOptions.ApiCompatibilityLevel = ApiCompatibilityLevel.NET_4_6;
                 else
                     scriptAssembly.CompilerOptions.ApiCompatibilityLevel = settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel;
 

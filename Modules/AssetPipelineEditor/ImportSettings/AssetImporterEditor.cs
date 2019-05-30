@@ -93,11 +93,8 @@ namespace UnityEditor.Experimental.AssetImporters
             m_InstantApply = m_AssetEditor == null || m_AssetEditor.target == null;
         }
 
-        // Called from a various number of places, like after an assembly reload or when the Editor gets created.
-        internal sealed override void InternalSetTargets(Object[] t)
+        void CheckExtraDataArray()
         {
-            base.InternalSetTargets(t);
-
             if (extraDataType != null)
             {
                 if (!typeof(ScriptableObject).IsAssignableFrom(extraDataType))
@@ -107,13 +104,19 @@ namespace UnityEditor.Experimental.AssetImporters
                 }
                 else
                 {
-                    m_ExtraDataTargets = new Object[t.Length];
+                    m_ExtraDataTargets = new Object[targets.Length];
                 }
             }
             else
             {
                 m_ExtraDataTargets = null;
             }
+        }
+
+        // Called from a various number of places, like after an assembly reload or when the Editor gets created.
+        internal sealed override void InternalSetTargets(Object[] t)
+        {
+            base.InternalSetTargets(t);
 
             if (m_CopySaved) // coming back from an assembly reload or asset re-import
             {
@@ -131,6 +134,7 @@ namespace UnityEditor.Experimental.AssetImporters
             }
             else // newly created editor
             {
+                CheckExtraDataArray();
                 var loadedIds = new List<int>(t.Length);
                 for (int i = 0; i < t.Length; ++i)
                 {
@@ -609,6 +613,8 @@ namespace UnityEditor.Experimental.AssetImporters
 
             if (!needsApplyRevert)
             {
+                if (extraDataSerializedObject != null && HasModified())
+                    Apply(); // user may have extra data that needs to be applied back to the target.
                 return;
             }
 

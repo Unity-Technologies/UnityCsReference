@@ -27,18 +27,16 @@ namespace UnityEditor
         private Vector3 m_LastPosition = Vector3.zero;
         private Quaternion m_LastRotation = Quaternion.identity;
         private Vector3 m_LastScale = Vector3.one;
-        private LightProbeGroupInspector m_Inspector;
 
-        public bool drawTetrahedra { get; set; }
+        public SavedBool drawTetrahedra { get; set; }
+        public bool deringProbes { get { return m_Group.dering; } set { m_Group.dering = value; } }
 
-        public LightProbeGroupEditor(LightProbeGroup group, LightProbeGroupInspector inspector)
+        public LightProbeGroupEditor(LightProbeGroup group)
         {
             m_Group = group;
             MarkTetrahedraDirty();
             m_SerializedSelectedProbes = ScriptableObject.CreateInstance<LightProbeGroupSelection>();
             m_SerializedSelectedProbes.hideFlags = HideFlags.HideAndDontSave;
-            m_Inspector = inspector;
-            drawTetrahedra = true;
         }
 
         public void SetEditing(bool editing)
@@ -195,16 +193,6 @@ namespace UnityEditor
             m_SerializedSelectedProbes.m_Selection = m_Selection;
         }
 
-        public void SetDeringProbes(bool enable)
-        {
-            m_Group.dering = enable;
-        }
-
-        public bool GetDeringProbes()
-        {
-            return m_Group.dering;
-        }
-
         private void DrawTetrahedra()
         {
             if (Event.current.type != EventType.Repaint)
@@ -294,8 +282,6 @@ namespace UnityEditor
             if (!m_Group.enabled)
                 return m_Editing;
 
-            int id = GUIUtility.GetControlID(FocusType.Passive);
-
             if (Event.current.type == EventType.Layout)
             {
                 //If the group has moved / scaled since last frame need to retetra);)
@@ -309,30 +295,6 @@ namespace UnityEditor
                 m_LastPosition = m_Group.transform.position;
                 m_LastRotation = m_Group.transform.rotation;
                 m_LastScale = m_Group.transform.localScale;
-
-                // Tell the handles system that we're the default tool (the one that should get focus when user clicks on nothing else.)
-                HandleUtility.AddDefaultControl(id);
-            }
-
-            //See if we should enter edit mode!
-            bool firstSelect = false;
-
-            // make sure we are the closest tool, so that the user is not clicking the handles
-            if ((Event.current.type == EventType.MouseDown) && (HandleUtility.nearestControl == id) && (Event.current.button == 0))
-            {
-                //We have no probes selected and have clicked the mouse... Did we click a probe
-                if (SelectedCount == 0)
-                {
-                    var selected = PointEditor.FindNearest(Event.current.mousePosition, transform, this);
-                    var clickedProbe = selected != -1;
-
-                    if (clickedProbe && !m_Editing)
-                    {
-                        m_Inspector.StartEditMode();
-                        m_Editing = true;
-                        firstSelect = true;
-                    }
-                }
             }
 
             //Need to cache this as select points will use it!
@@ -340,7 +302,7 @@ namespace UnityEditor
 
             if (m_Editing)
             {
-                if (PointEditor.SelectPoints(this, transform, ref m_Selection, firstSelect))
+                if (PointEditor.SelectPoints(this, transform, ref m_Selection))
                 {
                     Undo.RegisterCompleteObjectUndo(new Object[] { m_Group, m_SerializedSelectedProbes }, "Select Probes");
                 }
@@ -557,12 +519,18 @@ namespace UnityEditor
         }
         private LightProbeGroupEditor m_Editor;
 
+        private bool m_EditingProbes;
+        private bool m_ShouldFocus;
+
         public void OnEnable()
         {
-            m_Editor = new LightProbeGroupEditor(target as LightProbeGroup, this);
+            m_Editor = new LightProbeGroupEditor(target as LightProbeGroup);
             m_Editor.PullProbePositions();
             m_Editor.DeselectProbes();
             m_Editor.PushProbePositions();
+
+            m_Editor.drawTetrahedra = new SavedBool($"{target.GetType()}.drawTetrahedra", true);
+
             SceneView.duringSceneGui += OnSceneGUIDelegate;
             Undo.undoRedoPerformed += UndoRedoPerformed;
             EditMode.editModeStarted += OnEditModeStarted;
@@ -606,7 +574,6 @@ namespace UnityEditor
             if (!m_EditingProbes)
                 return;
 
-            m_Editor.drawTetrahedra = true;
             m_Editor.DeselectProbes();
             m_Editor.SetEditing(false);
             m_EditingProbes = false;
@@ -637,8 +604,6 @@ namespace UnityEditor
             m_Editor.MarkTetrahedraDirty();
         }
 
-        private bool m_EditingProbes;
-        private bool m_ShouldFocus;
         public override void OnInspectorGUI()
         {
             EditorGUI.BeginChangeCheck();
@@ -654,17 +619,19 @@ namespace UnityEditor
             GUILayout.Space(3);
             EditorGUI.BeginDisabledGroup(EditMode.editMode != EditMode.SceneViewEditMode.LightProbeGroup);
 
-            m_Editor.drawTetrahedra = EditorGUILayout.Toggle(Styles.showWireframe, m_Editor.drawTetrahedra);
-            bool performDeringing = EditorGUILayout.Toggle(Styles.performDeringing, m_Editor.GetDeringProbes());
-            m_Editor.SetDeringProbes(performDeringing);
+            m_Editor.drawTetrahedra.value = EditorGUILayout.Toggle(Styles.showWireframe, m_Editor.drawTetrahedra.value);
+            m_Editor.deringProbes = EditorGUILayout.Toggle(Styles.performDeringing, m_Editor.deringProbes);
 
             EditorGUI.BeginDisabledGroup(m_Editor.SelectedCount == 0);
+
+            EditorGUI.BeginChangeCheck();
             Vector3 pos = m_Editor.SelectedCount > 0 ? m_Editor.GetSelectedPositions()[0] : Vector3.zero;
             Vector3 newPosition = EditorGUILayout.Vector3Field(Styles.selectedProbePosition, pos);
-            if (newPosition != pos)
+
+            if (EditorGUI.EndChangeCheck())
             {
                 Vector3[] selectedPositions = m_Editor.GetSelectedPositions();
-                Vector3 delta = newPosition - pos;
+                Vector3 delta = CalculateDeltaAndClamp(newPosition, pos);
                 for (int i = 0; i < selectedPositions.Length; i++)
                     m_Editor.UpdateSelectedPosition(i, selectedPositions[i] + delta);
             }
@@ -725,6 +692,24 @@ namespace UnityEditor
         internal override Bounds GetWorldBoundsOfTarget(Object targetObject)
         {
             return m_Editor.bounds;
+        }
+
+        private Vector3 CalculateDeltaAndClamp(Vector3 vec1, Vector3 vec2)
+        {
+            if (float.IsInfinity(vec1.x) || float.IsNaN(vec1.x))
+                vec1.x = 0;
+
+            if (float.IsInfinity(vec1.y) || float.IsNaN(vec1.y))
+                vec1.y = 0;
+
+            if (float.IsInfinity(vec1.z) || float.IsNaN(vec1.z))
+                vec1.z = 0;
+
+            Mathf.Clamp(vec1.x, float.MinValue, float.MaxValue);
+            Mathf.Clamp(vec1.y, float.MinValue, float.MaxValue);
+            Mathf.Clamp(vec1.z, float.MinValue, float.MaxValue);
+
+            return vec1 - vec2;
         }
 
         private void InternalOnSceneView()

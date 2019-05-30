@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using UnityEditor.AddComponent;
 using UnityEditor.VersionControl;
 using UnityEngine;
@@ -104,8 +103,10 @@ namespace UnityEditor
         VisualElement m_RemovedPrefabComponentsElement;
 
         VisualElement m_PreviewAndLabelElement;
-
         VisualElement previewAndLabelElement => m_PreviewAndLabelElement ?? (m_PreviewAndLabelElement = FindVisualElementInTreeByClassName(s_FooterInfoClassName));
+
+        VisualElement m_VersionControlElement;
+        VisualElement versionControlElement => m_VersionControlElement ?? (m_VersionControlElement = FindVisualElementInTreeByClassName(s_HeaderInfoClassName));
 
         VisualElement m_MultiEditLabel;
 
@@ -138,12 +139,16 @@ namespace UnityEditor
             public static GUIStyle addComponentButtonStyle = "AC Button";
             public static GUIStyle previewMiniLabel = EditorStyles.whiteMiniLabel;
             public static GUIStyle typeSelection = "IN TypeSelection";
-            public static GUIStyle lockedHeaderButton = "preButton";
-            public static GUIStyle stickyNote = "VCS_StickyNote";
-            public static GUIStyle stickyNoteArrow = "VCS_StickyNoteArrow";
-            public static GUIStyle stickyNotePerforce = "VCS_StickyNoteP4";
-            public static GUIStyle stickyNoteLabel = "VCS_StickyNoteLabel";
-            public static readonly GUIContent VCS_NotConnectedMessage = EditorGUIUtility.TrTextContent("VCS ({0}) is not connected");
+
+            public static readonly GUIContent vcsCheckoutHint = EditorGUIUtility.TrTextContent("Under Version Control\nCheck out this asset in order to make changes.", EditorGUIUtility.GetHelpIcon(MessageType.Info));
+            public static readonly GUIContent vcsNotConnected = EditorGUIUtility.TrTextContent("VCS ({0}) is not connected");
+            public static readonly GUIContent vcsOffline = EditorGUIUtility.TrTextContent("Work Offline option is active");
+            public static readonly GUIContent vcsCheckout = EditorGUIUtility.TrTextContent("Check Out");
+            public static readonly GUIContent vcsAdd = EditorGUIUtility.TrTextContent("Add");
+            public static readonly GUIContent vcsLock = EditorGUIUtility.TrTextContent("Lock");
+            public static readonly GUIContent vcsUnlock = EditorGUIUtility.TrTextContent("Unlock");
+            public static readonly GUIContent vcsSubmit = EditorGUIUtility.TrTextContent("Submit");
+            public static GUIStyle vcsButtonStyle = "preButton";
             public static readonly string objectDisabledModuleWarningFormat = L10n.Tr(
                 "The built-in package '{0}', which implements this component type, has been disabled in Package Manager. This object will be removed in play mode and from any builds you make."
             );
@@ -161,6 +166,7 @@ namespace UnityEditor
         internal static readonly string s_ScrollViewClassName = "unity-inspector-root-scrollview";
         internal static readonly string s_EditorListClassName = "unity-inspector-editors-list";
         internal static readonly string s_AddComponentClassName = "unity-inspector-add-component-button";
+        internal static readonly string s_HeaderInfoClassName = "unity-inspector-header-info";
         internal static readonly string s_FooterInfoClassName = "unity-inspector-footer-info";
         internal static readonly string s_MainContainerClassName = "unity-inspector-main-container";
 
@@ -671,6 +677,7 @@ namespace UnityEditor
 
             var addComponentButton = rootVisualElement.Q(className: s_AddComponentClassName);
             addComponentButton.Clear();
+            versionControlElement.Clear();
             previewAndLabelElement.Clear();
 
             if (m_TrackerResetter == null)
@@ -681,6 +688,16 @@ namespace UnityEditor
             }
 
             Editor[] editors = tracker.activeEditors;
+
+            if (editors.Any())
+            {
+                Profiler.BeginSample("InspectorWindow.RebuildContentsContainers()::versionControlElement");
+                versionControlElement.Add(CreateIMGUIContainer(
+                    () => VersionControlBar(InspectorWindowUtils.GetFirstNonImportInspectorEditor(editors))));
+                Profiler.EndSample();
+            }
+
+
             Profiler.BeginSample("InspectorWindow.DrawEditors()");
             DrawEditors(editors);
             Profiler.EndSample();
@@ -729,18 +746,8 @@ namespace UnityEditor
             {
                 Profiler.BeginSample("InspectorWindow.RebuildContentsContainers()::previewAndLabelElement");
                 var previewAndLabelsContainer = CreateIMGUIContainer(DrawPreviewAndLabels, "preview-container");
-
                 m_PreviewResizer.SetContainer(previewAndLabelsContainer, kBottomToolbarHeight);
-
                 previewAndLabelElement.Add(previewAndLabelsContainer);
-                if (tracker.activeEditors.Length > 0)
-                {
-                    previewAndLabelElement.Add(CreateIMGUIContainer(
-                        () => DrawVCSShortInfo(this,
-                            InspectorWindowUtils.GetFirstNonImportInspectorEditor(tracker.activeEditors)),
-                        "first-non-import-inspector-container"));
-                }
-
                 Profiler.EndSample();
             }
 
@@ -1108,17 +1115,7 @@ namespace UnityEditor
             if (m_HasPreview)
             {
                 // If we have a preview we'll use the ResizerControl which handles both resizing and collapsing
-
-                // We have to subtract space used by version control bar from the window size we pass to the PreviewResizer
-                Rect windowRect = position;
-                if (EditorSettings.externalVersionControl != ExternalVersionControl.Disabled &&
-                    EditorSettings.externalVersionControl != ExternalVersionControl.AutoDetect &&
-                    EditorSettings.externalVersionControl != ExternalVersionControl.Generic
-                )
-                {
-                    windowRect.height -= kBottomToolbarHeight;
-                }
-                previewSize = m_PreviewResizer.ResizeHandle(windowRect, k_InspectorPreviewMinTotalHeight, k_MinAreaAbovePreview, kBottomToolbarHeight, dragRect);
+                previewSize = m_PreviewResizer.ResizeHandle(position, k_InspectorPreviewMinTotalHeight, k_MinAreaAbovePreview, kBottomToolbarHeight, dragRect);
             }
             else
             {
@@ -1211,166 +1208,166 @@ namespace UnityEditor
             GUIUtility.ExitGUI();
         }
 
-        private static void DrawVCSSticky(Rect anchorRect, Editor assetEditor, float offset)
+        internal static void VersionControlBar(Editor assetEditor)
         {
-            string message = "";
-            bool hasRemovedSticky = EditorPrefs.GetBool("vcssticky");
-            if (!hasRemovedSticky && !Editor.IsAppropriateFileOpenForEdit(assetEditor.target, out message))
+            if (!Provider.enabled)
+                return;
+            var vcsMode = EditorSettings.externalVersionControl;
+            if (vcsMode == ExternalVersionControl.Generic || vcsMode == ExternalVersionControl.Disabled || vcsMode == ExternalVersionControl.AutoDetect)
+                return;
+
+            var assetPath = AssetDatabase.GetAssetPath(assetEditor.target);
+            Asset asset = Provider.GetAssetByPath(assetPath);
+            if (asset == null)
+                return;
+            var vcsAssetPath = asset.path;
+            var underAssets = vcsAssetPath.StartsWith("Assets");
+            var underProjectSettings = vcsAssetPath.StartsWith("ProjectSettings");
+            if (!(underAssets || underProjectSettings))
+                return;
+
+            var connected = Provider.isActive;
+
+            // Note: files under project settings do not have .meta files next to them,
+            // but Provider.GetAssetByPath API helpfully (or unhelpfully, in this case)
+            // checks if passed file ends with "meta" and says "here, take this asset instead"
+            // if it exists -- so for files under project settings, it ends up returning
+            // a valid entry for the non-existing meta file. So just don't do it.
+            Asset metaAsset = null;
+            if (!underProjectSettings)
+                metaAsset = Provider.GetAssetByPath(assetPath.Trim('/') + ".meta");
+
+            string currentState = asset.StateToString();
+            string currentMetaState = metaAsset == null ? String.Empty : metaAsset.StateToString();
+
+            // If VCS is enabled but disconnected, the assets will have "Updating" state most of the time,
+            // but what we want to displays is a note that VCS is not connected.
+            if (!connected)
             {
-                const int stickyRectHeight = 80;
-                var rect = new Rect(10, anchorRect.y - stickyRectHeight, anchorRect.width - 30, stickyRectHeight);
-                rect.y -= offset;
-
-                if (GUI.Button(rect, "", Styles.stickyNote))
-                {
-                    EditorPrefs.SetBool("vcssticky", true);
-                }
-
-                if (Event.current.type == EventType.Repaint)
-                {
-                    Rect iconRect = new Rect(rect.x, rect.y + rect.height / 2 - 32, 64, 64);
-                    if (EditorSettings.externalVersionControl == "Perforce") // TODO: remove hardcoding of perforce
-                    {
-                        Styles.stickyNotePerforce.Draw(iconRect, false, false, false, false);
-                    }
-
-                    Rect textRect = new Rect(rect.x + iconRect.width, rect.y, rect.width - iconRect.width, rect.height);
-                    GUI.Label(textRect, EditorGUIUtility.TrTextContent("<b>Under Version Control</b>\nCheck out this asset in order to make changes."), Styles.stickyNoteLabel);
-
-                    Rect arrowRect = new Rect(rect.x + rect.width / 2, rect.y + 80, 19, 14);
-                    Styles.stickyNoteArrow.Draw(arrowRect, false, false, false, false);
-                }
+                if (EditorUserSettings.WorkOffline)
+                    currentState = Styles.vcsOffline.text;
+                else
+                    currentState = string.Format(Styles.vcsNotConnected.text, Provider.GetActivePlugin().name);
+                currentMetaState = currentState;
             }
-        }
 
-        internal static void DrawVCSShortInfo(EditorWindow hostWindow, Editor assetEditor)
-        {
-            if (Provider.enabled &&
-                EditorSettings.externalVersionControl != ExternalVersionControl.Disabled &&
-                EditorSettings.externalVersionControl != ExternalVersionControl.AutoDetect &&
-                EditorSettings.externalVersionControl != ExternalVersionControl.Generic)
-            {
-                string assetPath = AssetDatabase.GetAssetPath(assetEditor.target);
-                Asset asset = Provider.GetAssetByPath(assetPath);
-                if (asset == null)
-                    return;
+            var hasAssetState = !string.IsNullOrEmpty(currentState);
+            var hasMetaState = !string.IsNullOrEmpty(currentMetaState);
 
-                var vcsAssetPath = asset.path;
-                var underAssets = vcsAssetPath.StartsWith("Assets");
-                var underProjectSettings = vcsAssetPath.StartsWith("ProjectSettings");
-                if (!(underAssets || underProjectSettings))
-                    return;
+            GUILayout.Label(GUIContent.none, Styles.preToolbar, GUILayout.Height(kBottomToolbarHeight));
 
-                var providerActive = Provider.isActive;
+            var rect = GUILayoutUtility.GetLastRect();
 
-                // Note: files under project settings do not have .meta files next to them,
-                // but Provider.GetAssetByPath API helpfully (or unhelpfully, in this case)
-                // checks if passed file ends with "meta" and says "here, take this asset instead"
-                // if it exists -- so for files under project settings, it ends up returning
-                // a valid entry for the non-existing meta file. So just don't do it.
-                Asset metaAsset = null;
-                if (!underProjectSettings)
-                    metaAsset = Provider.GetAssetByPath(assetPath.Trim('/') + ".meta");
-
-                string currentState = asset.StateToString();
-                string currentMetaState = metaAsset == null ? String.Empty : metaAsset.StateToString();
-
-                // If VCS is enabled but disconnected, the assets will have "Updating" state most of the time,
-                // but what we want to displays is a note that VCS is not connected.
-                if (Provider.onlineState != OnlineState.Online)
-                {
-                    currentState = String.Format(Styles.VCS_NotConnectedMessage.text, Provider.GetActivePlugin().name);
-                }
-
-                bool showMetaState = metaAsset != null && (metaAsset.state & ~Asset.States.MetaFile) != asset.state;
-                bool showAssetState = currentState != "";
-
-                float labelHeight = showMetaState && showAssetState ? kBottomToolbarHeight * 2 : kBottomToolbarHeight;
-                GUILayout.Label(GUIContent.none, Styles.preToolbar, GUILayout.Height(labelHeight));
-
-                var rect = GUILayoutUtility.GetLastRect();
-
-                if (showAssetState)
-                {
-                    Texture2D icon = AssetDatabase.GetCachedIcon(assetPath) as Texture2D;
-                    if (showMetaState)
-                    {
-                        Rect assetRect = rect;
-                        assetRect.height = kBottomToolbarHeight;
-                        DrawVCSShortInfoAsset(asset, BuildTooltip(asset, null), assetRect, icon, currentState);
-
-                        Texture2D metaIcon = InternalEditorUtility.GetIconForFile(metaAsset.path);
-                        assetRect.y += kBottomToolbarHeight;
-                        DrawVCSShortInfoAsset(metaAsset, BuildTooltip(null, metaAsset), assetRect, metaIcon, currentMetaState);
-                    }
-                    else
-                    {
-                        DrawVCSShortInfoAsset(asset, BuildTooltip(asset, metaAsset), rect, icon, currentState);
-                    }
-                }
-                else if (currentMetaState != "")
-                {
-                    Texture2D metaIcon = InternalEditorUtility.GetIconForFile(metaAsset.path);
-                    DrawVCSShortInfoAsset(metaAsset, BuildTooltip(asset, metaAsset), rect, metaIcon, currentMetaState);
-                }
-
-                string message = "";
-                bool openForEdit = Editor.IsAppropriateFileOpenForEdit(assetEditor.target, out message);
-                if (!openForEdit)
-                {
-                    if (providerActive)  //Only offer a checkout button if we think we're in a state to open the file for edit
-                    {
-                        float buttonWidth = 80;
-                        Rect buttonRect = new Rect(rect.x + rect.width - buttonWidth, rect.y, buttonWidth, rect.height);
-                        if (GUI.Button(buttonRect, "Check out", Styles.lockedHeaderButton))
-                        {
-                            EditorPrefs.SetBool("vcssticky", true);
-                            // TODO: Retrieve default CheckoutMode from VC settings (depends on asset type; native vs. imported)
-                            Task task = Provider.Checkout(assetEditor.targets, CheckoutMode.Both);
-                            task.Wait();
-                            if (hostWindow != null)
-                                hostWindow.Repaint();
-                        }
-                    }
-
-                    if (!EditorPrefs.GetBool("vcssticky"))
-                    {
-                        DrawVCSSticky(rect, assetEditor, rect.height / 2);
-                    }
-                }
-            }
-        }
-
-        protected static string BuildTooltip(Asset asset, Asset metaAsset)
-        {
-            var sb = new StringBuilder();
-            if (asset != null)
-            {
-                sb.AppendLine("Asset:");
-                sb.AppendLine(asset.AllStateToString());
-            }
-            if (metaAsset != null)
-            {
-                sb.AppendLine("Meta file:");
-                sb.AppendLine(metaAsset.AllStateToString());
-            }
-            return sb.ToString().Trim();
-        }
-
-        static void DrawVCSShortInfoAsset(Asset asset, string tooltip, Rect rect, Texture2D icon, string currentState)
-        {
-            Rect overlayRect = new Rect(rect.x, rect.y, 28, 16);
-            Rect iconRect = overlayRect;
+            var icon = AssetDatabase.GetCachedIcon(assetPath) as Texture2D;
+            var overlayRect = new Rect(rect.x, rect.y + 1, 28, 16);
+            var iconRect = overlayRect;
             iconRect.x += 6;
             iconRect.width = 16;
             if (icon != null)
                 GUI.DrawTexture(iconRect, icon);
-            Overlay.DrawOverlay(asset, overlayRect);
+            Overlay.DrawOverlay(asset, metaAsset ?? asset, overlayRect);
 
-            Rect textRect = new Rect(rect.x + 26, rect.y, rect.width - 31, rect.height);
-            GUIContent content = GUIContent.Temp(currentState);
-            content.tooltip = tooltip;
-            EditorGUI.LabelField(textRect, content, Styles.preToolbar2);
+            if (currentMetaState != currentState)
+            {
+                if (hasAssetState && hasMetaState)
+                    currentState = currentState + "; meta: " + currentMetaState;
+                else if (hasAssetState && metaAsset != null) // project settings don't even have .meta files; no point in adding "asset only" for them
+                    currentState = currentState + " (asset only)";
+                else if (hasMetaState)
+                    currentState = currentMetaState + " (meta only)";
+            }
+
+            var buttonX = VersionControlBarButtons(assetEditor, rect, asset, connected);
+            var textRect = rect;
+            textRect.xMin += 26;
+            textRect.xMax = buttonX;
+
+            var content = GUIContent.Temp(currentState);
+            var fullState = Asset.AllStateToString(asset.state);
+            var fullMetaState = metaAsset != null ? Asset.AllStateToString(metaAsset.state) : string.Empty;
+            if (fullState != fullMetaState)
+                fullState = $"Asset state: {fullState}\nMeta state: {fullMetaState}";
+            else
+                fullState = "State: " + fullState;
+            content.tooltip = fullState;
+            GUI.Label(textRect, content, EditorStyles.label);
+
+            VersionControlCheckoutHint(assetEditor, connected);
+        }
+
+        static void VersionControlCheckoutHint(Editor assetEditor, bool connected)
+        {
+            if (!connected)
+                return;
+
+            const string prefKeyName = "vcs_CheckoutHintClosed";
+            var removedHint = EditorPrefs.GetBool(prefKeyName);
+            if (removedHint)
+                return;
+            if (Editor.IsAppropriateFileOpenForEdit(assetEditor.target))
+                return;
+
+            // allow clicking the help note to make it go away via prefs
+            if (GUILayout.Button(Styles.vcsCheckoutHint, EditorStyles.helpBox))
+                EditorPrefs.SetBool(prefKeyName, true);
+
+            GUILayout.Space(4);
+        }
+
+        static float VersionControlBarButtons(Editor assetEditor, Rect rect, Asset asset, bool connected)
+        {
+            var buttonX = rect.xMax - 7;
+            if (!connected)
+                return buttonX;
+
+            var buttonRect = rect;
+            var buttonStyle = Styles.vcsButtonStyle;
+            buttonRect.height = buttonStyle.CalcSize(Styles.vcsAdd).y;
+
+            var isFolder = asset.isFolder && !Provider.isVersioningFolders;
+
+            var assetList = new AssetList();
+            foreach (var o in assetEditor.targets)
+            {
+                assetList.Add(Provider.GetAssetByPath(AssetDatabase.GetAssetPath(o)));
+            }
+
+            if (!Editor.IsAppropriateFileOpenForEdit(assetEditor.target))
+            {
+                if (VersionControlActionButton(buttonRect, ref buttonX, Styles.vcsCheckout))
+                    Provider.Checkout(assetList, CheckoutMode.Both).Wait(); // TODO: Retrieve default CheckoutMode from VC settings (depends on asset type; native vs. imported)
+            }
+            if (!isFolder && Provider.AddIsValid(assetList))
+            {
+                if (VersionControlActionButton(buttonRect, ref buttonX, Styles.vcsAdd))
+                    Provider.Add(assetList, false).Wait();
+            }
+            if (Provider.SubmitIsValid(null, assetList))
+            {
+                if (VersionControlActionButton(buttonRect, ref buttonX, Styles.vcsSubmit))
+                    WindowChange.Open(assetList, true);
+            }
+            if (!isFolder && Provider.LockIsValid(assetList))
+            {
+                if (VersionControlActionButton(buttonRect, ref buttonX, Styles.vcsLock))
+                    Provider.Lock(assetList, true).Wait();
+            }
+            if (!isFolder && Provider.UnlockIsValid(assetList))
+            {
+                if (VersionControlActionButton(buttonRect, ref buttonX, Styles.vcsUnlock))
+                    Provider.Lock(assetList, false).Wait();
+            }
+
+            return buttonX;
+        }
+
+        static bool VersionControlActionButton(Rect buttonRect, ref float buttonX, GUIContent content)
+        {
+            var buttonStyle = Styles.vcsButtonStyle;
+            buttonRect.width = buttonStyle.CalcSize(content).x;
+            buttonRect.x = buttonX - buttonRect.width;
+            buttonX -= buttonRect.width;
+            return GUI.Button(buttonRect, content, buttonStyle);
         }
 
         HashSet<int> m_DrawnSelection = new HashSet<int>();

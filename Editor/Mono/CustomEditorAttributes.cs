@@ -122,7 +122,7 @@ namespace UnityEditor
         {
             kSCustomEditors.Clear();
             kSCustomMultiEditors.Clear();
-            var types = EditorAssemblies.GetAllTypesWithAttribute<CustomEditor>();
+            var types = TypeCache.GetTypesWithAttribute<CustomEditor>();
             foreach (var type in types)
             {
                 object[] attrs = type.GetCustomAttributes(typeof(CustomEditor), false);

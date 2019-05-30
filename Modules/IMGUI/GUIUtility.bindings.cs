@@ -11,8 +11,8 @@ namespace UnityEngine
      NativeHeader("Modules/IMGUI/GUIManager.h"),
      NativeHeader("Runtime/Input/InputBindings.h"),
      NativeHeader("Runtime/Input/InputManager.h"),
-     NativeHeader("Runtime/Utilities/CopyPaste.h"),
-     NativeHeader("Runtime/Camera/RenderLayers/GUITexture.h")]
+     NativeHeader("Runtime/Camera/RenderLayers/GUITexture.h"),
+     NativeHeader("Runtime/Utilities/CopyPaste.h")]
     public partial class GUIUtility
     {
         // Check to see if there's a modal IMGUI window that's currently open

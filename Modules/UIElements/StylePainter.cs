@@ -8,11 +8,12 @@ namespace UnityEngine.UIElements
 {
     internal interface IStylePainter
     {
-        MeshWriteData DrawMesh(int vertexCount, int indexCount, Material material, MeshGenerationContext.MeshFlags flags);
+        MeshWriteData DrawMesh(int vertexCount, int indexCount, Texture texture, Material material, MeshGenerationContext.MeshFlags flags);
         void DrawText(MeshGenerationContextUtils.TextParams textParams);
         void DrawRectangle(MeshGenerationContextUtils.RectangleParams rectParams);
         void DrawBorder(MeshGenerationContextUtils.BorderParams borderParams);
         void DrawImmediate(Action callback);
+        VisualElement visualElement { get; }
     }
 
     internal struct CursorPositionStylePainterParameters

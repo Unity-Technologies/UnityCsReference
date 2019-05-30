@@ -198,7 +198,7 @@ namespace UnityEngine.UIElements.UIR
         }
 
         // TODO: Remove this once case 1148851 has been fixed.
-        static internal Shader editorShader = null;
+        static internal Func<Shader> getEditorShader = null;
 
         /// <summary>
         /// Indicates whether the active subshader of the stock shader has compute capability. Derived shaders are
@@ -214,7 +214,7 @@ namespace UnityEngine.UIElements.UIR
                     // according to the graphic device capabilities unless the shader is precompiled. Querying tags will
                     // always return the tags from the first subshader. The editor shader is precompiled and doesn't
                     // suffer this issue, so we can use it as a reference.
-                    var stockDefaultShader = editorShader;
+                    var stockDefaultShader = getEditorShader();
                     var stockDefaultMaterial = new Material(stockDefaultShader);
                     string tagValue = stockDefaultMaterial.GetTag(k_ComputeIsAvailableTag, false);
                     UIRUtility.Destroy(stockDefaultMaterial);

@@ -110,10 +110,24 @@ namespace UnityEditor
                 }
                 else if (cw != null)
                 {
-                    if (cw.curve.length == 0)
+                    if (cw.curve.length == 0 || cw.curve.length != propCurve.length)
+                    {
                         m_Refresh = true;
-                    else if (propCurve.length >= 1 && propCurve.keys[0].value != cw.curve.keys[0].value)
-                        m_Refresh = true;
+                    }
+                    else
+                    {
+                        var curveKeys = cw.curve.keys;
+                        var propKeys = propCurve.keys;
+
+                        for (int i = 0; i < curveKeys.Length; i++)
+                        {
+                            if (!propKeys[i].Equals(curveKeys[i]))
+                            {
+                                m_Refresh = true;
+                                break;
+                            }
+                        }
+                    }
                 }
             }
             else if (cw != null)

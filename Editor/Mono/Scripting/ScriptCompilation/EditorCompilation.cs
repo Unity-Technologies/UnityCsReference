@@ -140,7 +140,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 var match = messageRegex.Match(message.message);
                 if (match.Success)
                 {
-                    var index = message.message.IndexOf(EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest ? "Consider adding a reference to that assembly." : "Consider adding a reference to assembly");
+                    var index = message.message.IndexOf("Consider adding a reference to that assembly.");
                     if (index != -1)
                         message.message = message.message.Substring(0, index);
                     var moduleName = match.Groups[1].Value;
@@ -1890,17 +1890,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             string[] editorOnlyCompatibleDefines = null;
 
-            ApiCompatibilityLevel apiCompatibilityLevel;
-            if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
-            {
-                apiCompatibilityLevel = ApiCompatibilityLevel.NET_4_6;
-            }
-            else
-            {
-                apiCompatibilityLevel = ApiCompatibilityLevel.NET_2_0;
-            }
-
-            editorOnlyCompatibleDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, apiCompatibilityLevel);
+            editorOnlyCompatibleDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, ApiCompatibilityLevel.NET_4_6);
 
             var playerAssembliesDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel);
 

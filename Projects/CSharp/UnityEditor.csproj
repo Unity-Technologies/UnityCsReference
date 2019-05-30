@@ -1558,6 +1558,9 @@
     <Compile Include="..\..\Editor\Mono\GUI\Knob.cs">
       <Link>Editor\Mono\GUI\Knob.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\GUI\LazyLoadReferenceField.cs">
+      <Link>Editor\Mono\GUI\LazyLoadReferenceField.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\ListViewElement.cs">
       <Link>Editor\Mono\GUI\ListViewElement.cs</Link>
     </Compile>

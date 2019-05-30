@@ -166,10 +166,6 @@ namespace UnityEditor
             public static readonly GUIContent skinOnGPUCompute = EditorGUIUtility.TrTextContent("Compute Skinning*", "Use Compute pipeline for Skinning");
             public static readonly GUIContent disableStatistics = EditorGUIUtility.TrTextContent("Disable HW Statistics*", "Disables HW Statistics");
             public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TrTextContent("Scripting Define Symbols");
-            public static readonly GUIContent scriptingRuntimeVersionDeprecationWarning = EditorGUIUtility.TrTextContent("The .NET 3.5 scripting runtime has been removed. Please select .NET 4.x Equivalent.");
-            public static readonly GUIContent scriptingRuntimeVersion = EditorGUIUtility.TrTextContent("Scripting Runtime Version*", "The scripting runtime version to be used. Unity uses different scripting backends based on platform, so these options are listed as equivalent expected behavior.");
-            public static readonly GUIContent scriptingRuntimeVersionLegacy = EditorGUIUtility.TrTextContent(".NET 3.5 Equivalent (Deprecated)");
-            public static readonly GUIContent scriptingRuntimeVersionLatest = EditorGUIUtility.TrTextContent(".NET 4.x Equivalent");
             public static readonly GUIContent scriptingBackend = EditorGUIUtility.TrTextContent("Scripting Backend");
             public static readonly GUIContent managedStrippingLevel = EditorGUIUtility.TrTextContent("Managed Stripping Level", "If scripting backend is IL2CPP, managed stripping can't be disabled.");
             public static readonly GUIContent il2cppCompilerConfiguration = EditorGUIUtility.TrTextContent("C++ Compiler Configuration");
@@ -1962,7 +1958,7 @@ namespace UnityEditor
                         PlayerSettings.SetIl2CppCompilerConfiguration(targetGroup, newConfiguration);
                 }
 
-                bool gcIncrementalEnabled = BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", platform.defaultTarget) && PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest;
+                bool gcIncrementalEnabled = BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", platform.defaultTarget);
                 if (targetGroup == BuildTargetGroup.iOS)
                     gcIncrementalEnabled = gcIncrementalEnabled && PlayerSettings.GetScriptingBackend(targetGroup) == ScriptingImplementation.IL2CPP;
 
@@ -2145,33 +2141,16 @@ namespace UnityEditor
 
         static ManagedStrippingLevel[] mono_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Disabled, ManagedStrippingLevel.Low, ManagedStrippingLevel.Medium, ManagedStrippingLevel.High };
         static ManagedStrippingLevel[] il2cpp_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Low, ManagedStrippingLevel.Medium, ManagedStrippingLevel.High };
-        static ManagedStrippingLevel[] mono_levels_old_runtime = new ManagedStrippingLevel[] { ManagedStrippingLevel.Disabled, ManagedStrippingLevel.Low };
-        static ManagedStrippingLevel[] il2cpp_levels_old_runtime = new ManagedStrippingLevel[] { ManagedStrippingLevel.Low };
-
-        // stripping levels vary based on both scripting backend and runtime version
+        // stripping levels vary based on scripting backend
         private ManagedStrippingLevel[] GetAvailableManagedStrippingLevels(ScriptingImplementation backend)
         {
-            if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
+            if (backend == ScriptingImplementation.IL2CPP)
             {
-                if (backend == ScriptingImplementation.IL2CPP)
-                {
-                    return il2cpp_levels;
-                }
-                else
-                {
-                    return mono_levels;
-                }
+                return il2cpp_levels;
             }
             else
             {
-                if (backend == ScriptingImplementation.IL2CPP)
-                {
-                    return il2cpp_levels_old_runtime;
-                }
-                else
-                {
-                    return mono_levels_old_runtime;
-                }
+                return mono_levels;
             }
         }
 

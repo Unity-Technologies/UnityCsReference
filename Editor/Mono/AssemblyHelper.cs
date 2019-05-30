@@ -482,24 +482,6 @@ namespace UnityEditor
             }
         }
 
-        internal static IEnumerable<T> FindImplementors<T>(Assembly assembly) where T : class
-        {
-            Type interfaze = typeof(T);
-            foreach (Type type in AssemblyHelper.GetTypesFromAssembly(assembly))
-            {
-                if (/*type.IsNotPublic - future! ||*/ type.IsInterface || type.IsAbstract || !interfaze.IsAssignableFrom(type))
-                    continue;
-                T module = null;
-
-                if (typeof(ScriptableObject).IsAssignableFrom(type))
-                    module = ScriptableObject.CreateInstance(type) as T;
-                else
-                    module = Activator.CreateInstance(type) as T;
-                if (module != null)
-                    yield return module;
-            }
-        }
-
         public static bool IsManagedAssembly(string file)
         {
             bool isManagedDll;

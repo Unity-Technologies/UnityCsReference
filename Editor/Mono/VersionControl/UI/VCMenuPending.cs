@@ -3,13 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor;
-
 using UnityEditor.VersionControl;
 
 namespace UnityEditorInternal.VersionControl
 {
-    // Standard menu used in the change list window when selecting assets.
-    public class PendingWindowContextMenu
+    // Change list window menu; set up and invoked from native code when VCS integration is turned on
+    class PendingWindowContextMenu
     {
         //[MenuItem("CONTEXT/Pending/Submit...", true, 100)]
         static bool SubmitTest(int userData)

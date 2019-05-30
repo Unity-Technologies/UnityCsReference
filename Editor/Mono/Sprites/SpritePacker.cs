@@ -60,25 +60,7 @@ namespace UnityEditor.Sprites
             if (m_policies != null)
                 return;
 
-            List<Type> types = new List<Type>();
-
-            System.Reflection.Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            foreach (var assembly in assemblies)
-            {
-                try
-                {
-                    Type[] asst = assembly.GetTypes();
-                    foreach (var t in asst)
-                    {
-                        if (typeof(IPackerPolicy).IsAssignableFrom(t) && (t != typeof(IPackerPolicy)))
-                            types.Add(t);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.Log(string.Format("SpritePacker failed to get types from {0}. Error: {1}", assembly.FullName, ex.Message));
-                }
-            }
+            var types = TypeCache.GetTypesDerivedFrom<IPackerPolicy>();
 
             m_policies = types.Select(t => t.Name).ToArray();
 

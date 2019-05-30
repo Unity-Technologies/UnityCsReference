@@ -54,7 +54,7 @@ namespace Unity.SerializationLogic
             "UnityEngine.Color32",
             "UnityEngine.Matrix4x4",
             "UnityEngine.Rendering.SphericalHarmonicsL2",
-            "UnityEngine.PropertyName"
+            "UnityEngine.PropertyName",
         };
 
         public static bool IsMonoBehaviour(TypeReference type)
@@ -123,6 +123,10 @@ namespace Unity.SerializationLogic
                 if (type.FullName == unityStruct)
                     return true;
             }
+
+            if (type.FullName.IndexOf("UnityEngine.LazyLoadReference`1") == 0)
+                return true;
+
             return false;
         }
 

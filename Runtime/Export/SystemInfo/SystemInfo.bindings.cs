@@ -473,6 +473,11 @@ namespace UnityEngine
             }
         }
 
+        public static bool usesLoadStoreActions
+        {
+            get { return UsesLoadStoreActions(); }
+        }
+
         [Obsolete("Vertex program support is required in Unity 5.0+")]
         public static bool supportsVertexPrograms { get { return true; } }
 
@@ -676,5 +681,8 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::GetGraphicsFormat")]
         extern public static GraphicsFormat GetGraphicsFormat(DefaultFormat format);
+
+        [FreeFunction("ScriptingGraphicsCaps::UsesLoadStoreActions")]
+        static extern bool UsesLoadStoreActions();
     }
 }

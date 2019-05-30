@@ -356,7 +356,6 @@ namespace UnityEditor
         [Obsolete("Use cameraMode instead", false)]
         public DrawCameraMode m_RenderMode = 0;
 
-
         [Obsolete("Use cameraMode instead", false)]
         public DrawCameraMode renderMode
         {
@@ -420,6 +419,10 @@ namespace UnityEditor
                 Shader.SetGlobalInt("_CheckPureMetal", m_DoValidateTrueMetals ? 1 : 0);
             }
         }
+
+        [SerializeField]
+        float m_ExposureSliderValue = 0.0f;
+        const float kExposureSliderMax = 23.0f;
 
         [SerializeField]
         private SceneViewState m_SceneViewState;
@@ -752,6 +755,7 @@ namespace UnityEditor
             public static GUIContent sceneVisToolbarButtonContent = EditorGUIUtility.TrIconContent("scenevis_hidden", "Number of hidden objects, click to toggle scene visibility");
             public static GUIStyle gizmoButtonStyle;
             public static GUIContent sceneViewCameraContent = EditorGUIUtility.TrIconContent("SceneViewCamera", "Settings for the Scene view camera.");
+            public static GUIContent exposureIcon = EditorGUIUtility.TrIconContent("Exposure", "Controls the number of stops to over or under expose the precomputed and baked lighting debug views.");
 
             static Styles()
             {
@@ -1095,6 +1099,13 @@ namespace UnityEditor
                 RefreshAudioPlay();
         }
 
+        private bool SelectedDrawModeNeedExposureControl()
+        {
+            // it only make sense to allow the user to adjust the exposure on these debug view
+            return cameraMode.drawMode == DrawCameraMode.BakedEmissive || cameraMode.drawMode == DrawCameraMode.BakedLightmap ||
+                cameraMode.drawMode == DrawCameraMode.RealtimeEmissive || cameraMode.drawMode == DrawCameraMode.RealtimeIndirect;
+        }
+
         void ToolbarDisplayStateGUI()
         {
             // render mode popup
@@ -1117,6 +1128,20 @@ namespace UnityEditor
             m_SceneIsLit = GUILayout.Toggle(m_SceneIsLit, Styles.lighting, EditorStyles.toolbarButton);
             if (cameraMode.drawMode == DrawCameraMode.ShadowCascades)     // cascade visualization requires actual lights with shadows
                 m_SceneIsLit = true;
+
+            EditorGUILayout.Space();
+
+            float labelWidth = EditorGUIUtility.labelWidth;
+            EditorGUIUtility.labelWidth = 21;
+            var rect2 = GUILayoutUtility.GetRect(65, EditorGUI.kWindowToolbarHeight);
+
+            using (new EditorGUI.DisabledScope(!SelectedDrawModeNeedExposureControl()))
+            {
+                m_ExposureSliderValue = EditorGUI.FloatField(rect2, Styles.exposureIcon, m_ExposureSliderValue);
+                m_ExposureSliderValue = Mathf.Min(Mathf.Max(m_ExposureSliderValue, -kExposureSliderMax), kExposureSliderMax);
+                Unsupported.SetSceneViewDebugModeExposureNoDirty(m_ExposureSliderValue);
+            }
+            EditorGUIUtility.labelWidth = labelWidth;
 
             using (new EditorGUI.DisabledScope(Application.isPlaying))
             {

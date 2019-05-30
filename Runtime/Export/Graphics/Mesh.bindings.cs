@@ -46,7 +46,7 @@ namespace UnityEngine
         extern private int[] GetIndicesImpl(int submesh, bool applyBaseVertex);
 
         [FreeFunction(Name = "SetMeshIndicesFromScript", HasExplicitThis = true)]
-        extern private void SetIndicesImpl(int submesh, MeshTopology topology, System.Array indices, int arraySize, bool calculateBounds, int baseVertex);
+        extern private void SetIndicesImpl(int submesh, MeshTopology topology, UnityEngine.Rendering.IndexFormat indicesFormat, System.Array indices, int arrayStart, int arraySize, bool calculateBounds, int baseVertex);
 
         [FreeFunction(Name = "MeshScripting::ExtractTrianglesToArray", HasExplicitThis = true)]
         extern private void GetTrianglesNonAllocImpl([Out] int[] values, int submesh, bool applyBaseVertex);
@@ -54,16 +54,21 @@ namespace UnityEngine
         [FreeFunction(Name = "MeshScripting::ExtractIndicesToArray", HasExplicitThis = true)]
         extern private void GetIndicesNonAllocImpl([Out] int[] values, int submesh, bool applyBaseVertex);
 
+        [FreeFunction(Name = "MeshScripting::ExtractIndicesToArray16", HasExplicitThis = true)]
+        extern private void GetIndicesNonAllocImpl16([Out] ushort[] values, int submesh, bool applyBaseVertex);
+
         // component (channels) setters/getters helpers
 
         [FreeFunction(Name = "MeshScripting::PrintErrorCantAccessChannel", HasExplicitThis = true)]
         extern private void PrintErrorCantAccessChannel(VertexAttribute ch);
 
         [FreeFunction(Name = "MeshScripting::HasChannel", HasExplicitThis = true)]
-        extern internal bool HasChannel(VertexAttribute ch);
+        extern public bool HasVertexAttribute(VertexAttribute attr);
+        [FreeFunction(Name = "MeshScripting::GetChannelDimension", HasExplicitThis = true)]
+        extern public int GetVertexAttributeDimension(VertexAttribute attr);
 
         [FreeFunction(Name = "SetMeshComponentFromArrayFromScript", HasExplicitThis = true)]
-        extern private void SetArrayForChannelImpl(VertexAttribute channel, InternalVertexChannelType format, int dim, System.Array values, int arraySize);
+        extern private void SetArrayForChannelImpl(VertexAttribute channel, InternalVertexChannelType format, int dim, System.Array values, int arraySize, int valuesStart, int valuesCount);
 
         [FreeFunction(Name = "AllocExtractMeshComponentFromScript", HasExplicitThis = true)]
         extern private System.Array GetAllocArrayFromChannelImpl(VertexAttribute channel, InternalVertexChannelType format, int dim);

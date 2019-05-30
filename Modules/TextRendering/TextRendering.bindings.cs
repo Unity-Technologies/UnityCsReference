@@ -43,31 +43,6 @@ namespace UnityEngine
         Overflow = 1
     }
 
-    [Obsolete("This component is part of the legacy UI system and will be removed in a future release.", false)]
-    [NativeClass("TextRenderingPrivate::GUIText"),
-     NativeHeader("Runtime/Shaders/Material.h"),
-     NativeHeader("Modules/TextRendering/Public/GUIText.h")]
-    public sealed class GUIText : GUIElement
-    {
-        public extern string text { get; set; }
-
-        public extern Material material
-        {
-            [FreeFunction("TextRenderingPrivate::GetGUITextMaterialWithFallback", HasExplicitThis = true)] get;
-            set;
-        }
-        public extern Font font { get; set; }
-        public extern TextAlignment alignment { get; set; }
-        public extern TextAnchor anchor { get; set; }
-        public extern float lineSpacing { get; set; }
-        public extern float tabSize { get; set; }
-        public extern int fontSize { get; set; }
-        public extern FontStyle fontStyle { get; set; }
-        public extern bool richText { get; set; }
-        public extern Color color { get; set; }
-        public extern Vector2 pixelOffset { get; set; }
-    }
-
     [RequireComponent(typeof(Transform), typeof(MeshRenderer))]
     [NativeClass("TextRenderingPrivate::TextMesh"),
      NativeHeader("Modules/TextRendering/Public/TextMesh.h")]

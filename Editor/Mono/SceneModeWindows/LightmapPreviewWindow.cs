@@ -25,6 +25,8 @@ namespace UnityEditor
         int m_SelectedPreviewTextureOptionIndex = 0;
         [SerializeField]
         float m_ExposureSliderValue = 0.0f;
+        [SerializeField]
+        float m_ExposureSliderMax = 10f;
 
         // Lightmap specifiers
         [SerializeField]
@@ -41,8 +43,6 @@ namespace UnityEditor
         int m_ActiveGameObjectLightmapIndex = -1; // the object the user selects in the scene
         int m_ActiveGameObjectInstanceId = -1; // for instance based non-atlas textures such as baked emissive for Progressive
         Hash128 m_ActiveGameObjectTextureHash = new Hash128(); // the object the user selects in the scene
-
-        private float m_ExposureSliderMax = 10f;
 
         GITextureType[] kRealtimePreviewTextureTypes =
         {
@@ -98,7 +98,7 @@ namespace UnityEditor
             public static readonly GUIContent TextureNotAvailableBakedAlbedoEmissive = EditorGUIUtility.TrTextContent("The texture is not an index-based texture and is not available when using Progressive.\nPlease go to the instance you wish to debug, and select the lightmap on the Mesh Renderer.");
             public static readonly GUIContent TextureLoading = EditorGUIUtility.TrTextContent("Loading...");
             public static readonly GUIContent UVOverlayIcon = EditorGUIUtility.TrIconContent("ToggleUVOverlay", "Toggles the UV Overlay for all the objects in the lightmap. The currently selected object will be highlighted. ");
-            public static readonly GUIContent ExposureIcon = EditorGUIUtility.TrIconContent("SceneViewLighting", "Controls the number of stops to over or under expose the lightmap.");
+            public static readonly GUIContent ExposureIcon = EditorGUIUtility.TrIconContent("Exposure", "Controls the number of stops to over or under expose the lightmap.");
         }
 
         public int lightmapIndex

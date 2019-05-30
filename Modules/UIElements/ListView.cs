@@ -208,7 +208,7 @@ namespace UnityEngine.UIElements
             m_ScrollView.contentContainer.RegisterCallback<MouseDownEvent>(OnClick);
             m_ScrollView.contentContainer.RegisterCallback<KeyDownEvent>(OnKeyDown);
             m_ScrollView.contentContainer.focusable = true;
-            m_ScrollView.contentContainer.renderHint &= ~RenderHint.GroupTransform; // Scroll views with virtualized content shouldn't have the "view transform" optimization
+            m_ScrollView.contentContainer.usageHints &= ~UsageHints.GroupTransform; // Scroll views with virtualized content shouldn't have the "view transform" optimization
 
             focusable = true;
             isCompositeRoot = true;

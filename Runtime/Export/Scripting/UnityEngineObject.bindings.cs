@@ -381,6 +381,9 @@ namespace UnityEngine
         [FreeFunction("UnityEngineObjectBindings::GetName")]
         extern static string GetName(Object obj);
 
+        [FreeFunction("UnityEngineObjectBindings::IsPersistent")]
+        internal extern static bool IsPersistent(Object obj);
+
         [FreeFunction("UnityEngineObjectBindings::SetName")]
         extern static void SetName(Object obj, string name);
 
@@ -390,5 +393,9 @@ namespace UnityEngine
         [VisibleToOtherModules]
         [FreeFunction("UnityEngineObjectBindings::FindObjectFromInstanceID")]
         internal extern static Object FindObjectFromInstanceID(int instanceID);
+
+        [VisibleToOtherModules]
+        [FreeFunction("UnityEngineObjectBindings::ForceLoadFromInstanceID")]
+        internal extern static Object ForceLoadFromInstanceID(int instanceID);
     }
 }

@@ -74,6 +74,7 @@ namespace UnityEditor
             return types;
         }
 
+        [Obsolete("Use public TypeCache.GetTypesDerivedFrom<> API instead.")]
         static internal IEnumerable<Type> SubclassesOfGenericType(Type genericType)
         {
             return loadedTypes.Where(klass => IsSubclassOfGenericType(klass, genericType));

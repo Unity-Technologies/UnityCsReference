@@ -128,7 +128,7 @@ namespace UnityEditor
         {
             var result = new List<MonoCreateAssetItem>();
 
-            foreach (var type in EditorAssemblies.GetAllTypesWithAttribute<CreateAssetMenuAttribute>())
+            foreach (var type in TypeCache.GetTypesWithAttribute<CreateAssetMenuAttribute>())
             {
                 var attr = type.GetCustomAttributes(typeof(CreateAssetMenuAttribute), false).FirstOrDefault() as CreateAssetMenuAttribute;
                 if (attr == null)

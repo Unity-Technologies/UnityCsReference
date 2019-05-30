@@ -17,6 +17,7 @@ using UnityEngine;
 internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocessor
 {
     readonly bool m_HasIl2CppPlayers;
+    protected const string k_MonoDirectoryName = "MonoBleedingEdge";
 
     protected DesktopStandalonePostProcessor(bool hasIl2CppPlayers)
     {
@@ -395,13 +396,10 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
             CommonRoles.builtInResources);
 
         // Mark up each mono runtime
-        foreach (var monoName in new[] {"Mono", "MonoBleedingEdge"})
-        {
-            args.report.RecordFilesAddedRecursive(Path.Combine(monoFolderRoot, monoName + "/EmbedRuntime"),
-                CommonRoles.monoRuntime);
-            args.report.RecordFilesAddedRecursive(Path.Combine(monoFolderRoot, monoName + "/etc"),
-                CommonRoles.monoConfig);
-        }
+        args.report.RecordFilesAddedRecursive(Path.Combine(monoFolderRoot, k_MonoDirectoryName + "/EmbedRuntime"),
+            CommonRoles.monoRuntime);
+        args.report.RecordFilesAddedRecursive(Path.Combine(monoFolderRoot, k_MonoDirectoryName + "/etc"),
+            CommonRoles.monoConfig);
     }
 
     private void CopyStagingAreaIntoBuildsFolder(BuildPostProcessArgs args)
@@ -457,11 +455,6 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
     protected abstract void DeleteDestination(BuildPostProcessArgs args);
 
-    protected static string GetMonoFolderName(ScriptingRuntimeVersion scriptingRuntimeVersion)
-    {
-        return "MonoBleedingEdge";
-    }
-
     protected static bool UseMono => !UseIl2Cpp || IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildTargetGroup.Standalone);
 
     protected static void DeleteUnusedMono(string dataFolder, BuildReport report)
@@ -469,7 +462,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         // Mono is built by the il2cpp builder, so we dont need the libs copied
         if (!UseMono)
         {
-            var monoPath = Path.Combine(dataFolder, GetMonoFolderName(ScriptingRuntimeVersion.Latest));
+            var monoPath = Path.Combine(dataFolder, k_MonoDirectoryName);
             FileUtil.DeleteFileOrDirectory(monoPath);
             report.RecordFilesDeletedRecursive(monoPath);
         }

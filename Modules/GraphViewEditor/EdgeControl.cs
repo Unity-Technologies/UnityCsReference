@@ -836,7 +836,7 @@ namespace UnityEditor.Experimental.GraphView
             uint wantedLength = (cpt) * 2;
             uint indexCount = (wantedLength - 2) * 3;
 
-            var md = mgc.Allocate((int)wantedLength, (int)indexCount, null, MeshGenerationContext.MeshFlags.UVisDisplacement);
+            var md = mgc.Allocate((int)wantedLength, (int)indexCount, null, null, MeshGenerationContext.MeshFlags.UVisDisplacement);
             if (md.vertexCount == 0)
                 return;
 

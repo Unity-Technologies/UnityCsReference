@@ -571,7 +571,7 @@ namespace UnityEditor
 
             var arrTools = new List<ITerrainPaintTool>();
             var arrNames = new List<string>();
-            foreach (var klass in EditorAssemblies.SubclassesOfGenericType(typeof(TerrainPaintTool<>)))
+            foreach (var klass in TypeCache.GetTypesDerivedFrom(typeof(TerrainPaintTool<>)))
             {
                 if (klass.IsAbstract ||
                     klass == typeof(PaintTreesTool) ||

@@ -51,103 +51,104 @@ namespace UnityEditor.VersionControl
             return AssetDatabase.LoadAssetAtPath(path, typeof(UnityEngine.Object));
         }
 
-        internal static string StateToString(Asset.States state)
+        internal static string StateToString(States state)
         {
-            if (IsState(state, Asset.States.AddedLocal))
+            if (IsState(state, States.AddedLocal))
                 return "Added Local";
 
-            if (IsState(state, Asset.States.AddedRemote))
+            if (IsState(state, States.AddedRemote))
                 return "Added Remote";
 
-            if (IsState(state, Asset.States.CheckedOutLocal) && !IsState(state, Asset.States.LockedLocal))
+            if (IsState(state, States.CheckedOutLocal) && !IsState(state, States.LockedLocal))
                 return "Checked Out Local";
 
-            if (IsState(state, Asset.States.CheckedOutRemote) && !IsState(state, Asset.States.LockedRemote))
+            if (IsState(state, States.CheckedOutRemote) && !IsState(state, States.LockedRemote))
                 return "Checked Out Remote";
 
-            if (IsState(state, Asset.States.Conflicted))
+            if (IsState(state, States.Conflicted))
                 return "Conflicted";
 
-            if (IsState(state, Asset.States.DeletedLocal))
+            if (IsState(state, States.DeletedLocal))
                 return "Deleted Local";
 
-            if (IsState(state, Asset.States.DeletedRemote))
+            if (IsState(state, States.DeletedRemote))
                 return "Deleted Remote";
 
-            if (IsState(state, Asset.States.Local))
+            if (IsState(state, States.Local) && !(IsState(state, States.OutOfSync) || IsState(state, States.Synced)))
                 return "Local";
 
-            if (IsState(state, Asset.States.LockedLocal))
+            if (IsState(state, States.LockedLocal))
                 return "Locked Local";
 
-            if (IsState(state, Asset.States.LockedRemote))
+            if (IsState(state, States.LockedRemote))
                 return "Locked Remote";
 
-            if (IsState(state, Asset.States.OutOfSync))
+            if (IsState(state, States.OutOfSync))
                 return "Out Of Sync";
 
-            if (IsState(state, Asset.States.Updating))
+            if (IsState(state, States.Updating))
                 return "Updating Status";
 
             return "";
         }
 
-        internal static string AllStateToString(Asset.States state)
+        internal static string AllStateToString(States state)
         {
             var sb = new System.Text.StringBuilder();
 
-            if (IsState(state, Asset.States.AddedLocal))
-                sb.AppendLine("Added Local");
+            if (IsState(state, States.AddedLocal))
+                sb.Append("Added Local, ");
 
-            if (IsState(state, Asset.States.AddedRemote))
-                sb.AppendLine("Added Remote");
+            if (IsState(state, States.AddedRemote))
+                sb.Append("Added Remote, ");
 
-            if (IsState(state, Asset.States.CheckedOutLocal))
-                sb.AppendLine("Checked Out Local");
+            if (IsState(state, States.CheckedOutLocal))
+                sb.Append("Checked Out Local, ");
 
-            if (IsState(state, Asset.States.CheckedOutRemote))
-                sb.AppendLine("Checked Out Remote");
+            if (IsState(state, States.CheckedOutRemote))
+                sb.Append("Checked Out Remote, ");
 
-            if (IsState(state, Asset.States.Conflicted))
-                sb.AppendLine("Conflicted");
+            if (IsState(state, States.Conflicted))
+                sb.Append("Conflicted, ");
 
-            if (IsState(state, Asset.States.DeletedLocal))
-                sb.AppendLine("Deleted Local");
+            if (IsState(state, States.DeletedLocal))
+                sb.Append("Deleted Local, ");
 
-            if (IsState(state, Asset.States.DeletedRemote))
-                sb.AppendLine("Deleted Remote");
+            if (IsState(state, States.DeletedRemote))
+                sb.Append("Deleted Remote, ");
 
-            if (IsState(state, Asset.States.Local))
-                sb.AppendLine("Local");
+            if (IsState(state, States.Local))
+                sb.Append("Local, ");
 
-            if (IsState(state, Asset.States.LockedLocal))
-                sb.AppendLine("Locked Local");
+            if (IsState(state, States.LockedLocal))
+                sb.Append("Locked Local, ");
 
-            if (IsState(state, Asset.States.LockedRemote))
-                sb.AppendLine("Locked Remote");
+            if (IsState(state, States.LockedRemote))
+                sb.Append("Locked Remote, ");
 
-            if (IsState(state, Asset.States.OutOfSync))
-                sb.AppendLine("Out Of Sync");
+            if (IsState(state, States.OutOfSync))
+                sb.Append("Out Of Sync, ");
 
-            if (IsState(state, Asset.States.Synced))
-                sb.AppendLine("Synced");
+            if (IsState(state, States.Synced))
+                sb.Append("Synced, ");
 
-            if (IsState(state, Asset.States.Missing))
-                sb.AppendLine("Missing");
+            if (IsState(state, States.Missing))
+                sb.Append("Missing, ");
 
-            if (IsState(state, Asset.States.ReadOnly))
-                sb.AppendLine("ReadOnly");
+            if (IsState(state, States.ReadOnly))
+                sb.Append("ReadOnly, ");
+
+            // remove trailing ", " if had any
+            if (sb.Length > 2)
+                sb.Remove(sb.Length - 2, 2);
 
             return sb.ToString();
         }
 
-        internal string AllStateToString()
-        {
-            return AllStateToString(this.state);
-        }
-
         internal string StateToString()
         {
+            if (isFolder && !isMeta && !Provider.isVersioningFolders)
+                return string.Empty;
             return StateToString(this.state);
         }
 

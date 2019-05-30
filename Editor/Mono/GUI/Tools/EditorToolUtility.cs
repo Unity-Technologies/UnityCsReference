@@ -47,7 +47,7 @@ namespace UnityEditor.EditorTools
             {
                 if (s_CustomEditorTools == null)
                 {
-                    Type[] editorTools = EditorAssemblies.GetAllTypesWithAttribute<EditorToolAttribute>()
+                    Type[] editorTools = TypeCache.GetTypesWithAttribute<EditorToolAttribute>()
                         .Where(x => !x.IsAbstract)
                         .ToArray();
 

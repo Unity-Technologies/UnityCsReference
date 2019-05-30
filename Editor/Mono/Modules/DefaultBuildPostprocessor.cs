@@ -71,11 +71,6 @@ namespace UnityEditor.Modules
                 }
             }
 
-            if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
-                config.Set("scripting-runtime-version", "latest");
-            else
-                config.Set("scripting-runtime-version", "legacy");
-
             string checkVREnabled = config.Get("vr-enabled");
             if (String.IsNullOrEmpty(checkVREnabled) || String.Compare("0", checkVREnabled, true) == 0)
             {

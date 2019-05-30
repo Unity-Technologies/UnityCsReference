@@ -107,6 +107,14 @@ namespace UnityEditor
             return res;
         }
 
+        public static bool TryGetGUIDAndLocalFileIdentifier<T>(LazyLoadReference<T> assetRef, out string guid, out long localId) where T : UnityEngine.Object
+        {
+            GUID uguid;
+            bool res = GetGUIDAndLocalIdentifierInFile(assetRef.instanceID, out uguid, out localId);
+            guid = uguid.ToString();
+            return res;
+        }
+
         public static void ForceReserializeAssets()
         {
             ForceReserializeAssets(GetAllAssetPaths());

@@ -285,7 +285,10 @@ namespace UnityEditor
                     if (bestWindQuality > 0)
                     {
                         if (isBillboard)
-                            bestWindQuality = bestWindQuality >= 1 ? 1 : 0; // billboard has only one level of wind quality
+                        {
+                            bestWindQuality = 1; // billboard has only one level of wind quality
+                        }
+
                         EditorGUILayout.Popup(
                             m_LODSettings.GetArrayElementAtIndex(m_SelectedLODRange).FindPropertyRelative("windQuality"),
                             SpeedTreeImporter.windQualityNames.Take(bestWindQuality + 1).Select(s => new GUIContent(s)).ToArray(),

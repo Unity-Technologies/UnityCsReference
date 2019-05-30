@@ -47,11 +47,17 @@ namespace Unity.CodeEditor
             }
 
             var assetFilePath = Path.GetFullPath(assetPath);
+            var assetExtension = Path.GetExtension(assetFilePath);
+            if (string.IsNullOrEmpty(assetExtension))
+            {
+                return false;
+            }
+
             if (!(selected.GetType().ToString() == "UnityEditor.MonoScript" ||
                   selected.GetType().ToString() == "UnityEngine.Shader" ||
                   selected.GetType().ToString() == "UnityEngine.Experimental.UIElements.VisualTreeAsset" ||
                   selected.GetType().ToString() == "UnityEngine.StyleSheets.StyleSheet" ||
-                  GetExtensionStrings().Contains(Path.GetExtension(assetFilePath).Substring(1))
+                  GetExtensionStrings().Contains(assetExtension.Substring(1))
             ))
             {
                 return false;

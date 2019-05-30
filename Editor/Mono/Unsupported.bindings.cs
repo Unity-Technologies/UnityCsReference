@@ -91,6 +91,9 @@ namespace UnityEditor
         [FreeFunction("GetRenderSettings().SetUseFogNoDirty")]
         public static extern void SetRenderSettingsUseFogNoDirty(bool fog);
 
+        [FreeFunction("GetRenderSettings().SetSceneViewDebugModeExposureNoDirty")]
+        public static extern void SetSceneViewDebugModeExposureNoDirty(float exposure);
+
         [FreeFunction("GetQualitySettings().SetShadowDistanceTemporarily")]
         public static extern void SetQualitySettingsShadowDistanceTemporarily(float distance);
 

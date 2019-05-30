@@ -206,7 +206,7 @@ namespace UnityEditor
             if (m_LineRenderer.positionCount == 0)
                 return;
 
-            PointEditor.SelectPoints(this, transform, ref m_Selection, false);
+            PointEditor.SelectPoints(this, transform, ref m_Selection);
             PointEditor.Draw(this, transform, m_Selection, true);
             PointEditor.MovePoints(this, transform, m_Selection);
             if (showWireframe)

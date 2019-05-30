@@ -89,7 +89,12 @@ namespace Unity.Collections.LowLevel.Unsafe
         unsafe public static extern void MemMove(void* destination, void* source, long size);
 
         [ThreadSafe]
-        unsafe public static extern void MemClear(void* destination, long size);
+        unsafe public static extern void MemSet(void* destination, byte value, long size);
+
+        unsafe public static void MemClear(void* destination, long size)
+        {
+            MemSet(destination, 0, size);
+        }
 
         [ThreadSafe]
         unsafe public static extern int MemCmp(void* ptr1, void* ptr2, long size);

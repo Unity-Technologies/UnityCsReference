@@ -787,6 +787,9 @@
     <Compile Include="..\..\Runtime\Export\Scripting\LayerMask.bindings.cs">
       <Link>Runtime\Export\Scripting\LayerMask.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\LazyLoadReference.cs">
+      <Link>Runtime\Export\Scripting\LazyLoadReference.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\ManagedStreamHelpers.cs">
       <Link>Runtime\Export\Scripting\ManagedStreamHelpers.cs</Link>
     </Compile>
@@ -1525,8 +1528,14 @@
     <Compile Include="..\..\Modules\IMGUI\GUIDebugger.bindings.cs">
       <Link>Modules\IMGUI\GUIDebugger.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\IMGUI\GUIElement.deprecated.cs">
+      <Link>Modules\IMGUI\GUIElement.deprecated.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\IMGUI\GUIEnums.cs">
       <Link>Modules\IMGUI\GUIEnums.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\IMGUI\GUILayer.deprecated.cs">
+      <Link>Modules\IMGUI\GUILayer.deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\IMGUI\GUILayout.cs">
       <Link>Modules\IMGUI\GUILayout.cs</Link>
@@ -1557,6 +1566,9 @@
     </Compile>
     <Compile Include="..\..\Modules\IMGUI\GUITargetAttribute.cs">
       <Link>Modules\IMGUI\GUITargetAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\IMGUI\GUITexture.deprecated.cs">
+      <Link>Modules\IMGUI\GUITexture.deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\IMGUI\GUIUtility.bindings.cs">
       <Link>Modules\IMGUI\GUIUtility.bindings.cs</Link>
@@ -1821,6 +1833,9 @@
     </Compile>
     <Compile Include="..\..\Modules\TextRendering\FontStyle.cs">
       <Link>Modules\TextRendering\FontStyle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextRendering\GUIText.deprecated.cs">
+      <Link>Modules\TextRendering\GUIText.deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextRendering\TextGenerator.cs">
       <Link>Modules\TextRendering\TextGenerator.cs</Link>

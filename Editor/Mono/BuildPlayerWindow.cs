@@ -28,6 +28,7 @@ namespace UnityEditor
         {
             public GUIContent invalidColorSpaceMessage = EditorGUIUtility.TrTextContent("In order to build a player, go to 'Player Settings...' to resolve the incompatibility between the Color Space and the current settings.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
             public GUIContent invalidLightmapEncodingMessage = EditorGUIUtility.TrTextContent("In order to build a player, go to 'Player Settings...' to resolve the incompatibility between the selected Lightmap Encoding and the current settings.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+            public GUIContent compilingMessage = EditorGUIUtility.TrTextContent("Cannot build player while editor is importing assets or compiling scripts.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
             public GUIStyle selected = "OL SelectedRow";
             public GUIStyle box = "OL Box";
             public GUIStyle title = EditorStyles.boldLabel;
@@ -862,6 +863,12 @@ namespace UnityEditor
                 EditorGUILayout.HelpBox(styles.invalidLightmapEncodingMessage);
             }
 
+            if (EditorApplication.isCompiling || EditorApplication.isUpdating)
+            {
+                enableBuildAndRunButton = false;
+                enableBuildButton = false;
+                EditorGUILayout.HelpBox(styles.compilingMessage);
+            }
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
             if (EditorGUILayout.LinkLabel(styles.learnAboutUnityCloudBuild))

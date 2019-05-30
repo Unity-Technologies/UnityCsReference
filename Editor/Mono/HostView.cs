@@ -316,7 +316,8 @@ namespace UnityEditor
             bool isExitGUIException = false;
             try
             {
-                using (new PerformanceTracker(actualView.GetType().Name + ".OnGUI." + Event.current.type))
+                var viewName = actualView != null ? actualView.GetType().Name : this.GetType().Name;
+                using (new PerformanceTracker(viewName + ".OnGUI." + Event.current.type))
                 {
                     Invoke("OnGUI");
                 }
@@ -491,7 +492,7 @@ namespace UnityEditor
             if (mi != null)
             {
                 const float rightOffset = 16f;
-                object[] lockButton = { new Rect(leftOffset - rightOffset, topOffset - 1f, 16, 16) };
+                object[] lockButton = { new Rect(leftOffset - rightOffset, topOffset, 16, 16) };
                 mi.Invoke(m_ActualView, lockButton);
             }
 

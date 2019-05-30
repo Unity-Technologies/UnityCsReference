@@ -142,7 +142,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         static Matrix4x4 GetTransformIDTransformInfo(VisualElement ve)
         {
-            Debug.Assert(ve.renderChainData.allocatedTransformID || (ve.renderHint & (RenderHint.GroupTransform)) != 0);
+            Debug.Assert(ve.renderChainData.allocatedTransformID || (ve.renderHints & (RenderHints.GroupTransform)) != 0);
             Matrix4x4 transform;
             if (ve.renderChainData.groupTransformAncestor != null)
                 transform = ve.renderChainData.groupTransformAncestor.worldTransform.inverse * ve.worldTransform;
@@ -167,7 +167,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         static void GetVerticesTransformInfo(VisualElement ve, out Matrix4x4 transform, out float transformID)
         {
-            if (ve.renderChainData.allocatedTransformID || (ve.renderHint & (RenderHint.GroupTransform)) != 0)
+            if (ve.renderChainData.allocatedTransformID || (ve.renderHints & (RenderHints.GroupTransform)) != 0)
                 transform = Matrix4x4.identity;
             else if (ve.renderChainData.boneTransformAncestor != null)
                 transform = ve.renderChainData.boneTransformAncestor.worldTransform.inverse * ve.worldTransform;
@@ -193,7 +193,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             if (parent != null)
             {
-                if ((parent.renderHint & (RenderHint.GroupTransform)) != 0)
+                if ((parent.renderHints & (RenderHints.GroupTransform)) != 0)
                     ve.renderChainData.groupTransformAncestor = parent;
                 else ve.renderChainData.groupTransformAncestor = parent.renderChainData.groupTransformAncestor;
             }
@@ -295,7 +295,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             bool hasParent = parent != null;
             if (!ve.renderChainData.allocatedTransformID)
             {
-                if (hasParent && (ve.renderHint & RenderHint.GroupTransform) == 0)
+                if (hasParent && (ve.renderHints & RenderHints.GroupTransform) == 0)
                 {
                     if (parent.renderChainData.allocatedTransformID)
                         ve.renderChainData.boneTransformAncestor = parent;
@@ -357,7 +357,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             {
                 // Only the clip info had to be updated, we can skip the other cases which are for transform changes only.
             }
-            else if ((ve.renderHint & RenderHint.GroupTransform) != 0)
+            else if ((ve.renderHints & RenderHints.GroupTransform) != 0)
             {
                 stats.groupTransformElementsChanged++;
             }
@@ -383,7 +383,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             if (dirtyHasBeenResolved)
                 ve.renderChainData.dirtyID = dirtyID; // Prevent reprocessing of the same element in the same pass
 
-            if ((ve.renderHint & RenderHint.GroupTransform) == 0)
+            if ((ve.renderHints & RenderHints.GroupTransform) == 0)
             {
                 // Recurse on children
                 int childrenCount = ve.hierarchy.childCount;
@@ -409,7 +409,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 hierarchical = true;
 
             Debug.Assert(ve.renderChainData.clipMethod != ClipMethod.Undetermined);
-            Debug.Assert(ve.renderChainData.allocatedTransformID || ve.hierarchy.parent == null || ve.renderChainData.transformID.start == ve.hierarchy.parent.renderChainData.transformID.start || (ve.renderHint & RenderHint.GroupTransform) != 0);
+            Debug.Assert(ve.renderChainData.allocatedTransformID || ve.hierarchy.parent == null || ve.renderChainData.transformID.start == ve.hierarchy.parent.renderChainData.transformID.start || (ve.renderHints & RenderHints.GroupTransform) != 0);
 
             var painterClosingInfo = new UIRStylePainter.ClosingInfo();
             var painter = PaintElement(renderChain, ve, ref stats);
@@ -490,7 +490,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             if (!UIRUtility.IsRoundRect(ve))
             {
-                if ((ve.renderHint & (RenderHint.GroupTransform | RenderHint.ClipWithScissors)) != 0)
+                if ((ve.renderHints & (RenderHints.GroupTransform | RenderHints.ClipWithScissors)) != 0)
                     return ClipMethod.Scissor;
                 return ClipMethod.ShaderDiscard;
             }
@@ -500,7 +500,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         static bool NeedsTransformID(VisualElement ve, ClipMethod newClipMethod)
         {
-            return (ve.renderHint & RenderHint.GroupTransform) == 0 && ((newClipMethod == ClipMethod.ShaderDiscard) || ((ve.renderHint & RenderHint.BoneTransform) == RenderHint.BoneTransform));
+            return (ve.renderHints & RenderHints.GroupTransform) == 0 && ((newClipMethod == ClipMethod.ShaderDiscard) || ((ve.renderHints & RenderHints.BoneTransform) == RenderHints.BoneTransform));
         }
 
         internal static UIRStylePainter PaintElement(RenderChain renderChain, VisualElement ve, ref ChainBuilderStats stats)
@@ -607,8 +607,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
                         if (entry.isClipRegisterEntry)
                             painter.LandClipRegisterMesh(targetVerticesSlice, targetIndicesSlice, entryIndexOffset);
 
-                        var cmd = InjectMeshDrawCommand(renderChain, ve, ref cmdPrev, ref cmdNext, entry.drawType, data, entryIndexCount, indicesFilled, entry.material, entry.custom, entry.font);
-                        if (entry.drawType == VertexFlags.IsText)
+                        var cmd = InjectMeshDrawCommand(renderChain, ve, ref cmdPrev, ref cmdNext, data, entryIndexCount, indicesFilled, entry.material, entry.custom, entry.font);
+                        if (entry.isTextEntry)
                         {
                             Debug.Assert(ve.renderChainData.usesText);
                             if (ve.renderChainData.textEntries == null)
@@ -664,7 +664,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     FindClosingCommandInsertionPoint(ve, out cmdPrev, out cmdNext);
 
                 if (painter.closingInfo.clipperRegisterIndices.Length > 0)
-                    painter.LandClipUnregisterMeshDrawCommand(InjectClosingMeshDrawCommand(renderChain, ve, ref cmdPrev, ref cmdNext, VertexFlags.IsSolid, null, 0, 0, null, null, null)); // Placeholder command that will be filled actually later
+                    painter.LandClipUnregisterMeshDrawCommand(InjectClosingMeshDrawCommand(renderChain, ve, ref cmdPrev, ref cmdNext, null, 0, 0, null, null, null)); // Placeholder command that will be filled actually later
                 if (painter.closingInfo.popViewMatrix)
                 {
                     var cmd = renderChain.AllocCommand();
@@ -867,7 +867,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             return true;
         }
 
-        static RenderChainCommand InjectMeshDrawCommand(RenderChain renderChain, VisualElement ve, ref RenderChainCommand cmdPrev, ref RenderChainCommand cmdNext, VertexFlags drawType, MeshHandle mesh, int indexCount, int indexOffset, Material material, Texture custom, Texture font)
+        static RenderChainCommand InjectMeshDrawCommand(RenderChain renderChain, VisualElement ve, ref RenderChainCommand cmdPrev, ref RenderChainCommand cmdNext, MeshHandle mesh, int indexCount, int indexOffset, Material material, Texture custom, Texture font)
         {
             var cmd = renderChain.AllocCommand();
             cmd.type = CommandType.Draw;
@@ -880,7 +880,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             return cmd;
         }
 
-        static RenderChainCommand InjectClosingMeshDrawCommand(RenderChain renderChain, VisualElement ve, ref RenderChainCommand cmdPrev, ref RenderChainCommand cmdNext, VertexFlags drawType, MeshHandle mesh, int indexCount, int indexOffset, Material material, Texture custom, Texture font)
+        static RenderChainCommand InjectClosingMeshDrawCommand(RenderChain renderChain, VisualElement ve, ref RenderChainCommand cmdPrev, ref RenderChainCommand cmdNext, MeshHandle mesh, int indexCount, int indexOffset, Material material, Texture custom, Texture font)
         {
             var cmd = renderChain.AllocCommand();
             cmd.type = CommandType.Draw;
@@ -1100,7 +1100,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
     {
         internal struct Entry
         {
-            public VertexFlags drawType;
             public NativeSlice<Vertex> vertices;
             public NativeSlice<UInt16> indices;
             public Material material; // Responsible for enabling immediate clipping
@@ -1108,6 +1107,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             public RenderChainCommand customCommand;
             public float clipRectID;
             public bool uvIsDisplacement;
+            public bool isTextEntry;
             public bool isClipRegisterEntry;
             public bool isStencilClipped;
         }
@@ -1191,21 +1191,32 @@ namespace UnityEngine.UIElements.UIR.Implementation
         float m_ElementOpacity = 1.0f;
         TempDataAlloc<Vertex> m_VertsPool = new TempDataAlloc<Vertex>(8192);
         TempDataAlloc<UInt16> m_IndicesPool = new TempDataAlloc<UInt16>(8192 << 1);
+        List<MeshWriteData> m_MeshWriteDataPool;
+        int m_NextMeshWriteDataPoolItem;
 
-        // The delegate must be stored to avoid allocations.
-        MeshBuilder.AllocMeshData m_AllocDelegate;
+        // The delegates must be stored to avoid allocations
+        MeshBuilder.AllocMeshData.Allocator m_AllocRawVertsIndicesDelegate;
+        MeshBuilder.AllocMeshData.Allocator m_AllocThroughDrawMeshDelegate;
 
-        MeshBuilder.MeshOutput Alloc(uint vertexCount, uint indexCount)
+        MeshWriteData GetPooledMeshWriteData()
+        {
+            if (m_NextMeshWriteDataPoolItem == m_MeshWriteDataPool.Count)
+                m_MeshWriteDataPool.Add(new MeshWriteData());
+            return m_MeshWriteDataPool[m_NextMeshWriteDataPoolItem++];
+        }
+
+        MeshWriteData AllocRawVertsIndices(uint vertexCount, uint indexCount, ref MeshBuilder.AllocMeshData allocatorData)
         {
             m_CurrentEntry.vertices = m_VertsPool.Alloc(vertexCount);
             m_CurrentEntry.indices = m_IndicesPool.Alloc(indexCount);
-            Debug.Assert(m_CurrentEntry.vertices.Length == vertexCount);
-            Debug.Assert(m_CurrentEntry.indices.Length == indexCount);
-            return new MeshBuilder.MeshOutput()
-            {
-                vertices = m_CurrentEntry.vertices,
-                indices = m_CurrentEntry.indices
-            };
+            var mwd = GetPooledMeshWriteData();
+            mwd.Reset(m_CurrentEntry.vertices, m_CurrentEntry.indices);
+            return mwd;
+        }
+
+        MeshWriteData AllocThroughDrawMesh(uint vertexCount, uint indexCount, ref MeshBuilder.AllocMeshData allocatorData)
+        {
+            return DrawMesh((int)vertexCount, (int)indexCount, allocatorData.texture, allocatorData.material, allocatorData.flags);
         }
 
         public UIRStylePainter(RenderChain renderChain)
@@ -1215,7 +1226,12 @@ namespace UnityEngine.UIElements.UIR.Implementation
             device = renderChain.device;
             m_AtlasManager = renderChain.atlasManager;
             m_ElementOpacity = 1.0f;
-            m_AllocDelegate = Alloc;
+            m_AllocRawVertsIndicesDelegate = AllocRawVertsIndices;
+            m_AllocThroughDrawMeshDelegate = AllocThroughDrawMesh;
+            int meshWriteDataPoolStartingSize = 32;
+            m_MeshWriteDataPool = new List<MeshWriteData>(meshWriteDataPoolStartingSize);
+            for (int i = 0; i < meshWriteDataPoolStartingSize; i++)
+                m_MeshWriteDataPool.Add(new MeshWriteData());
         }
 
         public MeshGenerationContext meshGenerationContext { get; }
@@ -1257,16 +1273,17 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         public void Begin()
         {
+            m_NextMeshWriteDataPoolItem = 0;
             m_ElementOpacity = currentElement.resolvedStyle.opacity;
             currentElement.renderChainData.usesText = currentElement.renderChainData.usesAtlas = currentElement.renderChainData.disableNudging = false;
             currentElement.renderChainData.displacementUVStart = currentElement.renderChainData.displacementUVEnd = 0;
-            bool isGroupTransform = (currentElement.renderHint & RenderHint.GroupTransform) != 0;
+            bool isGroupTransform = (currentElement.renderHints & RenderHints.GroupTransform) != 0;
             if (isGroupTransform)
             {
                 var cmd = m_Owner.AllocCommand();
                 cmd.owner = currentElement;
                 cmd.type = CommandType.PushView;
-                m_Entries.Add(new Entry() { drawType = VertexFlags.LastType, customCommand = cmd });
+                m_Entries.Add(new Entry() { customCommand = cmd });
                 m_ClosingInfo.needsClosing = m_ClosingInfo.popViewMatrix = true;
             }
             if (currentElement.hierarchy.parent != null)
@@ -1295,30 +1312,53 @@ namespace UnityEngine.UIElements.UIR.Implementation
             m_ClosingInfo.clipperRegisterIndexOffset = indexOffset;
         }
 
-        public MeshWriteData DrawMesh(int vertexCount, int indexCount, Material material, MeshGenerationContext.MeshFlags flags)
+        public MeshWriteData DrawMesh(int vertexCount, int indexCount, Texture texture, Material material, MeshGenerationContext.MeshFlags flags)
         {
+            var mwd = GetPooledMeshWriteData();
             if (vertexCount == 0 || indexCount == 0)
-                return new MeshWriteData();
+            {
+                mwd.Reset(new NativeSlice<Vertex>(), new NativeSlice<ushort>());
+                return mwd;
+            }
 
             m_CurrentEntry = new Entry()
             {
-                drawType = VertexFlags.IsSolid,
+                vertices = m_VertsPool.Alloc((uint)vertexCount),
+                indices = m_IndicesPool.Alloc((uint)indexCount),
                 material = material,
                 uvIsDisplacement = flags == MeshGenerationContext.MeshFlags.UVisDisplacement,
                 clipRectID = m_ClipRectID,
                 isStencilClipped = m_StencilClip
             };
 
-            var mesh = Alloc((uint)vertexCount, (uint)indexCount);
+            Debug.Assert(m_CurrentEntry.vertices.Length == vertexCount);
+            Debug.Assert(m_CurrentEntry.indices.Length == indexCount);
+
+            Rect uvRegion = new Rect(0, 0, 1, 1);
+            VertexFlags vertexFlags = VertexFlags.IsSolid;
+            if (texture != null)
+            {
+                // Attempt to override with an atlas.
+                RectInt atlasRect;
+                if (m_AtlasManager != null && m_AtlasManager.TryGetLocation(texture as Texture2D, out atlasRect))
+                {
+                    vertexFlags = texture.filterMode == FilterMode.Point ? VertexFlags.IsAtlasTexturedPoint : VertexFlags.IsAtlasTexturedBilinear;
+                    currentElement.renderChainData.usesAtlas = true;
+                    uvRegion = new Rect(atlasRect.x, atlasRect.y, atlasRect.width, atlasRect.height);
+                }
+                else
+                {
+                    vertexFlags = VertexFlags.IsCustomTextured;
+                    m_CurrentEntry.custom = texture;
+                }
+            }
+
+            mwd.Reset(m_CurrentEntry.vertices, m_CurrentEntry.indices, uvRegion, vertexFlags);
             m_Entries.Add(m_CurrentEntry);
             totalVertices += m_CurrentEntry.vertices.Length;
             totalIndices += m_CurrentEntry.indices.Length;
             m_CurrentEntry = new Entry();
-            return new MeshWriteData()
-            {
-                m_Vertices = mesh.vertices,
-                m_Indices = mesh.indices
-            };
+            return mwd;
         }
 
         public void DrawText(MeshGenerationContextUtils.TextParams textParams)
@@ -1351,10 +1391,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 if (textVertices.Length == 0)
                     return;
                 Vector2 localOffset = TextNative.GetOffset(textSettings, textParams.rect);
-                m_CurrentEntry.drawType = VertexFlags.IsText;
                 m_CurrentEntry.clipRectID = m_ClipRectID;
                 m_CurrentEntry.isStencilClipped = m_StencilClip;
-                MeshBuilder.MakeText(textVertices, localOffset, m_AllocDelegate);
+                m_CurrentEntry.isTextEntry = true;
+                MeshBuilder.MakeText(textVertices, localOffset, new MeshBuilder.AllocMeshData() { alloc = m_AllocRawVertsIndicesDelegate });
                 m_CurrentEntry.font = textParams.font.material.mainTexture;
                 m_Entries.Add(m_CurrentEntry);
                 totalVertices += m_CurrentEntry.vertices.Length;
@@ -1371,42 +1411,16 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             rectParams.color *= UIElementsUtility.editorPlayModeTintColor;
 
-            m_CurrentEntry.clipRectID = m_ClipRectID;
-            m_CurrentEntry.isStencilClipped = m_StencilClip;
+            var meshAlloc = new MeshBuilder.AllocMeshData()
+            {
+                alloc = m_AllocThroughDrawMeshDelegate,
+                texture = rectParams.texture,
+                material = rectParams.material
+            };
 
             if (rectParams.texture != null)
-            {
-                // Attempt to override with an atlas.
-                VertexFlags vertexFlags;
-                RectInt atlasRect;
-                if (m_AtlasManager != null && m_AtlasManager.TryGetLocation(rectParams.texture as Texture2D, out atlasRect))
-                {
-                    vertexFlags = rectParams.texture.filterMode == FilterMode.Point ? VertexFlags.IsAtlasTexturedPoint : VertexFlags.IsAtlasTexturedBilinear;
-                    rectParams.uv = new Rect(
-                        rectParams.uv.x * rectParams.texture.width + atlasRect.x,
-                        rectParams.uv.y * rectParams.texture.height + atlasRect.y,
-                        rectParams.uv.width * atlasRect.width,
-                        rectParams.uv.height * atlasRect.height);
-                    currentElement.renderChainData.usesAtlas = true;
-                }
-                else vertexFlags = VertexFlags.IsCustomTextured;
-
-                m_CurrentEntry.drawType = vertexFlags;
-                m_CurrentEntry.custom = vertexFlags == VertexFlags.IsCustomTextured ? rectParams.texture : null;
-                MeshBuilder.MakeTexture(rectParams, UIRUtility.k_MeshPosZ, vertexFlags, m_AllocDelegate);
-            }
-            else
-            {
-                m_CurrentEntry.drawType = VertexFlags.IsSolid;
-                MeshBuilder.MakeRect(rectParams, UIRUtility.k_MeshPosZ, m_AllocDelegate);
-            }
-            if (m_CurrentEntry.vertices.Length > 0 && m_CurrentEntry.indices.Length > 0)
-            {
-                m_Entries.Add(m_CurrentEntry);
-                totalVertices += m_CurrentEntry.vertices.Length;
-                totalIndices += m_CurrentEntry.indices.Length;
-            }
-            m_CurrentEntry = new Entry();
+                MeshBuilder.MakeTexturedRect(rectParams, UIRUtility.k_MeshPosZ, meshAlloc);
+            else MeshBuilder.MakeSolidRect(rectParams, UIRUtility.k_MeshPosZ, meshAlloc);
         }
 
         public void DrawBorder(MeshGenerationContextUtils.BorderParams borderParams)
@@ -1415,19 +1429,13 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             borderParams.color *= UIElementsUtility.editorPlayModeTintColor;
 
-            m_CurrentEntry.clipRectID = m_ClipRectID;
-            m_CurrentEntry.isStencilClipped = m_StencilClip;
-            m_CurrentEntry.uvIsDisplacement = true;
-            m_CurrentEntry.drawType = VertexFlags.IsEdge;
-            MeshBuilder.MakeBorder(borderParams, UIRUtility.k_MeshPosZ, m_AllocDelegate);
-
-            if (m_CurrentEntry.vertices.Length > 0 && m_CurrentEntry.indices.Length > 0)
+            MeshBuilder.MakeBorder(borderParams, UIRUtility.k_MeshPosZ, new MeshBuilder.AllocMeshData()
             {
-                m_Entries.Add(m_CurrentEntry);
-                totalVertices += m_CurrentEntry.vertices.Length;
-                totalIndices += m_CurrentEntry.indices.Length;
-            }
-            m_CurrentEntry = new Entry();
+                alloc = m_AllocThroughDrawMeshDelegate,
+                material = borderParams.material,
+                texture = null,
+                flags = MeshGenerationContext.MeshFlags.UVisDisplacement
+            });
         }
 
         public void DrawImmediate(Action callback)
@@ -1436,8 +1444,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
             cmd.type = CommandType.Immediate;
             cmd.owner = currentElement;
             cmd.callback = callback;
-            m_Entries.Add(new Entry() { drawType = VertexFlags.LastType, customCommand = cmd });
+            m_Entries.Add(new Entry() { customCommand = cmd });
         }
+
+        public VisualElement visualElement { get { return currentElement; } }
 
         public void DrawVisualElementBackground()
         {
@@ -1513,7 +1523,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 var cmd = m_Owner.AllocCommand();
                 cmd.type = CommandType.PushScissor;
                 cmd.owner = currentElement;
-                m_Entries.Add(new Entry() { drawType = VertexFlags.LastType, customCommand = cmd });
+                m_Entries.Add(new Entry() { customCommand = cmd });
                 m_ClosingInfo.needsClosing = m_ClosingInfo.popScissorClip = true;
             }
             else if (currentElement.renderChainData.clipMethod == ClipMethod.Stencil)
@@ -1547,12 +1557,11 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 rp.rect.width -= widthL + widthR;
                 rp.rect.height -= widthT + widthB;
 
-                m_CurrentEntry.drawType = VertexFlags.IsSolid;
                 m_CurrentEntry.clipRectID = m_ClipRectID;
                 m_CurrentEntry.isStencilClipped = m_StencilClip;
                 m_CurrentEntry.isClipRegisterEntry = true;
 
-                MeshBuilder.MakeRect(rp, UIRUtility.k_MaskPosZ, m_AllocDelegate);
+                MeshBuilder.MakeSolidRect(rp, UIRUtility.k_MaskPosZ, new MeshBuilder.AllocMeshData() { alloc = m_AllocRawVertsIndicesDelegate });
                 if (m_CurrentEntry.vertices.Length > 0 && m_CurrentEntry.indices.Length > 0)
                 {
                     m_Entries.Add(m_CurrentEntry);
@@ -1600,6 +1609,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             m_IndicesPool.SessionDone();
             m_ClosingInfo = new ClosingInfo();
             m_ElementOpacity = 1.0f;
+            m_NextMeshWriteDataPoolItem = 0;
             currentElement = null;
             totalVertices = totalIndices = 0;
         }
@@ -1654,7 +1664,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
         public void DrawBorder(MeshGenerationContextUtils.BorderParams borderParams) {}
         public void DrawImmediate(Action callback) {}
 
-        public MeshWriteData DrawMesh(int vertexCount, int indexCount, Material material, MeshGenerationContext.MeshFlags flags)
+        public VisualElement visualElement { get { return m_CurrentElement; } }
+
+        public MeshWriteData DrawMesh(int vertexCount, int indexCount, Texture texture, Material material, MeshGenerationContext.MeshFlags flags)
         {
             // Ideally we should allow returning 0 here and the client would handle that properly
             if (m_DudVerts.Length < vertexCount)

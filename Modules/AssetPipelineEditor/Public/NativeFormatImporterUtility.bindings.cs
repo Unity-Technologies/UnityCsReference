@@ -17,7 +17,7 @@ namespace UnityEditor
     {
         static NativeFormatImporterUtility()
         {
-            foreach (var type in EditorAssemblies.GetAllTypesWithAttribute<AssetFileNameExtensionAttribute>())
+            foreach (var type in TypeCache.GetTypesWithAttribute<AssetFileNameExtensionAttribute>())
             {
                 var attr = type.GetCustomAttributes(typeof(AssetFileNameExtensionAttribute), false)[0]
                     as AssetFileNameExtensionAttribute;

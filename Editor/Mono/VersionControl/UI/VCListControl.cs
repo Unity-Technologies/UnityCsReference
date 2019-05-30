@@ -6,7 +6,6 @@ using UnityEngine;
 using UnityEditor;
 using System;
 using System.Collections.Generic;
-
 using UnityEditor.VersionControl;
 
 // List control that manages VCAssets.  This is used in a number of places in the plugin to display and manipulate asset lists.
@@ -15,6 +14,23 @@ namespace UnityEditorInternal.VersionControl
     [System.Serializable]
     public class ListControl
     {
+        internal static class Styles
+        {
+            public static readonly GUIStyle evenBackground = "CN EntryBackEven";
+            public static GUIStyle dragBackground = new GUIStyle("CN EntryBackEven");
+
+            static Styles()
+            {
+                var yellowTex = new Texture2D(1, 1, TextureFormat.RGBA32, false, false);
+                yellowTex.SetPixel(0, 0, new Color(0.5f, 0.5f, 0.2f));
+                yellowTex.name = "YellowTex";
+                yellowTex.hideFlags = HideFlags.HideAndDontSave;
+                yellowTex.Apply();
+
+                dragBackground.onNormal.background = yellowTex;
+            }
+        }
+
         public enum SelectDirection
         {
             Up,
@@ -44,9 +60,6 @@ namespace UnityEditorInternal.VersionControl
         ListItem root = new ListItem();
         ListItem active = null;
         List<ListItem> visibleList = new List<ListItem>();
-        Texture2D blueTex = null;
-        Texture2D greyTex = null;
-        Texture2D yellowTex = null;
         [SerializeField] ListState m_listState;
         Dictionary<string, ListItem> pathSearch = new Dictionary<string, ListItem>();
         bool readOnly = false;
@@ -336,9 +349,6 @@ namespace UnityEditorInternal.VersionControl
         public bool OnGUI(Rect area, bool focus)
         {
             bool repaint = false;
-
-            // Late init here for now
-            CreateResources();
 
             Event e = Event.current;
             int open = active.OpenCount;
@@ -630,37 +640,6 @@ namespace UnityEditorInternal.VersionControl
             }
         }
 
-        // Late resource creation
-        void CreateResources()
-        {
-            if (blueTex == null)
-            {
-                blueTex = new Texture2D(1, 1);
-                blueTex.SetPixel(0, 0, new Color(0.23f, 0.35f, 0.55f));
-                blueTex.hideFlags = HideFlags.HideAndDontSave;
-                blueTex.name = "BlueTex";
-                blueTex.Apply();
-            }
-
-            if (greyTex == null)
-            {
-                greyTex = new Texture2D(1, 1);
-                greyTex.SetPixel(0, 0, new Color(0.3f, 0.3f, 0.3f));
-                greyTex.hideFlags = HideFlags.HideAndDontSave;
-                greyTex.name = "GrayTex";
-                greyTex.Apply();
-            }
-
-            if (yellowTex == null)
-            {
-                yellowTex = new Texture2D(1, 1);
-                yellowTex.SetPixel(0, 0, new Color(0.5f, 0.5f, 0.2f));
-                yellowTex.name = "YellowTex";
-                yellowTex.hideFlags = HideFlags.HideAndDontSave;
-                yellowTex.Apply();
-            }
-        }
-
         // Parse all key input supported by the list here
         void HandleKeyInput(Event e)
         {
@@ -727,28 +706,33 @@ namespace UnityEditorInternal.VersionControl
             bool drag = (item == dragTarget);
             bool highlight = selected;
 
-            if (selected)
+            if (selected && Event.current.type == EventType.Repaint)
             {
-                Texture2D selectTex = focus ? blueTex : greyTex;
-                GUI.DrawTexture(new Rect(area.x, y, area.width, c_lineHeight), selectTex, ScaleMode.StretchToFill, false);
+                Styles.evenBackground.Draw(new Rect(area.x, y, area.width, c_lineHeight), GUIContent.none, false, false, true, false);
             }
             else if (drag)
             {
                 switch (dragAdjust)
                 {
                     case SelectDirection.Up:
-                        if (item.PrevOpenVisible != item.Parent)
+                        if (item.PrevOpenVisible != item.Parent && Event.current.type == EventType.Repaint)
                         {
-                            GUI.DrawTexture(new Rect(x, y - 1, area.width, 2), yellowTex, ScaleMode.StretchToFill, false);
+                            Styles.dragBackground.Draw(new Rect(x, y - 1, area.width, 2), GUIContent.none, false, false, true, false);
                         }
                         break;
                     case SelectDirection.Down:
-                        GUI.DrawTexture(new Rect(x, y + c_lineHeight - 1, area.width, 2), yellowTex, ScaleMode.StretchToFill, false);
+                        if (Event.current.type == EventType.Repaint)
+                        {
+                            Styles.dragBackground.Draw(new Rect(x, y - 1, area.width, 2), GUIContent.none, false, false, true, false);
+                        }
                         break;
                     default:
                         if (item.CanAccept)
                         {
-                            GUI.DrawTexture(new Rect(area.x, y, area.width, c_lineHeight), yellowTex, ScaleMode.StretchToFill, false);
+                            if (Event.current.type == EventType.Repaint)
+                            {
+                                Styles.dragBackground.Draw(new Rect(area.x, y, area.width, c_lineHeight), GUIContent.none, false, false, true, false);
+                            }
                             highlight = true;
                         }
                         break;
@@ -756,7 +740,10 @@ namespace UnityEditorInternal.VersionControl
             }
             else if (dragTarget != null && item == dragTarget.Parent && dragAdjust != SelectDirection.Current)
             {
-                GUI.DrawTexture(new Rect(area.x, y, area.width, c_lineHeight), yellowTex, ScaleMode.StretchToFill, false);
+                if (Event.current.type == EventType.Repaint)
+                {
+                    Styles.dragBackground.Draw(new Rect(area.x, y, area.width, c_lineHeight), GUIContent.none, false, false, true, false);
+                }
                 highlight = true;
             }
 

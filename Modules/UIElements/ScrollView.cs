@@ -221,7 +221,7 @@ namespace UnityEngine.UIElements
             m_ContentContainer = new VisualElement() { name = "unity-content-container" };
             m_ContentContainer.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             m_ContentContainer.AddToClassList(contentUssClassName);
-            m_ContentContainer.renderHint = RenderHint.GroupTransform;
+            m_ContentContainer.usageHints = UsageHints.GroupTransform;
             contentViewport.Add(m_ContentContainer);
 
             SetScrollViewMode(scrollViewMode);

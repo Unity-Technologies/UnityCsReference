@@ -128,8 +128,7 @@ namespace UnityEditor
             get;
         }
 
-        // TODO: Obsolete/Uncomment when managed mono removal is complete
-        // [Obsolete("ScriptingRuntimeVersion has been deprecated in 2019.3 due to the removal of legacy mono")]
+        [Obsolete("ScriptingRuntimeVersion has been deprecated in 2019.3 due to the removal of legacy mono")]
         public static ScriptingRuntimeVersion scriptingRuntimeVersion
         {
             get { return ScriptingRuntimeVersion.Latest; }

@@ -296,7 +296,9 @@ namespace UnityEditor
         protected override void Apply()
         {
             base.Apply();
-            SaveAndUpdateAssemblyDefinitionStates(extraDataTargets.Cast<AssemblyDefinitionState>().ToArray());
+            // Do not write back to the asset if no asset can be found.
+            if (assetTarget != null)
+                SaveAndUpdateAssemblyDefinitionStates(extraDataTargets.Cast<AssemblyDefinitionState>().ToArray());
         }
 
         static void InversePlatformCompatibility(AssemblyDefinitionState state)

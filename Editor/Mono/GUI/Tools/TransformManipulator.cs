@@ -376,8 +376,6 @@ namespace UnityEditor
                 return;
 
             s_PreviousHandlePosition = newPosition;
-            if (!s_LockHandle)
-                Tools.UpdateHandlePosition(newPosition);
             Vector3 positionDelta = newPosition - oldPosition;
 
             for (int i = 0; i < s_MouseDownState.Length; i++)

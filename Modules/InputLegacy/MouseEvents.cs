@@ -48,30 +48,6 @@ namespace UnityEngine
             s_MouseUsed = true;
         }
 
-#pragma warning disable 0618
-        private static void HitTestLegacyGUI(Camera camera, Vector3 mousePosition, ref HitInfo hitInfo)
-        {
-            // Did we hit any gui elements?
-            var layer = camera.GetComponent<GUILayer>();
-            if (layer)
-            {
-                var element = layer.HitTest(mousePosition);
-                if (element)
-                {
-                    hitInfo.target = element.gameObject;
-                    hitInfo.camera = camera;
-                }
-                else
-                {
-                    // We did not hit any object, so clear current hit
-                    hitInfo.target = null;
-                    hitInfo.camera = null;
-                }
-            }
-        }
-
-#pragma warning restore 0618
-
         [RequiredByNativeCode]
         static void DoSendMouseEvents(int skipRTCameras)
         {
@@ -138,8 +114,6 @@ namespace UnityEngine
                     var rect = camera.pixelRect;
                     if (!rect.Contains(eventPosition))
                         continue;
-
-                    HitTestLegacyGUI(camera, eventPosition, ref m_CurrentHit[m_HitIndexGUI]);
 
                     // There is no need to continue if the camera shouldn't be sending out events
                     if (camera.eventMask == 0)

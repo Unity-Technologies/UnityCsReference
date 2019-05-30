@@ -200,6 +200,16 @@ namespace UnityEditor
             EditorGUI.indentLevel--;
         }
 
+        internal override void OnForceReloadInspector()
+        {
+            base.OnForceReloadInspector();
+
+            // Whenever inspector get reloaded (reset, move up/down), quit the edit mode if was in editing mode.
+            // Not sure why this pattern is used here but not for any other editors that implement edit mode button
+            if (editingCollider)
+                EditMode.QuitEditMode();
+        }
+
         protected void CheckColliderErrorState()
         {
             switch ((target as Collider2D).errorState)

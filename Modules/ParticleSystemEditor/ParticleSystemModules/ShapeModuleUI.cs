@@ -532,7 +532,7 @@ namespace UnityEditor
                             {
                                 int colorName = Shader.PropertyToID("_Color");
                                 int tintColorName = Shader.PropertyToID("_TintColor");
-                                if (!material.HasProperty(colorName) && !material.HasProperty(tintColorName) && !srcMesh.HasChannel(VertexAttribute.Color))
+                                if (!material.HasProperty(colorName) && !material.HasProperty(tintColorName) && !srcMesh.HasVertexAttribute(VertexAttribute.Color))
                                 {
                                     GUIContent warning = EditorGUIUtility.TrTextContent("To use mesh colors, your source mesh must either provide vertex colors, or its shader must contain a color property named \"_Color\" or \"_TintColor\".");
                                     EditorGUILayout.HelpBox(warning.text, MessageType.Warning, true);

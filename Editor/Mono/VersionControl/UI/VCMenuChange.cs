@@ -2,13 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor;
 using UnityEditor.VersionControl;
 
 namespace UnityEditorInternal.VersionControl
 {
     // Menu used when right clicking on change lists only.  As they are single select they will not get mixed up with asset selections.
-    public class ChangeSetContextMenu
+    class ChangeSetContextMenu
     {
         // Get the selected change list.  Only one valid at a time
         static ChangeSet GetChangeSet(ChangeSets changes)

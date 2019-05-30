@@ -17,6 +17,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             public GUIContent fillHeightmapUsingNeighbors = EditorGUIUtility.TrTextContent("Fill Heightmap Using Neighbors", "If selected, it will fill heightmap of the new terrain performing cross blend of heightmaps of its neighbors.");
             public GUIContent fillAddressMode = EditorGUIUtility.TrTextContent("Fill Heightmap Address Mode", "Type of the terrain's neighbors sampling address mode.");
+            public GUIContent terrainToolPropertyChange = EditorGUIUtility.TrTextContent("Terrain tool property change");
         }
 
         private enum FillAddressMode
@@ -91,15 +92,20 @@ namespace UnityEditor.Experimental.TerrainAPI
             base.OnInspectorGUI(terrain, editContext);
 
             if (s_Styles == null)
-            {
                 s_Styles = new Styles();
-            }
 
-            m_FillHeightmapUsingNeighbors = EditorGUILayout.Toggle(s_Styles.fillHeightmapUsingNeighbors, m_FillHeightmapUsingNeighbors);
-
-            EditorGUI.BeginDisabledGroup(!m_FillHeightmapUsingNeighbors);
-            m_FillAddressMode = (FillAddressMode)EditorGUILayout.EnumPopup(s_Styles.fillAddressMode, m_FillAddressMode);
+            EditorGUI.BeginChangeCheck();
+            bool fillHeightmapUsingNeighbors = EditorGUILayout.Toggle(s_Styles.fillHeightmapUsingNeighbors, m_FillHeightmapUsingNeighbors);
+            EditorGUI.BeginDisabledGroup(!fillHeightmapUsingNeighbors);
+            FillAddressMode fillAddressMode = (FillAddressMode)EditorGUILayout.EnumPopup(s_Styles.fillAddressMode, m_FillAddressMode);
             EditorGUI.EndDisabledGroup();
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(this, s_Styles.terrainToolPropertyChange.text);
+
+                m_FillHeightmapUsingNeighbors = fillHeightmapUsingNeighbors;
+                m_FillAddressMode = fillAddressMode;
+            }
         }
 
         Terrain CreateNeighbor(Terrain parent, Vector3 position)

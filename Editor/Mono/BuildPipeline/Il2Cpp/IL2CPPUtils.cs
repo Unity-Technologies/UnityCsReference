@@ -134,8 +134,7 @@ namespace UnityEditorInternal
 
         internal static bool UseIl2CppCodegenWithMonoBackend(BuildTargetGroup targetGroup)
         {
-            return EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest &&
-                EditorApplication.useLibmonoBackendForIl2cpp &&
+            return EditorApplication.useLibmonoBackendForIl2cpp &&
                 PlayerSettings.GetScriptingBackend(targetGroup) == ScriptingImplementation.IL2CPP;
         }
 
@@ -423,9 +422,7 @@ namespace UnityEditorInternal
                 arguments.Add("--mono-runtime");
 
             // Working around gcc bug 41091
-            if (m_PlatformProvider.target == BuildTarget.StandaloneLinux ||
-                m_PlatformProvider.target == BuildTarget.StandaloneLinux64 ||
-                m_PlatformProvider.target == BuildTarget.StandaloneLinuxUniversal)
+            if (m_PlatformProvider.target == BuildTarget.StandaloneLinux64)
             {
                 arguments.Add("--disable-aggressive-inlining");
             }

@@ -522,7 +522,6 @@ namespace UnityEditor
             // Search bar
             GUILayout.Space(4f);
             SearchField(e);
-            GUILayout.Space(4f);
 
             // Flags
             int errorCount = 0, warningCount = 0, logCount = 0;
@@ -790,13 +789,17 @@ namespace UnityEditor
         {
             EditorGUILayout.HyperLinkClickedEventArgs args = (EditorGUILayout.HyperLinkClickedEventArgs)e;
 
-            if (!args.hyperlinkInfos.ContainsKey("href"))
+            string filePath;
+            string lineString;
+            if (!args.hyperlinkInfos.TryGetValue("href", out filePath) ||
+                !args.hyperlinkInfos.TryGetValue("line", out lineString))
                 return;
 
-            int line = args.hyperlinkInfos.ContainsKey("line") ? Int32.Parse(args.hyperlinkInfos["line"]) : 0;
-            int column = -1;
+            int line = Int32.Parse(lineString);
+            var projectFilePath = FileUtil.GetProjectRelativePath(filePath.Replace('\\', '/'));
 
-            LogEntries.OpenFileOnSpecificLineAndColumn(args.hyperlinkInfos["href"], line, column);
+            if (!String.IsNullOrEmpty(projectFilePath))
+                LogEntries.OpenFileOnSpecificLineAndColumn(filePath, line, -1);
         }
 
         [UsedImplicitly]

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using UnityEngine.Internal;
 using UnityEngine.Scripting;
 using UnityEngine.Rendering;
+using uei = UnityEngine.Internal;
 
 namespace UnityEngine
 {
@@ -45,7 +46,7 @@ namespace UnityEngine
         {
             if (canAccess)
             {
-                if (HasChannel(channel))
+                if (HasVertexAttribute(channel))
                     return (T[])GetAllocArrayFromChannelImpl(channel, format, dim);
             }
             else
@@ -60,32 +61,46 @@ namespace UnityEngine
             return GetAllocArrayFromChannel<T>(channel, InternalVertexChannelType.Float, DefaultDimensionForChannel(channel));
         }
 
-        private void SetSizedArrayForChannel(VertexAttribute channel, InternalVertexChannelType format, int dim, System.Array values, int valuesCount)
+        private void SetSizedArrayForChannel(VertexAttribute channel, InternalVertexChannelType format, int dim, System.Array values, int valuesArrayLength, int valuesStart, int valuesCount)
         {
             if (canAccess)
-                SetArrayForChannelImpl(channel, format, dim, values, valuesCount);
+            {
+                if (valuesStart < 0)
+                    throw new ArgumentOutOfRangeException(nameof(valuesStart), valuesStart, "Mesh data array start index can't be negative.");
+                if (valuesCount < 0)
+                    throw new ArgumentOutOfRangeException(nameof(valuesCount), valuesCount, "Mesh data array length can't be negative.");
+                if (valuesStart >= valuesArrayLength && valuesCount != 0)
+                    throw new ArgumentOutOfRangeException(nameof(valuesStart), valuesStart, "Mesh data array start is outside of array size.");
+                if (valuesStart + valuesCount > valuesArrayLength)
+                    throw new ArgumentOutOfRangeException(nameof(valuesCount), valuesStart + valuesCount, "Mesh data array start+count is outside of array size.");
+                if (values == null)
+                    valuesStart = 0;
+                SetArrayForChannelImpl(channel, format, dim, values, valuesArrayLength, valuesStart, valuesCount);
+            }
             else
                 PrintErrorCantAccessChannel(channel);
         }
 
         private void SetArrayForChannel<T>(VertexAttribute channel, InternalVertexChannelType format, int dim, T[] values)
         {
-            SetSizedArrayForChannel(channel, format, dim, values, NoAllocHelpers.SafeLength(values));
+            var len = NoAllocHelpers.SafeLength(values);
+            SetSizedArrayForChannel(channel, format, dim, values, len, 0, len);
         }
 
         private void SetArrayForChannel<T>(VertexAttribute channel, T[] values)
         {
-            SetSizedArrayForChannel(channel, InternalVertexChannelType.Float, DefaultDimensionForChannel(channel), values, NoAllocHelpers.SafeLength(values));
+            var len = NoAllocHelpers.SafeLength(values);
+            SetSizedArrayForChannel(channel, InternalVertexChannelType.Float, DefaultDimensionForChannel(channel), values, len, 0, len);
         }
 
-        private void SetListForChannel<T>(VertexAttribute channel, InternalVertexChannelType format, int dim, List<T> values)
+        private void SetListForChannel<T>(VertexAttribute channel, InternalVertexChannelType format, int dim, List<T> values, int start, int length)
         {
-            SetSizedArrayForChannel(channel, format, dim, NoAllocHelpers.ExtractArrayFromList(values), NoAllocHelpers.SafeLength(values));
+            SetSizedArrayForChannel(channel, format, dim, NoAllocHelpers.ExtractArrayFromList(values), NoAllocHelpers.SafeLength(values), start, length);
         }
 
-        private void SetListForChannel<T>(VertexAttribute channel, List<T> values)
+        private void SetListForChannel<T>(VertexAttribute channel, List<T> values, int start, int length)
         {
-            SetSizedArrayForChannel(channel, InternalVertexChannelType.Float, DefaultDimensionForChannel(channel), NoAllocHelpers.ExtractArrayFromList(values), NoAllocHelpers.SafeLength(values));
+            SetSizedArrayForChannel(channel, InternalVertexChannelType.Float, DefaultDimensionForChannel(channel), NoAllocHelpers.ExtractArrayFromList(values), NoAllocHelpers.SafeLength(values), start, length);
         }
 
         private void GetListForChannel<T>(List<T> buffer, int capacity, VertexAttribute channel, int dim)
@@ -103,7 +118,7 @@ namespace UnityEngine
                 return;
             }
 
-            if (!HasChannel(channel))
+            if (!HasVertexAttribute(channel))
                 return;
 
             NoAllocHelpers.EnsureListElemCount(buffer, capacity);
@@ -186,7 +201,22 @@ namespace UnityEngine
 
         public void SetVertices(List<Vector3> inVertices)
         {
-            SetListForChannel(VertexAttribute.Position, inVertices);
+            SetVertices(inVertices, 0, NoAllocHelpers.SafeLength(inVertices));
+        }
+
+        public void SetVertices(List<Vector3> inVertices, int start, int length)
+        {
+            SetListForChannel(VertexAttribute.Position, inVertices, start, length);
+        }
+
+        public void SetVertices(Vector3[] inVertices)
+        {
+            SetVertices(inVertices, 0, NoAllocHelpers.SafeLength(inVertices));
+        }
+
+        public void SetVertices(Vector3[] inVertices, int start, int length)
+        {
+            SetSizedArrayForChannel(VertexAttribute.Position, InternalVertexChannelType.Float, DefaultDimensionForChannel(VertexAttribute.Position), inVertices, NoAllocHelpers.SafeLength(inVertices), start, length);
         }
 
         public void GetNormals(List<Vector3> normals)
@@ -199,7 +229,22 @@ namespace UnityEngine
 
         public void SetNormals(List<Vector3> inNormals)
         {
-            SetListForChannel(VertexAttribute.Normal, inNormals);
+            SetNormals(inNormals, 0, NoAllocHelpers.SafeLength(inNormals));
+        }
+
+        public void SetNormals(List<Vector3> inNormals, int start, int length)
+        {
+            SetListForChannel(VertexAttribute.Normal, inNormals, start, length);
+        }
+
+        public void SetNormals(Vector3[] inNormals)
+        {
+            SetNormals(inNormals, 0, NoAllocHelpers.SafeLength(inNormals));
+        }
+
+        public void SetNormals(Vector3[] inNormals, int start, int length)
+        {
+            SetSizedArrayForChannel(VertexAttribute.Normal, InternalVertexChannelType.Float, DefaultDimensionForChannel(VertexAttribute.Normal), inNormals, NoAllocHelpers.SafeLength(inNormals), start, length);
         }
 
         public void GetTangents(List<Vector4> tangents)
@@ -212,7 +257,22 @@ namespace UnityEngine
 
         public void SetTangents(List<Vector4> inTangents)
         {
-            SetListForChannel(VertexAttribute.Tangent, inTangents);
+            SetTangents(inTangents, 0, NoAllocHelpers.SafeLength(inTangents));
+        }
+
+        public void SetTangents(List<Vector4> inTangents, int start, int length)
+        {
+            SetListForChannel(VertexAttribute.Tangent, inTangents, start, length);
+        }
+
+        public void SetTangents(Vector4[] inTangents)
+        {
+            SetTangents(inTangents, 0, NoAllocHelpers.SafeLength(inTangents));
+        }
+
+        public void SetTangents(Vector4[] inTangents, int start, int length)
+        {
+            SetSizedArrayForChannel(VertexAttribute.Tangent, InternalVertexChannelType.Float, DefaultDimensionForChannel(VertexAttribute.Tangent), inTangents, NoAllocHelpers.SafeLength(inTangents), start, length);
         }
 
         public void GetColors(List<Color> colors)
@@ -225,7 +285,22 @@ namespace UnityEngine
 
         public void SetColors(List<Color> inColors)
         {
-            SetListForChannel(VertexAttribute.Color, inColors);
+            SetColors(inColors, 0, NoAllocHelpers.SafeLength(inColors));
+        }
+
+        public void SetColors(List<Color> inColors, int start, int length)
+        {
+            SetListForChannel(VertexAttribute.Color, inColors, start, length);
+        }
+
+        public void SetColors(Color[] inColors)
+        {
+            SetColors(inColors, 0, NoAllocHelpers.SafeLength(inColors));
+        }
+
+        public void SetColors(Color[] inColors, int start, int length)
+        {
+            SetSizedArrayForChannel(VertexAttribute.Color, InternalVertexChannelType.Float, DefaultDimensionForChannel(VertexAttribute.Color), inColors, NoAllocHelpers.SafeLength(inColors), start, length);
         }
 
         public void GetColors(List<Color32> colors)
@@ -238,10 +313,25 @@ namespace UnityEngine
 
         public void SetColors(List<Color32> inColors)
         {
-            SetListForChannel(VertexAttribute.Color, InternalVertexChannelType.Color, 4, inColors);
+            SetColors(inColors, 0, NoAllocHelpers.SafeLength(inColors));
         }
 
-        private void SetUvsImpl<T>(int uvIndex, int dim, List<T> uvs)
+        public void SetColors(List<Color32> inColors, int start, int length)
+        {
+            SetListForChannel(VertexAttribute.Color, InternalVertexChannelType.Color, 4, inColors, start, length);
+        }
+
+        public void SetColors(Color32[] inColors)
+        {
+            SetColors(inColors, 0, NoAllocHelpers.SafeLength(inColors));
+        }
+
+        public void SetColors(Color32[] inColors, int start, int length)
+        {
+            SetSizedArrayForChannel(VertexAttribute.Color, InternalVertexChannelType.Color, 4, inColors, NoAllocHelpers.SafeLength(inColors), start, length);
+        }
+
+        private void SetUvsImpl<T>(int uvIndex, int dim, List<T> uvs, int start, int length)
         {
             // before this resulted in error *printed* out deep inside c++ code (coming from assert - useless for end-user)
             // while excpetion would make sense we dont want to add exceptions to exisisting apis
@@ -250,22 +340,74 @@ namespace UnityEngine
                 Debug.LogError("The uv index is invalid. Must be in the range 0 to 7.");
                 return;
             }
-            SetListForChannel(GetUVChannel(uvIndex), InternalVertexChannelType.Float, dim, uvs);
+            SetListForChannel(GetUVChannel(uvIndex), InternalVertexChannelType.Float, dim, uvs, start, length);
         }
 
         public void SetUVs(int channel, List<Vector2> uvs)
         {
-            SetUvsImpl(channel, 2, uvs);
+            SetUVs(channel, uvs, 0, NoAllocHelpers.SafeLength(uvs));
         }
 
         public void SetUVs(int channel, List<Vector3> uvs)
         {
-            SetUvsImpl(channel, 3, uvs);
+            SetUVs(channel, uvs, 0, NoAllocHelpers.SafeLength(uvs));
         }
 
         public void SetUVs(int channel, List<Vector4> uvs)
         {
-            SetUvsImpl(channel, 4, uvs);
+            SetUVs(channel, uvs, 0, NoAllocHelpers.SafeLength(uvs));
+        }
+
+        public void SetUVs(int channel, List<Vector2> uvs, int start, int length)
+        {
+            SetUvsImpl(channel, 2, uvs, start, length);
+        }
+
+        public void SetUVs(int channel, List<Vector3> uvs, int start, int length)
+        {
+            SetUvsImpl(channel, 3, uvs, start, length);
+        }
+
+        public void SetUVs(int channel, List<Vector4> uvs, int start, int length)
+        {
+            SetUvsImpl(channel, 4, uvs, start, length);
+        }
+
+        private void SetUvsImpl(int uvIndex, int dim, System.Array uvs, int arrayStart, int arraySize)
+        {
+            if (uvIndex < 0 || uvIndex > 7)
+                throw new ArgumentOutOfRangeException(nameof(uvIndex), uvIndex, "The uv index is invalid. Must be in the range 0 to 7.");
+            SetSizedArrayForChannel(GetUVChannel(uvIndex), InternalVertexChannelType.Float, dim, uvs, NoAllocHelpers.SafeLength(uvs), arrayStart, arraySize);
+        }
+
+        public void SetUVs(int channel, Vector2[] uvs)
+        {
+            SetUVs(channel, uvs, 0, NoAllocHelpers.SafeLength(uvs));
+        }
+
+        public void SetUVs(int channel, Vector3[] uvs)
+        {
+            SetUVs(channel, uvs, 0, NoAllocHelpers.SafeLength(uvs));
+        }
+
+        public void SetUVs(int channel, Vector4[] uvs)
+        {
+            SetUVs(channel, uvs, 0, NoAllocHelpers.SafeLength(uvs));
+        }
+
+        public void SetUVs(int channel, Vector2[] uvs, int start, int length)
+        {
+            SetUvsImpl(channel, 2, uvs, start, length);
+        }
+
+        public void SetUVs(int channel, Vector3[] uvs, int start, int length)
+        {
+            SetUvsImpl(channel, 3, uvs, start, length);
+        }
+
+        public void SetUVs(int channel, Vector4[] uvs, int start, int length)
+        {
+            SetUvsImpl(channel, 4, uvs, start, length);
         }
 
         private void GetUVsImpl<T>(int uvIndex, List<T> uvs, int dim)
@@ -330,7 +472,7 @@ namespace UnityEngine
             }
             set
             {
-                if (canAccess)  SetTrianglesImpl(-1, value, NoAllocHelpers.SafeLength(value), true, 0);
+                if (canAccess)  SetTrianglesImpl(-1, UnityEngine.Rendering.IndexFormat.UInt32, value, NoAllocHelpers.SafeLength(value), 0, NoAllocHelpers.SafeLength(value), true, 0);
                 else            PrintErrorCantAccessIndices();
             }
         }
@@ -362,6 +504,7 @@ namespace UnityEngine
             GetTrianglesNonAllocImpl(NoAllocHelpers.ExtractArrayFromListT(triangles), submesh, applyBaseVertex);
         }
 
+        [uei.ExcludeFromDocs]
         public int[] GetIndices(int submesh)
         {
             return GetIndices(submesh, true);
@@ -372,6 +515,7 @@ namespace UnityEngine
             return CheckCanAccessSubmeshIndices(submesh) ? GetIndicesImpl(submesh, applyBaseVertex) : new int[0];
         }
 
+        [uei.ExcludeFromDocs]
         public void GetIndices(List<int> indices, int submesh)
         {
             GetIndices(indices, submesh, true);
@@ -380,13 +524,25 @@ namespace UnityEngine
         public void GetIndices(List<int> indices, int submesh, [DefaultValue("true")] bool applyBaseVertex)
         {
             if (indices == null)
-                throw new ArgumentNullException("The result indices list cannot be null.", "indices");
+                throw new ArgumentNullException("The result indices list cannot be null.", nameof(indices));
 
             if (submesh < 0 || submesh >= subMeshCount)
                 throw new IndexOutOfRangeException("Specified sub mesh is out of range. Must be greater or equal to 0 and less than subMeshCount.");
 
             NoAllocHelpers.EnsureListElemCount(indices, (int)GetIndexCount(submesh));
             GetIndicesNonAllocImpl(NoAllocHelpers.ExtractArrayFromListT(indices), submesh, applyBaseVertex);
+        }
+
+        public void GetIndices(List<ushort> indices, int submesh, bool applyBaseVertex = true)
+        {
+            if (indices == null)
+                throw new ArgumentNullException("The result indices list cannot be null.", nameof(indices));
+
+            if (submesh < 0 || submesh >= subMeshCount)
+                throw new IndexOutOfRangeException("Specified sub mesh is out of range. Must be greater or equal to 0 and less than subMeshCount.");
+
+            NoAllocHelpers.EnsureListElemCount(indices, (int)GetIndexCount(submesh));
+            GetIndicesNonAllocImpl16(NoAllocHelpers.ExtractArrayFromListT(indices), submesh, applyBaseVertex);
         }
 
         public UInt32 GetIndexStart(int submesh)
@@ -410,17 +566,35 @@ namespace UnityEngine
             return GetBaseVertexImpl(submesh);
         }
 
-        private void SetTrianglesImpl(int submesh, System.Array triangles, int arraySize, bool calculateBounds, int baseVertex)
+        private void CheckIndicesArrayRange(System.Array values, int valuesLength, int start, int length)
         {
-            SetIndicesImpl(submesh, MeshTopology.Triangles, triangles, arraySize, calculateBounds, baseVertex);
+            if (start < 0)
+                throw new ArgumentOutOfRangeException(nameof(start), start, "Mesh indices array start can't be negative.");
+            if (length < 0)
+                throw new ArgumentOutOfRangeException(nameof(length), length, "Mesh indices array length can't be negative.");
+            if (start >= valuesLength && length != 0)
+                throw new ArgumentOutOfRangeException(nameof(start), start, "Mesh indices array start is outside of array size.");
+            if (start + length > valuesLength)
+                throw new ArgumentOutOfRangeException(nameof(length), start + length, "Mesh indices array start+count is outside of array size.");
         }
 
-        // TODO: currently we cannot have proper default args in public api
+        private void SetTrianglesImpl(int submesh, UnityEngine.Rendering.IndexFormat indicesFormat, System.Array triangles, int trianglesArrayLength, int start, int length, bool calculateBounds, int baseVertex)
+        {
+            CheckIndicesArrayRange(triangles, trianglesArrayLength, start, length);
+            SetIndicesImpl(submesh, MeshTopology.Triangles, indicesFormat, triangles, start, length, calculateBounds, baseVertex);
+        }
+
+        // Note: we do have many overloads where seemingly "just use default arg values"
+        // would work too. However we can't change that, since it would be an API-breaking
+        // change.
+
+        [uei.ExcludeFromDocs]
         public void SetTriangles(int[] triangles, int submesh)
         {
             SetTriangles(triangles, submesh, true, 0);
         }
 
+        [uei.ExcludeFromDocs]
         public void SetTriangles(int[] triangles, int submesh, bool calculateBounds)
         {
             SetTriangles(triangles, submesh, calculateBounds, 0);
@@ -428,15 +602,33 @@ namespace UnityEngine
 
         public void SetTriangles(int[] triangles, int submesh, [DefaultValue("true")] bool calculateBounds, [DefaultValue("0")] int baseVertex)
         {
-            if (CheckCanAccessSubmeshTriangles(submesh))
-                SetTrianglesImpl(submesh, triangles, NoAllocHelpers.SafeLength(triangles), calculateBounds, baseVertex);
+            SetTriangles(triangles, 0, NoAllocHelpers.SafeLength(triangles), submesh, calculateBounds, baseVertex);
         }
 
+        public void SetTriangles(int[] triangles, int trianglesStart, int trianglesLength, int submesh, bool calculateBounds = true, int baseVertex = 0)
+        {
+            if (CheckCanAccessSubmeshTriangles(submesh))
+                SetTrianglesImpl(submesh, UnityEngine.Rendering.IndexFormat.UInt32, triangles, NoAllocHelpers.SafeLength(triangles), trianglesStart, trianglesLength, calculateBounds, baseVertex);
+        }
+
+        public void SetTriangles(ushort[] triangles, int submesh, bool calculateBounds = true, int baseVertex = 0)
+        {
+            SetTriangles(triangles, 0, NoAllocHelpers.SafeLength(triangles), submesh, calculateBounds, baseVertex);
+        }
+
+        public void SetTriangles(ushort[] triangles, int trianglesStart, int trianglesLength, int submesh, bool calculateBounds = true, int baseVertex = 0)
+        {
+            if (CheckCanAccessSubmeshTriangles(submesh))
+                SetTrianglesImpl(submesh, UnityEngine.Rendering.IndexFormat.UInt16, triangles, NoAllocHelpers.SafeLength(triangles), trianglesStart, trianglesLength, calculateBounds, baseVertex);
+        }
+
+        [uei.ExcludeFromDocs]
         public void SetTriangles(List<int> triangles, int submesh)
         {
             SetTriangles(triangles, submesh, true, 0);
         }
 
+        [uei.ExcludeFromDocs]
         public void SetTriangles(List<int> triangles, int submesh, bool calculateBounds)
         {
             SetTriangles(triangles, submesh, calculateBounds, 0);
@@ -444,15 +636,33 @@ namespace UnityEngine
 
         public void SetTriangles(List<int> triangles, int submesh, [DefaultValue("true")] bool calculateBounds, [DefaultValue("0")] int baseVertex)
         {
-            if (CheckCanAccessSubmeshTriangles(submesh))
-                SetTrianglesImpl(submesh, NoAllocHelpers.ExtractArrayFromList(triangles), NoAllocHelpers.SafeLength(triangles), calculateBounds, baseVertex);
+            SetTriangles(triangles, 0, NoAllocHelpers.SafeLength(triangles), submesh, calculateBounds, 0);
         }
 
+        public void SetTriangles(List<int> triangles, int trianglesStart, int trianglesLength, int submesh, bool calculateBounds = true, int baseVertex = 0)
+        {
+            if (CheckCanAccessSubmeshTriangles(submesh))
+                SetTrianglesImpl(submesh, UnityEngine.Rendering.IndexFormat.UInt32, NoAllocHelpers.ExtractArrayFromList(triangles), NoAllocHelpers.SafeLength(triangles), trianglesStart, trianglesLength, calculateBounds, baseVertex);
+        }
+
+        public void SetTriangles(List<ushort> triangles, int submesh, bool calculateBounds = true, int baseVertex = 0)
+        {
+            SetTriangles(triangles, 0, NoAllocHelpers.SafeLength(triangles), submesh, calculateBounds, 0);
+        }
+
+        public void SetTriangles(List<ushort> triangles, int trianglesStart, int trianglesLength, int submesh, bool calculateBounds = true, int baseVertex = 0)
+        {
+            if (CheckCanAccessSubmeshTriangles(submesh))
+                SetTrianglesImpl(submesh, UnityEngine.Rendering.IndexFormat.UInt16, NoAllocHelpers.ExtractArrayFromList(triangles), NoAllocHelpers.SafeLength(triangles), trianglesStart, trianglesLength, calculateBounds, baseVertex);
+        }
+
+        [uei.ExcludeFromDocs]
         public void SetIndices(int[] indices, MeshTopology topology, int submesh)
         {
             SetIndices(indices, topology, submesh, true, 0);
         }
 
+        [uei.ExcludeFromDocs]
         public void SetIndices(int[] indices, MeshTopology topology, int submesh, bool calculateBounds)
         {
             SetIndices(indices, topology, submesh, calculateBounds, 0);
@@ -460,8 +670,60 @@ namespace UnityEngine
 
         public void SetIndices(int[] indices, MeshTopology topology, int submesh, [DefaultValue("true")] bool calculateBounds, [DefaultValue("0")] int baseVertex)
         {
+            SetIndices(indices, 0, NoAllocHelpers.SafeLength(indices), topology, submesh, calculateBounds, baseVertex);
+        }
+
+        public void SetIndices(int[] indices, int indicesStart, int indicesLength, MeshTopology topology, int submesh, bool calculateBounds = true, int baseVertex = 0)
+        {
             if (CheckCanAccessSubmeshIndices(submesh))
-                SetIndicesImpl(submesh, topology, indices, NoAllocHelpers.SafeLength(indices), calculateBounds, baseVertex);
+            {
+                CheckIndicesArrayRange(indices, NoAllocHelpers.SafeLength(indices), indicesStart, indicesLength);
+                SetIndicesImpl(submesh, topology, UnityEngine.Rendering.IndexFormat.UInt32, indices, indicesStart, indicesLength, calculateBounds, baseVertex);
+            }
+        }
+
+        public void SetIndices(ushort[] indices, MeshTopology topology, int submesh, bool calculateBounds = true, int baseVertex = 0)
+        {
+            SetIndices(indices, 0, NoAllocHelpers.SafeLength(indices), topology, submesh, calculateBounds, baseVertex);
+        }
+
+        public void SetIndices(ushort[] indices, int indicesStart, int indicesLength, MeshTopology topology, int submesh, bool calculateBounds = true, int baseVertex = 0)
+        {
+            if (CheckCanAccessSubmeshIndices(submesh))
+            {
+                CheckIndicesArrayRange(indices, NoAllocHelpers.SafeLength(indices), indicesStart, indicesLength);
+                SetIndicesImpl(submesh, topology, UnityEngine.Rendering.IndexFormat.UInt16, indices, indicesStart, indicesLength, calculateBounds, baseVertex);
+            }
+        }
+
+        public void SetIndices(List<int> indices, MeshTopology topology, int submesh, bool calculateBounds = true, int baseVertex = 0)
+        {
+            SetIndices(indices, 0, NoAllocHelpers.SafeLength(indices), topology, submesh, calculateBounds, baseVertex);
+        }
+
+        public void SetIndices(List<int> indices, int indicesStart, int indicesLength, MeshTopology topology, int submesh, bool calculateBounds = true, int baseVertex = 0)
+        {
+            if (CheckCanAccessSubmeshIndices(submesh))
+            {
+                var indicesArray = NoAllocHelpers.ExtractArrayFromList(indices);
+                CheckIndicesArrayRange(indicesArray, NoAllocHelpers.SafeLength(indices), indicesStart, indicesLength);
+                SetIndicesImpl(submesh, topology, UnityEngine.Rendering.IndexFormat.UInt32, indicesArray, indicesStart, indicesLength, calculateBounds, baseVertex);
+            }
+        }
+
+        public void SetIndices(List<ushort> indices, MeshTopology topology, int submesh, bool calculateBounds = true, int baseVertex = 0)
+        {
+            SetIndices(indices, 0, NoAllocHelpers.SafeLength(indices), topology, submesh, calculateBounds, baseVertex);
+        }
+
+        public void SetIndices(List<ushort> indices, int indicesStart, int indicesLength, MeshTopology topology, int submesh, bool calculateBounds = true, int baseVertex = 0)
+        {
+            if (CheckCanAccessSubmeshIndices(submesh))
+            {
+                var indicesArray = NoAllocHelpers.ExtractArrayFromList(indices);
+                CheckIndicesArrayRange(indicesArray, NoAllocHelpers.SafeLength(indices), indicesStart, indicesLength);
+                SetIndicesImpl(submesh, topology, UnityEngine.Rendering.IndexFormat.UInt16, indicesArray, indicesStart, indicesLength, calculateBounds, baseVertex);
+            }
         }
 
         //
@@ -501,11 +763,12 @@ namespace UnityEngine
         //
         //
 
-        public void Clear(bool keepVertexLayout)
+        public void Clear([DefaultValue("true")] bool keepVertexLayout)
         {
             ClearImpl(keepVertexLayout);
         }
 
+        [uei.ExcludeFromDocs]
         public void Clear()
         {
             ClearImpl(true);
@@ -580,16 +843,19 @@ namespace UnityEngine
             CombineMeshesImpl(combine, mergeSubMeshes, useMatrices, hasLightmapData);
         }
 
+        [uei.ExcludeFromDocs]
         public void CombineMeshes(CombineInstance[] combine, bool mergeSubMeshes, bool useMatrices)
         {
             CombineMeshesImpl(combine, mergeSubMeshes, useMatrices, false);
         }
 
+        [uei.ExcludeFromDocs]
         public void CombineMeshes(CombineInstance[] combine, bool mergeSubMeshes)
         {
             CombineMeshesImpl(combine, mergeSubMeshes, true, false);
         }
 
+        [uei.ExcludeFromDocs]
         public void CombineMeshes(CombineInstance[] combine)
         {
             CombineMeshesImpl(combine, true, true, false);

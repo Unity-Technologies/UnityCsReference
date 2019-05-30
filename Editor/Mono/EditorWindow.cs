@@ -65,7 +65,7 @@ namespace UnityEditor
                 name = VisualElementUtils.GetUniqueName(name),
                 pickingMode = PickingMode.Ignore, // do not eat events so IMGUI gets them
                 viewDataKey = name,
-                renderHint = RenderHint.ClipWithScissors
+                renderHints = RenderHints.ClipWithScissors
             };
             root.pseudoStates |= PseudoStates.Root;
             UIElements.UIElementsEditorUtility.AddDefaultEditorStyleSheets(root);

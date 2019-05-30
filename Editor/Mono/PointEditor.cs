@@ -112,7 +112,7 @@ namespace UnityEditor
 
         private static List<int> s_SelectionStart;
         // This function implements selection of points. Returns true is selection changes
-        public static bool SelectPoints(IEditablePoint points, Transform cloudTransform, ref List<int> selection, bool firstSelect)
+        public static bool SelectPoints(IEditablePoint points, Transform cloudTransform, ref List<int> selection)
         {
             int id = GUIUtility.GetControlID(FocusType.Passive);
 
@@ -131,7 +131,7 @@ namespace UnityEditor
                 case EventType.MouseDown:
                     // If we got a left-mouse down (HandleUtility.nearestControl== id is only true when the user clicked outside any handles),
                     // we should begin selecting.
-                    if ((HandleUtility.nearestControl == id || firstSelect) && evt.button == 0)
+                    if ((HandleUtility.nearestControl == id) && evt.button == 0)
                     {
                         // If neither shift nor control is held down, we'll clear the selection as the fist thing.
                         if (!evt.shift && !EditorGUI.actionKey)

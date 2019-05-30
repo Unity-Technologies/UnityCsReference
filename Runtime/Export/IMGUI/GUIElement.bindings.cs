@@ -12,7 +12,6 @@ namespace UnityEngine
     // GUI STUFF
     // --------------------------------
     [NativeHeader("Modules/IMGUI/GUIStyle.h")]
-    [NativeHeader("Runtime/Camera/RenderLayers/GUILayer.h")]
     [UsedByNativeCode]
     public partial class RectOffset
     {
@@ -49,82 +48,5 @@ namespace UnityEngine
 
         // Remove the border offsets from a /rect/.
         public extern Rect Remove(Rect rect);
-    }
-
-
-    // Base class for images & text strings displayed in a GUI.
-    [RequireComponent(typeof(Transform))]
-    public class GUIElement : Behaviour
-    {
-        [ExcludeFromDocs]
-        public bool HitTest(Vector3 screenPosition)
-        {
-            return HitTest(new Vector2(screenPosition.x, screenPosition.y), null);
-        }
-
-        // Is a point on screen inside the element.
-        public bool HitTest(Vector3 screenPosition, [UnityEngine.Internal.DefaultValue("null")] Camera camera)
-        {
-            return HitTest(new Vector2(screenPosition.x, screenPosition.y), GetCameraOrWindowRect(camera));
-        }
-
-        // Returns bounding rectangle of [[GUIElement]] in screen coordinates.
-        public Rect GetScreenRect([UnityEngine.Internal.DefaultValue("null")] Camera camera)
-        {
-            return GetScreenRect(GetCameraOrWindowRect(camera));
-        }
-
-        [ExcludeFromDocs]
-        public Rect GetScreenRect()
-        {
-            return GetScreenRect(null);
-        }
-
-        private extern Rect GetScreenRect(Rect rect);
-        private extern bool HitTest(Vector2 screenPosition, Rect cameraRect);
-
-        private static Rect GetCameraOrWindowRect(Camera camera)
-        {
-            if (camera != null)
-            {
-                return camera.pixelRect;
-            }
-
-            return new Rect(0, 0, Screen.width, Screen.height);
-        }
-    }
-
-
-    // A texture image used in a 2D GUI.
-    [NativeHeader("Runtime/Camera/RenderLayers/GUITexture.h")]
-    [System.Obsolete("This component is part of the legacy UI system and will be removed in a future release.")]
-    public class GUITexture : GUIElement
-    {
-        // The color of the GUI texture.
-        public extern Color color { get; set; }
-
-        // The texture used for drawing.
-        public extern Texture texture { get; set; }
-
-        // Pixel inset used for pixel adjustments for size and position.
-        public extern Rect pixelInset { get; set; }
-
-        // The border defines the number of pixels from the edge that are not affected by scale.
-        public extern RectOffset border { get; set; }
-    }
-
-
-    // [[Component]] added to a camera to make it render 2D GUI elements.
-    [RequireComponent(typeof(Camera))]
-    [Obsolete("This component is part of the legacy UI system and will be removed in a future release.")]
-    public class GUILayer : Behaviour
-    {
-        // Get the GUI element at a specific screen position.
-        public GUIElement HitTest(Vector3 screenPosition)
-        {
-            return HitTest(new Vector2(screenPosition.x, screenPosition.y));
-        }
-
-        private extern GUIElement HitTest(Vector2 screenPosition);
     }
 }

@@ -728,5 +728,26 @@ namespace UnityEditor.Connect
         {
             get { return CanBuildWithUPID(); }
         }
+
+        [NativeMethod("IsCollabAcceleratorInUse")]
+        private static extern bool IsCollabAcceleratorInUse_Internal();
+        public bool isCollabAcceleratorInUse
+        {
+            get { return IsCollabAcceleratorInUse_Internal(); }
+        }
+
+        [NativeMethod("GetCollabAcceleratorId")]
+        private static extern string GetCollabAcceleratorId_Internal();
+        public string collabAcceleratorId
+        {
+            get { return GetCollabAcceleratorId_Internal(); }
+        }
+
+        [NativeMethod("GetCollabAcceleratorName")]
+        private static extern string GetCollabAcceleratorName_Internal();
+        public string collabAcceleratorName
+        {
+            get { return GetCollabAcceleratorName_Internal(); }
+        }
     }
 }

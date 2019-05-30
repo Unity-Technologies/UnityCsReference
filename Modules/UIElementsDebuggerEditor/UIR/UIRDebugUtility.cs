@@ -45,8 +45,8 @@ namespace UnityEditor.UIElements
             string res = t + n + (ve.GetClasses().Any() ? ("." + string.Join(",.", ve.GetClasses().ToArray())) : String.Empty);
             if (res == String.Empty)
                 return ve.GetType().Name;
-            if (ve.renderHint != RenderHint.None)
-                res += $" [{ve.renderHint}]";
+            if (ve.renderHints != RenderHints.None)
+                res += $" [{ve.renderHints}]";
             return res + " (" + ve.controlid + ")";
         }
     }

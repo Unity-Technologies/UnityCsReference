@@ -947,7 +947,7 @@ namespace UnityEditor
         private void SetVersionControlSystem(object data)
         {
             int popupIndex = (int)data;
-            if (popupIndex < 0 && popupIndex >= vcPopupList.Length)
+            if (popupIndex < 0 || popupIndex >= vcPopupList.Length)
                 return;
 
             PopupElement el = vcPopupList[popupIndex];

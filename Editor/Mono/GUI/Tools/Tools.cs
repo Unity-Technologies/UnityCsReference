@@ -134,28 +134,25 @@ namespace UnityEditor
             }
         }
 
-        private static Vector3 s_HandlePosition;
-        private static bool s_HandlePositionComputed;
+        static Vector3 s_HandlePosition;
+        static bool s_HandlePositionComputed;
+
         internal static Vector3 cachedHandlePosition
         {
             get
             {
                 if (!s_HandlePositionComputed)
                 {
-                    UpdateHandlePosition(GetHandlePosition());
+                    s_HandlePosition = GetHandlePosition();
+                    s_HandlePositionComputed = true;
                 }
                 return s_HandlePosition;
             }
         }
+
         internal static void InvalidateHandlePosition()
         {
             s_HandlePositionComputed = false;
-        }
-
-        internal static void UpdateHandlePosition(Vector3 newPosition)
-        {
-            s_HandlePosition = newPosition;
-            s_HandlePositionComputed = true;
         }
 
         public static Vector3 handlePosition

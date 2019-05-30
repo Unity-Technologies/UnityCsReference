@@ -358,7 +358,7 @@ namespace UnityEngine
             int id = GUIUtility.GetControlID(s_BoxHash, FocusType.Passive);
             if (Event.current.type == EventType.Repaint)
             {
-                style.Draw(position, content, id);
+                style.Draw(position, content, id, false, position.Contains(Event.current.mousePosition));
             }
         }
 
@@ -1371,7 +1371,7 @@ namespace UnityEngine
             GUIClip.Pop();
         }
 
-        internal static readonly UnityEngineInternal.GenericStack scrollViewStates = new UnityEngineInternal.GenericStack();
+        internal static UnityEngineInternal.GenericStack scrollViewStates { get; set; } = new UnityEngineInternal.GenericStack();
 
         public static Vector2 BeginScrollView(Rect position, Vector2 scrollPosition, Rect viewRect)
         {

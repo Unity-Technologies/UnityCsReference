@@ -624,7 +624,7 @@ namespace UnityEditor
                     newNode.m_State = SerializedNodeInfo.State.Enabled;
                 }
 
-                newNode.depth = i == 0 ? 0 : fullPath.Count(f => f == '/');
+                newNode.depth = fullPath.Count(f => f == '/');
 
                 int lastIndex = fullPath.LastIndexOf('/');
                 lastIndex = lastIndex == -1 ? 0 : lastIndex + 1;
