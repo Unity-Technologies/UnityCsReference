@@ -122,6 +122,8 @@ namespace UnityEditor
                 InitSettings();
             }
 
+            m_RenderSettings.UpdateIfRequiredOrScript();
+
             Material skyboxMaterial = m_SkyboxMaterial.objectReferenceValue as Material;
 
             m_bShowEnvironment = EditorGUILayout.FoldoutTitlebar(m_bShowEnvironment, Styles.env_top, true);
@@ -235,6 +237,8 @@ namespace UnityEditor
                 EditorGUI.indentLevel--;
                 EditorGUILayout.Space();
             }
+
+            m_RenderSettings.ApplyModifiedProperties();
         }
 
         public override void OnInspectorGUI()

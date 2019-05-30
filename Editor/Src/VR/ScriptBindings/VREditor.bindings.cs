@@ -61,6 +61,14 @@ namespace UnityEditorInternal
             [NativeMethod("SetOculusDashSupportEnabled")]
             set;
         }
+
+        public static extern bool v2Signing
+        {
+            [NativeMethod("GetOculusV2SigningEnabled")]
+            get;
+            [NativeMethod("SetOculusV2SigningEnabled")]
+            set;
+        }
     }
 }
 
@@ -82,6 +90,12 @@ namespace UnityEditor
             {
                 get { return UnityEditorInternal.PlayerSettingsOculus.dashSupport; }
                 set { UnityEditorInternal.PlayerSettingsOculus.dashSupport = value; }
+            }
+
+            public static bool v2Signing
+            {
+                get { return UnityEditorInternal.PlayerSettingsOculus.v2Signing; }
+                set { UnityEditorInternal.PlayerSettingsOculus.v2Signing = value; }
             }
         }
     }
