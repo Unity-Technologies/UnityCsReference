@@ -897,11 +897,12 @@ namespace UnityEditor
             }
         }
 
-        public void DoAvatarPreviewDrag(EventType type)
+        public void DoAvatarPreviewDrag(Event evt, EventType type)
         {
             if (type == EventType.DragUpdated)
             {
                 DragAndDrop.visualMode = DragAndDropVisualMode.Link;
+                evt.Use();
             }
             else if (type == EventType.DragPerform)
             {
@@ -913,6 +914,8 @@ namespace UnityEditor
                     DragAndDrop.AcceptDrag();
                     SetPreview(newPreviewObject);
                 }
+
+                evt.Use();
             }
         }
 
@@ -1016,7 +1019,7 @@ namespace UnityEditor
             int previewSceneID = GUIUtility.GetControlID(m_PreviewSceneHint, FocusType.Passive);
             type = evt.GetTypeForControl(previewSceneID);
 
-            DoAvatarPreviewDrag(type);
+            DoAvatarPreviewDrag(evt, type);
             HandleViewTool(evt, type, previewSceneID, previewRect);
             DoAvatarPreviewFrame(evt, type, previewRect);
 
