@@ -1369,8 +1369,6 @@ namespace UnityEditor
                 return;
             }
 
-            // Disable Scene view tools, so we can use our own.
-            Tools.current = Tool.None;
             if (state.ToolMode == (ToolMode)(-1))
                 state.ToolMode = ToolMode.Select;
 

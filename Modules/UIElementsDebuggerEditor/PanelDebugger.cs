@@ -23,6 +23,7 @@ namespace UnityEditor.UIElements.Debugger
             }
         }
 
+
         [SerializeField]
         private string m_LastVisualTreeName;
 
@@ -34,6 +35,17 @@ namespace UnityEditor.UIElements.Debugger
         private List<PanelChoice> m_PanelChoices;
         private IVisualElementScheduledItem m_ConnectWindowScheduledItem;
         private IVisualElementScheduledItem m_RestoreSelectionScheduledItem;
+
+        private Dictionary<Panel, EditorWindow> m_PanelToEditorWindow;
+
+        protected void TryFocusCorrespondingWindow(Panel panel)
+        {
+            EditorWindow window;
+            if (m_PanelToEditorWindow.TryGetValue(panel, out window))
+            {
+                window.Focus();
+            }
+        }
 
         public IPanelDebug panelDebug { get; set; }
 
@@ -61,6 +73,7 @@ namespace UnityEditor.UIElements.Debugger
                     RefreshPanelChoices();
             }, TrickleDown.TrickleDown);
 
+            m_PanelToEditorWindow = new Dictionary<Panel, EditorWindow>();
             m_PanelChoices = new List<PanelChoice>();
             m_PanelSelect = new ToolbarMenu() { name = "panelSelectPopup", variant = ToolbarMenu.Variant.Popup};
             m_PanelSelect.text = "Select a panel";
@@ -128,7 +141,7 @@ namespace UnityEditor.UIElements.Debugger
         private void RefreshPanelChoices()
         {
             m_PanelChoices.Clear();
-
+            m_PanelToEditorWindow.Clear();
             List<GUIView> guiViews = new List<GUIView>();
             GUIViewDebuggerHelper.GetViews(guiViews);
             var it = UIElementsUtility.GetPanelsIterator();
@@ -145,6 +158,8 @@ namespace UnityEditor.UIElements.Debugger
 
                 var p = it.Current.Value;
                 m_PanelChoices.Add(new PanelChoice { panel = p, name = p.name });
+                if (hostView != null && hostView.actualView != null)
+                    m_PanelToEditorWindow.Add(p, hostView.actualView);
             }
 
             var menu = m_PanelSelect.menu;
