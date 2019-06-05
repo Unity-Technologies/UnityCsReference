@@ -20,12 +20,15 @@ namespace UnityEditor.Scripting
     {
         // See AssemblyUpdater/Program.cs
         internal const byte Success                       = 0x00;
+        internal const byte FirstSuccessStatus            = (1 << 3);
+        internal const byte FirstErrorStatus              = (1 << 7);
+
+
         internal const byte ContainsUpdaterConfigurations = (1 << 3) + 2;
         internal const byte UpdatesApplied                = (1 << 3) + 3;
 
         internal static int Run(string arguments, string workingDir, out string stdOut, out string stdErr)
         {
-            var assemblyUpdaterPath = EditorApplication.applicationContentsPath + "/Tools/ScriptUpdater/AssemblyUpdater.exe";
             var monodistribution = MonoInstallationFinder.GetMonoInstallation("MonoBleedingEdge");
 
             var monoexe = Path.Combine(monodistribution, "bin/mono");
@@ -38,7 +41,7 @@ namespace UnityEditor.Scripting
 
             var startInfo = new ProcessStartInfo
             {
-                Arguments = assemblyUpdaterPath + " " + arguments,
+                Arguments = AssemblyUpdaterPath() + " " + arguments,
                 CreateNoWindow = true,
                 FileName = monoexe,
                 RedirectStandardError = true,
@@ -57,6 +60,14 @@ namespace UnityEditor.Scripting
             stdErr = string.Join("\r\n", assemblyUpdaterProcess.GetErrorOutput());
 
             return assemblyUpdaterProcess.ExitCode;
+        }
+
+        static string AssemblyUpdaterPath()
+        {
+            var unescapedAssemblyUpdaterPath = EditorApplication.applicationContentsPath + "/Tools/ScriptUpdater/AssemblyUpdater.exe";
+            return Application.platform == RuntimePlatform.WindowsEditor
+                ? CommandLineFormatter.EscapeCharsWindows(unescapedAssemblyUpdaterPath)
+                : CommandLineFormatter.EscapeCharsQuote(unescapedAssemblyUpdaterPath);
         }
 
         internal static string ArgumentsForUpdateAssembly(string assemblyPath, string tempOutputPath, IEnumerable<string> updateConfigSourcePaths)
@@ -82,6 +93,14 @@ namespace UnityEditor.Scripting
         {
             // See AssemblyUpdater/Program.cs
             return (exitCode & (1 << 7)) != 0;
+        }
+
+        internal static bool IsUnknown(int exitCode)
+        {
+            // See AssemblyUpdater/Program.cs
+            return exitCode != 0
+                && (exitCode & FirstErrorStatus) == 0    // It is not an error code returned from AssemblyUpdater.exe
+                && (exitCode & FirstSuccessStatus) == 0; // It is not an success code returned from AssemblyUpdater.exe
         }
 
         private static string ResolveAssemblyPath(string assemblyPath)

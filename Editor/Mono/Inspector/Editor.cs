@@ -1014,12 +1014,19 @@ namespace UnityEditor
             preview.ReloadPreviewInstances();
         }
 
+        // Some custom editors manually display SerializedObjects with only private properties
+        // Setting this to true allows them to properly toggling the visibility via the standard header foldout
+        internal bool alwaysAllowExpansion {get; set;}
+
         // Auxiliary method that determines whether this editor has a set of public properties and, as thus,
         // can be expanded via a foldout. This is used in order to determine whether a foldout needs to be
         // rendered on top of the inspector title bar or not. Some examples of editors that don't require
         // a foldout are GUI Layer and Audio Listener.
         internal bool CanBeExpandedViaAFoldout()
         {
+            if (alwaysAllowExpansion)
+                return true;
+
             if (m_SerializedObject == null)
                 m_SerializedObject = new SerializedObject(targets, m_Context);
             else
