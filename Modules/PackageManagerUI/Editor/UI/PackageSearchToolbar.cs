@@ -56,12 +56,14 @@ namespace UnityEditor.PackageManager.UI
                 showingPlaceHolder = true;
                 SearchTextField.value = kPlaceHolder;
                 SearchTextField.AddToClassList("placeholder");
+                SearchCancelButton.RemoveFromClassList("on");
             }
             else
             {
                 showingPlaceHolder = false;
                 SearchTextField.value = searchText;
                 SearchTextField.RemoveFromClassList("placeholder");
+                SearchCancelButton.AddToClassList("on");
             }
         }
 

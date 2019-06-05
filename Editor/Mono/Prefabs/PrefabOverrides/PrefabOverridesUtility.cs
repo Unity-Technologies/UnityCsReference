@@ -121,12 +121,22 @@ namespace UnityEditor.SceneManagement
             var prefabInstanceRoot = PrefabUtility.GetOutermostPrefabInstanceRoot(prefabInstance);
 
             // From root of asset traverse all children and detect any Components that are not present on the instance object (these must be deleted)
-            TransformVisitor transformVisitor = new TransformVisitor();
             var removedComponents = new List<RemovedComponent>();
             if (PrefabUtility.IsDisconnectedFromPrefabAsset(prefabInstance))
                 return removedComponents;
-
+            TransformVisitor transformVisitor = new TransformVisitor();
             transformVisitor.VisitAll(prefabInstanceRoot.transform, CheckForRemovedComponents, removedComponents);
+            return removedComponents;
+        }
+
+        public static List<RemovedComponent> GetRemovedComponentsForSingleGameObject(GameObject prefabInstance)
+        {
+            ThrowExceptionIfNullOrNotPartOfPrefabInstance(prefabInstance);
+
+            var removedComponents = new List<RemovedComponent>();
+            if (PrefabUtility.IsDisconnectedFromPrefabAsset(prefabInstance))
+                return removedComponents;
+            CheckForRemovedComponents(prefabInstance.transform, removedComponents);
             return removedComponents;
         }
 
