@@ -74,11 +74,20 @@ namespace UnityEngine.UIElements
         }
 
         [SerializeField]
-        private List<string> m_Stylesheets;
+        private List<string> m_StylesheetPaths;
 
-        public List<string> stylesheets
+        public List<string> stylesheetPaths
         {
-            get { return m_Stylesheets == null ? (m_Stylesheets = new List<string>()) : m_Stylesheets; }
+            get { return m_StylesheetPaths == null ? (m_StylesheetPaths = new List<string>()) : m_StylesheetPaths; }
+            set { m_StylesheetPaths = value; }
+        }
+
+        [SerializeField]
+        private List<StyleSheet> m_Stylesheets;
+
+        public List<StyleSheet> stylesheets
+        {
+            get { return m_Stylesheets == null ? (m_Stylesheets = new List<StyleSheet>()) : m_Stylesheets; }
             set { m_Stylesheets = value; }
         }
 

@@ -12,28 +12,28 @@ namespace UnityEditor.Build.Content
     [NativeHeader("Modules/BuildPipeline/Editor/Public/ContentBuildTypes.h")]
     [NativeHeader("Modules/BuildPipeline/Editor/Shared/ContentBuildInterface.bindings.h")]
     [StaticAccessor("BuildPipeline", StaticAccessorType.DoubleColon)]
-    public static class ContentBuildInterface
+    public static partial class ContentBuildInterface
     {
         public static extern AssetBundleBuild[] GenerateAssetBundleBuilds();
 
         public static extern BuildUsageTagGlobal GetGlobalUsageFromGraphicsSettings();
 
-        public static SceneDependencyInfo PrepareScene(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet, string outputFolder)
+        public static SceneDependencyInfo CalculatePlayerDependenciesForScene(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet)
         {
             if (IsBuildInProgress())
-                throw new InvalidOperationException("Cannot call PrepareScene while a build is in progress");
-            return PrepareSceneInternal(scenePath, settings, usageSet, null, outputFolder);
+                throw new InvalidOperationException("Cannot call CalculatePlayerDependenciesForScene while a build is in progress");
+            return CalculatePlayerDependenciesForSceneInternal(scenePath, settings, usageSet, null);
         }
 
-        public static SceneDependencyInfo PrepareScene(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet, BuildUsageCache usageCache, string outputFolder)
+        public static SceneDependencyInfo CalculatePlayerDependenciesForScene(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet, BuildUsageCache usageCache)
         {
             if (IsBuildInProgress())
-                throw new InvalidOperationException("Cannot call PrepareScene while a build is in progress");
-            return PrepareSceneInternal(scenePath, settings, usageSet, usageCache, outputFolder);
+                throw new InvalidOperationException("Cannot call CalculatePlayerDependenciesForScene while a build is in progress");
+            return CalculatePlayerDependenciesForSceneInternal(scenePath, settings, usageSet, usageCache);
         }
 
-        [FreeFunction("PrepareScene")]
-        static extern SceneDependencyInfo PrepareSceneInternal(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet, BuildUsageCache usageCache, string outputFolder);
+        [FreeFunction("CalculatePlayerDependenciesForScene")]
+        static extern SceneDependencyInfo CalculatePlayerDependenciesForSceneInternal(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet, BuildUsageCache usageCache);
 
         public static extern ObjectIdentifier[] GetPlayerObjectIdentifiersInAsset(GUID asset, BuildTarget target);
 
@@ -54,94 +54,49 @@ namespace UnityEditor.Build.Content
 
         internal static extern bool IsBuildInProgress();
 
-        public static WriteResult WriteSerializedFile(string outputFolder, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap)
+        public static WriteResult WriteSerializedFile(string outputFolder, WriteParameters parameters)
         {
             if (IsBuildInProgress())
                 throw new InvalidOperationException("Cannot call WriteSerializedFile while a build is in progress");
             if (string.IsNullOrEmpty(outputFolder))
                 throw new ArgumentException("String is null or empty.", "outputFolder");
-            if (writeCommand == null)
-                throw new ArgumentNullException("writeCommand");
-            if (referenceMap == null)
-                throw new ArgumentNullException("referenceMap");
-            return WriteSerializedFileRaw(outputFolder, writeCommand, settings, globalUsage, usageSet, referenceMap);
-        }
+            if (parameters.writeCommand == null)
+                throw new ArgumentNullException("parameters.writeCommand");
+            if (parameters.referenceMap == null)
+                throw new ArgumentNullException("parameters.referenceMap");
 
-        public static WriteResult WriteSerializedFile(string outputFolder, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, AssetBundleInfo bundleInfo)
-        {
-            if (IsBuildInProgress())
-                throw new InvalidOperationException("Cannot call WriteSerializedFile while a build is in progress");
-            if (string.IsNullOrEmpty(outputFolder))
-                throw new ArgumentException("String is null or empty.", "outputFolder");
-            if (writeCommand == null)
-                throw new ArgumentNullException("writeCommand");
-            if (referenceMap == null)
-                throw new ArgumentNullException("referenceMap");
-            if (bundleInfo == null)
-                throw new ArgumentNullException("bundleInfo");
-            return WriteSerializedFileAssetBundle(outputFolder, writeCommand, settings, globalUsage, usageSet, referenceMap, bundleInfo);
+            if (parameters.bundleInfo == null)
+                return WriteSerializedFileRaw(outputFolder, parameters.writeCommand, parameters.settings, parameters.globalUsage, parameters.usageSet, parameters.referenceMap);
+            return WriteSerializedFileAssetBundle(outputFolder, parameters.writeCommand, parameters.settings, parameters.globalUsage, parameters.usageSet, parameters.referenceMap, parameters.bundleInfo);
         }
 
         static extern WriteResult WriteSerializedFileRaw(string outputFolder, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap);
 
         static extern WriteResult WriteSerializedFileAssetBundle(string outputFolder, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, AssetBundleInfo bundleInfo);
 
-        public static WriteResult WriteSceneSerializedFile(string outputFolder, string scenePath, string processedScene, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap)
+        public static WriteResult WriteSceneSerializedFile(string outputFolder, WriteSceneParameters parameters)
         {
             if (IsBuildInProgress())
                 throw new InvalidOperationException("Cannot call WriteSceneSerializedFile while a build is in progress");
             if (string.IsNullOrEmpty(outputFolder))
                 throw new ArgumentException("String is null or empty.", "outputFolder");
-            if (string.IsNullOrEmpty(scenePath))
-                throw new ArgumentException("String is null or empty.", "scenePath");
-            if (writeCommand == null)
-                throw new ArgumentNullException("writeCommand");
-            if (referenceMap == null)
-                throw new ArgumentNullException("referenceMap");
-            return WriteSceneSerializedFileRaw(outputFolder, scenePath, processedScene, writeCommand, settings, globalUsage, usageSet, referenceMap);
+            if (parameters.writeCommand == null)
+                throw new ArgumentNullException("parameters.writeCommand");
+            if (parameters.referenceMap == null)
+                throw new ArgumentNullException("parameters.referenceMap");
+
+            if (parameters.preloadInfo == null && parameters.sceneBundleInfo == null)
+                return WriteSceneSerializedFileRaw(outputFolder, parameters.scenePath, parameters.writeCommand, parameters.settings, parameters.globalUsage, parameters.usageSet, parameters.referenceMap);
+            if (parameters.sceneBundleInfo == null)
+                return WriteSceneSerializedFilePlayerData(outputFolder, parameters.scenePath, parameters.writeCommand, parameters.settings, parameters.globalUsage, parameters.usageSet, parameters.referenceMap, parameters.preloadInfo);
+            return WriteSceneSerializedFileAssetBundle(outputFolder, parameters.scenePath, parameters.writeCommand, parameters.settings, parameters.globalUsage, parameters.usageSet, parameters.referenceMap, parameters.preloadInfo, parameters.sceneBundleInfo);
         }
 
-        public static WriteResult WriteSceneSerializedFile(string outputFolder, string scenePath, string processedScene, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, PreloadInfo preloadInfo)
-        {
-            if (IsBuildInProgress())
-                throw new InvalidOperationException("Cannot call WriteSceneSerializedFile while a build is in progress");
-            if (string.IsNullOrEmpty(outputFolder))
-                throw new ArgumentException("String is null or empty.", "outputFolder");
-            if (string.IsNullOrEmpty(scenePath))
-                throw new ArgumentException("String is null or empty.", "scenePath");
-            if (writeCommand == null)
-                throw new ArgumentNullException("writeCommand");
-            if (referenceMap == null)
-                throw new ArgumentNullException("referenceMap");
-            if (preloadInfo == null)
-                throw new ArgumentNullException("preloadInfo");
-            return WriteSceneSerializedFilePlayerData(outputFolder, scenePath, processedScene, writeCommand, settings, globalUsage, usageSet, referenceMap, preloadInfo);
-        }
+        static extern WriteResult WriteSceneSerializedFileRaw(string outputFolder, string scenePath, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap);
 
-        public static WriteResult WriteSceneSerializedFile(string outputFolder, string scenePath, string processedScene, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, PreloadInfo preloadInfo, SceneBundleInfo sceneBundleInfo)
-        {
-            if (IsBuildInProgress())
-                throw new InvalidOperationException("Cannot call WriteSceneSerializedFile while a build is in progress");
-            if (string.IsNullOrEmpty(outputFolder))
-                throw new ArgumentException("String is null or empty.", "outputFolder");
-            if (string.IsNullOrEmpty(scenePath))
-                throw new ArgumentException("String is null or empty.", "scenePath");
-            if (writeCommand == null)
-                throw new ArgumentNullException("writeCommand");
-            if (referenceMap == null)
-                throw new ArgumentNullException("referenceMap");
-            if (preloadInfo == null)
-                throw new ArgumentNullException("preloadInfo");
-            if (sceneBundleInfo == null)
-                throw new ArgumentNullException("sceneBundleInfo");
-            return WriteSceneSerializedFileAssetBundle(outputFolder, scenePath, processedScene, writeCommand, settings, globalUsage, usageSet, referenceMap, preloadInfo, sceneBundleInfo);
-        }
+        static extern WriteResult WriteSceneSerializedFilePlayerData(string outputFolder, string scenePath, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, PreloadInfo preloadInfo);
 
-        static extern WriteResult WriteSceneSerializedFileRaw(string outputFolder, string scenePath, string processedScene, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap);
-
-        static extern WriteResult WriteSceneSerializedFilePlayerData(string outputFolder, string scenePath, string processedScene, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, PreloadInfo preloadInfo);
-
-        static extern WriteResult WriteSceneSerializedFileAssetBundle(string outputFolder, string scenePath, string processedScene, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, PreloadInfo preloadInfo, SceneBundleInfo sceneBundleInfo);
+        static extern WriteResult WriteSceneSerializedFileAssetBundle(string outputFolder, string scenePath, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, PreloadInfo preloadInfo, SceneBundleInfo sceneBundleInfo);
 
         public static extern uint ArchiveAndCompress(ResourceFile[] resourceFiles, string outputBundlePath, UnityEngine.BuildCompression compression);
     }

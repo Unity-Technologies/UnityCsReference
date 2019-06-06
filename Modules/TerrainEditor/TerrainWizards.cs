@@ -73,8 +73,7 @@ namespace UnityEditor
         internal enum ByteOrder { Mac = 1, Windows = 2 }
 
         public Depth m_Depth = Depth.Bit16;
-        public int m_Width = 1;
-        public int m_Height = 1;
+        public int m_Resolution = 1;
         public ByteOrder m_ByteOrder = ByteOrder.Windows;
         public bool m_FlipVertically = false;
         public Vector3 m_TerrainSize = new Vector3(2000, 600, 2000);
@@ -93,16 +92,14 @@ namespace UnityEditor
 
             m_TerrainSize = terrainData.size;
 
-            if (terrainData.heightmapWidth * terrainData.heightmapHeight == fileSize)
+            if (terrainData.heightmapResolution * terrainData.heightmapResolution == fileSize)
             {
-                m_Width = terrainData.heightmapWidth;
-                m_Height = terrainData.heightmapHeight;
+                m_Resolution = terrainData.heightmapResolution;
                 m_Depth = Depth.Bit8;
             }
-            else if (terrainData.heightmapWidth * terrainData.heightmapHeight * 2 == fileSize)
+            else if (terrainData.heightmapResolution * terrainData.heightmapResolution * 2 == fileSize)
             {
-                m_Width = terrainData.heightmapWidth;
-                m_Height = terrainData.heightmapHeight;
+                m_Resolution = terrainData.heightmapResolution;
                 m_Depth = Depth.Bit16;
             }
             else
@@ -110,12 +107,10 @@ namespace UnityEditor
                 m_Depth = Depth.Bit16;
 
                 int pixels = fileSize / (int)m_Depth;
-                int width = Mathf.RoundToInt(Mathf.Sqrt(pixels));
-                int height = Mathf.RoundToInt(Mathf.Sqrt(pixels));
-                if ((width * height * (int)m_Depth) == fileSize)
+                int resolution = Mathf.RoundToInt(Mathf.Sqrt(pixels));
+                if ((resolution * resolution * (int)m_Depth) == fileSize)
                 {
-                    m_Width = width;
-                    m_Height = height;
+                    m_Resolution = resolution;
                     return;
                 }
 
@@ -123,12 +118,10 @@ namespace UnityEditor
                 m_Depth = Depth.Bit8;
 
                 pixels = fileSize / (int)m_Depth;
-                width = Mathf.RoundToInt(Mathf.Sqrt(pixels));
-                height = Mathf.RoundToInt(Mathf.Sqrt(pixels));
-                if ((width * height * (int)m_Depth) == fileSize)
+                resolution = Mathf.RoundToInt(Mathf.Sqrt(pixels));
+                if ((resolution * resolution * (int)m_Depth) == fileSize)
                 {
-                    m_Width = width;
-                    m_Height = height;
+                    m_Resolution = resolution;
                     return;
                 }
 
@@ -144,7 +137,7 @@ namespace UnityEditor
                 errorString = "Terrain does not exist";
             }
 
-            if (m_Width > kMaxResolution || m_Height > kMaxResolution)
+            if (m_Resolution > kMaxResolution)
             {
                 isValid = false;
                 errorString = "Heightmaps above 4097x4097 in resolution are not supported";
@@ -155,7 +148,7 @@ namespace UnityEditor
             {
                 Undo.RegisterCompleteObjectUndo(terrainData, "Import Raw heightmap");
 
-                terrainData.heightmapResolution = Mathf.Max(m_Width, m_Height);
+                terrainData.heightmapResolution = m_Resolution;
                 terrainData.size = m_TerrainSize;
                 ReadRaw(m_Path);
 
@@ -169,21 +162,20 @@ namespace UnityEditor
             byte[] data;
             using (BinaryReader br = new BinaryReader(File.Open(path, FileMode.Open, FileAccess.Read)))
             {
-                data = br.ReadBytes(m_Width * m_Height * (int)m_Depth);
+                data = br.ReadBytes(m_Resolution * m_Resolution * (int)m_Depth);
                 br.Close();
             }
 
-            int heightmapWidth = terrainData.heightmapWidth;
-            int heightmapHeight = terrainData.heightmapHeight;
-            float[,] heights = new float[heightmapHeight, heightmapWidth];
+            int heightmapRes = terrainData.heightmapResolution;
+            float[,] heights = new float[heightmapRes, heightmapRes];
             if (m_Depth == Depth.Bit16)
             {
                 float normalize = 1.0F / (1 << 16);
-                for (int y = 0; y < heightmapHeight; ++y)
+                for (int y = 0; y < heightmapRes; ++y)
                 {
-                    for (int x = 0; x < heightmapWidth; ++x)
+                    for (int x = 0; x < heightmapRes; ++x)
                     {
-                        int index = Mathf.Clamp(x, 0, m_Width - 1) + Mathf.Clamp(y, 0, m_Height - 1) * m_Width;
+                        int index = Mathf.Clamp(x, 0, m_Resolution - 1) + Mathf.Clamp(y, 0, m_Resolution - 1) * m_Resolution;
                         if ((m_ByteOrder == ByteOrder.Mac) == System.BitConverter.IsLittleEndian)
                         {
                             // Yay, seems like this is the easiest way to swap bytes in C#. NUTS
@@ -196,7 +188,7 @@ namespace UnityEditor
                         ushort compressedHeight = System.BitConverter.ToUInt16(data, index * 2);
 
                         float height = compressedHeight * normalize;
-                        int destY = m_FlipVertically ? heightmapHeight - 1 - y : y;
+                        int destY = m_FlipVertically ? heightmapRes - 1 - y : y;
                         heights[destY, x] = height;
                     }
                 }
@@ -204,14 +196,14 @@ namespace UnityEditor
             else
             {
                 float normalize =  1.0F / (1 << 8);
-                for (int y = 0; y < heightmapHeight; ++y)
+                for (int y = 0; y < heightmapRes; ++y)
                 {
-                    for (int x = 0; x < heightmapWidth; ++x)
+                    for (int x = 0; x < heightmapRes; ++x)
                     {
-                        int index = Mathf.Clamp(x, 0, m_Width - 1) + Mathf.Clamp(y, 0, m_Height - 1) * m_Width;
+                        int index = Mathf.Clamp(x, 0, m_Resolution - 1) + Mathf.Clamp(y, 0, m_Resolution - 1) * m_Resolution;
                         byte compressedHeight = data[index];
                         float height = compressedHeight * normalize;
-                        int destY = m_FlipVertically ? heightmapHeight - 1 - y : y;
+                        int destY = m_FlipVertically ? heightmapRes - 1 - y : y;
                         heights[destY, x] = height;
                     }
                 }
@@ -263,26 +255,25 @@ namespace UnityEditor
         {
             base.OnWizardUpdate();
             if (terrainData)
-                helpString = "Width " + terrainData.heightmapWidth + "\nHeight " + terrainData.heightmapHeight;
+                helpString = "Resolution " + terrainData.heightmapResolution;
         }
 
         void WriteRaw(string path)
         {
             // Write data
-            int heightmapWidth = terrainData.heightmapWidth;
-            int heightmapHeight = terrainData.heightmapHeight;
-            float[,] heights = terrainData.GetHeights(0, 0, heightmapWidth, heightmapHeight);
-            byte[] data = new byte[heightmapWidth * heightmapHeight * (int)m_Depth];
+            int heightmapRes = terrainData.heightmapResolution;
+            float[,] heights = terrainData.GetHeights(0, 0, heightmapRes, heightmapRes);
+            byte[] data = new byte[heightmapRes * heightmapRes * (int)m_Depth];
 
             if (m_Depth == Depth.Bit16)
             {
                 float normalize = (1 << 16);
-                for (int y = 0; y < heightmapHeight; ++y)
+                for (int y = 0; y < heightmapRes; ++y)
                 {
-                    for (int x = 0; x < heightmapWidth; ++x)
+                    for (int x = 0; x < heightmapRes; ++x)
                     {
-                        int index = x + y * heightmapWidth;
-                        int srcY = m_FlipVertically ? heightmapHeight - 1 - y : y;
+                        int index = x + y * heightmapRes;
+                        int srcY = m_FlipVertically ? heightmapRes - 1 - y : y;
                         int height = Mathf.RoundToInt(heights[srcY, x] * normalize);
                         ushort compressedHeight = (ushort)Mathf.Clamp(height, 0, ushort.MaxValue);
 
@@ -304,12 +295,12 @@ namespace UnityEditor
             else
             {
                 float normalize = (1 << 8);
-                for (int y = 0; y < heightmapHeight; ++y)
+                for (int y = 0; y < heightmapRes; ++y)
                 {
-                    for (int x = 0; x < heightmapWidth; ++x)
+                    for (int x = 0; x < heightmapRes; ++x)
                     {
-                        int index = x + y * heightmapWidth;
-                        int srcY = m_FlipVertically ? heightmapHeight - 1 - y : y;
+                        int index = x + y * heightmapRes;
+                        int srcY = m_FlipVertically ? heightmapRes - 1 - y : y;
                         int height = Mathf.RoundToInt(heights[srcY, x] * normalize);
                         byte compressedHeight = (byte)Mathf.Clamp(height, 0, byte.MaxValue);
                         data[index] = compressedHeight;
@@ -325,7 +316,7 @@ namespace UnityEditor
         new void InitializeDefaults(Terrain terrain)
         {
             m_Terrain = terrain;
-            helpString = "Width " + terrain.terrainData.heightmapWidth + " Height " + terrain.terrainData.heightmapHeight;
+            helpString = "Resolution " + terrain.terrainData.heightmapResolution;
             OnWizardUpdate();
         }
     }

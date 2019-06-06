@@ -255,6 +255,28 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
+        void MarkBoundingBoxesDirty(VisualElement ve)
+        {
+            var parent = ve.hierarchy.parent;
+            while (parent != null && !parent.isBoundingBoxDirty)
+            {
+                parent.isBoundingBoxDirty = true;
+                parent = parent.hierarchy.parent;
+            }
+
+            MarkChildrenBoundingBoxesDirty(ve);
+        }
+
+        void MarkChildrenBoundingBoxesDirty(VisualElement parent)
+        {
+            parent.isBoundingBoxDirty = true;
+
+            for (int i = 0; i < parent.hierarchy.childCount; ++i)
+            {
+                MarkChildrenBoundingBoxesDirty(parent.hierarchy[i]);
+            }
+        }
+
         public void UpdateGeometryFromContent()
         {
             hasPendingGeometryUpdate = false;
@@ -283,6 +305,8 @@ namespace UnityEditor.Experimental.GraphView
                 // The number of actual children should be low given the Scope (and Group) nodes do not parent their child nodes.
                 // This is mostly to fix things like the title element in the Group node.
                 MarkChildrenDirtyRepaint(this);
+                // We also need to mark the actual children bounding boxes as dirty, since the element dimensions may have changed.
+                MarkBoundingBoxesDirty(this);
 
                 if (m_ContainedElements.Count > 0)
                 {

@@ -655,6 +655,8 @@ namespace UnityEditor
                         // determine closest animation or blend tree
                         float clickPosition = evt.mousePosition.x;
                         float distance = Mathf.Infinity;
+
+                        m_ReorderableList.index = -1;
                         for (int i = 0; i < points.Length; i++)
                         {
                             float last = (i == 0) ? points[i] : points[i - 1];
@@ -673,9 +675,12 @@ namespace UnityEditor
                         m_UseAutomaticThresholds.boolValue = false;
 
                         // Get current blend value.
-                        SerializedProperty child = m_Childs.GetArrayElementAtIndex(m_ReorderableList.index);
-                        SerializedProperty threshold = child.FindPropertyRelative("m_Threshold");
-                        curBlendValue = threshold.floatValue;
+                        if (m_ReorderableList.index != -1)
+                        {
+                            SerializedProperty child = m_Childs.GetArrayElementAtIndex(m_ReorderableList.index);
+                            SerializedProperty threshold = child.FindPropertyRelative("m_Threshold");
+                            curBlendValue = threshold.floatValue;
+                        }
                     }
 
                     // Get drag'n'drop infos.

@@ -1384,7 +1384,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 return;
             }
 
-            textSettings.color *= UIElementsUtility.editorPlayModeTintColor;
+            textSettings.color *= textParams.playmodeTintColor;
 
             using (NativeArray<TextVertex> textVertices = TextNative.GetVertices(textSettings))
             {
@@ -1409,7 +1409,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
         {
             rectParams.color.a *= m_ElementOpacity;
 
-            rectParams.color *= UIElementsUtility.editorPlayModeTintColor;
+            rectParams.color *= rectParams.playmodeTintColor;
 
             var meshAlloc = new MeshBuilder.AllocMeshData()
             {
@@ -1427,7 +1427,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
         {
             borderParams.color.a *= m_ElementOpacity;
 
-            borderParams.color *= UIElementsUtility.editorPlayModeTintColor;
+            borderParams.color *= borderParams.playmodeTintColor;
 
             MeshBuilder.MakeBorder(borderParams, UIRUtility.k_MeshPosZ, new MeshBuilder.AllocMeshData()
             {
@@ -1465,7 +1465,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     topLeftRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderTopLeftRadius.value, parent),
                     topRightRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderTopRightRadius.value, parent),
                     bottomRightRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderBottomRightRadius.value, parent),
-                    bottomLeftRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderBottomLeftRadius.value, parent)
+                    bottomLeftRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderBottomLeftRadius.value, parent),
+                    playmodeTintColor = currentElement.panel.contextType == ContextType.Editor ? UIElementsUtility.editorPlayModeTintColor : Color.white
                 });
             }
 
@@ -1476,7 +1477,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     GUIUtility.AlignRectToDevice(currentElement.rect),
                     new Rect(0, 0, 1, 1),
                     style.backgroundImage.value.texture,
-                    style.unityBackgroundScaleMode.value);
+                    style.unityBackgroundScaleMode.value,
+                    currentElement.panel.contextType);
                 rectParams.topLeftRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderTopLeftRadius.value, parent);
                 rectParams.topRightRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderTopRightRadius.value, parent);
                 rectParams.bottomRightRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderBottomRightRadius.value, parent);
@@ -1510,7 +1512,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
                         leftWidth = style.borderLeftWidth.value,
                         topWidth = style.borderTopWidth.value,
                         rightWidth = style.borderRightWidth.value,
-                        bottomWidth = style.borderBottomWidth.value
+                        bottomWidth = style.borderBottomWidth.value,
+                        playmodeTintColor = currentElement.panel.contextType == ContextType.Editor ? UIElementsUtility.editorPlayModeTintColor : Color.white
                     });
                 }
             }
@@ -1548,7 +1551,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     topLeftRadius = Vector2.Max(Vector2.zero, radTL - new Vector2(widthL, widthT)),
                     topRightRadius = Vector2.Max(Vector2.zero, radTR - new Vector2(widthR, widthT)),
                     bottomLeftRadius = Vector2.Max(Vector2.zero, radBL - new Vector2(widthL, widthB)),
-                    bottomRightRadius = Vector2.Max(Vector2.zero, radBR - new Vector2(widthR, widthB))
+                    bottomRightRadius = Vector2.Max(Vector2.zero, radBR - new Vector2(widthR, widthB)),
+                    playmodeTintColor = currentElement.panel.contextType == ContextType.Editor ? UIElementsUtility.editorPlayModeTintColor : Color.white
                 };
 
                 // Only clip the interior shape, skipping the border
@@ -1707,8 +1711,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 return;
             }
 
-
-            textSettings.color *= UIElementsUtility.editorPlayModeTintColor;
+            textSettings.color *= textParams.playmodeTintColor;
 
             using (NativeArray<TextVertex> textVertices = TextNative.GetVertices(textSettings))
             {

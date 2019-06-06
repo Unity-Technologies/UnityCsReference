@@ -9,6 +9,7 @@ using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using System.Runtime.InteropServices;
 using UnityEngineInternal;
+using Scene = UnityEngine.SceneManagement.Scene;
 
 namespace UnityEditor
 {
@@ -444,5 +445,13 @@ namespace UnityEditor.Experimental
         // If we should write out AO to disk. Only works in On Demand bakes
         [StaticAccessor("GetLightmapEditorSettings()")]
         public extern static bool extractAmbientOcclusion { get; set; }
+
+        [NativeThrows]
+        [FreeFunction]
+        public static extern bool BakeAsync(Scene scene);
+
+        [NativeThrows]
+        [FreeFunction]
+        public static extern bool Bake(Scene scene);
     }
 }

@@ -103,6 +103,8 @@ namespace UnityEditor
         internal static Color kSceneViewMidLight = new Color(0.114f, 0.125f, 0.133f, 1);
         internal static Color kSceneViewDownLight = new Color(0.047f, 0.043f, 0.035f, 1);
 
+        public static Color selectedOutlineColor => kSceneViewSelectedOutline.Color;
+
         [SerializeField]
         bool m_ShowContextualTools;
 

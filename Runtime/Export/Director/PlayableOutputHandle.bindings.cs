@@ -85,13 +85,10 @@ namespace UnityEngine.Playables
         extern internal PlayableHandle GetSourcePlayable();
 
         [FreeFunction("PlayableOutputHandleBindings::SetSourcePlayable", HasExplicitThis = true, ThrowsException = true)]
-        extern internal void SetSourcePlayable(PlayableHandle target);
+        extern internal void SetSourcePlayable(PlayableHandle target, int port);
 
         [FreeFunction("PlayableOutputHandleBindings::GetSourceOutputPort", HasExplicitThis = true, ThrowsException = true)]
         extern internal int GetSourceOutputPort();
-
-        [FreeFunction("PlayableOutputHandleBindings::SetSourceOutputPort", HasExplicitThis = true, ThrowsException = true)]
-        extern internal void SetSourceOutputPort(int port);
 
         [FreeFunction("PlayableOutputHandleBindings::GetWeight", HasExplicitThis = true, ThrowsException = true)]
         extern internal float GetWeight();

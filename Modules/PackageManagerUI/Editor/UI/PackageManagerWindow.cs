@@ -4,8 +4,10 @@
 
 using System;
 using System.Linq;
+using Mono.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.Scripting;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -20,10 +22,13 @@ namespace UnityEditor.PackageManager.UI
         [NonSerialized]
         private string PackageToSelectAfterLoad;
 
+        [NonSerialized]
+        private object FilterToSelectAfterLoad;
+
         internal static bool SkipFetchCacheForAllWindows;
 
         [SerializeField]
-        private PackageFilter LastUsedPackageFilter;
+        internal PackageFilter LastUsedPackageFilter;
 
         public void OnEnable()
         {
@@ -191,9 +196,16 @@ namespace UnityEditor.PackageManager.UI
         private void OnPackagesLoaded()
         {
             PackageManagerToolbar.SetEnabled(true);
-            SelectionManager.SetSelection(PackageToSelectAfterLoad);
-            PackageManagerToolbar.SetFilter(Collection.Filter);
+
+            if (!string.IsNullOrEmpty(PackageToSelectAfterLoad) || FilterToSelectAfterLoad != null)
+            {
+                if (FilterToSelectAfterLoad != null)
+                    PackageManagerToolbar.SetFilter(FilterToSelectAfterLoad);
+                SelectionManager.SetSelection(PackageToSelectAfterLoad, FilterToSelectAfterLoad, true);
+            }
+
             PackageToSelectAfterLoad = null;
+            FilterToSelectAfterLoad = null;
         }
 
         private VisualElementCache Cache { get; set; }
@@ -222,18 +234,37 @@ namespace UnityEditor.PackageManager.UI
         [MenuItem("Window/Package Manager", priority = 1500)]
         internal static void ShowPackageManagerWindow(MenuCommand item)
         {
+            OpenPackageManager(item.context?.name);
+        }
+
+        [UsedByNativeCode]
+        internal static void OpenPackageManager(string packageIdOrDisplayName)
+        {
+            SelectPackageAndFilter(packageIdOrDisplayName);
+        }
+
+        internal static void SelectPackageAndFilter(string packageIdOrDisplayName, object filter = null, bool refresh = false)
+        {
             SkipFetchCacheForAllWindows = false;
             var window = GetWindow<PackageManagerWindow>(false, "Packages", true);
             window.minSize = new Vector2(700, 250);
-            if (item.context != null)
+            if (!string.IsNullOrEmpty(packageIdOrDisplayName) || filter is PackageFilter)
             {
-                if (window.Collection != null && window.Collection.LatestListPackages.Any())
+                if (window.Collection != null && window.Collection.LatestListPackages.Any() && !refresh)
                 {
-                    window.SelectionManager.SetSelection(item.context.name);
-                    window.PackageList.EnsureSelectionIsVisible();
+                    window.SelectionManager.SetSelection(packageIdOrDisplayName, filter);
                 }
                 else
-                    window.PackageToSelectAfterLoad = item.context.name;
+                {
+                    window.FilterToSelectAfterLoad = filter;
+                    window.PackageToSelectAfterLoad = packageIdOrDisplayName;
+                    if (refresh)
+                    {
+                        window.Collection.FetchListOfflineCache(true);
+                        window.Collection.FetchListCache(true);
+                        window.Collection.FetchSearchCache(true);
+                    }
+                }
             }
             window.Show();
         }

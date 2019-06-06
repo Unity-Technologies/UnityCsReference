@@ -8,11 +8,16 @@ namespace UnityEditorInternal
 {
     [NativeHeader("Editor/Src/RenderDoc/RenderDoc.h")]
     [StaticAccessor("RenderDoc", StaticAccessorType.DoubleColon)]
-    internal partial class RenderDoc
+    public static partial class RenderDoc
     {
         public static extern bool IsInstalled();
         public static extern bool IsLoaded();
         public static extern bool IsSupported();
         public static extern void Load();
+
+        public static void BeginCaptureRenderDoc(UnityEditor.EditorWindow window)
+            => window.m_Parent.BeginCaptureRenderDoc();
+        public static void EndCaptureRenderDoc(UnityEditor.EditorWindow window)
+            => window.m_Parent.EndCaptureRenderDoc();
     }
 }

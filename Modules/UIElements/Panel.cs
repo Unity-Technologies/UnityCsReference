@@ -120,6 +120,8 @@ namespace UnityEngine.UIElements
         VisualElement Pick(Vector2 point);
 
         VisualElement PickAll(Vector2 point, List<VisualElement> picked);
+
+        ContextualMenuManager contextualMenuManager { get; }
     }
 
     abstract class BaseVisualElementPanel : IPanel, IRuntimePanel
@@ -182,9 +184,11 @@ namespace UnityEngine.UIElements
         internal abstract void OnVersionChanged(VisualElement ele, VersionChangeType changeTypeFlag);
         internal abstract void SetUpdater(IVisualTreeUpdater updater, VisualTreeUpdatePhase phase);
 
+        // Need virtual for tests
         internal virtual RepaintData repaintData { get; set; }
+        // Need virtual for tests
         internal virtual ICursorManager cursorManager { get; set; }
-        internal virtual ContextualMenuManager contextualMenuManager { get; set; }
+        public ContextualMenuManager contextualMenuManager { get; internal set; }
 
         //IPanel
         public abstract VisualElement visualTree { get; }

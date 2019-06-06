@@ -25,5 +25,10 @@ namespace UnityEditor.PackageManager.UI
         {
             return new UpmRemoveOperation();
         }
+
+        public IEmbedOperation CreateEmbedOperation()
+        {
+            return new UpmEmbedOperation();
+        }
     }
 }

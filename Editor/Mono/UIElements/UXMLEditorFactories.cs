@@ -44,6 +44,7 @@ namespace UnityEditor.UIElements
                 new ToolbarMenu.UxmlFactory(),
                 new ToolbarSearchField.UxmlFactory(),
                 new ToolbarPopupSearchField.UxmlFactory(),
+                new ToolbarBreadcrumbs.UxmlFactory(),
                 // Bound
                 new PropertyField.UxmlFactory(),
                 new InspectorElement.UxmlFactory(),

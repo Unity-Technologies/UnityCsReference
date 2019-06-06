@@ -18,6 +18,7 @@ namespace UnityEngine.UIElements
         StyleEnum<FlexDirection> flexDirection { get; set; }
         StyleEnum<Wrap> flexWrap { get; set; }
         StyleEnum<Overflow> overflow { get; set; }
+        StyleEnum<OverflowClipBox> unityOverflowClipBox { get; set; }
         StyleLength left { get; set; }
         StyleLength top { get; set; }
         StyleLength right { get; set; }

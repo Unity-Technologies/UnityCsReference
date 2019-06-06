@@ -22,12 +22,12 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        // There can only be one package add/remove operation.
-        private static IBaseOperation addRemoveOperationInstance;
+        // There can only be one package operation.
+        private static IBaseOperation packageOperationInstance;
 
-        public static bool AddRemoveOperationInProgress
+        public static bool PackageOperationInProgress
         {
-            get { return addRemoveOperationInstance != null && !addRemoveOperationInstance.IsCompleted; }
+            get { return packageOperationInstance != null && !packageOperationInstance.IsCompleted; }
         }
 
         internal const string packageManagerUIName = "com.unity.package-manager-ui";
@@ -152,7 +152,7 @@ namespace UnityEditor.PackageManager.UI
 
         public bool AnyInDevelopment
         {
-            get { return Current != null && Current.IsInDevelopment; }
+            get { return Versions.Any(info => info.IsInDevelopment); }
         }
 
         public bool Equals(Package other)
@@ -175,11 +175,11 @@ namespace UnityEditor.PackageManager.UI
 
         internal void Add(PackageInfo packageInfo)
         {
-            if (packageInfo == Current || AddRemoveOperationInProgress)
+            if (packageInfo == Current || PackageOperationInProgress)
                 return;
 
             var operation = OperationFactory.Instance.CreateAddOperation();
-            addRemoveOperationInstance = operation;
+            packageOperationInstance = operation;
             OnAddOperationFinalizedEvent = () =>
             {
                 AddSignal.Operation = null;
@@ -200,10 +200,10 @@ namespace UnityEditor.PackageManager.UI
 
         internal static void AddFromUrl(string url)
         {
-            if (AddRemoveOperationInProgress)
+            if (PackageOperationInProgress)
                 return;
             var operation = OperationFactory.Instance.CreateAddOperation();
-            addRemoveOperationInstance = operation;
+            packageOperationInstance = operation;
             // convert SCP-like syntax to SSH URL as currently UPM doesn't support it
             if (url.ToLower().StartsWith("git@"))
                 url = "ssh://" + url.Replace(':', '/');
@@ -212,7 +212,7 @@ namespace UnityEditor.PackageManager.UI
 
         internal static void AddFromLocalDisk(string path)
         {
-            if (AddRemoveOperationInProgress)
+            if (PackageOperationInProgress)
                 return;
 
             var packageJson = PackageJsonHelper.Load(path);
@@ -223,7 +223,7 @@ namespace UnityEditor.PackageManager.UI
             }
 
             var operation = OperationFactory.Instance.CreateAddOperation();
-            addRemoveOperationInstance = operation;
+            packageOperationInstance = operation;
             operation.AddPackageAsync(packageJson.PackageInfo);
         }
 
@@ -234,11 +234,11 @@ namespace UnityEditor.PackageManager.UI
 
         public void Remove()
         {
-            if (Current == null || AddRemoveOperationInProgress)
+            if (Current == null || PackageOperationInProgress)
                 return;
 
             var operation = OperationFactory.Instance.CreateRemoveOperation();
-            addRemoveOperationInstance = operation;
+            packageOperationInstance = operation;
             OnRemoveOperationFinalizedEvent = () =>
             {
                 RemoveSignal.Operation = null;
@@ -250,6 +250,38 @@ namespace UnityEditor.PackageManager.UI
             RemoveSignal.SetOperation(operation);
 
             operation.RemovePackageAsync(Current);
+        }
+
+        [SerializeField]
+        internal readonly OperationSignal<IEmbedOperation> EmbedSignal = new OperationSignal<IEmbedOperation>();
+
+        private Action OnEmbedOperationFinalizedEvent;
+        private Action<PackageInfo> OnEmbedOperationSuccessEvent;
+
+        public void Embed(Action<PackageInfo> onSuccess = null)
+        {
+            if (Current == null || PackageOperationInProgress)
+                return;
+
+            var operation = OperationFactory.Instance.CreateEmbedOperation();
+            packageOperationInstance = operation;
+            OnEmbedOperationFinalizedEvent = () =>
+            {
+                EmbedSignal.Operation = null;
+                operation.OnOperationFinalized -= OnEmbedOperationFinalizedEvent;
+            };
+
+            OnEmbedOperationSuccessEvent = info =>
+            {
+                onSuccess?.Invoke(info);
+                operation.OnOperationSuccess -= OnEmbedOperationSuccessEvent;
+            };
+
+            operation.OnOperationSuccess += OnEmbedOperationSuccessEvent;
+            operation.OnOperationFinalized += OnEmbedOperationFinalizedEvent;
+            EmbedSignal.SetOperation(operation);
+
+            operation.EmbedPackageAsync(Current);
         }
     }
 }

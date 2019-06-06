@@ -36,6 +36,9 @@ namespace UnityEngine
         [FreeFunction(Name = "MeshScripting::GetIndexCount", HasExplicitThis = true)]
         extern private UInt32 GetIndexCountImpl(int submesh);
 
+        [FreeFunction(Name = "MeshScripting::GetTrianglesCount", HasExplicitThis = true)]
+        extern private UInt32 GetTrianglesCountImpl(int submesh);
+
         [FreeFunction(Name = "MeshScripting::GetBaseVertex", HasExplicitThis = true)]
         extern private UInt32 GetBaseVertexImpl(int submesh);
 
@@ -50,6 +53,9 @@ namespace UnityEngine
 
         [FreeFunction(Name = "MeshScripting::ExtractTrianglesToArray", HasExplicitThis = true)]
         extern private void GetTrianglesNonAllocImpl([Out] int[] values, int submesh, bool applyBaseVertex);
+
+        [FreeFunction(Name = "MeshScripting::ExtractTrianglesToArray16", HasExplicitThis = true)]
+        extern private void GetTrianglesNonAllocImpl16([Out] ushort[] values, int submesh, bool applyBaseVertex);
 
         [FreeFunction(Name = "MeshScripting::ExtractIndicesToArray", HasExplicitThis = true)]
         extern private void GetIndicesNonAllocImpl([Out] int[] values, int submesh, bool applyBaseVertex);

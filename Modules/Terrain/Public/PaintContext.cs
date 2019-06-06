@@ -118,6 +118,7 @@ namespace UnityEngine.Experimental.TerrainAPI
             None = 0,
             PaintHeightmap = 1 << 0,
             PaintTexture = 1 << 1,
+            PaintSurfaceMask = 1 << 2
         }
 
         // TerrainPaintUtilityEditor hooks to this event to do automatic undo
@@ -391,6 +392,27 @@ namespace UnityEngine.Experimental.TerrainAPI
                 "PaintContext.ScatterHeightmap");
         }
 
+        public void GatherSurfaceMask()
+        {
+            GatherInternal(
+                t => t.terrain.terrainData.surfaceMaskTexture,
+                new Color(0.0f, 0.0f, 0.0f, 0.0f),
+                "PaintContext.GatherSurfaceMask");
+        }
+
+        public void ScatterSurfaceMask(string editorUndoName)
+        {
+            ScatterInternal(
+                t =>
+                {
+                    onTerrainTileBeforePaint?.Invoke(t, ToolAction.PaintSurfaceMask, editorUndoName);
+                    t.terrain.terrainData.CopyActiveRenderTextureToTexture(TerrainData.SurfaceMaskTextureName, 0, t.clippedPCPixels, t.clippedTerrainPixels.min, true);
+                    OnTerrainPainted(t, ToolAction.PaintSurfaceMask);
+                    return null;
+                },
+                "PaintContext.ScatterSurfaceMask");
+        }
+
         public void GatherNormals()
         {
             GatherInternal(
@@ -574,6 +596,11 @@ namespace UnityEngine.Experimental.TerrainAPI
                 if ((pt.action & ToolAction.PaintHeightmap) != 0)
                 {
                     terrainData.SyncHeightmap();
+                    pt.terrain.editorRenderFlags = TerrainRenderFlags.All;
+                }
+                if ((pt.action & ToolAction.PaintSurfaceMask) != 0)
+                {
+                    terrainData.SyncTexture(TerrainData.SurfaceMaskTextureName);
                     pt.terrain.editorRenderFlags = TerrainRenderFlags.All;
                 }
                 if ((pt.action & ToolAction.PaintTexture) != 0)

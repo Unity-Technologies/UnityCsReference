@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.IO;
+using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
@@ -93,13 +95,50 @@ namespace UnityEditor.PackageManager.UI
             AddMenu.menu.AppendAction("Add package from disk...", a =>
             {
                 var path = EditorUtility.OpenFilePanelWithFilters("Select package on disk", "", new[] { "package.json file", "json" });
-                if (!string.IsNullOrEmpty(path) && !Package.AddRemoveOperationInProgress)
+                if (!string.IsNullOrEmpty(path) && !Package.PackageOperationInProgress)
                     Package.AddFromLocalDisk(path);
             }, a => DropdownMenuAction.Status.Normal);
 
             AddMenu.menu.AppendAction("Add package from git URL...", a =>
             {
-                PackageAddFromUrlField.Show(parent);
+                var addFromGitUrl = new PackagesAction("Add");
+                addFromGitUrl.actionClicked += url =>
+                {
+                    addFromGitUrl.Hide();
+                    if (!Package.PackageOperationInProgress)
+                    {
+                        Package.AddFromUrl(url);
+                    }
+                };
+
+                parent.Add(addFromGitUrl);
+                addFromGitUrl.Show();
+            }, a => DropdownMenuAction.Status.Normal);
+
+            AddMenu.menu.AppendSeparator("");
+
+            AddMenu.menu.AppendAction("Create Package...", a =>
+            {
+                var defaultName = PackageCreator.GenerateUniquePackageDisplayName("New Package");
+                var createPackage = new PackagesAction("Create", defaultName);
+                createPackage.actionClicked += displayName =>
+                {
+                    createPackage.Hide();
+                    var packagePath = PackageCreator.CreatePackage("Packages/" + displayName);
+                    AssetDatabase.Refresh();
+                    EditorApplication.delayCall += () =>
+                    {
+                        var path = Path.Combine(packagePath, "package.json");
+                        var o = AssetDatabase.LoadMainAssetAtPath(path);
+                        if (o != null)
+                            UnityEditor.Selection.activeObject = o;
+
+                        PackageManagerWindow.SelectPackageAndFilter(displayName, PackageFilter.InDevelopment, true);
+                    };
+                };
+
+                parent.Add(createPackage);
+                createPackage.Show();
             }, a => DropdownMenuAction.Status.Normal);
         }
 

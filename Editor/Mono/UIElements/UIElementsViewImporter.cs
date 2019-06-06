@@ -13,17 +13,37 @@ using ExCSS;
 using UnityEditor.Experimental.AssetImporters;
 using UnityEditor.StyleSheets;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 using UnityEngine.UIElements;
-
 using StyleSheet = UnityEngine.UIElements.StyleSheet;
 
 namespace UnityEditor.UIElements
 {
     // Make sure UXML is imported after assets than can be addressed in USS
-    [ScriptedImporter(version: 6, ext: "uxml", importQueueOffset: 1000)]
+    [ScriptedImporter(version: 6, ext: "uxml", importQueueOffset: 1100)]
     internal class UIElementsViewImporter : ScriptedImporter
     {
+        // Parses the XML file to figure out dependencies to other UXML/USS files
+        static string[] GatherDependenciesFromSourceFile(string assetPath)
+        {
+            XDocument doc;
+
+            try
+            {
+                doc = XDocument.Parse(File.ReadAllText(assetPath), LoadOptions.SetLineInfo);
+            }
+            catch (Exception)
+            {
+                // We want to be silent here, all XML syntax errors will be reported during the actual import
+                return new string[] {};
+            }
+            var dependencies = new List<string>();
+            UXMLImporterImpl.PopulateDependencies(assetPath, doc.Root, dependencies);
+
+            return dependencies.ToArray();
+        }
+
         public override void OnImportAsset(AssetImportContext args)
         {
             if (args == null)
@@ -93,9 +113,12 @@ namespace UnityEditor.UIElements
                     case ImportErrorCode.TemplateInstanceHasEmptySource:
                         return "'" + k_TemplateInstanceNode + "' declaration requires a non-empty '" +
                             k_TemplateInstanceSourceAttr + "' attribute";
-                    case ImportErrorCode.MissingPathAttributeOnTemplate:
-                        return "'" + k_TemplateNode + "' declaration requires a '" + k_TemplatePathAttr +
-                            "' attribute referencing another uxml file";
+                    case ImportErrorCode.TemplateMissingPathOrSrcAttribute:
+                        return "'" + k_TemplateNode + "' declaration requires a '" + k_GenericPathAttr + "' or '" + k_GenericSrcAttr +
+                            "' attribute referencing another UXML file";
+                    case ImportErrorCode.TemplateSrcAndPathBothSpecified:
+                        return "'" + k_TemplateNode + "' declaration does not accept both '" + k_GenericSrcAttr + "' and '" + k_GenericPathAttr +
+                            "' attributes";
                     case ImportErrorCode.DuplicateTemplateName:
                         return "Duplicate name '{0}'";
                     case ImportErrorCode.UnknownTemplate:
@@ -106,8 +129,12 @@ namespace UnityEditor.UIElements
                         return "Unknown attribute: '{0}'";
                     case ImportErrorCode.InvalidCssInStyleAttribute:
                         return "USS in 'style' attribute is invalid: {0}";
-                    case ImportErrorCode.StyleReferenceEmptyOrMissingPathAttr:
-                        return "USS in 'style' attribute is invalid: {0}";
+                    case ImportErrorCode.StyleReferenceEmptyOrMissingPathOrSrcAttr:
+                        return "'" + k_StyleReferenceNode + "' declaration requires a '" + k_GenericPathAttr + "' or '" + k_GenericSrcAttr +
+                            "' attribute referencing a USS file";
+                    case ImportErrorCode.StyleReferenceSrcAndPathBothSpecified:
+                        return "'" + k_StyleReferenceNode + "' declaration does not accept both '" + k_GenericSrcAttr + "' and '" + k_GenericPathAttr +
+                            "' attributes";
                     case ImportErrorCode.SlotsAreExperimental:
                         return "Slot are an experimental feature. Syntax and semantic may change in the future.";
                     case ImportErrorCode.DuplicateSlotDefinition:
@@ -126,6 +153,14 @@ namespace UnityEditor.UIElements
                         return "Please use '{0}' instead";
                     case ImportErrorCode.AttributeOverridesMissingElementNameAttr:
                         return "AttributeOverrides node missing 'element-name' attribute.";
+                    case ImportErrorCode.ReferenceInvalidURILocation:
+                        return "The specified URL is empty or invalid : {0}";
+                    case ImportErrorCode.ReferenceInvalidURIScheme:
+                        return "The scheme specified for the URI is invalid : {0}";
+                    case ImportErrorCode.ReferenceInvalidURIProjectAssetPath:
+                        return "The specified URI does not exist in the current project : {0}";
+                    case ImportErrorCode.ReferenceInvalidAssetType:
+                        return "The specified URI refers to an invalid asset : {0}";
                     default:
                         throw new ArgumentOutOfRangeException("Unhandled error code " + errorCode);
                 }
@@ -156,6 +191,11 @@ namespace UnityEditor.UIElements
             internal virtual void BeginImport(string path)
             {
                 m_Path = path;
+                // UXML files can be re-imported several times in the same refresh
+                // therefore we make sure that previously reported errors are gone.
+                // Even though dependency order will eventually be honoured
+                // some files are unexpectedly getting imported before their dependencies.
+                m_Errors.RemoveAll(e => e.filePath == path);
             }
 
             private void LogError(VisualTreeAsset obj, Error error)
@@ -213,15 +253,17 @@ namespace UnityEditor.UIElements
             }
         }
 
+
+        const string k_GenericPathAttr = "path";
+        const string k_GenericSrcAttr = "src";
+
         const StringComparison k_Comparison = StringComparison.InvariantCulture;
         public const string k_RootNode = "UXML";
         const string k_TemplateNode = "Template";
         const string k_TemplateNameAttr = "name";
-        const string k_TemplatePathAttr = "path";
         const string k_TemplateInstanceNode = "Instance";
         const string k_TemplateInstanceSourceAttr = "template";
         const string k_StyleReferenceNode = "Style";
-        const string k_StylePathAttr = "path";
         const string k_SlotDefinitionAttr = "slot-name";
         const string k_SlotUsageAttr = "slot";
         const string k_AttributeOverridesNode = "AttributeOverrides";
@@ -237,7 +279,8 @@ namespace UnityEditor.UIElements
 
         public void Import(out VisualTreeAsset asset)
         {
-            // TODO where is the EndImport matching this?
+            // Errors from this import will only be logged inside a post-processor.
+            // This guarantees that all files were imported in the correct order before logging any errors.
             logger.BeginImport(assetPath);
             ImportXml(assetPath, out asset);
         }
@@ -354,15 +397,21 @@ namespace UnityEditor.UIElements
         void LoadTemplateNode(VisualTreeAsset vta, XElement elt, XElement child)
         {
             bool hasPath = false;
+            bool hasSrc = false;
             string name = null;
             string path = null;
+            string src = null;
             foreach (var xAttribute in child.Attributes())
             {
                 switch (xAttribute.Name.LocalName)
                 {
-                    case k_TemplatePathAttr:
+                    case k_GenericPathAttr:
                         hasPath = true;
                         path = xAttribute.Value;
+                        break;
+                    case k_GenericSrcAttr:
+                        hasSrc = true;
+                        src = xAttribute.Value;
                         break;
                     case k_TemplateNameAttr:
                         name = xAttribute.Value;
@@ -387,10 +436,10 @@ namespace UnityEditor.UIElements
                 }
             }
 
-            if (!hasPath)
+            if (hasPath == hasSrc)
             {
                 logger.LogError(ImportErrorType.Semantic,
-                    ImportErrorCode.MissingPathAttributeOnTemplate,
+                    hasPath ? ImportErrorCode.TemplateSrcAndPathBothSpecified : ImportErrorCode.TemplateMissingPathOrSrcAttribute,
                     null,
                     Error.Level.Fatal,
                     elt
@@ -412,7 +461,95 @@ namespace UnityEditor.UIElements
                 return;
             }
 
-            vta.RegisterTemplate(name, path);
+            if (hasPath)
+            {
+                vta.RegisterTemplate(name, path);
+            }
+            else if (hasSrc)
+            {
+                string errorMessage, projectRelativePath;
+
+                URIValidationResult result = URIHelpers.ValidAssetURL(assetPath, src, out errorMessage, out projectRelativePath);
+
+                if (result != URIValidationResult.OK)
+                {
+                    logger.LogError(ImportErrorType.Semantic, ConvertErrorCode(result), errorMessage, Error.Level.Fatal, elt);
+                }
+                else
+                {
+                    Object asset = DeclareDependencyAndLoad(projectRelativePath);
+
+                    if (asset is VisualTreeAsset)
+                    {
+                        vta.RegisterTemplate(name, asset as VisualTreeAsset);
+                    }
+                    else
+                    {
+                        logger.LogError(ImportErrorType.Semantic, ImportErrorCode.ReferenceInvalidAssetType, projectRelativePath, Error.Level.Fatal, elt);
+                    }
+                }
+            }
+        }
+
+        static ImportErrorCode ConvertErrorCode(URIValidationResult result)
+        {
+            switch (result)
+            {
+                case URIValidationResult.InvalidURILocation:
+                    return ImportErrorCode.ReferenceInvalidURILocation;
+                case URIValidationResult.InvalidURIScheme:
+                    return ImportErrorCode.ReferenceInvalidURIScheme;
+                case URIValidationResult.InvalidURIProjectAssetPath:
+                    return ImportErrorCode.ReferenceInvalidURIProjectAssetPath;
+                default:
+                    throw new ArgumentOutOfRangeException(result.ToString());
+            }
+        }
+
+        static void AddDependency(string assetPath, XElement templateNode, List<string> dependencies)
+        {
+            bool hasSrc = false;
+            string src = null;
+
+            foreach (var xAttribute in templateNode.Attributes())
+            {
+                switch (xAttribute.Name.LocalName)
+                {
+                    case k_GenericSrcAttr:
+                        hasSrc = true;
+                        src = xAttribute.Value;
+                        break;
+                }
+            }
+
+            if (hasSrc)
+            {
+                string errorMessage, projectRelativePath;
+
+                URIValidationResult result = URIHelpers.ValidAssetURL(assetPath, src, out errorMessage, out projectRelativePath);
+
+                if (result == URIValidationResult.OK)
+                {
+                    dependencies.Add(projectRelativePath);
+                }
+            }
+        }
+
+        internal static void PopulateDependencies(string assetPath, XElement elt, List<string> dependencies)
+        {
+            foreach (var child in elt.Elements())
+            {
+                switch (child.Name.LocalName)
+                {
+                    case k_TemplateNode:
+                    case k_StyleReferenceNode:
+                        AddDependency(assetPath, child, dependencies);
+                        break;
+                    default:
+                        PopulateDependencies(assetPath, child, dependencies);
+                        continue;
+                }
+            }
         }
 
         void LoadXml(XElement elt, VisualElementAsset parent, VisualTreeAsset vta, int orderInDocument)
@@ -470,13 +607,46 @@ namespace UnityEditor.UIElements
 
         void LoadStyleReferenceNode(VisualElementAsset vea, XElement styleElt)
         {
-            XAttribute pathAttr = styleElt.Attribute(k_StylePathAttr);
-            if (pathAttr == null || String.IsNullOrEmpty(pathAttr.Value))
+            XAttribute pathAttr = styleElt.Attribute(k_GenericPathAttr);
+            bool hasPath = pathAttr != null && !String.IsNullOrEmpty(pathAttr.Value);
+
+            XAttribute srcAttr = styleElt.Attribute(k_GenericSrcAttr);
+            bool hasSrc = srcAttr != null && !String.IsNullOrEmpty(srcAttr.Value);
+
+            if (hasPath == hasSrc)
             {
-                logger.LogError(ImportErrorType.Semantic, ImportErrorCode.StyleReferenceEmptyOrMissingPathAttr, null, Error.Level.Warning, styleElt);
+                logger.LogError(ImportErrorType.Semantic, hasPath ? ImportErrorCode.StyleReferenceSrcAndPathBothSpecified : ImportErrorCode.StyleReferenceEmptyOrMissingPathOrSrcAttr, null, Error.Level.Warning, styleElt);
                 return;
             }
-            vea.stylesheets.Add(pathAttr.Value);
+
+            if (hasPath)
+            {
+                vea.stylesheetPaths.Add(pathAttr.Value);
+            }
+            else if (hasSrc)
+            {
+                string errorMessage, projectRelativePath;
+
+                URIValidationResult result = URIHelpers.ValidAssetURL(assetPath, srcAttr.Value, out errorMessage, out projectRelativePath);
+
+                if (result != URIValidationResult.OK)
+                {
+                    logger.LogError(ImportErrorType.Semantic, ConvertErrorCode(result), errorMessage, Error.Level.Fatal, styleElt);
+                }
+                else
+                {
+                    Object asset = DeclareDependencyAndLoad(projectRelativePath);
+
+                    if (asset is StyleSheet)
+                    {
+                        vea.stylesheets.Add(asset as StyleSheet);
+                    }
+                    else
+                    {
+                        logger.LogError(ImportErrorType.Semantic, ImportErrorCode.ReferenceInvalidAssetType, projectRelativePath, Error.Level.Fatal, styleElt);
+                    }
+                }
+            }
         }
 
         void LoadAttributeOverridesNode(TemplateAsset templateAsset, XElement attributeOverridesElt)
@@ -648,10 +818,12 @@ namespace UnityEditor.UIElements
         UnknownAttribute,
         InvalidXml,
         InvalidCssInStyleAttribute,
-        MissingPathAttributeOnTemplate,
+        TemplateMissingPathOrSrcAttribute,
+        TemplateSrcAndPathBothSpecified,
         TemplateHasEmptyName,
         TemplateInstanceHasEmptySource,
-        StyleReferenceEmptyOrMissingPathAttr,
+        StyleReferenceEmptyOrMissingPathOrSrcAttr,
+        StyleReferenceSrcAndPathBothSpecified,
         SlotsAreExperimental,
         DuplicateSlotDefinition,
         SlotUsageInNonTemplate,
@@ -660,7 +832,11 @@ namespace UnityEditor.UIElements
         DuplicateContentContainer,
         DeprecatedAttributeName,
         ReplaceByAttributeName,
-        AttributeOverridesMissingElementNameAttr
+        AttributeOverridesMissingElementNameAttr,
+        ReferenceInvalidURILocation,
+        ReferenceInvalidURIScheme,
+        ReferenceInvalidURIProjectAssetPath,
+        ReferenceInvalidAssetType
     }
 
     internal enum ImportErrorType

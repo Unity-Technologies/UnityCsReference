@@ -18,6 +18,7 @@ namespace UnityEngine.Experimental.TerrainAPI
             SetHeights,
             SmoothHeights,
             PaintTexture,
+            PaintSurfaceMask
         }
 
         private static Material s_BuiltinPaintMaterial = null;
@@ -149,6 +150,20 @@ namespace UnityEngine.Experimental.TerrainAPI
         public static void EndPaintHeightmap(PaintContext ctx, string editorUndoName)
         {
             ctx.ScatterHeightmap(editorUndoName);
+            ctx.Cleanup();
+        }
+
+        public static PaintContext BeginPaintSurfaceMask(Terrain terrain, Rect boundsInTerrainSpace, int extraBorderPixels = 0)
+        {
+            int surfaceMaskResolution = terrain.terrainData.surfaceMaskResolution;
+            PaintContext ctx = InitializePaintContext(terrain, surfaceMaskResolution, surfaceMaskResolution, Terrain.surfaceMaskRenderTextureFormat, boundsInTerrainSpace, extraBorderPixels);
+            ctx.GatherSurfaceMask();
+            return ctx;
+        }
+
+        public static void EndPaintSurfaceMask(PaintContext ctx, string editorUndoName)
+        {
+            ctx.ScatterSurfaceMask(editorUndoName);
             ctx.Cleanup();
         }
 

@@ -36,6 +36,7 @@ namespace UnityEngine.UIElements.StyleSheets
         internal StyleFloat flexShrink;
         internal StyleFloat flexGrow;
         internal StyleInt overflow;
+        internal StyleInt unityOverflowClipBox;
         internal StyleLength left;
         internal StyleLength top;
         internal StyleLength right;
@@ -130,6 +131,7 @@ namespace UnityEngine.UIElements.StyleSheets
             flexGrow.Apply(other.flexGrow, mode);
             flexShrink.Apply(other.flexShrink, mode);
             overflow.Apply(other.overflow, mode);
+            unityOverflowClipBox.Apply(other.unityOverflowClipBox, mode);
             left.Apply(other.left, mode);
             top.Apply(other.top, mode);
             right.Apply(other.right, mode);
@@ -478,6 +480,10 @@ namespace UnityEngine.UIElements.StyleSheets
 
                 case StylePropertyID.Overflow:
                     applicator.ApplyEnum<OverflowInternal>(sheet, handles, specificity, ref overflow);
+                    break;
+
+                case StylePropertyID.OverflowClipBox:
+                    applicator.ApplyEnum<OverflowClipBox>(sheet, handles, specificity, ref unityOverflowClipBox);
                     break;
 
                 case StylePropertyID.PaddingLeft:

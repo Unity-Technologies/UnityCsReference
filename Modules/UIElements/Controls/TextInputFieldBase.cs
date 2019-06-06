@@ -290,7 +290,6 @@ namespace UnityEngine.UIElements
                 m_Text = string.Empty;
                 name = TextField.textInputUssName;
 
-
                 requireMeasureFunction = true;
 
                 editorEngine = new TextEditorEngine(OnDetectFocusChange, OnCursorIndexChange);
@@ -422,6 +421,10 @@ namespace UnityEngine.UIElements
 
             internal void DrawWithTextSelectionAndCursor(MeshGenerationContext mgc, string newText)
             {
+                var playmodeTintColor = panel.contextType == ContextType.Editor
+                    ? UIElementsUtility.editorPlayModeTintColor
+                    : Color.white;
+
                 var keyboardTextEditor = editorEventHandler as KeyboardTextEditorEventHandler;
                 if (keyboardTextEditor == null)
                     return;
@@ -488,7 +491,8 @@ namespace UnityEngine.UIElements
                         mgc.Rectangle(new MeshGenerationContextUtils.RectangleParams()
                         {
                             rect = new Rect(minPos.x, minPos.y, maxPos.x - minPos.x, lineHeight),
-                            color = selectionColor
+                            color = selectionColor,
+                            playmodeTintColor = playmodeTintColor
                         });
                     }
                     else
@@ -497,7 +501,8 @@ namespace UnityEngine.UIElements
                         mgc.Rectangle(new MeshGenerationContextUtils.RectangleParams()
                         {
                             rect = new Rect(minPos.x, minPos.y, contentRect.xMax - minPos.x, lineHeight),
-                            color = selectionColor
+                            color = selectionColor,
+                            playmodeTintColor = playmodeTintColor
                         });
 
                         var inbetweenHeight = (maxPos.y - minPos.y) - lineHeight;
@@ -507,7 +512,8 @@ namespace UnityEngine.UIElements
                             mgc.Rectangle(new MeshGenerationContextUtils.RectangleParams()
                             {
                                 rect = new Rect(contentRect.xMin, minPos.y + lineHeight, contentRect.width, inbetweenHeight),
-                                color = selectionColor
+                                color = selectionColor,
+                                playmodeTintColor = playmodeTintColor
                             });
                         }
 
@@ -517,7 +523,8 @@ namespace UnityEngine.UIElements
                             mgc.Rectangle(new MeshGenerationContextUtils.RectangleParams()
                             {
                                 rect = new Rect(contentRect.xMin, maxPos.y, maxPos.x, lineHeight),
-                                color = selectionColor
+                                color = selectionColor,
+                                playmodeTintColor = playmodeTintColor
                             });
                         }
                     }
@@ -549,7 +556,8 @@ namespace UnityEngine.UIElements
                         mgc.Rectangle(new MeshGenerationContextUtils.RectangleParams
                         {
                             rect = new Rect(cursorPosition.x, cursorPosition.y, 1f, lineHeight),
-                            color = drawCursorColor
+                            color = drawCursorColor,
+                            playmodeTintColor = playmodeTintColor
                         });
                     }
 
@@ -567,7 +575,8 @@ namespace UnityEngine.UIElements
                         mgc.Rectangle(new MeshGenerationContextUtils.RectangleParams
                         {
                             rect = new Rect(altCursorPosition.x, altCursorPosition.y, 1f, lineHeight),
-                            color = drawCursorColor
+                            color = drawCursorColor,
+                            playmodeTintColor = playmodeTintColor
                         });
                     }
                 }

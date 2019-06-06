@@ -13,8 +13,7 @@ namespace UnityEngine.Playables
         static public void Play(Animator animator, Playable playable, PlayableGraph graph)
         {
             AnimationPlayableOutput playableOutput = AnimationPlayableOutput.Create(graph, "AnimationClip", animator);
-            playableOutput.SetSourcePlayable(playable);
-            playableOutput.SetSourceOutputPort(0);
+            playableOutput.SetSourcePlayable(playable, 0);
             graph.SyncUpdateAndTimeMode(animator);
             graph.Play();
         }

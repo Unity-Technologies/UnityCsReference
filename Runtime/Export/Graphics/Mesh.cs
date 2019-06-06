@@ -500,8 +500,20 @@ namespace UnityEngine
             if (submesh < 0 || submesh >= subMeshCount)
                 throw new IndexOutOfRangeException("Specified sub mesh is out of range. Must be greater or equal to 0 and less than subMeshCount.");
 
-            NoAllocHelpers.EnsureListElemCount(triangles, (int)GetIndexCount(submesh));
+            NoAllocHelpers.EnsureListElemCount(triangles, 3 * (int)GetTrianglesCountImpl(submesh));
             GetTrianglesNonAllocImpl(NoAllocHelpers.ExtractArrayFromListT(triangles), submesh, applyBaseVertex);
+        }
+
+        public void GetTriangles(List<ushort> triangles, int submesh, bool applyBaseVertex = true)
+        {
+            if (triangles == null)
+                throw new ArgumentNullException("The result triangles list cannot be null.", "triangles");
+
+            if (submesh < 0 || submesh >= subMeshCount)
+                throw new IndexOutOfRangeException("Specified sub mesh is out of range. Must be greater or equal to 0 and less than subMeshCount.");
+
+            NoAllocHelpers.EnsureListElemCount(triangles, 3 * (int)GetTrianglesCountImpl(submesh));
+            GetTrianglesNonAllocImpl16(NoAllocHelpers.ExtractArrayFromListT(triangles), submesh, applyBaseVertex);
         }
 
         [uei.ExcludeFromDocs]

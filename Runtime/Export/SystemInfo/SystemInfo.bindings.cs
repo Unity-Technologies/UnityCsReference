@@ -290,6 +290,18 @@ namespace UnityEngine
             get { return SupportsComputeShaders(); }
         }
 
+        // Are geometry shaders supported? (RO)
+        public static bool supportsGeometryShaders
+        {
+            get { return SupportsGeometryShaders(); }
+        }
+
+        // Are tessellation shaders supported? (RO)
+        public static bool supportsTessellationShaders
+        {
+            get { return SupportsTessellationShaders(); }
+        }
+
         // Is GPU draw call instancing supported? (RO)
         public static bool supportsInstancing
         {
@@ -324,7 +336,7 @@ namespace UnityEngine
             get { return SupportsSeparatedRenderTargetsBlend(); }
         }
 
-        internal static int supportedRandomWriteTargetCount
+        public static int supportedRandomWriteTargetCount
         {
             get { return SupportedRandomWriteTargetCount(); }
         }
@@ -423,6 +435,56 @@ namespace UnityEngine
         internal static int maxRenderTextureSize
         {
             get { return GetMaxRenderTextureSize(); }
+        }
+
+        public static int maxComputeBufferInputsVertex
+        {
+            get { return MaxComputeBufferInputsVertex(); }
+        }
+
+        public static int maxComputeBufferInputsFragment
+        {
+            get { return MaxComputeBufferInputsFragment(); }
+        }
+
+        public static int maxComputeBufferInputsGeometry
+        {
+            get { return MaxComputeBufferInputsGeometry(); }
+        }
+
+        public static int maxComputeBufferInputsDomain
+        {
+            get { return MaxComputeBufferInputsDomain(); }
+        }
+
+        public static int maxComputeBufferInputsHull
+        {
+            get { return MaxComputeBufferInputsHull(); }
+        }
+
+        public static int maxComputeBufferInputsCompute
+        {
+            get { return MaxComputeBufferInputsCompute(); }
+        }
+
+        public static int maxComputeWorkGroupSize
+        {
+            get { return GetMaxComputeWorkGroupSize(); }
+        }
+
+        public static int maxComputeWorkGroupSizeX
+        {
+            get { return GetMaxComputeWorkGroupSizeX(); }
+        }
+
+        public static int maxComputeWorkGroupSizeY
+        {
+            get { return GetMaxComputeWorkGroupSizeY(); }
+        }
+
+        public static int maxComputeWorkGroupSizeZ
+        {
+            get { return GetMaxComputeWorkGroupSizeZ(); }
         }
 
         public static bool supportsAsyncCompute
@@ -595,6 +657,12 @@ namespace UnityEngine
         [FreeFunction("ScriptingGraphicsCaps::SupportsComputeShaders")]
         static extern bool SupportsComputeShaders();
 
+        [FreeFunction("ScriptingGraphicsCaps::SupportsGeometryShaders")]
+        static extern bool SupportsGeometryShaders();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsTessellationShaders")]
+        static extern bool SupportsTessellationShaders();
+
         [FreeFunction("ScriptingGraphicsCaps::SupportsInstancing")]
         static extern bool SupportsInstancing();
 
@@ -615,6 +683,24 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportedRandomWriteTargetCount")]
         static extern int SupportedRandomWriteTargetCount();
+
+        [FreeFunction("ScriptingGraphicsCaps::MaxComputeBufferInputsVertex")]
+        static extern int MaxComputeBufferInputsVertex();
+
+        [FreeFunction("ScriptingGraphicsCaps::MaxComputeBufferInputsFragment")]
+        static extern int MaxComputeBufferInputsFragment();
+
+        [FreeFunction("ScriptingGraphicsCaps::MaxComputeBufferInputsGeometry")]
+        static extern int MaxComputeBufferInputsGeometry();
+
+        [FreeFunction("ScriptingGraphicsCaps::MaxComputeBufferInputsDomain")]
+        static extern int MaxComputeBufferInputsDomain();
+
+        [FreeFunction("ScriptingGraphicsCaps::MaxComputeBufferInputsHull")]
+        static extern int MaxComputeBufferInputsHull();
+
+        [FreeFunction("ScriptingGraphicsCaps::MaxComputeBufferInputsCompute")]
+        static extern int MaxComputeBufferInputsCompute();
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsMultisampledTextures")]
         static extern int SupportsMultisampledTextures();
@@ -648,6 +734,18 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::GetMaxRenderTextureSize")]
         static extern int GetMaxRenderTextureSize();
+
+        [FreeFunction("ScriptingGraphicsCaps::GetMaxComputeWorkGroupSize")]
+        static extern int GetMaxComputeWorkGroupSize();
+
+        [FreeFunction("ScriptingGraphicsCaps::GetMaxComputeWorkGroupSizeX")]
+        static extern int GetMaxComputeWorkGroupSizeX();
+
+        [FreeFunction("ScriptingGraphicsCaps::GetMaxComputeWorkGroupSizeY")]
+        static extern int GetMaxComputeWorkGroupSizeY();
+
+        [FreeFunction("ScriptingGraphicsCaps::GetMaxComputeWorkGroupSizeZ")]
+        static extern int GetMaxComputeWorkGroupSizeZ();
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsAsyncCompute")]
         static extern bool SupportsAsyncCompute();

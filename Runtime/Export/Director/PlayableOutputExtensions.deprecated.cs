@@ -15,10 +15,16 @@ namespace UnityEngine.Playables
             return output.GetHandle().GetSourceOutputPort();
         }
 
-        [Obsolete("Method SetSourceInputPort has been renamed to SetSourceOutputPort (UnityUpgradable) -> SetSourceOutputPort<U>(*)", false)]
+        [Obsolete("Method SetSourceInputPort has been deprecated. Use SetSourcePlayable(Playable, Port) instead.", false)]
         public static void SetSourceInputPort<U>(this U output, int value) where U : struct, IPlayableOutput
         {
-            output.GetHandle().SetSourceOutputPort(value);
+            SetSourcePlayable(output, GetSourcePlayable(output), value);
+        }
+
+        [Obsolete("Method SetSourceOutputPort has been deprecated. Use SetSourcePlayable(Playable, Port) instead.", false)]
+        public static void SetSourceOutputPort<U>(this U output, int value) where U : struct, IPlayableOutput
+        {
+            SetSourcePlayable(output, GetSourcePlayable(output), value);
         }
     }
 }

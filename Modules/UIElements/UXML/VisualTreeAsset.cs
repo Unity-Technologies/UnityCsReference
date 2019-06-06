@@ -30,10 +30,20 @@ namespace UnityEngine.UIElements
 
             [SerializeField] public string path;
 
+            [SerializeField] public VisualTreeAsset asset;
+
             public UsingEntry(string alias, string path)
             {
                 this.alias = alias;
                 this.path = path;
+                this.asset = null;
+            }
+
+            public UsingEntry(string alias, VisualTreeAsset asset)
+            {
+                this.alias = alias;
+                this.path = null;
+                this.asset = asset;
             }
         }
 
@@ -326,9 +336,12 @@ namespace UnityEngine.UIElements
         {
             if (m_Usings == null || m_Usings.Count == 0)
                 return null;
-            int index = m_Usings.BinarySearch(new UsingEntry(templateName, null), UsingEntry.comparer);
+            int index = m_Usings.BinarySearch(new UsingEntry(templateName, string.Empty), UsingEntry.comparer);
             if (index < 0)
                 return null;
+
+            if (m_Usings[index].asset)
+                return m_Usings[index].asset;
 
             string path = m_Usings[index].path;
             return Panel.LoadResource(path, typeof(VisualTreeAsset)) as VisualTreeAsset;
@@ -338,21 +351,31 @@ namespace UnityEngine.UIElements
         {
             if (m_Usings == null || m_Usings.Count == 0)
                 return false;
-            var index = m_Usings.BinarySearch(new UsingEntry(templateName, null), UsingEntry.comparer);
+            var index = m_Usings.BinarySearch(new UsingEntry(templateName, string.Empty), UsingEntry.comparer);
             return index >= 0;
         }
 
         internal void RegisterTemplate(string templateName, string path)
+        {
+            InsertUsingEntry(new UsingEntry(templateName, path));
+        }
+
+        internal void RegisterTemplate(string templateName, VisualTreeAsset asset)
+        {
+            InsertUsingEntry(new UsingEntry(templateName, asset));
+        }
+
+        private void InsertUsingEntry(UsingEntry entry)
         {
             if (m_Usings == null)
                 m_Usings = new List<UsingEntry>();
 
             // find insertion index so usings are sorted by alias
             int i = 0;
-            while (i < m_Usings.Count && templateName.CompareTo(m_Usings[i].alias) != -1)
+            while (i < m_Usings.Count && String.Compare(entry.alias, m_Usings[i].alias, StringComparison.Ordinal) != -1)
                 i++;
 
-            m_Usings.Insert(i, new UsingEntry(templateName, path));
+            m_Usings.Insert(i, entry);
         }
 
 
@@ -411,10 +434,16 @@ namespace UnityEngine.UIElements
                     res.AddToClassList(asset.classes[i]);
             }
 
+            if (asset.stylesheetPaths != null)
+            {
+                for (int i = 0; i < asset.stylesheetPaths.Count; i++)
+                    res.AddStyleSheetPath(asset.stylesheetPaths[i]);
+            }
+
             if (asset.stylesheets != null)
             {
-                for (int i = 0; i < asset.stylesheets.Count; i++)
-                    res.AddStyleSheetPath(asset.stylesheets[i]);
+                for (int i = 0; i < asset.stylesheets.Count; ++i)
+                    res.styleSheets.Add(asset.stylesheets[i]);
             }
 
             return res;

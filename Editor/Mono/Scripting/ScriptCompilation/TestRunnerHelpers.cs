@@ -23,7 +23,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 && (PlayerSettings.playModeTestRunnerEnabled || (targetAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly);
         }
 
-        public static IEnumerable<EditorBuildRules.TargetAssembly> GetReferences(IEnumerable<EditorBuildRules.TargetAssembly> assembliesCustomTargetAssemblies, string settingsOutputDirectory)
+        public static IEnumerable<EditorBuildRules.TargetAssembly> GetReferences(IEnumerable<EditorBuildRules.TargetAssembly> assembliesCustomTargetAssemblies)
         {
             return assembliesCustomTargetAssemblies.Where(x =>
                 x.Filename == k_EditorTestRunnerAssemblyName ||

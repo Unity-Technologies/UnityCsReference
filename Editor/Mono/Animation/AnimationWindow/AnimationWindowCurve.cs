@@ -11,7 +11,7 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditorInternal
 {
-    internal class AnimationWindowCurve : IComparable<AnimationWindowCurve>
+    internal class AnimationWindowCurve : IComparable<AnimationWindowCurve>, IEquatable<AnimationWindowCurve>
     {
         public const float timeEpsilon = 0.00001f;
 
@@ -101,47 +101,13 @@ namespace UnityEditorInternal
 
         public int CompareTo(AnimationWindowCurve obj)
         {
-            bool pathEquals = path.Equals(obj.path);
-            bool typeEquals = obj.type == type;
-
-            if (!pathEquals && depth != obj.depth)
+            if (!path.Equals(obj.path))
             {
-                int minLength = Math.Min(path.Length, obj.path.Length);
-                int commonLength = 0;
-                int index = 0;
-                for (; index < minLength; ++index)
-                {
-                    if (path[index] != obj.path[index])
-                        break;
-
-                    if (path[index] == '/')
-                        commonLength = index + 1;
-                }
-
-                if (index == minLength)
-                    commonLength = minLength;
-
-                string subPath1 = path.Substring(commonLength);
-                string subPath2 = obj.path.Substring(commonLength);
-
-                if (String.IsNullOrEmpty(subPath1))
-                    return -1;
-                else if (String.IsNullOrEmpty(subPath2))
-                    return 1;
-
-                Regex r = new Regex(@"^[^\/]*\/");
-
-                Match match1 = r.Match(subPath1);
-                string next1 = match1.Success ? match1.Value.Substring(0, match1.Value.Length - 1) : subPath1;
-
-                Match match2 = r.Match(subPath2);
-                string next2 = match2.Success ? match2.Value.Substring(0, match2.Value.Length - 1) : subPath2;
-
-                return next1.CompareTo(next2);
+                return ComparePaths(obj.path);
             }
 
-            bool sameTransformComponent = type == typeof(Transform) && obj.type == typeof(Transform) && pathEquals;
-            bool oneIsTransformComponent = (type == typeof(Transform) || obj.type == typeof(Transform)) && pathEquals;
+            bool sameTransformComponent = type == typeof(Transform) && obj.type == typeof(Transform);
+            bool oneIsTransformComponent = (type == typeof(Transform) || obj.type == typeof(Transform));
 
             // We want to sort position before rotation
             if (sameTransformComponent)
@@ -164,7 +130,7 @@ namespace UnityEditorInternal
             }
 
             // Sort (.r, .g, .b, .a) and (.x, .y, .z, .w)
-            if (pathEquals && typeEquals)
+            if (obj.type == type)
             {
                 int lhsIndex = AnimationWindowUtility.GetComponentIndex(obj.propertyName);
                 int rhsIndex = AnimationWindowUtility.GetComponentIndex(propertyName);
@@ -172,7 +138,37 @@ namespace UnityEditorInternal
                     return rhsIndex - lhsIndex;
             }
 
-            return (path + type + propertyName).CompareTo(obj.path + obj.type + obj.propertyName);
+            return string.Compare((path + type + propertyName), obj.path + obj.type + obj.propertyName, StringComparison.Ordinal);
+        }
+
+        public bool Equals(AnimationWindowCurve other)
+        {
+            return CompareTo(other) == 0;
+        }
+
+        int ComparePaths(string otherPath)
+        {
+            var thisPath = path.Split('/');
+            var objPath = otherPath.Split('/');
+
+            int smallerLength = Math.Min(thisPath.Length, objPath.Length);
+            for (int i = 0; i < smallerLength; ++i)
+            {
+                int compare = string.Compare(thisPath[i], objPath[i], StringComparison.Ordinal);
+                if (compare == 0)
+                {
+                    continue;
+                }
+
+                return compare;
+            }
+
+            if (thisPath.Length < objPath.Length)
+            {
+                return -1;
+            }
+
+            return 1;
         }
 
         public AnimationCurve ToAnimationCurve()

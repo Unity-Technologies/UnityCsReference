@@ -562,6 +562,7 @@ namespace UnityEngine.UIElements
                     UpdateWorldClip();
                     isWorldClipDirty = false;
                 }
+
                 return m_WorldClip;
             }
         }
@@ -607,6 +608,14 @@ namespace UnityEngine.UIElements
             else
             {
                 m_WorldClipMinusGroup = m_WorldClip = panel != null ? panel.visualTree.rect : GUIClip.topmostRect;
+            }
+
+            if (ShouldClip() && computedStyle.unityOverflowClipBox == OverflowClipBox.ContentBox)
+            {
+                m_WorldClip.x += resolvedStyle.paddingLeft;
+                m_WorldClip.y += resolvedStyle.paddingTop;
+                m_WorldClip.width -= resolvedStyle.paddingLeft + resolvedStyle.paddingRight;
+                m_WorldClip.height -= resolvedStyle.paddingTop + resolvedStyle.paddingBottom;
             }
         }
 

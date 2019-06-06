@@ -14,5 +14,6 @@ namespace UnityEditor.PackageManager.UI
         ISearchOperation CreateSearchOperation();
         IAddOperation CreateAddOperation();
         IRemoveOperation CreateRemoveOperation();
+        IEmbedOperation CreateEmbedOperation();
     }
 }

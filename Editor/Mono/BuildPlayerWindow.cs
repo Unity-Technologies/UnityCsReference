@@ -410,12 +410,10 @@ namespace UnityEditor
             if (PlayerSettings.colorSpace == ColorSpace.Linear)
             {
                 var hasMinGraphicsAPI = true;
-                var hasMinOSVersion = true;
 
                 var apis = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
                 if (platform.targetGroup == BuildTargetGroup.Android)
                 {
-                    hasMinOSVersion = (int)PlayerSettings.Android.minSdkVersion >= 18;
                     hasMinGraphicsAPI = (apis.Contains(GraphicsDeviceType.Vulkan) || apis.Contains(GraphicsDeviceType.OpenGLES3)) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
                 }
                 else if (platform.targetGroup == BuildTargetGroup.iOS || platform.targetGroup == BuildTargetGroup.tvOS)
@@ -428,7 +426,7 @@ namespace UnityEditor
                     hasMinGraphicsAPI = apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
                 }
 
-                return hasMinGraphicsAPI && hasMinOSVersion;
+                return hasMinGraphicsAPI;
             }
             else
             {
@@ -441,7 +439,6 @@ namespace UnityEditor
             if (PlayerSettings.GetLightmapEncodingQualityForPlatformGroup(platform.targetGroup) != LightmapEncodingQuality.Low)
             {
                 var hasMinGraphicsAPI = true;
-                var hasMinOSVersion = true;
 
                 if (platform.targetGroup == BuildTargetGroup.iOS)
                 {
@@ -457,10 +454,9 @@ namespace UnityEditor
                 {
                     var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
                     hasMinGraphicsAPI = (apis.Contains(GraphicsDeviceType.Vulkan) || apis.Contains(GraphicsDeviceType.OpenGLES3)) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
-                    hasMinOSVersion = (int)PlayerSettings.Android.minSdkVersion >= 18;
                 }
 
-                return hasMinGraphicsAPI && hasMinOSVersion;
+                return hasMinGraphicsAPI;
             }
             else
             {

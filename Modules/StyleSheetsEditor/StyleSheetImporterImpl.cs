@@ -76,8 +76,6 @@ namespace UnityEditor.StyleSheets
             return AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);
         }
 
-        static readonly Uri s_ProjectRootUri = new UriBuilder("project", "").Uri;
-
         protected void VisitResourceFunction(GenericFunction funcTerm)
         {
             var argTerm = funcTerm.Arguments.FirstOrDefault() as PrimitiveTerm;
@@ -91,50 +89,32 @@ namespace UnityEditor.StyleSheets
             m_Builder.AddValue(path, StyleValueType.ResourcePath);
         }
 
+        static StyleSheetImportErrorCode ConvertErrorCode(URIValidationResult result)
+        {
+            switch (result)
+            {
+                case URIValidationResult.InvalidURILocation:
+                    return StyleSheetImportErrorCode.InvalidURILocation;
+                case URIValidationResult.InvalidURIScheme:
+                    return StyleSheetImportErrorCode.InvalidURIScheme;
+                case URIValidationResult.InvalidURIProjectAssetPath:
+                    return StyleSheetImportErrorCode.InvalidURIProjectAssetPath;
+                default:
+                    return StyleSheetImportErrorCode.Internal;
+            }
+        }
+
         protected void VisitUrlFunction(PrimitiveTerm term)
         {
-            string path = term.Value as string;
-            if (string.IsNullOrEmpty(path))
-            {
-                m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidURILocation, "");
-                return;
-            }
+            string path = (string)term.Value;
 
-            Uri absoluteUri = null;
-            // Always treat URIs starting with "/" as implicit project schemes
-            if (path.StartsWith("/"))
-            {
-                var builder = new UriBuilder(s_ProjectRootUri.Scheme, "", 0, path);
-                absoluteUri = builder.Uri;
-            }
-            else if (Uri.TryCreate(path, UriKind.Absolute, out absoluteUri) == false)
-            {
-                // Resolve a relative URI compared to current file
-                Uri assetPathUri = new Uri(s_ProjectRootUri, assetPath);
+            string projectRelativePath, errorMessage;
 
-                if (Uri.TryCreate(assetPathUri, path, out absoluteUri) == false)
-                {
-                    m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidURILocation, path);
-                    return;
-                }
-            }
-            else if (absoluteUri.Scheme != s_ProjectRootUri.Scheme)
-            {
-                m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidURIScheme, absoluteUri.Scheme);
-                return;
-            }
+            URIValidationResult result = URIHelpers.ValidAssetURL(assetPath, path, out errorMessage, out projectRelativePath);
 
-            string projectRelativePath = absoluteUri.LocalPath;
-
-            // Remove any leading "/" as this now used as a path relative to the current directory
-            if (projectRelativePath.StartsWith("/"))
+            if (result != URIValidationResult.OK)
             {
-                projectRelativePath = projectRelativePath.Substring(1);
-            }
-
-            if (string.IsNullOrEmpty(projectRelativePath) || !File.Exists(projectRelativePath))
-            {
-                m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidURIProjectAssetPath, path);
+                m_Errors.AddSemanticError(ConvertErrorCode(result), errorMessage);
             }
             else
             {

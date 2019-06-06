@@ -167,6 +167,8 @@ namespace UnityEditor
             public readonly GUIContent wavingGrassTint = EditorGUIUtility.TrTextContent("Grass Tint", "Overall color tint applied to grass objects.");
             public readonly GUIContent meshResolution = EditorGUIUtility.TrTextContent("Mesh Resolution (On Terrain Data)");
             public readonly GUIContent detailResolutionWarning = EditorGUIUtility.TrTextContent("You may reduce CPU draw call overhead by setting the detail resolution per patch as high as possible, relative to detail resolution.");
+            public readonly GUIContent surfaceMaskSettings = EditorGUIUtility.TrTextContent("Surface Mask Settings (On Terrain Data)");
+            public readonly GUIContent surfaceMaskCompressionToggle = EditorGUIUtility.TrTextContent("Compress Surface Mask Texture", "If enabled, surface mask texture will be compressed at runtime if compression supported.");
         }
         static Styles styles;
 
@@ -1407,6 +1409,9 @@ namespace UnityEditor
             ShowResolution(terrainData);
             EditorGUILayout.Space();
 
+            ShowSurfaceMaskSettings(terrainData);
+            EditorGUILayout.Space();
+
             ShowTextures();
             EditorGUILayout.Space();
 
@@ -1503,19 +1508,46 @@ namespace UnityEditor
             RenderTexture oldHeightmap = RenderTexture.GetTemporary(m_Terrain.terrainData.heightmapTexture.descriptor);
             Graphics.Blit(m_Terrain.terrainData.heightmapTexture, oldHeightmap);
 
+            // TODO: Can this be optimized if there is no hole?
+            RenderTexture oldSurfaceMask = RenderTexture.GetTemporary(m_Terrain.terrainData.surfaceMaskRenderTexture.descriptor);
+            Graphics.Blit(m_Terrain.terrainData.surfaceMaskRenderTexture, oldSurfaceMask);
+
             Undo.RegisterCompleteObjectUndo(m_Terrain.terrainData, "Resize Heightmap");
+
+            float sUV = 1.0f;
+            int dWidth = m_Terrain.terrainData.heightmapResolution;
+            int sWidth = newResolution;
 
             Vector3 oldSize = m_Terrain.terrainData.size;
             m_Terrain.terrainData.heightmapResolution = newResolution;
             m_Terrain.terrainData.size = oldSize;
 
             oldHeightmap.filterMode = FilterMode.Bilinear;
-            Graphics.Blit(oldHeightmap, m_Terrain.terrainData.heightmapTexture);
+
+            // Make sure textures are offset correctly when resampling
+            // tsuv = (suv * swidth - 0.5) / (swidth - 1)
+            // duv = (tsuv(dwidth - 1) + 0.5) / dwidth
+            // duv = (((suv * swidth - 0.5) / (swidth - 1)) * (dwidth - 1) + 0.5) / dwidth
+            // k = (dwidth - 1) / (swidth - 1) / dwidth
+            // duv = suv * (swidth * k)     + 0.5 / dwidth - 0.5 * k
+
+            float k = (dWidth - 1.0f) / (sWidth - 1.0f) / dWidth;
+            float scaleX = sUV * (sWidth * k);
+            float offsetX = (float)(0.5 / dWidth - 0.5 * k);
+            Vector2 scale = new Vector2(scaleX, scaleX);
+            Vector2 offset = new Vector2(offsetX, offsetX);
+
+            Graphics.Blit(oldHeightmap, m_Terrain.terrainData.heightmapTexture, scale, offset);
             RenderTexture.ReleaseTemporary(oldHeightmap);
+
+            oldSurfaceMask.filterMode = FilterMode.Point;
+            Graphics.Blit(oldSurfaceMask, (RenderTexture)m_Terrain.terrainData.surfaceMaskRenderTexture);
+            RenderTexture.ReleaseTemporary(oldSurfaceMask);
 
             RenderTexture.active = oldRT;
 
             m_Terrain.terrainData.DirtyHeightmapRegion(new RectInt(0, 0, m_Terrain.terrainData.heightmapTexture.width, m_Terrain.terrainData.heightmapTexture.height), TerrainHeightmapSyncControl.HeightAndLod);
+            m_Terrain.terrainData.DirtyTextureRegion(TerrainData.SurfaceMaskTextureName, new RectInt(0, 0, m_Terrain.terrainData.surfaceMaskRenderTexture.width, m_Terrain.terrainData.surfaceMaskRenderTexture.height), false);
 
             Repaint();
         }
@@ -1677,6 +1709,37 @@ namespace UnityEditor
 
                 MarkTerrainDataDirty();
                 m_Terrain.Flush();
+            }
+
+            --EditorGUI.indentLevel;
+
+            EditorGUILayout.EndFoldoutHeaderGroup();
+        }
+
+        private bool m_ShowSurfaceMaskSettings = true;
+
+        public void ShowSurfaceMaskSettings(TerrainData terrainData)
+        {
+            m_ShowSurfaceMaskSettings = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowSurfaceMaskSettings, styles.surfaceMaskSettings);
+            if (!m_ShowSurfaceMaskSettings)
+            {
+                EditorGUILayout.EndFoldoutHeaderGroup();
+                return;
+            }
+
+            ++EditorGUI.indentLevel;
+
+            EditorGUI.BeginChangeCheck();
+
+            bool enableSurfaceMaskTextureCompression = EditorGUILayout.Toggle(styles.surfaceMaskCompressionToggle, terrainData.enableSurfaceMaskTextureCompression);
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(terrainData, "TerrainData property change");
+
+                terrainData.enableSurfaceMaskTextureCompression = enableSurfaceMaskTextureCompression;
+
+                MarkTerrainDataDirty();
             }
 
             --EditorGUI.indentLevel;
@@ -1877,7 +1940,7 @@ namespace UnityEditor
             Ray mouseRay = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
 
             RaycastHit hit;
-            if (m_Terrain.GetComponent<Collider>().Raycast(mouseRay, out hit, Mathf.Infinity))
+            if (m_Terrain.GetComponent<TerrainCollider>().Raycast(mouseRay, out hit, Mathf.Infinity, true))
             {
                 uv = hit.textureCoord;
                 pos = hit.point;
@@ -1913,8 +1976,8 @@ namespace UnityEditor
                 Bounds bounds = new Bounds();
                 float brushSize = selectedTool == TerrainTool.PlaceTree ? PaintTreesTool.instance.brushSize : m_Size;
                 Vector3 size;
-                size.x = brushSize / m_Terrain.terrainData.heightmapWidth * m_Terrain.terrainData.size.x;
-                size.z = brushSize / m_Terrain.terrainData.heightmapHeight * m_Terrain.terrainData.size.z;
+                size.x = brushSize / m_Terrain.terrainData.heightmapResolution * m_Terrain.terrainData.size.x;
+                size.z = brushSize / m_Terrain.terrainData.heightmapResolution * m_Terrain.terrainData.size.z;
                 size.y = (size.x + size.z) * 0.5F;
                 bounds.center = pos;
                 bounds.size = size;
@@ -1946,11 +2009,11 @@ namespace UnityEditor
 
                 Vector3 size = m_Terrain.terrainData.size;
 
-                float[,] heights = m_Terrain.terrainData.GetHeights(0, 0, m_Terrain.terrainData.heightmapWidth, m_Terrain.terrainData.heightmapHeight);
+                float[,] heights = m_Terrain.terrainData.GetHeights(0, 0, m_Terrain.terrainData.heightmapResolution, m_Terrain.terrainData.heightmapResolution);
 
                 float maxHeight = float.MinValue;
-                for (int y = 0; y < m_Terrain.terrainData.heightmapHeight; y++)
-                    for (int x = 0; x < m_Terrain.terrainData.heightmapWidth; x++)
+                for (int y = 0; y < m_Terrain.terrainData.heightmapResolution; y++)
+                    for (int x = 0; x < m_Terrain.terrainData.heightmapResolution; x++)
                         maxHeight = Mathf.Max(maxHeight, heights[x, y]);
 
                 size.y = maxHeight * size.y;
@@ -1989,7 +2052,7 @@ namespace UnityEditor
             foreach (Terrain terrain in Terrain.activeTerrains)
             {
                 RaycastHit hit;
-                if (terrain.GetComponent<Collider>().Raycast(mouseRay, out hit, Mathf.Infinity))
+                if (terrain.GetComponent<TerrainCollider>().Raycast(mouseRay, out hit, Mathf.Infinity, true))
                 {
                     if (hit.distance < minDist)
                     {
@@ -2137,7 +2200,6 @@ namespace UnityEditor
                         changeSelection = true;
                     }
 
-                    hitTerrain.editorRenderFlags = TerrainRenderFlags.All;
                     PaintContext.ApplyDelayedActions();
 
                     e.Use();

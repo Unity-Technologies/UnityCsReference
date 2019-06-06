@@ -67,7 +67,7 @@ namespace UnityEngine.XR
         [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static int eyeTextureHeight { get; }
 
-        [NativeName("DefaultEyeTextureDesc")]
+        [NativeName("IntermediateEyeTextureDesc")]
         [NativeConditional("ENABLE_VR", "RenderTextureDesc()")]
         [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static UnityEngine.RenderTextureDescriptor eyeTextureDesc { get; }

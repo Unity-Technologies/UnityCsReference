@@ -168,6 +168,7 @@ namespace UnityEditor
                         delayToAfterScriptReload = true;
                 }
 
+                bool locationPathExistedBeforeBuild = System.IO.Directory.Exists(options.locationPathName);
                 // Trigger build.
                 // Note: report will be null, if delayToAfterScriptReload = true
                 var report = BuildPipeline.BuildPlayerInternalNoCheck(options.scenes, options.locationPathName, null, options.targetGroup, options.target, options.options, delayToAfterScriptReload);
@@ -185,7 +186,7 @@ namespace UnityEditor
                         case Build.Reporting.BuildResult.Failed:
                             //  On some platforms the user creates the build folder, therefore they own the folder and
                             // it should not be automatically deleted by the Unity Editor, even if it is empty (case 1073851)
-                            if (options.target != BuildTarget.XboxOne)
+                            if (options.target != BuildTarget.XboxOne && !locationPathExistedBeforeBuild)
                                 DeleteBuildFolderIfEmpty(report.summary.outputPath);
                             Debug.LogError(resultStr);
                             throw new BuildMethodException(report.SummarizeErrors());

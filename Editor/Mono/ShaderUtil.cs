@@ -101,6 +101,7 @@ namespace UnityEditor
         // GetShaderMessageCount includes warnings, this function filters them out
         public static bool ShaderHasError(Shader shader)
         {
+            FetchCachedMessages(shader);
             var errors = GetShaderMessages(shader);
             return errors.Any(x => x.severity == ShaderCompilerMessageSeverity.Error);
         }

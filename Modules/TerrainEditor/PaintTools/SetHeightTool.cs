@@ -124,15 +124,13 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             Undo.RegisterCompleteObjectUndo(terrain.terrainData, terrain.gameObject.name);
 
-            int w = terrain.terrainData.heightmapWidth;
-            int h = terrain.terrainData.heightmapHeight;
-
             float terrainHeight = Mathf.Clamp01((m_HeightWorldSpace - terrain.transform.position.y) / terrain.terrainData.size.y);
 
-            float[,] heights = new float[h, w];
-            for (int y = 0; y < heights.GetLength(0); y++)
+            int res = terrain.terrainData.heightmapResolution;
+            float[,] heights = new float[res, res];
+            for (int y = 0; y < res; y++)
             {
-                for (int x = 0; x < heights.GetLength(1); x++)
+                for (int x = 0; x < res; x++)
                 {
                     heights[y, x] = terrainHeight;
                 }

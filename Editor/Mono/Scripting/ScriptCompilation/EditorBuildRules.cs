@@ -662,10 +662,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var unityReferences = GetUnityReferences(scriptAssembly, assemblies.UnityAssemblies, settings.CompilationOptions, UnityReferencesOptions.None);
             references.AddRange(unityReferences);
 
-            if (TestRunnerHelpers.ShouldAddTestRunnerReferences(targetAssembly) && assemblies.CustomTargetAssemblies != null)
-            {
-                targetAssembly.References.AddRange(TestRunnerHelpers.GetReferences(assemblies.CustomTargetAssemblies.Values, settings.OutputDirectory));
-            }
+            AddTestRunnerCustomReferences(ref targetAssembly, assemblies.CustomTargetAssemblies);
 
             // Setup target assembly references
             foreach (var reference in targetAssembly.References)
@@ -725,10 +722,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 precompiledReferences.AddRange(allPrecompiledAssemblies.Where(x => (x.Flags & AssemblyFlags.ExplicitlyReferenced) != AssemblyFlags.ExplicitlyReferenced));
             }
 
-            if (TestRunnerHelpers.ShouldAddNunitReferences(targetAssembly))
-            {
-                precompiledReferences.AddRange(allPrecompiledAssemblies.Where(x => TestRunnerHelpers.IsPrecompiledAssemblyNunit(ref x)));
-            }
+            AddTestRunnerPrecompiledReferences(targetAssembly, allPrecompiledAssemblies, ref precompiledReferences);
 
             var precompiledReferenceNames = GetPrecompiledReferences(scriptAssembly, targetAssembly.Type, settings.CompilationOptions, targetAssembly.editorCompatibility, precompiledReferences.ToArray());
             references.AddRange(precompiledReferenceNames);
@@ -740,6 +734,22 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             scriptAssembly.ScriptAssemblyReferences = scriptAssemblyReferences.ToArray();
             scriptAssembly.References = references.ToArray();
+        }
+
+        internal static void AddTestRunnerCustomReferences(ref TargetAssembly targetAssembly, Dictionary<string, TargetAssembly> assembliesCustomTargetAssemblies)
+        {
+            if (TestRunnerHelpers.ShouldAddTestRunnerReferences(targetAssembly) && assembliesCustomTargetAssemblies != null)
+            {
+                targetAssembly.References.AddRange(TestRunnerHelpers.GetReferences(assembliesCustomTargetAssemblies.Values));
+            }
+        }
+
+        internal static void AddTestRunnerPrecompiledReferences(TargetAssembly targetAssembly, PrecompiledAssembly[] allPrecompiledAssemblies, ref List<PrecompiledAssembly> precompiledReferences)
+        {
+            if (TestRunnerHelpers.ShouldAddNunitReferences(targetAssembly))
+            {
+                precompiledReferences.AddRange(allPrecompiledAssemblies.Where(x => TestRunnerHelpers.IsPrecompiledAssemblyNunit(ref x)));
+            }
         }
 
         public static List<string> GetUnityReferences(ScriptAssembly scriptAssembly, PrecompiledAssembly[] unityAssemblies, EditorScriptCompilationOptions options, UnityReferencesOptions unityReferencesOptions)

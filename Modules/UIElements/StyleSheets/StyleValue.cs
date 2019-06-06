@@ -101,6 +101,7 @@ namespace UnityEngine.UIElements.StyleSheets
         BackgroundScaleMode,
         Visibility,
         Overflow,
+        OverflowClipBox,
         Display,
         // All string values
         BackgroundImage,

@@ -48,14 +48,13 @@ namespace UnityEditor
 
         class SettingsContent
         {
-            public static readonly GUIContent colorSpaceAndroidWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires OpenGL ES 3.0 or Vulkan, uncheck 'Automatic Graphics API' to remove OpenGL ES 2 API, Blit Type for non-SRP projects must be Always Blit or Auto and 'Minimum API Level' must be at least Android 4.3");
+            public static readonly GUIContent colorSpaceAndroidWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires OpenGL ES 3.0 or Vulkan, uncheck 'Automatic Graphics API' to remove OpenGL ES 2 API, Blit Type for non-SRP projects must be Always Blit or Auto");
             public static readonly GUIContent colorSpaceWebGLWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires WebGL 2.0, uncheck 'Automatic Graphics API' to remove WebGL 1.0 API. WARNING: If DXT sRGB is not supported by the browser, texture will be decompressed");
             public static readonly GUIContent colorSpaceIOSWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2/3 APIs.");
             public static readonly GUIContent recordingInfo = EditorGUIUtility.TrTextContent("Reordering the list will switch editor to the first available platform");
             public static readonly GUIContent notApplicableInfo = EditorGUIUtility.TrTextContent("Not applicable for this platform.");
             public static readonly GUIContent sharedBetweenPlatformsInfo = EditorGUIUtility.TrTextContent("* Shared setting between multiple platforms.");
             public static readonly GUIContent vrOrientationInfo = EditorGUIUtility.TrTextContent("Virtual Reality Support is enabled. Upon entering VR mode, landscape left orientation will be the default orientation unless only landscape right is available.");
-            public static readonly GUIContent IL2CPPAndroidExperimentalInfo = EditorGUIUtility.TrTextContent("IL2CPP on Android is experimental and unsupported");
 
             public static readonly GUIContent cursorHotspot = EditorGUIUtility.TrTextContent("Cursor Hotspot");
             public static readonly GUIContent defaultCursor = EditorGUIUtility.TrTextContent("Default Cursor");
@@ -188,7 +187,7 @@ namespace UnityEditor
             public static readonly GUIContent[] lightmapEncodingNames = { EditorGUIUtility.TrTextContent("Low Quality"), EditorGUIUtility.TrTextContent("Normal Quality"), EditorGUIUtility.TrTextContent("High Quality")};
             public static readonly GUIContent lightmapStreamingEnabled = EditorGUIUtility.TrTextContent("Lightmap Streaming Enabled", "Only load larger lightmap mipmaps as needed to render the current game cameras. Requires texture streaming to be enabled in quality settings. This value is applied to the light map textures as they are generated.");
             public static readonly GUIContent lightmapStreamingPriority = EditorGUIUtility.TrTextContent("Streaming Priority", "Lightmap mipmap streaming priority when there's contention for resources. Positive numbers represent higher priority. Valid range is -128 to 127. This value is applied to the light map textures as they are generated.");
-            public static readonly GUIContent lightmapQualityAndroidWarning = EditorGUIUtility.TrTextContent("The selected Lightmap Encoding requires OpenGL ES 3.0 or Vulkan. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2 API. Additionally, 'Minimum API Level' must be at least Android 4.3");
+            public static readonly GUIContent lightmapQualityAndroidWarning = EditorGUIUtility.TrTextContent("The selected Lightmap Encoding requires OpenGL ES 3.0 or Vulkan. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2 API");
             public static readonly GUIContent lightmapQualityIOSWarning = EditorGUIUtility.TrTextContent("The selected Lightmap Encoding requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES APIs.");
             public static readonly GUIContent legacyClampBlendShapeWeights = EditorGUIUtility.TrTextContent("Clamp BlendShapes (Deprecated)*", "If set, the range of BlendShape weights in SkinnedMeshRenderers will be clamped.");
             public static string undoChangedBundleIdentifierString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS bundleIdentifier"); } }
@@ -1492,7 +1491,7 @@ namespace UnityEditor
                 {
                     // SRP should handle blits internally
                     bool hasBlitDisabled = (PlayerSettings.Android.blitType == AndroidBlitType.Never) && (GraphicsSettings.renderPipelineAsset == null);
-                    showWarning = hasBlitDisabled || apis.Contains(GraphicsDeviceType.OpenGLES2) || (int)PlayerSettings.Android.minSdkVersion < 18;
+                    showWarning = hasBlitDisabled || apis.Contains(GraphicsDeviceType.OpenGLES2);
                     warningMessage = SettingsContent.colorSpaceAndroidWarning;
                 }
                 else if (targetGroup == BuildTargetGroup.iOS || platform.targetGroup == BuildTargetGroup.tvOS)
@@ -1716,8 +1715,7 @@ namespace UnityEditor
                         {
                             var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
                             var hasMinAPI = (apis.Contains(GraphicsDeviceType.Vulkan) || apis.Contains(GraphicsDeviceType.OpenGLES3)) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
-                            bool hasMinOSVersion = (int)PlayerSettings.Android.minSdkVersion >= 18;
-                            if (!hasMinAPI || !hasMinOSVersion)
+                            if (!hasMinAPI)
                                 EditorGUILayout.HelpBox(SettingsContent.lightmapQualityAndroidWarning.text, MessageType.Warning);
                         }
                     }

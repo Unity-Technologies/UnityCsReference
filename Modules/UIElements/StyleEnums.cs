@@ -25,6 +25,12 @@ namespace UnityEngine.UIElements
         Scroll = YogaOverflow.Scroll,
     }
 
+    public enum OverflowClipBox
+    {
+        PaddingBox,
+        ContentBox
+    }
+
     public enum FlexDirection
     {
         Column = YogaFlexDirection.Column,

@@ -101,6 +101,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                 Save(true);
             }
 
+            terrain.materialTemplate.SetFloat("_NumLayersCount", terrain.terrainData.terrainLayers.Length);
             TerrainLayerUtility.ShowTerrainLayerGUI(terrain, m_SelectedTerrainLayer, ref m_SelectedTerrainLayerInspector,
                 (m_TemplateMaterialEditor as MaterialEditor)?.customShaderGUI as ITerrainLayerCustomUI);
             EditorGUILayout.Space();

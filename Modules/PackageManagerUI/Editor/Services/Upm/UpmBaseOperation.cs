@@ -169,7 +169,15 @@ namespace UnityEditor.PackageManager.UI
             // Create the request after the delay
             if (CurrentRequest == null)
             {
-                CurrentRequest = CreateRequest();
+                try
+                {
+                    CurrentRequest = CreateRequest();
+                }
+                catch (Exception e)
+                {
+                    OnError(new Error(NativeErrorCode.Unknown, e.Message));
+                    return;
+                }
             }
 
             // Since CurrentRequest's error property is private, we need to simulate

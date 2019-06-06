@@ -61,6 +61,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"flex-grow", StylePropertyID.FlexGrow},
             {"flex-shrink", StylePropertyID.FlexShrink},
             {"overflow", StylePropertyID.Overflow},
+            {"-unity-overflow-clip-box", StylePropertyID.OverflowClipBox},
             {"left", StylePropertyID.PositionLeft},
             {"top", StylePropertyID.PositionTop},
             {"right", StylePropertyID.PositionRight},
@@ -175,6 +176,7 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyleValues[(int)StylePropertyID.BackgroundImageTintColor] = StyleValue.Create(StylePropertyID.BackgroundImageTintColor, Color.white);
             s_InitialStyleValues[(int)StylePropertyID.Visibility] = StyleValue.Create(StylePropertyID.Visibility, (int)Visibility.Visible);
             s_InitialStyleValues[(int)StylePropertyID.Overflow] = StyleValue.Create(StylePropertyID.Overflow, (int)Overflow.Visible);
+            s_InitialStyleValues[(int)StylePropertyID.OverflowClipBox] = StyleValue.Create(StylePropertyID.OverflowClipBox, (int)OverflowClipBox.PaddingBox);
             s_InitialStyleValues[(int)StylePropertyID.Display] = StyleValue.Create(StylePropertyID.Display, (int)DisplayStyle.Flex);
             s_InitialStyleValues[(int)StylePropertyID.BackgroundImage] = StyleValue.Create(StylePropertyID.BackgroundImage); // null resource
             s_InitialStyleValues[(int)StylePropertyID.Color] = StyleValue.Create(StylePropertyID.Color, Color.black);

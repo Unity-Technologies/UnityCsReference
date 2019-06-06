@@ -324,7 +324,7 @@ namespace UnityEditor.PackageManager.UI
 
         public bool CanBeRemoved
         {
-            get { return Origin == PackageSource.Registry || Origin == PackageSource.BuiltIn || Origin == PackageSource.Local || Origin == PackageSource.Git; }
+            get { return Origin == PackageSource.Embedded || Origin == PackageSource.Registry || Origin == PackageSource.BuiltIn || Origin == PackageSource.Local || Origin == PackageSource.Git; }
         }
 
         public void OnBeforeSerialize()

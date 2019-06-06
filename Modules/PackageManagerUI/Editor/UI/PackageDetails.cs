@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
@@ -63,9 +64,11 @@ namespace UnityEditor.PackageManager.UI
 
             SetContentVisibility(false);
             SetUpdateVisibility(false);
+            DevelopButton.visible = false;
             RemoveButton.visible = false;
             UpdateBuiltIn.visible = false;
 
+            DevelopButton.clickable.clicked += DevelopClick;
             UpdateButton.clickable.clicked += UpdateClick;
             UpdateBuiltIn.clickable.clicked += UpdateClick;
             RemoveButton.clickable.clicked += RemoveClick;
@@ -267,10 +270,13 @@ namespace UnityEditor.PackageManager.UI
 
                 RefreshAddButton();
                 RefreshRemoveButton();
+                RefreshDevelopButton();
+
                 UIUtils.SetElementDisplay(CustomContainer, true);
 
                 package.AddSignal.OnOperation += OnAddOperation;
                 package.RemoveSignal.OnOperation += OnRemoveOperation;
+                package.EmbedSignal.OnOperation += OnDevelopOperation;
                 RefreshExtensions(DisplayPackage);
 
                 ShowDependencies();
@@ -319,6 +325,7 @@ namespace UnityEditor.PackageManager.UI
             SetContentVisibility(true);
 
             this.package = package;
+
             if (displayPackage == null)
                 displayPackage = package != null ? package.VersionToDisplay : null;
 
@@ -428,6 +435,39 @@ namespace UnityEditor.PackageManager.UI
                 extension.OnPackageRemoved(packageInfo.Info);
         }
 
+        private void OnDevelopOperation(IEmbedOperation operation)
+        {
+            // Make sure we are not already registered
+            operation.OnOperationError -= OnDevelopOperationError;
+            operation.OnOperationSuccess -= OnDevelopOperationSuccess;
+
+            operation.OnOperationError += OnDevelopOperationError;
+            operation.OnOperationSuccess += OnDevelopOperationSuccess;
+        }
+
+        private void OnDevelopOperationError(Error error)
+        {
+            if (package != null && package.EmbedSignal.Operation != null)
+            {
+                package.EmbedSignal.Operation.OnOperationSuccess -= OnDevelopOperationSuccess;
+                package.EmbedSignal.Operation.OnOperationError -= OnDevelopOperationError;
+                package.EmbedSignal.Operation = null;
+            }
+
+            SetError(error);
+            OnOperationError(package, error);
+        }
+
+        private void OnDevelopOperationSuccess(PackageInfo packageInfo)
+        {
+            if (package != null && package.RemoveSignal.Operation != null)
+            {
+                package.EmbedSignal.Operation.OnOperationSuccess -= OnDevelopOperationSuccess;
+                package.EmbedSignal.Operation.OnOperationError -= OnDevelopOperationError;
+                package.EmbedSignal.Operation = null;
+            }
+        }
+
         private PackageInfo TargetVersion
         {
             get
@@ -456,7 +496,7 @@ namespace UnityEditor.PackageManager.UI
             if (targetVersion == null)
                 return;
 
-            var enableButton = !Package.AddRemoveOperationInProgress;
+            var enableButton = !Package.PackageOperationInProgress;
 
             var action = PackageAction.Update;
             var addOperation = package.AddSignal.Operation;
@@ -570,7 +610,7 @@ namespace UnityEditor.PackageManager.UI
                 var action = current.IsBuiltIn ? PackageAction.Disable : PackageAction.Remove;
                 var inprogress = package.RemoveSignal.Operation != null;
 
-                var enableButton = visibleFlag && !EditorApplication.isCompiling && !inprogress && !Package.AddRemoveOperationInProgress
+                var enableButton = visibleFlag && !EditorApplication.isCompiling && !inprogress && !Package.PackageOperationInProgress
                     && current == DisplayPackage;
 
                 if (EditorApplication.isCompiling)
@@ -586,6 +626,28 @@ namespace UnityEditor.PackageManager.UI
             UIUtils.SetElementDisplay(RemoveButton, visibleFlag);
         }
 
+        private void RefreshDevelopButton()
+        {
+            if (package.AnyInDevelopment)
+            {
+                UIUtils.SetElementDisplay(DevelopButton, false);
+                return;
+            }
+
+            var visibleFlag = DisplayPackage.IsInstalled && DisplayPackage.Origin == PackageSource.Registry;
+            var inprogress = package.EmbedSignal.Operation != null;
+            var enableButton = !EditorApplication.isCompiling && !inprogress && !Package.PackageOperationInProgress;
+
+            if (EditorApplication.isCompiling)
+            {
+                EditorApplication.update -= CheckCompilationStatus;
+                EditorApplication.update += CheckCompilationStatus;
+            }
+
+            DevelopButton.SetEnabled(enableButton);
+            UIUtils.SetElementDisplay(DevelopButton, visibleFlag);
+        }
+
         private void CheckCompilationStatus()
         {
             if (EditorApplication.isCompiling)
@@ -593,6 +655,7 @@ namespace UnityEditor.PackageManager.UI
 
             RefreshAddButton();
             RefreshRemoveButton();
+            RefreshDevelopButton();
             EditorApplication.update -= CheckCompilationStatus;
         }
 
@@ -604,11 +667,28 @@ namespace UnityEditor.PackageManager.UI
                 string.Format("{0} {1}", actionText, version);
         }
 
+        private void DevelopClick()
+        {
+            // Embed
+            DetailError.ClearError();
+            package.Embed(info =>
+            {
+                RefreshAddButton();
+                RefreshRemoveButton();
+                RefreshDevelopButton();
+            });
+
+            UIUtils.SetElementDisplay(UpdateBuiltIn, false);
+            UIUtils.SetElementDisplay(UpdateButton, false);
+            UIUtils.SetElementDisplay(RemoveButton, false);
+            RefreshDevelopButton();
+        }
+
         private void UpdateClick()
         {
             if (package.IsPackageManagerUI)
             {
-                // Let's not allow updating of the UI if there are build errrors, as for now, that will prevent the UI from reloading properly.
+                // Let's not allow updating of the UI if there are build errors, as for now, that will prevent the UI from reloading properly.
                 if (EditorUtility.scriptCompilationFailed)
                 {
                     EditorUtility.DisplayDialog("Unity Package Manager", "The Package Manager UI cannot be updated while there are script compilation errors in your project.  Please fix the errors and try again.", "Ok");
@@ -699,6 +779,32 @@ namespace UnityEditor.PackageManager.UI
 
                     return;
                 }
+            }
+
+            if (DisplayPackage.IsInDevelopment)
+            {
+                if (!EditorUtility.DisplayDialog("Unity Package Manager", "You will loose all your changes (if any) if you delete a package in development. Are you sure?", "Yes", "No"))
+                    return;
+
+                RefreshRemoveButton();
+                RefreshAddButton();
+
+                Directory.Delete(DisplayPackage.Info.resolvedPath, true);
+                AssetDatabase.Refresh();
+                EditorApplication.delayCall += () =>
+                {
+                    if (Collection.Filter == PackageFilter.InDevelopment)
+                    {
+                        var otherInDev = Collection.listPackages.Any(info => info.IsInDevelopment && info.Name != package.Name);
+                        PackageManagerWindow.SelectPackageAndFilter(DisplayPackage.VersionId, otherInDev ? PackageFilter.InDevelopment : PackageFilter.Local, true);
+                    }
+                    else
+                    {
+                        PackageManagerWindow.SelectPackageAndFilter(DisplayPackage.VersionId, null, true);
+                    }
+                };
+
+                return;
             }
 
             var result = 0;
@@ -798,8 +904,9 @@ namespace UnityEditor.PackageManager.UI
         private VisualElementCache Cache { get; set; }
 
         private Label DetailDesc { get { return Cache.Get<Label>("detailDesc"); } }
+        internal Button DevelopButton { get { return Cache.Get<Button>("develop"); } }
         internal Button UpdateButton { get { return Cache.Get<Button>("update"); } }
-        private Button RemoveButton { get { return Cache.Get<Button>("remove"); } }
+        internal Button RemoveButton { get { return Cache.Get<Button>("remove"); } }
         private Button ViewDocButton { get { return Cache.Get<Button>("viewDocumentation"); } }
         private VisualElement DocumentationContainer { get { return Cache.Get<VisualElement>("documentationContainer"); } }
         private Button ViewChangelogButton { get { return Cache.Get<Button>("viewChangelog"); } }

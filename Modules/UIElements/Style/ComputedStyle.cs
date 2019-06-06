@@ -38,6 +38,7 @@ namespace UnityEngine.UIElements
         public StyleEnum<FlexDirection> flexDirection => stylesData.flexDirection.ToStyleEnum((FlexDirection)stylesData.flexDirection.value);
         public StyleEnum<Wrap> flexWrap => stylesData.flexWrap.ToStyleEnum((Wrap)stylesData.flexWrap.value);
         public StyleEnum<Overflow> overflow => stylesData.overflow.ToStyleEnum((Overflow)stylesData.overflow.value);
+        public StyleEnum<OverflowClipBox> unityOverflowClipBox => stylesData.unityOverflowClipBox.ToStyleEnum((OverflowClipBox)stylesData.unityOverflowClipBox.value);
         public StyleLength left => stylesData.left;
         public StyleLength top => stylesData.top;
         public StyleLength right => stylesData.right;

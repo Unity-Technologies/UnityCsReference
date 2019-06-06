@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -42,15 +43,7 @@ namespace UnityEditor.UIElements
             set
             {
                 m_Variant = value;
-
-                if (m_Variant == Variant.Popup)
-                {
-                    AddToClassList(popupVariantUssClassName);
-                }
-                else
-                {
-                    RemoveFromClassList(popupVariantUssClassName);
-                }
+                EnableInClassList(popupVariantUssClassName, value == Variant.Popup);
             }
         }
     }

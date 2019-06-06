@@ -37,7 +37,13 @@ namespace UnityEngine
         public static extern void DrawWireMesh(Mesh mesh, int submeshIndex, [DefaultValue("Vector3.zero")] Vector3 position, [DefaultValue("Quaternion.identity")] Quaternion rotation, [DefaultValue("Vector3.one")] Vector3 scale);
 
         [NativeThrows]
-        public static extern void DrawIcon(Vector3 center, string name, [DefaultValue("true")] bool allowScaling);
+        public static void DrawIcon(Vector3 center, string name, [DefaultValue("true")] bool allowScaling)
+        {
+            DrawIcon(center, name, allowScaling, Color.white);
+        }
+
+        [NativeThrows]
+        public static extern void DrawIcon(Vector3 center, string name, [DefaultValue("true")] bool allowScaling, [DefaultValue("Color(255,255,255,255)")] Color tint);
 
         [NativeThrows]
         public static extern void DrawGUITexture(Rect screenRect, Texture texture, int leftBorder, int rightBorder, int topBorder, int bottomBorder, [DefaultValue("null")] Material mat);

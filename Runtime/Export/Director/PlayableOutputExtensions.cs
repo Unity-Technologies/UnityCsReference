@@ -47,7 +47,7 @@ namespace UnityEngine.Playables
             where U : struct, IPlayableOutput
             where V : struct, IPlayable
         {
-            output.GetHandle().SetSourcePlayable(value.GetHandle());
+            output.GetHandle().SetSourcePlayable(value.GetHandle(), GetSourceOutputPort<U>(output));
         }
 
         public static void SetSourcePlayable<U, V>(this U output, V value, int port)
@@ -55,18 +55,12 @@ namespace UnityEngine.Playables
             where V : struct, IPlayable
         {
             var handle = output.GetHandle();
-            handle.SetSourcePlayable(value.GetHandle());
-            handle.SetSourceOutputPort(port);
+            handle.SetSourcePlayable(value.GetHandle(), port);
         }
 
         public static int GetSourceOutputPort<U>(this U output) where U : struct, IPlayableOutput
         {
             return output.GetHandle().GetSourceOutputPort();
-        }
-
-        public static void SetSourceOutputPort<U>(this U output, int value) where U : struct, IPlayableOutput
-        {
-            output.GetHandle().SetSourceOutputPort(value);
         }
 
         public static float GetWeight<U>(this U output) where U : struct, IPlayableOutput

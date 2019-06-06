@@ -14,12 +14,16 @@ namespace UnityEditor.UIElements.Debugger
     {
         protected class PanelChoice
         {
-            public Panel panel;
-            public string name;
+            public Panel panel { get; }
+
+            public PanelChoice(Panel p)
+            {
+                panel = p;
+            }
 
             public override string ToString()
             {
-                return name ?? panel.visualTree.name;
+                return panel.name ?? panel.visualTree.name;
             }
         }
 
@@ -159,7 +163,7 @@ namespace UnityEditor.UIElements.Debugger
                     continue;
 
                 var p = it.Current.Value;
-                m_PanelChoices.Add(new PanelChoice { panel = p, name = p.name });
+                m_PanelChoices.Add(new PanelChoice(p));
                 if (hostView != null && hostView.actualView != null)
                     m_PanelToEditorWindow.Add(p, hostView.actualView);
             }
@@ -198,7 +202,7 @@ namespace UnityEditor.UIElements.Debugger
                     for (int i = 0; i < m_PanelChoices.Count; i++)
                     {
                         var vt = m_PanelChoices[i];
-                        if (vt.name == m_LastVisualTreeName)
+                        if (vt.ToString() == m_LastVisualTreeName)
                         {
                             SelectPanelToDebug((PanelChoice)vt);
                             break;
@@ -228,10 +232,10 @@ namespace UnityEditor.UIElements.Debugger
                 pc.panel.panelDebug.AttachDebugger(this);
 
                 m_SelectedPanel = pc;
-                m_LastVisualTreeName = pc.name;
+                m_LastVisualTreeName = pc.ToString();
 
                 OnSelectPanelDebug(panelDebug);
-                menuText = pc.name;
+                menuText = pc.ToString();
             }
             else
             {

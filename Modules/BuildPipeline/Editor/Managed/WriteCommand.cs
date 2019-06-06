@@ -208,4 +208,26 @@ namespace UnityEditor.Build.Content
             set { m_SerializeObjects = value; }
         }
     }
+
+    public struct WriteParameters
+    {
+        public WriteCommand writeCommand;
+        public BuildSettings settings;
+        public BuildUsageTagGlobal globalUsage;
+        public BuildUsageTagSet usageSet;
+        public BuildReferenceMap referenceMap;
+        public AssetBundleInfo bundleInfo;
+    }
+
+    public struct WriteSceneParameters
+    {
+        public string scenePath;
+        public WriteCommand writeCommand;
+        public BuildSettings settings;
+        public BuildUsageTagGlobal globalUsage;
+        public BuildUsageTagSet usageSet;
+        public BuildReferenceMap referenceMap;
+        public PreloadInfo preloadInfo;
+        public SceneBundleInfo sceneBundleInfo;
+    }
 }

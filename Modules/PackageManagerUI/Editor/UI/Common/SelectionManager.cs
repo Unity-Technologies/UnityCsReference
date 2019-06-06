@@ -16,6 +16,7 @@ namespace UnityEditor.PackageManager.UI
         private Selection ListSelection;
         private Selection SearchSelection;
         private Selection BuiltInSelection;
+        private Selection InDevSelection;
 
         private PackageCollection Collection { get; set; }
 
@@ -30,6 +31,9 @@ namespace UnityEditor.PackageManager.UI
                     return SearchSelection;
                 if (Collection.Filter == PackageFilter.Local)
                     return ListSelection;
+                if (Collection.Filter == PackageFilter.InDevelopment)
+                    return InDevSelection;
+
                 return BuiltInSelection;
             }
         }
@@ -42,6 +46,8 @@ namespace UnityEditor.PackageManager.UI
                 SearchSelection = new Selection();
             if (BuiltInSelection == null)
                 BuiltInSelection = new Selection();
+            if (InDevSelection == null)
+                InDevSelection = new Selection();
         }
 
         public void SetCollection(PackageCollection collection)
@@ -50,6 +56,7 @@ namespace UnityEditor.PackageManager.UI
             ListSelection.SetCollection(collection);
             SearchSelection.SetCollection(collection);
             BuiltInSelection.SetCollection(collection);
+            InDevSelection.SetCollection(collection);
         }
 
         public void ClearAll()
@@ -57,21 +64,28 @@ namespace UnityEditor.PackageManager.UI
             ListSelection.ClearSelectionInternal();
             SearchSelection.ClearSelectionInternal();
             BuiltInSelection.ClearSelectionInternal();
+            InDevSelection.ClearSelectionInternal();
         }
 
-        public void SetSelection(string packageName)
+        public void SetSelection(string packageName, object filter, bool forceSelect = false)
         {
-            if (string.IsNullOrEmpty(packageName))
+            if (string.IsNullOrEmpty(packageName) && filter is PackageFilter)
+            {
+                Collection.SetFilter((PackageFilter)filter);
                 return;
+            }
 
             if (Collection == null)
                 return;
 
             var package = Collection.GetPackageByName(packageName);
+            if (package == null)
+                package = Collection.GetPackageByDisplayName(packageName);
+
             if (package != null)
             {
-                Collection.SetFilter(package.IsBuiltIn ? PackageFilter.Modules : PackageFilter.Local);
-                Selection.SetSelection(package);
+                Collection.SetFilter((PackageFilter?)filter ?? (package.IsBuiltIn ? PackageFilter.Modules : PackageFilter.Local));
+                Selection.SetSelection(package, forceSelect);
             }
         }
     }

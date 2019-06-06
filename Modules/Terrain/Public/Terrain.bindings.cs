@@ -22,6 +22,8 @@ namespace UnityEngine
         FlushEverythingImmediately = 8,
         RemoveDirtyDetailsImmediately = 16,
         HeightmapResolution = 32,
+        SurfaceMask = 64,
+        DelayedSurfaceMaskUpdate = 128,
         WillBeDestroyed = 256,
     }
 
@@ -169,6 +171,22 @@ namespace UnityEngine
         static public RenderTextureFormat normalmapRenderTextureFormat
         {
             get { return GraphicsFormatUtility.GetRenderTextureFormat(normalmapFormat); }
+        }
+
+        [StaticAccessor("Terrain", StaticAccessorType.DoubleColon)]
+        extern static public GraphicsFormat surfaceMaskFormat { get; }
+
+        static public RenderTextureFormat surfaceMaskRenderTextureFormat
+        {
+            get { return GraphicsFormatUtility.GetRenderTextureFormat(surfaceMaskFormat); }
+        }
+
+        [StaticAccessor("Terrain", StaticAccessorType.DoubleColon)]
+        extern static public GraphicsFormat compressedSurfaceMaskFormat { get; }
+
+        static public TextureFormat compressedSurfaceMaskTextureFormat
+        {
+            get { return GraphicsFormatUtility.GetTextureFormat(compressedSurfaceMaskFormat); }
         }
 
         extern public static Terrain activeTerrain { get; }

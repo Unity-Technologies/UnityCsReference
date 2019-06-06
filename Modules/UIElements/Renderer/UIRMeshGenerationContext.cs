@@ -81,6 +81,7 @@ namespace UnityEngine.UIElements
         {
             public Rect rect;
             public Color color;
+            public Color playmodeTintColor;
 
             public float leftWidth;
             public float topWidth;
@@ -94,14 +95,19 @@ namespace UnityEngine.UIElements
 
             public Material material;
 
-            public static BorderParams MakeSimple(Rect rect, float width, Vector2 radius, Color color)
+            public static BorderParams MakeSimple(Rect rect, float width, Vector2 radius, Color color, ContextType panelContext)
             {
+                var playmodeTintColor = panelContext == ContextType.Editor
+                    ? UIElementsUtility.editorPlayModeTintColor
+                    : Color.white;
+
                 return new BorderParams()
                 {
                     rect = rect,
                     color = color,
                     topWidth = width, rightWidth = width, bottomWidth = width, leftWidth = width,
-                    topLeftRadius = radius, topRightRadius = radius, bottomRightRadius = radius, bottomLeftRadius = radius
+                    topLeftRadius = radius, topRightRadius = radius, bottomRightRadius = radius, bottomLeftRadius = radius,
+                    playmodeTintColor = playmodeTintColor
                 };
             }
         }
@@ -113,6 +119,7 @@ namespace UnityEngine.UIElements
             public Color color;
             public Texture texture;
             public Material material;
+            public Color playmodeTintColor;
 
             public Vector2 topLeftRadius;
             public Vector2 topRightRadius;
@@ -124,13 +131,27 @@ namespace UnityEngine.UIElements
             public int rightSlice;
             public int bottomSlice;
 
-            public static RectangleParams MakeSolid(Rect rect, Color color)
+            public static RectangleParams MakeSolid(Rect rect, Color color, ContextType panelContext)
             {
-                return new RectangleParams() { rect = rect, color = color, uv = new Rect(0, 0, 1, 1) };
+                var playmodeTintColor = panelContext == ContextType.Editor
+                    ? UIElementsUtility.editorPlayModeTintColor
+                    : Color.white;
+
+                return new RectangleParams
+                {
+                    rect = rect,
+                    color = color,
+                    uv = new Rect(0, 0, 1, 1),
+                    playmodeTintColor = playmodeTintColor
+                };
             }
 
-            public static RectangleParams MakeTextured(Rect rect, Rect uv, Texture texture, ScaleMode scaleMode)
+            public static RectangleParams MakeTextured(Rect rect, Rect uv, Texture texture, ScaleMode scaleMode, ContextType panelContext)
             {
+                var playmodeTintColor = panelContext == ContextType.Editor
+                    ? UIElementsUtility.editorPlayModeTintColor
+                    : Color.white;
+
                 // Fill the UVs according to scale mode
                 // Comparing aspects ratio is error-prone because the screenRect may end up being scaled by the
                 // transform and the corners will end up being pixel aligned, possibly resulting in blurriness.
@@ -173,7 +194,14 @@ namespace UnityEngine.UIElements
                         throw new NotImplementedException();
                 }
 
-                var rp = new RectangleParams() { rect = rect, uv = uv, color = Color.white, texture = texture };
+                var rp = new RectangleParams
+                {
+                    rect = rect,
+                    uv = uv,
+                    color = Color.white,
+                    texture = texture,
+                    playmodeTintColor = playmodeTintColor
+                };
                 return rp;
             }
 
@@ -199,6 +227,7 @@ namespace UnityEngine.UIElements
             public float wordWrapWidth;
             public bool richText;
             public Material material;
+            public Color playmodeTintColor;
 
             internal static TextParams MakeStyleBased(VisualElement ve, string text)
             {
@@ -215,12 +244,13 @@ namespace UnityEngine.UIElements
                     wordWrap = style.whiteSpace.value == WhiteSpace.Normal,
                     wordWrapWidth = style.whiteSpace.value == WhiteSpace.Normal ? ve.contentRect.width : 0.0f,
                     richText = false,
+                    playmodeTintColor = ve.panel?.contextType == ContextType.Editor ? UIElementsUtility.editorPlayModeTintColor : Color.white
                 };
             }
 
             internal static TextNativeSettings GetTextNativeSettings(TextParams textParams, float scaling)
             {
-                return new TextNativeSettings
+                var settings = new TextNativeSettings
                 {
                     text = textParams.text,
                     font = textParams.font,
@@ -233,6 +263,10 @@ namespace UnityEngine.UIElements
                     wordWrapWidth = textParams.wordWrapWidth,
                     richText = textParams.richText
                 };
+
+                settings.color *= textParams.playmodeTintColor;
+
+                return settings;
             }
         }
 

@@ -145,7 +145,7 @@ namespace UnityEngine.UIElements
             if (current == null)
                 return;
 
-            var rectParams = MeshGenerationContextUtils.RectangleParams.MakeTextured(contentRect, uv, current, scaleMode);
+            var rectParams = MeshGenerationContextUtils.RectangleParams.MakeTextured(contentRect, uv, current, scaleMode, panel.contextType);
             rectParams.color = tintColor;
             mgc.Rectangle(rectParams);
         }

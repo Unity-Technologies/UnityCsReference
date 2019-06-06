@@ -266,6 +266,22 @@ namespace UnityEngine.UIElements
             }
         }
 
+        StyleEnum<OverflowClipBox> IStyle.unityOverflowClipBox
+        {
+            get
+            {
+                var tmp = GetStyleInt(StylePropertyID.OverflowClipBox);
+                return new StyleEnum<OverflowClipBox>((OverflowClipBox)tmp.value, tmp.keyword);
+            }
+            set
+            {
+                if (SetStyleValue(StylePropertyID.OverflowClipBox, value, ve.sharedStyle.unityOverflowClipBox))
+                {
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
+                }
+            }
+        }
+
         StyleLength IStyle.left
         {
             get { return GetStyleLength(StylePropertyID.PositionLeft); }

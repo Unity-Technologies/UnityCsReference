@@ -96,31 +96,23 @@ namespace UnityEditorInternal
             args.Add($"--rule-set={GetRuleSetForStrippingLevel(managedStrippingLevel)}");
             args.Add($"--editor-data-file={CommandLineFormatter.PrepareFileName(editorToLinkerDataPath)}");
 
-            // One final check to make sure we only run high on latest runtime.
-            if ((managedStrippingLevel == ManagedStrippingLevel.High) && (PlayerSettingsEditor.IsLatestApiCompatibility(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup))))
+            var compilerPlatform = "";
+            var compilerArchitecture = "";
+            Il2CppNativeCodeBuilder il2cppNativeCodeBuilder = platformProvider.CreateIl2CppNativeCodeBuilder();
+            if (il2cppNativeCodeBuilder != null)
             {
-                // Prepare the arguments to run the UnityLinker.  When in high mode, need to also
-                // supply the IL2CPP compiler platform and compiler architecture.  When the scripting backend
-                // is not IL2CPP, we have to map those strings and use a utility function to figure out proper strings.
-
-                // Currently only need to do this on the non aot platforms of Android, Windows, Mac, Linux.
-                var compilerPlatform = "";
-                var compilerArchitecture = "";
-                Il2CppNativeCodeBuilder il2cppNativeCodeBuilder = platformProvider.CreateIl2CppNativeCodeBuilder();
-                if (il2cppNativeCodeBuilder != null)
-                {
-                    compilerPlatform = il2cppNativeCodeBuilder.CompilerPlatform;
-                    compilerArchitecture = il2cppNativeCodeBuilder.CompilerArchitecture;
-                }
-                else
-                {
-                    GetUnityLinkerPlatformStringsFromBuildTarget(platformProvider.target, out compilerPlatform, out compilerArchitecture);
-                }
-
-                args.Add($"--platform={compilerPlatform}");
-                if (!string.IsNullOrEmpty(compilerArchitecture))
-                    args.Add($"--architecture={compilerArchitecture}");
+                compilerPlatform = il2cppNativeCodeBuilder.CompilerPlatform;
+                compilerArchitecture = il2cppNativeCodeBuilder.CompilerArchitecture;
             }
+            else
+            {
+                // When the scripting backend is not IL2CPP, we have to map those strings and use a utility function to figure out proper strings.
+                GetUnityLinkerPlatformStringsFromBuildTarget(platformProvider.target, out compilerPlatform, out compilerArchitecture);
+            }
+
+            args.Add($"--platform={compilerPlatform}");
+            if (!string.IsNullOrEmpty(compilerArchitecture))
+                args.Add($"--architecture={compilerArchitecture}");
 
             if (!UseUnityLinkerEngineModuleStripping)
             {

@@ -53,6 +53,9 @@ namespace UnityEngine
                 if (m_Position == value)
                     return;
 
+                // Reset the scrollOffset to force its recomputation.
+                scrollOffset = Vector2.zero;
+
                 m_Position = value;
 
                 UpdateScrollOffset();
@@ -1025,39 +1028,48 @@ namespace UnityEngine
             int cursorPos = cursorIndex;
             graphicalCursorPos = style.GetCursorPixelPosition(new Rect(0, 0, position.width, position.height), m_Content, cursorPos);
 
-            Rect r = style.padding.Remove(position);
+            // The rectangle inside which the text is displayed.
+            Rect viewRect = style.padding.Remove(position);
 
+            // Position of the cursor in the viewRect coordinate system.
+            var localGraphicalCursorPos = graphicalCursorPos;
+            localGraphicalCursorPos.x -= style.padding.left;
+            localGraphicalCursorPos.y -= style.padding.top;
+
+            // The size of the text, without any padding.
             Vector2 contentSize = new Vector2(style.CalcSize(m_Content).x, style.CalcHeight(m_Content, position.width));
+            contentSize.x -= (style.padding.left + style.padding.right);
+            contentSize.y -= (style.padding.top + style.padding.bottom);
 
             // If there is plenty of room, simply show entire string
-            if (contentSize.x < position.width)
+            if (contentSize.x < viewRect.width)
             {
                 scrollOffset.x = 0;
             }
             else if (m_RevealCursor)
             {
                 //go right
-                if (graphicalCursorPos.x + 1 > scrollOffset.x + r.width)
+                if (localGraphicalCursorPos.x + 1 > scrollOffset.x + viewRect.width)
                     // do we want html or apple behavior? this is html behavior
-                    scrollOffset.x = graphicalCursorPos.x - r.width;
+                    scrollOffset.x = localGraphicalCursorPos.x - viewRect.width + 1;
                 //go left
-                if (graphicalCursorPos.x < scrollOffset.x + style.padding.left)
-                    scrollOffset.x = graphicalCursorPos.x - style.padding.left;
+                if (localGraphicalCursorPos.x < scrollOffset.x)
+                    scrollOffset.x = localGraphicalCursorPos.x;
             }
             // ... and height/y as well
             // If there is plenty of room, simply show entire string
-            if (contentSize.y < r.height)
+            if (contentSize.y < viewRect.height)
             {
                 scrollOffset.y = 0;
             }
             else if (m_RevealCursor)
             {
                 //go down
-                if (graphicalCursorPos.y + style.lineHeight > scrollOffset.y + r.height + style.padding.top)
-                    scrollOffset.y = graphicalCursorPos.y - r.height - style.padding.top + style.lineHeight;
+                if (localGraphicalCursorPos.y + style.lineHeight > scrollOffset.y + viewRect.height)
+                    scrollOffset.y = localGraphicalCursorPos.y - viewRect.height + style.lineHeight;
                 //go up
-                if (graphicalCursorPos.y < scrollOffset.y + style.padding.top)
-                    scrollOffset.y = graphicalCursorPos.y - style.padding.top;
+                if (localGraphicalCursorPos.y < scrollOffset.y)
+                    scrollOffset.y = localGraphicalCursorPos.y;
             }
 
             // This case takes many words to explain:
@@ -1065,8 +1077,8 @@ namespace UnityEngine
             // 2. user e.g. deletes some lines of text at the bottom (backspace or select+delete)
             // 3. now suddenly we have space at the bottom of text field, that is now not filled with any content
             // 4. scroll text field up to fill in that space (this is what other text editors do)
-            if (scrollOffset.y > 0 && contentSize.y - scrollOffset.y < r.height + style.padding.top + style.padding.bottom)
-                scrollOffset.y = contentSize.y - r.height - style.padding.top - style.padding.bottom;
+            if (scrollOffset.y > 0 && contentSize.y - scrollOffset.y < viewRect.height)
+                scrollOffset.y = contentSize.y - viewRect.height;
 
             scrollOffset.y = scrollOffset.y < 0 ? 0 : scrollOffset.y;
 

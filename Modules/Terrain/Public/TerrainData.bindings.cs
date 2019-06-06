@@ -218,7 +218,7 @@ namespace UnityEngine
         public float max { get { return m_max; } set { m_max = value; } }
     }
 
-    // Must Match Heightmap::SyncControl
+    // Must Match Heightmap::HeightmapSyncControl
     public enum TerrainHeightmapSyncControl
     {
         None = 0,
@@ -277,17 +277,11 @@ namespace UnityEngine
             DirtyHeightmapRegion(new RectInt(x, y, width, height), syncHeightmapTextureImmediately ? TerrainHeightmapSyncControl.HeightOnly : TerrainHeightmapSyncControl.None);
         }
 
-        extern public int heightmapWidth
-        {
-            [NativeName(k_HeightmapPrefix + "GetWidth")]
-            get;
-        }
+        [Obsolete("Please use heightmapResolution instead. (UnityUpgradable) -> heightmapResolution", false)]
+        public int heightmapWidth => heightmapResolution;
 
-        extern public int heightmapHeight
-        {
-            [NativeName(k_HeightmapPrefix + "GetHeight")]
-            get;
-        }
+        [Obsolete("Please use heightmapResolution instead. (UnityUpgradable) -> heightmapResolution", false)]
+        public int heightmapHeight => heightmapResolution;
 
         extern public RenderTexture heightmapTexture
         {
@@ -325,6 +319,49 @@ namespace UnityEngine
             [NativeName(k_HeightmapPrefix + "GetScale")]
             get;
         }
+
+        public Texture surfaceMaskTexture
+        {
+            get
+            {
+                if (IsSurfaceMaskTextureCompressed())
+                {
+                    return GetCompressedSurfaceMaskTexture();
+                }
+                else
+                {
+                    return GetSurfaceMaskTexture();
+                }
+            }
+        }
+
+        extern public bool enableSurfaceMaskTextureCompression
+        {
+            [NativeName(k_HeightmapPrefix + "GetEnableSurfaceMaskTextureCompression")]
+            get;
+
+            [NativeName(k_HeightmapPrefix + "SetEnableSurfaceMaskTextureCompression")]
+            set;
+        }
+
+        internal RenderTexture surfaceMaskRenderTexture
+        {
+            get
+            {
+                return GetSurfaceMaskTexture();
+            }
+        }
+
+        [NativeName(k_HeightmapPrefix + "IsSurfaceMaskTextureCompressed")]
+        extern internal bool IsSurfaceMaskTextureCompressed();
+
+        [NativeName(k_HeightmapPrefix + "GetSurfaceMaskTexture")]
+        extern internal RenderTexture GetSurfaceMaskTexture();
+
+        [NativeName(k_HeightmapPrefix + "GetCompressedSurfaceMaskTexture")]
+        extern internal Texture2D GetCompressedSurfaceMaskTexture();
+
+        public int surfaceMaskResolution => heightmapResolution - 1;
 
         extern public Vector3 size
         {
@@ -389,7 +426,7 @@ namespace UnityEngine
 
         public float[,] GetHeights(int xBase, int yBase, int width, int height)
         {
-            if (xBase < 0 || yBase < 0 || xBase + width < 0 || yBase + height < 0 || xBase + width > heightmapWidth || yBase + height > heightmapHeight)
+            if (xBase < 0 || yBase < 0 || xBase + width < 0 || yBase + height < 0 || xBase + width > heightmapResolution || yBase + height > heightmapResolution)
             {
                 throw new System.ArgumentException("Trying to access out-of-bounds terrain height information.");
             }
@@ -406,9 +443,9 @@ namespace UnityEngine
             {
                 throw new System.NullReferenceException();
             }
-            if (xBase + heights.GetLength(1) > heightmapWidth || xBase + heights.GetLength(1) < 0 || yBase + heights.GetLength(0) < 0 || xBase < 0 || yBase < 0 || yBase + heights.GetLength(0) > heightmapHeight)
+            if (xBase + heights.GetLength(1) > heightmapResolution || xBase + heights.GetLength(1) < 0 || yBase + heights.GetLength(0) < 0 || xBase < 0 || yBase < 0 || yBase + heights.GetLength(0) > heightmapResolution)
             {
-                throw new System.ArgumentException(UnityString.Format("X or Y base out of bounds. Setting up to {0}x{1} while map size is {2}x{3}", xBase + heights.GetLength(1), yBase + heights.GetLength(0), heightmapWidth, heightmapHeight));
+                throw new System.ArgumentException(UnityString.Format("X or Y base out of bounds. Setting up to {0}x{1} while map size is {2}x{2}", xBase + heights.GetLength(1), yBase + heights.GetLength(0), heightmapResolution));
             }
 
             Internal_SetHeights(xBase, yBase, heights.GetLength(1), heights.GetLength(0), heights);
@@ -436,17 +473,81 @@ namespace UnityEngine
             int height = heights.GetLength(0);
             int width = heights.GetLength(1);
 
-            if (xBase < 0 || (xBase + width) < 0 || (xBase + width) > heightmapWidth)
-                throw new System.ArgumentException(UnityString.Format("X out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", xBase, xBase + width, heightmapWidth));
+            if (xBase < 0 || (xBase + width) < 0 || (xBase + width) > heightmapResolution)
+                throw new System.ArgumentException(UnityString.Format("X out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", xBase, xBase + width, heightmapResolution));
 
-            if (yBase < 0 || (yBase + height) < 0 || (yBase + height) > heightmapHeight)
-                throw new System.ArgumentException(UnityString.Format("Y out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", yBase, yBase + height, heightmapHeight));
+            if (yBase < 0 || (yBase + height) < 0 || (yBase + height) > heightmapResolution)
+                throw new System.ArgumentException(UnityString.Format("Y out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", yBase, yBase + height, heightmapResolution));
 
             Internal_SetHeightsDelayLOD(xBase, yBase, width, height, heights);
         }
 
         [FreeFunction(k_ScriptingInterfacePrefix + "SetHeightsDelayLOD", HasExplicitThis = true)]
         extern private void Internal_SetHeightsDelayLOD(int xBase, int yBase, int width, int height, float[,] heights);
+
+        public bool IsSurface(int x, int y)
+        {
+            if (x < 0 || x >= surfaceMaskResolution || y < 0 || y >= surfaceMaskResolution)
+            {
+                throw new ArgumentException("Trying to access out-of-bounds terrain surface mask information.");
+            }
+
+            return Internal_IsSurface(x, y);
+        }
+
+        public bool[,] GetSurfaceMask(int xBase, int yBase, int width, int height)
+        {
+            if (xBase < 0 || yBase < 0 || width <= 0 || height <= 0 || xBase + width > surfaceMaskResolution || yBase + height > surfaceMaskResolution)
+            {
+                throw new ArgumentException("Trying to access out-of-bounds terrain surface mask information.");
+            }
+
+            return Internal_GetSurfaceMask(xBase, yBase, width, height);
+        }
+
+        public void SetSurfaceMask(int xBase, int yBase, bool[,] surfaceMask)
+        {
+            if (surfaceMask == null) throw new ArgumentNullException("surfaceMask");
+
+            int height = surfaceMask.GetLength(0);
+            int width = surfaceMask.GetLength(1);
+
+            if (xBase < 0 || (xBase + width) > surfaceMaskResolution)
+                throw new ArgumentException(UnityString.Format("X out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", xBase, xBase + width, surfaceMaskResolution));
+
+            if (yBase < 0 || (yBase + height) > surfaceMaskResolution)
+                throw new ArgumentException(UnityString.Format("Y out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", yBase, yBase + height, surfaceMaskResolution));
+
+            Internal_SetSurfaceMask(xBase, yBase, surfaceMask.GetLength(1), surfaceMask.GetLength(0), surfaceMask);
+        }
+
+        public void SetSurfaceMaskDelayLOD(int xBase, int yBase, bool[,] surfaceMask)
+        {
+            if (surfaceMask == null) throw new ArgumentNullException("surfaceMask");
+
+            int height = surfaceMask.GetLength(0);
+            int width = surfaceMask.GetLength(1);
+
+            if (xBase < 0 || (xBase + width) > surfaceMaskResolution)
+                throw new ArgumentException(UnityString.Format("X out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", xBase, xBase + width, surfaceMaskResolution));
+
+            if (yBase < 0 || (yBase + height) > surfaceMaskResolution)
+                throw new ArgumentException(UnityString.Format("Y out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", yBase, yBase + height, surfaceMaskResolution));
+
+            Internal_SetSurfaceMaskDelayLOD(xBase, yBase, width, height, surfaceMask);
+        }
+
+        [FreeFunction(k_ScriptingInterfacePrefix + "SetSurfaceMask", HasExplicitThis = true)]
+        extern private void Internal_SetSurfaceMask(int xBase, int yBase, int width, int height, bool[,] surfaceMask);
+
+        [FreeFunction(k_ScriptingInterfacePrefix + "GetSurfaceMask", HasExplicitThis = true)]
+        extern private bool[,] Internal_GetSurfaceMask(int xBase, int yBase, int width, int height);
+
+        [FreeFunction(k_ScriptingInterfacePrefix + "IsSurface", HasExplicitThis = true)]
+        extern private bool Internal_IsSurface(int x, int y);
+
+        [FreeFunction(k_ScriptingInterfacePrefix + "SetSurfaceMaskDelayLOD", HasExplicitThis = true)]
+        extern private void Internal_SetSurfaceMaskDelayLOD(int xBase, int yBase, int width, int height, bool[,] surfaceMask);
 
         [NativeName(k_HeightmapPrefix + "GetSteepness")]
         extern public float GetSteepness(float x, float y);
@@ -793,14 +894,23 @@ namespace UnityEngine
         [NativeName(k_TreeDatabasePrefix + "RemoveTrees")]
         extern internal int RemoveTrees(Vector2 position, float radius, int prototypeIndex);
 
-        [NativeName(k_HeightmapPrefix + "CopyFromActiveRenderTexture")]
+        [NativeName(k_HeightmapPrefix + "CopyHeightmapFromActiveRenderTexture")]
         private extern void Internal_CopyActiveRenderTextureToHeightmap(RectInt rect, int destX, int destY, TerrainHeightmapSyncControl syncControl);
 
-        [NativeName(k_HeightmapPrefix + "DirtyRegion")]
+        [NativeName(k_HeightmapPrefix + "DirtyHeightmapRegion")]
         private extern void Internal_DirtyHeightmapRegion(int x, int y, int width, int height, TerrainHeightmapSyncControl syncControl);
 
-        [NativeName(k_HeightmapPrefix + "SyncGPUModifications")]
+        [NativeName(k_HeightmapPrefix + "SyncHeightmapGPUModifications")]
         public extern void SyncHeightmap();
+
+        [NativeName(k_HeightmapPrefix + "CopySurfaceMaskFromActiveRenderTexture")]
+        private extern void Internal_CopyActiveRenderTextureToSurfaceMask(RectInt rect, int destX, int destY, bool allowDelayedCPUSync);
+
+        [NativeName(k_HeightmapPrefix + "DirtySurfaceMaskRegion")]
+        private extern void Internal_DirtySurfaceMaskRegion(int x, int y, int width, int height, bool allowDelayedCPUSync);
+
+        [NativeName(k_HeightmapPrefix + "SyncSurfaceMaskGPUModifications")]
+        private extern void Internal_SyncSurfaceMask();
 
         [NativeName(k_SplatDatabasePrefix + "MarkDirtyRegion")]
         private extern void Internal_MarkAlphamapDirtyRegion(int alphamapIndex, int x, int y, int width, int height);

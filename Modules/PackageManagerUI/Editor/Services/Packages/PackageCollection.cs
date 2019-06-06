@@ -305,9 +305,17 @@ namespace UnityEditor.PackageManager.UI
 
         public Package GetPackageByName(string name)
         {
+            if (string.IsNullOrEmpty(name))
+                return null;
+
             Package package;
             packages.TryGetValue(name, out package);
             return package;
+        }
+
+        public Package GetPackageByDisplayName(string name)
+        {
+            return packages.Values.FirstOrDefault(package => package.VersionToDisplay.DisplayName == name);
         }
 
         public Package GetPackage(PackageInfo packageInfo)

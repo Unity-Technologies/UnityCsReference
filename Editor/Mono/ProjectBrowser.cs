@@ -1583,24 +1583,26 @@ namespace UnityEditor
         [UsedByNativeCode]
         internal static bool SelectionIsPackagesRootFolder()
         {
-            if (s_LastInteractedProjectBrowser == null)
+            var pb = s_LastInteractedProjectBrowser;
+            if (pb == null)
                 return false;
 
-            if (s_LastInteractedProjectBrowser.m_ViewMode == ViewMode.OneColumn &&
-                s_LastInteractedProjectBrowser.m_AssetTree != null &&
-                s_LastInteractedProjectBrowser.m_AssetTree.IsSelected(kPackagesFolderInstanceId))
+            if (pb.m_ViewMode == ViewMode.OneColumn &&
+                pb.m_AssetTree != null &&
+                pb.m_AssetTree.IsSelected(kPackagesFolderInstanceId))
             {
                 return true;
             }
 
-            if (s_LastInteractedProjectBrowser.m_ViewMode == ViewMode.TwoColumns &&
-                s_LastInteractedProjectBrowser.m_FolderTree != null &&
-                s_LastInteractedProjectBrowser.m_FolderTree.IsSelected(kPackagesFolderInstanceId))
+            if (pb.m_ViewMode == ViewMode.TwoColumns &&
+                (pb.useTreeViewSelectionInsteadOfMainSelection || Selection.activeInstanceID == 0) &&
+                pb.m_FolderTree != null &&
+                pb.m_FolderTree.IsSelected(kPackagesFolderInstanceId))
             {
                 return true;
             }
 
-            return false;
+            return Selection.activeInstanceID == kPackagesFolderInstanceId;
         }
 
         private bool ShouldDiscardCommandsEventsForImmmutablePackages()
@@ -2835,8 +2837,36 @@ namespace UnityEditor
             return -1;
         }
 
-        // FIXME: The validation logic is duplicated on the C++ side in CanDeleteSelectedAssets
-        // Keep these in sync for now
+        [UsedByNativeCode]
+        internal static bool CanDeleteSelectedAssets()
+        {
+            var treeViewSelection = GetTreeViewFolderSelection();
+            var instanceIDs = treeViewSelection.Length > 0 ? new List<int>(treeViewSelection) : new List<int>(Selection.instanceIDs);
+
+            var objectsToDelete = new HashSet<int>();
+            foreach (var instanceID in instanceIDs)
+            {
+                if (instanceID == AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets") || instanceID == kPackagesFolderInstanceId)
+                {
+                    return false;
+                }
+
+                if (AssetDatabase.IsMainAsset(instanceID))
+                {
+                    var path = AssetDatabase.GetAssetPath(instanceID);
+                    bool isRootFolder, isImmutable;
+                    if (string.IsNullOrEmpty(path) || !AssetDatabase.GetAssetFolderInfo(path, out isRootFolder, out isImmutable) || isImmutable)
+                    {
+                        return false;
+                    }
+
+                    objectsToDelete.Add(instanceID);
+                }
+            }
+
+            return objectsToDelete.Count != 0;
+        }
+
         [UsedByNativeCode]
         internal static void DeleteSelectedAssets(bool askIfSure)
         {
@@ -2986,8 +3016,8 @@ namespace UnityEditor
                         subFolderDisplayNames.Add(Path.GetFileName(subFolderPath));
                 }
 
-                GenericMenu menu = new GenericMenu();
-                if (subFolders.Count >= 0)
+                var menu = new GenericMenu {allowDuplicateNames = true};
+                if (subFolders.Count > 0)
                 {
                     var i = 0;
                     foreach (var subFolderPath in subFolders)

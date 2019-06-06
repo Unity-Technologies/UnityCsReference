@@ -65,10 +65,9 @@ namespace UnityEditor
 
         public static void Smooth(TerrainData terrain)
         {
-            int w = terrain.heightmapWidth;
-            int h = terrain.heightmapHeight;
+            int r = terrain.heightmapResolution;
 
-            float[,] heights = terrain.GetHeights(0, 0, w, h);
+            float[,] heights = terrain.GetHeights(0, 0, r, r);
 
             Smooth(heights, terrain);
 
@@ -77,13 +76,12 @@ namespace UnityEditor
 
         public static void Flatten(TerrainData terrain, float height)
         {
-            int w = terrain.heightmapWidth;
-            int h = terrain.heightmapHeight;
+            int r = terrain.heightmapResolution;
 
-            float[,] heights = new float[h, w];
-            for (int y = 0; y < heights.GetLength(0); y++)
+            float[,] heights = new float[r, r];
+            for (int y = 0; y < r; y++)
             {
-                for (int x = 0; x < heights.GetLength(1); x++)
+                for (int x = 0; x < r; x++)
                 {
                     heights[y, x] = height;
                 }

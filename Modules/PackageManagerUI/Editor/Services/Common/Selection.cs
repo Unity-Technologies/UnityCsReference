@@ -88,9 +88,9 @@ namespace UnityEditor.PackageManager.UI
         }
 
          
-        public void SetSelection(PackageInfo version)
+        public void SetSelection(PackageInfo version, bool forceSelect = false)
         {
-            if (IsSelected(version))
+            if (!forceSelect && IsSelected(version))
                 return;
 
             ClearSelectionInternal();
@@ -101,10 +101,10 @@ namespace UnityEditor.PackageManager.UI
                 AddSelection(version);
         }
 
-        public void SetSelection(Package package)
+        public void SetSelection(Package package, bool forceSelect = false)
         {
             var packageVersion = package != null ? package.VersionToDisplay : null;
-            SetSelection(packageVersion);
+            SetSelection(packageVersion, forceSelect);
         }
 
         public PackageVersion FirstSelected

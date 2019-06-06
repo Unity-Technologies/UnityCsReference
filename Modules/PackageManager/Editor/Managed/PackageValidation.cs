@@ -8,7 +8,7 @@ namespace UnityEditor.PackageManager
 {
     internal static class PackageValidation
     {
-        private static readonly Regex s_NameRegEx = new Regex(@"^([a-z][a-z\d\-\._]{0,230})$");
+        private static readonly Regex s_NameRegEx = new Regex(@"^([a-z][a-z\d\-\._]{0,213})$");
         private static readonly Regex s_AllowedSemverRegEx = new Regex(@"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(\-.+)?$");
         private static readonly Regex s_UnityMajorVersionRegEx = new Regex(@"^([1-9][0-9]{3})$");
         private static readonly Regex s_UnityMinorVersionRegEx = new Regex(@"^([1-9])$");

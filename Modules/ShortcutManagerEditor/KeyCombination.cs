@@ -258,13 +258,7 @@ namespace UnityEditor.ShortcutManagement
             if (keyCodeString.Length != 1)
                 return false;
 
-            var character = keyCodeString[0];
-            if (character >= 'A' && character <= 'Z')
-            {
-                keyCode = KeyCode.A + (character - 'A');
-                additionalModifiers = ShortcutModifiers.Shift;
-                return true;
-            }
+            var character = char.ToLowerInvariant(keyCodeString[0]);
 
             keyCode = (KeyCode)character;
             return Enum.IsDefined(typeof(KeyCode), keyCode);
