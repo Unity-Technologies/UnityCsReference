@@ -33,6 +33,13 @@ namespace UnityEngine.XR.WSA
         Simulated
     };
 
+    [NativeHeader("Runtime/VR/HoloLens/PerceptionRemoting.h")]
+    internal enum RemoteDeviceVersion
+    {
+        V1,
+        V2
+    }
+
     [NativeHeader("Runtime/VR/HoloLens/HolographicEmulation/HolographicEmulationManager.h")]
     [StaticAccessor("HolographicEmulation::HolographicEmulationManager::Get()", StaticAccessorType.Dot)]
     internal partial class HolographicEmulationHelper
@@ -46,6 +53,8 @@ namespace UnityEngine.XR.WSA
     [NativeConditional("ENABLE_HOLOLENS_MODULE")]
     internal partial class PerceptionRemoting
     {
+        internal static extern void SetRemoteDeviceVersion(RemoteDeviceVersion remoteDeviceVersion);
+
         internal static extern void Connect(string clientName);
 
         internal static extern void Disconnect();

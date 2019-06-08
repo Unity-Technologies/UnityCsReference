@@ -822,7 +822,9 @@ namespace UnityEditor
                 DoRenderPreview();
                 previewUtility.EndAndDrawPreview(r);
                 var copy = new RenderTexture(previewUtility.renderTexture);
-                Graphics.CopyTexture(previewUtility.renderTexture, copy);
+                var previous = RenderTexture.active;
+                Graphics.Blit(previewUtility.renderTexture, copy);
+                RenderTexture.active = previous;
                 m_PreviewCache.Add(referenceTargetIndex, copy);
             }
         }

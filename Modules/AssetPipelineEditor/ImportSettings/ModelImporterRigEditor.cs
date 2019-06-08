@@ -262,18 +262,27 @@ namespace UnityEditor
                     EditorGUI.BeginChangeCheck();
                     using (new EditorGUI.DisabledScope(!m_CanMultiEditTransformList))
                     {
-                        rootIndex = EditorGUILayout.Popup(Styles.RootNode, rootIndex, m_RootMotionBoneList);
+                        if (assetTarget == null)
+                        {
+                            m_RootMotionBoneName.stringValue =
+                                EditorGUILayout.TextField(Styles.RootNode, m_RootMotionBoneName.stringValue);
+                        }
+                        else
+                            rootIndex = EditorGUILayout.Popup(Styles.RootNode, rootIndex, m_RootMotionBoneList);
                     }
                     if (EditorGUI.EndChangeCheck())
                     {
-                        if (rootIndex > 0 && rootIndex < m_RootMotionBoneList.Length)
+                        if (assetTarget != null)
                         {
-                            m_RootMotionBoneName.stringValue =
-                                FileUtil.GetLastPathNameComponent(m_RootMotionBoneList[rootIndex].text);
-                        }
-                        else
-                        {
-                            m_RootMotionBoneName.stringValue = "";
+                            if (rootIndex > 0 && rootIndex < m_RootMotionBoneList.Length)
+                            {
+                                m_RootMotionBoneName.stringValue =
+                                    FileUtil.GetLastPathNameComponent(m_RootMotionBoneList[rootIndex].text);
+                            }
+                            else
+                            {
+                                m_RootMotionBoneName.stringValue = "";
+                            }
                         }
                     }
                 }
