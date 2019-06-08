@@ -213,22 +213,44 @@ namespace UnityEditorInternal.APIUpdating
 
         private static bool HandleAssemblyUpdaterErrors(IEnumerable<AssemblyUpdaterUpdateTask> allTasks)
         {
-            var tasksWithErrors = allTasks.Where(t => APIUpdaterAssemblyHelper.IsError(t.Result) || t.Exception != null);
+            var tasksWithErrors = allTasks.Where(t => APIUpdaterAssemblyHelper.IsError(t.Result) || APIUpdaterAssemblyHelper.IsUnknown(t.Result) || t.Exception != null);
             if (!tasksWithErrors.Any())
                 return false;
 
             var sb = new StringBuilder(L10n.Tr("Unable to update following assemblies:"));
             foreach (var updaterTask in tasksWithErrors)
             {
-                sb.AppendFormat("{1} (Name = {2}, Error = {3}) (Output: {4}){0}{5}{0}{6}{0}", Environment.NewLine, updaterTask.Candidate.Path, updaterTask.Candidate.Name, updaterTask.Result, updaterTask.OutputPath, updaterTask.StdOut, updaterTask.StdErr);
-                if (updaterTask.Exception != null)
-                    sb.AppendFormat("\tException: {0}{1}", updaterTask.Exception, Environment.NewLine);
+                sb.Append(FormatErrorFromTask(updaterTask));
             }
 
             ReportIgnoredAssembliesDueToPreviousErrors(sb, allTasks.Except(tasksWithErrors));
 
             APIUpdaterLogger.WriteErrorToConsole(sb.ToString());
             return true;
+        }
+
+        static string FormatErrorFromTask(AssemblyUpdaterUpdateTask updaterTask)
+        {
+            // this may happen if mono.exe (which we use to run AssemblyUpdater.exe) cannot run the executable
+            // and reports an error (for example, *file not found*)
+            var unknownStatusMessage = APIUpdaterAssemblyHelper.IsUnknown(updaterTask.Result)
+                ? " does not match any return code from AssemblyUpdater.exe"
+                : string.Empty;
+
+            var exceptionMessage = updaterTask.Exception != null
+                ? $"{Environment.NewLine}\tException: {updaterTask.Exception}"
+                : string.Empty;
+
+            return string.Format("{1} (Name = {2}, Error = {3}{7}) (Output: {4}){0}{5}{0}{6}{0}{8}",
+                Environment.NewLine,
+                updaterTask.Candidate.Path,
+                updaterTask.Candidate.Name,
+                updaterTask.Result,
+                updaterTask.OutputPath,
+                updaterTask.StdOut,
+                updaterTask.StdErr,
+                unknownStatusMessage,
+                exceptionMessage);
         }
 
         private static void ReportIgnoredAssembliesDueToPreviousErrors(StringBuilder sb, IEnumerable<AssemblyUpdaterUpdateTask> completedSuccessfully)

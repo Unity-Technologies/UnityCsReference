@@ -23,7 +23,8 @@ namespace UnityEditor.Scripting
     {
         public readonly BuildTarget _target;
         public readonly bool _development_player;
-        public readonly bool _editor;
+        public readonly bool _buildingForEditor;
+        public readonly bool _isEditorAssembly;
         public readonly bool _allowUnsafeCode;
         public readonly ApiCompatibilityLevel _api_compatibility_level;
         public readonly string[] _files;
@@ -36,7 +37,8 @@ namespace UnityEditor.Scripting
         {
             _target = target;
             _development_player = false;
-            _editor = false;
+            _buildingForEditor = false;
+            _isEditorAssembly = false;
             _allowUnsafeCode = allowUnsafeCode;
             _api_compatibility_level = api_compatibility_level;
             _files = files;
@@ -46,11 +48,12 @@ namespace UnityEditor.Scripting
             _responseFiles = null;
         }
 
-        public MonoIsland(BuildTarget target, bool editor, bool development_player, bool allowUnsafeCode, ApiCompatibilityLevel api_compatibility_level, string[] files, string[] references, string[] defines, string output)
+        public MonoIsland(BuildTarget target, bool buildingForEditor, bool isEditorAssembly, bool development_player, bool allowUnsafeCode, ApiCompatibilityLevel api_compatibility_level, string[] files, string[] references, string[] defines, string output)
         {
             _target = target;
             _development_player = development_player;
-            _editor = editor;
+            _buildingForEditor = buildingForEditor;
+            _isEditorAssembly = isEditorAssembly;
             _allowUnsafeCode = allowUnsafeCode;
             _api_compatibility_level = api_compatibility_level;
             _files = files;
@@ -60,8 +63,8 @@ namespace UnityEditor.Scripting
             _responseFiles = null;
         }
 
-        public MonoIsland(BuildTarget target, bool editor, bool development_player, bool allowUnsafeCode, ApiCompatibilityLevel api_compatibility_level, string[] files, string[] references, string[] defines, string output, string[] responseFiles)
-            : this(target, editor, development_player, allowUnsafeCode, api_compatibility_level, files, references, defines, output)
+        public MonoIsland(BuildTarget target, bool buildingForEditor, bool isEditorAssembly, bool development_player, bool allowUnsafeCode, ApiCompatibilityLevel api_compatibility_level, string[] files, string[] references, string[] defines, string output, string[] responseFiles)
+            : this(target, buildingForEditor, isEditorAssembly, development_player, allowUnsafeCode, api_compatibility_level, files, references, defines, output)
         {
             _responseFiles = responseFiles;
         }

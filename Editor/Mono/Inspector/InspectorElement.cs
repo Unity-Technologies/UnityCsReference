@@ -311,6 +311,34 @@ namespace UnityEditor.UIElements
             return false;
         }
 
+        static internal bool SetWideModeForWidth(VisualElement displayElement)
+        {
+            var previousWideMode = EditorGUIUtility.wideMode;
+
+            float inspectorWidth = 0;
+
+            // the inspector's width can be NaN if this is our first layout check.
+            // or when the inspector display is changed from none to flex, the width will be zero during the measuring phase.
+            // we try to find a parent with a a width. If none are found, we'll set wideMode to true to avoid computing
+            // too tall an inspector on the first layout calculation
+            while (displayElement != null && (float.IsNaN(inspectorWidth) || inspectorWidth == 0))
+            {
+                inspectorWidth = displayElement.layout.width;
+                displayElement = displayElement.hierarchy.parent;
+            }
+
+            if (!float.IsNaN(inspectorWidth) && inspectorWidth > 0)
+            {
+                EditorGUIUtility.wideMode = inspectorWidth > Editor.k_WideModeMinWidth;
+            }
+            else
+            {
+                EditorGUIUtility.wideMode = true;
+            }
+
+            return previousWideMode;
+        }
+
         IMGUIContainer m_IMGUIContainer;
 
         private VisualElement CreateIMGUIInspectorFromEditor(SerializedObject serializedObject, Editor editor,
@@ -391,21 +419,10 @@ namespace UnityEditor.UIElements
                     //set the current PropertyHandlerCache to the current editor
                     ScriptAttributeUtility.propertyHandlerCache = editor.propertyHandlerCache;
 
-                    var originalWideMode = EditorGUIUtility.wideMode;
                     var originalHierarchyMode = EditorGUIUtility.hierarchyMode;
-
                     EditorGUIUtility.hierarchyMode = true;
-                    var inspectorWidth = inspector.layout.width;
-                    // the inspector's width can be NaN if this is our first layout check.
-                    // If that's the case we'll set wideMode to true to avoid computing too tall an inspector on the first layout calculation
-                    if (!float.IsNaN(inspectorWidth))
-                    {
-                        EditorGUIUtility.wideMode = inspectorWidth > Editor.k_WideModeMinWidth;
-                    }
-                    else
-                    {
-                        EditorGUIUtility.wideMode = true;
-                    }
+
+                    var originalWideMode = SetWideModeForWidth(inspector);
 
                     GUIStyle editorWrapper = (editor.UseDefaultMargins()
                         ? EditorStyles.inspectorDefaultMargins
@@ -464,6 +481,14 @@ namespace UnityEditor.UIElements
                     }
                     finally
                     {
+                        if (GUI.changed)
+                        {
+                            // This forces a relayout of all imguicontainers in this inspector window.
+                            // fixes part of case 1148706
+                            var element = inspector.GetFirstAncestorOfType<EditorElement>();
+                            if (element != null)
+                                EditorElement.InvalidateIMGUILayouts(element.parent);
+                        }
                         EditorGUIUtility.wideMode = originalWideMode;
                         EditorGUIUtility.hierarchyMode = originalHierarchyMode;
                     }

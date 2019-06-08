@@ -3,10 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Reflection;
 using UnityEngine;
-using UnityEngineInternal;
-using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
+using UnityEngine.Scripting;
 
 namespace UnityEngine.Playables
 {

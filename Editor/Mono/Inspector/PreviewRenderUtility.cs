@@ -221,7 +221,7 @@ namespace UnityEditor
         {
             Texture defaultEnvTexture = ReflectionProbe.defaultTexture;
 
-            if (Unsupported.SetOverrideRenderSettings(previewScene.scene))
+            if (Unsupported.SetOverrideLightingSettings(previewScene.scene))
             {
                 RenderSettings.ambientMode = AmbientMode.Flat;
                 RenderSettings.ambientLight = ambientColor;
@@ -260,7 +260,7 @@ namespace UnityEditor
             {
                 var oldProbe = RenderSettings.ambientProbe;
                 Texture defaultEnvTexture = ReflectionProbe.defaultTexture;
-                if (Unsupported.SetOverrideRenderSettings(previewScene.scene))
+                if (Unsupported.SetOverrideLightingSettings(previewScene.scene))
                 {
                     // Most preview windows just want the light probe from the main scene so by default we copy it here. It can then be overridden if user wants.
                     RenderSettings.ambientProbe = oldProbe;
@@ -338,7 +338,7 @@ namespace UnityEditor
 
         public Texture EndPreview()
         {
-            Unsupported.RestoreOverrideRenderSettings();
+            Unsupported.RestoreOverrideLightingSettings();
 
             m_SavedState.Restore();
             FinishFrame();
@@ -347,7 +347,7 @@ namespace UnityEditor
 
         private void FinishFrame()
         {
-            Unsupported.RestoreOverrideRenderSettings();
+            Unsupported.RestoreOverrideLightingSettings();
             foreach (var light in lights)
                 light.enabled = false;
         }
@@ -366,7 +366,7 @@ namespace UnityEditor
         public Texture2D EndStaticPreview()
         {
             if (!EditorApplication.isUpdating)
-                Unsupported.RestoreOverrideRenderSettings();
+                Unsupported.RestoreOverrideLightingSettings();
 
             var tmp = RenderTexture.GetTemporary((int)m_TargetRect.width, (int)m_TargetRect.height, 0, GraphicsFormat.R8G8B8A8_UNorm);
 

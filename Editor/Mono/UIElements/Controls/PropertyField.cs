@@ -100,13 +100,22 @@ namespace UnityEditor.UIElements
                 {
                     customPropertyGUI = new IMGUIContainer(() =>
                     {
-                        EditorGUI.BeginChangeCheck();
-                        m_SerializedProperty.serializedObject.Update();
+                        var originalWideMode = InspectorElement.SetWideModeForWidth(this);
 
-                        EditorGUILayout.PropertyField(m_SerializedProperty, true);
+                        try
+                        {
+                            EditorGUI.BeginChangeCheck();
+                            m_SerializedProperty.serializedObject.Update();
 
-                        m_SerializedProperty.serializedObject.ApplyModifiedProperties();
-                        EditorGUI.EndChangeCheck();
+                            EditorGUILayout.PropertyField(m_SerializedProperty, true);
+
+                            m_SerializedProperty.serializedObject.ApplyModifiedProperties();
+                            EditorGUI.EndChangeCheck();
+                        }
+                        finally
+                        {
+                            EditorGUIUtility.wideMode = originalWideMode;
+                        }
                     });
                 }
                 hierarchy.Add(customPropertyGUI);

@@ -209,22 +209,22 @@ namespace UnityEngine
     internal class ParticleSystemExtensionsImpl
     {
         [FreeFunction(Name = "ParticleSystemScriptBindings::GetSafeCollisionEventSize")]
-        extern internal static int GetSafeCollisionEventSize(ParticleSystem ps);
+        extern internal static int GetSafeCollisionEventSize([NotNull] ParticleSystem ps);
 
         [FreeFunction(Name = "ParticleSystemScriptBindings::GetCollisionEventsDeprecated")]
-        extern internal static int GetCollisionEventsDeprecated(ParticleSystem ps, GameObject go, [Out] ParticleCollisionEvent[] collisionEvents);
+        extern internal static int GetCollisionEventsDeprecated([NotNull] ParticleSystem ps, GameObject go, [Out] ParticleCollisionEvent[] collisionEvents);
 
         [FreeFunction(Name = "ParticleSystemScriptBindings::GetSafeTriggerParticlesSize")]
-        extern internal static int GetSafeTriggerParticlesSize(ParticleSystem ps, int type);
+        extern internal static int GetSafeTriggerParticlesSize([NotNull] ParticleSystem ps, int type);
 
         [FreeFunction(Name = "ParticleSystemScriptBindings::GetCollisionEvents")]
-        extern internal static int GetCollisionEvents(ParticleSystem ps, [NotNull] GameObject go, [NotNull] List<ParticleCollisionEvent> collisionEvents);
+        extern internal static int GetCollisionEvents([NotNull] ParticleSystem ps, [NotNull] GameObject go, [NotNull] List<ParticleCollisionEvent> collisionEvents);
 
         [FreeFunction(Name = "ParticleSystemScriptBindings::GetTriggerParticles")]
-        extern internal static int GetTriggerParticles(ParticleSystem ps, int type, [NotNull] List<ParticleSystem.Particle> particles);
+        extern internal static int GetTriggerParticles([NotNull] ParticleSystem ps, int type, [NotNull] List<ParticleSystem.Particle> particles);
 
         [FreeFunction(Name = "ParticleSystemScriptBindings::SetTriggerParticles")]
-        extern internal static void SetTriggerParticles(ParticleSystem ps, int type, [NotNull] List<ParticleSystem.Particle> particles, int offset, int count);
+        extern internal static void SetTriggerParticles([NotNull] ParticleSystem ps, int type, [NotNull] List<ParticleSystem.Particle> particles, int offset, int count);
     }
 
     public static partial class ParticlePhysicsExtensions

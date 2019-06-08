@@ -17,6 +17,7 @@ namespace UnityEditor
 
         public virtual void OnEnable()
         {
+            alwaysAllowExpansion = true;
             m_SortingOrder = serializedObject.FindProperty("m_SortingOrder");
             m_SortingLayerID = serializedObject.FindProperty("m_SortingLayerID");
         }

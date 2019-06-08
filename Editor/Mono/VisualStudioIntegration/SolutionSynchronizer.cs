@@ -506,7 +506,7 @@ namespace UnityEditor.VisualStudioIntegration
             var references = new List<string>();
             var projectReferences = new List<Match>();
             Match match;
-            bool isBuildingEditorProject = island._output.EndsWith("-Editor.dll");
+            bool isBuildingEditorProject = island._isEditorAssembly;
 
             foreach (string file in island._files)
             {

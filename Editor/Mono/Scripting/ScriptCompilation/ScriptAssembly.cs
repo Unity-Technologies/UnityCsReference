@@ -79,6 +79,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             bool buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;
             bool developmentBuild = (options & EditorScriptCompilationOptions.BuildingDevelopmentBuild) == EditorScriptCompilationOptions.BuildingDevelopmentBuild;
 
+            bool isEditorAssembly = (Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
+
             var references = ScriptAssemblyReferences.Select(a => AssetPath.Combine(a.OutputDirectory, a.Filename));
 
             var referencesArray = references.Concat(References).ToArray();
@@ -95,6 +97,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             return new MonoIsland(BuildTarget,
                 buildingForEditor,
+                isEditorAssembly,
                 developmentBuild,
                 CompilerOptions.AllowUnsafeCode,
                 ApiCompatibilityLevel,

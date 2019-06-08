@@ -37,7 +37,7 @@ namespace UnityEditor.Scripting.Compilers
             arguments.Add("/langversion:latest");
 
             var platformSupportModule = ModuleManager.FindPlatformSupportModule(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget));
-            if (platformSupportModule != null && !m_Island._editor)
+            if (platformSupportModule != null && !m_Island._buildingForEditor)
             {
                 var compilationExtension = platformSupportModule.CreateCompilationExtension();
 
@@ -130,7 +130,7 @@ namespace UnityEditor.Scripting.Compilers
 
             arguments.Add("/debug:portable");
 
-            var disableOptimizations = m_Island._development_player || (m_Island._editor && EditorPrefs.GetBool("AllowAttachedDebuggingOfEditor", true));
+            var disableOptimizations = m_Island._development_player || (m_Island._buildingForEditor && EditorPrefs.GetBool("AllowAttachedDebuggingOfEditor", true));
             if (!disableOptimizations)
             {
                 arguments.Add("/optimize+");
