@@ -166,9 +166,7 @@ namespace UnityEngine.UIElements.UIR
         bool m_TransformBufferNeedsUpdate;
         ComputeBuffer[] m_TransformBuffers;
 
-        // We need to make sure we're using version 4.5+ with OpenGL as this is the condition used by the shader
-        // to determine whether StructuredBuffers are used or not
-        public bool supportsFragmentClipping { get; } = SystemInfo.supportsComputeShaders && !OpenGLCoreBelow45();
+        public bool supportsFragmentClipping => ComputeIsAvailable;
         BlockAllocator m_ClippingAllocator;
         List<NativeArray<ClippingData>> m_ClippingPages;
         uint m_ClippingBufferToUse;
@@ -194,6 +192,10 @@ namespace UnityEngine.UIElements.UIR
         public StatePool statePool { get; } = new StatePool();
         readonly MeshHandlePool m_MeshHandlePool = new MeshHandlePool();
         readonly DrawChainState m_DrawChainState = new DrawChainState();
+
+        static bool? s_ComputeIsAvailable;
+        const string k_ComputeIsAvailableTag = "UIE_ComputeIsAvailable";
+        const string k_ComputeIsAvailableTrue = "1";
 
 
         static UIRenderDevice()
@@ -236,6 +238,34 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
+        // TODO: Remove this once case 1148851 has been fixed.
+        static internal Func<Shader> getEditorShader = null;
+
+        /// <summary>
+        /// Indicates whether the active subshader of the stock shader has compute capability. Derived shaders are
+        /// expected to work as the stock shader in that regard.
+        /// </summary>
+        bool ComputeIsAvailable
+        {
+            get
+            {
+                if (!s_ComputeIsAvailable.HasValue)
+                {
+                    // Remove this workaround once case 1148851 has been fixed. In the editor, subshaders aren't stripped
+                    // according to the graphic device capabilities unless the shader is precompiled. Querying tags will
+                    // always return the tags from the first subshader. The editor shader is precompiled and doesn't
+                    // suffer this issue, so we can use it as a reference.
+                    var stockDefaultShader = getEditorShader();
+                    var stockDefaultMaterial = new Material(stockDefaultShader);
+                    string tagValue = stockDefaultMaterial.GetTag(k_ComputeIsAvailableTag, false);
+                    UIRUtility.Destroy(stockDefaultMaterial);
+                    s_ComputeIsAvailable = tagValue == k_ComputeIsAvailableTrue;
+                }
+
+                return s_ComputeIsAvailable.Value;
+            }
+        }
+
         void CompleteCreation()
         {
             if (m_DrawRanges.IsCreated)
@@ -244,7 +274,7 @@ namespace UnityEngine.UIElements.UIR
             // Initialize Skinning-Transform Data
             {
                 var initialTransformCapacity = m_LazyCreationInitialTransformCapacity;
-                bool unlimitedTransformCount = SystemInfo.supportsComputeShaders && !OpenGLCoreBelow45();
+                bool unlimitedTransformCount = ComputeIsAvailable;
                 if (!unlimitedTransformCount)
                     // This should be in sync with the fallback value of UIE_SKIN_ELEMS_COUNT_MAX_CONSTANTS in UnityUIE.cginc (minus one for the identity matrix)
                     initialTransformCapacity = 19;
@@ -648,18 +678,6 @@ namespace UnityEngine.UIElements.UIR
             }
 
             return m_DefaultMaterial;
-        }
-
-        static bool OpenGLCoreBelow45()
-        {
-            int maj, min;
-            if (UIRUtility.GetOpenGLCoreVersion(out maj, out min))
-            {
-                if (maj == 4)
-                    return min < 5;
-                return maj < 4;
-            }
-            else return false;
         }
 
         static void SetupStandardMaterial(Material material, DrawingModes mode)

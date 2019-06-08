@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -147,6 +149,18 @@ namespace UnityEditor.UIElements
             return headerElement;
         }
 
+        private static UQueryState<IMGUIContainer> ImguiContainersQuery = new UQueryBuilder<IMGUIContainer>(null).SingleBaseType().Build();
+
+
+        internal static void InvalidateIMGUILayouts(VisualElement element)
+        {
+            if (element != null)
+            {
+                var q = ImguiContainersQuery.RebuildOn(element);
+                q.ForEach(e => e.MarkDirtyLayout());
+            }
+        }
+
         void HeaderOnGUI()
         {
             if (!IsEditorValid())
@@ -181,6 +195,13 @@ namespace UnityEditor.UIElements
             using (new InspectorWindowUtils.LayoutGroupChecker())
             {
                 m_DragRect = DrawEditorHeader(target, ref wasVisible);
+            }
+
+            if (GUI.changed)
+            {
+                // If the header changed something, we must trigger a layout calculating on imgui children
+                // Fixes Material editor toggling layout issues (case 1148706)
+                InvalidateIMGUILayouts(this);
             }
 
             if (wasVisible != IsElementVisible(m_InspectorElement))

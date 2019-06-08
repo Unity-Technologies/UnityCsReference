@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{A15E35A9-22E8-4A79-B6CE-C0984062DAC6}</ProjectGuid>
+    
     <OutputType>Library</OutputType>
     <RootNamespace>Unity.DataContract</RootNamespace>
     <AssemblyName>Unity.DataContract</AssemblyName>

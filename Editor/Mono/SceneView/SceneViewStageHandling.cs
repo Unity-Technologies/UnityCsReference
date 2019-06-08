@@ -160,6 +160,10 @@ namespace UnityEditor
                 if (!HasAnyActiveLights(stage.prefabStage.scene))
                     m_SceneView.sceneLighting = false;
 
+                // Default to not showing skybox if user did not specify a custom environment scene.
+                if (string.IsNullOrEmpty(stage.prefabStage.scene.path))
+                    m_SceneView.sceneViewState.showSkybox = false;
+
                 // For UI to frame properly we need to delay one full Update for the layouting to have been processed
                 EditorApplication.update += DelayedFraming;
             }

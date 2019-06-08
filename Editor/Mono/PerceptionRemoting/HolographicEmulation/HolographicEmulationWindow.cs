@@ -27,6 +27,8 @@ namespace UnityEngine.XR.WSA
         [SerializeField]
         private EmulationMode m_Mode = EmulationMode.None;
         [SerializeField]
+        private RemoteDeviceVersion m_DeviceVersion = RemoteDeviceVersion.V1;
+        [SerializeField]
         private int m_RoomIndex = 0;
         [SerializeField]
         private PlaymodeInputType m_InputType = PlaymodeInputType.LeftController;
@@ -46,6 +48,7 @@ namespace UnityEngine.XR.WSA
 
         private static GUIContent s_ConnectionStatusText = EditorGUIUtility.TrTextContent("Connection Status");
         private static GUIContent s_EmulationModeText = EditorGUIUtility.TrTextContent("Emulation Mode");
+        private static GUIContent s_DeviceVersionText = EditorGUIUtility.TrTextContent("Device Version");
         private static GUIContent s_RoomText = EditorGUIUtility.TrTextContent("Room");
         private static GUIContent s_InputText = EditorGUIUtility.TrTextContent("Simulated Input");
         private static GUIContent s_RemoteMachineText = EditorGUIUtility.TrTextContent("Remote Machine");
@@ -65,6 +68,12 @@ namespace UnityEngine.XR.WSA
             EditorGUIUtility.TrTextContent("None"),
             EditorGUIUtility.TrTextContent("Remote to Device"),
             EditorGUIUtility.TrTextContent("Simulate in Editor")
+        };
+
+        private static GUIContent[] s_DeviceVersionStrings = new GUIContent[]
+        {
+            EditorGUIUtility.TrTextContent("HoloLens (1st Gen)"),
+            EditorGUIUtility.TrTextContent("HoloLens 2")
         };
 
         private static GUIContent[] s_RoomStrings = new GUIContent[]
@@ -240,6 +249,9 @@ namespace UnityEngine.XR.WSA
 
         private void RemotingPreferencesOnGUI()
         {
+            m_DeviceVersion = (RemoteDeviceVersion)EditorGUILayout.Popup(s_DeviceVersionText, (int)m_DeviceVersion, s_DeviceVersionStrings);
+            PerceptionRemoting.SetRemoteDeviceVersion(m_DeviceVersion);
+
             EditorGUI.BeginChangeCheck();
             m_RemoteMachineAddress = EditorGUILayout.DelayedTextFieldDropDown(s_RemoteMachineText, m_RemoteMachineAddress, m_RemoteMachineHistory);
             if (EditorGUI.EndChangeCheck())

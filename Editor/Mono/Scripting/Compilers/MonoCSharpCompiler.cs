@@ -35,7 +35,7 @@ namespace UnityEditor.Scripting.Compilers
             if (m_Island._allowUnsafeCode)
                 arguments.Add("-unsafe");
 
-            if (!m_Island._development_player && !m_Island._editor)
+            if (!m_Island._development_player && !m_Island._buildingForEditor)
                 arguments.Add("-optimize");
 
             foreach (string dll in m_Island._references)

@@ -516,16 +516,6 @@ namespace UnityEditorInternal.VR
             return list.elementHeight + customOptionsHeight;
         }
 
-        private void SelectVRDeviceElement(BuildTargetGroup target, ReorderableList list)
-        {
-            string name = (string)m_VRDeviceActiveUI[target].list[list.index];
-            VRCustomOptions customOptions;
-            if (m_CustomOptions.TryGetValue(name, out customOptions))
-            {
-                customOptions.IsExpanded = false;
-            }
-        }
-
         private bool GetVRDeviceElementIsInList(BuildTargetGroup target, string deviceName)
         {
             var enabledDevices = VREditor.GetVREnabledDevicesOnTargetGroup(target);
@@ -534,6 +524,16 @@ namespace UnityEditorInternal.VR
                 return true;
 
             return false;
+        }
+
+        private void DragVRDeviceElement(BuildTargetGroup target, ReorderableList list)
+        {
+            string name = (string)m_VRDeviceActiveUI[target].list[list.index];
+            VRCustomOptions customOptions;
+            if (m_CustomOptions.TryGetValue(name, out customOptions))
+            {
+                customOptions.IsExpanded = false;
+            }
         }
 
         private void VRDevicesGUIOneBuildTarget(BuildTargetGroup targetGroup)
@@ -548,7 +548,7 @@ namespace UnityEditorInternal.VR
                 rlist.drawElementCallback = (rect, index, isActive, isFocused) => DrawVRDeviceElement(targetGroup, rect, index, isActive, isFocused);
                 rlist.drawHeaderCallback = (rect) => GUI.Label(rect, Styles.listHeader, EditorStyles.label);
                 rlist.elementHeightCallback = (index) => GetVRDeviceElementHeight(targetGroup, index);
-                rlist.onSelectCallback = (list) => SelectVRDeviceElement(targetGroup, list);
+                rlist.onMouseDragCallback = (list) => DragVRDeviceElement(targetGroup, list);
                 m_VRDeviceActiveUI.Add(targetGroup, rlist);
             }
 
