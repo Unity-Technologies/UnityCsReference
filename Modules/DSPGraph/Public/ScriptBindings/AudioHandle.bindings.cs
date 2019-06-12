@@ -5,12 +5,14 @@
 
 using System;
 using UnityEngine.Bindings;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace Unity.Audio
 {
     [NativeType(Header = "Modules/DSPGraph/Public/DSPGraphHandles.h")]
     internal struct Handle : IHandle<Handle>
     {
+        [NativeDisableUnsafePtrRestriction]
         public IntPtr Ptr;
         public int Version;
 

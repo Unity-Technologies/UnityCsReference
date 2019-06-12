@@ -27,9 +27,8 @@ namespace UnityEditor.AddComponent
         }
 
         public NewScriptDropdownItem()
-            : base("New Script")
+            : base("New Script", L10n.Tr("New Script"))
         {
-            localizedName = L10n.Tr("New Script");
         }
 
         internal bool CanCreate()

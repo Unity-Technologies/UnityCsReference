@@ -77,6 +77,7 @@ namespace UnityEditor
     [NativeAsStruct]
     [StructLayout(LayoutKind.Sequential)]
     [NativeType(Header = "Modules/AssetPipelineEditor/Public/VideoClipImporter.h")]
+    [Serializable]
     public partial class VideoImporterTargetSettings
     {
         public bool                   enableTranscoding;

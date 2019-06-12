@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{016C8D73-3641-47FB-8D33-7A015A7EC7DB}</ProjectGuid>
+    
     <OutputType>Library</OutputType>
     <RootNamespace>UnityEditor</RootNamespace>
     <AssemblyName>UnityEditor</AssemblyName>
@@ -3018,6 +3018,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\AssetPathVersionMetaData.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\AssetPathVersionMetaData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\AutoReferencedPackageAssemblies.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\AutoReferencedPackageAssemblies.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\CSharpNamespaceParser.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\CSharpNamespaceParser.cs</Link>

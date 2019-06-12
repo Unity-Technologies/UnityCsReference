@@ -161,6 +161,29 @@ namespace UnityEngine
             return GetComponentsInParent<T>(false);
         }
 
+        [System.Security.SecuritySafeCritical]
+        public unsafe bool TryGetComponent<T>(out T component)
+        {
+            var h = new CastHelper<T>();
+            TryGetComponentFastPath(typeof(T), new System.IntPtr(&h.onePointerFurtherThanT));
+            component = h.t;
+            return h.t != null;
+        }
+
+        public bool TryGetComponent(Type type, out Component component)
+        {
+            component = TryGetComponentInternal(type);
+            return component != null;
+        }
+
+        [TypeInferenceRule(TypeInferenceRules.TypeReferencedByFirstArgument)]
+        [FreeFunction(Name = "GameObjectBindings::TryGetComponentFromType", HasExplicitThis = true, ThrowsException = true)]
+        internal extern Component TryGetComponentInternal(Type type);
+
+        [FreeFunction(Name = "GameObjectBindings::TryGetComponentFastPath", HasExplicitThis = true, ThrowsException = true)]
+        [NativeWritableSelf]
+        internal extern void TryGetComponentFastPath(Type type, IntPtr oneFurtherThanResultValue);
+
         public static GameObject FindWithTag(string tag)
         {
             return FindGameObjectWithTag(tag);

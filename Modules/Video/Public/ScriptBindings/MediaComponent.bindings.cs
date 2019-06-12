@@ -11,6 +11,7 @@ using UnityEngine.Experimental.Audio;
 
 using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("VideoTesting")]
+[assembly: InternalsVisibleTo("Unity.Audio.DSPGraph")]
 
 namespace UnityEngineInternal.Video
 {

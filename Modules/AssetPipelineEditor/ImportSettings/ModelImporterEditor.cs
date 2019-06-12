@@ -2,6 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.IO;
+using System.Linq;
+
 using UnityEngine;
 using UnityEditor;
 
@@ -12,6 +16,16 @@ namespace UnityEditor
     internal class ModelImporterEditor : AssetImporterTabbedEditor
     {
         static string s_LocalizedTitle = L10n.Tr("Model Import Settings");
+
+        static string s_C4DDeprecationWarning = L10n.Tr("Starting with the Unity 2019.3 release, direct import of Cinema4D files will require an external plugin. Keep an eye on our External Tools forum for updates.\n\nPlease note that FBX files exported from Cinema4D will still be supported.");
+
+        public override void OnInspectorGUI()
+        {
+            if (targets.Any(t => t != null && Path.GetExtension(((AssetImporter)t).assetPath).Equals(".c4d", StringComparison.OrdinalIgnoreCase)))
+                EditorGUILayout.HelpBox(s_C4DDeprecationWarning, MessageType.Warning);
+
+            base.OnInspectorGUI();
+        }
 
         public override void OnEnable()
         {

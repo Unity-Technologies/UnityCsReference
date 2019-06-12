@@ -294,8 +294,6 @@ namespace UnityEditor
             if (!m_Group.enabled)
                 return m_Editing;
 
-            int id = GUIUtility.GetControlID(FocusType.Passive);
-
             if (Event.current.type == EventType.Layout)
             {
                 //If the group has moved / scaled since last frame need to retetra);)
@@ -309,16 +307,12 @@ namespace UnityEditor
                 m_LastPosition = m_Group.transform.position;
                 m_LastRotation = m_Group.transform.rotation;
                 m_LastScale = m_Group.transform.localScale;
-
-                // Tell the handles system that we're the default tool (the one that should get focus when user clicks on nothing else.)
-                HandleUtility.AddDefaultControl(id);
             }
 
             //See if we should enter edit mode!
             bool firstSelect = false;
 
-            // make sure we are the closest tool, so that the user is not clicking the handles
-            if ((Event.current.type == EventType.MouseDown) && (HandleUtility.nearestControl == id) && (Event.current.button == 0))
+            if (Event.current.type == EventType.MouseDown && Event.current.button == 0)
             {
                 //We have no probes selected and have clicked the mouse... Did we click a probe
                 if (SelectedCount == 0)

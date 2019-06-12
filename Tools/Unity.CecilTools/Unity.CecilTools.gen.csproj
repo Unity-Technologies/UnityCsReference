@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{35FF4EBD-85F0-4727-8AC0-32AE4F3723D0}</ProjectGuid>
+    
     <OutputType>Library</OutputType>
     <RootNamespace>Unity.CecilTools</RootNamespace>
     <AssemblyName>Unity.CecilTools</AssemblyName>

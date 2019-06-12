@@ -8,6 +8,7 @@ using UnityEngine.Bindings;
 
 namespace Unity.Audio
 {
+    [NativeHeader("Modules/DSPGraph/Public/DSPSampleProvider.bindings.h")]
     [NativeType(Header = "Modules/DSPGraph/Public/DSPCommandBlock.bindings.h")]
     internal struct DSPCommandBlockInternal
     {
@@ -61,10 +62,10 @@ namespace Unity.Audio
         public static extern void Internal_AddOutletPort(ref Handle graph, ref Handle block, ref Handle node, int channelCount, int format);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        public static extern unsafe void Internal_SetSampleProvider(ref Handle graph, ref Handle block, ref Handle node, int item, int index, uint audioSampleProviderId);
+        public static extern unsafe void Internal_SetSampleProvider(ref Handle graph, ref Handle block, ref Handle node, int item, int index, uint audioSampleProviderId, bool destroyOnRemove);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        public static extern unsafe void Internal_InsertSampleProvider(ref Handle graph, ref Handle block, ref Handle node, int item, int index, uint audioSampleProviderId);
+        public static extern unsafe void Internal_InsertSampleProvider(ref Handle graph, ref Handle block, ref Handle node, int item, int index, uint audioSampleProviderId, bool destroyOnRemove);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
         public static extern unsafe void Internal_RemoveSampleProvider(ref Handle graph, ref Handle block, ref Handle node, int item, int index);

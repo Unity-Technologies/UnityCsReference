@@ -312,6 +312,7 @@ namespace UnityEditor
 
         public void OnEnable()
         {
+            prevSizeGroupType = (int)currentSizeGroupType;
             titleContent = GetLocalizedTitleContent();
             UpdateZoomAreaAndParent();
             dontClearBackground = true;

@@ -41,6 +41,7 @@ namespace UnityEditor
         OverrideSampleRate = 2
     }
 
+    [System.Serializable]
     public partial struct AudioImporterSampleSettings
     {
         public AudioClipLoadType        loadType;
