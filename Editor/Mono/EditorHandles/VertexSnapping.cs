@@ -108,6 +108,7 @@ namespace UnityEditor
 
             // Important to reset handleOffset before querying handlePosition,
             // since handlePosition depends on handleOffset.
+            Tools.InvalidateHandlePosition();
             Tools.handleOffset = Vector3.zero;
             Tools.handleOffset = near - Tools.handlePosition;
         }

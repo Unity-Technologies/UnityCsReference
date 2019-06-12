@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{A6749DFF-E369-4FE6-9019-6B7C555E80EA}</ProjectGuid>
+    
     <OutputType>Library</OutputType>
     <RootNamespace>Unity.SerializationLogic</RootNamespace>
     <AssemblyName>Unity.SerializationLogic</AssemblyName>

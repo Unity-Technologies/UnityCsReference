@@ -33,7 +33,7 @@ namespace UnityEditor.AddComponent
             {
                 if (hasSearch && item is ComponentDropdownItem)
                 {
-                    name = ((ComponentDropdownItem)item).searchableName;
+                    name = ((ComponentDropdownItem)item).searchableNameLocalized;
                 }
                 base.DrawItem(item, name, icon, enabled, drawArrow, selected, hasSearch);
                 return;

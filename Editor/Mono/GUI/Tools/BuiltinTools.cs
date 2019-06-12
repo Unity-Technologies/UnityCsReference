@@ -406,7 +406,7 @@ namespace UnityEditor
                 GUI.color = fadedColor;
             }
 
-            Vector3 oldPivot = Tools.GetHandlePosition();
+            Vector3 oldPivot = Tools.cachedHandlePosition;
 
             // Pivot handle
             if (!Tools.vertexDragging)

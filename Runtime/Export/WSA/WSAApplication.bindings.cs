@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 
 namespace UnityEngine.WSA
 {
@@ -49,12 +50,14 @@ namespace UnityEngine.WSA
 
         private static extern string GetAppArguments();
 
+        [RequiredByNativeCode]
         internal static void InvokeWindowSizeChangedEvent(int width, int height)
         {
             if (windowSizeChanged != null)
                 windowSizeChanged.Invoke(width, height);
         }
 
+        [RequiredByNativeCode]
         internal static void InvokeWindowActivatedEvent(WindowActivationState state)
         {
             if (windowActivated != null) windowActivated.Invoke(state);

@@ -23,6 +23,11 @@ namespace UnityEditor.IMGUI.Controls
             set { m_Name = value; }
         }
 
+        internal virtual string displayName
+        {
+            get { return m_Name; }
+        }
+
         public Texture2D icon
         {
             get { return m_Icon; }

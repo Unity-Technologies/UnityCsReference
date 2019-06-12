@@ -213,17 +213,18 @@ namespace UnityEditor
         {
             FieldInfo field = null;
 
-            var regex = new Regex(@"\.Array\.data\[[0-9]+\]");
-            var match = regex.IsMatch(path);
-            if (match)
-                path = regex.Replace(path, "");
+            const string arrayData = @"\.Array\.data\[[0-9]+\]";
+            // we are looking for array element only when the path ends with Array.data[x]
+            var lookingForArrayElement = Regex.IsMatch(path, arrayData + "$");
+            // remove any Array.data[x] from the path because it is prevents cache searching.
+            path = Regex.Replace(path, arrayData, ".___ArrayElement___");
 
             Cache cache = new Cache(host, path);
             if (s_FieldInfoFromPropertyPathCache.TryGetValue(cache, out field))
             {
                 type = field?.FieldType;
                 // we want to get the element type if we are looking for Array.data[x]
-                if (match && type != null && type.IsArrayOrList())
+                if (lookingForArrayElement && type != null && type.IsArrayOrList())
                     type = type.GetArrayOrListElementType();
                 return field;
             }
@@ -251,8 +252,9 @@ namespace UnityEditor
                 field = foundField;
                 type = field.FieldType;
                 // we want to get the element type if we are looking for Array.data[x]
-                if (match && type.IsArrayOrList())
+                if (i < parts.Length - 1 && parts[i + 1] == "___ArrayElement___" && type.IsArrayOrList())
                 {
+                    i++; // skip the "___ArrayElement___" part
                     type = type.GetArrayOrListElementType();
                 }
             }

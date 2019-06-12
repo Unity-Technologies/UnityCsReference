@@ -3,9 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 
-using System;
 using UnityEngine.Bindings;
-using UnityEngine;
 
 namespace UnityEngine.Experimental.Audio
 {
@@ -15,8 +13,7 @@ namespace UnityEngine.Experimental.Audio
     internal static class AudioClipExtensionsInternal
     {
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        public extern static uint Internal_CreateAudioClipSampleProvider(
-            AudioClip audioClip, ulong start, long end, bool loop, bool allowDrop);
+        public static extern uint Internal_CreateAudioClipSampleProvider(this AudioClip audioClip, ulong start, long end, bool loop, bool allowDrop);
     }
 }
 

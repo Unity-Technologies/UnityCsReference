@@ -32,6 +32,7 @@ namespace UnityEditor.Presets
 
         static Dictionary<int, ReferenceCount> s_References = new Dictionary<int, ReferenceCount>();
 
+        List<int> m_PresetsInstanceIds = new List<int>();
         bool m_DisplayErrorPreset;
         string m_SelectedPresetTypeName;
         Dictionary<string, List<Object>> m_InspectedTypes = new Dictionary<string, List<Object>>();
@@ -159,6 +160,7 @@ namespace UnityEditor.Presets
                         return;
                     }
                     s_References.Add(p.GetInstanceID(), reference);
+                    m_PresetsInstanceIds.Add(p.GetInstanceID());
                 }
                 reference.count++;
                 objs[index] = reference.reference;
@@ -172,22 +174,23 @@ namespace UnityEditor.Presets
             if (m_InternalEditor != null)
             {
                 DestroyImmediate(m_InternalEditor);
-                for (var index = 0; index < targets.Length; index++)
+                // On Destroy, look for instances id instead of target because they may already be null.
+                for (var index = 0; index < m_PresetsInstanceIds.Count; index++)
                 {
-                    var p = (Preset)targets[index];
-                    if (--s_References[p.GetInstanceID()].count == 0)
+                    var instanceId = m_PresetsInstanceIds[index];
+                    if (--s_References[instanceId].count == 0)
                     {
-                        if (s_References[p.GetInstanceID()].reference is Component)
+                        if (s_References[instanceId].reference is Component)
                         {
-                            var go = ((Component)s_References[p.GetInstanceID()].reference).gameObject;
+                            var go = ((Component)s_References[instanceId].reference).gameObject;
                             go.hideFlags = HideFlags.None; // make sure we remove the don't destroy flag before calling destroy
                             DestroyImmediate(go);
                         }
                         else
                         {
-                            DestroyImmediate(s_References[p.GetInstanceID()].reference);
+                            DestroyImmediate(s_References[instanceId].reference);
                         }
-                        s_References.Remove(p.GetInstanceID());
+                        s_References.Remove(instanceId);
                     }
                 }
             }

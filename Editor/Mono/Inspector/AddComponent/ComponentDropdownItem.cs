@@ -16,6 +16,10 @@ namespace UnityEditor.AddComponent
         private string m_SearchableNameLocalized;
         private string m_SearchableName;
 
+        internal override string displayName
+        {
+            get { return m_LocalizedName; }
+        }
         public string searchableName
         {
             get
@@ -41,7 +45,6 @@ namespace UnityEditor.AddComponent
         public string localizedName
         {
             get { return m_LocalizedName ?? name; }
-            set { m_LocalizedName = value; }
         }
 
         public string menuPath => m_MenuPath;
@@ -50,8 +53,16 @@ namespace UnityEditor.AddComponent
         {
         }
 
-        public ComponentDropdownItem(string name, string menuPath, string command) : base(name)
+        public ComponentDropdownItem(string name, string localized) : base(name)
         {
+            m_LocalizedName = localized;
+            m_SearchableName = name;
+            m_SearchableNameLocalized = localized;
+        }
+
+        public ComponentDropdownItem(string name, string localized, string menuPath, string command) : base(name)
+        {
+            m_LocalizedName = localized;
             m_MenuPath = menuPath;
             m_IsLegacy = menuPath.Contains("Legacy");
 
@@ -66,10 +77,11 @@ namespace UnityEditor.AddComponent
             else
             {
                 var classId = int.Parse(command);
-                base.name = localizedName;
+                base.name = name;
                 base.icon = AssetPreview.GetMiniTypeThumbnailFromClassID(classId);
             }
             m_SearchableName = name;
+            m_SearchableNameLocalized = localized;
             if (m_IsLegacy)
             {
                 m_SearchableName += " (Legacy)";

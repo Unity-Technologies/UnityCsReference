@@ -46,6 +46,18 @@ namespace UnityEngine
             return h.t;
         }
 
+        [TypeInferenceRule(TypeInferenceRules.TypeReferencedByFirstArgument)]
+        public bool TryGetComponent(Type type, out Component component)
+        {
+            return gameObject.TryGetComponent(type, out component);
+        }
+
+        [System.Security.SecuritySafeCritical]
+        public unsafe bool TryGetComponent<T>(out T component)
+        {
+            return gameObject.TryGetComponent(out component);
+        }
+
         [FreeFunction(HasExplicitThis = true)]
         extern public Component GetComponent(string type);
 

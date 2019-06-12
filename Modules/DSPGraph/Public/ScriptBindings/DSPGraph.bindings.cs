@@ -14,9 +14,6 @@ namespace Unity.Audio
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
         public static extern void Internal_CreateDSPGraph(out Handle graph, int outputFormat, uint outputChannels, uint dspBufferSize, uint sampleRate);
 
-        [NativeMethod(IsFreeFunction = true)]
-        public static extern void Internal_GetDefaultGraph(out Handle graph);
-
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
         public static extern void Internal_DisposeDSPGraph(ref Handle graph);
 
@@ -37,10 +34,10 @@ namespace Unity.Audio
         public static extern ulong Internal_GetDSPClock(ref Handle graph);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true, IsThreadSafe = true)]
-        public static extern void Internal_BeginMix(ref Handle graph);
+        public static extern void Internal_BeginMix(ref Handle graph, int frameCount, int executionMode);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true, IsThreadSafe = true)]
-        public static extern unsafe void Internal_ReadMix(ref Handle graph, void* buffer, int length);
+        public static extern unsafe void Internal_ReadMix(ref Handle graph, void* buffer, int frameCount);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
         public static extern unsafe void Internal_Update(ref Handle graph);

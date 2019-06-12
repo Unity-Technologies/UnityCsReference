@@ -411,7 +411,7 @@ namespace UnityEditor.IMGUI.Controls
                 }
                 else
                 {
-                    m_Gui.DrawItem(child, child.name, child.icon, child.enabled, child.children.Any(), selected, hasSearch);
+                    m_Gui.DrawItem(child, child.displayName, child.icon, child.enabled, child.children.Any(), selected, hasSearch);
                 }
 
                 var r = GUILayoutUtility.GetLastRect();

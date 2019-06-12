@@ -195,7 +195,7 @@ namespace UnityEngine.Experimental.Audio
         private static extern uint InternalCreateSampleProvider(ushort channelCount, uint sampleRate);
 
         [NativeMethod(IsThreadSafe = true)]
-        private static extern void InternalRemove(uint providerId);
+        internal static extern void InternalRemove(uint providerId);
 
         [NativeMethod(IsThreadSafe = true)]
         private static extern void InternalGetFormatInfo(
@@ -211,7 +211,7 @@ namespace UnityEngine.Experimental.Audio
             uint providerId, AudioSampleProvider provider);
 
         [NativeMethod(IsThreadSafe = true)]
-        private static extern bool InternalIsValid(uint providerId);
+        internal static extern bool InternalIsValid(uint providerId);
 
         [NativeMethod(IsThreadSafe = true)]
         private static extern uint InternalGetMaxSampleFrameCount(uint providerId);

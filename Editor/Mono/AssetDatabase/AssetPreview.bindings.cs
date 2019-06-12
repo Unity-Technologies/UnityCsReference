@@ -30,6 +30,9 @@ namespace UnityEditor
         [FreeFunction("AssetPreviewBindings::GetAssetPreview")]
         internal static extern Texture2D GetAssetPreview(int instanceID, int clientID);
 
+        [FreeFunction("AssetPreviewBindings::HasAssetPreview")]
+        internal static extern bool HasAssetPreview(int instanceID, int clientID);
+
         public static bool IsLoadingAssetPreview(int instanceID)
         {
             return IsLoadingAssetPreview(instanceID, kSharedClientID);

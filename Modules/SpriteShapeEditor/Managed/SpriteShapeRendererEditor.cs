@@ -19,9 +19,13 @@ namespace UnityEditor.Experimental.U2D
 
         private static class Styles
         {
-            public static readonly GUIContent materialLabel = EditorGUIUtility.TrTextContent("Material", "Material to be used by SpriteRenderer");
+            public static readonly GUIContent fillMaterialLabel = EditorGUIUtility.TrTextContent("Fill Material", "Fill Material to be used by SpriteShapeRenderer");
+            public static readonly GUIContent edgeMaterialLabel = EditorGUIUtility.TrTextContent("Edge Material", "Edge Material to be used by SpriteShapeRenderer");
             public static readonly GUIContent colorLabel = EditorGUIUtility.TrTextContent("Color", "Rendering color for the Sprite graphic");
             public static readonly Texture2D warningIcon = EditorGUIUtility.LoadIcon("console.warnicon");
+
+            public static readonly string mainTexErrorText = L10n.Tr("Material does not have a _MainTex texture property. It is required for SpriteShapeRenderer.");
+            public static readonly string offsetScaleErrorText = L10n.Tr("Material texture property _MainTex has offset/scale set. It is incompatible with SpriteShapeRenderer.");
         }
 
         public override void OnEnable()
@@ -42,29 +46,16 @@ namespace UnityEditor.Experimental.U2D
             EditorGUILayout.PropertyField(m_Color, Styles.colorLabel, true);
             EditorGUILayout.PropertyField(m_MaskInteraction);
 
-            if (m_Material.arraySize == 0)
-                m_Material.InsertArrayElementAtIndex(0);
-
-            Rect r = GUILayoutUtility.GetRect(
-                EditorGUILayout.kLabelFloatMinW, EditorGUILayout.kLabelFloatMaxW,
-                EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight);
-
-            EditorGUI.showMixedValue = m_Material.hasMultipleDifferentValues;
-            Object currentMaterialRef = m_Material.GetArrayElementAtIndex(0).objectReferenceValue;
-            Object returnedMaterialRef = EditorGUI.ObjectField(r, Styles.materialLabel, currentMaterialRef, typeof(Material), false);
-            if (returnedMaterialRef != currentMaterialRef)
-            {
-                m_Material.GetArrayElementAtIndex(0).objectReferenceValue = returnedMaterialRef;
-            }
-            EditorGUI.showMixedValue = false;
+            EditorGUILayout.PropertyField(m_Material.GetArrayElementAtIndex(0), Styles.fillMaterialLabel, true);
+            EditorGUILayout.PropertyField(m_Material.GetArrayElementAtIndex(1), Styles.edgeMaterialLabel, true);
 
             bool isTextureTiled;
-            if (!DoesMaterialHaveSpriteTexture(out isTextureTiled))
-                ShowError("Material does not have a _MainTex texture property. It is required for SpriteRenderer.");
+            if (!DoesFillMaterialHaveSpriteTexture(out isTextureTiled))
+                ShowError(Styles.mainTexErrorText);
             else
             {
                 if (isTextureTiled)
-                    ShowError("Material texture property _MainTex has offset/scale set. It is incompatible with SpriteRenderer.");
+                    ShowError(Styles.offsetScaleErrorText);
             }
 
             Other2DSettingsGUI();
@@ -72,7 +63,7 @@ namespace UnityEditor.Experimental.U2D
             serializedObject.ApplyModifiedProperties();
         }
 
-        private bool DoesMaterialHaveSpriteTexture(out bool tiled)
+        private bool DoesFillMaterialHaveSpriteTexture(out bool tiled)
         {
             tiled = false;
 

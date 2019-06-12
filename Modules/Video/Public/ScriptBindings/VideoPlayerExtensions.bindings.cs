@@ -31,7 +31,7 @@ namespace UnityEngine.Experimental.Video
                     "Current: " + mode);
 
             var provider = AudioSampleProvider.Lookup(
-                InternalGetAudioSampleProviderId(vp, trackIndex), vp, trackIndex);
+                vp.InternalGetAudioSampleProviderId(trackIndex), vp, trackIndex);
 
             if (provider == null)
                 throw new InvalidOperationException(
@@ -49,7 +49,7 @@ namespace UnityEngine.Experimental.Video
             return provider;
         }
 
-        extern private static uint InternalGetAudioSampleProviderId(VideoPlayer vp, ushort trackIndex);
+        extern internal static uint InternalGetAudioSampleProviderId(this VideoPlayer vp, ushort trackIndex);
     }
 }
 

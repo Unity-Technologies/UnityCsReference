@@ -185,18 +185,20 @@ namespace UnityEditor
             if (search.Find(dragUponInstanceId, null))
                 return InternalEditorUtility.ProjectWindowDrag(search, perform);
 
-            var path = AssetDatabase.GetAssetPath(dragUponInstanceId);
-            if (string.IsNullOrEmpty(path))
-                return DragAndDropVisualMode.Rejected;
-
-            var packageInfo = PackageManager.PackageInfo.FindForAssetPath(path);
-            if (packageInfo != null)
+            if (dragUponInstanceId != 0)
             {
-                search = new HierarchyProperty(packageInfo.assetPath);
-                if (search.Find(dragUponInstanceId, null))
-                    return InternalEditorUtility.ProjectWindowDrag(search, perform);
-            }
+                var path = AssetDatabase.GetAssetPath(dragUponInstanceId);
+                if (string.IsNullOrEmpty(path))
+                    return DragAndDropVisualMode.Rejected;
 
+                var packageInfo = PackageManager.PackageInfo.FindForAssetPath(path);
+                if (packageInfo != null)
+                {
+                    search = new HierarchyProperty(packageInfo.assetPath);
+                    if (search.Find(dragUponInstanceId, null))
+                        return InternalEditorUtility.ProjectWindowDrag(search, perform);
+                }
+            }
             return InternalEditorUtility.ProjectWindowDrag(null, perform);
         }
 
