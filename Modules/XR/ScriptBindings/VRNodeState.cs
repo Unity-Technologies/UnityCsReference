@@ -163,7 +163,7 @@ namespace UnityEngine.XR
 
         private bool TryGet(Vector3 inValue, AvailableTrackingData availabilityFlag, out Vector3 outValue)
         {
-            if ((m_Tracked == 1) && ((m_AvailableFields & availabilityFlag) > 0))
+            if ((m_AvailableFields & availabilityFlag) > 0)
             {
                 outValue = inValue;
                 return true;
@@ -177,7 +177,7 @@ namespace UnityEngine.XR
 
         private bool TryGet(Quaternion inValue, AvailableTrackingData availabilityFlag, out Quaternion outValue)
         {
-            if ((m_Tracked == 1) && ((m_AvailableFields & availabilityFlag) > 0))
+            if ((m_AvailableFields & availabilityFlag) > 0)
             {
                 outValue = inValue;
                 return true;

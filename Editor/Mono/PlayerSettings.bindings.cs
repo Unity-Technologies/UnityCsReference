@@ -523,6 +523,8 @@ namespace UnityEditor
         // Restrict standalone players to a single concurrent running instance.
         public static extern bool forceSingleInstance { get; set; }
 
+        public static extern bool useFlipModelSwapchain { get; set; }
+
         [NativeProperty(TargetType = TargetType.Field)]
         public static extern bool openGLRequireES31
         {

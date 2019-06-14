@@ -31,7 +31,7 @@ namespace UnityEditor.UIElements.Debugger
             }
         }
 
-        private IList<ITreeViewItem> m_TreeRootItems;
+        private IList<ITreeViewItem> m_TreeRootItems = new List<ITreeViewItem>();
 
         private TreeView m_TreeView;
         private HighlightOverlayPainter m_TreeViewHoverOverlay;
@@ -148,10 +148,20 @@ namespace UnityEditor.UIElements.Debugger
             m_Container.Clear();
 
             int nextId = 1;
-            m_TreeRootItems = GetTreeItemsFromVisualTree(panelDebug?.visualTree, ref nextId);
 
-            if (panelDebug?.visualTree != null)
-                m_TreeRootItems.Insert(0, new TreeViewItem<VisualElement>(0, panelDebug.visualTree));
+            m_TreeRootItems.Clear();
+
+            var visualTree = panelDebug?.visualTree;
+            if (visualTree != null)
+            {
+                var rootItem = new TreeViewItem<VisualElement>(nextId++, visualTree);
+                m_TreeRootItems.Add(rootItem);
+
+                var childItems = new List<ITreeViewItem>();
+                AddTreeItemsForElement(childItems, visualTree, ref nextId);
+
+                rootItem.AddChildren(childItems);
+            }
 
             Func<VisualElement> makeItem = () =>
             {
@@ -278,36 +288,30 @@ namespace UnityEditor.UIElements.Debugger
             }
         }
 
-        private IList<ITreeViewItem> GetTreeItemsFromVisualTree(VisualElement parent, ref int nextId)
+        private void AddTreeItemsForElement(IList<ITreeViewItem> items, VisualElement ve, ref int nextId)
         {
-            List<ITreeViewItem> items = null;
+            if (ve == null)
+                return;
 
-            if (parent == null)
-                return null;
-
-            int count = parent.hierarchy.childCount;
+            int count = ve.hierarchy.childCount;
             if (count == 0)
-                return null;
+                return;
 
             for (int i = 0; i < count; i++)
             {
-                if (items == null)
-                    items = new List<ITreeViewItem>();
+                var child = ve.hierarchy[i];
 
-                var element = parent.hierarchy[i];
-
-                var item = new TreeViewItem<VisualElement>(nextId, element);
-                items.Add(item);
+                var treeItem = new TreeViewItem<VisualElement>(nextId, child);
+                items.Add(treeItem);
                 nextId++;
 
-                var childItems = GetTreeItemsFromVisualTree(element, ref nextId);
-                if (childItems == null)
+                var childItems = new List<ITreeViewItem>();
+                AddTreeItemsForElement(childItems, child, ref nextId);
+                if (childItems.Count == 0)
                     continue;
 
-                item.AddChildren(childItems);
+                treeItem.AddChildren(childItems);
             }
-
-            return items;
         }
     }
 }
