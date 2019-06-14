@@ -548,19 +548,28 @@ namespace UnityEditor.UIElements.Debugger
                 }
             }
 
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    var hashCode = matchRecord.GetHashCode();
+                    hashCode = (hashCode * 397) ^ (displayPath != null ? displayPath.GetHashCode() : 0);
+                    hashCode = (hashCode * 397) ^ lineNumber;
+                    hashCode = (hashCode * 397) ^ (fullPath != null ? fullPath.GetHashCode() : 0);
+                    return hashCode;
+                }
+            }
+
             private sealed class LineNumberFullPathEqualityComparer : IEqualityComparer<MatchedRule>
             {
                 public bool Equals(MatchedRule x, MatchedRule y)
                 {
-                    return x.lineNumber == y.lineNumber && string.Equals(x.fullPath, y.fullPath);
+                    return x.lineNumber == y.lineNumber && string.Equals(x.fullPath, y.fullPath) && string.Equals(x.displayPath, y.displayPath);
                 }
 
                 public int GetHashCode(MatchedRule obj)
                 {
-                    unchecked
-                    {
-                        return (obj.lineNumber * 397) ^ (obj.fullPath != null ? obj.fullPath.GetHashCode() : 0);
-                    }
+                    return obj.GetHashCode();
                 }
             }
 

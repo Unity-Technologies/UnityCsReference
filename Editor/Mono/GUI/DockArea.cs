@@ -685,7 +685,7 @@ namespace UnityEditor
             }
 
             menu.AddSeparator("");
-            menu.AddItem(EditorGUIUtility.TextContent("UIElements Debugger _%f5"), false, DebugWindow, view);
+            AddUIElementsDebuggerToMenu(menu);
         }
 
         void AddTabToHere(object userData)
@@ -1127,7 +1127,7 @@ namespace UnityEditor
             }
 
             menu.AddSeparator("");
-            menu.AddItem(EditorGUIUtility.TextContent("UIElements Debugger _%f5"), false, DebugWindow, window);
+            AddUIElementsDebuggerToMenu(menu);
         }
     }
 }

@@ -119,6 +119,7 @@ namespace UnityEditor
             public static readonly GUIContent displayResolutionDialogDeprecationWarning = EditorGUIUtility.TrTextContent("The Display Resolution Dialog has been deprecated and will be removed in a future version.");
             public static readonly GUIContent visibleInBackground = EditorGUIUtility.TrTextContent("Visible In Background");
             public static readonly GUIContent allowFullscreenSwitch = EditorGUIUtility.TrTextContent("Allow Fullscreen Switch");
+            public static readonly GUIContent useFlipModelSwapChain = EditorGUIUtility.TrTextContent("Use DXGI Flip Model Swapchain for D3D11", "Flip model ensures the best performance. Disable this to fallback to Windows 7-style BltBlt model. This setting affects only D3D11 graphics API.");
             public static readonly GUIContent use32BitDisplayBuffer = EditorGUIUtility.TrTextContent("Use 32-bit Display Buffer*", "If set Display Buffer will be created to hold 32-bit color values. Use it only if you see banding, as it has performance implications.");
             public static readonly GUIContent disableDepthAndStencilBuffers = EditorGUIUtility.TrTextContent("Disable Depth and Stencil*");
             public static readonly GUIContent preserveFramebufferAlpha = EditorGUIUtility.TrTextContent("Render Over Native UI*", "Enable this option ONLY if you want Unity to render on top of the native Android or iOS UI.");
@@ -326,6 +327,7 @@ namespace UnityEditor
         SerializedProperty m_VisibleInBackground;
         SerializedProperty m_AllowFullscreenSwitch;
         SerializedProperty m_ForceSingleInstance;
+        SerializedProperty m_UseFlipModelSwapchain;
 
         SerializedProperty m_RunInBackground;
         SerializedProperty m_CaptureSingleScreen;
@@ -485,6 +487,7 @@ namespace UnityEditor
             m_SkinOnGPU                     = FindPropertyAssert("gpuSkinning");
             m_GraphicsJobs                  = FindPropertyAssert("graphicsJobs");
             m_ForceSingleInstance           = FindPropertyAssert("forceSingleInstance");
+            m_UseFlipModelSwapchain         = FindPropertyAssert("useFlipModelSwapchain");
 
             m_RequireES31                   = FindPropertyAssert("openGLRequireES31");
             m_RequireES31AEP                = FindPropertyAssert("openGLRequireES31AEP");
@@ -952,6 +955,7 @@ namespace UnityEditor
                         EditorGUILayout.PropertyField(m_AllowFullscreenSwitch, SettingsContent.allowFullscreenSwitch);
 
                         EditorGUILayout.PropertyField(m_ForceSingleInstance);
+                        EditorGUILayout.PropertyField(m_UseFlipModelSwapchain, SettingsContent.useFlipModelSwapChain);
                         EditorGUILayout.PropertyField(m_SupportedAspectRatios, true);
 
                         EditorGUILayout.Space();
