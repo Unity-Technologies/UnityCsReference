@@ -467,7 +467,7 @@ namespace UnityEditor
 
         internal static void DrawRenderingLayer(SerializedProperty layerMask, Renderer target, Object[] targets, bool useMiniStyle = false)
         {
-            RenderPipelineAsset srpAsset = GraphicsSettings.renderPipelineAsset;
+            RenderPipelineAsset srpAsset = GraphicsSettings.currentRenderPipeline;
             bool usingSRP = srpAsset != null;
             if (!usingSRP || target == null)
                 return;

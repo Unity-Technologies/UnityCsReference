@@ -558,6 +558,7 @@ namespace UnityEngine
             set { graphicsFormat = GraphicsFormatUtility.GetGraphicsFormat(value, sRGB); }
         }
 
+        extern public GraphicsFormat stencilFormat { get; set; }
         extern public bool autoGenerateMips { get; set; }
         extern public int volumeDepth { get; set; }
         extern public int antiAliasing { get; set; }

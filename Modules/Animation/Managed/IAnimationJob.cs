@@ -4,9 +4,11 @@
 
 
 using Unity.Jobs.LowLevel.Unsafe;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEngine.Experimental.Animations
+namespace UnityEngine.Animations
 {
+    [MovedFrom("UnityEngine.Experimental.Animations")]
     [JobProducerType(typeof(ProcessAnimationJobStruct<>))]
     public interface IAnimationJob
     {

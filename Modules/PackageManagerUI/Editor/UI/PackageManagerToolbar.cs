@@ -140,6 +140,12 @@ namespace UnityEditor.PackageManager.UI
                 parent.Add(createPackage);
                 createPackage.Show();
             }, a => DropdownMenuAction.Status.Normal);
+
+            PackageManagerExtensions.ExtensionCallback(() =>
+            {
+                foreach (var extension in PackageManagerExtensions.MenuExtensions)
+                    extension.OnAddMenuCreate(AddMenu.menu);
+            });
         }
 
         private void SetupFilterMenu()
@@ -169,6 +175,12 @@ namespace UnityEditor.PackageManager.UI
                     SetFilter(PackageFilter.InDevelopment);
                 }, a => selectedFilter == PackageFilter.InDevelopment ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
             }
+
+            PackageManagerExtensions.ExtensionCallback(() =>
+            {
+                foreach (var extension in PackageManagerExtensions.MenuExtensions)
+                    extension.OnFilterMenuCreate(FilterMenu.menu);
+            });
         }
 
         private void SetupAdvancedMenu()
@@ -187,6 +199,12 @@ namespace UnityEditor.PackageManager.UI
             {
                 TogglePreviewPackages();
             }, a => PackageManagerPrefs.ShowPreviewPackages ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+
+            PackageManagerExtensions.ExtensionCallback(() =>
+            {
+                foreach (var extension in PackageManagerExtensions.MenuExtensions)
+                    extension.OnAdvancedMenuCreate(AdvancedMenu.menu);
+            });
         }
 
         private void ToggleDependencies()

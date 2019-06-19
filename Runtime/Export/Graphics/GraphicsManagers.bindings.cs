@@ -3,9 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using uei = UnityEngine.Internal;
+using UnityEngine.Rendering;
 
 using AmbientMode = UnityEngine.Rendering.AmbientMode;
 using ReflectionMode = UnityEngine.Rendering.DefaultReflectionMode;
@@ -90,6 +90,14 @@ namespace UnityEngine
         extern public static bool  realtimeReflectionProbes         { get; set; }
         extern public static bool  billboardsFaceCameraPosition     { get; set; }
         extern public static float resolutionScalingFixedDPIFactor  { get; set; }
+
+        [NativeName("RenderPipeline")] extern private static ScriptableObject INTERNAL_renderPipeline { get; set; }
+        public static RenderPipelineAsset renderPipeline
+        {
+            get { return INTERNAL_renderPipeline as RenderPipelineAsset; }
+            set { INTERNAL_renderPipeline = value; }
+        }
+
 
         [Obsolete("blendWeights is obsolete. Use skinWeights instead (UnityUpgradable) -> skinWeights", true)]
         extern public static BlendWeights blendWeights   { [NativeName("GetSkinWeights")] get; [NativeName("SetSkinWeights")] set; }

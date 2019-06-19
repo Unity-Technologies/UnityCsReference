@@ -11,7 +11,6 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEditorInternal;
 using System.Runtime.InteropServices;
-using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine.Experimental.Networking.PlayerConnection;
 using ConnectionUtility = UnityEditor.Experimental.Networking.PlayerConnection.EditorGUIUtility;
@@ -283,7 +282,7 @@ namespace UnityEditor
         const float kMinListWidth = 200f;
         const float kMinDetailsWidth = 200f;
         const float kMinWindowWidth = 240f;
-        const float kDetailsMargin = 4f;
+        const float kDetailsMargin = 0f;
         const float kMinPreviewSize = 64f;
 
         const string kFloatFormat = "g2";
@@ -659,13 +658,14 @@ namespace UnityEditor
             int newLimit;
             using (new EditorGUI.DisabledScope(FrameDebuggerUtility.count <= 1))
             {
-                newLimit = EditorGUILayout.IntSlider(FrameDebuggerUtility.limit, 1, FrameDebuggerUtility.count);
+                newLimit = EditorGUILayout.IntSlider(FrameDebuggerUtility.limit, 1, FrameDebuggerUtility.count, -1,
+                    styles.sliderTextField, styles.slider, styles.sliderThumb, null, null);
             }
             if (EditorGUI.EndChangeCheck())
             {
                 ChangeFrameEventLimit(newLimit);
             }
-            GUILayout.Label(" of " + FrameDebuggerUtility.count, EditorStyles.miniLabel);
+            GUILayout.Label(" of " + FrameDebuggerUtility.count, styles.miniLabel);
             // prev/next buttons
             using (new EditorGUI.DisabledScope(newLimit <= 1))
             {
@@ -792,7 +792,11 @@ namespace UnityEditor
             if (hasShowableDepth)
                 showableRTCount++;
 
+            GUILayout.BeginHorizontal(EditorStyles.toolbar);
+
             EditorGUILayout.LabelField("RenderTarget", cur.rtName);
+
+            GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
 
@@ -816,8 +820,6 @@ namespace UnityEditor
             }
 
             // color channels
-            GUILayout.Space(10);
-
             using (new EditorGUI.DisabledScope(isDepthOnlyRT))
             {
                 GUILayout.Label(Styles.channelHeader, EditorStyles.miniLabel);
@@ -825,8 +827,8 @@ namespace UnityEditor
             }
 
             // levels
-            GUILayout.Space(10);
-            GUILayout.Label(Styles.levelsHeader, EditorStyles.miniLabel);
+            GUILayout.BeginHorizontal(styles.toolbarLabelSliderGroup);
+            GUILayout.Label(Styles.levelsHeader);
             EditorGUILayout.MinMaxSlider(ref m_RTBlackLevel, ref m_RTWhiteLevel, 0.0f, 1.0f, GUILayout.MaxWidth(200.0f));
             if (EditorGUI.EndChangeCheck() || rtWasClamped)
             {
@@ -848,6 +850,7 @@ namespace UnityEditor
                 RepaintAllNeededThings();
             }
 
+            GUILayout.EndHorizontal();
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
 
@@ -1446,6 +1449,37 @@ namespace UnityEditor
             public GUIStyle entryOdd = "OL EntryBackOdd";
             public GUIStyle rowText = "OL Label";
             public GUIStyle rowTextRight = "OL RightLabel";
+
+            public GUIStyle slider = new GUIStyle(GUI.skin.horizontalSlider)
+            {
+                name = "SmallerHorizontalSlider",
+                margin = new RectOffset(0, 0, 0, 0)
+            };
+
+            public GUIStyle sliderThumb = new GUIStyle(GUI.skin.horizontalSliderThumb)
+            {
+                margin = new RectOffset(0, 0, 3, 0)
+            };
+
+            public GUIStyle sliderTextField = new GUIStyle(EditorStyles.numberField)
+            {
+                margin = new RectOffset(0, 0, 0, 0),
+                fixedHeight = 16,
+                fontSize = EditorStyles.miniTextField.fontSize
+            };
+
+            public GUIStyle miniLabel = new GUIStyle(EditorStyles.miniLabel)
+            {
+                margin = new RectOffset(4, 4, 1, 1)
+            };
+
+            public GUIStyle toolbarLabelSliderGroup = new GUIStyle(EditorStyles.toolbarButton)
+            {
+                margin = new RectOffset(4, 4, 0, 0),
+                padding = new RectOffset(4, 4, 0, 0),
+                fixedHeight = 21
+            };
+
             public GUIContent recordButton = new GUIContent(EditorGUIUtility.TrTextContent("Record", "Record profiling information"));
             public GUIContent prevFrame = new GUIContent(EditorGUIUtility.TrIconContent("Profiler.PrevFrame", "Go back one frame"));
             public GUIContent nextFrame = new GUIContent(EditorGUIUtility.TrIconContent("Profiler.NextFrame", "Go one frame forwards"));

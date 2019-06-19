@@ -3,16 +3,15 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 
-using UnityEngine;
-using UnityEngine.Bindings;
-using UnityEngine.Scripting;
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-namespace UnityEngine.Experimental.Animations
+using UnityEngine.Bindings;
+using UnityEngine.Scripting.APIUpdating;
+
+namespace UnityEngine.Animations
 {
+    [MovedFrom("UnityEngine.Experimental.Animations")]
     [NativeHeader("Modules/Animation/Animator.h")] // -> dof enum
     [NativeHeader("Modules/Animation/MuscleHandle.h")]
     [StructLayout(LayoutKind.Sequential)]

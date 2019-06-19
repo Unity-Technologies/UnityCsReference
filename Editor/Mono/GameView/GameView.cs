@@ -551,7 +551,7 @@ namespace UnityEditor
 
         void DoZoomSlider()
         {
-            GUILayout.Label(Styles.zoomSliderContent, EditorStyles.miniLabel);
+            GUILayout.Label(Styles.zoomSliderContent);
             EditorGUI.BeginChangeCheck();
             // Zooming feels more natural on a log scale
             var logScale = Mathf.Log10(m_ZoomArea.scale.y);
@@ -565,7 +565,7 @@ namespace UnityEditor
             }
             var scaleContent = EditorGUIUtility.TempContent(UnityString.Format("{0}x", (m_ZoomArea.scale.y).ToString("G3", CultureInfo.InvariantCulture.NumberFormat)));
             scaleContent.tooltip = Styles.zoomSliderContent.tooltip;
-            GUILayout.Label(scaleContent, EditorStyles.miniLabel, GUILayout.Width(kScaleLabelWidth));
+            GUILayout.Label(scaleContent, GUILayout.Width(kScaleLabelWidth));
             scaleContent.tooltip = string.Empty;
         }
 
@@ -638,7 +638,7 @@ namespace UnityEditor
 
                 m_Stats = GUILayout.Toggle(m_Stats, Styles.statsContent, EditorStyles.toolbarButton);
 
-                if (EditorGUILayout.DropDownToggle(ref m_Gizmos, Styles.gizmosContent, EditorStyles.toolbarDropDownToggle))
+                if (EditorGUILayout.DropDownToggle(ref m_Gizmos, Styles.gizmosContent, EditorStyles.toolbarDropDownToggleRight))
                 {
                     Rect rect = GUILayoutUtility.topLevel.GetLast();
                     if (AnnotationWindow.ShowAtPosition(rect, true))

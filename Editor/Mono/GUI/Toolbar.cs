@@ -306,7 +306,7 @@ namespace UnityEditor
                 if (!Application.HasProLicense())
                 {
                     menu.AddSeparator("");
-                    menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Upgrade to Pro"));
+                    menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Upgrade to Unity Plus or Pro"));
                 }
             }
             else
@@ -328,7 +328,8 @@ namespace UnityEditor
                 if (!Application.HasProLicense())
                 {
                     menu.AddSeparator("");
-                    menu.AddItem(EditorGUIUtility.TrTextContent("Upgrade to Pro"), false, () => Application.OpenURL("https://store.unity3d.com/"));
+                    // Debug.log()
+                    menu.AddItem(EditorGUIUtility.TrTextContent("Upgrade to Unity Plus or Pro"), false, () => Application.OpenURL("https://store.unity.com/"));
                 }
             }
 

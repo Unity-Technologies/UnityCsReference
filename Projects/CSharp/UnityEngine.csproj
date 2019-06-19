@@ -373,6 +373,12 @@
     <Compile Include="..\..\Modules\DSPGraph\Public\ScriptBindings\AudioHandle.bindings.cs">
       <Link>Modules\DSPGraph\Public\ScriptBindings\AudioHandle.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\DSPGraph\Public\ScriptBindings\AudioMemoryManager.bindings.cs">
+      <Link>Modules\DSPGraph\Public\ScriptBindings\AudioMemoryManager.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\DSPGraph\Public\ScriptBindings\AudioOutputHookManager.bindings.cs">
+      <Link>Modules\DSPGraph\Public\ScriptBindings\AudioOutputHookManager.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\DSPGraph\Public\ScriptBindings\DSPCommandBlock.bindings.cs">
       <Link>Modules\DSPGraph\Public\ScriptBindings\DSPCommandBlock.bindings.cs</Link>
     </Compile>
@@ -2523,6 +2529,12 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\StaticBatching\MeshSubsetCombineUtility.cs">
       <Link>Runtime\Export\StaticBatching\MeshSubsetCombineUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\StaticShim\ShimBase.cs">
+      <Link>Runtime\Export\StaticShim\ShimBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\StaticShim\ShimManager.cs">
+      <Link>Runtime\Export\StaticShim\ShimManager.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Stripping\ClassStubsForStripping.cs">
       <Link>Runtime\Export\Stripping\ClassStubsForStripping.cs</Link>

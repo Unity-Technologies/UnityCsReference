@@ -110,6 +110,14 @@ namespace UnityEngine.Analytics
 
         [ThreadSafe]
         [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
+        internal static extern AnalyticsResult SetEventWithLimitEndPoint(string eventName, string endPoint, int ver, string prefix);
+
+        [ThreadSafe]
+        [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
+        internal static extern AnalyticsResult SetEventWithLimitPriority(string eventName, AnalyticsEventPriority eventPriority, int ver, string prefix);
+
+        [ThreadSafe]
+        [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
         internal static extern bool QueueEvent(string eventName, object parameters, int ver, string prefix);
     }
 }

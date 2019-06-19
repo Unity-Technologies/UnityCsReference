@@ -12,6 +12,7 @@ using UnityEditor.Experimental;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.Assertions.Must;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.ShortcutManagement
@@ -27,13 +28,12 @@ namespace UnityEditor.ShortcutManagement
         TextElement m_ActiveProfileDropdownButton;
         Keyboard m_KeyboardElement;
         ListView m_ShortcutsTable;
-        TextField m_SearchTextField;
+        ToolbarPopupSearchField m_SearchTextField;
 
         bool m_StartedDrag;
         Vector2 m_MouseDownStartPos;
         ListView m_CategoryTreeView;
-        VisualElement m_SearchCancelEnding;
-        ShortcutTextField m_KeyBindingSearchField;
+        ShortcutPopupSearchField m_KeyBindingSearchField;
         ShortcutEntry m_EditingBindings;
         VisualElement m_SearchFiltersContainer;
         VisualElement m_ShortcutsTableSearchFilterContainer;
@@ -258,29 +258,38 @@ namespace UnityEditor.ShortcutManagement
         void BuildSearchField(VisualElement root)
         {
             var searchControlContainer = root.Q("searchControlContainer");
-            var searchOptionsDropDown = root.Q("searchOptionsDropDown");
-            m_SearchTextField = root.Q<TextField>();
-            m_SearchCancelEnding = root.Q("searchCancelEnding");
-            m_KeyBindingSearchField = new ShortcutTextField();
+
+            m_SearchTextField = new ToolbarPopupSearchField();
+
+            m_SearchTextField.menu.AppendAction(EditorGUIUtility.TrTextContent("Command").text,
+                a => SearchOptionSelected(SearchOption.Name),
+                a => m_ViewController.searchMode == SearchOption.Name ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+
+            m_SearchTextField.menu.AppendAction(EditorGUIUtility.TrTextContent("Shortcut").text,
+                a => SearchOptionSelected(SearchOption.Binding),
+                a => m_ViewController.searchMode == SearchOption.Binding ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+
+            m_KeyBindingSearchField = new ShortcutPopupSearchField();
+
+            m_KeyBindingSearchField.menu.AppendAction(EditorGUIUtility.TrTextContent("Command").text,
+                a => SearchOptionSelected(SearchOption.Name),
+                a => m_ViewController.searchMode == SearchOption.Name ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+
+            m_KeyBindingSearchField.menu.AppendAction(EditorGUIUtility.TrTextContent("Shortcut").text,
+                a => SearchOptionSelected(SearchOption.Binding),
+                a => m_ViewController.searchMode == SearchOption.Binding ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+
 
             ShowAppropriateSearchField();
 
             m_SearchTextField.value = m_ViewController.GetSearch();
             m_SearchTextField.RegisterValueChangedCallback(OnSearchStringChanged);
 
-            m_SearchCancelEnding.RegisterCallback<MouseDownEvent>(CancelSearchClicked);
-
-            searchOptionsDropDown.RegisterCallback<MouseDownEvent>(OnSearchOptionsClicked);
-
             m_KeyBindingSearchField.value = m_ViewController.GetBindingSearch();
             m_KeyBindingSearchField.OnWorkingValueChanged += SearchByBindingsChanged;
 
-            HandleClearButtonVisibility();
-
-            searchOptionsDropDown.Add(m_SearchTextField);
-            searchOptionsDropDown.Add(m_KeyBindingSearchField);
-            searchControlContainer.Add(searchOptionsDropDown);
-            searchControlContainer.Add(m_SearchCancelEnding);
+            searchControlContainer.Add(m_SearchTextField);
+            searchControlContainer.Add(m_KeyBindingSearchField);
 
             root.Add(searchControlContainer);
         }
@@ -585,52 +594,14 @@ namespace UnityEditor.ShortcutManagement
         void OnSearchStringChanged(ChangeEvent<string> evt)
         {
             m_ViewController.SetSearch(evt.newValue);
-            HandleClearButtonVisibility();
         }
 
         void SearchByBindingsChanged(List<KeyCombination> newBindingSearch)
         {
             m_ViewController.SetBindingSearch(newBindingSearch);
-            HandleClearButtonVisibility();
         }
 
-        void HandleClearButtonVisibility()
-        {
-            var shouldShow = false;
-            switch (m_ViewController.searchMode)
-            {
-                case SearchOption.Name:
-                    shouldShow = !string.IsNullOrEmpty(m_ViewController.GetSearch());
-                    break;
-                case SearchOption.Binding:
-                    shouldShow = m_ViewController.GetBindingSearch().Any();
-                    break;
-            }
-            if (shouldShow)
-                m_SearchCancelEnding.AddToClassList("showCancel");
-            else
-                m_SearchCancelEnding.RemoveFromClassList("showCancel");
-        }
-
-        void CancelSearchClicked(MouseDownEvent evt)
-        {
-            m_SearchTextField.value = "";
-            m_KeyBindingSearchField.value = new List<KeyCombination>();
-        }
-
-        void OnSearchOptionsClicked(MouseDownEvent evt)
-        {
-            var targetElement = (VisualElement)evt.target;
-            var menu = new GenericMenu();
-            menu.AddItem(EditorGUIUtility.TrTextContent("Command"), m_ViewController.searchMode == SearchOption.Name, SearchOptionSelected, SearchOption.Name);
-            menu.AddItem(EditorGUIUtility.TrTextContent("Shortcut"), m_ViewController.searchMode == SearchOption.Binding, SearchOptionSelected, SearchOption.Binding);
-            var menuPosition = new Vector2(0.0f, targetElement.layout.height);
-            menuPosition = targetElement.LocalToWorld(menuPosition);
-            var menuRect = new Rect(menuPosition, Vector2.zero);
-            menu.DropDown(menuRect);
-        }
-
-        void SearchOptionSelected(object searchOptionArg)
+        void SearchOptionSelected(SearchOption searchOptionArg)
         {
             var newValue = (SearchOption)searchOptionArg;
             if (m_ViewController.searchMode != newValue)
@@ -1388,6 +1359,51 @@ namespace UnityEditor.ShortcutManagement
             if (!string.IsNullOrEmpty(viewDataKey))
                 SaveViewData();
             MarkDirtyRepaint();
+        }
+    }
+
+    internal class ShortcutSearchField : SearchFieldBase<ShortcutTextField, List<KeyCombination>>
+    {
+        public new static readonly string ussClassName = "unity-shortcut-search-field";
+        public new class UxmlFactory : UxmlFactory<ShortcutSearchField> {}
+
+        public event Action<List<KeyCombination>> OnWorkingValueChanged;
+
+        private void ForwardWorkingValueChanged(List<KeyCombination> workingValue)
+        {
+            OnWorkingValueChanged?.Invoke(workingValue);
+        }
+
+        public ShortcutSearchField()
+        {
+            AddToClassList(ussClassName);
+
+            textInputField.OnWorkingValueChanged += ForwardWorkingValueChanged;
+        }
+
+        protected override void ClearTextField()
+        {
+            value = null;
+        }
+
+        protected override bool FieldIsEmpty(List<KeyCombination> fieldValue)
+        {
+            return value == null || !value.Any();
+        }
+    }
+
+    internal class ShortcutPopupSearchField : ShortcutSearchField, IToolbarMenuElement
+    {
+        public new class UxmlFactory : UxmlFactory<ShortcutPopupSearchField> {}
+
+        public DropdownMenu menu { get; }
+
+        public ShortcutPopupSearchField()
+        {
+            AddToClassList(popupVariantUssClassName);
+
+            menu = new DropdownMenu();
+            searchButton.clickable.clicked += this.ShowMenu;
         }
     }
 

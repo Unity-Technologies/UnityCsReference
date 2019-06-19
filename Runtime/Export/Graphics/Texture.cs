@@ -23,6 +23,8 @@ namespace UnityEngine
         public int mipCount { get; set; }
 
         private GraphicsFormat _graphicsFormat;// { get; set; }
+
+
         public GraphicsFormat graphicsFormat
         {
             get { return _graphicsFormat; }
@@ -33,6 +35,8 @@ namespace UnityEngine
                 SetOrClearRenderTextureCreationFlag(GraphicsFormatUtility.IsSRGBFormat(value), RenderTextureCreationFlags.SRGB);
             }
         }
+
+        public GraphicsFormat stencilFormat { get; set; }
 
         public RenderTextureFormat colorFormat
         {

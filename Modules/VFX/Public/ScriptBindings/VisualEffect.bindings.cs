@@ -30,8 +30,11 @@ namespace UnityEngine.Experimental.VFX
     {
         public const string PlayEventName = "OnPlay";
         public const string StopEventName = "OnStop";
+        public static readonly int PlayEventID = Shader.PropertyToID(PlayEventName);
+        public static readonly int StopEventID = Shader.PropertyToID(StopEventName);
     }
 
+    [NativeHeader("Modules/VFX/Public/ScriptBindings/VisualEffectBindings.h")]
     [NativeHeader("Modules/VFX/Public/VisualEffect.h")]
     [RequireComponent(typeof(Transform))]
     public class VisualEffect : Behaviour
@@ -39,8 +42,23 @@ namespace UnityEngine.Experimental.VFX
         extern public bool pause { get; set; }
         extern public float playRate { get; set; }
         extern public uint startSeed { get; set; }
-
         extern public bool resetSeedOnPlay { get; set; }
+        extern public int initialEventID
+        {
+            [FreeFunction(Name = "VisualEffectBindings::GetInitialEventID", HasExplicitThis = true)]
+            get;
+            [FreeFunction(Name = "VisualEffectBindings::SetInitialEventID", HasExplicitThis = true)]
+            set;
+        }
+
+        extern public string initialEventName
+        {
+            [FreeFunction(Name = "VisualEffectBindings::GetInitialEventName", HasExplicitThis = true)]
+            get;
+            [FreeFunction(Name = "VisualEffectBindings::SetInitialEventName", HasExplicitThis = true)]
+            set;
+        }
+
         extern public bool culled { get; }
 
         extern public VisualEffectAsset visualEffectAsset { get; set; }
@@ -61,41 +79,13 @@ namespace UnityEngine.Experimental.VFX
             }
         }
 
-        extern internal void SendPlay(VFXEventAttribute eventAttribute);
-        public void Play(VFXEventAttribute eventAttribute)
-        {
-            CheckValidVFXEventAttribute(eventAttribute);
-            SendPlay(eventAttribute);
-        }
-
-        public void Play()
-        {
-            SendPlay(null);
-        }
-
-        extern internal void SendStop(VFXEventAttribute eventAttribute);
-        public void Stop(VFXEventAttribute eventAttribute)
-        {
-            CheckValidVFXEventAttribute(eventAttribute);
-            SendStop(eventAttribute);
-        }
-
-        public void Stop()
-        {
-            SendStop(null);
-        }
-
-        extern private void Internal_SendEvent(int eventNameID, VFXEventAttribute eventAttribute);
+        [FreeFunction(Name = "VisualEffectBindings::SendEventFromScript", HasExplicitThis = true)]
+        extern private void SendEventFromScript(int eventNameID, VFXEventAttribute eventAttribute);
 
         public void SendEvent(int eventNameID, VFXEventAttribute eventAttribute)
         {
             CheckValidVFXEventAttribute(eventAttribute);
-            Internal_SendEvent(eventNameID, eventAttribute);
-        }
-
-        public void SendEvent(string eventName)
-        {
-            SendEvent(Shader.PropertyToID(eventName), null);
+            SendEventFromScript(eventNameID, eventAttribute);
         }
 
         public void SendEvent(string eventName, VFXEventAttribute eventAttribute)
@@ -103,51 +93,81 @@ namespace UnityEngine.Experimental.VFX
             SendEvent(Shader.PropertyToID(eventName), eventAttribute);
         }
 
+        public void SendEvent(int eventNameID)
+        {
+            SendEventFromScript(eventNameID, null);
+        }
+
+        public void SendEvent(string eventName)
+        {
+            SendEvent(Shader.PropertyToID(eventName), null);
+        }
+
+        public void Play(VFXEventAttribute eventAttribute)
+        {
+            SendEvent(VisualEffectAsset.PlayEventID, eventAttribute);
+        }
+
+        public void Play()
+        {
+            SendEvent(VisualEffectAsset.PlayEventID);
+        }
+
+        public void Stop(VFXEventAttribute eventAttribute)
+        {
+            SendEvent(VisualEffectAsset.StopEventID, eventAttribute);
+        }
+
+        public void Stop()
+        {
+            SendEvent(VisualEffectAsset.StopEventID);
+        }
+
         extern public void Reinit();
         extern public void AdvanceOneFrame();
 
-        [NativeName("ResetOverrideFromScript")] extern public void ResetOverride(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::ResetOverrideFromScript", HasExplicitThis = true)] extern public void ResetOverride(int nameID);
 
         // Values check
-        [NativeName("GetTextureDimensionFromScript")] extern public UnityEngine.Rendering.TextureDimension GetTextureDimension(int nameID);
-        [NativeName("HasValueFromScript<bool>")] extern public bool HasBool(int nameID);
-        [NativeName("HasValueFromScript<int>")] extern public bool HasInt(int nameID);
-        [NativeName("HasValueFromScript<UInt32>")] extern public bool HasUInt(int nameID);
-        [NativeName("HasValueFromScript<float>")] extern public bool HasFloat(int nameID);
-        [NativeName("HasValueFromScript<Vector2f>")] extern public bool HasVector2(int nameID);
-        [NativeName("HasValueFromScript<Vector3f>")] extern public bool HasVector3(int nameID);
-        [NativeName("HasValueFromScript<Vector4f>")] extern public bool HasVector4(int nameID);
-        [NativeName("HasValueFromScript<Matrix4x4f>")] extern public bool HasMatrix4x4(int nameID);
-        [NativeName("HasValueFromScript<Texture*>")] extern public bool HasTexture(int nameID);
-        [NativeName("HasValueFromScript<AnimationCurve*>")] extern public bool HasAnimationCurve(int nameID);
-        [NativeName("HasValueFromScript<Gradient*>")] extern public bool HasGradient(int nameID);
-        [NativeName("HasValueFromScript<Mesh*>")] extern public bool HasMesh(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::GetTextureDimensionFromScript", HasExplicitThis = true)] extern public UnityEngine.Rendering.TextureDimension GetTextureDimension(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<bool>", HasExplicitThis = true)] extern public bool HasBool(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<int>", HasExplicitThis = true)] extern public bool HasInt(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<UInt32>", HasExplicitThis = true)] extern public bool HasUInt(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<float>", HasExplicitThis = true)] extern public bool HasFloat(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<Vector2f>", HasExplicitThis = true)] extern public bool HasVector2(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<Vector3f>", HasExplicitThis = true)] extern public bool HasVector3(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<Vector4f>", HasExplicitThis = true)] extern public bool HasVector4(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<Matrix4x4f>", HasExplicitThis = true)] extern public bool HasMatrix4x4(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<Texture*>", HasExplicitThis = true)] extern public bool HasTexture(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<AnimationCurve*>", HasExplicitThis = true)] extern public bool HasAnimationCurve(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<Gradient*>", HasExplicitThis = true)] extern public bool HasGradient(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<Mesh*>", HasExplicitThis = true)] extern public bool HasMesh(int nameID);
 
         // Value setters
-        [NativeName("SetValueFromScript<bool>")] extern public void SetBool(int nameID, bool b);
-        [NativeName("SetValueFromScript<int>")] extern public void SetInt(int nameID, int i);
-        [NativeName("SetValueFromScript<UInt32>")] extern public void SetUInt(int nameID, uint i);
-        [NativeName("SetValueFromScript<float>")] extern public void SetFloat(int nameID, float f);
-        [NativeName("SetValueFromScript<Vector2f>")] extern public void SetVector2(int nameID, Vector2 v);
-        [NativeName("SetValueFromScript<Vector3f>")] extern public void SetVector3(int nameID, Vector3 v);
-        [NativeName("SetValueFromScript<Vector4f>")] extern public void SetVector4(int nameID, Vector4 v);
-        [NativeName("SetValueFromScript<Matrix4x4f>")] extern public void SetMatrix4x4(int nameID, Matrix4x4 v);
-        [NativeName("SetValueFromScript<Texture*>")] extern public void SetTexture(int nameID, Texture t);
-        [NativeName("SetValueFromScript<AnimationCurve*>")] extern public void SetAnimationCurve(int nameID, AnimationCurve c);
-        [NativeName("SetValueFromScript<Gradient*>")] extern public void SetGradient(int nameID, Gradient g);
-        [NativeName("SetValueFromScript<Mesh*>")] extern public void SetMesh(int nameID, Mesh m);
+        [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<bool>", HasExplicitThis = true)] extern public void SetBool(int nameID, bool b);
+        [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<int>", HasExplicitThis = true)] extern public void SetInt(int nameID, int i);
+        [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<UInt32>", HasExplicitThis = true)] extern public void SetUInt(int nameID, uint i);
+        [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<float>", HasExplicitThis = true)] extern public void SetFloat(int nameID, float f);
+        [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<Vector2f>", HasExplicitThis = true)] extern public void SetVector2(int nameID, Vector2 v);
+        [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<Vector3f>", HasExplicitThis = true)] extern public void SetVector3(int nameID, Vector3 v);
+        [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<Vector4f>", HasExplicitThis = true)] extern public void SetVector4(int nameID, Vector4 v);
+        [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<Matrix4x4f>", HasExplicitThis = true)] extern public void SetMatrix4x4(int nameID, Matrix4x4 v);
+        [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<Texture*>", HasExplicitThis = true)] extern public void SetTexture(int nameID, Texture t);
+        [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<AnimationCurve*>", HasExplicitThis = true)] extern public void SetAnimationCurve(int nameID, AnimationCurve c);
+        [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<Gradient*>", HasExplicitThis = true)] extern public void SetGradient(int nameID, Gradient g);
+        [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<Mesh*>", HasExplicitThis = true)] extern public void SetMesh(int nameID, Mesh m);
 
         // Value getters
-        [NativeName("GetValueFromScript<bool>")] extern public bool GetBool(int nameID);
-        [NativeName("GetValueFromScript<int>")] extern public int GetInt(int nameID);
-        [NativeName("GetValueFromScript<UInt32>")] extern public uint GetUInt(int nameID);
-        [NativeName("GetValueFromScript<float>")] extern public float GetFloat(int nameID);
-        [NativeName("GetValueFromScript<Vector2f>")] extern public Vector2 GetVector2(int nameID);
-        [NativeName("GetValueFromScript<Vector3f>")] extern public Vector3 GetVector3(int nameID);
-        [NativeName("GetValueFromScript<Vector4f>")] extern public Vector4 GetVector4(int nameID);
-        [NativeName("GetValueFromScript<Matrix4x4f>")] extern public Matrix4x4 GetMatrix4x4(int nameID);
-        [NativeName("GetValueFromScript<Texture*>")] extern public Texture GetTexture(int nameID);
-        [NativeName("GetValueFromScript<Mesh*>")] extern public Mesh GetMesh(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::GetValueFromScript<bool>", HasExplicitThis = true)] extern public bool GetBool(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::GetValueFromScript<int>", HasExplicitThis = true)] extern public int GetInt(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::GetValueFromScript<UInt32>", HasExplicitThis = true)] extern public uint GetUInt(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::GetValueFromScript<float>", HasExplicitThis = true)] extern public float GetFloat(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::GetValueFromScript<Vector2f>", HasExplicitThis = true)] extern public Vector2 GetVector2(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::GetValueFromScript<Vector3f>", HasExplicitThis = true)] extern public Vector3 GetVector3(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::GetValueFromScript<Vector4f>", HasExplicitThis = true)] extern public Vector4 GetVector4(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::GetValueFromScript<Matrix4x4f>", HasExplicitThis = true)] extern public Matrix4x4 GetMatrix4x4(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::GetValueFromScript<Texture*>", HasExplicitThis = true)] extern public Texture GetTexture(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::GetValueFromScript<Mesh*>", HasExplicitThis = true)] extern public Mesh GetMesh(int nameID);
         public Gradient GetGradient(int nameID)
         {
             var gradient = new Gradient();
@@ -155,7 +175,7 @@ namespace UnityEngine.Experimental.VFX
             return gradient;
         }
 
-        [NativeName("Internal_GetGradientFromScript")] extern private void Internal_GetGradient(int nameID, Gradient gradient);
+        [FreeFunction(Name = "VisualEffectBindings::Internal_GetGradientFromScript", HasExplicitThis = true)] extern private void Internal_GetGradient(int nameID, Gradient gradient);
 
         public AnimationCurve GetAnimationCurve(int nameID)
         {
@@ -164,7 +184,7 @@ namespace UnityEngine.Experimental.VFX
             return curve;
         }
 
-        [NativeName("Internal_GetAnimationCurveFromScript")] extern private void Internal_GetAnimationCurve(int nameID, AnimationCurve curve);
+        [FreeFunction(Name = "VisualEffectBindings::Internal_GetAnimationCurveFromScript", HasExplicitThis = true)] extern private void Internal_GetAnimationCurve(int nameID, AnimationCurve curve);
 
         public void ResetOverride(string name)
         {

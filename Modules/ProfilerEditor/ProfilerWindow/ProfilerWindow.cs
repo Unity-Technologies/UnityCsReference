@@ -728,7 +728,7 @@ namespace UnityEditor
 
             m_PaneScroll[(int)m_CurrentArea] = GUILayout.BeginScrollView(m_PaneScroll[(int)m_CurrentArea], Styles.background);
 
-            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+            EditorGUILayout.BeginHorizontal(EditorStyles.contentToolbar);
             EditorGUILayout.LabelField("Operation Detail");
             EditorGUILayout.LabelField("Over 5 Ticks");
             EditorGUILayout.LabelField("Over 10 Ticks");
@@ -827,7 +827,7 @@ namespace UnityEditor
 
         private void DrawAudioPane()
         {
-            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+            EditorGUILayout.BeginHorizontal(EditorStyles.contentToolbar);
             ProfilerAudioView newShowDetailedAudioPane = m_ShowDetailedAudioPane;
             if (AudioDeepProfileToggle())
             {
@@ -992,7 +992,7 @@ namespace UnityEditor
 
         private void DrawMemoryToolbar()
         {
-            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+            EditorGUILayout.BeginHorizontal(EditorStyles.contentToolbar);
 
             m_ShowDetailedMemoryPane = (ProfilerMemoryView)EditorGUILayout.EnumPopup(m_ShowDetailedMemoryPane, EditorStyles.toolbarDropDown, GUILayout.Width(70f));
 
@@ -1392,7 +1392,7 @@ namespace UnityEditor
 
         static void DrawOtherToolbar(ProfilerArea? area)
         {
-            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+            EditorGUILayout.BeginHorizontal(EditorStyles.contentToolbar);
             if (area == ProfilerArea.Rendering)
             {
                 if (GUILayout.Button(GUI.enabled

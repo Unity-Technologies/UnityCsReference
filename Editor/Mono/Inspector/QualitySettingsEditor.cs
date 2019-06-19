@@ -507,7 +507,9 @@ namespace UnityEditor
             var asyncUploadPersistentBufferProperty = currentSettings.FindPropertyRelative("asyncUploadPersistentBuffer");
             var resolutionScalingFixedDPIFactorProperty = currentSettings.FindPropertyRelative("resolutionScalingFixedDPIFactor");
 
-            bool usingSRP = GraphicsSettings.renderPipelineAsset != null;
+            var customRenderPipeline = currentSettings.FindPropertyRelative("customRenderPipeline");
+
+            bool usingSRP = GraphicsSettings.currentRenderPipeline != null;
 
             if (string.IsNullOrEmpty(nameProperty.stringValue))
                 nameProperty.stringValue = "Level " + selectedLevel;
@@ -520,6 +522,9 @@ namespace UnityEditor
             GUILayout.Space(10);
 
             GUILayout.Label(EditorGUIUtility.TempContent("Rendering"), EditorStyles.boldLabel);
+
+            EditorGUILayout.PropertyField(customRenderPipeline);
+
             if (!usingSRP)
                 EditorGUILayout.PropertyField(pixelLightCountProperty);
 

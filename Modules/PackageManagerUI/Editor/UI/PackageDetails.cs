@@ -57,8 +57,11 @@ namespace UnityEditor.PackageManager.UI
 
             Cache = new VisualElementCache(root);
 
-            foreach (var extension in PackageManagerExtensions.Extensions)
-                CustomContainer.Add(extension.CreateExtensionUI());
+            PackageManagerExtensions.ExtensionCallback(() =>
+            {
+                foreach (var extension in PackageManagerExtensions.Extensions)
+                    CustomContainer.Add(extension.CreateExtensionUI());
+            });
 
             root.StretchToParentSize();
 
@@ -167,11 +170,14 @@ namespace UnityEditor.PackageManager.UI
 
         void RefreshExtensions(PackageInfo packageInfo)
         {
-            foreach (var extension in PackageManagerExtensions.Extensions)
-                extension.OnPackageSelectionChange(packageInfo?.Info);
+            PackageManagerExtensions.ExtensionCallback(() =>
+            {
+                foreach (var extension in PackageManagerExtensions.Extensions)
+                    extension.OnPackageSelectionChange(packageInfo?.Info);
 
-            foreach (var extension in PackageManagerExtensions.ToolbarExtensions)
-                extension.OnPackageSelectionChange(packageInfo, PackageToolbarLeftArea);
+                foreach (var extension in PackageManagerExtensions.ToolbarExtensions)
+                    extension.OnPackageSelectionChange(packageInfo, PackageToolbarContainer);
+            });
         }
 
         private void SetDisplayPackage(PackageInfo packageInfo, Error packageError = null)
@@ -391,8 +397,11 @@ namespace UnityEditor.PackageManager.UI
                 package.AddSignal.Operation = null;
             }
 
-            foreach (var extension in PackageManagerExtensions.Extensions)
-                extension.OnPackageAddedOrUpdated(packageInfo.Info);
+            PackageManagerExtensions.ExtensionCallback(() =>
+            {
+                foreach (var extension in PackageManagerExtensions.Extensions)
+                    extension.OnPackageAddedOrUpdated(packageInfo.Info);
+            });
 
             Selection.SetSelection(packageInfo);
             foreach (var itemState in Selection.States.Where(p => p.PackageId == packageInfo.PackageId))
@@ -431,8 +440,11 @@ namespace UnityEditor.PackageManager.UI
                 package.RemoveSignal.Operation = null;
             }
 
-            foreach (var extension in PackageManagerExtensions.Extensions)
-                extension.OnPackageRemoved(packageInfo.Info);
+            PackageManagerExtensions.ExtensionCallback(() =>
+            {
+                foreach (var extension in PackageManagerExtensions.Extensions)
+                    extension.OnPackageRemoved(packageInfo.Info);
+            });
         }
 
         private void OnDevelopOperation(IEmbedOperation operation)

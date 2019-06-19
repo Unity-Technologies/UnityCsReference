@@ -118,29 +118,6 @@ namespace UnityEditor
             }
         }
 
-        public static Process PrepareMonoProcess(string workDir)
-        {
-            var process = new Process();
-
-            var executableName = Application.platform == RuntimePlatform.WindowsEditor ? "mono.exe" : "mono";
-            process.StartInfo.FileName = Paths.Combine(MonoInstallationFinder.GetMonoInstallation(), "bin", executableName);
-
-            // ;; TODO fix this hack for strange process handle duplication problem inside mono
-            process.StartInfo.EnvironmentVariables["_WAPI_PROCESS_HANDLE_OFFSET"] = "5";
-
-            // We run the linker on .NET 2.0 profile
-            var monoProfile = BuildPipeline.CompatibilityProfileToClassLibFolder(ApiCompatibilityLevel.NET_2_0);
-            process.StartInfo.EnvironmentVariables["MONO_PATH"] = MonoInstallationFinder.GetProfileDirectory(monoProfile);
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.RedirectStandardError = true;
-            process.StartInfo.CreateNoWindow = true;
-
-            process.StartInfo.WorkingDirectory = workDir;
-
-            return process;
-        }
-
         public static Process PrepareMonoProcessBleedingEdge(string workDir)
         {
             var process = new Process();

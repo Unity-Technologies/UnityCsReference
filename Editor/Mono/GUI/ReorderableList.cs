@@ -216,7 +216,7 @@ namespace UnityEditorInternal
                 if (Event.current.type == EventType.Repaint)
                 {
                     if (draggable)
-                        draggingHandle.Draw(new Rect(rect.x + 5, rect.y + 7, 10, rect.height - (rect.height - 7)), false, false, false, false);
+                        draggingHandle.Draw(new Rect(rect.x + 5, rect.y + 8, 10, 6), false, false, false, false);
                 }
             }
 

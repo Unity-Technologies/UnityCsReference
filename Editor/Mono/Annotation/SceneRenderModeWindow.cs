@@ -154,7 +154,7 @@ namespace UnityEditor
                 int modes;
 
                 // TODO: This needs to be fixed and we need to find a way to dif. between disabled and unsupported
-                if (GraphicsSettings.renderPipelineAsset != null)
+                if (GraphicsSettings.currentRenderPipeline != null)
                 {
                     // When using SRP, we completely hide disabled builtin modes, including headers
                     headers = Styles.sBuiltinCameraModes.Where(mode => m_SceneView.IsCameraDrawModeEnabled(mode)).Select(mode => mode.section).Distinct().Count() +
@@ -242,7 +242,7 @@ namespace UnityEditor
         private void Draw(float listElementWidth)
         {
             var drawPos = new Rect(0, 0, listElementWidth, EditorGUI.kSingleLineHeight);
-            bool usingScriptableRenderPipeline = (GraphicsSettings.renderPipelineAsset != null);
+            bool usingScriptableRenderPipeline = (GraphicsSettings.currentRenderPipeline != null);
             string lastSection = null;
 
             foreach (SceneView.CameraMode mode in SceneView.userDefinedModes.OrderBy(mode => mode.section).Concat(Styles.sBuiltinCameraModes))

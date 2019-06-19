@@ -201,6 +201,7 @@ namespace UnityEditor
 
             LoadVisualTreeFromUxml();
 
+            m_PreviewResizer.localFrame = true;
             m_PreviewResizer.Init("InspectorPreview");
             m_LabelGUI.OnEnable();
 

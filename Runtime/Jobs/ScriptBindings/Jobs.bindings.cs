@@ -46,6 +46,7 @@ namespace Unity.Jobs.LowLevel.Unsafe
     }
 
     [NativeType(Header = "Runtime/Jobs/ScriptBindings/JobsBindings.h")]
+    [NativeHeader("Runtime/Jobs/JobSystem.h")]
     public static class JobsUtility
     {
         [StructLayout(LayoutKind.Sequential)]
@@ -108,6 +109,31 @@ namespace Unity.Jobs.LowLevel.Unsafe
 
         public static extern bool JobDebuggerEnabled {[FreeFunction] get; [FreeFunction] set; }
         public static extern bool JobCompilerEnabled {[FreeFunction] get; [FreeFunction] set; }
+
+        [FreeFunction("JobSystem::GetJobQueueWorkerThreadCount")]
+        static extern int GetJobQueueWorkerThreadCount();
+
+        [FreeFunction("JobSystem::ForceSetJobQueueWorkerThreadCount")]
+        static extern void SetJobQueueMaximumActiveThreadCount(int count);
+
+        public static extern int JobWorkerMaximumCount
+        {
+            [FreeFunction("JobSystem::GetJobQueueMaximumThreadCount")]
+            get;
+        }
+
+        public static int JobWorkerCount
+        {
+            get { return GetJobQueueWorkerThreadCount(); }
+            set
+            {
+                if ((value != -1) && ((value < 1) || (value > JobsUtility.JobWorkerMaximumCount)))
+                {
+                    throw new ArgumentOutOfRangeException("JobWorkerCount", $"Invalid JobWorkerCount {value} must be -1 or in the range 1 -> {JobsUtility.JobWorkerMaximumCount}");
+                }
+                SetJobQueueMaximumActiveThreadCount(value);
+            }
+        }
 
         //@TODO: @timj Should we decrease this???
         public const int MaxJobThreadCount = 128;

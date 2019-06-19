@@ -182,7 +182,7 @@ namespace UnityEditor
             public static readonly GUIContent apiCompatibilityLevel_NET_Standard_2_0 = EditorGUIUtility.TrTextContent(".NET Standard 2.0");
             public static readonly GUIContent allowUnsafeCode = EditorGUIUtility.TrTextContent("Allow 'unsafe' Code", "Allow compilation of unsafe code for predefined assemblies (Assembly-CSharp.dll, etc.)");
             public static readonly GUIContent activeInputHandling = EditorGUIUtility.TrTextContent("Active Input Handling*");
-            public static readonly GUIContent[] activeInputHandlingOptions = new GUIContent[] { EditorGUIUtility.TrTextContent("Input Manager"), EditorGUIUtility.TrTextContent("Input System (Preview)"), EditorGUIUtility.TrTextContent("Both") };
+            public static readonly GUIContent[] activeInputHandlingOptions = new GUIContent[] { EditorGUIUtility.TrTextContent("Input Manager (Old)"), EditorGUIUtility.TrTextContent("Input System Package (New)"), EditorGUIUtility.TrTextContent("Both") };
             public static readonly GUIContent lightmapEncodingLabel = EditorGUIUtility.TrTextContent("Lightmap Encoding", "Affects the encoding scheme and compression format of the lightmaps.");
             public static readonly GUIContent[] lightmapEncodingNames = { EditorGUIUtility.TrTextContent("Low Quality"), EditorGUIUtility.TrTextContent("Normal Quality"), EditorGUIUtility.TrTextContent("High Quality")};
             public static readonly GUIContent lightmapStreamingEnabled = EditorGUIUtility.TrTextContent("Lightmap Streaming Enabled", "Only load larger lightmap mipmaps as needed to render the current game cameras. Requires texture streaming to be enabled in quality settings. This value is applied to the light map textures as they are generated.");
@@ -1490,7 +1490,7 @@ namespace UnityEditor
                 if (targetGroup == BuildTargetGroup.Android)
                 {
                     // SRP should handle blits internally
-                    bool hasBlitDisabled = (PlayerSettings.Android.blitType == AndroidBlitType.Never) && (GraphicsSettings.renderPipelineAsset == null);
+                    bool hasBlitDisabled = (PlayerSettings.Android.blitType == AndroidBlitType.Never) && (GraphicsSettings.currentRenderPipeline == null);
                     showWarning = hasBlitDisabled || apis.Contains(GraphicsDeviceType.OpenGLES2);
                     warningMessage = SettingsContent.colorSpaceAndroidWarning;
                 }
@@ -1600,7 +1600,7 @@ namespace UnityEditor
                         EditorGUILayout.Toggle(SettingsContent.staticBatching, false);
                 }
 
-                if (GraphicsSettings.renderPipelineAsset == null)
+                if (GraphicsSettings.currentRenderPipeline == null)
                 {
                     using (new EditorGUI.DisabledScope(!dynamicBatchingSupported))
                     {

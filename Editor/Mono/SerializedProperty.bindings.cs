@@ -873,8 +873,7 @@ namespace UnityEditor
         {
             get
             {
-                UnityObject obj = objectReferenceValue;
-                return obj ? obj.GetInstanceID() : 0;
+                return GetPPtrValueFromInstanceIDInternal();
             }
             set
             {
@@ -882,6 +881,9 @@ namespace UnityEditor
                 SetPPtrValueFromInstanceIDInternal(value);
             }
         }
+
+        [NativeName("GetPPtrInstanceID")]
+        private extern int GetPPtrValueFromInstanceIDInternal();
 
         [FreeFunction(Name = "SerializedPropertyBindings::SetPPtrValueFromInstanceIDInternal", HasExplicitThis = true)]
         private extern void SetPPtrValueFromInstanceIDInternal(int instanceID);

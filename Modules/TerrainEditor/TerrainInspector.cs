@@ -61,7 +61,10 @@ namespace UnityEditor
         {
             public GUIStyle gridList = "GridList";
             public GUIStyle gridListText = "GridListText";
-            public GUIStyle largeSquare = "Button";
+            public GUIStyle largeSquare = new GUIStyle("Button")
+            {
+                fixedHeight = 22
+            };
             public GUIStyle command = "Command";
             public Texture settingsIcon = EditorGUIUtility.IconContent("SettingsIcon").image;
 
@@ -93,7 +96,8 @@ namespace UnityEditor
                 "console.warnicon");
 
             public readonly GUIContent assign = EditorGUIUtility.TrTextContent("Assign");
-            public readonly GUIContent duplicateTab = EditorGUIUtility.TrTextContent("NOTE: Inspector tab is a duplicate.  Paint functionality disabled.");
+            public readonly GUIContent duplicateTab = EditorGUIUtility.TrTextContent("This inspector tab is not the active Terrain inspector, paint functionality disabled.");
+            public readonly GUIContent makeMeActive = EditorGUIUtility.TrTextContent("Activate this inspector");
 
             // Textures
             public readonly GUIContent terrainLayers = EditorGUIUtility.TrTextContent("Terrain Layers");
@@ -662,7 +666,7 @@ namespace UnityEditor
         static bool ShouldShowCreateMaterialButton(Material material)
         {
             return material == null
-                || GraphicsSettings.renderPipelineAsset != null && material == GraphicsSettings.renderPipelineAsset.defaultTerrainMaterial
+                || GraphicsSettings.currentRenderPipeline != null && material == GraphicsSettings.currentRenderPipeline.defaultTerrainMaterial
                 || material == AssetDatabase.GetBuiltinExtraResource<Material>("Default-Terrain-Standard.mat")
                 || material == AssetDatabase.GetBuiltinExtraResource<Material>("Default-Terrain-Diffuse.mat")
                 || material == AssetDatabase.GetBuiltinExtraResource<Material>("Default-Terrain-Specular.mat");
@@ -1788,7 +1792,7 @@ namespace UnityEditor
 
         public void ShowRefreshPrototypes()
         {
-            if (GUILayout.Button(styles.refresh))
+            if (GUILayout.Button(styles.refresh, styles.largeSquare))
             {
                 TerrainMenus.RefreshPrototypes();
             }
@@ -1844,6 +1848,12 @@ namespace UnityEditor
             {
                 GUILayout.BeginVertical(EditorStyles.helpBox);
                 GUILayout.Label(styles.duplicateTab, EditorStyles.boldLabel);
+                if (GUILayout.Button(styles.makeMeActive))
+                {
+                    // Acquire active inspector ownership
+                    s_activeTerrainInspector = GetInstanceID();
+                    s_activeTerrainInspectorInstance = this;
+                }
                 GUILayout.EndVertical();
             }
 

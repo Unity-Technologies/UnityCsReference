@@ -142,7 +142,7 @@ namespace UnityEditor
             EditorGUILayout.Space();
 
 
-            bool usingSRP = GraphicsSettings.renderPipelineAsset != null;
+            bool usingSRP = GraphicsSettings.currentRenderPipeline != null;
 
             if (usingSRP)
                 EditorGUILayout.HelpBox("A Scriptable Render Pipeline is in use, some settings will not be used and are hidden", MessageType.Info);

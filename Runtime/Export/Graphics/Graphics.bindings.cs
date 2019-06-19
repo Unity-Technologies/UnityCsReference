@@ -5,12 +5,12 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using UnityEditor;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 using uei = UnityEngine.Internal;
-using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine;
 
 namespace UnityEngine
 {
@@ -36,10 +36,11 @@ namespace UnityEngine
         public const int SystemSetting = -2;
     }
 
+
     [NativeHeader("Runtime/Graphics/ScreenManager.h")]
     [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
     [StaticAccessor("GetScreenManager()", StaticAccessorType.Dot)]
-    public sealed partial class Screen
+    internal sealed class EditorScreen
     {
         extern public static int   width  {[NativeMethod(Name = "GetWidth",  IsThreadSafe = true)] get; }
         extern public static int   height {[NativeMethod(Name = "GetHeight", IsThreadSafe = true)] get; }
@@ -117,6 +118,96 @@ namespace UnityEngine
         extern public static Resolution[] resolutions {[FreeFunction("ScreenScripting::GetResolutions")] get; }
 
         extern public static float brightness { get; set; }
+    }
+}
+
+namespace UnityEngine
+{
+    public sealed partial class Screen
+    {
+        public static int width => ShimManager.GetActiveShim().width;
+        public static int height => ShimManager.GetActiveShim().height;
+        public static float dpi => ShimManager.GetActiveShim().dpi;
+        public static Resolution currentResolution => ShimManager.GetActiveShim().currentResolution;
+        public static Resolution[] resolutions => ShimManager.GetActiveShim().resolutions;
+
+        public static void SetResolution(int width, int height, FullScreenMode fullscreenMode, [uei.DefaultValue("0")] int preferredRefreshRate)
+        {
+            ShimManager.GetActiveShim().SetResolution(width, height, fullscreenMode, preferredRefreshRate);
+        }
+
+        public static void SetResolution(int width, int height, FullScreenMode fullscreenMode)
+        {
+            SetResolution(width, height, fullscreenMode, 0);
+        }
+
+        public static void SetResolution(int width, int height, bool fullscreen, [uei.DefaultValue("0")] int preferredRefreshRate)
+        {
+            SetResolution(width, height, fullscreen ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed, preferredRefreshRate);
+        }
+
+        public static void SetResolution(int width, int height, bool fullscreen)
+        {
+            SetResolution(width, height, fullscreen, 0);
+        }
+
+        public static bool fullScreen
+        {
+            get { return ShimManager.GetActiveShim().fullScreen; }
+            set { ShimManager.GetActiveShim().fullScreen = value; }
+        }
+
+        public static FullScreenMode fullScreenMode
+        {
+            get { return ShimManager.GetActiveShim().fullScreenMode; }
+            set { ShimManager.GetActiveShim().fullScreenMode = value; }
+        }
+
+        public static Rect safeArea => ShimManager.GetActiveShim().safeArea;
+
+        public static Rect[] cutouts => ShimManager.GetActiveShim().cutouts;
+
+        public static bool autorotateToPortrait
+        {
+            get { return ShimManager.GetActiveShim().autorotateToPortrait; }
+            set { ShimManager.GetActiveShim().autorotateToPortrait = value; }
+        }
+
+        public static bool autorotateToPortraitUpsideDown
+        {
+            get { return ShimManager.GetActiveShim().autorotateToPortraitUpsideDown; }
+            set { ShimManager.GetActiveShim().autorotateToPortraitUpsideDown = value; }
+        }
+
+        public static bool autorotateToLandscapeLeft
+        {
+            get { return ShimManager.GetActiveShim().autorotateToLandscapeLeft; }
+            set { ShimManager.GetActiveShim().autorotateToLandscapeLeft = value; }
+        }
+
+        public static bool autorotateToLandscapeRight
+        {
+            get { return ShimManager.GetActiveShim().autorotateToLandscapeRight; }
+            set { ShimManager.GetActiveShim().autorotateToLandscapeRight = value; }
+        }
+
+        public static ScreenOrientation orientation
+        {
+            get { return ShimManager.GetActiveShim().orientation; }
+            set { ShimManager.GetActiveShim().orientation = value; }
+        }
+
+        public static int sleepTimeout
+        {
+            get { return ShimManager.GetActiveShim().sleepTimeout; }
+            set { ShimManager.GetActiveShim().sleepTimeout = value; }
+        }
+
+        public static float brightness
+        {
+            get { return ShimManager.GetActiveShim().brightness; }
+            set { ShimManager.GetActiveShim().brightness = value; }
+        }
     }
 }
 
@@ -241,6 +332,9 @@ namespace UnityEngine
 
         [FreeFunction("GraphicsScripting::DrawMeshInstanced")]
         extern private static void Internal_DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, Matrix4x4[] matrices, int count, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, int layer, Camera camera, LightProbeUsage lightProbeUsage, LightProbeProxyVolume lightProbeProxyVolume);
+
+        [FreeFunction("GraphicsScripting::DrawMeshInstancedProcedural")]
+        extern private static void Internal_DrawMeshInstancedProcedural(Mesh mesh, int submeshIndex, Material material, Bounds bounds, int count, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, int layer, Camera camera, LightProbeUsage lightProbeUsage, LightProbeProxyVolume lightProbeProxyVolume);
 
         [FreeFunction("GraphicsScripting::DrawMeshInstancedIndirect")]
         extern private static void Internal_DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material material, Bounds bounds, ComputeBuffer bufferWithArgs, int argsOffset, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, int layer, Camera camera, LightProbeUsage lightProbeUsage, LightProbeProxyVolume lightProbeProxyVolume);

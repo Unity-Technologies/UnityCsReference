@@ -366,11 +366,6 @@ namespace UnityEditor.UIElements
             }
         }
 
-        private static void EnumBind(PopupField<string> popup, SerializedObjectUpdateWrapper objWrapper, SerializedProperty prop)
-        {
-            SerializedEnumBinding.CreateBind(popup, objWrapper, prop);
-        }
-
         internal static void HandleStyleUpdate(VisualElement element)
         {
             var bindable = element as IBindable;
@@ -385,7 +380,11 @@ namespace UnityEditor.UIElements
         {
             if (element is PopupField<string>)
             {
-                EnumBind((PopupField<string>)element, objWrapper, prop);
+                SerializedDefaultEnumBinding.CreateBind((PopupField<string>)element, objWrapper, prop);
+            }
+            else if (element is EnumFlagsField || element is EnumField)
+            {
+                SerializedManagedEnumBinding.CreateBind((BaseField<Enum>)element, objWrapper, prop);
             }
             else
             {
@@ -1118,10 +1117,160 @@ namespace UnityEditor.UIElements
             }
         }
         // specific enum version that binds on the index property of the PopupField<string>
-        private class SerializedEnumBinding : SerializedObjectBindingToBaseField<string, PopupField<string>>
+        private class SerializedManagedEnumBinding : SerializedObjectBindingToBaseField<Enum, BaseField<Enum>>
         {
-            public static ObjectPool<SerializedEnumBinding> s_Pool =
-                new ObjectPool<SerializedEnumBinding>(32);
+            public static ObjectPool<SerializedManagedEnumBinding> s_Pool =
+                new ObjectPool<SerializedManagedEnumBinding>(32);
+
+            //we need to keep a copy of the last value since some fields will allocate when getting the value
+            private int lastEnumValue;
+            private Type managedType;
+
+            public static void CreateBind(BaseField<Enum> field,  SerializedObjectUpdateWrapper objWrapper,
+                SerializedProperty property)
+            {
+                Type managedType;
+                ScriptAttributeUtility.GetFieldInfoFromProperty(property, out managedType);
+
+                if (managedType == null)
+                {
+                    Debug.LogWarning(
+                        $"{field.GetType().FullName} is not compatible with property \"{property.propertyPath}\". " +
+                        "Make sure you're binding to a managed enum type");
+                    return;
+                }
+
+                var newBinding = s_Pool.Get();
+                newBinding.isReleased = false;
+                newBinding.SetBinding(field, objWrapper, property, managedType);
+            }
+
+            private void SetBinding(BaseField<Enum> c, SerializedObjectUpdateWrapper objWrapper,
+                SerializedProperty property, Type manageType)
+            {
+                this.managedType = manageType;
+                property.unsafeMode = true;
+                this.boundPropertyPath = property.propertyPath;
+                this.boundObject = objWrapper;
+                this.boundProperty = property;
+
+                int enumValueAsInt = property.intValue;
+
+                Enum value = GetEnumFromSerializedFromInt(manageType, enumValueAsInt);
+
+                if (c is EnumField)
+                    (c as EnumField).Init(value);
+                else if (c is EnumFlagsField)
+                    (c as EnumFlagsField).Init(value);
+                else
+                {
+                    throw new InvalidOperationException(c.GetType() + " cannot be bound to a enum");
+                }
+
+                lastEnumValue = enumValueAsInt;
+
+                // Make sure to write this property only after setting a first value into the field
+                // This avoid any null checks in regular update methods
+                this.field = c;
+
+                Update();
+            }
+
+            static Enum GetEnumFromSerializedFromInt(Type managedType, int enumValueAsInt)
+            {
+                var enumData = EnumDataUtility.GetCachedEnumData(managedType);
+
+                if (enumData.flags)
+                    return EnumDataUtility.IntToEnumFlags(managedType, enumValueAsInt);
+                else
+                {
+                    int valueIndex = Array.IndexOf(enumData.flagValues, enumValueAsInt);
+
+                    if (valueIndex != -1)
+                        return enumData.values[valueIndex];
+                    else
+                    {
+                        Debug.LogWarning("Error: invalid enum value " + enumValueAsInt + " for type " + managedType);
+                        return null;
+                    }
+                }
+            }
+
+            protected override void SyncPropertyToField(BaseField<Enum> c, SerializedProperty p)
+            {
+                if (p == null)
+                {
+                    throw new ArgumentNullException(nameof(p));
+                }
+                if (c == null)
+                {
+                    throw new ArgumentNullException(nameof(c));
+                }
+
+                int enumValueAsInt = p.intValue;
+                if (enumValueAsInt != lastEnumValue)
+                {
+                    field.value = GetEnumFromSerializedFromInt(managedType, enumValueAsInt);
+                    lastEnumValue = enumValueAsInt;
+                }
+            }
+
+            protected override void UpdateLastFieldValue()
+            {
+                var enumData = EnumDataUtility.GetCachedEnumData(managedType);
+
+                if (enumData.flags)
+                    lastEnumValue = EnumDataUtility.EnumFlagsToInt(enumData, field.value);
+                else
+                {
+                    int valueIndex = Array.IndexOf(enumData.values, field.value);
+
+                    if (valueIndex != -1)
+                        lastEnumValue = enumData.flagValues[valueIndex];
+                    else
+                        Debug.LogWarning("Error: invalid enum value " + field.value + " for type " + managedType);
+                }
+            }
+
+            protected override bool SyncFieldValueToProperty()
+            {
+                if (lastEnumValue != boundProperty.intValue)
+                {
+                    boundProperty.intValue = lastEnumValue;
+                    boundProperty.m_SerializedObject.ApplyModifiedProperties();
+                    return true;
+                }
+                return false;
+            }
+
+            public override void Release()
+            {
+                if (isReleased)
+                    return;
+
+                if (FieldBinding == this)
+                {
+                    // Make sure to nullify the field to unbind before reverting the enum value
+                    var saveField = field;
+                    field = null;
+                    saveField.value = null;
+                    FieldBinding = null;
+                }
+
+                boundObject = null;
+                boundProperty = null;
+                field = null;
+                managedType = null;
+                isReleased = true;
+                s_Pool.Release(this);
+            }
+        }
+
+        // specific enum version that binds on the index property of the PopupField<string>
+        private class SerializedDefaultEnumBinding : SerializedObjectBindingToBaseField<string, PopupField<string>>
+        {
+            public static ObjectPool<SerializedDefaultEnumBinding> s_Pool =
+                new ObjectPool<SerializedDefaultEnumBinding>(32);
 
             //we need to keep a copy of the last value since some fields will allocate when getting the value
             private int lastFieldValueIndex;

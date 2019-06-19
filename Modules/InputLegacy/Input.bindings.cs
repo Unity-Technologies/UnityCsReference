@@ -292,6 +292,7 @@ namespace UnityEngine
         [FreeFunction("ResetInput")]
         public extern static void ResetInputAxes();
         public extern static bool IsJoystickPreconfigured(string joystickName);
+        [NativeThrows]
         public extern static string[] GetJoystickNames();
         [NativeThrows]
         public extern static Touch GetTouch(int index);
@@ -329,10 +330,15 @@ namespace UnityEngine
         }
 
         public extern static bool simulateMouseWithTouches { get; set; }
+        [NativeThrows]
         public extern static bool anyKey { get; }
+        [NativeThrows]
         public extern static bool anyKeyDown { get; }
+        [NativeThrows]
         public extern static string inputString { get; }
+        [NativeThrows]
         public extern static Vector3 mousePosition { get; }
+        [NativeThrows]
         public extern static Vector2 mouseScrollDelta { get; }
         public extern static IMECompositionMode imeCompositionMode { get; set; }
         public extern static string compositionString { get; }

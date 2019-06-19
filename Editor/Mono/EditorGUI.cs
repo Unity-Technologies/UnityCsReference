@@ -109,7 +109,7 @@ namespace UnityEditor
         internal static string s_UnitString = "";
         internal const int kInspTitlebarIconWidth = 16;
         internal const int kInspTitlebarFoldoutIconWidth = 13;
-        internal static readonly SVC<float> kWindowToolbarHeight = new SVC<float>("--window-toolbar-height", 20f);
+        internal static readonly SVC<float> kWindowToolbarHeight = new SVC<float>("--window-toolbar-height", 21f);
         private const string kEnabledPropertyName = "m_Enabled";
         private const string k_MultiEditValueString = "<multi>";
         private const float kDropDownArrowMargin = -2;
@@ -1338,7 +1338,12 @@ namespace UnityEditor
 
         internal static Rect GetInspectorTitleBarObjectFoldoutRenderRect(Rect rect)
         {
-            return new Rect(rect.x + EditorStyles.foldout.margin.left + 1f, rect.y + (rect.height - kInspTitlebarFoldoutIconWidth) / 2 , kInspTitlebarFoldoutIconWidth, kInspTitlebarFoldoutIconWidth);
+            return GetInspectorTitleBarObjectFoldoutRenderRect(rect, null);
+        }
+
+        internal static Rect GetInspectorTitleBarObjectFoldoutRenderRect(Rect rect, GUIStyle baseStyle)
+        {
+            return new Rect(rect.x + EditorStyles.foldout.margin.left + 1f, rect.y + (rect.height - kInspTitlebarFoldoutIconWidth) / 2 + (baseStyle != null ? baseStyle.padding.top : 0), kInspTitlebarFoldoutIconWidth, kInspTitlebarFoldoutIconWidth);
         }
 
         [SuppressMessage("ReSharper", "RedundantCast.0")]
@@ -1676,8 +1681,10 @@ namespace UnityEditor
             {
                 using (new DisabledScope(true))
                 {
-                    bool hovered = position.Contains(Event.current.mousePosition);
-                    EditorStyles.toolbarSearchFieldPopup.Draw(position, EditorGUIUtility.TempContent(searchModes[searchMode]), id, false, hovered);
+                    var placeHolderTextRect = position;
+
+                    placeHolderTextRect.xMin += EditorStyles.toolbarSearchFieldPopup.padding.right;
+                    EditorStyles.label.Draw(placeHolderTextRect, EditorGUIUtility.TempContent(searchModes[searchMode]), false, false, false, false);
                 }
             }
 
@@ -2343,7 +2350,12 @@ namespace UnityEditor
         // Make a slider the user can drag to change a value between a min and a max.
         public static float Slider(Rect position, GUIContent label, float value, float leftValue, float rightValue)
         {
-            return PowerSlider(position, label, value, leftValue, rightValue, 1.0f);
+            return Slider(position, label, value, leftValue, rightValue, EditorStyles.numberField);
+        }
+
+        internal static float Slider(Rect position, GUIContent label, float value, float leftValue, float rightValue, GUIStyle textfieldStyle)
+        {
+            return PowerSlider(position, label, value, leftValue, rightValue, textfieldStyle, 1.0f);
         }
 
         internal static float Slider(Rect position, GUIContent label, float value, float sliderMin, float sliderMax, float textFieldMin, float textFieldMax)
@@ -2351,7 +2363,8 @@ namespace UnityEditor
             var id = GUIUtility.GetControlID(s_SliderHash, FocusType.Keyboard, position);
             var controlRect = PrefixLabel(position, id, label);
             var dragZone = LabelHasContent(label) ? EditorGUIUtility.DragZoneRect(position) : new Rect(); // Ensure dragzone is empty when we have no label
-            return DoSlider(controlRect, dragZone, id, value, sliderMin, sliderMax, kFloatFieldFormatString, textFieldMin, textFieldMax, 1f, GUI.skin.horizontalSlider, GUI.skin.horizontalSliderThumb, null, GUI.skin.horizontalSliderThumbExtent);
+            return DoSlider(controlRect, dragZone, id, value, sliderMin, sliderMax, kFloatFieldFormatString, textFieldMin, textFieldMax, 1f,
+                EditorStyles.numberField, GUI.skin.horizontalSlider, GUI.skin.horizontalSliderThumb, null, GUI.skin.horizontalSliderThumbExtent);
         }
 
         internal static float PowerSlider(Rect position, string label, float sliderValue, float leftValue, float rightValue, float power)
@@ -2360,12 +2373,18 @@ namespace UnityEditor
         }
 
         // Make a power slider the user can drag to change a value between a min and a max.
-        internal static float PowerSlider(Rect position, GUIContent label, float sliderValue, float leftValue, float rightValue, float power)
+        internal static float PowerSlider(Rect position, GUIContent label, float sliderValue, float leftValue,
+            float rightValue, float power)
+        {
+            return PowerSlider(position, label, sliderValue, leftValue, rightValue, EditorStyles.numberField, power);
+        }
+
+        internal static float PowerSlider(Rect position, GUIContent label, float sliderValue, float leftValue, float rightValue, GUIStyle textfieldStyle, float power)
         {
             int id = GUIUtility.GetControlID(s_SliderHash, FocusType.Keyboard, position);
             Rect controlRect = PrefixLabel(position, id, label);
             Rect dragZone = LabelHasContent(label) ? EditorGUIUtility.DragZoneRect(position) : new Rect(); // Ensure dragzone is empty when we have no label
-            return DoSlider(controlRect, dragZone, id, sliderValue, leftValue, rightValue, kFloatFieldFormatString, power);
+            return DoSlider(controlRect, dragZone, id, sliderValue, leftValue, rightValue, kFloatFieldFormatString, textfieldStyle, power);
         }
 
         private static float PowPreserveSign(float f, float p)
@@ -2536,10 +2555,21 @@ namespace UnityEditor
             EndProperty();
         }
 
-        public static int IntSlider(Rect position, int value, int leftValue, int rightValue)
+        internal static int IntSlider(Rect position, int value, int leftValue, int rightValue, float power = -1,
+            GUIStyle textfieldStyle = null, GUIStyle sliderStyle = null, GUIStyle thumbStyle = null, Texture2D sliderBackground = null, GUIStyle thumbStyleExtent = null)
         {
             int id = GUIUtility.GetControlID(s_SliderHash, FocusType.Keyboard, position);
-            return Mathf.RoundToInt(DoSlider(IndentedRect(position), EditorGUIUtility.DragZoneRect(position), id, value, leftValue, rightValue, kIntFieldFormatString));
+            return Mathf.RoundToInt(DoSlider(IndentedRect(position), EditorGUIUtility.DragZoneRect(position), id, value, leftValue, rightValue, kIntFieldFormatString, power,
+                textfieldStyle ?? EditorStyles.numberField,
+                sliderStyle ?? GUI.skin.horizontalSlider,
+                thumbStyle ?? GUI.skin.horizontalSliderThumb,
+                sliderBackground,
+                thumbStyleExtent ?? GUI.skin.horizontalSliderThumbExtent));
+        }
+
+        public static int IntSlider(Rect position, int value, int leftValue, int rightValue)
+        {
+            return IntSlider(position, value, leftValue, rightValue);
         }
 
         public static int IntSlider(Rect position, string label, int value, int leftValue, int rightValue)
@@ -2551,7 +2581,7 @@ namespace UnityEditor
         public static int IntSlider(Rect position, GUIContent label, int value, int leftValue, int rightValue)
         {
             int id = GUIUtility.GetControlID(s_SliderHash, FocusType.Keyboard, position);
-            return Mathf.RoundToInt(DoSlider(PrefixLabel(position, id, label), EditorGUIUtility.DragZoneRect(position), id, value, leftValue, rightValue, kIntFieldFormatString));
+            return Mathf.RoundToInt(DoSlider(PrefixLabel(position, id, label), EditorGUIUtility.DragZoneRect(position), id, value, leftValue, rightValue, kIntFieldFormatString, EditorStyles.numberField));
         }
 
         public static void IntSlider(Rect position, SerializedProperty property, int leftValue, int rightValue)
@@ -2597,19 +2627,24 @@ namespace UnityEditor
             labelStyle.alignment = oldAlignment;
         }
 
-        private static float DoSlider(Rect position, Rect dragZonePosition, int id, float value, float left, float right, string formatString, float power = 1f)
+        internal static float DoSlider(Rect position, Rect dragZonePosition, int id, float value, float left, float right, string formatString, float power = 1f)
         {
-            return DoSlider(position, dragZonePosition, id, value, left, right, formatString, power, GUI.skin.horizontalSlider, GUI.skin.horizontalSliderThumb, null, GUI.skin.horizontalSliderThumbExtent);
+            return DoSlider(position, dragZonePosition, id, value, left, right, formatString, power, EditorStyles.numberField, GUI.skin.horizontalSlider, GUI.skin.horizontalSliderThumb, null, GUI.skin.horizontalSliderThumbExtent);
         }
 
-        private static float DoSlider(Rect position, Rect dragZonePosition, int id, float value, float left, float right, string formatString, float power, GUIStyle sliderStyle, GUIStyle thumbStyle, Texture2D sliderBackground, GUIStyle thumbStyleExtent)
+        internal static float DoSlider(Rect position, Rect dragZonePosition, int id, float value, float left, float right, string formatString, GUIStyle textfieldStyle, float power = 1f)
         {
-            return DoSlider(position, dragZonePosition, id, value, left, right, formatString, left, right, power, sliderStyle, thumbStyle, sliderBackground, thumbStyleExtent);
+            return DoSlider(position, dragZonePosition, id, value, left, right, formatString, power, textfieldStyle, GUI.skin.horizontalSlider, GUI.skin.horizontalSliderThumb, null, GUI.skin.horizontalSliderThumbExtent);
+        }
+
+        private static float DoSlider(Rect position, Rect dragZonePosition, int id, float value, float left, float right, string formatString, float power, GUIStyle textfieldStyle, GUIStyle sliderStyle, GUIStyle thumbStyle, Texture2D sliderBackground, GUIStyle thumbStyleExtent)
+        {
+            return DoSlider(position, dragZonePosition, id, value, left, right, formatString, left, right, power, textfieldStyle, sliderStyle, thumbStyle, sliderBackground, thumbStyleExtent);
         }
 
         private static float DoSlider(
             Rect position, Rect dragZonePosition, int id, float value, float sliderMin, float sliderMax, string formatString, float textFieldMin
-            , float textFieldMax, float power, GUIStyle sliderStyle, GUIStyle thumbStyle, Texture2D sliderBackground, GUIStyle thumbStyleExtent
+            , float textFieldMax, float power, GUIStyle textfieldStyle, GUIStyle sliderStyle, GUIStyle thumbStyle, Texture2D sliderBackground, GUIStyle thumbStyleExtent
         )
         {
             int sliderId = GUIUtility.GetControlID(s_SliderKnobHash, FocusType.Passive, position);
@@ -2720,7 +2755,8 @@ namespace UnityEditor
                 }
 
                 BeginChangeCheck();
-                var newTextFieldValue = DoFloatField(s_RecycledEditor, new Rect(position.x + sWidth + kSpacing, position.y, EditorGUIUtility.fieldWidth - 2, position.height), dragZonePosition, id, value, formatString, EditorStyles.numberField, true);
+                var newTextFieldValue = DoFloatField(s_RecycledEditor, new Rect(position.x + sWidth + kSpacing, position.y, EditorGUIUtility.fieldWidth - 2, position.height),
+                    dragZonePosition, id, value, formatString, textfieldStyle ?? EditorStyles.numberField, true);
                 if (EndChangeCheck())
                 {
                     value = Mathf.Clamp(newTextFieldValue, Mathf.Min(textFieldMin, textFieldMax), Mathf.Max(textFieldMin, textFieldMax));
@@ -2731,7 +2767,7 @@ namespace UnityEditor
                 w = Mathf.Min(EditorGUIUtility.fieldWidth, w);
                 position.x = position.xMax - w;
                 position.width = w;
-                value = DoFloatField(s_RecycledEditor, position, dragZonePosition, id, value, formatString, EditorStyles.numberField, true);
+                value = DoFloatField(s_RecycledEditor, position, dragZonePosition, id, value, formatString, textfieldStyle ?? EditorStyles.numberField, true);
                 value = Mathf.Clamp(value, Mathf.Min(textFieldMin, textFieldMax), Mathf.Max(textFieldMin, textFieldMax));
             }
             return value;
@@ -2866,7 +2902,7 @@ namespace UnityEditor
                 throw new ArgumentException("Parameter selected must be of type System.Enum", nameof(selected));
             }
 
-            var enumData = GetCachedEnumData(enumType, !includeObsolete);
+            var enumData = EnumDataUtility.GetCachedEnumData(enumType, !includeObsolete);
             var i = Array.IndexOf(enumData.values, selected);
             GUIContent[] options;
             using (new UnityEditor.Localization.Editor.LocalizationGroup(enumType))
@@ -2887,7 +2923,7 @@ namespace UnityEditor
                 throw new ArgumentException("Parameter selected must be of type System.Enum", nameof(enumType));
             }
 
-            var enumData = GetCachedEnumData(enumType, !includeObsolete);
+            var enumData = EnumDataUtility.GetCachedEnumData(enumType, !includeObsolete);
             var i = Array.IndexOf(enumData.flagValues, flagValue);
             GUIContent[] options;
             using (new UnityEditor.Localization.Editor.LocalizationGroup(enumType))
@@ -3292,113 +3328,6 @@ namespace UnityEditor
             return layer;
         }
 
-        internal struct EnumData
-        {
-            public Enum[] values;
-            public int[] flagValues;
-            public string[] displayNames;
-            public string[] tooltip;
-            public bool flags;
-            public Type underlyingType;
-            public bool unsigned;
-            public bool serializable;
-        }
-
-        private static readonly Dictionary<Type, EnumData> s_NonObsoleteEnumData = new Dictionary<Type, EnumData>();
-        private static readonly Dictionary<Type, EnumData> s_EnumData = new Dictionary<Type, EnumData>();
-
-        private static string EnumNameFromEnumField(FieldInfo field)
-        {
-            var description = field.GetCustomAttributes(typeof(InspectorNameAttribute), false);
-            if (description.Length > 0)
-            {
-                return ((InspectorNameAttribute)description.First()).displayName;
-            }
-            if (field.IsDefined(typeof(ObsoleteAttribute), false))
-            {
-                return string.Format("{0} (Obsolete)", ObjectNames.NicifyVariableName(field.Name));
-            }
-            return ObjectNames.NicifyVariableName(field.Name);
-        }
-
-        private static string EnumTooltipFromEnumField(FieldInfo field)
-        {
-            var tooltip = field.GetCustomAttributes(typeof(TooltipAttribute), false);
-            if (tooltip.Length > 0)
-            {
-                return ((TooltipAttribute)tooltip.First()).tooltip;
-            }
-            return string.Empty;
-        }
-
-        private static bool CheckObsoleteAddition(FieldInfo field, bool excludeObsolete)
-        {
-            var obsolete = field.GetCustomAttributes(typeof(ObsoleteAttribute), false);
-            if (obsolete.Length > 0)
-            {
-                if (excludeObsolete)
-                {
-                    return false;
-                }
-                return !((ObsoleteAttribute)obsolete.First()).IsError;
-            }
-
-            return true;
-        }
-
-        internal static EnumData GetCachedEnumData(Type enumType, bool excludeObsolete = true)
-        {
-            EnumData enumData;
-            if (excludeObsolete && s_NonObsoleteEnumData.TryGetValue(enumType, out enumData))
-                return enumData;
-            if (!excludeObsolete && s_EnumData.TryGetValue(enumType, out enumData))
-                return enumData;
-            enumData = new EnumData { underlyingType = Enum.GetUnderlyingType(enumType) };
-            enumData.unsigned =
-                enumData.underlyingType == typeof(byte)
-                || enumData.underlyingType == typeof(ushort)
-                || enumData.underlyingType == typeof(uint)
-                || enumData.underlyingType == typeof(ulong);
-            var enumFields = enumType.GetFields(BindingFlags.Static | BindingFlags.Public)
-                .Where(f => CheckObsoleteAddition(f, excludeObsolete))
-                .OrderBy(f => f.MetadataToken).ToList();
-            enumData.displayNames = enumFields.Select(f => EnumNameFromEnumField(f)).ToArray();
-            if (enumData.displayNames.Distinct().Count() != enumData.displayNames.Length)
-            {
-                Debug.LogWarning($"Enum {enumType.Name} has multiple entries with the same display name, this prevents selection in EnumPopup.");
-            }
-            enumData.tooltip = enumFields.Select(f => EnumTooltipFromEnumField(f)).ToArray();
-            enumData.values = enumFields.Select(f => (Enum)Enum.Parse(enumType, f.Name)).ToArray();
-            enumData.flagValues = enumData.unsigned ?
-                enumData.values.Select(v => unchecked((int)Convert.ToUInt64(v))).ToArray() :
-                enumData.values.Select(v => unchecked((int)Convert.ToInt64(v))).ToArray();
-            // convert "everything" values to ~0 for unsigned 8- and 16-bit types
-            if (enumData.underlyingType == typeof(ushort))
-            {
-                for (int i = 0, length = enumData.flagValues.Length; i < length; ++i)
-                {
-                    if (enumData.flagValues[i] == 0xFFFFu)
-                        enumData.flagValues[i] = ~0;
-                }
-            }
-            else if (enumData.underlyingType == typeof(byte))
-            {
-                for (int i = 0, length = enumData.flagValues.Length; i < length; ++i)
-                {
-                    if (enumData.flagValues[i] == 0xFFu)
-                        enumData.flagValues[i] = ~0;
-                }
-            }
-            enumData.flags = enumType.IsDefined(typeof(FlagsAttribute), false);
-            enumData.serializable = enumData.underlyingType != typeof(long) && enumData.underlyingType != typeof(ulong);
-
-            if (excludeObsolete)
-                s_NonObsoleteEnumData[enumType] = enumData;
-            else
-                s_EnumData[enumType] = enumData;
-            return enumData;
-        }
-
         internal static int MaskFieldInternal(Rect position, GUIContent label, int mask, string[] displayedOptions, GUIStyle style)
         {
             var id = GUIUtility.GetControlID(s_MaskField, FocusType.Keyboard, position);
@@ -3468,7 +3397,7 @@ namespace UnityEditor
             if (!enumType.IsEnum)
                 throw new ArgumentException("Parameter enumValue must be of type System.Enum", nameof(enumValue));
 
-            var enumData = GetCachedEnumData(enumType, !includeObsolete);
+            var enumData = EnumDataUtility.GetCachedEnumData(enumType, !includeObsolete);
             if (!enumData.serializable)
                 // this is the same message used in ScriptPopupMenus.cpp
                 throw new NotSupportedException(string.Format("Unsupported enum base type for {0}", enumType.Name));
@@ -3476,14 +3405,14 @@ namespace UnityEditor
             var id = GUIUtility.GetControlID(s_EnumFlagsField, FocusType.Keyboard, position);
             position = PrefixLabel(position, id, label);
 
-            var flagsInt = EnumFlagsToInt(enumData, enumValue);
+            var flagsInt = EnumDataUtility.EnumFlagsToInt(enumData, enumValue);
 
             BeginChangeCheck();
             flagsInt = MaskFieldGUI.DoMaskField(position, id, flagsInt, enumData.displayNames, enumData.flagValues, style, out changedFlags, out changedToValue);
             if (!EndChangeCheck())
                 return enumValue;
 
-            return IntToEnumFlags(enumType, flagsInt);
+            return EnumDataUtility.IntToEnumFlags(enumType, flagsInt);
         }
 
         internal static int EnumFlagsField(Rect position, GUIContent label, int enumValue, Type enumType, bool includeObsolete, GUIStyle style)
@@ -3491,7 +3420,7 @@ namespace UnityEditor
             if (!enumType.IsEnum)
                 throw new ArgumentException("Specified enumType must be System.Enum", nameof(enumType));
 
-            var enumData = GetCachedEnumData(enumType, !includeObsolete);
+            var enumData = EnumDataUtility.GetCachedEnumData(enumType, !includeObsolete);
             if (!enumData.serializable)
                 // this is the same message used in ScriptPopupMenus.cpp
                 throw new NotSupportedException(string.Format("Unsupported enum base type for {0}", enumType.Name));
@@ -4848,7 +4777,7 @@ namespace UnityEditor
 
             if (expandable)
             {
-                Rect renderRect = GetInspectorTitleBarObjectFoldoutRenderRect(position);
+                Rect renderRect = GetInspectorTitleBarObjectFoldoutRenderRect(position, baseStyle);
                 DoObjectFoldoutInternal(foldout, renderRect, id);
             }
 
@@ -4867,7 +4796,7 @@ namespace UnityEditor
 
             if (editor.CanBeExpandedViaAFoldout())
             {
-                Rect renderRect = GetInspectorTitleBarObjectFoldoutRenderRect(position);
+                Rect renderRect = GetInspectorTitleBarObjectFoldoutRenderRect(position, baseStyle);
                 DoObjectFoldoutInternal(foldout, renderRect, id);
             }
 
@@ -5171,7 +5100,7 @@ namespace UnityEditor
             if (Event.current.type == EventType.Repaint)
             {
                 baseStyle.Draw(position, GUIContent.none, id, foldout);
-                foldoutStyle.Draw(GetInspectorTitleBarObjectFoldoutRenderRect(position), GUIContent.none, id, foldout);
+                foldoutStyle.Draw(GetInspectorTitleBarObjectFoldoutRenderRect(position, baseStyle), GUIContent.none, id, foldout);
                 position = baseStyle.padding.Remove(position);
                 textStyle.Draw(textRect, label, id, foldout);
             }
@@ -5192,7 +5121,7 @@ namespace UnityEditor
                 Rect textRect = new Rect(position.x + baseStyle.padding.left + kInspTitlebarSpacing + (skipIconSpacing ? 0 : kInspTitlebarIconWidth), position.y + baseStyle.padding.top, EditorGUIUtility.labelWidth, kInspTitlebarIconWidth);
 
                 baseStyle.Draw(position, GUIContent.none, id, foldout);
-                foldoutStyle.Draw(GetInspectorTitleBarObjectFoldoutRenderRect(position), GUIContent.none, id, foldout);
+                foldoutStyle.Draw(GetInspectorTitleBarObjectFoldoutRenderRect(position, baseStyle), GUIContent.none, id, foldout);
                 position = baseStyle.padding.Remove(position);
                 textStyle.Draw(textRect, EditorGUIUtility.TempContent(label.text), id, foldout);
             }
@@ -5566,15 +5495,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
             {
                 Rect labelPosition = new Rect(totalPosition.x + indent, totalPosition.y, EditorGUIUtility.labelWidth - indent, kSingleLineHeight);
                 Rect fieldPosition = totalPosition;
-                fieldPosition.xMin += EditorGUIUtility.labelWidth;
-
-
-                if (columns > 1)
-                {
-                    // Tweak where the first sub-label is positioned to make it look like it lines up better.
-                    labelPosition.width -= 1;
-                    fieldPosition.xMin -= 1;
-                }
+                fieldPosition.xMin += EditorGUIUtility.labelWidth + kPrefixPaddingRight;
 
                 // If there are 2 columns we use the same column widths as if there had been 3 columns
                 // in order to make columns line up neatly.
@@ -6490,56 +6411,6 @@ This warning only shows up in development builds.", helpTopic, pageName);
                     break;
             }
             return false;
-        }
-
-        internal static int EnumFlagsToInt(EnumData enumData, Enum enumValue)
-        {
-            if (enumData.unsigned)
-            {
-                if (enumData.underlyingType == typeof(uint))
-                    return unchecked((int)Convert.ToUInt32(enumValue));
-
-                // ensure unsigned 16- and 8-bit variants will display using "Everything" label
-                if (enumData.underlyingType == typeof(ushort))
-                {
-                    var unsigned = Convert.ToUInt16(enumValue);
-                    return unsigned == ushort.MaxValue ? ~0 : unsigned;
-                }
-                else
-                {
-                    var unsigned = Convert.ToByte(enumValue);
-                    return unsigned == byte.MaxValue ? ~0 : unsigned;
-                }
-            }
-
-            return Convert.ToInt32(enumValue);
-        }
-
-        internal static Enum IntToEnumFlags(Type enumType, int value)
-        {
-            var enumData = GetCachedEnumData(enumType);
-
-            // parsing a string seems to be the only way to go from a flags int to an enum value
-            if (enumData.unsigned)
-            {
-                if (enumData.underlyingType == typeof(uint))
-                {
-                    var unsigned = unchecked((uint)value);
-                    return Enum.Parse(enumType, unsigned.ToString()) as Enum;
-                }
-                else if (enumData.underlyingType == typeof(ushort))
-                {
-                    var unsigned = unchecked((ushort)value);
-                    return Enum.Parse(enumType, unsigned.ToString()) as Enum;
-                }
-                else
-                {
-                    var unsigned = unchecked((byte)value);
-                    return Enum.Parse(enumType, unsigned.ToString()) as Enum;
-                }
-            }
-
-            return Enum.Parse(enumType, value.ToString()) as Enum;
         }
 
         internal static bool isCollectingTooltips
@@ -8239,6 +8110,13 @@ This warning only shows up in development builds.", helpTopic, pageName);
         {
             Rect r = s_LastRect = GetSliderRect(false, options);
             return EditorGUI.IntSlider(r, value, leftValue, rightValue);
+        }
+
+        internal static int IntSlider(int value, int leftValue, int rightValue, float power,
+            GUIStyle textfieldStyle, GUIStyle sliderStyle, GUIStyle thumbStyle, Texture2D sliderBackground, GUIStyle thumbStyleExtent, params GUILayoutOption[] options)
+        {
+            Rect r = s_LastRect = GetSliderRect(false, options);
+            return EditorGUI.IntSlider(r, value, leftValue, rightValue, power, textfieldStyle, sliderStyle, thumbStyle, sliderBackground, thumbStyleExtent);
         }
 
         public static int IntSlider(string label, int value, int leftValue, int rightValue, params GUILayoutOption[] options)

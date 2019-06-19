@@ -114,6 +114,7 @@ namespace UnityEditor.UIElements.Samples
                 new SampleTreeItem("Choice Fields", MakeChoiceFieldsPanel, new List<TreeViewItem<string>>()
                 {
                     new SampleTreeItem("Enum", EnumFieldSnippet.Create),
+                    new SampleTreeItem("EnumFlags", EnumFlagsFieldSnippet.Create),
                     new SampleTreeItem("Popup", PopupFieldSnippet.Create),
                     new SampleTreeItem("Tag", TagFieldSnippet.Create),
                     new SampleTreeItem("Mask", MaskFieldSnippet.Create),

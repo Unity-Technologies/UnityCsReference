@@ -142,7 +142,11 @@ namespace UnityEditor
                         if (newPlaying)
                             PlayClip(clip, 0, s_Loop);
                         else
+                        {
+                            AudioUtil.StopClip(m_Clip);
                             m_Clip = null;
+                            s_PlayingInstance = null;
+                        }
                     }
                 }
             }

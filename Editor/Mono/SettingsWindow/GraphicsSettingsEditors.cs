@@ -342,7 +342,7 @@ namespace UnityEditor
                 if (!vertical)
                     EditorGUILayout.LabelField(Styles.standardShaderSettings, EditorStyles.boldLabel);
 
-                bool usingSRP = GraphicsSettings.renderPipelineAsset != null;
+                bool usingSRP = GraphicsSettings.currentRenderPipeline != null;
                 if (!usingSRP)
                 {
                     EditorGUILayout.LabelField(Styles.standardShaderQuality);
@@ -433,7 +433,7 @@ namespace UnityEditor
                 if (!vertical)
                     EditorGUILayout.LabelField(Styles.empty, EditorStyles.boldLabel);
 
-                bool usingSRP = GraphicsSettings.renderPipelineAsset != null;
+                bool usingSRP = GraphicsSettings.currentRenderPipeline != null;
                 if (!usingSRP)
                 {
                     ts.standardShaderQuality = ShaderQualityPopup(ts.standardShaderQuality);

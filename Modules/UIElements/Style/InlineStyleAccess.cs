@@ -260,7 +260,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetStyleValue(StylePropertyID.Overflow, value, ve.sharedStyle.overflow))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Overflow);
                     ve.yogaNode.Overflow = (YogaOverflow)ve.computedStyle.overflow.value;
                 }
             }
@@ -445,7 +445,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetStyleValue(StylePropertyID.BorderTopLeftRadius, value, ve.sharedStyle.borderTopLeftRadius))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint | VersionChangeType.BorderRadius);
                 }
             }
         }
@@ -457,7 +457,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetStyleValue(StylePropertyID.BorderTopRightRadius, value, ve.sharedStyle.borderTopRightRadius))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint | VersionChangeType.BorderRadius);
                 }
             }
         }
@@ -469,7 +469,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetStyleValue(StylePropertyID.BorderBottomRightRadius, value, ve.sharedStyle.borderBottomRightRadius))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint | VersionChangeType.BorderRadius);
                 }
             }
         }
@@ -481,7 +481,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetStyleValue(StylePropertyID.BorderBottomLeftRadius, value, ve.sharedStyle.borderBottomLeftRadius))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint | VersionChangeType.BorderRadius);
                 }
             }
         }

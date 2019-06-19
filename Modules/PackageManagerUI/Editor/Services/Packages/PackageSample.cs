@@ -155,7 +155,7 @@ namespace UnityEditor.PackageManager.UI
                 foreach (var v in prevImports)
                     IOUtils.RemovePathAndMeta(v, true);
 
-                IOUtils.DirectoryCopy(resolvedPath, importPath);
+                IOUtils.DirectoryCopy(resolvedPath, importPath, true);
                 AssetDatabase.Refresh();
             }
             return true;

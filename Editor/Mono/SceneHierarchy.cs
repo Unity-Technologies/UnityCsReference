@@ -24,7 +24,7 @@ namespace UnityEditor
             const string kWarningSymbol = "console.warnicon.sml";
             const string kWarningMessage = "The current sorting method is taking a lot of time. Consider using 'Transform Sort' in playmode for better performance.";
 
-            public static GUIContent defaultSortingContent = new GUIContent(EditorGUIUtility.FindTexture(kCustomSorting));
+            public static GUIContent defaultSortingContent = EditorGUIUtility.TrIconContent(kCustomSorting);
             public static GUIContent createContent = EditorGUIUtility.IconContent("CreateAddNew");
             public static GUIContent fetchWarning = new GUIContent("", EditorGUIUtility.FindTexture(kWarningSymbol), kWarningMessage);
 
@@ -1000,7 +1000,7 @@ namespace UnityEditor
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Rename"));
             menu.AddItem(EditorGUIUtility.TrTextContent("Duplicate"), false, DuplicateGO);
 
-            if (GetIsCustomParentSelected() || GetIsNotEditable())
+            if (GetIsCustomParentSelected())
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Delete"));
             else
                 menu.AddItem(EditorGUIUtility.TrTextContent("Delete"), false, DeleteGO);

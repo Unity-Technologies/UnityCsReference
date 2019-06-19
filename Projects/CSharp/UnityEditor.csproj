@@ -994,6 +994,9 @@
     <Compile Include="..\..\Editor\Mono\EditorWindow.cs">
       <Link>Editor\Mono\EditorWindow.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\EnumDataUtility.cs">
+      <Link>Editor\Mono\EnumDataUtility.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\ExportPackageOptions.cs">
       <Link>Editor\Mono\ExportPackageOptions.cs</Link>
     </Compile>
@@ -2602,6 +2605,9 @@
     <Compile Include="..\..\Editor\Mono\ProjectWindow\SearchableEditorWindow.cs">
       <Link>Editor\Mono\ProjectWindow\SearchableEditorWindow.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\QuickSearch.cs">
+      <Link>Editor\Mono\QuickSearch.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\RagdollBuilder.cs">
       <Link>Editor\Mono\RagdollBuilder.cs</Link>
     </Compile>
@@ -2884,6 +2890,9 @@
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\AssetPathVersionMetaData.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\AssetPathVersionMetaData.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\AutoReferencedPackageAssemblies.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\AutoReferencedPackageAssemblies.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\CSharpNamespaceParser.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\CSharpNamespaceParser.cs</Link>
     </Compile>
@@ -3136,6 +3145,9 @@
     <Compile Include="..\..\Editor\Mono\UIElements\Controls\EnumField.cs">
       <Link>Editor\Mono\UIElements\Controls\EnumField.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\UIElements\Controls\EnumFlagsField.cs">
+      <Link>Editor\Mono\UIElements\Controls\EnumFlagsField.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\Controls\FloatField.cs">
       <Link>Editor\Mono\UIElements\Controls\FloatField.cs</Link>
     </Compile>
@@ -3204,6 +3216,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\Toolbar\IToolbarMenuElement.cs">
       <Link>Editor\Mono\UIElements\Toolbar\IToolbarMenuElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UIElements\Toolbar\SearchFieldBase.cs">
+      <Link>Editor\Mono\UIElements\Toolbar\SearchFieldBase.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\Toolbar\Toolbar.cs">
       <Link>Editor\Mono\UIElements\Toolbar\Toolbar.cs</Link>
@@ -4071,6 +4086,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerExtension.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerExtension.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerMenuExtension.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerMenuExtension.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerToolbarExtension.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerToolbarExtension.cs</Link>
@@ -4972,6 +4990,9 @@
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\EnumFieldSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\Snippets\EnumFieldSnippet.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\EnumFlagsFieldSnippet.cs">
+      <Link>Modules\UIElementsSamplesEditor\Snippets\EnumFlagsFieldSnippet.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\FloatFieldSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\Snippets\FloatFieldSnippet.cs</Link>
     </Compile>
@@ -5140,8 +5161,17 @@
     <Compile Include="..\..\Modules\XREditor\Build\XRBuildUtilities.bindings.cs">
       <Link>Modules\XREditor\Build\XRBuildUtilities.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\XREditor\Transition\IVRDeviceSettingsTransition.cs">
+      <Link>Modules\XREditor\Transition\IVRDeviceSettingsTransition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\XREditor\Transition\VRDeviceSettingsTransitionTargetGroupAttribute.cs">
+      <Link>Modules\XREditor\Transition\VRDeviceSettingsTransitionTargetGroupAttribute.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\XREditor\Transition\VRDeviceTransition.cs">
       <Link>Modules\XREditor\Transition\VRDeviceTransition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\XREditor\Transition\WindowsMRDeviceSettingsTransition.cs">
+      <Link>Modules\XREditor\Transition\WindowsMRDeviceSettingsTransition.cs</Link>
     </Compile>
     <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\AssetDatabaseBindings.gen.cs">
       <Link>artifacts\generated\bindings_old\common\Editor\AssetDatabaseBindings.gen.cs</Link>
@@ -5227,9 +5257,6 @@
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="Mono.Posix">
-      <HintPath>..\..\External\MonoBleedingEdge\builds\monodistribution\lib\mono\2.0-api\Mono.Posix.dll</HintPath>
-    </Reference>
     <Reference Include="Boo.Lang">
       <HintPath>..\..\External\MonoBleedingEdge\builds\monodistribution\lib\mono\2.0-api\Boo.Lang.dll</HintPath>
     </Reference>

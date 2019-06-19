@@ -402,6 +402,13 @@ namespace UnityEditor.Experimental.VFX
         extern public VFXUpdateMode updateMode { get; set; }
         extern public float preWarmDeltaTime { get; set; }
         extern public uint preWarmStepCount { get; set; }
+        extern public string initialEventName
+        {
+            [FreeFunction("VisualEffectResourceBindings::GetInitialEventName", HasExplicitThis = true)]
+            get;
+            [FreeFunction("VisualEffectResourceBindings::SetInitialEventName", HasExplicitThis = true)]
+            set;
+        }
         extern public VFXCullingFlags cullingFlags { get; set; }
 
         extern public void MarkRuntimeVersion();

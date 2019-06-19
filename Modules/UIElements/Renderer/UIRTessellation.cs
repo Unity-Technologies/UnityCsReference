@@ -570,7 +570,7 @@ namespace UnityEngine.UIElements.UIR
 
                 // Map to the provided texture rect.
                 vertex.uv.x = (uv.x * textureRect.width + textureRect.xMin) * uvRegion.width + uvRegion.xMin;
-                vertex.uv.y = (uv.y * textureRect.height + textureRect.yMin) * uvRegion.height + uvRegion.yMin;
+                vertex.uv.y = ((1.0f - uv.y) * textureRect.height + textureRect.yMin) * uvRegion.height + uvRegion.yMin;
 
                 vertices[i] = vertex;
             }

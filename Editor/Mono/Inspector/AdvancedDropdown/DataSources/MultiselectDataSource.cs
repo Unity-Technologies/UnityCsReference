@@ -26,12 +26,12 @@ namespace UnityEditor.IMGUI.Controls
             m_EnumFlag = enumValue;
             var enumType = enumFlags.GetType();
 
-            var enumData = EditorGUI.GetCachedEnumData(enumType);
+            var enumData = EnumDataUtility.GetCachedEnumData(enumType);
             if (!enumData.serializable)
                 // this is the same message used in ScriptPopupMenus.cpp
                 throw new NotSupportedException(string.Format("Unsupported enum base type for {0}", enumType.Name));
 
-            m_Mask = EditorGUI.EnumFlagsToInt(enumData, enumFlags);
+            m_Mask = EnumDataUtility.EnumFlagsToInt(enumData, enumFlags);
             m_DisplayNames = enumData.displayNames;
             m_FlagValues = enumData.flagValues;
 
@@ -83,7 +83,7 @@ namespace UnityEditor.IMGUI.Controls
             string buttonText;
             MaskFieldGUI.GetMenuOptions(m_Mask, m_DisplayNames, m_FlagValues, out buttonText, out m_OptionNames, out m_OptionMaskValues, out m_SelectedOptions);
             if (enumFlags != null)
-                m_EnumFlag = EditorGUI.IntToEnumFlags(enumFlags.GetType(), m_Mask);
+                m_EnumFlag = EnumDataUtility.IntToEnumFlags(enumFlags.GetType(), m_Mask);
             RebuildSelection(root);
         }
     }

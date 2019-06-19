@@ -12,6 +12,107 @@ namespace UnityEditor.Experimental.AssetImporters
 {
     public abstract partial class AssetImporterEditor : Editor
     {
+        /// <summary>
+        /// This class allows us to save the dirty state of the current editor targets.
+        /// We save it on each ApplyModifiedProperties (at the end of the Inspector GUI loop)
+        /// If the dirty count changed during the Update (at the beginning of the Inspector GUI loop)
+        /// That means the target has been updated outside of the editor (by calling Reset, applying a Preset or performing any static menu action)
+        /// And thus we need to re-initialize the extra instances before updating the serializedObject.
+        /// </summary>
+        protected sealed class ExtraDataSerializedObject : SerializedObject
+        {
+            List<int> m_TargetDirtyCount;
+            AssetImporterEditor m_Editor;
+
+            private ExtraDataSerializedObject(Object obj)
+                : base(obj) {}
+
+            private ExtraDataSerializedObject(Object obj, Object context)
+                : base(obj, context) {}
+
+            private ExtraDataSerializedObject(Object[] objs)
+                : base(objs) {}
+
+            private ExtraDataSerializedObject(Object[] objs, Object context)
+                : base(objs, context) {}
+
+            internal ExtraDataSerializedObject(Object[] objs, AssetImporterEditor editor)
+                : base(objs)
+            {
+                m_Editor = editor;
+            }
+
+            void UpdateTargetDirtyCount()
+            {
+                if (m_Editor != null)
+                {
+                    // When coming back from a target reload
+                    // this is the very first place we can catch mismatching saved data and fix them.
+                    if (m_Editor.m_TargetsReloaded)
+                    {
+                        SaveTargetDirtyCount();
+                        m_Editor.m_TargetsReloaded = false;
+                        for (int i = 0; i < m_Editor.targets.Length; i++)
+                            UpdateSavedData(m_Editor.targets[i]);
+                        return;
+                    }
+
+                    if (m_TargetDirtyCount != null)
+                    {
+                        for (int i = 0; i < m_Editor.targets.Length; i++)
+                        {
+                            var newCount = EditorUtility.GetDirtyCount(m_Editor.targets[i]);
+                            if (m_TargetDirtyCount[i] != newCount)
+                            {
+                                m_TargetDirtyCount[i] = newCount;
+                                m_Editor.InitializeExtraDataInstance(targetObjects[i], i);
+                            }
+                        }
+                    }
+                }
+            }
+
+            void SaveTargetDirtyCount()
+            {
+                if (m_Editor != null)
+                {
+                    if (m_TargetDirtyCount == null)
+                    {
+                        m_TargetDirtyCount = new int[m_Editor.targets.Length].ToList();
+                    }
+
+                    for (int i = 0; i < m_Editor.targets.Length; i++)
+                    {
+                        m_TargetDirtyCount[i] = EditorUtility.GetDirtyCount(m_Editor.targets[i]);
+                    }
+                }
+            }
+
+            public new void Update()
+            {
+                UpdateTargetDirtyCount();
+                base.Update();
+            }
+
+            public new void UpdateIfRequiredOrScript()
+            {
+                UpdateTargetDirtyCount();
+                base.UpdateIfRequiredOrScript();
+            }
+
+            public new void ApplyModifiedProperties()
+            {
+                SaveTargetDirtyCount();
+                base.ApplyModifiedProperties();
+            }
+
+            public new void SetIsDifferentCacheDirty()
+            {
+                SaveTargetDirtyCount();
+                base.SetIsDifferentCacheDirty();
+            }
+        }
+
         static class Styles
         {
             public static string localizedTitleString = L10n.Tr("{0} Import Settings");
@@ -50,14 +151,17 @@ namespace UnityEditor.Experimental.AssetImporters
 
         protected Object extraDataTarget => m_ExtraDataTargets[referenceTargetIndex];
 
-        SerializedObject m_ExtraDataSerializedObject;
-        protected SerializedObject extraDataSerializedObject
+        ExtraDataSerializedObject m_ExtraDataSerializedObject;
+        protected ExtraDataSerializedObject extraDataSerializedObject
         {
             get
             {
-                if (m_ExtraDataSerializedObject == null && extraDataType != null)
+                if (extraDataType != null)
                 {
-                    m_ExtraDataSerializedObject = new SerializedObject(m_ExtraDataTargets);
+                    if (m_ExtraDataSerializedObject == null)
+                    {
+                        m_ExtraDataSerializedObject = new ExtraDataSerializedObject(m_ExtraDataTargets, this);
+                    }
                 }
                 return m_ExtraDataSerializedObject;
             }
@@ -85,6 +189,7 @@ namespace UnityEditor.Experimental.AssetImporters
         // If the Inspector is not null and not Locked, then change Selection.Object list back.
         InspectorWindow m_Inspector;
         bool m_HasInspectorBeenSeenLocked = false;
+        bool m_TargetsReloaded = false;
 
         // Called from ActiveEditorTracker.cpp to setup the target editor once created before Awake and OnEnable of the Editor.
         internal void InternalSetAssetImporterTargetEditor(Object editor)
@@ -120,17 +225,12 @@ namespace UnityEditor.Experimental.AssetImporters
 
             if (m_CopySaved) // coming back from an assembly reload or asset re-import
             {
-                if (m_ExtraDataTargets != null) // we need to recreate the user custom array
+                if (extraDataType != null && m_ExtraDataTargets != null) // we need to recreate the user custom array
                 {
                     // just get back the data from customSerializedData array, it gets serialized and reconstructed properly
-                    extraDataSerializedObject.SetIsDifferentCacheDirty();
                     m_ExtraDataTargets = extraDataSerializedObject.targetObjects;
                 }
-                foreach (var index in AssetWasUpdated())
-                {
-                    ResetHash(index);
-                    ReloadAssetData(index);
-                }
+                ReloadTargets(AssetWasUpdated());
             }
             else // newly created editor
             {
@@ -245,7 +345,7 @@ namespace UnityEditor.Experimental.AssetImporters
         protected virtual Type extraDataType => null;
         protected virtual void InitializeExtraDataInstance(Object extraData, int targetIndex)
         {
-            // Will never be called until CustomDataType is not null.
+            throw new NotImplementedException("InitializeExtraDataInstance must be implemented when extraDataType is overridden.");
         }
 
         // prevent application quit if user cancel the setting changes apply/revert
@@ -464,21 +564,13 @@ namespace UnityEditor.Experimental.AssetImporters
             ApplyRevertGUI();
         }
 
-        private string[] GetAssetPaths()
+        IEnumerable<string> GetAssetPaths()
         {
-            Object[] allTargets = targets;
-            string[] paths = new string[allTargets.Length];
-            for (int i = 0; i < allTargets.Length; i++)
-            {
-                AssetImporter importer = allTargets[i] as AssetImporter;
-                paths[i] = importer.assetPath;
-            }
-            return paths;
+            return targets.OfType<AssetImporter>().Select(i => i.assetPath);
         }
 
         private void ReloadAssetData(int index)
         {
-            serializedObject.SetIsDifferentCacheDirty();
             if (extraDataSerializedObject != null)
             {
                 extraDataSerializedObject.SetIsDifferentCacheDirty();
@@ -486,13 +578,12 @@ namespace UnityEditor.Experimental.AssetImporters
                 extraDataSerializedObject.Update();
             }
             UpdateSavedData(targets[index]);
-            serializedObject.Update();
         }
 
         protected virtual void ResetValues()
         {
-            serializedObject.ApplyModifiedProperties();
-            extraDataSerializedObject?.ApplyModifiedProperties();
+            serializedObject.SetIsDifferentCacheDirty();
+            extraDataSerializedObject?.SetIsDifferentCacheDirty();
             for (int i = 0; i < targets.Length; ++i)
                 RevertObject(targets[i]);
             extraDataSerializedObject?.Update();
@@ -517,7 +608,7 @@ namespace UnityEditor.Experimental.AssetImporters
                 UpdateSavedData(targets[i]);
         }
 
-        private IEnumerable<int> AssetWasUpdated()
+        IEnumerable<int> AssetWasUpdated()
         {
             for (int i = 0; i < targets.Length; i++)
             {
@@ -546,26 +637,17 @@ namespace UnityEditor.Experimental.AssetImporters
         {
             Apply();
             ImportAssets(GetAssetPaths());
-            ResetValues();
         }
 
-        private void ImportAssets(string[] paths)
+        static void ImportAssets(IEnumerable<string> paths)
         {
             // When using the cache server we have to write all import settings to disk first.
             // Then perform the import (Otherwise the cache server will not be used for the import)
+            AssetDatabase.ForceReserializeAssets(paths, ForceReserializeAssetsOptions.ReserializeAssetsAndMetadata);
+            AssetDatabase.StartAssetEditing();
             foreach (string path in paths)
-                AssetDatabase.WriteImportSettingsIfDirty(path);
-
-            try
-            {
-                AssetDatabase.StartAssetEditing();
-                foreach (string path in paths)
-                    AssetDatabase.ImportAsset(path);
-            }
-            finally
-            {
-                AssetDatabase.StopAssetEditing();
-            }
+                AssetDatabase.ImportAsset(path);
+            AssetDatabase.StopAssetEditing();
         }
 
         protected void RevertButton()
@@ -611,6 +693,13 @@ namespace UnityEditor.Experimental.AssetImporters
                 serializedObject.Update();
             }
 
+            if (extraDataSerializedObject != null && extraDataSerializedObject.hasModifiedProperties)
+            {
+                Debug.LogWarning("OnInspectorGUI should call extraDataSerializedObject.Update() at its beginning and extraDataSerializedObject.ApplyModifiedProperties() before calling ApplyRevertGUI() method.");
+                extraDataSerializedObject.ApplyModifiedProperties();
+                extraDataSerializedObject.Update();
+            }
+
             if (!needsApplyRevert)
             {
                 if (extraDataSerializedObject != null && HasModified())
@@ -636,22 +725,33 @@ namespace UnityEditor.Experimental.AssetImporters
                 var updatedAssets = AssetWasUpdated();
                 if (updatedAssets.Any() && Event.current.type != EventType.Layout)
                 {
-                    IPreviewable previewable = preview;
-                    if (previewable != null)
-                        previewable.ReloadPreviewInstances();
-
-                    foreach (var index in updatedAssets)
-                    {
-                        ResetHash(index);
-                        ReloadAssetData(index);
-                    }
-                    applied = true;
+                    ReloadTargets(updatedAssets);
+                    applied = false;
                 }
 
                 // asset has changed...
                 // need to start rendering again.
                 if (applied)
                     Repaint();
+            }
+        }
+
+        void ReloadTargets(IEnumerable<int> targetIndices)
+        {
+            if (targetIndices.Any())
+            {
+                if (preview != null)
+                {
+                    ReloadPreviewInstances();
+                    Repaint();
+                }
+
+                foreach (var index in targetIndices)
+                {
+                    ResetHash(index);
+                    ReloadAssetData(index);
+                }
+                m_TargetsReloaded = true;
             }
         }
     }

@@ -16,7 +16,7 @@ namespace UnityEditor
     {
         static class Styles
         {
-            public static GUIStyle settingsStyle = "SettingsIconButton";
+            public static GUIStyle settingsStyle = "IconButton";
             public static StyleBlock settingsBtn => EditorResources.GetStyle("sb-settings-icon-btn");
         }
 
@@ -118,10 +118,15 @@ namespace UnityEditor
                 using (new EditorGUI.DisabledScope(!settingsEditor.IsEnabled()))
                 {
                     var tagrObjects = new[] { settingsEditor.serializedObject.targetObject };
-                    var rect = GUILayoutUtility.GetRect(Styles.settingsBtn.GetFloat(StyleCatalogKeyword.width), Styles.settingsBtn.GetFloat(StyleCatalogKeyword.height));
-                    rect.y = Styles.settingsBtn.GetFloat(StyleCatalogKeyword.marginTop);
+
+                    var btnWidth = Styles.settingsBtn.GetFloat(StyleCatalogKeyword.width);
+                    var btnHeight = Styles.settingsBtn.GetFloat(StyleCatalogKeyword.height);
+                    var btnMargin = Styles.settingsBtn.GetFloat(StyleCatalogKeyword.marginTop);
+
+                    var rect = GUILayoutUtility.GetRect(btnWidth, btnHeight);
+                    rect.y = btnMargin;
                     EditorGUIUtility.DrawEditorHeaderItems(rect, tagrObjects);
-                    var settingsRect = GUILayoutUtility.GetRect(Styles.settingsBtn.GetFloat(StyleCatalogKeyword.width), Styles.settingsBtn.GetFloat(StyleCatalogKeyword.height));
+                    var settingsRect = GUILayoutUtility.GetRect(btnWidth, btnHeight);
                     settingsRect.y = rect.y;
                     if (GUI.Button(settingsRect, EditorGUI.GUIContents.titleSettingsIcon, Styles.settingsStyle))
                     {

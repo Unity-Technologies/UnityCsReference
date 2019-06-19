@@ -67,9 +67,22 @@ namespace UnityEditor
         internal static SettingsProvider CreateProjectSettingsProvider()
         {
             var provider = AssetSettingsProvider.CreateProviderFromAssetPath(
-                "Project/Input", "ProjectSettings/InputManager.asset",
+                "Project/Input Manager", "ProjectSettings/InputManager.asset",
                 SettingsProvider.GetSearchKeywordsFromPath("ProjectSettings/InputManager.asset"));
             return provider;
+        }
+    }
+
+    [CustomEditor(typeof(InputManager))]
+    internal sealed class InputManagerEditor : Editor
+    {
+        public override void OnInspectorGUI()
+        {
+            if (PlayerSettings.disableOldInputManagerSupport)
+                EditorGUILayout.HelpBox("This is where you can configure the controls to use with the UnityEngine.Input API. But you have switched input handling to \"Input System Package\" in your Player Settings. The Input Manager will not be used.", MessageType.Error);
+            else
+                EditorGUILayout.HelpBox("This is where you can configure the controls to use with the UnityEngine.Input API. Consider using the new Input System Package instead.", MessageType.Info);
+            DrawDefaultInspector();
         }
     }
 

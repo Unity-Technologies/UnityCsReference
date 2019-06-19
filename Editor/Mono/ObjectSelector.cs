@@ -80,7 +80,10 @@ namespace UnityEditor
         const float kMinWidth = 200;
         const float kPreviewMargin = 5;
         const float kPreviewExpandedAreaHeight = 75;
-        float m_ToolbarHeight = 40;
+        static float kToolbarHeight => EditorGUI.kWindowToolbarHeight;
+        static float kTopAreaHeight => kToolbarHeight * 2;
+        const float kResizerHeight = 20f;
+
         float           m_PreviewSize = 0;
         float           m_TopSize = 0;
         AnimBool m_ShowWidePreview = new AnimBool();
@@ -92,7 +95,7 @@ namespace UnityEditor
         {
             get
             {
-                return new Rect(0, m_ToolbarHeight, position.width, Mathf.Max(0f, m_TopSize - m_ToolbarHeight));
+                return new Rect(0, kTopAreaHeight, position.width, Mathf.Max(0f, m_TopSize - kTopAreaHeight));
             }
         }
 
@@ -486,14 +489,14 @@ namespace UnityEditor
         // This is our search field
         void SearchArea()
         {
-            GUI.Label(new Rect(0, 0, position.width, m_ToolbarHeight / 2), GUIContent.none, EditorStyles.toolbar);// Styles.toolbarBack);
+            GUI.Label(new Rect(0, 0, position.width, kToolbarHeight), GUIContent.none, EditorStyles.toolbar);
 
             // ESC clears search field and removes it's focus. But if we get an esc event we only want to clear search field.
             // So we need special handling afterwards.
             bool wasEscape = Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape;
 
             GUI.SetNextControlName("SearchFilter");
-            string searchFilter = EditorGUI.SearchField(new Rect(5, 1, position.width - 10, 15), m_SearchFilter);
+            string searchFilter = EditorGUI.ToolbarSearchField(new Rect(2, 2, position.width - 2, 16), m_SearchFilter, false);
 
             if (wasEscape && Event.current.type == EventType.Used)
             {
@@ -520,10 +523,10 @@ namespace UnityEditor
 
             GUI.changed = false;
 
-            GUI.Label(new Rect(0, m_ToolbarHeight / 2, position.width, m_ToolbarHeight / 2), GUIContent.none, EditorStyles.toolbar);
+            GUI.Label(new Rect(0, kToolbarHeight, position.width, kToolbarHeight), GUIContent.none, EditorStyles.toolbar);
 
             // TAB BAR
-            GUILayout.BeginArea(new Rect(4, m_ToolbarHeight / 2, position.width - 4, m_ToolbarHeight / 2));
+            GUILayout.BeginArea(new Rect(4, kToolbarHeight, position.width - 4, kToolbarHeight));
             GUILayout.BeginHorizontal();
 
             // Asset Tab
@@ -568,7 +571,7 @@ namespace UnityEditor
             if (m_ListArea.CanShowThumbnails())
             {
                 EditorGUI.BeginChangeCheck();
-                var newGridSize = (int)GUI.HorizontalSlider(new Rect(position.width - (60 + size.x), m_ToolbarHeight / 2, 55, m_ToolbarHeight / 2), m_ListArea.gridSize, m_ListArea.minGridSize, m_ListArea.maxGridSize);
+                var newGridSize = (int)GUI.HorizontalSlider(new Rect(position.width - (60 + size.x), kToolbarHeight + GUI.skin.horizontalSlider.margin.top, 55, EditorGUI.kSingleLineHeight), m_ListArea.gridSize, m_ListArea.minGridSize, m_ListArea.maxGridSize);
                 if (EditorGUI.EndChangeCheck())
                 {
                     m_ListArea.gridSize = newGridSize;
@@ -578,7 +581,7 @@ namespace UnityEditor
             if (m_IsShowingAssets)
             {
                 EditorGUI.BeginChangeCheck();
-                var skipHiddenPackages = GUI.Toggle(new Rect(position.width - size.x, m_ToolbarHeight / 2 + 1, size.x, EditorStyles.toolbarButton.fixedHeight), m_SkipHiddenPackages, Styles.packagesVisibilityContent, EditorStyles.toolbarButtonRight);
+                var skipHiddenPackages = GUI.Toggle(new Rect(position.width - size.x, kToolbarHeight, size.x, EditorStyles.toolbarButton.fixedHeight), m_SkipHiddenPackages, Styles.packagesVisibilityContent, EditorStyles.toolbarButtonRight);
                 if (EditorGUI.EndChangeCheck())
                 {
                     m_SkipHiddenPackages = skipHiddenPackages;
@@ -733,7 +736,7 @@ namespace UnityEditor
             GUI.changed = false;
 
             // Handle preview size
-            m_PreviewSize = m_PreviewResizer.ResizeHandle(position, kPreviewExpandedAreaHeight + kPreviewMargin * 2 - 20, kMinTopSize + 20, m_PreviewSize + 20) + 20;
+            m_PreviewSize = m_PreviewResizer.ResizeHandle(position, kPreviewExpandedAreaHeight + kPreviewMargin * 2 - kResizerHeight, kMinTopSize + kResizerHeight, kResizerHeight) + kResizerHeight;
             m_TopSize = position.height - m_PreviewSize;
 
             bool open = PreviewIsOpen();

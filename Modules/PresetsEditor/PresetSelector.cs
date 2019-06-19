@@ -378,19 +378,7 @@ namespace UnityEditor.Presets
             var path = CreatePresetDialog(ref preset, target);
             if (!string.IsNullOrEmpty(path))
             {
-                // Known issue 958603 - PPtr are NULL if we replace an asset until Unity is restarted.
-                // This workaround prevent the replace and keep the PPtr valid.
-                var oldPreset = AssetDatabase.LoadAssetAtPath<Preset>(path);
-                if (oldPreset != null)
-                {
-                    EditorUtility.CopySerialized(preset, oldPreset);
-                    // replace name because it was erased by the CopySerialized
-                    oldPreset.name = System.IO.Path.GetFileNameWithoutExtension(path);
-                }
-                else
-                {
-                    AssetDatabase.CreateAsset(preset, path);
-                }
+                AssetDatabase.CreateAsset(preset, path);
             }
             GUIUtility.ExitGUI();
         }

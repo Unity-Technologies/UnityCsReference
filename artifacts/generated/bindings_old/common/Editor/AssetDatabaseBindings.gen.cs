@@ -703,21 +703,6 @@ public static Hash128 GetArtifactHash(string guid, [uei.DefaultValue("null")]  T
 
     
     
-    private static Hash128 GetArtifactHash_Internal_Hash (Hash128 hash, Type importerType) {
-        Hash128 result;
-        INTERNAL_CALL_GetArtifactHash_Internal_Hash ( ref hash, importerType, out result );
-        return result;
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_GetArtifactHash_Internal_Hash (ref Hash128 hash, Type importerType, out Hash128 value);
-    public static Hash128 GetArtifactHash(Hash128 hash, Type importerType)
-        {
-            return GetArtifactHash_Internal_Hash(hash, importerType);
-        }
-    
-    
     public static bool GetArtifactPaths (Hash128 hash, out string[] paths) {
         return INTERNAL_CALL_GetArtifactPaths ( ref hash, out paths );
     }

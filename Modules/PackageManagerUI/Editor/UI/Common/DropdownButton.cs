@@ -11,8 +11,11 @@ namespace UnityEditor.PackageManager.UI
 {
     enum DropdownStatus { None = 0, Success, Error };
 
-    class DropdownButton : VisualElement
+    class DropdownButton : Button
     {
+        static string HasDropDownClass = "hasDropDown";
+        static string HasStatusClass = "hasStatus";
+
         internal new class UxmlFactory : UxmlFactory<DropdownButton, UxmlTraits> {}
 
         public new class UxmlTraits : VisualElement.UxmlTraits
@@ -28,14 +31,16 @@ namespace UnityEditor.PackageManager.UI
             {
                 base.Init(ve, bag, cc);
                 var button = ve as DropdownButton;
-                button.MainButton.text = m_Text.GetValueFromBag(bag, cc);
+                button.Label.text = m_Text.GetValueFromBag(bag, cc);
                 button.StatusIcon.pickingMode = PickingMode.Ignore;
             }
         }
 
-        readonly VisualElement root;
+        public TextElement Label;
+        public VisualElement StatusIcon;
 
-        const string RerunWarningTooltip = "\n*Click to trigger this action again, all previous results will be overwritten";
+        public VisualElement DropDownArea;
+        public VisualElement DropDown;
 
         DropdownStatus status = DropdownStatus.None;
         public DropdownStatus Status
@@ -44,58 +49,87 @@ namespace UnityEditor.PackageManager.UI
             set
             {
                 status = value;
+                StatusIcon.RemoveFromClassList("none");
                 StatusIcon.RemoveFromClassList("success");
                 StatusIcon.RemoveFromClassList("error");
-                UIUtils.SetElementDisplay(DropDown, status != DropdownStatus.None);
 
-                if (status != DropdownStatus.None)
-                {
-                    StatusIcon.AddToClassList(status.ToString().ToLower());
-                    if (!tooltip.Contains(RerunWarningTooltip))
-                        tooltip += RerunWarningTooltip;
-                }
+                StatusIcon.AddToClassList(status.ToString().ToLower());
+
+                UIUtils.SetElementDisplay(StatusIcon, status != DropdownStatus.None);
+
+                if (status == DropdownStatus.None)
+                    RemoveFromClassList(HasStatusClass);
                 else
-                {
-                    tooltip = tooltip.Replace(RerunWarningTooltip, "");
-                }
+                    AddToClassList(HasStatusClass);
             }
         }
 
-        public void RegisterClickCallback(EventCallback<MouseDownEvent> value)
+        GenericMenu dropdownMenu;
+        /// <summary>
+        /// Sets a dropdown menu for this button. The dropdown menu icon will only show if
+        /// there is a non-null menu set.
+        /// </summary>
+        public GenericMenu DropdownMenu
         {
-            StatusIcon.RegisterCallback(value);
-            MainButton.clickable.clicked += () => value(null);    // RegisterCallback does not work here, so using this instead
+            get { return dropdownMenu;}
+            set
+            {
+                UIUtils.SetElementDisplay(DropDownArea, value != null);
+                dropdownMenu = value;
+
+                if (dropdownMenu == null)
+                    RemoveFromClassList(HasDropDownClass);
+                else
+                    AddToClassList(HasDropDownClass);
+            }
         }
 
-        public void UnregisterClickCallback(EventCallback<MouseDownEvent> value)
+        public new string text
         {
-            StatusIcon.UnregisterCallback(value);
-            MainButton.UnregisterCallback(value);
+            get { return Label.text; }
+            set { Label.text = value; }
         }
 
-        public GenericMenu DropdownMenu { get; set; }
-        void OnDropdownButtonClicked()
+        public void OnDropdownButtonClicked()
         {
             if (DropdownMenu == null)
                 return;
-            var menuPosition = new Vector2(DropDown.layout.center.x, DropDown.layout.center.y);
-            menuPosition = this.LocalToWorld(menuPosition);
+            var menuPosition = new Vector2(layout.xMin, layout.center.y + 2);
+            menuPosition = parent.LocalToWorld(menuPosition);
             var menuRect = new Rect(menuPosition, Vector2.zero);
             DropdownMenu.DropDown(menuRect);
         }
 
         public DropdownButton()
         {
-            root = Resources.GetTemplate("DropdownButton.uxml");
-            Add(root);
-            Cache = new VisualElementCache(root);
+            style.flexDirection = FlexDirection.Row;
 
-            DropDown.clickable.clicked += OnDropdownButtonClicked;
+            StatusIcon = new VisualElement();
+            StatusIcon.name = "statusIcon";
+            Add(StatusIcon);
+
+            Label = new TextElement();
+            Label.name = "label";
+            Add(Label);
+
+            DropDown = new VisualElement();
+            DropDown.name = "dropDown";
+
+            DropDownArea = new VisualElement();
+            DropDownArea.RegisterCallback<MouseDownEvent>(evt =>
+            {
+                evt.PreventDefault();
+                evt.StopImmediatePropagation();
+
+                OnDropdownButtonClicked();
+            });
+            DropDownArea.name = "dropDownArea";
+            DropDownArea.Add(DropDown);
+            Add(DropDownArea);
+
+            DropdownMenu = null;
+
+            Status = DropdownStatus.None;
         }
-
-        internal VisualElement StatusIcon { get { return Cache.Get<VisualElement>("statusIcon"); } }
-        internal Button MainButton { get { return Cache.Get<Button>("mainButton"); } }
-        internal Button DropDown { get { return Cache.Get<Button>("dropDownIcon"); } }
-        VisualElementCache Cache { get; set; }
     }
 }

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 using UnityEditorInternal.VR;
 using UnityEngine;
@@ -66,6 +67,45 @@ namespace UnityEditor.XR
             }
         }
 
+        static Dictionary<BuildTargetGroup, IVRDeviceSettingsTransition> s_DeviceSettingsTransitionCache = new Dictionary<BuildTargetGroup, IVRDeviceSettingsTransition>();
+
+        static IVRDeviceSettingsTransition GetTypeWithBuildTargetGroupAttribute(BuildTargetGroup targetGroup)
+        {
+            IVRDeviceSettingsTransition ret = null;
+
+            if (s_DeviceSettingsTransitionCache.TryGetValue(targetGroup, out ret))
+                return ret;
+
+            foreach (var type in TypeCache.GetTypesDerivedFrom<IVRDeviceSettingsTransition>())
+            {
+                foreach (var att in type.GetCustomAttributes(typeof(VRDeviceSettingsTransitionTargetGroupAttribute), false))
+                {
+                    VRDeviceSettingsTransitionTargetGroupAttribute btgattr = att as VRDeviceSettingsTransitionTargetGroupAttribute;
+                    if (btgattr != null && btgattr.TargetGroup == targetGroup)
+                    {
+                        try
+                        {
+                            ret = Activator.CreateInstance(type) as IVRDeviceSettingsTransition;
+                        }
+                        catch (Exception ex)
+                        {
+                            String logMsg = String.Format("Error getting settings transition instance for buildtarget {0}.\n", targetGroup);
+                            logMsg += ex.Message;
+
+                            Debug.LogError(logMsg);
+                            ret = null;
+                        }
+                        if (ret != null)
+                        {
+                            s_DeviceSettingsTransitionCache.Add(targetGroup, ret);
+                        }
+                    }
+                }
+            }
+
+            return ret;
+        }
+
         static void EnableVRSettings()
         {
             string storedGroupsTransitioned = "";
@@ -98,6 +138,11 @@ namespace UnityEditor.XR
 
                     Debug.LogFormat("No XR SDK Provider detected in project. Re-enabling VR Device settings for {0}", targetGroup);
                     VREditor.SetVREnabledOnTargetGroup(targetGroup, true);
+                    IVRDeviceSettingsTransition settingsTransition = GetTypeWithBuildTargetGroupAttribute(targetGroup);
+                    if (settingsTransition != null)
+                    {
+                        settingsTransition.EnableSettings();
+                    }
                 }
 
                 XRProjectSettings.RemoveSetting(XRProjectSettings.KnownSettings.k_VRDeviceTransitionGroups);
@@ -122,6 +167,12 @@ namespace UnityEditor.XR
                 if (VREditor.GetVREnabledOnTargetGroup(targetGroup))
                 {
                     Debug.LogFormat("XR SDK Provider detected in project. Disabling VR Device settings for {0}", targetGroup);
+                    IVRDeviceSettingsTransition settingsTransition = GetTypeWithBuildTargetGroupAttribute(targetGroup);
+                    if (settingsTransition != null)
+                    {
+                        settingsTransition.DisableSettings();
+                    }
+
                     VREditor.SetVREnabledOnTargetGroup(targetGroup, false);
                     didTransitionVRDevice = true;
                     if (!groupsTransitioned.Contains(targetGroupString))

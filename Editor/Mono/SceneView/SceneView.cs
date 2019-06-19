@@ -1602,7 +1602,7 @@ namespace UnityEditor
 
         internal bool IsSceneCameraDeferred()
         {
-            bool usingScriptableRenderPipeline = (GraphicsSettings.renderPipelineAsset != null);
+            bool usingScriptableRenderPipeline = (GraphicsSettings.currentRenderPipeline != null);
             if (m_Camera == null || usingScriptableRenderPipeline)
                 return false;
             if (m_Camera.actualRenderingPath == RenderingPath.DeferredLighting || m_Camera.actualRenderingPath == RenderingPath.DeferredShading)
@@ -1863,7 +1863,7 @@ namespace UnityEditor
             float realFOV = m_Camera.fieldOfView;
 
             var clearFlags = m_Camera.clearFlags;
-            if (GraphicsSettings.renderPipelineAsset != null)
+            if (GraphicsSettings.currentRenderPipeline != null)
                 m_Camera.clearFlags = CameraClearFlags.Color;
             m_Camera.fieldOfView = skyboxFOV;
             Handles.ClearCamera(cameraRect, m_Camera);
@@ -3366,7 +3366,7 @@ namespace UnityEditor
             viewIsLockedToObject = lockView;
             FixNegativeSize();
 
-            Bounds bounds = InternalEditorUtility.CalculateSelectionBounds(false, Tools.pivotMode == PivotMode.Pivot);
+            Bounds bounds = InternalEditorUtility.CalculateSelectionBounds(false, Tools.pivotMode == PivotMode.Pivot, true);
 
             // Check active editor for OnGetFrameBounds
             foreach (Editor editor in activeEditors)

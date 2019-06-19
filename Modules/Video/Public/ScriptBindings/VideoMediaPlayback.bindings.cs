@@ -9,6 +9,7 @@ using UnityEngine.Scripting;
 
 using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("VideoTesting")]
+[assembly: InternalsVisibleTo("Unity.Audio.DSPGraph.Tests")]
 
 namespace UnityEngineInternal.Video
 {

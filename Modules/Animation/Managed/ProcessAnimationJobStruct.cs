@@ -7,7 +7,7 @@ using System;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs.LowLevel.Unsafe;
 
-namespace UnityEngine.Experimental.Animations
+namespace UnityEngine.Animations
 {
     internal enum JobMethodIndex
     {
@@ -15,6 +15,7 @@ namespace UnityEngine.Experimental.Animations
         ProcessAnimationMethodIndex,
         MethodIndexCount
     }
+
 
     internal struct ProcessAnimationJobStruct<T>
         where T : struct, IAnimationJob

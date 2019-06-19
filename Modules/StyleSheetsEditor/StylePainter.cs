@@ -167,17 +167,19 @@ namespace UnityEditor.StyleSheets
 
             var guiBgColor = GUI.backgroundColor;
             var bgColorTint = guiBgColor * colorTint;
+            var hasBorders = border.any;
+
             if (!block.Execute(StyleCatalogKeyword.background, DrawGradient, new GradientParams(drawRect, border.radius, bgColorTint)))
             {
                 // Draw background color
                 var backgroundColor = block.GetColor(StyleCatalogKeyword.backgroundColor);
                 if (backgroundColor.a > 0f)
                 {
-                    GUI.DrawTexture(drawRect, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, false, 0f, backgroundColor * bgColorTint, Vector4.zero, border.radius);
+                    GUI.DrawTexture(drawRect, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, false, 0f, backgroundColor * bgColorTint, Vector4.zero, border.radius, !hasBorders);
                 }
                 else if (guiBgColor != Color.clear && guiBgColor != Color.white)
                 {
-                    GUI.DrawTexture(drawRect, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, false, 0f, guiBgColor, Vector4.zero, border.radius);
+                    GUI.DrawTexture(drawRect, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, false, 0f, guiBgColor, Vector4.zero, border.radius, !hasBorders);
                 }
             }
 
@@ -195,12 +197,12 @@ namespace UnityEditor.StyleSheets
                 // Draw content (text & image)
                 bool hasImage = content.image != null;
                 float opacity = hasImage ? block.GetFloat(StyleCatalogKeyword.opacity, 1f) : 1f;
-                float backgroundPositionX = hasImage ? block.GetFloat(StyleCatalogKeyword.backgroundPositionX) : 0;
-                float backgroundPositionY = hasImage ? block.GetFloat(StyleCatalogKeyword.backgroundPositionY) : 0;
+                float contentImageOffsetX = hasImage ? block.GetFloat(StyleCatalogKeyword.contentImageOffsetX) : 0;
+                float contentImageOffsetY = hasImage ? block.GetFloat(StyleCatalogKeyword.contentImageOffsetY) : 0;
                 basis.Internal_DrawContent(contentRect, content, states.isHover, states.isActive, states.on, states.hasKeyboardFocus,
                     states.hasTextInput, states.drawSelectionAsComposition, states.cursorFirst, states.cursorLast,
                     states.cursorColor, states.selectionColor, Color.white * opacity,
-                    0, 0, backgroundPositionY, backgroundPositionX, false, false);
+                    0, 0, contentImageOffsetY, contentImageOffsetX, false, false);
 
                 // Handle tooltip and hovering region
                 if (!String.IsNullOrEmpty(content.tooltip) && contentRect.Contains(Event.current.mousePosition))
@@ -208,7 +210,7 @@ namespace UnityEditor.StyleSheets
             }
 
             // Draw border
-            if (border.any)
+            if (hasBorders)
             {
                 GUI.DrawTexture(drawRect, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, true, 0f, border.borderLeftColor * colorTint,
                     border.borderTopColor * colorTint, border.borderRightColor * colorTint, border.borderBottomColor * colorTint, border.widths, border.radius);

@@ -51,7 +51,7 @@ namespace UnityEngine.UIElements
         {
             public int Compare(UsingEntry x, UsingEntry y)
             {
-                return Comparer<string>.Default.Compare(x.alias, y.alias);
+                return String.CompareOrdinal(x.alias, y.alias);
             }
         }
 
@@ -372,7 +372,7 @@ namespace UnityEngine.UIElements
 
             // find insertion index so usings are sorted by alias
             int i = 0;
-            while (i < m_Usings.Count && String.Compare(entry.alias, m_Usings[i].alias, StringComparison.Ordinal) != -1)
+            while (i < m_Usings.Count && String.CompareOrdinal(entry.alias, m_Usings[i].alias) > 0)
                 i++;
 
             m_Usings.Insert(i, entry);

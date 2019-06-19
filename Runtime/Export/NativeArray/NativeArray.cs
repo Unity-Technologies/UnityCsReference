@@ -95,10 +95,10 @@ namespace Unity.Collections
         [BurstDiscard]
         internal static void IsUnmanagedAndThrow()
         {
-            if (!UnsafeUtility.IsUnmanaged<T>())
+            if (!UnsafeUtility.IsValidNativeContainerElementType<T>())
             {
                 throw new InvalidOperationException(
-                    $"{typeof(T)} used in NativeArray<{typeof(T)}> must be unmanaged (contain no managed types).");
+                    $"{typeof(T)} used in NativeArray<{typeof(T)}> must be unmanaged (contain no managed types) and cannot itself be a native container type.");
             }
         }
 

@@ -475,7 +475,7 @@ namespace UnityEditor
 
             public void DrawRenderingLayerMask()
             {
-                RenderPipelineAsset srpAsset = GraphicsSettings.renderPipelineAsset;
+                RenderPipelineAsset srpAsset = GraphicsSettings.currentRenderPipeline;
                 bool usingSRP = srpAsset != null;
                 if (!usingSRP)
                     return;

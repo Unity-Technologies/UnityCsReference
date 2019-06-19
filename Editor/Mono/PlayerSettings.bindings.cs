@@ -1147,5 +1147,7 @@ namespace UnityEditor
 
         [FreeFunction("GetPlayerSettings().SetLightmapStreamingPriority")]
         internal static extern void SetLightmapStreamingPriorityForPlatformGroup(BuildTargetGroup platformGroup, int lightmapStreamingPriority);
+
+        internal static extern bool disableOldInputManagerSupport { get; }
     }
 }

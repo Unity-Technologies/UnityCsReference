@@ -501,6 +501,38 @@ namespace UnityEngine.Networking
                 }
             }
         }
+
+        [FreeFunction("UNETManager::Get()->LoadEncryptionLibrary")]
+        extern static private bool LoadEncryptionLibraryInternal(string libraryName);
+
+        public static bool LoadEncryptionLibrary(string libraryName)
+        {
+            return LoadEncryptionLibraryInternal(libraryName);
+        }
+
+        [FreeFunction("UNETManager::Get()->UnloadEncryptionLibrary")]
+        extern static private void UnloadEncryptionLibraryInternal();
+
+        public static void UnloadEncryptionLibrary()
+        {
+            UnloadEncryptionLibraryInternal();
+        }
+
+        [FreeFunction("UNETManager::Get()->IsEncryptionActive")]
+        extern static private bool IsEncryptionActiveInternal();
+
+        public static bool IsEncryptionActive()
+        {
+            return IsEncryptionActiveInternal();
+        }
+
+        [FreeFunction("UNETManager::Get()->GetEncryptionSafeMaxPacketSize")]
+        extern static private short GetEncryptionSafeMaxPacketSizeInternal(short maxPacketSize);
+
+        public static short GetEncryptionSafeMaxPacketSize(short maxPacketSize)
+        {
+            return GetEncryptionSafeMaxPacketSizeInternal(maxPacketSize);
+        }
     }
 }
 

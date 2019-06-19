@@ -185,12 +185,23 @@ namespace UnityEngine
         public static void DrawTexture(Rect position, Texture image, ScaleMode scaleMode, bool alphaBlend
             , float imageAspect, Color color, Vector4 borderWidths, Vector4 borderRadiuses)
         {
+            DrawTexture(position, image, scaleMode, alphaBlend, imageAspect, color, borderWidths, borderRadiuses, true);
+        }
+
+        internal static void DrawTexture(Rect position, Texture image, ScaleMode scaleMode, bool alphaBlend
+            , float imageAspect, Color color, Vector4 borderWidths, Vector4 borderRadiuses, bool drawSmoothCorners)
+        {
             DrawTexture(position, image, scaleMode, alphaBlend, imageAspect, color, color, color, color
-                , borderWidths, borderRadiuses);
+                , borderWidths, borderRadiuses, drawSmoothCorners);
         }
 
         // Draw a texture within a rectangle.
         internal static void DrawTexture(Rect position, Texture image, ScaleMode scaleMode, bool alphaBlend, float imageAspect, Color leftColor, Color topColor, Color rightColor, Color bottomColor, Vector4 borderWidths, Vector4 borderRadiuses)
+        {
+            DrawTexture(position, image, scaleMode, alphaBlend, imageAspect, leftColor, topColor, rightColor, bottomColor, borderWidths, borderRadiuses, true);
+        }
+
+        internal static void DrawTexture(Rect position, Texture image, ScaleMode scaleMode, bool alphaBlend, float imageAspect, Color leftColor, Color topColor, Color rightColor, Color bottomColor, Vector4 borderWidths, Vector4 borderRadiuses, bool drawSmoothCorners)
         {
             GUIUtility.CheckOnGUI();
             if (Event.current.type == EventType.Repaint)
@@ -239,6 +250,7 @@ namespace UnityEngine
                     borderWidths = borderWidths,
                     cornerRadiuses = borderRadiuses,
                     texture = image,
+                    smoothCorners = drawSmoothCorners,
                     mat = mat
                 };
                 CalculateScaledTextureRects(position, scaleMode, imageAspect, ref arguments.screenRect, ref arguments.sourceRect);

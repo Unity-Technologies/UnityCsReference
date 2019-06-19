@@ -63,6 +63,7 @@ namespace UnityEditor.UIElements
                 new LayerField.UxmlFactory(),
                 new TagField.UxmlFactory(),
                 new GradientField.UxmlFactory(),
+                new EnumFlagsField.UxmlFactory(),
 
                 // Compounds
                 new RectField.UxmlFactory(),

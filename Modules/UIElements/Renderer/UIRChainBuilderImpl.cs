@@ -34,7 +34,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
         internal static uint OnChildAdded(RenderChain renderChain, VisualElement parent, VisualElement ve, int index)
         {
             uint addedCount = DepthFirstOnChildAdded(renderChain, parent, ve, index, true);
-            OnClippingChanged(renderChain, ve);
+            OnClippingChanged(renderChain, ve, true);
             OnVisualsChanged(renderChain, ve, true);
             return addedCount;
         }
@@ -48,7 +48,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             for (int i = 0; i < childrenCount; i++)
                 DepthFirstOnChildAdded(renderChain, ve, ve.hierarchy[i], i, false);
 
-            OnClippingChanged(renderChain, ve);
+            OnClippingChanged(renderChain, ve, true);
             OnVisualsChanged(renderChain, ve, true);
         }
 
@@ -60,19 +60,14 @@ namespace UnityEngine.UIElements.UIR.Implementation
         //internal static void OnChildDestroyed(RenderChain renderChain, VisualElement ve) { }
         internal static void OnVisualsChanged(RenderChain renderChain, VisualElement ve, bool hierarchical)
         {
-            if (ve.renderChainData.isInChain && ve.renderChainData.dirtiedVisuals == 0)
-            {
-                if (ve.renderChainData.dirtiedVisuals == 0)
-                    renderChain.OnVisualsChanged(ve, hierarchical);
-                else if (hierarchical)
-                    ve.renderChainData.dirtiedVisuals = 2;
-            }
+            if (ve.renderChainData.isInChain)
+                renderChain.OnVisualsChanged(ve, hierarchical);
         }
 
-        internal static void OnClippingChanged(RenderChain renderChain, VisualElement ve)
+        internal static void OnClippingChanged(RenderChain renderChain, VisualElement ve, bool hierarchical)
         {
-            if (ve.renderChainData.isInChain && !ve.renderChainData.dirtiedClipping)
-                renderChain.OnClippingChanged(ve);
+            if (ve.renderChainData.isInChain)
+                renderChain.OnClippingChanged(ve, hierarchical);
         }
 
         internal static void OnTransformOrSizeChanged(RenderChain renderChain, VisualElement ve, bool transformChanged, bool sizeChanged)
@@ -113,7 +108,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
         internal static void ProcessOnClippingChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, UIRenderDevice device, ref ChainBuilderStats stats)
         {
             stats.recursiveClipUpdates++;
-            DepthFirstOnClippingChanged(renderChain, ve.hierarchy.parent, ve, dirtyID, false, device, ref stats);
+            DepthFirstOnClippingChanged(renderChain, ve.hierarchy.parent, ve, dirtyID, false, true, false, false, false, device, ref stats);
         }
 
         internal static void ProcessOnTransformOrSizeChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, UIRenderDevice device, ref ChainBuilderStats stats)
@@ -124,7 +119,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         internal static void ProcessOnVisualsChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
         {
-            bool hierarchical = ve.renderChainData.dirtiedVisuals == 2;
+            bool hierarchical = (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.VisualsHierarchy) != 0;
             if (hierarchical)
                 stats.recursiveVisualUpdates++;
             else stats.nonRecursiveVisualUpdates++;
@@ -255,86 +250,185 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     renderChain.device.Free(ve.renderChainData.data);
                     ve.renderChainData.data = null;
                 }
-                if (ve.renderChainData.dirtiedClipping)
+                if ((ve.renderChainData.dirtiedValues & (RenderDataDirtyTypes.Clipping | RenderDataDirtyTypes.ClippingHierarchy)) != 0)
                     removalInfo.anyDirtiedClipping = true;
                 if ((ve.renderChainData.dirtiedValues & (RenderDataDirtyTypes.Transform | RenderDataDirtyTypes.Size)) != 0)
                     removalInfo.anyDirtiedTransformOrSize = true;
-                if (ve.renderChainData.dirtiedVisuals > 0)
+                if ((ve.renderChainData.dirtiedValues & (RenderDataDirtyTypes.Visuals | RenderDataDirtyTypes.VisualsHierarchy)) != 0)
                     removalInfo.anyDirtiedVisuals = true;
             }
             return deepCount + 1;
         }
 
-        static void DepthFirstOnClippingChanged(RenderChain renderChain, VisualElement parent, VisualElement ve, uint dirtyID, bool evenIfUpToDate, UIRenderDevice device, ref ChainBuilderStats stats)
+        static void DepthFirstOnClippingChanged(RenderChain renderChain,
+            VisualElement parent,
+            VisualElement ve,
+            uint dirtyID,
+            bool hierarchical,                  // MUST be false on the root call. Indicates that ALL descendants MUST be processed.
+            bool isRootOfChange,                // MUST be true  on the root call.
+            bool isPendingHierarchicalRepaint,  // MUST be false on the root call.
+            bool inheritedTransformIDChanged,   // MUST be false on the root call.
+            bool inheritedStencilClippedChanged,// MUST be false on the root call.
+            UIRenderDevice device,
+            ref ChainBuilderStats stats)
         {
             bool upToDate = dirtyID == ve.renderChainData.dirtyID;
-            if (!evenIfUpToDate && upToDate)
+            if (upToDate && !inheritedTransformIDChanged && !inheritedStencilClippedChanged)
                 return;
-            ve.renderChainData.dirtyID = dirtyID; // Prevent reprocessing of the same element in the same pass
 
+            ve.renderChainData.dirtyID = dirtyID; // Prevent reprocessing of the same element in the same pass
             stats.recursiveClipUpdatesExpanded++;
 
-            var newClipMethod = DetermineClipMethod(ve);
-            var oldTransformID = ve.renderChainData.transformID.start;
-            bool needsTransformID = NeedsTransformID(ve, newClipMethod);
-            if (needsTransformID)
+            // Despite an originally non-hierarchical processing, we may need to recurse to propagate some values. When
+            // doing so, we may update elements that required hierarchical processing. In this case, we need to set
+            // this flag because otherwise, their own individual processing may be skipped since the dirtyID has been set.
+            hierarchical |= (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.ClippingHierarchy) != 0;
+
+            isPendingHierarchicalRepaint |= (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.VisualsHierarchy) != 0;
+
+            // Internal operations (done in this call) to do:
+            bool mustUpdateTransformID = hierarchical || isRootOfChange || inheritedTransformIDChanged;
+            bool mustUpdateClippingMethod = hierarchical || isRootOfChange;
+            bool mustUpdateStencilClippedFlag = hierarchical || isRootOfChange || inheritedStencilClippedChanged;
+
+            // External operations (done by recursion or postponed) to do:
+            bool mustRepaintThis = false;
+            bool mustRepaintHierarchy = false;
+            bool mustProcessSizeChange = false;
+            // mustRecurse implies recursing on all children, but doesn't force anything beyond them.
+            // hierarchical implies recursing on all descendants
+            // As a result, hierarchical implies mustRecurse
+            bool mustRecurse = hierarchical;
+
+            // Update the clipping method.
+            ClipMethod oldClippingMethod = ve.renderChainData.clipMethod;
+            ClipMethod newClippingMethod = oldClippingMethod;
+            if (mustUpdateClippingMethod)
+                newClippingMethod = DetermineClipMethod(ve);
+
+            // Update the transform ID.
+            Alloc oldTransformID = ve.renderChainData.transformID;
+            Alloc newTransformID = oldTransformID;
+            if (mustUpdateTransformID)
             {
+                if (NeedsTransformID(ve, newClippingMethod))
+                {
+                    if (!ve.renderChainData.allocatedTransformID)
+                    {
+                        newTransformID = device.AllocateTransform();
+                        ve.renderChainData.transformID = newTransformID;
+                    }
+                }
+                else
+                {
+                    if (ve.renderChainData.allocatedTransformID)
+                    {
+                        device.Free(ve.renderChainData.transformID);
+                        newTransformID = new Alloc();
+                        ve.renderChainData.transformID = newTransformID;
+                    }
+                }
+
                 if (!ve.renderChainData.allocatedTransformID)
                 {
-                    var newTransformID = device.AllocateTransform();
-                    if (newTransformID.size > 0)
+                    if (parent != null && (ve.renderHints & RenderHints.GroupTransform) == 0)
+                    {
+                        if (parent.renderChainData.allocatedTransformID)
+                            ve.renderChainData.boneTransformAncestor = parent;
+                        else
+                            ve.renderChainData.boneTransformAncestor = parent.renderChainData.boneTransformAncestor;
+
+                        newTransformID = parent.renderChainData.transformID;
+                        // Mark this allocation as not owned by us. Note that we are hijacking this field since it is
+                        // actually unused in the case of transform ids.
+                        newTransformID.shortLived = true;
                         ve.renderChainData.transformID = newTransformID;
+                    }
+                    else
+                        ve.renderChainData.boneTransformAncestor = null;
                 }
             }
-            else if (ve.renderChainData.allocatedTransformID)
-            {
-                device.Free(ve.renderChainData.transformID);
-                ve.renderChainData.transformID = new Alloc();
-            }
 
-            bool hasParent = parent != null;
-            if (!ve.renderChainData.allocatedTransformID)
+            if (!ve.renderChainData.allocatedTransformID && newClippingMethod == ClipMethod.ShaderDiscard)
+                // Fallback to scissoring since we couldn't allocate a transform ID
+                newClippingMethod = ClipMethod.Scissor;
+
+            if (oldClippingMethod != newClippingMethod)
             {
-                if (hasParent && (ve.renderHints & RenderHints.GroupTransform) == 0)
+                ve.renderChainData.clipMethod = newClippingMethod;
+
+                if (oldClippingMethod == ClipMethod.Stencil || newClippingMethod == ClipMethod.Stencil)
                 {
-                    if (parent.renderChainData.allocatedTransformID)
-                        ve.renderChainData.boneTransformAncestor = parent;
-                    else ve.renderChainData.boneTransformAncestor = parent.renderChainData.boneTransformAncestor;
-                    ve.renderChainData.transformID = parent.renderChainData.transformID;
-                    ve.renderChainData.transformID.shortLived = true; // Mark this allocation as not owned by us
+                    mustUpdateStencilClippedFlag = true;
+
+                    // Proper winding order must be used.
+                    mustRepaintHierarchy = true;
                 }
-                else ve.renderChainData.boneTransformAncestor = null;
-                if (newClipMethod == ClipMethod.ShaderDiscard)
-                    newClipMethod = ClipMethod.Scissor; // Fallback to scissoring since we couldn't allocate a transform ID
+
+                if (oldClippingMethod == ClipMethod.Scissor || newClippingMethod == ClipMethod.Scissor)
+                    // We need to add/remove scissor push/pop commands
+                    mustRepaintThis = true;
+
+                if (newClippingMethod == ClipMethod.ShaderDiscard || oldClippingMethod == ClipMethod.ShaderDiscard && ve.renderChainData.allocatedTransformID)
+                    // We must update the clipping rects.
+                    mustProcessSizeChange = true;
             }
-            else if (upToDate)
+
+            bool transformIdChanged = false;
+            if (TransformIDHasChanged(oldTransformID, newTransformID))
             {
-                Debug.Assert(ve.renderChainData.clipMethod != ClipMethod.Undetermined);
-                return; // We are up to date already and we allocate our own transformID, so no need to recurse
+                transformIdChanged = true;
+
+                // Our children MUST update their render data transformIDs
+                mustRecurse = true;
+
+                // Our children MUST update their vertex transformIDs
+                mustRepaintHierarchy = true;
             }
 
-            if (!evenIfUpToDate && (oldTransformID != ve.renderChainData.transformID.start))
+            bool isStencilClippedChanged = false;
+            if (mustUpdateStencilClippedFlag)
             {
-                // Introduce a recursive paint if the transformID changes due to shader discards
-                evenIfUpToDate = true; // Our children MUST update their vertex transformIDs
-                RenderEvents.OnVisualsChanged(renderChain, ve, true);
+                bool oldStencilClipped = ve.renderChainData.isStencilClipped;
+                bool newStencilClipped = newClippingMethod == ClipMethod.Stencil || (parent != null && parent.renderChainData.isStencilClipped);
+                ve.renderChainData.isStencilClipped = newStencilClipped;
+                if (oldStencilClipped != newStencilClipped)
+                {
+                    isStencilClippedChanged = true;
+
+                    // Our children MUST update their isStencilClipped flag
+                    mustRecurse = true;
+                }
             }
 
-            if (newClipMethod != ve.renderChainData.clipMethod)
+            if ((mustRepaintThis || mustRepaintHierarchy) && !isPendingHierarchicalRepaint)
             {
-                // Introduce a recursive repaint to regen indices in proper winding order for children if was using or will be using stencil clipping
-                bool needRecursePaint = (newClipMethod == ClipMethod.Stencil) || (ve.renderChainData.clipMethod == ClipMethod.Stencil);
-
-                ve.renderChainData.clipMethod = newClipMethod;
-                ve.renderChainData.isStencilClipped = (newClipMethod == ClipMethod.Stencil) || (hasParent && ve.hierarchy.parent.renderChainData.isStencilClipped);
-                if (needRecursePaint)
-                    RenderEvents.OnVisualsChanged(renderChain, ve, true);
+                OnVisualsChanged(renderChain, ve, mustRepaintHierarchy);
+                isPendingHierarchicalRepaint = true;
             }
 
-            // Recurse on children
-            int childrenCount = ve.hierarchy.childCount;
-            for (int i = 0; i < childrenCount; i++)
-                DepthFirstOnClippingChanged(renderChain, ve, ve.hierarchy[i], dirtyID, evenIfUpToDate, device, ref stats);
+            if (mustProcessSizeChange)
+                OnTransformOrSizeChanged(renderChain, ve, false, true);
+
+            if (mustRecurse)
+            {
+                int childrenCount = ve.hierarchy.childCount;
+                for (int i = 0; i < childrenCount; i++)
+                    DepthFirstOnClippingChanged(
+                        renderChain,
+                        ve,
+                        ve.hierarchy[i],
+                        dirtyID,
+                        // Having to recurse doesn't mean that we need to process ALL descendants. For example, the
+                        // propagation of the transformId may stop if a group or a bone is encountered.
+                        hierarchical,
+                        false,
+                        isPendingHierarchicalRepaint,
+                        transformIdChanged,
+                        isStencilClippedChanged,
+                        device,
+                        ref stats);
+            }
         }
 
         static void  DepthFirstOnTransformOrSizeChanged(RenderChain renderChain, VisualElement parent, VisualElement ve, uint dirtyID, UIRenderDevice device, bool isAncestorOfChangeSkinned, bool transformChanged, ref ChainBuilderStats stats)
@@ -368,7 +462,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 dirtyHasBeenResolved = false; // We just skipped processing, if another later transform change is queued on this element this pass then we should still process it
                 stats.skipTransformed++;
             }
-            else if ((ve.renderChainData.dirtiedVisuals == 0) && (ve.renderChainData.data != null))
+            else if ((ve.renderChainData.dirtiedValues & (RenderDataDirtyTypes.Visuals | RenderDataDirtyTypes.VisualsHierarchy)) == 0 && (ve.renderChainData.data != null))
             {
                 // If a visual update will happen, then skip work here as the visual update will incorporate the transformed vertices
                 if (!ve.renderChainData.disableNudging && NudgeVerticesToNewSpace(ve, device))
@@ -501,6 +595,19 @@ namespace UnityEngine.UIElements.UIR.Implementation
         static bool NeedsTransformID(VisualElement ve, ClipMethod newClipMethod)
         {
             return (ve.renderHints & RenderHints.GroupTransform) == 0 && ((newClipMethod == ClipMethod.ShaderDiscard) || ((ve.renderHints & RenderHints.BoneTransform) == RenderHints.BoneTransform));
+        }
+
+        // Indicates whether the transform id assigned to an element has changed. It does not care who the owner is.
+        static bool TransformIDHasChanged(Alloc before, Alloc after)
+        {
+            if (before.size == 0 && after.size == 0)
+                // Whatever start is, both are invalid allocations.
+                return false;
+
+            if (before.size != after.size || before.start != after.start)
+                return true;
+
+            return false;
         }
 
         internal static UIRStylePainter PaintElement(RenderChain renderChain, VisualElement ve, ref ChainBuilderStats stats)

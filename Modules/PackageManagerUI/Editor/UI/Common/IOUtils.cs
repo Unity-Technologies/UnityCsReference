@@ -4,7 +4,6 @@
 
 using System.IO;
 using System.Linq;
-using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -12,7 +11,7 @@ namespace UnityEditor.PackageManager.UI
     {
         // Need to re-create this method since Unity's FileUtil equivalent (with overwrite) is internal only.
         // From: https://stackoverflow.com/questions/58744/copy-the-entire-contents-of-a-directory-in-c-sharp
-        public static void DirectoryCopy(string sourcePath, string destinationPath)
+        public static void DirectoryCopy(string sourcePath, string destinationPath, bool makeWritable = false)
         {
             Directory.CreateDirectory(destinationPath);
 
@@ -21,8 +20,13 @@ namespace UnityEditor.PackageManager.UI
                 Directory.CreateDirectory(dirPath.Replace(sourcePath, destinationPath));
 
             //Copy all the files & Replaces any files with the same name
-            foreach (string newPath in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
-                File.Copy(newPath, newPath.Replace(sourcePath, destinationPath), true);
+            foreach (string source in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
+            {
+                var dest = source.Replace(sourcePath, destinationPath);
+                File.Copy(source, dest, true);
+                if (makeWritable)
+                    new FileInfo(dest).IsReadOnly = false;
+            }
         }
 
         public static string SanitizeFileName(string name)

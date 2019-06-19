@@ -46,7 +46,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             public string[] AdditionalPrefixes { get; set; }
             public Func<string, int> PathFilter { get; private set; }
             public Func<ScriptAssemblySettings, string[], bool> IsCompatibleFunc { get; private set; }
-            public List<TargetAssembly> References { get; private set; }
+            public List<TargetAssembly> References { get; set; }
             public List<PrecompiledAssembly> PrecompiledReferences { get; set; }
             public TargetAssemblyType Type { get; private set; }
             public string[] Defines { get; set; }
@@ -627,6 +627,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 // Otherwise player builds might fail for partial classes.
                 Array.Sort(scriptAssembly.Files, StringComparer.Ordinal);
             }
+
+            AutoReferencedPackageAssemblies.AddReferences(assemblies.CustomTargetAssemblies, settings.CompilationOptions);
 
             // Setup ScriptAssembly references
             index = 0;

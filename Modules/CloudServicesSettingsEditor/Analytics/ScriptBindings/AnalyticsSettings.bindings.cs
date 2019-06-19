@@ -7,6 +7,7 @@ using UnityEngine.Bindings;
 namespace UnityEditor.Analytics
 {
 
+    [NativeHeader("Modules/UnityConnect/UnityConnectSettings.h")]
     [NativeHeader("Modules/UnityConnect/UnityAnalytics/UnityAnalyticsSettings.h")]
     [StaticAccessor("GetUnityAnalyticsSettings()", StaticAccessorType.Dot)]
     public static partial class AnalyticsSettings
@@ -16,6 +17,17 @@ namespace UnityEditor.Analytics
         public static extern bool testMode { get; set; }
 
         public static extern bool initializeOnStartup { get; set; }
+
+        public static bool deviceStatsEnabledInBuild
+        {
+            get { return CoreStats.hasCoreStatsInBuild; }
+        }
+
+        [StaticAccessor("GetUnityConnectSettings()", StaticAccessorType.Dot)]
+        public static extern string eventUrl { get; set; }
+
+        [StaticAccessor("GetUnityConnectSettings()", StaticAccessorType.Dot)]
+        public static extern string configUrl { get; set; }
 
         internal static extern void SetEnabledServiceWindow(bool enabled);
 

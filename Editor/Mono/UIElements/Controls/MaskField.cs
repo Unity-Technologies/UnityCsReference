@@ -11,50 +11,10 @@ using UnityEngine.Profiling;
 
 namespace UnityEditor.UIElements
 {
-    public class MaskField : BasePopupField<int, string>
+    public abstract class BaseMaskField<TChoice> : BasePopupField<TChoice, string>
     {
-        public new class UxmlFactory : UxmlFactory<MaskField, UxmlTraits> {}
-
-        public new class UxmlTraits : BasePopupField<int, UxmlIntAttributeDescription>.UxmlTraits
-        {
-            UxmlStringAttributeDescription m_MaskChoices = new UxmlStringAttributeDescription { name = "choices" };
-            UxmlIntAttributeDescription m_MaskValue = new UxmlIntAttributeDescription { name = "value" };
-            internal static List<string> ParseChoiceList(string choicesFromBag)
-            {
-                // Here the choices is comma separated in the string...
-                string[] choices = choicesFromBag.Split(',');
-
-                if (choices.Length != 0)
-                {
-                    List<string> listOfChoices = new List<string>();
-                    foreach (var choice in choices)
-                    {
-                        listOfChoices.Add(choice.Trim());
-                    }
-                    return listOfChoices;
-                }
-                return null;
-            }
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                var f = (MaskField)ve;
-
-                string choicesFromBag = m_MaskChoices.GetValueFromBag(bag, cc);
-
-
-                var listOfChoices = ParseChoiceList(choicesFromBag);
-
-                if (listOfChoices != null && listOfChoices.Count > 0)
-                {
-                    f.choices = listOfChoices;
-                }
-                // The mask is simply an int
-                f.SetValueWithoutNotify(m_MaskValue.GetValueFromBag(bag, cc));
-
-                base.Init(ve, bag, cc);
-            }
-        }
+        internal abstract TChoice MaskToValue(int newMask);
+        internal abstract int ValueToMask(TChoice value);
 
         static readonly int s_NothingIndex = 0;
         static readonly int s_EverythingIndex = 1;
@@ -75,6 +35,10 @@ namespace UnityEditor.UIElements
         // This is containing a mask to cover all the choices from the list. Computed with the help of m_UserChoicesMasks
         //     or based on the power of 2 mask values.
         int m_FullChoiceMask;
+
+        internal BaseMaskField(string label) : base(label)
+        {
+        }
 
         internal override List<string> choices
         {
@@ -144,42 +108,42 @@ namespace UnityEditor.UIElements
             }
         }
 
-        public virtual Func<string, string> formatSelectedValueCallback
+        void ComputeFullChoiceMask()
         {
-            get { return m_FormatSelectedValueCallback; }
-            set
+            // Compute the full mask for all the items... it is not necessarily ~0 (which is all bits set to 1)
+            if (m_UserChoices.Count == 0)
             {
-                m_FormatSelectedValueCallback = value;
-                textElement.text = GetValueToDisplay();
+                m_FullChoiceMask = 0;
             }
-        }
-
-        public virtual Func<string, string> formatListItemCallback
-        {
-            get { return m_FormatListItemCallback; }
-            set { m_FormatListItemCallback = value; }
-        }
-
-        public override void SetValueWithoutNotify(int newValue)
-        {
-            base.SetValueWithoutNotify(UpdateMaskIfEverything(newValue));
-        }
-
-        internal override string GetListItemToDisplay(int itemIndex)
-        {
-            string displayedValue = GetDisplayedValue(itemIndex);
-            if (ShouldFormatListItem(itemIndex))
-                displayedValue = m_FormatListItemCallback(displayedValue);
-
-            return displayedValue;
-        }
-
-        internal override string GetValueToDisplay()
-        {
-            string displayedValue = GetDisplayedValue(rawValue);
-            if (ShouldFormatSelectedValue())
-                displayedValue = m_FormatSelectedValueCallback(displayedValue);
-            return displayedValue;
+            else
+            {
+                if ((m_UserChoicesMasks != null) && (m_UserChoicesMasks.Count == m_UserChoices.Count))
+                {
+                    if (m_UserChoices.Count >= (sizeof(int) * 8))
+                    {
+                        m_FullChoiceMask = ~0;
+                    }
+                    else
+                    {
+                        m_FullChoiceMask = 0;
+                        foreach (int itemMask in m_UserChoicesMasks)
+                        {
+                            m_FullChoiceMask |= itemMask;
+                        }
+                    }
+                }
+                else
+                {
+                    if (m_UserChoices.Count >= (sizeof(int) * 8))
+                    {
+                        m_FullChoiceMask = ~0;
+                    }
+                    else
+                    {
+                        m_FullChoiceMask = (1 << m_UserChoices.Count) - 1;
+                    }
+                }
+            }
         }
 
         // Trick to get the number of selected values...
@@ -189,14 +153,14 @@ namespace UnityEditor.UIElements
             return ((itemIndex & (itemIndex - 1)) == 0);
         }
 
-        internal bool ShouldFormatListItem(int itemIndex)
+        internal override string GetValueToDisplay()
         {
-            return itemIndex != 0 && itemIndex != -1 && m_FormatListItemCallback != null;
+            return GetDisplayedValue(ValueToMask(value));
         }
 
-        internal bool ShouldFormatSelectedValue()
+        internal override string GetListItemToDisplay(TChoice item)
         {
-            return rawValue != 0 && rawValue != -1 && m_FormatSelectedValueCallback != null && IsPowerOf2(rawValue);
+            return GetDisplayedValue(ValueToMask(item));
         }
 
         internal string GetDisplayedValue(int itemIndex)
@@ -254,12 +218,19 @@ namespace UnityEditor.UIElements
             return newValueToShowUser;
         }
 
+        public override void SetValueWithoutNotify(TChoice newValue)
+        {
+            base.SetValueWithoutNotify(MaskToValue(UpdateMaskIfEverything(ValueToMask(newValue))));
+        }
+
         internal override void AddMenuItems(GenericMenu menu)
         {
             if (menu == null)
             {
                 throw new ArgumentNullException(nameof(menu));
             }
+
+            int valueMask = ValueToMask(value);
 
             foreach (var item in m_Choices)
             {
@@ -268,101 +239,88 @@ namespace UnityEditor.UIElements
                 switch (maskOfItem)
                 {
                     case 0:
-                        if (value == 0)
+                        if (valueMask == 0)
                         {
                             isSelected = true;
                         }
                         break;
 
                     case ~0:
-                        if (value == ~0)
+                        if (valueMask == ~0)
                         {
                             isSelected = true;
                         }
                         break;
 
                     default:
-                        if ((maskOfItem & value) == maskOfItem)
+                        if ((maskOfItem & valueMask) == maskOfItem)
                         {
                             isSelected = true;
                         }
                         break;
                 }
 
-                menu.AddItem(new GUIContent(GetListItemToDisplay(maskOfItem)), isSelected, () => ChangeValueFromMenu(item));
+                menu.AddItem(new GUIContent(GetListItemToDisplay(MaskToValue(maskOfItem))), isSelected, () => ChangeValueFromMenu(item));
             }
         }
 
-        void ComputeFullChoiceMask()
+        // Based on the current mask, this is updating the value of the actual mask to use vs the full mask.
+        // This is returning ~0 if all the values are selected...
+        int UpdateMaskIfEverything(int currentMask)
         {
-            // Compute the full mask for all the items... it is not necessarily ~0 (which is all bits set to 1)
-            if (m_UserChoices.Count == 0)
+            int newMask = currentMask;
+            // If the mask is full, put back the Everything flag.
+            if (m_FullChoiceMask != 0)
             {
-                m_FullChoiceMask = 0;
-            }
-            else
-            {
-                if ((m_UserChoicesMasks != null) && (m_UserChoicesMasks.Count == m_UserChoices.Count))
+                if ((currentMask & m_FullChoiceMask) == m_FullChoiceMask)
                 {
-                    if (m_UserChoices.Count >= (sizeof(int) * 8))
-                    {
-                        m_FullChoiceMask = ~0;
-                    }
-                    else
-                    {
-                        m_FullChoiceMask = 0;
-                        foreach (int itemMask in m_UserChoicesMasks)
-                        {
-                            m_FullChoiceMask |= itemMask;
-                        }
-                    }
+                    newMask = ~0;
                 }
                 else
                 {
-                    if (m_UserChoices.Count >= (sizeof(int) * 8))
+                    newMask &= m_FullChoiceMask;
+                }
+            }
+
+            return newMask;
+        }
+
+        private void ChangeValueFromMenu(string menuItem)
+        {
+            var newMask = ValueToMask(value);
+            var maskFromItem = GetMaskValueOfItem(menuItem);
+            switch (maskFromItem)
+            {
+                // Nothing
+                case 0:
+                    newMask = 0;
+                    break;
+
+                // Everything
+                case ~0:
+                    newMask = ~0;
+                    break;
+
+                default:
+                    // Make sure to have only the real selected one...
+                    //newMask &= m_FullChoiceMask;
+
+                    // Add or remove the newly selected...
+                    if ((newMask & maskFromItem) == maskFromItem)
                     {
-                        m_FullChoiceMask = ~0;
+                        newMask &= ~maskFromItem;
                     }
                     else
                     {
-                        m_FullChoiceMask = (1 << m_UserChoices.Count) - 1;
+                        newMask |= maskFromItem;
                     }
-                }
+
+                    // If the mask is full, put back the Everything flag.
+                    newMask = UpdateMaskIfEverything(newMask);
+                    break;
             }
-        }
-
-        public new static readonly string ussClassName = "unity-mask-field";
-        public new static readonly string labelUssClassName = ussClassName + "__label";
-        public new static readonly string inputUssClassName = ussClassName + "__input";
-
-
-        public MaskField(List<string> choices, int defaultMask, Func<string, string> formatSelectedValueCallback = null, Func<string, string> formatListItemCallback = null)
-            : this(null, choices, defaultMask, formatSelectedValueCallback, formatListItemCallback)
-        {
-        }
-
-        public MaskField(string label, List<string> choices, int defaultMask, Func<string, string> formatSelectedValueCallback = null, Func<string, string> formatListItemCallback = null)
-            : this(label)
-        {
-            this.choices = choices;
-            m_FormatListItemCallback = formatListItemCallback;
-            m_FormatSelectedValueCallback = formatSelectedValueCallback;
-
-            SetValueWithoutNotify(defaultMask);
-
-            this.formatListItemCallback = formatListItemCallback;
-            this.formatSelectedValueCallback = formatSelectedValueCallback;
-        }
-
-        public MaskField()
-            : this(null) {}
-
-        public MaskField(string label)
-            : base(label)
-        {
-            AddToClassList(ussClassName);
-            labelElement.AddToClassList(labelUssClassName);
-            visualInput.AddToClassList(inputUssClassName);
+            // Finally, make sure to update the value of the mask...
+            value = MaskToValue(newMask);
         }
 
         // Returns the mask to be used for the item...
@@ -400,64 +358,131 @@ namespace UnityEditor.UIElements
             }
             return maskValue;
         }
+    }
 
-        // Based on the current mask, this is updating the value of the actual mask to use vs the full mask.
-        // This is returning ~0 if all the values are selected...
-        int UpdateMaskIfEverything(int currentMask)
+    public class MaskField : BaseMaskField<int>
+    {
+        internal override int MaskToValue(int newMask) => newMask;
+        internal override int ValueToMask(int value) => value;
+
+        public new class UxmlFactory : UxmlFactory<MaskField, UxmlTraits> {}
+
+        public new class UxmlTraits : BasePopupField<int, UxmlIntAttributeDescription>.UxmlTraits
         {
-            int newMask = currentMask;
-            // If the mask is full, put back the Everything flag.
-            if (m_FullChoiceMask != 0)
+            UxmlStringAttributeDescription m_MaskChoices = new UxmlStringAttributeDescription { name = "choices" };
+            UxmlIntAttributeDescription m_MaskValue = new UxmlIntAttributeDescription { name = "value" };
+            internal static List<string> ParseChoiceList(string choicesFromBag)
             {
-                if ((currentMask & m_FullChoiceMask) == m_FullChoiceMask)
+                // Here the choices is comma separated in the string...
+                string[] choices = choicesFromBag.Split(',');
+
+                if (choices.Length != 0)
                 {
-                    newMask = ~0;
+                    List<string> listOfChoices = new List<string>();
+                    foreach (var choice in choices)
+                    {
+                        listOfChoices.Add(choice.Trim());
+                    }
+                    return listOfChoices;
                 }
-                else
-                {
-                    newMask &= m_FullChoiceMask;
-                }
+                return null;
             }
 
-            return newMask;
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                var f = (MaskField)ve;
+
+                string choicesFromBag = m_MaskChoices.GetValueFromBag(bag, cc);
+
+
+                var listOfChoices = ParseChoiceList(choicesFromBag);
+
+                if (listOfChoices != null && listOfChoices.Count > 0)
+                {
+                    f.choices = listOfChoices;
+                }
+                // The mask is simply an int
+                f.SetValueWithoutNotify(m_MaskValue.GetValueFromBag(bag, cc));
+
+                base.Init(ve, bag, cc);
+            }
         }
 
-        private void ChangeValueFromMenu(string menuItem)
+        public virtual Func<string, string> formatSelectedValueCallback
         {
-            var newMask = value;
-            var maskFromItem = GetMaskValueOfItem(menuItem);
-            switch (maskFromItem)
+            get { return m_FormatSelectedValueCallback; }
+            set
             {
-                // Nothing
-                case 0:
-                    newMask = 0;
-                    break;
-
-                // Everything
-                case ~0:
-                    newMask = ~0;
-                    break;
-
-                default:
-                    // Make sure to have only the real selected one...
-                    newMask &= m_FullChoiceMask;
-
-                    // Add or remove the newly selected...
-                    if ((newMask & maskFromItem) == maskFromItem)
-                    {
-                        newMask &= ~maskFromItem;
-                    }
-                    else
-                    {
-                        newMask |= maskFromItem;
-                    }
-
-                    // If the mask is full, put back the Everything flag.
-                    newMask = UpdateMaskIfEverything(newMask);
-                    break;
+                m_FormatSelectedValueCallback = value;
+                textElement.text = GetValueToDisplay();
             }
-            // Finally, make sure to update the value of the mask...
-            value = newMask;
+        }
+
+        public virtual Func<string, string> formatListItemCallback
+        {
+            get { return m_FormatListItemCallback; }
+            set { m_FormatListItemCallback = value; }
+        }
+
+        internal override string GetListItemToDisplay(int itemIndex)
+        {
+            string displayedValue = GetDisplayedValue(itemIndex);
+            if (ShouldFormatListItem(itemIndex))
+                displayedValue = m_FormatListItemCallback(displayedValue);
+
+            return displayedValue;
+        }
+
+        internal override string GetValueToDisplay()
+        {
+            string displayedValue = GetDisplayedValue(rawValue);
+            if (ShouldFormatSelectedValue())
+                displayedValue = m_FormatSelectedValueCallback(displayedValue);
+            return displayedValue;
+        }
+
+        internal bool ShouldFormatListItem(int itemIndex)
+        {
+            return itemIndex != 0 && itemIndex != -1 && m_FormatListItemCallback != null;
+        }
+
+        internal bool ShouldFormatSelectedValue()
+        {
+            return rawValue != 0 && rawValue != -1 && m_FormatSelectedValueCallback != null && IsPowerOf2(rawValue);
+        }
+
+        public new static readonly string ussClassName = "unity-mask-field";
+        public new static readonly string labelUssClassName = ussClassName + "__label";
+        public new static readonly string inputUssClassName = ussClassName + "__input";
+
+
+        public MaskField(List<string> choices, int defaultMask, Func<string, string> formatSelectedValueCallback = null, Func<string, string> formatListItemCallback = null)
+            : this(null, choices, defaultMask, formatSelectedValueCallback, formatListItemCallback)
+        {
+        }
+
+        public MaskField(string label, List<string> choices, int defaultMask, Func<string, string> formatSelectedValueCallback = null, Func<string, string> formatListItemCallback = null)
+            : this(label)
+        {
+            this.choices = choices;
+            m_FormatListItemCallback = formatListItemCallback;
+            m_FormatSelectedValueCallback = formatSelectedValueCallback;
+
+            SetValueWithoutNotify(defaultMask);
+
+            this.formatListItemCallback = formatListItemCallback;
+            this.formatSelectedValueCallback = formatSelectedValueCallback;
+        }
+
+        public MaskField()
+            : this(null) {}
+
+        public MaskField(string label)
+            : base(label)
+        {
+            AddToClassList(ussClassName);
+            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
         }
     }
 }

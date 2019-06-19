@@ -128,8 +128,15 @@ namespace UnityEditor
             float previewHeight = m_Texture.height;
 
             if (m_PlayingClip.pixelAspectRatioDenominator > 0)
-                previewWidth *= (float)m_PlayingClip.pixelAspectRatioNumerator /
+            {
+                float pixelAspectRatio = (float)m_PlayingClip.pixelAspectRatioNumerator /
                     (float)m_PlayingClip.pixelAspectRatioDenominator;
+
+                if (pixelAspectRatio > 1.0F)
+                    previewWidth *= pixelAspectRatio;
+                else
+                    previewHeight /= pixelAspectRatio;
+            }
 
             float zoomLevel = 1.0f;
 

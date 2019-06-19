@@ -68,7 +68,6 @@ namespace UnityEngine.Profiling
         }
 
         [NativeMethod(IsThreadSafe = true)]
-        [NativeConditional("ENABLE_PROFILER")]
         private extern long GetElapsedNanoseconds();
 
         public int sampleBlockCount
@@ -77,7 +76,6 @@ namespace UnityEngine.Profiling
         }
 
         [NativeMethod(IsThreadSafe = true)]
-        [NativeConditional("ENABLE_PROFILER")]
         private extern int GetSampleBlockCount();
 
         [ThreadSafe]

@@ -542,6 +542,7 @@ namespace UnityEngine
                 MSAA2x = 11,
                 MSAA4x = 12,
                 MSAA8x = 13,
+                StencilSampling = 15,
             }
 
             // Keep in sync with DefaultFormat in Runtime/Graphics/Format.h
@@ -1634,6 +1635,15 @@ namespace UnityEngine.Rendering
     {
         None = 0,
         AsyncCompute = 1 << 1
+    }
+
+    //Needs to line up with the common elements of the c++ version of this enum found GfxDeviceTypes.h
+    public enum RenderTextureSubElement
+    {
+        Color = 0,
+        Depth = 1,
+        Stencil = 2,
+        Default = 3
     }
 } // namespace UnityEngine.Rendering
 

@@ -42,8 +42,6 @@ namespace UnityEditor
 
         bool m_SelectionContainsTrackerFile;
 
-        List<int> m_DirtyCount;
-
         [Serializable]
         class AudioImporterPlatformSettings
         {
@@ -191,27 +189,11 @@ namespace UnityEditor
                     break;
                 }
             }
-
-            m_DirtyCount = new List<int>(targets.Length);
-            for (int i = 0; i < targets.Length; i++)
-            {
-                m_DirtyCount.Add(EditorUtility.GetDirtyCount(targets[i]));
-            }
         }
 
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
-
-            for (int i = 0; i < targets.Length; i++)
-            {
-                var newCount = EditorUtility.GetDirtyCount(targets[i]);
-                if (m_DirtyCount[i] != newCount)
-                {
-                    InitializeExtraDataInstance(extraDataTargets[i], i);
-                }
-            }
-
             extraDataSerializedObject.Update();
 
             OnAudioImporterGUI(m_SelectionContainsTrackerFile);
@@ -244,11 +226,6 @@ namespace UnityEditor
             serializedObject.ApplyModifiedProperties();
 
             ApplyRevertGUI();
-
-            for (int i = 0; i < targets.Length; i++)
-            {
-                m_DirtyCount[i] = EditorUtility.GetDirtyCount(targets[i]);
-            }
         }
 
         private List<AudioCompressionFormat> GetFormatsForPlatform(BuildTargetGroup platform)

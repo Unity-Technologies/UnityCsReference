@@ -193,7 +193,6 @@ namespace UnityEditor
             // Sortmethod GUI
             if (m_SceneHierarchy.hasSortMethods)
             {
-                GUILayout.Space(6);
                 m_SceneHierarchy.SortMethodsDropDownButton();
             }
 
@@ -289,13 +288,13 @@ namespace UnityEditor
 
     internal class TransformSorting : HierarchySorting
     {
-        readonly GUIContent m_Content = new GUIContent(EditorGUIUtility.FindTexture("DefaultSorting"), "Transform Child Order");
+        readonly GUIContent m_Content = EditorGUIUtility.TrIconContent("DefaultSorting", "Transform Child Order");
         public override GUIContent content { get { return m_Content; } }
     }
 
     internal class AlphabeticalSorting : HierarchySorting
     {
-        readonly GUIContent m_Content = new GUIContent(EditorGUIUtility.FindTexture("AlphabeticalSorting"), "Alphabetical Order");
+        readonly GUIContent m_Content = EditorGUIUtility.TrIconContent("AlphabeticalSorting", "Alphabetical Order");
         public override GUIContent content { get { return m_Content; } }
     }
 }

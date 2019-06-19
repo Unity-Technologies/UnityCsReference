@@ -47,8 +47,7 @@ namespace UnityEditor.AddComponent
                     var path = paths[j];
                     if (j == paths.Length - 1)
                     {
-                        var element = new ComponentDropdownItem(path, menuPath, menu.Value);
-                        element.localizedName = L10n.Tr(path);
+                        var element = new ComponentDropdownItem(path, L10n.Tr(path), menuPath, menu.Value);
                         parent.AddChild(element);
                         m_SearchableElements.Add(element);
                         continue;
@@ -56,16 +55,14 @@ namespace UnityEditor.AddComponent
                     var group = (ComponentDropdownItem)parent.children.SingleOrDefault(c => c.name == path);
                     if (group == null)
                     {
-                        group = new ComponentDropdownItem(path);
-                        group.localizedName = L10n.Tr(path);
+                        group = new ComponentDropdownItem(path, L10n.Tr(path));
                         parent.AddChild(group);
                     }
                     parent = group;
                 }
             }
             root = root.children.Single();
-            var newScript = new ComponentDropdownItem("New script");
-            newScript.localizedName = L10n.Tr("New script");
+            var newScript = new ComponentDropdownItem("New script", L10n.Tr("New script"));
             newScript.AddChild(new NewScriptDropdownItem());
             root.AddChild(newScript);
             return root;
@@ -141,8 +138,7 @@ namespace UnityEditor.AddComponent
             }
             if (searchTree != null)
             {
-                var addNewScriptGroup = new ComponentDropdownItem("New script");
-                addNewScriptGroup.name = L10n.Tr("New script");
+                var addNewScriptGroup = new ComponentDropdownItem("New script", L10n.Tr("New script"));
                 m_State.SetSelectedIndex(addNewScriptGroup, 0);
                 var addNewScript = new NewScriptDropdownItem();
                 addNewScript.className = searchString;

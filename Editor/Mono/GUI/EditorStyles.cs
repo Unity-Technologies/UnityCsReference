@@ -193,6 +193,8 @@ namespace UnityEditor
         // Toolbar background from top of windows.
         public static GUIStyle toolbar { get { return s_Current.m_Toolbar; } }
         private GUIStyle m_Toolbar;
+        internal static GUIStyle contentToolbar { get { return s_Current.m_ContentToolbar; } }
+        private GUIStyle m_ContentToolbar;
 
         // Style for Button and Toggles in toolbars.
         public static GUIStyle toolbarButton { get { return s_Current.m_ToolbarButton; } }
@@ -212,6 +214,10 @@ namespace UnityEditor
         // Toolbar Dropdown Toggle
         internal static GUIStyle toolbarDropDownToggle { get { return s_Current.m_ToolbarDropDownToggle; } }
         private GUIStyle m_ToolbarDropDownToggle;
+
+        // Toolbar Dropdown Toggle Right
+        internal static GUIStyle toolbarDropDownToggleRight { get { return s_Current.m_ToolbarDropDownToggleRight; } }
+        private GUIStyle m_ToolbarDropDownToggleRight;
 
         // Toolbar Dropdown
         internal static GUIStyle toolbarCreateAddNewDropDown { get { return s_Current.m_ToolbarCreateAddNewDropDown; } }
@@ -382,11 +388,13 @@ namespace UnityEditor
             m_MiniButtonRight = GetStyle("miniButtonRight");
             m_MiniPullDown = GetStyle("MiniPullDown");
             m_Toolbar = GetStyle("toolbar");
+            m_ContentToolbar = GetStyle("contentToolbar");
             m_ToolbarButton = GetStyle("toolbarbutton");
             m_ToolbarButtonRight = GetStyle("toolbarbuttonRight");
             m_ToolbarPopup = GetStyle("toolbarPopup");
             m_ToolbarDropDown = GetStyle("toolbarDropDown");
             m_ToolbarDropDownToggle = GetStyle("toolbarDropDownToggle");
+            m_ToolbarDropDownToggleRight = GetStyle("toolbarDropDownToggleRight");
             m_ToolbarCreateAddNewDropDown = GetStyle("ToolbarCreateAddNewDropDown");
             m_ToolbarTextField = GetStyle("toolbarTextField");
             m_ToolbarSearchField = GetStyle("ToolbarSeachTextField");

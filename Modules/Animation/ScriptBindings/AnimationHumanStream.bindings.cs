@@ -2,14 +2,16 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine;
-using UnityEngine.Bindings;
-using UnityEngine.Scripting;
 using System;
 using System.Runtime.InteropServices;
 
-namespace UnityEngine.Experimental.Animations
+using UnityEngine.Bindings;
+using UnityEngine.Scripting;
+using UnityEngine.Scripting.APIUpdating;
+
+namespace UnityEngine.Animations
 {
+    [MovedFrom("UnityEngine.Experimental.Animations")]
     [NativeHeader("Modules/Animation/ScriptBindings/AnimationHumanStream.bindings.h")]
     [NativeHeader("Modules/Animation/Director/AnimationHumanStream.h")]
     [RequiredByNativeCode]

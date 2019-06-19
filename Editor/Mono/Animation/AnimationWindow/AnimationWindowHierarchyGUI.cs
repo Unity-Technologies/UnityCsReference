@@ -411,7 +411,7 @@ namespace UnityEditorInternal
             switch (type)
             {
                 case EventType.Repaint:
-                    style.Draw(position, content, id, false);
+                    style.Draw(position, content, id, false, position.Contains(evt.mousePosition));
                     break;
                 case EventType.MouseDown:
                     if (position.Contains(evt.mousePosition) && evt.button == 0)

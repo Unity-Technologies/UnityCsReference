@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 using UnityEngine;
@@ -31,11 +32,35 @@ namespace UnityEngine.Rendering
             return HasShaderDefine(Graphics.activeTier, defineHash);
         }
 
-        [NativeName("RenderPipeline")] extern private static ScriptableObject INTERNAL_renderPipelineAsset { get; set; }
+        [NativeName("CurrentRenderPipeline")] extern private static ScriptableObject INTERNAL_currentRenderPipeline { get; }
+        public static RenderPipelineAsset currentRenderPipeline
+        {
+            get { return INTERNAL_currentRenderPipeline as RenderPipelineAsset; }
+        }
+
+        //[Obsolete("renderPipelineAsset has been deprecated. Use defaultRenderPipeline instead (UnityUpgradable) -> defaultRenderPipeline", true)]
+        // TODO: SRP package needs updating (not break ABV) once that is done we can remove this
         public static RenderPipelineAsset renderPipelineAsset
         {
-            get { return INTERNAL_renderPipelineAsset as RenderPipelineAsset; }
-            set { INTERNAL_renderPipelineAsset = value; }
+            get { return defaultRenderPipeline; }
+            set { defaultRenderPipeline = value; }
+        }
+
+        [NativeName("DefaultRenderPipeline")] extern private static ScriptableObject INTERNAL_defaultRenderPipeline { get; set; }
+        public static RenderPipelineAsset defaultRenderPipeline
+        {
+            get { return INTERNAL_defaultRenderPipeline as RenderPipelineAsset; }
+            set { INTERNAL_defaultRenderPipeline = value; }
+        }
+
+        [NativeName("GetAllConfiguredRenderPipelinesForScript")] extern static private ScriptableObject[] GetAllConfiguredRenderPipelines();
+
+        public static RenderPipelineAsset[] allConfiguredRenderPipelines
+        {
+            get
+            {
+                return GetAllConfiguredRenderPipelines().Cast<RenderPipelineAsset>().ToArray();
+            }
         }
 
         [FreeFunction] extern internal static Object GetGraphicsSettings();

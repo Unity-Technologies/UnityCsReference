@@ -114,6 +114,16 @@ namespace UnityEditor
             return SendEventWithLimit(eventName, parameters, ver, "");
         }
 
+        public static AnalyticsResult SetEventWithLimitEndPoint(string eventName, string endPoint, int ver)
+        {
+            return SetEventWithLimitEndPoint(eventName, endPoint, ver, "");
+        }
+
+        public static AnalyticsResult SetEventWithLimitPriority(string eventName, AnalyticsEventPriority eventPriority, int ver)
+        {
+            return SetEventWithLimitPriority(eventName, eventPriority, ver, "");
+        }
+
         private static AnalyticsResult RegisterEventWithLimit(string eventName, int maxEventPerHour, int maxItems, string vendorKey, int ver, string prefix, Assembly assembly)
         {
             string assemblyInfo = null;
@@ -135,6 +145,10 @@ namespace UnityEditor
         private extern static AnalyticsResult RegisterEventWithLimit(string eventName, int maxEventPerHour, int maxItems, string vendorKey, int ver, string prefix, string assemblyInfo, string packageName, string packageVersion, bool notifyServer);
 
         private extern static AnalyticsResult SendEventWithLimit(string eventName, object parameters, int ver, string prefix);
+
+        private extern static AnalyticsResult SetEventWithLimitEndPoint(string eventName, string endPoint, int ver, string prefix);
+
+        private extern static AnalyticsResult SetEventWithLimitPriority(string eventName, AnalyticsEventPriority eventPriority, int ver, string prefix);
 
         internal class ContinuousEvent
         {

@@ -46,6 +46,49 @@ namespace UnityEditor
     {
         internal const string StreamingAssets = "Assets/StreamingAssets";
 
+        internal static void AddProjectBootConfigKey(string key)
+        {
+            AddProjectBootConfigKeyValue(key, null);
+        }
+
+        internal static void AddProjectBootConfigKeyValue(string key, string value)
+        {
+            if (projectBootConfigEntries.ContainsKey(key))
+            {
+                projectBootConfigEntries[key] = value;
+            }
+            else
+            {
+                projectBootConfigEntries.Add(key, value);
+            }
+        }
+
+        internal static bool RemoveProjectBootConfigKey(string key)
+        {
+            return projectBootConfigEntries.Remove(key);
+        }
+
+        internal static bool GetProjectBootConfigKeyValue(string key, out string value)
+        {
+            if (projectBootConfigEntries.ContainsKey(key))
+            {
+                value = projectBootConfigEntries[key];
+                return true;
+            }
+            else
+            {
+                value = null;
+                return false;
+            }
+        }
+
+        internal static void ClearProjectBootConfigEntries()
+        {
+            projectBootConfigEntries.Clear();
+        }
+
+        private static Dictionary<string, string> projectBootConfigEntries = new Dictionary<string, string>();
+
         // Seems to be used only by PlatformDependent\AndroidPlayer\Editor\Managed\PostProcessAndroidPlayer.cs
         internal static bool InstallPluginsByExtension(string pluginSourceFolder, string extension, string debugExtension, string destPluginFolder, bool copyDirectories)
         {
@@ -246,6 +289,14 @@ namespace UnityEditor
             IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(targetGroup, target);
             if (postprocessor != null)
                 postprocessor.UpdateBootConfig(target, config, options);
+
+            foreach (var keyValue in projectBootConfigEntries)
+            {
+                if ((keyValue.Value == null) || keyValue.Value.All(char.IsWhiteSpace))
+                    config.AddKey(keyValue.Key);
+                else
+                    config.Set(keyValue.Key, keyValue.Value);
+            }
         }
 
         static public void Postprocess(BuildTargetGroup targetGroup, BuildTarget target, string installPath, string companyName, string productName,

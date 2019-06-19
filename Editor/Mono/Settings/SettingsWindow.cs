@@ -323,7 +323,22 @@ namespace UnityEditor
         private void DrawControls()
         {
             using (new EditorGUI.LabelHighlightScope(m_SearchText, Styles.settingsPanel.GetColor("-unity-search-highlight-selection-color"), Styles.settingsPanel.GetColor("-unity-search-highlight-color")))
+            {
+                var currentWideMode = EditorGUIUtility.wideMode;
+                var inspectorWidth = m_SettingsPanel.layout.width;
+                // the inspector's width can be NaN if this is our first layout check.
+                // If that's the case we'll set wideMode to true to avoid computing too tall an inspector on the first layout calculation
+                if (!float.IsNaN(inspectorWidth))
+                {
+                    EditorGUIUtility.wideMode = inspectorWidth > Editor.k_WideModeMinWidth;
+                }
+                else
+                {
+                    EditorGUIUtility.wideMode = true;
+                }
                 m_TreeView.currentProvider.OnGUI(m_SearchText);
+                EditorGUIUtility.wideMode = currentWideMode;
+            }
         }
 
         private void DrawTitleBar()
@@ -345,8 +360,8 @@ namespace UnityEditor
         private void DrawTreeView()
         {
             var splitterRect = m_Splitter.GetSplitterRect(m_Splitter.Children().First());
-            var splitterPos = splitterRect.xMax;
-            var treeWidth = splitterPos - Styles.window.GetFloat("margin-left") - Styles.window.GetFloat("margin-right");
+            var splitterPos = splitterRect.xMax - (m_Splitter.splitSize / 2f);
+            var treeWidth = splitterPos;
             using (var scrollViewScope = new GUILayout.ScrollViewScope(m_PosLeft, GUILayout.Width(splitterPos), GUILayout.MaxWidth(splitterPos), GUILayout.MinWidth(splitterPos)))
             {
                 m_PosLeft = scrollViewScope.scrollPosition;

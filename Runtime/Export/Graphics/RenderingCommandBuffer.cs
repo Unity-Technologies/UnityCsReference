@@ -154,22 +154,32 @@ namespace UnityEngine.Rendering
         // Set a texture parameter.
         public void SetComputeTextureParam(ComputeShader computeShader, int kernelIndex, string name, RenderTargetIdentifier rt)
         {
-            Internal_SetComputeTextureParam(computeShader, kernelIndex, Shader.PropertyToID(name), ref rt, 0);
+            Internal_SetComputeTextureParam(computeShader, kernelIndex, Shader.PropertyToID(name), ref rt, 0, RenderTextureSubElement.Default);
         }
 
         public void SetComputeTextureParam(ComputeShader computeShader, int kernelIndex, int nameID, RenderTargetIdentifier rt)
         {
-            Internal_SetComputeTextureParam(computeShader, kernelIndex, nameID, ref rt, 0);
+            Internal_SetComputeTextureParam(computeShader, kernelIndex, nameID, ref rt, 0, RenderTextureSubElement.Default);
         }
 
         public void SetComputeTextureParam(ComputeShader computeShader, int kernelIndex, string name, RenderTargetIdentifier rt, int mipLevel)
         {
-            Internal_SetComputeTextureParam(computeShader, kernelIndex, Shader.PropertyToID(name), ref rt, mipLevel);
+            Internal_SetComputeTextureParam(computeShader, kernelIndex, Shader.PropertyToID(name), ref rt, mipLevel, RenderTextureSubElement.Default);
         }
 
         public void SetComputeTextureParam(ComputeShader computeShader, int kernelIndex, int nameID, RenderTargetIdentifier rt, int mipLevel)
         {
-            Internal_SetComputeTextureParam(computeShader, kernelIndex, nameID, ref rt, mipLevel);
+            Internal_SetComputeTextureParam(computeShader, kernelIndex, nameID, ref rt, mipLevel, RenderTextureSubElement.Default);
+        }
+
+        public void SetComputeTextureParam(ComputeShader computeShader, int kernelIndex, string name, RenderTargetIdentifier rt, int mipLevel, RenderTextureSubElement element)
+        {
+            Internal_SetComputeTextureParam(computeShader, kernelIndex, Shader.PropertyToID(name), ref rt, mipLevel, element);
+        }
+
+        public void SetComputeTextureParam(ComputeShader computeShader, int kernelIndex, int nameID, RenderTargetIdentifier rt, int mipLevel, RenderTextureSubElement element)
+        {
+            Internal_SetComputeTextureParam(computeShader, kernelIndex, nameID, ref rt, mipLevel, element);
         }
 
         public void SetComputeBufferParam(ComputeShader computeShader, int kernelIndex, string name, ComputeBuffer buffer)
@@ -376,6 +386,25 @@ namespace UnityEngine.Rendering
         public void DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, int shaderPass, Matrix4x4[] matrices)
         {
             DrawMeshInstanced(mesh, submeshIndex, material, shaderPass, matrices, matrices.Length);
+        }
+
+        public void DrawMeshInstancedProcedural(Mesh mesh, int submeshIndex, Material material, int shaderPass, int count, MaterialPropertyBlock properties = null)
+        {
+            if (!SystemInfo.supportsInstancing)
+                throw new InvalidOperationException("DrawMeshInstancedProcedural is not supported.");
+            if (mesh == null)
+                throw new ArgumentNullException("mesh");
+            if (submeshIndex < 0 || submeshIndex >= mesh.subMeshCount)
+                throw new ArgumentOutOfRangeException("submeshIndex", "submeshIndex out of range.");
+            if (material == null)
+                throw new ArgumentNullException("material");
+            if (count <= 0)
+                throw new ArgumentOutOfRangeException("count");
+
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
+            if (count > 0)
+                Internal_DrawMeshInstancedProcedural(mesh, submeshIndex, material, shaderPass, count, properties);
         }
 
         public void DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material material, int shaderPass, ComputeBuffer bufferWithArgs, int argsOffset, MaterialPropertyBlock properties)
@@ -615,12 +644,22 @@ namespace UnityEngine.Rendering
 
         public void SetGlobalTexture(string name, RenderTargetIdentifier value)
         {
-            SetGlobalTexture(Shader.PropertyToID(name), value);
+            SetGlobalTexture(Shader.PropertyToID(name), value, RenderTextureSubElement.Default);
         }
 
         public void SetGlobalTexture(int nameID, RenderTargetIdentifier value)
         {
-            SetGlobalTexture_Impl(nameID, ref value);
+            SetGlobalTexture_Impl(nameID, ref value, RenderTextureSubElement.Default);
+        }
+
+        public void SetGlobalTexture(string name, RenderTargetIdentifier value, RenderTextureSubElement element)
+        {
+            SetGlobalTexture(Shader.PropertyToID(name), value, element);
+        }
+
+        public void SetGlobalTexture(int nameID, RenderTargetIdentifier value, RenderTextureSubElement element)
+        {
+            SetGlobalTexture_Impl(nameID, ref value, element);
         }
 
         public void SetGlobalBuffer(string name, ComputeBuffer value)

@@ -96,7 +96,7 @@ namespace UnityEditor
                 GUIUtility.GetControlID(s_MaskField, FocusType.Keyboard, position),
                 Convert.ToInt32(enumValue),
                 names, style);
-            return IntToEnumFlags(enumType, flags);
+            return EnumDataUtility.IntToEnumFlags(enumType, flags);
         }
 
         [Obsolete("EnumMaskField has been deprecated. Use EnumFlagsField instead.")]
@@ -112,7 +112,7 @@ namespace UnityEditor
 
             var names = Enum.GetNames(enumType).Select(ObjectNames.NicifyVariableName).ToArray();
             int flags = MaskFieldGUIDeprecated.DoMaskField(position2, id, Convert.ToInt32(enumValue), names, style);
-            return IntToEnumFlags(enumType, flags);
+            return EnumDataUtility.IntToEnumFlags(enumType, flags);
         }
 
         [Obsolete("EnumMaskField has been deprecated. Use EnumFlagsField instead.")]
@@ -129,7 +129,7 @@ namespace UnityEditor
                 id,
                 Convert.ToInt32(enumValue),
                 names, style, out changedFlags, out changedToValue);
-            return IntToEnumFlags(enumType, flags);
+            return EnumDataUtility.IntToEnumFlags(enumType, flags);
         }
 
         [Obsolete("EnumMaskField has been deprecated. Use EnumFlagsField instead.")]

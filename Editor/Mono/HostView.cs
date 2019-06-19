@@ -294,7 +294,7 @@ namespace UnityEditor
                     g.resetCoords = false;
                     g.minWidth = g.maxWidth = screenRect.width + 1;
                     g.minHeight = g.maxHeight = screenRect.height + 2;
-                    g.rect = Rect.MinMaxRect(-1, -1, g.rect.xMax, g.rect.yMax - 10);
+                    g.rect = Rect.MinMaxRect(-1, 0, g.rect.xMax, g.rect.yMax - 10);
                     break;
             }
             GUI.BeginGroup(screenRect, content, style);

@@ -15,7 +15,7 @@ namespace UnityEditor
         private class Styles
         {
             public GUIStyle background = "grey_border";
-            public GUIStyle menuItem = "MenuItem";
+            public GUIStyle menuItem = "MenuToggleItem";
         }
 
         public class InputData

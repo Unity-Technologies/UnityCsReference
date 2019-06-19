@@ -102,7 +102,7 @@ namespace UnityEditor.IMGUI.Controls
 
         internal void DrawHeader(AdvancedDropdownItem group, Action backButtonPressed, bool hasParent)
         {
-            var content = GUIContent.Temp(group.name, group.icon);
+            var content = GUIContent.Temp(group.displayName, group.icon);
             m_HeaderRect = GUILayoutUtility.GetRect(content, Styles.header, GUILayout.ExpandWidth(true));
 
             if (Event.current.type == EventType.Repaint)

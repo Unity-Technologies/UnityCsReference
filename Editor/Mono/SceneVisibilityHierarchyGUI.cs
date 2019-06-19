@@ -4,6 +4,7 @@
 
 using UnityEditor.Experimental;
 using UnityEditor.IMGUI.Controls;
+using UnityEditor.StyleSheets;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -72,7 +73,8 @@ namespace UnityEditor
 
         private const int k_VisibilityIconPadding = 0;
         private const int k_IconWidth = 16;
-        private static readonly float k_sceneHeaderOverflow = GameObjectTreeViewGUI.GameObjectStyles.sceneHeaderBg.fixedHeight - EditorGUIUtility.singleLineHeight;
+
+        private static float k_sceneHeaderOverflow => GameObjectTreeViewGUI.GameObjectStyles.sceneHeaderBg.fixedHeight + 2*GameObjectTreeViewGUI.GameObjectStyles.sceneHeaderWidth - EditorGUIUtility.singleLineHeight;
         private static bool m_PrevItemWasScene;
 
         public const float utilityBarWidth = k_VisibilityIconPadding * 2 + k_IconWidth;
@@ -135,13 +137,6 @@ namespace UnityEditor
                     if (isSelected)
                     {
                         TreeViewGUI.Styles.selectionStyle.Draw(rect, false, false, true, isFocused);
-                    }
-                    else if (isHovered)
-                    {
-                        using (new GUI.BackgroundColorScope(GameObjectTreeViewGUI.GameObjectStyles.hoveredBackgroundColor))
-                        {
-                            GUI.Label(rect, GUIContent.none, GameObjectTreeViewGUI.GameObjectStyles.hoveredItemBackgroundStyle);
-                        }
                     }
                 }
                 else

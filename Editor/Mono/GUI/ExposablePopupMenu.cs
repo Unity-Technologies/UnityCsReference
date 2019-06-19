@@ -31,6 +31,7 @@ namespace UnityEditor
             public bool m_Enabled;
             public object m_UserData;
             public float m_Width;
+            public float m_Height;
         }
 
         public class PopupButtonData
@@ -73,6 +74,8 @@ namespace UnityEditor
                 foreach (var item in m_Items)
                 {
                     buttonRect.width = item.m_Width;
+                    buttonRect.y = rect.y + (rect.height - item.m_Height) / 2;
+                    buttonRect.height = item.m_Height;
 
                     EditorGUI.BeginChangeCheck();
 
@@ -112,7 +115,10 @@ namespace UnityEditor
             m_WidthOfButtons = 0f;
             foreach (var item in m_Items)
             {
-                item.m_Width = item.m_Style.CalcSize(item.m_GUIContent).x;
+                var itemSize = item.m_Style.CalcSize(item.m_GUIContent);
+                item.m_Width = itemSize.x;
+                item.m_Height = itemSize.y;
+
                 m_WidthOfButtons += item.m_Width;
             }
             m_WidthOfButtons += (m_Items.Count - 1) * m_ItemSpacing;

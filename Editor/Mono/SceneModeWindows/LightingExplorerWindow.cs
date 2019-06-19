@@ -169,9 +169,9 @@ namespace UnityEditor
         {
             System.Type SRPType = null;
 
-            if (GraphicsSettings.renderPipelineAsset != null)
+            if (GraphicsSettings.currentRenderPipeline != null)
             {
-                SRPType = GraphicsSettings.renderPipelineAsset.GetType();
+                SRPType = GraphicsSettings.currentRenderPipeline.GetType();
             }
 
             return SRPType;

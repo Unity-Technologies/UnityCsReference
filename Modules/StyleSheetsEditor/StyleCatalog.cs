@@ -82,6 +82,10 @@ namespace UnityEditor.StyleSheets
         public readonly static int backgroundPosition = "background-position".GetHashCode();
         public readonly static int backgroundPositionX = "background-position-x".GetHashCode();
         public readonly static int backgroundPositionY = "background-position-y".GetHashCode();
+
+        public readonly static int contentImageOffsetX = "-unity-content-image-offset-x".GetHashCode();
+        public readonly static int contentImageOffsetY = "-unity-content-image-offset-y".GetHashCode();
+
         public readonly static int backgroundRepeat = "background-repeat".GetHashCode();
         public readonly static int backgroundSize = "background-size".GetHashCode();
         public readonly static int border = "border".GetHashCode();

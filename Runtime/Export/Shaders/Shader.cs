@@ -120,6 +120,8 @@ namespace UnityEngine
         public void SetBuffer(int nameID, ComputeBuffer value)  { SetBufferImpl(nameID, value); }
         public void SetTexture(string name, Texture value)      { SetTextureImpl(Shader.PropertyToID(name), value); }
         public void SetTexture(int nameID, Texture value)       { SetTextureImpl(nameID, value); }
+        public void SetTexture(string name, RenderTexture value, Rendering.RenderTextureSubElement element) { SetRenderTextureImpl(Shader.PropertyToID(name), value, element); }
+        public void SetTexture(int nameID, RenderTexture value, Rendering.RenderTextureSubElement element) { SetRenderTextureImpl(nameID, value, element); }
         public void SetConstantBuffer(string name, ComputeBuffer value, int offset, int size) { SetConstantBufferImpl(Shader.PropertyToID(name), value, offset, size); }
         public void SetConstantBuffer(int nameID, ComputeBuffer value, int offset, int size) { SetConstantBufferImpl(nameID, value, offset, size); }
 
@@ -330,8 +332,12 @@ namespace UnityEngine
         public static void SetGlobalColor(int nameID, Color value)              { SetGlobalVectorImpl(nameID, (Vector4)value); }
         public static void SetGlobalMatrix(string name, Matrix4x4 value)        { SetGlobalMatrixImpl(Shader.PropertyToID(name), value); }
         public static void SetGlobalMatrix(int nameID, Matrix4x4 value)         { SetGlobalMatrixImpl(nameID, value); }
+
         public static void SetGlobalTexture(string name, Texture value)         { SetGlobalTextureImpl(Shader.PropertyToID(name), value); }
         public static void SetGlobalTexture(int nameID, Texture value)          { SetGlobalTextureImpl(nameID, value); }
+        public static void SetGlobalTexture(string name, RenderTexture value, Rendering.RenderTextureSubElement element) { SetGlobalRenderTextureImpl(Shader.PropertyToID(name), value, element); }
+        public static void SetGlobalTexture(int nameID, RenderTexture value, Rendering.RenderTextureSubElement element) { SetGlobalRenderTextureImpl(nameID, value, element); }
+
         public static void SetGlobalBuffer(string name, ComputeBuffer value)    { SetGlobalBufferImpl(Shader.PropertyToID(name), value); }
         public static void SetGlobalBuffer(int nameID, ComputeBuffer value)     { SetGlobalBufferImpl(nameID, value); }
         public static void SetGlobalConstantBuffer(int nameID, ComputeBuffer value, int offset, int size) { SetGlobalConstantBufferImpl(nameID, value, offset, size); }
@@ -499,6 +505,8 @@ namespace UnityEngine
         public void SetMatrix(int nameID, Matrix4x4 value)      { SetMatrixImpl(nameID, value); }
         public void SetTexture(string name, Texture value)      { SetTextureImpl(Shader.PropertyToID(name), value); }
         public void SetTexture(int nameID, Texture value)       { SetTextureImpl(nameID, value); }
+        public void SetTexture(string name, RenderTexture value, Rendering.RenderTextureSubElement element) { SetRenderTextureImpl(Shader.PropertyToID(name), value, element); }
+        public void SetTexture(int nameID, RenderTexture value, Rendering.RenderTextureSubElement element) { SetRenderTextureImpl(nameID, value, element); }
         public void SetBuffer(string name, ComputeBuffer value) { SetBufferImpl(Shader.PropertyToID(name), value); }
         public void SetBuffer(int nameID, ComputeBuffer value)  { SetBufferImpl(nameID, value); }
         public void SetConstantBuffer(string name, ComputeBuffer value, int offset, int size) { SetConstantBufferImpl(Shader.PropertyToID(name), value, offset, size); }
@@ -642,6 +650,16 @@ namespace UnityEngine
         public void SetTexture(int kernelIndex, string name, Texture texture, int mipLevel)
         {
             SetTexture(kernelIndex, Shader.PropertyToID(name), texture, mipLevel);
+        }
+
+        public void SetTexture(int kernelIndex, int nameID, RenderTexture texture, int mipLevel, Rendering.RenderTextureSubElement element)
+        {
+            SetRenderTexture(kernelIndex, nameID, texture, mipLevel, element);
+        }
+
+        public void SetTexture(int kernelIndex, string name, RenderTexture texture, int mipLevel, Rendering.RenderTextureSubElement element)
+        {
+            SetRenderTexture(kernelIndex, Shader.PropertyToID(name), texture, mipLevel, element);
         }
 
         public void SetTextureFromGlobal(int kernelIndex, string name, string globalTextureName)

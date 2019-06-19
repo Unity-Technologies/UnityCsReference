@@ -1183,7 +1183,7 @@ namespace UnityEditorInternal
             int threadCount = iter.GetThreadCount(frameIndex);
             iter.SetRoot(frameIndex, 0);
 
-            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+            EditorGUILayout.BeginHorizontal(EditorStyles.contentToolbar);
 
             DrawToolbar(iter);
 

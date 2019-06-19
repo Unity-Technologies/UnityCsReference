@@ -88,7 +88,7 @@ namespace UnityEditor
 
             EditorGUI.BeginChangeCheck();
 
-            var rowRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.label, GUILayout.ExpandWidth(true));
+            var rowRect = GUILayoutUtility.GetRect(0, EditorGUI.kSingleLineHeight, GUILayout.ExpandWidth(true));
             var warningRect = new Rect(rowRect.x, rowRect.y, Styles.smallWarningIcon.width, Styles.smallWarningIcon.height);
             if (m_HasAnyUnappliedSwitches)
             {

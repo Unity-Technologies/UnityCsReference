@@ -3,13 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine;
 using UnityEngine.Bindings;
-using UnityEngine.Playables;
 using UnityEngine.Internal;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEngine.Experimental.Animations
+namespace UnityEngine.Animations
 {
+    [MovedFrom("UnityEngine.Experimental.Animations")]
     public enum CustomStreamPropertyType
     {
         Float = BindType.Float,
@@ -17,6 +17,7 @@ namespace UnityEngine.Experimental.Animations
         Int = BindType.Int
     }
 
+    [MovedFrom("UnityEngine.Experimental.Animations")]
     [NativeHeader("Modules/Animation/ScriptBindings/AnimatorJobExtensions.bindings.h")]
     [NativeHeader("Modules/Animation/Animator.h")]
     [NativeHeader("Modules/Animation/Director/AnimationStreamHandles.h")]

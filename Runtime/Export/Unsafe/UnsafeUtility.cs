@@ -83,5 +83,20 @@ namespace Unity.Collections.LowLevel.Unsafe
                 IsUnmanagedCache<T>.value = value = IsUnmanaged(typeof(T)) ? 1 : -1;
             return value == 1;
         }
+
+        internal struct IsValidNativeContainerElementTypeCache<T>
+        {
+            internal static int value; // 0 == unknown, -1 false, 1 true
+        }
+
+        public static bool IsValidNativeContainerElementType<T>()
+        {
+            int value = IsValidNativeContainerElementTypeCache<T>.value;
+            if (value == -1)  // most common case
+                return false;
+            if (value == 0)
+                IsUnmanagedCache<T>.value = value = IsValidNativeContainerElementType(typeof(T)) ? 1 : -1;
+            return value == 1;
+        }
     }
 }

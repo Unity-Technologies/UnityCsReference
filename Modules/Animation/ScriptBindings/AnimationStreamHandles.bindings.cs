@@ -3,15 +3,14 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 
-using UnityEngine;
-using UnityEngine.Bindings;
-using UnityEngine.Scripting;
 using System;
 using System.Runtime.InteropServices;
+using UnityEngine.Bindings;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEngine.Experimental.Animations
+namespace UnityEngine.Animations
 {
     // This enum is mapped to UnityEngine::Animation::BindType
     internal enum BindType
@@ -25,6 +24,7 @@ namespace UnityEngine.Experimental.Animations
         DiscreetInt                    = 11, // UnityEngine::Animation::kBindDiscreteInt
     }
 
+    [MovedFrom("UnityEngine.Experimental.Animations")]
     [NativeHeader("Modules/Animation/ScriptBindings/AnimationStreamHandles.bindings.h")]
     [NativeHeader("Modules/Animation/Director/AnimationStreamHandles.h")]
     [StructLayout(LayoutKind.Sequential)]
@@ -207,6 +207,7 @@ namespace UnityEngine.Experimental.Animations
         private extern void SetGlobalTRInternal(ref AnimationStream stream, Vector3 position, Quaternion rotation, bool useMask);
     }
 
+    [MovedFrom("UnityEngine.Experimental.Animations")]
     [NativeHeader("Modules/Animation/Director/AnimationStreamHandles.h")]
     [StructLayout(LayoutKind.Sequential)]
     public struct PropertyStreamHandle
@@ -375,6 +376,7 @@ namespace UnityEngine.Experimental.Animations
         private extern bool GetReadMaskInternal(ref AnimationStream stream);
     }
 
+    [MovedFrom("UnityEngine.Experimental.Animations")]
     [NativeHeader("Modules/Animation/ScriptBindings/AnimationStreamHandles.bindings.h")]
     [NativeHeader("Modules/Animation/Director/AnimationSceneHandles.h")]
     [StructLayout(LayoutKind.Sequential)]
@@ -498,6 +500,7 @@ namespace UnityEngine.Experimental.Animations
         private extern void GetGlobalTRInternal(ref AnimationStream stream, out Vector3 position, out Quaternion rotation);
     }
 
+    [MovedFrom("UnityEngine.Experimental.Animations")]
     [NativeHeader("Modules/Animation/Director/AnimationSceneHandles.h")]
     [StructLayout(LayoutKind.Sequential)]
     public struct PropertySceneHandle
@@ -600,6 +603,7 @@ namespace UnityEngine.Experimental.Animations
         private extern bool GetBoolInternal(ref AnimationStream stream);
     }
 
+    [MovedFrom("UnityEngine.Experimental.Animations")]
     [NativeHeader("Modules/Animation/ScriptBindings/AnimationStreamHandles.bindings.h")]
     unsafe public static class AnimationSceneHandleUtility
     {
@@ -645,6 +649,7 @@ namespace UnityEngine.Experimental.Animations
         static private extern void ReadSceneFloatsInternal(ref AnimationStream stream, void* propertySceneHandles, void* floatBuffer, int count);
     }
 
+    [MovedFrom("UnityEngine.Experimental.Animations")]
     [NativeHeader("Modules/Animation/ScriptBindings/AnimationStreamHandles.bindings.h")]
     unsafe public static class AnimationStreamHandleUtility
     {

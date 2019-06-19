@@ -30,6 +30,22 @@ namespace UnityEngine.Analytics
         UnsupportedPlatform
     }
 
+    [Flags]
+    public enum AnalyticsEventPriority
+    {
+        kFlushQueueFlag       = 1 << 0,
+        kCacheImmediatelyFlag = 1 << 1,
+        kAllowInStopModeFlag  = 1 << 2,
+        kSendImmediateFlag    = 1 << 3,
+
+
+        kNormalPriorityEvent                = 0,
+        kNormalPriorityEvent_WithCaching    = kCacheImmediatelyFlag,
+        kHighPriorityEvent                  = kFlushQueueFlag,
+        kHighPriorityEvent_InStopMode       = kFlushQueueFlag | kAllowInStopModeFlag,
+        kHighestPriorityEvent               = kFlushQueueFlag | kSendImmediateFlag
+    };
+
     public static partial class Analytics
     {
         public static bool playerOptedOut
@@ -237,6 +253,26 @@ namespace UnityEngine.Analytics
             if (!IsInitialized())
                 return AnalyticsResult.NotInitialized;
             return SendEventWithLimit(eventName, parameters, ver, prefix);
+        }
+
+        public static AnalyticsResult SetEventEndPoint(string eventName, string endPoint, int ver = 1, string prefix = "")
+        {
+            if (string.IsNullOrEmpty(eventName))
+                throw new ArgumentException("Cannot set event name to an empty or null string");
+            if (endPoint == null)
+                throw new ArgumentException("Cannot set parameters to null");
+            if (!IsInitialized())
+                return AnalyticsResult.NotInitialized;
+            return SetEventWithLimitEndPoint(eventName, endPoint, ver, prefix);
+        }
+
+        public static AnalyticsResult SetEventPriority(string eventName, AnalyticsEventPriority eventPriority, int ver = 1, string prefix = "")
+        {
+            if (string.IsNullOrEmpty(eventName))
+                throw new ArgumentException("Cannot set event name to an empty or null string");
+            if (!IsInitialized())
+                return AnalyticsResult.NotInitialized;
+            return SetEventWithLimitPriority(eventName, eventPriority, ver, prefix);
         }
     }
 }

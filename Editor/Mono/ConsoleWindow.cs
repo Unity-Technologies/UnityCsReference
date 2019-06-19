@@ -487,8 +487,6 @@ namespace UnityEditor
                 }
             }
 
-            EditorGUILayout.Space();
-
             bool wasCollapsed = HasFlag(ConsoleFlags.Collapse);
             SetFlag(ConsoleFlags.Collapse, GUILayout.Toggle(wasCollapsed, Constants.CollapseLabel, Constants.MiniButton));
 

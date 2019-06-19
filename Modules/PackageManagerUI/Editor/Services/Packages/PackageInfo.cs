@@ -329,7 +329,7 @@ namespace UnityEditor.PackageManager.UI
 
         public void OnBeforeSerialize()
         {
-            _Version = Version.ToString();
+            _Version = Version == null ? new Version().ToString() : Version.ToString();
         }
 
         public void OnAfterDeserialize()

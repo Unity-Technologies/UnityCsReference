@@ -549,7 +549,7 @@ namespace UnityEditor
                     // UnityEngine.UI references UnityEngine.Collider, which causes the inclusion of Physics and Physics2D modules if
                     // UnityEngine.UI is referenced. UnityEngine.UI code is designed to only actually access Colliders if these modules
                     // are used, so don't include references from UnityEngine.UI here.
-                    if (fileNames[i] == "Unity.ugui.dll")
+                    if (fileNames[i] == "UnityEngine.UI.dll")
                         unityEngineUIAssemblyDefinition = assemblies[i];
                 }
 

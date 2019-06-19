@@ -8,9 +8,11 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.Playables;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEngine.Experimental.Animations
+namespace UnityEngine.Animations
 {
+    [MovedFrom("UnityEngine.Experimental.Animations")]
     [NativeHeader("Modules/Animation/ScriptBindings/AnimationScriptPlayable.bindings.h")]
     [NativeHeader("Runtime/Director/Core/HPlayableGraph.h")]
     [NativeHeader("Runtime/Director/Core/HPlayable.h")]

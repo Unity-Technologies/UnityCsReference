@@ -72,9 +72,9 @@ namespace UnityEditor
 
                     // we have a render pipeline...
                     // we need to select the one with the correct RP asset
-                    if (GraphicsSettings.renderPipelineAsset != null)
+                    if (GraphicsSettings.currentRenderPipeline != null)
                     {
-                        var rpType = GraphicsSettings.renderPipelineAsset.GetType();
+                        var rpType = GraphicsSettings.currentRenderPipeline.GetType();
                         foreach (var editor in s_SearchCache)
                         {
                             if (editor.m_RenderPipelineType == rpType)

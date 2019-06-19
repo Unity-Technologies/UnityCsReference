@@ -9,6 +9,7 @@ using UnityEditor.Experimental;
 using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
+using UnityEditor.StyleSheets;
 using UnityEngine;
 using UnityEngine.Assertions.Comparers;
 using UnityEngine.SceneManagement;
@@ -38,6 +39,7 @@ namespace UnityEditor
             public static GUIContent saveSceneGUIContent = new GUIContent(EditorGUIUtility.FindTexture("SceneSave"), "Save scene");
             public static GUIStyle optionsButtonStyle = "PaneOptions";
             public static GUIStyle sceneHeaderBg = "SceneTopBarBg";
+            public static SVC<float> sceneHeaderWidth = new SVC<float>("SceneTopBarBg", "border-bottom-width", 1f);
             public static GUIStyle rightArrow = "ArrowNavigationRight";
             public static GUIStyle hoveredItemBackgroundStyle = "WhiteBackground";
             public static Color hoveredBackgroundColor =

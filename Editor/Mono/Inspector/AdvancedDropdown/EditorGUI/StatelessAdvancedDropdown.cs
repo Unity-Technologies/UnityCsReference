@@ -150,8 +150,8 @@ namespace UnityEditor
 
         public static Enum DoEnumMaskPopup(Rect rect, Enum options, GUIStyle style)
         {
-            var enumData = EditorGUI.GetCachedEnumData(options.GetType());
-            var optionValue = EditorGUI.EnumFlagsToInt(enumData, options);
+            var enumData = EnumDataUtility.GetCachedEnumData(options.GetType());
+            var optionValue = EnumDataUtility.EnumFlagsToInt(enumData, options);
             string buttonText;
             string[] optionNames;
             int[] optionMaskValues;
@@ -196,7 +196,7 @@ namespace UnityEditor
         private static Enum DoEnumPopup(Rect rect, Enum selected, GUIStyle style, params GUILayoutOption[] options)
         {
             var enumType = selected.GetType();
-            var enumData = EditorGUI.GetCachedEnumData(enumType);
+            var enumData = EnumDataUtility.GetCachedEnumData(enumType);
             var i = Array.IndexOf(enumData.values, selected);
             using (new UnityEditor.Localization.Editor.LocalizationGroup(enumType))
             {

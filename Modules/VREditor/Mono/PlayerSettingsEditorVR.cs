@@ -155,16 +155,16 @@ namespace UnityEditorInternal.VR
 
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying)) // switching VR flags in play mode is not supported
                 {
-                    bool shouldVRDeviceSettingsBeDisabled = XRProjectSettings.GetBool(XRProjectSettings.KnownSettings.k_VRDeviceDisabled, false);;
+                    bool shouldVRDeviceSettingsBeDisabled = XRProjectSettings.GetBool(XRProjectSettings.KnownSettings.k_VRDeviceDisabled, false);
                     using (new EditorGUI.DisabledGroupScope(shouldVRDeviceSettingsBeDisabled))
                     {
                         if (shouldVRDeviceSettingsBeDisabled)
                         {
-                            EditorGUILayout.HelpBox("Legacy XR is currently disabled. Unity has detected that you have one or more XR SDK Provider packages installed. Legacy XR is incompatible with XR SDK. Remove all XR SDK Pacakges from your project to re-enable legacy XR", MessageType.Warning);
+                            EditorGUILayout.HelpBox("Legacy XR is currently disabled. Unity has detected that you have one or more XR SDK Provider packages installed. Legacy XR is incompatible with XR SDK. Remove all XR SDK Packages from your project to re-enable legacy XR", MessageType.Warning);
 
                             if (!XRProjectSettings.GetBool(XRProjectSettings.KnownSettings.k_VRDeviceDidAlertUser))
                             {
-                                EditorUtility.DisplayDialog("Legacy XR Disabled", "Unity has detected that you have one or more XR SDK Provider packages installed. Legacy XR is incompatible with XR SDK. Remove all XR SDK Pacakges from your project to re-enable legacy XR", "Ok");
+                                EditorUtility.DisplayDialog("Legacy XR Disabled", "Unity has detected that you have one or more XR SDK Provider packages installed. Legacy XR is incompatible with XR SDK. Remove all XR SDK Packages from your project to re-enable legacy XR", "Ok");
                                 XRProjectSettings.SetBool(XRProjectSettings.KnownSettings.k_VRDeviceDidAlertUser, true);
                             }
                         }
@@ -425,7 +425,9 @@ namespace UnityEditorInternal.VR
 
         private void DrawVRDeviceElement(BuildTargetGroup target, Rect rect, int index, bool selected, bool focused)
         {
-            string name = (string)m_VRDeviceActiveUI[target].list[index];
+            var VRDeviceUIList = m_VRDeviceActiveUI[target];
+            string name = (string)VRDeviceUIList.list[index];
+            Rect headerRect = new Rect(rect.x, rect.y, rect.width, VRDeviceUIList.elementHeight);
 
             string uiName;
             if (!m_MapVRDeviceKeyToUIString.TryGetValue(name, out uiName))
@@ -437,9 +439,10 @@ namespace UnityEditorInternal.VR
                 // Draw the foldout if we have extra options
                 if (!(customOptions is VRCustomOptionsNone))
                 {
-                    Rect foldoutRect = new Rect(rect);
-                    foldoutRect.width = EditorStyles.foldout.border.left;
-                    foldoutRect.height = EditorStyles.foldout.border.top;
+                    Rect foldoutRect = new Rect(headerRect.x, headerRect.y + (headerRect.height - EditorStyles.foldout.border.top) / 2,
+                        EditorStyles.foldout.border.left, EditorStyles.foldout.border.top);
+
+                    foldoutRect = EditorStyles.foldout.margin.Add(foldoutRect);
                     bool oldHierarchyMode = EditorGUIUtility.hierarchyMode;
                     EditorGUIUtility.hierarchyMode = false;
                     customOptions.IsExpanded = EditorGUI.Foldout(foldoutRect, customOptions.IsExpanded, "", false, EditorStyles.foldout);
@@ -448,9 +451,10 @@ namespace UnityEditorInternal.VR
             }
 
             // Draw
+            headerRect.xMin += EditorStyles.foldout.border.left;
             rect.xMin += EditorStyles.foldout.border.left;
-            GUI.Label(rect, uiName, EditorStyles.label);
-            rect.y += EditorGUIUtility.singleLineHeight + EditorGUI.kControlVerticalSpacing;
+            GUI.Label(headerRect, uiName, EditorStyles.label);
+            rect.y += VRDeviceUIList.elementHeight + EditorGUI.kControlVerticalSpacing;
 
             if (customOptions != null && customOptions.IsExpanded)
             {

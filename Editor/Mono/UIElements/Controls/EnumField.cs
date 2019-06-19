@@ -14,39 +14,29 @@ namespace UnityEditor.UIElements
 
         public new class UxmlTraits : BaseField<Enum>.UxmlTraits
         {
-            UxmlStringAttributeDescription m_Type = new UxmlStringAttributeDescription { name = "type", use = UxmlAttributeDescription.Use.Required };
-            UxmlStringAttributeDescription m_Value = new UxmlStringAttributeDescription { name = "value" };
-
-            internal static void ParseEnumValues(EnumField enumField, string typeValue, string v)
-            {
-                // Only works for the currently running assembly
-                enumField.m_EnumType = Type.GetType(typeValue);
-                if (enumField.m_EnumType != null)
-                {
-                    if (!Enum.IsDefined(enumField.m_EnumType, v))
-                    {
-                        Debug.LogErrorFormat("Could not parse value of '{0}', because it isn't defined in the {1} enum.", v, enumField.m_EnumType.FullName);
-                        enumField.SetValueWithoutNotify(null);
-                    }
-                    else
-                    {
-                        enumField.SetValueWithoutNotify((Enum)Enum.Parse(enumField.m_EnumType, v));
-                    }
-                }
-            }
+#pragma warning disable 414
+            private UxmlStringAttributeDescription m_Type = EnumFieldHelpers.type;
+            private UxmlStringAttributeDescription m_Value = EnumFieldHelpers.value;
+            private UxmlBoolAttributeDescription m_IncludeObsoleteValues = EnumFieldHelpers.includeObsoleteValues;
+#pragma warning restore 414
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
 
-                EnumField enumField = (EnumField)ve;
-
-                ParseEnumValues(enumField, m_Type.GetValueFromBag(bag, cc), m_Value.GetValueFromBag(bag, cc));
+                Enum resEnumValue;
+                bool resIncludeObsoleteValues;
+                if (EnumFieldHelpers.ExtractValue(bag, cc, out resEnumValue, out resIncludeObsoleteValues))
+                {
+                    EnumField enumField = (EnumField)ve;
+                    enumField.Init(resEnumValue, resIncludeObsoleteValues);
+                }
             }
         }
 
         private Type m_EnumType;
         private TextElement m_TextElement;
+        private EnumData m_EnumData;
 
         public string text
         {
@@ -87,12 +77,19 @@ namespace UnityEditor.UIElements
 
         public void Init(Enum defaultValue)
         {
+            Init(defaultValue, false);
+        }
+
+        public void Init(Enum defaultValue, bool includeObsoleteValues)
+        {
             if (defaultValue == null)
             {
                 throw new ArgumentNullException(nameof(defaultValue));
             }
 
             m_EnumType = defaultValue.GetType();
+            m_EnumData = EnumDataUtility.GetCachedEnumData(m_EnumType, !includeObsoleteValues);
+
             SetValueWithoutNotify(defaultValue);
         }
 
@@ -101,7 +98,16 @@ namespace UnityEditor.UIElements
             if (rawValue != newValue)
             {
                 base.SetValueWithoutNotify(newValue);
-                m_TextElement.text = ObjectNames.NicifyVariableName(rawValue.ToString());
+
+                if (m_EnumType == null)
+                    return;
+
+                int idx = Array.IndexOf(m_EnumData.values, newValue);
+
+                if (idx >= 0 & idx < m_EnumData.values.Length)
+                {
+                    m_TextElement.text = m_EnumData.displayNames[idx];
+                }
             }
         }
 
@@ -147,13 +153,14 @@ namespace UnityEditor.UIElements
 
             var menu = new GenericMenu();
 
-            foreach (Enum item in Enum.GetValues(m_EnumType))
+            int selectedIndex = Array.IndexOf(m_EnumData.values, value);
+
+            for (int i = 0; i < m_EnumData.values.Length; ++i)
             {
-                bool isSelected = item.CompareTo(value) == 0;
-                string label = ObjectNames.NicifyVariableName(item.ToString());
-                menu.AddItem(new GUIContent(label), isSelected,
+                bool isSelected = selectedIndex == i;
+                menu.AddItem(new GUIContent(m_EnumData.displayNames[i]), isSelected,
                     contentView => ChangeValueFromMenu(contentView),
-                    item);
+                    m_EnumData.values[i]);
             }
 
             var menuPosition = new Vector2(visualInput.layout.xMin, visualInput.layout.height);

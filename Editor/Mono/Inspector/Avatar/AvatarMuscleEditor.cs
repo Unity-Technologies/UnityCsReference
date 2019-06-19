@@ -928,7 +928,8 @@ namespace UnityEditor
             HeaderGUI("", "Additional Settings");
             GUILayout.BeginVertical(styles.box);
             {
-                m_ArmTwistFactor = EditorGUI.Slider(GetSettingsRect(), styles.armTwist, m_ArmTwistFactor, 0, 1);
+                m_ArmTwistFactor = EditorGUI.Slider(GetSettingsRect(), styles.armTwist, m_ArmTwistFactor, 0, 1,
+                    EditorStyles.miniTextField);
                 if (m_ArmTwistProperty.floatValue != m_ArmTwistFactor)
                 {
                     Undo.RegisterCompleteObjectUndo(this, "Upper arm twist");
@@ -937,7 +938,8 @@ namespace UnityEditor
                     recomputePose = true;
                 }
 
-                m_ForeArmTwistFactor = EditorGUI.Slider(GetSettingsRect(), styles.foreArmTwist, m_ForeArmTwistFactor, 0, 1);
+                m_ForeArmTwistFactor = EditorGUI.Slider(GetSettingsRect(), styles.foreArmTwist, m_ForeArmTwistFactor, 0, 1,
+                    EditorStyles.miniTextField);
                 if (m_ForeArmTwistProperty.floatValue != m_ForeArmTwistFactor)
                 {
                     Undo.RegisterCompleteObjectUndo(this, "Lower arm twist");
@@ -946,7 +948,8 @@ namespace UnityEditor
                     recomputePose = true;
                 }
 
-                m_UpperLegTwistFactor = EditorGUI.Slider(GetSettingsRect(), styles.upperLegTwist, m_UpperLegTwistFactor, 0, 1);
+                m_UpperLegTwistFactor = EditorGUI.Slider(GetSettingsRect(), styles.upperLegTwist, m_UpperLegTwistFactor, 0, 1,
+                    EditorStyles.miniTextField);
                 if (m_UpperLegTwistProperty.floatValue != m_UpperLegTwistFactor)
                 {
                     Undo.RegisterCompleteObjectUndo(this, "Upper leg twist");
@@ -955,7 +958,8 @@ namespace UnityEditor
                     recomputePose = true;
                 }
 
-                m_LegTwistFactor = EditorGUI.Slider(GetSettingsRect(), styles.legTwist, m_LegTwistFactor, 0, 1);
+                m_LegTwistFactor = EditorGUI.Slider(GetSettingsRect(), styles.legTwist, m_LegTwistFactor, 0, 1,
+                    EditorStyles.miniTextField);
                 if (m_LegTwistProperty.floatValue != m_LegTwistFactor)
                 {
                     Undo.RegisterCompleteObjectUndo(this, "Lower leg twist");
@@ -964,7 +968,8 @@ namespace UnityEditor
                     recomputePose = true;
                 }
 
-                m_ArmStretchFactor = EditorGUI.Slider(GetSettingsRect(), styles.armStretch, m_ArmStretchFactor, 0, 1);
+                m_ArmStretchFactor = EditorGUI.Slider(GetSettingsRect(), styles.armStretch, m_ArmStretchFactor, 0, 1,
+                    EditorStyles.miniTextField);
                 if (m_ArmStretchProperty.floatValue != m_ArmStretchFactor)
                 {
                     Undo.RegisterCompleteObjectUndo(this, "Arm stretch");
@@ -973,7 +978,8 @@ namespace UnityEditor
                     recomputePose = true;
                 }
 
-                m_LegStretchFactor = EditorGUI.Slider(GetSettingsRect(), styles.legStretch, m_LegStretchFactor, 0, 1);
+                m_LegStretchFactor = EditorGUI.Slider(GetSettingsRect(), styles.legStretch, m_LegStretchFactor, 0, 1,
+                    EditorStyles.miniTextField);
                 if (m_LegStretchProperty.floatValue != m_LegStretchFactor)
                 {
                     Undo.RegisterCompleteObjectUndo(this, "Leg stretch");
@@ -982,7 +988,8 @@ namespace UnityEditor
                     recomputePose = true;
                 }
 
-                m_FeetSpacingFactor = EditorGUI.Slider(GetSettingsRect(), styles.feetSpacing, m_FeetSpacingFactor, 0, 1);
+                m_FeetSpacingFactor = EditorGUI.Slider(GetSettingsRect(), styles.feetSpacing, m_FeetSpacingFactor, 0, 1,
+                    EditorStyles.miniTextField);
                 if (m_FeetSpacingProperty.floatValue != m_FeetSpacingFactor)
                 {
                     Undo.RegisterCompleteObjectUndo(this, "Feet spacing");
