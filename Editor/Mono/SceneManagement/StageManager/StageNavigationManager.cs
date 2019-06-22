@@ -612,7 +612,7 @@ namespace UnityEditor.SceneManagement
                 m_EventData = new EventData();
                 m_EventData.existingStage = GetStageType(previousStageItem);
                 m_EventData.existingBreadcrumbCount = StageNavigationManager.instance.stageHistory.Length;
-                if (previousStageItem.isPrefabStage)
+                if (previousStageItem.prefabStage != null)
                 {
                     m_EventData.didUserModify = previousStageItem.prefabStage.analyticsDidUserModify;
                     m_EventData.didUserSave = previousStageItem.prefabStage.analyticsDidUserSave;
