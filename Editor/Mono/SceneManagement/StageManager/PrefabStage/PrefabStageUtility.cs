@@ -311,31 +311,31 @@ namespace UnityEditor.Experimental.SceneManagement
         static Scene CreateDefaultPreviewScene()
         {
             Scene previewScene = EditorSceneManager.NewPreviewScene();
-            Unsupported.SetOverrideLightingSettings(previewScene);
 
             // Setup default render settings for this preview scene
+            Unsupported.SetOverrideLightingSettings(previewScene);
             UnityEngine.RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Custom;
-            UnityEngine.RenderSettings.customReflection = GetDefaultReflection();   // ensure chrome materials do not render balck
+            UnityEngine.RenderSettings.customReflection = GetDefaultReflection();   // ensure chrome materials do not render black
             UnityEngine.RenderSettings.skybox = AssetDatabase.GetBuiltinExtraResource<Material>("Default-Skybox.mat") as Material;
             UnityEngine.RenderSettings.ambientMode = AmbientMode.Skybox;
+            UnityEditorInternal.InternalEditorUtility.CalculateAmbientProbeFromSkybox();
             Unsupported.RestoreOverrideLightingSettings();
 
             return previewScene;
         }
 
-        static Cubemap s_DefaultHDRI;
+        static Cubemap s_DefaultReflection;
         static Cubemap GetDefaultReflection()
         {
-            if (s_DefaultHDRI == null)
+            const string path = "PrefabMode/DefaultReflectionForPrefabMode.exr";
+            if (s_DefaultReflection == null)
             {
-                s_DefaultHDRI = EditorGUIUtility.Load("LookDevView/DefaultHDRI.exr") as Cubemap;
-                if (s_DefaultHDRI == null)
-                    s_DefaultHDRI = EditorGUIUtility.Load("LookDevView/DefaultHDRI.asset") as Cubemap;
+                s_DefaultReflection = EditorGUIUtility.Load(path) as Cubemap;
             }
 
-            if (s_DefaultHDRI == null)
-                Debug.LogError("Could not find DefaultHDRI");
-            return s_DefaultHDRI;
+            if (s_DefaultReflection == null)
+                Debug.LogError("Could not find: " + path);
+            return s_DefaultReflection;
         }
 
         internal static void DestroyPreviewScene(Scene previewScene)
