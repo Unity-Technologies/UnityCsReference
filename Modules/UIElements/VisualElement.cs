@@ -562,13 +562,17 @@ namespace UnityEngine.UIElements
                     float x2 = Mathf.Min(wb.xMax, m_WorldClip.xMax);
                     float y1 = Mathf.Max(wb.yMin, m_WorldClip.yMin);
                     float y2 = Mathf.Min(wb.yMax, m_WorldClip.yMax);
-                    m_WorldClip = new Rect(x1, y1, x2 - x1, y2 - y1);
+                    float width = Mathf.Max(x2 - x1, 0);
+                    float height = Mathf.Max(y2 - y1, 0);
+                    m_WorldClip = new Rect(x1, y1, width, height);
 
                     x1 = Mathf.Max(wb.xMin, m_WorldClipMinusGroup.xMin);
                     x2 = Mathf.Min(wb.xMax, m_WorldClipMinusGroup.xMax);
                     y1 = Mathf.Max(wb.yMin, m_WorldClipMinusGroup.yMin);
                     y2 = Mathf.Min(wb.yMax, m_WorldClipMinusGroup.yMax);
-                    m_WorldClipMinusGroup = new Rect(x1, y1, x2 - x1, y2 - y1);
+                    width = Mathf.Max(x2 - x1, 0);
+                    height = Mathf.Max(y2 - y1, 0);
+                    m_WorldClipMinusGroup = new Rect(x1, y1, width, height);
                 }
             }
             else
@@ -1194,6 +1198,12 @@ namespace UnityEngine.UIElements
                 return;
             }
 
+            var previousOverflow = m_Style.overflow;
+            var previousBorderBottomLeftRadius = m_Style.borderBottomLeftRadius;
+            var previousBorderBottomRightRadius = m_Style.borderBottomRightRadius;
+            var previousBorderTopLeftRadius = m_Style.borderTopLeftRadius;
+            var previousBorderTopRightRadius = m_Style.borderTopRightRadius;
+
             if (hasInlineStyle)
             {
                 m_Style.Apply(sharedStyle, StylePropertyApplyMode.CopyIfNotInline);
@@ -1207,9 +1217,22 @@ namespace UnityEngine.UIElements
 
             FinalizeLayout();
 
+            VersionChangeType changes = VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint;
+
+            if (m_Style.overflow != previousOverflow)
+                changes |= VersionChangeType.Overflow;
+
+            if (previousBorderBottomLeftRadius != m_Style.borderBottomLeftRadius ||
+                previousBorderBottomRightRadius != m_Style.borderBottomRightRadius ||
+                previousBorderTopLeftRadius != m_Style.borderTopLeftRadius ||
+                previousBorderTopRightRadius != m_Style.borderTopRightRadius)
+            {
+                changes |= VersionChangeType.BorderRadius;
+            }
+
             // This is a pre-emptive since we do not know if style changes actually cause a repaint or a layout
             // But those should be the only possible type of changes needed
-            IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint);
+            IncrementVersion(changes);
         }
 
         internal void ResetPositionProperties()

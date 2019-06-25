@@ -133,6 +133,12 @@ namespace UnityEditor.Experimental.SceneManagement
 
         internal bool LoadStage(string prefabPath)
         {
+            if (!File.Exists(prefabPath))
+            {
+                Debug.LogError("LoadStage with an invalid path: Prefab file not found " + prefabPath);
+                return false;
+            }
+
             if (isValid)
                 Cleanup();
 
@@ -322,6 +328,10 @@ namespace UnityEditor.Experimental.SceneManagement
             if (m_PrefabWasChangedOnDisk)
             {
                 m_PrefabWasChangedOnDisk = false;
+
+                if (!File.Exists(m_PrefabAssetPath))
+                    return;
+
                 if (HasSceneBeenModified())
                 {
                     var title = L10n.Tr("Prefab Has Been Changed on Disk");

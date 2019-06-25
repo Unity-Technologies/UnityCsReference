@@ -12,7 +12,7 @@ namespace UnityEditor
     {
         private PreviewRenderUtility m_PreviewUtility;
         private AudioClip m_Clip;
-        private bool playing => s_PlayingInstance == this && AudioUtil.IsClipPlaying(m_Clip);
+        private bool playing => s_PlayingInstance == this && m_Clip != null && AudioUtil.IsClipPlaying(m_Clip);
         Vector2 m_Position = Vector2.zero;
         private bool m_MultiEditing;
 
@@ -143,7 +143,10 @@ namespace UnityEditor
                         if (newPlaying)
                             PlayClip(clip, 0, s_Loop);
                         else
+                        {
+                            AudioUtil.StopAllClips();
                             m_Clip = null;
+                        }
                     }
                 }
             }

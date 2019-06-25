@@ -591,12 +591,14 @@ namespace UnityEditor.PackageManager.UI
         /// <summary>
         /// Get the full dependent message string
         /// </summary>
-        private string GetDependentMessage(IEnumerable<PackageInfo> roots, int maxListCount = MaxDependentList)
+        private string GetDependentMessage(PackageInfo packageInfo, IEnumerable<PackageInfo> roots, int maxListCount = MaxDependentList)
         {
             var dependentPackages = roots.Where(p => !p.IsBuiltIn).ToList();
             var dependentModules = roots.Where(p => p.IsBuiltIn).ToList();
 
-            var message = string.Format("{0}{1}:\n\n", "This built-in package is a dependency of the following ",  dependentPackages.Any() ? "packages" : "built-in packages");
+            var packageType = packageInfo.IsBuiltIn ? "built-in package" : "package";
+            var prefix = $"This {packageType} is a dependency of the following ";
+            var message = string.Format("{0}{1}:\n\n", prefix,  dependentPackages.Any() ? "packages" : "built-in packages");
 
             if (dependentPackages.Any())
                 message += GetPackageDashList(dependentPackages, maxListCount);
@@ -608,26 +610,27 @@ namespace UnityEditor.PackageManager.UI
             if (roots.Count() > maxListCount)
                 message += "\n\n   ... and more (see console for details) ...";
 
-            message += "\n\nYou will need to remove or disable them before being able to disable this built-in package.";
+            var actionType = packageInfo.IsBuiltIn ? "disable" : "remove";
+            message += $"\n\nYou will need to remove or disable them before being able to {actionType} this {packageType}.";
 
             return message;
         }
 
         private void RemoveClick()
         {
-            if (DisplayPackage.IsBuiltIn)
+            var roots = Collection.GetDependents(DisplayPackage).ToList();
+            // Only show this message on a package if it is installed by dependency only. This allows it to still be removed from the installed list.
+            var showDialog = roots.Any() && !(!DisplayPackage.IsBuiltIn && DisplayPackage.IsDirectDependency);
+            if (showDialog)
             {
-                var roots = Collection.GetDependents(DisplayPackage).ToList();
-                if (roots.Any())
-                {
-                    if (roots.Count > MaxDependentList)
-                        Debug.Log(GetDependentMessage(roots, int.MaxValue));
+                if (roots.Count > MaxDependentList)
+                    Debug.Log(GetDependentMessage(DisplayPackage, roots, int.MaxValue));
 
-                    var message = GetDependentMessage(roots);
-                    EditorUtility.DisplayDialog("Cannot Disable Built-In Package", message, "Ok");
+                var message = GetDependentMessage(DisplayPackage, roots);
+                var title = DisplayPackage.IsBuiltIn ? "Cannot disable built-in package" : "Cannot remove dependent package";
+                EditorUtility.DisplayDialog(title, message, "Ok");
 
-                    return;
-                }
+                return;
             }
 
             var result = 0;

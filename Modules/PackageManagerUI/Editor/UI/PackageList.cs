@@ -233,14 +233,24 @@ namespace UnityEditor.PackageManager.UI
             if (selection != null)
             {
                 var index = list.IndexOf(selection);
-                var nextIndex = index + delta;
 
-                if (nextIndex >= list.Count)
-                    return false;
-                if (nextIndex < 0)
-                    return false;
+                var direction = Math.Sign(delta);
+                delta = Math.Abs(delta);
+                var nextIndex = index;
+                var numVisibleElements = 0;
+                IPackageSelection nextElement = null;
+                while (numVisibleElements < delta)
+                {
+                    nextIndex += direction;
+                    if (nextIndex >= list.Count)
+                        return false;
+                    if (nextIndex < 0)
+                        return false;
+                    nextElement = list.ElementAt(nextIndex);
+                    if (UIUtils.IsElementVisible(nextElement.Element))
+                        ++numVisibleElements;
+                }
 
-                var nextElement = list.ElementAt(nextIndex);
                 Selection.SetSelection(nextElement.TargetVersion);
 
                 foreach (var scrollView in UIUtils.GetParentsOfType<ScrollView>(nextElement.Element))

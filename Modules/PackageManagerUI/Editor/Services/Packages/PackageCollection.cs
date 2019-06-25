@@ -369,6 +369,9 @@ namespace UnityEditor.PackageManager.UI
             // Consolidate with latest fetched package infos
             foreach (var p in allPackageInfos)
             {
+                var search = searchPackages.FirstOrDefault(packageInfo => p.PackageId == packageInfo.PackageId);
+                if (search != null)  p.IsDiscoverable = search.IsDiscoverable;
+
                 if (p.HasFullFetch)
                     continue;
                 var latestInfo = GetLatestInfoInCache(p.PackageId);
@@ -397,8 +400,6 @@ namespace UnityEditor.PackageManager.UI
             // Send a request for latest info
             foreach (var p in outdatedDisplayPackages)
                 FetchLatestPackageInfo(p, true);
-
-            MarkDependentModulesAsInstalled();
         }
 
         private void RebuildDependenciesDictionnary()
@@ -452,34 +453,6 @@ namespace UnityEditor.PackageManager.UI
                             projectDependencies[dependency.name] = newVersion;
                     }
                 }
-            }
-        }
-
-        /// <summary>
-        /// We need no mark modules that are a dependency of any package/module as installed.
-        /// This is how the module system currently behaves, so the UI needs to match this.
-        /// </summary>
-        private void MarkDependentModulesAsInstalled()
-        {
-            // Reset previous installed state
-            foreach (var packageInfo in CompletePackageInfosList.Where(p => p.IsBuiltIn))
-                packageInfo.IsInstalledByDependency = false;
-
-            // Set dependent installed state
-            var installedPackages = LatestListPackages.Where(p => p.IsInstalled);
-            foreach (var package in installedPackages)
-                MarkModulesAsInstalled(package.DependentModules);
-        }
-
-        private void MarkModulesAsInstalled(IEnumerable<DependencyInfo> modules)
-        {
-            foreach (var module in modules)
-            {
-                var latestInfo = CompletePackageInfosList.FirstOrDefault(p => p.PackageId == PackageInfo.FormatPackageId(module));
-                if (latestInfo == null)
-                    Debug.LogWarning("Module does not have package info: " + module.name);
-                if (latestInfo != null && !latestInfo.IsInstalled)
-                    latestInfo.IsInstalledByDependency = true;
             }
         }
 
