@@ -27,8 +27,7 @@ namespace UnityEditor.PackageManager.UI
         public string Description;
         public string Category;
         public PackageState State;
-        public bool IsInstalledByDependency;
-        public bool IsInstalledByUpm;
+        public bool IsInstalledByDependency => IsInstalled && (!Info?.isDirectDependency ?? false);
         public bool IsLatest;
         public string Group;
         public string Type;
@@ -46,11 +45,7 @@ namespace UnityEditor.PackageManager.UI
 
         public PackageManager.PackageInfo Info;
 
-        public bool IsInstalled
-        {
-            get { return IsInstalledByUpm || IsInstalledByDependency; }
-            set { IsInstalledByUpm = value; }
-        }
+        public bool IsInstalled;
 
         public static string ModulePrefix { get { return string.Format("{0}modules.", UnityPrefix); } }
         public static string UnityPrefix { get { return "com.unity."; } }

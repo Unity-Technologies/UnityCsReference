@@ -283,11 +283,11 @@ namespace UnityEditor
 
                     if (effect.sendTarget != null)
                     {
-                        float wetLevel = group.GetValueForSend(controller, controller.TargetSnapshot);
+                        float wetLevel = effect.GetValueForMixLevel(controller, controller.TargetSnapshot);
                         if (AudioMixerEffectGUI.Slider(Texts.sendLevel, ref wetLevel, 1.0f, 1.0f, Texts.dB, AudioMixerController.kMinVolume, AudioMixerController.kMaxEffect, controller, new AudioGroupParameterPath(group, group.GetGUIDForSend())))
                         {
                             Undo.RecordObject(controller.TargetSnapshot, "Change Send Level");
-                            group.SetValueForSend(controller, controller.TargetSnapshot, wetLevel);
+                            effect.SetValueForMixLevel(controller, controller.TargetSnapshot, wetLevel);
                             AudioMixerUtility.RepaintAudioMixerAndInspectors();
                         }
                     }

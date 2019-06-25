@@ -3,10 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using System.Collections.Generic;
 using UnityEngine.Scripting;
+
+using UnityEngine.Experimental.XR;
 
 namespace UnityEngine.XR
 {
@@ -34,13 +37,71 @@ namespace UnityEngine.XR
     [NativeConditional("ENABLE_VR")]
     public static class XRSettings
     {
-        extern public static bool enabled
-        {
-            [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
-            get;
+        private static List<ISubsystemDescriptor> s_Descriptors = new List<ISubsystemDescriptor>();
+        private static object s_DescriptorsLock = new object();
 
-            [NativeMethod("VRModuleBindings::SetDeviceEnabled", true)]
-            set;
+        internal static bool ShouldDisableLegacyVR()
+        {
+            if (!s_Descriptors.Any())
+            {
+                lock (s_DescriptorsLock)
+                {
+                    if (!s_Descriptors.Any())
+                    {
+                        SubsystemManager.GetAllSubsystemDescriptors(s_Descriptors);
+                    }
+                }
+            }
+
+            foreach (var descriptor in s_Descriptors)
+            {
+                if (descriptor.GetType() == typeof(XRDisplaySubsystemDescriptor))
+                {
+                    XRDisplaySubsystemDescriptor displayDescriptor = (XRDisplaySubsystemDescriptor)descriptor;
+
+                    if (displayDescriptor.disablesLegacyVr)
+                        return true;
+                }
+            }
+            return false;
+        }
+
+        internal static bool DidGenerateErrorForLegacyVR()
+        {
+            if (ShouldDisableLegacyVR())
+            {
+                Debug.LogError("Legacy XR is currently disabled. Unity has detected that you have one or more XR SDK Provider packages installed. Legacy XR is incompatible with XR SDK. Remove all XR SDK Packages from your project to re-enable legacy XR");
+                return true;
+            }
+            return false;
+        }
+
+        [NativeName("GetEnabled")]
+        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        extern internal static bool Internal_GetEnabled();
+
+        [NativeMethod("VRModuleBindings::SetDeviceEnabled", true)]
+        extern internal static void Internal_SetEnabled(bool enabled);
+
+        public static bool enabled
+        {
+            get
+            {
+                if (DidGenerateErrorForLegacyVR())
+                {
+                    return false;
+                }
+                return Internal_GetEnabled();
+            }
+
+            set
+            {
+                if (DidGenerateErrorForLegacyVR())
+                {
+                    return;
+                }
+                Internal_SetEnabled(value);
+            }
         }
 
         [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]

@@ -18,24 +18,25 @@ namespace UnityEngine.UIElements
     internal enum VersionChangeType
     {
         // Some data was bound
-        Bindings = 1 << 8,
+        Bindings = 1 << 0,
         // persistent data ready
-        ViewData = 1 << 7,
+        ViewData = 1 << 1,
         // changes to hierarchy
-        Hierarchy = 1 << 6,
+        Hierarchy = 1 << 2,
         // changes to properties that may have an impact on layout
-        Layout = 1 << 5,
+        Layout = 1 << 3,
         // changes to StyleSheet, USS class
         StyleSheet = 1 << 4,
         // changes to styles, colors and other render properties
-        Styles = 1 << 3,
+        Styles = 1 << 5,
+        Overflow = 1 << 6,
+        BorderRadius = 1 << 7,
         // changes that may impact the world transform (e.g. laid out position, local transform)
-        Transform = 1 << 2,
+        Transform = 1 << 8,
         // changes to the size of the element after layout has been performed, without taking the local transform into account
-        Size = 1 << 1,
+        Size = 1 << 9,
         // The visuals of the element have changed
-        // TODO: Rename to visuals
-        Repaint = 1 << 0,
+        Repaint = 1 << 10,
     }
 
     [Flags]

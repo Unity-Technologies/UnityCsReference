@@ -5185,8 +5185,17 @@
     <Compile Include="..\..\Modules\XREditor\Build\XRBuildUtilities.bindings.cs">
       <Link>Modules\XREditor\Build\XRBuildUtilities.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\XREditor\Transition\IVRDeviceSettingsTransition.cs">
+      <Link>Modules\XREditor\Transition\IVRDeviceSettingsTransition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\XREditor\Transition\VRDeviceSettingsTransitionTargetGroupAttribute.cs">
+      <Link>Modules\XREditor\Transition\VRDeviceSettingsTransitionTargetGroupAttribute.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\XREditor\Transition\VRDeviceTransition.cs">
       <Link>Modules\XREditor\Transition\VRDeviceTransition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\XREditor\Transition\WindowsMRDeviceSettingsTransition.cs">
+      <Link>Modules\XREditor\Transition\WindowsMRDeviceSettingsTransition.cs</Link>
     </Compile>
     <Compile Include="..\..\artifacts\generated\bindings_old\common\ProfilerEditor\ProfilerAPIBindings.gen.cs">
       <Link>artifacts\generated\bindings_old\common\ProfilerEditor\ProfilerAPIBindings.gen.cs</Link>

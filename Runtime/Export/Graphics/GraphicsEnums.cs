@@ -476,7 +476,7 @@ namespace UnityEngine
         DeviceSpecific
     }
 
-    // keep this in sync with the RenderTextureFlags enum in RenderTexture.h
+    // keep this in sync with the RenderTextureFlags enum in RenderTextureDesc.h
     [Flags]
     public enum RenderTextureCreationFlags
     {

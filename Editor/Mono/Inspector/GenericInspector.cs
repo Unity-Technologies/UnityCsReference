@@ -15,7 +15,6 @@ namespace UnityEditor
             NoOptimizedBlock
         }
 
-        private AudioFilterGUI m_AudioFilterGUI;
         private float m_LastHeight;
         private Rect m_LastVisibleRect;
         private OptimizedBlockState m_OptimizedBlockState = OptimizedBlockState.CheckOptimizedBlock;
@@ -204,18 +203,6 @@ namespace UnityEditor
                 return;
 
             base.OnInspectorGUI();
-
-            var behaviour = target as MonoBehaviour;
-            if (behaviour != null)
-            {
-                // Does this have a AudioRead callback?
-                if (AudioUtil.HasAudioCallback(behaviour) && AudioUtil.GetCustomFilterChannelCount(behaviour) > 0)
-                {
-                    if (m_AudioFilterGUI == null)
-                        m_AudioFilterGUI = new AudioFilterGUI();
-                    m_AudioFilterGUI.DrawAudioFilterGUI(behaviour);
-                }
-            }
         }
     }
 }

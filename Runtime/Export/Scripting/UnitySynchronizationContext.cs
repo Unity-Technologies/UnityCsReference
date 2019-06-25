@@ -85,8 +85,7 @@ namespace UnityEngine
         [RequiredByNativeCode]
         private static void InitializeSynchronizationContext()
         {
-            if (SynchronizationContext.Current == null)
-                SynchronizationContext.SetSynchronizationContext(new UnitySynchronizationContext(System.Threading.Thread.CurrentThread.ManagedThreadId));
+            SynchronizationContext.SetSynchronizationContext(new UnitySynchronizationContext(System.Threading.Thread.CurrentThread.ManagedThreadId));
         }
 
         // All requests must be processed on the main thread where the full Unity API is available

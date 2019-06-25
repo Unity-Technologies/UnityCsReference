@@ -139,13 +139,14 @@ namespace UnityEngine.UIElements.UIR
 
 
             m_DirtyID++;
+            var clearDirty = ~(RenderDataDirtyTypes.Clipping | RenderDataDirtyTypes.ClippingHierarchy);
             VisualElement dirty = m_FirstDirtyClipping;
             s_ClipProcessingSampler.Begin();
             while (dirty != null)
             {
                 if (dirty.renderChainData.isInChain && dirty.renderChainData.dirtyID != m_DirtyID)
                     Implementation.RenderEvents.ProcessOnClippingChanged(this, dirty, m_DirtyID, device, ref m_Stats);
-                dirty.renderChainData.dirtiedClipping = false;
+                dirty.renderChainData.dirtiedValues &= clearDirty;
                 var old = dirty;
                 dirty = dirty.renderChainData.nextDirtyClipping;
                 old.renderChainData.nextDirtyClipping = null;
@@ -154,7 +155,7 @@ namespace UnityEngine.UIElements.UIR
             m_FirstDirtyClipping = m_LastDirtyClipping = null;
 
             m_DirtyID++;
-            var clearDirty = ~(RenderDataDirtyTypes.Transform | RenderDataDirtyTypes.Size);
+            clearDirty = ~(RenderDataDirtyTypes.Transform | RenderDataDirtyTypes.Size);
             dirty = m_FirstDirtyTransformOrSize;
             s_TransformProcessingSampler.Begin();
             while (dirty != null)
@@ -170,13 +171,14 @@ namespace UnityEngine.UIElements.UIR
             m_FirstDirtyTransformOrSize = m_LastDirtyTransformOrSize = null;
 
             m_DirtyID++;
+            clearDirty = ~(RenderDataDirtyTypes.Visuals | RenderDataDirtyTypes.VisualsHierarchy);
             dirty = m_FirstDirtyVisuals;
             s_VisualsProcessingSampler.Begin();
             while (dirty != null)
             {
                 if (dirty.renderChainData.isInChain && dirty.renderChainData.dirtyID != m_DirtyID)
                     Implementation.RenderEvents.ProcessOnVisualsChanged(this, dirty, m_DirtyID, ref m_Stats);
-                dirty.renderChainData.dirtiedVisuals = 0;
+                dirty.renderChainData.dirtiedValues &= clearDirty;
                 var old = dirty;
                 dirty = dirty.renderChainData.nextDirtyVisuals;
                 old.renderChainData.nextDirtyVisuals = null;
@@ -375,7 +377,7 @@ namespace UnityEngine.UIElements.UIR
             Implementation.RenderEvents.OnTransformOrSizeChanged(this, ve, transformChanged, sizeChanged);
         }
 
-        public void UIEOnClippingChanged(VisualElement ve) { Implementation.RenderEvents.OnClippingChanged(this, ve); }
+        public void UIEOnClippingChanged(VisualElement ve, bool hierarchical) { Implementation.RenderEvents.OnClippingChanged(this, ve, hierarchical); }
         public void UIEOnVisualsChanged(VisualElement ve, bool hierarchical) { Implementation.RenderEvents.OnVisualsChanged(this, ve, hierarchical); }
         #endregion
 
@@ -446,24 +448,44 @@ namespace UnityEngine.UIElements.UIR
 
         internal void OnVisualsChanged(VisualElement ve, bool hierarchical)
         {
-            ve.renderChainData.dirtiedVisuals = hierarchical ? (byte)2 : (byte)1;
-            if (m_LastDirtyVisuals != null)
+            RenderDataDirtyTypes current = ve.renderChainData.dirtiedValues;
+            bool isInList = (current & (RenderDataDirtyTypes.Visuals | RenderDataDirtyTypes.VisualsHierarchy)) != 0;
+
+            current |= RenderDataDirtyTypes.Visuals;
+            if (hierarchical)
+                current |= RenderDataDirtyTypes.VisualsHierarchy;
+            ve.renderChainData.dirtiedValues = current;
+
+            if (!isInList)
             {
-                m_LastDirtyVisuals.renderChainData.nextDirtyVisuals = ve;
-                m_LastDirtyVisuals = ve;
+                if (m_LastDirtyVisuals != null)
+                {
+                    m_LastDirtyVisuals.renderChainData.nextDirtyVisuals = ve;
+                    m_LastDirtyVisuals = ve;
+                }
+                else m_FirstDirtyVisuals = m_LastDirtyVisuals = ve;
             }
-            else m_FirstDirtyVisuals = m_LastDirtyVisuals = ve;
         }
 
-        internal void OnClippingChanged(VisualElement ve)
+        internal void OnClippingChanged(VisualElement ve, bool hierarchical)
         {
-            ve.renderChainData.dirtiedClipping = true;
-            if (m_LastDirtyClipping != null)
+            RenderDataDirtyTypes current = ve.renderChainData.dirtiedValues;
+            bool isInList = (current & (RenderDataDirtyTypes.Clipping | RenderDataDirtyTypes.ClippingHierarchy)) != 0;
+
+            current |= RenderDataDirtyTypes.Clipping;
+            if (hierarchical)
+                current |= RenderDataDirtyTypes.ClippingHierarchy;
+            ve.renderChainData.dirtiedValues = current;
+
+            if (!isInList)
             {
-                m_LastDirtyClipping.renderChainData.nextDirtyClipping = ve;
-                m_LastDirtyClipping = ve;
+                if (m_LastDirtyClipping != null)
+                {
+                    m_LastDirtyClipping.renderChainData.nextDirtyClipping = ve;
+                    m_LastDirtyClipping = ve;
+                }
+                else m_FirstDirtyClipping = m_LastDirtyClipping = ve;
             }
-            else m_FirstDirtyClipping = m_LastDirtyClipping = ve;
         }
 
         internal void OnTransformOrSizeChanged(VisualElement ve, bool transformChanged, bool sizeChanged)
@@ -611,6 +633,10 @@ namespace UnityEngine.UIElements.UIR
         None = 0,
         Transform = 1 << 0,
         Size = 1 << 1,
+        Clipping = 1 << 2,           // The clipping state of the VE needs to be reevaluated.
+        ClippingHierarchy = 1 << 3,  // Same as above, but applies to all descendants too.
+        Visuals = 1 << 4,            // The visuals of the VE need to be repainted.
+        VisualsHierarchy = 1 << 5    // Same as above, but applies to all descendants too.
     }
 
     internal struct RenderChainVEData
@@ -622,8 +648,6 @@ namespace UnityEngine.UIElements.UIR
         internal RenderChainCommand firstClosingCommand, lastClosingCommand; // Optional, sequential for the same owner, the presence of closing commands requires starting commands too, otherwise certain optimizations will become invalid
         internal bool isInChain, isStencilClipped, isHierarchyHidden;
         internal bool usesText, usesAtlas, disableNudging;
-        internal byte dirtiedVisuals; // 0, 1 is for self, and 2 is hierarchical
-        internal bool dirtiedClipping;
         internal RenderDataDirtyTypes dirtiedValues;
         internal Implementation.ClipMethod clipMethod;
         internal MeshHandle data, closingData;

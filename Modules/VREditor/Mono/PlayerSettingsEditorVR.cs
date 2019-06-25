@@ -155,16 +155,16 @@ namespace UnityEditorInternal.VR
 
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying)) // switching VR flags in play mode is not supported
                 {
-                    bool shouldVRDeviceSettingsBeDisabled = XRProjectSettings.GetBool(XRProjectSettings.KnownSettings.k_VRDeviceDisabled, false);;
+                    bool shouldVRDeviceSettingsBeDisabled = XRProjectSettings.GetBool(XRProjectSettings.KnownSettings.k_VRDeviceDisabled, false);
                     using (new EditorGUI.DisabledGroupScope(shouldVRDeviceSettingsBeDisabled))
                     {
                         if (shouldVRDeviceSettingsBeDisabled)
                         {
-                            EditorGUILayout.HelpBox("Legacy XR is currently disabled. Unity has detected that you have one or more XR SDK Provider packages installed. Legacy XR is incompatible with XR SDK. Remove all XR SDK Pacakges from your project to re-enable legacy XR", MessageType.Warning);
+                            EditorGUILayout.HelpBox("Legacy XR is currently disabled. Unity has detected that you have one or more XR SDK Provider packages installed. Legacy XR is incompatible with XR SDK. Remove all XR SDK Packages from your project to re-enable legacy XR", MessageType.Warning);
 
                             if (!XRProjectSettings.GetBool(XRProjectSettings.KnownSettings.k_VRDeviceDidAlertUser))
                             {
-                                EditorUtility.DisplayDialog("Legacy XR Disabled", "Unity has detected that you have one or more XR SDK Provider packages installed. Legacy XR is incompatible with XR SDK. Remove all XR SDK Pacakges from your project to re-enable legacy XR", "Ok");
+                                EditorUtility.DisplayDialog("Legacy XR Disabled", "Unity has detected that you have one or more XR SDK Provider packages installed. Legacy XR is incompatible with XR SDK. Remove all XR SDK Packages from your project to re-enable legacy XR", "Ok");
                                 XRProjectSettings.SetBool(XRProjectSettings.KnownSettings.k_VRDeviceDidAlertUser, true);
                             }
                         }

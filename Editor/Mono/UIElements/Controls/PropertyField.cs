@@ -168,6 +168,16 @@ namespace UnityEditor.UIElements
             // number of them).
             if (parentSerializedObject != null)
                 parentPropertyField.Bind(parentSerializedObject);
+
+            // Very important that we stop immediate propagation here. If we don't,
+            // the next handler will be FieldValueChanged() in the IBinding which
+            // will be operating on a stale [this target] field
+            // (we just killed it in our Unbind()/Bind() above).
+            // In turn, because we share the IBinding, this event handling will
+            // essentially call Unbind() one more time on the array size field
+            // [this.target] and the array size field will no longer work.
+            // See: case 1141787
+            changeEvent.StopImmediatePropagation();
         }
 
         private VisualElement CreateFoldout(SerializedProperty property)
