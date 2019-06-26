@@ -29,6 +29,18 @@ namespace UnityEditor
             EditorToolbar<EditorTool>(s_CustomEditorTools);
         }
 
+        public static void EditorToolbarForTarget(GUIContent content, UObject target)
+        {
+            if (target == null)
+                throw new ArgumentNullException("target");
+
+            GUILayout.BeginHorizontal();
+            PrefixLabel(content);
+            EditorToolContext.GetCustomEditorToolsForTarget(target, s_CustomEditorTools, true);
+            EditorToolbar<EditorTool>(s_CustomEditorTools);
+            GUILayout.EndHorizontal();
+        }
+
         public static void EditorToolbar(params EditorTool[] tools)
         {
             EditorToolbar<EditorTool>(tools);

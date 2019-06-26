@@ -114,6 +114,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
+        public static void Initialize()
+        {
+            Instance.Initialize();
+        }
+
+        [RequiredByNativeCode]
         public static void SetAssetPathsMetaData(AssetPathMetaData[] assetPathMetaDatas)
         {
             Instance.SetAssetPathsMetaData(assetPathMetaDatas);

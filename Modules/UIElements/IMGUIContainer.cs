@@ -432,7 +432,14 @@ namespace UnityEngine.UIElements
         {
             base.HandleEvent(evt);
 
-            if (evt == null || evt.propagationPhase == PropagationPhase.DefaultAction)
+            if (evt == null)
+            {
+                return;
+            }
+
+            if (evt.propagationPhase != PropagationPhase.TrickleDown &&
+                evt.propagationPhase != PropagationPhase.AtTarget &&
+                evt.propagationPhase != PropagationPhase.BubbleUp)
             {
                 return;
             }

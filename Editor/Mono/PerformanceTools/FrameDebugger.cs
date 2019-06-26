@@ -659,13 +659,13 @@ namespace UnityEditor
             using (new EditorGUI.DisabledScope(FrameDebuggerUtility.count <= 1))
             {
                 newLimit = EditorGUILayout.IntSlider(FrameDebuggerUtility.limit, 1, FrameDebuggerUtility.count, -1,
-                    styles.sliderTextField, styles.slider, styles.sliderThumb, null, null);
+                    EditorStyles.toolbarSlider);
             }
             if (EditorGUI.EndChangeCheck())
             {
                 ChangeFrameEventLimit(newLimit);
             }
-            GUILayout.Label(" of " + FrameDebuggerUtility.count, styles.miniLabel);
+            GUILayout.Label("of " + FrameDebuggerUtility.count, styles.miniLabel);
             // prev/next buttons
             using (new EditorGUI.DisabledScope(newLimit <= 1))
             {
@@ -1449,24 +1449,6 @@ namespace UnityEditor
             public GUIStyle entryOdd = "OL EntryBackOdd";
             public GUIStyle rowText = "OL Label";
             public GUIStyle rowTextRight = "OL RightLabel";
-
-            public GUIStyle slider = new GUIStyle(GUI.skin.horizontalSlider)
-            {
-                name = "SmallerHorizontalSlider",
-                margin = new RectOffset(0, 0, 0, 0)
-            };
-
-            public GUIStyle sliderThumb = new GUIStyle(GUI.skin.horizontalSliderThumb)
-            {
-                margin = new RectOffset(0, 0, 3, 0)
-            };
-
-            public GUIStyle sliderTextField = new GUIStyle(EditorStyles.numberField)
-            {
-                margin = new RectOffset(0, 0, 0, 0),
-                fixedHeight = 16,
-                fontSize = EditorStyles.miniTextField.fontSize
-            };
 
             public GUIStyle miniLabel = new GUIStyle(EditorStyles.miniLabel)
             {

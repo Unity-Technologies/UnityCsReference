@@ -72,6 +72,7 @@ namespace UnityEditor
         [FreeFunction("CopySerializedIfDifferent")]
         private static extern void InternalCopySerializedIfDifferent(Object source, Object dest);
 
+        [NativeThrows]
         public static extern Object[] CollectDependencies(Object[] roots);
         public static extern Object[] CollectDeepHierarchy(Object[] roots);
 

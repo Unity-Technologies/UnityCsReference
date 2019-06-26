@@ -155,7 +155,7 @@ namespace UnityEditor.UIElements
             CreateBindingObjectForProperty(fieldElement, obj, property);
         }
 
-        private static void Bind(VisualElement element, SerializedObjectUpdateWrapper objWrapper, SerializedProperty parentProperty)
+        internal static void Bind(VisualElement element, SerializedObjectUpdateWrapper objWrapper, SerializedProperty parentProperty)
         {
             IBindable field = element as IBindable;
 
@@ -202,8 +202,7 @@ namespace UnityEditor.UIElements
         private static bool SendBindingEvent<TEventType>(TEventType evt, VisualElement target) where TEventType : EventBase<TEventType>, new()
         {
             evt.target = target;
-            evt.propagationPhase = PropagationPhase.AtTarget;
-            target.HandleEvent(evt);
+            target.HandleEventAtTargetPhase(evt);
             return evt.isPropagationStopped;
         }
 
@@ -400,6 +399,32 @@ namespace UnityEditor.UIElements
             DefaultBind<string>(element, objWrapper, prop, readToString, (p, s) => {}, OneWayStringValueEquals);
         }
 
+        private static bool BindListView(ListView listView, SerializedObjectUpdateWrapper objWrapper, SerializedProperty prop)
+        {
+            // This should be done elsewhere. That's what the SerializedPropertyBindEvent are for.
+            // Problem is, ListView is in the engine assembly and can't have knowledge of SerializedObjects
+            if (prop.propertyType == SerializedPropertyType.Generic)
+            {
+                var sizeProperty = prop.FindPropertyRelative("Array.size");
+
+                if (sizeProperty == null)
+                {
+                    Debug.LogWarning(string.Format("Binding ListView failed: can't find array size for property \"{0}\"",
+                        prop.propertyPath));
+                    return false;
+                }
+                ListViewSerializedObjectBinding.CreateBind(listView, objWrapper, prop);
+
+                return true;
+            }
+            else
+            {
+                Debug.LogWarning(string.Format("Binding ListView is not supported for {0} properties \"{1}\"", prop.type,
+                    prop.propertyPath));
+            }
+            return false;
+        }
+
         private static void CreateBindingObjectForProperty(VisualElement element, SerializedObjectUpdateWrapper objWrapper, SerializedProperty prop)
         {
             // A bound Foldout (a PropertyField with child properties) is special.
@@ -427,6 +452,11 @@ namespace UnityEditor.UIElements
                     (p, v) => {},
                     ValueEquals<string>);
 
+                return;
+            }
+            if (element is ListView)
+            {
+                BindListView(element as ListView, objWrapper, prop);
                 return;
             }
 
@@ -549,7 +579,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        private class SerializedObjectUpdateWrapper
+        internal class SerializedObjectUpdateWrapper
         {
             SerializedObjectChangeTracker tracker;
             public UInt64 LastRevision {get; private set; }
@@ -598,7 +628,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        private abstract class SerializedObjectBindingBase : IBinding
+        internal abstract class SerializedObjectBindingBase : IBinding
         {
             public SerializedObjectUpdateWrapper boundObject;
             public string boundPropertyPath;
@@ -811,19 +841,14 @@ namespace UnityEditor.UIElements
                 }
                 return false;
             }
-        }
 
-        private abstract class SerializedObjectBindingToBaseField<TValue, TField> : SerializedObjectBindingBase where TField : class, INotifyValueChanged<TValue>
-        {
-            private TField m_Field;
+            protected IBindable m_Field;
 
-            protected TField field
+            protected IBindable boundElement
             {
                 get { return m_Field; }
                 set
                 {
-                    m_Field?.UnregisterValueChangedCallback(FieldValueChanged);
-
                     VisualElement ve = m_Field as VisualElement;
                     if (ve != null)
                     {
@@ -835,8 +860,6 @@ namespace UnityEditor.UIElements
                     UpdateFieldIsAttached();
                     if (m_Field != null)
                     {
-                        m_Field.RegisterValueChangedCallback(FieldValueChanged);
-
                         ve = m_Field as VisualElement;
                         if (ve != null)
                         {
@@ -872,6 +895,66 @@ namespace UnityEditor.UIElements
             }
 
             protected bool isFieldAttached { get; private set; }
+
+            private void OnFieldAttached(AttachToPanelEvent evt)
+            {
+                isFieldAttached = true;
+                ResetCachedValues();
+            }
+
+            private void OnFieldDetached(DetachFromPanelEvent evt)
+            {
+                isFieldAttached = false;
+            }
+
+            protected void UpdateFieldIsAttached()
+            {
+                VisualElement ve = m_Field as VisualElement;
+
+                if (ve != null)
+                {
+                    bool attached = ve.panel != null;
+
+                    if (isFieldAttached != attached)
+                    {
+                        isFieldAttached = attached;
+                        if (attached)
+                        {
+                            ResetCachedValues();
+                        }
+                    }
+                }
+                else
+                {
+                    //we're not dealing with VisualElement
+                    if (!isFieldAttached)
+                    {
+                        isFieldAttached = true;
+                        ResetCachedValues();
+                    }
+                }
+            }
+
+            protected abstract void ResetCachedValues();
+        }
+
+        private abstract class SerializedObjectBindingToBaseField<TValue, TField> : SerializedObjectBindingBase where TField : class, INotifyValueChanged<TValue>
+        {
+            protected TField field
+            {
+                get { return m_Field as TField; }
+                set
+                {
+                    field?.UnregisterValueChangedCallback(FieldValueChanged);
+                    boundElement = value as IBindable;
+
+                    if (field != null)
+                    {
+                        field.RegisterValueChangedCallback(FieldValueChanged);
+                    }
+                }
+            }
+
 
             private void FieldValueChanged(ChangeEvent<TValue> evt)
             {
@@ -909,7 +992,7 @@ namespace UnityEditor.UIElements
 
             private UInt64 lastUpdatedRevision = 0xFFFFFFFFFFFFFFFF;
 
-            public void ResetCachedValues()
+            protected override void ResetCachedValues()
             {
                 lastUpdatedRevision = 0xFFFFFFFFFFFFFFFF;
                 UpdateLastFieldValue();
@@ -949,45 +1032,6 @@ namespace UnityEditor.UIElements
                 }
                 // We unbind here
                 Release();
-            }
-
-            private void OnFieldAttached(AttachToPanelEvent evt)
-            {
-                isFieldAttached = true;
-                ResetCachedValues();
-            }
-
-            private void OnFieldDetached(DetachFromPanelEvent evt)
-            {
-                isFieldAttached = false;
-            }
-
-            protected void UpdateFieldIsAttached()
-            {
-                VisualElement ve = m_Field as VisualElement;
-
-                if (ve != null)
-                {
-                    bool attached =  ve.panel != null;
-
-                    if (isFieldAttached != attached)
-                    {
-                        isFieldAttached = attached;
-                        if (attached)
-                        {
-                            ResetCachedValues();
-                        }
-                    }
-                }
-                else
-                {
-                    //we're not dealing with VisualElement
-                    if (!isFieldAttached)
-                    {
-                        isFieldAttached = true;
-                        ResetCachedValues();
-                    }
-                }
             }
 
             // Read the value from the ui field and save it.

@@ -4,8 +4,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using Mono.Cecil;
+using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine.Scripting;
 
 namespace UnityEditor
@@ -20,6 +22,7 @@ namespace UnityEditor
             ReferenceHasErrors = (1 << 0),
             UnresolvableReference = (1 << 1),
             IncompatibleWithEditor = (1 << 2),
+            AsmdefPluginConflict = (1 << 3)
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -27,6 +30,7 @@ namespace UnityEditor
         {
             public ErrorFlags flags;
             public string message;
+            public string assemblyPath;
 
             public void Add(ErrorFlags newFlags, string newMessage)
             {
@@ -129,6 +133,52 @@ namespace UnityEditor
                 PluginCompatibleWithEditor);
 
             return errors;
+        }
+
+        [RequiredByNativeCode]
+        public static Error[] ValidateAssemblyDefinitionFiles()
+        {
+            var customScriptAssemblies = EditorCompilationInterface.Instance.GetCustomScriptAssemblies();
+
+            if (customScriptAssemblies.Length == 0)
+                return null;
+
+            var pluginImporters = PluginImporter.GetAllImporters();
+
+            if (pluginImporters == null || pluginImporters.Length == 0)
+                return null;
+
+            var pluginFilenameToAssetPath = new Dictionary<string, string>();
+
+            foreach (var pluginImporter in pluginImporters)
+            {
+                var pluginAssetPath = pluginImporter.assetPath;
+                var lowerPluginFilename = AssetPath.GetFileName(pluginAssetPath).ToLower(CultureInfo.InvariantCulture);
+                pluginFilenameToAssetPath[lowerPluginFilename] = pluginAssetPath;
+            }
+
+            var errors = new List<Error>();
+
+            foreach (var customScriptAssembly in customScriptAssemblies)
+            {
+                var lowerAsmdefFilename = $"{customScriptAssembly.Name.ToLower(CultureInfo.InvariantCulture)}.dll";
+
+                string pluginPath;
+
+                if (pluginFilenameToAssetPath.TryGetValue(lowerAsmdefFilename, out pluginPath))
+                {
+                    var error = new Error()
+                    {
+                        message = $"Plugin '{pluginPath}' has the same filename as Assembly Definition File '{customScriptAssembly.FilePath}'. Rename the assemblies to avoid hard to diagnose issues and crashes.",
+                        flags = ErrorFlags.AsmdefPluginConflict,
+                        assemblyPath = pluginPath
+                    };
+
+                    errors.Add(error);
+                }
+            }
+
+            return errors.ToArray();
         }
 
         public static bool PluginCompatibleWithEditor(string path)

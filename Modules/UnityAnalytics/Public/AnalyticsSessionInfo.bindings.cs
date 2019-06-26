@@ -99,6 +99,34 @@ namespace UnityEngine.Analytics
             }
         }
 
+        public delegate void IdentityTokenChanged(string token);
+        public static event IdentityTokenChanged identityTokenChanged;
+
+        [RequiredByNativeCode]
+        internal static void CallIdentityTokenChanged(string token)
+        {
+            var handler = identityTokenChanged;
+            if (handler != null)
+                handler(token);
+        }
+
+        public static string identityToken
+        {
+            get
+            {
+                if (!Analytics.IsInitialized())
+                    return null;
+                return identityTokenInternal;
+            }
+        }
+
+        [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
+        private extern static string identityTokenInternal
+        {
+            [NativeMethod("GetIdentityToken")]
+            get;
+        }
+
         [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
         private extern static string customUserIdInternal
         {

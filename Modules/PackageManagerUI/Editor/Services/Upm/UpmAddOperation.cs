@@ -4,40 +4,36 @@
 
 using System;
 using UnityEditor.PackageManager.Requests;
-using System.Linq;
 
 namespace UnityEditor.PackageManager.UI
 {
-    internal class UpmAddOperation : UpmBaseOperation, IAddOperation
+    [Serializable]
+    internal class UpmAddOperation : UpmBaseOperation<AddRequest>
     {
-        public PackageInfo PackageInfo { get; protected set; }
+        private string m_SpecialUniqueId = string.Empty;
 
-        public event Action<PackageInfo> OnOperationSuccess = delegate {};
+        public override string specialUniqueId { get { return m_SpecialUniqueId; } }
 
-        public void AddPackageAsync(PackageInfo packageInfo, Action<PackageInfo> doneCallbackAction = null, Action<Error> errorCallbackAction = null)
+        public void Add(string packageId)
         {
-            PackageInfo = packageInfo;
-            OnOperationError += errorCallbackAction;
-            OnOperationSuccess += doneCallbackAction;
-
+            m_PackageId = packageId;
+            m_PackageName = string.Empty;
+            m_SpecialUniqueId = string.Empty;
             Start();
         }
 
-        public void AddPackageAsync(string packageId, Action<PackageInfo> doneCallbackAction = null, Action<Error> errorCallbackAction = null)
+        public void AddByUrlOrPath(string urlOrPath)
         {
-            AddPackageAsync(new PackageInfo {PackageId = packageId}, doneCallbackAction, errorCallbackAction);
+            m_SpecialUniqueId = urlOrPath;
+            m_PackageId = string.Empty;
+            m_PackageName = string.Empty;
+            Start();
         }
 
-        protected override Request CreateRequest()
+        protected override AddRequest CreateRequest()
         {
-            return Client.Add(PackageInfo.PackageId);
-        }
-
-        protected override void ProcessData()
-        {
-            var request = CurrentRequest as AddRequest;
-            var package = FromUpmPackageInfo(request.Result).FirstOrDefault(p => p.PackageId == PackageInfo.PackageId);
-            OnOperationSuccess(package);
+            var uniqueId = string.IsNullOrEmpty(specialUniqueId) ? packageId : specialUniqueId;
+            return Client.Add(uniqueId);
         }
     }
 }

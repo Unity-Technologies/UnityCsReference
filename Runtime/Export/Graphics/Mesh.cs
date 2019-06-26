@@ -8,6 +8,9 @@ using System.Collections.Generic;
 using UnityEngine.Internal;
 using UnityEngine.Scripting;
 using UnityEngine.Rendering;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
+
 using uei = UnityEngine.Internal;
 
 namespace UnityEngine
@@ -15,13 +18,6 @@ namespace UnityEngine
     [RequiredByNativeCode] // Used by IMGUI (even on empty projects, it draws development console & watermarks)
     public sealed partial class Mesh : Object
     {
-        // WARNING: MUST be kept in sync with InternalScriptingShaderChannel in Runtime/Graphics/GraphicsScriptBindings.h
-        internal enum InternalVertexChannelType
-        {
-            Float = 0,
-            Color = 2,
-        }
-
         internal VertexAttribute GetUVChannel(int uvIndex)
         {
             if (uvIndex < 0 || uvIndex > 7)
@@ -42,7 +38,7 @@ namespace UnityEngine
             throw new ArgumentException("DefaultDimensionForChannel called for bad channel", "channel");
         }
 
-        private T[] GetAllocArrayFromChannel<T>(VertexAttribute channel, InternalVertexChannelType format, int dim)
+        private T[] GetAllocArrayFromChannel<T>(VertexAttribute channel, VertexAttributeFormat format, int dim)
         {
             if (canAccess)
             {
@@ -58,10 +54,10 @@ namespace UnityEngine
 
         private T[] GetAllocArrayFromChannel<T>(VertexAttribute channel)
         {
-            return GetAllocArrayFromChannel<T>(channel, InternalVertexChannelType.Float, DefaultDimensionForChannel(channel));
+            return GetAllocArrayFromChannel<T>(channel, VertexAttributeFormat.Float32, DefaultDimensionForChannel(channel));
         }
 
-        private void SetSizedArrayForChannel(VertexAttribute channel, InternalVertexChannelType format, int dim, System.Array values, int valuesArrayLength, int valuesStart, int valuesCount)
+        private void SetSizedArrayForChannel(VertexAttribute channel, VertexAttributeFormat format, int dim, System.Array values, int valuesArrayLength, int valuesStart, int valuesCount)
         {
             if (canAccess)
             {
@@ -81,7 +77,7 @@ namespace UnityEngine
                 PrintErrorCantAccessChannel(channel);
         }
 
-        private void SetArrayForChannel<T>(VertexAttribute channel, InternalVertexChannelType format, int dim, T[] values)
+        private void SetArrayForChannel<T>(VertexAttribute channel, VertexAttributeFormat format, int dim, T[] values)
         {
             var len = NoAllocHelpers.SafeLength(values);
             SetSizedArrayForChannel(channel, format, dim, values, len, 0, len);
@@ -90,25 +86,25 @@ namespace UnityEngine
         private void SetArrayForChannel<T>(VertexAttribute channel, T[] values)
         {
             var len = NoAllocHelpers.SafeLength(values);
-            SetSizedArrayForChannel(channel, InternalVertexChannelType.Float, DefaultDimensionForChannel(channel), values, len, 0, len);
+            SetSizedArrayForChannel(channel, VertexAttributeFormat.Float32, DefaultDimensionForChannel(channel), values, len, 0, len);
         }
 
-        private void SetListForChannel<T>(VertexAttribute channel, InternalVertexChannelType format, int dim, List<T> values, int start, int length)
+        private void SetListForChannel<T>(VertexAttribute channel, VertexAttributeFormat format, int dim, List<T> values, int start, int length)
         {
             SetSizedArrayForChannel(channel, format, dim, NoAllocHelpers.ExtractArrayFromList(values), NoAllocHelpers.SafeLength(values), start, length);
         }
 
         private void SetListForChannel<T>(VertexAttribute channel, List<T> values, int start, int length)
         {
-            SetSizedArrayForChannel(channel, InternalVertexChannelType.Float, DefaultDimensionForChannel(channel), NoAllocHelpers.ExtractArrayFromList(values), NoAllocHelpers.SafeLength(values), start, length);
+            SetSizedArrayForChannel(channel, VertexAttributeFormat.Float32, DefaultDimensionForChannel(channel), NoAllocHelpers.ExtractArrayFromList(values), NoAllocHelpers.SafeLength(values), start, length);
         }
 
         private void GetListForChannel<T>(List<T> buffer, int capacity, VertexAttribute channel, int dim)
         {
-            GetListForChannel(buffer, capacity, channel, dim, InternalVertexChannelType.Float);
+            GetListForChannel(buffer, capacity, channel, dim, VertexAttributeFormat.Float32);
         }
 
-        private void GetListForChannel<T>(List<T> buffer, int capacity, VertexAttribute channel, int dim, InternalVertexChannelType channelType)
+        private void GetListForChannel<T>(List<T> buffer, int capacity, VertexAttribute channel, int dim, VertexAttributeFormat channelType)
         {
             buffer.Clear();
 
@@ -187,8 +183,8 @@ namespace UnityEngine
         }
         public Color32[] colors32
         {
-            get { return GetAllocArrayFromChannel<Color32>(VertexAttribute.Color, InternalVertexChannelType.Color, 4); }
-            set { SetArrayForChannel(VertexAttribute.Color, InternalVertexChannelType.Color, 4, value); }
+            get { return GetAllocArrayFromChannel<Color32>(VertexAttribute.Color, VertexAttributeFormat.UNorm8, 4); }
+            set { SetArrayForChannel(VertexAttribute.Color, VertexAttributeFormat.UNorm8, 4, value); }
         }
 
         public void GetVertices(List<Vector3> vertices)
@@ -216,7 +212,7 @@ namespace UnityEngine
 
         public void SetVertices(Vector3[] inVertices, int start, int length)
         {
-            SetSizedArrayForChannel(VertexAttribute.Position, InternalVertexChannelType.Float, DefaultDimensionForChannel(VertexAttribute.Position), inVertices, NoAllocHelpers.SafeLength(inVertices), start, length);
+            SetSizedArrayForChannel(VertexAttribute.Position, VertexAttributeFormat.Float32, DefaultDimensionForChannel(VertexAttribute.Position), inVertices, NoAllocHelpers.SafeLength(inVertices), start, length);
         }
 
         public void GetNormals(List<Vector3> normals)
@@ -244,7 +240,7 @@ namespace UnityEngine
 
         public void SetNormals(Vector3[] inNormals, int start, int length)
         {
-            SetSizedArrayForChannel(VertexAttribute.Normal, InternalVertexChannelType.Float, DefaultDimensionForChannel(VertexAttribute.Normal), inNormals, NoAllocHelpers.SafeLength(inNormals), start, length);
+            SetSizedArrayForChannel(VertexAttribute.Normal, VertexAttributeFormat.Float32, DefaultDimensionForChannel(VertexAttribute.Normal), inNormals, NoAllocHelpers.SafeLength(inNormals), start, length);
         }
 
         public void GetTangents(List<Vector4> tangents)
@@ -272,7 +268,7 @@ namespace UnityEngine
 
         public void SetTangents(Vector4[] inTangents, int start, int length)
         {
-            SetSizedArrayForChannel(VertexAttribute.Tangent, InternalVertexChannelType.Float, DefaultDimensionForChannel(VertexAttribute.Tangent), inTangents, NoAllocHelpers.SafeLength(inTangents), start, length);
+            SetSizedArrayForChannel(VertexAttribute.Tangent, VertexAttributeFormat.Float32, DefaultDimensionForChannel(VertexAttribute.Tangent), inTangents, NoAllocHelpers.SafeLength(inTangents), start, length);
         }
 
         public void GetColors(List<Color> colors)
@@ -300,7 +296,7 @@ namespace UnityEngine
 
         public void SetColors(Color[] inColors, int start, int length)
         {
-            SetSizedArrayForChannel(VertexAttribute.Color, InternalVertexChannelType.Float, DefaultDimensionForChannel(VertexAttribute.Color), inColors, NoAllocHelpers.SafeLength(inColors), start, length);
+            SetSizedArrayForChannel(VertexAttribute.Color, VertexAttributeFormat.Float32, DefaultDimensionForChannel(VertexAttribute.Color), inColors, NoAllocHelpers.SafeLength(inColors), start, length);
         }
 
         public void GetColors(List<Color32> colors)
@@ -308,7 +304,7 @@ namespace UnityEngine
             if (colors == null)
                 throw new ArgumentNullException("The result colors list cannot be null.", "colors");
 
-            GetListForChannel(colors, vertexCount, VertexAttribute.Color, 4, InternalVertexChannelType.Color);
+            GetListForChannel(colors, vertexCount, VertexAttribute.Color, 4, VertexAttributeFormat.UNorm8);
         }
 
         public void SetColors(List<Color32> inColors)
@@ -318,7 +314,7 @@ namespace UnityEngine
 
         public void SetColors(List<Color32> inColors, int start, int length)
         {
-            SetListForChannel(VertexAttribute.Color, InternalVertexChannelType.Color, 4, inColors, start, length);
+            SetListForChannel(VertexAttribute.Color, VertexAttributeFormat.UNorm8, 4, inColors, start, length);
         }
 
         public void SetColors(Color32[] inColors)
@@ -328,7 +324,7 @@ namespace UnityEngine
 
         public void SetColors(Color32[] inColors, int start, int length)
         {
-            SetSizedArrayForChannel(VertexAttribute.Color, InternalVertexChannelType.Color, 4, inColors, NoAllocHelpers.SafeLength(inColors), start, length);
+            SetSizedArrayForChannel(VertexAttribute.Color, VertexAttributeFormat.UNorm8, 4, inColors, NoAllocHelpers.SafeLength(inColors), start, length);
         }
 
         private void SetUvsImpl<T>(int uvIndex, int dim, List<T> uvs, int start, int length)
@@ -340,7 +336,7 @@ namespace UnityEngine
                 Debug.LogError("The uv index is invalid. Must be in the range 0 to 7.");
                 return;
             }
-            SetListForChannel(GetUVChannel(uvIndex), InternalVertexChannelType.Float, dim, uvs, start, length);
+            SetListForChannel(GetUVChannel(uvIndex), VertexAttributeFormat.Float32, dim, uvs, start, length);
         }
 
         public void SetUVs(int channel, List<Vector2> uvs)
@@ -377,7 +373,7 @@ namespace UnityEngine
         {
             if (uvIndex < 0 || uvIndex > 7)
                 throw new ArgumentOutOfRangeException(nameof(uvIndex), uvIndex, "The uv index is invalid. Must be in the range 0 to 7.");
-            SetSizedArrayForChannel(GetUVChannel(uvIndex), InternalVertexChannelType.Float, dim, uvs, NoAllocHelpers.SafeLength(uvs), arrayStart, arraySize);
+            SetSizedArrayForChannel(GetUVChannel(uvIndex), VertexAttributeFormat.Float32, dim, uvs, NoAllocHelpers.SafeLength(uvs), arrayStart, arraySize);
         }
 
         public void SetUVs(int channel, Vector2[] uvs)
@@ -433,6 +429,20 @@ namespace UnityEngine
         public void GetUVs(int channel, List<Vector4> uvs)
         {
             GetUVsImpl(channel, uvs, 4);
+        }
+
+        public UnityEngine.Rendering.VertexAttributeDescriptor[] GetVertexAttributes()
+        {
+            return (UnityEngine.Rendering.VertexAttributeDescriptor[])GetVertexAttributesAlloc();
+        }
+
+        public unsafe void SetVertexBufferData<T>(NativeArray<T> data, int dataStart, int meshBufferStart, int count, int stream = 0) where T : struct
+        {
+            if (!canAccess)
+                throw new InvalidOperationException($"Not allowed to access vertex data on mesh '{name}' (isReadable is false; Read/Write must be enabled in import settings)");
+            if (dataStart < 0 || meshBufferStart < 0 || count < 0 || dataStart + count > data.Length)
+                throw new ArgumentOutOfRangeException($"Bad start/count arguments (dataStart:{dataStart} meshBufferStart:{meshBufferStart} count:{count})");
+            InternalSetVertexBufferData(stream, (IntPtr)data.GetUnsafeReadOnlyPtr(), dataStart, meshBufferStart, count, UnsafeUtility.SizeOf<T>());
         }
 
         //
@@ -555,6 +565,18 @@ namespace UnityEngine
 
             NoAllocHelpers.EnsureListElemCount(indices, (int)GetIndexCount(submesh));
             GetIndicesNonAllocImpl16(NoAllocHelpers.ExtractArrayFromListT(indices), submesh, applyBaseVertex);
+        }
+
+        public unsafe void SetIndexBufferData<T>(NativeArray<T> data, int dataStart, int meshBufferStart, int count) where T : struct
+        {
+            if (!canAccess)
+            {
+                PrintErrorCantAccessIndices();
+                return;
+            }
+            if (dataStart < 0 || meshBufferStart < 0 || count < 0 || dataStart + count > data.Length)
+                throw new ArgumentOutOfRangeException($"Bad start/count arguments (dataStart:{dataStart} meshBufferStart:{meshBufferStart} count:{count})");
+            InternalSetIndexBufferData((IntPtr)data.GetUnsafeReadOnlyPtr(), dataStart, meshBufferStart, count, UnsafeUtility.SizeOf<T>());
         }
 
         public UInt32 GetIndexStart(int submesh)

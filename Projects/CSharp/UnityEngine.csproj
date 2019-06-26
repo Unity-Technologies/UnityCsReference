@@ -1603,12 +1603,6 @@
     <Compile Include="..\..\Modules\XR\Subsystems\Experience\XRExperienceSubsystemDescriptor.bindings.cs">
       <Link>Modules\XR\Subsystems\Experience\XRExperienceSubsystemDescriptor.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\XR\Subsystems\Gestures\XRGestureSubsystem.bindings.cs">
-      <Link>Modules\XR\Subsystems\Gestures\XRGestureSubsystem.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\XR\Subsystems\Gestures\XRGestureSubsystemDescriptor.bindings.cs">
-      <Link>Modules\XR\Subsystems\Gestures\XRGestureSubsystemDescriptor.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\XR\Subsystems\Input\XRInputSubsystem.bindings.cs">
       <Link>Modules\XR\Subsystems\Input\XRInputSubsystem.bindings.cs</Link>
     </Compile>
@@ -2034,6 +2028,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\Mesh.cs">
       <Link>Runtime\Export\Graphics\Mesh.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\OnDemandRendering.bindings.cs">
+      <Link>Runtime\Export\Graphics\OnDemandRendering.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\RenderingCommandBuffer.bindings.cs">
       <Link>Runtime\Export\Graphics\RenderingCommandBuffer.bindings.cs</Link>

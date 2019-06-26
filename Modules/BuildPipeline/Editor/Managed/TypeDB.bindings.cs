@@ -49,12 +49,15 @@ namespace UnityEditor.Build.Player
         [NativeMethod(IsThreadSafe = true)]
         private static extern void Internal_Destroy(IntPtr ptr);
 
+        [NativeMethod(IsThreadSafe = true)]
         public extern Hash128 GetHash128();
 
         internal extern string SerializeToJson();
         internal extern void DeserializeFromJson(string data);
 
+        [NativeMethod(IsThreadSafe = true)]
         internal extern byte[] SerializeToBinary();
+        [NativeMethod(IsThreadSafe = true)]
         internal extern void DeserializeFromBinary([Out] byte[] data);
 
         public override bool Equals(object obj)

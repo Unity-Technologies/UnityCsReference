@@ -86,19 +86,17 @@ namespace UnityEngine.UIElements
         public override string ToString()
         {
             string unitStr = string.Empty;
-            if (!Mathf.Approximately(0, value))
+            switch (unit)
             {
-                switch (unit)
-                {
-                    case LengthUnit.Pixel:
+                case LengthUnit.Pixel:
+                    if (!Mathf.Approximately(0, value))
                         unitStr = "px";
-                        break;
-                    case LengthUnit.Percent:
-                        unitStr = "%";
-                        break;
-                    default:
-                        break;
-                }
+                    break;
+                case LengthUnit.Percent:
+                    unitStr = "%";
+                    break;
+                default:
+                    break;
             }
             return $"{value.ToString(CultureInfo.InvariantCulture.NumberFormat)}{unitStr}";
         }

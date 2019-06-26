@@ -165,6 +165,11 @@ namespace UnityEditor
         [NonSerialized]
         private GUIStyle m_TextStyle;
 
+        public virtual void OnEnable()
+        {
+            alwaysAllowExpansion = true;
+        }
+
         public override void OnInspectorGUI()
         {
             if (m_TextStyle == null)

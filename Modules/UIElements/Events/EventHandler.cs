@@ -75,31 +75,54 @@ namespace UnityEngine.UIElements
 
         public abstract void SendEvent(EventBase e);
 
+        internal void HandleEventAtTargetPhase(EventBase evt)
+        {
+            evt.propagationPhase = PropagationPhase.AtTarget;
+            HandleEvent(evt);
+            evt.propagationPhase = PropagationPhase.DefaultActionAtTarget;
+            HandleEvent(evt);
+        }
+
         public virtual void HandleEvent(EventBase evt)
         {
             if (evt == null)
                 return;
 
-            if (evt.propagationPhase != PropagationPhase.DefaultAction)
+            switch (evt.propagationPhase)
             {
-                if (!evt.isPropagationStopped)
+                case PropagationPhase.TrickleDown:
+                case PropagationPhase.AtTarget:
+                case PropagationPhase.BubbleUp:
                 {
-                    m_CallbackRegistry?.InvokeCallbacks(evt);
+                    if (!evt.isPropagationStopped)
+                    {
+                        m_CallbackRegistry?.InvokeCallbacks(evt);
+                    }
+                    break;
                 }
 
-                if (evt.propagationPhase == PropagationPhase.AtTarget && !evt.isDefaultPrevented)
+                case PropagationPhase.DefaultActionAtTarget:
                 {
-                    using (new EventDebuggerLogExecuteDefaultAction(evt))
+                    if (!evt.isDefaultPrevented)
                     {
-                        ExecuteDefaultActionAtTarget(evt);
+                        using (new EventDebuggerLogExecuteDefaultAction(evt))
+                        {
+                            ExecuteDefaultActionAtTarget(evt);
+                        }
                     }
+                    break;
                 }
-            }
-            else if (!evt.isDefaultPrevented)
-            {
-                using (new EventDebuggerLogExecuteDefaultAction(evt))
+
+                case PropagationPhase.DefaultAction:
                 {
-                    ExecuteDefaultAction(evt);
+                    if (!evt.isDefaultPrevented)
+                    {
+                        using (new EventDebuggerLogExecuteDefaultAction(evt))
+                        {
+                            ExecuteDefaultAction(evt);
+                        }
+                    }
+                    break;
                 }
             }
         }

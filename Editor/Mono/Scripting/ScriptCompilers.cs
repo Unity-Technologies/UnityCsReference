@@ -9,6 +9,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using UnityEditor.Scripting.Compilers;
 using UnityEditor.Scripting.ScriptCompilation;
+using UnityEngine.Scripting;
 
 namespace UnityEditor.Scripting
 {
@@ -102,6 +103,7 @@ namespace UnityEditor.Scripting
             }).ToArray();
         }
 
+        [RequiredByNativeCode]
         internal static string GetNamespace(string file, string definedSymbols)
         {
             if (string.IsNullOrEmpty(file)) throw new ArgumentException("Invalid file");

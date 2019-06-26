@@ -7,36 +7,9 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEditor;
 
 namespace UnityEditor.PackageManager.UI
 {
-    internal class PackageWithSamplesJsonHelper
-    {
-        public List<SampleJsonHelper> samples = new List<SampleJsonHelper>();
-    }
-
-    [Serializable]
-    internal class SampleJsonHelper
-    {
-        public string displayName = "";
-        public string description = "";
-        public string path = "";
-        public string resolvedPath = "";
-        public string importPath = "";
-        public bool interactiveImport = true;
-
-        internal static List<SampleJsonHelper> LoadSamplesFromPackageJson(string packagePath)
-        {
-            var packageJsonPath = System.IO.Path.Combine(packagePath, "package.json");
-            if (!File.Exists(packageJsonPath))
-                throw new FileNotFoundException(packageJsonPath);
-            var packageJsonText = File.ReadAllText(packageJsonPath);
-            var packageJson = JsonUtility.FromJson<PackageWithSamplesJsonHelper>(packageJsonText);
-            return packageJson.samples;
-        }
-    }
-
     /// <summary>
     /// Struct for Package Sample
     /// </summary>
@@ -94,15 +67,6 @@ namespace UnityEditor.PackageManager.UI
             get { return !string.IsNullOrEmpty(importPath) && Directory.Exists(importPath); }
         }
 
-        internal Sample(SampleJsonHelper sample)
-        {
-            this.displayName = sample.displayName;
-            this.description = sample.description;
-            this.resolvedPath = sample.resolvedPath;
-            this.importPath = sample.importPath;
-            this.interactiveImport = sample.interactiveImport;
-        }
-
         internal Sample(string displayName, string description, string resolvedPath, string importPath, bool interactiveImport)
         {
             this.displayName = displayName;
@@ -120,14 +84,14 @@ namespace UnityEditor.PackageManager.UI
         /// <returns>A list of samples in the given package</returns>
         public static IEnumerable<Sample> FindByPackage(string packageName, string packageVersion)
         {
-            var package = PackageCollection.packages[packageName];
+            var package = PackageDatabase.instance.GetPackage(packageName);
             if (package != null)
             {
-                var packageInfo = package.Current;
+                var version = package.installedVersion;
                 if (!string.IsNullOrEmpty(packageVersion))
-                    packageInfo = package.Versions.FirstOrDefault(v => v.Version == packageVersion);
-                if (packageInfo != null)
-                    return packageInfo.Samples;
+                    version = package.versions.FirstOrDefault(v => v.version == packageVersion);
+                if (version != null)
+                    return version.samples;
             }
             return new List<Sample>();
         }
@@ -149,7 +113,7 @@ namespace UnityEditor.PackageManager.UI
                 AssetDatabase.ImportPackage(unityPackages[0], interactive);
             else
             {
-                var prevImports = PreviousImports;
+                var prevImports = previousImports;
                 if (prevImports.Count > 0 && (options & ImportOptions.OverridePreviousImports) == ImportOptions.None)
                     return false;
                 foreach (var v in prevImports)
@@ -161,7 +125,7 @@ namespace UnityEditor.PackageManager.UI
             return true;
         }
 
-        internal List<string> PreviousImports
+        internal List<string> previousImports
         {
             get
             {
@@ -184,7 +148,7 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        internal string Size
+        internal string size
         {
             get
             {
@@ -199,7 +163,7 @@ namespace UnityEditor.PackageManager.UI
                     order++;
                     len = len / 1024;
                 }
-                return string.Format("{0:0.##} {1}", len, sizes[order]);
+                return $"{len:0.##} {sizes[order]}";
             }
         }
     }

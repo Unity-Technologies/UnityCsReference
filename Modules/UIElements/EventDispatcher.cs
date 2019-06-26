@@ -31,7 +31,7 @@ namespace UnityEngine.UIElements
 
     public struct EventDispatcherGate : IDisposable, IEquatable<EventDispatcherGate>
     {
-        EventDispatcher m_Dispatcher;
+        readonly EventDispatcher m_Dispatcher;
 
         public EventDispatcherGate(EventDispatcher d)
         {
@@ -287,19 +287,19 @@ namespace UnityEngine.UIElements
                     }
                 }
 
-                EventDispatchUtilities.ExecuteDefaultAction(evt, panel);
                 if (evt.path != null)
                 {
-                    foreach (var element in evt.path.targetAndBubblePath)
+                    foreach (var element in evt.path.targetElements)
                     {
-                        if (element.m_IsTarget)
-                        {
-                            evt.target = element.m_VisualElement;
-                            EventDispatchUtilities.ExecuteDefaultAction(evt, panel);
-                        }
+                        evt.target = element;
+                        EventDispatchUtilities.ExecuteDefaultAction(evt, panel);
                     }
 
                     evt.target = evt.leafTarget;
+                }
+                else
+                {
+                    EventDispatchUtilities.ExecuteDefaultAction(evt, panel);
                 }
 
                 evt.PostDispatch(panel);

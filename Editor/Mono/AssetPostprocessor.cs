@@ -11,6 +11,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using UnityEditor.AssetImporters;
 using Object = UnityEngine.Object;
 using UnityEditor.Experimental.AssetImporters;
 
@@ -193,6 +194,16 @@ namespace UnityEditor
             }
         }
 
+        static bool ImplementsAnyOfTheses(Type type, string[] methods)
+        {
+            foreach (var method in methods)
+            {
+                if (type.GetMethod(method, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null)
+                    return true;
+            }
+            return false;
+        }
+
         [RequiredByNativeCode]
         static string GetMeshProcessorsHashString()
         {
@@ -207,11 +218,21 @@ namespace UnityEditor
                 {
                     var inst = Activator.CreateInstance(assetPostprocessorClass) as AssetPostprocessor;
                     var type = inst.GetType();
-                    bool hasPreProcessMethod = type.GetMethod("OnPreprocessModel", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
-                    bool hasPostprocessMeshHierarchy = type.GetMethod("OnPostprocessMeshHierarchy", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
-                    bool hasPostProcessMethod = type.GetMethod("OnPostprocessModel", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
+                    bool hasAnyPostprocessMethod = ImplementsAnyOfTheses(type, new[]
+                    {
+                        "OnPreprocessModel",
+                        "OnPostprocessMeshHierarchy",
+                        "OnPostprocessModel",
+                        "OnPreprocessAnimation",
+                        "OnPostprocessAnimation",
+                        "OnPostprocessGameObjectWithAnimatedUserProperties",
+                        "OnPostprocessGameObjectWithUserProperties",
+                        "OnPostprocessMaterial",
+                        "OnAssignMaterialModel",
+                        "OnPreprocessMaterialDescription"
+                    });
                     uint version = inst.GetVersion();
-                    if (version != 0 && (hasPreProcessMethod || hasPostprocessMeshHierarchy || hasPostProcessMethod))
+                    if (version != 0 && hasAnyPostprocessMethod)
                     {
                         versionsByType.Add(type.FullName, version);
                     }
@@ -336,6 +357,16 @@ namespace UnityEditor
             {
                 object[] args = { material };
                 InvokeMethodIfAvailable(inst, "OnPostprocessMaterial", args);
+            }
+        }
+
+        [RequiredByNativeCode]
+        static void PreprocessMaterialDescription(MaterialDescription description, Material material, AnimationClip[] animations)
+        {
+            object[] args = { description, material, animations };
+            foreach (AssetPostprocessor inst in m_ImportProcessors)
+            {
+                InvokeMethodIfAvailable(inst, "OnPreprocessMaterialDescription", args);
             }
         }
 

@@ -1020,6 +1020,7 @@ namespace UnityEditor
                 return;
             }
 
+            ModeService.ChangeModeById("default");
             FileUtil.DeleteFileOrDirectory(layoutsPreferencesPath);
             FileUtil.DeleteFileOrDirectory(ProjectLayoutPath);
 

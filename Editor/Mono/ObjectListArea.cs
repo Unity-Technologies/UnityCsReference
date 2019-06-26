@@ -74,6 +74,8 @@ namespace UnityEditor
             public GUIStyle subAssetBgMiddle = GetStyle("ProjectBrowserSubAssetBgMiddle");
             public GUIStyle subAssetBgDivider = GetStyle("ProjectBrowserSubAssetBgDivider");
             public GUIStyle subAssetExpandButton = GetStyle("ProjectBrowserSubAssetExpandBtn");
+            public GUIStyle subAssetExpandButtonMedium = GetStyle("ProjectBrowserSubAssetExpandBtnMedium");
+            public GUIStyle subAssetExpandButtonSmall = GetStyle("ProjectBrowserSubAssetExpandBtnSmall");
 
             public GUIContent m_AssetStoreNotAvailableText = EditorGUIUtility.TrTextContent("The Asset Store is not available");
 

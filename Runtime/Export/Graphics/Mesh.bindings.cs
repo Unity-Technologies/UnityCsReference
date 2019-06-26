@@ -30,6 +30,21 @@ namespace UnityEngine
 
         extern public UnityEngine.Rendering.IndexFormat indexFormat { get; set; }
 
+        [FreeFunction(Name = "MeshScripting::SetIndexBufferParams", HasExplicitThis = true)]
+        extern public void SetIndexBufferParams(int indexCount, UnityEngine.Rendering.IndexFormat format);
+
+        [FreeFunction(Name = "MeshScripting::InternalSetIndexBufferData", HasExplicitThis = true, ThrowsException = true)]
+        extern private void InternalSetIndexBufferData(IntPtr data, int dataStart, int meshBufferStart, int count, int elemSize);
+
+        [FreeFunction(Name = "MeshScripting::SetVertexBufferParams", HasExplicitThis = true, ThrowsException = true)]
+        extern public void SetVertexBufferParams(int vertexCount, params UnityEngine.Rendering.VertexAttributeDescriptor[] attributes);
+
+        [FreeFunction(Name = "MeshScripting::InternalSetVertexBufferData", HasExplicitThis = true)]
+        extern private void InternalSetVertexBufferData(int stream, IntPtr data, int dataStart, int meshBufferStart, int count, int elemSize);
+
+        [FreeFunction(Name = "MeshScripting::GetVertexAttributesAlloc", HasExplicitThis = true)]
+        extern private System.Array GetVertexAttributesAlloc();
+
         [FreeFunction(Name = "MeshScripting::GetIndexStart", HasExplicitThis = true)]
         extern private UInt32 GetIndexStartImpl(int submesh);
 
@@ -72,15 +87,17 @@ namespace UnityEngine
         extern public bool HasVertexAttribute(VertexAttribute attr);
         [FreeFunction(Name = "MeshScripting::GetChannelDimension", HasExplicitThis = true)]
         extern public int GetVertexAttributeDimension(VertexAttribute attr);
+        [FreeFunction(Name = "MeshScripting::GetChannelFormat", HasExplicitThis = true)]
+        extern public VertexAttributeFormat GetVertexAttributeFormat(VertexAttribute attr);
 
         [FreeFunction(Name = "SetMeshComponentFromArrayFromScript", HasExplicitThis = true)]
-        extern private void SetArrayForChannelImpl(VertexAttribute channel, InternalVertexChannelType format, int dim, System.Array values, int arraySize, int valuesStart, int valuesCount);
+        extern private void SetArrayForChannelImpl(VertexAttribute channel, VertexAttributeFormat format, int dim, System.Array values, int arraySize, int valuesStart, int valuesCount);
 
         [FreeFunction(Name = "AllocExtractMeshComponentFromScript", HasExplicitThis = true)]
-        extern private System.Array GetAllocArrayFromChannelImpl(VertexAttribute channel, InternalVertexChannelType format, int dim);
+        extern private System.Array GetAllocArrayFromChannelImpl(VertexAttribute channel, VertexAttributeFormat format, int dim);
 
         [FreeFunction(Name = "ExtractMeshComponentFromScript", HasExplicitThis = true)]
-        extern private void GetArrayFromChannelImpl(VertexAttribute channel, InternalVertexChannelType format, int dim, System.Array values);
+        extern private void GetArrayFromChannelImpl(VertexAttribute channel, VertexAttributeFormat format, int dim, System.Array values);
 
         // access to native underlying graphics API resources (mostly for native code plugins)
 
@@ -195,6 +212,11 @@ namespace UnityEngine
             [NativeMethod(Name = "GetSubMeshCount")] get;
             [FreeFunction(Name = "MeshScripting::SetSubMeshCount", HasExplicitThis = true)] set;
         }
+
+        [FreeFunction("MeshScripting::SetSubMesh", HasExplicitThis = true, ThrowsException = true)]
+        extern public void SetSubMesh(int index, SubMeshDescriptor desc);
+        [FreeFunction("MeshScripting::GetSubMesh", HasExplicitThis = true, ThrowsException = true)]
+        extern public SubMeshDescriptor GetSubMesh(int index);
 
         extern public Bounds bounds { get; set; }
 

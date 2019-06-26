@@ -134,6 +134,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     return hashCode;
                 }
             }
+
+            public List<string> GetResponseFiles()
+            {
+                return Language?.CreateResponseFileProvider().Get(PathPrefix);
+            }
         }
 
         public class CompilationAssemblies

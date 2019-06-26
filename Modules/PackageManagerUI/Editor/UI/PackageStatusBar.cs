@@ -3,9 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI
@@ -14,122 +11,106 @@ namespace UnityEditor.PackageManager.UI
     {
         internal new class UxmlFactory : UxmlFactory<PackageStatusBar> {}
 
-        private readonly VisualElement root;
-        private string LastErrorMessage;
-        private string LastUpdateTime;
+        private const string k_OfflineErrorMessage = "You seem to be offline";
 
-        private List<IBaseOperation> operationsInProgress;
+        private string m_LastErrorMessage;
 
         private enum StatusType { Normal, Loading, Error };
 
-        public event Action OnCheckInternetReachability = delegate {};
-
         public PackageStatusBar()
         {
-            root = Resources.GetTemplate("PackageStatusBar.uxml");
+            var root = Resources.GetTemplate("PackageStatusBar.uxml");
             Add(root);
-            Cache = new VisualElementCache(root);
+            cache = new VisualElementCache(root);
 
-            LastErrorMessage = string.Empty;
-            operationsInProgress = new List<IBaseOperation>();
+            m_LastErrorMessage = string.Empty;
         }
 
-        public void Setup(PackageCollection collection)
+        public void Setup()
         {
-            LastUpdateTime = collection.lastUpdateTime;
             UpdateStatusMessage();
 
-            StatusLabel.RegisterCallback<MouseDownEvent>(e =>
+            PackageDatabase.instance.onUpdateTimeChange += SetUpdateTimestamp;
+
+            PackageDatabase.instance.onRefreshOperationStart += () => SetStatusMessage(StatusType.Loading, "Loading packages...");
+            PackageDatabase.instance.onRefreshOperationFinish += UpdateStatusMessage;
+            PackageDatabase.instance.onRefreshOperationError += (error) =>
             {
-                // only react to left mouse button
-                if (e.button != 0)
+                m_LastErrorMessage = "Error loading packages, see console";
+                UpdateStatusMessage();
+            };
+
+            statusLabel.RegisterCallback<MouseDownEvent>(e =>
+            {
+                // only react to left mouse button click outside of play mode
+                if (e.button != 0 || EditorApplication.isPlaying)
                     return;
-                if (!EditorApplication.isPlaying)
-                {
-                    collection.FetchListOfflineCache(true);
-                    collection.FetchListCache(true);
-                    collection.FetchSearchCache(true);
-                }
+
+                PackageDatabase.instance.Refresh(RefreshOptions.SearchAll);
             });
         }
 
-        public void SetUpdateTimeMessage(string lastUpdateTime)
+        private static string GetUpdateTimeLabel(long timestamp)
         {
-            LastUpdateTime = lastUpdateTime;
-            if (!string.IsNullOrEmpty(LastUpdateTime))
-                SetStatusMessage(StatusType.Normal, "Last update " + LastUpdateTime);
+            return new DateTime(timestamp).ToString("MMM d, HH:mm");
+        }
+
+        private void SetUpdateTimestamp(long lastUpdateTimestamp)
+        {
+            // Only refresh update time after a search operation successfully returns while online
+            if (ApplicationUtil.instance.isInternetReachable && lastUpdateTimestamp != 0)
+                SetUpdateTimeLabel(GetUpdateTimeLabel(lastUpdateTimestamp));
+        }
+
+        private void SetUpdateTimeLabel(string lastUpdateTime)
+        {
+            if (!string.IsNullOrEmpty(lastUpdateTime))
+                SetStatusMessage(StatusType.Normal, "Last update " + lastUpdateTime);
             else
                 SetStatusMessage(StatusType.Normal, string.Empty);
         }
 
-        internal void OnListOrSearchOperation(IBaseOperation operation)
-        {
-            if (operation == null || operation.IsCompleted)
-                return;
-            operationsInProgress.Add(operation);
-            operation.OnOperationFinalized += () => { OnOperationFinalized(operation); };
-            operation.OnOperationError += OnOperationError;
-
-            SetStatusMessage(StatusType.Loading, "Loading packages...");
-        }
-
-        private void OnOperationFinalized(IBaseOperation operation)
-        {
-            operationsInProgress.Remove(operation);
-            if (operationsInProgress.Any()) return;
-            UpdateStatusMessage();
-        }
-
         private void UpdateStatusMessage()
         {
-            var errorMessage = LastErrorMessage;
-            if (Application.internetReachability == NetworkReachability.NotReachable)
+            var errorMessage = m_LastErrorMessage;
+            if (!ApplicationUtil.instance.isInternetReachable)
             {
                 EditorApplication.update -= CheckInternetReachability;
                 EditorApplication.update += CheckInternetReachability;
-                errorMessage = "You seem to be offline";
+                errorMessage = k_OfflineErrorMessage;
             }
 
             if (!string.IsNullOrEmpty(errorMessage))
                 SetStatusMessage(StatusType.Error, errorMessage);
             else
-                SetUpdateTimeMessage(LastUpdateTime);
-        }
-
-        private void OnOperationError(Error error)
-        {
-            LastErrorMessage = "Cannot load packages, see console";
+                SetUpdateTimeLabel(GetUpdateTimeLabel(PackageDatabase.instance.lastUpdateTimestamp));
         }
 
         private void CheckInternetReachability()
         {
-            if (Application.internetReachability == NetworkReachability.NotReachable)
+            if (!ApplicationUtil.instance.isInternetReachable)
                 return;
 
-            OnCheckInternetReachability();
+            PackageDatabase.instance.Refresh(RefreshOptions.ListInstalled | RefreshOptions.SearchAll);
+
             EditorApplication.update -= CheckInternetReachability;
         }
 
         private void SetStatusMessage(StatusType status, string message)
         {
             if (status == StatusType.Loading)
-            {
-                LoadingSpinner.Start();
-            }
+                loadingSpinner.Start();
             else
-            {
-                LoadingSpinner.Stop();
-            }
+                loadingSpinner.Stop();
 
-
-            UIUtils.SetElementDisplay(ErrorIcon, status == StatusType.Error);
-            StatusLabel.text = message;
+            UIUtils.SetElementDisplay(errorIcon, status == StatusType.Error);
+            statusLabel.text = message;
         }
 
-        private VisualElementCache Cache { get; set; }
+        private VisualElementCache cache { get; set; }
 
-        private LoadingSpinner LoadingSpinner { get { return Cache.Get<LoadingSpinner>("loadingSpinner"); }}
-        private Label ErrorIcon { get { return Cache.Get<Label>("errorIcon"); }}
-        private Label StatusLabel { get { return Cache.Get<Label>("statusLabel"); }}
+        private LoadingSpinner loadingSpinner { get { return cache.Get<LoadingSpinner>("loadingSpinner"); }}
+        private Label errorIcon { get { return cache.Get<Label>("errorIcon"); }}
+        private Label statusLabel { get { return cache.Get<Label>("statusLabel"); }}
     }
 }

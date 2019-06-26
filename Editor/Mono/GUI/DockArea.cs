@@ -153,7 +153,6 @@ namespace UnityEditor
                 if (w == null)
                     continue;
 
-                Invoke("OnDestroy", w);
                 UnityEngine.Object.DestroyImmediate(w, true);
             }
 

@@ -322,6 +322,7 @@ namespace UnityEditor
         int m_ReferenceTargetIndex = 0;
         PropertyHandlerCache m_PropertyHandlerCache = new PropertyHandlerCache();
         IPreviewable m_DummyPreview;
+        AudioFilterGUI m_AudioFilterGUI;
 
         internal SerializedObject m_SerializedObject = null;
         internal SerializedProperty m_EnabledProperty = null;
@@ -350,7 +351,7 @@ namespace UnityEditor
 
         const float kImageSectionWidth = 44;
         internal const float k_WideModeMinWidth = 330f;
-        internal const float k_HeaderHeight = 19f;
+        internal const float k_HeaderHeight = 21f;
 
         internal delegate void OnEditorGUIDelegate(Editor editor, Rect drawRect);
         internal static OnEditorGUIDelegate OnPostIconGUI = null;
@@ -669,6 +670,15 @@ namespace UnityEditor
             using (new UnityEditor.Localization.Editor.LocalizationGroup(target))
             {
                 res = DoDrawDefaultInspector(serializedObject);
+
+                var behaviour = target as MonoBehaviour;
+                if (behaviour == null || !AudioUtil.HasAudioCallback(behaviour) || AudioUtil.GetCustomFilterChannelCount(behaviour) <= 0)
+                    return res;
+
+                // If we have an OnAudioFilterRead callback, draw vu meter
+                if (m_AudioFilterGUI == null)
+                    m_AudioFilterGUI = new AudioFilterGUI();
+                m_AudioFilterGUI.DrawAudioFilterGUI(behaviour);
             }
             return res;
         }

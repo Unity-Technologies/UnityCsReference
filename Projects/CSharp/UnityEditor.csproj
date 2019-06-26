@@ -352,6 +352,9 @@
     <Compile Include="..\..\Editor\Mono\AssetPipeline\LocalCacheServer.cs">
       <Link>Editor\Mono\AssetPipeline\LocalCacheServer.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\AssetPipeline\MaterialDescription.bindings.cs">
+      <Link>Editor\Mono\AssetPipeline\MaterialDescription.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\AssetPipeline\ShaderImporter.bindings.cs">
       <Link>Editor\Mono\AssetPipeline\ShaderImporter.bindings.cs</Link>
     </Compile>
@@ -636,9 +639,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\BuildPlayerWindowBuildMethods.cs">
       <Link>Editor\Mono\BuildPlayerWindowBuildMethods.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\BuildPlayerWindowPublish.cs">
-      <Link>Editor\Mono\BuildPlayerWindowPublish.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\BuildTarget.cs">
       <Link>Editor\Mono\BuildTarget.cs</Link>
@@ -1134,6 +1134,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\EditModeTools\EditModeTool.cs">
       <Link>Editor\Mono\GUI\EditModeTools\EditModeTool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\GUI\EditModeTools\PrimitiveCollider2DTool.cs">
+      <Link>Editor\Mono\GUI\EditModeTools\PrimitiveCollider2DTool.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\EditorApplicationLayout.cs">
       <Link>Editor\Mono\GUI\EditorApplicationLayout.cs</Link>
@@ -2049,9 +2052,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\PreviewWindow.cs">
       <Link>Editor\Mono\Inspector\PreviewWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\PrimitiveCollider2DEditor.cs">
-      <Link>Editor\Mono\Inspector\PrimitiveCollider2DEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\PrimitiveCollider3DEditor.cs">
       <Link>Editor\Mono\Inspector\PrimitiveCollider3DEditor.cs</Link>
@@ -3163,6 +3163,9 @@
     <Compile Include="..\..\Editor\Mono\UIElements\Controls\LayerMaskField.cs">
       <Link>Editor\Mono\UIElements\Controls\LayerMaskField.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\UIElements\Controls\ListViewBindings.cs">
+      <Link>Editor\Mono\UIElements\Controls\ListViewBindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\Controls\LongField.cs">
       <Link>Editor\Mono\UIElements\Controls\LongField.cs</Link>
     </Compile>
@@ -3718,9 +3721,6 @@
     <Compile Include="..\..\Modules\CloudServicesSettingsEditor\Analytics\ScriptBindings\AnalyticsSettings.bindings.cs">
       <Link>Modules\CloudServicesSettingsEditor\Analytics\ScriptBindings\AnalyticsSettings.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CloudServicesSettingsEditor\Analytics\ScriptBindings\CoreStats.bindings.cs">
-      <Link>Modules\CloudServicesSettingsEditor\Analytics\ScriptBindings\CoreStats.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\CloudServicesSettingsEditor\CrashReporting\Managed\CrashReporting.cs">
       <Link>Modules\CloudServicesSettingsEditor\CrashReporting\Managed\CrashReporting.cs</Link>
     </Compile>
@@ -3931,20 +3931,8 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\ApplicationUtil.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\ApplicationUtil.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\ItemState.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Common\ItemState.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\OperationSignal.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Common\OperationSignal.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\Resources.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\Resources.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\Selection.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Common\Selection.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\ThreadedDelay.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Common\ThreadedDelay.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\VisualElementCache.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\VisualElementCache.cs</Link>
@@ -3952,65 +3940,41 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\VisualElementExtensions.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\VisualElementExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IAddOperation.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IAddOperation.cs</Link>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IApplicationUtil.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IApplicationUtil.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IBaseOperation.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IBaseOperation.cs</Link>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IOperation.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IOperation.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IEmbedOperation.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IEmbedOperation.cs</Link>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IPackage.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IPackage.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IListOperation.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IListOperation.cs</Link>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IPackageDatabase.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IPackageDatabase.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IOperationFactory.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IOperationFactory.cs</Link>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IPackageFiltering.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IPackageFiltering.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IPackageSelection.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IPackageSelection.cs</Link>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IPackageVersion.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IPackageVersion.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IRemoveOperation.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IRemoveOperation.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\ISearchOperation.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\ISearchOperation.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\OperationFactory.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\OperationFactory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\Package.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Packages\Package.cs</Link>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IUpmClient.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IUpmClient.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageAssetPostprocessor.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageAssetPostprocessor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageCollection.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageCollection.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageCreator.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageCreator.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageError.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageError.cs</Link>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageDatabase.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageDatabase.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageFilter.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageFilter.cs</Link>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageFilterTab.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageFilterTab.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageGroupOrigins.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageGroupOrigins.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageInfo.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageInfoListExtensions.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageInfoListExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageJsonHelper.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageJsonHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageListExtensions.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageListExtensions.cs</Link>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageFiltering.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageFiltering.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageOrigin.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageOrigin.cs</Link>
@@ -4018,20 +3982,11 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageSample.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageSample.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageSearchFilter.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageSearchFilter.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageState.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageState.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageTag.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageTag.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageType.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageVersion.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageVersion.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmAddOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmAddOperation.cs</Link>
@@ -4039,14 +3994,23 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmBaseOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmBaseOperation.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmClient.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmClient.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmEmbedOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmEmbedOperation.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmListOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmListOperation.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmOperationFactory.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmOperationFactory.cs</Link>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmPackage.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmPackage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmPackageDocs.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmPackageDocs.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmPackageVersion.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmPackageVersion.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmRemoveOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmRemoveOperation.cs</Link>
@@ -4065,9 +4029,6 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\DropdownButton.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\DropdownButton.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\ElementSelection.cs">
-      <Link>Modules\PackageManagerUI\Editor\UI\Common\ElementSelection.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\IOUtils.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\IOUtils.cs</Link>
@@ -4090,20 +4051,23 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerMenuExtension.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerMenuExtension.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerPrefs.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerPrefs.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerToolbarExtension.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerToolbarExtension.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\ISelectableItem.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\ISelectableItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\ISelectionManager.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\ISelectionManager.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDependencies.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageDependencies.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDetails.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageDetails.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageFiltering.cs">
-      <Link>Modules\PackageManagerUI\Editor\UI\PackageFiltering.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageGroup.cs">
-      <Link>Modules\PackageManagerUI\Editor\UI\PackageGroup.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageItem.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageItem.cs</Link>
@@ -4138,8 +4102,8 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageToolBar.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageToolBar.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageVersionLabel.cs">
-      <Link>Modules\PackageManagerUI\Editor\UI\PackageVersionLabel.cs</Link>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageVersionItem.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageVersionItem.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackagesAction.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackagesAction.cs</Link>
@@ -4501,47 +4465,17 @@
     <Compile Include="..\..\Modules\ProfilerEditor\Public\ProfilerSettingsProvider.cs">
       <Link>Modules\ProfilerEditor\Public\ProfilerSettingsProvider.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\RestService\AssetRestHandler.cs">
-      <Link>Modules\RestService\AssetRestHandler.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\RestService\Handler.cs">
       <Link>Modules\RestService\Handler.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\RestService\HttpStatusCode.cs">
       <Link>Modules\RestService\HttpStatusCode.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\RestService\Logger.cs">
-      <Link>Modules\RestService\Logger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\RestService\OpenDocumentsRestHandler.cs">
-      <Link>Modules\RestService\OpenDocumentsRestHandler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\RestService\PairingRestHandler.cs">
-      <Link>Modules\RestService\PairingRestHandler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\RestService\PlayModeRestHandler.cs">
-      <Link>Modules\RestService\PlayModeRestHandler.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\RestService\PlayerDataFileLocator.cs">
       <Link>Modules\RestService\PlayerDataFileLocator.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\RestService\ProjectStateRestHandler.cs">
-      <Link>Modules\RestService\ProjectStateRestHandler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\RestService\RestRequest.cs">
-      <Link>Modules\RestService\RestRequest.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\RestService\RestRequestException.cs">
-      <Link>Modules\RestService\RestRequestException.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\RestService\RestServiceExtension.cs">
-      <Link>Modules\RestService\RestServiceExtension.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\RestService\ScriptBindings\RestService.bindings.cs">
       <Link>Modules\RestService\ScriptBindings\RestService.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\RestService\ScriptEditorSettings.cs">
-      <Link>Modules\RestService\ScriptEditorSettings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShortcutManagerEditor\BindingValidator.cs">
       <Link>Modules\ShortcutManagerEditor\BindingValidator.cs</Link>

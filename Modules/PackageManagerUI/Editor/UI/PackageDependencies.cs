@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Linq;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI
@@ -11,14 +10,11 @@ namespace UnityEditor.PackageManager.UI
     {
         internal new class UxmlFactory : UxmlFactory<PackageDependencies> {}
 
-        private readonly VisualElement root;
-        private PackageCollection Collection;
-
         public PackageDependencies()
         {
-            root = Resources.GetTemplate("PackageDependencies.uxml");
+            var root = Resources.GetTemplate("PackageDependencies.uxml");
             Add(root);
-            Cache = new VisualElementCache(root);
+            cache = new VisualElementCache(root);
         }
 
         private static Label BuildLabel(string text, string clazz)
@@ -30,37 +26,27 @@ namespace UnityEditor.PackageManager.UI
 
         private string BuildNameText(DependencyInfo dependency)
         {
-            var packageInfo = Collection.LatestSearchPackages.FirstOrDefault(p => p.Name == dependency.name);
-            if (packageInfo != null)
-            {
-                return packageInfo.DisplayName;
-            }
-
-            return dependency.name;
+            var packageVersion = PackageDatabase.instance.GetPackageVersion(dependency);
+            return packageVersion != null ? packageVersion.displayName : UpmPackageVersion.ExtractDisplayName(dependency.name);
         }
 
+        // TODO: In the original RebuildDependenciesDictionnary function there's some handling for dependencies that looks like this:
+        //  foreach (var dependency in dependencies) {if (dependency.version.StartsWith("file:")) }
+        // need to figure out what is that used for
         private string BuildStatusText(DependencyInfo dependency)
         {
-            SemVersion installedVersion;
-            if (Collection.ProjectDependencies.TryGetValue(dependency.name, out installedVersion))
-            {
-                if (installedVersion == PackageCollection.EmbdeddedVersion)
-                    return "(in development)";
+            var installedVersion = PackageDatabase.instance.GetPackage(dependency.name)?.installedVersion;
+            if (installedVersion == null)
+                return string.Empty;
 
-                if (installedVersion == PackageCollection.LocalVersion)
-                    return "(local)";
+            if (installedVersion.HasTag(PackageTag.InDevelopment))
+                return "(in development)";
 
-                return installedVersion == dependency.version
-                    ? "(installed \u2714)"
-                    : string.Format("({0} installed \u2714)", installedVersion);
-            }
+            if (installedVersion.HasTag(PackageTag.Local))
+                return "(local)";
 
-            return string.Empty;
-        }
-
-        public void SetCollection(PackageCollection collection)
-        {
-            Collection = collection;
+            return installedVersion.version == dependency.version
+                ? "(installed \u2714)" : $"({installedVersion.version} installed \u2714)";
         }
 
         public void SetDependencies(DependencyInfo[] dependencies)
@@ -71,38 +57,38 @@ namespace UnityEditor.PackageManager.UI
                 return;
             }
 
-            DependenciesNames.Clear();
-            DependenciesVersions.Clear();
-            DependenciesStatuses.Clear();
+            dependenciesNames.Clear();
+            dependenciesVersions.Clear();
+            dependenciesStatuses.Clear();
             foreach (var dependency in dependencies)
             {
-                DependenciesNames.Add(BuildLabel(BuildNameText(dependency), "text"));
-                DependenciesVersions.Add(BuildLabel(dependency.version, "text"));
-                DependenciesStatuses.Add(BuildLabel(BuildStatusText(dependency), "text"));
+                dependenciesNames.Add(BuildLabel(BuildNameText(dependency), "text"));
+                dependenciesVersions.Add(BuildLabel(dependency.version, "text"));
+                dependenciesStatuses.Add(BuildLabel(BuildStatusText(dependency), "text"));
             }
 
-            UIUtils.SetElementDisplay(NoDependencies, false);
-            UIUtils.SetElementDisplay(DependenciesNames, true);
-            UIUtils.SetElementDisplay(DependenciesVersions, true);
+            UIUtils.SetElementDisplay(noDependencies, false);
+            UIUtils.SetElementDisplay(dependenciesNames, true);
+            UIUtils.SetElementDisplay(dependenciesVersions, true);
         }
 
         private void ClearDependencies()
         {
-            DependenciesNames.Clear();
-            DependenciesVersions.Clear();
-            DependenciesStatuses.Clear();
+            dependenciesNames.Clear();
+            dependenciesVersions.Clear();
+            dependenciesStatuses.Clear();
 
-            UIUtils.SetElementDisplay(NoDependencies, true);
-            UIUtils.SetElementDisplay(DependenciesNames, false);
-            UIUtils.SetElementDisplay(DependenciesVersions, false);
+            UIUtils.SetElementDisplay(noDependencies, true);
+            UIUtils.SetElementDisplay(dependenciesNames, false);
+            UIUtils.SetElementDisplay(dependenciesVersions, false);
         }
 
-        private VisualElementCache Cache { get; set; }
+        private VisualElementCache cache { get; set; }
 
-        private VisualElement DependenciesContainer { get { return Cache.Get<VisualElement>("dependenciesContainer"); } }
-        private Label NoDependencies { get { return Cache.Get<Label>("noDependencies"); } }
-        private VisualElement DependenciesNames { get { return Cache.Get<VisualElement>("dependenciesNames"); } }
-        private VisualElement DependenciesVersions { get { return Cache.Get<VisualElement>("dependenciesVersions"); } }
-        private VisualElement DependenciesStatuses { get { return Cache.Get<VisualElement>("dependenciesStatuses"); } }
+        private VisualElement dependenciesContainer { get { return cache.Get<VisualElement>("dependenciesContainer"); } }
+        private Label noDependencies { get { return cache.Get<Label>("noDependencies"); } }
+        private VisualElement dependenciesNames { get { return cache.Get<VisualElement>("dependenciesNames"); } }
+        private VisualElement dependenciesVersions { get { return cache.Get<VisualElement>("dependenciesVersions"); } }
+        private VisualElement dependenciesStatuses { get { return cache.Get<VisualElement>("dependenciesStatuses"); } }
     }
 }

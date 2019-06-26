@@ -457,10 +457,9 @@ namespace UnityEditor
 
             WindowLayout.SaveCurrentLayoutPerMode(GetModeId(args.prevIndex));
 
-
             try
             {
-                // Load the last valid layout fir this mode:
+                // Load the last valid layout for this mode
                 WindowLayout.LoadDefaultWindowPreferences();
             }
             catch (Exception)

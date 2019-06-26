@@ -11,24 +11,24 @@ namespace UnityEditor.PackageManager.UI
     {
         internal new class UxmlFactory : UxmlFactory<Alert> {}
 
-        private readonly VisualElement root;
-        private const float originalPositionRight = 5.0f;
-        private const float positionRightWithScroll = 12.0f;
+        private const float k_PositionRightOriginal = 5.0f;
+        private const float k_PositionRightWithScroll = 12.0f;
 
-        public Action OnCloseError;
+        public Action onCloseError;
 
         public Alert()
         {
             UIUtils.SetElementDisplay(this, false);
 
-            root = Resources.GetTemplate("Alert.uxml");
+            var root = Resources.GetTemplate("Alert.uxml");
             Add(root);
             root.StretchToParentSize();
 
-            CloseButton.clickable.clicked += () =>
+            cache = new VisualElementCache(root);
+
+            closeButton.clickable.clicked += () =>
             {
-                if (null != OnCloseError)
-                    OnCloseError();
+                onCloseError?.Invoke();
                 ClearError();
             };
         }
@@ -37,9 +37,9 @@ namespace UnityEditor.PackageManager.UI
         {
             var message = "An error occurred.";
             if (error != null)
-                message = error.message ?? string.Format("An error occurred ({0})", error.errorCode.ToString());
+                message = error.message ?? $"An error occurred ({error.errorCode.ToString()})";
 
-            AlertMessage.text = message;
+            alertMessage.text = message;
             UIUtils.SetElementDisplay(this, true);
         }
 
@@ -47,22 +47,22 @@ namespace UnityEditor.PackageManager.UI
         {
             UIUtils.SetElementDisplay(this, false);
             AdjustSize(false);
-            AlertMessage.text = "";
-            OnCloseError = null;
+            alertMessage.text = "";
+            onCloseError = null;
         }
 
         public void AdjustSize(bool verticalScrollerVisible)
         {
             if (verticalScrollerVisible)
-                style.right = originalPositionRight + positionRightWithScroll;
+                style.right = k_PositionRightOriginal + k_PositionRightWithScroll;
             else
-                style.right = originalPositionRight;
+                style.right = k_PositionRightOriginal;
         }
 
-        private Label _alertMessage;
-        private Label AlertMessage { get { return _alertMessage ?? (_alertMessage = root.Q<Label>("alertMessage")); } }
+        private VisualElementCache cache { get; set; }
 
-        private Button _closeButton;
-        private Button CloseButton { get { return _closeButton ?? (_closeButton = root.Q<Button>("close")); } }
+        private Label alertMessage { get { return cache.Get<Label>("alertMessage"); } }
+
+        private Button closeButton { get { return cache.Get<Button>("close"); } }
     }
 }

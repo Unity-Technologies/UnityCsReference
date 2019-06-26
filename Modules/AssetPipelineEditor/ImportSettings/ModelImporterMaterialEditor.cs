@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using UnityEditor.Experimental.AssetImporters;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -18,7 +17,6 @@ namespace UnityEditor
         bool m_ShowMaterialRemapOptions = false;
 
         // Material
-        SerializedProperty m_ImportMaterials;
         SerializedProperty m_MaterialName;
         SerializedProperty m_MaterialSearch;
         SerializedProperty m_MaterialLocation;
@@ -31,6 +29,8 @@ namespace UnityEditor
         SerializedProperty m_SupportsEmbeddedMaterials;
 
         SerializedProperty m_UseSRGBMaterialColor;
+
+        SerializedProperty m_MaterialImportMode;
 
         private bool m_HasEmbeddedMaterials = false;
 
@@ -53,14 +53,7 @@ namespace UnityEditor
 
         static class Styles
         {
-            public static GUIContent ImportMaterials = EditorGUIUtility.TrTextContent("Import Materials");
-
             public static GUIContent MaterialLocation = EditorGUIUtility.TrTextContent("Location");
-            public static GUIContent[] MaterialLocationOpt =
-            {
-                EditorGUIUtility.TrTextContent("Use External Materials (Legacy)", "Use external materials if found in the project."),
-                EditorGUIUtility.TrTextContent("Use Embedded Materials", "Embed the material inside the imported asset.")
-            };
 
             public static GUIContent MaterialName = EditorGUIUtility.TrTextContent("Naming");
             public static GUIContent[] MaterialNameOptMain =
@@ -120,6 +113,8 @@ namespace UnityEditor
             public static GUIContent RemapMaterialsInProject = EditorGUIUtility.TrTextContent("Search and Remap", "Click on this button to search and remap the materials from the project.");
 
             public static GUIContent SRGBMaterialColor = EditorGUIUtility.TrTextContent("sRGB Albedo Colors", "Albedo colors in gamma space. Disable this for projects using linear color space.");
+
+            public static GUIContent MaterialCreationMode = EditorGUIUtility.TrTextContent("Material Creation Mode", "Select the method used to generate materials during the import process.");
         }
 
         public ModelImporterMaterialEditor(AssetImporterEditor panelContainer)
@@ -165,7 +160,6 @@ namespace UnityEditor
         internal override void OnEnable()
         {
             // Material
-            m_ImportMaterials = serializedObject.FindProperty("m_ImportMaterials");
             m_MaterialName = serializedObject.FindProperty("m_MaterialName");
             m_MaterialSearch = serializedObject.FindProperty("m_MaterialSearch");
             m_MaterialLocation = serializedObject.FindProperty("m_MaterialLocation");
@@ -178,6 +172,8 @@ namespace UnityEditor
             m_SupportsEmbeddedMaterials = serializedObject.FindProperty("m_SupportsEmbeddedMaterials");
 
             m_UseSRGBMaterialColor = serializedObject.FindProperty("m_UseSRGBMaterialColor");
+
+            m_MaterialImportMode = serializedObject.FindProperty("m_MaterialImportMode");
 
             if (m_CacheCurrentTarget != target)
             {
@@ -430,16 +426,42 @@ namespace UnityEditor
 
             UpdateShowAllMaterialNameOptions();
 
-            EditorGUILayout.PropertyField(m_ImportMaterials, Styles.ImportMaterials);
+            using (var horizontal = new EditorGUILayout.HorizontalScope())
+            {
+                using (var prop = new EditorGUI.PropertyScope(horizontal.rect, Styles.MaterialCreationMode, m_MaterialImportMode))
+                {
+                    EditorGUI.BeginChangeCheck();
+                    var newValue = (int)(ModelImporterMaterialImportMode)EditorGUILayout.EnumPopup(prop.content, (ModelImporterMaterialImportMode)m_MaterialImportMode.intValue);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        m_MaterialImportMode.intValue = newValue;
+                    }
+                }
+            }
 
             string materialHelp = string.Empty;
-            if (!m_ImportMaterials.hasMultipleDifferentValues)
+            if (!m_MaterialImportMode.hasMultipleDifferentValues)
             {
-                if (m_ImportMaterials.boolValue)
+                if (m_MaterialImportMode.intValue != (int)ModelImporterMaterialImportMode.None)
                 {
-                    EditorGUILayout.PropertyField(m_UseSRGBMaterialColor, Styles.SRGBMaterialColor);
+                    if (m_MaterialImportMode.intValue == (int)ModelImporterMaterialImportMode.LegacyImport)
+                    {
+                        EditorGUILayout.PropertyField(m_UseSRGBMaterialColor, Styles.SRGBMaterialColor);
+                    }
 
-                    EditorGUILayout.Popup(m_MaterialLocation, Styles.MaterialLocationOpt, Styles.MaterialLocation);
+                    using (var horizontal = new EditorGUILayout.HorizontalScope())
+                    {
+                        using (var prop = new EditorGUI.PropertyScope(horizontal.rect, Styles.MaterialLocation, m_MaterialLocation))
+                        {
+                            EditorGUI.BeginChangeCheck();
+                            var newValue = (int)(ModelImporterMaterialLocation)EditorGUILayout.EnumPopup(prop.content, (ModelImporterMaterialLocation)m_MaterialLocation.intValue);
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                m_MaterialLocation.intValue = newValue;
+                            }
+                        }
+                    }
+
                     if (!m_MaterialLocation.hasMultipleDifferentValues)
                     {
                         if (m_MaterialLocation.intValue == 0)
@@ -496,7 +518,7 @@ namespace UnityEditor
             }
 
             // hidden for multi-selection
-            if (m_ImportMaterials.boolValue && targets.Length == 1 && m_Materials.arraySize > 0 && m_MaterialLocation.intValue != 0 && !m_MaterialLocation.hasMultipleDifferentValues && !m_Materials.hasMultipleDifferentValues && !m_ExternalObjects.hasMultipleDifferentValues)
+            if (m_MaterialImportMode.intValue != (int)ModelImporterMaterialImportMode.None && targets.Length == 1 && m_Materials.arraySize > 0 && m_MaterialLocation.intValue != 0 && !m_MaterialLocation.hasMultipleDifferentValues && !m_Materials.hasMultipleDifferentValues && !m_ExternalObjects.hasMultipleDifferentValues)
             {
                 GUILayout.Label(Styles.ExternalMaterialMappings, EditorStyles.boldLabel);
 

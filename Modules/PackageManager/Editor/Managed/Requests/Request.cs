@@ -89,7 +89,10 @@ namespace UnityEditor.PackageManager.Requests
 
         private void FetchError()
         {
-            if (m_ErrorFetched || NativeStatus.ConvertToManaged() != StatusCode.Failure)
+            // We assume the request is empty when the Id is 0 and skip error fetching.
+            // This happens during the serialization process as empty instances are created
+            // in place of null references.
+            if (Id == 0 || m_ErrorFetched || NativeStatus.ConvertToManaged() != StatusCode.Failure)
             {
                 return;
             }

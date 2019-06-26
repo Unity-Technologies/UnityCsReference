@@ -182,9 +182,9 @@ namespace UnityEditor
 
         void OnGUI()
         {
-            EditorGUILayout.BeginHorizontal(GUIContent.none, "preToolbar", GUILayout.Height(EditorGUI.kWindowToolbarHeight));
+            EditorGUILayout.BeginHorizontal(GUIContent.none, EditorStyles.toolbar, GUILayout.Height(EditorGUI.kWindowToolbarHeight));
 
-            GUILayout.Label(lightmapTitle, "preToolbar2");
+            GUILayout.Label(lightmapTitle, "BoldLabel");
             GUILayout.FlexibleSpace();
 
             PreviewSettings();
@@ -242,8 +242,8 @@ namespace UnityEditor
             {
                 float labelWidth = EditorGUIUtility.labelWidth;
                 EditorGUIUtility.labelWidth = 20;
-                var rect = GUILayoutUtility.GetRect(160, EditorGUI.kWindowToolbarHeight);
-                m_ExposureSliderValue = EditorGUI.Slider(rect, Styles.ExposureIcon, m_ExposureSliderValue, -m_ExposureSliderMax, m_ExposureSliderMax, float.MinValue, float.MaxValue);
+                m_ExposureSliderValue = EditorGUILayout.Slider(Styles.ExposureIcon, m_ExposureSliderValue, -m_ExposureSliderMax,
+                    m_ExposureSliderMax, float.MinValue, float.MaxValue, EditorStyles.toolbarSlider);
 
                 // This will allow the user to set a new max value for the current session
                 if (m_ExposureSliderValue >= 0)
@@ -254,7 +254,7 @@ namespace UnityEditor
                 EditorGUIUtility.labelWidth = labelWidth;
             }
 
-            m_ShowUVOverlay = GUILayout.Toggle(m_ShowUVOverlay, Styles.UVOverlayIcon, "preButton");
+            m_ShowUVOverlay = GUILayout.Toggle(m_ShowUVOverlay, Styles.UVOverlayIcon, EditorStyles.toolbarButton);
 
             Rect dropRect = GUILayoutUtility.GetRect(14, 160, EditorGUI.kWindowToolbarHeight, EditorGUI.kWindowToolbarHeight);
             GUIContent[] options = isRealtimeLightmap ? Styles.RealtimePreviewTextureOptions : Styles.BakedPreviewTextureOptions;
@@ -265,7 +265,7 @@ namespace UnityEditor
                 m_SelectedPreviewTextureOptionIndex = 0;
             }
 
-            if (EditorGUI.DropdownButton(dropRect, options[m_SelectedPreviewTextureOptionIndex], FocusType.Passive, "PreDropDown"))
+            if (EditorGUI.DropdownButton(dropRect, options[m_SelectedPreviewTextureOptionIndex], FocusType.Passive, EditorStyles.toolbarDropDownRight))
             {
                 GenericMenu menu = new GenericMenu();
 

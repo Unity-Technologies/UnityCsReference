@@ -827,6 +827,23 @@ namespace UnityEngine.Rendering
         UInt32 = 1,
     }
 
+    // Match VertexFormat on C++ side
+    public enum VertexAttributeFormat
+    {
+        Float32 = 0,
+        Float16 = 1,
+        UNorm8 = 2,
+        SNorm8 = 3,
+        UNorm16 = 4,
+        SNorm16 = 5,
+        UInt8 = 6,
+        SInt8 = 7,
+        UInt16 = 8,
+        SInt16 = 9,
+        UInt32 = 10,
+        SInt32 = 11,
+    }
+
     //Keep in sync with ShaderChannel in GfxDeviceTypes.h
     [MovedFrom("UnityEngine.Experimental.Rendering")]
     public enum VertexAttribute
@@ -1183,6 +1200,81 @@ namespace UnityEngine.Rendering
         Tier1 = 0,
         Tier2 = 1,
         Tier3 = 2,
+    }
+
+    // C++ MeshScripting::SubMeshDesc has to match layout
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public struct SubMeshDescriptor
+    {
+        public Bounds bounds { get; set; }
+        public MeshTopology topology { get; set; }
+        public int indexStart { get; set; }
+        public int indexCount { get; set; }
+        public int baseVertex { get; set; }
+        public int firstVertex { get; set; }
+        public int vertexCount { get; set; }
+    }
+
+    // C++ MeshScripting::VertexAttributeDesc has to match layout
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    [UsedByNativeCode]
+    public struct VertexAttributeDescriptor : IEquatable<VertexAttributeDescriptor>
+    {
+        public VertexAttribute attribute { get; set; }
+        public VertexAttributeFormat format { get; set; }
+        public int dimension { get; set; }
+        public int stream { get; set; }
+
+        public VertexAttributeDescriptor(VertexAttribute attribute = VertexAttribute.Position, VertexAttributeFormat format = VertexAttributeFormat.Float32, int dimension = 3, int stream = 0)
+        {
+            this.attribute = attribute;
+            this.format = format;
+            this.dimension = dimension;
+            this.stream = stream;
+        }
+
+        override public string ToString()
+        {
+            return $"(attr={attribute} fmt={format} dim={dimension} stream={stream})";
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int h = 17;
+                h = h * 23 + (int)attribute;
+                h = h * 23 + (int)format;
+                h = h * 23 + dimension;
+                h = h * 23 + stream;
+                return h;
+            }
+        }
+
+        public override bool Equals(object other)
+        {
+            if (!(other is VertexAttributeDescriptor)) return false;
+            return Equals((VertexAttributeDescriptor)other);
+        }
+
+        public bool Equals(VertexAttributeDescriptor other)
+        {
+            return
+                attribute == other.attribute &&
+                format == other.format &&
+                dimension == other.dimension &&
+                stream == other.stream;
+        }
+
+        public static bool operator==(VertexAttributeDescriptor lhs, VertexAttributeDescriptor rhs)
+        {
+            return lhs.Equals(rhs);
+        }
+
+        public static bool operator!=(VertexAttributeDescriptor lhs, VertexAttributeDescriptor rhs)
+        {
+            return !lhs.Equals(rhs);
+        }
     }
 
     // Keep in sync with C++ FormatSwizzle in Runtime/Graphics/Format.h

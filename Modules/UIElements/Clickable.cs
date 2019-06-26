@@ -45,11 +45,12 @@ namespace UnityEngine.UIElements
 
         private void OnTimer(TimerState timerState)
         {
-            if (clicked != null && IsRepeatable())
+            if ((clicked != null || clickedWithEventInfo != null) && IsRepeatable())
             {
                 if (target.ContainsPoint(lastMousePosition))
                 {
-                    clicked();
+                    Invoke(null);
+
                     target.pseudoStates |= PseudoStates.Active;
                 }
                 else
@@ -78,6 +79,14 @@ namespace UnityEngine.UIElements
             target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
         }
 
+        private void Invoke(EventBase evt)
+        {
+            if (clicked != null)
+                clicked();
+
+            clickedWithEventInfo?.Invoke(evt);
+        }
+
         protected void OnMouseDown(MouseDownEvent evt)
         {
             if (evt != null && CanStartManipulation(evt))
@@ -91,10 +100,7 @@ namespace UnityEngine.UIElements
                     // Repeatable button clicks are performed on the MouseDown and at timer events
                     if (target.ContainsPoint(evt.localMousePosition))
                     {
-                        if (clicked != null)
-                            clicked();
-                        else
-                            clickedWithEventInfo?.Invoke(evt);
+                        Invoke(evt);
                     }
 
                     if (m_Repeater == null)
@@ -152,10 +158,7 @@ namespace UnityEngine.UIElements
                     // Non repeatable button clicks are performed on the MouseUp
                     if (target.ContainsPoint(evt.localMousePosition))
                     {
-                        if (clicked != null)
-                            clicked();
-                        else
-                            clickedWithEventInfo?.Invoke(evt);
+                        Invoke(evt);
                     }
                 }
                 target.pseudoStates &= ~PseudoStates.Active;

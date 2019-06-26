@@ -622,8 +622,20 @@ namespace UnityEditor
                 if (showFoldout && !ListMode)
                 {
                     float fraction = position.height / 128f;
-                    float buttonWidth = 28f * fraction;
-                    float buttonHeight = 32f * fraction;
+                    float buttonWidth = 28f;
+                    float buttonHeight = 32f;
+
+                    if (fraction < 0.5f)
+                    {
+                        buttonWidth = 14f;
+                        buttonHeight = 16;
+                    }
+                    else if (fraction < 0.75f)
+                    {
+                        buttonWidth = 21f;
+                        buttonHeight = 24f;
+                    }
+
                     foldoutRect = new Rect(position.xMax - buttonWidth * 0.5f, position.y + (position.height - s_Styles.resultsGridLabel.fixedHeight) * 0.5f - buttonWidth * 0.5f, buttonWidth, buttonHeight);
                     //foldoutRect = new Rect(position.xMax - 16, position.yMax - 16 - s_Styles.resultsGridLabel.fixedHeight, 16, 16);   // bottom right corner
                 }
@@ -823,7 +835,17 @@ namespace UnityEditor
 
                         if (showFoldout)
                         {
-                            s_Styles.subAssetExpandButton.Draw(foldoutRect, !ListMode, !ListMode, IsExpanded(instanceID), false);
+                            var style = s_Styles.subAssetExpandButton;
+
+                            if (foldoutRect.height <= 16)
+                            {
+                                style = s_Styles.subAssetExpandButtonSmall;
+                            }
+                            else if (foldoutRect.height <= 24)
+                            {
+                                style = s_Styles.subAssetExpandButtonMedium;
+                            }
+                            style.Draw(foldoutRect, !ListMode, !ListMode, IsExpanded(instanceID), false);
                         }
 
                         if (filterItem != null && filterItem.isMainRepresentation)

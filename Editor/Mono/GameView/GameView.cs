@@ -12,6 +12,7 @@ using UnityEditor.Modules;
 using UnityEngine.Scripting;
 using UnityEngine.Experimental.Rendering;
 using System.Globalization;
+using UnityEngine.Rendering;
 
 /*
 The main GameView can be in the following states when entering playmode.
@@ -914,7 +915,9 @@ namespace UnityEditor
                     if (m_TargetTexture.IsCreated())
                     {
                         var sendInput = true;
-                        EditorGUIUtility.RenderGameViewCamerasInternal(m_TargetTexture, currentTargetDisplay, GUIClip.Unclip(viewInWindow), gameMousePosition, m_Gizmos, sendInput);
+                        if (!EditorApplication.isPlaying || (EditorApplication.isPlaying && Time.frameCount % OnDemandRendering.GetRenderFrameInterval() == 0))
+                            EditorGUIUtility.RenderGameViewCamerasInternal(m_TargetTexture, currentTargetDisplay, GUIClip.Unclip(viewInWindow), gameMousePosition, m_Gizmos, sendInput);
+
                         oldState.ApplyAndForget();
                         GUIUtility.s_EditorScreenPointOffset = oldOffset;
 

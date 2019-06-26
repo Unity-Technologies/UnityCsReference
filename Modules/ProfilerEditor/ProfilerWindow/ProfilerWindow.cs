@@ -923,7 +923,7 @@ namespace UnityEditor
                         bool showAllGroups = EditorPrefs.GetBool("AudioProfilerShowAllGroups");
                         bool newShowAllGroups = GUILayout.Toggle(showAllGroups, "Show all groups (dev mode only)", EditorStyles.toolbarButton);
                         if (showAllGroups != newShowAllGroups)
-                            EditorPrefs.SetBool("AudioProfilerShowAllGroups", newShowAllGroups);
+                            AudioUtil.SetProfilerShowAllGroups(newShowAllGroups);
                     }
                     GUILayout.FlexibleSpace();
                     EditorGUILayout.EndHorizontal();

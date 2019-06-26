@@ -4,16 +4,16 @@
 
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
+using UnityEditor.EditorTools;
 
 namespace UnityEditor
 {
     [CustomEditor(typeof(CapsuleCollider2D))]
     [CanEditMultipleObjects]
-    internal class CapsuleCollider2DEditor : PrimitiveCollider2DEditor
+    class CapsuleCollider2DEditor : Collider2DEditorBase
     {
-        private SerializedProperty m_Size;
-        private SerializedProperty m_Direction;
-        private readonly CapsuleBoundsHandle m_BoundsHandle = new CapsuleBoundsHandle();
+        SerializedProperty m_Size;
+        SerializedProperty m_Direction;
 
         public override void OnEnable()
         {
@@ -26,7 +26,8 @@ namespace UnityEditor
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
-            InspectorEditButtonGUI();
+
+            EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Collider"), target);
 
             base.OnInspectorGUI();
 
@@ -37,12 +38,20 @@ namespace UnityEditor
 
             FinalizeInspectorGUI();
         }
+    }
 
-        protected override PrimitiveBoundsHandle boundsHandle { get { return m_BoundsHandle; } }
+    [EditorTool("Edit Capsule Collider 2D", typeof(CapsuleCollider2D))]
+    class CapsuleCollider2DTool : PrimitiveCollider2DTool<CapsuleCollider2D>
+    {
+        readonly CapsuleBoundsHandle m_BoundsHandle = new CapsuleBoundsHandle();
 
-        protected override void CopyColliderSizeToHandle()
+        protected override PrimitiveBoundsHandle boundsHandle
         {
-            CapsuleCollider2D collider = (CapsuleCollider2D)target;
+            get { return m_BoundsHandle; }
+        }
+
+        protected override void CopyColliderSizeToHandle(CapsuleCollider2D collider)
+        {
             Vector3 handleHeightAxis, handleRadiusAxis;
             GetHandleVectorsInWorldSpace(collider, out handleHeightAxis, out handleRadiusAxis);
             m_BoundsHandle.height = m_BoundsHandle.radius = 0f;
@@ -50,12 +59,11 @@ namespace UnityEditor
             m_BoundsHandle.radius = handleRadiusAxis.magnitude * 0.5f;
         }
 
-        protected override bool CopyHandleSizeToCollider()
+        protected override bool CopyHandleSizeToCollider(CapsuleCollider2D collider)
         {
-            CapsuleCollider2D collider = (CapsuleCollider2D)target;
-
             // transform handle axes into world space
             Vector3 localDiameterAxis, localHeightAxis;
+
             if (collider.direction == CapsuleDirection2D.Horizontal)
             {
                 localDiameterAxis = Vector3.up;
@@ -66,6 +74,7 @@ namespace UnityEditor
                 localDiameterAxis = Vector3.right;
                 localHeightAxis = Vector3.up;
             }
+
             Vector3 worldHeight = Handles.matrix * (localHeightAxis * m_BoundsHandle.height);
             Vector3 worldDiameter = Handles.matrix * (localDiameterAxis * m_BoundsHandle.radius * 2f);
 
@@ -77,7 +86,9 @@ namespace UnityEditor
             // project results back in collider's local space
             projectedDiameter = ProjectOntoColliderPlane(projectedDiameter, colliderTransformMatrix);
             projectedHeight = ProjectOntoColliderPlane(projectedHeight, colliderTransformMatrix);
+
             Vector2 oldSize = collider.size;
+
             collider.size = colliderTransformMatrix.inverse * (projectedDiameter + projectedHeight);
 
             // test for size change after using property setter in case input data was sanitized
@@ -91,11 +102,12 @@ namespace UnityEditor
             return Quaternion.LookRotation(Vector3.forward, heightVector);
         }
 
-        private void GetHandleVectorsInWorldSpace(CapsuleCollider2D collider, out Vector3 handleHeightVector, out Vector3 handleDiameterVector)
+        void GetHandleVectorsInWorldSpace(CapsuleCollider2D collider, out Vector3 handleHeightVector, out Vector3 handleDiameterVector)
         {
             Matrix4x4 colliderTransformMatrix = collider.transform.localToWorldMatrix;
             Vector3 x = ProjectOntoWorldPlane(colliderTransformMatrix * (Vector3.right * collider.size.x));
             Vector3 y = ProjectOntoWorldPlane(colliderTransformMatrix * (Vector3.up * collider.size.y));
+
             if (collider.direction == CapsuleDirection2D.Horizontal)
             {
                 handleDiameterVector = y;

@@ -85,5 +85,7 @@ namespace UnityEditor
         extern public static int GetCustomFilterProcessTime(MonoBehaviour behaviour);
         extern public static float GetCustomFilterMaxIn(MonoBehaviour behaviour, int channel);
         extern public static float GetCustomFilterMaxOut(MonoBehaviour behaviour, int channel);
+
+        extern internal static void SetProfilerShowAllGroups(bool value);
     }
 }

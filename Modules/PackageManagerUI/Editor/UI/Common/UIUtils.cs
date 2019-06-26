@@ -11,6 +11,8 @@ namespace UnityEditor.PackageManager.UI
 {
     internal static class UIUtils
     {
+        public static readonly string k_SelectedClassName = "selected";
+
         public static void SetElementDisplay(VisualElement element, bool value)
         {
             if (element == null)

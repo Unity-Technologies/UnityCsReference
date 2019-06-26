@@ -5,6 +5,7 @@
 using System;
 using System.Linq;
 using UnityEngine.Bindings;
+using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
 
 namespace UnityEngine
@@ -54,6 +55,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Misc/SystemInfo.h")]
     [NativeHeader("Runtime/Shaders/GraphicsCapsScriptBindings.h")]
     [NativeHeader("Runtime/Graphics/GraphicsFormatUtility.bindings.h")]
+    [NativeHeader("Runtime/Graphics/Mesh/MeshScriptBindings.h")]
     [NativeHeader("Runtime/Camera/RenderLoops/MotionVectorRenderLoop.h")]
     [NativeHeader("Runtime/Input/GetInput.h")]
     public sealed partial class SystemInfo
@@ -414,6 +416,15 @@ namespace UnityEngine
             return SupportsTextureFormatNative(format);
         }
 
+        public static bool SupportsVertexAttributeFormat(VertexAttributeFormat format, int dimension)
+        {
+            if (!IsValidEnumValue(format))
+                throw new ArgumentException("Failed SupportsVertexAttributeFormat; format is not a valid VertexAttributeFormat");
+            if (dimension < 1 || dimension > 4)
+                throw new ArgumentException("Failed SupportsVertexAttributeFormat; dimension must be in 1..4 range");
+            return SupportsVertexAttributeFormatNative(format, dimension);
+        }
+
         /// What [[NPOT|NPOTSupport]] support does GPU provide? (RO)
         ///
         /// SA: [[NPOTSupport]] enum.
@@ -722,6 +733,9 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsTextureFormat")]
         static extern bool SupportsTextureFormatNative(TextureFormat format);
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsVertexAttributeFormat")]
+        static extern bool SupportsVertexAttributeFormatNative(VertexAttributeFormat format, int dimension);
 
         [FreeFunction("ScriptingGraphicsCaps::GetNPOTSupport")]
         static extern NPOTSupport GetNPOTSupport();

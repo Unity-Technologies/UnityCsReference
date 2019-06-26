@@ -15,9 +15,7 @@ namespace UnityEditor.PackageManager
 {
     internal static class PackageTemplate
     {
-        private const string k_DefaultTemplateName = "default";
         private const string k_PackageManifestFileName = "package.json";
-        static readonly string PackageTemplatesRootFolder = Path.Combine(EditorApplication.applicationContentsPath, "Resources/PackageManager/PackageTemplates");
 
         private static string ReplaceVariablesInString(TemplateVariables variables, string txt)
         {
@@ -53,7 +51,7 @@ namespace UnityEditor.PackageManager
         {
             var packageManifestFile = Path.Combine(templateFolder, k_PackageManifestFileName);
             if (!File.Exists(packageManifestFile))
-                throw new Exception(L10n.Tr($"Package template must contain a {k_PackageManifestFileName} file."));
+                throw new Exception(string.Format(L10n.Tr("Package template must contain a file named {0}."), k_PackageManifestFileName));
 
             var templateFiles = Directory.GetFiles(templateFolder, "*.*", SearchOption.AllDirectories);
             foreach (var file in templateFiles)
@@ -63,29 +61,6 @@ namespace UnityEditor.PackageManager
             }
 
             return templateFiles;
-        }
-
-        private static void CreatePackageFromTemplateFolder(TemplateVariables variables, string templateFolder, string targetFolder)
-        {
-            var tempFolder = FileUtil.GetUniqueTempPathInProject();
-            try
-            {
-                FileUtil.CopyFileOrDirectory(templateFolder, tempFolder);
-
-                foreach (var file in GetPackageTemplateFiles(tempFolder))
-                {
-                    File.SetAttributes(file, File.GetAttributes(file) & ~FileAttributes.ReadOnly);
-                    ReplaceVariablesInFile(variables, file);
-                    RenameFileWithVariables(variables, file);
-                }
-
-                Directory.Move(tempFolder, targetFolder);
-            }
-            finally
-            {
-                if (Directory.Exists(tempFolder))
-                    Directory.Delete(tempFolder, true);
-            }
         }
 
         private static bool ValidateRootNamespace(string rootNamespace)
@@ -106,16 +81,27 @@ namespace UnityEditor.PackageManager
             var errors = new List<string>();
             var requiredErrorMessage = L10n.Tr("{0} is required");
 
-            if (string.IsNullOrEmpty(options.name?.Trim()))
+            options.name = options.name?.Trim();
+            if (string.IsNullOrEmpty(options.name))
                 errors.Add(string.Format(requiredErrorMessage, nameof(options.name)));
             else if (!PackageValidation.ValidateName(options.name))
                 errors.Add(string.Format(L10n.Tr("Package name [{0}] is invalid"), options.name));
+            else if (PackageInfo.GetAll().Any(p => p.name == options.name))
+                errors.Add(string.Format(L10n.Tr("The project already contains a package with the name [{0}]."), options.name));
 
-            if (string.IsNullOrEmpty(options.displayName?.Trim()))
+            options.displayName = options.displayName?.Trim();
+            if (string.IsNullOrEmpty(options.displayName))
                 errors.Add(string.Format(requiredErrorMessage, nameof(options.displayName)));
 
+            options.rootNamespace = options.rootNamespace?.Trim();
             if (!string.IsNullOrEmpty(options.rootNamespace) && !ValidateRootNamespace(options.rootNamespace))
                 errors.Add(string.Format(L10n.Tr("[{0}] is not a valid namespace"), options.rootNamespace));
+
+            options.templateFolder = options.templateFolder?.Trim();
+            if (string.IsNullOrEmpty(options.templateFolder))
+                errors.Add(string.Format(requiredErrorMessage, nameof(options.templateFolder)));
+            else if (!Directory.Exists(options.templateFolder))
+                errors.Add(string.Format(L10n.Tr("The directory [{0}] does not exist"), options.templateFolder));
 
             if (errors.Count > 0)
             {
@@ -141,16 +127,32 @@ namespace UnityEditor.PackageManager
         {
             ValidateOptions(options);
 
-            var existingPackage = PackageInfo.GetAll().FirstOrDefault(p => p.name == options.name);
-            if (existingPackage != null)
-                throw new InvalidOperationException(string.Format(L10n.Tr("The project already contains a package with the name [{0}]."), options.name));
-
             var targetFolder = $"{Folders.GetPackagesPath()}/{options.name}";
             if (Directory.Exists(targetFolder))
                 throw new InvalidOperationException(string.Format(L10n.Tr("The target folder [{0}] for this new package already exists."), targetFolder));
 
-            var sourceFolder = Path.Combine(PackageTemplatesRootFolder, k_DefaultTemplateName);
-            CreatePackageFromTemplateFolder(CreateTemplateVariables(options), sourceFolder, targetFolder);
+            var variables = CreateTemplateVariables(options);
+            var templateFolder = options.templateFolder;
+            var tempFolder = FileUtil.GetUniqueTempPathInProject();
+            try
+            {
+                FileUtil.CopyFileOrDirectory(templateFolder, tempFolder);
+
+                foreach (var file in GetPackageTemplateFiles(tempFolder))
+                {
+                    File.SetAttributes(file, File.GetAttributes(file) & ~FileAttributes.ReadOnly);
+                    ReplaceVariablesInFile(variables, file);
+                    RenameFileWithVariables(variables, file);
+                }
+
+                Directory.Move(tempFolder, targetFolder);
+            }
+            finally
+            {
+                if (Directory.Exists(tempFolder))
+                    Directory.Delete(tempFolder, true);
+            }
+
             return targetFolder;
         }
     }

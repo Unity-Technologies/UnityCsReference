@@ -476,7 +476,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
                 grow = 0f;
                 shrink = 1f;
-                basis = 0f;
+                basis = Length.Percent(0);
 
                 bool growFound = false;
                 bool basisFound = false;

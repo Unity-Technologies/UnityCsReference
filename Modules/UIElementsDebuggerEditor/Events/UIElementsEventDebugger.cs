@@ -711,17 +711,33 @@ namespace UnityEditor.UIElements.Debugger
                     m_EventPropagationPaths.text += "    <empty>\n";
                 }
 
+                m_EventPropagationPaths.text += "Target list:\n";
+                var targets = propagationPath.paths.targetElements;
+                if (targets != null && targets.Any())
+                {
+                    foreach (var t in targets)
+                    {
+                        var targetName = t.name;
+                        if (string.IsNullOrEmpty(targetName))
+                            targetName = t.GetType().Name;
+                        m_EventPropagationPaths.text += "    " + targetName + "\n";
+                    }
+                }
+                else
+                {
+                    m_EventPropagationPaths.text += "    <empty>\n";
+                }
+
                 m_EventPropagationPaths.text += "Bubble Up Path:\n";
-                var pathsBubblePath = propagationPath.paths.targetAndBubblePath;
+                var pathsBubblePath = propagationPath.paths.bubbleUpPath;
                 if (pathsBubblePath != null && pathsBubblePath.Any())
                 {
                     foreach (var bubblePathElement in pathsBubblePath)
                     {
-                        var bubblePathName = bubblePathElement.m_VisualElement.name;
+                        var bubblePathName = bubblePathElement.name;
                         if (string.IsNullOrEmpty(bubblePathName))
-                            bubblePathName = bubblePathElement.m_VisualElement.GetType().Name;
-                        var target = bubblePathElement.m_IsTarget ? "(T) " : "";
-                        m_EventPropagationPaths.text += "    " + target + bubblePathName + "\n";
+                            bubblePathName = bubblePathElement.GetType().Name;
+                        m_EventPropagationPaths.text += "    " + bubblePathName + "\n";
                     }
                 }
                 else

@@ -12,13 +12,56 @@ namespace UnityEngine.UIElements
 
         public new class UxmlTraits : TextElement.UxmlTraits {}
 
-        public Clickable clickable { get; set; }
+        public new static readonly string ussClassName = "unity-button";
+        private Clickable m_Clickable;
+
+        public Clickable clickable
+        {
+            get
+            {
+                return m_Clickable;
+            }
+            set
+            {
+                if (m_Clickable != null && m_Clickable.target == this)
+                {
+                    this.RemoveManipulator(m_Clickable);
+                }
+
+                m_Clickable = value;
+
+                if (m_Clickable != null)
+                {
+                    this.AddManipulator(m_Clickable);
+                }
+            }
+        }
+
+        public event Action onClick
+        {
+            add
+            {
+                if (m_Clickable == null)
+                {
+                    clickable = new Clickable(value);
+                }
+                else
+                {
+                    m_Clickable.clicked += value;
+                }
+            }
+            remove
+            {
+                if (m_Clickable != null)
+                {
+                    m_Clickable.clicked -= value;
+                }
+            }
+        }
 
         public Button() : this(null)
         {
         }
-
-        public new static readonly string ussClassName = "unity-button";
 
         public Button(System.Action clickEvent)
         {
@@ -26,16 +69,16 @@ namespace UnityEngine.UIElements
 
             // Click-once behaviour
             clickable = new Clickable(clickEvent);
-            this.AddManipulator(clickable);
         }
 
+        private static readonly string NonEmptyString = " ";
         protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight,
             MeasureMode heightMode)
         {
             var textToMeasure = text;
             if (string.IsNullOrEmpty(textToMeasure))
             {
-                textToMeasure = " ";
+                textToMeasure = NonEmptyString;
             }
             return MeasureTextSize(textToMeasure, desiredWidth, widthMode, desiredHeight, heightMode);
         }

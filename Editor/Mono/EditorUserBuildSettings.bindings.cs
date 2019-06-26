@@ -255,6 +255,7 @@ namespace UnityEditor
     [StaticAccessor("GetEditorUserBuildSettings()", StaticAccessorType.Dot)]
     public partial class EditorUserBuildSettings : Object
     {
+        private const string kSettingWaitForManagedDebugger = "WaitForManagedDebugger";
         private EditorUserBuildSettings() {}
 
         internal static extern AppleBuildAndRunType appleBuildAndRunType { get; set; }
@@ -684,5 +685,18 @@ namespace UnityEditor
 
         // Place the built player in the build folder.
         public static extern bool installInBuildFolder { get; set; }
+
+        public static bool waitForManagedDebugger
+        {
+            get
+            {
+                return GetPlatformSettings("Editor", kSettingWaitForManagedDebugger) == "true";
+            }
+
+            set
+            {
+                SetPlatformSettings("Editor", kSettingWaitForManagedDebugger, value.ToString().ToLower());
+            }
+        }
     }
 }

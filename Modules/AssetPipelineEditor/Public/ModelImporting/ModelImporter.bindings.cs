@@ -179,16 +179,16 @@ namespace UnityEditor
         }
     }
 
-    [System.Obsolete("Use ModelImporterMaterialName, ModelImporter.materialName and ModelImporter.importMaterials instead")]
+    [System.Obsolete("Use ModelImporterMaterialName, ModelImporter.materialName and ModelImporter.materialImportMode instead")]
     public enum ModelImporterGenerateMaterials
     {
-        [System.Obsolete("Use ModelImporter.importMaterials=false instead")]
+        [System.Obsolete("Use ModelImporter.materialImportMode=None instead")]
         None = 0,
 
-        [System.Obsolete("Use ModelImporter.importMaterials=true and ModelImporter.materialName=ModelImporterMaterialName.BasedOnTextureName instead")]
+        [System.Obsolete("Use ModelImporter.materialImportMode=Import and ModelImporter.materialName=ModelImporterMaterialName.BasedOnTextureName instead")]
         PerTexture = 1,
 
-        [System.Obsolete("Use ModelImporter.importMaterials=true and ModelImporter.materialName=ModelImporterMaterialName.BasedOnModelNameAndMaterialName instead")]
+        [System.Obsolete("Use ModelImporter.materialImportMode=Import and ModelImporter.materialName=ModelImporterMaterialName.BasedOnModelNameAndMaterialName instead")]
         PerSourceMaterial = 2,
     }
 
@@ -218,8 +218,25 @@ namespace UnityEditor
     [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
     public enum ModelImporterMaterialLocation
     {
+        [InspectorName("Use External Materials (Legacy)")]
+        [Tooltip("Use external materials if found in the project.")]
         External = 0,
+        [InspectorName("Use Embedded Materials")]
+        [Tooltip("Embed the material inside the imported asset.")]
         InPrefab = 1
+    };
+
+    [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
+    public enum ModelImporterMaterialImportMode
+    {
+        [Tooltip("Do not import materials")]
+        None = 0,
+        [InspectorName("Import (Legacy)")]
+        [Tooltip("Use the legacy Material import method.")]
+        LegacyImport = 1,
+        [InspectorName("Import (Experimental)")]
+        [Tooltip("Use AssetPostprocessor.OnPreprocessMaterialDescription")]
+        Import = 2
     };
 
     public enum ModelImporterTangentSpaceMode
@@ -398,13 +415,13 @@ namespace UnityEditor
     [NativeHeader("Modules/Animation/ScriptBindings/AvatarBuilder.bindings.h")]
     public partial class ModelImporter : AssetImporter
     {
-        [System.Obsolete("Use importMaterials, materialName and materialSearch instead")]
+        [System.Obsolete("Use materialImportMode, materialName and materialSearch instead")]
         public extern ModelImporterGenerateMaterials generateMaterials
         {
             get;
             set;
         }
-
+        [System.Obsolete("Use materialImportMode instead")]
         public extern bool importMaterials
         {
             get;
@@ -1019,6 +1036,12 @@ namespace UnityEditor
             set;
         }
         public extern bool sortHierarchyByName
+        {
+            get;
+            set;
+        }
+
+        public extern ModelImporterMaterialImportMode materialImportMode
         {
             get;
             set;

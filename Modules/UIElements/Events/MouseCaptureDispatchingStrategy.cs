@@ -93,8 +93,7 @@ namespace UnityEngine.UIElements
                 evt.dispatch = true;
                 evt.target = MouseCaptureController.mouseCapture;
                 evt.currentTarget = MouseCaptureController.mouseCapture;
-                evt.propagationPhase = PropagationPhase.AtTarget;
-                MouseCaptureController.mouseCapture.HandleEvent(evt);
+                (MouseCaptureController.mouseCapture as CallbackEventHandler)?.HandleEventAtTargetPhase(evt);
 
                 // Do further processing with a target computed the usual way.
                 // However, if mouseEventWasCaptured, the only thing remaining to do is ExecuteDefaultAction,

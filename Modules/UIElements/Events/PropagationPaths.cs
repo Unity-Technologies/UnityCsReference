@@ -19,27 +19,25 @@ namespace UnityEngine.UIElements
             BubbleUp = 2
         }
 
-        public struct PropagationPathElement
-        {
-            public VisualElement m_VisualElement;
-            public bool m_IsTarget;
-        }
-
         public readonly List<VisualElement> trickleDownPath;
-        public readonly List<PropagationPathElement> targetAndBubblePath;
+        public readonly List<VisualElement> targetElements;
+        public readonly List<VisualElement> bubbleUpPath;
 
         const int k_DefaultPropagationDepth = 16;
+        const int k_DefaultTargetCount = 4;
 
         public PropagationPaths()
         {
             trickleDownPath = new List<VisualElement>(k_DefaultPropagationDepth);
-            targetAndBubblePath = new List<PropagationPathElement>(k_DefaultPropagationDepth);
+            targetElements = new List<VisualElement>(k_DefaultTargetCount);
+            bubbleUpPath = new List<VisualElement>(k_DefaultPropagationDepth);
         }
 
         public PropagationPaths(PropagationPaths paths)
         {
             trickleDownPath = new List<VisualElement>(paths.trickleDownPath);
-            targetAndBubblePath = new List<PropagationPathElement>(paths.targetAndBubblePath);
+            targetElements = new List<VisualElement>(paths.targetElements);
+            bubbleUpPath = new List<VisualElement>(paths.bubbleUpPath);
         }
 
         public static PropagationPaths Build(VisualElement elem, Type pathTypesRequested)
@@ -49,6 +47,8 @@ namespace UnityEngine.UIElements
 
             PropagationPaths paths = s_Pool.Get();
 
+            paths.targetElements.Add(elem);
+
             while (elem.hierarchy.parent != null)
             {
                 if (elem.hierarchy.parent.enabledInHierarchy)
@@ -56,12 +56,7 @@ namespace UnityEngine.UIElements
                     if (elem.hierarchy.parent.isCompositeRoot)
                     {
                         // Callback for elem.hierarchy.parent must be called at the Target phase.
-                        var item = new PropagationPathElement
-                        {
-                            m_VisualElement = elem.hierarchy.parent,
-                            m_IsTarget = true
-                        };
-                        paths.targetAndBubblePath.Add(item);
+                        paths.targetElements.Add(elem.hierarchy.parent);
                     }
                     else
                     {
@@ -72,12 +67,7 @@ namespace UnityEngine.UIElements
 
                         if ((pathTypesRequested & Type.BubbleUp) == Type.BubbleUp && elem.hierarchy.parent.HasBubbleUpHandlers())
                         {
-                            var item = new PropagationPathElement
-                            {
-                                m_VisualElement = elem.hierarchy.parent,
-                                m_IsTarget = false
-                            };
-                            paths.targetAndBubblePath.Add(item);
+                            paths.bubbleUpPath.Add(elem.hierarchy.parent);
                         }
                     }
                 }
@@ -89,7 +79,8 @@ namespace UnityEngine.UIElements
         public void Release()
         {
             // Empty paths to avoid leaking VisualElements.
-            targetAndBubblePath.Clear();
+            bubbleUpPath.Clear();
+            targetElements.Clear();
             trickleDownPath.Clear();
 
             s_Pool.Release(this);

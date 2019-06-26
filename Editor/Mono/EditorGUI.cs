@@ -101,7 +101,7 @@ namespace UnityEditor
         internal static string kIntFieldFormatString = "#######0";
         internal static int ms_IndentLevel = 0;
         private const float kIndentPerLevel = 15;
-        internal const int kControlVerticalSpacingLegacy =  2;
+        internal const int kControlVerticalSpacingLegacy = 2;
         internal const int kDefaultSpacing = 6;
         internal static readonly SVC<float> kControlVerticalSpacing = new SVC<float>("--theme-control-vertical-spacing", 2.0f);
         internal static readonly SVC<float> kVerticalSpacingMultiField = new SVC<float>("--theme-multifield-vertical-spacing", 0.0f);
@@ -112,7 +112,7 @@ namespace UnityEditor
         internal static readonly SVC<float> kWindowToolbarHeight = new SVC<float>("--window-toolbar-height", 21f);
         private const string kEnabledPropertyName = "m_Enabled";
         private const string k_MultiEditValueString = "<multi>";
-        private const float kDropDownArrowMargin = -2;
+        private const float kDropDownArrowMargin = 2;
         private const float kDropDownArrowWidth = 12;
         private const float kDropDownArrowHeight = 12;
 
@@ -159,11 +159,14 @@ namespace UnityEditor
         private static Rect s_PrefixTotalRect;
         private static Rect s_PrefixRect;
         private static GUIStyle s_PrefixStyle;
+        private static GUIStyle s_IconButtonStyle;
         private static Color s_PrefixGUIColor;
 
         private static string s_LabelHighlightContext;
         private static Color s_LabelHighlightColor;
         private static Color s_LabelHighlightSelectionColor;
+
+        internal static float lineHeight { get; set; } = kSingleLineHeight;
 
         // Makes the following controls give the appearance of editing multiple different values.
         public static bool showMixedValue { get; set; }
@@ -2360,11 +2363,19 @@ namespace UnityEditor
 
         internal static float Slider(Rect position, GUIContent label, float value, float sliderMin, float sliderMax, float textFieldMin, float textFieldMax)
         {
+            return Slider(position, label, value, sliderMin, sliderMax, textFieldMin, textFieldMax,
+                EditorStyles.numberField, GUI.skin.horizontalSlider, GUI.skin.horizontalSliderThumb, null,
+                GUI.skin.horizontalSliderThumbExtent);
+        }
+
+        internal static float Slider(Rect position, GUIContent label, float value, float sliderMin, float sliderMax, float textFieldMin, float textFieldMax
+            , GUIStyle textfieldStyle, GUIStyle sliderStyle, GUIStyle thumbStyle, Texture2D sliderBackground, GUIStyle thumbStyleExtent)
+        {
             var id = GUIUtility.GetControlID(s_SliderHash, FocusType.Keyboard, position);
             var controlRect = PrefixLabel(position, id, label);
             var dragZone = LabelHasContent(label) ? EditorGUIUtility.DragZoneRect(position) : new Rect(); // Ensure dragzone is empty when we have no label
             return DoSlider(controlRect, dragZone, id, value, sliderMin, sliderMax, kFloatFieldFormatString, textFieldMin, textFieldMax, 1f,
-                EditorStyles.numberField, GUI.skin.horizontalSlider, GUI.skin.horizontalSliderThumb, null, GUI.skin.horizontalSliderThumbExtent);
+                textfieldStyle, sliderStyle, thumbStyle, sliderBackground, thumbStyleExtent);
         }
 
         internal static float PowerSlider(Rect position, string label, float sliderValue, float leftValue, float rightValue, float power)
@@ -2696,7 +2707,8 @@ namespace UnityEditor
                 {
                     Color orgColor = GUI.color;
                     GUI.color = GUI.color * new Color(1f, 1f, 1f, 0.5f);
-                    Rect labelRect = new Rect(sliderRect.x, sliderRect.y + 10, sliderRect.width, sliderRect.height);
+                    float labelHeight = Mathf.Max(EditorStyles.miniLabel.CalcHeight(EditorGUIUtility.sliderLabels.leftLabel, 0), EditorStyles.miniLabel.CalcHeight(EditorGUIUtility.sliderLabels.rightLabel, 0));
+                    Rect labelRect = new Rect(sliderRect.x, sliderRect.y + (sliderRect.height + thumbStyle.fixedHeight) / 2, sliderRect.width, labelHeight);
                     DoTwoLabels(labelRect, EditorGUIUtility.sliderLabels.leftLabel, EditorGUIUtility.sliderLabels.rightLabel, EditorStyles.miniLabel);
                     GUI.color = orgColor;
                     EditorGUIUtility.sliderLabels.SetLabels(null, null);
@@ -2755,8 +2767,17 @@ namespace UnityEditor
                 }
 
                 BeginChangeCheck();
-                var newTextFieldValue = DoFloatField(s_RecycledEditor, new Rect(position.x + sWidth + kSpacing, position.y, EditorGUIUtility.fieldWidth - 2, position.height),
-                    dragZonePosition, id, value, formatString, textfieldStyle ?? EditorStyles.numberField, true);
+                var style = textfieldStyle ?? EditorStyles.numberField;
+                position.x += sWidth + kSpacing;
+                position.width = EditorGUIUtility.fieldWidth;
+
+                // Centers the textfield if it has a specified height
+                if (style.fixedHeight > 0)
+                {
+                    position.y += (position.height - style.fixedHeight) / 2;
+                }
+                var newTextFieldValue = DoFloatField(s_RecycledEditor, position,
+                    dragZonePosition, id, value, formatString, style, true);
                 if (EndChangeCheck())
                 {
                     value = Mathf.Clamp(newTextFieldValue, Mathf.Min(textFieldMin, textFieldMax), Mathf.Max(textFieldMin, textFieldMax));
@@ -2764,10 +2785,17 @@ namespace UnityEditor
             }
             else
             {
+                var style = textfieldStyle ?? EditorStyles.numberField;
                 w = Mathf.Min(EditorGUIUtility.fieldWidth, w);
                 position.x = position.xMax - w;
                 position.width = w;
-                value = DoFloatField(s_RecycledEditor, position, dragZonePosition, id, value, formatString, textfieldStyle ?? EditorStyles.numberField, true);
+
+                // Centers the textfield if it has a specified height
+                if (style.fixedHeight > 0)
+                {
+                    position.y += (position.height - style.fixedHeight) / 2;
+                }
+                value = DoFloatField(s_RecycledEditor, position, dragZonePosition, id, value, formatString, style, true);
                 value = Mathf.Clamp(value, Mathf.Min(textFieldMin, textFieldMax), Mathf.Max(textFieldMin, textFieldMax));
             }
             return value;
@@ -4683,7 +4711,7 @@ namespace UnityEditor
 
         internal static Vector2 GetObjectIconDropDownSize(float width, float height)
         {
-            return new Vector2(width, height + kDropDownArrowMargin + kDropDownArrowHeight);
+            return new Vector2(width + kDropDownArrowWidth / 2 + 2 * kDropDownArrowMargin, height + kDropDownArrowWidth / 2 + 2 * kDropDownArrowMargin);
         }
 
         internal static void ObjectIconDropDown(Rect position, Object[] targets, bool showLabelIcons, Texture2D nullIcon, SerializedProperty iconProperty)
@@ -4693,9 +4721,33 @@ namespace UnityEditor
                 s_IconTextureInactive = (Material)EditorGUIUtility.LoadRequired("Inspectors/InactiveGUI.mat");
             }
 
+            if (s_IconButtonStyle == null)
+            {
+                s_IconButtonStyle = new GUIStyle(EditorStyles.iconButton)
+                {
+                    fixedWidth = 0,
+                    fixedHeight = 0
+                };
+            }
+
+            if (DropdownButton(position, GUIContent.none, FocusType.Passive, s_IconButtonStyle))
+            {
+                if (IconSelector.ShowAtPosition(targets, position, showLabelIcons))
+                {
+                    GUIUtility.ExitGUI();
+                }
+            }
+
             if (Event.current.type == EventType.Repaint)
             {
-                Rect arrowRect = new Rect(position.x + (position.width - kDropDownArrowWidth) / 2, position.y + position.height - kDropDownArrowHeight, kDropDownArrowWidth, kDropDownArrowHeight);
+                var contentPosition = position;
+
+                contentPosition.xMin += kDropDownArrowMargin;
+                contentPosition.xMax -= kDropDownArrowMargin + kDropDownArrowWidth / 2;
+                contentPosition.yMin += kDropDownArrowMargin;
+                contentPosition.yMax -= kDropDownArrowMargin + kDropDownArrowWidth / 2;
+
+                Rect arrowRect = new Rect(contentPosition.x + contentPosition.width - kDropDownArrowWidth / 2, contentPosition.y + contentPosition.height - kDropDownArrowHeight / 2, kDropDownArrowWidth, kDropDownArrowHeight);
                 Texture2D icon = null;
 
                 if (!iconProperty.hasMultipleDifferentValues)
@@ -4707,18 +4759,14 @@ namespace UnityEditor
                     icon = nullIcon;
                 }
 
-                Rect remainingRect = position;
-
-                remainingRect.yMax = arrowRect.yMin - kDropDownArrowMargin;
-
-                Vector2 iconSize = remainingRect.size;
+                Vector2 iconSize = contentPosition.size;
 
                 if (icon)
                 {
                     iconSize.x = Mathf.Min(icon.width, iconSize.x);
                     iconSize.y = Mathf.Min(icon.height, iconSize.y);
                 }
-                Rect iconRect = new Rect(remainingRect.x + remainingRect.width / 2 - iconSize.x / 2, remainingRect.y + remainingRect.height / 2 - iconSize.y / 2 , iconSize.x, iconSize.y);
+                Rect iconRect = new Rect(contentPosition.x + contentPosition.width / 2 - iconSize.x / 2, contentPosition.y + contentPosition.height / 2 - iconSize.y / 2 , iconSize.x, iconSize.y);
                 GameObject obj = targets[0] as GameObject;
 
                 bool isInactive = obj && (!EditorUtility.IsPersistent(targets[0]) && (!obj.activeSelf || !obj.activeInHierarchy));
@@ -4741,14 +4789,6 @@ namespace UnityEditor
                     s_IconDropDown = EditorGUIUtility.IconContent("Icon Dropdown");
                 }
                 GUIStyle.none.Draw(arrowRect, s_IconDropDown, false, false, false, false);
-            }
-
-            if (DropdownButton(position, GUIContent.none, FocusType.Passive, GUIStyle.none))
-            {
-                if (IconSelector.ShowAtPosition(targets, position, showLabelIcons))
-                {
-                    GUIUtility.ExitGUI();
-                }
             }
         }
 
@@ -4964,7 +5004,7 @@ namespace UnityEditor
                     textStyle.Draw(textRect, EditorGUIUtility.TempContent(ObjectNames.GetInspectorTitle(targetObjs[0])), id, foldout, textRect.Contains(Event.current.mousePosition));
                     if (EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None)
                     {
-                        iconButtonStyle.Draw(settingsRect, GUIContents.titleSettingsIcon, id, foldout, settingsRect.Contains(Event.current.mousePosition));
+                        EditorStyles.optionsButtonStyle.Draw(settingsRect, GUIContent.none, id, foldout, settingsRect.Contains(Event.current.mousePosition));
                     }
                     break;
             }
@@ -5202,11 +5242,20 @@ This warning only shows up in development builds.", helpTopic, pageName);
             {
                 eventType = Event.current.rawType;
             }
+
+            Rect clickRect = position;
+            if (!toggleOnLabelClick)
+            {
+                clickRect = origPosition;
+                clickRect.width += style.padding.right;
+                clickRect.x += indent;
+            }
+
             switch (eventType)
             {
                 case EventType.MouseDown:
                     // If the mouse is inside the button, we say that we're the hot control
-                    if (position.Contains(Event.current.mousePosition) && Event.current.button == 0)
+                    if (clickRect.Contains(Event.current.mousePosition) && Event.current.button == 0)
                     {
                         GUIUtility.keyboardControl = GUIUtility.hotControl = id;
                         Event.current.Use();
@@ -5222,12 +5271,6 @@ This warning only shows up in development builds.", helpTopic, pageName);
                         Event.current.Use();
 
                         // toggle the passed-in value if the mouse was over the button & return true
-                        Rect clickRect = position;
-                        if (!toggleOnLabelClick)
-                        {
-                            clickRect.width = style.padding.left;
-                            clickRect.x += indent;
-                        }
                         if (clickRect.Contains(Event.current.mousePosition))
                         {
                             GUI.changed = true;
@@ -5478,7 +5521,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
                 return IndentedRect(totalPosition);
             }
 
-            Rect labelPosition = new Rect(totalPosition.x + indent, totalPosition.y, EditorGUIUtility.labelWidth - indent, kSingleLineHeight);
+            Rect labelPosition = new Rect(totalPosition.x + indent, totalPosition.y, EditorGUIUtility.labelWidth - indent, lineHeight);
             Rect fieldPosition = new Rect(totalPosition.x + EditorGUIUtility.labelWidth + kPrefixPaddingRight, totalPosition.y, totalPosition.width - EditorGUIUtility.labelWidth - kPrefixPaddingRight, totalPosition.height);
             HandlePrefixLabel(totalPosition, labelPosition, label, id, style);
             return fieldPosition;
@@ -8066,8 +8109,51 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
         internal static float Slider(GUIContent label, float value, float sliderLeftValue, float sliderRightValue, float textLeftValue, float textRightValue, params GUILayoutOption[] options)
         {
-            Rect r = s_LastRect = GetSliderRect(true, options);
-            return EditorGUI.Slider(r, label, value, sliderLeftValue, sliderRightValue, textLeftValue, textRightValue);
+            return Slider(label, value, sliderLeftValue, sliderRightValue, textLeftValue, textRightValue, EditorStyles.numberField,
+                GUI.skin.horizontalSlider, GUI.skin.horizontalSliderThumb, null, GUI.skin.horizontalSliderThumbExtent, options);
+        }
+
+        static void GetSliderParts(GUIStyle baseStyle, ref GUIStyle textFieldStyle, ref GUIStyle thumbStyle, ref GUIStyle thumbExtentStyle)
+        {
+            string baseName = baseStyle.name;
+            thumbStyle = GUI.skin.FindStyle(baseName + "Thumb") ?? thumbStyle;
+            thumbExtentStyle = GUI.skin.FindStyle(baseName + "ThumbExtent") ?? thumbExtentStyle;
+            textFieldStyle = GUI.skin.FindStyle(baseName + "TextField") ?? textFieldStyle;
+        }
+
+        static void GetHorizontalSliderParts(GUIStyle baseStyle, out GUIStyle textFieldStyle, out GUIStyle thumbStyle, out GUIStyle thumbExtentStyle)
+        {
+            thumbStyle = GUI.skin.horizontalSliderThumb;
+            thumbExtentStyle = GUI.skin.horizontalSliderThumbExtent;
+            textFieldStyle = EditorStyles.numberField;
+
+            GetSliderParts(baseStyle, ref textFieldStyle, ref thumbStyle, ref thumbExtentStyle);
+        }
+
+        static void GetVerticalSliderParts(GUIStyle baseStyle, out GUIStyle textFieldStyle, out GUIStyle thumbStyle, out GUIStyle thumbExtentStyle)
+        {
+            thumbStyle = GUI.skin.verticalSliderThumb;
+            thumbExtentStyle = GUI.skin.verticalSliderThumbExtent;
+            textFieldStyle = EditorStyles.numberField;
+
+            GetSliderParts(baseStyle, ref textFieldStyle, ref thumbStyle, ref thumbExtentStyle);
+        }
+
+        internal static float Slider(GUIContent label, float value, float sliderLeftValue, float sliderRightValue, float textLeftValue, float textRightValue, GUIStyle sliderStyle, params GUILayoutOption[] options)
+        {
+            GUIStyle sliderThumbStyle, sliderThumbStyleExtent, sliderTextFieldStyle;
+
+            GetHorizontalSliderParts(sliderStyle, out sliderTextFieldStyle, out sliderThumbStyle, out sliderThumbStyleExtent);
+
+            return Slider(label, value, sliderLeftValue, sliderRightValue, textLeftValue, textRightValue, sliderTextFieldStyle, sliderStyle
+                , sliderThumbStyle, null, sliderThumbStyleExtent);
+        }
+
+        internal static float Slider(GUIContent label, float value, float sliderLeftValue, float sliderRightValue, float textLeftValue, float textRightValue
+            , GUIStyle sliderTextField, GUIStyle sliderStyle, GUIStyle sliderThumbStyle, Texture2D sliderBackground, GUIStyle sliderThumbStyleExtent, params GUILayoutOption[] options)
+        {
+            Rect r = s_LastRect = GetSliderRect(true, sliderStyle, options);
+            return EditorGUI.Slider(r, label, value, sliderLeftValue, sliderRightValue, textLeftValue, textRightValue, sliderTextField, sliderStyle, sliderThumbStyle, sliderBackground, sliderThumbStyleExtent);
         }
 
         public static void Slider(SerializedProperty property, float leftValue, float rightValue, params GUILayoutOption[] options)
@@ -8112,10 +8198,19 @@ This warning only shows up in development builds.", helpTopic, pageName);
             return EditorGUI.IntSlider(r, value, leftValue, rightValue);
         }
 
+        internal static int IntSlider(int value, int leftValue, int rightValue, float power, GUIStyle sliderStyle, params GUILayoutOption[] options)
+        {
+            GUIStyle sliderThumbStyle, sliderThumbStyleExtent, sliderTextFieldStyle;
+
+            GetHorizontalSliderParts(sliderStyle, out sliderTextFieldStyle, out sliderThumbStyle, out sliderThumbStyleExtent);
+
+            return IntSlider(value, leftValue, rightValue, power, sliderTextFieldStyle, sliderStyle, sliderThumbStyle, null, sliderThumbStyleExtent, options);
+        }
+
         internal static int IntSlider(int value, int leftValue, int rightValue, float power,
             GUIStyle textfieldStyle, GUIStyle sliderStyle, GUIStyle thumbStyle, Texture2D sliderBackground, GUIStyle thumbStyleExtent, params GUILayoutOption[] options)
         {
-            Rect r = s_LastRect = GetSliderRect(false, options);
+            Rect r = s_LastRect = GetSliderRect(false, sliderStyle, options);
             return EditorGUI.IntSlider(r, value, leftValue, rightValue, power, textfieldStyle, sliderStyle, thumbStyle, sliderBackground, thumbStyleExtent);
         }
 
@@ -9319,12 +9414,12 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
         public static bool PropertyField(SerializedProperty property, params GUILayoutOption[] options)
         {
-            return PropertyField(property, null, false, options);
+            return PropertyField(property, null, IsChildrenIncluded(property), options);
         }
 
         public static bool PropertyField(SerializedProperty property, GUIContent label, params GUILayoutOption[] options)
         {
-            return PropertyField(property, label, false, options);
+            return PropertyField(property, label, IsChildrenIncluded(property), options);
         }
 
         public static bool PropertyField(SerializedProperty property, bool includeChildren, params GUILayoutOption[] options)
@@ -9336,6 +9431,18 @@ This warning only shows up in development builds.", helpTopic, pageName);
         public static bool PropertyField(SerializedProperty property, GUIContent label, bool includeChildren, params GUILayoutOption[] options)
         {
             return ScriptAttributeUtility.GetHandler(property).OnGUILayout(property, label, includeChildren, options);
+        }
+
+        private static bool IsChildrenIncluded(SerializedProperty prop)
+        {
+            switch (prop.propertyType)
+            {
+                case SerializedPropertyType.Generic:
+                case SerializedPropertyType.Vector4:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         public static Rect GetControlRect(params GUILayoutOption[] options)
@@ -9363,10 +9470,15 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
         internal static Rect GetSliderRect(bool hasLabel, params GUILayoutOption[] options)
         {
+            return GetSliderRect(hasLabel, GUI.skin.horizontalSlider, options);
+        }
+
+        internal static Rect GetSliderRect(bool hasLabel, GUIStyle sliderStyle, params GUILayoutOption[] options)
+        {
             return GUILayoutUtility.GetRect(
                 hasLabel ? kLabelFloatMinW : EditorGUIUtility.fieldWidth,
                 kLabelFloatMaxW + EditorGUI.kSpacing + EditorGUI.kSliderMaxW,
-                EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight, EditorStyles.numberField, options);
+                EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight, sliderStyle, options);
         }
 
         internal static Rect GetToggleRect(bool hasLabel, params GUILayoutOption[] options)
