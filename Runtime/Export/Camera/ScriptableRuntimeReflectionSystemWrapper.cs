@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.Scripting;
 
 namespace UnityEngine.Experimental.Rendering
@@ -12,16 +13,9 @@ namespace UnityEngine.Experimental.Rendering
         internal IScriptableRuntimeReflectionSystem implementation { get; set; }
 
         [RequiredByNativeCode]
-        bool Internal_ScriptableRuntimeReflectionSystemWrapper_TickRealtimeProbes_ReturnResult()
+        unsafe void Internal_ScriptableRuntimeReflectionSystemWrapper_TickRealtimeProbes(IntPtr result)
         {
-            return implementation != null
-                && implementation.TickRealtimeProbes();
-        }
-
-        [RequiredByNativeCode]
-        void Internal_ScriptableRuntimeReflectionSystemWrapper_TickRealtimeProbes(out bool result)
-        {
-            result = implementation != null
+            *(bool*)result = implementation != null
                 && implementation.TickRealtimeProbes();
         }
     }

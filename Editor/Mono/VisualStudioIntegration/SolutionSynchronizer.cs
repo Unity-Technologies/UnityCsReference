@@ -31,6 +31,33 @@ namespace UnityEditor.VisualStudioIntegration
         UnityScript,
     }
 
+    interface IAssemblyNameProvider
+    {
+        string GetAssemblyNameFromScriptPath(string path);
+        IEnumerable<MonoIsland> GetAllScriptAssemblies(Func<string, bool> shouldFileBePartOfSolution, string projectDirectory);
+        IEnumerable<string> GetAllAssetPaths();
+    }
+
+    class AssemblyNameProvider : IAssemblyNameProvider
+    {
+        public string GetAssemblyNameFromScriptPath(string path)
+        {
+            return CompilationPipeline.GetAssemblyNameFromScriptPath(path);
+        }
+
+        public IEnumerable<MonoIsland> GetAllScriptAssemblies(Func<string, bool> shouldFileBePartOfSolution, string projectDirectory)
+        {
+            return EditorCompilationInterface.Instance.GetAllScriptAssemblies(EditorScriptCompilationOptions.BuildingForEditor | EditorCompilationInterface.GetAdditionalEditorScriptCompilationOptions())
+                .Where(i => 0 < i.Files.Length && i.Files.Any(shouldFileBePartOfSolution))
+                .Select(x => x.ToMonoIsland(EditorScriptCompilationOptions.BuildingForEditor, string.Empty, projectDirectory)).ToList();
+        }
+
+        public IEnumerable<string> GetAllAssetPaths()
+        {
+            return AssetDatabase.GetAllAssetPaths();
+        }
+    }
+
     class SolutionSynchronizer
     {
         enum Mode
@@ -81,7 +108,7 @@ namespace UnityEditor.VisualStudioIntegration
         private readonly string _projectDirectory;
         private readonly ISolutionSynchronizationSettings _settings;
         private readonly string _projectName;
-
+        readonly IAssemblyNameProvider m_assemblyNameProvider;
 
         private static readonly string DefaultMonoDevelopSolutionProperties = string.Join("\r\n", new[]
         {
@@ -90,11 +117,16 @@ namespace UnityEditor.VisualStudioIntegration
             "    EndGlobalSection",
         }).Replace("    ", "\t");
 
-        public SolutionSynchronizer(string projectDirectory, ISolutionSynchronizationSettings settings)
+        public SolutionSynchronizer(string projectDirectory, ISolutionSynchronizationSettings settings, IAssemblyNameProvider assemblyNameProvider)
         {
             _projectDirectory = projectDirectory.ConvertSeparatorsToUnity();
             _settings = settings;
             _projectName = Path.GetFileName(_projectDirectory);
+            m_assemblyNameProvider = assemblyNameProvider;
+        }
+
+        public SolutionSynchronizer(string projectDirectory, ISolutionSynchronizationSettings settings) : this(projectDirectory, settings, new AssemblyNameProvider())
+        {
         }
 
         public SolutionSynchronizer(string projectDirectory) : this(projectDirectory, DefaultSynchronizationSettings)
@@ -226,9 +258,7 @@ namespace UnityEditor.VisualStudioIntegration
         {
             // Only synchronize islands that have associated source files and ones that we actually want in the project.
             // This also filters out DLLs coming from .asmdef files in packages.
-            IEnumerable<MonoIsland> islands = EditorCompilationInterface.Instance.GetAllScriptAssemblies(EditorScriptCompilationOptions.BuildingForEditor | EditorCompilationInterface.GetAdditionalEditorScriptCompilationOptions())
-                .Where(i => 0 < i.Files.Length && i.Files.Any(ShouldFileBePartOfSolution))
-                .Select(x => x.ToMonoIsland(EditorScriptCompilationOptions.BuildingForEditor, string.Empty, _projectDirectory)).ToList();
+            IEnumerable<MonoIsland> islands = m_assemblyNameProvider.GetAllScriptAssemblies(ShouldFileBePartOfSolution, _projectDirectory);
 
             var allAssetProjectParts = GenerateAllAssetProjectParts();
 
@@ -256,8 +286,8 @@ namespace UnityEditor.VisualStudioIntegration
             };
 
             var systemReferenceDirectories = CSharpLanguage.GetCSharpCompiler(island._target, true, scriptAssembly) == CSharpCompiler.Microsoft
-                && PlayerSettings.GetScriptingBackend(BuildPipeline.GetBuildTargetGroup(island._target)) == ScriptingImplementation.WinRTDotNET && !island._editor
-                ? MicrosoftCSharpCompiler.GetClassLibraries(island._target, island._editor)
+                && PlayerSettings.GetScriptingBackend(BuildPipeline.GetBuildTargetGroup(island._target)) == ScriptingImplementation.WinRTDotNET && !island._buildingForEditor
+                ? MicrosoftCSharpCompiler.GetClassLibraries(island._target, island._buildingForEditor)
                 : MonoLibraryHelpers.GetSystemReferenceDirectories(island._api_compatibility_level);
 
             Dictionary<string, ScriptCompilerBase.ResponseFileData> responseFilesData = island._responseFiles.ToDictionary(x => x, x => ScriptCompilerBase.ParseResponseFileFromFile(
@@ -285,7 +315,7 @@ namespace UnityEditor.VisualStudioIntegration
         {
             Dictionary<string, StringBuilder> stringBuilders = new Dictionary<string, StringBuilder>();
 
-            foreach (string asset in AssetDatabase.GetAllAssetPaths())
+            foreach (string asset in m_assemblyNameProvider.GetAllAssetPaths())
             {
                 // Exclude files coming from packages except if they are internalized.
                 if (IsNonInternalizedPackagePath(asset))
@@ -296,9 +326,14 @@ namespace UnityEditor.VisualStudioIntegration
                 if (IsSupportedExtension(extension) && ScriptingLanguage.None == ScriptingLanguageFor(extension))
                 {
                     // Find assembly the asset belongs to by adding script extension and using compilation pipeline.
-                    var assemblyName = CompilationPipeline.GetAssemblyNameFromScriptPath(asset + ".cs");
-                    assemblyName = assemblyName ?? CompilationPipeline.GetAssemblyNameFromScriptPath(asset + ".js");
-                    assemblyName = assemblyName ?? CompilationPipeline.GetAssemblyNameFromScriptPath(asset + ".boo");
+                    var assemblyName = m_assemblyNameProvider.GetAssemblyNameFromScriptPath(asset + ".cs");
+                    assemblyName = assemblyName ?? m_assemblyNameProvider.GetAssemblyNameFromScriptPath(asset + ".js");
+                    assemblyName = assemblyName ?? m_assemblyNameProvider.GetAssemblyNameFromScriptPath(asset + ".boo");
+
+                    if (string.IsNullOrEmpty(assemblyName))
+                    {
+                        continue;
+                    }
 
                     assemblyName = Path.GetFileNameWithoutExtension(assemblyName);
 
@@ -402,7 +437,7 @@ namespace UnityEditor.VisualStudioIntegration
             var references = new List<string>();
             var projectReferences = new List<Match>();
             Match match;
-            bool isBuildingEditorProject = island._output.EndsWith("-Editor.dll");
+            bool isBuildingEditorProject = island._isEditorAssembly;
 
             foreach (string file in island._files)
             {

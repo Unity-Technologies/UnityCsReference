@@ -738,14 +738,17 @@ namespace UnityEditor
                 {
                     var precompiledReference = new PrecompiledReference();
 
-                    var precompiledAssemblyPossibleReference = nameToPrecompiledReference.ContainsKey(precompiledReferenceName);
-                    if (!precompiledAssemblyPossibleReference && !data.overrideReferences)
+                    var precompiledAssemblyExists = nameToPrecompiledReference.ContainsKey(precompiledReferenceName);
+                    if (!precompiledAssemblyExists && data.overrideReferences)
                     {
                         throw new AssemblyDefinitionException(string.Format("Referenced precompiled assembly '{0}' not found", precompiledReferenceName), path);
                     }
 
-                    precompiledReference.precompiled = nameToPrecompiledReference[precompiledReferenceName];
-                    precompiledReference.displayValue = MixedBool.True;
+                    if (precompiledAssemblyExists)
+                    {
+                        precompiledReference.precompiled = nameToPrecompiledReference[precompiledReferenceName];
+                        precompiledReference.displayValue = MixedBool.True;
+                    }
                     state.precompiledReferences.Add(precompiledReference);
                 }
                 catch (AssemblyDefinitionException e)

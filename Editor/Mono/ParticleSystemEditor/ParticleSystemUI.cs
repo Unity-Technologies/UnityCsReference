@@ -20,6 +20,10 @@ namespace UnityEditor
         private static string[] s_ModuleNames;
         private string m_SupportsCullingText;
         private string m_SupportsCullingTextLabel; // Cached version including bullet points
+        private int m_CachedMeshInstanceID;
+        private int m_CachedMaterialInstanceID;
+        private int m_CachedMeshDirtyCount;
+        private int m_CachedMaterialDirtyCount;
 
         private static PrefColor s_BoundsColor = new PrefColor("Particle System/Bounds", 1.0f, 235.0f / 255.0f, 4.0f / 255.0f, 1.0f);
 
@@ -185,23 +189,46 @@ namespace UnityEditor
                         if (isRepaintEvent && renderer != null)
                         {
                             bool iconRendered = false;
-                            int instanceID = 0;
 
                             if (!multiEdit)
                             {
+                                int instanceID = 0;
+
                                 if (renderer.renderMode == ParticleSystemRenderMode.Mesh)
                                 {
                                     if (renderer.mesh != null)
+                                    {
                                         instanceID = renderer.mesh.GetInstanceID();
+
+                                        // If the asset is dirty we ensure to get a updated one by clearing cache of temporary previews
+                                        if (m_CachedMeshInstanceID != instanceID)
+                                        {
+                                            m_CachedMeshInstanceID = instanceID;
+                                            m_CachedMeshDirtyCount = -1;
+                                        }
+                                        if (EditorUtility.GetDirtyIndex(instanceID) != m_CachedMeshDirtyCount)
+                                        {
+                                            AssetPreview.ClearTemporaryAssetPreviews();
+                                            m_CachedMeshDirtyCount = EditorUtility.GetDirtyIndex(instanceID);
+                                        }
+                                    }
                                 }
                                 else if (renderer.sharedMaterial != null)
                                 {
                                     instanceID = renderer.sharedMaterial.GetInstanceID();
-                                }
 
-                                // If the asset is dirty we ensure to get a updated one by clearing cache of temporary previews
-                                if (EditorUtility.IsDirty(instanceID))
-                                    AssetPreview.ClearTemporaryAssetPreviews();
+                                    // If the asset is dirty we ensure to get a updated one by clearing cache of temporary previews
+                                    if (m_CachedMaterialInstanceID != instanceID)
+                                    {
+                                        m_CachedMaterialInstanceID = instanceID;
+                                        m_CachedMaterialDirtyCount = -1;
+                                    }
+                                    if (EditorUtility.GetDirtyIndex(instanceID) != m_CachedMaterialDirtyCount)
+                                    {
+                                        AssetPreview.ClearTemporaryAssetPreviews();
+                                        m_CachedMaterialDirtyCount = EditorUtility.GetDirtyIndex(instanceID);
+                                    }
+                                }
 
                                 if (instanceID != 0)
                                 {

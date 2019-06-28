@@ -19,7 +19,14 @@ namespace UnityEditor
         ReserializeAssetsAndMetadata = ReserializeAssets | ReserializeMetadata
     }
 
+    internal enum ImportPackageOptions
+    {
+        Default = 0,
+        NoGUI = 1 << 0,
+    }
+
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabaseUtility.h")]
+    [NativeHeader("Editor/Src/PackageUtility.h")]
     public partial class AssetDatabase
     {
         [FreeFunction("AssetDatabase::ReSerializeAssetsForced")]
@@ -106,5 +113,18 @@ namespace UnityEditor
 
         [FreeFunction("AssetDatabase::RemoveObjectFromAsset")]
         extern public static void RemoveObjectFromAsset([NotNull] UnityEngine.Object objectToRemove);
+
+        [FreeFunction("::ImportPackage")]
+        extern private static bool ImportPackage(string packagePath, ImportPackageOptions options);
+        //TODO: This API should be Obsoleted when there is time available to update all the uses of it in Package Manager packages
+        public static void ImportPackage(string packagePath, bool interactive)
+        {
+            ImportPackage(packagePath, interactive ? ImportPackageOptions.Default : ImportPackageOptions.NoGUI);
+        }
+
+        internal static bool ImportPackageImmediately(string packagePath)
+        {
+            return ImportPackage(packagePath, ImportPackageOptions.NoGUI);
+        }
     }
 }

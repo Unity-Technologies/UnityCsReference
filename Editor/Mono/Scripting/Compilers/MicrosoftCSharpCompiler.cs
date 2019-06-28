@@ -52,11 +52,11 @@ namespace UnityEditor.Scripting.Compilers
             arguments.Add("/langversion:latest");
 
             var platformSupportModule = ModuleManager.FindPlatformSupportModule(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget));
-            if (platformSupportModule != null && !m_Island._editor)
+            if (platformSupportModule != null && !m_Island._buildingForEditor)
             {
                 var compilationExtension = platformSupportModule.CreateCompilationExtension();
 
-                arguments.AddRange(GetClassLibraries(BuildTarget, m_Island._editor).Select(r => "/reference:\"" + r + "\""));
+                arguments.AddRange(GetClassLibraries(BuildTarget, m_Island._buildingForEditor).Select(r => "/reference:\"" + r + "\""));
                 arguments.AddRange(compilationExtension.GetAdditionalAssemblyReferences().Select(r => "/reference:\"" + r + "\""));
                 arguments.AddRange(compilationExtension.GetWindowsMetadataReferences().Select(r => "/reference:\"" + r + "\""));
                 arguments.AddRange(compilationExtension.GetAdditionalDefines().Select(d => "/define:" + d));
@@ -123,7 +123,7 @@ namespace UnityEditor.Scripting.Compilers
 
             if (!string.IsNullOrEmpty(obsoleteResponseFile.Key))
             {
-                if (!IsBuildingForDotNetScriptingBackend(buildTargetGroup, m_Island._editor))
+                if (!IsBuildingForDotNetScriptingBackend(buildTargetGroup, m_Island._buildingForEditor))
                 {
                     Debug.LogWarning($"Using obsolete custom response file '{obsoleteResponseFile.Key}'. Please use '{CompilerSpecificResponseFiles.MicrosoftCSharpCompiler}' instead.");
                 }
@@ -201,10 +201,10 @@ namespace UnityEditor.Scripting.Compilers
                 arguments.Add("/unsafe");
 
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(BuildTarget);
-            var disableOptimizations = m_Island._development_player || (m_Island._editor && EditorPrefs.GetBool("AllowAttachedDebuggingOfEditor", true));
+            var disableOptimizations = m_Island._development_player || (m_Island._buildingForEditor && EditorPrefs.GetBool("AllowAttachedDebuggingOfEditor", true));
             if (!disableOptimizations)
             {
-                if (IsBuildingForDotNetScriptingBackend(buildTargetGroup, m_Island._editor))
+                if (IsBuildingForDotNetScriptingBackend(buildTargetGroup, m_Island._buildingForEditor))
                     arguments.Add("/debug:pdbonly");
                 else
                     arguments.Add("/debug:portable");
@@ -212,7 +212,7 @@ namespace UnityEditor.Scripting.Compilers
             }
             else
             {
-                if (IsBuildingForDotNetScriptingBackend(buildTargetGroup, m_Island._editor))
+                if (IsBuildingForDotNetScriptingBackend(buildTargetGroup, m_Island._buildingForEditor))
                     arguments.Add("/debug:full");
                 else
                     arguments.Add("/debug:portable");
@@ -235,9 +235,9 @@ namespace UnityEditor.Scripting.Compilers
         protected override string[] GetSystemReferenceDirectories()
         {
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(BuildTarget);
-            if (IsBuildingForDotNetScriptingBackend(buildTargetGroup, m_Island._editor))
+            if (IsBuildingForDotNetScriptingBackend(buildTargetGroup, m_Island._buildingForEditor))
             {
-                return GetClassLibraries(BuildTarget, m_Island._editor).Select(library => Directory.GetParent(library).FullName).Distinct().ToArray();
+                return GetClassLibraries(BuildTarget, m_Island._buildingForEditor).Select(library => Directory.GetParent(library).FullName).Distinct().ToArray();
             }
 
             return MonoLibraryHelpers.GetSystemReferenceDirectories(m_Island._api_compatibility_level);

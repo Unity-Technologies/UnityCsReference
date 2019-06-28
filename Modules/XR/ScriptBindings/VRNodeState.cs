@@ -163,7 +163,7 @@ namespace UnityEngine.XR
 
         private bool TryGet<T>(T inValue, AvailableTrackingData availabilityFlag, out T outValue) where T : new()
         {
-            if ((m_Tracked == 1) && ((m_AvailableFields & availabilityFlag) > 0))
+            if ((m_AvailableFields & availabilityFlag) > 0)
             {
                 outValue = inValue;
                 return true;

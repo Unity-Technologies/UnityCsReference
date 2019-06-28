@@ -368,7 +368,12 @@ namespace UnityEditor.Experimental.SceneManagement
             if (root == null)
                 return false;
 
-            return root.GetComponent<RectTransform>() != null && root.GetComponentInChildren<CanvasRenderer>(true) != null;
+            // In principle, RectTransforms can be used for other things than UI,
+            // so only treat as UI Prefab if it has both a RectTransform on the root
+            // AND either a Canvas on the root or a CanvasRenderer somewhere in the hierarchy.
+            bool rectTransformOnRoot = root.GetComponent<RectTransform>() != null;
+            bool uiSpecificComponentPresent = (root.GetComponent<Canvas>() != null || root.GetComponentInChildren<CanvasRenderer>(true) != null);
+            return rectTransformOnRoot && uiSpecificComponentPresent;
         }
 
         static void HandleUIReparentingIfNeeded(GameObject instanceRoot)
