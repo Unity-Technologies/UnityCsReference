@@ -11,6 +11,9 @@ namespace UnityEditor.PackageManager.UI
 {
     internal static class UIUtils
     {
+        public static readonly string k_SelectedClassName = "selected";
+        private static readonly string[] s_SizeUnits = { "KB", "MB", "GB", "TB" };
+
         public static void SetElementDisplay(VisualElement element, bool value)
         {
             if (element == null)
@@ -25,7 +28,7 @@ namespace UnityEditor.PackageManager.UI
             if (element == null)
                 return;
 
-            var nonEmpty = !string.IsNullOrEmpty(element.text);
+            var nonEmpty = !String.IsNullOrEmpty(element.text);
             element.style.display = nonEmpty ? DisplayStyle.Flex : DisplayStyle.None;
             element.style.visibility = nonEmpty ? Visibility.Visible : Visibility.Hidden;
         }
@@ -78,6 +81,18 @@ namespace UnityEditor.PackageManager.UI
         public static T GetParentOfType<T>(VisualElement element) where T : VisualElement
         {
             return GetParentsOfType<T>(element).FirstOrDefault();
+        }
+
+        public static string convertToHumanReadableSize(ulong sizeInBytes)
+        {
+            var len = sizeInBytes / 1024.0;
+            var order = 0;
+            while (len >= 1024 && order < s_SizeUnits.Length - 1)
+            {
+                order++;
+                len = len / 1024;
+            }
+            return $"{len:0.##} {s_SizeUnits[order]}";
         }
     }
 }

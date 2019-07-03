@@ -179,9 +179,6 @@ namespace UnityEditor
 
         public bool EditGameObject(GameObject gameObject)
         {
-            if (state.linkedWithSequencer == true)
-                return false;
-
             return EditGameObjectInternal(gameObject, (IAnimationWindowControl)null);
         }
 
@@ -266,6 +263,9 @@ namespace UnityEditor
         private bool ShouldUpdateGameObjectSelection(GameObjectSelectionItem selectedItem)
         {
             if (m_LockTracker.isLocked)
+                return false;
+
+            if (state.linkedWithSequencer)
                 return false;
 
             // Selected game object with no animation player.

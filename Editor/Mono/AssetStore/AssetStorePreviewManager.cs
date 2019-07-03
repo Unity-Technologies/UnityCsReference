@@ -58,7 +58,6 @@ namespace UnityEditor
 
 
         Dictionary<string, CachedAssetStoreImage> m_CachedAssetStoreImages;
-        const double kQueryDelay = 0.2;
         const int kMaxConcurrentDownloads = 15;
         const int kMaxConvertionsPerTick = 1;
         int m_MaxCachedAssetStoreImages = 10;
@@ -195,7 +194,7 @@ namespace UnityEditor
             AsyncHTTPClient client = new AsyncHTTPClient(url);
             cached.client = client;
             client.tag = tag;
-            client.doneCallback = delegate(AsyncHTTPClient c) {
+            client.doneCallback = delegate(IAsyncHTTPClient c) {
                 // Debug.Log("Got image " + EditorApplication.timeSinceStartup.ToString());
                 cached.client = null;
                 if (!client.IsSuccess())

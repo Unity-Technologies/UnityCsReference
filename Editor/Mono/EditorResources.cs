@@ -53,7 +53,101 @@ namespace UnityEditor.Experimental
 
         internal static string GetCurrentFont()
         {
-            return EditorPrefs.GetString("user_editor_font", GetDefaultFont());
+            var currentFont = EditorPrefs.GetString("user_editor_font", GetDefaultFont());
+
+            // If the current is not available then fallback to the default font
+            if (!GetSupportedFonts().Contains(currentFont))
+            {
+                currentFont = GetDefaultFont();
+                EditorPrefs.DeleteKey("user_editor_font");
+            }
+
+            return currentFont;
+        }
+
+        private static Font s_SmallFont;
+        internal static Font GetSmallFont()
+        {
+            if (s_SmallFont == null)
+            {
+                var currentFont = GetCurrentFont();
+
+                if (IsSystemFont(currentFont))
+                {
+                    s_SmallFont = EditorGUIUtility.LoadRequired("Fonts/System/System Small.ttf") as Font;
+                    s_SmallFont.fontNames = new[] { currentFont };
+                }
+                else
+                {
+                    if (currentFont == "Roboto")
+                    {
+                        s_SmallFont = EditorGUIUtility.LoadRequired("Fonts/roboto/Roboto-Small.ttf") as Font;
+                    }
+                    else if (currentFont == "Lucida Grande")
+                    {
+                        s_SmallFont = EditorGUIUtility.LoadRequired("Fonts/Lucida Grande small.ttf") as Font;
+                    }
+                    else
+                    {
+                        s_SmallFont = GetNormalFont();
+                    }
+                }
+            }
+
+            return s_SmallFont;
+        }
+
+        private static Font s_NormalFont;
+        internal static Font GetNormalFont()
+        {
+            if (s_NormalFont == null)
+            {
+                var currentFont = GetCurrentFont();
+
+                if (IsSystemFont(currentFont))
+                {
+                    s_NormalFont = EditorGUIUtility.LoadRequired("Fonts/System/System Normal.ttf") as Font;
+                    s_NormalFont.fontNames = new[] { currentFont };
+                }
+                else
+                {
+                    s_NormalFont = EditorGUIUtility.LoadRequired(builtInFonts[currentFont]) as Font;
+                }
+            }
+
+            return s_NormalFont;
+        }
+
+        private static Font s_BoldFont;
+        internal static Font GetBoldFont()
+        {
+            if (s_BoldFont == null)
+            {
+                var currentFont = GetCurrentFont();
+
+                if (IsSystemFont(currentFont))
+                {
+                    s_BoldFont = EditorGUIUtility.LoadRequired("Fonts/System/System Normal Bold.ttf") as Font;
+                    s_BoldFont.fontNames = new[] { currentFont + " Bold" };
+                }
+                else
+                {
+                    if (currentFont == "Roboto")
+                    {
+                        s_BoldFont = EditorGUIUtility.LoadRequired("Fonts/roboto/Roboto-Bold.ttf") as Font;
+                    }
+                    else if (currentFont == "Lucida Grande")
+                    {
+                        s_BoldFont = EditorGUIUtility.LoadRequired("Fonts/Lucida Grande Bold.ttf") as Font;
+                    }
+                    else
+                    {
+                        s_BoldFont = EditorGUIUtility.LoadRequired(builtInFonts[currentFont]) as Font;
+                    }
+                }
+            }
+
+            return s_BoldFont;
         }
 
         private static List<string> s_SupportedFonts = null;
@@ -74,7 +168,8 @@ namespace UnityEditor.Experimental
                     s_SupportedFonts.Add(builtinFont);
                 }
 
-                s_SupportedFonts.Add(EditorResources.GetDefaultFont());
+                if (!s_SupportedFonts.Contains(EditorResources.GetDefaultFont()))
+                    s_SupportedFonts.Add(EditorResources.GetDefaultFont());
             }
 
             return s_SupportedFonts;
@@ -90,11 +185,9 @@ namespace UnityEditor.Experimental
                 {
                     s_BuiltInFonts = new Dictionary<string, string>();
 
-                    if (Application.platform == RuntimePlatform.WindowsEditor)
-                    {
-                        s_BuiltInFonts["Roboto"] = "Fonts/roboto/Roboto-Regular.ttf";
-                    }
-                    else
+                    s_BuiltInFonts["Roboto"] = "Fonts/roboto/Roboto-Regular.ttf";
+
+                    if (Application.platform != RuntimePlatform.WindowsEditor)
                     {
                         s_BuiltInFonts["Lucida Grande"] = "Fonts/Lucida Grande.ttf";
                     }
@@ -150,6 +243,7 @@ namespace UnityEditor.Experimental
                     // TODO: Emit OnStyleCatalogLoaded
                     if (Path.GetFileName(Path.GetDirectoryName(Application.dataPath)) == "editor_resources")
                         ConverterUtils.ResetSkinToPristine(skin, EditorGUIUtility.isProSkin ? SkinTarget.Dark : SkinTarget.Light);
+                    skin.font = GetNormalFont();
                     UpdateGUIStyleProperties(skin);
                 }
             }
@@ -209,34 +303,6 @@ namespace UnityEditor.Experimental
 
         private static void UpdateGUIStyleProperties(string name, GUIStyle style)
         {
-            if (LocalizationDatabase.currentEditorLanguage == SystemLanguage.English)
-            {
-                var rootBlock = styleCatalog.GetStyle(StyleCatalogKeyword.root, StyleState.root);
-                var systemSmallFont = EditorGUIUtility.LoadRequired("Fonts/System/System Small.ttf") as Font;
-                var systemNormalFont = EditorGUIUtility.LoadRequired("Fonts/System/System Normal.ttf") as Font;
-                var currentFont = GetCurrentFont();
-
-                if (IsSystemFont(currentFont))
-                {
-                    var defaultSmallFontSize = rootBlock.GetInt("--unity-font-size-small", 11);
-                    var systemFont = style.fontSize == defaultSmallFontSize ? systemSmallFont : systemNormalFont;
-                    systemFont.fontNames = new[] { currentFont };
-                    style.font = systemFont;
-                }
-                else
-                {
-                    if ((currentFont == "Roboto") && (style.fontStyle == FontStyle.Bold))
-                    {
-                        style.font = EditorGUIUtility.LoadRequired("Fonts/roboto/Roboto-Medium.ttf") as Font;
-                        style.fontStyle = FontStyle.Normal;
-                    }
-                    else
-                    {
-                        style.font = EditorGUIUtility.LoadRequired(builtInFonts[currentFont]) as Font;
-                    }
-                }
-            }
-
             var sname = GUIStyleExtensions.StyleNameToBlockName(style.name, false);
             var block = styleCatalog.GetStyle(sname);
             if (!block.IsValid())

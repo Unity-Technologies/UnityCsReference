@@ -166,10 +166,6 @@ namespace UnityEditor
             {
                 var panel = iterator.Current.Value;
 
-                // In-game doesn't support styling
-                if (panel.contextType != ContextType.Editor)
-                    continue;
-
                 panel.DirtyStyleSheets();
 
                 var guiView = panel.ownerObject as GUIView;

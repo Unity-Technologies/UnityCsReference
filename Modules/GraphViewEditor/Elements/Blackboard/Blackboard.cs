@@ -174,7 +174,6 @@ namespace UnityEditor.Experimental.GraphView
             hierarchy.Add(m_MainContainer);
 
             capabilities |= Capabilities.Movable | Capabilities.Resizable;
-            cacheAsBitmap = true;
             style.overflow = Overflow.Hidden;
 
             ClearClassList();

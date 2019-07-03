@@ -28,7 +28,7 @@ namespace UnityEditor.PackageManager.UI
             }
 
             if (packageJsonsUpdated)
-                PackageManagerWindow.FetchListOfflineCacheForAllWindows();
+                PackageDatabase.instance.Refresh(RefreshOptions.OfflineMode | RefreshOptions.ListInstalled);
         }
     }
 }

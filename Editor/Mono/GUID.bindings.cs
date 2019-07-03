@@ -124,10 +124,12 @@ namespace UnityEditor
             return GUIDToHexInternal(ref this);
         }
 
-        [NativeMethod(Name = "GUIDToString", IsFreeFunction = true)]
+        //Thread safety verified, only safe static methods are used.
+        [NativeMethod(Name = "GUIDToString", IsFreeFunction = true, IsThreadSafe = true)]
         extern private static string GUIDToHexInternal(ref GUID value);
 
-        [NativeMethod(Name = "CoreStringToGUID", IsFreeFunction = true)]
+        //Thread safety verified, native method modified to not lazy init global lookup table.
+        [NativeMethod(Name = "CoreStringToGUID", IsFreeFunction = true, IsThreadSafe = true)]
         extern private static GUID HexToGUIDInternal(string hex);
 
         [NativeMethod(Name = "GenerateGUID", IsFreeFunction = true)]

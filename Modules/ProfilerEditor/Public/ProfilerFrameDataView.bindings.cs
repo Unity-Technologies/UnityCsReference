@@ -44,6 +44,7 @@ namespace UnityEditor.Profiling
         internal const int columnSelfGpuPercent = 11;
         public const int columnWarningCount = 12;
         public const int columnObjectName = 13;
+        public const int columnStartTime = 14;
 
         internal HierarchyFrameDataView(int frameIndex, int threadIndex, ViewModes viewMode, int sortColumn, bool sortAscending)
         {

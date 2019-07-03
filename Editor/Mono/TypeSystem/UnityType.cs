@@ -19,6 +19,7 @@ namespace UnityEditor
         EditorOnly  = 1 << 2
     }
 
+    [System.Diagnostics.DebuggerDisplay("{module}:{name}")]
     sealed partial class UnityType
     {
         public string name { get; private set;  }

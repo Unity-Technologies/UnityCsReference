@@ -53,7 +53,7 @@ namespace UnityEngine
         }
 
         public static string AlphamapTextureName => "alphamap";
-        public static string SurfaceMaskTextureName => "surfacemask";
+        public static string HolesTextureName => "holes";
 
         public void CopyActiveRenderTextureToTexture(string textureName, int textureIndex, RectInt sourceRect, Vector2Int dest, bool allowDelayedCPUSync)
         {
@@ -67,13 +67,13 @@ namespace UnityEngine
             int textureWidth = 0;
             int textureHeight = 0;
 
-            if (textureName == SurfaceMaskTextureName)
+            if (textureName == HolesTextureName)
             {
                 if (textureIndex != 0)
                     throw new ArgumentOutOfRangeException("textureIndex");
-                else if (source == surfaceMaskTexture)
-                    throw new ArgumentException("source", "Active RenderTexture cannot be surfaceMaskTexture.");
-                textureWidth = textureHeight = surfaceMaskResolution;
+                else if (source == holesTexture)
+                    throw new ArgumentException("source", "Active RenderTexture cannot be holesTexture.");
+                textureWidth = textureHeight = holesResolution;
             }
             else if (textureName == AlphamapTextureName)
             {
@@ -94,9 +94,9 @@ namespace UnityEngine
             else if (dest.y < 0 || dest.y + sourceRect.height > textureHeight)
                 throw new ArgumentOutOfRangeException("dest.y");
 
-            if (textureName == SurfaceMaskTextureName)
+            if (textureName == HolesTextureName)
             {
-                Internal_CopyActiveRenderTextureToSurfaceMask(sourceRect, dest.x, dest.y, allowDelayedCPUSync);
+                Internal_CopyActiveRenderTextureToHoles(sourceRect, dest.x, dest.y, allowDelayedCPUSync);
                 return;
             }
 
@@ -165,9 +165,9 @@ namespace UnityEngine
             {
                 resolution = alphamapResolution;
             }
-            else if (textureName == SurfaceMaskTextureName)
+            else if (textureName == HolesTextureName)
             {
-                resolution = surfaceMaskResolution;
+                resolution = holesResolution;
             }
             else
             {
@@ -184,9 +184,9 @@ namespace UnityEngine
             else if (region.height <= 0 || region.yMax > resolution)
                 throw new ArgumentOutOfRangeException("region.height");
 
-            if (textureName == SurfaceMaskTextureName)
+            if (textureName == HolesTextureName)
             {
-                Internal_DirtySurfaceMaskRegion(region.x, region.y, region.width, region.height, allowDelayedCPUSync);
+                Internal_DirtyHolesRegion(region.x, region.y, region.width, region.height, allowDelayedCPUSync);
                 return;
             }
 
@@ -207,12 +207,12 @@ namespace UnityEngine
             // For now the textureName should always equal to "alphamap".
             if (textureName == AlphamapTextureName)
                 Internal_SyncAlphamaps();
-            else if (textureName == SurfaceMaskTextureName)
+            else if (textureName == HolesTextureName)
             {
-                if (IsSurfaceMaskTextureCompressed())
-                    throw new InvalidOperationException("Surface mask texture is compressed. Compressed surface mask texture can not be read back from GPU. Use TerrainData.enableSurfaceMaskTextureCompression to disable surface mask texture compression.");
+                if (IsHolesTextureCompressed())
+                    throw new InvalidOperationException("Holes texture is compressed. Compressed holes texture can not be read back from GPU. Use TerrainData.enableHolesTextureCompression to disable holes texture compression.");
 
-                Internal_SyncSurfaceMask();
+                Internal_SyncHoles();
             }
             else
             {

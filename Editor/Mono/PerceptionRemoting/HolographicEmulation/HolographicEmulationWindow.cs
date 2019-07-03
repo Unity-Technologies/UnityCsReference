@@ -31,7 +31,7 @@ namespace UnityEngine.XR.WSA
         [SerializeField]
         private int m_RoomIndex = 0;
         [SerializeField]
-        private PlaymodeInputType m_InputType = PlaymodeInputType.LeftController;
+        private PlaymodeInputType m_InputType = PlaymodeInputType.RightHand;
         [SerializeField]
         private string m_RemoteMachineAddress = "";
         [SerializeField]
@@ -97,7 +97,12 @@ namespace UnityEngine.XR.WSA
         internal EmulationMode emulationMode
         {
             get { return m_Mode; }
-            set { m_Mode = value; Repaint(); }
+            set
+            {
+                HolographicAutomation.SetEmulationMode(value);
+                m_Mode = value;
+                Repaint();
+            }
         }
 
         internal static void Init()
@@ -110,15 +115,9 @@ namespace UnityEngine.XR.WSA
         private void OnEnable()
         {
             titleContent = EditorGUIUtility.TrTextContent("Holographic");
-            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             m_InPlayMode = EditorApplication.isPlayingOrWillChangePlaymode;
 
             m_RemoteMachineHistory = EditorPrefs.GetString("HolographicRemoting.RemoteMachineHistory").Split(',');
-        }
-
-        private void OnDisable()
-        {
-            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
         }
 
         private void LoadCurrentRoom()
@@ -128,49 +127,6 @@ namespace UnityEngine.XR.WSA
 
             string roomPath = System.IO.Path.GetFullPath("Packages/com.unity.xr.windowsmr.metro") + "/Plugins/HolographicSimulation/Rooms/";
             HolographicAutomation.LoadRoom(roomPath + s_RoomStrings[m_RoomIndex].text + ".xef");
-        }
-
-        private void InitializeSimulation()
-        {
-            Disconnect();
-
-            HolographicAutomation.Initialize();
-
-            LoadCurrentRoom();
-        }
-
-        private void OnPlayModeStateChanged(PlayModeStateChange state)
-        {
-            if (!IsWindowsMixedRealityCurrentTarget())
-                return;
-
-            bool wasPlaying = m_InPlayMode;
-            m_InPlayMode = EditorApplication.isPlayingOrWillChangePlaymode;
-
-            if (m_InPlayMode && !wasPlaying)
-            {
-                HolographicAutomation.SetEmulationMode(m_Mode);
-                switch (m_Mode)
-                {
-                    case EmulationMode.Simulated:
-                        InitializeSimulation();
-                        break;
-                    case EmulationMode.RemoteDevice:
-                        break;
-                }
-            }
-            else if (!m_InPlayMode && wasPlaying)
-            {
-                switch (m_Mode)
-                {
-                    case EmulationMode.Simulated:
-                        HolographicAutomation.Shutdown();
-                        break;
-
-                    case EmulationMode.RemoteDevice:
-                        break;
-                }
-            }
         }
 
         private void Connect()
@@ -341,10 +297,13 @@ namespace UnityEngine.XR.WSA
         private void DrawRemotingMode()
         {
             EditorGUI.BeginChangeCheck();
+            EmulationMode previousMode = m_Mode;
             m_Mode = (EmulationMode)EditorGUILayout.Popup(s_EmulationModeText, (int)m_Mode, s_ModeStrings);
-            if (EditorGUI.EndChangeCheck() && m_Mode != EmulationMode.RemoteDevice)
+            if (EditorGUI.EndChangeCheck())
             {
-                Disconnect();
+                if (previousMode == EmulationMode.RemoteDevice)
+                    Disconnect();
+                HolographicAutomation.SetEmulationMode(m_Mode);
             }
         }
 

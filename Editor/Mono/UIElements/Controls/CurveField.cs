@@ -156,7 +156,7 @@ namespace UnityEditor.UIElements
             if (visualInput.style.backgroundImage.value.texture != null)
                 Object.DestroyImmediate(visualInput.style.backgroundImage.value.texture);
             m_Mesh = null;
-            visualInput.style.backgroundImage = new Background(null);
+            visualInput.style.backgroundImage = new Background();
             m_TextureDirty = true;
         }
 
@@ -425,7 +425,7 @@ namespace UnityEditor.UIElements
             if (m_TextureDirty || m_Mesh == null)
             {
                 m_TextureDirty = false;
-                visualInput.style.backgroundImage = new Background(null);
+                visualInput.style.backgroundImage = new Background();
 
                 FillCurveData();
             }

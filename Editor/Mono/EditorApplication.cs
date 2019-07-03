@@ -11,6 +11,7 @@ using UnityEngine.Events;
 using UnityEngine.Scripting;
 using UnityEditorInternal;
 using UnityEngine.TestTools;
+using Unity.Profiling;
 
 namespace UnityEditor
 {
@@ -304,7 +305,16 @@ namespace UnityEditor
         static void Internal_CallUpdateFunctions()
         {
             if (update != null)
-                update();
+            {
+                var invocationList = update.GetInvocationList();
+                foreach (var cb in invocationList)
+                {
+                    var marker = new ProfilerMarker(cb.Method.Name);
+                    marker.Begin();
+                    cb.DynamicInvoke();
+                    marker.End();
+                }
+            }
         }
 
         static void Internal_CallDelayFunctions()

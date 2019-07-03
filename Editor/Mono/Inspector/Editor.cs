@@ -322,6 +322,7 @@ namespace UnityEditor
         int m_ReferenceTargetIndex = 0;
         PropertyHandlerCache m_PropertyHandlerCache = new PropertyHandlerCache();
         IPreviewable m_DummyPreview;
+        AudioFilterGUI m_AudioFilterGUI;
 
         internal SerializedObject m_SerializedObject = null;
         internal SerializedProperty m_EnabledProperty = null;
@@ -350,7 +351,7 @@ namespace UnityEditor
 
         const float kImageSectionWidth = 44;
         internal const float k_WideModeMinWidth = 330f;
-        internal const float k_HeaderHeight = 19f;
+        internal const float k_HeaderHeight = 21f;
 
         internal delegate void OnEditorGUIDelegate(Editor editor, Rect drawRect);
         internal static OnEditorGUIDelegate OnPostIconGUI = null;
@@ -669,6 +670,15 @@ namespace UnityEditor
             using (new UnityEditor.Localization.Editor.LocalizationGroup(target))
             {
                 res = DoDrawDefaultInspector(serializedObject);
+
+                var behaviour = target as MonoBehaviour;
+                if (behaviour == null || !AudioUtil.HasAudioCallback(behaviour) || AudioUtil.GetCustomFilterChannelCount(behaviour) <= 0)
+                    return res;
+
+                // If we have an OnAudioFilterRead callback, draw vu meter
+                if (m_AudioFilterGUI == null)
+                    m_AudioFilterGUI = new AudioFilterGUI();
+                m_AudioFilterGUI.DrawAudioFilterGUI(behaviour);
             }
             return res;
         }
@@ -892,14 +902,15 @@ namespace UnityEditor
 
             // Help and Settings
             Rect titleRect;
+            var titleHeight = EditorGUI.lineHeight;
             if (editor)
             {
                 Rect helpAndSettingsRect = editor.DrawHeaderHelpAndSettingsGUI(r);
                 float rectX = r.x + kImageSectionWidth;
-                titleRect = new Rect(rectX, r.y + 6, (helpAndSettingsRect.x - rectX) - 4, 16);
+                titleRect = new Rect(rectX, r.y + 6, (helpAndSettingsRect.x - rectX) - 4, titleHeight);
             }
             else
-                titleRect = new Rect(r.x + kImageSectionWidth, r.y + 6, r.width - kImageSectionWidth, 16);
+                titleRect = new Rect(r.x + kImageSectionWidth, r.y + 6, r.width - kImageSectionWidth, titleHeight);
 
             // Title
             if (editor)
@@ -944,7 +955,7 @@ namespace UnityEditor
 
         public static void DrawFoldoutInspector(UnityObject target, ref Editor editor)
         {
-            if (editor != null && editor.target != target)
+            if (editor != null && (editor.target != target || target == null))
             {
                 UnityObject.DestroyImmediate(editor);
                 editor = null;

@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
 using System;
 using System.Collections.Generic;
 
@@ -459,15 +458,6 @@ namespace UnityEditor
             RecalcMinMaxAndReflowAll(this);
             newDockArea.MakeVistaDWMHappyDance();
             return true;
-        }
-
-        static string PosVals(float[] posVals)
-        {
-            string s = "[";
-            foreach (float p in posVals)
-                s += "" + p + ", ";
-            s += "]";
-            return (s);
         }
 
         void MakeRoomForRect(Rect r)

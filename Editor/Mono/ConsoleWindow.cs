@@ -794,7 +794,7 @@ namespace UnityEditor
                 return;
 
             int line = Int32.Parse(lineString);
-            var projectFilePath = FileUtil.GetProjectRelativePath(filePath.Replace('\\', '/'));
+            var projectFilePath = filePath.Replace('\\', '/');
 
             if (!String.IsNullOrEmpty(projectFilePath))
                 LogEntries.OpenFileOnSpecificLineAndColumn(filePath, line, -1);

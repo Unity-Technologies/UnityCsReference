@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine;
 using DefaultFormat = UnityEngine.Experimental.Rendering.DefaultFormat;
 
@@ -32,9 +31,6 @@ namespace UnityEditor
             public readonly GUIContent alpha = EditorGUIUtility.TrTextContent("Alpha");
             public readonly GUIContent min = EditorGUIUtility.TrTextContent("Min", "The value when the texture channel is 0");
             public readonly GUIContent max = EditorGUIUtility.TrTextContent("Max", "The value when the texture channel is 1");
-            public readonly GUIContent tilingSettings = EditorGUIUtility.TrTextContent("Tiling Settings");
-            public readonly GUIContent tileSize = EditorGUIUtility.TrTextContent("Size");
-            public readonly GUIContent tileOffset = EditorGUIUtility.TrTextContent("Offset");
         }
 
         private static Styles s_Styles = new Styles();
@@ -107,67 +103,6 @@ namespace UnityEditor
         {
             m_CustomUI = customUI;
             m_CustomUITerrain = terrain;
-        }
-
-        private void UpdateMaskMapChannelUsages(string maskMapR, string maskMapG, string maskMapB, string maskMapA, string diffuseA, string diffuseAMaskEnabled, bool maskMapUsed)
-        {
-            if (String.IsNullOrEmpty(maskMapR) && String.IsNullOrEmpty(maskMapG) && String.IsNullOrEmpty(maskMapB) && String.IsNullOrEmpty(maskMapA))
-            {
-                m_ShowMaskMap = false;
-                m_MaskMapUsed = false;
-                return;
-            }
-
-            m_ShowMaskMap = true;
-            m_MaskMapUsed = maskMapUsed;
-
-            m_MaskMapText = new GUIContent(s_Styles.maskMapTexture);
-            m_MaskMapText.tooltip = "";
-            if (!String.IsNullOrEmpty(maskMapR))
-            {
-                m_MaskMapText.tooltip += "Red: " + maskMapR;
-                m_MaskRemapRText.text = maskMapR;
-            }
-            else
-                m_MaskRemapRText = null;
-
-            if (!String.IsNullOrEmpty(maskMapG))
-            {
-                m_MaskMapText.tooltip += (String.IsNullOrEmpty(m_MaskMapText.tooltip) ? "" : "\n") + "Green: " + maskMapG;
-                m_MaskRemapGText.text = maskMapG;
-            }
-            else
-                m_MaskRemapGText = null;
-
-            if (!String.IsNullOrEmpty(maskMapB))
-            {
-                m_MaskMapText.tooltip += (String.IsNullOrEmpty(m_MaskMapText.tooltip) ? "" : "\n") + "Blue: " + maskMapB;
-                m_MaskRemapBText.text = maskMapB;
-            }
-            else
-                m_MaskRemapBText = null;
-
-            if (!String.IsNullOrEmpty(maskMapA))
-            {
-                m_MaskMapText.tooltip += (String.IsNullOrEmpty(m_MaskMapText.tooltip) ? "" : "\n") + "Alpha: " + maskMapA;
-                m_MaskRemapAText.text = maskMapA;
-            }
-            else
-                m_MaskRemapAText = null;
-
-            if (!String.IsNullOrEmpty(diffuseA))
-            {
-                m_DiffuseMapText = new GUIContent(s_Styles.diffuseTexture);
-                m_DiffuseMapText.tooltip = "Alpha: " + diffuseA;
-
-                if (!String.IsNullOrEmpty(diffuseAMaskEnabled))
-                {
-                    m_DiffuseMapMaskMapEnabledText = new GUIContent(s_Styles.diffuseTextureMaskMapEnabled);
-                    m_DiffuseMapMaskMapEnabledText.tooltip = "Alpha: " + diffuseAMaskEnabled;
-                }
-                else
-                    m_DiffuseMapMaskMapEnabledText = m_DiffuseMapText;
-            }
         }
 
         private static void DoMinMaxLabels(GUIContent minLabel, GUIContent maxLabel, GUIStyle style)

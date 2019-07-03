@@ -60,8 +60,7 @@ namespace UnityEditor.Modules
             config.Set("wait-for-native-debugger", "0");
             if (config.Get("player-connection-debug") == "1")
             {
-                if (EditorUserBuildSettings.GetPlatformSettings(BuildPipeline.GetBuildTargetName(target),
-                    BuildPlayerWindow.kSettingDebuggingWaitForManagedDebugger) == "true")
+                if (EditorUserBuildSettings.waitForManagedDebugger)
                 {
                     config.Set("wait-for-managed-debugger", "1");
                 }

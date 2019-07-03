@@ -25,6 +25,12 @@ namespace UnityEngine.UIElements.StyleSheets
 
     internal class StyleSheetApplicator : IStyleSheetApplicator
     {
+        internal struct ImageSource
+        {
+            public Texture2D texture;
+            public VectorImage vectorImage;
+        }
+
         // Strategy to create default cursor must be provided in the context of Editor or Runtime
         internal delegate int GetCursorIdFunction(StyleSheet sheet, StyleValueHandle handle);
         internal static GetCursorIdFunction getCursorIdFunc = null;
@@ -79,8 +85,10 @@ namespace UnityEngine.UIElements.StyleSheets
 
             if (isCustom)
             {
-                if (TryGetSourceFromHandle(sheet, handles[index++], out texture))
+                ImageSource source;
+                if (TryGetSourceFromHandle(sheet, handles[index++], out source))
                 {
+                    texture = source.texture;
                     if (index < handles.Length && handles[index].valueType == StyleValueType.Float && sheet.TryReadFloat(handles, index++, out hotspotX))
                     {
                         if (!sheet.TryReadFloat(handles, index++, out hotspotY))
@@ -161,7 +169,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
         public void ApplyImage(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleBackground property)
         {
-            Texture2D source = null;
+            ImageSource source = new ImageSource();
 
             StyleValueHandle handle = handles[0];
             if (handle.valueType == StyleValueType.Keyword)
@@ -178,9 +186,15 @@ namespace UnityEngine.UIElements.StyleSheets
             else if (TryGetSourceFromHandle(sheet, handle, out source) == false)
             {
                 // Load a stand-in picture to make it easier to identify which image element is missing its picture
-                source = Panel.LoadResource("d_console.warnicon", typeof(Texture2D)) as Texture2D;
+                source.texture = Panel.LoadResource("d_console.warnicon", typeof(Texture2D)) as Texture2D;
             }
-            var value = new StyleBackground(source) {specificity = specificity};
+            StyleBackground value;
+            if (source.texture != null)
+                value = new StyleBackground(source.texture) { specificity = specificity };
+            else if (source.vectorImage != null)
+                value = new StyleBackground(source.vectorImage) { specificity = specificity };
+            else
+                value = new StyleBackground();
             property.Apply(value, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
         }
 
@@ -222,9 +236,9 @@ namespace UnityEngine.UIElements.StyleSheets
             property.Apply(value, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
         }
 
-        static bool TryGetSourceFromHandle(StyleSheet sheet, StyleValueHandle handle, out Texture2D source)
+        static bool TryGetSourceFromHandle(StyleSheet sheet, StyleValueHandle handle, out ImageSource source)
         {
-            source = null;
+            source = new ImageSource();
 
             switch (handle.valueType)
             {
@@ -234,12 +248,14 @@ namespace UnityEngine.UIElements.StyleSheets
 
                     if (!string.IsNullOrEmpty(path))
                     {
-                        source = Panel.LoadResource(path, typeof(Texture2D)) as Texture2D;
+                        source.texture = Panel.LoadResource(path, typeof(Texture2D)) as Texture2D;
+                        if (source.texture == null)
+                            source.vectorImage = Panel.LoadResource(path, typeof(VectorImage)) as VectorImage;
                     }
 
-                    if (source == null)
+                    if (source.texture == null && source.vectorImage == null)
                     {
-                        Debug.LogWarning(string.Format("Texture not found for path: {0}", path));
+                        Debug.LogWarning(string.Format("Image not found for path: {0}", path));
                         return false;
                     }
                 }
@@ -247,11 +263,13 @@ namespace UnityEngine.UIElements.StyleSheets
 
                 case StyleValueType.AssetReference:
                 {
-                    source = sheet.ReadAssetReference(handle) as Texture2D;
+                    var o = sheet.ReadAssetReference(handle);
+                    source.texture = o as Texture2D;
+                    source.vectorImage = o as VectorImage;
 
-                    if (source  == null)
+                    if (source.texture == null && source.vectorImage == null)
                     {
-                        Debug.LogWarning("Invalid texture specified");
+                        Debug.LogWarning("Invalid image specified");
 
                         return false;
                     }
@@ -313,11 +331,22 @@ namespace UnityEngine.UIElements.StyleSheets
 
         public void ApplyImage(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleBackground property)
         {
-            Texture2D texture = null;
+            var styleBackground = new StyleBackground(currentStyleValue.keyword);
             if (currentStyleValue.resource.IsAllocated)
-                texture = currentStyleValue.resource.Target as Texture2D;
+            {
+                var vectorImage = currentStyleValue.resource.Target as VectorImage;
+                if (vectorImage != null)
+                    styleBackground = new StyleBackground(vectorImage, currentStyleValue.keyword);
+                else
+                {
+                    var texture = currentStyleValue.resource.Target as Texture2D;
+                    if (texture != null)
+                        styleBackground = new StyleBackground(texture, currentStyleValue.keyword);
+                }
+            }
 
-            property.Apply(new StyleBackground(texture, currentStyleValue.keyword) {specificity = specificity}, StylePropertyApplyMode.Copy);
+            styleBackground.specificity = specificity;
+            property.Apply(styleBackground, StylePropertyApplyMode.Copy);
         }
 
         public void ApplyInt(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleInt property)
@@ -352,6 +381,30 @@ namespace UnityEngine.UIElements.StyleSheets
 
     internal static class ShorthandApplicator
     {
+        public static void ApplyBorderColor(StyleSheet sheet, StyleValueHandle[] handles, int specificity, VisualElementStylesData styleData)
+        {
+            StyleColor top;
+            StyleColor right;
+            StyleColor bottom;
+            StyleColor left;
+            CompileBoxArea(sheet, handles, specificity, out top, out right, out bottom, out left);
+
+            // border-color doesn't support any keyword, revert to Color.clear in that case
+            if (top.keyword != StyleKeyword.Undefined)
+                top.value = Color.clear;
+            if (right.keyword != StyleKeyword.Undefined)
+                right.value = Color.clear;
+            if (bottom.keyword != StyleKeyword.Undefined)
+                bottom.value = Color.clear;
+            if (left.keyword != StyleKeyword.Undefined)
+                left.value = Color.clear;
+
+            styleData.borderTopColor.Apply(top, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+            styleData.borderRightColor.Apply(right, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+            styleData.borderBottomColor.Apply(bottom, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+            styleData.borderLeftColor.Apply(left, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
+        }
+
         public static void ApplyBorderRadius(StyleSheet sheet, StyleValueHandle[] handles, int specificity, VisualElementStylesData styleData)
         {
             StyleLength topLeft;
@@ -476,7 +529,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
                 grow = 0f;
                 shrink = 1f;
-                basis = 0f;
+                basis = Length.Percent(0);
 
                 bool growFound = false;
                 bool basisFound = false;
@@ -574,6 +627,49 @@ namespace UnityEngine.UIElements.StyleSheets
                     right = sheet.ReadStyleLength(handles[1], specificity);
                     bottom = sheet.ReadStyleLength(handles[2], specificity);
                     left = sheet.ReadStyleLength(handles[3], specificity);
+                    break;
+                }
+            }
+        }
+
+        private static void CompileBoxArea(StyleSheet sheet, StyleValueHandle[] handles, int specificity, out StyleColor top, out StyleColor right, out StyleColor bottom, out StyleColor left)
+        {
+            top = Color.clear;
+            right = Color.clear;
+            bottom = Color.clear;
+            left = Color.clear;
+            switch (handles.Length)
+            {
+                // apply to all four sides
+                case 0:
+                    break;
+                case 1:
+                {
+                    top = right = bottom = left = sheet.ReadStyleColor(handles[0], specificity);
+                    break;
+                }
+                // vertical | horizontal
+                case 2:
+                {
+                    top = bottom = sheet.ReadStyleColor(handles[0], specificity);
+                    left = right = sheet.ReadStyleColor(handles[1], specificity);
+                    break;
+                }
+                // top | horizontal | bottom
+                case 3:
+                {
+                    top = sheet.ReadStyleColor(handles[0], specificity);
+                    left = right = sheet.ReadStyleColor(handles[1], specificity);
+                    bottom = sheet.ReadStyleColor(handles[2], specificity);
+                    break;
+                }
+                // top | right | bottom | left
+                default:
+                {
+                    top = sheet.ReadStyleColor(handles[0], specificity);
+                    right = sheet.ReadStyleColor(handles[1], specificity);
+                    bottom = sheet.ReadStyleColor(handles[2], specificity);
+                    left = sheet.ReadStyleColor(handles[3], specificity);
                     break;
                 }
             }

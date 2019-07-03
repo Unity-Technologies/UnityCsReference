@@ -320,48 +320,48 @@ namespace UnityEngine
             get;
         }
 
-        public Texture surfaceMaskTexture
+        public Texture holesTexture
         {
             get
             {
-                if (IsSurfaceMaskTextureCompressed())
+                if (IsHolesTextureCompressed())
                 {
-                    return GetCompressedSurfaceMaskTexture();
+                    return GetCompressedHolesTexture();
                 }
                 else
                 {
-                    return GetSurfaceMaskTexture();
+                    return GetHolesTexture();
                 }
             }
         }
 
-        extern public bool enableSurfaceMaskTextureCompression
+        extern public bool enableHolesTextureCompression
         {
-            [NativeName(k_HeightmapPrefix + "GetEnableSurfaceMaskTextureCompression")]
+            [NativeName(k_HeightmapPrefix + "GetEnableHolesTextureCompression")]
             get;
 
-            [NativeName(k_HeightmapPrefix + "SetEnableSurfaceMaskTextureCompression")]
+            [NativeName(k_HeightmapPrefix + "SetEnableHolesTextureCompression")]
             set;
         }
 
-        internal RenderTexture surfaceMaskRenderTexture
+        internal RenderTexture holesRenderTexture
         {
             get
             {
-                return GetSurfaceMaskTexture();
+                return GetHolesTexture();
             }
         }
 
-        [NativeName(k_HeightmapPrefix + "IsSurfaceMaskTextureCompressed")]
-        extern internal bool IsSurfaceMaskTextureCompressed();
+        [NativeName(k_HeightmapPrefix + "IsHolesTextureCompressed")]
+        extern internal bool IsHolesTextureCompressed();
 
-        [NativeName(k_HeightmapPrefix + "GetSurfaceMaskTexture")]
-        extern internal RenderTexture GetSurfaceMaskTexture();
+        [NativeName(k_HeightmapPrefix + "GetHolesTexture")]
+        extern internal RenderTexture GetHolesTexture();
 
-        [NativeName(k_HeightmapPrefix + "GetCompressedSurfaceMaskTexture")]
-        extern internal Texture2D GetCompressedSurfaceMaskTexture();
+        [NativeName(k_HeightmapPrefix + "GetCompressedHolesTexture")]
+        extern internal Texture2D GetCompressedHolesTexture();
 
-        public int surfaceMaskResolution => heightmapResolution - 1;
+        public int holesResolution => heightmapResolution - 1;
 
         extern public Vector3 size
         {
@@ -485,69 +485,69 @@ namespace UnityEngine
         [FreeFunction(k_ScriptingInterfacePrefix + "SetHeightsDelayLOD", HasExplicitThis = true)]
         extern private void Internal_SetHeightsDelayLOD(int xBase, int yBase, int width, int height, float[,] heights);
 
-        public bool IsSurface(int x, int y)
+        public bool IsHole(int x, int y)
         {
-            if (x < 0 || x >= surfaceMaskResolution || y < 0 || y >= surfaceMaskResolution)
+            if (x < 0 || x >= holesResolution || y < 0 || y >= holesResolution)
             {
-                throw new ArgumentException("Trying to access out-of-bounds terrain surface mask information.");
+                throw new ArgumentException("Trying to access out-of-bounds terrain holes information.");
             }
 
-            return Internal_IsSurface(x, y);
+            return Internal_IsHole(x, y);
         }
 
-        public bool[,] GetSurfaceMask(int xBase, int yBase, int width, int height)
+        public bool[,] GetHoles(int xBase, int yBase, int width, int height)
         {
-            if (xBase < 0 || yBase < 0 || width <= 0 || height <= 0 || xBase + width > surfaceMaskResolution || yBase + height > surfaceMaskResolution)
+            if (xBase < 0 || yBase < 0 || width <= 0 || height <= 0 || xBase + width > holesResolution || yBase + height > holesResolution)
             {
-                throw new ArgumentException("Trying to access out-of-bounds terrain surface mask information.");
+                throw new ArgumentException("Trying to access out-of-bounds terrain holes information.");
             }
 
-            return Internal_GetSurfaceMask(xBase, yBase, width, height);
+            return Internal_GetHoles(xBase, yBase, width, height);
         }
 
-        public void SetSurfaceMask(int xBase, int yBase, bool[,] surfaceMask)
+        public void SetHoles(int xBase, int yBase, bool[,] holes)
         {
-            if (surfaceMask == null) throw new ArgumentNullException("surfaceMask");
+            if (holes == null) throw new ArgumentNullException("holes");
 
-            int height = surfaceMask.GetLength(0);
-            int width = surfaceMask.GetLength(1);
+            int height = holes.GetLength(0);
+            int width = holes.GetLength(1);
 
-            if (xBase < 0 || (xBase + width) > surfaceMaskResolution)
-                throw new ArgumentException(UnityString.Format("X out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", xBase, xBase + width, surfaceMaskResolution));
+            if (xBase < 0 || (xBase + width) > holesResolution)
+                throw new ArgumentException(UnityString.Format("X out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", xBase, xBase + width, holesResolution));
 
-            if (yBase < 0 || (yBase + height) > surfaceMaskResolution)
-                throw new ArgumentException(UnityString.Format("Y out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", yBase, yBase + height, surfaceMaskResolution));
+            if (yBase < 0 || (yBase + height) > holesResolution)
+                throw new ArgumentException(UnityString.Format("Y out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", yBase, yBase + height, holesResolution));
 
-            Internal_SetSurfaceMask(xBase, yBase, surfaceMask.GetLength(1), surfaceMask.GetLength(0), surfaceMask);
+            Internal_SetHoles(xBase, yBase, holes.GetLength(1), holes.GetLength(0), holes);
         }
 
-        public void SetSurfaceMaskDelayLOD(int xBase, int yBase, bool[,] surfaceMask)
+        public void SetHolesDelayLOD(int xBase, int yBase, bool[,] holes)
         {
-            if (surfaceMask == null) throw new ArgumentNullException("surfaceMask");
+            if (holes == null) throw new ArgumentNullException("holes");
 
-            int height = surfaceMask.GetLength(0);
-            int width = surfaceMask.GetLength(1);
+            int height = holes.GetLength(0);
+            int width = holes.GetLength(1);
 
-            if (xBase < 0 || (xBase + width) > surfaceMaskResolution)
-                throw new ArgumentException(UnityString.Format("X out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", xBase, xBase + width, surfaceMaskResolution));
+            if (xBase < 0 || (xBase + width) > holesResolution)
+                throw new ArgumentException(UnityString.Format("X out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", xBase, xBase + width, holesResolution));
 
-            if (yBase < 0 || (yBase + height) > surfaceMaskResolution)
-                throw new ArgumentException(UnityString.Format("Y out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", yBase, yBase + height, surfaceMaskResolution));
+            if (yBase < 0 || (yBase + height) > holesResolution)
+                throw new ArgumentException(UnityString.Format("Y out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", yBase, yBase + height, holesResolution));
 
-            Internal_SetSurfaceMaskDelayLOD(xBase, yBase, width, height, surfaceMask);
+            Internal_SetHolesDelayLOD(xBase, yBase, width, height, holes);
         }
 
-        [FreeFunction(k_ScriptingInterfacePrefix + "SetSurfaceMask", HasExplicitThis = true)]
-        extern private void Internal_SetSurfaceMask(int xBase, int yBase, int width, int height, bool[,] surfaceMask);
+        [FreeFunction(k_ScriptingInterfacePrefix + "SetHoles", HasExplicitThis = true)]
+        extern private void Internal_SetHoles(int xBase, int yBase, int width, int height, bool[,] holes);
 
-        [FreeFunction(k_ScriptingInterfacePrefix + "GetSurfaceMask", HasExplicitThis = true)]
-        extern private bool[,] Internal_GetSurfaceMask(int xBase, int yBase, int width, int height);
+        [FreeFunction(k_ScriptingInterfacePrefix + "GetHoles", HasExplicitThis = true)]
+        extern private bool[,] Internal_GetHoles(int xBase, int yBase, int width, int height);
 
-        [FreeFunction(k_ScriptingInterfacePrefix + "IsSurface", HasExplicitThis = true)]
-        extern private bool Internal_IsSurface(int x, int y);
+        [FreeFunction(k_ScriptingInterfacePrefix + "IsHole", HasExplicitThis = true)]
+        extern private bool Internal_IsHole(int x, int y);
 
-        [FreeFunction(k_ScriptingInterfacePrefix + "SetSurfaceMaskDelayLOD", HasExplicitThis = true)]
-        extern private void Internal_SetSurfaceMaskDelayLOD(int xBase, int yBase, int width, int height, bool[,] surfaceMask);
+        [FreeFunction(k_ScriptingInterfacePrefix + "SetHolesDelayLOD", HasExplicitThis = true)]
+        extern private void Internal_SetHolesDelayLOD(int xBase, int yBase, int width, int height, bool[,] holes);
 
         [NativeName(k_HeightmapPrefix + "GetSteepness")]
         extern public float GetSteepness(float x, float y);
@@ -903,14 +903,14 @@ namespace UnityEngine
         [NativeName(k_HeightmapPrefix + "SyncHeightmapGPUModifications")]
         public extern void SyncHeightmap();
 
-        [NativeName(k_HeightmapPrefix + "CopySurfaceMaskFromActiveRenderTexture")]
-        private extern void Internal_CopyActiveRenderTextureToSurfaceMask(RectInt rect, int destX, int destY, bool allowDelayedCPUSync);
+        [NativeName(k_HeightmapPrefix + "CopyHolesFromActiveRenderTexture")]
+        private extern void Internal_CopyActiveRenderTextureToHoles(RectInt rect, int destX, int destY, bool allowDelayedCPUSync);
 
-        [NativeName(k_HeightmapPrefix + "DirtySurfaceMaskRegion")]
-        private extern void Internal_DirtySurfaceMaskRegion(int x, int y, int width, int height, bool allowDelayedCPUSync);
+        [NativeName(k_HeightmapPrefix + "DirtyHolesRegion")]
+        private extern void Internal_DirtyHolesRegion(int x, int y, int width, int height, bool allowDelayedCPUSync);
 
-        [NativeName(k_HeightmapPrefix + "SyncSurfaceMaskGPUModifications")]
-        private extern void Internal_SyncSurfaceMask();
+        [NativeName(k_HeightmapPrefix + "SyncHolesGPUModifications")]
+        private extern void Internal_SyncHoles();
 
         [NativeName(k_SplatDatabasePrefix + "MarkDirtyRegion")]
         private extern void Internal_MarkAlphamapDirtyRegion(int alphamapIndex, int x, int y, int width, int height);

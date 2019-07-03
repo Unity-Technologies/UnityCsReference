@@ -127,9 +127,11 @@ namespace UnityEditor.PackageManager
 
         protected override Type extraDataType => typeof(PackageManifestState);
 
+#pragma warning disable 0649
         [HideInInspector]
         [SerializeField]
         private Vector2 descriptionScrollViewPosition;
+#pragma warning restore 0649
 
         private List<string> errorMessages;
         private List<string> warningMessages;

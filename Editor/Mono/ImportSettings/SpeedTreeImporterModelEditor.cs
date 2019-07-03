@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using UnityEditor.AnimatedValues;
 using UnityEditor.Experimental.AssetImporters;
-using UnityEditor.VersionControl;
 using UnityEngine;
 
 namespace UnityEditor
@@ -99,23 +98,6 @@ namespace UnityEditor
 
             m_ShowSmoothLODOptions.valueChanged.RemoveListener(Repaint);
             m_ShowCrossFadeWidthOptions.valueChanged.RemoveListener(Repaint);
-        }
-
-        private void GenerateMaterials()
-        {
-            string[] matFolders = importers.Select(im => im.materialFolderPath).ToArray();
-            string[] guids = AssetDatabase.FindAssets("t:Material", matFolders);
-            string[] paths = guids.Select(guid => AssetDatabase.GUIDToAssetPath(guid)).ToArray();
-
-            bool doGenerate = true;
-            if (paths.Length > 0)
-                doGenerate = Provider.PromptAndCheckoutIfNeeded(paths, String.Format("Materials will be checked out in:\n{0}", String.Join("\n", matFolders)));
-
-            if (doGenerate)
-            {
-                foreach (var importer in importers)
-                    importer.GenerateMaterials();
-            }
         }
 
         internal List<LODGroupGUI.LODInfo> GetLODInfoArray(Rect area)

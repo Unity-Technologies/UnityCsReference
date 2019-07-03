@@ -2,18 +2,53 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.EditorTools;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 
 namespace UnityEditor
 {
+    [EditorTool("Edit Sphere Collider", typeof(SphereCollider))]
+    class SphereColliderTool : PrimitiveColliderTool<SphereCollider>
+    {
+        readonly SphereBoundsHandle m_BoundsHandle = new SphereBoundsHandle();
+
+        protected override PrimitiveBoundsHandle boundsHandle
+        {
+            get { return m_BoundsHandle; }
+        }
+
+        protected override void CopyColliderPropertiesToHandle(SphereCollider collider)
+        {
+            m_BoundsHandle.center = TransformColliderCenterToHandleSpace(collider.transform, collider.center);
+            m_BoundsHandle.radius = collider.radius * GetRadiusScaleFactor(collider);
+        }
+
+        protected override void CopyHandlePropertiesToCollider(SphereCollider collider)
+        {
+            collider.center = TransformHandleCenterToColliderSpace(collider.transform, m_BoundsHandle.center);
+            float scaleFactor = GetRadiusScaleFactor(collider);
+            collider.radius = Mathf.Approximately(scaleFactor, 0f) ? 0f : m_BoundsHandle.radius / scaleFactor;
+        }
+
+        static float GetRadiusScaleFactor(SphereCollider collider)
+        {
+            float result = 0f;
+            Vector3 lossyScale = collider.transform.lossyScale;
+
+            for (int axis = 0; axis < 3; ++axis)
+                result = Mathf.Max(result, Mathf.Abs(lossyScale[axis]));
+
+            return result;
+        }
+    }
+
     [CustomEditor(typeof(SphereCollider))]
     [CanEditMultipleObjects]
-    internal class SphereColliderEditor : PrimitiveCollider3DEditor
+    class SphereColliderEditor : Collider3DEditorBase
     {
         SerializedProperty m_Center;
         SerializedProperty m_Radius;
-        private readonly SphereBoundsHandle m_BoundsHandle = new SphereBoundsHandle();
 
         public override void OnEnable()
         {
@@ -27,42 +62,14 @@ namespace UnityEditor
         {
             serializedObject.Update();
 
-            InspectorEditButtonGUI();
+            EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Collider"), target);
+
             EditorGUILayout.PropertyField(m_IsTrigger);
             EditorGUILayout.PropertyField(m_Material);
             EditorGUILayout.PropertyField(m_Center);
             EditorGUILayout.PropertyField(m_Radius);
 
             serializedObject.ApplyModifiedProperties();
-        }
-
-        protected override PrimitiveBoundsHandle boundsHandle { get { return m_BoundsHandle; } }
-
-        protected override void CopyColliderPropertiesToHandle()
-        {
-            SphereCollider collider = (SphereCollider)target;
-            m_BoundsHandle.center = TransformColliderCenterToHandleSpace(collider.transform, collider.center);
-            m_BoundsHandle.radius = collider.radius * GetRadiusScaleFactor();
-        }
-
-        protected override void CopyHandlePropertiesToCollider()
-        {
-            SphereCollider collider = (SphereCollider)target;
-            collider.center = TransformHandleCenterToColliderSpace(collider.transform, m_BoundsHandle.center);
-            float scaleFactor = GetRadiusScaleFactor();
-            collider.radius =
-                Mathf.Approximately(scaleFactor, 0f) ? 0f : m_BoundsHandle.radius / GetRadiusScaleFactor();
-        }
-
-        private float GetRadiusScaleFactor()
-        {
-            float result = 0f;
-            Vector3 lossyScale = ((SphereCollider)target).transform.lossyScale;
-            for (int axis = 0; axis < 3; ++axis)
-            {
-                result = Mathf.Max(result, Mathf.Abs(lossyScale[axis]));
-            }
-            return result;
         }
     }
 }

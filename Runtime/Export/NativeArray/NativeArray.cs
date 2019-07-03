@@ -412,6 +412,108 @@ namespace Unity.Collections
 
             handle.Free();
         }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void CheckReinterpretLoadRange<U>(int sourceIndex) where U : struct
+        {
+            int tsize = UnsafeUtility.SizeOf<T>();
+            AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
+
+            int usize = UnsafeUtility.SizeOf<U>();
+            long byteSize = Length * tsize;
+
+            long firstByte = sourceIndex * tsize;
+            long lastByte = firstByte + usize;
+
+            if (firstByte < 0 || lastByte > byteSize)
+                throw new ArgumentOutOfRangeException(nameof(sourceIndex), "loaded byte range must fall inside container bounds");
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void CheckReinterpretStoreRange<U>(int destIndex) where U : struct
+        {
+            int tsize = UnsafeUtility.SizeOf<T>();
+            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+
+            int usize = UnsafeUtility.SizeOf<U>();
+            long byteSize = Length * tsize;
+
+            long firstByte = destIndex * tsize;
+            long lastByte = firstByte + usize;
+
+            if (firstByte < 0 || lastByte > byteSize)
+                throw new ArgumentOutOfRangeException(nameof(destIndex), "stored byte range must fall inside container bounds");
+        }
+
+        public U ReinterpretLoad<U>(int sourceIndex) where U : struct
+        {
+            CheckReinterpretLoadRange<U>(sourceIndex);
+            byte* src_ptr = ((byte*)m_Buffer) + UnsafeUtility.SizeOf<T>() * sourceIndex;
+            return UnsafeUtility.ReadArrayElement<U>(src_ptr, 0);
+        }
+
+        public void ReinterpretStore<U>(int destIndex, U data) where U : struct
+        {
+            CheckReinterpretStoreRange<U>(destIndex);
+            byte* dst_ptr = ((byte*)m_Buffer) + UnsafeUtility.SizeOf<T>() * destIndex;
+            UnsafeUtility.WriteArrayElement<U>(dst_ptr, 0, data);
+        }
+
+        private NativeArray<U> InternalReinterpret<U>(int length) where U : struct
+        {
+            var result = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<U>(m_Buffer, length, m_AllocatorLabel);
+
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref result, m_Safety);
+            result.m_DisposeSentinel = m_DisposeSentinel;
+            return result;
+        }
+
+        public NativeArray<U> Reinterpret<U>() where U : struct
+        {
+            if (UnsafeUtility.SizeOf<T>() != UnsafeUtility.SizeOf<U>())
+            {
+                throw new InvalidOperationException($"Types {typeof(T)} and {typeof(U)} are different sizes - direct reinterpretation is not possible. If this is what you intended, use Reinterpret(<type size>)");
+            }
+            return InternalReinterpret<U>(Length);
+        }
+
+        public NativeArray<U> Reinterpret<U>(int expectedTypeSize) where U : struct
+        {
+            var tSize = UnsafeUtility.SizeOf<T>();
+            var uSize = UnsafeUtility.SizeOf<U>();
+
+            var byteLen = ((long)Length) * tSize;
+            var uLen = byteLen / uSize;
+
+            if (tSize != expectedTypeSize)
+            {
+                throw new InvalidOperationException($"Type {typeof(T)} was expected to be {expectedTypeSize} but is {tSize} bytes");
+            }
+
+            if (uLen * uSize != byteLen)
+            {
+                throw new InvalidOperationException($"Types {typeof(T)} (array length {Length}) and {typeof(U)} cannot be aliased due to size constraints. The size of the types and lengths involved must line up.");
+            }
+            return InternalReinterpret<U>((int)uLen);
+        }
+
+        public NativeArray<T> GetSubArray(int start, int length)
+        {
+            if (start < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(start), "start must be >= 0");
+            }
+
+            if (start + length > Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(length), $"sub array range {start}-{start+length-1} is outside the range of the native array 0-{Length-1}");
+            }
+            var result = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(((byte*)m_Buffer) + UnsafeUtility.SizeOf<T>() * start, length, Allocator.Invalid);
+
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref result, m_Safety);
+            result.m_DisposeSentinel = null;
+            return result;
+        }
     }
 
     /// <summary>

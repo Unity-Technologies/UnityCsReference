@@ -32,13 +32,23 @@ namespace UnityEditor
                 Rect resultRect;
                 switch (location)
                 {
-                    case PopupLocation.Below:
-                        if (PopupBelow(buttonRect, minSize, maxSize, popupContainerWindow, out resultRect))
+                    case PopupLocation.BelowAlignLeft:
+                        if (PopupBelowAlignLeft(buttonRect, minSize, maxSize, popupContainerWindow, out resultRect))
                             return resultRect;
                         croppedRects.Add(resultRect);
                         break;
-                    case PopupLocation.Above:
-                        if (PopupAbove(buttonRect, minSize, maxSize, popupContainerWindow, out resultRect))
+                    case PopupLocation.BelowAlignRight:
+                        if (PopupBelowAlignRight(buttonRect, minSize, maxSize, popupContainerWindow, out resultRect))
+                            return resultRect;
+                        croppedRects.Add(resultRect);
+                        break;
+                    case PopupLocation.AboveAlignLeft:
+                        if (PopupAboveAlignLeft(buttonRect, minSize, maxSize, popupContainerWindow, out resultRect))
+                            return resultRect;
+                        croppedRects.Add(resultRect);
+                        break;
+                    case PopupLocation.AboveAlignRight:
+                        if (PopupAboveAlignRight(buttonRect, minSize, maxSize, popupContainerWindow, out resultRect))
                             return resultRect;
                         croppedRects.Add(resultRect);
                         break;
@@ -109,10 +119,23 @@ namespace UnityEditor
             return false;
         }
 
-        private static bool PopupAbove(Rect buttonRect, Vector2 minSize, Vector2 maxSize, ContainerWindow popupContainerWindow,
+        private static bool PopupAboveAlignLeft(Rect buttonRect, Vector2 minSize, Vector2 maxSize, ContainerWindow popupContainerWindow,
             out Rect resultRect)
         {
             Rect dropDownRectAbove = new Rect(buttonRect.x, buttonRect.y - maxSize.y, maxSize.x, maxSize.y);
+            return PopupAbove(dropDownRectAbove, buttonRect, minSize, maxSize, popupContainerWindow, out resultRect);
+        }
+
+        private static bool PopupAboveAlignRight(Rect buttonRect, Vector2 minSize, Vector2 maxSize, ContainerWindow popupContainerWindow,
+            out Rect resultRect)
+        {
+            Rect dropDownRectAbove = new Rect(buttonRect.xMax - maxSize.x, buttonRect.y - maxSize.y, maxSize.x, maxSize.y);
+            return PopupAbove(dropDownRectAbove, buttonRect, minSize, maxSize, popupContainerWindow, out resultRect);
+        }
+
+        private static bool PopupAbove(Rect dropDownRectAbove, Rect buttonRect, Vector2 minSize, Vector2 maxSize, ContainerWindow popupContainerWindow,
+            out Rect resultRect)
+        {
             float spaceFromTop = 0;
 
             // Expand dropdown height to include empty space above
@@ -135,11 +158,23 @@ namespace UnityEditor
             return false;
         }
 
-        private static bool PopupBelow(Rect buttonRect, Vector2 minSize, Vector2 maxSize, ContainerWindow popupContainerWindow,
+        private static bool PopupBelowAlignLeft(Rect buttonRect, Vector2 minSize, Vector2 maxSize, ContainerWindow popupContainerWindow,
             out Rect resultRect)
         {
             Rect dropDownRectBelow = new Rect(buttonRect.x, buttonRect.yMax, maxSize.x, maxSize.y);
+            return PopupBelow(dropDownRectBelow, buttonRect, minSize, maxSize, popupContainerWindow, out resultRect);
+        }
 
+        private static bool PopupBelowAlignRight(Rect buttonRect, Vector2 minSize, Vector2 maxSize, ContainerWindow popupContainerWindow,
+            out Rect resultRect)
+        {
+            Rect dropDownRectBelow = new Rect(buttonRect.xMax - maxSize.x, buttonRect.yMax, maxSize.x, maxSize.y);
+            return PopupBelow(dropDownRectBelow, buttonRect, minSize, maxSize, popupContainerWindow, out resultRect);
+        }
+
+        private static bool PopupBelow(Rect dropDownRectBelow, Rect buttonRect, Vector2 minSize, Vector2 maxSize, ContainerWindow popupContainerWindow,
+            out Rect resultRect)
+        {
             // Expand dropdown height to include empty space below
             dropDownRectBelow.height += k_SpaceFromBottom;
             // Fit rect to screen

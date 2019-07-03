@@ -9,19 +9,22 @@ namespace UnityEngine.UIElements
     public enum PropagationPhase
     {
         // Not propagating at the moment.
-        None,
+        None = 0,
 
         // Propagation from root of tree to immediate parent of target.
-        TrickleDown,
+        TrickleDown = 1,
 
         // Event is at target.
-        AtTarget,
+        AtTarget = 2,
+
+        // Execute the default action(s) at target.
+        DefaultActionAtTarget = 5,
 
         // After the target has gotten the chance to handle the event, the event walks back up the parent hierarchy back to root.
-        BubbleUp,
+        BubbleUp = 3,
 
         // At last, execute the default action(s).
-        DefaultAction
+        DefaultAction = 4
     }
 
     interface IEventDispatchingStrategy
@@ -38,63 +41,84 @@ namespace UnityEngine.UIElements
 
             evt.dispatch = true;
 
-            if (evt.tricklesDown && evt.path != null && evt.path.trickleDownPath.Count > 0)
+            if (evt.path == null)
+            {
+                (evt.target as CallbackEventHandler)?.HandleEventAtTargetPhase(evt);
+            }
+            else
             {
                 // Phase 1: TrickleDown phase
                 // Propagate event from root to target.parent
-                evt.propagationPhase = PropagationPhase.TrickleDown;
-
-                for (int i = evt.path.trickleDownPath.Count - 1; i >= 0; i--)
+                if (evt.tricklesDown)
                 {
-                    if (evt.isPropagationStopped)
-                        break;
+                    evt.propagationPhase = PropagationPhase.TrickleDown;
 
-                    if (evt.Skip(evt.path.trickleDownPath[i]))
+                    for (int i = evt.path.trickleDownPath.Count - 1; i >= 0; i--)
+                    {
+                        if (evt.isPropagationStopped)
+                            break;
+
+                        if (evt.Skip(evt.path.trickleDownPath[i]))
+                        {
+                            continue;
+                        }
+
+                        evt.currentTarget = evt.path.trickleDownPath[i];
+                        evt.currentTarget.HandleEvent(evt);
+                    }
+                }
+
+                // Phase 2: Target / DefaultActionAtTarget
+                // Propagate event from target parent up to root for the target phase
+
+                // Call HandleEvent() even if propagation is stopped, for the default actions at target.
+                evt.propagationPhase = PropagationPhase.AtTarget;
+                foreach (var element in evt.path.targetElements)
+                {
+                    if (evt.Skip(element))
                     {
                         continue;
                     }
 
-                    evt.currentTarget = evt.path.trickleDownPath[i];
+                    evt.target = element;
+                    evt.currentTarget = evt.target;
                     evt.currentTarget.HandleEvent(evt);
                 }
-            }
 
-            // Phase 2: Target
-            // Call HandleEvent() even if propagation is stopped, for the default actions at target.
-            if (evt.target != null && !evt.Skip(evt.target))
-            {
-                evt.propagationPhase = PropagationPhase.AtTarget;
-                evt.currentTarget = evt.target;
-                evt.currentTarget.HandleEvent(evt);
-            }
-
-            // Phase 2+3: target/bubble up phase
-            // Propagate event from target parent up to root
-            if (evt.path != null && evt.path.targetAndBubblePath.Count > 0)
-            {
-                foreach (var element in evt.path.targetAndBubblePath)
+                // Call ExecuteDefaultActionAtTarget
+                evt.propagationPhase = PropagationPhase.DefaultActionAtTarget;
+                foreach (var element in evt.path.targetElements)
                 {
-                    if (evt.Skip(element.m_VisualElement))
+                    if (evt.Skip(element))
                     {
                         continue;
                     }
 
-                    if (element.m_IsTarget)
+                    evt.target = element;
+                    evt.currentTarget = evt.target;
+                    evt.currentTarget.HandleEvent(evt);
+                }
+
+                // Reset target to original target
+                evt.target = evt.leafTarget;
+
+                // Phase 3: bubble up phase
+                // Propagate event from target parent up to root
+                if (evt.bubbles)
+                {
+                    evt.propagationPhase = PropagationPhase.BubbleUp;
+
+                    foreach (var element in evt.path.bubbleUpPath)
                     {
-                        evt.propagationPhase = PropagationPhase.AtTarget;
-                        evt.target = element.m_VisualElement;
-                        evt.currentTarget = evt.target;
-                        evt.currentTarget.HandleEvent(evt);
-                    }
-                    else if (evt.bubbles)
-                    {
-                        evt.propagationPhase = PropagationPhase.BubbleUp;
-                        evt.currentTarget = element.m_VisualElement;
+                        if (evt.Skip(element))
+                        {
+                            continue;
+                        }
+
+                        evt.currentTarget = element;
                         evt.currentTarget.HandleEvent(evt);
                     }
                 }
-
-                evt.target = evt.leafTarget;
             }
 
             evt.dispatch = false;

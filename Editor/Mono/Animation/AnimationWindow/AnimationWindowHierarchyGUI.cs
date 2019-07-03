@@ -304,15 +304,6 @@ namespace UnityEditorInternal
             return splits[splits.Length - 1];
         }
 
-        private string GetPathWithoutChildmostGameObject(string path)
-        {
-            if (string.IsNullOrEmpty(path))
-                return "";
-
-            int lastIndex = path.LastIndexOf('/');
-            return path.Substring(0, lastIndex + 1);
-        }
-
         private void DoValueField(Rect rect, AnimationWindowHierarchyNode node, int row)
         {
             bool curvesChanged = false;

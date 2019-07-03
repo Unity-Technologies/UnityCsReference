@@ -153,7 +153,6 @@ namespace UnityEditor
                 if (w == null)
                     continue;
 
-                Invoke("OnDestroy", w);
                 UnityEngine.Object.DestroyImmediate(w, true);
             }
 
@@ -341,8 +340,6 @@ namespace UnityEditor
 
             DrawDockAreaBackground(dockAreaRect);
 
-            // FixDockAreaRectBorders(customBorder, ref dockAreaRect);
-
             var viewRect = UpdateViewRect(dockAreaRect);
             var titleBarRect = new Rect(viewRect.x, dockAreaRect.y, viewRect.width, borderSize.top);
             var tabAreaRect = new Rect(titleBarRect.x, viewRect.y - kTabHeight, titleBarRect.width - GetExtraButtonsWidth(), kTabHeight);
@@ -366,30 +363,6 @@ namespace UnityEditor
 
             EditorGUI.ShowRepaints();
             Highlighter.ControlHighlightGUI(this);
-        }
-
-        private float GetViewMarginTopOffset(bool isBottomTab, bool customBorder)
-        {
-            float viewMarginTopOffset = 3f;
-            if (isBottomTab)
-                viewMarginTopOffset = 2f;
-            if (customBorder)
-                viewMarginTopOffset = 0f;
-            return viewMarginTopOffset;
-        }
-
-        internal void UpdateDockAreaFromLocation(Rect windowPosition, Rect containerPosition, ref Rect dockAreaRect)
-        {
-            float sideBorder = kSideBorders;
-            if (windowPosition.x == 0)
-            {
-                dockAreaRect.x -= sideBorder;
-                dockAreaRect.width += sideBorder;
-            }
-            if (windowPosition.xMax == containerPosition.width)
-            {
-                dockAreaRect.width += sideBorder;
-            }
         }
 
         private void DrawView(Rect viewRect, Rect dockAreaRect)
@@ -454,14 +427,6 @@ namespace UnityEditor
                     dockTitleBarStyle = "dockHeader";
                 dockTitleBarStyle.Draw(titleBarRect, GUIContent.none, 0);
             }
-        }
-
-        private static void FixDockAreaRectBorders(bool customBorder, ref Rect dockAreaRect)
-        {
-            if (!customBorder)
-                return;
-            dockAreaRect.y += 1f;
-            dockAreaRect.height -= 1f;
         }
 
         private void SetupHoldScrollerUpdate(float clickOffset)

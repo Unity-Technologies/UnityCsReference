@@ -10,31 +10,31 @@ namespace UnityEditor.PackageManager.UI
 {
     internal static class Resources
     {
-        private const string TemplateRoot = "UXML/PackageManager/";
+        private const string k_TemplateRoot = "UXML/PackageManager/";
 
-        private const string PackageManagerCommonStyleSheetPath = "StyleSheets/PackageManager/Common.uss";
-        private const string PackageManagerDarkVariablesSheetPath = "StyleSheets/PackageManager/Dark.uss";
-        private const string PackageManagerLightVariablesSheetPath = "StyleSheets/PackageManager/Light.uss";
+        private const string k_PackageManagerCommonStyleSheetPath = "StyleSheets/PackageManager/Common.uss";
+        private const string k_PackageManagerDarkVariablesSheetPath = "StyleSheets/PackageManager/Dark.uss";
+        private const string k_PackageManagerLightVariablesSheetPath = "StyleSheets/PackageManager/Light.uss";
 
-        private static StyleSheet _darkStyleSheet;
-        private static StyleSheet DarkStyleSheet
+        private static StyleSheet m_DarkStyleSheet;
+        private static StyleSheet darkStyleSheet
         {
             get
             {
-                if (_darkStyleSheet == null)
-                    _darkStyleSheet = LoadAndResolveStyleSheet(true);
-                return _darkStyleSheet;
+                if (m_DarkStyleSheet == null)
+                    m_DarkStyleSheet = LoadAndResolveStyleSheet(true);
+                return m_DarkStyleSheet;
             }
         }
 
-        private static StyleSheet _lightStyleSheet;
-        private static StyleSheet LightStyleSheet
+        private static StyleSheet m_LightStyleSheet;
+        private static StyleSheet lightStyleSheet
         {
             get
             {
-                if (_lightStyleSheet == null)
-                    _lightStyleSheet = LoadAndResolveStyleSheet(false);
-                return _lightStyleSheet;
+                if (m_LightStyleSheet == null)
+                    m_LightStyleSheet = LoadAndResolveStyleSheet(false);
+                return m_LightStyleSheet;
             }
         }
 
@@ -44,10 +44,10 @@ namespace UnityEditor.PackageManager.UI
             styleSheet.hideFlags = HideFlags.HideAndDontSave;
             styleSheet.isUnityStyleSheet = true;
 
-            var packageManagerThemeVariablesSheetPath = isDarkTheme ? PackageManagerDarkVariablesSheetPath : PackageManagerLightVariablesSheetPath;
+            var packageManagerThemeVariablesSheetPath = isDarkTheme ? k_PackageManagerDarkVariablesSheetPath : k_PackageManagerLightVariablesSheetPath;
             var variablesThemeStyleSheetPath = isDarkTheme ? UIElementsEditorUtility.s_DefaultCommonDarkStyleSheetPath : UIElementsEditorUtility.s_DefaultCommonLightStyleSheetPath;
 
-            var packageManagerCommon = EditorGUIUtility.Load(PackageManagerCommonStyleSheetPath) as StyleSheet;
+            var packageManagerCommon = EditorGUIUtility.Load(k_PackageManagerCommonStyleSheetPath) as StyleSheet;
             var packageManagerTheme = EditorGUIUtility.Load(packageManagerThemeVariablesSheetPath) as StyleSheet;
 
             var variableThemeSheet = EditorGUIUtility.Load(UIElementsEditorUtility.GetStyleSheetPathForCurrentFont(variablesThemeStyleSheetPath)) as StyleSheet;
@@ -61,7 +61,7 @@ namespace UnityEditor.PackageManager.UI
 
         private static string TemplatePath(string filename)
         {
-            return TemplateRoot + filename;
+            return k_TemplateRoot + filename;
         }
 
         public static VisualTreeAsset GetVisualTreeAsset(string templateFilename)
@@ -81,7 +81,7 @@ namespace UnityEditor.PackageManager.UI
 
         public static StyleSheet GetStyleSheet()
         {
-            return EditorGUIUtility.isProSkin ? DarkStyleSheet : LightStyleSheet;
+            return EditorGUIUtility.isProSkin ? darkStyleSheet : lightStyleSheet;
         }
     }
 }

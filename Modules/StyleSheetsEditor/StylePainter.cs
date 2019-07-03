@@ -167,19 +167,20 @@ namespace UnityEditor.StyleSheets
 
             var guiBgColor = GUI.backgroundColor;
             var bgColorTint = guiBgColor * colorTint;
-            var hasBorders = border.any;
 
             if (!block.Execute(StyleCatalogKeyword.background, DrawGradient, new GradientParams(drawRect, border.radius, bgColorTint)))
             {
+                var smoothCorners = !border.all;
+
                 // Draw background color
                 var backgroundColor = block.GetColor(StyleCatalogKeyword.backgroundColor);
                 if (backgroundColor.a > 0f)
                 {
-                    GUI.DrawTexture(drawRect, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, false, 0f, backgroundColor * bgColorTint, Vector4.zero, border.radius, !hasBorders);
+                    GUI.DrawTexture(drawRect, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, false, 0f, backgroundColor * bgColorTint, Vector4.zero, border.radius, smoothCorners);
                 }
                 else if (guiBgColor != Color.clear && guiBgColor != Color.white)
                 {
-                    GUI.DrawTexture(drawRect, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, false, 0f, guiBgColor, Vector4.zero, border.radius, !hasBorders);
+                    GUI.DrawTexture(drawRect, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, false, 0f, guiBgColor, Vector4.zero, border.radius, smoothCorners);
                 }
             }
 
@@ -210,7 +211,7 @@ namespace UnityEditor.StyleSheets
             }
 
             // Draw border
-            if (hasBorders)
+            if (border.any)
             {
                 GUI.DrawTexture(drawRect, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, true, 0f, border.borderLeftColor * colorTint,
                     border.borderTopColor * colorTint, border.borderRightColor * colorTint, border.borderBottomColor * colorTint, border.widths, border.radius);
@@ -298,10 +299,12 @@ namespace UnityEditor.StyleSheets
 
         private struct StyleBackgroundPosition
         {
+#pragma warning disable 0649
             public int xEdge;
             public float xOffset;
             public int yEdge;
             public float yOffset;
+#pragma warning restore 0649
         }
 
         private struct StyleBorder
@@ -341,6 +344,20 @@ namespace UnityEditor.StyleSheets
                     }
 
                     return false;
+                }
+            }
+
+            public bool all
+            {
+                get
+                {
+                    for (int i = 0; i < 4; ++i)
+                    {
+                        if (widths[i] < 1f)
+                            return false;
+                    }
+
+                    return true;
                 }
             }
 

@@ -242,14 +242,14 @@ namespace UnityEditor
             if (windowTypeName != "")
                 type = Type.GetType(windowTypeName);
 
-            // Also get the GameView
-            GameView gameView = FindEditorWindowOfType(typeof(GameView)) as GameView;
-            if (type != null && gameView && gameView.m_Parent != null && gameView.m_Parent is DockArea)
+            // Also get the Preview Window
+            var previewWindow = PreviewEditorWindow.GetMainPreviewWindow();
+            if (type != null && previewWindow && previewWindow.m_Parent != null && previewWindow.m_Parent is DockArea)
             {
                 // Get all windows of that type
                 object[] potentials = Resources.FindObjectsOfTypeAll(type);
 
-                DockArea dock = gameView.m_Parent as DockArea;
+                DockArea dock = previewWindow.m_Parent as DockArea;
 
                 // Find the one that is actually docked together with the GameView
                 for (int i = 0; i < potentials.Length; i++)
@@ -287,14 +287,14 @@ namespace UnityEditor
         {
             if (enteringPlaymode)
             {
-                GameView gameView = (GameView)FindEditorWindowOfType(typeof(GameView));
-                if (gameView)
+                var previewWindow = PreviewEditorWindow.GetMainPreviewWindow();
+                if (previewWindow)
                 {
-                    SaveCurrentFocusedWindowInSameDock(gameView);
-                    gameView.Focus();
+                    SaveCurrentFocusedWindowInSameDock(previewWindow);
+                    previewWindow.Focus();
                 }
 
-                return gameView;
+                return previewWindow;
             }
             else
             {
@@ -826,10 +826,10 @@ namespace UnityEditor
                         containerWindow.Show(containerWindow.showMode, loadPosition: false, displayImmediately: true, setFocus: true);
                 }
 
-                // Unmaximize maximized GameView if maximize on play is enabled
-                GameView gameView = GetMaximizedWindow() as GameView;
-                if (gameView != null && gameView.maximizeOnPlay)
-                    Unmaximize(gameView);
+                // Unmaximize maximized Preview window if maximize on play is enabled
+                PreviewEditorWindow preview = GetMaximizedWindow() as PreviewEditorWindow;
+                if (preview != null && preview.maximizeOnPlay)
+                    Unmaximize(preview);
             }
             catch (Exception ex)
             {
@@ -1020,6 +1020,7 @@ namespace UnityEditor
                 return;
             }
 
+            ModeService.ChangeModeById("default");
             FileUtil.DeleteFileOrDirectory(layoutsPreferencesPath);
             FileUtil.DeleteFileOrDirectory(ProjectLayoutPath);
 

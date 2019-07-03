@@ -23,12 +23,12 @@ namespace UnityEngine.XR
         uint m_BufferMaxSize;
         uint m_BufferOptimalSize;
 
-        public uint numChannels             { get { return m_NumChannels; }         internal set { m_NumChannels = value; } }
-        public bool supportsImpulse         { get { return m_SupportsImpulse; }     internal set { m_SupportsImpulse = value; } }
-        public bool supportsBuffer          { get { return m_SupportsBuffer; }      internal set { m_SupportsBuffer = value; } }
-        public uint bufferFrequencyHz       { get { return m_BufferFrequencyHz; }   internal set { m_BufferFrequencyHz = value; } }
-        public uint bufferMaxSize           { get { return m_BufferMaxSize; } internal set { m_BufferMaxSize = value; } }
-        public uint bufferOptimalSize       { get { return m_BufferOptimalSize; } internal set { m_BufferOptimalSize = value; } }
+        public uint numChannels { get { return m_NumChannels; } internal set { m_NumChannels = value; } }
+        public bool supportsImpulse { get { return m_SupportsImpulse; } internal set { m_SupportsImpulse = value; } }
+        public bool supportsBuffer { get { return m_SupportsBuffer; } internal set { m_SupportsBuffer = value; } }
+        public uint bufferFrequencyHz { get { return m_BufferFrequencyHz; } internal set { m_BufferFrequencyHz = value; } }
+        public uint bufferMaxSize { get { return m_BufferMaxSize; } internal set { m_BufferMaxSize = value; } }
+        public uint bufferOptimalSize { get { return m_BufferOptimalSize; } internal set { m_BufferOptimalSize = value; } }
 
         public override bool Equals(object obj)
         {
@@ -105,7 +105,7 @@ namespace UnityEngine.XR
     };
 
     [Flags]
-    public enum InputDeviceCharacteristics: UInt32
+    public enum InputDeviceCharacteristics : UInt32
     {
         None = 0,
         HeadMounted = 1 << 0,
@@ -142,7 +142,7 @@ namespace UnityEngine.XR
     public struct InputFeatureUsage : IEquatable<InputFeatureUsage>
     {
         internal string m_Name;
-        [NativeName("m_FeatureType")]  internal InputFeatureType m_InternalType;
+        [NativeName("m_FeatureType")] internal InputFeatureType m_InternalType;
 
         public string name { get { return m_Name; } internal set { m_Name = value; } }
         internal InputFeatureType internalType { get { return m_InternalType; } set { m_InternalType = value; } }
@@ -152,16 +152,16 @@ namespace UnityEngine.XR
             {
                 switch (m_InternalType)
                 {
-                    case InputFeatureType.Custom:           throw new InvalidCastException("No valid managed type for Custom native types.");
-                    case InputFeatureType.Binary:           return typeof(bool);
-                    case InputFeatureType.DiscreteStates:   return typeof(uint);
-                    case InputFeatureType.Axis1D:           return typeof(float);
-                    case InputFeatureType.Axis2D:           return typeof(Vector2);
-                    case InputFeatureType.Axis3D:           return typeof(Vector3);
-                    case InputFeatureType.Rotation:         return typeof(Quaternion);
-                    case InputFeatureType.Hand:             return typeof(Hand);
-                    case InputFeatureType.Bone:             return typeof(Bone);
-                    case InputFeatureType.Eyes:             return typeof(Eyes);
+                    case InputFeatureType.Custom: throw new InvalidCastException("No valid managed type for Custom native types.");
+                    case InputFeatureType.Binary: return typeof(bool);
+                    case InputFeatureType.DiscreteStates: return typeof(uint);
+                    case InputFeatureType.Axis1D: return typeof(float);
+                    case InputFeatureType.Axis2D: return typeof(Vector2);
+                    case InputFeatureType.Axis3D: return typeof(Vector3);
+                    case InputFeatureType.Rotation: return typeof(Quaternion);
+                    case InputFeatureType.Hand: return typeof(Hand);
+                    case InputFeatureType.Bone: return typeof(Bone);
+                    case InputFeatureType.Eyes: return typeof(Eyes);
 
                     default: throw new InvalidCastException("No valid managed type for unknown native type.");
                 }
@@ -257,22 +257,16 @@ namespace UnityEngine.XR
         public static InputFeatureUsage<bool> menuButton = new InputFeatureUsage<bool>("MenuButton");
         public static InputFeatureUsage<bool> primary2DAxisClick = new InputFeatureUsage<bool>("Primary2DAxisClick");
         public static InputFeatureUsage<bool> primary2DAxisTouch = new InputFeatureUsage<bool>("Primary2DAxisTouch");
-        public static InputFeatureUsage<bool> thumbrest = new InputFeatureUsage<bool>("Thumbrest");
+        public static InputFeatureUsage<bool> secondary2DAxisClick = new InputFeatureUsage<bool>("Secondary2DAxisClick");
+        public static InputFeatureUsage<bool> secondary2DAxisTouch = new InputFeatureUsage<bool>("Secondary2DAxisTouch");
 
         public static InputFeatureUsage<InputTrackingState> trackingState = new InputFeatureUsage<InputTrackingState>("TrackingState");
 
-        public static InputFeatureUsage<float> indexTouch = new InputFeatureUsage<float>("IndexTouch");
-        public static InputFeatureUsage<float> thumbTouch = new InputFeatureUsage<float>("ThumbTouch");
         public static InputFeatureUsage<float> batteryLevel = new InputFeatureUsage<float>("BatteryLevel");
         public static InputFeatureUsage<float> trigger = new InputFeatureUsage<float>("Trigger");
         public static InputFeatureUsage<float> grip = new InputFeatureUsage<float>("Grip");
-        public static InputFeatureUsage<float> indexFinger = new InputFeatureUsage<float>("IndexFinger");
-        public static InputFeatureUsage<float> middleFinger = new InputFeatureUsage<float>("MiddleFinger");
-        public static InputFeatureUsage<float> ringFinger = new InputFeatureUsage<float>("RingFinger");
-        public static InputFeatureUsage<float> pinkyFinger = new InputFeatureUsage<float>("PinkyFinger");
 
         public static InputFeatureUsage<Vector2> primary2DAxis = new InputFeatureUsage<Vector2>("Primary2DAxis");
-        public static InputFeatureUsage<Vector2> dPad = new InputFeatureUsage<Vector2>("DPad");
         public static InputFeatureUsage<Vector2> secondary2DAxis = new InputFeatureUsage<Vector2>("Secondary2DAxis");
 
         public static InputFeatureUsage<Vector3> devicePosition = new InputFeatureUsage<Vector3>("DevicePosition");
@@ -309,6 +303,25 @@ namespace UnityEngine.XR
 
         public static InputFeatureUsage<Hand> handData = new InputFeatureUsage<Hand>("HandData");
         public static InputFeatureUsage<Eyes> eyesData = new InputFeatureUsage<Eyes>("EyesData");
+
+        [Obsolete("CommonUsages.dPad is not used by any XR platform and will be removed.")]
+        public static InputFeatureUsage<Vector2> dPad = new InputFeatureUsage<Vector2>("DPad");
+        [Obsolete("CommonUsages.indexFinger is not used by any XR platform and will be removed.")]
+        public static InputFeatureUsage<float> indexFinger = new InputFeatureUsage<float>("IndexFinger");
+        [Obsolete("CommonUsages.MiddleFinger is not used by any XR platform and will be removed.")]
+        public static InputFeatureUsage<float> middleFinger = new InputFeatureUsage<float>("MiddleFinger");
+        [Obsolete("CommonUsages.RingFinger is not used by any XR platform and will be removed.")]
+        public static InputFeatureUsage<float> ringFinger = new InputFeatureUsage<float>("RingFinger");
+        [Obsolete("CommonUsages.PinkyFinger is not used by any XR platform and will be removed.")]
+        public static InputFeatureUsage<float> pinkyFinger = new InputFeatureUsage<float>("PinkyFinger");
+
+        // These should go to Oculus SDK
+        [Obsolete("CommonUsages.thumbrest is Oculus only, and is being moved to their package. Please use OculusUsages.thumbrest. These will still function until removed.")]
+        public static InputFeatureUsage<bool> thumbrest = new InputFeatureUsage<bool>("Thumbrest");
+        [Obsolete("CommonUsages.indexTouch is Oculus only, and is being moved to their package.  Please use OculusUsages.indexTouch. These will still function until removed.")]
+        public static InputFeatureUsage<float> indexTouch = new InputFeatureUsage<float>("IndexTouch");
+        [Obsolete("CommonUsages.thumbTouch is Oculus only, and is being moved to their package.  Please use OculusUsages.thumbTouch. These will still function until removed.")]
+        public static InputFeatureUsage<float> thumbTouch = new InputFeatureUsage<float>("ThumbTouch");
     };
 
     [UsedByNativeCode]
@@ -316,9 +329,28 @@ namespace UnityEngine.XR
     [NativeConditional("ENABLE_VR")]
     public struct InputDevice : IEquatable<InputDevice>
     {
+        private static List<XRInputSubsystem> s_InputSubsystemCache;
         private UInt64 m_DeviceId;
+        static InputDevice invalid { get { return new InputDevice(UInt64.MaxValue); } }
         internal InputDevice(UInt64 deviceId) { m_DeviceId = deviceId; }
+        public XRInputSubsystem subsystem
+        {
+            get
+            {
+                if (s_InputSubsystemCache == null)
+                    s_InputSubsystemCache = new List<XRInputSubsystem>();
 
+                /// The DeviceId is cut in two, with the hiword being the subsystem identifier, and the loword being for the specific device.
+                UInt32 pluginIndex = (UInt32)(m_DeviceId >> 32);
+                SubsystemManager.GetInstances<XRInputSubsystem>(s_InputSubsystemCache);
+                for (int i = 0; i < s_InputSubsystemCache.Count; i++)
+                {
+                    if (pluginIndex == s_InputSubsystemCache[i].GetIndex())
+                        return s_InputSubsystemCache[i];
+                }
+                return null;
+            }
+        }
         public bool isValid { get { return InputDevices.IsDeviceValid(m_DeviceId); } }
         public string name { get { return InputDevices.GetDeviceName(m_DeviceId); } }
         [Obsolete("This API has been marked as deprecated and will be removed in future versions. Please use InputDevice.characteristics instead.")]
@@ -346,7 +378,7 @@ namespace UnityEngine.XR
             return InputDevices.TryGetFeatureUsages(m_DeviceId, featureUsages);
         }
 
-        // Features
+        // Features by Usage
         public bool TryGetFeatureValue(InputFeatureUsage<bool> usage, out bool value)              { return InputDevices.TryGetFeatureValue_bool(m_DeviceId, usage.name, out value); }
         public bool TryGetFeatureValue(InputFeatureUsage<uint> usage, out uint value)              { return InputDevices.TryGetFeatureValue_UInt32(m_DeviceId, usage.name, out value); }
         public bool TryGetFeatureValue(InputFeatureUsage<float> usage, out float value)            { return InputDevices.TryGetFeatureValue_float(m_DeviceId, usage.name, out value); }
@@ -370,7 +402,7 @@ namespace UnityEngine.XR
             return false;
         }
 
-        // Features
+        // Features at time
         public bool TryGetFeatureValue(InputFeatureUsage<bool> usage, DateTime time, out bool value) { return InputDevices.TryGetFeatureValueAtTime_bool(m_DeviceId, usage.name, TimeConverter.LocalDateTimeToUnixTimeMilliseconds(time), out value); }
         public bool TryGetFeatureValue(InputFeatureUsage<uint> usage, DateTime time, out uint value) { return InputDevices.TryGetFeatureValueAtTime_UInt32(m_DeviceId, usage.name, TimeConverter.LocalDateTimeToUnixTimeMilliseconds(time), out value); }
         public bool TryGetFeatureValue(InputFeatureUsage<float> usage, DateTime time, out float value) { return InputDevices.TryGetFeatureValueAtTime_float(m_DeviceId, usage.name, TimeConverter.LocalDateTimeToUnixTimeMilliseconds(time), out value); }

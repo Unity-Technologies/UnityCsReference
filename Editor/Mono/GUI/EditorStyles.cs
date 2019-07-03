@@ -160,6 +160,9 @@ namespace UnityEditor
         public static GUIStyle foldoutHeaderIcon { get { return s_Current.m_FoldoutHeaderIcon; } }
         GUIStyle m_FoldoutHeaderIcon;
 
+        internal static GUIStyle optionsButtonStyle { get { return s_Current.m_OptionsButtonStyle; } }
+        GUIStyle m_OptionsButtonStyle;
+
         // Style used for headings for EditorGUILayout::ref::BeginToggleGroup.
         public static GUIStyle toggleGroup { get { return s_Current.m_ToggleGroup; }  }
         private GUIStyle m_ToggleGroup;
@@ -210,6 +213,10 @@ namespace UnityEditor
         // Toolbar Dropdown
         public static GUIStyle toolbarDropDown { get { return s_Current.m_ToolbarDropDown; } }
         private GUIStyle m_ToolbarDropDown;
+
+        // Toolbar Dropdown Right
+        internal static GUIStyle toolbarDropDownRight { get { return s_Current.m_ToolbarDropDownRight; } }
+        private GUIStyle m_ToolbarDropDownRight;
 
         // Toolbar Dropdown Toggle
         internal static GUIStyle toolbarDropDownToggle { get { return s_Current.m_ToolbarDropDownToggle; } }
@@ -302,6 +309,9 @@ namespace UnityEditor
         internal static GUIStyle selectionRect { get { return s_Current.m_SelectionRect; } }
         private GUIStyle m_SelectionRect;
 
+        internal static GUIStyle toolbarSlider { get { return s_Current.m_ToolbarSlider; } }
+        private GUIStyle m_ToolbarSlider;
+
         internal static GUIStyle minMaxHorizontalSliderThumb { get { return s_Current.m_MinMaxHorizontalSliderThumb; } }
         private GUIStyle m_MinMaxHorizontalSliderThumb;
 
@@ -393,6 +403,7 @@ namespace UnityEditor
             m_ToolbarButtonRight = GetStyle("toolbarbuttonRight");
             m_ToolbarPopup = GetStyle("toolbarPopup");
             m_ToolbarDropDown = GetStyle("toolbarDropDown");
+            m_ToolbarDropDownRight = GetStyle("toolbarDropDownRight");
             m_ToolbarDropDownToggle = GetStyle("toolbarDropDownToggle");
             m_ToolbarDropDownToggleRight = GetStyle("toolbarDropDownToggleRight");
             m_ToolbarCreateAddNewDropDown = GetStyle("ToolbarCreateAddNewDropDown");
@@ -409,19 +420,21 @@ namespace UnityEditor
             m_AssetLabelPartial = GetStyle("AssetLabel Partial");
             m_AssetLabelIcon = GetStyle("AssetLabel Icon");
             m_SelectionRect = GetStyle("selectionRect");
+            m_ToolbarSlider = GetStyle("ToolbarSlider");
             m_MinMaxHorizontalSliderThumb = GetStyle("MinMaxHorizontalSliderThumb");
             m_DropDownList = GetStyle("DropDownButton");
             m_MinMaxStateDropdown = GetStyle("IN MinMaxStateDropdown");
-            m_BoldFont = GetStyle("BoldLabel").font;
-            m_StandardFont = GetStyle("Label").font;
-            m_MiniFont = GetStyle("MiniLabel").font;
-            m_MiniBoldFont = GetStyle("MiniBoldLabel").font;
+            m_BoldFont = EditorResources.GetBoldFont();
+            m_StandardFont = EditorResources.GetNormalFont();
+            m_MiniFont =  EditorResources.GetSmallFont();
+            m_MiniBoldFont = EditorResources.GetBoldFont();
             m_ProgressBarBack = GetStyle("ProgressBarBack");
             m_ProgressBarBar = GetStyle("ProgressBarBar");
             m_ProgressBarText = GetStyle("ProgressBarText");
             m_FoldoutPreDrop = GetStyle("FoldoutPreDrop");
             m_FoldoutHeader = GetStyle("FoldoutHeader");
             m_FoldoutHeaderIcon = GetStyle("FoldoutHeaderIcon");
+            m_OptionsButtonStyle = GetStyle("PaneOptions");
             m_InspectorTitlebar = GetStyle("IN Title");
             m_InspectorTitlebarText = GetStyle("IN TitleText");
             m_ToggleGroup = GetStyle("BoldToggle");

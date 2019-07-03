@@ -432,7 +432,14 @@ namespace UnityEngine.UIElements
         {
             base.HandleEvent(evt);
 
-            if (evt == null || evt.propagationPhase == PropagationPhase.DefaultAction)
+            if (evt == null)
+            {
+                return;
+            }
+
+            if (evt.propagationPhase != PropagationPhase.TrickleDown &&
+                evt.propagationPhase != PropagationPhase.AtTarget &&
+                evt.propagationPhase != PropagationPhase.BubbleUp)
             {
                 return;
             }
@@ -463,6 +470,12 @@ namespace UnityEngine.UIElements
 
         internal bool SendEventToIMGUI(EventBase evt)
         {
+            if (evt is IPointerEvent)
+            {
+                // Pointer events are not handled by IMGUI. The compatibility mouse event will eventually come.
+                return false;
+            }
+
             bool result;
             using (new EventDebuggerLogIMGUICall(evt))
             {

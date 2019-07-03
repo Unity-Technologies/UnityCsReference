@@ -236,10 +236,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         }
         else
         {
-            CopyVariationFolderIntoStagingArea(args);
-
-            if (GetCreateSolution(args))
-                CopyPlayerSolutionIntoStagingArea(args, filesToNotOverwrite);
+            CopyVariationFolderIntoStagingArea(args, filesToNotOverwrite);
 
             if (UseIl2Cpp)
             {
@@ -306,7 +303,59 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         ProcessPlatformSpecificIL2CPPOutput(args);
     }
 
-    protected virtual void ProcessIl2CppOutputForSolution(BuildPostProcessArgs args, IIl2CppPlatformProvider il2cppPlatformProvider, IEnumerable<string> cppPlugins)
+    private void ProcessIl2CppOutputForSolution(BuildPostProcessArgs args, IIl2CppPlatformProvider il2cppPlatformProvider, IEnumerable<string> cppPlugins)
+    {
+        if (EditorUtility.DisplayCancelableProgressBar("Building Player", "Copying IL2CPP related files", 0.1f))
+            throw new OperationCanceledException();
+
+        // Move managed assemblies
+        var projectName = GetPathSafeProductName(args);
+        FileUtil.MoveFileOrDirectory(args.stagingAreaDataManaged, Paths.Combine(args.stagingArea, projectName, "Managed"));
+
+        // Move il2cpp data
+        var il2cppOutputPath = IL2CPPBuilder.GetCppOutputPath(args.stagingAreaData);
+        var il2cppDataSource = Path.Combine(il2cppOutputPath, "Data");
+        var il2cppDataTarget = Path.Combine(args.stagingAreaData, "il2cpp_data");
+
+        FileUtil.MoveFileOrDirectory(il2cppDataSource, il2cppDataTarget);
+
+        // Move generated source code
+        var il2cppOutputProjectDirectory = Path.Combine(args.stagingArea, "Il2CppOutputProject");
+        var sourceFolder = Path.Combine(il2cppOutputProjectDirectory, "Source");
+        Directory.CreateDirectory(sourceFolder);
+        FileUtil.MoveFileOrDirectory(il2cppOutputPath, Path.Combine(sourceFolder, "il2cppOutput"));
+
+        // Copy C++ plugins
+        if (cppPlugins.Any())
+        {
+            var cppPluginsDirectory = Path.Combine(sourceFolder, "CppPlugins");
+            Directory.CreateDirectory(cppPluginsDirectory);
+
+            foreach (var cppPlugin in cppPlugins)
+                FileUtil.CopyFileOrDirectory(cppPlugin, Path.Combine(cppPluginsDirectory, Path.GetFileName(cppPlugin)));
+        }
+
+        // Copy IL2CPP
+        var il2cppSourceFolder = IL2CPPUtils.GetIl2CppFolder();
+        var il2cppTargetFolder = Paths.Combine(il2cppOutputProjectDirectory, "IL2CPP");
+        Directory.CreateDirectory(il2cppTargetFolder);
+
+        FileUtil.CopyFileOrDirectory(Path.Combine(il2cppSourceFolder, "build"), Path.Combine(il2cppTargetFolder, "build"));
+        FileUtil.CopyFileOrDirectory(Path.Combine(il2cppSourceFolder, "external"), Path.Combine(il2cppTargetFolder, "external"));
+        FileUtil.CopyFileOrDirectory(Path.Combine(il2cppSourceFolder, "libil2cpp"), Path.Combine(il2cppTargetFolder, "libil2cpp"));
+
+        if (IL2CPPUtils.EnableIL2CPPDebugger(il2cppPlatformProvider, BuildTargetGroup.Standalone))
+        {
+            FileUtil.CopyFileOrDirectory(Path.Combine(il2cppSourceFolder, "libmono"), Path.Combine(il2cppTargetFolder, "libmono"));
+        }
+
+        FileUtil.CopyFileOrDirectory(Path.GetDirectoryName(IL2CPPBuilder.GetMapFileParserPath()), Path.Combine(il2cppTargetFolder, "MapFileParser"));
+        FileUtil.CopyFileOrDirectory(Path.Combine(il2cppSourceFolder, "il2cpp_root"), Path.Combine(il2cppTargetFolder, "il2cpp_root"));
+
+        WriteIl2CppOutputProject(args, il2cppOutputProjectDirectory, il2cppPlatformProvider);
+    }
+
+    protected virtual void WriteIl2CppOutputProject(BuildPostProcessArgs args, string il2cppOutputProjectDirectory, IIl2CppPlatformProvider il2cppPlatformProvider)
     {
         throw new NotSupportedException("CreateSolution is not supported on " + BuildPipeline.GetBuildTargetName(args.target));
     }
@@ -364,15 +413,10 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 #pragma warning restore 618
     }
 
-    protected virtual void CopyPlayerSolutionIntoStagingArea(BuildPostProcessArgs args, HashSet<string> filesToNotOverwrite)
-    {
-        throw new NotSupportedException("CreateSolution is not supported on " + BuildPipeline.GetBuildTargetName(args.target));
-    }
-
     protected string GetVariationFolder(BuildPostProcessArgs args) =>
         Paths.Combine(args.playerPackage, "Variations", GetVariationName(args));
 
-    protected abstract void CopyVariationFolderIntoStagingArea(BuildPostProcessArgs args);
+    protected abstract void CopyVariationFolderIntoStagingArea(BuildPostProcessArgs args, HashSet<string> filesToNotOverwrite);
 
     protected static void RecordCommonFiles(BuildPostProcessArgs args, string variationSourceFolder, string monoFolderRoot)
     {
@@ -381,7 +425,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         // So we find the files in the source Variations directory and mark the corresponding files in the output
         var path = Path.Combine(variationSourceFolder, "Data/Managed");
         foreach (var file in Directory.GetFiles(path, "*.dll")
-                 .Concat(Directory.GetFiles(path, "*.dll.mdb")))
+                 .Concat(Directory.GetFiles(path, "*.pdb")))
         {
             var filename = Path.GetFileName(file);
             if (!filename.StartsWith("UnityEngine"))
@@ -498,9 +542,14 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
     protected virtual string GetVariationName(BuildPostProcessArgs args)
     {
-        return string.Format("{0}_{1}",
-            PlatformStringFor(args.target),
-            (GetDevelopment(args) ? "development" : "nondevelopment"));
+        var platformString = PlatformStringFor(args.target);
+        var configurationString = GetDevelopment(args) ? "development" : "nondevelopment";
+
+        var scriptingBackend = "mono";
+        if (UseIl2Cpp && !IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildTargetGroup.Standalone))
+            scriptingBackend = "il2cpp";
+
+        return $"{platformString}_{configurationString}_{scriptingBackend}";
     }
 
     protected static string GetPathSafeProductName(BuildPostProcessArgs args)

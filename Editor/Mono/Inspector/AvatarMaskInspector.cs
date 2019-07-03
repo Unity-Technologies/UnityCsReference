@@ -536,7 +536,7 @@ namespace UnityEditor
                 }
                 else
                 {
-                    m_SimpleTreeView.OnGUI(EditorGUILayout.GetControlRect(false, m_SimpleTreeView.totalHeightIncludingSearchBarAndBottomBar));
+                    m_SimpleTreeView.OnGUI(Rect.zero);
                 }
             }
         }

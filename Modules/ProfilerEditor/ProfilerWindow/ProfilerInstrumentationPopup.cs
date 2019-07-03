@@ -2,12 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEditor;
-using Object = UnityEngine.Object;
 
 namespace UnityEditorInternal
 {
@@ -166,6 +164,7 @@ namespace UnityEditorInternal
             m_AllCheckbox.partiallySelected = someSelected && !allSelected;
         }
 
+        // Called from native code in InstrumentationProfiler
         static void SetFunctionNamesFromUnity(bool allFunction, string[] functionNames, int[] isInstrumentedFlags)
         {
             var dict = new Dictionary<string, int>(functionNames.Length);

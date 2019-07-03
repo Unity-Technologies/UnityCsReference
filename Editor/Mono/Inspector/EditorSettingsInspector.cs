@@ -36,6 +36,7 @@ namespace UnityEditor
             public static GUIContent allowAsyncUpdate = EditorGUIUtility.TrTextContent("Allow Async Update");
             public static GUIContent showFailedCheckouts = EditorGUIUtility.TrTextContent("Show Failed Checkouts");
             public static GUIContent overwriteFailedCheckoutAssets = EditorGUIUtility.TrTextContent("Overwrite Failed Checkout Assets", "When on, assets that can not be checked out will get saved anyway.");
+            public static GUIContent overlayIcons = EditorGUIUtility.TrTextContent("Overlay Icons", "Should version control status icons be shown in project view.");
 
             public static GUIContent assetPipeline = EditorGUIUtility.TrTextContent("Asset Pipeline (experimental)");
             public static GUIContent cacheServer = EditorGUIUtility.TrTextContent("Cache Server");
@@ -469,6 +470,13 @@ namespace UnityEditor
                 {
                     EditorUserSettings.showFailedCheckout = EditorGUILayout.Toggle(Content.showFailedCheckouts, EditorUserSettings.showFailedCheckout);
                     EditorUserSettings.overwriteFailedCheckoutAssets = EditorGUILayout.Toggle(Content.overwriteFailedCheckoutAssets, EditorUserSettings.overwriteFailedCheckoutAssets);
+                }
+
+                var newOverlayIcons = EditorGUILayout.Toggle(Content.overlayIcons, EditorUserSettings.overlayIcons);
+                if (newOverlayIcons != EditorUserSettings.overlayIcons)
+                {
+                    EditorUserSettings.overlayIcons = newOverlayIcons;
+                    EditorApplication.RequestRepaintAllViews();
                 }
 
                 GUI.enabled = editorEnabled;

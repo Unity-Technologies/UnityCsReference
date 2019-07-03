@@ -49,12 +49,15 @@ namespace UnityEditor.Build.Content
         [NativeMethod(IsThreadSafe = true)]
         private static extern void Internal_Destroy(IntPtr ptr);
 
+        [NativeMethod(IsThreadSafe = true)]
         public extern Hash128 GetHash128();
 
         internal extern string SerializeToJson();
         internal extern void DeserializeFromJson(string data);
 
+        [ThreadSafe]
         internal extern byte[] SerializeToBinary();
+        [ThreadSafe]
         internal extern void DeserializeFromBinary([Out] byte[] data);
 
         internal extern string GetBuildUsageJson(ObjectIdentifier objectId);

@@ -50,7 +50,7 @@ namespace UnityEditor
         float m_WidthOfButtons;
         float m_ItemSpacing;
         PopupButtonData m_PopupButtonData;
-        float m_WidthOfPopup;
+        Vector2 m_PopupButtonSize = Vector2.zero;
         float m_MinWidthOfPopup;
         System.Action<ItemData> m_SelectionChangedCallback = null; // <userData>
 
@@ -97,15 +97,20 @@ namespace UnityEditor
             }
             else
             {
+                var dropDownRect = rect;
+
                 // Show as popup
-                if (m_WidthOfPopup < rect.width)
-                    rect.width = m_WidthOfPopup;
+                if (m_PopupButtonSize.x < rect.width)
+                    dropDownRect.width = m_PopupButtonSize.x;
+
+                dropDownRect.height = m_PopupButtonSize.y;
+                dropDownRect.y = rect.y + (rect.height - dropDownRect.height) / 2;
 
                 //if (GUI.Button (rect, m_PopupButtonData.m_GUIContent, m_PopupButtonData.m_Style))
-                if (EditorGUI.DropdownButton(rect, m_PopupButtonData.m_GUIContent, FocusType.Passive, m_PopupButtonData.m_Style))
-                    PopUpMenu.Show(rect, m_Items, this);
+                if (EditorGUI.DropdownButton(dropDownRect, m_PopupButtonData.m_GUIContent, FocusType.Passive, m_PopupButtonData.m_Style))
+                    PopUpMenu.Show(dropDownRect, m_Items, this);
 
-                return m_WidthOfPopup;
+                return m_PopupButtonSize.x;
             }
         }
 
@@ -124,9 +129,7 @@ namespace UnityEditor
             m_WidthOfButtons += (m_Items.Count - 1) * m_ItemSpacing;
 
             // Popup
-            Vector2 size = m_PopupButtonData.m_Style.CalcSize(m_PopupButtonData.m_GUIContent);
-            size.x += 3f; // more space between text and arrow
-            m_WidthOfPopup = size.x;
+            m_PopupButtonSize = m_PopupButtonData.m_Style.CalcSize(m_PopupButtonData.m_GUIContent);
         }
 
         void SelectionChanged(ItemData item)

@@ -51,6 +51,7 @@ namespace UnityEngine.Rendering
         public LightmapsMode lightmapsModes { get; set; } =
             LightmapsMode.NonDirectional | LightmapsMode.CombinedDirectional;
 
+        public bool enlighten { get; set; } = true;
         public bool lightProbeProxyVolumes { get; set; } = true;
         public bool motionVectors { get; set; } = true;
         public bool receiveShadows { get; set; } = true;
@@ -169,6 +170,10 @@ namespace UnityEngine.Rendering
             }
 
             *isSupported = ((active.lightmapBakeTypes & bakeType) == bakeType);
+
+            // if we are using realtime GI on a new project and Enlighten has been deprecated, don't allow realtime GI
+            if (bakeType == LightmapBakeType.Realtime && !active.enlighten && !GraphicsSettings.AllowEnlightenSupportForUpgradedProject())
+                *isSupported = false;
         }
 
         internal static unsafe bool IsLightmapsModeSupported(LightmapsMode mode)
@@ -183,6 +188,38 @@ namespace UnityEngine.Rendering
         {
             var isSupported = (bool*)isSupportedPtr;
             *isSupported = ((active.lightmapsModes & mode) == mode);
+        }
+
+        internal static unsafe bool IsLightmapperSupported(int lightmapper)
+        {
+            bool isSupported;
+            IsLightmapperSupportedByRef(lightmapper, new IntPtr(&isSupported));
+            return isSupported;
+        }
+
+        [RequiredByNativeCode]
+        internal static unsafe void IsLightmapperSupportedByRef(int lightmapper, IntPtr isSupportedPtr)
+        {
+            var isSupported = (bool*)isSupportedPtr;
+
+            // 0 = Enlighten
+            // if the lightmapper is Enlighten but Enlighten is deprecated and the project isn't upgraded, it's not supported
+            *isSupported = ((lightmapper == 0) && !active.enlighten && !GraphicsSettings.AllowEnlightenSupportForUpgradedProject()) ? false : true;
+        }
+
+        internal static unsafe int FallbackLightmapper()
+        {
+            int lightmapper;
+            FallbackLightmapperByRef(new IntPtr(&lightmapper));
+            return lightmapper;
+        }
+
+        [RequiredByNativeCode]
+        internal static unsafe void FallbackLightmapperByRef(IntPtr lightmapperPtr)
+        {
+            var lightmapper = (int*)lightmapperPtr;
+
+            *lightmapper = 1; // Progressive CPU
         }
     }
 }

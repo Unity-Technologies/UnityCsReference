@@ -203,14 +203,26 @@ namespace UnityEditor
             typeof(AnimationWindow)
         };
 
+        private static IEnumerable<Type> GetCurrentModePaneTypes(string modePaneTypeSectionName)
+        {
+            var modePaneTypes = ModeService.GetModeDataSectionList<string>(ModeService.currentIndex, modePaneTypeSectionName);
+            var editorWindowTypes = TypeCache.GetTypesDerivedFrom<EditorWindow>();
+            foreach (var paneTypeName in modePaneTypes)
+            {
+                var paneType = editorWindowTypes.FirstOrDefault(t => t.Name.EndsWith(paneTypeName));
+                if (paneType != null)
+                    yield return paneType;
+                else
+                    Debug.LogWarning($"Cannot find editor window pane type {paneTypeName} for editor mode {ModeService.currentId}.");
+            }
+        }
+
         private static IEnumerable<Type> GetDefaultPaneTypes()
         {
             const string k_PaneTypesSectionName = "pane_types";
             if (!ModeService.HasSection(ModeService.currentIndex, k_PaneTypesSectionName))
                 return k_PaneTypes;
-
-            var modePaneTypes = ModeService.GetModeDataSectionList<string>(ModeService.currentIndex, k_PaneTypesSectionName).ToList();
-            return TypeCache.GetTypesDerivedFrom<EditorWindow>().Where(t => modePaneTypes.Any(mpt => t.Name.EndsWith(mpt))).ToArray();
+            return GetCurrentModePaneTypes(k_PaneTypesSectionName);
         }
 
         protected IEnumerable<Type> GetPaneTypes()
@@ -316,7 +328,7 @@ namespace UnityEditor
             bool isExitGUIException = false;
             try
             {
-                var viewName = actualView != null ? actualView.GetType().Name : this.GetType().Name;
+                var viewName = actualView != null ? actualView.GetType().Name : GetType().Name;
                 using (new PerformanceTracker(viewName + ".OnGUI." + Event.current.type))
                 {
                     Invoke("OnGUI");
@@ -621,7 +633,7 @@ namespace UnityEditor
                 UIElementsUtility.editorPlayModeTintColor = newColorToUse;
 
                 // Make sure to dirty the right imgui container in this HostView (and all its children / parents)
-                // The MarkDirtyRepaint() function is dirtying the element itself and its parent, but not the children explicitely.
+                // The MarkDirtyRepaint() function is dirtying the element itself and its parent, but not the children explicitly.
                 // ... and in the repaint function, it check for the current rendered element, not the parent.
                 // Since the HostView "hosts" an IMGUIContainer or any VisualElement, we have to make sure to dirty everything here.
                 PropagateDirtyRepaint(visualTree);

@@ -30,11 +30,14 @@ namespace UnityEngine.UIElements
         {
             if (m_Event != null && m_Event.log)
             {
+                IPanel panel = (m_Event.target as VisualElement)?.panel;
+                IEventHandler capture = panel?.GetCapturingElement(PointerId.mousePointerId);
+
                 m_Event.eventLogger.LogCall(GetCallbackHashCode(), GetCallbackName(), m_Event,
                     m_IsPropagationStopped != m_Event.isPropagationStopped,
                     m_IsImmediatePropagationStopped != m_Event.isImmediatePropagationStopped,
                     m_IsDefaultPrevented != m_Event.isDefaultPrevented,
-                    (long)(Time.realtimeSinceStartup * 1000.0f) - m_Start, MouseCaptureController.mouseCapture);
+                    (long)(Time.realtimeSinceStartup * 1000.0f) - m_Start, capture);
             }
         }
 
@@ -79,8 +82,10 @@ namespace UnityEngine.UIElements
         {
             if (m_Event != null && m_Event.log)
             {
+                IPanel panel = (m_Event.target as VisualElement)?.panel;
+                IEventHandler capture = panel?.GetCapturingElement(PointerId.mousePointerId);
                 m_Event.eventLogger.LogIMGUICall(m_Event,
-                    (long)(Time.realtimeSinceStartup * 1000.0f) - m_Start, MouseCaptureController.mouseCapture);
+                    (long)(Time.realtimeSinceStartup * 1000.0f) - m_Start, capture);
             }
         }
     }
@@ -99,8 +104,10 @@ namespace UnityEngine.UIElements
         {
             if (m_Event != null && m_Event.log)
             {
+                IPanel panel = (m_Event.target as VisualElement)?.panel;
+                IEventHandler capture = panel?.GetCapturingElement(PointerId.mousePointerId);
                 m_Event.eventLogger.LogExecuteDefaultAction(m_Event, m_Event.propagationPhase,
-                    (long)(Time.realtimeSinceStartup * 1000.0f) - m_Start, MouseCaptureController.mouseCapture);
+                    (long)(Time.realtimeSinceStartup * 1000.0f) - m_Start, capture);
             }
         }
     }

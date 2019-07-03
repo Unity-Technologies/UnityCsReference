@@ -89,6 +89,9 @@ namespace UnityEditorInternal.VersionControl
 
         static void DrawOverlays(Asset asset, Asset metaAsset, Rect itemRect)
         {
+            if (!EditorUserSettings.overlayIcons)
+                return;
+
             CreateStaticResources();
             float iconWidth = 16;
             float offsetX = 1f; // offset to compensate that icons are 16x16 with 8x8 content

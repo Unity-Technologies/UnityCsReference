@@ -1326,21 +1326,6 @@ namespace UnityEditor
             }
         }
 
-        struct KeyFrameCopy
-        {
-            public float time, value, inTangent, outTangent;
-            public int idx, selectionIdx;
-            public KeyFrameCopy(int idx, int selectionIdx, Keyframe source)
-            {
-                this.idx = idx;
-                this.selectionIdx = selectionIdx;
-                time = source.time;
-                value = source.value;
-                inTangent = source.inTangent;
-                outTangent = source.outTangent;
-            }
-        }
-
         internal void DeleteSelectedKeys()
         {
             string undoLabel;
@@ -2882,7 +2867,7 @@ namespace UnityEditor
                         }
 
                         // Curve dragging. Moving keys has highest priority, therefore we check curve/region dragging AFTER key dragging above
-                        if (settings.allowDraggingCurvesAndRegions && m_DraggingKey == null)
+                        if (evt.shift && settings.allowDraggingCurvesAndRegions && m_DraggingKey == null)
                         {
                             // We use the logic as for moving keys when we drag entire curves or regions: We just
                             // select all keyFrames in a curve or region before dragging and ensure to hide tangents when drawing.

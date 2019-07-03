@@ -7,9 +7,6 @@ using UnityEditor.VersionControl;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditorInternal;
-using UnityEngine.Assertions;
-using Math = System.Math;
-using IndexOutOfRangeException = System.IndexOutOfRangeException;
 
 namespace UnityEditor
 {
@@ -74,6 +71,8 @@ namespace UnityEditor
             public GUIStyle subAssetBgMiddle = GetStyle("ProjectBrowserSubAssetBgMiddle");
             public GUIStyle subAssetBgDivider = GetStyle("ProjectBrowserSubAssetBgDivider");
             public GUIStyle subAssetExpandButton = GetStyle("ProjectBrowserSubAssetExpandBtn");
+            public GUIStyle subAssetExpandButtonMedium = GetStyle("ProjectBrowserSubAssetExpandBtnMedium");
+            public GUIStyle subAssetExpandButtonSmall = GetStyle("ProjectBrowserSubAssetExpandBtnSmall");
 
             public GUIContent m_AssetStoreNotAvailableText = EditorGUIUtility.TrTextContent("The Asset Store is not available");
 
@@ -119,10 +118,6 @@ namespace UnityEditor
 
         Vector2 m_LastScrollPosition = new Vector2(0, 0);
         double LastScrollTime = 0;
-
-
-        const double kDelayQueryAfterScroll = 0.0;
-
 
         public bool selectedAssetStoreAsset;
 
@@ -599,18 +594,6 @@ namespace UnityEditor
         public int numItemsDisplayed
         {
             get { return m_LocalAssets.ItemCount; }
-        }
-
-        static string CreateFilterString(string searchString, string requiredClassName)
-        {
-            string filter = searchString;
-
-            if (!string.IsNullOrEmpty(requiredClassName))
-            {
-                filter += " t:" + requiredClassName;
-            }
-
-            return filter;
         }
 
         bool ObjectsHaveThumbnails(HierarchyType type, SearchFilter searchFilter)

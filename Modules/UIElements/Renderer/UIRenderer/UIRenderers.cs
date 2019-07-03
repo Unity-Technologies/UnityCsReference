@@ -19,8 +19,9 @@ namespace UnityEngine.UIElements.UIR
         IsCustomTextured = 4,
         IsEdge = 5,
         IsSVGGradients = 6,
+        IsCustomSVGGradients = 7,
 
-        LastType = 7,
+        LastType = 8,
     }
 
     internal struct State

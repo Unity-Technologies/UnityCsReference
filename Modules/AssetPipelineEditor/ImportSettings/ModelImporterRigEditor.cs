@@ -5,20 +5,14 @@
 using System;
 using UnityEngine;
 using UnityEditor.SceneManagement;
-using UnityEditorInternal;
 using System.Collections.Generic;
 using Object = UnityEngine.Object;
-using System.IO;
-using System.Linq;
 using UnityEditor.Experimental.AssetImporters;
-using UnityEditor.IMGUI.Controls;
 
 namespace UnityEditor
 {
     internal class ModelImporterRigEditor : BaseAssetImporterTabUI
     {
-        const float kDeleteWidth = 17;
-
         ModelImporter singleImporter { get { return targets[0] as ModelImporter; } }
 
         public int m_SelectedClipIndex = -1;

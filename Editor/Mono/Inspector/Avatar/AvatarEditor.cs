@@ -5,9 +5,7 @@
 using UnityEngine;
 using UnityEditor.SceneManagement;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using UnityEditorInternal;
 using UnityEngine.SceneManagement;
 
 namespace UnityEditor
@@ -39,7 +37,7 @@ namespace UnityEditor
         }
         */
 
-        //[MenuItem ("Mecanim/Write All Assets")]
+        /*[MenuItem ("Mecanim/Write All Assets")]
         static void DoWriteAllAssets()
         {
             UnityEngine.Object[] objects = Resources.FindObjectsOfTypeAll(typeof(UnityEngine.Object));
@@ -49,7 +47,7 @@ namespace UnityEditor
                     EditorUtility.SetDirty(asset);
             }
             AssetDatabase.SaveAssets();
-        }
+        }*/
 
         protected AvatarEditor m_Inspector;
         protected GameObject gameObject { get { return m_Inspector.m_GameObject; } }
@@ -257,7 +255,6 @@ namespace UnityEditor
 
         const int sMappingTab = 0;
         const int sMuscleTab = 1;
-        const int sDefaultTab = sMappingTab;
 
         public GameObject prefab
         {

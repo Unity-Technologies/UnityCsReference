@@ -62,59 +62,48 @@ namespace UnityEditor.Scripting.Compilers
             return MonoLibraryHelpers.GetSystemReferenceDirectories(apiCompatibilityLevel);
         }
 
-        public string GetNamespaceNewRuntime(string filePath, string definedSymbols, string[] defines)
+        public string GetNamespaceNewRuntime(string filePath, string[] definesSymbols, string[] rspDefines)
         {
-            var definedSymbolSplit = definedSymbols.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-            var uniqueSymbols = defines.Union(definedSymbolSplit).Distinct().ToArray();
+            var uniqueSymbols = definesSymbols;
+            if (rspDefines != null && rspDefines.Any())
+            {
+                uniqueSymbols = definesSymbols.Union(rspDefines).Distinct().ToArray();
+            }
+
             return CSharpNamespaceParser.GetNamespace(
                 ReadAndConverteNewLines(filePath).ReadToEnd(),
                 Path.GetFileNameWithoutExtension(filePath),
                 uniqueSymbols);
         }
 
-        public string GetNamespaceOldRuntime(string filePath, string definedSymbols, string[] defines)
-        {
-            var definedSymbolSplit = definedSymbols.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-            var uniqueSymbols = defines.Union(definedSymbolSplit).Distinct().ToArray();
-            using (var parser = ParserFactory.CreateParser(ICSharpCode.NRefactory.SupportedLanguage.CSharp, ReadAndConverteNewLines(filePath)))
-            {
-                foreach (var symbol in uniqueSymbols)
-                {
-                    parser.Lexer.ConditionalCompilationSymbols.Add(symbol, string.Empty);
-                }
-
-                parser.Lexer.EvaluateConditionalCompilation = true;
-                parser.Parse();
-                try
-                {
-                    var visitor = new NamespaceVisitor();
-                    var data = new VisitorData { TargetClassName = Path.GetFileNameWithoutExtension(filePath) };
-                    parser.CompilationUnit.AcceptVisitor(visitor, data);
-                    return string.IsNullOrEmpty(data.DiscoveredNamespace) ? string.Empty : data.DiscoveredNamespace;
-                }
-                catch
-                {
-                    // Don't care; all we want is the namespace
-                }
-            }
-            return string.Empty;
-        }
-
         public override string GetNamespace(string filePath, string definedSymbols)
         {
-            var responseFilePath = Path.Combine("Assets", MicrosoftCSharpCompiler.ResponseFilename);
-            var responseFileData = ScriptCompilerBase.ParseResponseFileFromFile(
-                responseFilePath,
-                Directory.GetParent(Application.dataPath).FullName,
-                GetSystemReferenceDirectories(ApiCompatibilityLevel.NET_4_6));
-            return GetNamespaceNewRuntime(filePath, definedSymbols, responseFileData.Defines);
+            var targetAssemblyFromPath = EditorCompilationInterface.Instance.GetTargetAssemblyFromPath(filePath);
+            var definedSymbolsSplit = definedSymbols.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+
+            string[] fullListOfDefines = new string[definedSymbolsSplit.Length + (targetAssemblyFromPath?.Defines?.Length ?? 0)];
+            Array.Copy(definedSymbolsSplit, fullListOfDefines, definedSymbolsSplit.Length);
+
+            if (targetAssemblyFromPath?.Defines != null)
+            {
+                Array.Copy(targetAssemblyFromPath.Defines, 0, fullListOfDefines, definedSymbolsSplit.Length, targetAssemblyFromPath.Defines.Length);
+            }
+
+            var rspFile = targetAssemblyFromPath?.GetResponseFiles()?.FirstOrDefault();
+            ApiCompatibilityLevel compatibilityLevel = ApiCompatibilityLevel.NET_4_6;
+
+            string[] rspDefines = null;
+            if (!string.IsNullOrEmpty(rspFile))
+            {
+                rspDefines = ScriptCompilerBase.ParseResponseFileFromFile(
+                    rspFile,
+                    Application.dataPath,
+                    GetSystemReferenceDirectories(compatibilityLevel)).Defines;
+            }
+
+            return GetNamespaceNewRuntime(filePath,  fullListOfDefines, rspDefines);
         }
 
-        // TODO: Revisit this code and switch to version 5.5.1 (or Roslyn if possible) when Editor switches to newer runtime version (on going work expected
-        //       to finish around 2017.2 or 2017.3 release.
-        //
-        // This is a workaround for a bug in version 3.2.1 of NRefactory in which it fails to parse sources with a combination of LF / #if / #else
-        // Version 5.5.1 is confirmed to not have this bug but we can't use it since it requires a newer runtime/c# version;
         static StringReader ReadAndConverteNewLines(string filePath)
         {
             var text = File.ReadAllText(filePath);
@@ -123,48 +112,6 @@ namespace UnityEditor.Scripting.Compilers
             text = _lfOnlyRegex.Replace(text, "\r\n");
 
             return new StringReader(text);
-        }
-
-        class VisitorData
-        {
-            public VisitorData()
-            {
-                CurrentNamespaces = new Stack<string>();
-            }
-
-            public string TargetClassName;
-            public Stack<string> CurrentNamespaces;
-            public string DiscoveredNamespace;
-        }
-        class NamespaceVisitor : AbstractAstVisitor
-        {
-            public override object VisitNamespaceDeclaration(ICSharpCode.NRefactory.Ast.NamespaceDeclaration namespaceDeclaration, object data)
-            {
-                var visitorData = (VisitorData)data;
-                visitorData.CurrentNamespaces.Push(namespaceDeclaration.Name);
-                // Visit children (E.g. TypeDcelarion objects)
-                namespaceDeclaration.AcceptChildren(this, visitorData);
-                visitorData.CurrentNamespaces.Pop();
-                return null;
-            }
-
-            public override object VisitTypeDeclaration(ICSharpCode.NRefactory.Ast.TypeDeclaration typeDeclaration, object data)
-            {
-                var visitorData = (VisitorData)data;
-                if (typeDeclaration.Name == visitorData.TargetClassName)
-                {
-                    var fullNamespace = string.Empty;
-                    foreach (var ns in visitorData.CurrentNamespaces)
-                    {
-                        if (fullNamespace == string.Empty)
-                            fullNamespace = ns;
-                        else
-                            fullNamespace = ns + "." + fullNamespace;
-                    }
-                    visitorData.DiscoveredNamespace = fullNamespace;
-                }
-                return null;
-            }
         }
     }
 }

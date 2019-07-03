@@ -10,11 +10,11 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
-    public class ListView : VisualElement
+    public class ListView : BindableElement
     {
         public new class UxmlFactory : UxmlFactory<ListView, UxmlTraits> {}
 
-        public new class UxmlTraits : VisualElement.UxmlTraits
+        public new class UxmlTraits : BindableElement.UxmlTraits
         {
             UxmlIntAttributeDescription m_ItemHeight = new UxmlIntAttributeDescription { name = "item-height", obsoleteNames = new[] {"itemHeight"}, defaultValue = s_DefaultItemHeight };
 
@@ -43,6 +43,7 @@ namespace UnityEngine.UIElements
             public RecycledItem(VisualElement element)
             {
                 this.element = element;
+                index = id = -1;
                 element.AddToClassList(ListView.itemUssClassName);
             }
 
@@ -181,6 +182,9 @@ namespace UnityEngine.UIElements
         private float m_LastHeight;
         private List<RecycledItem> m_Pool = new List<RecycledItem>();
         private ScrollView m_ScrollView;
+
+        // we keep this list in order to minimize temporary gc allocs
+        List<RecycledItem> m_ScrollInsertionList = new List<RecycledItem>();
 
         private const int k_ExtraVisibleItems = 2;
         private int m_VisibleItemCount;
@@ -565,11 +569,65 @@ namespace UnityEngine.UIElements
                 return;
 
             m_ScrollOffset = offset;
-            m_FirstVisibleIndex = (int)(offset / itemHeight);
+            int fistVisibleItem = (int)(offset / itemHeight);
             m_ScrollView.contentContainer.style.height = itemsSource.Count * itemHeight;
 
-            for (var i = 0; i < m_Pool.Count && i + m_FirstVisibleIndex < itemsSource.Count; i++)
-                Setup(m_Pool[i], i + m_FirstVisibleIndex);
+            if (fistVisibleItem != m_FirstVisibleIndex)
+            {
+                m_FirstVisibleIndex = fistVisibleItem;
+
+
+                if (m_Pool.Count > 0)
+                {
+                    // we try to avoid rebinding a few items
+                    if (m_FirstVisibleIndex < m_Pool[0].index) //we're scrolling up
+                    {
+                        //How many do we have to swap back
+                        int count = m_Pool[0].index - m_FirstVisibleIndex;
+
+                        var inserting = m_ScrollInsertionList;
+
+                        for (int i = 0; i < count && m_Pool.Count > 0; ++i)
+                        {
+                            var last = m_Pool[m_Pool.Count - 1];
+                            inserting.Add(last);
+                            m_Pool.RemoveAt(m_Pool.Count - 1); //we remove from the end
+
+                            last.element.SendToBack();  //We send the element to the top of the list (back in z-order)
+                        }
+
+                        m_ScrollInsertionList = m_Pool;
+                        m_Pool = inserting;
+                        m_Pool.AddRange(m_ScrollInsertionList);
+                        m_ScrollInsertionList.Clear();
+                    }
+                    else //down
+                    {
+                        if (m_FirstVisibleIndex < m_Pool[m_Pool.Count - 1].index)
+                        {
+                            var inserting = m_ScrollInsertionList;
+
+                            int checkIndex = 0;
+                            while (m_FirstVisibleIndex > m_Pool[checkIndex].index)
+                            {
+                                var first = m_Pool[checkIndex];
+                                inserting.Add(first);
+                                checkIndex++;
+
+                                first.element.BringToFront();  //We send the element to the bottom of the list (front in z-order)
+                            }
+
+                            m_Pool.RemoveRange(0, checkIndex); //we remove them all at once
+                            m_Pool.AddRange(inserting); // add them back to the end
+                            inserting.Clear();
+                        }
+                    }
+
+                    //Let's rebind everything
+                    for (var i = 0; i < m_Pool.Count && i + m_FirstVisibleIndex < itemsSource.Count; i++)
+                        Setup(m_Pool[i], i + m_FirstVisibleIndex);
+                }
+            }
         }
 
         private bool HasValidDataAndBindings()
@@ -667,13 +725,18 @@ namespace UnityEngine.UIElements
 
             m_LastHeight = height;
 
-            // Add selected objects to working lists.
-            for (int index = 0; index < m_ItemsSource.Count; ++index)
+
+            // O(n)
+            if (m_SelectedIds.Count > 0)
             {
-                if (m_SelectedIds.Contains(GetIdFromIndex(index)))
+                // Add selected objects to working lists.
+                for (int index = 0; index < m_ItemsSource.Count; ++index)
                 {
-                    m_SelectedIndices.Add(index);
-                    m_SelectedItems.Add(m_ItemsSource[index]);
+                    if (m_SelectedIds.Contains(GetIdFromIndex(index)))
+                    {
+                        m_SelectedIndices.Add(index);
+                        m_SelectedItems.Add(m_ItemsSource[index]);
+                    }
                 }
             }
         }
@@ -683,12 +746,15 @@ namespace UnityEngine.UIElements
             var newId = GetIdFromIndex(newIndex);
 
             recycledItem.element.style.visibility = Visibility.Visible;
-            recycledItem.index = newIndex;
-            recycledItem.id = newId;
-            recycledItem.element.style.top = recycledItem.index * itemHeight;
-            recycledItem.element.style.bottom = (itemsSource.Count - recycledItem.index - 1) * itemHeight;
-            bindItem(recycledItem.element, recycledItem.index);
-            recycledItem.SetSelected(m_SelectedIds.Contains(newId));
+            if (recycledItem.index != newIndex)
+            {
+                recycledItem.index = newIndex;
+                recycledItem.id = newId;
+                recycledItem.element.style.top = recycledItem.index * itemHeight;
+                recycledItem.element.style.bottom = (itemsSource.Count - recycledItem.index - 1) * itemHeight;
+                bindItem(recycledItem.element, recycledItem.index);
+                recycledItem.SetSelected(m_SelectedIds.Contains(newId));
+            }
         }
 
         private void OnSizeChanged(GeometryChangedEvent evt)

@@ -370,19 +370,6 @@ internal class ParticleSystemCurveEditor
         m_CurveEditor.SelectNone();
     }
 
-    private void RemoveAll()
-    {
-        bool anyRemoved = false;
-        while (m_AddedCurves.Count > 0)
-            anyRemoved |= Remove(0);
-
-        if (anyRemoved)
-        {
-            ContentChanged();
-            UpdateRangeBasedOnShownCurves();
-        }
-    }
-
     public Color GetAvailableColor()
     {
         // If no available colors left just use same colors again...
@@ -457,15 +444,6 @@ internal class ParticleSystemCurveEditor
                 }
             }
         }
-    }
-
-    void SetConstantCurve(CurveWrapper cw, float constantValue)
-    {
-        Keyframe[] keys = new Keyframe[1];
-        keys[0].time = 0.0f;
-        keys[0].value = constantValue;
-        cw.curve.keys = keys;
-        cw.changed = true; // Used in SaveChangedCurves () later in OnGUI
     }
 
     void SetCurve(CurveWrapper cw, AnimationCurve curve)

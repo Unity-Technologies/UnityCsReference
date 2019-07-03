@@ -62,14 +62,13 @@ namespace UnityEngine.UIElements.UIR
             device = new UIRenderDevice(Implementation.RenderEvents.ResolveShader(standardShader));
 
             atlasManager = new UIRAtlasManager();
-            atlasManager.ResetPerformed += OnAtlasReset;
-
+            vectorImageManager = new VectorImageManager(atlasManager);
             painter = new Implementation.UIRStylePainter(this);
 
             Font.textureRebuilt += OnFontReset;
         }
 
-        protected RenderChain(IPanel panel, UIRenderDevice device, UIRAtlasManager atlasManager)
+        protected RenderChain(IPanel panel, UIRenderDevice device, UIRAtlasManager atlasManager, VectorImageManager vectorImageManager)
         {
             if (disposed)
                 DisposeHelper.NotifyDisposedUsed(this);
@@ -77,8 +76,7 @@ namespace UnityEngine.UIElements.UIR
             this.panel = panel;
             this.device = device;
             this.atlasManager = atlasManager;
-            if (atlasManager != null)
-                atlasManager.ResetPerformed += OnAtlasReset;
+            this.vectorImageManager = vectorImageManager;
             painter = new Implementation.UIRStylePainter(this);
             Font.textureRebuilt += OnFontReset;
         }
@@ -105,6 +103,7 @@ namespace UnityEngine.UIElements.UIR
                 painter?.Dispose();
                 m_TextUpdatePainter?.Dispose();
                 atlasManager?.Dispose();
+                vectorImageManager?.Dispose();
                 device?.Dispose();
 
                 painter = null;
@@ -122,6 +121,8 @@ namespace UnityEngine.UIElements.UIR
 
         internal ChainBuilderStats stats { get { return m_Stats; } }
 
+        internal static Action OnPreRender = null;
+
         public void Render(Rect topRect, Matrix4x4 projection)
         {
             s_RenderSampler.Begin();
@@ -134,8 +135,23 @@ namespace UnityEngine.UIElements.UIR
             m_StatsElementsAdded = m_StatsElementsRemoved = 0;
             m_StatsClipListCleanup = m_StatsTransformListCleanup = m_StatsVisualListCleanup = 0;
 
+            if (OnPreRender != null)
+                OnPreRender();
+
+            bool atlasWasReset = false;
             if (atlasManager?.RequiresReset() == true)
+            {
                 atlasManager.Reset(); // May cause a dirty repaint
+                atlasWasReset = true;
+            }
+            if (vectorImageManager?.RequiresReset() == true)
+            {
+                vectorImageManager.Reset();
+                atlasWasReset = true;
+            }
+
+            if (atlasWasReset)
+                RepaintAtlassedElements();
 
 
             m_DirtyID++;
@@ -204,13 +220,15 @@ namespace UnityEngine.UIElements.UIR
             }
 
 
-            atlasManager?.Update(); // Commit new requests if any
+            // Commit new requests for atlases if any
+            atlasManager?.Commit();
+            vectorImageManager?.Commit();
 
             if (BeforeDrawChain != null)
                 BeforeDrawChain(device);
 
             Exception immediateException = null;
-            device.DrawChain(m_FirstCommand, topRect, projection, atlasManager?.atlas, ref immediateException);
+            device.DrawChain(m_FirstCommand, topRect, projection, atlasManager?.atlas, vectorImageManager?.atlas, ref immediateException);
 
             s_RenderSampler.End();
 
@@ -384,6 +402,7 @@ namespace UnityEngine.UIElements.UIR
         internal IPanel panel { get; private set; }
         internal UIRenderDevice device { get; private set; }
         internal UIRAtlasManager atlasManager { get; private set; }
+        internal VectorImageManager vectorImageManager { get; private set; }
         internal Implementation.UIRStylePainter painter { get; private set; }
         internal bool drawStats { get; set; }
 
@@ -528,6 +547,8 @@ namespace UnityEngine.UIElements.UIR
             painter = null;
             device.Dispose();
             device = null;
+            atlasManager?.Reset();
+            vectorImageManager?.Reset();
         }
 
         internal void AfterRenderDeviceRelease()
@@ -540,6 +561,7 @@ namespace UnityEngine.UIElements.UIR
 
             Debug.Assert(painter == null);
             painter = new Implementation.UIRStylePainter(this);
+
             var ve = GetFirstElementInPanel(m_FirstCommand?.owner);
             while (ve != null)
             {
@@ -549,7 +571,7 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        void OnAtlasReset(object sender, EventArgs e)
+        private void RepaintAtlassedElements()
         {
             // Cause a regen on textured elements to get the new UVs from the atlas
             var ve = m_FirstCommand?.owner;

@@ -126,6 +126,7 @@ namespace UnityEngine.UIElements.UIR
         static readonly int s_FontTexPropID = Shader.PropertyToID("_FontTex");
         static readonly int s_CustomTexPropID = Shader.PropertyToID("_CustomTex");
         static readonly int s_1PixelClipInvViewPropID = Shader.PropertyToID("_1PixelClipInvView");
+        static readonly int s_GradientSettingsTexID = Shader.PropertyToID("_GradientSettingsTex");
         static readonly int s_PixelClipRectPropID = Shader.PropertyToID("_PixelClipRect");
         static readonly int s_TransformsPropID = Shader.PropertyToID("_Transforms");
         static readonly int s_TransformsBufferPropID = Shader.PropertyToID("_TransformsBuffer");
@@ -724,7 +725,7 @@ namespace UnityEngine.UIElements.UIR
             s_BeforeDrawSampler.End();
         }
 
-        void EvaluateChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, Texture atlas, ref Exception immediateException)
+        void EvaluateChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, Texture atlas, Texture gradientSettings, ref Exception immediateException)
         {
             var drawParams = m_DrawParams;
             drawParams.Reset(viewport, projection);
@@ -735,6 +736,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 standardMaterial = GetStandardMaterial();
                 standardMaterial.mainTexture = atlas;
+                standardMaterial.SetTexture(s_GradientSettingsTexID, gradientSettings);
                 SetTransformsOnMaterial(transformsAsStructBuffer, standardMaterial);
                 Set1PixelSizeOnMaterial(drawParams, standardMaterial);
                 standardMaterial.SetVector(s_PixelClipRectPropID, drawParams.view.Peek().clipRect);
@@ -777,7 +779,7 @@ namespace UnityEngine.UIElements.UIR
                     }
 
                     kickRanges = materialChanges || (head.mesh.allocPage != curPage);
-                    if (!kickRanges)
+                    if (!kickRanges) // For debugging just disable those lines to get a draw call per draw command
                         stashRange = curDrawIndex != (head.mesh.allocIndices.start + head.indexOffset); // Should we stash at least?
                 }
 
@@ -925,7 +927,7 @@ namespace UnityEngine.UIElements.UIR
         }
 
         // Called every frame to draw one entire UI window
-        public void DrawChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, Texture atlas, ref Exception immediateException)
+        public void DrawChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, Texture atlas, Texture gradientSettings, ref Exception immediateException)
         {
             if (head == null)
                 return;
@@ -933,7 +935,7 @@ namespace UnityEngine.UIElements.UIR
             BeforeDraw();
             Utility.ProfileDrawChainBegin();
 
-            EvaluateChain(head, viewport, projection, atlas, ref immediateException);
+            EvaluateChain(head, viewport, projection, atlas, gradientSettings, ref immediateException);
 
             Utility.ProfileDrawChainEnd();
 

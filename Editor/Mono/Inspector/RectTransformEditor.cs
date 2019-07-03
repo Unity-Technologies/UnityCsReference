@@ -795,7 +795,7 @@ namespace UnityEditor
             {
                 s_ParentDragTime = Time.realtimeSinceStartup;
                 Canvas.ForceUpdateCanvases();
-                GameView.RepaintAll();
+                PreviewEditorWindow.RepaintAll();
                 return;
             }
 
@@ -816,7 +816,7 @@ namespace UnityEditor
             }
             Canvas.ForceUpdateCanvases();
             SceneView.RepaintAll();
-            GameView.RepaintAll();
+            PreviewEditorWindow.RepaintAll();
         }
 
         void AllAnchorsSceneGUI(RectTransform gui, RectTransform guiParent, Transform parentSpace, Transform transform)

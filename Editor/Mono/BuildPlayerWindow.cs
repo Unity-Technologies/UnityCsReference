@@ -100,9 +100,7 @@ namespace UnityEditor
 
         Vector2 scrollPosition = new Vector2(0, 0);
 
-
         private const string kEditorBuildSettingsPath = "ProjectSettings/EditorBuildSettings.asset";
-        internal const string kSettingDebuggingWaitForManagedDebugger = "WaitForManagedDebugger";
 
         static Styles styles = null;
 
@@ -389,13 +387,6 @@ namespace UnityEditor
                 return true;
             else
                 return BuildPipeline.IsBuildTargetSupported(targetGroup, target);
-        }
-
-        static void RepairSelectedBuildTargetGroup()
-        {
-            BuildTargetGroup group = EditorUserBuildSettings.selectedBuildTargetGroup;
-            if ((int)group == 0 || !BuildPlatforms.instance.ContainsBuildTarget(group))
-                EditorUserBuildSettings.selectedBuildTargetGroup = BuildTargetGroup.Standalone;
         }
 
         static bool IsAnyStandaloneModuleLoaded()
@@ -700,10 +691,7 @@ namespace UnityEditor
 
                         if (EditorUserBuildSettings.allowDebugging && shouldDrawWaitForManagedDebugger)
                         {
-                            var buildTargetName = BuildPipeline.GetBuildTargetName(buildTarget);
-
-                            bool value = EditorGUILayout.Toggle(styles.waitForManagedDebugger, EditorUserBuildSettings.GetPlatformSettings(buildTargetName, kSettingDebuggingWaitForManagedDebugger) == "true");
-                            EditorUserBuildSettings.SetPlatformSettings(buildTargetName, kSettingDebuggingWaitForManagedDebugger, value.ToString().ToLower());
+                            EditorUserBuildSettings.waitForManagedDebugger = EditorGUILayout.Toggle(styles.waitForManagedDebugger, EditorUserBuildSettings.waitForManagedDebugger);
                         }
                     }
 
@@ -793,9 +781,6 @@ namespace UnityEditor
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
             }
-
-            if (buildTarget == BuildTarget.Android)
-                AndroidPublishGUI();
 
             GUIBuildButtons(buildWindowExtension, enableBuildButton, enableBuildAndRunButton,
                 canInstallInBuildFolder, platform);

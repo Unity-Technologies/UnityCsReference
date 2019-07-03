@@ -253,9 +253,10 @@ namespace UnityEngine
         extern private static void Internal_ExternalCall(string script);
 
         // The version of the Unity runtime used to play the content.
+        //Thread safety verified as the native method just returns a #DEFINE value.
         extern public static string unityVersion
         {
-            [FreeFunction("Application_Bindings::GetUnityVersion")]
+            [FreeFunction("Application_Bindings::GetUnityVersion", IsThreadSafe = true)]
             get;
         }
 

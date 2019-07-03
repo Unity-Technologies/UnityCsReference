@@ -46,7 +46,6 @@ namespace UnityEditor
 
         internal const string k_DefaultModeId = "default";
         internal const string k_ModeIndexKeyName = "mode-index";
-        internal const string k_ModeLayoutKeyName = "mode-layout";
         internal const string k_CapabilitiesSectionName = "capabilities";
         internal const string k_ExecuteHandlersSectionName = "execute_handlers";
         internal const string k_LayoutsSectionName = "layouts";
@@ -457,10 +456,9 @@ namespace UnityEditor
 
             WindowLayout.SaveCurrentLayoutPerMode(GetModeId(args.prevIndex));
 
-
             try
             {
-                // Load the last valid layout fir this mode:
+                // Load the last valid layout for this mode
                 WindowLayout.LoadDefaultWindowPreferences();
             }
             catch (Exception)

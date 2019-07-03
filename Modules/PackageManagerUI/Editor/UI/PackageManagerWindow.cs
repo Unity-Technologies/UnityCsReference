@@ -4,7 +4,8 @@
 
 using System;
 using System.Linq;
-using Mono.Collections.Generic;
+using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.Scripting;
@@ -13,82 +14,62 @@ namespace UnityEditor.PackageManager.UI
 {
     internal class PackageManagerWindow : EditorWindow
     {
-        internal PackageCollection Collection;
-        private PackageSearchFilter SearchFilter;
-        internal SelectionManager SelectionManager;
-
-        private VisualElement root;
+        [NonSerialized]
+        private string m_PackageToSelectOnLoaded;
 
         [NonSerialized]
-        private string PackageToSelectAfterLoad;
-
-        [NonSerialized]
-        private object FilterToSelectAfterLoad;
-
-        internal static bool SkipFetchCacheForAllWindows;
-
-        [SerializeField]
-        internal PackageFilter LastUsedPackageFilter;
+        private PackageFilterTab? m_FilterToSelectAfterLoad;
 
         public void OnEnable()
         {
-            var styleSheet = Resources.GetStyleSheet();
-            rootVisualElement.styleSheets.Add(styleSheet);
-
-            var collectionWasNull = Collection == null;
-            if (Collection == null)
-                Collection = new PackageCollection();
-
-            if (SearchFilter == null)
-                SearchFilter = new PackageSearchFilter();
-
-            if (SelectionManager == null)
-                SelectionManager = new SelectionManager();
-
-            var windowResource = Resources.GetVisualTreeAsset("PackageManagerWindow.uxml");
-            if (windowResource != null)
+            if (s_Root == null)
             {
-                root = windowResource.CloneTree();
-                rootVisualElement.Add(root);
-                root.StretchToParentSize();
-
-                Cache = new VisualElementCache(root);
-
-                SelectionManager.SetCollection(Collection);
-                Collection.OnFilterChanged += filter => SetupSelection();
-                if (collectionWasNull)
+                var windowResource = Resources.GetVisualTreeAsset("PackageManagerWindow.uxml");
+                if (windowResource != null)
                 {
-                    LastUsedPackageFilter = PackageManagerPrefs.LastUsedPackageFilter;
+                    s_Root = windowResource.CloneTree();
+                    s_Root.styleSheets.Add(Resources.GetStyleSheet());
+                    s_Cache = new VisualElementCache(s_Root);
+
+                    PackageDatabase.instance.Setup();
+                    SelectionManager.instance.Setup();
+
+                    packageDetails.Setup();
+                    packageList.Setup();
+                    packageManagerToolbar.Setup();
+                    packageStatusbar.Setup();
+
+                    SetupDelayedPackageSelection();
+
+                    PackageManagerWindowAnalytics.Setup();
                 }
+            }
 
-                Collection.SetFilter(LastUsedPackageFilter);
-                Collection.UpdatePackageCollection(true);
-
-                SetupPackageDetails();
-                SetupPackageList();
-                SetupSearchToolbar();
-                SetupToolbar();
-                SetupStatusbar();
-                SetupCollection();
-                SetupSelection();
-
-                // Disable filter while fetching first results
-                if (!Collection.LatestListPackages.Any())
-                    PackageManagerToolbar.SetEnabled(false);
+            if (s_Root != null && s_Root.parent == null)
+            {
+                rootVisualElement.Add(s_Root);
+                s_Root.StretchToParentSize();
 
                 if (!EditorApplication.isPlayingOrWillChangePlaymode)
-                {
-                    Collection.FetchListOfflineCache(true);
-                    Collection.FetchListCache(collectionWasNull);
-                    Collection.FetchSearchCache(collectionWasNull);
-                }
-                Collection.TriggerPackagesChanged();
+                    RefreshDatabase();
+
+                PackageFiltering.instance.currentFilterTab = PackageManagerPrefs.instance.lastUsedPackageFilter ?? PackageFilterTab.All;
             }
+        }
+
+        private void RefreshDatabase()
+        {
+            // trigger both offline & offline refresh
+            PackageDatabase.instance.Refresh(RefreshOptions.SearchAll | RefreshOptions.ListInstalled | RefreshOptions.OfflineMode);
+            PackageDatabase.instance.Refresh(RefreshOptions.SearchAll | RefreshOptions.ListInstalled | RefreshOptions.Purchased);
         }
 
         public void OnDisable()
         {
-            PackageManagerPrefs.LastUsedPackageFilter = LastUsedPackageFilter;
+            if (s_Root != null && rootVisualElement.Contains(s_Root))
+                rootVisualElement.Remove(s_Root);
+
+            PackageManagerPrefs.instance.lastUsedPackageFilter = PackageFiltering.instance.currentFilterTab;
         }
 
         private void OnDestroy()
@@ -97,140 +78,57 @@ namespace UnityEditor.PackageManager.UI
                 extension.OnWindowDestroy();
         }
 
-        private void SetupCollection()
+        private void SetupDelayedPackageSelection()
         {
-            Collection.OnPackagesChanged += (filter, packages) =>
+            packageManagerToolbar.SetEnabled(!PackageDatabase.instance.isEmpty);
+            packageList.onPackagesLoaded += SelectPackageAndFilter;
+        }
+
+        private void SelectPackageAndFilter()
+        {
+            packageManagerToolbar.SetEnabled(true);
+
+            if (m_FilterToSelectAfterLoad != null)
             {
-                PackageList.SetPackages(filter, packages);
-                SelectionManager.Selection.TriggerNewSelection();
-                PackageManagerToolbar.OnPackagesChanged();
-            };
-            Collection.OnUpdateTimeChange += PackageStatusbar.SetUpdateTimeMessage;
-            Collection.ListSignal.WhenOperation(PackageStatusbar.OnListOrSearchOperation);
-            Collection.SearchSignal.WhenOperation(PackageStatusbar.OnListOrSearchOperation);
-        }
-
-        private void SetupStatusbar()
-        {
-            PackageStatusbar.OnCheckInternetReachability += OnCheckInternetReachability;
-            PackageStatusbar.Setup(Collection);
-        }
-
-        private void SetupToolbar()
-        {
-            PackageManagerToolbar.OnFilterChange += OnFilterChange;
-            PackageManagerToolbar.OnTogglePreviewChange += OnTogglePreviewChange;
-            PackageManagerToolbar.SetFilter(Collection.Filter);
-            PackageManagerToolbar.SetCollection(Collection);
-        }
-
-        private void SetupSearchToolbar()
-        {
-            PackageManagerToolbar.OnSearchChange += OnSearchChange;
-            PackageManagerToolbar.SearchToolbar.SetValueWithoutNotify(SearchFilter.SearchText);
-        }
-
-        private void SetupPackageList()
-        {
-            PackageList.OnLoaded += OnPackagesLoaded;
-            PackageList.OnFocusChange += OnListFocusChange;
-            PackageList.SetSearchFilter(SearchFilter);
-            Collection.OnLatestPackageInfoFetched += PackageList.OnLatestPackageInfoFetched;
-        }
-
-        private void SetupPackageDetails()
-        {
-            PackageDetails.OnCloseError += OnCloseError;
-            PackageDetails.OnOperationError += OnOperationError;
-            PackageDetails.SetCollection(Collection);
-            Collection.OnLatestPackageInfoFetched += PackageDetails.OnLatestPackageInfoFetched;
-        }
-
-        private void SetupSelection()
-        {
-            PackageList.SetSelection(SelectionManager.Selection);
-            PackageDetails.SetSelection(SelectionManager.Selection);
-        }
-
-        private void OnCloseError(Package package)
-        {
-            Collection.RemovePackageErrors(package);
-            Collection.UpdatePackageCollection();
-        }
-
-        private void OnOperationError(Package package, Error error)
-        {
-            Collection.AddPackageError(package, error);
-            Collection.UpdatePackageCollection();
-        }
-
-        private void OnTogglePreviewChange()
-        {
-            Collection.UpdatePackageCollection(true);
-        }
-
-        private void OnFilterChange(PackageFilter filter)
-        {
-            LastUsedPackageFilter = filter;
-            Collection.SetFilter(filter);
-        }
-
-        private void OnCheckInternetReachability()
-        {
-            Collection.FetchSearchCache(true);
-            Collection.FetchListCache(true);
-        }
-
-        private void OnListFocusChange()
-        {
-            PackageManagerToolbar.GrabFocus();
-        }
-
-        private void OnSearchChange(string searchText)
-        {
-            SearchFilter.SearchText = searchText;
-            PackageList.SetSearchFilter(SearchFilter);
-            PackageFiltering.FilterPackageList(PackageList);
-        }
-
-        private void OnPackagesLoaded()
-        {
-            PackageManagerToolbar.SetEnabled(true);
-
-            if (!string.IsNullOrEmpty(PackageToSelectAfterLoad) || FilterToSelectAfterLoad != null)
-            {
-                if (FilterToSelectAfterLoad != null)
-                    PackageManagerToolbar.SetFilter(FilterToSelectAfterLoad);
-                SelectionManager.SetSelection(PackageToSelectAfterLoad, FilterToSelectAfterLoad, true);
+                PackageFiltering.instance.currentFilterTab = (PackageFilterTab)m_FilterToSelectAfterLoad;
             }
 
-            PackageToSelectAfterLoad = null;
-            FilterToSelectAfterLoad = null;
-        }
-
-        private VisualElementCache Cache { get; set; }
-
-        private PackageList PackageList { get { return Cache.Get<PackageList>("packageList"); } }
-        private PackageDetails PackageDetails { get { return Cache.Get<PackageDetails>("packageDetails"); } }
-        private PackageManagerToolbar PackageManagerToolbar { get {return Cache.Get<PackageManagerToolbar>("topMenuToolbar");} }
-        private PackageStatusBar PackageStatusbar { get {return Cache.Get<PackageStatusBar>("packageStatusBar");} }
-
-        internal static void FetchListOfflineCacheForAllWindows()
-        {
-            if (SkipFetchCacheForAllWindows)
-                return;
-
-            var windows = UnityEngine.Resources.FindObjectsOfTypeAll<PackageManagerWindow>();
-            if (windows == null || windows.Length <= 0)
-                return;
-
-            foreach (var window in windows)
+            if (!string.IsNullOrEmpty(m_PackageToSelectOnLoaded))
             {
-                if (window.Collection != null)
-                    window.Collection.FetchListOfflineCache(true);
+                var package = PackageDatabase.instance.GetPackage(m_PackageToSelectOnLoaded)
+                    ?? PackageDatabase.instance.GetPackageByDisplayName(m_PackageToSelectOnLoaded);
+                if (package != null)
+                {
+                    if (m_FilterToSelectAfterLoad == null)
+                    {
+                        var newFilterTab = PackageFilterTab.All;
+                        if (package.versions.Any(v => v.HasTag(PackageTag.BuiltIn)))
+                            newFilterTab = PackageFilterTab.Modules;
+                        else
+                        {
+                            var installdVersion = package.installedVersion;
+                            if (installdVersion != null && installdVersion.isDirectDependency)
+                                newFilterTab = PackageFilterTab.Local;
+                        }
+                        PackageFiltering.instance.currentFilterTab = newFilterTab;
+                    }
+
+                    SelectionManager.instance.SetSelected(package);
+                }
             }
+
+            m_FilterToSelectAfterLoad = null;
+            m_PackageToSelectOnLoaded = null;
         }
 
+        private static VisualElement s_Root;
+
+        private static VisualElementCache s_Cache;
+
+        private PackageList packageList { get { return s_Cache.Get<PackageList>("packageList"); } }
+        private PackageDetails packageDetails { get { return s_Cache.Get<PackageDetails>("packageDetails"); } }
+        private PackageManagerToolbar packageManagerToolbar { get {return s_Cache.Get<PackageManagerToolbar>("topMenuToolbar");} }
+        private PackageStatusBar packageStatusbar { get {return s_Cache.Get<PackageStatusBar>("packageStatusBar");} }
         [MenuItem("Window/Package Manager", priority = 1500)]
         internal static void ShowPackageManagerWindow(MenuCommand item)
         {
@@ -238,32 +136,41 @@ namespace UnityEditor.PackageManager.UI
         }
 
         [UsedByNativeCode]
-        internal static void OpenPackageManager(string packageIdOrDisplayName)
+        internal static void OpenPackageManager(string packageNameOrDisplayName)
         {
-            SelectPackageAndFilter(packageIdOrDisplayName);
+            var window = GetWindowDontShow<PackageManagerWindow>();
+            var isWindowAlreadyVisible = window != null && window.m_Parent != null;
+
+            SelectPackageAndFilter(packageNameOrDisplayName);
+
+            if (!isWindowAlreadyVisible)
+            {
+                string packageId = null;
+                if (!string.IsNullOrEmpty(packageNameOrDisplayName))
+                {
+                    var package = PackageDatabase.instance.GetPackage(packageNameOrDisplayName)
+                        ?? PackageDatabase.instance.GetPackageByDisplayName(packageNameOrDisplayName);
+                    packageId = package?.primaryVersion.uniqueId ?? $"{packageNameOrDisplayName}@primary";
+                }
+                PackageManagerWindowAnalytics.SendEvent("openWindow", packageId);
+            }
         }
 
-        internal static void SelectPackageAndFilter(string packageIdOrDisplayName, object filter = null, bool refresh = false)
+        internal static void SelectPackageAndFilter(string packageIdOrDisplayName, PackageFilterTab? filterTab = null, bool refresh = false)
         {
-            SkipFetchCacheForAllWindows = false;
             var window = GetWindow<PackageManagerWindow>(false, "Packages", true);
             window.minSize = new Vector2(700, 250);
-            if (!string.IsNullOrEmpty(packageIdOrDisplayName) || filter is PackageFilter)
+            if (!string.IsNullOrEmpty(packageIdOrDisplayName))
             {
-                if (window.Collection != null && window.Collection.LatestListPackages.Any() && !refresh)
+                window.m_PackageToSelectOnLoaded = packageIdOrDisplayName;
+                window.m_FilterToSelectAfterLoad = filterTab;
+                if (!PackageDatabase.instance.isEmpty && !refresh)
                 {
-                    window.SelectionManager.SetSelection(packageIdOrDisplayName, filter);
+                    window.SelectPackageAndFilter();
                 }
-                else
+                else if (refresh)
                 {
-                    window.FilterToSelectAfterLoad = filter;
-                    window.PackageToSelectAfterLoad = packageIdOrDisplayName;
-                    if (refresh)
-                    {
-                        window.Collection.FetchListOfflineCache(true);
-                        window.Collection.FetchListCache(true);
-                        window.Collection.FetchSearchCache(true);
-                    }
+                    window.RefreshDatabase();
                 }
             }
             window.Show();

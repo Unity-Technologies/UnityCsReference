@@ -2,37 +2,21 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEditor.PackageManager.Requests;
-using System.Linq;
 
 namespace UnityEditor.PackageManager.UI
 {
-    internal class UpmEmbedOperation : UpmBaseOperation, IEmbedOperation
+    internal class UpmEmbedOperation : UpmBaseOperation<EmbedRequest>
     {
-        public PackageInfo PackageInfo { get; protected set; }
-
-        public event Action<PackageInfo> OnOperationSuccess = delegate {};
-
-        public void EmbedPackageAsync(PackageInfo packageInfo, Action<PackageInfo> doneCallbackAction = null, Action<Error> errorCallbackAction = null)
+        public void Embed(string packageName)
         {
-            PackageInfo = packageInfo;
-            OnOperationError += errorCallbackAction;
-            OnOperationSuccess += doneCallbackAction;
-
+            m_PackageName = packageName;
             Start();
         }
 
-        protected override Request CreateRequest()
+        protected override EmbedRequest CreateRequest()
         {
-            return Client.Embed(PackageInfo.Name);
-        }
-
-        protected override void ProcessData()
-        {
-            var request = CurrentRequest as EmbedRequest;
-            var package = FromUpmPackageInfo(request.Result).FirstOrDefault();
-            OnOperationSuccess(package);
+            return Client.Embed(packageName);
         }
     }
 }

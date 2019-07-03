@@ -900,15 +900,6 @@ namespace UnityEditorInternal
             m_SelectionBoundsCache = null;
         }
 
-        public void SelectKeysFromDopeline(DopeLine dopeline)
-        {
-            if (dopeline == null)
-                return;
-
-            foreach (var key in dopeline.keys)
-                SelectKey(key);
-        }
-
         public void UnselectKey(AnimationWindowKeyframe keyframe)
         {
             int hash = keyframe.GetHash();
@@ -917,15 +908,6 @@ namespace UnityEditorInternal
 
             m_SelectedKeysCache = null;
             m_SelectionBoundsCache = null;
-        }
-
-        public void UnselectKeysFromDopeline(DopeLine dopeline)
-        {
-            if (dopeline == null)
-                return;
-
-            foreach (var key in dopeline.keys)
-                UnselectKey(key);
         }
 
         public void DeleteSelectedKeys()
@@ -1544,18 +1526,6 @@ namespace UnityEditorInternal
             }
 
             return hierarchyIDs;
-        }
-
-        public List<DopeLine> GetAffectedDopelines(List<AnimationWindowKeyframe> keyframes)
-        {
-            List<DopeLine> affectedDopelines = new List<DopeLine>();
-
-            foreach (AnimationWindowCurve curve in GetAffectedCurves(keyframes))
-                foreach (DopeLine dopeline in dopelines)
-                    if (!affectedDopelines.Contains(dopeline) && dopeline.curves.Contains(curve))
-                        affectedDopelines.Add(dopeline);
-
-            return affectedDopelines;
         }
 
         public List<AnimationWindowCurve> GetAffectedCurves(List<AnimationWindowKeyframe> keyframes)

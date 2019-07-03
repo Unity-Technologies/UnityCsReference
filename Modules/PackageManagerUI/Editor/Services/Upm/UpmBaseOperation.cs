@@ -3,196 +3,105 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.IO;
-using System.Globalization;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEditor.PackageManager.Requests;
 
 namespace UnityEditor.PackageManager.UI
 {
-    internal abstract class UpmBaseOperation : IBaseOperation
+    internal abstract class UpmBaseOperation : IOperation
     {
-        public static string GroupName(PackageSource origin, string type)
-        {
-            var group = PackageGroupOrigins.Packages.ToString();
-            if (PackageInfo.IsPackageBuiltIn(origin, type))
-                group = PackageGroupOrigins.BuiltInPackages.ToString();
+        public abstract event Action<Error> onOperationError;
+        public abstract event Action onOperationSuccess;
+        public abstract event Action onOperationFinalized;
 
-            return group;
+        protected string m_PackageName = string.Empty;
+        public string packageName
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(m_PackageName))
+                    return m_PackageName;
+                if (!string.IsNullOrEmpty(m_PackageId))
+                    return m_PackageId.Split(new[] { '@' }, 2)[0];
+                return string.Empty;
+            }
         }
 
-        protected static IEnumerable<PackageInfo> FromUpmPackageInfo(PackageManager.PackageInfo info, bool isCurrent = true)
-        {
-            var packages = new List<PackageInfo>();
-            var displayName = info.displayName;
-            if (string.IsNullOrEmpty(displayName))
-            {
-                displayName = info.name.Replace(PackageInfo.ModulePrefix, "");
-                displayName = displayName.Replace(PackageInfo.UnityPrefix, "");
-                displayName = new CultureInfo("en-US").TextInfo.ToTitleCase(displayName);
-            }
+        protected string m_PackageId = string.Empty;
+        public string packageId { get { return m_PackageId; } }
 
-            string author = info.author.name;
-            if (string.IsNullOrEmpty(info.author.name) && info.name.StartsWith(PackageInfo.UnityPrefix))
-                author = "Unity Technologies Inc.";
+        public string packageUniqueId { get { return packageName; } }
+        public string versionUniqueId { get { return packageId; } }
 
-            var lastCompatible = info.versions.latestCompatible;
-            var versions = new List<string>();
-            versions.AddRange(info.versions.compatible);
-            if (versions.FindIndex(version => version == info.version) == -1)
-            {
-                versions.Add(info.version);
+        public virtual string specialUniqueId { get { return string.Empty; } }
 
-                versions.Sort((left, right) =>
-                {
-                    if (left == null || right == null) return 0;
+        // a timestamp is added to keep track of how `refresh` the result it
+        // in the case of an online operation, it is the time when the operation starts
+        // in the case of an offline operation, it is set to the timestamp of the last online operation
+        protected long m_Timestamp = 0;
+        public long timestamp { get { return m_Timestamp; } }
 
-                    SemVersion leftVersion = left;
-                    SemVersion righVersion = right;
-                    return leftVersion.CompareByPrecedence(righVersion);
-                });
+        protected long m_LastSuccessTimestamp = 0;
+        public long lastSuccessTimestamp { get { return m_LastSuccessTimestamp; } }
 
-                SemVersion packageVersion = info.version;
-                if (!string.IsNullOrEmpty(lastCompatible))
-                {
-                    SemVersion lastCompatibleVersion =
-                        string.IsNullOrEmpty(lastCompatible) ? (SemVersion)null : lastCompatible;
-                    if (packageVersion != null && string.IsNullOrEmpty(packageVersion.Prerelease) &&
-                        packageVersion.CompareByPrecedence(lastCompatibleVersion) > 0)
-                        lastCompatible = info.version;
-                }
-                else
-                {
-                    if (packageVersion != null && string.IsNullOrEmpty(packageVersion.Prerelease))
-                        lastCompatible = info.version;
-                }
-            }
+        protected bool m_OfflineMode = false;
+        public bool isOfflineMode { get { return m_OfflineMode; } }
 
-            foreach (var version in versions)
-            {
-                var isVersionCurrent = version == info.version && isCurrent;
-                var isBuiltIn = info.source == PackageSource.BuiltIn;
-                var isVerified = string.IsNullOrEmpty(SemVersion.Parse(version).Prerelease) && version == info.versions.verified;
-                var state = (isBuiltIn || info.version == lastCompatible ||   !isCurrent) ? PackageState.UpToDate : PackageState.Outdated;
+        public abstract bool isInProgress { get; }
 
-                // Happens mostly when using a package that hasn't been in production yet.
-                if (info.versions.all.Length <= 0)
-                    state = PackageState.UpToDate;
+        public Error error { get; protected set; }        // Keep last error
+    }
 
-                if (info.errors.Length > 0)
-                    state = PackageState.Error;
+    internal abstract class UpmBaseOperation<T> : UpmBaseOperation where T : Request
+    {
+        public override event Action<Error> onOperationError = delegate {};
+        public override event Action onOperationFinalized = delegate {};
+        public override event Action onOperationSuccess = delegate {};
+        public Action<T> onProcessResult = delegate {};
 
-                var packageInfo = new PackageInfo
-                {
-                    Name = info.name,
-                    DisplayName = displayName,
-                    PackageId = version == info.version ? info.packageId : null,
-                    Version = version,
-                    Description = info.description,
-                    Category = info.category,
-                    IsInstalled = isVersionCurrent,
-                    IsLatest = version == lastCompatible,
-                    IsVerified = isVerified,
-                    Errors = info.errors.ToList(),
-                    Group = GroupName(info.source, info.type),
-                    Type = info.type,
-                    State = state,
-                    Origin = isBuiltIn || isVersionCurrent ? info.source : PackageSource.Registry,
-                    Author = author,
-                    Info = info,
-                    HasFullFetch = version == info.version
-                };
+        protected T m_Request;
 
-                if (version == info.version && !string.IsNullOrEmpty(info.resolvedPath))
-                {
-                    var loadedSamples = SampleJsonHelper.LoadSamplesFromPackageJson(info.resolvedPath);
-                    packageInfo.Samples = new List<Sample>();
-                    foreach (var sample in loadedSamples)
-                    {
-                        sample.resolvedPath = Path.Combine(info.resolvedPath, sample.path);
-                        sample.importPath = IOUtils.CombinePaths
-                            (
-                                Application.dataPath,
-                                "Samples",
-                                IOUtils.SanitizeFileName(packageInfo.DisplayName),
-                                packageInfo.Version.ToString(),
-                                IOUtils.SanitizeFileName(sample.displayName)
-                            );
-                        packageInfo.Samples.Add(new Sample(sample));
-                    }
-                }
-                packages.Add(packageInfo);
-            }
+        public override bool isInProgress { get { return m_Request != null && m_Request.Id != 0 && !m_Request.IsCompleted; } }
 
-            return packages;
-        }
-
-        public static event Action<UpmBaseOperation> OnOperationStart = delegate {};
-
-        public event Action<Error> OnOperationError = delegate {};
-        public event Action OnOperationFinalized = delegate {};
-
-        public Error ForceError { get; set; }                // Allow external component to force an error on the requests (eg: testing)
-        public Error Error { get; protected set; }        // Keep last error
-
-        public bool IsCompleted { get; private set; }
-
-        protected abstract Request CreateRequest();
-
-        [SerializeField]
-        protected Request CurrentRequest;
-        public readonly ThreadedDelay Delay = new ThreadedDelay();
-
-        protected abstract void ProcessData();
+        protected abstract T CreateRequest();
 
         protected void Start()
         {
-            Error = null;
-            OnOperationStart(this);
-
-            Delay.Start();
-
-            if (TryForcedError())
+            if (isInProgress)
+            {
+                Debug.LogError("Unable to start the operation again while it's in progress. " +
+                    "Please cancel the operation before re-start or wait until the operation is completed.");
                 return;
+            }
 
+            if (!isOfflineMode)
+                m_Timestamp = DateTime.Now.Ticks;
+            m_Request = CreateRequest();
+            error = null;
             EditorApplication.update += Progress;
         }
 
-        // Common progress code for all classes
-        private void Progress()
+        protected void CancelInternal()
         {
-            if (!Delay.IsDone)
-                return;
+            m_Request = null;
+            onOperationError = delegate {};
+            onOperationFinalized = delegate {};
+            onProcessResult = delegate {};
+            EditorApplication.update -= Progress;
+        }
 
-            // Create the request after the delay
-            if (CurrentRequest == null)
+        // Common progress code for all classes
+        protected void Progress()
+        {
+            if (m_Request.IsCompleted)
             {
-                try
-                {
-                    CurrentRequest = CreateRequest();
-                }
-                catch (Exception e)
-                {
-                    OnError(new Error(NativeErrorCode.Unknown, e.Message));
-                    return;
-                }
-            }
-
-            // Since CurrentRequest's error property is private, we need to simulate
-            // an error instead of just setting it.
-            if (TryForcedError())
-                return;
-
-            if (CurrentRequest.IsCompleted)
-            {
-                if (CurrentRequest.Status == StatusCode.Success)
-                    OnDone();
-                else if (CurrentRequest.Status >= StatusCode.Failure)
-                    OnError(CurrentRequest.Error);
+                if (m_Request.Status == StatusCode.Success)
+                    OnSuccess();
+                else if (m_Request.Status >= StatusCode.Failure)
+                    OnError(m_Request.Error);
                 else
-                    Debug.LogError("Unsupported progress state " + CurrentRequest.Status);
+                    Debug.LogError("Unsupported progress state " + m_Request.Status);
+                OnFinalize();
             }
         }
 
@@ -200,62 +109,42 @@ namespace UnityEditor.PackageManager.UI
         {
             try
             {
-                Error = error;
-
-                var message = "Cannot perform upm operation.";
-                if (error != null)
-                    message = "Cannot perform upm operation: " + Error.message + " [" + Error.errorCode + "]";
+                this.error = error;
+                var message = "Cannot perform upm operation";
+                message += error == null ? "." : $": {error.message} [{error.errorCode}]";
 
                 Debug.LogError(message);
-
-                OnOperationError(Error);
+                onOperationError(error);
             }
             catch (Exception exception)
             {
-                Debug.LogError("Package Manager Window had an error while reporting an error in an operation: " + exception);
+                Debug.LogError($"Package Manager Window had an error while reporting an error in an operation: {exception}");
             }
-
-            FinalizeOperation();
         }
 
-        private void OnDone()
+        private void OnSuccess()
         {
             try
             {
-                ProcessData();
+                onProcessResult(m_Request);
+                m_LastSuccessTimestamp = m_Timestamp;
+                onOperationSuccess();
             }
-            catch (Exception error)
+            catch (Exception exception)
             {
-                Debug.LogError("Package Manager Window had an error while completing an operation: " + error);
+                Debug.LogError($"Package Manager Window had an error while completing an operation: {exception}");
             }
-
-            FinalizeOperation();
         }
 
-        private void FinalizeOperation()
+        private void OnFinalize()
         {
             EditorApplication.update -= Progress;
-            OnOperationFinalized();
-            IsCompleted = true;
-        }
+            onOperationFinalized();
 
-        public void Cancel()
-        {
-            EditorApplication.update -= Progress;
-            OnOperationError = delegate {};
-            OnOperationFinalized = delegate {};
-            IsCompleted = true;
-        }
-
-        private bool TryForcedError()
-        {
-            if (ForceError != null)
-            {
-                OnError(ForceError);
-                return true;
-            }
-
-            return false;
+            onOperationError = delegate {};
+            onOperationFinalized = delegate {};
+            onOperationSuccess = delegate {};
+            onProcessResult = delegate {};
         }
     }
 }

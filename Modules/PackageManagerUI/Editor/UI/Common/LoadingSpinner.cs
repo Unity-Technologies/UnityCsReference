@@ -11,15 +11,13 @@ namespace UnityEditor.PackageManager.UI
     {
         internal new class UxmlFactory : UxmlFactory<LoadingSpinner> {}
 
-        public bool InvertColor { get; set; }
-        public bool Started { get; private set; }
+        public bool started { get; private set; }
 
-        private int rotation;
+        private int m_Rotation;
 
         public LoadingSpinner()
         {
-            InvertColor = false;
-            Started = false;
+            started = false;
             UIUtils.SetElementDisplay(this, false);
 
             // add child elements to set up centered spinner rotation
@@ -30,33 +28,33 @@ namespace UnityEditor.PackageManager.UI
 
         private void UpdateProgress()
         {
-            transform.rotation = Quaternion.Euler(0, 0, rotation);
-            rotation += 3;
-            if (rotation > 360)
-                rotation -= 360;
+            transform.rotation = Quaternion.Euler(0, 0, m_Rotation);
+            m_Rotation += 3;
+            if (m_Rotation > 360)
+                m_Rotation -= 360;
         }
 
         public void Start()
         {
-            if (Started)
+            if (started)
                 return;
 
-            rotation = 0;
+            m_Rotation = 0;
 
             EditorApplication.update += UpdateProgress;
 
-            Started = true;
+            started = true;
             UIUtils.SetElementDisplay(this, true);
         }
 
         public void Stop()
         {
-            if (!Started)
+            if (!started)
                 return;
 
             EditorApplication.update -= UpdateProgress;
 
-            Started = false;
+            started = false;
             UIUtils.SetElementDisplay(this, false);
         }
     }

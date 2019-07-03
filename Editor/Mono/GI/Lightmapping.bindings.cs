@@ -285,7 +285,7 @@ namespace UnityEditor
                 startedRendering();
         }
 
-        internal static event Action lightingDataUpdated;
+        public static event Action lightingDataUpdated;
 
         internal static void Internal_CallLightingDataUpdatedFunctions()
         {

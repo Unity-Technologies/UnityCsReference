@@ -3,48 +3,34 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using UnityEngine;
 using UnityEditor.PackageManager.Requests;
 
 namespace UnityEditor.PackageManager.UI
 {
-    internal class UpmListOperation : UpmBaseOperation, IListOperation
+    [Serializable]
+    internal class UpmListOperation : UpmBaseOperation<ListRequest>
     {
-        [SerializeField]
-        private Action<IEnumerable<PackageInfo>> _doneCallbackAction;
-
-        public UpmListOperation(bool offlineMode) : base()
+        public void List()
         {
-            OfflineMode = offlineMode;
-        }
-
-        public bool OfflineMode { get; set; }
-
-        public void GetPackageListAsync(Action<IEnumerable<PackageInfo>> doneCallbackAction, Action<Error> errorCallbackAction = null)
-        {
-            this._doneCallbackAction = doneCallbackAction;
-            OnOperationError += errorCallbackAction;
-
+            m_OfflineMode = false;
             Start();
         }
 
-        protected override Request CreateRequest()
+        public void ListOffline(long timestamp)
         {
-            return Client.List(OfflineMode, true);
+            m_OfflineMode = true;
+            m_Timestamp = timestamp;
+            Start();
         }
 
-        protected override void ProcessData()
+        protected override ListRequest CreateRequest()
         {
-            var request = CurrentRequest as ListRequest;
-            var packages = new List<PackageInfo>();
-            foreach (var upmPackage in request.Result)
-            {
-                var packageInfos = FromUpmPackageInfo(upmPackage);
-                packages.AddRange(packageInfos);
-            }
+            return Client.List(isOfflineMode, true);
+        }
 
-            _doneCallbackAction(packages);
+        public void Cancel()
+        {
+            CancelInternal();
         }
     }
 }

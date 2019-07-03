@@ -140,3 +140,24 @@ namespace UnityEditor
         }
     }
 }
+
+namespace UnityEditor.Experimental
+{
+    public partial class AssetDatabaseExperimental
+    {
+        [FreeFunction("AssetDatabase::ClearImporterOverride")]
+        extern public static void ClearImporterOverride(string path);
+
+        public static void SetImporterOverride<T>(string path)
+            where T : Experimental.AssetImporters.ScriptedImporter
+        {
+            SetImporterOverrideInternal(path, typeof(T));
+        }
+
+        [FreeFunction("AssetDatabase::SetImporterOverride")]
+        extern internal static void SetImporterOverrideInternal(string path, System.Type importer);
+
+        [FreeFunction("AssetDatabase::GetImporterOverride")]
+        extern public static System.Type GetImporterOverride(string path);
+    }
+}

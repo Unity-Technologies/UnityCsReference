@@ -21,18 +21,18 @@ namespace UnityEditor.PackageManager.UI
         /// Called by the Package Manager UI when the package selection changed.
         /// </summary>
         /// <param name="packageInfo">The newly selected package information (can be null)</param>
-        void OnPackageSelectionChange(PackageManager.PackageInfo packageInfo);
+        void OnPackageSelectionChange(PackageInfo packageInfo);
 
         /// <summary>
         /// Called by the Package Manager UI when a package is added or updated.
         /// </summary>
         /// <param name="packageInfo">The package information</param>
-        void OnPackageAddedOrUpdated(PackageManager.PackageInfo packageInfo);
+        void OnPackageAddedOrUpdated(PackageInfo packageInfo);
 
         /// <summary>
         /// Called by the Package Manager UI when a package is removed.
         /// </summary>
         /// <param name="packageInfo">The package information</param>
-        void OnPackageRemoved(PackageManager.PackageInfo packageInfo);
+        void OnPackageRemoved(PackageInfo packageInfo);
     }
 }

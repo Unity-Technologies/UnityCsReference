@@ -310,7 +310,8 @@ namespace UnityEditor.UIElements.Debugger
         {
             evt.eventLogger = m_Debugger;
             m_EventTimestampDictionary[evt.eventId] = (long)(Time.realtimeSinceStartup * 1000.0f);
-            m_Debugger.BeginProcessEvent(evt, MouseCaptureController.mouseCapture);
+            IEventHandler capture = panel?.GetCapturingElement(PointerId.mousePointerId);
+            m_Debugger.BeginProcessEvent(evt, capture);
             return false;
         }
 
@@ -321,7 +322,8 @@ namespace UnityEditor.UIElements.Debugger
                 var now = (long)(Time.realtimeSinceStartup * 1000.0f);
                 var start = m_EventTimestampDictionary[evt.eventId];
                 m_EventTimestampDictionary.Remove(evt.eventId);
-                m_Debugger.EndProcessEvent(evt, now - start, MouseCaptureController.mouseCapture);
+                IEventHandler capture = panel?.GetCapturingElement(PointerId.mousePointerId);
+                m_Debugger.EndProcessEvent(evt, now - start, capture);
                 evt.eventLogger = null;
             }
         }
@@ -711,17 +713,33 @@ namespace UnityEditor.UIElements.Debugger
                     m_EventPropagationPaths.text += "    <empty>\n";
                 }
 
+                m_EventPropagationPaths.text += "Target list:\n";
+                var targets = propagationPath.paths.targetElements;
+                if (targets != null && targets.Any())
+                {
+                    foreach (var t in targets)
+                    {
+                        var targetName = t.name;
+                        if (string.IsNullOrEmpty(targetName))
+                            targetName = t.GetType().Name;
+                        m_EventPropagationPaths.text += "    " + targetName + "\n";
+                    }
+                }
+                else
+                {
+                    m_EventPropagationPaths.text += "    <empty>\n";
+                }
+
                 m_EventPropagationPaths.text += "Bubble Up Path:\n";
-                var pathsBubblePath = propagationPath.paths.targetAndBubblePath;
+                var pathsBubblePath = propagationPath.paths.bubbleUpPath;
                 if (pathsBubblePath != null && pathsBubblePath.Any())
                 {
                     foreach (var bubblePathElement in pathsBubblePath)
                     {
-                        var bubblePathName = bubblePathElement.m_VisualElement.name;
+                        var bubblePathName = bubblePathElement.name;
                         if (string.IsNullOrEmpty(bubblePathName))
-                            bubblePathName = bubblePathElement.m_VisualElement.GetType().Name;
-                        var target = bubblePathElement.m_IsTarget ? "(T) " : "";
-                        m_EventPropagationPaths.text += "    " + target + bubblePathName + "\n";
+                            bubblePathName = bubblePathElement.GetType().Name;
+                        m_EventPropagationPaths.text += "    " + bubblePathName + "\n";
                     }
                 }
                 else

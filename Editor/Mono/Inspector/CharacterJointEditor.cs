@@ -2,13 +2,16 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor.IMGUI.Controls;
+using UnityEditor.EditorTools;
 using UnityEngine;
 
 namespace UnityEditor
 {
     [CustomEditor(typeof(CharacterJoint)), CanEditMultipleObjects]
-    class CharacterJointEditor : JointEditor<CharacterJoint>
+    class CharacterJointEditor : JointEditor<CharacterJoint> {}
+
+    [EditorTool("Edit Character Joint", typeof(CharacterJoint))]
+    class CharacterJointTool : JointTool<CharacterJoint>
     {
         protected override void DoAngularLimitHandles(CharacterJoint joint)
         {

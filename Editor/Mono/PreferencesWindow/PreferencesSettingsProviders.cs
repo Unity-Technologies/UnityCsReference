@@ -13,7 +13,6 @@ using Unity.CodeEditor;
 using UnityEditor.Connect;
 using UnityEngine.UIElements;
 using UnityEditor.Experimental;
-using UnityEditor.StyleSheets;
 using UnityEngine.TestTools;
 using UnityEditor.Collaboration;
 
@@ -886,17 +885,6 @@ namespace UnityEditor
                 extension.WritePreferences();
             }
             UnityEditor.Lightmapping.UpdateCachePath();
-        }
-
-        static private void SetupDefaultPreferences()
-        {
-        }
-
-        static private string GetProgramFilesFolder()
-        {
-            string result = Environment.GetEnvironmentVariable("ProgramFiles(x86)");
-            if (result != null) return result;
-            return Environment.GetEnvironmentVariable("ProgramFiles");
         }
 
         private int CurrentEditorScalingValue

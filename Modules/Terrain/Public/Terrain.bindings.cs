@@ -22,8 +22,8 @@ namespace UnityEngine
         FlushEverythingImmediately = 8,
         RemoveDirtyDetailsImmediately = 16,
         HeightmapResolution = 32,
-        SurfaceMask = 64,
-        DelayedSurfaceMaskUpdate = 128,
+        Holes = 64,
+        DelayedHolesUpdate = 128,
         WillBeDestroyed = 256,
     }
 
@@ -174,19 +174,19 @@ namespace UnityEngine
         }
 
         [StaticAccessor("Terrain", StaticAccessorType.DoubleColon)]
-        extern static public GraphicsFormat surfaceMaskFormat { get; }
+        extern static public GraphicsFormat holesFormat { get; }
 
-        static public RenderTextureFormat surfaceMaskRenderTextureFormat
+        static public RenderTextureFormat holesRenderTextureFormat
         {
-            get { return GraphicsFormatUtility.GetRenderTextureFormat(surfaceMaskFormat); }
+            get { return GraphicsFormatUtility.GetRenderTextureFormat(holesFormat); }
         }
 
         [StaticAccessor("Terrain", StaticAccessorType.DoubleColon)]
-        extern static public GraphicsFormat compressedSurfaceMaskFormat { get; }
+        extern static public GraphicsFormat compressedHolesFormat { get; }
 
-        static public TextureFormat compressedSurfaceMaskTextureFormat
+        static public TextureFormat compressedHolesTextureFormat
         {
-            get { return GraphicsFormatUtility.GetTextureFormat(compressedSurfaceMaskFormat); }
+            get { return GraphicsFormatUtility.GetTextureFormat(compressedHolesFormat); }
         }
 
         extern public static Terrain activeTerrain { get; }

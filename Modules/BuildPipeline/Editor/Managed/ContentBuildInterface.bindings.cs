@@ -98,6 +98,14 @@ namespace UnityEditor.Build.Content
 
         static extern WriteResult WriteSceneSerializedFileAssetBundle(string outputFolder, string scenePath, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, PreloadInfo preloadInfo, SceneBundleInfo sceneBundleInfo);
 
-        public static extern uint ArchiveAndCompress(ResourceFile[] resourceFiles, string outputBundlePath, UnityEngine.BuildCompression compression);
+        public static uint ArchiveAndCompress(ResourceFile[] resourceFiles, string outputBundlePath,
+            UnityEngine.BuildCompression compression)
+        {
+            return ArchiveAndCompress(resourceFiles, outputBundlePath, compression, false);
+        }
+
+        //modified to be thread safe - if called from a non-main thread, there are no dialogs presented in the case of an error.
+        [ThreadSafe]
+        public static extern uint ArchiveAndCompress(ResourceFile[] resourceFiles, string outputBundlePath, UnityEngine.BuildCompression compression, bool stripUnityVersion);
     }
 }

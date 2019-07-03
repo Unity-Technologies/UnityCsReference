@@ -99,7 +99,7 @@ namespace UnityEditor
         static internal void RepaintSceneAndGameViews()
         {
             SceneView.RepaintAll();
-            GameView.RepaintAll();
+            PreviewEditorWindow.RepaintAll();
         }
 
         void OnGUI()

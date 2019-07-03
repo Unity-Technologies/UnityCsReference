@@ -13,25 +13,24 @@ namespace UnityEditor.PackageManager.UI
     /// </summary>
     class VisualElementCache
     {
-        private Dictionary<string, VisualElement> Cache = new Dictionary<string, VisualElement>();
-        private VisualElement Root;
+        private Dictionary<string, VisualElement> m_Cache = new Dictionary<string, VisualElement>();
+        private VisualElement m_Root;
 
         public VisualElementCache(VisualElement root)
         {
-            Root = root;
+            m_Root = root;
         }
 
-        public T Create<T>(string query) where T : VisualElement
+        private T Create<T>(string query) where T : VisualElement
         {
-            return Root.Q<T>(query);
+            return m_Root.Q<T>(query);
         }
 
         public T Get<T>(string query) where T : VisualElement
         {
-            if (!Cache.ContainsKey(query))
-                Cache[query] = Create<T>(query);
-
-            return Cache[query] as T;
+            if (!m_Cache.ContainsKey(query))
+                m_Cache[query] = Create<T>(query);
+            return m_Cache[query] as T;
         }
     }
 }

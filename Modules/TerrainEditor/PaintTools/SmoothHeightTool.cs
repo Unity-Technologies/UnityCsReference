@@ -33,7 +33,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         }
 
         [FormerlyPrefKeyAs("Terrain/Smooth Height", "f3")]
-        [Shortcut("Terrain/Smooth Height", typeof(TerrainToolShortcutContext))]
+        [Shortcut("Terrain/Smooth Height", typeof(TerrainToolShortcutContext), KeyCode.F3)]
         static void SelectShortcut(ShortcutArguments args)
         {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
@@ -58,7 +58,8 @@ namespace UnityEditor.Experimental.TerrainAPI
             if (EditorGUI.EndChangeCheck())
                 Save(true);
 
-            editContext.ShowBrushesGUI(5);
+            int textureRez = terrain.terrainData.heightmapResolution;
+            editContext.ShowBrushesGUI(5, BrushGUIEditFlags.All, textureRez);
         }
 
         private void ApplyBrushInternal(PaintContext paintContext, float brushStrength, Texture brushTexture, BrushTransform brushXform)

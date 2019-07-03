@@ -167,13 +167,6 @@ namespace UnityEditor.UIElements.Debugger
                 textElement.text = EditorGUILayout.TextField("Text", textElement.text);
             }
 
-            bool cacheContents = EditorGUILayout.Toggle("Cache Contents", m_SelectedElement.cacheAsBitmap);
-            m_SelectedElement.cacheAsBitmap = cacheContents;
-            if (m_SelectedElement.cacheAsBitmap && m_SelectedElement.computedStyle.overflow.value == Overflow.Visible)
-            {
-                EditorGUILayout.HelpBox("Bitmap caching will be ignored for this element because it's not clipped", MessageType.Warning);
-            }
-
             m_SelectedElement.pickingMode = (PickingMode)EditorGUILayout.EnumPopup("Picking Mode", m_SelectedElement.pickingMode);
 
             if (m_SelectedElement.pseudoStates != 0)

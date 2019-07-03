@@ -118,7 +118,7 @@ namespace UnityEngine.Experimental.TerrainAPI
             None = 0,
             PaintHeightmap = 1 << 0,
             PaintTexture = 1 << 1,
-            PaintSurfaceMask = 1 << 2
+            PaintHoles = 1 << 2
         }
 
         // TerrainPaintUtilityEditor hooks to this event to do automatic undo
@@ -135,7 +135,7 @@ namespace UnityEngine.Experimental.TerrainAPI
                 terrainData.size.x / (targetTextureWidth - 1.0f),
                 terrainData.size.z / (targetTextureHeight - 1.0f));
 
-            FindTerrainTiles();
+            FindTerrainTilesUnlimited();
         }
 
         public static PaintContext CreateFromBounds(Terrain terrain, Rect boundsInTerrainSpace, int inputTextureWidth, int inputTextureHeight, int extraBorderPixels = 0)
@@ -146,7 +146,61 @@ namespace UnityEngine.Experimental.TerrainAPI
                 inputTextureWidth, inputTextureHeight);
         }
 
-        internal void FindTerrainTiles()
+        private void FindTerrainTilesUnlimited()
+        {
+            // pixel rect bounds (in world space)
+            float minX = originTerrain.transform.position.x + pixelSize.x * pixelRect.xMin;
+            float minZ = originTerrain.transform.position.z + pixelSize.y * pixelRect.yMin;
+            float maxX = originTerrain.transform.position.x + pixelSize.x * (pixelRect.xMax - 1);
+            float maxZ = originTerrain.transform.position.z + pixelSize.y * (pixelRect.yMax - 1);
+
+            // this filter limits the search to Terrains that overlap the pixel rect bounds
+            TerrainUtility.TerrainMap.TerrainFilter filterOverlap =
+                t =>
+            {
+                // terrain bounds (in world space)
+                float tminX = t.transform.position.x;
+                float tminZ = t.transform.position.z;
+                float tmaxX = t.transform.position.x + t.terrainData.size.x;
+                float tmaxZ = t.transform.position.z + t.terrainData.size.z;
+
+                // test overlap
+                return (tminX <= maxX) && (tmaxX >= minX)
+                    && (tminZ <= maxZ) && (tmaxZ >= minZ);
+            };
+
+            // gather Terrains that pass the filter
+            TerrainUtility.TerrainMap terrainMap =
+                TerrainUtility.TerrainMap.CreateFromConnectedNeighbors(originTerrain, filterOverlap, false);
+
+            // convert those Terrains into the TerrainTile list
+            m_TerrainTiles = new List<TerrainTile>();
+            if (terrainMap != null)
+            {
+                foreach (var cur in terrainMap.m_terrainTiles)
+                {
+                    var coord = cur.Key;
+                    Terrain terrain = cur.Value;
+
+                    int minPixelX = coord.tileX * (targetTextureWidth - 1);
+                    int minPixelZ = coord.tileZ * (targetTextureHeight - 1);
+                    RectInt terrainPixelRect = new RectInt(minPixelX, minPixelZ, targetTextureWidth, targetTextureHeight);
+                    if (pixelRect.Overlaps(terrainPixelRect))
+                    {
+                        m_TerrainTiles.Add(
+                            TerrainTile.Make(
+                                terrain,
+                                minPixelX,
+                                minPixelZ,
+                                pixelRect,
+                                targetTextureWidth,
+                                targetTextureHeight));
+                    }
+                }
+            }
+        }
+
+        private void FindTerrainTiles()
         {
             m_TerrainTiles = new List<PaintContext.TerrainTile>();
 
@@ -155,10 +209,10 @@ namespace UnityEngine.Experimental.TerrainAPI
             Terrain top = originTerrain.topNeighbor;
             Terrain bottom = originTerrain.bottomNeighbor;
 
-            bool wantLeft = (pixelRect.x < 0);
-            bool wantRight = (pixelRect.xMax > (targetTextureWidth - 1));
-            bool wantTop = (pixelRect.yMax > (targetTextureHeight - 1));
-            bool wantBottom = (pixelRect.y < 0);
+            bool wantLeft = (pixelRect.xMin <= 0);
+            bool wantRight = (pixelRect.xMax >= targetTextureWidth);
+            bool wantTop = (pixelRect.yMax >= targetTextureHeight);
+            bool wantBottom = (pixelRect.y <= 0);
 
             if (wantLeft && wantRight)
             {
@@ -392,25 +446,25 @@ namespace UnityEngine.Experimental.TerrainAPI
                 "PaintContext.ScatterHeightmap");
         }
 
-        public void GatherSurfaceMask()
+        public void GatherHoles()
         {
             GatherInternal(
-                t => t.terrain.terrainData.surfaceMaskTexture,
+                t => t.terrain.terrainData.holesTexture,
                 new Color(0.0f, 0.0f, 0.0f, 0.0f),
-                "PaintContext.GatherSurfaceMask");
+                "PaintContext.GatherHoles");
         }
 
-        public void ScatterSurfaceMask(string editorUndoName)
+        public void ScatterHoles(string editorUndoName)
         {
             ScatterInternal(
                 t =>
                 {
-                    onTerrainTileBeforePaint?.Invoke(t, ToolAction.PaintSurfaceMask, editorUndoName);
-                    t.terrain.terrainData.CopyActiveRenderTextureToTexture(TerrainData.SurfaceMaskTextureName, 0, t.clippedPCPixels, t.clippedTerrainPixels.min, true);
-                    OnTerrainPainted(t, ToolAction.PaintSurfaceMask);
+                    onTerrainTileBeforePaint?.Invoke(t, ToolAction.PaintHoles, editorUndoName);
+                    t.terrain.terrainData.CopyActiveRenderTextureToTexture(TerrainData.HolesTextureName, 0, t.clippedPCPixels, t.clippedTerrainPixels.min, true);
+                    OnTerrainPainted(t, ToolAction.PaintHoles);
                     return null;
                 },
-                "PaintContext.ScatterSurfaceMask");
+                "PaintContext.ScatterHoles");
         }
 
         public void GatherNormals()
@@ -598,9 +652,9 @@ namespace UnityEngine.Experimental.TerrainAPI
                     terrainData.SyncHeightmap();
                     pt.terrain.editorRenderFlags = TerrainRenderFlags.All;
                 }
-                if ((pt.action & ToolAction.PaintSurfaceMask) != 0)
+                if ((pt.action & ToolAction.PaintHoles) != 0)
                 {
-                    terrainData.SyncTexture(TerrainData.SurfaceMaskTextureName);
+                    terrainData.SyncTexture(TerrainData.HolesTextureName);
                     pt.terrain.editorRenderFlags = TerrainRenderFlags.All;
                 }
                 if ((pt.action & ToolAction.PaintTexture) != 0)

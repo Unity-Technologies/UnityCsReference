@@ -1221,10 +1221,8 @@ namespace UnityEditor
             Asset asset = Provider.GetAssetByPath(assetPath);
             if (asset == null)
                 return;
-            var vcsAssetPath = asset.path;
-            var underAssets = vcsAssetPath.StartsWith("Assets");
-            var underProjectSettings = vcsAssetPath.StartsWith("ProjectSettings");
-            if (!(underAssets || underProjectSettings))
+
+            if (!Provider.PathIsVersioned(asset.path))
                 return;
 
             var connected = Provider.isActive;
@@ -1235,7 +1233,7 @@ namespace UnityEditor
             // if it exists -- so for files under project settings, it ends up returning
             // a valid entry for the non-existing meta file. So just don't do it.
             Asset metaAsset = null;
-            if (!underProjectSettings)
+            if (Provider.PathHasMetaFile(asset.path))
                 metaAsset = Provider.GetAssetByPath(assetPath.Trim('/') + ".meta");
 
             string currentState = asset.StateToString();

@@ -315,6 +315,8 @@ namespace UnityEditorInternal.Profiling
                     return LocalizationDatabase.GetLocalizedString("|Warnings");
                 case HierarchyFrameDataView.columnObjectName:
                     return LocalizationDatabase.GetLocalizedString("Name");
+                case HierarchyFrameDataView.columnStartTime:
+                    return LocalizationDatabase.GetLocalizedString("Start ms");
                 default:
                     return "ProfilerColumn." + column;
             }

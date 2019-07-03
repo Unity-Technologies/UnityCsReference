@@ -11,6 +11,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using UnityEditor.AssetImporters;
 using Object = UnityEngine.Object;
 using UnityEditor.Experimental.AssetImporters;
 
@@ -135,6 +136,7 @@ namespace UnityEditor
         static string m_MeshProcessorsHashString = null;
         static string m_TextureProcessorsHashString = null;
         static string m_AudioProcessorsHashString = null;
+        static string m_SpeedTreeProcessorsHashString = null;
 
         static Type[] GetCachedAssetPostprocessorClasses()
         {
@@ -193,6 +195,16 @@ namespace UnityEditor
             }
         }
 
+        static bool ImplementsAnyOfTheses(Type type, string[] methods)
+        {
+            foreach (var method in methods)
+            {
+                if (type.GetMethod(method, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null)
+                    return true;
+            }
+            return false;
+        }
+
         [RequiredByNativeCode]
         static string GetMeshProcessorsHashString()
         {
@@ -207,11 +219,21 @@ namespace UnityEditor
                 {
                     var inst = Activator.CreateInstance(assetPostprocessorClass) as AssetPostprocessor;
                     var type = inst.GetType();
-                    bool hasPreProcessMethod = type.GetMethod("OnPreprocessModel", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
-                    bool hasPostprocessMeshHierarchy = type.GetMethod("OnPostprocessMeshHierarchy", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
-                    bool hasPostProcessMethod = type.GetMethod("OnPostprocessModel", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
+                    bool hasAnyPostprocessMethod = ImplementsAnyOfTheses(type, new[]
+                    {
+                        "OnPreprocessModel",
+                        "OnPostprocessMeshHierarchy",
+                        "OnPostprocessModel",
+                        "OnPreprocessAnimation",
+                        "OnPostprocessAnimation",
+                        "OnPostprocessGameObjectWithAnimatedUserProperties",
+                        "OnPostprocessGameObjectWithUserProperties",
+                        "OnPostprocessMaterial",
+                        "OnAssignMaterialModel",
+                        "OnPreprocessMaterialDescription"
+                    });
                     uint version = inst.GetVersion();
-                    if (version != 0 && (hasPreProcessMethod || hasPostprocessMeshHierarchy || hasPostProcessMethod))
+                    if (version != 0 && hasAnyPostprocessMethod)
                     {
                         versionsByType.Add(type.FullName, version);
                     }
@@ -336,6 +358,16 @@ namespace UnityEditor
             {
                 object[] args = { material };
                 InvokeMethodIfAvailable(inst, "OnPostprocessMaterial", args);
+            }
+        }
+
+        [RequiredByNativeCode]
+        static void PreprocessMaterialDescription(MaterialDescription description, Material material, AnimationClip[] animations)
+        {
+            object[] args = { description, material, animations };
+            foreach (AssetPostprocessor inst in m_ImportProcessors)
+            {
+                InvokeMethodIfAvailable(inst, "OnPreprocessMaterialDescription", args);
             }
         }
 
@@ -501,6 +533,42 @@ namespace UnityEditor
                 var assetPostprocessor = Activator.CreateInstance(assetPostprocessorClass) as AssetPostprocessor;
                 InvokeMethodIfAvailable(assetPostprocessor, "OnPostprocessAssetbundleNameChanged", args);
             }
+        }
+
+        [RequiredByNativeCode]
+        static string GetSpeedTreeProcessorsHashString()
+        {
+            if (m_SpeedTreeProcessorsHashString != null)
+                return m_SpeedTreeProcessorsHashString;
+
+            var versionsByType = new SortedList<string, uint>();
+
+            foreach (var assetPostprocessorClass in GetCachedAssetPostprocessorClasses())
+            {
+                try
+                {
+                    var inst = Activator.CreateInstance(assetPostprocessorClass) as AssetPostprocessor;
+                    var type = inst.GetType();
+                    bool hasPreProcessMethod = type.GetMethod("OnPreprocessSpeedTree", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
+                    bool hasPostProcessMethod = type.GetMethod("OnPostprocessSpeedTree", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
+                    uint version = inst.GetVersion();
+                    if (version != 0 && (hasPreProcessMethod || hasPostProcessMethod))
+                    {
+                        versionsByType.Add(type.FullName, version);
+                    }
+                }
+                catch (MissingMethodException)
+                {
+                    LogPostProcessorMissingDefaultConstructor(assetPostprocessorClass);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+            }
+
+            m_SpeedTreeProcessorsHashString = BuildHashString(versionsByType);
+            return m_SpeedTreeProcessorsHashString;
         }
 
         static object InvokeMethod(MethodInfo method, object[] args)

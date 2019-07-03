@@ -181,6 +181,15 @@ namespace UnityEditor
         [NativeThrows]
         extern internal static void RevertPropertyModificationsForObject([NotNull] Object target);
 
+        // Returns editor curve bindings for animation clip and animator hierarchy that need to be snapshot for animation mode.
+        extern internal static EditorCurveBinding[] GetAllBindings([NotNull] GameObject root, [NotNull] AnimationClip clip);
+
+        // Returns editor curve bindings for animation clip that need to be snapshot for animation mode.
+        extern internal static EditorCurveBinding[] GetCurveBindings([NotNull] AnimationClip clip);
+
+        // Return editor curve bindings for animator hierarhcy that need to be snapshot for animation mode.
+        extern internal static EditorCurveBinding[] GetAnimatorBindings([NotNull] GameObject root);
+
         extern private static bool Internal_InAnimationMode(Object driver);
 
         extern private static bool Internal_InAnimationModeNoDriver();

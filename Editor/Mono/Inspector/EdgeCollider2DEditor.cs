@@ -4,17 +4,17 @@
 
 using UnityEngine;
 using System;
+using UnityEditor.EditorTools;
+using UnityEditor.IMGUI.Controls;
 
 namespace UnityEditor
 {
     [CustomEditor(typeof(EdgeCollider2D))]
     [CanEditMultipleObjects]
-    internal class EdgeCollider2DEditor : Collider2DEditorBase
+    class EdgeCollider2DEditor : Collider2DEditorBase
     {
-        private PolygonEditorUtility m_PolyUtility = new PolygonEditorUtility();
-
-        private SerializedProperty m_EdgeRadius;
-        private SerializedProperty m_Points;
+        SerializedProperty m_EdgeRadius;
+        SerializedProperty m_Points;
 
         public override void OnEnable()
         {
@@ -43,23 +43,41 @@ namespace UnityEditor
 
             FinalizeInspectorGUI();
         }
+    }
 
-        protected override void OnEditStart()
+    [EditorTool("Edit Edge Collider", typeof(EdgeCollider2D))]
+    class EdgeCollider2DTool : EditorTool
+    {
+        public override GUIContent toolbarIcon { get { return PrimitiveBoundsHandle.editModeButton; } }
+        PolygonEditorUtility m_PolyUtility = new PolygonEditorUtility();
+
+        public void OnEnable()
         {
-            m_PolyUtility.StartEditing(target as Collider2D);
+            EditorTools.EditorTools.activeToolChanged += OnActiveToolChanged;
+            EditorTools.EditorTools.activeToolChanging += OnActiveToolChanging;
         }
 
-        protected override void OnEditEnd()
+        public void OnDisable()
         {
-            m_PolyUtility.StopEditing();
+            EditorTools.EditorTools.activeToolChanged -= OnActiveToolChanged;
+            EditorTools.EditorTools.activeToolChanging -= OnActiveToolChanging;
         }
 
-        public void OnSceneGUI()
+        public override void OnToolGUI(EditorWindow window)
         {
-            if (!editingCollider)
-                return;
-
             m_PolyUtility.OnSceneGUI();
+        }
+
+        void OnActiveToolChanged()
+        {
+            if (EditorTools.EditorTools.IsActiveTool(this))
+                m_PolyUtility.StartEditing(target as Collider2D);
+        }
+
+        void OnActiveToolChanging()
+        {
+            if (EditorTools.EditorTools.IsActiveTool(this))
+                m_PolyUtility.StopEditing();
         }
     }
 }

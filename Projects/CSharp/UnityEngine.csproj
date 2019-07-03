@@ -886,6 +886,9 @@
     <Compile Include="..\..\Modules\UIElements\Events\DragAndDropEvents.cs">
       <Link>Modules\UIElements\Events\DragAndDropEvents.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Events\ElementUnderPointer.cs">
+      <Link>Modules\UIElements\Events\ElementUnderPointer.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Events\EventBase.cs">
       <Link>Modules\UIElements\Events\EventBase.cs</Link>
     </Compile>
@@ -945,6 +948,18 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Events\PanelEvents.cs">
       <Link>Modules\UIElements\Events\PanelEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Events\PointerCaptureDispatchingStrategy.cs">
+      <Link>Modules\UIElements\Events\PointerCaptureDispatchingStrategy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Events\PointerDeviceState.cs">
+      <Link>Modules\UIElements\Events\PointerDeviceState.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Events\PointerEventDispatchingStrategy.cs">
+      <Link>Modules\UIElements\Events\PointerEventDispatchingStrategy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Events\PointerEvents.cs">
+      <Link>Modules\UIElements\Events\PointerEvents.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Events\PropagationPaths.cs">
       <Link>Modules\UIElements\Events\PropagationPaths.cs</Link>
@@ -1024,6 +1039,9 @@
     <Compile Include="..\..\Modules\UIElements\Panel.cs">
       <Link>Modules\UIElements\Panel.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\PointerCaptureController.cs">
+      <Link>Modules\UIElements\PointerCaptureController.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\PopupWindow.cs">
       <Link>Modules\UIElements\PopupWindow.cs</Link>
     </Compile>
@@ -1039,8 +1057,14 @@
     <Compile Include="..\..\Modules\UIElements\Renderer\UIRChainBuilderImpl.cs">
       <Link>Modules\UIElements\Renderer\UIRChainBuilderImpl.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Renderer\UIRGradientSettingsAtlas.cs">
+      <Link>Modules\UIElements\Renderer\UIRGradientSettingsAtlas.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Renderer\UIRLayoutUpdater.cs">
       <Link>Modules\UIElements\Renderer\UIRLayoutUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Renderer\UIRLinkedPool.cs">
+      <Link>Modules\UIElements\Renderer\UIRLinkedPool.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Renderer\UIRMeshBuilder.cs">
       <Link>Modules\UIElements\Renderer\UIRMeshBuilder.cs</Link>
@@ -1054,8 +1078,14 @@
     <Compile Include="..\..\Modules\UIElements\Renderer\UIRTessellation.cs">
       <Link>Modules\UIElements\Renderer\UIRTessellation.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Renderer\UIRTextureBlitter.cs">
+      <Link>Modules\UIElements\Renderer\UIRTextureBlitter.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Renderer\UIRUtility.cs">
       <Link>Modules\UIElements\Renderer\UIRUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Renderer\UIRVectorImageManager.cs">
+      <Link>Modules\UIElements\Renderer\UIRVectorImageManager.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Renderer\UIRenderer\UIRenderDevice.cs">
       <Link>Modules\UIElements\Renderer\UIRenderer\UIRenderDevice.cs</Link>
@@ -1270,6 +1300,9 @@
     <Compile Include="..\..\Modules\UIElements\UXML\UxmlTypeRestriction.cs">
       <Link>Modules\UIElements\UXML\UxmlTypeRestriction.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\UXML\VectorImage.cs">
+      <Link>Modules\UIElements\UXML\VectorImage.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\UXML\VisualElementAsset.cs">
       <Link>Modules\UIElements\UXML\VisualElementAsset.cs</Link>
     </Compile>
@@ -1369,8 +1402,8 @@
     <Compile Include="..\..\Modules\UNET\ScriptBindings\UNETworking.bindings.cs">
       <Link>Modules\UNET\ScriptBindings\UNETworking.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UnityAnalytics\ContinuousEvent\Manager.bindings.cs">
-      <Link>Modules\UnityAnalytics\ContinuousEvent\Manager.bindings.cs</Link>
+    <Compile Include="..\..\Modules\UnityAnalytics\ContinuousEvent\ContinuousEvent.bindings.cs">
+      <Link>Modules\UnityAnalytics\ContinuousEvent\ContinuousEvent.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UnityAnalytics\Public\AnalyticsSessionInfo.bindings.cs">
       <Link>Modules\UnityAnalytics\Public\AnalyticsSessionInfo.bindings.cs</Link>
@@ -1596,18 +1629,6 @@
     </Compile>
     <Compile Include="..\..\Modules\XR\Subsystems\Example\XRExampleSubsystemDescriptor.bindings.cs">
       <Link>Modules\XR\Subsystems\Example\XRExampleSubsystemDescriptor.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\XR\Subsystems\Experience\XRExperienceSubsystem.bindings.cs">
-      <Link>Modules\XR\Subsystems\Experience\XRExperienceSubsystem.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\XR\Subsystems\Experience\XRExperienceSubsystemDescriptor.bindings.cs">
-      <Link>Modules\XR\Subsystems\Experience\XRExperienceSubsystemDescriptor.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\XR\Subsystems\Gestures\XRGestureSubsystem.bindings.cs">
-      <Link>Modules\XR\Subsystems\Gestures\XRGestureSubsystem.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\XR\Subsystems\Gestures\XRGestureSubsystemDescriptor.bindings.cs">
-      <Link>Modules\XR\Subsystems\Gestures\XRGestureSubsystemDescriptor.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\XR\Subsystems\Input\XRInputSubsystem.bindings.cs">
       <Link>Modules\XR\Subsystems\Input\XRInputSubsystem.bindings.cs</Link>
@@ -2035,6 +2056,9 @@
     <Compile Include="..\..\Runtime\Export\Graphics\Mesh.cs">
       <Link>Runtime\Export\Graphics\Mesh.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\OnDemandRendering.bindings.cs">
+      <Link>Runtime\Export\Graphics\OnDemandRendering.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\RenderingCommandBuffer.bindings.cs">
       <Link>Runtime\Export\Graphics\RenderingCommandBuffer.bindings.cs</Link>
     </Compile>
@@ -2043,6 +2067,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\RenderingCommandBuffer.deprecated.cs">
       <Link>Runtime\Export\Graphics\RenderingCommandBuffer.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\ShaderWarmup.bindings.cs">
+      <Link>Runtime\Export\Graphics\ShaderWarmup.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\SplashScreen.bindings.cs">
       <Link>Runtime\Export\Graphics\SplashScreen.bindings.cs</Link>
@@ -2530,11 +2557,14 @@
     <Compile Include="..\..\Runtime\Export\StaticBatching\MeshSubsetCombineUtility.cs">
       <Link>Runtime\Export\StaticBatching\MeshSubsetCombineUtility.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\StaticShim\ShimBase.cs">
-      <Link>Runtime\Export\StaticShim\ShimBase.cs</Link>
+    <Compile Include="..\..\Runtime\Export\StaticShim\ScreenShimBase.cs">
+      <Link>Runtime\Export\StaticShim\ScreenShimBase.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\StaticShim\ShimManager.cs">
       <Link>Runtime\Export\StaticShim\ShimManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\StaticShim\SystemInfoShimBase.cs">
+      <Link>Runtime\Export\StaticShim\SystemInfoShimBase.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Stripping\ClassStubsForStripping.cs">
       <Link>Runtime\Export\Stripping\ClassStubsForStripping.cs</Link>

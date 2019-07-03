@@ -8,6 +8,7 @@ using Unity.Collections;
 
 namespace UnityEngine.UIElements
 {
+    [Serializable]
     public struct Vertex
     {
         public readonly static float nearZ = -1.0f;
@@ -17,7 +18,8 @@ namespace UnityEngine.UIElements
         public Vector2 uv;
         internal float transformID;   // Allocator gives an int, but we only take floats, so set to ((float)transformID)
         internal float clipRectID;    // Comes from the same pool as transformIDs
-        internal float flags;         // Solid,Font,AtlasTextured,CustomTextured,Edge,SVG with gradients,...
+        [SerializeField] internal float flags; // Solid,Font,AtlasTextured,CustomTextured,Edge,SVG with gradients,...
+        [SerializeField] internal float settingIndex; // Index in stored SVG gradients atlas
         // Winding order of vertices matters. CCW is for clipped meshes.
     }
 
@@ -55,24 +57,21 @@ namespace UnityEngine.UIElements
             m_Vertices = vertices;
             m_Indices = indices;
             m_UVRegion = new Rect(0, 0, 1, 1);
-            m_Flags = UIR.VertexFlags.IsSolid;
             currentIndex = currentVertex = 0;
         }
 
-        internal void Reset(NativeSlice<Vertex> vertices, NativeSlice<UInt16> indices, Rect uvRegion, UIR.VertexFlags flags)
+        internal void Reset(NativeSlice<Vertex> vertices, NativeSlice<UInt16> indices, Rect uvRegion)
         {
             m_Vertices = vertices;
             m_Indices = indices;
             m_UVRegion = uvRegion;
-            m_Flags = flags;
             currentIndex = currentVertex = 0;
         }
 
         internal NativeSlice<Vertex> m_Vertices;
         internal NativeSlice<UInt16> m_Indices;
         internal Rect m_UVRegion;
-        internal UIR.VertexFlags m_Flags;
-        int currentIndex, currentVertex;
+        internal int currentIndex, currentVertex;
     }
 
     internal static class MeshGenerationContextUtils
@@ -80,8 +79,12 @@ namespace UnityEngine.UIElements
         public struct BorderParams
         {
             public Rect rect;
-            public Color color;
             public Color playmodeTintColor;
+
+            public Color leftColor;
+            public Color topColor;
+            public Color rightColor;
+            public Color bottomColor;
 
             public float leftWidth;
             public float topWidth;
@@ -94,22 +97,6 @@ namespace UnityEngine.UIElements
             public Vector2 bottomLeftRadius;
 
             public Material material;
-
-            public static BorderParams MakeSimple(Rect rect, float width, Vector2 radius, Color color, ContextType panelContext)
-            {
-                var playmodeTintColor = panelContext == ContextType.Editor
-                    ? UIElementsUtility.editorPlayModeTintColor
-                    : Color.white;
-
-                return new BorderParams()
-                {
-                    rect = rect,
-                    color = color,
-                    topWidth = width, rightWidth = width, bottomWidth = width, leftWidth = width,
-                    topLeftRadius = radius, topRightRadius = radius, bottomRightRadius = radius, bottomLeftRadius = radius,
-                    playmodeTintColor = playmodeTintColor
-                };
-            }
         }
 
         public struct RectangleParams
@@ -118,7 +105,9 @@ namespace UnityEngine.UIElements
             public Rect uv;
             public Color color;
             public Texture texture;
+            public VectorImage vectorImage;
             public Material material;
+            public ScaleMode scaleMode;
             public Color playmodeTintColor;
 
             public Vector2 topLeftRadius;
@@ -200,6 +189,25 @@ namespace UnityEngine.UIElements
                     uv = uv,
                     color = Color.white,
                     texture = texture,
+                    scaleMode = scaleMode,
+                    playmodeTintColor = playmodeTintColor
+                };
+                return rp;
+            }
+
+            public static RectangleParams MakeVectorTextured(Rect rect, Rect uv, VectorImage vectorImage, ScaleMode scaleMode, ContextType panelContext)
+            {
+                var playmodeTintColor = panelContext == ContextType.Editor
+                    ? UIElementsUtility.editorPlayModeTintColor
+                    : Color.white;
+
+                var rp = new RectangleParams
+                {
+                    rect = rect,
+                    uv = uv,
+                    color = Color.white,
+                    vectorImage = vectorImage,
+                    scaleMode = scaleMode,
                     playmodeTintColor = playmodeTintColor
                 };
                 return rp;
@@ -310,7 +318,7 @@ namespace UnityEngine.UIElements
     public class MeshGenerationContext
     {
         [Flags]
-        internal enum MeshFlags { None, UVisDisplacement };
+        internal enum MeshFlags { None, UVisDisplacement, IsSVGGradients, IsCustomSVGGradients };
 
         public VisualElement visualElement { get { return painter.visualElement; } }
 

@@ -10,17 +10,17 @@ namespace UnityEditor.PackageManager.UI
     {
         internal new class UxmlFactory : UxmlFactory<ArrowToggle> {}
 
-        private bool _Expanded;
-        public bool Expanded
+        private bool m_Expanded;
+        public bool expanded
         {
-            get { return _Expanded; }
+            get { return m_Expanded; }
             set
             {
-                _Expanded = value;
+                m_Expanded = value;
 
-                this.EnableClassToggle("expanded", "collapsed", Expanded);
+                this.EnableClassToggle("expanded", "collapsed", expanded);
 
-                if (_Expanded)
+                if (m_Expanded)
                     SetDirection(Direction.Down);
                 else
                     SetDirection(Direction.Right);
@@ -29,12 +29,12 @@ namespace UnityEditor.PackageManager.UI
 
         public ArrowToggle()
         {
-            Expanded = false;
+            expanded = false;
         }
 
         public void Toggle()
         {
-            Expanded = !Expanded;
+            expanded = !expanded;
         }
     }
 }
