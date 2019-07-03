@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor.Experimental.VFX;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {

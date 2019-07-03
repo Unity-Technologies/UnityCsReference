@@ -18,27 +18,27 @@ namespace UnityEditor.PackageManager.UI
             cache = new VisualElementCache(root);
         }
 
-        public void SetPackage(IPackageVersion package)
+        public void SetPackageVersion(IPackageVersion version)
         {
             importStatusContainer.Clear();
             nameLabelContainer.Clear();
             sizeLabelContainer.Clear();
             importButtonContainer.Clear();
 
-            if (package == null || package.samples == null || !package.samples.Any())
+            if (version == null || version.samples == null || !version.samples.Any())
             {
                 UIUtils.SetElementDisplay(this, false);
                 return;
             }
             UIUtils.SetElementDisplay(this, true);
-            foreach (var sample in package.samples)
+            foreach (var sample in version.samples)
             {
-                var sampleItem = new PackageSampleItem(sample);
+                var sampleItem = new PackageSampleItem(version, sample);
                 importStatusContainer.Add(sampleItem.importStatus);
                 nameLabelContainer.Add(sampleItem.nameLabel);
                 sizeLabelContainer.Add(sampleItem.sizeLabel);
                 importButtonContainer.Add(sampleItem.importButton);
-                sampleItem.importButton.SetEnabled(package.isInstalled);
+                sampleItem.importButton.SetEnabled(version.isInstalled);
             }
         }
 

@@ -271,10 +271,5 @@ namespace UnityEditor.UIElements.Samples
 
             return scrollView;
         }
-
-        private VisualElement MakeEmptyPanel(SampleTreeItem item)
-        {
-            return new Label(item.name + ": Nothing to see here.");
-        }
     }
 }

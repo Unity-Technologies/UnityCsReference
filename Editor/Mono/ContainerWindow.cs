@@ -338,26 +338,6 @@ namespace UnityEditor
             return PopupLocationHelper.GetDropDownRect(buttonRect, minSize, maxSize, this);
         }
 
-        internal Rect FitPopupWindowRectToScreen(Rect rect, float minimumHeight)
-        {
-            const float maxHeight = 900;
-            float spaceFromBottom = 0f;
-            if (Application.platform == RuntimePlatform.OSXEditor)
-                spaceFromBottom = 10f;
-
-            float minHeight = minimumHeight + spaceFromBottom;
-            Rect p = rect;
-            p.height = Mathf.Min(p.height, maxHeight);
-            p.height += spaceFromBottom;
-            p = FitWindowRectToScreen(p, true, true);
-
-            float newHeight = Mathf.Max(p.yMax - rect.y, minHeight);
-            p.y = p.yMax - newHeight;
-            p.height = newHeight - spaceFromBottom;
-
-            return p;
-        }
-
         public void HandleWindowDecorationEnd(Rect windowPosition)
         {
             // No Op

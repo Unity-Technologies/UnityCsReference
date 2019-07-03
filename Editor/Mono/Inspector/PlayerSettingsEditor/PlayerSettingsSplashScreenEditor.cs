@@ -342,9 +342,9 @@ namespace UnityEditor
                 if (SplashScreen.isFinished)
                 {
                     SplashScreen.Begin();
-                    var gv = GameView.GetMainGameView();
-                    if (gv)
-                        gv.Focus();
+                    var preview = PreviewEditorWindow.GetMainPreviewWindow();
+                    if (preview)
+                        preview.Focus();
                     EditorApplication.update += PollSplashState;
                 }
                 else

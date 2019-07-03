@@ -424,10 +424,10 @@ namespace UnityEditor
             m_MinMaxHorizontalSliderThumb = GetStyle("MinMaxHorizontalSliderThumb");
             m_DropDownList = GetStyle("DropDownButton");
             m_MinMaxStateDropdown = GetStyle("IN MinMaxStateDropdown");
-            m_BoldFont = GetStyle("BoldLabel").font;
-            m_StandardFont = GetStyle("Label").font;
-            m_MiniFont = GetStyle("MiniLabel").font;
-            m_MiniBoldFont = GetStyle("MiniBoldLabel").font;
+            m_BoldFont = EditorResources.GetBoldFont();
+            m_StandardFont = EditorResources.GetNormalFont();
+            m_MiniFont =  EditorResources.GetSmallFont();
+            m_MiniBoldFont = EditorResources.GetBoldFont();
             m_ProgressBarBack = GetStyle("ProgressBarBack");
             m_ProgressBarBar = GetStyle("ProgressBarBar");
             m_ProgressBarText = GetStyle("ProgressBarText");

@@ -9,7 +9,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using UnityEditor;
 
 namespace UnityEditor
 {
@@ -38,7 +37,6 @@ namespace UnityEditor
             public string region;
             public string twitter;
             public string nationality;
-            public string gravatar_hash;
             public bool alumni;
 
             public string FormattedName

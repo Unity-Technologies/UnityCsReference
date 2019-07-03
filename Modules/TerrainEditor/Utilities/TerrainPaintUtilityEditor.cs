@@ -108,8 +108,22 @@ namespace UnityEditor.Experimental.TerrainAPI
             int quadsY = heightmapPC.pixelRect.height - 1;
             int vertexCount = quadsX * quadsY * (2 * 3);  // two triangles (2 * 3 vertices) per quad
 
+            // issue: the 'int vertexID' in the shader is often stored in an fp32
+            // which can only represent exact integers up to 16777216 ~== 6 * 1672^2
+            // once we have more than 16777216 vertices, the vertexIDs start skipping odd values, resulting in missing triangles
+            // the solution is to reduce vertex count by halving our mesh resolution before we hit that point
+            const int kMaxFP32Int = 16777216;
+            int vertSkip = 1;
+            while (vertexCount > kMaxFP32Int / 2)   // in practice we want to stay well below 16 million verts, for perf sanity
+            {
+                quadsX = (quadsX + 1) / 2;
+                quadsY = (quadsY + 1) / 2;
+                vertexCount = quadsX * quadsY * (2 * 3);
+                vertSkip *= 2;
+            }
+
             // this is used to tessellate the quad mesh (from within the vertex shader)
-            proceduralMaterial.SetVector("_QuadRez", new Vector4(quadsX, quadsY, vertexCount, 0.0f));
+            proceduralMaterial.SetVector("_QuadRez", new Vector4(quadsX, quadsY, vertexCount, vertSkip));
 
             // paint context pixels to heightmap uv:   uv = (pixels + 0.5) / width
             Texture heightmapTexture = (previewTexture == BrushPreview.SourceRenderTexture) ? heightmapPC.sourceRenderTexture : heightmapPC.destinationRenderTexture;

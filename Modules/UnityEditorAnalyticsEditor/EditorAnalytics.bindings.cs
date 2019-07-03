@@ -149,31 +149,6 @@ namespace UnityEditor
         private extern static AnalyticsResult SetEventWithLimitEndPoint(string eventName, string endPoint, int ver, string prefix);
 
         private extern static AnalyticsResult SetEventWithLimitPriority(string eventName, AnalyticsEventPriority eventPriority, int ver, string prefix);
-
-        internal class ContinuousEvent
-        {
-            public static void RegisterCollector<T>(string collectorName, System.Func<T> del) where T : struct, IComparable<T>, IEquatable<T>
-            {
-                RegisterCollector_Internal(typeof(T).ToString(), collectorName, del);
-            }
-
-            public static void SetEventHistogramThresholds<T>(string eventName, int count, T[] data) where T : struct, IComparable<T>, IEquatable<T>
-            {
-                SetEventHistogramThresholds_Internal(typeof(T).ToString(), eventName, count, data);
-            }
-
-            [StaticAccessor("GetUnityEditorAnalyticsManager().GetUnityEditorAnalytics()->GetContinuousEventManager()", StaticAccessorType.Dot)]
-            extern private static void RegisterCollector_Internal(string type, string collectorName, object collector);
-
-            [StaticAccessor("GetUnityEditorAnalyticsManager().GetUnityEditorAnalytics()->GetContinuousEventManager()", StaticAccessorType.Dot)]
-            extern private static void SetEventHistogramThresholds_Internal(string type, string eventName, int count, object data);
-
-            [StaticAccessor("GetUnityEditorAnalyticsManager().GetUnityEditorAnalytics()->GetContinuousEventManager()", StaticAccessorType.Dot)]
-            extern public static void EnableEvent(string eventName, bool enabled);
-
-            [StaticAccessor("GetUnityEditorAnalyticsManager().GetUnityEditorAnalytics()->GetContinuousEventManager()", StaticAccessorType.Dot)]
-            extern public static void ConfigureEvent(string eventName, string collectorName, float interval, float period, bool enabled, bool custom = false);
-        }
     }
 
     [RequiredByNativeCode]

@@ -66,11 +66,6 @@ namespace UnityEditor.StyleSheets
                 resource = AssetDatabase.LoadMainAssetAtPath(pathName);
             }
 
-            if (resource != null)
-            {
-                Debug.Assert(type.IsAssignableFrom(resource.GetType()), "Resource type mismatch");
-            }
-
             if (assetIsRetinaTexture)
             {
                 Texture2D tex = (Texture2D)resource;

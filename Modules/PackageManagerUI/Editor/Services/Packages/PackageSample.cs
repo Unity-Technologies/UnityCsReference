@@ -155,15 +155,7 @@ namespace UnityEditor.PackageManager.UI
                 if (string.IsNullOrEmpty(resolvedPath) || !Directory.Exists(resolvedPath))
                     return "0 KB";
                 var sizeInBytes = IOUtils.DirectorySizeInBytes(resolvedPath);
-                string[] sizes = { "KB", "MB", "GB", "TB" };
-                double len = sizeInBytes / 1024.0;
-                int order = 0;
-                while (len >= 1024 && order < sizes.Length - 1)
-                {
-                    order++;
-                    len = len / 1024;
-                }
-                return $"{len:0.##} {sizes[order]}";
+                return UIUtils.convertToHumanReadableSize(sizeInBytes);
             }
         }
     }

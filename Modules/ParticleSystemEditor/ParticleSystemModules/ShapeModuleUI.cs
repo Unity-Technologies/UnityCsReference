@@ -1002,13 +1002,13 @@ namespace UnityEditor
 
                 if (EditMode.editMode == EditMode.SceneViewEditMode.ParticleSystemShapeModulePosition || EditMode.editMode == EditMode.SceneViewEditMode.ParticleSystemShapeModuleRotation || EditMode.editMode == EditMode.SceneViewEditMode.ParticleSystemShapeModuleScale)
                 {
-                    Handles.matrix = transformMatrix;
+                    Handles.matrix = Matrix4x4.identity;
 
-                    float handleSize = HandleUtility.GetHandleSize(shapeModule.position);
+                    Vector3 position = transformMatrix.MultiplyPoint(shapeModule.position);
+                    Quaternion rotation = transformMatrix.rotation * Quaternion.Euler(shapeModule.rotation);
+                    Vector3 scale = transformMatrix.MultiplyVector(shapeModule.scale);
 
-                    Vector3 position = shapeModule.position;
-                    Quaternion rotation = Quaternion.Euler(shapeModule.rotation);
-                    Vector3 scale = shapeModule.scale;
+                    float handleSize = HandleUtility.GetHandleSize(position);
 
                     EditorGUI.BeginChangeCheck();
 
@@ -1023,9 +1023,11 @@ namespace UnityEditor
                     {
                         Undo.RecordObject(ps, s_Texts.undoTransform);
 
-                        shapeModule.position = position;
-                        shapeModule.rotation = rotation.eulerAngles;
-                        shapeModule.scale = scale;
+                        Matrix4x4 inverseTransformMatrix = transformMatrix.inverse;
+
+                        shapeModule.position = inverseTransformMatrix.MultiplyPoint(position);
+                        shapeModule.rotation = (inverseTransformMatrix.rotation * rotation).eulerAngles;
+                        shapeModule.scale = inverseTransformMatrix.MultiplyVector(scale);
                     }
                 }
             }

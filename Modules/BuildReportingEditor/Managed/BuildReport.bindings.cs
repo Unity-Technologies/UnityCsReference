@@ -31,6 +31,11 @@ namespace UnityEditor.Build.Reporting
             get { return GetAppendices<StrippingInfo>().SingleOrDefault(); }
         }
 
+        public PackedAssets[] packedAssets
+        {
+            get { return GetAppendicesByType<PackedAssets>(); }
+        }
+
         [NativeMethod("RelocateFiles")]
         internal extern void RecordFilesMoved(string originalPathPrefix, string newPathPrefix);
 
@@ -63,6 +68,13 @@ namespace UnityEditor.Build.Reporting
         }
 
         internal extern Object[] GetAppendices([NotNull] Type type);
+
+        internal TAppendix[] GetAppendicesByType<TAppendix>() where TAppendix : Object
+        {
+            return GetAppendicesByType(typeof(TAppendix)).Cast<TAppendix>().ToArray();
+        }
+
+        internal extern Object[] GetAppendicesByType([NotNull] Type type);
 
         internal extern Object[] GetAllAppendices();
 

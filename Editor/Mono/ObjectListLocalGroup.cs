@@ -721,10 +721,17 @@ namespace UnityEditor
 
                         m_Content.text = labeltext;
                         m_Content.image = null;
-                        Texture2D icon = filterItem != null ? filterItem.icon : AssetPreview.GetAssetPreview(instanceID, m_Owner.GetAssetPreviewManagerID());
+                        Texture2D icon;
 
-                        if (icon == null && m_Owner.GetCreateAssetUtility().icon != null)
+                        if (m_Owner.GetCreateAssetUtility().instanceID == instanceID && m_Owner.GetCreateAssetUtility().icon != null)
+                        {
+                            // If we are creating a new asset we might have an icon to use
                             icon = m_Owner.GetCreateAssetUtility().icon;
+                        }
+                        else
+                        {
+                            icon = filterItem != null ? filterItem.icon : AssetPreview.GetAssetPreview(instanceID, m_Owner.GetAssetPreviewManagerID());
+                        }
 
                         if (selected)
                             s_Styles.resultsLabel.Draw(position, GUIContent.none, false, false, selected, m_Owner.HasFocus());

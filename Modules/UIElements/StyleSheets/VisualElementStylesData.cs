@@ -59,7 +59,6 @@ namespace UnityEngine.UIElements.StyleSheets
         internal StyleColor color;
         internal StyleInt flexDirection;
         internal StyleColor backgroundColor;
-        internal StyleColor borderColor;
         internal StyleBackground backgroundImage;
         internal StyleInt unityBackgroundScaleMode;
         internal StyleColor unityBackgroundImageTintColor;
@@ -67,6 +66,10 @@ namespace UnityEngine.UIElements.StyleSheets
         internal StyleInt alignContent;
         internal StyleInt justifyContent;
         internal StyleInt flexWrap;
+        internal StyleColor borderLeftColor;
+        internal StyleColor borderTopColor;
+        internal StyleColor borderRightColor;
+        internal StyleColor borderBottomColor;
         internal StyleFloat borderLeftWidth;
         internal StyleFloat borderTopWidth;
         internal StyleFloat borderRightWidth;
@@ -111,7 +114,10 @@ namespace UnityEngine.UIElements.StyleSheets
             flexShrink = StyleSheetCache.GetInitialValue(StylePropertyID.FlexShrink).ToStyleFloat();
             flexBasis = StyleSheetCache.GetInitialValue(StylePropertyID.FlexBasis).ToStyleLength();
             color = StyleSheetCache.GetInitialValue(StylePropertyID.Color).color;
-            borderColor = StyleSheetCache.GetInitialValue(StylePropertyID.BorderColor).color;
+            borderLeftColor = StyleSheetCache.GetInitialValue(StylePropertyID.BorderLeftColor).color;
+            borderTopColor = StyleSheetCache.GetInitialValue(StylePropertyID.BorderTopColor).color;
+            borderRightColor = StyleSheetCache.GetInitialValue(StylePropertyID.BorderRightColor).color;
+            borderBottomColor = StyleSheetCache.GetInitialValue(StylePropertyID.BorderBottomColor).color;
             opacity = StyleSheetCache.GetInitialValue(StylePropertyID.Opacity).number;
             unityBackgroundImageTintColor = StyleSheetCache.GetInitialValue(StylePropertyID.BackgroundImageTintColor).color;
         }
@@ -154,7 +160,6 @@ namespace UnityEngine.UIElements.StyleSheets
             color.Apply(other.color, mode);
             flexDirection.Apply(other.flexDirection, mode);
             backgroundColor.Apply(other.backgroundColor, mode);
-            borderColor.Apply(other.borderColor, mode);
             backgroundImage.Apply(other.backgroundImage, mode);
             unityBackgroundScaleMode.Apply(other.unityBackgroundScaleMode, mode);
             unityBackgroundImageTintColor.Apply(other.unityBackgroundImageTintColor, mode);
@@ -162,6 +167,10 @@ namespace UnityEngine.UIElements.StyleSheets
             alignContent.Apply(other.alignContent, mode);
             justifyContent.Apply(other.justifyContent, mode);
             flexWrap.Apply(other.flexWrap, mode);
+            borderLeftColor.Apply(other.borderLeftColor, mode);
+            borderTopColor.Apply(other.borderTopColor, mode);
+            borderRightColor.Apply(other.borderRightColor, mode);
+            borderBottomColor.Apply(other.borderBottomColor, mode);
             borderLeftWidth.Apply(other.borderLeftWidth, mode);
             borderTopWidth.Apply(other.borderTopWidth, mode);
             borderRightWidth.Apply(other.borderRightWidth, mode);
@@ -256,6 +265,7 @@ namespace UnityEngine.UIElements.StyleSheets
                         case StylePropertyID.Custom:
                             ApplyCustomStyleProperty(sheet, styleProperty, specificity);
                             break;
+                        case StylePropertyID.BorderColor:
                         case StylePropertyID.BorderRadius:
                         case StylePropertyID.BorderWidth:
                         case StylePropertyID.Flex:
@@ -298,6 +308,21 @@ namespace UnityEngine.UIElements.StyleSheets
                 case StylePropertyID.Custom:
                 {
                     Debug.LogAssertion($"Unexpected style property ID {propertyID.ToString()}.");
+                    break;
+                }
+                case StylePropertyID.BorderColor:
+                {
+                    StyleValue sv = StyleSheetCache.GetInitialValue(StylePropertyID.BorderLeftColor);
+                    ApplyStyleValue(sv.id, sv, specificity);
+
+                    sv = StyleSheetCache.GetInitialValue(StylePropertyID.BorderTopColor);
+                    ApplyStyleValue(sv.id, sv, specificity);
+
+                    sv = StyleSheetCache.GetInitialValue(StylePropertyID.BorderRightColor);
+                    ApplyStyleValue(sv.id, sv, specificity);
+
+                    sv = StyleSheetCache.GetInitialValue(StylePropertyID.BorderBottomColor);
+                    ApplyStyleValue(sv.id, sv, specificity);
                     break;
                 }
                 case StylePropertyID.BorderRadius:
@@ -380,6 +405,7 @@ namespace UnityEngine.UIElements.StyleSheets
                 default:
                 {
                     StyleValue sv = StyleSheetCache.GetInitialValue(propertyID);
+                    Debug.Assert(sv.keyword != StyleKeyword.Initial, "Recursive apply initial value");
                     ApplyStyleValue(sv.id, sv, specificity);
                     break;
                 }
@@ -550,8 +576,20 @@ namespace UnityEngine.UIElements.StyleSheets
                     applicator.ApplyColor(sheet, handles, specificity, ref unityBackgroundImageTintColor);
                     break;
 
-                case StylePropertyID.BorderColor:
-                    applicator.ApplyColor(sheet, handles, specificity, ref borderColor);
+                case StylePropertyID.BorderLeftColor:
+                    applicator.ApplyColor(sheet, handles, specificity, ref borderLeftColor);
+                    break;
+
+                case StylePropertyID.BorderTopColor:
+                    applicator.ApplyColor(sheet, handles, specificity, ref borderTopColor);
+                    break;
+
+                case StylePropertyID.BorderRightColor:
+                    applicator.ApplyColor(sheet, handles, specificity, ref borderRightColor);
+                    break;
+
+                case StylePropertyID.BorderBottomColor:
+                    applicator.ApplyColor(sheet, handles, specificity, ref borderBottomColor);
                     break;
 
                 case StylePropertyID.BorderLeftWidth:
@@ -627,6 +665,10 @@ namespace UnityEngine.UIElements.StyleSheets
         {
             switch (propertyID)
             {
+                case StylePropertyID.BorderColor:
+                    ShorthandApplicator.ApplyBorderColor(sheet, handles, specificity, this);
+                    break;
+
                 case StylePropertyID.BorderRadius:
                     ShorthandApplicator.ApplyBorderRadius(sheet, handles, specificity, this);
                     break;
@@ -735,6 +777,21 @@ namespace UnityEngine.UIElements.StyleSheets
             {
                 s_StyleSheetApplicator.ApplyImage(propertyHandle.data, propertyHandle.handles, propertyHandle.specificity, ref tmp);
                 value = tmp.value.texture;
+                return true;
+            }
+
+            value = null;
+            return false;
+        }
+
+        public bool TryGetValue(CustomStyleProperty<VectorImage> property, out VectorImage value)
+        {
+            CustomPropertyHandle propertyHandle;
+            var tmp = new StyleBackground();
+            if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out propertyHandle))
+            {
+                s_StyleSheetApplicator.ApplyImage(propertyHandle.data, propertyHandle.handles, propertyHandle.specificity, ref tmp);
+                value = tmp.value.vectorImage;
                 return true;
             }
 

@@ -120,13 +120,13 @@ namespace UnityEditor.StyleSheets
             {
                 UnityEngine.Object asset = DeclareDependencyAndLoad(projectRelativePath);
 
-                if (asset is Texture2D || asset is Font)
+                if (asset is Texture2D || asset is Font || asset is VectorImage)
                 {
                     m_Builder.AddValue(asset);
                 }
                 else
                 {
-                    m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidURIProjectAssetType, string.Format("Invalid asset type {0}, only Font and Texture2D are supported", asset.GetType().Name));
+                    m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidURIProjectAssetType, string.Format("Invalid asset type {0}, only Font, Texture2D and VectorImage are supported", asset.GetType().Name));
                 }
             }
         }

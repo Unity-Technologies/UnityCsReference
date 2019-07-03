@@ -10,7 +10,7 @@ using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 
-namespace UnityEditor.Experimental.VFX
+namespace UnityEditor.VFX
 {
     [UsedByNativeCode]
     [NativeHeader("Modules/VFXEditor/Public/VFXMemorySerializer.h")]

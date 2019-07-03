@@ -20,6 +20,8 @@ namespace UnityEditor
 
         private static extern Texture2D GetTextureByHandle(IntPtr handle);
 
+        private static extern string[] GetHeadersByHandle(IntPtr handle);
+
         public static extern void AbortByTag(string tag);
 
         private static extern void AbortByHandle(IntPtr handle);

@@ -209,7 +209,6 @@ namespace UnityEditor
         static readonly Quaternion kDefaultRotation = Quaternion.LookRotation(new Vector3(-1, -.7f, -1));
 
         const float kDefaultViewSize = 10f;
-        const CameraEvent kCommandBufferCameraEvent = CameraEvent.AfterImageEffectsOpaque;
 
         [NonSerialized]
         static readonly Vector3 kDefaultPivot = Vector3.zero;
@@ -317,8 +316,6 @@ namespace UnityEditor
         }
 
         internal static List<CameraMode> userDefinedModes { get; } = new List<CameraMode>();
-
-        internal Object m_OneClickDragObject;
 
         [SerializeField]
         bool m_PlayAudio = false;
@@ -893,10 +890,10 @@ namespace UnityEditor
         internal void OnLostFocus()
         {
             // don't bleed our scene view rendering into game view
-            GameView gameView = (GameView)WindowLayout.FindEditorWindowOfType(typeof(GameView));
-            if (gameView && gameView.m_Parent != null && m_Parent != null && gameView.m_Parent == m_Parent)
+            var previewWindow = PreviewEditorWindow.GetMainPreviewWindow();
+            if (previewWindow && previewWindow.m_Parent != null && m_Parent != null && previewWindow.m_Parent == m_Parent)
             {
-                gameView.m_Parent.backgroundValid = false;
+                previewWindow.m_Parent.backgroundValid = false;
             }
 
             if (s_LastActiveSceneView == this)
@@ -3474,9 +3471,12 @@ namespace UnityEditor
                         if (EditorGUI.EndChangeCheck())
                             editor.serializedObject.SetIsDifferentCacheDirty();
                     }
+
                     ResetOnSceneGUIState();
                 }
             }
+
+            EditorToolContext.InvokeOnSceneGUICustomEditorTools();
 
             if (duringSceneGui != null)
             {
@@ -3580,10 +3580,10 @@ namespace UnityEditor
 
         internal static void ShowSceneViewPlayModeSaveWarning()
         {
-            // In this case, we wan't to explicitely try the GameView before passing it on to whatever notificationView we have
-            var gameView = (GameView)WindowLayout.FindEditorWindowOfType(typeof(GameView));
-            if (gameView != null && gameView.hasFocus)
-                gameView.ShowNotification(EditorGUIUtility.TrTextContent("You must exit play mode to save the scene!"));
+            // In this case, we want to explicitly try the GameView before passing it on to whatever notificationView we have
+            var preview = (PreviewEditorWindow)WindowLayout.FindEditorWindowOfType(typeof(PreviewEditorWindow));
+            if (preview != null && preview.hasFocus)
+                preview.ShowNotification(EditorGUIUtility.TrTextContent("You must exit play mode to save the scene!"));
             else
                 ShowNotification("You must exit play mode to save the scene!");
         }
@@ -3622,7 +3622,7 @@ namespace UnityEditor
         {
             if (m_2DMode)
             {
-                lastSceneViewRotation = rotation;
+                lastSceneViewRotation = m_Rotation.target;
                 m_LastSceneViewOrtho = orthographic;
                 LookAt(pivot, Quaternion.identity, size, true);
                 if (Tools.current == Tool.Move)

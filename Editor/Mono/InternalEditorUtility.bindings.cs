@@ -129,6 +129,10 @@ namespace UnityEditorInternal
         [NativeMethod("PerformUnmarkedBumpMapTexturesFixingAfterDialog")]
         public extern static void BumpMapSettingsFixingWindowReportResult(int result);
 
+        [StaticAccessor("BumpMapSettings::Get()", StaticAccessorType.Dot)]
+        [NativeMethod("PerformUnmarkedBumpMapTexturesFixing")]
+        public extern static bool PerformUnmarkedBumpMapTexturesFixing();
+
         [FreeFunction("InternalEditorUtilityBindings::BumpMapTextureNeedsFixingInternal")]
         public extern static bool BumpMapTextureNeedsFixingInternal(Material material, string propName, bool flaggedAsNormal);
 
@@ -397,6 +401,12 @@ namespace UnityEditorInternal
         extern public static string unityPreferencesFolder
         {
             [FreeFunction]
+            get;
+        }
+
+        internal static extern string userAppDataFolder
+        {
+            [FreeFunction("GetUserAppDataFolder")]
             get;
         }
 

@@ -16,7 +16,9 @@ namespace UnityEditor.IMGUI.Controls
         }
 
         private static int m_SelectedIndex;
+#pragma warning disable 0649
         private AdvancedDropdownState m_State;
+#pragma warning restore 0649
 
         internal int selectedIndex
         {

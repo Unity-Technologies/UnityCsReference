@@ -8,9 +8,26 @@ using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
-using UnityEngine.Experimental.VFX;
+using UnityEngine.VFX;
 
+//Temporary
+//Adds ProcessCamera in UnityEngine.Experimental.VFX namespace for HDRP
+//Remove this code when a new com.unity.render-pipelines.high-definition built-in package has been provided
+using System.Runtime.CompilerServices;
+[assembly: InternalsVisibleTo("Unity.RenderPipelines.HighDefinition.Runtime")]
+[assembly: InternalsVisibleTo("Unity.RenderPipelines.HighDefinition.Runtime-testable")]
 namespace UnityEngine.Experimental.VFX
+{
+    internal static class VFXManager
+    {
+        public static void ProcessCamera(Camera cam)
+        {
+            UnityEngine.VFX.VFXManager.ProcessCamera(cam);
+        }
+    }
+}
+
+namespace UnityEngine.VFX
 {
     [RequiredByNativeCode]
     [NativeHeader("Modules/VFX/Public/VFXManager.h")]

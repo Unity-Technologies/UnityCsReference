@@ -8,6 +8,7 @@ namespace UnityEditor.PackageManager.UI
     {
         Unknown,
         Builtin,
-        Registry
+        Registry,
+        AssetStore,
     }
 }

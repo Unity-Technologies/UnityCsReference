@@ -714,11 +714,6 @@ namespace UnityEditor
         public string m_DisplayText;
         public int m_Flags;
 
-        bool IsBitSet(byte b, int pos)
-        {
-            return (b & (1 << pos)) != 0;
-        }
-
         public bool HasGizmo()
         {
             return (m_Flags & (int)Flags.kHasGizmo) > 0;

@@ -58,7 +58,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Graphics/Mesh/MeshScriptBindings.h")]
     [NativeHeader("Runtime/Camera/RenderLoops/MotionVectorRenderLoop.h")]
     [NativeHeader("Runtime/Input/GetInput.h")]
-    public sealed partial class SystemInfo
+    internal sealed class EditorSystemInfo
     {
         public const string unsupportedIdentifier = "n/a";
 
@@ -797,4 +797,212 @@ namespace UnityEngine
         [FreeFunction("ScriptingGraphicsCaps::UsesLoadStoreActions")]
         static extern bool UsesLoadStoreActions();
     }
+
+
+    public sealed partial class SystemInfo
+    {
+        public const string unsupportedIdentifier = EditorSystemInfo.unsupportedIdentifier;
+
+        public static float batteryLevel => ShimManager.SystemInfoShim.batteryLevel;
+
+        public static BatteryStatus batteryStatus => ShimManager.SystemInfoShim.batteryStatus;
+
+        public static string operatingSystem => ShimManager.SystemInfoShim.operatingSystem;
+
+        public static OperatingSystemFamily operatingSystemFamily => ShimManager.SystemInfoShim.operatingSystemFamily;
+
+        public static string processorType => ShimManager.SystemInfoShim.processorType;
+
+        public static int processorFrequency => ShimManager.SystemInfoShim.processorFrequency;
+
+        public static int processorCount => ShimManager.SystemInfoShim.processorCount;
+
+        public static int systemMemorySize => ShimManager.SystemInfoShim.systemMemorySize;
+
+        public static string deviceUniqueIdentifier => ShimManager.SystemInfoShim.deviceUniqueIdentifier;
+
+        public static string deviceName => ShimManager.SystemInfoShim.deviceName;
+
+        public static string deviceModel => ShimManager.SystemInfoShim.deviceModel;
+
+        public static bool supportsAccelerometer => ShimManager.SystemInfoShim.supportsAccelerometer;
+
+        public static bool supportsGyroscope => ShimManager.SystemInfoShim.supportsGyroscope;
+
+        public static bool supportsLocationService => ShimManager.SystemInfoShim.supportsLocationService;
+
+        public static bool supportsVibration => ShimManager.SystemInfoShim.supportsVibration;
+
+        public static bool supportsAudio => ShimManager.SystemInfoShim.supportsAudio;
+
+        public static DeviceType deviceType => ShimManager.SystemInfoShim.deviceType;
+
+        public static int graphicsMemorySize => ShimManager.SystemInfoShim.graphicsMemorySize;
+
+        public static string graphicsDeviceName => ShimManager.SystemInfoShim.graphicsDeviceName;
+
+        public static string graphicsDeviceVendor => ShimManager.SystemInfoShim.graphicsDeviceVendor;
+
+        public static int graphicsDeviceID => ShimManager.SystemInfoShim.graphicsDeviceID;
+
+        public static int graphicsDeviceVendorID => ShimManager.SystemInfoShim.graphicsDeviceVendorID;
+
+        public static Rendering.GraphicsDeviceType graphicsDeviceType => ShimManager.SystemInfoShim.graphicsDeviceType;
+
+        public static bool graphicsUVStartsAtTop => ShimManager.SystemInfoShim.graphicsUVStartsAtTop;
+
+        public static string graphicsDeviceVersion => ShimManager.SystemInfoShim.graphicsDeviceVersion;
+
+        public static int graphicsShaderLevel => ShimManager.SystemInfoShim.graphicsShaderLevel;
+
+        public static bool graphicsMultiThreaded => ShimManager.SystemInfoShim.graphicsMultiThreaded;
+
+        public static bool hasHiddenSurfaceRemovalOnGPU => ShimManager.SystemInfoShim.hasHiddenSurfaceRemovalOnGPU;
+
+        public static bool hasDynamicUniformArrayIndexingInFragmentShaders =>
+            ShimManager.SystemInfoShim.hasDynamicUniformArrayIndexingInFragmentShaders;
+
+        public static bool supportsShadows => ShimManager.SystemInfoShim.supportsShadows;
+
+        public static bool supportsRawShadowDepthSampling => ShimManager.SystemInfoShim.supportsRawShadowDepthSampling;
+
+        public static bool supportsMotionVectors => ShimManager.SystemInfoShim.supportsMotionVectors;
+
+        public static bool supports3DTextures => ShimManager.SystemInfoShim.supports3DTextures;
+
+        public static bool supports2DArrayTextures => ShimManager.SystemInfoShim.supports2DArrayTextures;
+
+        public static bool supports3DRenderTextures => ShimManager.SystemInfoShim.supports3DRenderTextures;
+
+        public static bool supportsCubemapArrayTextures => ShimManager.SystemInfoShim.supportsCubemapArrayTextures;
+
+        public static Rendering.CopyTextureSupport copyTextureSupport => ShimManager.SystemInfoShim.copyTextureSupport;
+
+        public static bool supportsComputeShaders => ShimManager.SystemInfoShim.supportsComputeShaders;
+
+        public static bool supportsGeometryShaders => ShimManager.SystemInfoShim.supportsGeometryShaders;
+
+        public static bool supportsTessellationShaders => ShimManager.SystemInfoShim.supportsTessellationShaders;
+
+        public static bool supportsInstancing => ShimManager.SystemInfoShim.supportsInstancing;
+
+        public static bool supportsHardwareQuadTopology => ShimManager.SystemInfoShim.supportsHardwareQuadTopology;
+
+        public static bool supports32bitsIndexBuffer => ShimManager.SystemInfoShim.supports32bitsIndexBuffer;
+
+        public static bool supportsSparseTextures => ShimManager.SystemInfoShim.supportsSparseTextures;
+
+        public static int supportedRenderTargetCount => ShimManager.SystemInfoShim.supportedRenderTargetCount;
+
+        public static bool supportsSeparatedRenderTargetsBlend => ShimManager.SystemInfoShim.supportsSeparatedRenderTargetsBlend;
+
+        public static int supportedRandomWriteTargetCount => ShimManager.SystemInfoShim.supportedRandomWriteTargetCount;
+
+        public static int supportsMultisampledTextures => ShimManager.SystemInfoShim.supportsMultisampledTextures;
+
+        public static bool supportsMultisampleAutoResolve => ShimManager.SystemInfoShim.supportsMultisampleAutoResolve;
+
+        public static int supportsTextureWrapMirrorOnce => ShimManager.SystemInfoShim.supportsTextureWrapMirrorOnce;
+
+        public static bool usesReversedZBuffer => ShimManager.SystemInfoShim.usesReversedZBuffer;
+
+        public static bool SupportsRenderTextureFormat(RenderTextureFormat format)
+        {
+            return ShimManager.SystemInfoShim.SupportsRenderTextureFormat(format);
+        }
+
+        public static bool SupportsBlendingOnRenderTextureFormat(RenderTextureFormat format)
+        {
+            return ShimManager.SystemInfoShim.SupportsBlendingOnRenderTextureFormat(format);
+        }
+
+        public static bool SupportsTextureFormat(TextureFormat format)
+        {
+            return ShimManager.SystemInfoShim.SupportsTextureFormat(format);
+        }
+
+        public static bool SupportsVertexAttributeFormat(VertexAttributeFormat format, int dimension)
+        {
+            return ShimManager.SystemInfoShim.SupportsVertexAttributeFormat(format, dimension);
+        }
+
+        public static NPOTSupport npotSupport => ShimManager.SystemInfoShim.npotSupport;
+
+        public static int maxTextureSize => ShimManager.SystemInfoShim.maxTextureSize;
+
+        public static int maxCubemapSize => ShimManager.SystemInfoShim.maxCubemapSize;
+
+        internal static int maxRenderTextureSize => EditorSystemInfo.maxRenderTextureSize;
+
+        public static int maxComputeBufferInputsVertex => ShimManager.SystemInfoShim.maxComputeBufferInputsVertex;
+
+        public static int maxComputeBufferInputsFragment => ShimManager.SystemInfoShim.maxComputeBufferInputsFragment;
+
+        public static int maxComputeBufferInputsGeometry => ShimManager.SystemInfoShim.maxComputeBufferInputsGeometry;
+
+        public static int maxComputeBufferInputsDomain => ShimManager.SystemInfoShim.maxComputeBufferInputsDomain;
+
+        public static int maxComputeBufferInputsHull => ShimManager.SystemInfoShim.maxComputeBufferInputsHull;
+
+        public static int maxComputeBufferInputsCompute => ShimManager.SystemInfoShim.maxComputeBufferInputsCompute;
+
+        public static int maxComputeWorkGroupSize => ShimManager.SystemInfoShim.maxComputeWorkGroupSize;
+
+        public static int maxComputeWorkGroupSizeX => ShimManager.SystemInfoShim.maxComputeWorkGroupSizeX;
+
+        public static int maxComputeWorkGroupSizeY => ShimManager.SystemInfoShim.maxComputeWorkGroupSizeY;
+
+        public static int maxComputeWorkGroupSizeZ => ShimManager.SystemInfoShim.maxComputeWorkGroupSizeZ;
+
+        public static bool supportsAsyncCompute => ShimManager.SystemInfoShim.supportsAsyncCompute;
+
+        public static bool supportsGraphicsFence => ShimManager.SystemInfoShim.supportsGraphicsFence;
+
+        public static bool supportsAsyncGPUReadback => ShimManager.SystemInfoShim.supportsAsyncGPUReadback;
+        public static bool supportsRayTracing => ShimManager.SystemInfoShim.supportsRayTracing;
+
+        public static bool supportsSetConstantBuffer => ShimManager.SystemInfoShim.supportsSetConstantBuffer;
+
+        public static bool minConstantBufferOffsetAlignment => ShimManager.SystemInfoShim.minConstantBufferOffsetAlignment;
+
+        public static bool hasMipMaxLevel => ShimManager.SystemInfoShim.hasMipMaxLevel;
+
+        public static bool supportsMipStreaming => ShimManager.SystemInfoShim.supportsMipStreaming;
+
+        public static bool usesLoadStoreActions => ShimManager.SystemInfoShim.usesLoadStoreActions;
+
+        public static bool IsFormatSupported(GraphicsFormat format, FormatUsage usage)
+        {
+            return ShimManager.SystemInfoShim.IsFormatSupported(format, usage);
+        }
+
+        public static GraphicsFormat GetCompatibleFormat(GraphicsFormat format, FormatUsage usage)
+        {
+            return ShimManager.SystemInfoShim.GetCompatibleFormat(format, usage);
+        }
+
+        public static GraphicsFormat GetGraphicsFormat(DefaultFormat format)
+        {
+            return ShimManager.SystemInfoShim.GetGraphicsFormat(format);
+        }
+
+        [Obsolete("supportsRenderTextures always returns true, no need to call it")]
+        public static bool supportsRenderTextures => EditorSystemInfo.supportsRenderTextures;
+
+        [Obsolete("supportsRenderToCubemap always returns true, no need to call it")]
+        public static bool supportsRenderToCubemap => EditorSystemInfo.supportsRenderToCubemap;
+
+        [Obsolete("supportsImageEffects always returns true, no need to call it")]
+        public static bool supportsImageEffects => EditorSystemInfo.supportsImageEffects;
+
+        [Obsolete("supportsStencil always returns true, no need to call it")]
+        public static int supportsStencil => EditorSystemInfo.supportsStencil;
+
+        [Obsolete("graphicsPixelFillrate is no longer supported in Unity 5.0+.")]
+        public static int graphicsPixelFillrate => EditorSystemInfo.graphicsPixelFillrate;
+
+        [Obsolete("Vertex program support is required in Unity 5.0+")]
+        public static bool supportsVertexPrograms => EditorSystemInfo.supportsVertexPrograms;
+    }
+
 }

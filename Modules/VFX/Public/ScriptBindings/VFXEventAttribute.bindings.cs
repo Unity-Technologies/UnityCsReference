@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
-namespace UnityEngine.Experimental.VFX
+namespace UnityEngine.VFX
 {
     [RequiredByNativeCode]
     [StructLayout(LayoutKind.Sequential)]

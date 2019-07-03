@@ -425,7 +425,11 @@ namespace UnityEditor.Experimental.GraphView
             if (m_ConnectorBox == null)
                 return;
 
-            m_ConnectorBox.style.borderColor = highlight ? m_PortColor : m_DisabledPortColor;
+            var color = highlight ? m_PortColor : m_DisabledPortColor;
+            m_ConnectorBox.style.borderLeftColor = color;
+            m_ConnectorBox.style.borderTopColor = color;
+            m_ConnectorBox.style.borderRightColor = color;
+            m_ConnectorBox.style.borderBottomColor = color;
             m_ConnectorBox.SetEnabled(highlight);
         }
 

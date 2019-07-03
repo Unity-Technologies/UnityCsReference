@@ -125,15 +125,15 @@ namespace UnityEngine
 {
     public sealed partial class Screen
     {
-        public static int width => ShimManager.GetActiveShim().width;
-        public static int height => ShimManager.GetActiveShim().height;
-        public static float dpi => ShimManager.GetActiveShim().dpi;
-        public static Resolution currentResolution => ShimManager.GetActiveShim().currentResolution;
-        public static Resolution[] resolutions => ShimManager.GetActiveShim().resolutions;
+        public static int width => ShimManager.ScreenShim.width;
+        public static int height => ShimManager.ScreenShim.height;
+        public static float dpi => ShimManager.ScreenShim.dpi;
+        public static Resolution currentResolution => ShimManager.ScreenShim.currentResolution;
+        public static Resolution[] resolutions => ShimManager.ScreenShim.resolutions;
 
         public static void SetResolution(int width, int height, FullScreenMode fullscreenMode, [uei.DefaultValue("0")] int preferredRefreshRate)
         {
-            ShimManager.GetActiveShim().SetResolution(width, height, fullscreenMode, preferredRefreshRate);
+            ShimManager.ScreenShim.SetResolution(width, height, fullscreenMode, preferredRefreshRate);
         }
 
         public static void SetResolution(int width, int height, FullScreenMode fullscreenMode)
@@ -153,60 +153,60 @@ namespace UnityEngine
 
         public static bool fullScreen
         {
-            get { return ShimManager.GetActiveShim().fullScreen; }
-            set { ShimManager.GetActiveShim().fullScreen = value; }
+            get { return ShimManager.ScreenShim.fullScreen; }
+            set { ShimManager.ScreenShim.fullScreen = value; }
         }
 
         public static FullScreenMode fullScreenMode
         {
-            get { return ShimManager.GetActiveShim().fullScreenMode; }
-            set { ShimManager.GetActiveShim().fullScreenMode = value; }
+            get { return ShimManager.ScreenShim.fullScreenMode; }
+            set { ShimManager.ScreenShim.fullScreenMode = value; }
         }
 
-        public static Rect safeArea => ShimManager.GetActiveShim().safeArea;
+        public static Rect safeArea => ShimManager.ScreenShim.safeArea;
 
-        public static Rect[] cutouts => ShimManager.GetActiveShim().cutouts;
+        public static Rect[] cutouts => ShimManager.ScreenShim.cutouts;
 
         public static bool autorotateToPortrait
         {
-            get { return ShimManager.GetActiveShim().autorotateToPortrait; }
-            set { ShimManager.GetActiveShim().autorotateToPortrait = value; }
+            get { return ShimManager.ScreenShim.autorotateToPortrait; }
+            set { ShimManager.ScreenShim.autorotateToPortrait = value; }
         }
 
         public static bool autorotateToPortraitUpsideDown
         {
-            get { return ShimManager.GetActiveShim().autorotateToPortraitUpsideDown; }
-            set { ShimManager.GetActiveShim().autorotateToPortraitUpsideDown = value; }
+            get { return ShimManager.ScreenShim.autorotateToPortraitUpsideDown; }
+            set { ShimManager.ScreenShim.autorotateToPortraitUpsideDown = value; }
         }
 
         public static bool autorotateToLandscapeLeft
         {
-            get { return ShimManager.GetActiveShim().autorotateToLandscapeLeft; }
-            set { ShimManager.GetActiveShim().autorotateToLandscapeLeft = value; }
+            get { return ShimManager.ScreenShim.autorotateToLandscapeLeft; }
+            set { ShimManager.ScreenShim.autorotateToLandscapeLeft = value; }
         }
 
         public static bool autorotateToLandscapeRight
         {
-            get { return ShimManager.GetActiveShim().autorotateToLandscapeRight; }
-            set { ShimManager.GetActiveShim().autorotateToLandscapeRight = value; }
+            get { return ShimManager.ScreenShim.autorotateToLandscapeRight; }
+            set { ShimManager.ScreenShim.autorotateToLandscapeRight = value; }
         }
 
         public static ScreenOrientation orientation
         {
-            get { return ShimManager.GetActiveShim().orientation; }
-            set { ShimManager.GetActiveShim().orientation = value; }
+            get { return ShimManager.ScreenShim.orientation; }
+            set { ShimManager.ScreenShim.orientation = value; }
         }
 
         public static int sleepTimeout
         {
-            get { return ShimManager.GetActiveShim().sleepTimeout; }
-            set { ShimManager.GetActiveShim().sleepTimeout = value; }
+            get { return ShimManager.ScreenShim.sleepTimeout; }
+            set { ShimManager.ScreenShim.sleepTimeout = value; }
         }
 
         public static float brightness
         {
-            get { return ShimManager.GetActiveShim().brightness; }
-            set { ShimManager.GetActiveShim().brightness = value; }
+            get { return ShimManager.ScreenShim.brightness; }
+            set { ShimManager.ScreenShim.brightness = value; }
         }
     }
 }
@@ -674,6 +674,21 @@ namespace UnityEngine
 
         // The number of cells (tetrahedra + outer cells) the space is divided to.
         public extern int cellCount {[NativeName("GetTetrahedraSize")] get; }
+    }
+}
+
+namespace UnityEngine
+{
+    public enum D3DHDRDisplayBitDepth
+    {
+        D3DHDRDisplayBitDepth10,
+        D3DHDRDisplayBitDepth16
+    }
+
+    static public class HDROutputSettings
+    {
+        [StaticAccessor("GetGfxDevice()", StaticAccessorType.Dot)]
+        static extern public void SetPaperWhiteInNits(float paperWhite);
     }
 }
 

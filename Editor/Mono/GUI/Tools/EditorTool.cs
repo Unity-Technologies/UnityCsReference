@@ -24,6 +24,11 @@ namespace UnityEditor.EditorTools
         }
     }
 
+    public interface IDrawSelectedHandles
+    {
+        void OnDrawHandles();
+    }
+
     public abstract class EditorTool : ScriptableObject
     {
         [HideInInspector]

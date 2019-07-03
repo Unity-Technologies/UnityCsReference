@@ -422,7 +422,7 @@ namespace UnityEditorInternal
 
         public static bool UseUnityLinkerEngineModuleStripping
         {
-            get { return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("UNITYLINKER_DISABLE_EMS")); }
+            get { return string.IsNullOrEmpty(Environment.GetEnvironmentVariable("UNITYLINKER_DISABLE_EMS")); }
         }
 
         private static string WriteTypesInScenesBlacklist(string managedAssemblyDirectory, RuntimeClassRegistry rcr)
@@ -567,7 +567,9 @@ namespace UnityEditorInternal
                 items.Add(new EditorToLinkerData.NativeTypeData
                 {
                     name = unityType.name,
-                    module = unityType.module
+                    module = unityType.module,
+                    baseName = unityType.baseClass != null ? unityType.baseClass.name : null,
+                    baseModule = unityType.baseClass != null ? unityType.baseClass.module : null,
                 });
             }
 

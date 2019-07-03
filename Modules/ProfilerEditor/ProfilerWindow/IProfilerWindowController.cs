@@ -2,6 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using UnityEngine.Profiling;
+using UnityEditor;
 using UnityEditor.Profiling;
 
 namespace UnityEditorInternal
@@ -15,6 +18,8 @@ namespace UnityEditorInternal
 
     internal interface IProfilerWindowController
     {
+        event ProfilerWindow.SelectionChangedCallback selectionChanged;
+
         void SetSelectedPropertyPath(string path);
         void ClearSelectedPropertyPath();
 
@@ -25,5 +30,11 @@ namespace UnityEditorInternal
         int GetActiveVisibleFrameIndex();
         bool IsRecording();
         void Repaint();
+
+        string ConnectedTargetName { get; }
+        bool ConnectedToEditor { get; }
+
+        ProfilerProperty CreateProperty();
+        ProfilerProperty CreateProperty(int sortType);
     }
 }

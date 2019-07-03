@@ -2,13 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
 using UnityEngine;
-using System.Text;
 using System.IO;
-using System;
-using UnityEditor;
-using UnityEditorInternal;
 
 namespace UnityEditor.Web
 {
@@ -377,42 +372,6 @@ namespace UnityEditor.Web
             scriptObject = CreateInstance<WebScriptObject>();
             scriptObject.hideFlags = HideFlags.HideAndDontSave;
             scriptObject.webView = webView;
-        }
-
-        private void InvokeJSMethod(string objectName, string name, params object[] args)
-        {
-            if (!webView)
-                return;
-
-            var scriptCodeBuffer = new StringBuilder();
-            scriptCodeBuffer.Append(objectName);
-            scriptCodeBuffer.Append('.');
-            scriptCodeBuffer.Append(name);
-            scriptCodeBuffer.Append('(');
-
-            var isFirst = true;
-            foreach (var arg in args)
-            {
-                if (!isFirst)
-                    scriptCodeBuffer.Append(',');
-
-                // Quote strings.  This is pretty simple-minded as we don't escape
-                // things within the string.
-                var isString = arg is string;
-                if (isString)
-                    scriptCodeBuffer.Append('"');
-
-                scriptCodeBuffer.Append(arg);
-
-                if (isString)
-                    scriptCodeBuffer.Append('"');
-
-                isFirst = false;
-            }
-
-            scriptCodeBuffer.Append(");");
-
-            webView.ExecuteJavascript(scriptCodeBuffer.ToString());
         }
 
         private void SetFocus(bool value)

@@ -2,13 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Tilemaps;
-using Enum = System.Enum;
 
 namespace UnityEditor
 {
@@ -77,11 +73,13 @@ namespace UnityEditor
             serializedObject.ApplyModifiedProperties();
         }
 
+        // Called from SceneView code using reflection
         private bool HasFrameBounds()
         {
             return true;
         }
 
+        // Called from SceneView code using reflection
         private Bounds OnGetFrameBounds()
         {
             Bounds localBounds = tilemap.localFrameBounds;

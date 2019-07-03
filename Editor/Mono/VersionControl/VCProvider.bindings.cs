@@ -300,5 +300,13 @@ namespace UnityEditor.VersionControl
         [NativeThrows]
         [FreeFunction("VersionControlBindings::VCProvider::Internal_ConsolidateAssetList")]
         private static extern Asset[] Internal_ConsolidateAssetList(Asset[] assets, CheckoutMode mode);
+
+        [StaticAccessor("VCProvider", StaticAccessorType.DoubleColon)]
+        [NativeMethod("ShouldAddMetaFile")]
+        static internal extern bool PathHasMetaFile(string path);
+
+        [StaticAccessor("VCProvider", StaticAccessorType.DoubleColon)]
+        [NativeMethod("ShouldPathBeVersioned")]
+        static internal extern bool PathIsVersioned(string path);
     }
 }

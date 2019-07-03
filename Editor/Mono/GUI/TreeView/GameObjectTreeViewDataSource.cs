@@ -590,18 +590,6 @@ namespace UnityEditor
             Debug.Log(text);
         }
 
-        static int FindTransformDepth(Transform transform)
-        {
-            var trans = transform.parent;
-            int depth = 0;
-            while (trans != null)
-            {
-                depth++;
-                trans = trans.parent;
-            }
-            return depth;
-        }
-
         override public bool IsRenamingItemAllowed(TreeViewItem item)
         {
             GameObjectTreeViewItem goItem = item as GameObjectTreeViewItem;

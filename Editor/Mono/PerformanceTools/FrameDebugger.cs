@@ -277,11 +277,9 @@ namespace UnityEditor
             public string[] texturePropertyTooltips;
         }
 
-        const float kScrollbarWidth = 16;
         const float kResizerWidth = 5f;
         const float kMinListWidth = 200f;
         const float kMinDetailsWidth = 200f;
-        const float kMinWindowWidth = 240f;
         const float kDetailsMargin = 0f;
         const float kMinPreviewSize = 64f;
 
@@ -486,10 +484,10 @@ namespace UnityEditor
             // Make sure game view is visible when enabling frame debugger locally
             if (FrameDebuggerUtility.IsLocalEnabled())
             {
-                GameView gameView = (GameView)WindowLayout.FindEditorWindowOfType(typeof(GameView));
-                if (gameView)
+                var previewWindow = PreviewEditorWindow.GetMainPreviewWindow();
+                if (previewWindow)
                 {
-                    gameView.ShowTab();
+                    previewWindow.ShowTab();
                 }
             }
 

@@ -150,7 +150,8 @@ namespace UnityEditor.Experimental.GraphView
             if (graphView == null)
                 return;
 
-            if (MouseCaptureController.IsMouseCaptured())
+            IPanel panel = (evt.target as VisualElement)?.panel;
+            if (panel.GetCapturingElement(PointerId.mousePointerId) != null)
                 return;
 
             Vector3 position = graphView.viewTransform.position;

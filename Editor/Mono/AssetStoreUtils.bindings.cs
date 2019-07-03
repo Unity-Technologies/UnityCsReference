@@ -17,6 +17,7 @@ namespace UnityEditor
 
         extern public static void Download(string id, string url, string[] destination, string key, string jsonData, bool resumeOK, DownloadDoneCallback doneCallback = null);
         extern public static string CheckDownload(string id, string url, string[] destination, string key);
+        extern public static bool AbortDownload(string id, string[] destination);
         extern public static void RegisterDownloadDelegate([NotNull] ScriptableObject d);
         extern public static void UnRegisterDownloadDelegate([NotNull] ScriptableObject d);
         extern public static string GetLoaderPath();

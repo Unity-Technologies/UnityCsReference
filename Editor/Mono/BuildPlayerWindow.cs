@@ -389,13 +389,6 @@ namespace UnityEditor
                 return BuildPipeline.IsBuildTargetSupported(targetGroup, target);
         }
 
-        static void RepairSelectedBuildTargetGroup()
-        {
-            BuildTargetGroup group = EditorUserBuildSettings.selectedBuildTargetGroup;
-            if ((int)group == 0 || !BuildPlatforms.instance.ContainsBuildTarget(group))
-                EditorUserBuildSettings.selectedBuildTargetGroup = BuildTargetGroup.Standalone;
-        }
-
         static bool IsAnyStandaloneModuleLoaded()
         {
             return ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneLinux64) ||

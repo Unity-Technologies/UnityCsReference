@@ -54,7 +54,6 @@ namespace UnityEditor
         internal static Color s_ColliderHandleColorDisabled = new Color(84, 200f, 77f, 140f) / 255;
         internal static Color s_BoundingBoxHandleColor = new Color(255, 255, 255, 150) / 255;
 
-        const int kMaxDottedLineVertices = 1000;
         static GUIContent s_Static = EditorGUIUtility.TrTextContent("Static");
 
         internal static int s_SliderHash = "SliderHash".GetHashCode();
@@ -136,16 +135,6 @@ namespace UnityEditor
                 if (s_CylinderMesh == null)
                     Init();
                 return s_CylinderMesh;
-            }
-        }
-
-        static Mesh quadMesh
-        {
-            get
-            {
-                if (s_QuadMesh == null)
-                    Init();
-                return s_QuadMesh;
             }
         }
 
@@ -345,11 +334,11 @@ namespace UnityEditor
 
         public static bool ShouldRenderGizmos()
         {
-            GameView gv = GameView.GetRenderingGameView();
+            var preview = PreviewEditorWindow.GetRenderingPreview();
             SceneView sv = SceneView.currentDrawingSceneView;
 
-            if (gv != null)
-                return gv.IsShowingGizmos();
+            if (preview != null)
+                return preview.IsShowingGizmos();
 
             if (sv != null)
                 return sv.drawGizmos;
@@ -1297,10 +1286,10 @@ namespace UnityEditor
             return cameraRect;
         }
 
-        // Get the size of the main game view window
+        // Get the size of the main preview window
         public static Vector2 GetMainGameViewSize()
         {
-            return GameView.GetMainGameViewTargetSize();
+            return PreviewEditorWindow.GetMainPreviewTargetSize();
         }
 
         // Clears the camera.

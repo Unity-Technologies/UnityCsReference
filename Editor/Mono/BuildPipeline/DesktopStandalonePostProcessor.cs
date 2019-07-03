@@ -425,7 +425,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         // So we find the files in the source Variations directory and mark the corresponding files in the output
         var path = Path.Combine(variationSourceFolder, "Data/Managed");
         foreach (var file in Directory.GetFiles(path, "*.dll")
-                 .Concat(Directory.GetFiles(path, "*.dll.mdb")))
+                 .Concat(Directory.GetFiles(path, "*.pdb")))
         {
             var filename = Path.GetFileName(file);
             if (!filename.StartsWith("UnityEngine"))

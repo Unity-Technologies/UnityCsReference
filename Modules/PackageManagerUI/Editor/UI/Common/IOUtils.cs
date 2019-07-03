@@ -39,14 +39,14 @@ namespace UnityEditor.PackageManager.UI
             return name.Trim();
         }
 
-        public static long DirectorySizeInBytes(string path)
+        public static ulong DirectorySizeInBytes(string path)
         {
             var files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories);
-            long sizeInBytes = 0;
+            ulong sizeInBytes = 0;
             foreach (var file in files)
             {
-                FileInfo info = new FileInfo(file);
-                sizeInBytes += info.Length;
+                var info = new FileInfo(file);
+                sizeInBytes += (ulong)info.Length;
             }
             return sizeInBytes;
         }

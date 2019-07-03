@@ -2,9 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.IO;
 using System.Linq;
-using UnityEditor;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements.Samples
@@ -31,15 +29,6 @@ namespace UnityEditor.UIElements.Samples
 
         internal virtual void Apply(VisualElement container)
         {
-        }
-
-        private static string ReadFile(string path)
-        {
-            if (!File.Exists(path))
-                return "";
-
-            var text = File.ReadAllText(path);
-            return text;
         }
 
         private static string ProcessCSharp(string text)

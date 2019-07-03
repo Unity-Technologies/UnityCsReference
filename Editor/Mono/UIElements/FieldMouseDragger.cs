@@ -83,7 +83,8 @@ namespace UnityEditor.UIElements
             if (dragging)
             {
                 dragging = false;
-                MouseCaptureController.ReleaseMouse();
+                IPanel panel = (evt.target as VisualElement)?.panel;
+                panel.ReleasePointer(PointerId.mousePointerId);
                 EditorGUIUtility.SetWantsMouseJumping(0);
                 m_DrivenField.StopDragging();
             }
@@ -96,7 +97,8 @@ namespace UnityEditor.UIElements
                 dragging = false;
                 m_DrivenField.value = startValue;
                 m_DrivenField.StopDragging();
-                MouseCaptureController.ReleaseMouse();
+                IPanel panel = (evt.target as VisualElement)?.panel;
+                panel.ReleasePointer(PointerId.mousePointerId);
                 EditorGUIUtility.SetWantsMouseJumping(0);
             }
         }

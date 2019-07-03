@@ -3,14 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
-using UnityEditorInternal;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using Math = System.Math;
-using IndexOutOfRangeException = System.IndexOutOfRangeException;
-
 
 namespace UnityEditor
 {
@@ -257,26 +250,6 @@ namespace UnityEditor
                 rect.width = labelDims.x;
                 rect.y += 2; // better y pos for minilabel
                 GUI.Label(rect, label, s_Styles.groupHeaderLabelCount);
-            }
-
-            Object[] GetSelectedReferences()
-            {
-                return Selection.objects;
-            }
-
-            static string[] GetMainSelectedPaths()
-            {
-                List<string> paths = new List<string>();
-                foreach (int instanceID in Selection.instanceIDs)
-                {
-                    if (AssetDatabase.IsMainAsset(instanceID))
-                    {
-                        string path = AssetDatabase.GetAssetPath(instanceID);
-                        paths.Add(path);
-                    }
-                }
-
-                return paths.ToArray();
             }
         }
     }

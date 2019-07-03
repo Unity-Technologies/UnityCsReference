@@ -967,24 +967,6 @@ namespace UnityEditorInternal.VersionControl
             catch { return null; }
         }
 
-        // Recursively update items for path search mapping
-        void PathSearchUpdate(ListItem item)
-        {
-            if (item.Asset != null && item.Asset.path.Length > 0)
-                pathSearch.Add(item.Asset.path.ToLower(), item);
-            else if (item.Change != null)
-            {
-                pathSearch.Add(c_changeKeyPrefix + item.Change.id.ToString(), item);
-                return;
-            }
-            ListItem en = item.FirstChild;
-            while (en != null)
-            {
-                PathSearchUpdate(en);
-                en = en.Next;
-            }
-        }
-
         // Is the item selected?
         internal bool IsSelected(ListItem item)
         {
@@ -1144,13 +1126,18 @@ namespace UnityEditorInternal.VersionControl
 
             name = name.EndsWith(c_metaSuffix) ? name.Substring(0, name.Length - 5) : name;
             int itemID = AssetDatabase.GetMainAssetInstanceID(name.TrimEnd('/'));
+
+            int[] newSel = new int[arrayLen + 1];
+
+            //asset is in current project - the correct folder is opened
+            //asset is in another project - current project root folder is opened
             if (itemID != 0)
             {
-                int[] newSel = new int[arrayLen + 1];
                 newSel[arrayLen] = itemID;
-                Array.Copy(sel, newSel, arrayLen);
-                Selection.instanceIDs = newSel;
             }
+
+            Array.Copy(sel, newSel, arrayLen);
+            Selection.instanceIDs = newSel;
         }
 
         void SelectedRemove(ListItem item)

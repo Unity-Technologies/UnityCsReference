@@ -3,18 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
 using UnityEditorInternal;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace UnityEditor
 {
     internal class DopeSheetEditorRectangleTool : RectangleTool
     {
-        const float kDefaultFrameRate = 60f;
-
         const int kScaleLeftWidth = 17;
         const int kScaleLeftMarginHorizontal = 0;
         const float kScaleLeftMarginVertical = 4;
@@ -380,14 +375,6 @@ namespace UnityEditor
             bool flipX;
             if (CalculateScaleTimeMatrix(m_Previous.x, time, m_MouseOffset.x, m_Pivot.x, frameRate, out transform, out flipX))
                 TransformKeys(transform, flipX, false);
-        }
-
-        private void OnScaleValue(float val)
-        {
-            Matrix4x4 transform;
-            bool flipY;
-            if (CalculateScaleValueMatrix(m_Previous.y, val, m_MouseOffset.y, m_Pivot.y, out transform, out flipY))
-                TransformKeys(transform, false, flipY);
         }
 
         private void OnEndScale()

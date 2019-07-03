@@ -470,6 +470,12 @@ namespace UnityEngine.UIElements
 
         internal bool SendEventToIMGUI(EventBase evt)
         {
+            if (evt is IPointerEvent)
+            {
+                // Pointer events are not handled by IMGUI. The compatibility mouse event will eventually come.
+                return false;
+            }
+
             bool result;
             using (new EventDebuggerLogIMGUICall(evt))
             {

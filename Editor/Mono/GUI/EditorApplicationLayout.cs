@@ -23,13 +23,13 @@ namespace UnityEditor
 {
     internal class EditorApplicationLayout
     {
-        static private GameView m_GameView = null;
+        static private PreviewEditorWindow m_PreviewWindow = null;
         static private bool m_MaximizePending = false;
 
 
         static internal bool IsInitializingPlaymodeLayout()
         {
-            return m_GameView != null;
+            return m_PreviewWindow != null;
         }
 
         static internal void SetPlaymodeLayout()
@@ -52,33 +52,33 @@ namespace UnityEditor
 
         static internal void InitPlaymodeLayout()
         {
-            m_GameView = WindowLayout.ShowAppropriateViewOnEnterExitPlaymode(true) as GameView;
-            if (m_GameView == null)
+            m_PreviewWindow = WindowLayout.ShowAppropriateViewOnEnterExitPlaymode(true) as PreviewEditorWindow;
+            if (m_PreviewWindow == null)
                 return;
 
-            if (m_GameView.maximizeOnPlay)
+            if (m_PreviewWindow.maximizeOnPlay)
             {
-                DockArea da = m_GameView.m_Parent as DockArea;
+                DockArea da = m_PreviewWindow.m_Parent as DockArea;
 
                 if (da != null)
                     m_MaximizePending = WindowLayout.MaximizePrepare(da.actualView);
             }
 
-            // Mark this game view as the start gameview so the backend
-            // can set size and mouseoffset properly for this game view
-            m_GameView.m_Parent.SetAsStartView();
+            // Mark this preview window as the start preview so the backend
+            // can set size and mouseoffset properly for this preview
+            m_PreviewWindow.m_Parent.SetAsStartView();
 
             Toolbar.RepaintToolbar();
         }
 
         static internal void FinalizePlaymodeLayout()
         {
-            if (m_GameView != null)
+            if (m_PreviewWindow != null)
             {
                 if (m_MaximizePending)
-                    WindowLayout.MaximizePresent(m_GameView);
+                    WindowLayout.MaximizePresent(m_PreviewWindow);
 
-                m_GameView.m_Parent.ClearStartView();
+                m_PreviewWindow.m_Parent.ClearStartView();
             }
 
             Clear();
@@ -87,7 +87,7 @@ namespace UnityEditor
         static private void Clear()
         {
             m_MaximizePending = false;
-            m_GameView = null;
+            m_PreviewWindow = null;
         }
     }
 } // namespace

@@ -15,6 +15,7 @@ namespace UnityEngine
         [NativeProperty("type", false, TargetType.Field)] public extern EventType rawType { get; }
         [NativeProperty("mousePosition", false, TargetType.Field)] public extern Vector2 mousePosition { get; set; }
         [NativeProperty("delta", false, TargetType.Field)] public extern Vector2 delta { get; set; }
+        [NativeProperty("pointerType", false, TargetType.Field)] public extern PointerType pointerType { get; set; }
         [NativeProperty("button", false, TargetType.Field)] public extern int button { get; set; }
         [NativeProperty("modifiers", false, TargetType.Field)] public extern EventModifiers modifiers { get; set; }
         [NativeProperty("pressure", false, TargetType.Field)] public extern float pressure { get; set; }

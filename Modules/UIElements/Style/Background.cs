@@ -9,11 +9,45 @@ namespace UnityEngine.UIElements
 {
     public struct Background : IEquatable<Background>
     {
-        public Texture2D texture { get; set; }
+        private Texture2D m_Texture;
+        public Texture2D texture
+        {
+            get { return m_Texture; }
+            set
+            {
+                if (value != null && vectorImage != null)
+                    throw new InvalidOperationException("Cannot set both texture and vectorImage on Background object");
+                m_Texture = value;
+            }
+        }
 
+        private VectorImage m_VectorImage;
+        public VectorImage vectorImage
+        {
+            get { return m_VectorImage; }
+            set
+            {
+                if (value != null && texture != null)
+                    throw new InvalidOperationException("Cannot set both texture and vectorImage on Background object");
+                m_VectorImage = value;
+            }
+        }
+
+        [Obsolete("Use Background.FromTexture2D instead")]
         public Background(Texture2D t)
         {
-            texture = t;
+            m_Texture = t;
+            m_VectorImage = null;
+        }
+
+        public static Background FromTexture2D(Texture2D t)
+        {
+            return new Background() { texture = t };
+        }
+
+        public static Background FromVectorImage(VectorImage vi)
+        {
+            return new Background() { vectorImage = vi };
         }
 
         public static bool operator==(Background lhs, Background rhs)
@@ -45,7 +79,10 @@ namespace UnityEngine.UIElements
         public override int GetHashCode()
         {
             var hashCode = 851985039;
-            hashCode = hashCode * -1521134295 + EqualityComparer<Texture2D>.Default.GetHashCode(texture);
+            if (texture != null)
+                hashCode = hashCode * -1521134295 + EqualityComparer<Texture2D>.Default.GetHashCode(texture);
+            if (vectorImage != null)
+                hashCode = hashCode * -1521134295 + EqualityComparer<VectorImage>.Default.GetHashCode(vectorImage);
             return hashCode;
         }
 

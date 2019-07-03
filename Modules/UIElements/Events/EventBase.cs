@@ -37,6 +37,7 @@ namespace UnityEngine.UIElements
             StopDispatch = 64,
             PropagateToIMGUI = 128,
             Dispatched = 512,
+            Processed = 1024,
         }
 
         static ulong s_NextEventId = 0;
@@ -92,6 +93,7 @@ namespace UnityEngine.UIElements
 #pragma warning disable 618
             PostDispatch();
 #pragma warning restore 618
+            processed = true;
         }
 
         public bool bubbles
@@ -257,6 +259,22 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal bool processed
+        {
+            get { return (lifeCycleStatus & LifeCycleStatus.Processed) != LifeCycleStatus.None; }
+            private set
+            {
+                if (value)
+                {
+                    lifeCycleStatus |= LifeCycleStatus.Processed;
+                }
+                else
+                {
+                    lifeCycleStatus &= ~LifeCycleStatus.Processed;
+                }
+            }
+        }
+
         internal bool stopDispatch
         {
             get { return (lifeCycleStatus & LifeCycleStatus.StopDispatch) != LifeCycleStatus.None; }
@@ -291,6 +309,9 @@ namespace UnityEngine.UIElements
 
         private Event m_ImguiEvent;
 
+        // Since we recycle events (in their pools) and we do not free/reallocate a new imgui event
+        // at each recycling (m_ImguiEvent is never null), we use this flag to know whether m_ImguiEvent
+        // represents a valid Event.
         bool imguiEventIsValid
         {
             get { return (lifeCycleStatus & LifeCycleStatus.IMGUIEventIsValid) != LifeCycleStatus.None; }
@@ -372,6 +393,7 @@ namespace UnityEngine.UIElements
             propagateToIMGUI = true;
 
             dispatched = false;
+            processed = false;
             imguiEventIsValid = false;
             pooled = false;
 

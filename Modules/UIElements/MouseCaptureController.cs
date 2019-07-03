@@ -8,74 +8,47 @@ namespace UnityEngine.UIElements
 {
     public static class MouseCaptureController
     {
-        internal static IEventHandler mouseCapture { get; private set; }
+#pragma warning disable 414
+        static bool m_IsMouseCapturedWarningEmitted = false;
+        static bool m_ReleaseMouseWarningEmitted = false;
+#pragma warning restore 414
 
+        // TODO 2020.1 [Obsolete("Use PointerCaptureHelper.GetCapturingElement() instead.")]
         public static bool IsMouseCaptured()
         {
-            return mouseCapture != null;
+            return EventDispatcher.editorDispatcher.pointerState.GetCapturingElement(PointerId.mousePointerId) != null;
         }
 
         public static bool HasMouseCapture(this IEventHandler handler)
         {
-            return mouseCapture == handler;
+            VisualElement ve = handler as VisualElement;
+            return ve.HasPointerCapture(PointerId.mousePointerId);
         }
 
         public static void CaptureMouse(this IEventHandler handler)
         {
-            if (mouseCapture == handler)
-                return;
-
-            if (handler == null)
+            VisualElement ve = handler as VisualElement;
+            if (ve != null)
             {
-                ReleaseMouse();
-                return;
-            }
-
-            if (GUIUtility.hotControl != 0)
-            {
-                Debug.Log("Should not be capturing when there is a hotcontrol");
-                return;
-            }
-
-            // TODO: assign a reserved control id to hotControl so that repaint events in OnGUI() have their hotcontrol check behave normally
-
-            IEventHandler currentMouseCapture = mouseCapture;
-            mouseCapture = handler;
-
-            if (currentMouseCapture != null)
-            {
-                using (MouseCaptureOutEvent releaseEvent = MouseCaptureOutEvent.GetPooled(currentMouseCapture, mouseCapture))
-                {
-                    currentMouseCapture.SendEvent(releaseEvent);
-                }
-            }
-
-            using (MouseCaptureEvent captureEvent = MouseCaptureEvent.GetPooled(mouseCapture, currentMouseCapture))
-            {
-                mouseCapture.SendEvent(captureEvent);
+                ve.CapturePointer(PointerId.mousePointerId);
+                ve.panel.ProcessPointerCapture(PointerId.mousePointerId);
             }
         }
 
         public static void ReleaseMouse(this IEventHandler handler)
         {
-            if (handler == mouseCapture)
+            VisualElement ve = handler as VisualElement;
+            if (ve != null)
             {
-                ReleaseMouse();
+                ve.ReleasePointer(PointerId.mousePointerId);
+                ve.panel.ProcessPointerCapture(PointerId.mousePointerId);
             }
         }
 
+        // TODO 2020.1 [Obsolete("Use PointerCaptureHelper.ReleasePointer() instead.")]
         public static void ReleaseMouse()
         {
-            if (mouseCapture != null)
-            {
-                IEventHandler currentMouseCapture = mouseCapture;
-                mouseCapture = null;
-
-                using (MouseCaptureOutEvent e = MouseCaptureOutEvent.GetPooled(currentMouseCapture, null))
-                {
-                    currentMouseCapture.SendEvent(e);
-                }
-            }
+            PointerCaptureHelper.ReleaseEditorMouseCapture();
         }
     }
 }

@@ -710,25 +710,6 @@ namespace UnityEditor.IMGUI.Controls
             hoveredItem = currentHoveredItem;
         }
 
-        List<int> GetVisibleSelectedIds()
-        {
-            // Do visible items
-            int firstRow, lastRow;
-            gui.GetFirstAndLastRowVisible(out firstRow, out lastRow);
-            if (lastRow < 0)
-                return new List<int>();
-
-            List<int> ids = new List<int>(lastRow - firstRow);
-            for (int row = firstRow; row < lastRow; ++row)
-            {
-                var item = data.GetItem(row);
-                ids.Add(item.id);
-            }
-
-            List<int> selectedVisibleIDs = (from id in ids where state.selectedIDs.Contains(id) select id).ToList();
-            return selectedVisibleIDs;
-        }
-
         private void ExpansionAnimationEnded(TreeViewAnimationInput setup)
         {
             // When collapsing we delay the actual collapse until the animation is done
@@ -1145,22 +1126,6 @@ namespace UnityEditor.IMGUI.Controls
             int newIndex = Mathf.Clamp(index + offset, 0, visibleRows.Count - 1);
             EnsureRowIsVisible(newIndex, false);
             SelectionByKey(visibleRows[newIndex]);
-        }
-
-        bool GetFirstAndLastSelected(List<TreeViewItem> items, out int firstIndex, out int lastIndex)
-        {
-            firstIndex = -1;
-            lastIndex = -1;
-            for (int i = 0; i < items.Count; ++i)
-            {
-                if (state.selectedIDs.Contains(items[i].id))
-                {
-                    if (firstIndex == -1)
-                        firstIndex = i;
-                    lastIndex = i; // just overwrite and we will have the last in the end...
-                }
-            }
-            return firstIndex != -1 && lastIndex != -1;
         }
 
         public Func<TreeViewItem, bool, bool, List<int>> getNewSelectionOverride { private get; set; }

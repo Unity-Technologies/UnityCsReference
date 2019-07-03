@@ -9,10 +9,12 @@ namespace UnityEditor.PackageManager.UI
 {
     internal class PackageSampleItem
     {
+        private IPackageVersion m_Version;
         private Sample m_Sample;
 
-        public PackageSampleItem(Sample sample)
+        public PackageSampleItem(IPackageVersion version, Sample sample)
         {
+            m_Version = version;
             m_Sample = sample;
             nameLabel.text = sample.displayName;
             nameLabel.tooltip = sample.displayName; // add tooltip for when the label text is cut off
@@ -51,6 +53,8 @@ namespace UnityEditor.PackageManager.UI
             if (!string.IsNullOrEmpty(warningMessage) &&
                 EditorUtility.DisplayDialog("Unity Package Manager", warningMessage + " Are you sure you want to continue?", "No", "Yes"))
                 return;
+
+            PackageManagerWindowAnalytics.SendEvent("importSample", m_Version.uniqueId);
 
             if (m_Sample.Import(Sample.ImportOptions.OverridePreviousImports))
             {

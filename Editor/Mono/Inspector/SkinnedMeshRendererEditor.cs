@@ -17,6 +17,7 @@ namespace UnityEditor
         class Styles
         {
             public static readonly GUIContent legacyClampBlendShapeWeightsInfo = EditorGUIUtility.TrTextContent("Note that BlendShape weight range is clamped. This can be disabled in Player Settings.");
+            public static readonly GUIContent meshNotSupportingSkinningInfo = EditorGUIUtility.TrTextContent("The assigned mesh doesn't support skinning. A valid setup requires bone weights with bind pose or blend shapes. If you do not need either of these, use a MeshRenderer instead.");
             public static readonly GUIContent bounds = EditorGUIUtility.TrTextContent("Bounds");
             public static readonly GUIContent quality = EditorGUIUtility.TrTextContent("Quality", "Number of bones to use per vertex during skinning.");
             public static readonly GUIContent updateWhenOffscreen = EditorGUIUtility.TrTextContent("Update When Offscreen", "If an accurate bounding volume representation should be calculated every frame. ");
@@ -69,7 +70,9 @@ namespace UnityEditor
 
             EditorGUILayout.PropertyField(m_Quality, Styles.quality);
             EditorGUILayout.PropertyField(m_UpdateWhenOffscreen, Styles.updateWhenOffscreen);
-            EditorGUILayout.PropertyField(m_Mesh, Styles.mesh);
+
+            OnMeshUI();
+
             EditorGUILayout.PropertyField(m_RootBone, Styles.rootBone);
 
             DrawMaterials();
@@ -82,6 +85,23 @@ namespace UnityEditor
         internal override Bounds GetWorldBoundsOfTarget(Object targetObject)
         {
             return ((SkinnedMeshRenderer)targetObject).bounds;
+        }
+
+        public void OnMeshUI()
+        {
+            SkinnedMeshRenderer renderer = (SkinnedMeshRenderer)target;
+
+            if (renderer.sharedMesh != null)
+            {
+                bool haveClothComponent = renderer.gameObject.GetComponent<Cloth>() != null;
+
+                if (!haveClothComponent && renderer.sharedMesh.blendShapeCount == 0 && (renderer.sharedMesh.boneWeights.Length == 0 || renderer.sharedMesh.bindposes.Length == 0))
+                {
+                    EditorGUILayout.HelpBox(Styles.meshNotSupportingSkinningInfo.text, MessageType.Info);
+                }
+            }
+
+            EditorGUILayout.PropertyField(m_Mesh, Styles.mesh);
         }
 
         public void OnBlendShapeUI()

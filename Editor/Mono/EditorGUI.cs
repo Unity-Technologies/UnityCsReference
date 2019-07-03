@@ -3,11 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -148,7 +146,6 @@ namespace UnityEditor
 
         private static Color k_OverrideMarginColor = new Color(1f / 255f, 153f / 255f, 235f / 255f, 0.75f);
 
-        private const int kInspTitlebarToggleWidth = 16;
         private const int kInspTitlebarSpacing = 4;
         private static readonly GUIContent s_PropertyFieldTempContent = new GUIContent();
         private static GUIContent s_IconDropDown;

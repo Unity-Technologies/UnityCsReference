@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine.Scripting;
 
 namespace UnityEngine
@@ -71,16 +70,11 @@ namespace UnityEngine
         private float OnMouseDown()
         {
             var mousePosition = CurrentEvent().mousePosition;
-
-            Rect thumbZone = ThumbSelectionRect();
+            var thumbZone = ThumbSelectionRect();
             var mouseOverThumb = thumbZone.Contains(mousePosition);
 
-            Rect clickableZone = thumbZone;
-            clickableZone.x = position.x;
-            clickableZone.width = position.width;
-
             // if the click is outside this control, just bail out...
-            if (IsEmptySlider() || (!mouseOverThumb && !clickableZone.Contains(mousePosition)))
+            if (IsEmptySlider() || (!position.Contains(mousePosition) && !mouseOverThumb))
                 return currentValue;
 
             GUI.scrollTroughSide = 0;
@@ -266,10 +260,7 @@ namespace UnityEngine
 
         private Rect ThumbExtRect()
         {
-            var rect = new Rect(0, 0, thumbExtent.fixedWidth, thumbExtent.fixedHeight);
-
-            rect.center = ThumbRect().center;
-
+            var rect = new Rect(0, 0, thumbExtent.fixedWidth, thumbExtent.fixedHeight) {center = ThumbRect().center};
             return rect;
         }
 

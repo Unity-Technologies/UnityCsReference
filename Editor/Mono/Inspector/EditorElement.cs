@@ -104,8 +104,6 @@ namespace UnityEditor.UIElements
 
             if (EditorNeedsVerticalOffset(editorTarget))
             {
-                // This is madness
-                m_InspectorElement.cacheAsBitmap = false;
                 m_InspectorElement.style.overflow = Overflow.Hidden;
             }
 

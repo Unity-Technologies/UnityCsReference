@@ -90,6 +90,14 @@ namespace UnityEditor.PackageManager.UI
                     }
                 }
 
+                if (version.HasTag(PackageTag.AssetStore))
+                {
+                    var words = text.Split(new[] {' '}, StringSplitOptions.RemoveEmptyEntries);
+                    var categories = version.category.Split('/');
+                    if (words.All(word => word.Length >= 2 && categories.Any(category => category.StartsWith(word, StringComparison.CurrentCultureIgnoreCase))))
+                        return true;
+                }
+
                 return false;
             }
 
@@ -108,13 +116,15 @@ namespace UnityEditor.PackageManager.UI
                 switch (currentFilterTab)
                 {
                     case PackageFilterTab.Modules:
-                        return package.versions.Any(v => v.HasTag(PackageTag.BuiltIn));
+                        return package.versions.Any(v => v.HasTag(PackageTag.BuiltIn) && !v.HasTag(PackageTag.AssetStore));
                     case PackageFilterTab.All:
-                        return package.versions.Any(v => !v.HasTag(PackageTag.BuiltIn))
+                        return package.versions.Any(v => !v.HasTag(PackageTag.BuiltIn) && !v.HasTag(PackageTag.AssetStore))
                             && (package.isDiscoverable || (package.installedVersion?.isDirectDependency ?? false));
                     case PackageFilterTab.Local:
-                        return package.versions.Any(v => !v.HasTag(PackageTag.BuiltIn))
+                        return package.versions.Any(v => !v.HasTag(PackageTag.BuiltIn) && !v.HasTag(PackageTag.AssetStore))
                             && (package.installedVersion?.isDirectDependency ?? false);
+                    case PackageFilterTab.AssetStore:
+                        return ApplicationUtil.instance.isUserLoggedIn && (package.primaryVersion?.HasTag(PackageTag.AssetStore) ?? false);
                     case PackageFilterTab.InDevelopment:
                         return package.installedVersion?.HasTag(PackageTag.InDevelopment) ?? false;
                     default:

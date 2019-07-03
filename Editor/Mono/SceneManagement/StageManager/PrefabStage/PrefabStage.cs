@@ -23,6 +23,7 @@ namespace UnityEditor.Experimental.SceneManagement
     {
         public static event Action<PrefabStage> prefabStageOpened;
         public static event Action<PrefabStage> prefabStageClosing;
+        public static event Action<PrefabStage> prefabStageDirtied;
         public static event Action<GameObject> prefabSaving;
         public static event Action<GameObject> prefabSaved;
         internal static event Action<PrefabStage> prefabIconChanged;
@@ -36,6 +37,7 @@ namespace UnityEditor.Experimental.SceneManagement
         int m_LastSceneDirtyID;
         bool m_IgnoreNextAssetImportedEventForCurrentPrefab;
         bool m_PrefabWasChangedOnDisk;
+        bool m_StageDirtiedFired;
         HideFlagUtility m_HideFlagUtility;
         Texture2D m_PrefabFileIcon;
         bool m_TemporarilyDisableAutoSave;
@@ -156,6 +158,7 @@ namespace UnityEditor.Experimental.SceneManagement
                 m_PrefabFileIcon = DeterminePrefabFileIconFromInstanceRootGameObject();
                 m_LastRootTransform = m_PrefabContentsRoot.transform;
                 m_InitialSceneDirtyID = m_PreviewScene.dirtyID;
+                m_StageDirtiedFired = false;
                 UpdateEnvironmentHideFlags();
             }
             else
@@ -206,6 +209,7 @@ namespace UnityEditor.Experimental.SceneManagement
             m_HideFlagUtility = null;
             m_PrefabAssetPath = null;
             m_InitialSceneDirtyID = 0;
+            m_StageDirtiedFired = false;
             m_LastSceneDirtyID = 0;
             m_IgnoreNextAssetImportedEventForCurrentPrefab = false;
             m_PrefabWasChangedOnDisk = false;
@@ -241,7 +245,16 @@ namespace UnityEditor.Experimental.SceneManagement
                 return;
 
             if (HasSceneBeenModified())
+            {
                 m_AnalyticsDidUserModify = true;
+
+                if (!m_StageDirtiedFired)
+                {
+                    m_StageDirtiedFired = true;
+                    if (prefabStageDirtied != null)
+                        prefabStageDirtied(this);
+                }
+            }
 
             UpdateEnvironmentHideFlagsIfNeeded();
             HandleAutoSave();
@@ -351,6 +364,7 @@ namespace UnityEditor.Experimental.SceneManagement
         {
             EditorSceneManager.ClearSceneDirtiness(m_PreviewScene);
             m_InitialSceneDirtyID = m_PreviewScene.dirtyID;
+            m_StageDirtiedFired = false;
         }
 
         bool PromptIfMissingBasePrefabForVariant()
@@ -699,13 +713,6 @@ namespace UnityEditor.Experimental.SceneManagement
                     break;
                 }
             }
-        }
-
-        void DestroyPrefabInstance()
-        {
-            if (m_PrefabContentsRoot == null)
-                return;
-            UnityEngine.Object.DestroyImmediate(m_PrefabContentsRoot);
         }
 
         internal bool HasSceneBeenModified()

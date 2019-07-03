@@ -1509,13 +1509,6 @@ namespace TreeEditor
             return temp.ToArray();
         }
 
-        private TreeGroup[] ArrayAdd(TreeGroup[] array, TreeGroup value)
-        {
-            List<TreeGroup> temp = new List<TreeGroup>(array);
-            temp.Add(value);
-            return temp.ToArray();
-        }
-
         private TreeGroupBranch[] ArrayAdd(TreeGroupBranch[] array, TreeGroupBranch value)
         {
             List<TreeGroupBranch> temp = new List<TreeGroupBranch>(array);
@@ -1540,13 +1533,6 @@ namespace TreeEditor
         private int[] ArrayRemove(int[] array, int value)
         {
             List<int> temp = new List<int>(array);
-            temp.Remove(value);
-            return temp.ToArray();
-        }
-
-        private TreeGroup[] ArrayRemove(TreeGroup[] array, TreeGroup value)
-        {
-            List<TreeGroup> temp = new List<TreeGroup>(array);
             temp.Remove(value);
             return temp.ToArray();
         }

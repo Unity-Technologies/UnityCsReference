@@ -9,11 +9,11 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
-using UnityEngine.Experimental.VFX;
+using UnityEngine.VFX;
 
 using UnityObject = UnityEngine.Object;
 
-namespace UnityEditor.Experimental.VFX
+namespace UnityEditor.VFX
 {
     [NativeHeader("Modules/VFXEditor/Public/VisualEffectUtility.h")]
     internal static class VisualEffectUtility

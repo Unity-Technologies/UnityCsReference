@@ -136,6 +136,7 @@ namespace UnityEditor
         static string m_MeshProcessorsHashString = null;
         static string m_TextureProcessorsHashString = null;
         static string m_AudioProcessorsHashString = null;
+        static string m_SpeedTreeProcessorsHashString = null;
 
         static Type[] GetCachedAssetPostprocessorClasses()
         {
@@ -532,6 +533,42 @@ namespace UnityEditor
                 var assetPostprocessor = Activator.CreateInstance(assetPostprocessorClass) as AssetPostprocessor;
                 InvokeMethodIfAvailable(assetPostprocessor, "OnPostprocessAssetbundleNameChanged", args);
             }
+        }
+
+        [RequiredByNativeCode]
+        static string GetSpeedTreeProcessorsHashString()
+        {
+            if (m_SpeedTreeProcessorsHashString != null)
+                return m_SpeedTreeProcessorsHashString;
+
+            var versionsByType = new SortedList<string, uint>();
+
+            foreach (var assetPostprocessorClass in GetCachedAssetPostprocessorClasses())
+            {
+                try
+                {
+                    var inst = Activator.CreateInstance(assetPostprocessorClass) as AssetPostprocessor;
+                    var type = inst.GetType();
+                    bool hasPreProcessMethod = type.GetMethod("OnPreprocessSpeedTree", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
+                    bool hasPostProcessMethod = type.GetMethod("OnPostprocessSpeedTree", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
+                    uint version = inst.GetVersion();
+                    if (version != 0 && (hasPreProcessMethod || hasPostProcessMethod))
+                    {
+                        versionsByType.Add(type.FullName, version);
+                    }
+                }
+                catch (MissingMethodException)
+                {
+                    LogPostProcessorMissingDefaultConstructor(assetPostprocessorClass);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+            }
+
+            m_SpeedTreeProcessorsHashString = BuildHashString(versionsByType);
+            return m_SpeedTreeProcessorsHashString;
         }
 
         static object InvokeMethod(MethodInfo method, object[] args)

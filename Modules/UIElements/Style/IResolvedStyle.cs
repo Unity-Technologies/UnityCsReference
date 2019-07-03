@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+
 namespace UnityEngine.UIElements
 {
     public interface IResolvedStyle
@@ -37,6 +39,7 @@ namespace UnityEngine.UIElements
         WhiteSpace whiteSpace { get; }
         Color color { get; }
         Color backgroundColor { get; }
+        [Obsolete("IResolvedStyle.borderColor is deprecated. Use left/right/top/bottom border properties instead.")]
         Color borderColor { get; }
         Font unityFont { get; }
         ScaleMode unityBackgroundScaleMode { get; }
@@ -44,6 +47,10 @@ namespace UnityEngine.UIElements
         Align alignItems { get; }
         Align alignContent { get; }
         Justify justifyContent { get; }
+        Color borderLeftColor { get; }
+        Color borderRightColor { get; }
+        Color borderTopColor { get; }
+        Color borderBottomColor { get; }
         float borderLeftWidth { get; }
         float borderRightWidth { get; }
         float borderTopWidth { get; }

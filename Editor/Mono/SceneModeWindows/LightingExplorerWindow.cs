@@ -4,7 +4,6 @@
 
 using UnityEngine;
 using UnityEngine.Rendering;
-using System.Collections.Generic;
 using System.Linq;
 using System;
 
@@ -35,7 +34,6 @@ namespace UnityEditor
         LightingExplorerTab[] m_TableTabs;
         GUIContent[] m_TabTitles;
 
-        float m_ToolbarPadding = -1;
         int m_SelectedTab = 0;
 
         System.Type m_CurrentSRPType = null;
@@ -48,19 +46,6 @@ namespace UnityEditor
             LightingExplorerWindow window = EditorWindow.GetWindow<LightingExplorerWindow>();
             window.minSize = new Vector2(500, 250);
             window.Show();
-        }
-
-        private float toolbarPadding
-        {
-            get
-            {
-                if (m_ToolbarPadding == -1)
-                {
-                    var iconsSize = EditorStyles.iconButton.CalcSize(EditorGUI.GUIContents.helpIcon);
-                    m_ToolbarPadding = (iconsSize.x * 2) + (EditorGUI.kControlVerticalSpacing * 3);
-                }
-                return m_ToolbarPadding;
-            }
         }
 
         void OnEnable()

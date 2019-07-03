@@ -8,6 +8,12 @@ namespace UnityEditor.PackageManager.UI
 {
     internal interface IApplicationUtil
     {
+        event Action<bool> onUserLoginStateChange;
+
+        event Action<bool> onInternetReachabilityChange;
+
+        event Action onFinishCompiling;
+
         bool isPreReleaseVersion { get; }
 
         string shortUnityVersion { get; }
@@ -16,6 +22,12 @@ namespace UnityEditor.PackageManager.UI
 
         bool isCompiling { get; }
 
-        event Action onFinishCompiling;
+        bool isUserLoggedIn { get; }
+
+        string userAppDataPath { get; }
+
+        void ShowLogin();
+
+        void OpenURL(string url);
     }
 }

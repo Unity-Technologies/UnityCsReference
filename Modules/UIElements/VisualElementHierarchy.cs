@@ -17,20 +17,8 @@ namespace UnityEngine.UIElements
             get; private set;
         }
 
-        bool m_CacheAsBitmap = false;
-
-        public bool cacheAsBitmap
-        {
-            get { return m_CacheAsBitmap; }
-            set
-            {
-                if (m_CacheAsBitmap != value)
-                {
-                    m_CacheAsBitmap = value;
-                    IncrementVersion(VersionChangeType.Repaint);
-                }
-            }
-        }
+        [Obsolete("VisualElement.cacheAsBitmap is deprecated and has no effect")]
+        public bool cacheAsBitmap { get; set; }
 
         internal bool ShouldClip()
         {

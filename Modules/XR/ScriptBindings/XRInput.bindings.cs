@@ -329,9 +329,28 @@ namespace UnityEngine.XR
     [NativeConditional("ENABLE_VR")]
     public struct InputDevice : IEquatable<InputDevice>
     {
+        private static List<XRInputSubsystem> s_InputSubsystemCache;
         private UInt64 m_DeviceId;
+        static InputDevice invalid { get { return new InputDevice(UInt64.MaxValue); } }
         internal InputDevice(UInt64 deviceId) { m_DeviceId = deviceId; }
+        public XRInputSubsystem subsystem
+        {
+            get
+            {
+                if (s_InputSubsystemCache == null)
+                    s_InputSubsystemCache = new List<XRInputSubsystem>();
 
+                /// The DeviceId is cut in two, with the hiword being the subsystem identifier, and the loword being for the specific device.
+                UInt32 pluginIndex = (UInt32)(m_DeviceId >> 32);
+                SubsystemManager.GetInstances<XRInputSubsystem>(s_InputSubsystemCache);
+                for (int i = 0; i < s_InputSubsystemCache.Count; i++)
+                {
+                    if (pluginIndex == s_InputSubsystemCache[i].GetIndex())
+                        return s_InputSubsystemCache[i];
+                }
+                return null;
+            }
+        }
         public bool isValid { get { return InputDevices.IsDeviceValid(m_DeviceId); } }
         public string name { get { return InputDevices.GetDeviceName(m_DeviceId); } }
         [Obsolete("This API has been marked as deprecated and will be removed in future versions. Please use InputDevice.characteristics instead.")]

@@ -299,10 +299,12 @@ namespace UnityEditor.StyleSheets
 
         private struct StyleBackgroundPosition
         {
+#pragma warning disable 0649
             public int xEdge;
             public float xOffset;
             public int yEdge;
             public float yOffset;
+#pragma warning restore 0649
         }
 
         private struct StyleBorder

@@ -4,6 +4,8 @@
 
 using System;
 using System.Linq;
+using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.Scripting;
@@ -38,6 +40,8 @@ namespace UnityEditor.PackageManager.UI
                     packageStatusbar.Setup();
 
                     SetupDelayedPackageSelection();
+
+                    PackageManagerWindowAnalytics.Setup();
                 }
             }
 
@@ -57,7 +61,7 @@ namespace UnityEditor.PackageManager.UI
         {
             // trigger both offline & offline refresh
             PackageDatabase.instance.Refresh(RefreshOptions.SearchAll | RefreshOptions.ListInstalled | RefreshOptions.OfflineMode);
-            PackageDatabase.instance.Refresh(RefreshOptions.SearchAll | RefreshOptions.ListInstalled);
+            PackageDatabase.instance.Refresh(RefreshOptions.SearchAll | RefreshOptions.ListInstalled | RefreshOptions.Purchased);
         }
 
         public void OnDisable()
@@ -125,7 +129,6 @@ namespace UnityEditor.PackageManager.UI
         private PackageDetails packageDetails { get { return s_Cache.Get<PackageDetails>("packageDetails"); } }
         private PackageManagerToolbar packageManagerToolbar { get {return s_Cache.Get<PackageManagerToolbar>("topMenuToolbar");} }
         private PackageStatusBar packageStatusbar { get {return s_Cache.Get<PackageStatusBar>("packageStatusBar");} }
-
         [MenuItem("Window/Package Manager", priority = 1500)]
         internal static void ShowPackageManagerWindow(MenuCommand item)
         {
@@ -133,9 +136,24 @@ namespace UnityEditor.PackageManager.UI
         }
 
         [UsedByNativeCode]
-        internal static void OpenPackageManager(string packageIdOrDisplayName)
+        internal static void OpenPackageManager(string packageNameOrDisplayName)
         {
-            SelectPackageAndFilter(packageIdOrDisplayName);
+            var window = GetWindowDontShow<PackageManagerWindow>();
+            var isWindowAlreadyVisible = window != null && window.m_Parent != null;
+
+            SelectPackageAndFilter(packageNameOrDisplayName);
+
+            if (!isWindowAlreadyVisible)
+            {
+                string packageId = null;
+                if (!string.IsNullOrEmpty(packageNameOrDisplayName))
+                {
+                    var package = PackageDatabase.instance.GetPackage(packageNameOrDisplayName)
+                        ?? PackageDatabase.instance.GetPackageByDisplayName(packageNameOrDisplayName);
+                    packageId = package?.primaryVersion.uniqueId ?? $"{packageNameOrDisplayName}@primary";
+                }
+                PackageManagerWindowAnalytics.SendEvent("openWindow", packageId);
+            }
         }
 
         internal static void SelectPackageAndFilter(string packageIdOrDisplayName, PackageFilterTab? filterTab = null, bool refresh = false)

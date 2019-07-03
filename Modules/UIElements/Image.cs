@@ -22,6 +22,7 @@ namespace UnityEngine.UIElements
 
         private ScaleMode m_ScaleMode;
         private Texture m_Image;
+        private VectorImage m_VectorImage;
         private Rect m_UV;
         private Color m_TintColor;
 
@@ -35,12 +36,40 @@ namespace UnityEngine.UIElements
             get { return m_Image; }
             set
             {
+                if (value != null && vectorImage != null)
+                {
+                    Debug.LogError("Both image and vectorImage are set on Image object");
+                    m_VectorImage = null;
+                }
                 m_ImageIsInline = value != null;
                 if (m_Image != value)
                 {
                     m_Image = value;
                     IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
                     if (m_Image == null)
+                    {
+                        m_UV = new Rect(0, 0, 1, 1);
+                    }
+                }
+            }
+        }
+
+        public VectorImage vectorImage
+        {
+            get { return m_VectorImage; }
+            set
+            {
+                if (value != null && image != null)
+                {
+                    Debug.LogError("Both image and vectorImage are set on Image object");
+                    m_Image = null;
+                }
+                m_ImageIsInline = value != null;
+                if (m_VectorImage != value)
+                {
+                    m_VectorImage = value;
+                    IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
+                    if (m_VectorImage == null)
                     {
                         m_UV = new Rect(0, 0, 1, 1);
                     }
@@ -116,15 +145,20 @@ namespace UnityEngine.UIElements
             float measuredWidth = float.NaN;
             float measuredHeight = float.NaN;
 
-            Texture current = image;
-            if (current == null)
+            if (image == null && vectorImage == null)
                 return new Vector2(measuredWidth, measuredHeight);
+
+            var sourceSize = Vector2.zero;
+            if (image != null)
+                sourceSize = new Vector2(image.width, image.height);
+            else
+                sourceSize = vectorImage.size;
 
             // covers the MeasureMode.Exactly case
             Rect rect = sourceRect;
             bool hasImagePosition = rect != Rect.zero;
-            measuredWidth = hasImagePosition ? rect.width : current.width;
-            measuredHeight = hasImagePosition ? rect.height : current.height;
+            measuredWidth = hasImagePosition ? rect.width : sourceSize.x;
+            measuredHeight = hasImagePosition ? rect.height : sourceSize.y;
 
             if (widthMode == MeasureMode.AtMost)
             {
@@ -141,16 +175,20 @@ namespace UnityEngine.UIElements
 
         private void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
-            Texture current = image;
-            if (current == null)
+            if (image == null && vectorImage == null)
                 return;
 
-            var rectParams = MeshGenerationContextUtils.RectangleParams.MakeTextured(contentRect, uv, current, scaleMode, panel.contextType);
+            var rectParams = new MeshGenerationContextUtils.RectangleParams();
+            if (image != null)
+                rectParams = MeshGenerationContextUtils.RectangleParams.MakeTextured(contentRect, uv, image, scaleMode, panel.contextType);
+            else if (vectorImage != null)
+                rectParams = MeshGenerationContextUtils.RectangleParams.MakeVectorTextured(contentRect, uv, vectorImage, scaleMode, panel.contextType);
             rectParams.color = tintColor;
             mgc.Rectangle(rectParams);
         }
 
         static CustomStyleProperty<Texture2D> s_ImageProperty = new CustomStyleProperty<Texture2D>("--unity-image");
+        static CustomStyleProperty<VectorImage> s_VectorImageProperty = new CustomStyleProperty<VectorImage>("--unity-image");
         static CustomStyleProperty<string> s_ScaleModeProperty = new CustomStyleProperty<string>("--unity-image-size");
         static CustomStyleProperty<Color> s_TintColorProperty = new CustomStyleProperty<Color>("--unity-image-tint-color");
 
@@ -158,11 +196,23 @@ namespace UnityEngine.UIElements
         {
             // We should consider not exposing image as a style at all, since it's intimately tied to uv/sourceRect
             Texture2D textureValue = null;
+            VectorImage vectorImageValue = null;
             string scaleModeValue;
             Color tintValue = Color.white;
             ICustomStyle customStyle = e.customStyle;
             if (!m_ImageIsInline && customStyle.TryGetValue(s_ImageProperty, out textureValue))
+            {
                 m_Image = textureValue;
+                if (m_Image != null)
+                    m_VectorImage = null;
+            }
+
+            if (!m_ImageIsInline && customStyle.TryGetValue(s_VectorImageProperty, out vectorImageValue))
+            {
+                m_VectorImage = vectorImageValue;
+                if (m_VectorImage != null)
+                    m_Image = null;
+            }
 
             if (!m_ScaleModeIsInline && customStyle.TryGetValue(s_ScaleModeProperty, out scaleModeValue))
             {
@@ -181,34 +231,47 @@ namespace UnityEngine.UIElements
         private void CalculateUV(Rect srcRect)
         {
             m_UV = new Rect(0, 0, 1, 1);
+
+            var size = Vector2.zero;
+
             Texture texture = image;
             if (texture != null)
+                size = new Vector2(texture.width, texture.height);
+
+            var vi = vectorImage;
+            if (vi != null)
+                size = vi.size;
+
+            if (size != Vector2.zero)
             {
                 // Convert texture coordinates to UV
-                int width = texture.width;
-                int height = texture.height;
-
-                m_UV.x = srcRect.x / width;
-                m_UV.width = srcRect.width / width;
-                m_UV.height = srcRect.height / height;
-                m_UV.y = 1.0f - m_UV.height - (srcRect.y / height);
+                m_UV.x = srcRect.x / size.x;
+                m_UV.width = srcRect.width / size.x;
+                m_UV.height = srcRect.height / size.y;
+                m_UV.y = 1.0f - m_UV.height - (srcRect.y / size.y);
             }
         }
 
         private Rect GetSourceRect()
         {
             Rect rect = Rect.zero;
-            Texture texture = image;
+            var size = Vector2.zero;
+
+            var texture = image;
             if (texture != null)
+                size = new Vector2(texture.width, texture.height);
+
+            var vi = vectorImage;
+            if (vi != null)
+                size = vi.size;
+
+            if (size != Vector2.zero)
             {
                 // Convert UV to texture coordinates
-                int width = texture.width;
-                int height = texture.height;
-
-                rect.x = uv.x * width;
-                rect.width = uv.width * width;
-                rect.y = (1.0f - uv.y - uv.height) * height;
-                rect.height = uv.height * height;
+                rect.x = uv.x * size.x;
+                rect.width = uv.width * size.x;
+                rect.y = (1.0f - uv.y - uv.height) * size.y;
+                rect.height = uv.height * size.y;
             }
 
             return rect;

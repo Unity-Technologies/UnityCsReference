@@ -16,7 +16,6 @@ using System.Collections;
 using System.Reflection;
 using System.Collections.Generic;
 using System.IO;
-using UnityScript.Scripting;
 using UnityEditor;
 using UnityEditorInternal;
 

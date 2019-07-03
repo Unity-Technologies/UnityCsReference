@@ -43,6 +43,11 @@ namespace UnityEditor.PackageManager.UI
 
             UIUtils.SetElementDisplay(emptyArea, false);
             UIUtils.SetElementDisplay(noResult, false);
+            UIUtils.SetElementDisplay(mustLogin, false);
+
+            emptyAreaText.text = L10n.Tr("There are no packages.");
+
+            loginBtn.clickable.clicked += OnLoginClicked;
 
             RegisterCallback<AttachToPanelEvent>(OnEnterPanel);
             RegisterCallback<DetachFromPanelEvent>(OnLeavePanel);
@@ -63,6 +68,12 @@ namespace UnityEditor.PackageManager.UI
             PackageDatabase.instance.onPackageOperationStart += OnPackageOperationStart;
             PackageDatabase.instance.onPackageOperationFinish += OnPackageOperationFinish;
 
+            PackageDatabase.instance.onDownloadProgress += OnDownloadProgress;
+            PackageDatabase.instance.onRefreshOperationStart += OnRefreshOperationStart;
+            PackageDatabase.instance.onRefreshOperationFinish += OnRefreshOperationFinish;
+
+            ApplicationUtil.instance.onUserLoginStateChange += OnUserLoginStateChange;
+
             // manually build the items on initialization to refresh the UI
             RebuildItems();
             OnSelectionChanged(SelectionManager.instance.GetSelections());
@@ -77,6 +88,8 @@ namespace UnityEditor.PackageManager.UI
         {
             noResultText.text = string.Empty;
             UIUtils.SetElementDisplay(noResult, false);
+            UIUtils.SetElementDisplay(emptyArea, false);
+            UIUtils.SetElementDisplay(mustLogin, false);
 
             // Only select main element if none of its versions are already selected
             var hasSelection = item.GetSelectableItems().Any(i => SelectionManager.instance.IsSelected(i.package, i.targetVersion));
@@ -86,14 +99,56 @@ namespace UnityEditor.PackageManager.UI
             ScrollIfNeeded(list, item);
         }
 
+        public void ShowEmptyResults()
+        {
+            UIUtils.SetElementDisplay(noResult, false);
+
+            if (!ApplicationUtil.instance.isUserLoggedIn && PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore)
+            {
+                UIUtils.SetElementDisplay(mustLogin, true);
+                UIUtils.SetElementDisplay(emptyArea, false);
+            }
+            else
+            {
+                UIUtils.SetElementDisplay(mustLogin, false);
+                UIUtils.SetElementDisplay(emptyArea, true);
+            }
+
+            SelectionManager.instance.ClearSelection();
+        }
+
+        private void OnUserLoginStateChange(bool loggedIn)
+        {
+            if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore)
+            {
+                if (loggedIn)
+                {
+                    UIUtils.SetElementDisplay(mustLogin, false);
+                    UIUtils.SetElementDisplay(emptyArea, true);
+                }
+                else
+                {
+                    UIUtils.SetElementDisplay(mustLogin, true);
+                    UIUtils.SetElementDisplay(emptyArea, false);
+                }
+            }
+        }
+
         public void ShowNoResults()
         {
             if (!string.IsNullOrEmpty(PackageFiltering.instance.currentSearchText))
             {
-                noResultText.text = $"No results for \"{PackageFiltering.instance.currentSearchText}\"";
+                noResultText.text = string.Format(L10n.Tr("No results for \"{0}\""), PackageFiltering.instance.currentSearchText);
                 UIUtils.SetElementDisplay(noResult, true);
             }
+            UIUtils.SetElementDisplay(emptyArea, false);
+            UIUtils.SetElementDisplay(mustLogin, false);
             SelectionManager.instance.ClearSelection();
+        }
+
+        private void OnLoginClicked()
+        {
+            ApplicationUtil.instance.ShowLogin();
         }
 
         private void OnEnterPanel(AttachToPanelEvent e)
@@ -114,6 +169,33 @@ namespace UnityEditor.PackageManager.UI
         private void OnPackageOperationStart(IPackage package)
         {
             FindPackageItem(package)?.StartSpinner();
+        }
+
+        private void OnRefreshOperationStart()
+        {
+            emptyAreaText.text = (PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore) ? L10n.Tr("Fetching packages...") : string.Empty;
+        }
+
+        private void OnRefreshOperationFinish()
+        {
+            emptyAreaText.text = L10n.Tr("There are no packages.");
+        }
+
+        private void OnDownloadProgress(IPackage package, DownloadProgress progress)
+        {
+            var item = FindPackageItem(package);
+            if (item != null)
+            {
+                if (progress.state == DownloadProgress.State.Completed || progress.state == DownloadProgress.State.Aborted || progress.state == DownloadProgress.State.Error)
+                {
+                    item.StopSpinner();
+                    item.SetPackage(package);
+                    if (progress.state == DownloadProgress.State.Completed)
+                        item.SetExpand(false);
+                }
+                else
+                    item.StartSpinner();
+            }
         }
 
         private void ScrollIfNeeded(ScrollView container = null, VisualElement target = null)
@@ -210,7 +292,9 @@ namespace UnityEditor.PackageManager.UI
             {
                 var item = FindPackageItem(package);
                 if (item != null)
+                {
                     list.Remove(item);
+                }
             }
 
             foreach (var package in updated)
@@ -343,6 +427,7 @@ namespace UnityEditor.PackageManager.UI
 
             UIUtils.SetElementDisplay(emptyArea, false);
             UIUtils.SetElementDisplay(noResult, false);
+            UIUtils.SetElementDisplay(mustLogin, false);
         }
 
         public void RebuildItems()
@@ -376,20 +461,23 @@ namespace UnityEditor.PackageManager.UI
         {
             var visiblePackageItems = packageItems.Where(p => UIUtils.IsElementVisible(p));
             if (!visiblePackageItems.Any())
-                ShowNoResults();
-            else
             {
-                var currentSelection = SelectionManager.instance.GetSelections().FirstOrDefault();
-                var selectedItem = currentSelection == null ? null : visiblePackageItems.FirstOrDefault(item => item.package.uniqueId == currentSelection.packageUniqueId);
-                ShowResults(selectedItem ?? visiblePackageItems.First());
+                ShowEmptyResults();
+                return;
             }
+            var currentSelection = SelectionManager.instance.GetSelections().FirstOrDefault();
+            var selectedItem = currentSelection == null ? null : visiblePackageItems.FirstOrDefault(item => item.package.uniqueId == currentSelection.packageUniqueId);
+            ShowResults(selectedItem ?? visiblePackageItems.First());
         }
 
         private VisualElementCache cache { get; set; }
 
         private ScrollView list { get { return cache.Get<ScrollView>("scrollView"); } }
         private VisualElement emptyArea { get { return cache.Get<VisualElement>("emptyArea"); } }
+        private Label emptyAreaText { get { return cache.Get<Label>("emptyAreaText"); } }
         private VisualElement noResult { get { return cache.Get<VisualElement>("noResult"); } }
         private Label noResultText { get { return cache.Get<Label>("noResultText"); } }
+        private VisualElement mustLogin { get { return cache.Get<VisualElement>("mustLogin"); } }
+        private Button loginBtn { get { return cache.Get<Button>("loginBtn"); } }
     }
 }

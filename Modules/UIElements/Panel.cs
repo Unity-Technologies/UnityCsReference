@@ -212,7 +212,28 @@ namespace UnityEngine.UIElements
 
         internal abstract IVisualTreeUpdater GetUpdater(VisualTreeUpdatePhase phase);
 
-        internal VisualElement topElementUnderMouse { get; private set; }
+        private ElementUnderPointer m_TopElementUnderPointers = new ElementUnderPointer();
+
+        internal VisualElement GetTopElementUnderPointer(int pointerId)
+        {
+            return m_TopElementUnderPointers.GetTopElementUnderPointer(pointerId);
+        }
+
+        void SetElementUnderPointer(VisualElement newElementUnderPointer, int pointerId)
+        {
+            m_TopElementUnderPointers.SetElementUnderPointer(newElementUnderPointer, pointerId);
+        }
+
+        internal void SetElementUnderPointer(VisualElement newElementUnderPointer, EventBase triggerEvent)
+        {
+            m_TopElementUnderPointers.SetElementUnderPointer(newElementUnderPointer, triggerEvent);
+        }
+
+        internal void CommitElementUnderPointers()
+        {
+            m_TopElementUnderPointers.CommitElementUnderPointers(dispatcher);
+        }
+
         internal abstract Shader standardShader { get; set; }
 
         internal event Action standardShaderChanged;
@@ -221,52 +242,22 @@ namespace UnityEngine.UIElements
         internal event HierarchyEvent hierarchyChanged;
         internal void InvokeHierarchyChanged(VisualElement ve, HierarchyChangeType changeType) { if (hierarchyChanged != null) hierarchyChanged(ve, changeType); }
 
-        internal void SetElementUnderMouse(VisualElement newElementUnderMouse, EventBase triggerEvent)
+        internal void UpdateElementUnderPointers()
         {
-            if (newElementUnderMouse == topElementUnderMouse)
-                return;
-
-            VisualElement previousTopElementUnderMouse = topElementUnderMouse;
-            topElementUnderMouse = newElementUnderMouse;
-
-            IMouseEvent mouseEvent = triggerEvent == null ? null : triggerEvent as IMouseEvent;
-            var mousePosition = mouseEvent == null
-                ? MousePositionTracker.mousePosition
-                : mouseEvent?.mousePosition ?? Vector2.zero;
-
-            var sendMouseOverOut = (triggerEvent == null ||
-                triggerEvent.eventTypeId == MouseMoveEvent.TypeId() ||
-                triggerEvent.eventTypeId == MouseDownEvent.TypeId() ||
-                triggerEvent.eventTypeId == MouseUpEvent.TypeId() ||
-                triggerEvent.eventTypeId == MouseEnterWindowEvent.TypeId() ||
-                triggerEvent.eventTypeId == MouseLeaveWindowEvent.TypeId() ||
-                triggerEvent.eventTypeId == WheelEvent.TypeId());
-
-            var sendDragEnterLeave = triggerEvent != null && (triggerEvent.eventTypeId == DragUpdatedEvent.TypeId() || triggerEvent.eventTypeId == DragExitedEvent.TypeId());
-
-            using (new EventDispatcherGate(dispatcher))
+            foreach (var pointerId in PointerId.hoveringPointers)
             {
-                // mouse enter/leave must be dispatched *any* time the element under mouse changes
-                MouseEventsHelper.SendEnterLeave<MouseLeaveEvent, MouseEnterEvent>(previousTopElementUnderMouse, topElementUnderMouse, mouseEvent, mousePosition);
+                if (PointerDeviceState.GetPanel(pointerId) != this)
+                {
+                    SetElementUnderPointer(null, pointerId);
+                }
+                else
+                {
+                    VisualElement elementUnderPointer = Pick(PointerDeviceState.GetPointerPosition(pointerId));
+                    SetElementUnderPointer(elementUnderPointer, pointerId);
+                }
+            }
 
-                if (sendMouseOverOut)
-                    MouseEventsHelper.SendMouseOverMouseOut(previousTopElementUnderMouse, topElementUnderMouse, mouseEvent, mousePosition);
-                if (sendDragEnterLeave)
-                    MouseEventsHelper.SendEnterLeave<DragLeaveEvent, DragEnterEvent>(previousTopElementUnderMouse, topElementUnderMouse, mouseEvent, mousePosition);
-            }
-        }
-
-        internal void UpdateElementUnderMouse()
-        {
-            if (MousePositionTracker.panel != this)
-            {
-                SetElementUnderMouse(null, null);
-            }
-            else
-            {
-                VisualElement elementUnderMouse = Pick(MousePositionTracker.mousePosition);
-                SetElementUnderMouse(elementUnderMouse, null);
-            }
+            CommitElementUnderPointers();
         }
 
         public IPanelDebug panelDebug { get; set; }
@@ -464,6 +455,7 @@ namespace UnityEngine.UIElements
         }
 
         private Shader m_StandardShader;
+
         internal override Shader standardShader
         {
             get { return m_StandardShader; }
@@ -477,13 +469,18 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public Panel(ScriptableObject ownerObject, ContextType contextType, EventDispatcher dispatcher = null)
+        internal static Panel CreateEditorPanel(ScriptableObject ownerObject)
+        {
+            return new Panel(ownerObject, ContextType.Editor, EventDispatcher.editorDispatcher);
+        }
+
+        public Panel(ScriptableObject ownerObject, ContextType contextType, EventDispatcher dispatcher)
         {
             m_VisualTreeUpdater = new VisualTreeUpdater(this);
 
             this.ownerObject = ownerObject;
             this.contextType = contextType;
-            this.dispatcher = dispatcher ?? EventDispatcher.instance;
+            this.dispatcher = dispatcher;
             repaintData = new RepaintData();
             cursorManager = new CursorManager();
             contextualMenuManager = null;

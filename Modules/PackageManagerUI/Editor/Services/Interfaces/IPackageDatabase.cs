@@ -14,6 +14,7 @@ namespace UnityEditor.PackageManager.UI
         OfflineMode     = 1 << 0,
         ListInstalled   = 1 << 1,
         SearchAll       = 1 << 2,
+        Purchased       = 1 << 3
     }
 
     internal interface IPackageDatabase
@@ -34,6 +35,8 @@ namespace UnityEditor.PackageManager.UI
         event Action onRefreshOperationFinish;
         event Action<Error> onRefreshOperationError;
 
+        event Action<IPackage, DownloadProgress> onDownloadProgress;
+
         void Setup();
 
         void Clear();
@@ -52,6 +55,14 @@ namespace UnityEditor.PackageManager.UI
         void InstallFromPath(string path);
 
         void Uninstall(IPackage package);
+
+        bool IsDownloadInProgress(IPackageVersion version);
+
+        void Download(IPackage package);
+
+        void AbortDownload(IPackage package);
+
+        void Import(IPackage package);
 
         void Embed(IPackage package);
         void RemoveEmbedded(IPackage package);

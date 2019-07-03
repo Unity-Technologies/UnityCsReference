@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UnityEditorInternal;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -12,6 +13,8 @@ namespace UnityEditor
 {
     internal class ModelImporterPostProcessor : AssetPostprocessor
     {
+        static bool AskedForBumpMap = false;
+
         static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromPath)
         {
             if (AssetDatabase.IsOnDemandModeEnabled())
@@ -22,6 +25,7 @@ namespace UnityEditor
             }
 
             List<Object> loadedAssets = new List<Object>();
+            bool oneFound = false;
             try
             {
                 foreach (var assetPath in importedAssets)
@@ -39,6 +43,7 @@ namespace UnityEditor
                         var embeddedMaterials = AssetDatabase.LoadAllAssetsAtPath(assetPath).OfType<Material>();
                         foreach (var material in embeddedMaterials)
                         {
+                            oneFound = true;
                             BumpMapSettings.PerformBumpMapCheck(material);
                         }
                     }
@@ -46,11 +51,25 @@ namespace UnityEditor
             }
             finally
             {
+                if (oneFound && !AskedForBumpMap)
+                {
+                    AskedForBumpMap = true;
+                    // We cannot open the BumpMapTexturesWindow here because the Editor Layout may not have been loaded yet
+                    // and will destroy the window when doing so. So lets wait for the first frame to open it.
+                    EditorApplication.update += OpenBumpMapCheckWindow;
+                }
                 foreach (var o in loadedAssets)
                 {
                     Resources.UnloadAsset(o);
                 }
             }
+        }
+
+        static void OpenBumpMapCheckWindow()
+        {
+            AskedForBumpMap = false;
+            EditorApplication.update -= OpenBumpMapCheckWindow;
+            InternalEditorUtility.PerformUnmarkedBumpMapTexturesFixing();
         }
     }
 }

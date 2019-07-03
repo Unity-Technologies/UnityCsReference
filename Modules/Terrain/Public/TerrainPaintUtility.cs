@@ -18,7 +18,7 @@ namespace UnityEngine.Experimental.TerrainAPI
             SetHeights,
             SmoothHeights,
             PaintTexture,
-            PaintSurfaceMask
+            PaintHoles
         }
 
         private static Material s_BuiltinPaintMaterial = null;
@@ -27,6 +27,34 @@ namespace UnityEngine.Experimental.TerrainAPI
             if (s_BuiltinPaintMaterial == null)
                 s_BuiltinPaintMaterial = new Material(Shader.Find("Hidden/TerrainEngine/PaintHeight"));
             return s_BuiltinPaintMaterial;
+        }
+
+        public static void GetBrushWorldSizeLimits(
+            out float minBrushWorldSize,
+            out float maxBrushWorldSize,
+            float terrainTileWorldSize,
+            int terrainTileTextureResolutionPixels,
+            int minBrushResolutionPixels = 1,
+            int maxBrushResolutionPixels = 8192)
+        {
+            if (terrainTileTextureResolutionPixels <= 0)
+            {
+                minBrushWorldSize = terrainTileWorldSize;
+                maxBrushWorldSize = terrainTileWorldSize;
+            }
+            else
+            {
+                float pixelSize = terrainTileWorldSize / terrainTileTextureResolutionPixels;
+
+                // min brush size is the size of one pixel
+                minBrushWorldSize = minBrushResolutionPixels * pixelSize;
+
+                // max brush size is the size of maxResolution pixels
+                float maxResolution =
+                    Mathf.Min(maxBrushResolutionPixels, SystemInfo.maxTextureSize);
+
+                maxBrushWorldSize = maxResolution * pixelSize;
+            }
         }
 
         // returns a transform from terrain space to brush UV
@@ -153,17 +181,17 @@ namespace UnityEngine.Experimental.TerrainAPI
             ctx.Cleanup();
         }
 
-        public static PaintContext BeginPaintSurfaceMask(Terrain terrain, Rect boundsInTerrainSpace, int extraBorderPixels = 0)
+        public static PaintContext BeginPaintHoles(Terrain terrain, Rect boundsInTerrainSpace, int extraBorderPixels = 0)
         {
-            int surfaceMaskResolution = terrain.terrainData.surfaceMaskResolution;
-            PaintContext ctx = InitializePaintContext(terrain, surfaceMaskResolution, surfaceMaskResolution, Terrain.surfaceMaskRenderTextureFormat, boundsInTerrainSpace, extraBorderPixels);
-            ctx.GatherSurfaceMask();
+            int holesResolution = terrain.terrainData.holesResolution;
+            PaintContext ctx = InitializePaintContext(terrain, holesResolution, holesResolution, Terrain.holesRenderTextureFormat, boundsInTerrainSpace, extraBorderPixels);
+            ctx.GatherHoles();
             return ctx;
         }
 
-        public static void EndPaintSurfaceMask(PaintContext ctx, string editorUndoName)
+        public static void EndPaintHoles(PaintContext ctx, string editorUndoName)
         {
-            ctx.ScatterSurfaceMask(editorUndoName);
+            ctx.ScatterHoles(editorUndoName);
             ctx.Cleanup();
         }
 

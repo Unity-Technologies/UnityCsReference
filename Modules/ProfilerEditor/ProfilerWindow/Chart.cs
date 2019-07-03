@@ -207,7 +207,7 @@ namespace UnityEditorInternal
             EventType evtType = evt.GetTypeForControl(m_chartControlID);
 
             if (evtType == EventType.MouseDown && chartRect.Contains(evt.mousePosition) && selected != null)
-                selected(this);
+                ChartSelected();
 
             // if we are not dragging labels, handle graph frame selection
             if (m_DragItemIndex == -1)
@@ -242,6 +242,11 @@ namespace UnityEditorInternal
             }
 
             return selectedFrame;
+        }
+
+        public void ChartSelected()
+        {
+            selected(this);
         }
 
         private void DrawSelectedFrame(int selectedFrame, ChartViewData cdata, Rect r)

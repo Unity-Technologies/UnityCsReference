@@ -24,7 +24,10 @@ namespace UnityEditor.Connect
         CloudPortal = 7,
         CloudPerfEvents = 8,
         CloudAdsDashboard = 9,
-        CloudServicesDashboard = 10
+        CloudServicesDashboard = 10,
+        CloudPackagesApi = 11,
+        CloudPackagesKey = 12,
+        CloudAssetStoreUrl = 13
     }
 
     //*undocumented*
@@ -179,7 +182,7 @@ namespace UnityEditor.Connect
             client.postData = string.Format("client_id={0}&response_type=code&format=json&access_token={1}&prompt=none",
                 clientId,
                 UnityConnect.instance.GetAccessToken());
-            client.doneCallback = delegate(AsyncHTTPClient c)
+            client.doneCallback = delegate(IAsyncHTTPClient c)
             {
                 AuthCodeResponse response = new AuthCodeResponse();
                 if (!c.IsSuccess())

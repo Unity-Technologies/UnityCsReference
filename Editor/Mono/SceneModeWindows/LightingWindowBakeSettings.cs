@@ -3,12 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using System.Collections;
 using System.Linq;
-using UnityEditor.AnimatedValues;
 using UnityEngine.Rendering;
-using UnityEditorInternal;
 using UnityEngine;
 using UnityEngineInternal;
 using Object = UnityEngine.Object;
@@ -157,8 +153,6 @@ namespace UnityEditor
             m_LightmapSettings = null;
             m_RenderSettingsSO.Dispose();
         }
-
-        void Repaint() { InspectorWindow.RepaintAllInspectors(); }
 
         static void DrawResolutionField(SerializedProperty resolution, GUIContent label)
         {
@@ -353,7 +347,7 @@ namespace UnityEditor
             Lightmapping.enlightenForceUpdates = EditorGUILayout.Toggle(Styles.ForceUpdates, Lightmapping.enlightenForceUpdates);
             Lightmapping.enlightenForceWhiteAlbedo = EditorGUILayout.Toggle(Styles.ForceWhiteAlbedo, Lightmapping.enlightenForceWhiteAlbedo);
 
-            if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU)
+            if (m_BakeBackend.intValue == (int)LightmapEditorSettings.Lightmapper.ProgressiveCPU)
             {
                 EditorGUILayout.PropertyField(m_ExportTrainingData, Styles.ExportTrainingData);
 
@@ -389,7 +383,7 @@ namespace UnityEditor
 
         private void ClampFilterType(SerializedProperty filter)
         {
-            if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU)
+            if (m_BakeBackend.intValue == (int)LightmapEditorSettings.Lightmapper.ProgressiveGPU)
             {
                 // Force unsupported A-Trous filter back to Gaussian.
                 if (filter.intValue == (int)LightmapEditorSettings.FilterType.ATrous)
@@ -466,10 +460,53 @@ namespace UnityEditor
             return true;
         }
 
+        void OnBakeBackedSelected(object userData)
+        {
+            m_BakeBackend.intValue = (int)userData;
+        }
+
+        void BakeBackendGUI()
+        {
+            var rect = EditorGUILayout.GetControlRect();
+            EditorGUI.BeginProperty(rect, Styles.BakeBackend, m_BakeBackend);
+            EditorGUI.BeginChangeCheck();
+            rect = EditorGUI.PrefixLabel(rect, Styles.BakeBackend);
+
+            int index = Math.Max(0, Array.IndexOf(Styles.BakeBackendValues, m_BakeBackend.intValue));
+
+            if (EditorGUI.DropdownButton(rect, Styles.BakeBackendStrings[index], FocusType.Passive))
+            {
+                var menu = new GenericMenu();
+
+                for (int i = 0; i < Styles.BakeBackendValues.Length; i++)
+                {
+                    int value = Styles.BakeBackendValues[i];
+                    bool selected = (value == m_BakeBackend.intValue);
+
+                    if (!SupportedRenderingFeatures.IsLightmapperSupported(value))
+                        menu.AddDisabledItem(Styles.BakeBackendStrings[i], selected);
+                    else
+                        menu.AddItem(Styles.BakeBackendStrings[i], selected, OnBakeBackedSelected, value);
+                }
+                menu.DropDown(rect);
+            }
+            if (EditorGUI.EndChangeCheck())
+                InspectorWindow.RepaintAllInspectors(); // We need to repaint other inspectors that might need to update based on the selected backend.
+
+            EditorGUI.EndProperty();
+
+            if (!SupportedRenderingFeatures.IsLightmapperSupported(m_BakeBackend.intValue))
+            {
+                string fallbackLightmapper = Styles.BakeBackendStrings[SupportedRenderingFeatures.FallbackLightmapper()].text;
+                EditorGUILayout.HelpBox(Styles.LightmapperNotSupportedWarning.text + fallbackLightmapper, MessageType.Warning);
+            }
+        }
+
         void GeneralLightmapSettingsGUI()
         {
             bool bakedGISupported = SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Baked);
             bool realtimeGISupported = SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Realtime);
+            bool lightmapperSupported = SupportedRenderingFeatures.IsLightmapperSupported(m_BakeBackend.intValue);
 
             if (!bakedGISupported && !realtimeGISupported)
                 return;
@@ -485,157 +522,173 @@ namespace UnityEditor
                     {
                         using (new EditorGUI.DisabledScope(!m_EnabledBakedGI.boolValue))
                         {
-                            EditorGUI.BeginChangeCheck();
-                            EditorGUILayout.PropertyField(m_BakeBackend, Styles.BakeBackend);
-                            if (EditorGUI.EndChangeCheck())
-                                InspectorWindow.RepaintAllInspectors(); // We need to repaint other inspectors that might need to update based on the selected backend.
+                            BakeBackendGUI();
 
-                            if (LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.Enlighten)
+                            if (lightmapperSupported)
                             {
-                                EditorGUI.indentLevel++;
-
-                                EditorGUILayout.PropertyField(m_PVRCulling, Styles.PVRCulling);
-
-                                bool enableMIS = (m_PVREnvironmentMIS.intValue & 1) != 0;
-                                if (EditorGUILayout.Toggle(Styles.PVREnvironmentMIS, enableMIS))
-                                    m_PVREnvironmentMIS.intValue |= 1;
-                                else
-                                    m_PVREnvironmentMIS.intValue &= ~1;
-
-                                // Sampling type
-                                //EditorGUILayout.PropertyField(m_PvrSampling, Styles.m_PVRSampling); // TODO(PVR): make non-fixed sampling modes work.
-
-                                if (LightmapEditorSettings.sampling != LightmapEditorSettings.Sampling.Auto)
+                                if (m_BakeBackend.intValue == (int)LightmapEditorSettings.Lightmapper.Enlighten)
                                 {
-                                    // Update those constants also in LightmapBake.cpp UpdateSamples() and LightmapBake.h.
-                                    // NOTE: sample count needs to be a power of two as we are using Sobol sequence.
-                                    const int kMinDirectSamples = 1;
-                                    const int kMinEnvironmentSamples = 8;
-                                    const int kMinSamples = 8;
-                                    const int kMaxSamples = 131072;
-
-                                    // Sample count
-                                    // TODO(PVR): make non-fixed sampling modes work.
-                                    //EditorGUI.indentLevel++;
-                                    //if (LightmapEditorSettings.giPathTracerSampling == LightmapEditorSettings.PathTracerSampling.PathTracerSamplingAdaptive)
-                                    //  EditorGUILayout.PropertyField(m_PVRSampleCount, Styles.PVRSampleCountAdaptive);
-                                    //else
-
-                                    EditorGUILayout.PropertyField(m_PVRDirectSampleCount, Styles.PVRDirectSampleCount);
-                                    EditorGUILayout.PropertyField(m_PVRSampleCount, Styles.PVRIndirectSampleCount);
-
-                                    if (m_PVRSampleCount.intValue < kMinSamples ||
-                                        m_PVRSampleCount.intValue > kMaxSamples)
-                                    {
-                                        m_PVRSampleCount.intValue = Math.Max(Math.Min(m_PVRSampleCount.intValue, kMaxSamples), kMinSamples);
-                                    }
-
-                                    if (m_PVRDirectSampleCount.intValue < kMinDirectSamples ||
-                                        m_PVRDirectSampleCount.intValue > kMaxSamples)
-                                    {
-                                        m_PVRDirectSampleCount.intValue = Math.Max(Math.Min(m_PVRDirectSampleCount.intValue, kMaxSamples), kMinDirectSamples);
-                                    }
-
-                                    EditorGUILayout.PropertyField(m_PVREnvironmentSampleCount, Styles.PVREnvironmentSampleCount);
-
-                                    if (m_PVREnvironmentSampleCount.intValue < kMinEnvironmentSamples || m_PVREnvironmentSampleCount.intValue > kMaxSamples)
-                                    {
-                                        m_PVREnvironmentSampleCount.intValue = Math.Max(Math.Min(m_PVREnvironmentSampleCount.intValue, kMaxSamples), kMinEnvironmentSamples);
-                                    }
-
-                                    // TODO(PVR): make non-fixed sampling modes work.
-                                    //EditorGUI.indentLevel--;
-                                }
-
-                                EditorGUILayout.IntPopup(m_PVRBounces, Styles.BouncesStrings, Styles.BouncesValues, Styles.PVRBounces);
-
-                                // Filtering
-                                EditorGUILayout.PropertyField(m_PVRFilteringMode, Styles.PVRFilteringMode);
-
-                                if (m_PVRFilteringMode.enumValueIndex == (int)LightmapEditorSettings.FilterMode.Advanced)
-                                {
-                                    // Check if the platform doesn't support denoising.
-                                    bool usingGPULightmapper = LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU;
-                                    bool anyDenoisingSupported = (LightmapEditorSettings.IsOptixDenoiserSupported() || LightmapEditorSettings.IsOpenImageDenoiserSupported());
-                                    bool aoDenoisingSupported = DenoiserSupported((LightmapEditorSettings.DenoiserType)m_PVRDenoiserTypeAO.intValue);
-                                    bool directDenoisingSupported = DenoiserSupported((LightmapEditorSettings.DenoiserType)m_PVRDenoiserTypeDirect.intValue);
-                                    bool indirectDenoisingSupported = DenoiserSupported((LightmapEditorSettings.DenoiserType)m_PVRDenoiserTypeIndirect.intValue);
-
                                     EditorGUI.indentLevel++;
-                                    using (new EditorGUI.DisabledScope(!anyDenoisingSupported))
+
+                                    EditorGUILayout.PropertyField(m_FinalGather, Styles.FinalGather);
+                                    if (m_FinalGather.boolValue)
                                     {
-                                        DrawDenoiserTypeDropdown(m_PVRDenoiserTypeDirect, directDenoisingSupported ? Styles.PVRDenoiserTypeDirect : Styles.DenoisingWarningDirect, DenoiserTarget.Direct);
-                                    }
-                                    ClampFilterType(m_PVRFilterTypeDirect);
-                                    if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU)
-                                        EditorGUILayout.IntPopup(m_PVRFilterTypeDirect, Styles.GPUFilterOptions, Styles.GPUFilterInts, Styles.PVRFilterTypeDirect);
-                                    else
-                                        EditorGUILayout.PropertyField(m_PVRFilterTypeDirect, Styles.PVRFilterTypeDirect);
-
-                                    EditorGUI.indentLevel++;
-                                    DrawFilterSettingField(m_PVRFilteringGaussRadiusDirect,
-                                        m_PVRFilteringAtrousPositionSigmaDirect,
-                                        Styles.PVRFilteringGaussRadiusDirect,
-                                        Styles.PVRFilteringAtrousPositionSigmaDirect,
-                                        LightmapEditorSettings.filterTypeDirect);
-                                    EditorGUI.indentLevel--;
-
-                                    EditorGUILayout.Space();
-
-                                    using (new EditorGUI.DisabledScope(!anyDenoisingSupported))
-                                    {
-                                        DrawDenoiserTypeDropdown(m_PVRDenoiserTypeIndirect, indirectDenoisingSupported ? Styles.PVRDenoiserTypeIndirect : Styles.DenoisingWarningIndirect, DenoiserTarget.Indirect);
-                                    }
-                                    if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU)
-                                        EditorGUILayout.IntPopup(m_PVRFilterTypeIndirect, Styles.GPUFilterOptions, Styles.GPUFilterInts, Styles.PVRFilterTypeIndirect);
-                                    else
-                                        EditorGUILayout.PropertyField(m_PVRFilterTypeIndirect, Styles.PVRFilterTypeIndirect);
-                                    ClampFilterType(m_PVRFilterTypeIndirect);
-
-                                    EditorGUI.indentLevel++;
-                                    DrawFilterSettingField(m_PVRFilteringGaussRadiusIndirect,
-                                        m_PVRFilteringAtrousPositionSigmaIndirect,
-                                        Styles.PVRFilteringGaussRadiusIndirect,
-                                        Styles.PVRFilteringAtrousPositionSigmaIndirect,
-                                        LightmapEditorSettings.filterTypeIndirect);
-                                    EditorGUI.indentLevel--;
-
-                                    using (new EditorGUI.DisabledScope(!m_AmbientOcclusion.boolValue))
-                                    {
-                                        EditorGUILayout.Space();
-                                        using (new EditorGUI.DisabledScope(!anyDenoisingSupported))
-                                        {
-                                            DrawDenoiserTypeDropdown(m_PVRDenoiserTypeAO, aoDenoisingSupported ? Styles.PVRDenoiserTypeAO : Styles.DenoisingWarningAO, DenoiserTarget.AO);
-                                        }
-                                        if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU)
-                                            EditorGUILayout.IntPopup(m_PVRFilterTypeAO, Styles.GPUFilterOptions, Styles.GPUFilterInts, Styles.PVRFilterTypeAO);
-                                        else
-                                            EditorGUILayout.PropertyField(m_PVRFilterTypeAO, Styles.PVRFilterTypeAO);
-                                        ClampFilterType(m_PVRFilterTypeAO);
-
                                         EditorGUI.indentLevel++;
-                                        DrawFilterSettingField(m_PVRFilteringGaussRadiusAO,
-                                            m_PVRFilteringAtrousPositionSigmaAO,
-                                            Styles.PVRFilteringGaussRadiusAO, Styles.PVRFilteringAtrousPositionSigmaAO,
-                                            LightmapEditorSettings.filterTypeAO);
+                                        EditorGUILayout.PropertyField(m_FinalGatherRayCount, Styles.FinalGatherRayCount);
+                                        EditorGUILayout.PropertyField(m_FinalGatherFiltering, Styles.FinalGatherFiltering);
                                         EditorGUI.indentLevel--;
                                     }
-                                    // Show warning if A-Trous filtering is selected and the platform doesn't support it.
-                                    if (usingGPULightmapper && (m_PVRFilterTypeDirect.intValue == (int)LightmapEditorSettings.FilterType.ATrous || m_PVRFilterTypeIndirect.intValue == (int)LightmapEditorSettings.FilterType.ATrous || (m_AmbientOcclusion.boolValue && m_PVRFilterTypeAO.intValue == (int)LightmapEditorSettings.FilterType.ATrous)))
-                                        EditorGUILayout.HelpBox(Styles.ProgressiveGPUWarning.text, MessageType.Warning);
 
                                     EditorGUI.indentLevel--;
                                 }
 
-                                EditorGUI.indentLevel--;
+                                if (m_BakeBackend.intValue != (int)LightmapEditorSettings.Lightmapper.Enlighten)
+                                {
+                                    EditorGUI.indentLevel++;
+
+                                    EditorGUILayout.PropertyField(m_PVRCulling, Styles.PVRCulling);
+
+                                    bool enableMIS = (m_PVREnvironmentMIS.intValue & 1) != 0;
+                                    if (EditorGUILayout.Toggle(Styles.PVREnvironmentMIS, enableMIS))
+                                        m_PVREnvironmentMIS.intValue |= 1;
+                                    else
+                                        m_PVREnvironmentMIS.intValue &= ~1;
+
+                                    // Sampling type
+                                    //EditorGUILayout.PropertyField(m_PvrSampling, Styles.m_PVRSampling); // TODO(PVR): make non-fixed sampling modes work.
+
+                                    if (LightmapEditorSettings.sampling != LightmapEditorSettings.Sampling.Auto)
+                                    {
+                                        // Update those constants also in LightmapBake.cpp UpdateSamples() and LightmapBake.h.
+                                        // NOTE: sample count needs to be a power of two as we are using Sobol sequence.
+                                        const int kMinDirectSamples = 1;
+                                        const int kMinEnvironmentSamples = 8;
+                                        const int kMinSamples = 8;
+                                        const int kMaxSamples = 131072;
+
+                                        // Sample count
+                                        // TODO(PVR): make non-fixed sampling modes work.
+                                        //EditorGUI.indentLevel++;
+                                        //if (LightmapEditorSettings.giPathTracerSampling == LightmapEditorSettings.PathTracerSampling.PathTracerSamplingAdaptive)
+                                        //  EditorGUILayout.PropertyField(m_PVRSampleCount, Styles.PVRSampleCountAdaptive);
+                                        //else
+
+                                        EditorGUILayout.PropertyField(m_PVRDirectSampleCount, Styles.PVRDirectSampleCount);
+                                        EditorGUILayout.PropertyField(m_PVRSampleCount, Styles.PVRIndirectSampleCount);
+
+                                        if (m_PVRSampleCount.intValue < kMinSamples ||
+                                            m_PVRSampleCount.intValue > kMaxSamples)
+                                        {
+                                            m_PVRSampleCount.intValue = Math.Max(Math.Min(m_PVRSampleCount.intValue, kMaxSamples), kMinSamples);
+                                        }
+
+                                        if (m_PVRDirectSampleCount.intValue < kMinDirectSamples ||
+                                            m_PVRDirectSampleCount.intValue > kMaxSamples)
+                                        {
+                                            m_PVRDirectSampleCount.intValue = Math.Max(Math.Min(m_PVRDirectSampleCount.intValue, kMaxSamples), kMinDirectSamples);
+                                        }
+
+                                        EditorGUILayout.PropertyField(m_PVREnvironmentSampleCount, Styles.PVREnvironmentSampleCount);
+
+                                        if (m_PVREnvironmentSampleCount.intValue < kMinEnvironmentSamples || m_PVREnvironmentSampleCount.intValue > kMaxSamples)
+                                        {
+                                            m_PVREnvironmentSampleCount.intValue = Math.Max(Math.Min(m_PVREnvironmentSampleCount.intValue, kMaxSamples), kMinEnvironmentSamples);
+                                        }
+
+                                        // TODO(PVR): make non-fixed sampling modes work.
+                                        //EditorGUI.indentLevel--;
+                                    }
+
+                                    EditorGUILayout.IntPopup(m_PVRBounces, Styles.BouncesStrings, Styles.BouncesValues, Styles.PVRBounces);
+
+                                    // Filtering
+                                    EditorGUILayout.PropertyField(m_PVRFilteringMode, Styles.PVRFilteringMode);
+
+                                    if (m_PVRFilteringMode.enumValueIndex == (int)LightmapEditorSettings.FilterMode.Advanced)
+                                    {
+                                        // Check if the platform doesn't support denoising.
+                                        bool usingGPULightmapper = m_BakeBackend.intValue == (int)LightmapEditorSettings.Lightmapper.ProgressiveGPU;
+                                        bool anyDenoisingSupported = (LightmapEditorSettings.IsOptixDenoiserSupported() || LightmapEditorSettings.IsOpenImageDenoiserSupported());
+                                        bool aoDenoisingSupported = DenoiserSupported((LightmapEditorSettings.DenoiserType)m_PVRDenoiserTypeAO.intValue);
+                                        bool directDenoisingSupported = DenoiserSupported((LightmapEditorSettings.DenoiserType)m_PVRDenoiserTypeDirect.intValue);
+                                        bool indirectDenoisingSupported = DenoiserSupported((LightmapEditorSettings.DenoiserType)m_PVRDenoiserTypeIndirect.intValue);
+
+                                        EditorGUI.indentLevel++;
+                                        using (new EditorGUI.DisabledScope(!anyDenoisingSupported))
+                                        {
+                                            DrawDenoiserTypeDropdown(m_PVRDenoiserTypeDirect, directDenoisingSupported ? Styles.PVRDenoiserTypeDirect : Styles.DenoisingWarningDirect, DenoiserTarget.Direct);
+                                        }
+                                        ClampFilterType(m_PVRFilterTypeDirect);
+                                        if (m_BakeBackend.intValue == (int)LightmapEditorSettings.Lightmapper.ProgressiveGPU)
+                                            EditorGUILayout.IntPopup(m_PVRFilterTypeDirect, Styles.GPUFilterOptions, Styles.GPUFilterInts, Styles.PVRFilterTypeDirect);
+                                        else
+                                            EditorGUILayout.PropertyField(m_PVRFilterTypeDirect, Styles.PVRFilterTypeDirect);
+
+                                        EditorGUI.indentLevel++;
+                                        DrawFilterSettingField(m_PVRFilteringGaussRadiusDirect,
+                                            m_PVRFilteringAtrousPositionSigmaDirect,
+                                            Styles.PVRFilteringGaussRadiusDirect,
+                                            Styles.PVRFilteringAtrousPositionSigmaDirect,
+                                            LightmapEditorSettings.filterTypeDirect);
+                                        EditorGUI.indentLevel--;
+
+                                        EditorGUILayout.Space();
+
+                                        using (new EditorGUI.DisabledScope(!anyDenoisingSupported))
+                                        {
+                                            DrawDenoiserTypeDropdown(m_PVRDenoiserTypeIndirect, indirectDenoisingSupported ? Styles.PVRDenoiserTypeIndirect : Styles.DenoisingWarningIndirect, DenoiserTarget.Indirect);
+                                        }
+                                        if (m_BakeBackend.intValue == (int)LightmapEditorSettings.Lightmapper.ProgressiveGPU)
+                                            EditorGUILayout.IntPopup(m_PVRFilterTypeIndirect, Styles.GPUFilterOptions, Styles.GPUFilterInts, Styles.PVRFilterTypeIndirect);
+                                        else
+                                            EditorGUILayout.PropertyField(m_PVRFilterTypeIndirect, Styles.PVRFilterTypeIndirect);
+                                        ClampFilterType(m_PVRFilterTypeIndirect);
+
+                                        EditorGUI.indentLevel++;
+                                        DrawFilterSettingField(m_PVRFilteringGaussRadiusIndirect,
+                                            m_PVRFilteringAtrousPositionSigmaIndirect,
+                                            Styles.PVRFilteringGaussRadiusIndirect,
+                                            Styles.PVRFilteringAtrousPositionSigmaIndirect,
+                                            LightmapEditorSettings.filterTypeIndirect);
+                                        EditorGUI.indentLevel--;
+
+                                        using (new EditorGUI.DisabledScope(!m_AmbientOcclusion.boolValue))
+                                        {
+                                            EditorGUILayout.Space();
+                                            using (new EditorGUI.DisabledScope(!anyDenoisingSupported))
+                                            {
+                                                DrawDenoiserTypeDropdown(m_PVRDenoiserTypeAO, aoDenoisingSupported ? Styles.PVRDenoiserTypeAO : Styles.DenoisingWarningAO, DenoiserTarget.AO);
+                                            }
+                                            if (m_BakeBackend.intValue == (int)LightmapEditorSettings.Lightmapper.ProgressiveGPU)
+                                                EditorGUILayout.IntPopup(m_PVRFilterTypeAO, Styles.GPUFilterOptions, Styles.GPUFilterInts, Styles.PVRFilterTypeAO);
+                                            else
+                                                EditorGUILayout.PropertyField(m_PVRFilterTypeAO, Styles.PVRFilterTypeAO);
+                                            ClampFilterType(m_PVRFilterTypeAO);
+
+                                            EditorGUI.indentLevel++;
+                                            DrawFilterSettingField(m_PVRFilteringGaussRadiusAO,
+                                                m_PVRFilteringAtrousPositionSigmaAO,
+                                                Styles.PVRFilteringGaussRadiusAO, Styles.PVRFilteringAtrousPositionSigmaAO,
+                                                LightmapEditorSettings.filterTypeAO);
+                                            EditorGUI.indentLevel--;
+                                        }
+                                        // Show warning if A-Trous filtering is selected and the platform doesn't support it.
+                                        if (usingGPULightmapper && (m_PVRFilterTypeDirect.intValue == (int)LightmapEditorSettings.FilterType.ATrous || m_PVRFilterTypeIndirect.intValue == (int)LightmapEditorSettings.FilterType.ATrous || (m_AmbientOcclusion.boolValue && m_PVRFilterTypeAO.intValue == (int)LightmapEditorSettings.FilterType.ATrous)))
+                                            EditorGUILayout.HelpBox(Styles.ProgressiveGPUWarning.text, MessageType.Warning);
+
+                                        EditorGUI.indentLevel--;
+                                    }
+
+                                    EditorGUI.indentLevel--;
+                                }
                             }
                         }
                     }
 
                     // We only want to show the Indirect Resolution in a disabled state if the user is using PLM and has the ability to turn on Realtime GI.
-                    if (realtimeGISupported || (bakedGISupported && (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.Enlighten)))
+                    if (realtimeGISupported || (bakedGISupported && (m_BakeBackend.intValue == (int)LightmapEditorSettings.Lightmapper.Enlighten) && lightmapperSupported))
                     {
-                        using (new EditorGUI.DisabledScope((LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.Enlighten) && !m_EnableRealtimeGI.boolValue))
+                        using (new EditorGUI.DisabledScope((m_BakeBackend.intValue != (int)LightmapEditorSettings.Lightmapper.Enlighten) && !m_EnableRealtimeGI.boolValue))
                         {
                             DrawResolutionField(m_Resolution, Styles.IndirectResolution);
                         }
@@ -667,18 +720,6 @@ namespace UnityEditor
                                 EditorGUILayout.Slider(m_CompAOExponentDirect, 0.0f, 10.0f, Styles.AmbientOcclusionContributionDirect);
 
                                 EditorGUI.indentLevel--;
-                            }
-
-                            if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.Enlighten)
-                            {
-                                EditorGUILayout.PropertyField(m_FinalGather, Styles.FinalGather);
-                                if (m_FinalGather.boolValue)
-                                {
-                                    EditorGUI.indentLevel++;
-                                    EditorGUILayout.PropertyField(m_FinalGatherRayCount, Styles.FinalGatherRayCount);
-                                    EditorGUILayout.PropertyField(m_FinalGatherFiltering, Styles.FinalGatherFiltering);
-                                    EditorGUI.indentLevel--;
-                                }
                             }
                         }
                     }
@@ -738,6 +779,14 @@ namespace UnityEditor
 
         static class Styles
         {
+            public static readonly int[] BakeBackendValues = { (int)LightmapEditorSettings.Lightmapper.Enlighten, (int)LightmapEditorSettings.Lightmapper.ProgressiveCPU, (int)LightmapEditorSettings.Lightmapper.ProgressiveGPU };
+            public static readonly GUIContent[] BakeBackendStrings =
+            {
+                EditorGUIUtility.TrTextContent("Enlighten (Deprecated)"),
+                EditorGUIUtility.TrTextContent("Progressive CPU"),
+                EditorGUIUtility.TrTextContent("Progressive GPU (Preview)"),
+            };
+
             public static readonly int[] LightmapDirectionalModeValues = { (int)LightmapsMode.NonDirectional, (int)LightmapsMode.CombinedDirectional };
             public static readonly GUIContent[] LightmapDirectionalModeStrings =
             {
@@ -791,6 +840,7 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Mixed lights provide realtime direct lighting. Indirect lighting gets baked into lightmaps and light probes. Shadowmasks and light probes occlusion get generated for baked shadows. The Shadowmask Mode used at run time can be set in the Quality Settings panel.")
             };
 
+            public static readonly GUIContent LightmapperNotSupportedWarning = EditorGUIUtility.TrTextContent("The Lightmapper is not supported by the current render pipeline. Fallback is ");
             public static readonly GUIContent MixedModeNotSupportedWarning = EditorGUIUtility.TrTextContent("The Mixed mode is not supported by the current render pipeline. Fallback mode is ");
             public static readonly GUIContent DirectionalNotSupportedWarning = EditorGUIUtility.TrTextContent("Directional Mode is not supported. Fallback will be Non-Directional.");
 
@@ -825,7 +875,7 @@ namespace UnityEditor
             public static readonly GUIContent FinalGatherFiltering = EditorGUIUtility.TrTextContent("Denoising", "Controls whether a denoising filter is applied to the final gather output.");
             public static readonly GUIContent SubtractiveShadowColor = EditorGUIUtility.TrTextContent("Realtime Shadow Color", "The color used for mixing realtime shadows with baked lightmaps in Subtractive lighting mode. The color defines the darkest point of the realtime shadow.");
             public static readonly GUIContent MixedLightMode = EditorGUIUtility.TrTextContent("Lighting Mode", "Specifies which Scene lighting mode will be used for all Mixed lights in the Scene. Options are Baked Indirect, Shadowmask and Subtractive.");
-            public static readonly GUIContent UseRealtimeGI = EditorGUIUtility.TrTextContent("Realtime Global Illumination", "Controls whether Realtime lights in the Scene contribute indirect light. If enabled, Realtime lights contribute both direct and indirect light. If disabled, Realtime lights only contribute direct light. This can be disabled on a per-light basis in the light component Inspector by setting Indirect Multiplier to 0.");
+            public static readonly GUIContent UseRealtimeGI = EditorGUIUtility.TrTextContent("Realtime Global Illumination (Deprecated)", "Enlighten is entering deprecation. Please ensure that your project will not require support for Enlighten beyond the deprecation date.");
             public static readonly GUIContent BakedGIDisabledInfo = EditorGUIUtility.TrTextContent("All Baked and Mixed lights in the Scene are currently being overridden to Realtime light modes. Enable Baked Global Illumination to allow the use of Baked and Mixed light modes.");
             public static readonly GUIContent BakeBackend = EditorGUIUtility.TrTextContent("Lightmapper", "Specifies which baking system will be used to generate baked lightmaps.");
             //public static readonly GUIContent PVRSampling = EditorGUIUtility.TrTextContent("Sampling", "How to sample the lightmaps. Auto and adaptive automatically test for convergence. Auto uses a maximum of 16K samples. Adaptive uses a configurable maximum number of samples. Fixed always uses the set number of samples and does not test for convergence.");

@@ -76,7 +76,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+#pragma warning disable 0649
         [SerializeField] private List<UsingEntry> m_Usings;
+#pragma warning restore 0649
 
         [SerializeField] internal StyleSheet inlineSheet;
 

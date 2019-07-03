@@ -126,7 +126,7 @@ namespace UnityEditor.UIElements
             if (style.backgroundImage.value.texture != null)
             {
                 Object.DestroyImmediate(style.backgroundImage.value.texture);
-                style.backgroundImage = new Background(null);
+                style.backgroundImage = new Background();
             }
         }
 
@@ -151,7 +151,7 @@ namespace UnityEditor.UIElements
         {
             if (m_ValueNull)
             {
-                visualInput.style.backgroundImage = new Background(null);
+                visualInput.style.backgroundImage = new Background();
             }
             else
             {

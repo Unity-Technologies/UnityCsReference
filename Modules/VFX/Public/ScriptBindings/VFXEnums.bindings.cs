@@ -7,7 +7,7 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 
-namespace UnityEngine.Experimental.VFX
+namespace UnityEngine.VFX
 {
     [Flags]
     internal enum VFXCullingFlags

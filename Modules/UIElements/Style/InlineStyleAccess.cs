@@ -386,6 +386,54 @@ namespace UnityEngine.UIElements
             }
         }
 
+        StyleColor IStyle.borderLeftColor
+        {
+            get { return GetStyleColor(StylePropertyID.BorderLeftColor); }
+            set
+            {
+                if (SetStyleValue(StylePropertyID.BorderLeftColor, value, ve.sharedStyle.borderLeftColor))
+                {
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
+                }
+            }
+        }
+
+        StyleColor IStyle.borderTopColor
+        {
+            get { return GetStyleColor(StylePropertyID.BorderTopColor); }
+            set
+            {
+                if (SetStyleValue(StylePropertyID.BorderTopColor, value, ve.sharedStyle.borderTopColor))
+                {
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
+                }
+            }
+        }
+
+        StyleColor IStyle.borderRightColor
+        {
+            get { return GetStyleColor(StylePropertyID.BorderRightColor); }
+            set
+            {
+                if (SetStyleValue(StylePropertyID.BorderRightColor, value, ve.sharedStyle.borderRightColor))
+                {
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
+                }
+            }
+        }
+
+        StyleColor IStyle.borderBottomColor
+        {
+            get { return GetStyleColor(StylePropertyID.BorderBottomColor); }
+            set
+            {
+                if (SetStyleValue(StylePropertyID.BorderBottomColor, value, ve.sharedStyle.borderBottomColor))
+                {
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
+                }
+            }
+        }
+
         StyleFloat IStyle.borderLeftWidth
         {
             get { return GetStyleFloat(StylePropertyID.BorderLeftWidth); }
@@ -687,10 +735,14 @@ namespace UnityEngine.UIElements
 
         StyleColor IStyle.borderColor
         {
-            get { return GetStyleColor(StylePropertyID.BorderColor); }
+            get { return GetStyleColor(StylePropertyID.BorderLeftColor); }
             set
             {
-                if (SetStyleValue(StylePropertyID.BorderColor, value, ve.sharedStyle.borderColor))
+                bool anySet = SetStyleValue(StylePropertyID.BorderLeftColor, value, ve.sharedStyle.borderLeftColor);
+                anySet |= SetStyleValue(StylePropertyID.BorderTopColor, value, ve.sharedStyle.borderTopColor);
+                anySet |= SetStyleValue(StylePropertyID.BorderRightColor, value, ve.sharedStyle.borderRightColor);
+                anySet |= SetStyleValue(StylePropertyID.BorderBottomColor, value, ve.sharedStyle.borderBottomColor);
+                if (anySet)
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
@@ -1059,8 +1111,9 @@ namespace UnityEngine.UIElements
             var sv = new StyleValue();
             if (TryGetStyleValue(id, ref sv))
             {
+                var vectorImage = sv.resource.IsAllocated ? sv.resource.Target as VectorImage : null;
                 var texture = sv.resource.IsAllocated ? sv.resource.Target as Texture2D : null;
-                if (texture == inlineValue.value.texture && sv.keyword == inlineValue.keyword)
+                if ((vectorImage == inlineValue.value.vectorImage && texture == inlineValue.value.texture) && sv.keyword == inlineValue.keyword)
                     return false;
 
                 if (sv.resource.IsAllocated)
@@ -1069,7 +1122,12 @@ namespace UnityEngine.UIElements
 
             sv.id = id;
             sv.keyword = inlineValue.keyword;
-            sv.resource = inlineValue.value.texture != null ? GCHandle.Alloc(inlineValue.value.texture) : new GCHandle();
+            if (inlineValue.value.vectorImage != null)
+                sv.resource = GCHandle.Alloc(inlineValue.value.vectorImage);
+            else if (inlineValue.value.texture != null)
+                sv.resource = GCHandle.Alloc(inlineValue.value.texture);
+            else
+                sv.resource = new GCHandle();
 
             SetStyleValue(sv);
 
@@ -1078,7 +1136,12 @@ namespace UnityEngine.UIElements
             {
                 specificity = sharedValue.specificity;
                 sv.keyword = sharedValue.keyword;
-                sv.resource = sharedValue.value.texture != null ? GCHandle.Alloc(sharedValue.value.texture) : new GCHandle();
+                if (sharedValue.value.texture != null)
+                    sv.resource = GCHandle.Alloc(sharedValue.value.texture);
+                else if (sharedValue.value.vectorImage != null)
+                    sv.resource = GCHandle.Alloc(sharedValue.value.vectorImage);
+                else
+                    sv.resource = new GCHandle();
             }
 
             ApplyStyleValue(sv, specificity);

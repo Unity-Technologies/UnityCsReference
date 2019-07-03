@@ -27,6 +27,7 @@ namespace UnityEditor
 
             EditorToolContext.GetCustomEditorToolsForTarget(target, s_CustomEditorTools, true);
             EditorToolbar<EditorTool>(s_CustomEditorTools);
+            s_CustomEditorTools.Clear();
         }
 
         public static void EditorToolbarForTarget(GUIContent content, UObject target)
@@ -39,6 +40,7 @@ namespace UnityEditor
             EditorToolContext.GetCustomEditorToolsForTarget(target, s_CustomEditorTools, true);
             EditorToolbar<EditorTool>(s_CustomEditorTools);
             GUILayout.EndHorizontal();
+            s_CustomEditorTools.Clear();
         }
 
         public static void EditorToolbar(params EditorTool[] tools)

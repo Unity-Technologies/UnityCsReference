@@ -61,11 +61,6 @@ namespace UnityEditor
             return state;
         }
 
-        public static int GetCurveIndexFromName(string name)
-        {
-            return ExtractComponentCharacter(name) - 'x';
-        }
-
         public static char ExtractComponentCharacter(string name)
         {
             return name[name.Length - 1];

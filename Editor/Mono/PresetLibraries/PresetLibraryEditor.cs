@@ -6,7 +6,6 @@ using System.IO;
 using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEditorInternal;
-using System.Collections.Generic;
 
 namespace UnityEditor
 {
@@ -170,12 +169,6 @@ namespace UnityEditor
             HandleUtility.Repaint();
         }
 
-        void ValidateNoExtension(string value)
-        {
-            if (Path.HasExtension(value))
-                Debug.LogError("currentLibraryWithoutExtension should not have an extension: " + value);
-        }
-
         public string currentLibraryWithoutExtension
         {
             get
@@ -235,18 +228,6 @@ namespace UnityEditor
             if (CreateNewLibrary(pathWithoutExtension) != null)
                 currentLibraryWithoutExtension = pathWithoutExtension;
             return PresetLibraryManager.instance.GetLastError();
-        }
-
-        static bool IsItemVisible(float scrollHeight, float itemYMin, float itemYMax, float scrollPos)
-        {
-            float yMin = itemYMin - scrollPos;
-            float yMax = itemYMax - scrollPos;
-            if (yMax < 0f)
-                return false;
-            if (yMin > scrollHeight)
-                return false;
-
-            return true;
         }
 
         void OnLayoutChanged()

@@ -84,6 +84,7 @@ namespace UnityEditor.Sprites
                 SetSelectedPolicy(kDefaultPolicy);
         }
 
+        // Called from SpritePacker::GetSelectedPolicyId()
         internal static string GetSelectedPolicyId()
         {
             RegenerateList();

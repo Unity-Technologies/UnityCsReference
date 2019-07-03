@@ -14,7 +14,8 @@ namespace UnityEditor.Build.Content
     public enum ContentBuildFlags
     {
         None = 0,
-        DisableWriteTypeTree = 1 << 0
+        DisableWriteTypeTree = 1 << 0,
+        StripUnityVersion = 1 << 1
     }
 
     [Serializable]

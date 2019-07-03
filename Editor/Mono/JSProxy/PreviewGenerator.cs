@@ -3,16 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
-using System;
-using System.Collections;
 
 namespace UnityEditor.Web
 {
     internal class PreviewGenerator
     {
-        const string kPreviewBuildFolder = "builds";
-
         static protected PreviewGenerator s_Instance = null;
 
         public static PreviewGenerator GetInstance()

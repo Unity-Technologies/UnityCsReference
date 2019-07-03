@@ -37,7 +37,8 @@ namespace UnityEditor.Experimental.GraphView
 
         void OnKeyDown(KeyDownEvent evt)
         {
-            if (MouseCaptureController.IsMouseCaptured())
+            IPanel panel = (evt.target as VisualElement)?.panel;
+            if (panel.GetCapturingElement(PointerId.mousePointerId) != null)
                 return;
 
             if (m_Dictionary.ContainsKey(evt.imguiEvent))

@@ -78,6 +78,10 @@ namespace UnityEngine.UIElements.StyleSheets
         FlexBasis,
         FlexGrow,
         FlexShrink,
+        BorderLeftColor,
+        BorderTopColor,
+        BorderRightColor,
+        BorderBottomColor,
         BorderLeftWidth,
         BorderTopWidth,
         BorderRightWidth,
@@ -108,7 +112,6 @@ namespace UnityEngine.UIElements.StyleSheets
         // All color values
         Color,
         BackgroundColor,
-        BorderColor,
         BackgroundImageTintColor,
         // OtherValues
         SliceLeft,
@@ -117,6 +120,7 @@ namespace UnityEngine.UIElements.StyleSheets
         SliceBottom,
         Opacity,
         // Shorthand value
+        BorderColor,
         BorderRadius,
         BorderWidth,
         Flex,

@@ -781,11 +781,6 @@ namespace UnityEditor
             return copy;
         }
 
-        float Log2(float x)
-        {
-            return (float)(System.Math.Log(x) / System.Math.Log(2));
-        }
-
         public override string GetInfoString()
         {
             // TextureInspector code is reused for RenderTexture and Cubemap inspectors.

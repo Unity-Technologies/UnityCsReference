@@ -269,6 +269,13 @@ namespace UnityEditor
                 return SceneVisibilityState.IsGameObjectHidden(gameObject);
         }
 
+        static bool IsIgnoredBySceneVisibility(GameObject go)
+        {
+            var hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSaveInBuild | HideFlags.DontSaveInEditor;
+
+            return (go.hideFlags & hideFlags) != 0;
+        }
+
         public bool AreAllDescendantsHidden(Scene scene)
         {
             if (scene.rootCount == 0)
@@ -277,6 +284,9 @@ namespace UnityEditor
             scene.GetRootGameObjects(m_RootBuffer);
             foreach (GameObject root in m_RootBuffer)
             {
+                if (IsIgnoredBySceneVisibility(root))
+                    continue;
+
                 if (!SceneVisibilityState.IsHierarchyHidden(root))
                     return false;
             }
@@ -530,7 +540,7 @@ namespace UnityEditor
 
         internal void ToggleScene(Scene scene, SceneState state)
         {
-            if (state == SceneState.AllVisible)
+            if (state == SceneState.AllVisible || state == SceneState.Mixed)
             {
                 Hide(scene);
             }

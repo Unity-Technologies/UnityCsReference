@@ -59,7 +59,10 @@ namespace UnityEditor.PackageManager.UI
             UIUtils.SetElementDisplay(itemVersions, expander.expanded);
             SelectionManager.instance.SetExpanded(package, value);
             if (!value)
+            {
+                UIUtils.SetElementDisplay(noVersionsLabel, false);
                 SelectionManager.instance.SetSeeAllVersions(package, false);
+            }
         }
 
         public void SetExpand(bool value)
@@ -93,8 +96,10 @@ namespace UnityEditor.PackageManager.UI
                     stateClass = "development";
                 else if (package.state == PackageState.Outdated && package.recommendedVersion != package.installedVersion)
                     stateClass = GetIconStateId(PackageState.Outdated);
-                else
+                else if (!displayVersion.HasTag(PackageTag.AssetStore))
                     stateClass = "installed";
+                else if (displayVersion.HasTag(PackageTag.AssetStore))
+                    stateClass = package.state == PackageState.Outdated ? GetIconStateId(PackageState.Outdated) : "installed";
             }
             // Error state should be last as it should supersede other states
             if (package.errors.Any())
@@ -222,7 +227,7 @@ namespace UnityEditor.PackageManager.UI
 
         public static string GetStandardizedLabel(IPackageVersion version, bool simplified = false)
         {
-            if (version == null)
+            if (version == null || version.version == null)
                 return string.Empty;
 
             var label = version.version.StripTag();

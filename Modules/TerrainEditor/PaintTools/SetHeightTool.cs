@@ -21,7 +21,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         [SerializeField]
 
         [FormerlyPrefKeyAs("Terrain/Set Height", "f2")]
-        [Shortcut("Terrain/Set Height", typeof(TerrainToolShortcutContext))]
+        [Shortcut("Terrain/Set Height", typeof(TerrainToolShortcutContext), KeyCode.F2)]
         static void SelectShortcut(ShortcutArguments args)
         {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
@@ -163,7 +163,8 @@ namespace UnityEditor.Experimental.TerrainAPI
                 Save(true);
 
             // show built-in brushes
-            editContext.ShowBrushesGUI(5);
+            int textureRez = terrain.terrainData.heightmapResolution;
+            editContext.ShowBrushesGUI(5, BrushGUIEditFlags.All, textureRez);
         }
     }
 }

@@ -332,7 +332,6 @@ namespace UnityEditor.Experimental.GraphView
 
             if (borderContainer != null)
             {
-                borderContainer.cacheAsBitmap = true;
                 borderContainer.style.overflow = Overflow.Hidden;
                 mainContainer = borderContainer;
                 var selection = main.Q(name: "selection-border");

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
@@ -101,6 +102,12 @@ namespace UnityEngine
                         throw new IndexOutOfRangeException("Invalid Color32 index(" + index + ")!");
                 }
             }
+        }
+
+        [VisibleToOtherModules]
+        internal bool InternalEquals(Color32 other)
+        {
+            return rgba == other.rgba;
         }
 
         public override string ToString()

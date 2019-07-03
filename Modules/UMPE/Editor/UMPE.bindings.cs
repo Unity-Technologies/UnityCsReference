@@ -37,45 +37,128 @@ namespace Unity.MPE
         UMP_CAP_SLAVE = 2
     };
 
-    [NativeType("Modules/UMPE/EventService.h")]
+    [NativeType("Modules/UMPE/ChannelService.h")]
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    internal struct ConnectionInfo
+    internal struct ChannelInfo
     {
-        [NativeName("endPoint")]
-        string m_EndPoint;
+        public static ChannelInfo InvalidChannel = new ChannelInfo()
+        {
+            m_ChannelId = -1
+        };
+
+        [NativeName("channelName")]
+        string m_ChannelName;
+
+        [NativeName("channelId")]
+        int m_ChannelId;
+
+        public string channelName => m_ChannelName;
+
+        public int channelId => m_ChannelId;
+
+        public override bool Equals(System.Object obj)
+        {
+            return obj is ChannelInfo && this == (ChannelInfo)obj;
+        }
+
+        public override int GetHashCode()
+        {
+            return channelName.GetHashCode() ^ channelId.GetHashCode();
+        }
+
+        public static bool operator==(ChannelInfo x, ChannelInfo y)
+        {
+            return x.channelId == y.channelId && x.channelName == y.channelName;
+        }
+
+        public static bool operator!=(ChannelInfo x, ChannelInfo y)
+        {
+            return !(x == y);
+        }
+    };
+
+    [NativeType("Modules/UMPE/ChannelService.h")]
+    [Serializable]
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct ChannelClientInfo
+    {
+        public static ChannelClientInfo InvalidClient = new ChannelClientInfo()
+        {
+            m_ChannelClientId = -1,
+            m_ConnectionId = -1
+        };
+
+        [NativeName("channelName")]
+        string m_ChannelName;
+
+        [NativeName("channelClientId")]
+        int m_ChannelClientId;
 
         [NativeName("connectionId")]
         int m_ConnectionId;
 
-        public string endPoint
+        public string channelName => m_ChannelName;
+
+        public int channelClientId => m_ChannelClientId;
+
+        public int connectionId => m_ConnectionId;
+
+        public override bool Equals(System.Object obj)
         {
-            get { return m_EndPoint; }
+            return obj is ChannelClientInfo && this == (ChannelClientInfo)obj;
         }
 
-        public int connectionId
+        public override int GetHashCode()
         {
-            get { return m_ConnectionId; }
+            return channelName.GetHashCode() ^ channelClientId.GetHashCode() ^ connectionId.GetHashCode();
+        }
+
+        public static bool operator==(ChannelClientInfo x, ChannelClientInfo y)
+        {
+            return x.channelName == y.channelName && x.channelClientId == y.channelClientId && x.connectionId == y.connectionId;
+        }
+
+        public static bool operator!=(ChannelClientInfo x, ChannelClientInfo y)
+        {
+            return !(x == y);
         }
     };
 
-    [NativeHeader("Modules/UMPE/EventService.h"),
-     StaticAccessor("Unity::MPE::EventServer", StaticAccessorType.DoubleColon)]
-    internal partial class EventServer
+    [NativeHeader("Modules/UMPE/ChannelService.h"),
+     StaticAccessor("Unity::MPE::ChannelService", StaticAccessorType.DoubleColon)]
+    internal static partial class ChannelService
     {
         public static extern void Start();
         public static extern void Stop();
         public static extern bool IsRunning();
-        public static extern ConnectionInfo[] GetConnectionList();
+        public static extern ChannelInfo[] GetChannelList();
+        public static extern ChannelClientInfo[] GetChannelClientList();
+        public static extern void Broadcast(int channelId, string data);
+        public static extern void BroadcastBinary(int channelId, byte[] data);
+        public static extern void Send(int connectionId, string data);
+        internal static extern void SendBinary(int connectionId, byte[] data);
+        public static extern int ChannelNameToId(string channelName);
+        internal static extern int Internal_GetOrCreateChannel(string channelName);
+        internal static extern void Internal_CloseChannel(string channelName);
     }
 
-    [NativeHeader("Modules/UMPE/EventService.h"),
-     StaticAccessor("Unity::MPE::EventService", StaticAccessorType.DoubleColon)]
-    internal partial class EventService
+    [NativeHeader("Modules/UMPE/ChannelService.h"),
+     StaticAccessor("Unity::MPE::ChannelClient", StaticAccessorType.DoubleColon)]
+    internal partial class ChannelClient
     {
-        public static extern int ConnectionId { get; }
-        public static extern int NewRequestId();
-        public static extern void Send(string requestStr);
+        internal static extern void Internal_Shutdown();
+        internal static extern void Start(int clientId, bool autoTick);
+        internal static extern void Stop(int clientId);
+        internal static extern void Tick(int clientId);
+        internal static extern bool IsConnected(int clientId);
+        internal static extern void Send(int clientId, string data);
+        internal static extern void SendBinary(int clientId, byte[] data);
+        internal static extern int Internal_GetOrCreateClient(string channelName);
+        internal static extern void Internal_CloseClient(string channelName);
+        public static extern int NewRequestId(int clientId);
+        public static extern ChannelClientInfo GetChannelClientInfo(int clientId);
+        public static extern ChannelClientInfo[] GetChannelClientList();
     }
 
     [NativeHeader("Modules/UMPE/ProcessService.h"),
@@ -84,21 +167,20 @@ namespace Unity.MPE
     {
         public static extern ProcessLevel level { get; }
         public static extern string roleName { get; }
-
         public static extern string ReadParameter(string paramName);
         public static extern void LaunchSlave(string roleName, params string[] keyValuePairs);
-
         public static extern void ApplyPropertyModifications(PropertyModification[] modifications);
         public static extern byte[] SerializeObject(int instanceId);
         public static extern UnityEngine.Object DeserializeObject(byte[] bytes);
     }
 
-    [NativeHeader("Modules/UMPE/EventService.h"),
+    [NativeHeader("Modules/UMPE/TestClient.h"),
      StaticAccessor("Unity::MPE::TestClient", StaticAccessorType.DoubleColon)]
     internal partial class TestClient
     {
         public static extern void Start();
         public static extern void Stop();
+        public static extern void Emit(string eventType, string payload);
         public static extern void Request(string eventType, string payload);
         public static extern int ConnectionId { get; }
         public static bool IsConnected => ConnectionId != -1;

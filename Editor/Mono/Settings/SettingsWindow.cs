@@ -252,7 +252,18 @@ namespace UnityEditor
 
         private void SetupUI()
         {
+            var containers = Resources.FindObjectsOfTypeAll(typeof(ContainerWindow));
             minSize = new Vector2(Styles.window.GetFloat("min-width"), Styles.window.GetFloat("min-height"));
+            foreach (ContainerWindow window in containers)
+            {
+                if (window.showMode == ShowMode.MainWindow)
+                {
+                    position = new Rect(
+                        window.position.center - (minSize / 2),
+                        minSize);
+                    break;
+                }
+            }
 
             var root = rootVisualElement;
             root.AddStyleSheetPath("StyleSheets/SettingsWindowCommon.uss");

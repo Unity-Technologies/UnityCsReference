@@ -1461,7 +1461,7 @@ namespace UnityEngine.UIElements
         {
             if (elementPanel != null)
             {
-                if (eventType == MouseOverEvent.TypeId() && elementPanel.topElementUnderMouse == this)
+                if (eventType == MouseOverEvent.TypeId() && elementPanel.GetTopElementUnderPointer(PointerId.mousePointerId) == this)
                 {
                     elementPanel.cursorManager.SetCursor(computedStyle.cursor.value);
                 }

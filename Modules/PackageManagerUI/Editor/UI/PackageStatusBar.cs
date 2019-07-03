@@ -34,11 +34,13 @@ namespace UnityEditor.PackageManager.UI
 
             PackageDatabase.instance.onRefreshOperationStart += () => SetStatusMessage(StatusType.Loading, "Loading packages...");
             PackageDatabase.instance.onRefreshOperationFinish += UpdateStatusMessage;
-            PackageDatabase.instance.onRefreshOperationError += (error) =>
+            PackageDatabase.instance.onRefreshOperationError += error =>
             {
-                m_LastErrorMessage = "Error loading packages, see console";
+                m_LastErrorMessage = error == null ? string.Empty : L10n.Tr("Error loading packages, see console");
                 UpdateStatusMessage();
             };
+
+            ApplicationUtil.instance.onInternetReachabilityChange += OnInternetReachabilityChange;
 
             statusLabel.RegisterCallback<MouseDownEvent>(e =>
             {
@@ -46,13 +48,22 @@ namespace UnityEditor.PackageManager.UI
                 if (e.button != 0 || EditorApplication.isPlaying)
                     return;
 
-                PackageDatabase.instance.Refresh(RefreshOptions.SearchAll);
+                PackageDatabase.instance.Refresh(RefreshOptions.ListInstalled | RefreshOptions.SearchAll | RefreshOptions.Purchased);
             });
+        }
+
+        private void OnInternetReachabilityChange(bool value)
+        {
+            UpdateStatusMessage();
+            if (value)
+            {
+                PackageDatabase.instance.Refresh(RefreshOptions.ListInstalled | RefreshOptions.SearchAll | RefreshOptions.Purchased);
+            }
         }
 
         private static string GetUpdateTimeLabel(long timestamp)
         {
-            return new DateTime(timestamp).ToString("MMM d, HH:mm");
+            return $"{new DateTime(timestamp):MMM d, HH:mm}";
         }
 
         private void SetUpdateTimestamp(long lastUpdateTimestamp)
@@ -75,25 +86,15 @@ namespace UnityEditor.PackageManager.UI
             var errorMessage = m_LastErrorMessage;
             if (!ApplicationUtil.instance.isInternetReachable)
             {
-                EditorApplication.update -= CheckInternetReachability;
-                EditorApplication.update += CheckInternetReachability;
                 errorMessage = k_OfflineErrorMessage;
             }
 
             if (!string.IsNullOrEmpty(errorMessage))
                 SetStatusMessage(StatusType.Error, errorMessage);
             else
-                SetUpdateTimeLabel(GetUpdateTimeLabel(PackageDatabase.instance.lastUpdateTimestamp));
-        }
-
-        private void CheckInternetReachability()
-        {
-            if (!ApplicationUtil.instance.isInternetReachable)
-                return;
-
-            PackageDatabase.instance.Refresh(RefreshOptions.ListInstalled | RefreshOptions.SearchAll);
-
-            EditorApplication.update -= CheckInternetReachability;
+            {
+                SetUpdateTimeLabel(PackageDatabase.instance.lastUpdateTimestamp != 0 ? GetUpdateTimeLabel(PackageDatabase.instance.lastUpdateTimestamp) : string.Empty);
+            }
         }
 
         private void SetStatusMessage(StatusType status, string message)

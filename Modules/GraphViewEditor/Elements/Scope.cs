@@ -70,7 +70,6 @@ namespace UnityEditor.Experimental.GraphView
             ClearClassList();
             AddToClassList("scope");
 
-            cacheAsBitmap = true;
             style.overflow = Overflow.Hidden;
 
             style.position = Position.Absolute;

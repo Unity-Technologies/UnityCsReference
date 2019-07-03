@@ -310,12 +310,6 @@ namespace UnityEditor.UIElements
             return EqualityComparer<TValue>.Default.Equals(value, propVal);
         }
 
-        internal static bool OneWayStringValueEquals(string value, SerializedProperty p, Func<SerializedProperty, string> propertyReadFunc)
-        {
-            var propVal = propertyReadFunc(p);
-            return String.CompareOrdinal(value, propVal) == 0;
-        }
-
         internal static bool ValueEquals(string value, SerializedProperty p, Func<SerializedProperty, string> propertyReadFunc)
         {
             if (p.propertyType == SerializedPropertyType.Enum)
@@ -389,14 +383,6 @@ namespace UnityEditor.UIElements
             {
                 DefaultBind(element, objWrapper, prop, GetEnumPropertyValueAsString, SetEnumPropertyValueFromString, SlowEnumValueEquals);
             }
-        }
-
-        private static void OneWayStringBind<TValue>(VisualElement element, SerializedObjectUpdateWrapper objWrapper, SerializedProperty prop,
-            Func<SerializedProperty, TValue> propertyReadFunc)
-        {
-            Func<SerializedProperty, string> readToString =  (SerializedProperty p) => $"{propertyReadFunc(p)}";
-
-            DefaultBind<string>(element, objWrapper, prop, readToString, (p, s) => {}, OneWayStringValueEquals);
         }
 
         private static bool BindListView(ListView listView, SerializedObjectUpdateWrapper objWrapper, SerializedProperty prop)

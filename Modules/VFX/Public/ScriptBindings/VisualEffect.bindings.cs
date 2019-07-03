@@ -4,7 +4,7 @@
 
 using UnityEngine;
 using UnityEngine.Bindings;
-using UnityEngine.Experimental.VFX;
+using UnityEngine.VFX;
 using UnityEngine.Scripting;
 using System;
 using System.Runtime;
@@ -12,7 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections;
 
-namespace UnityEngine.Experimental.VFX
+namespace UnityEngine.VFX
 {
     [UsedByNativeCode]
     [NativeHeader("Modules/VFX/Public/ScriptBindings/VisualEffectAssetBindings.h")]

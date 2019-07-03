@@ -20,7 +20,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         [SerializeField]
         float m_MaxBlendAdd = 0.0f;
 
-        [Shortcut("Terrain/Stamp Terrain", typeof(TerrainToolShortcutContext))]
+        [Shortcut("Terrain/Stamp Terrain", typeof(TerrainToolShortcutContext), KeyCode.F7)]
         static void SelectShortcut(ShortcutArguments args)
         {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
@@ -151,7 +151,8 @@ namespace UnityEditor.Experimental.TerrainAPI
             }
 
             // show built-in brushes
-            editContext.ShowBrushesGUI(5);
+            int textureRez = terrain.terrainData.heightmapResolution;
+            editContext.ShowBrushesGUI(5, BrushGUIEditFlags.All, textureRez);
             base.OnInspectorGUI(terrain, editContext);
         }
     }

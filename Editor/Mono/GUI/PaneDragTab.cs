@@ -16,7 +16,6 @@ namespace UnityEditor
 #pragma warning disable 169
 
         private static PaneDragTab s_Get;
-        private const float kTopThumbnailOffset = 1;
         private float m_TargetAlpha = 1.0f;
         private DropInfo.Type m_Type = (DropInfo.Type)(-1);
         private GUIContent m_Content;
