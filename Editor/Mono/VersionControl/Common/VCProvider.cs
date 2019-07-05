@@ -249,7 +249,7 @@ namespace UnityEditor.VersionControl
             return CheckCallbackAndCheckout(assetList, mode, changeset);
         }
 
-        //*Undocumented
+        //*Undocumented : intention is to make this public
         static internal bool PromptAndCheckoutIfNeeded(string[] assets, string promptIfCheckoutIsNeeded, ChangeSet changeset = null)
         {
             var assetList = new AssetList();

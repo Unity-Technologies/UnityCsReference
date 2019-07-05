@@ -158,7 +158,7 @@ namespace UnityEditor
             }
         }
 
-        private static void GetObjectListFromHierarchy(HashSet<int> hierarchyInstanceIDs, GameObject gameObject)
+        internal static void GetObjectListFromHierarchy(HashSet<int> hierarchyInstanceIDs, GameObject gameObject)
         {
             Transform transform = null;
             List<Component> components = new List<Component>();
@@ -221,7 +221,7 @@ namespace UnityEditor
             }
         }
 
-        private static void RegisterNewObjects(GameObject newHierarchy, HashSet<int> hierarchyInstanceIDs, string actionName)
+        internal static void RegisterNewObjects(GameObject newHierarchy, HashSet<int> hierarchyInstanceIDs, string actionName)
         {
             var danglingObjects = new List<Object>();
 
@@ -503,17 +503,22 @@ namespace UnityEditor
             // Ensure importing of saved Prefab Assets only kicks in after all Prefab Asset have been saved
             AssetDatabase.StartAssetEditing();
 
-            // Write modified value to prefab source object.
-            for (int i = 0; i < serializedObjects.Count; i++)
+            try
             {
-                if (serializedObjects[i].ApplyModifiedProperties())
-                    SaveChangesToPrefabFileIfPersistent(serializedObjects[i]);
+                // Write modified value to prefab source object.
+                for (int i = 0; i < serializedObjects.Count; i++)
+                {
+                    if (serializedObjects[i].ApplyModifiedProperties())
+                        SaveChangesToPrefabFileIfPersistent(serializedObjects[i]);
 
-                if (action == InteractionMode.UserAction)
-                    Undo.FlushUndoRecordObjects(); // flush'es ensure that SavePrefab() on undo/redo on the source happens in the right order
+                    if (action == InteractionMode.UserAction)
+                        Undo.FlushUndoRecordObjects(); // flush'es ensure that SavePrefab() on undo/redo on the source happens in the right order
+                }
             }
-
-            AssetDatabase.StopAssetEditing();
+            finally
+            {
+                AssetDatabase.StopAssetEditing();
+            }
         }
 
         static void SaveChangesToPrefabFileIfPersistent(SerializedObject serializedObject)
