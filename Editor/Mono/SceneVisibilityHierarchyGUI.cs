@@ -189,16 +189,16 @@ namespace UnityEditor
 
         private static void DrawSceneItem(Rect rect, Scene scene, bool isItemHovered, bool isIconHovered)
         {
-            var isHidden = SceneVisibilityManager.IsEntireSceneHidden(scene);
+            var state = SceneVisibilityManager.instance.GetSceneState(scene);
             bool shouldDisplayIcon = true;
             Styles.IconState iconState = isIconHovered ? Styles.iconHovered : Styles.iconNormal;
 
             GUIContent icon;
-            if (isHidden)
+            if (state == SceneVisibilityManager.SceneState.AllHidden)
             {
                 icon = iconState.hiddenAll;
             }
-            else if (SceneVisibilityManager.HasHiddenGameObjects(scene))
+            else if (state == SceneVisibilityManager.SceneState.Mixed)
             {
                 icon = iconState.visibleMixed;
             }
@@ -211,14 +211,7 @@ namespace UnityEditor
 
             if (shouldDisplayIcon && GUI.Button(rect, icon, Styles.sceneVisibilityStyle))
             {
-                if (isHidden)
-                {
-                    SceneVisibilityManager.ShowScene(scene);
-                }
-                else
-                {
-                    SceneVisibilityManager.HideScene(scene);
-                }
+                SceneVisibilityManager.instance.ToggleScene(scene, state);
             }
         }
     }

@@ -413,7 +413,7 @@ namespace UnityEditor
             //  Active: Enabled, background for draggable bar
             //  Focused: Enabled, foreground for draggable bar
 
-            float level = GetValueForEffect(effect, p.group, m_Controller, snapshot);
+            float level = (effect != null) ? Mathf.Clamp(effect.GetValueForMixLevel(m_Controller, snapshot), AudioMixerController.kMinVolume, AudioMixerController.kMaxEffect) : AudioMixerController.kMinVolume;
             bool showLevel = (effect != null) && ((effect.IsSend() && effect.sendTarget != null) || effect.enableWetMix);
             if (evt.type == EventType.Repaint)
             {
@@ -497,7 +497,7 @@ namespace UnityEditor
         {
             if (m_ChangingWetMixIndex == m_IndexCounter && showLevel)
             {
-                return UnityString.Format("{0:F1} dB", GetValueForEffect(effect, p.group, m_Controller, snapshot));
+                return UnityString.Format("{0:F1} dB", effect.GetValueForMixLevel(m_Controller, snapshot));
             }
 
             if (effect.IsSend() && effect.sendTarget != null)
@@ -683,14 +683,26 @@ namespace UnityEditor
                                     Undo.RecordObject(m_Controller.TargetSnapshot, "Change effect level");
                                     if (effect.IsSend() && m_Controller.CachedSelection.Count > 1 && m_Controller.CachedSelection.Contains(p.group))
                                     {
-                                        foreach (var group in m_Controller.CachedSelection)
-                                            foreach (var cachedEffect in group.effects)
-                                                if (cachedEffect.effectName == effect.effectName && cachedEffect.sendTarget == effect.sendTarget)
-                                                    SetValueForEffect(cachedEffect, group, m_Controller, snapshot, GetValueForEffect(cachedEffect, group, m_Controller, snapshot) + deltaLevel);
+                                        List<AudioMixerEffectController> changeEffects = new List<AudioMixerEffectController>();
+                                        foreach (var g in m_Controller.CachedSelection)
+                                            foreach (var e in g.effects)
+                                                if (e.effectName == effect.effectName && e.sendTarget == effect.sendTarget)
+                                                    changeEffects.Add(e);
+                                        foreach (var e in changeEffects)
+                                            if (!e.IsSend() || e.sendTarget != null)
+                                                e.SetValueForMixLevel(
+                                                    m_Controller,
+                                                    snapshot,
+                                                    Mathf.Clamp(e.GetValueForMixLevel(m_Controller, snapshot) + deltaLevel, AudioMixerController.kMinVolume, AudioMixerController.kMaxEffect));
                                     }
                                     else
-                                        SetValueForEffect(effect, p.group, m_Controller, snapshot, level + deltaLevel);
-
+                                    {
+                                        if (!effect.IsSend() || effect.sendTarget != null)
+                                            effect.SetValueForMixLevel(
+                                                m_Controller,
+                                                snapshot,
+                                                Mathf.Clamp(level + deltaLevel, AudioMixerController.kMinVolume, AudioMixerController.kMaxEffect));
+                                    }
                                     InspectorWindow.RepaintAllInspectors();
                                 }
                                 evt.Use();
@@ -1721,26 +1733,6 @@ namespace UnityEditor
 
             float maxWidth = channelStripsOffset.x * 2 + (channelStripBaseWidth + channelStripSpacing) * sortedGroups.Count + (isShowingReferencedGroups ? spaceBetweenMainGroupsAndReferenced : 0f);
             return new Rect(0, 0, maxWidth, maxHeight);
-        }
-
-        static float GetValueForEffect(AudioMixerEffectController effect, AudioMixerGroupController group, AudioMixerController controller, AudioMixerSnapshotController snapshot)
-        {
-            float level = AudioMixerController.kMinVolume;
-            if (effect == null)
-                return level;
-            level = (effect.IsSend() && effect.sendTarget != null) ? group.GetValueForSend(controller, snapshot) : effect.GetValueForMixLevel(controller, snapshot);
-            return Mathf.Clamp(level, AudioMixerController.kMinVolume, AudioMixerController.kMaxEffect);
-        }
-
-        static void SetValueForEffect(AudioMixerEffectController effect, AudioMixerGroupController group, AudioMixerController controller, AudioMixerSnapshotController snapshot, float level)
-        {
-            if (effect == null)
-                return;
-            level = Mathf.Clamp(level, AudioMixerController.kMinVolume, AudioMixerController.kMaxEffect);
-            if (effect.IsSend() && effect.sendTarget != null)
-                group.SetValueForSend(controller, snapshot, level);
-            else
-                effect.SetValueForMixLevel(controller, snapshot, level);
         }
     }
 }
