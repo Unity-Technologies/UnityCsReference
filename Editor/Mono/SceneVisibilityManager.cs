@@ -268,6 +268,13 @@ namespace UnityEditor
                 return SceneVisibilityState.IsGameObjectHidden(gameObject);
         }
 
+        static bool IsIgnoredBySceneVisibility(GameObject go)
+        {
+            var hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSaveInBuild | HideFlags.DontSaveInEditor;
+
+            return (go.hideFlags & hideFlags) != 0;
+        }
+
         public bool AreAllDescendantsHidden(Scene scene)
         {
             if (scene.rootCount == 0)
@@ -276,6 +283,9 @@ namespace UnityEditor
             scene.GetRootGameObjects(m_RootBuffer);
             foreach (GameObject root in m_RootBuffer)
             {
+                if (IsIgnoredBySceneVisibility(root))
+                    continue;
+
                 if (!SceneVisibilityState.IsHierarchyHidden(root))
                     return false;
             }
@@ -286,6 +296,22 @@ namespace UnityEditor
         public bool AreAnyDescendantsHidden(Scene scene)
         {
             return SceneVisibilityState.HasHiddenGameObjects(scene);
+        }
+
+        internal enum SceneState
+        {
+            AllHidden,
+            AllVisible,
+            Mixed
+        }
+
+        internal SceneState GetSceneState(Scene scene)
+        {
+            if (AreAllDescendantsHidden(scene))
+                return SceneState.AllHidden;
+            if (AreAnyDescendantsHidden(scene))
+                return SceneState.Mixed;
+            return SceneState.AllVisible;
         }
 
         public void Show(GameObject[] gameObjects, bool includeDescendants)
@@ -508,6 +534,18 @@ namespace UnityEditor
             {
                 RevertIsolationCurrentStage();
                 VisibilityChanged();
+            }
+        }
+
+        internal void ToggleScene(Scene scene, SceneState state)
+        {
+            if (state == SceneState.AllVisible || state == SceneState.Mixed)
+            {
+                Hide(scene);
+            }
+            else
+            {
+                Show(scene);
             }
         }
     }

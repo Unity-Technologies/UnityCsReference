@@ -121,9 +121,6 @@
     <Compile Include="..\..\Editor\Mono\BuildPlayerWindowBuildMethods.cs">
       <Link>Editor\Mono\BuildPlayerWindowBuildMethods.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\BuildPlayerWindowPublish.cs">
-      <Link>Editor\Mono\BuildPlayerWindowPublish.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\BuildTarget.cs">
       <Link>Editor\Mono\BuildTarget.cs</Link>
     </Compile>

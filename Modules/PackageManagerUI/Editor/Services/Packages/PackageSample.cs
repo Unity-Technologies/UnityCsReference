@@ -31,9 +31,10 @@ namespace UnityEditor.PackageManager.UI
             var packageJsonPath = System.IO.Path.Combine(packagePath, "package.json");
             if (!File.Exists(packageJsonPath))
                 throw new FileNotFoundException(packageJsonPath);
+
             var packageJsonText = File.ReadAllText(packageJsonPath);
             var packageJson = JsonUtility.FromJson<PackageWithSamplesJsonHelper>(packageJsonText);
-            return packageJson.samples;
+            return packageJson != null ? packageJson.samples : new List<SampleJsonHelper>();
         }
     }
 
