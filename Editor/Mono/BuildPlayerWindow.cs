@@ -784,9 +784,6 @@ namespace UnityEditor
                 GUILayout.EndHorizontal();
             }
 
-            if (buildTarget == BuildTarget.Android)
-                AndroidPublishGUI();
-
             GUIBuildButtons(buildWindowExtension, enableBuildButton, enableBuildAndRunButton,
                 canInstallInBuildFolder, platform);
         }
