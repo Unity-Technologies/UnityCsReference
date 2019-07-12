@@ -149,6 +149,9 @@ namespace UnityEditor.VersionControl
         [FreeFunction("VersionControlBindings::VCProvider::Internal_PromptAndCheckoutIfNeeded")]
         private static extern bool Internal_PromptAndCheckoutIfNeeded(string[] assets, string promptIfCheckoutIsNeeded);
 
+        [FreeFunction("VersionControlBindings::VCProvider::MakeEditable")]
+        static internal extern bool MakeEditable(string[] assets, [Out] string[] editableAssets);
+
         [NativeThrows]
         [FreeFunction("VersionControlBindings::VCProvider::Internal_Delete")]
         private static extern Task Internal_Delete(Asset[] assets);

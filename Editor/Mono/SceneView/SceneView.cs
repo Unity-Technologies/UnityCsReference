@@ -1887,7 +1887,7 @@ namespace UnityEditor
             // Use custom scene RenderSettings (if currently showing a custom scene)
             bool restoreOverrideRenderSettings = false;
             if (m_CustomScene.IsValid())
-                restoreOverrideRenderSettings = Unsupported.SetOverrideRenderSettings(m_CustomScene);
+                restoreOverrideRenderSettings = Unsupported.SetOverrideLightingSettings(m_CustomScene);
 
             SetupCustomSceneLighting();
 
@@ -1920,7 +1920,7 @@ namespace UnityEditor
 
             CleanupCustomSceneLighting();
             if (restoreOverrideRenderSettings)
-                Unsupported.RestoreOverrideRenderSettings();
+                Unsupported.RestoreOverrideLightingSettings();
 
 
             //Ensure that the target texture is clamped [0-1]

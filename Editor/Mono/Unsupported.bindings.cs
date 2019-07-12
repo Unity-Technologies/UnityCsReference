@@ -78,15 +78,15 @@ namespace UnityEditor
         [FreeFunction("GetScreenManager().SetAllowCursorLock")]
         internal static extern void SetAllowCursorLock(bool allow, DisallowCursorLockReasons reasons);
 
-        public static bool SetOverrideRenderSettings(Scene scene)
+        public static bool SetOverrideLightingSettings(Scene scene)
         {
-            return SetOverrideRenderSettingsInternal(scene.handle);
+            return SetOverrideLightingSettingsInternal(scene.handle);
         }
 
-        internal static extern bool SetOverrideRenderSettingsInternal(int sceneHandle);
+        internal static extern bool SetOverrideLightingSettingsInternal(int sceneHandle);
 
 
-        public static extern void RestoreOverrideRenderSettings();
+        public static extern void RestoreOverrideLightingSettings();
 
         [FreeFunction("GetRenderSettings().SetUseFogNoDirty")]
         public static extern void SetRenderSettingsUseFogNoDirty(bool fog);

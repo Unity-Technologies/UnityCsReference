@@ -142,7 +142,7 @@ namespace UnityEditor.VersionControl
             return Internal_Checkout(new Asset[] { vcasset }, mode);
         }
 
-        //*Undocumented
+        //*Undocumented : intention is to make this public
         static internal bool PromptAndCheckoutIfNeeded(string[] assets, string promptIfCheckoutIsNeeded)
         {
             return Internal_PromptAndCheckoutIfNeeded(assets, promptIfCheckoutIsNeeded);

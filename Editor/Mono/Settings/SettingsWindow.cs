@@ -376,6 +376,7 @@ namespace UnityEditor
         {
             var settingsWindow = FindWindowByScope(scopes) ?? Create(scopes);
             settingsWindow.Show();
+            settingsWindow.Focus();
 
             if (settingsPath != null)
             {

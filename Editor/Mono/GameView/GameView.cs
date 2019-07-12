@@ -42,6 +42,8 @@ namespace UnityEditor
         const float kMinScale = 1f;
         const float kMaxScale = 5f;
         const float kScrollZoomSnapDelay = 0.2f;
+        // This will save the previous state which will be useful in case of platform switch
+        int prevSizeGroupType;
 
         float minScale
         {
@@ -306,6 +308,7 @@ namespace UnityEditor
 
         public void OnEnable()
         {
+            prevSizeGroupType = (int)currentSizeGroupType;
             titleContent = GetLocalizedTitleContent();
             UpdateZoomAreaAndParent();
             dontClearBackground = true;
@@ -565,6 +568,13 @@ namespace UnityEditor
                 EditorGUILayout.GameViewSizePopup(currentSizeGroupType, selectedSizeIndex, this, EditorStyles.toolbarPopup, GUILayout.Width(160f));
 
                 DoZoomSlider();
+                // If the previous platform and current does not match, update the scale
+                if ((int)currentSizeGroupType != prevSizeGroupType)
+                {
+                    UpdateZoomAreaAndParent();
+                    // Update the platform to the recent one
+                    prevSizeGroupType = (int)currentSizeGroupType;
+                }
 
                 if (FrameDebuggerUtility.IsLocalEnabled())
                 {

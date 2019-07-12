@@ -133,35 +133,35 @@ namespace UnityEngine.XR
         // Getters
         public bool TryGetPosition(out Vector3 position)
         {
-            return TryGet<Vector3>(m_Position, AvailableTrackingData.PositionAvailable, out position);
+            return TryGet(m_Position, AvailableTrackingData.PositionAvailable, out position);
         }
 
         public bool TryGetRotation(out Quaternion rotation)
         {
-            return TryGet<Quaternion>(m_Rotation, AvailableTrackingData.RotationAvailable, out rotation);
+            return TryGet(m_Rotation, AvailableTrackingData.RotationAvailable, out rotation);
         }
 
         public bool TryGetVelocity(out Vector3 velocity)
         {
-            return TryGet<Vector3>(m_Velocity, AvailableTrackingData.VelocityAvailable, out velocity);
+            return TryGet(m_Velocity, AvailableTrackingData.VelocityAvailable, out velocity);
         }
 
         public bool TryGetAngularVelocity(out Vector3 angularVelocity)
         {
-            return TryGet<Vector3>(m_AngularVelocity, AvailableTrackingData.AngularVelocityAvailable, out angularVelocity);
+            return TryGet(m_AngularVelocity, AvailableTrackingData.AngularVelocityAvailable, out angularVelocity);
         }
 
         public bool TryGetAcceleration(out Vector3 acceleration)
         {
-            return TryGet<Vector3>(m_Acceleration, AvailableTrackingData.AccelerationAvailable, out acceleration);
+            return TryGet(m_Acceleration, AvailableTrackingData.AccelerationAvailable, out acceleration);
         }
 
         public bool TryGetAngularAcceleration(out Vector3 angularAcceleration)
         {
-            return TryGet<Vector3>(m_AngularAcceleration, AvailableTrackingData.AngularAccelerationAvailable, out angularAcceleration);
+            return TryGet(m_AngularAcceleration, AvailableTrackingData.AngularAccelerationAvailable, out angularAcceleration);
         }
 
-        private bool TryGet<T>(T inValue, AvailableTrackingData availabilityFlag, out T outValue) where T : new()
+        private bool TryGet(Vector3 inValue, AvailableTrackingData availabilityFlag, out Vector3 outValue)
         {
             if ((m_AvailableFields & availabilityFlag) > 0)
             {
@@ -170,7 +170,21 @@ namespace UnityEngine.XR
             }
             else
             {
-                outValue = new T();
+                outValue = Vector3.zero;
+                return false;
+            }
+        }
+
+        private bool TryGet(Quaternion inValue, AvailableTrackingData availabilityFlag, out Quaternion outValue)
+        {
+            if ((m_Tracked == 1) && ((m_AvailableFields & availabilityFlag) > 0))
+            {
+                outValue = inValue;
+                return true;
+            }
+            else
+            {
+                outValue = Quaternion.identity;
                 return false;
             }
         }
