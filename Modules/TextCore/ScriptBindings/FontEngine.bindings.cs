@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
+using UnityEngine.Profiling;
 
 namespace UnityEngine.TextCore.LowLevel
 {
@@ -135,7 +136,8 @@ namespace UnityEngine.TextCore.LowLevel
     {
         private static readonly FontEngine s_Instance = new FontEngine();
 
-        private static uint[] s_GlyphIndexesToMarshall;
+        private static Glyph[] s_Glyphs = new Glyph[16];
+        private static uint[] s_GlyphIndexes_MarshallingArray = new uint[16];
 
         private static GlyphMarshallingStruct[] s_GlyphMarshallingStruct_IN = new GlyphMarshallingStruct[16];
         private static GlyphMarshallingStruct[] s_GlyphMarshallingStruct_OUT = new GlyphMarshallingStruct[16];
@@ -143,7 +145,7 @@ namespace UnityEngine.TextCore.LowLevel
         private static GlyphRect[] s_FreeGlyphRects = new GlyphRect[16];
         private static GlyphRect[] s_UsedGlyphRects = new GlyphRect[16];
 
-        private static GlyphPairAdjustmentRecord[] s_GlyphPairAdjustmentRecords;
+        private static GlyphPairAdjustmentRecord[] s_GlyphPairAdjustmentRecords_MarshallingArray;
 
         private static Dictionary<uint, Glyph> s_GlyphLookupDictionary = new Dictionary<uint, Glyph>();
 
@@ -814,22 +816,27 @@ namespace UnityEngine.TextCore.LowLevel
         /// </summary>
         internal static bool TryAddGlyphsToTexture(List<uint> glyphIndexes, int padding, GlyphPackingMode packingMode, List<GlyphRect> freeGlyphRects, List<GlyphRect> usedGlyphRects, GlyphRenderMode renderMode, Texture2D texture, out Glyph[] glyphs)
         {
+            Profiler.BeginSample("FontEngine.TryAddGlyphsToTexture");
+
             glyphs = null;
 
             if (glyphIndexes == null || glyphIndexes.Count == 0)
+            {
+                Profiler.EndSample();
                 return false;
+            }
 
             int glyphCount = glyphIndexes.Count;
 
             // Make sure marshalling glyph index array allocations are appropriate.
-            if (s_GlyphIndexesToMarshall == null || s_GlyphIndexesToMarshall.Length < glyphCount)
+            if (s_GlyphIndexes_MarshallingArray == null || s_GlyphIndexes_MarshallingArray.Length < glyphCount)
             {
-                if (s_GlyphIndexesToMarshall == null)
-                    s_GlyphIndexesToMarshall = new uint[glyphCount];
+                if (s_GlyphIndexes_MarshallingArray == null)
+                    s_GlyphIndexes_MarshallingArray = new uint[glyphCount];
                 else
                 {
                     int newSize = Mathf.NextPowerOfTwo(glyphCount + 1);
-                    s_GlyphIndexesToMarshall = new uint[newSize];
+                    s_GlyphIndexes_MarshallingArray = new uint[newSize];
                 }
             }
 
@@ -853,12 +860,14 @@ namespace UnityEngine.TextCore.LowLevel
                 s_GlyphMarshallingStruct_OUT = new GlyphMarshallingStruct[newSize];
             }
 
-            // Copy glyph indexes and glyph rect data to marshalling arrays.
-            int glyphRectCount = Mathf.Max(freeGlyphRectCount, usedGlyphRectCount, glyphCount);
+            // Determine the max count
+            int glyphRectCount = FontEngineUtilities.MaxValue(freeGlyphRectCount, usedGlyphRectCount, glyphCount);
+
+            // Copy inbound data to Marshalling arrays.
             for (int i = 0; i < glyphRectCount; i++)
             {
                 if (i < glyphCount)
-                    s_GlyphIndexesToMarshall[i] = glyphIndexes[i];
+                    s_GlyphIndexes_MarshallingArray[i] = glyphIndexes[i];
 
                 if (i < freeGlyphRectCount)
                     s_FreeGlyphRects[i] = freeGlyphRects[i];
@@ -868,20 +877,25 @@ namespace UnityEngine.TextCore.LowLevel
             }
 
             // Marshall data over to the native side.
-            bool allGlyphsAdded = TryAddGlyphsToTexture_Internal(s_GlyphIndexesToMarshall, padding, packingMode, s_FreeGlyphRects, ref freeGlyphRectCount, s_UsedGlyphRects, ref usedGlyphRectCount, renderMode, texture, s_GlyphMarshallingStruct_OUT, ref glyphCount);
+            bool allGlyphsAdded = TryAddGlyphsToTexture_Internal(s_GlyphIndexes_MarshallingArray, padding, packingMode, s_FreeGlyphRects, ref freeGlyphRectCount, s_UsedGlyphRects, ref usedGlyphRectCount, renderMode, texture, s_GlyphMarshallingStruct_OUT, ref glyphCount);
 
-            // Allocate array of glyphs
-            glyphs = new Glyph[glyphCount];
+            // Make sure internal glyph array is properly sized.
+            if (s_Glyphs == null || s_Glyphs.Length <= glyphCount)
+                s_Glyphs = new Glyph[Mathf.NextPowerOfTwo(glyphCount + 1)];
+
+            s_Glyphs[glyphCount] = null;
 
             freeGlyphRects.Clear();
             usedGlyphRects.Clear();
 
-            // Copy marshalled free and used GlyphRect data over.
-            glyphRectCount = Mathf.Max(freeGlyphRectCount, usedGlyphRectCount, glyphCount);
+            // Determine the max count
+            glyphRectCount = FontEngineUtilities.MaxValue(freeGlyphRectCount, usedGlyphRectCount, glyphCount);
+
+            // Copy marshalled data back to their appropriate data structures.
             for (int i = 0; i < glyphRectCount; i++)
             {
                 if (i < glyphCount)
-                    glyphs[i] = new Glyph(s_GlyphMarshallingStruct_OUT[i]);
+                    s_Glyphs[i] = new Glyph(s_GlyphMarshallingStruct_OUT[i]);
 
                 if (i < freeGlyphRectCount)
                     freeGlyphRects.Add(s_FreeGlyphRects[i]);
@@ -889,6 +903,10 @@ namespace UnityEngine.TextCore.LowLevel
                 if (i < usedGlyphRectCount)
                     usedGlyphRects.Add(s_UsedGlyphRects[i]);
             }
+
+            glyphs = s_Glyphs;
+
+            Profiler.EndSample();
 
             return allGlyphsAdded;
         }
@@ -907,13 +925,13 @@ namespace UnityEngine.TextCore.LowLevel
         {
             int maxGlyphPairAdjustmentRecords = glyphIndexes.Length * glyphIndexes.Length;
 
-            if (s_GlyphPairAdjustmentRecords == null || s_GlyphPairAdjustmentRecords.Length < maxGlyphPairAdjustmentRecords)
+            if (s_GlyphPairAdjustmentRecords_MarshallingArray == null || s_GlyphPairAdjustmentRecords_MarshallingArray.Length < maxGlyphPairAdjustmentRecords)
             {
-                s_GlyphPairAdjustmentRecords = new GlyphPairAdjustmentRecord[maxGlyphPairAdjustmentRecords];
+                s_GlyphPairAdjustmentRecords_MarshallingArray = new GlyphPairAdjustmentRecord[maxGlyphPairAdjustmentRecords];
             }
 
             int adjustmentRecordCount;
-            if (GetGlyphPairAdjustmentTable_Internal(glyphIndexes, s_GlyphPairAdjustmentRecords, out adjustmentRecordCount) != 0)
+            if (GetGlyphPairAdjustmentTable_Internal(glyphIndexes, s_GlyphPairAdjustmentRecords_MarshallingArray, out adjustmentRecordCount) != 0)
             {
                 // TODO: Add debug warning messages.
                 return null;
@@ -923,7 +941,7 @@ namespace UnityEngine.TextCore.LowLevel
 
             for (int i = 0; i < adjustmentRecordCount; i++)
             {
-                pairAdjustmentRecords[i] = s_GlyphPairAdjustmentRecords[i];
+                pairAdjustmentRecords[i] = s_GlyphPairAdjustmentRecords_MarshallingArray[i];
             }
 
             return pairAdjustmentRecords;
@@ -934,6 +952,11 @@ namespace UnityEngine.TextCore.LowLevel
         /// </summary>
         [NativeMethod(Name = "TextCore::FontEngine::GetGlyphPairAdjustmentTable", IsFreeFunction = true)]
         extern static int GetGlyphPairAdjustmentTable_Internal(uint[] glyphIndexes, [Out] GlyphPairAdjustmentRecord[] glyphPairAdjustmentRecords, out int adjustmentRecordCount);
+
+        // ================================================
+        // Utility Methods
+        // ================================================
+
 
         // ================================================
         // Experimental / Testing / Benchmarking Functions
@@ -1017,6 +1040,11 @@ namespace UnityEngine.TextCore.LowLevel
         internal static bool Approximately(float a, float b)
         {
             return Mathf.Abs(a - b) < 0.001f;
+        }
+
+        internal static int MaxValue(int a, int b, int c)
+        {
+            return a < b ? (b < c ? c : b) : (a < c ? c : a);
         }
     }
 }
