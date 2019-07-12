@@ -59,7 +59,8 @@ namespace UnityEditor
         {
             var type = typeof(TMode);
             VisualElement root = null;
-            if (!m_RootElementPerEditorMode.TryGetValue(type, out root))
+
+            if ((m_RootElementPerEditorMode != null)  && (!m_RootElementPerEditorMode.TryGetValue(type, out root)))
             {
                 if (createIfNull)
                 {
@@ -70,6 +71,7 @@ namespace UnityEditor
                     root = GetRootElement<DefaultEditorMode>(true);
                 }
             }
+
             return root;
         }
 

@@ -173,7 +173,7 @@ namespace UnityEngine.TextCore
         private float m_HorizontalBearingX;
 
         [SerializeField]
-        [NativeName("horizontalBearingy")]
+        [NativeName("horizontalBearingY")]
         private float m_HorizontalBearingY;
 
         [SerializeField]

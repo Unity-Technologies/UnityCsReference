@@ -64,7 +64,12 @@ namespace UnityEditor
 
             RectOffset margins = GetBorderSize();
 
-            IStyle style = EditorModes.GetRootElement(view).style;
+            var rootElement = EditorModes.GetRootElement(view);
+
+            if (rootElement == null)
+                return;
+
+            IStyle style = rootElement.style;
             style.top = margins.top;
             style.bottom = margins.bottom;
             style.left = margins.left;
@@ -394,6 +399,10 @@ namespace UnityEditor
                 return;
 
             var root = EditorModes.GetRootElement(m_ActualView);
+
+            if (root == null)
+                return;
+
             if (root.hierarchy.parent == visualTree)
             {
                 root.RemoveFromHierarchy();
