@@ -803,7 +803,7 @@ namespace UnityEditor
             }
         }
 
-        private static string StacktraceWithHyperlinks(string stacktraceText)
+        internal static string StacktraceWithHyperlinks(string stacktraceText)
         {
             StringBuilder textWithHyperlinks = new StringBuilder();
             var lines = stacktraceText.Split(new string[] {"\n"}, StringSplitOptions.None);
@@ -820,7 +820,7 @@ namespace UnityEditor
                         int lineIndex = filePathPart.LastIndexOf(":", StringComparison.Ordinal); // LastIndex because the url can contain ':' ex:"C:"
                         if (lineIndex > 0)
                         {
-                            int endLineIndex = filePathPart.IndexOf(")", StringComparison.Ordinal);
+                            int endLineIndex = filePathPart.LastIndexOf(")", StringComparison.Ordinal); // LastIndex because files or folder in the url can contain ')'
                             if (endLineIndex > 0)
                             {
                                 string lineString =
@@ -830,7 +830,7 @@ namespace UnityEditor
                                 textWithHyperlinks.Append(lines[i].Substring(0, filePathIndex));
                                 textWithHyperlinks.Append("<a href=\"" + filePath + "\"" + " line=\"" + lineString + "\">");
                                 textWithHyperlinks.Append(filePath + ":" + lineString);
-                                textWithHyperlinks.AppendLine("</a>)");
+                                textWithHyperlinks.Append("</a>)\n");
 
                                 continue; // continue to evade the default case
                             }
@@ -838,8 +838,11 @@ namespace UnityEditor
                     }
                 }
                 // default case if no hyperlink : we just write the line
-                textWithHyperlinks.AppendLine(lines[i]);
+                textWithHyperlinks.Append(lines[i] + "\n");
             }
+            // Remove the last \n
+            if (textWithHyperlinks.Length > 0) // textWithHyperlinks always ends with \n if it is not empty
+                textWithHyperlinks.Remove(textWithHyperlinks.Length - 1, 1);
 
             return textWithHyperlinks.ToString();
         }

@@ -46,6 +46,9 @@ namespace UnityEditor
         [NativeProperty("VCShowFailedCheckout")]
         public static extern bool showFailedCheckout { get; set; }
 
+        [NativeProperty("VCOverwriteFailedCheckoutAssets")]
+        public static extern bool overwriteFailedCheckoutAssets { get; set; }
+
         [NativeProperty("VCAllowAsyncUpdate")]
         public static extern bool allowAsyncStatusUpdate { get; set; }
 
