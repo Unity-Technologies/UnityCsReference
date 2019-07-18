@@ -501,10 +501,8 @@ namespace UnityEditor
             }
 
             for (int i = 0; i < m_SectionAnimators.Length; i++)
-                m_SectionAnimators[i] = new AnimBool(m_SelectedSection.value == i, Repaint);
-
-            m_ShowDefaultIsNativeResolution.valueChanged.AddListener(Repaint);
-            m_ShowResolution.valueChanged.AddListener(Repaint);
+                m_SectionAnimators[i] = new AnimBool(m_SelectedSection.value == i);
+            SetValueChangeListeners(Repaint);
 
             m_VRSettings = new VR.PlayerSettingsEditorVR(this);
 
@@ -515,13 +513,19 @@ namespace UnityEditor
             s_GraphicsDeviceLists.Clear();
         }
 
-        public void SetSectionOpenListener(UnityAction action)
+        public void SetValueChangeListeners(UnityAction action)
         {
             for (int i = 0; i < m_SectionAnimators.Length; i++)
             {
                 m_SectionAnimators[i].valueChanged.RemoveAllListeners();
                 m_SectionAnimators[i].valueChanged.AddListener(action);
             }
+
+            m_ShowDefaultIsNativeResolution.valueChanged.RemoveAllListeners();
+            m_ShowDefaultIsNativeResolution.valueChanged.AddListener(action);
+
+            m_ShowResolution.valueChanged.RemoveAllListeners();
+            m_ShowResolution.valueChanged.AddListener(action);
         }
 
         public override bool UseDefaultMargins()
@@ -2543,7 +2547,7 @@ namespace UnityEditor
                 SettingsProvider.GetSearchKeywordsFromGUIContentProperties<SettingsContent>());
             provider.activateHandler = (searchContext, rootElement) =>
             {
-                (provider.settingsEditor as PlayerSettingsEditor)?.SetSectionOpenListener(provider.Repaint);
+                (provider.settingsEditor as PlayerSettingsEditor)?.SetValueChangeListeners(provider.Repaint);
             };
             return provider;
         }

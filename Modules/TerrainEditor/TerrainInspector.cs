@@ -94,6 +94,7 @@ namespace UnityEditor
 
             public readonly GUIContent assign = EditorGUIUtility.TrTextContent("Assign");
             public readonly GUIContent duplicateTab = EditorGUIUtility.TrTextContent("NOTE: Inspector tab is a duplicate.  Paint functionality disabled.");
+            public readonly GUIContent gles2NotSupported = EditorGUIUtility.TrTextContentWithIcon("Terrain editting is not supported in GLES2.", MessageType.Info);
 
             // Textures
             public readonly GUIContent terrainLayers = EditorGUIUtility.TrTextContent("Terrain Layers");
@@ -1803,28 +1804,36 @@ namespace UnityEditor
 
             EditorGUI.BeginDisabledGroup(s_activeTerrainInspector != GetInstanceID() || s_activeTerrainInspectorInstance != this);
 
-            // Show the master tool selector
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();          // flexible space on either end centers the toolbar
-            GUI.changed = false;
             int tool = (int)selectedTool;
-            int newlySelectedTool = GUILayout.Toolbar(tool, styles.toolIcons, styles.command);
-
-            if (newlySelectedTool != tool)
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLES2)
             {
-                SetCurrentPaintToolInactive();
-                selectedTool = (TerrainTool)newlySelectedTool;
-                SetCurrentPaintToolActive();
-
-                // Need to repaint other terrain inspectors as their previously selected tool is now deselected.
-                InspectorWindow.RepaintAllInspectors();
-
-                if (Toolbar.get != null)
-                    Toolbar.get.Repaint();
+                EditorGUILayout.HelpBox(styles.gles2NotSupported);
+                tool = (int)TerrainTool.TerrainSettings;
             }
+            else
+            {
+                // Show the master tool selector
+                GUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();          // flexible space on either end centers the toolbar
+                GUI.changed = false;
+                int newlySelectedTool = GUILayout.Toolbar(tool, styles.toolIcons, styles.command);
 
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
+                if (newlySelectedTool != tool)
+                {
+                    SetCurrentPaintToolInactive();
+                    selectedTool = (TerrainTool)newlySelectedTool;
+                    SetCurrentPaintToolActive();
+
+                    // Need to repaint other terrain inspectors as their previously selected tool is now deselected.
+                    InspectorWindow.RepaintAllInspectors();
+
+                    if (Toolbar.get != null)
+                        Toolbar.get.Repaint();
+                }
+
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+            }
 
             if (tool != (int)TerrainTool.Paint)
             {
@@ -1832,12 +1841,14 @@ namespace UnityEditor
                 if (tool == (int)TerrainTool.CreateNeighbor)
                 {
                     GUILayout.Label(m_CreateTool.GetName());
-                    GUILayout.Label(m_CreateTool.GetDesc(), EditorStyles.wordWrappedMiniLabel);
+                    if (!string.IsNullOrEmpty(m_CreateTool.GetDesc()))
+                        GUILayout.Label(m_CreateTool.GetDesc(), EditorStyles.wordWrappedMiniLabel);
                 }
                 else if (tool > (int)TerrainTool.Paint && tool < styles.toolIcons.Length)
                 {
                     GUILayout.Label(styles.toolNames[tool].text);
-                    GUILayout.Label(styles.toolNames[tool].tooltip, EditorStyles.wordWrappedMiniLabel);
+                    if (!string.IsNullOrEmpty(styles.toolNames[tool].tooltip))
+                        GUILayout.Label(styles.toolNames[tool].tooltip, EditorStyles.wordWrappedMiniLabel);
                 }
                 else
                 {

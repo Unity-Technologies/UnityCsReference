@@ -136,7 +136,13 @@ namespace UnityEditor.Experimental.TerrainAPI
             terrain.allowAutoConnect = parent.allowAutoConnect;
 
             string parentTerrainDataDir = Path.GetDirectoryName(AssetDatabase.GetAssetPath(parent.terrainData));
-            AssetDatabase.CreateAsset(terrainData, Path.Combine(parentTerrainDataDir, "TerrainData_" + terrainData.name + ".asset"));
+
+            var assetsToSave = new UnityEngine.Object[1 + terrainData.alphamapTextureCount];
+            assetsToSave[0] = terrainData;
+            for (int i = 0; i < terrainData.alphamapTextureCount; ++i)
+                assetsToSave[i + 1] = terrainData.alphamapTextures[i];
+
+            AssetDatabase.CreateAssetFromObjects(assetsToSave, Path.Combine(parentTerrainDataDir, "TerrainData_" + terrainData.name + ".asset"));
             if (m_FillHeightmapUsingNeighbors)
                 FillHeightmapUsingNeighbors(terrain);
 
@@ -217,7 +223,8 @@ namespace UnityEditor.Experimental.TerrainAPI
         public override void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext)
         {
             if ((Event.current.type == EventType.MouseUp || Event.current.type == EventType.MouseDown) &&
-                (Event.current.button == 2 || Event.current.alt))
+                (Event.current.button == 2 || Event.current.alt)
+                || terrain.terrainData == null)
             {
                 return;
             }

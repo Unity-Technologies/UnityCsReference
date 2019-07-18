@@ -26,40 +26,38 @@ namespace UnityEditor
     {
         private const string kMaximizeRestoreFile = "CurrentMaximizeLayout.dwlt";
         private const string kLastLayoutName = "LastLayout.dwlt";
-        private const string kCurrentLayoutPath = "Library/CurrentLayout.dwlt";
         private const string kDefaultLayoutName = "Default.wlt";
+        // Backward compatibility: name of the old (non mode specific) per project layout
+        internal const string kOldCurrentLayoutPath = "Library/CurrentLayout.dwlt";
+        internal static string layoutsPreferencesPath => FileUtil.CombinePaths(InternalEditorUtility.unityPreferencesFolder, "Layouts");
+        internal static string layoutsModePreferencesPath => FileUtil.CombinePaths(layoutsPreferencesPath, ModeService.currentId);
+        internal static string layoutsDefaultModePreferencesPath => FileUtil.CombinePaths(layoutsPreferencesPath, "default");
+        internal static string layoutsProjectPath => Directory.GetCurrentDirectory() + "/Library";
+        // Backward compatibility: property for old global layout (for default mode only)
+        internal static string OldGlobalLayoutPath => Path.Combine(layoutsPreferencesPath, "__Current__.dwlt");
+        internal static string ProjectLayoutPath => GetProjectLayoutPerMode(ModeService.currentId);
+        internal static string LastLayoutPath => Path.Combine(layoutsModePreferencesPath, kLastLayoutName);
 
         [UsedImplicitly, RequiredByNativeCode]
         public static void LoadDefaultWindowPreferences()
         {
+            LoadDefaultWindowPreferencesEx(false);
+        }
+
+        public static void LoadDefaultWindowPreferencesEx(bool keepMainWindow)
+        {
             InitializeLayoutPreferencesFolder();
-
-            // Upgrade path from global layout state to per-project layout state
-            string lastLayoutPath = Path.Combine(layoutsPreferencesPath, kLastLayoutName);
-            string oldCurrentLayoutPath = Path.Combine(layoutsPreferencesPath, "__Current__.dwlt");
-            if (File.Exists(oldCurrentLayoutPath) && !File.Exists(lastLayoutPath))
+            var projectLayoutExists = File.Exists(ProjectLayoutPath);
+            if (!projectLayoutExists)
             {
-                // For projects that were using the global layout state, we'll use the last layout state used.
-                // In the case of Unity's first run, the last layout state will be the old global layout state.
-                FileUtil.CopyFileOrDirectory(oldCurrentLayoutPath, lastLayoutPath);
+                var currentLayoutPath = GetCurrentLayoutPath();
+                FileUtil.CopyFileOrDirectory(currentLayoutPath, ProjectLayoutPath);
             }
 
-            bool newProjectLayout = !File.Exists(kCurrentLayoutPath);
-
-            // Make sure we have a current layout file created
-            if (newProjectLayout)
-            {
-                if (File.Exists(lastLayoutPath))
-                    // First we try to load the last layout
-                    FileUtil.CopyFileOrDirectory(lastLayoutPath, kCurrentLayoutPath);
-                else
-                    // Otherwise we load the default layout that the user could've modified
-                    FileUtil.CopyFileOrDirectory(GetDefaultLayoutPath(), kCurrentLayoutPath);
-            }
-            Debug.Assert(File.Exists(kCurrentLayoutPath));
+            Debug.Assert(File.Exists(ProjectLayoutPath));
 
             // Load the current project layout
-            LoadWindowLayout(kCurrentLayoutPath, newProjectLayout);
+            LoadWindowLayout(ProjectLayoutPath, !projectLayoutExists, false, keepMainWindow);
         }
 
         [UsedImplicitly, RequiredByNativeCode]
@@ -69,20 +67,61 @@ namespace UnityEditor
             if (!InternalEditorUtility.isHumanControllingUs)
                 return;
 
-            // Save Project Current Layout
-            SaveWindowLayout(Path.Combine(Directory.GetCurrentDirectory(), kCurrentLayoutPath));
-
-            // Make sure we have a layout directory to save the last layout.
-            if (!Directory.Exists(layoutsPreferencesPath))
-                Directory.CreateDirectory(layoutsPreferencesPath);
-
-            // Save Global Last Layout
-            SaveWindowLayout(Path.Combine(layoutsPreferencesPath, kLastLayoutName));
+            SaveCurrentLayoutPerMode(ModeService.currentId);
         }
 
-        private static string GetDefaultLayoutPath()
+        internal static void SaveCurrentLayoutPerMode(string modeId)
         {
-            return Path.Combine(layoutsPreferencesPath, kDefaultLayoutName);
+            // Save Project Current Layout
+            SaveWindowLayout(FileUtil.CombinePaths(Directory.GetCurrentDirectory(), GetProjectLayoutPerMode(modeId)));
+
+            // Save Global Last Layout
+            SaveWindowLayout(FileUtil.CombinePaths(layoutsPreferencesPath, modeId, kLastLayoutName));
+        }
+
+        internal static string GetCurrentLayoutPath()
+        {
+            var currentLayoutPath = ProjectLayoutPath;
+
+            // Make sure we have a current layout file created
+            if (!File.Exists(ProjectLayoutPath))
+            {
+                currentLayoutPath = GetDefaultLayoutPath();
+                if (File.Exists(LastLayoutPath))
+                {
+                    // First we try to load the last layout (per mode)
+                    currentLayoutPath = LastLayoutPath;
+                }
+                else if (ModeService.currentId == ModeService.k_DefaultModeId)
+                {
+                    // Backward compatibility check:
+                    // Old non mode Library\CurrentLayout.dwlt
+                    if (File.Exists(kOldCurrentLayoutPath))
+                    {
+                        currentLayoutPath = kOldCurrentLayoutPath;
+                    }
+                    else
+                    {
+                        // Older non mode <Prefs>\__Current__.dwlt
+                        if (File.Exists(OldGlobalLayoutPath))
+                        {
+                            currentLayoutPath = OldGlobalLayoutPath;
+                        }
+                    }
+                }
+            }
+
+            return currentLayoutPath;
+        }
+
+        internal static string GetDefaultLayoutPath()
+        {
+            return Path.Combine(layoutsModePreferencesPath, kDefaultLayoutName);
+        }
+
+        internal static string GetProjectLayoutPerMode(string modeId)
+        {
+            return $"Library/CurrentLayout-{modeId}.dwlt";
         }
 
         private static void InitializeLayoutPreferencesFolder()
@@ -93,26 +132,40 @@ namespace UnityEditor
             if (!Directory.Exists(layoutsPreferencesPath))
                 Directory.CreateDirectory(layoutsPreferencesPath);
 
-            // Make sure we have a window layouts preferences folder
-            if (!Directory.Exists(layoutsDefaultModePreferencesPath))
+            if (!Directory.Exists(layoutsModePreferencesPath))
             {
-                // If not copy the standard set of window layouts to the preferences folder
-                FileUtil.CopyFileOrDirectory(layoutResourcesPath, layoutsDefaultModePreferencesPath);
-                var defaultModeUserLayouts = Directory.GetFiles(layoutsPreferencesPath, "*.wlt");
-                foreach (var layoutPath in defaultModeUserLayouts)
+                // Make sure we have a valid default mode folder initialized with the proper default layouts.
+                if (layoutsDefaultModePreferencesPath == layoutsModePreferencesPath)
                 {
-                    var fileName = Path.GetFileName(layoutPath);
-                    var dst = Path.Combine(layoutsDefaultModePreferencesPath, fileName);
-                    if (!File.Exists(dst))
-                        FileUtil.CopyFileIfExists(layoutPath, dst, false);
+                    // Backward compatibility: if the default layout folder doesn't exists but some layouts have been
+                    // saved be sure to copy them to the "default layout per mode folder".
+                    FileUtil.CopyFileOrDirectory(layoutResourcesPath, layoutsDefaultModePreferencesPath);
+                    var defaultModeUserLayouts = Directory.GetFiles(layoutsPreferencesPath, "*.wlt");
+                    foreach (var layoutPath in defaultModeUserLayouts)
+                    {
+                        var fileName = Path.GetFileName(layoutPath);
+                        var dst = Path.Combine(layoutsDefaultModePreferencesPath, fileName);
+                        if (!File.Exists(dst))
+                            FileUtil.CopyFileIfExists(layoutPath, dst, false);
+                    }
+                }
+                else
+                {
+                    Directory.CreateDirectory(layoutsModePreferencesPath);
                 }
             }
 
             // Make sure we have the default layout file in the preferences folder
             if (!File.Exists(defaultLayoutPath))
             {
+                var defaultModeLayoutPath = ModeService.GetDefaultModeLayout();
+                if (!File.Exists(defaultModeLayoutPath))
+                {
+                    // No mode default layout, use the editor_resources Default:
+                    defaultModeLayoutPath = Path.Combine(layoutResourcesPath, kDefaultLayoutName);
+                }
                 // If not copy our default file to the preferences folder
-                FileUtil.CopyFileOrDirectory(Path.Combine(layoutResourcesPath, kDefaultLayoutName), defaultLayoutPath);
+                FileUtil.CopyFileOrDirectory(defaultModeLayoutPath, defaultLayoutPath);
             }
             Debug.Assert(File.Exists(defaultLayoutPath));
         }
@@ -684,7 +737,7 @@ namespace UnityEditor
                             continue;
                         }
 
-                        // Host views that donot hold any containers are not desirable at this stage
+                        // Host views that do not hold any containers are not desirable at this stage
                         HostView hostview = o as HostView;
                         if (hostview != null && hostview.actualView == null)
                         {
@@ -830,11 +883,11 @@ namespace UnityEditor
         {
             InitializeLayoutPreferencesFolder();
 
-            FileUtil.DeleteFileOrDirectory(kCurrentLayoutPath);
-            FileUtil.CopyFileOrDirectory(GetDefaultLayoutPath(), kCurrentLayoutPath);
-            Debug.Assert(File.Exists(kCurrentLayoutPath));
+            FileUtil.DeleteFileOrDirectory(ProjectLayoutPath);
+            FileUtil.CopyFileOrDirectory(GetDefaultLayoutPath(), ProjectLayoutPath);
+            Debug.Assert(File.Exists(ProjectLayoutPath));
 
-            LoadWindowLayout(kCurrentLayoutPath, true);
+            LoadWindowLayout(ProjectLayoutPath, true);
         }
 
         public static void CloseWindows()
@@ -934,19 +987,27 @@ namespace UnityEditor
                 all.Add(w);
             }
 
-            InternalEditorUtility.SaveToSerializedFileAndForget(all.ToArray(typeof(UnityObject)) as UnityObject[], path, true);
+            var parentLayoutFolder = Path.GetDirectoryName(path);
+            if (!String.IsNullOrEmpty(parentLayoutFolder))
+            {
+                if (!Directory.Exists(parentLayoutFolder))
+                    Directory.CreateDirectory(parentLayoutFolder);
+                InternalEditorUtility.SaveToSerializedFileAndForget(all.ToArray(typeof(UnityObject)) as UnityObject[], path, true);
+            }
         }
 
-        internal static MainView FindMainView()
+        internal static View FindMainView()
         {
-            var mainViews = Resources.FindObjectsOfTypeAll<MainView>();
-            if (mainViews.Length == 0)
+            UnityEngine.Object[] containers = Resources.FindObjectsOfTypeAll(typeof(ContainerWindow));
+            foreach (ContainerWindow window in containers)
             {
-                Debug.LogError("No Main View found!");
-                return null;
+                if (window.showMode == ShowMode.MainWindow)
+                    return window.rootView;
             }
 
-            return mainViews[0];
+
+            Debug.LogError("No Main View found!");
+            return null;
         }
 
         public static void SaveGUI()
@@ -970,17 +1031,13 @@ namespace UnityEditor
                 return;
             }
 
+            ModeService.ChangeModeById("default");
             FileUtil.DeleteFileOrDirectory(layoutsPreferencesPath);
-            FileUtil.DeleteFileOrDirectory(kCurrentLayoutPath);
+            FileUtil.DeleteFileOrDirectory(ProjectLayoutPath);
 
             LoadDefaultWindowPreferences();
             ShortcutIntegration.instance.RebuildShortcuts();
         }
-
-        internal static string layoutsPreferencesPath => FileUtil.CombinePaths(InternalEditorUtility.unityPreferencesFolder, "Layouts");
-        internal static string layoutsModePreferencesPath => FileUtil.CombinePaths(layoutsPreferencesPath, ModeService.currentId);
-        internal static string layoutsDefaultModePreferencesPath => FileUtil.CombinePaths(layoutsPreferencesPath, "default");
-        internal static string layoutsProjectPath => Directory.GetCurrentDirectory() + "/Library";
     }
 
     [EditorWindowTitle(title = "Save Layout")]

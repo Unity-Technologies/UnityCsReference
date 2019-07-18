@@ -11,6 +11,24 @@ namespace UnityEngine.UIElements
 
         public new class UxmlFactory : UxmlFactory<Foldout, UxmlTraits> {}
 
+        public new class UxmlTraits : BindableElement.UxmlTraits
+        {
+            UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
+            UxmlBoolAttributeDescription m_Value = new UxmlBoolAttributeDescription { name = "value" };
+
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                base.Init(ve, bag, cc);
+
+                Foldout f = ve as Foldout;
+                if (f != null)
+                {
+                    f.text = m_Text.GetValueFromBag(bag, cc);
+                    f.SetValueWithoutNotify(m_Value.GetValueFromBag(bag, cc));
+                }
+            }
+        }
+
         Toggle m_Toggle;
         VisualElement m_Container;
 
@@ -34,7 +52,9 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private bool m_Value = true;
+        [SerializeField]
+        private bool m_Value;
+
         public bool value
         {
             get
@@ -51,6 +71,7 @@ namespace UnityEngine.UIElements
                     evt.target = this;
                     SetValueWithoutNotify(value);
                     SendEvent(evt);
+                    SaveViewData();
                 }
             }
         }
@@ -66,8 +87,20 @@ namespace UnityEngine.UIElements
         public static readonly string toggleUssClassName = ussClassName + "__toggle";
         public static readonly string contentUssClassName = ussClassName + "__content";
 
+        internal override void OnViewDataReady()
+        {
+            base.OnViewDataReady();
+
+            string key = GetFullHierarchicalViewDataKey();
+
+            OverwriteFromViewData(this, key);
+            SetValueWithoutNotify(m_Value);
+        }
+
         public Foldout()
         {
+            m_Value = true;
+
             AddToClassList(ussClassName);
 
             m_Toggle = new Toggle

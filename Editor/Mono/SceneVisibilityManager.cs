@@ -63,7 +63,7 @@ namespace UnityEditor
             PrefabStage stage = StageNavigationManager.instance.GetCurrentPrefabStage();
             SceneVisibilityState.SetPrefabStageScene(stage == null ? default(Scene) : stage.scene);
             s_ShortcutContext = new ShortcutContext();
-            ShortcutIntegration.instance.contextManager.RegisterToolContext(s_ShortcutContext);
+            EditorApplication.delayCall += () => ShortcutIntegration.instance.contextManager.RegisterToolContext(s_ShortcutContext);
         }
 
         private static void InternalStructureChanged()

@@ -39,6 +39,8 @@ namespace UnityEditor
             }
         }
 
+        public bool localFrame { get; set; }
+
         // Instances of this class should be serialized.
         // The Init function will only have effect if the serialized values are not already set.
         public void Init(string prefName)
@@ -84,7 +86,7 @@ namespace UnityEditor
             }
 
             bool expandedBefore = expanded;
-            previewSize = -PixelPreciseCollapsibleSlider(id, resizerRect, -previewSize, -maxPreviewSize, -0, ref expanded);
+            previewSize = -PixelPreciseCollapsibleSlider(id, resizerRect, -previewSize, -maxPreviewSize, -0, ref expanded, localFrame);
             previewSize = Mathf.Min(previewSize, maxPreviewSize);
             dragging = (GUIUtility.hotControl == id);
 
@@ -173,7 +175,13 @@ namespace UnityEditor
         }
 
         // This is the slider behavior for resizing the preview area
-        public static float PixelPreciseCollapsibleSlider(int id, Rect position, float value, float min, float max, ref bool expanded)
+        public static float PixelPreciseCollapsibleSlider(int id, Rect position, float value, float min, float max,
+            ref bool expanded)
+        {
+            return PixelPreciseCollapsibleSlider(id, position, value, min, max, ref expanded, false);
+        }
+
+        public static float PixelPreciseCollapsibleSlider(int id, Rect position, float value, float min, float max, ref bool expanded, bool localFrame)
         {
             Event evt = Event.current;
 
@@ -182,8 +190,13 @@ namespace UnityEditor
                 return value;
             }
 
-            var mousePosition = GUIClip.UnclipToWindow(evt.mousePosition);
-            mousePosition.y -= Editor.k_HeaderHeight;
+            var mousePosition = evt.mousePosition;
+
+            if (localFrame)
+            {
+                mousePosition = GUIClip.UnclipToWindow(evt.mousePosition);
+                mousePosition.y -= Editor.k_HeaderHeight;
+            }
 
             switch (evt.GetTypeForControl(id))
             {
@@ -216,8 +229,14 @@ namespace UnityEditor
                     }
                     break;
                 case EventType.Repaint:
-                    const float x = 0f;
-                    const float y = 0f;
+                    float x = position.x;
+                    float y = position.y;
+
+                    if (localFrame)
+                    {
+                        x = 0f;
+                        y = 0f;
+                    }
 
                     if (GUIUtility.hotControl == 0)
                     {

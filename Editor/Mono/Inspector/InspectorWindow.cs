@@ -191,6 +191,7 @@ namespace UnityEditor
 
             LoadVisualTreeFromUxml();
 
+            m_PreviewResizer.localFrame = true;
             m_PreviewResizer.Init("InspectorPreview");
             m_LabelGUI.OnEnable();
 
@@ -1869,15 +1870,15 @@ namespace UnityEditor
                     continue;
                 }
 
+                // We won't have an EditorElement for editors that are normally culled so we should skip this
+                if (ShouldCullEditor(editors, newEditorsIndex))
+                {
+                    ++newEditorsIndex;
+                    continue;
+                }
+
                 if (ed.target != currentEd.editor.target)
                 {
-                    // We won't have an EditorElement for editors that are normally culled so we should skip this
-                    if (ShouldCullEditor(editors, newEditorsIndex))
-                    {
-                        ++newEditorsIndex;
-                        continue;
-                    }
-
                     return null;
                 }
 

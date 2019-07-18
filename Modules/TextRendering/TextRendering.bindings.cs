@@ -334,7 +334,13 @@ namespace UnityEngine
 
         public Font(string name)
         {
-            Internal_CreateFont(this, name);
+            // Determine if string name contains the name of the font file or the path to the font file.
+            bool isFileName = System.IO.Path.GetDirectoryName(name) == string.Empty;
+
+            if (isFileName)
+                Internal_CreateFont(this, name);
+            else
+                Internal_CreateFontFromPath(this, name);
         }
 
         private Font(string[] names, int size)
@@ -374,8 +380,10 @@ namespace UnityEngine
         private extern bool HasCharacter(int c);
 
         public static extern string[] GetOSInstalledFontNames();
+        public static extern string[] GetPathsToOSFonts();
 
         private static extern void Internal_CreateFont([Writable] Font self, string name);
+        private static extern void Internal_CreateFontFromPath([Writable] Font self, string fontPath);
         private static extern void Internal_CreateDynamicFont([Writable] Font self, string[] _names, int size);
 
         [FreeFunction("TextRenderingPrivate::GetCharacterInfo", HasExplicitThis = true)]

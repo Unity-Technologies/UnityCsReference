@@ -153,6 +153,8 @@ namespace UnityEditor
             }
             set
             {
+                if (!get)
+                    return;
                 get.m_LastLoadedLayoutName = value;
                 get.Repaint();
             }
