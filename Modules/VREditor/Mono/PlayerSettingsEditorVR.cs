@@ -565,6 +565,10 @@ namespace UnityEditorInternal.VR
 
         internal void VuforiaGUI(BuildTargetGroup targetGroup)
         {
+            // Vuforia is not supported in the Linux Editor
+            if (Application.platform == RuntimePlatform.LinuxEditor)
+                return;
+
             if (!BuildTargetDiscovery.PlatformGroupHasVRFlag(targetGroup, VRAttributes.SupportVuforia))
                 return;
 

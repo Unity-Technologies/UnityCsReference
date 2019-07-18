@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor.UIElements.Debugger;
 using UnityEngine.UIElements;
@@ -191,23 +192,43 @@ namespace UnityEditor
             base.OnDestroy();
         }
 
-        protected Type[] GetPaneTypes()
+        private static readonly Type[] k_PaneTypes =
+        {
+            typeof(SceneView),
+            typeof(GameView),
+            typeof(InspectorWindow),
+            typeof(SceneHierarchyWindow),
+            typeof(ProjectBrowser),
+            typeof(ProfilerWindow),
+            typeof(AnimationWindow)
+        };
+
+        private static IEnumerable<Type> GetCurrentModePaneTypes(string modePaneTypeSectionName)
+        {
+            var modePaneTypes = ModeService.GetModeDataSectionList<string>(ModeService.currentIndex, modePaneTypeSectionName);
+            var editorWindowTypes = TypeCache.GetTypesDerivedFrom<EditorWindow>();
+            foreach (var paneTypeName in modePaneTypes)
+            {
+                var paneType = editorWindowTypes.FirstOrDefault(t => t.Name.EndsWith(paneTypeName));
+                if (paneType != null)
+                    yield return paneType;
+                else
+                    Debug.LogWarning($"Cannot find editor window pane type {paneTypeName} for editor mode {ModeService.currentId}.");
+            }
+        }
+
+        private static IEnumerable<Type> GetDefaultPaneTypes()
         {
             const string k_PaneTypesSectionName = "pane_types";
             if (!ModeService.HasSection(ModeService.currentIndex, k_PaneTypesSectionName))
-                return new[]
-                {
-                    typeof(SceneView),
-                    typeof(GameView),
-                    typeof(InspectorWindow),
-                    typeof(SceneHierarchyWindow),
-                    typeof(ProjectBrowser),
-                    typeof(ProfilerWindow),
-                    typeof(AnimationWindow)
-                };
+                return k_PaneTypes;
+            return GetCurrentModePaneTypes(k_PaneTypesSectionName);
+        }
 
-            var modePaneTypes = ModeService.GetModeDataSectionList<string>(ModeService.currentIndex, k_PaneTypesSectionName).ToArray();
-            return EditorAssemblies.SubclassesOf(typeof(EditorWindow)).Where(t => modePaneTypes.Any(mpt => t.Name.EndsWith(mpt))).ToArray();
+        protected IEnumerable<Type> GetPaneTypes()
+        {
+            foreach (var paneType in GetDefaultPaneTypes())
+                yield return paneType;
         }
 
         // Messages sent by Unity to editor windows today.
@@ -299,7 +320,8 @@ namespace UnityEditor
             bool isExitGUIException = false;
             try
             {
-                using (new PerformanceTracker(actualView.GetType().Name + ".OnGUI." + Event.current.type))
+                var viewName = actualView != null ? actualView.GetType().Name : GetType().Name;
+                using (new PerformanceTracker(viewName + ".OnGUI." + Event.current.type))
                 {
                     Invoke("OnGUI");
                 }
@@ -603,7 +625,7 @@ namespace UnityEditor
                 UIElementsUtility.editorPlayModeTintColor = newColorToUse;
 
                 // Make sure to dirty the right imgui container in this HostView (and all its children / parents)
-                // The MarkDirtyRepaint() function is dirtying the element itself and its parent, but not the children explicitely.
+                // The MarkDirtyRepaint() function is dirtying the element itself and its parent, but not the children explicitly.
                 // ... and in the repaint function, it check for the current rendered element, not the parent.
                 // Since the HostView "hosts" an IMGUIContainer or any VisualElement, we have to make sure to dirty everything here.
                 PropagateDirtyRepaint(visualTree);

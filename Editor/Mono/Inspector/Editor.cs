@@ -945,7 +945,7 @@ namespace UnityEditor
 
         public static void DrawFoldoutInspector(UnityObject target, ref Editor editor)
         {
-            if (editor != null && editor.target != target)
+            if (editor != null && (editor.target != target || target == null))
             {
                 UnityObject.DestroyImmediate(editor);
                 editor = null;

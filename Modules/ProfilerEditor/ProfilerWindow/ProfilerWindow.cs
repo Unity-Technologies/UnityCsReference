@@ -1344,6 +1344,7 @@ namespace UnityEditor
             m_GPUFrameDataHierarchyView.Clear();
 
             ProfilerDriver.ClearAllFrames();
+            m_LastFrameFromTick = -1;
 
 #pragma warning disable CS0618
             NetworkDetailStats.m_NetworkOperations.Clear();

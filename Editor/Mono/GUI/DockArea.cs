@@ -136,6 +136,7 @@ namespace UnityEditor
                 // Avoid destroying a window that has already being destroyed (case 967778)
                 if (w == null)
                     continue;
+
                 UnityEngine.Object.DestroyImmediate(w, true);
             }
 
@@ -672,12 +673,15 @@ namespace UnityEditor
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Close Tab"));
             menu.AddSeparator("");
 
-            System.Type[] types = GetPaneTypes();
+            IEnumerable<Type> types = GetPaneTypes();
             GUIContent baseContent = EditorGUIUtility.TrTextContent("Add Tab");
-            foreach (System.Type t in types)
+            foreach (Type t in types)
             {
                 if (t == null)
+                {
+                    menu.AddSeparator(baseContent.text + "/");
                     continue;
+                }
 
                 GUIContent entry = new GUIContent(EditorWindow.GetLocalizedTitleContentFromType(t)); // make a copy since we modify the text below
                 entry.text = baseContent.text + "/" + entry.text;
@@ -1113,13 +1117,16 @@ namespace UnityEditor
             menu.AddItem(EditorGUIUtility.TrTextContent("Maximize"), !(parent is SplitView), Unmaximize, window);
             menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Close Tab"));
             menu.AddSeparator("");
-            System.Type[] types = GetPaneTypes();
+            IEnumerable<Type> types = GetPaneTypes();
 
             GUIContent baseContent = EditorGUIUtility.TrTextContent("Add Tab");
-            foreach (System.Type t in types)
+            foreach (Type t in types)
             {
                 if (t == null)
+                {
+                    menu.AddSeparator(baseContent.text + "/");
                     continue;
+                }
 
                 GUIContent entry = new GUIContent(EditorWindow.GetLocalizedTitleContentFromType(t)); // make a copy since we modify the text below
                 entry.text = baseContent.text + "/" + entry.text;

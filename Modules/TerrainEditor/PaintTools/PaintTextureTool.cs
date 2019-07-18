@@ -21,6 +21,9 @@ namespace UnityEditor.Experimental.TerrainAPI
         [SerializeField]
         TerrainLayer m_SelectedTerrainLayer = null;
 
+        // Keep this separate from m_SelectedTerrainLayer so that it allows selecting null TerrainLayers (like those deleted from Assets).
+        private int m_SelectedTerrainLayerIndex = -1;
+
         [FormerlyPrefKeyAs("Terrain/Texture Paint", "f4")]
         [Shortcut("Terrain/Paint Texture", typeof(TerrainToolShortcutContext))]
         static void SelectShortcut(ShortcutArguments args)
@@ -37,6 +40,11 @@ namespace UnityEditor.Experimental.TerrainAPI
         public override string GetDesc()
         {
             return "Paints the selected material layer onto the terrain texture";
+        }
+
+        public override void OnEnterToolMode()
+        {
+            m_SelectedTerrainLayerIndex = -1;
         }
 
         public override bool OnPaint(Terrain terrain, IOnPaint editContext)
@@ -91,16 +99,19 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             EditorGUILayout.Space();
 
-            int layerIndex = TerrainPaintUtility.FindTerrainLayerIndex(terrain, m_SelectedTerrainLayer);
-            layerIndex = TerrainLayerUtility.ShowTerrainLayersSelectionHelper(terrain, layerIndex);
+            if (m_SelectedTerrainLayerIndex == -1)
+                m_SelectedTerrainLayerIndex = TerrainPaintUtility.FindTerrainLayerIndex(terrain, m_SelectedTerrainLayer);
+
+            m_SelectedTerrainLayerIndex = TerrainLayerUtility.ShowTerrainLayersSelectionHelper(terrain, m_SelectedTerrainLayerIndex);
             EditorGUILayout.Space();
 
             if (EditorGUI.EndChangeCheck())
             {
-                m_SelectedTerrainLayer = layerIndex != -1 ? terrain.terrainData.terrainLayers[layerIndex] : null;
+                m_SelectedTerrainLayer = m_SelectedTerrainLayerIndex != -1 ? terrain.terrainData.terrainLayers[m_SelectedTerrainLayerIndex] : null;
                 Save(true);
             }
 
+            terrain.materialTemplate.SetFloat("_NumLayersCount", terrain.terrainData.terrainLayers.Length);
             TerrainLayerUtility.ShowTerrainLayerGUI(terrain, m_SelectedTerrainLayer, ref m_SelectedTerrainLayerInspector,
                 (m_TemplateMaterialEditor as MaterialEditor)?.customShaderGUI as ITerrainLayerCustomUI);
             EditorGUILayout.Space();

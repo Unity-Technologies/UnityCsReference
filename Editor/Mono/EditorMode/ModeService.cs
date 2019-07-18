@@ -65,18 +65,10 @@ namespace UnityEditor
 
         static ModeService()
         {
-            LoadModes();
+            LoadModes(true);
 
             modeChanged += OnModeChangeMenus;
             modeChanged += OnModeChangeLayouts;
-            EditorApplication.projectWasLoaded += LoadModes;
-        }
-
-        private static void LoadModes()
-        {
-            ScanModes();
-            SetModeIndex(LoadProjectPrefModeIndex());
-            EditorApplication.delayCall += () => RaiseModeChanged(-1, currentIndex);
         }
 
         public static void ChangeModeById(string modeId)
@@ -220,6 +212,51 @@ namespace UnityEditor
             return !string.IsNullOrEmpty(id) && id.All(c => char.IsLetterOrDigit(c) || c == '_' || c == '-' || c == '.');
         }
 
+        internal static string GetDefaultModeLayout(string modeId = null)
+        {
+            var layouts = GetModeDataSection(currentIndex, k_LayoutsSectionName) as IList<object>;
+            if (layouts != null && layouts.Count > 0)
+            {
+                var layoutPath = layouts[0] as string;
+                if (layoutPath != null)
+                {
+                    if (File.Exists(layoutPath))
+                    {
+                        return layoutPath;
+                    }
+                    else
+                    {
+                        Debug.LogWarning("Default Mode Layout: " + layoutPath + " doesn't exists.");
+                    }
+                }
+            }
+            return null;
+        }
+
+        internal static bool HasStartupMode()
+        {
+            return Application.HasARGV("editor-mode");
+        }
+
+        private static void LoadModes(bool checkStartupMode = false)
+        {
+            ScanModes();
+            var currentModeIndex = LoadProjectPrefModeIndex();
+            if (checkStartupMode && HasStartupMode())
+            {
+                var requestEditorMode = Application.GetValueForARGV("editor-mode");
+                var modeIndex = Array.FindIndex(modes, m => m.id == requestEditorMode);
+                if (modeIndex != -1)
+                {
+                    currentModeIndex = modeIndex;
+                    SaveProjectPrefModeIndex(currentModeIndex);
+                }
+            }
+
+            SetModeIndex(currentModeIndex);
+            EditorApplication.delayCall += () => RaiseModeChanged(-1, currentIndex);
+        }
+
         private static void ScanModes()
         {
             var modesData = new Dictionary<string, object> { [k_DefaultModeId] = new Dictionary<string, object> { [k_LabelSectionName] = "Default" } };
@@ -344,6 +381,7 @@ namespace UnityEditor
                     var menuName = JsonUtils.JsonReadString(menu, k_MenuKeyName);
                     var fullMenuName = prefix + menuName;
                     var platform = JsonUtils.JsonReadString(menu, k_MenuKeyPlatform);
+                    var hasExplicitPriority = menu.Contains(k_MenuKeyPriority);
                     priority = JsonUtils.JsonReadInt(menu, k_MenuKeyPriority, priority + 1);
 
                     // Check the menu item platform
@@ -360,7 +398,7 @@ namespace UnityEditor
                             var whitelistedItems = Menu.ExtractSubmenus(fullMenuName);
                             var renamedTo = prefix + JsonUtils.JsonReadString(menu, k_MenuKeyRename, menuName);
                             foreach (var wi in whitelistedItems)
-                                Menu.AddExistingMenuItem(wi.Replace(fullMenuName, renamedTo), wi, priority);
+                                Menu.AddExistingMenuItem(wi.Replace(fullMenuName, renamedTo), wi, hasExplicitPriority ? priority : -1);
                         }
                     }
                     else
@@ -414,28 +452,20 @@ namespace UnityEditor
             if (args.prevIndex == -1)
                 return;
 
-            if (HasCapability(ModeCapability.LayoutSwitching, true))
-            {
-                // Save previous mode layout
-                var prevLayoutPath = Path.Combine(Application.temporaryCachePath, $"{k_ModeLayoutKeyName}-{GetModeId(args.prevIndex)}.wlt");
-                WindowLayout.SaveWindowLayout(prevLayoutPath);
+            if (!HasCapability(ModeCapability.LayoutSwitching, true))
+                return;
 
-                // Load exiting layout if available
-                var modeLayoutPath = Path.Combine(Application.temporaryCachePath, $"{k_ModeLayoutKeyName}-{GetModeId(args.nextIndex)}.wlt");
-                if (File.Exists(modeLayoutPath))
-                {
-                    WindowLayout.LoadWindowLayout(modeLayoutPath, false, false, true);
-                }
-                else
-                {
-                    var layouts = GetModeDataSection(args.nextIndex, k_LayoutsSectionName) as IList<object>;
-                    if (layouts != null && layouts.Count > 0)
-                    {
-                        var layoutPath = layouts[0] as string;
-                        if (layoutPath != null)
-                            WindowLayout.LoadWindowLayout(layoutPath, false, false, true);
-                    }
-                }
+            WindowLayout.SaveCurrentLayoutPerMode(GetModeId(args.prevIndex));
+
+            try
+            {
+                // Load the last valid layout for this mode
+                WindowLayout.LoadDefaultWindowPreferencesEx(true);
+            }
+            catch (Exception)
+            {
+                // Error while loading layout. Load the default layout for current mode.
+                WindowLayout.LoadDefaultLayout();
             }
 
             WindowLayout.ReloadWindowLayoutMenu();

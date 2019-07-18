@@ -33,6 +33,7 @@ namespace UnityEditor
             public static GUIContent workOffline = EditorGUIUtility.TrTextContent("Work Offline");
             public static GUIContent allowAsyncUpdate = EditorGUIUtility.TrTextContent("Allow Async Update");
             public static GUIContent showFailedCheckouts = EditorGUIUtility.TrTextContent("Show Failed Checkouts");
+            public static GUIContent overwriteFailedCheckoutAssets = EditorGUIUtility.TrTextContent("Overwrite Failed Checkout Assets", "When on, assets that can not be checked out will get saved anyway.");
 
             public static GUIContent assetPipeline = EditorGUIUtility.TrTextContent("Asset Pipeline (experimental)");
             public static GUIContent cacheServer = EditorGUIUtility.TrTextContent("Cache Server");
@@ -457,7 +458,10 @@ namespace UnityEditor
                 }
 
                 if (Provider.hasCheckoutSupport)
+                {
                     EditorUserSettings.showFailedCheckout = EditorGUILayout.Toggle(Content.showFailedCheckouts, EditorUserSettings.showFailedCheckout);
+                    EditorUserSettings.overwriteFailedCheckoutAssets = EditorGUILayout.Toggle(Content.overwriteFailedCheckoutAssets, EditorUserSettings.overwriteFailedCheckoutAssets);
+                }
 
                 GUI.enabled = editorEnabled;
 

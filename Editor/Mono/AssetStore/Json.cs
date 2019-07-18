@@ -18,6 +18,7 @@
 
 using System.Collections.Generic;
 using System;
+using System.Globalization;
 using UnityEngine;
 
 namespace UnityEditorInternal
@@ -640,7 +641,7 @@ namespace UnityEditorInternal
 
             try
             {
-                float f = System.Convert.ToSingle(resstr);
+                float f = System.Convert.ToSingle(resstr, CultureInfo.InvariantCulture);
                 return new JSONValue(f);
             }
             catch (Exception)
