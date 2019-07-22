@@ -25,7 +25,9 @@ namespace UnityEngine
             Point,
             Spot,
             Rectangle,
-            Disc
+            Disc,
+            SpotPyramidShape,
+            SpotBoxShape
         }
 
         public enum LightMode : byte
@@ -43,6 +45,12 @@ namespace UnityEngine
             Linear,
             Legacy,
             Undefined
+        }
+
+        public enum AngularFalloffType : byte
+        {
+            LUT,
+            AnalyticAndInnerAngle
         }
 
         // The linear color struct contains 4 values. 3 values are for specifying normalized RGB values, in other words they're between 0 and 1.
@@ -173,6 +181,7 @@ namespace UnityEngine
             public float        coneAngle;
             public float        innerConeAngle;
             public FalloffType  falloff;
+            public AngularFalloffType angularFalloff;
         }
         public struct RectangleLight
         {
@@ -209,6 +218,43 @@ namespace UnityEngine
             public float        radius;
             public FalloffType  falloff;
         }
+        public struct SpotLightBoxShape
+        {
+            // light id
+            public int          instanceID;
+            // shadow
+            public bool         shadow;
+            // light mode
+            public LightMode    mode;
+            // light
+            public Vector3      position;
+            public Quaternion   orientation;
+            public LinearColor  color;
+            public LinearColor  indirectColor;
+            public float        range;
+            //box dimensions
+            public float        width;
+            public float        height;
+        }
+        public struct SpotLightPyramidShape
+        {
+            // light id
+            public int          instanceID;
+            // shadow
+            public bool         shadow;
+            // light mode
+            public LightMode    mode;
+            // light
+            public Vector3      position;
+            public Quaternion   orientation;
+            public LinearColor  color;
+            public LinearColor  indirectColor;
+            public float        range;
+            // pyramid parameters
+            public float        angle;
+            public float        aspectRatio;
+            public FalloffType  falloff;
+        }
 
         // This struct must be kept in sync with its counterpart in LightDataGI.h
         [StructLayout(LayoutKind.Sequential)]
@@ -227,7 +273,9 @@ namespace UnityEngine
             // spot light only
             public float        coneAngle;
             public float        innerConeAngle;
-            // area light parameters (interpretation depends on the type, can affect shadow softness)
+            // area light and box light parameters
+            //for area light (interpretation depends on the type, can affect shadow softness) it is width and height
+            //for box light it is sizeX and sizeY
             public float        shape0;
             public float        shape1;
             // types
@@ -283,7 +331,7 @@ namespace UnityEngine
                 coneAngle      = light.coneAngle;
                 innerConeAngle = light.innerConeAngle;
                 shape0         = light.sphereRadius;
-                shape1         = 0.0f;
+                shape1         = (float)light.angularFalloff;
                 type           = LightType.Spot;
                 mode           = light.mode;
                 shadow         = (byte)(light.shadow ? 1 : 0);
@@ -321,6 +369,42 @@ namespace UnityEngine
                 shape0         = light.radius;
                 shape1         = 0.0f;
                 type           = LightType.Disc;
+                mode           = light.mode;
+                shadow         = (byte)(light.shadow ? 1 : 0);
+                falloff        = light.falloff;
+            }
+
+            public void Init(ref SpotLightBoxShape light)
+            {
+                instanceID     = light.instanceID;
+                color          = light.color;
+                indirectColor  = light.indirectColor;
+                orientation    = light.orientation;
+                position       = light.position;
+                range          = light.range;
+                coneAngle      = 0.0f;
+                innerConeAngle = 0.0f;
+                shape0         = light.width;
+                shape1         = light.height;
+                type           = LightType.SpotBoxShape;
+                mode           = light.mode;
+                shadow         = (byte)(light.shadow ? 1 : 0);
+                falloff        = FalloffType.Undefined;
+            }
+
+            public void Init(ref SpotLightPyramidShape light)
+            {
+                instanceID     = light.instanceID;
+                color          = light.color;
+                indirectColor  = light.indirectColor;
+                orientation    = light.orientation;
+                position       = light.position;
+                range          = light.range;
+                coneAngle      = light.angle;
+                innerConeAngle = 0.0f;
+                shape0         = light.aspectRatio;
+                shape1         = 0.0f;
+                type           = LightType.SpotPyramidShape;
                 mode           = light.mode;
                 shadow         = (byte)(light.shadow ? 1 : 0);
                 falloff        = light.falloff;
@@ -392,9 +476,10 @@ namespace UnityEngine
                 spot.indirectColor = ExtractIndirect(l);
                 spot.range         = l.range;
                 spot.sphereRadius  = l.shadows == LightShadows.Soft ? l.shadowRadius : 0.0f;
-                spot.coneAngle     = l.spotAngle * Mathf.Deg2Rad;
+                spot.coneAngle      = l.spotAngle * Mathf.Deg2Rad;
                 spot.innerConeAngle = ExtractInnerCone(l);
-                spot.falloff       = FalloffType.Legacy;
+                spot.falloff        = FalloffType.Legacy;
+                spot.angularFalloff = AngularFalloffType.LUT;
             }
 
             public static void Extract(Light l, ref RectangleLight rect)
@@ -425,6 +510,21 @@ namespace UnityEngine
                 disc.radius         = l.areaSize.x;
                 disc.falloff        = FalloffType.Legacy;
             }
+
+            /*
+             * Builtin Unity does not support the following light types, so no extraction utility function will be provided.
+             * The following definitions are only here so it doesn't look like they have been forgotten.
+             *
+            public static void Extract(Light l, ref SpotLightBoxShape box)
+            {
+                Debug.Assert(false, "Builtin Unity does not support the LightType.SpotBoxShape.");
+            }
+
+            public static void Extract(Light l, ref SpotLightPyramidShape pyramid)
+            {
+                Debug.Assert(false, "Builtin Unity does not support the LightType.SpotPyramidShape.");
+            }
+            */
         }
 
         public static class Lightmapping
@@ -452,12 +552,12 @@ namespace UnityEngine
             private static readonly RequestLightsDelegate s_DefaultDelegate   = (Light[] requests, NativeArray<LightDataGI> lightsOutput) =>
             {
                 // get all lights in the scene
-                DirectionalLight dir   = new DirectionalLight();
-                PointLight       point = new PointLight();
-                SpotLight        spot  = new SpotLight();
-                RectangleLight   rect = new RectangleLight();
-                DiscLight        disc = new DiscLight();
-                LightDataGI      ld    = new LightDataGI();
+                DirectionalLight    dir    = new DirectionalLight();
+                PointLight          point  = new PointLight();
+                SpotLight           spot   = new SpotLight();
+                RectangleLight      rect   = new RectangleLight();
+                DiscLight           disc   = new DiscLight();
+                LightDataGI         ld     = new LightDataGI();
                 for (int i = 0; i < requests.Length; i++)
                 {
                     Light l = requests[i];

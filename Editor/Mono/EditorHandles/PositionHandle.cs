@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor.Snap;
 using UnityEngine;
 
 namespace UnityEditor
@@ -320,7 +321,7 @@ namespace UnityEditor
                     s_DoPositionHandle_ArrowCapConeOffset = isHot
                         ? rotation * Vector3.Scale(Vector3.Scale(axisVector, param.axisOffset), s_DoPositionHandle_AxisHandlesOctant)
                         : Vector3.zero;
-                    position = Slider(ids[i], position, offset, dir, size * param.axisSize[i], DoPositionHandle_ArrowCap, GridSnapping.active ? 0f : SnapSettings.move[i]);
+                    position = Slider(ids[i], position, offset, dir, size * param.axisSize[i], DoPositionHandle_ArrowCap, GridSnapping.active ? 0f : EditorSnapSettings.move[i]);
                 }
             }
 
@@ -329,13 +330,13 @@ namespace UnityEditor
             {
                 color = ToActiveColorSpace(centerColor);
                 GUI.SetNextControlName("FreeMoveAxis");
-                position = FreeMoveHandle(ids.xyz, position, rotation, size * kFreeMoveHandleSizeFactor, GridSnapping.active ? Vector3.zero : SnapSettings.move, RectangleHandleCap);
+                position = FreeMoveHandle(ids.xyz, position, rotation, size * kFreeMoveHandleSizeFactor, GridSnapping.active ? Vector3.zero : EditorSnapSettings.move, RectangleHandleCap);
             }
-
-            color = temp;
 
             if (GridSnapping.active)
                 position = GridSnapping.Snap(position);
+
+            color = temp;
 
             return position;
         }
@@ -438,7 +439,7 @@ namespace UnityEditor
                 axis1, axis2,
                 handleSize * 0.5f,
                 RectangleHandleCap,
-                GridSnapping.active ? Vector2.zero : new Vector2(SnapSettings.move[axis1index], SnapSettings.move[axis2index]),
+                GridSnapping.active ? Vector2.zero : new Vector2(EditorSnapSettings.move[axis1index], EditorSnapSettings.move[axis2index]),
                 false);
 
             Handles.color = prevColor;

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
 
@@ -17,6 +18,9 @@ namespace UnityEditor.Presets
             public static GUIContent presetType = EditorGUIUtility.TrTextContent("Preset Type", "The Object type this Preset can be applied to.");
             public static GUIStyle inspectorBig = new GUIStyle(EditorStyles.inspectorBig);
             public static GUIStyle centerStyle = new GUIStyle() { alignment = TextAnchor.MiddleCenter };
+
+            public static GUIContent addToDefault = EditorGUIUtility.TrTextContent("Add to {0} default", "The Preset will be added first in the default list with an empty filter.");
+            public static GUIContent removeFromDefault = EditorGUIUtility.TrTextContent("Remove from {0} default", "All entry using this Preset will be removed from the default list.");
 
             static Style()
             {
@@ -104,21 +108,35 @@ namespace UnityEditor.Presets
 
         internal override void OnHeaderControlsGUI()
         {
-            using (new EditorGUI.DisabledScope(targets.Length != 1 || Preset.IsPresetExcludedFromDefaultPresets(target as Preset)))
+            var preset = target as Preset;
+            if (preset != null)
             {
-                var preset = (Preset)target;
-                if (Preset.GetDefaultForPreset(preset) == preset)
+                using (new EditorGUI.DisabledScope(targets.Length != 1 || !preset.GetPresetType().IsValidDefault()))
                 {
-                    if (GUILayout.Button(string.Format("Remove from {0} Default", preset.GetTargetTypeName()), EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                    var defaultList = Preset.GetDefaultPresetsForType(preset.GetPresetType()).Where(d => d.m_Preset == preset);
+                    if (defaultList.Any())
                     {
-                        Preset.RemoveFromDefault(preset);
+                        if (GUILayout.Button(GUIContent.Temp(string.Format(Style.removeFromDefault.text, preset.GetTargetTypeName()), Style.removeFromDefault.tooltip), EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                        {
+                            Undo.RecordObject(Resources.FindObjectsOfTypeAll<PresetManager>().First(), "Preset Manager");
+                            Preset.RemoveFromDefault(preset);
+                            Undo.FlushUndoRecordObjects();
+                        }
                     }
-                }
-                else
-                {
-                    if (GUILayout.Button(string.Format("Set as {0} Default", preset.GetTargetTypeName()), EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                    else
                     {
-                        Preset.SetAsDefault(preset);
+                        if (GUILayout.Button(GUIContent.Temp(string.Format(Style.addToDefault.text, preset.GetTargetTypeName()), Style.addToDefault.tooltip), EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                        {
+                            Undo.RecordObject(Resources.FindObjectsOfTypeAll<PresetManager>().First(), "Preset Manager");
+                            var list = Preset.GetDefaultPresetsForType(preset.GetPresetType()).ToList();
+                            list.Insert(0, new DefaultPreset()
+                            {
+                                m_Filter = string.Empty,
+                                m_Preset = preset
+                            });
+                            Preset.SetDefaultPresetsForType(preset.GetPresetType(), list.ToArray());
+                            Undo.FlushUndoRecordObjects();
+                        }
                     }
                 }
             }
@@ -127,9 +145,9 @@ namespace UnityEditor.Presets
         internal override void OnHeaderTitleGUI(Rect titleRect, string header)
         {
             if (m_InspectedTypes.Count > 1)
-                header = string.Format("Multiple Types Presets ({0})", targets.Length);
+                header = $"Multiple Types Presets ({targets.Length})";
             else if (targets.Length > 1)
-                header = string.Format("{0} Presets ({1})", m_SelectedPresetTypeName, targets.Length);
+                header = $"{m_SelectedPresetTypeName} Presets ({targets.Length})";
 
             base.OnHeaderTitleGUI(titleRect, header);
         }
@@ -141,31 +159,54 @@ namespace UnityEditor.Presets
 
         void GenerateInternalEditor()
         {
-            Object[] objs = new Object[targets.Length];
-            for (var index = 0; index < targets.Length; index++)
+            if (m_InternalEditor == null)
             {
-                var p = (Preset)targets[index];
-                ReferenceCount reference = null;
-                if (!s_References.TryGetValue(p.GetInstanceID(), out reference))
+                Object[] objs = new Object[targets.Length];
+                for (var index = 0; index < targets.Length; index++)
                 {
-                    reference = new ReferenceCount()
+                    var p = (Preset)targets[index];
+                    ReferenceCount reference = null;
+                    if (!s_References.TryGetValue(p.GetInstanceID(), out reference))
                     {
-                        count = 0,
-                        reference = p.GetReferenceObject()
-                    };
-                    if (reference.reference == null)
-                    {
-                        // fast exit on NULL targets as we do not support their inspector in Preset.
-                        m_NotSupportedEditorName = p.GetTargetTypeName();
-                        return;
+                        reference = new ReferenceCount()
+                        {
+                            count = 0,
+                            reference = p.GetReferenceObject()
+                        };
+                        if (reference.reference == null)
+                        {
+                            // fast exit on NULL targets as we do not support their inspector in Preset.
+                            m_NotSupportedEditorName = p.GetTargetTypeName();
+                            return;
+                        }
+                        s_References.Add(p.GetInstanceID(), reference);
+                        m_PresetsInstanceIds.Add(p.GetInstanceID());
                     }
-                    s_References.Add(p.GetInstanceID(), reference);
-                    m_PresetsInstanceIds.Add(p.GetInstanceID());
+                    reference.count++;
+                    objs[index] = reference.reference;
                 }
-                reference.count++;
-                objs[index] = reference.reference;
+                m_InternalEditor = CreateEditor(objs);
             }
-            m_InternalEditor = CreateEditor(objs);
+            else
+            {
+                //Coming back from an assembly reload... our references are probably broken and we need to fix them.
+                for (var index = 0; index < targets.Length; index++)
+                {
+                    var instanceID = targets[index].GetInstanceID();
+                    ReferenceCount reference = null;
+                    if (!s_References.TryGetValue(instanceID, out reference))
+                    {
+                        reference = new ReferenceCount()
+                        {
+                            count = 0,
+                            reference = m_InternalEditor.targets[index]
+                        };
+                        s_References.Add(instanceID, reference);
+                    }
+                    reference.count++;
+                }
+            }
+
             m_InternalEditor.firstInspectedEditor = true;
         }
 
@@ -173,22 +214,29 @@ namespace UnityEditor.Presets
         {
             if (m_InternalEditor != null)
             {
-                DestroyImmediate(m_InternalEditor);
+                // Do not destroy anything if we are just reloading assemblies or re-importing.
+                bool shouldDestroyEverything = Unsupported.IsDestroyScriptableObject(this);
+                if (shouldDestroyEverything)
+                    DestroyImmediate(m_InternalEditor);
+
                 // On Destroy, look for instances id instead of target because they may already be null.
                 for (var index = 0; index < m_PresetsInstanceIds.Count; index++)
                 {
                     var instanceId = m_PresetsInstanceIds[index];
                     if (--s_References[instanceId].count == 0)
                     {
-                        if (s_References[instanceId].reference is Component)
+                        if (shouldDestroyEverything)
                         {
-                            var go = ((Component)s_References[instanceId].reference).gameObject;
-                            go.hideFlags = HideFlags.None; // make sure we remove the don't destroy flag before calling destroy
-                            DestroyImmediate(go);
-                        }
-                        else
-                        {
-                            DestroyImmediate(s_References[instanceId].reference);
+                            if (s_References[instanceId].reference is Component)
+                            {
+                                var go = ((Component)s_References[instanceId].reference).gameObject;
+                                go.hideFlags = HideFlags.None; // make sure we remove the don't destroy flag before calling destroy
+                                DestroyImmediate(go);
+                            }
+                            else
+                            {
+                                DestroyImmediate(s_References[instanceId].reference);
+                            }
                         }
                         s_References.Remove(instanceId);
                     }

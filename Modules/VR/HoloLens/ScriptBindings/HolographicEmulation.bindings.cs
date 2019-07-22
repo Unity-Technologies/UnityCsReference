@@ -34,7 +34,7 @@ namespace UnityEngine.XR.WSA
     };
 
     [NativeHeader("Modules/VR/HoloLens/PerceptionRemoting.h")]
-    internal enum RemoteDeviceVersion
+    public enum RemoteDeviceVersion
     {
         V1,
         V2
@@ -70,5 +70,16 @@ namespace UnityEngine.XR.WSA
         internal static extern void SetEnableVideo(bool enable);
 
         internal static extern void SetVideoEncodingParameters(int maxBitRate);
+    }
+}
+
+namespace UnityEngineInternal.XR.WSA
+{
+    [NativeHeader("Modules/VR/HoloLens/PerceptionRemoting.h")]
+    [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+    public partial class RemoteSpeechAccess
+    {
+        public static extern void EnableRemoteSpeech(UnityEngine.XR.WSA.RemoteDeviceVersion remoteDeviceVersion);
+        public static extern void DisableRemoteSpeech();
     }
 }

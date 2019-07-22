@@ -4,21 +4,23 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections;
-using System.Linq;
 using System.Text;
-using UnityEditor.AnimatedValues;
-using UnityEditor.SceneManagement;
 using UnityEditorInternal;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using UnityEngineInternal;
 using Object = UnityEngine.Object;
 using UnityEngine.Rendering;
+using UnityEditor.Rendering;
 using System.Globalization;
 
 namespace UnityEditor
 {
+    public abstract class LightingWindowEnvironmentSection
+    {
+        public virtual void OnEnable() {}
+        public virtual void OnDisable() {}
+        public virtual void OnInspectorGUI() {}
+    }
+
     internal class LightingWindowLightingTab
     {
         class Styles
@@ -41,13 +43,45 @@ namespace UnityEditor
             public static readonly float ButtonWidth = 90;
         }
 
+        class DefaultEnvironmentSectionExtension : LightingWindowEnvironmentSection
+        {
+            Editor m_EnvironmentEditor;
+
+            Editor environmentEditor
+            {
+                get
+                {
+                    if (m_EnvironmentEditor == null || m_EnvironmentEditor.target == null)
+                    {
+                        Editor.CreateCachedEditor(RenderSettings.GetRenderSettings(), typeof(LightingEditor), ref m_EnvironmentEditor);
+                    }
+
+                    return m_EnvironmentEditor;
+                }
+            }
+
+            public override void OnInspectorGUI()
+            {
+                environmentEditor.OnInspectorGUI();
+            }
+
+            public override void OnDisable()
+            {
+                if (m_EnvironmentEditor != null)
+                {
+                    Object.DestroyImmediate(m_EnvironmentEditor);
+                    m_EnvironmentEditor = null;
+                }
+            }
+        }
+
         enum BakeMode
         {
             BakeReflectionProbes = 0,
             Clear = 1
         }
 
-        Editor          m_LightingEditor;
+        LightingWindowEnvironmentSection m_EnvironmentSection;
         Editor          m_FogEditor;
         Editor          m_OtherRenderingEditor;
         SavedBool       m_ShowOtherSettings;
@@ -62,6 +96,8 @@ namespace UnityEditor
         SerializedProperty m_WorkflowMode;
         SerializedProperty m_EnabledBakedGI;
 
+        Type m_SRP = GraphicsSettings.currentRenderPipeline?.GetType();
+
         Object renderSettings
         {
             get
@@ -73,16 +109,29 @@ namespace UnityEditor
             }
         }
 
-        Editor lightingEditor
+        LightingWindowEnvironmentSection environmentEditor
         {
             get
             {
-                if (m_LightingEditor == null || m_LightingEditor.target == null)
+                var currentSRP = GraphicsSettings.currentRenderPipeline?.GetType();
+                if (m_EnvironmentSection != null && m_SRP != currentSRP)
                 {
-                    Editor.CreateCachedEditor(renderSettings, typeof(LightingEditor), ref m_LightingEditor);
+                    m_SRP = currentSRP;
+                    m_EnvironmentSection.OnDisable();
+                    m_EnvironmentSection = null;
                 }
 
-                return m_LightingEditor;
+                if (m_EnvironmentSection == null)
+                {
+                    Type extensionType = RenderPipelineEditorUtility.FetchFirstCompatibleTypeUsingScriptableRenderPipelineExtension<LightingWindowEnvironmentSection>();
+                    if (extensionType == null)
+                        extensionType = typeof(DefaultEnvironmentSectionExtension);
+                    LightingWindowEnvironmentSection extension = (LightingWindowEnvironmentSection)Activator.CreateInstance(extensionType);
+                    m_EnvironmentSection = extension;
+                    m_EnvironmentSection.OnEnable();
+                }
+
+                return m_EnvironmentSection;
             }
         }
 
@@ -127,16 +176,17 @@ namespace UnityEditor
         public void OnDisable()
         {
             m_BakeSettings.OnDisable();
+            environmentEditor.OnDisable();
 
             ClearCachedProperties();
         }
 
         void ClearCachedProperties()
         {
-            if (m_LightingEditor != null)
+            if (m_EnvironmentSection != null)
             {
-                Object.DestroyImmediate(m_LightingEditor);
-                m_LightingEditor = null;
+                m_EnvironmentSection.OnDisable();
+                m_EnvironmentSection = null;
             }
             if (m_FogEditor != null)
             {
@@ -209,7 +259,7 @@ namespace UnityEditor
             m_ScrollPosition = EditorGUILayout.BeginScrollView(m_ScrollPosition);
 
             if (!SupportedRenderingFeatures.active.overridesEnvironmentLighting)
-                lightingEditor.OnInspectorGUI();
+                environmentEditor.OnInspectorGUI();
 
             m_BakeSettings.OnGUI();
             OtherSettingsGUI();

@@ -86,6 +86,15 @@ namespace UnityEngine.Profiling
             set;
         }
 
+        public extern static bool enableAllocationCallstacks
+        {
+            [NativeMethod(Name = "ProfilerBindings::IsAllocationCallstackCaptureEnabled", IsFreeFunction = true)]
+            get;
+            [NativeMethod(Name = "ProfilerBindings::SetAllocationCallstackCaptureEnabled", IsFreeFunction = true)]
+            set;
+        }
+
+
         [Conditional("ENABLE_PROFILER")]
         [FreeFunction("profiler_set_area_enabled")]
         public extern static void SetAreaEnabled(ProfilerArea area, bool enabled);

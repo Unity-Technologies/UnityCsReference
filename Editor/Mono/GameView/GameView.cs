@@ -38,7 +38,7 @@ namespace UnityEditor
         const int kScaleSliderMinWidth = 30;
         const int kScaleSliderMaxWidth = 150;
         const int kScaleSliderSnapThreshold = 4;
-        const int kScaleLabelWidth = 30;
+        const int kScaleLabelWidth = 35;
         readonly Vector2 kWarningSize = new Vector2(400f, 140f);
         readonly Color kClearBlack = new Color(0, 0 , 0, 0);
         const float kMinScale = 1f;
@@ -102,7 +102,7 @@ namespace UnityEditor
 
             static Styles()
             {
-                gameViewBackgroundStyle = (GUIStyle)"GameViewBackground";
+                gameViewBackgroundStyle = "GameViewBackground";
                 renderdocContent = EditorGUIUtility.TrIconContent("renderdoc", UnityEditor.RenderDocUtil.openInRenderDocLabel);
             }
         };
@@ -251,9 +251,7 @@ namespace UnityEditor
 
         void InitializeZoomArea()
         {
-            m_ZoomArea = new ZoomableArea(true, false);
-            m_ZoomArea.uniformScale = true;
-            m_ZoomArea.upDirection = ZoomableArea.YDirection.Negative;
+            m_ZoomArea = new ZoomableArea(true, false) {uniformScale = true, upDirection = ZoomableArea.YDirection.Negative};
         }
 
         public void OnEnable()
@@ -573,8 +571,7 @@ namespace UnityEditor
         {
             switch (mode)
             {
-                case 0:
-                default:
+                default: // or 0
                     UnityEngine.XR.XRSettings.gameViewRenderMode = UnityEngine.XR.GameViewRenderMode.LeftEye;
                     break;
                 case 1:

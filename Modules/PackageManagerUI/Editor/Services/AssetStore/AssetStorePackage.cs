@@ -94,5 +94,10 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 m_State = PackageState.Error;
             }
         }
+
+        public IPackage Clone()
+        {
+            return (IPackage)MemberwiseClone();
+        }
     }
 }

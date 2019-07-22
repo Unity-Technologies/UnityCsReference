@@ -21,16 +21,16 @@ namespace Unity.Jobs.LowLevel.Unsafe
         }
     }
 
+    [StructLayout(LayoutKind.Sequential)]
     public unsafe struct JobRanges
     {
-        public int  BatchSize;
-        public int  NumJobs;
-        public int  TotalIterationCount;
-        public int  NumPhases;
-        public int  IndicesPerPhase;
+        internal int    BatchSize;
+        internal int    NumJobs;
+        public   int    TotalIterationCount;
+        internal int    NumPhases;
 
-        public IntPtr StartEndIndex;
-        public IntPtr PhaseData;
+        internal IntPtr StartEndIndex;
+        internal IntPtr PhaseData;
     }
 
     public enum ScheduleMode

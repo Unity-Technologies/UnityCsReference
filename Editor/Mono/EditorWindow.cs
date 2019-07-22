@@ -793,6 +793,12 @@ namespace UnityEditor
             return win;
         }
 
+        public static bool HasOpenInstances<T>() where T : UnityEditor.EditorWindow
+        {
+            UnityEngine.Object[] wins = Resources.FindObjectsOfTypeAll(typeof(T));
+            return wins != null && wins.Length > 0;
+        }
+
         // Focuses the first found EditorWindow of specified type if it is open.
         public static void FocusWindowIfItsOpen(System.Type t)
         {

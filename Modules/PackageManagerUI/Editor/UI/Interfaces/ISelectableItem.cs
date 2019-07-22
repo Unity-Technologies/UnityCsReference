@@ -8,7 +8,6 @@ namespace UnityEditor.PackageManager.UI
 {
     internal interface ISelectableItem
     {
-        void RefreshSelection();
         IPackage package { get; }
         IPackageVersion targetVersion { get; }
         VisualElement element { get; }

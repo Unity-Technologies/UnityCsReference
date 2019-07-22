@@ -163,8 +163,6 @@ namespace UnityEditor
             public readonly GUIContent treeBillboardDistance = EditorGUIUtility.TrTextContent("Billboard Start", "The distance (from camera) at which 3D tree objects will be replaced by billboard images. For SpeedTree trees this parameter is controlled by the LOD group settings.");
             public readonly GUIContent treeCrossFadeLength = EditorGUIUtility.TrTextContent("Fade Length", "Distance over which trees will transition between 3D objects and billboards. For SpeedTree trees this parameter is controlled by the LOD group settings.");
             public readonly GUIContent treeMaximumFullLODCount = EditorGUIUtility.TrTextContent("Max Mesh Trees", "The maximum number of visible trees that will be represented as solid 3D meshes. Beyond this limit, trees will be replaced with billboards. For SpeedTree trees this parameter is controlled by the LOD group settings.");
-            public readonly GUIContent physics = EditorGUIUtility.TrTextContent("Physics (On Terrain Data)");
-            public readonly GUIContent thickness = EditorGUIUtility.TrTextContent("Thickness", "How much the terrain collision volume should extend along the negative Y-axis. Objects are considered colliding with the terrain from the surface to a depth equal to the thickness. This helps prevent high-speed moving objects from penetrating into the terrain without using expensive continuous collision detection.");
             public readonly GUIContent grassWindSettings = EditorGUIUtility.TrTextContent("Wind Settings for Grass (On Terrain Data)");
             public readonly GUIContent wavingGrassStrength = EditorGUIUtility.TrTextContent("Speed", "The speed of the wind as it blows grass.");
             public readonly GUIContent wavingGrassSpeed = EditorGUIUtility.TrTextContent("Size", "The size of the 'ripples' on grassy areas as the wind blows over them.");
@@ -174,6 +172,8 @@ namespace UnityEditor
             public readonly GUIContent detailResolutionWarning = EditorGUIUtility.TrTextContent("You may reduce CPU draw call overhead by setting the detail resolution per patch as high as possible, relative to detail resolution.");
             public readonly GUIContent holesSettings = EditorGUIUtility.TrTextContent("Holes Settings (On Terrain Data)");
             public readonly GUIContent holesCompressionToggle = EditorGUIUtility.TrTextContent("Compress Holes Texture", "If enabled, holes texture will be compressed at runtime if compression supported.");
+
+            public static readonly GUIContent renderingLayerMask = EditorGUIUtility.TrTextContent("Rendering Layer Mask", "Mask that can be used with SRP DrawRenderers command to filter renderers outside of the normal layering system.");
         }
         static Styles styles;
 
@@ -1207,7 +1207,6 @@ namespace UnityEditor
 
         private bool m_ShowBasicTerrainSettings = true;
         private bool m_ShowTreeAndDetailSettings = true;
-        private bool m_ShowPhysicsSettings = true;
         private bool m_ShowGrassWindSettings = true;
 
         private static void MarkDirty(Terrain terrain)
@@ -1409,29 +1408,6 @@ namespace UnityEditor
             EditorGUILayout.EndFoldoutHeaderGroup();
             EditorGUILayout.Space();
 
-            m_ShowPhysicsSettings = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowPhysicsSettings, styles.physics);
-
-            if (m_ShowPhysicsSettings)
-            {
-                ++EditorGUI.indentLevel;
-                EditorGUI.BeginChangeCheck();
-                var thickness = EditorGUILayout.FloatField(styles.thickness, terrainData.thickness);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    Undo.RecordObject(terrainData, "TerrainData property change");
-                    terrainData.thickness = thickness;
-
-                    // In cases where terrain data is embedded in the scene (i.e. it's not an asset),
-                    // we need to dirty the scene if terrainData has changed.
-                    if (!EditorUtility.IsPersistent(terrainData) && !EditorApplication.isPlaying)
-                        SceneManagement.EditorSceneManager.MarkSceneDirty(m_Terrain.gameObject.scene);
-                }
-                --EditorGUI.indentLevel;
-            }
-
-            EditorGUILayout.EndFoldoutHeaderGroup();
-            EditorGUILayout.Space();
-
             m_ShowGrassWindSettings = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowGrassWindSettings, styles.grassWindSettings);
 
             if (m_ShowGrassWindSettings)
@@ -1471,6 +1447,40 @@ namespace UnityEditor
             EditorGUILayout.Space();
 
             RenderLightingFields();
+
+            ShowRenderingLayerMask();
+        }
+
+        // this is a non-serializedProperty version of RendererEditorBase.DrawRenderingLayer()
+        // if we switch to serializedProperty multi-edit, we can just use that function directly instead
+        private void ShowRenderingLayerMask(bool useMiniStyle = false)
+        {
+            RenderPipelineAsset srpAsset = GraphicsSettings.renderPipelineAsset;
+
+            var layerNames = srpAsset.renderingLayerMaskNames;
+            if (layerNames == null)
+                layerNames = RendererEditorBase.defaultRenderingLayerNames;
+
+            int mask = (int)m_Terrain.renderingLayerMask;
+
+            EditorGUI.BeginChangeCheck();
+
+            var rect = EditorGUILayout.GetControlRect();
+
+            if (useMiniStyle)
+            {
+                rect = ModuleUI.PrefixLabel(rect, Styles.renderingLayerMask);
+                mask = EditorGUI.MaskField(rect, GUIContent.none, mask, layerNames, ParticleSystemStyles.Get().popup);
+            }
+            else
+                mask = EditorGUI.MaskField(rect, Styles.renderingLayerMask, mask, layerNames);
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(m_Terrain, "Set Terrain rendering layer mask");
+                m_Terrain.renderingLayerMask = (UInt32)mask;
+                EditorUtility.SetDirty(this);
+            }
         }
 
         public void ShowPaint()

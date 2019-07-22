@@ -159,6 +159,19 @@ namespace UnityEngine
             get { EventType t = type; return t == EventType.ScrollWheel; }
         }
 
+        // Is this event comes from a direct manipulation device?
+        // A direct manipulation device is a device where the user directly manipulates elements
+        // (like a touch screen), without any cursor acting as an intermediate.
+        internal bool isDirectManipulationDevice
+        {
+            [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+            get
+            {
+                return pointerType == PointerType.Pen
+                    || pointerType == PointerType.Touch;
+            }
+        }
+
         // Create a keyboard event.
         public static Event KeyboardEvent(string key)
         {

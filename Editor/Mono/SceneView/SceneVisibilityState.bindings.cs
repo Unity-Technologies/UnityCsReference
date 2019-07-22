@@ -30,21 +30,31 @@ namespace UnityEditor
 
         public static extern bool IsHierarchyHidden([NotNull] GameObject gameObject);
 
+        public static extern void SetGameObjectPickingDisabled([NotNull] GameObject gameObject, bool pickingDisabled, bool includeChildren);
+
+        public static extern void SetGameObjectsPickingDisabled([NotNull] GameObject[] gameObjects, bool pickingDisabled, bool includeChildren);
+
+        public static extern bool IsGameObjectPickingDisabled([NotNull] GameObject gameObject);
+
+        public static extern bool IsHierarchyPickingDisabled([NotNull] GameObject gameObject);
         public static extern bool AreAllChildrenVisible([NotNull] GameObject gameObject);
+        public static extern bool IsPickingEnabledOnAllChildren([NotNull] GameObject gameObject);
 
         public static extern bool AreAllChildrenHidden([NotNull] GameObject gameObject);
+        public static extern bool IsPickingDisabledOnAllChildren([NotNull] GameObject gameObject);
 
         public static extern void ShowScene(Scene scene);
 
         public static extern void HideScene(Scene scene);
 
+        public static extern void EnablePicking(Scene scene);
+
+        public static extern void DisablePicking(Scene scene);
+
         public static extern bool HasHiddenGameObjects(Scene scene);
+        public static extern bool ContainsGameObjectsWithPickingDisabled(Scene scene);
 
         public static extern void ClearScene(Scene scene);
-
-        public static extern void SetSceneIsolation(Scene scene, bool isolating);
-
-        public static extern void ClearIsolation();
 
         public static extern void OnSceneSaving(Scene scene, string scenePath);
 
@@ -55,6 +65,7 @@ namespace UnityEditor
         public static extern void OnSceneSaved(Scene scene);
 
         public static extern int GetHiddenObjectCount();
+        public static extern int GetPickingDisabledObjectCount();
         public static extern void SetPrefabStageScene(Scene scene);
 
         public static Action internalStructureChanged;
@@ -65,8 +76,8 @@ namespace UnityEditor
             internalStructureChanged?.Invoke();
         }
 
-        public static extern bool active { get; set; }
-        public static extern bool prefabStageIsolated { get; set; }
-        public static extern bool mainStageIsolated { get; set; }
+        public static extern bool visibilityActive { get; set; }
+        public static extern bool pickingActive { get; set; }
+        public static extern bool isolation { get; set; }
     }
 }

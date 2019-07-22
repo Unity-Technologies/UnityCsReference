@@ -129,6 +129,10 @@ namespace UnityEngine.UIElements
                 if (evt.eventTypeId == MouseDownEvent.TypeId())
                 {
                     Focus();
+
+                    // If we click on a focusable element, that means the event was handled and we should not send it to the rootIMGUIContainer
+                    if (this.canGrabFocus)
+                        evt.doNotSendToRootIMGUIContainer = true;
                 }
 
                 focusController?.SwitchFocusOnEvent(evt);

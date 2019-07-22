@@ -61,7 +61,6 @@ namespace Unity.MPE
                 System.Threading.Thread.Sleep(10);
             }
 
-            Console.WriteLine("[UMPE] Connect tries: " + (100 - tickCount) + 1);
             EditorApplication.update += Tick;
         }
 
@@ -112,7 +111,6 @@ namespace Unity.MPE
 
         public static void Clear()
         {
-            s_Events = new Dictionary<string, List<OnHandler>>();
             s_Requests = new Dictionary<string, RequestData>();
         }
 
@@ -120,8 +118,13 @@ namespace Unity.MPE
 
         public static void Emit(string eventType, params object[] args)
         {
+            Emit(-1, eventType, args);
+        }
+
+        public static void Emit(int targetId, string eventType, params object[] args)
+        {
             const bool notifyWildcard = true;
-            var req = CreateRequestMsg(kEvent, eventType, -1, args);
+            var req = CreateRequestMsg(kEvent, eventType, targetId, args);
 
             // TODO: do we want to ensure that all local listeners received json as payload? This means we could recycle handlers... If so we need to serialize/deserialize... ugly. real ugly...
             var reqStr = Json.Serialize(req);
@@ -194,7 +197,7 @@ namespace Unity.MPE
         [RequiredByNativeCode]
         private static void IncomingEvent(string eventMsg)
         {
-            Console.WriteLine("[EventService] " + eventMsg);
+            //Console.WriteLine("[UMPE] " + eventMsg);
             var msg = Json.Deserialize(eventMsg) as Dictionary<string, object>;
             if (msg == null)
             {
@@ -346,7 +349,7 @@ namespace Unity.MPE
             return s_Events.TryGetValue(eventType, out handlers) && handlers.Count > 0;
         }
 
-        private static void Tick()
+        internal static void Tick()
         {
             if (!IsConnected)
                 return;
@@ -359,7 +362,6 @@ namespace Unity.MPE
                 foreach (var request in pendingRequests)
                 {
                     var elapsedTime = new TimeSpan(now - request.offerStartTime).TotalMilliseconds;
-                    Console.WriteLine($"[UMPE] Ticking {request.eventType} {elapsedTime} ms");
                     if (request.isAcknowledged)
                         continue;
                     if (elapsedTime > request.timeoutInMs)
@@ -396,8 +398,9 @@ namespace Unity.MPE
                         handler(eventType, data);
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    Debug.LogException(ex);
                 }
             }
 

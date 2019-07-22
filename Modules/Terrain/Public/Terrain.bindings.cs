@@ -202,6 +202,8 @@ namespace UnityEngine
         extern public Terrain rightNeighbor { get; }
         extern public Terrain topNeighbor { get; }
         extern public Terrain bottomNeighbor { get; }
+
+        extern public UInt32 renderingLayerMask { get; set; }
     }
 
     public static partial class TerrainExtensions

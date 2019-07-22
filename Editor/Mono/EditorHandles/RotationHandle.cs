@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor.Snap;
 using UnityEngine;
 
 namespace UnityEditor
@@ -150,6 +151,7 @@ namespace UnityEditor
             }
 
             var radiusOfAxesHandles = -1f;
+
             for (var i = 0; i < 3; ++i)
             {
                 if (!param.ShouldShow(i))
@@ -163,7 +165,7 @@ namespace UnityEditor
                 var radius = size * param.axisSize[i];
                 radiusOfAxesHandles = Mathf.Max(radius, radiusOfAxesHandles);
 
-                rotation = UnityEditorInternal.Disc.Do(ids[i], rotation, position, rotation * axisDir, radius, true, SnapSettings.rotation, param.enableRayDrag, true, k_RotationPieColor);
+                rotation = UnityEditorInternal.Disc.Do(ids[i], rotation, position, rotation * axisDir, radius, true, EditorSnapSettings.rotate, param.enableRayDrag, true, k_RotationPieColor);
             }
 
             if (radiusOfAxesHandles > 0 && evt.type == EventType.Repaint)

@@ -73,6 +73,8 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal bool doNotSendToRootIMGUIContainer { get; set; }
+
         LifeCycleStatus lifeCycleStatus { get; set; }
 
         [Obsolete("Override PreDispatch(IPanel panel) instead.")]

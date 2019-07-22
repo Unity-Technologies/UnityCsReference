@@ -24,24 +24,20 @@ namespace UnityEditor.Experimental
 
             public struct CacheServerCounters
             {
-                public Counter resolveRequests;
-                public Counter resolveReplies;
+                public Counter metadataRequested;
+                public Counter metadataDownloaded;
+                public Counter metadataFailedToDownload;
+                public Counter metadataUploaded;
+                public Counter metadataFailedToUpload;
+                public Counter metadataVersionsDownloaded;
+                public Counter metadataMatched;
 
-                public Counter artifactsRequestedResolved;
-                public Counter artifactsInResolveReplies;
-                public Counter artifactVersionsInResolveReplies;
-                public Counter artifactsMatchedResolveVersion;
-
-                public Counter artifactFilesDownloaded;
                 public Counter artifactsDownloaded;
-
-                public Counter artifactFilesUploaded;
+                public Counter artifactFilesDownloaded;
+                public Counter artifactFilesFailedToDownload;
                 public Counter artifactsUploaded;
-
-                public Counter reliabilityChecks;
-                public Counter reliabilityCheckReportedIndeterminism;
-                public Counter reliabilityCheckReportedNewArtifactVersion;
-                public Counter reliabilityCheckReportedArtifactVersionMatched;
+                public Counter artifactFilesUploaded;
+                public Counter artifactFilesFailedToUpload;
 
                 public Counter connects;
                 public Counter disconnects;

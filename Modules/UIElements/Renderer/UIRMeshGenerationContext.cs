@@ -288,10 +288,10 @@ namespace UnityEngine.UIElements
             mgc.painter.DrawBorder(borderParams);
         }
 
-        public static void Text(this MeshGenerationContext mgc, TextParams textParams)
+        public static void Text(this MeshGenerationContext mgc, TextParams textParams, TextHandle handle)
         {
             if (textParams.font != null)
-                mgc.painter.DrawText(textParams);
+                mgc.painter.DrawText(textParams, handle);
         }
 
         public static Vector2 GetVisualElementRadius(Length length, VisualElement parent)

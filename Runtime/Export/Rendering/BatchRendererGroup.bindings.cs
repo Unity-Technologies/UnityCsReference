@@ -98,15 +98,85 @@ namespace UnityEngine.Rendering
             return arr;
         }
 
+        unsafe public NativeArray<float> GetBatchScalarArray(int batchIndex, string propertyName)
+        {
+            int elementCount = 0;
+
+            var elements = GetBatchScalarArray(batchIndex, propertyName, out elementCount);
+            var arr = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<float>((void*)elements, elementCount, Allocator.Invalid);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref arr, GetBatchArraySafetyHandle(batchIndex, propertyName));
+            return arr;
+        }
+
+        unsafe public NativeArray<Vector4> GetBatchVectorArray(int batchIndex, string propertyName)
+        {
+            int elementCount = 0;
+
+            var elements = GetBatchVectorArray(batchIndex, propertyName, out elementCount);
+            var arr = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector4>((void*)elements, elementCount, Allocator.Invalid);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref arr, GetBatchArraySafetyHandle(batchIndex, propertyName));
+            return arr;
+        }
+
+        unsafe public NativeArray<Matrix4x4> GetBatchMatrixArray(int batchIndex, string propertyName)
+        {
+            int elementCount = 0;
+
+            var elements = GetBatchMatrixArray(batchIndex, propertyName, out elementCount);
+            var arr = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Matrix4x4>((void*)elements, elementCount, Allocator.Invalid);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref arr, GetBatchArraySafetyHandle(batchIndex, propertyName));
+            return arr;
+        }
+
+        unsafe public NativeArray<float> GetBatchScalarArray(int batchIndex, int propertyName)
+        {
+            int elementCount = 0;
+
+            var elements = GetBatchScalarArray_Int(batchIndex, propertyName, out elementCount);
+            var arr = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<float>((void*)elements, elementCount, Allocator.Invalid);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref arr, GetBatchArraySafetyHandle_Int(batchIndex, propertyName));
+            return arr;
+        }
+
+        unsafe public NativeArray<Vector4> GetBatchVectorArray(int batchIndex, int propertyName)
+        {
+            int elementCount = 0;
+
+            var elements = GetBatchVectorArray_Int(batchIndex, propertyName, out elementCount);
+            var arr = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector4>((void*)elements, elementCount, Allocator.Invalid);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref arr, GetBatchArraySafetyHandle_Int(batchIndex, propertyName));
+            return arr;
+        }
+
+        unsafe public NativeArray<Matrix4x4> GetBatchMatrixArray(int batchIndex, int propertyName)
+        {
+            int elementCount = 0;
+
+            var elements = GetBatchMatrixArray_Int(batchIndex, propertyName, out elementCount);
+            var arr = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Matrix4x4>((void*)elements, elementCount, Allocator.Invalid);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref arr, GetBatchArraySafetyHandle_Int(batchIndex, propertyName));
+            return arr;
+        }
+
         extern public void SetBatchBounds(int batchIndex, Bounds bounds);
 
         public extern int GetNumBatches();
         public extern void RemoveBatch(int index);
 
         unsafe extern void* GetBatchMatrices(int batchIndex, out int matrixCount);
-
-
+        unsafe extern void* GetBatchScalarArray(int batchIndex, string propertyName, out int elementCount);
+        unsafe extern void* GetBatchVectorArray(int batchIndex, string propertyName, out int elementCount);
+        unsafe extern void* GetBatchMatrixArray(int batchIndex, string propertyName, out int elementCount);
+        [NativeName("GetBatchScalarArray")]
+        unsafe extern void* GetBatchScalarArray_Int(int batchIndex, int propertyName, out int elementCount);
+        [NativeName("GetBatchVectorArray")]
+        unsafe extern void* GetBatchVectorArray_Int(int batchIndex, int propertyName, out int elementCount);
+        [NativeName("GetBatchMatrixArray")]
+        unsafe extern void* GetBatchMatrixArray_Int(int batchIndex, int propertyName, out int elementCount);
         extern private AtomicSafetyHandle GetMatricesSafetyHandle(int batchIndex);
+        extern private AtomicSafetyHandle GetBatchArraySafetyHandle(int batchIndex, string propertyName);
+        [NativeName("GetBatchArraySafetyHandle")]
+        extern private AtomicSafetyHandle GetBatchArraySafetyHandle_Int(int batchIndex, int propertyName);
         static extern IntPtr Create(BatchRendererGroup group);
         static extern void Destroy(IntPtr groupHandle);
 

@@ -55,7 +55,6 @@ namespace UnityEngine.UIElements.StyleSheets
             {"max-height", StylePropertyID.MaxHeight},
             {"min-width", StylePropertyID.MinWidth},
             {"min-height", StylePropertyID.MinHeight},
-            {"flex", StylePropertyID.Flex},
             {"flex-wrap", StylePropertyID.FlexWrap},
             {"flex-basis", StylePropertyID.FlexBasis},
             {"flex-grow", StylePropertyID.FlexGrow},
@@ -75,7 +74,6 @@ namespace UnityEngine.UIElements.StyleSheets
             {"padding-right", StylePropertyID.PaddingRight},
             {"padding-bottom", StylePropertyID.PaddingBottom},
             {"position", StylePropertyID.Position},
-            {"align-self", StylePropertyID.AlignSelf},
             {"-unity-text-align", StylePropertyID.UnityTextAlign},
             {"-unity-font-style", StylePropertyID.FontStyleAndWeight},
             {"-unity-font", StylePropertyID.Font},
@@ -87,8 +85,9 @@ namespace UnityEngine.UIElements.StyleSheets
             {"background-image", StylePropertyID.BackgroundImage},
             {"-unity-background-scale-mode", StylePropertyID.BackgroundScaleMode},
             {"-unity-background-image-tint-color", StylePropertyID.BackgroundImageTintColor},
-            {"align-items", StylePropertyID.AlignItems},
             {"align-content", StylePropertyID.AlignContent},
+            {"align-items", StylePropertyID.AlignItems},
+            {"align-self", StylePropertyID.AlignSelf},
             {"justify-content", StylePropertyID.JustifyContent},
             {"border-left-color", StylePropertyID.BorderLeftColor},
             {"border-top-color", StylePropertyID.BorderTopColor},
@@ -114,6 +113,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"border-color", StylePropertyID.BorderColor},
             {"border-radius", StylePropertyID.BorderRadius},
             {"border-width", StylePropertyID.BorderWidth},
+            {"flex", StylePropertyID.Flex},
             {"margin", StylePropertyID.Margin},
             {"padding", StylePropertyID.Padding}
         };
@@ -304,8 +304,6 @@ namespace UnityEngine.UIElements.StyleSheets
         {
             string validName;
             s_DeprecatedNames.TryGetValue(name, out validName);
-
-
             return validName ?? name;
         }
 
@@ -321,13 +319,14 @@ namespace UnityEngine.UIElements.StyleSheets
 
         static StylePropertyID GetPropertyID(StyleSheet sheet, StyleRule rule, int index)
         {
-            string name = rule.properties[index].name;
+            var property = rule.properties[index];
+            string name = property.name;
             StylePropertyID id;
 
             name = MapDeprecatedPropertyName(name, sheet.name, rule.line);
             if (!s_NameToIDCache.TryGetValue(name, out id))
             {
-                if (name.StartsWith("--"))
+                if (property.isCustomProperty)
                 {
                     id = StylePropertyID.Custom;
                 }

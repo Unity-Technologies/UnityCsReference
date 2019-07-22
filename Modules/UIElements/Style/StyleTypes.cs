@@ -123,5 +123,20 @@ namespace UnityEngine.UIElements
                     return false;
             }
         }
+
+        internal static StyleKeyword ToStyleKeyword(this StyleValueKeyword styleValueKeyword)
+        {
+            switch (styleValueKeyword)
+            {
+                case StyleValueKeyword.Auto:
+                    return StyleKeyword.Auto;
+                case StyleValueKeyword.None:
+                    return StyleKeyword.None;
+                case StyleValueKeyword.Initial:
+                    return StyleKeyword.Initial;
+            }
+
+            return StyleKeyword.Undefined;
+        }
     }
 }

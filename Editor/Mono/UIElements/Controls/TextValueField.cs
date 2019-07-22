@@ -155,12 +155,12 @@ namespace UnityEditor.UIElements
                         // Here we should update the value, but it will be done when the blur event will be handled...
                         parent.Focus();
                     }
-                    else
+                    else if (!isReadOnly)
                     {
                         hasChanged = true;
                     }
                 }
-                else if (evt.eventTypeId == ExecuteCommandEvent.TypeId())
+                else if (!isReadOnly && evt.eventTypeId == ExecuteCommandEvent.TypeId())
                 {
                     ExecuteCommandEvent commandEvt = evt as ExecuteCommandEvent;
                     string cmdName = commandEvt.commandName;
@@ -207,6 +207,23 @@ namespace UnityEditor.UIElements
                         UpdateValueFromText();
                     }
                 }
+            }
+        }
+    }
+
+    // Derive from BaseFieldTraits in order to not inherit from TextInputBaseField UXML attributes.
+    public class TextValueFieldTraits<TValueType, TValueUxmlAttributeType> : BaseFieldTraits<TValueType, TValueUxmlAttributeType>
+        where TValueUxmlAttributeType : TypedUxmlAttributeDescription<TValueType>, new()
+    {
+        UxmlBoolAttributeDescription m_IsReadOnly = new UxmlBoolAttributeDescription { name = "readonly" };
+
+        public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+        {
+            base.Init(ve, bag, cc);
+            var field = (TextInputBaseField<TValueType>)ve;
+            if (field != null)
+            {
+                field.isReadOnly = m_IsReadOnly.GetValueFromBag(bag, cc);
             }
         }
     }

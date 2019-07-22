@@ -12,6 +12,10 @@ namespace UnityEditor.PackageManager.UI
     {
         static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
         {
+            var windows = UnityEngine.Resources.FindObjectsOfTypeAll<PackageManagerWindow>();
+            if (windows == null || windows.Length == 0)
+                return;
+
             var allUpdatedAssets = importedAssets.Concat(deletedAssets).Concat(movedAssets).Concat(movedFromAssetPaths);
             var packageJsonsUpdated = false;
 
@@ -28,7 +32,7 @@ namespace UnityEditor.PackageManager.UI
             }
 
             if (packageJsonsUpdated)
-                PackageDatabase.instance.Refresh(RefreshOptions.OfflineMode | RefreshOptions.ListInstalled);
+                PageManager.instance.Refresh(RefreshOptions.UpmListOffline);
         }
     }
 }

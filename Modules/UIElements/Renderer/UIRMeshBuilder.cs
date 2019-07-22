@@ -60,6 +60,18 @@ namespace UnityEngine.UIElements.UIR
             else MakeSlicedQuad(ref rectParams, posZ, meshAlloc);
         }
 
+        private static Vertex ConvertTextVertexToUIRVertex(TextCore.MeshInfo info, int index, Vector2 offset)
+        {
+            return new Vertex
+            {
+                position = new Vector3(info.vertices[index].x + offset.x, info.vertices[index].y + offset.y, UIRUtility.k_MeshPosZ),
+                uv = info.uvs0[index],
+                //textParms = info.uvs2[index],
+                tint = info.colors32[index],
+                flags = (float)VertexFlags.IsText
+            };
+        }
+
         private static Vertex ConvertTextVertexToUIRVertex(TextVertex textVertex, Vector2 offset)
         {
             return new Vertex
@@ -67,13 +79,40 @@ namespace UnityEngine.UIElements.UIR
                 position = new Vector3(textVertex.position.x + offset.x, textVertex.position.y + offset.y, UIRUtility.k_MeshPosZ),
                 uv = textVertex.uv0,
                 tint = textVertex.color,
-                flags = (float)VertexFlags.IsText
+                flags = (float)VertexFlags.IsText // same flag for both text engines
             };
         }
 
         private const int k_MaxTextMeshVertices = ushort.MaxValue + 1;
         private const int k_MaxTextMeshIndices = ushort.MaxValue + 1;
         private static readonly int k_MaxTextQuadCount = Math.Min(k_MaxTextMeshVertices / 4, k_MaxTextMeshIndices / 6);
+
+        internal static void MakeText(TextCore.MeshInfo meshInfo, Vector2 offset, AllocMeshData meshAlloc)
+        {
+            int quadCount = meshInfo.vertexCount / 4;
+            if (quadCount > k_MaxTextQuadCount)
+            {
+                Debug.LogError("MakeText: text is too long and generates too many vertices");
+                quadCount = k_MaxTextQuadCount;
+            }
+
+            var mesh = meshAlloc.Allocate((uint)(quadCount * 4), (uint)(quadCount * 6));
+
+            for (int q = 0, v = 0, i = 0; q < quadCount; ++q, v += 4, i += 6)
+            {
+                mesh.SetNextVertex(ConvertTextVertexToUIRVertex(meshInfo, v + 0, offset));
+                mesh.SetNextVertex(ConvertTextVertexToUIRVertex(meshInfo, v + 1, offset));
+                mesh.SetNextVertex(ConvertTextVertexToUIRVertex(meshInfo, v + 2, offset));
+                mesh.SetNextVertex(ConvertTextVertexToUIRVertex(meshInfo, v + 3, offset));
+
+                mesh.SetNextIndex((UInt16)(v + 0));
+                mesh.SetNextIndex((UInt16)(v + 2));
+                mesh.SetNextIndex((UInt16)(v + 1));
+                mesh.SetNextIndex((UInt16)(v + 2));
+                mesh.SetNextIndex((UInt16)(v + 0));
+                mesh.SetNextIndex((UInt16)(v + 3));
+            }
+        }
 
         internal static void MakeText(NativeArray<TextVertex> uiVertices, Vector2 offset, AllocMeshData meshAlloc)
         {
@@ -189,7 +228,7 @@ namespace UnityEngine.UIElements.UIR
         static readonly float[] k_PositionSlicesX = new float[4];
         static readonly float[] k_PositionSlicesY = new float[4];
 
-        private static void MakeSlicedQuad(ref MeshGenerationContextUtils.RectangleParams rectParams, float posZ, AllocMeshData meshAlloc)
+        internal static void MakeSlicedQuad(ref MeshGenerationContextUtils.RectangleParams rectParams, float posZ, AllocMeshData meshAlloc)
         {
             var mesh = meshAlloc.Allocate(16, 9 * 6);
 
@@ -198,17 +237,30 @@ namespace UnityEngine.UIElements.UIR
             if (texture2D != null)
                 pixelsPerPoint = texture2D.pixelsPerPoint;
 
-            float uConversion = pixelsPerPoint / rectParams.texture.width;
-            float vConversion = pixelsPerPoint / rectParams.texture.height;
+            float texWidth = rectParams.texture.width;
+            float texHeight = rectParams.texture.height;
+            float uConversion = pixelsPerPoint / texWidth;
+            float vConversion = pixelsPerPoint / texHeight;
+
+            float leftSlice = Mathf.Max(0.0f, rectParams.leftSlice);
+            float rightSlice = Mathf.Max(0.0f, rectParams.rightSlice);
+            float bottomSlice = Mathf.Max(0.0f, rectParams.bottomSlice);
+            float topSlice = Mathf.Max(0.0f, rectParams.topSlice);
+
+            // Clamp UVs in the [0,1] range
+            float uvLeftSlice = Mathf.Clamp(leftSlice * uConversion, 0.0f, 1.0f);
+            float uvRightSlice = Mathf.Clamp(rightSlice * uConversion, 0.0f, 1.0f);
+            float uvBottomSlice = Mathf.Clamp(bottomSlice * vConversion, 0.0f, 1.0f);
+            float uvTopslice = Mathf.Clamp(topSlice * vConversion, 0.0f, 1.0f);
 
             k_TexCoordSlicesX[0] = rectParams.uv.min.x;
-            k_TexCoordSlicesX[1] = rectParams.uv.min.x + rectParams.leftSlice * uConversion;
-            k_TexCoordSlicesX[2] = rectParams.uv.max.x - rectParams.rightSlice * uConversion;
+            k_TexCoordSlicesX[1] = rectParams.uv.min.x + uvLeftSlice;
+            k_TexCoordSlicesX[2] = rectParams.uv.max.x - uvRightSlice;
             k_TexCoordSlicesX[3] = rectParams.uv.max.x;
 
             k_TexCoordSlicesY[0] = rectParams.uv.max.y;
-            k_TexCoordSlicesY[1] = rectParams.uv.max.y - rectParams.bottomSlice * vConversion;
-            k_TexCoordSlicesY[2] = rectParams.uv.min.y + rectParams.topSlice * vConversion;
+            k_TexCoordSlicesY[1] = rectParams.uv.max.y - uvBottomSlice;
+            k_TexCoordSlicesY[2] = rectParams.uv.min.y + uvTopslice;
             k_TexCoordSlicesY[3] = rectParams.uv.min.y;
 
             var uvRegion = mesh.uvRegion;
@@ -218,14 +270,31 @@ namespace UnityEngine.UIElements.UIR
                 k_TexCoordSlicesY[i] = (rectParams.uv.min.y + rectParams.uv.max.y - k_TexCoordSlicesY[i]) * uvRegion.height + uvRegion.yMin;
             }
 
+            // Prevent overlapping slices
+            float sliceWidth = (leftSlice + rightSlice);
+            if (sliceWidth > rectParams.rect.width)
+            {
+                float rescale = rectParams.rect.width / sliceWidth;
+                leftSlice *= rescale;
+                rightSlice *= rescale;
+            }
+
+            float sliceHeight = (bottomSlice + topSlice);
+            if (sliceHeight > rectParams.rect.height)
+            {
+                float rescale = rectParams.rect.height / sliceHeight;
+                bottomSlice *= rescale;
+                topSlice *= rescale;
+            }
+
             k_PositionSlicesX[0] = rectParams.rect.x;
-            k_PositionSlicesX[1] = rectParams.rect.x + rectParams.leftSlice;
-            k_PositionSlicesX[2] = rectParams.rect.xMax - rectParams.rightSlice;
+            k_PositionSlicesX[1] = rectParams.rect.x + leftSlice;
+            k_PositionSlicesX[2] = rectParams.rect.xMax - rightSlice;
             k_PositionSlicesX[3] = rectParams.rect.xMax;
 
             k_PositionSlicesY[0] = rectParams.rect.yMax;
-            k_PositionSlicesY[1] = rectParams.rect.yMax - rectParams.bottomSlice;
-            k_PositionSlicesY[2] = rectParams.rect.y + rectParams.topSlice;
+            k_PositionSlicesY[1] = rectParams.rect.yMax - bottomSlice;
+            k_PositionSlicesY[2] = rectParams.rect.y + topSlice;
             k_PositionSlicesY[3] = rectParams.rect.y;
 
             for (int i = 0; i < 16; ++i)

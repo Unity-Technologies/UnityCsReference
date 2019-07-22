@@ -3,18 +3,20 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.IO;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 using System.Linq;
 using System;
 using UnityEngine;
+using System.IO;
 
 namespace UnityEditor.PackageManager.UI
 {
     internal class PackageManagerToolbar : VisualElement
     {
         internal new class UxmlFactory : UxmlFactory<PackageManagerToolbar> {}
+
+        static bool HasPackageInDevelopment => PackageDatabase.instance.allPackages.Any(p => p.installedVersion?.HasTag(PackageTag.InDevelopment) ?? false);
 
         private long m_SearchTextChangeTimestamp;
 
@@ -41,17 +43,20 @@ namespace UnityEditor.PackageManager.UI
             searchToolbar.SetValueWithoutNotify(PackageFiltering.instance.currentSearchText);
 
             PackageDatabase.instance.onPackagesChanged += OnPackagesChanged;
+
             PackageFiltering.instance.onFilterTabChanged += SetFilter;
         }
 
-        private void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> updated)
+        private void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdate, IEnumerable<IPackage> postUpdate)
         {
-            var anyInDevelopment = PackageDatabase.instance.allPackages.Any(p => p.installedVersion?.HasTag(PackageTag.InDevelopment) ?? false);
-            SetupFilterMenu(anyInDevelopment);
+            // If nothing in the change list is related to `in development` packages
+            // we can skip the whole database scan to save some time
+            var changed = added.Concat(removed).Concat(preUpdate).Concat(postUpdate);
+            if (!changed.Any(p => p.installedVersion?.HasTag(PackageTag.InDevelopment) ?? false))
+                return;
 
-            // If we have the in-development filter set and no packages are in development,
-            // reset the filter to local packages.
-            if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.InDevelopment && !anyInDevelopment)
+            // If we have a filter set and no packages are in this filter, reset the filter to local packages.
+            if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.InDevelopment && !HasPackageInDevelopment)
                 SetFilter(PackageFilterTab.Local);
         }
 
@@ -86,15 +91,15 @@ namespace UnityEditor.PackageManager.UI
             switch (filter)
             {
                 case PackageFilterTab.All:
-                    return "All packages";
+                    return L10n.Tr("All packages");
                 case PackageFilterTab.Local:
-                    return "In Project";
+                    return L10n.Tr("In Project");
                 case PackageFilterTab.Modules:
-                    return "Built-in packages";
+                    return L10n.Tr("Built-in packages");
                 case PackageFilterTab.AssetStore:
-                    return "My Assets";
+                    return L10n.Tr("My Assets");
                 case PackageFilterTab.InDevelopment:
-                    return "In Development";
+                    return L10n.Tr("In Development");
                 default:
                     return filter.ToString();
             }
@@ -156,33 +161,6 @@ namespace UnityEditor.PackageManager.UI
                 addFromGitUrl.Show();
             }, a => DropdownMenuAction.Status.Normal);
 
-            addMenu.menu.AppendSeparator("");
-
-            addMenu.menu.AppendAction("Create Package...", a =>
-            {
-                var defaultName = PackageCreator.GenerateUniquePackageDisplayName("New Package");
-                var createPackage = new PackagesAction("Create", defaultName);
-                createPackage.actionClicked += displayName =>
-                {
-                    createPackage.Hide();
-                    var packagePath = PackageCreator.CreatePackage("Packages/" + displayName);
-                    PackageManagerWindowAnalytics.SendEvent("createPackage");
-                    AssetDatabase.Refresh();
-                    EditorApplication.delayCall += () =>
-                    {
-                        var path = Path.Combine(packagePath, "package.json");
-                        var o = AssetDatabase.LoadMainAssetAtPath(path);
-                        if (o != null)
-                            UnityEditor.Selection.activeObject = o;
-
-                        PackageManagerWindow.SelectPackageAndFilter(displayName, PackageFilterTab.InDevelopment, true);
-                    };
-                };
-
-                parent.Add(createPackage);
-                createPackage.Show();
-            }, a => DropdownMenuAction.Status.Normal);
-
             PackageManagerExtensions.ExtensionCallback(() =>
             {
                 foreach (var extension in PackageManagerExtensions.MenuExtensions)
@@ -190,7 +168,7 @@ namespace UnityEditor.PackageManager.UI
             });
         }
 
-        private void SetupFilterMenu(bool? showInDevelopment = null)
+        private void SetupFilterMenu()
         {
             filterMenu.menu.MenuItems().Clear();
             filterMenu.menu.AppendAction(GetFilterDisplayName(PackageFilterTab.All), a =>
@@ -203,11 +181,16 @@ namespace UnityEditor.PackageManager.UI
                 SetFilterFromMenu(PackageFilterTab.Local);
             }, a => PackageFiltering.instance.currentFilterTab == PackageFilterTab.Local ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
 
-            filterMenu.menu.AppendSeparator();
-            filterMenu.menu.AppendAction(GetFilterDisplayName(PackageFilterTab.Modules), a =>
+            filterMenu.menu.AppendAction(GetFilterDisplayName(PackageFilterTab.InDevelopment), a =>
             {
-                SetFilterFromMenu(PackageFilterTab.Modules);
-            }, a => PackageFiltering.instance.currentFilterTab == PackageFilterTab.Modules ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+                SetFilterFromMenu(PackageFilterTab.InDevelopment);
+            }, a =>
+                {
+                    if (!HasPackageInDevelopment)
+                        return DropdownMenuAction.Status.Hidden;
+
+                    return PackageFiltering.instance.currentFilterTab == PackageFilterTab.InDevelopment ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal;
+                });
 
             filterMenu.menu.AppendSeparator();
             filterMenu.menu.AppendAction(GetFilterDisplayName(PackageFilterTab.AssetStore), a =>
@@ -215,15 +198,11 @@ namespace UnityEditor.PackageManager.UI
                 SetFilter(PackageFilterTab.AssetStore);
             }, a => PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
 
-            var addInDevelopmentMenu = showInDevelopment ?? PackageDatabase.instance.allPackages.Any(p => p.installedVersion?.HasTag(PackageTag.InDevelopment) ?? false);
-            if (addInDevelopmentMenu)
+            filterMenu.menu.AppendSeparator();
+            filterMenu.menu.AppendAction(GetFilterDisplayName(PackageFilterTab.Modules), a =>
             {
-                filterMenu.menu.AppendSeparator();
-                filterMenu.menu.AppendAction(GetFilterDisplayName(PackageFilterTab.InDevelopment), a =>
-                {
-                    SetFilterFromMenu(PackageFilterTab.InDevelopment);
-                }, a => PackageFiltering.instance.currentFilterTab == PackageFilterTab.InDevelopment ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
-            }
+                SetFilterFromMenu(PackageFilterTab.Modules);
+            }, a => PackageFiltering.instance.currentFilterTab == PackageFilterTab.Modules ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
 
             PackageManagerExtensions.ExtensionCallback(() =>
             {
@@ -237,7 +216,7 @@ namespace UnityEditor.PackageManager.UI
             advancedMenu.menu.AppendAction("Reset Packages to defaults", a =>
             {
                 EditorApplication.ExecuteMenuItem(ApplicationUtil.k_ResetPackagesMenuPath);
-                PackageDatabase.instance.Refresh(RefreshOptions.ListInstalled | RefreshOptions.OfflineMode);
+                PageManager.instance.Refresh(RefreshOptions.UpmListOffline);
                 PackageManagerWindowAnalytics.SendEvent("resetToDefaults");
             }, a => DropdownMenuAction.Status.Normal);
 

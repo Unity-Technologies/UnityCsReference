@@ -20,6 +20,10 @@ namespace UnityEditor
                 public GUIContent visibleMixed;
                 public GUIContent hiddenAll;
                 public GUIContent hiddenMixed;
+                public GUIContent pickingEnabledAll;
+                public GUIContent pickingEnabledMixed;
+                public GUIContent pickingDisabledAll;
+                public GUIContent pickingDisabledMixed;
             }
 
             public static readonly IconState iconNormal = new IconState
@@ -28,6 +32,10 @@ namespace UnityEditor
                 visibleMixed = EditorGUIUtility.TrIconContent("scenevis_visible-mixed"),
                 hiddenAll = EditorGUIUtility.TrIconContent("scenevis_hidden"),
                 hiddenMixed = EditorGUIUtility.TrIconContent("scenevis_hidden-mixed"),
+                pickingEnabledAll = EditorGUIUtility.TrIconContent("scenepicking_pickable"),
+                pickingEnabledMixed = EditorGUIUtility.TrIconContent("scenepicking_pickable-mixed"),
+                pickingDisabledAll = EditorGUIUtility.TrIconContent("scenepicking_notpickable"),
+                pickingDisabledMixed = EditorGUIUtility.TrIconContent("scenepicking_notpickable-mixed"),
             };
 
             public static readonly IconState iconHovered = new IconState
@@ -36,6 +44,10 @@ namespace UnityEditor
                 visibleMixed = EditorGUIUtility.TrIconContent("scenevis_visible-mixed_hover"),
                 hiddenAll = EditorGUIUtility.TrIconContent("scenevis_hidden_hover"),
                 hiddenMixed = EditorGUIUtility.TrIconContent("scenevis_hidden-mixed_hover"),
+                pickingEnabledAll = EditorGUIUtility.TrIconContent("scenepicking_pickable_hover"),
+                pickingEnabledMixed = EditorGUIUtility.TrIconContent("scenepicking_pickable-mixed_hover"),
+                pickingDisabledAll = EditorGUIUtility.TrIconContent("scenepicking_notpickable_hover"),
+                pickingDisabledMixed = EditorGUIUtility.TrIconContent("scenepicking_notpickable-mixed_hover"),
             };
 
             public static readonly Color backgroundColor = EditorResources.GetStyle("game-object-tree-view-scene-visibility")
@@ -49,8 +61,6 @@ namespace UnityEditor
 
             public static readonly Color selectedNoFocusBackgroundColor = EditorResources.GetStyle("game-object-tree-view-scene-visibility")
                 .GetColor("-unity-object-selected-no-focus-color");
-
-            public static readonly GUIContent iconSceneHovered = EditorGUIUtility.TrIconContent("scenevis_scene_hover");
 
             public static readonly GUIStyle sceneVisibilityStyle = "SceneVisibility";
 
@@ -77,7 +87,7 @@ namespace UnityEditor
         private static float k_sceneHeaderOverflow => GameObjectTreeViewGUI.GameObjectStyles.sceneHeaderBg.fixedHeight + 2*GameObjectTreeViewGUI.GameObjectStyles.sceneHeaderWidth - EditorGUIUtility.singleLineHeight;
         private static bool m_PrevItemWasScene;
 
-        public const float utilityBarWidth = k_VisibilityIconPadding * 2 + k_IconWidth;
+        public const float utilityBarWidth = k_VisibilityIconPadding * 3 + k_IconWidth * 2;
 
         public static void DrawBackground(Rect rect)
         {
@@ -97,9 +107,15 @@ namespace UnityEditor
             isHovered = isHovered && !isDragging;
             bool isIconHovered = !isDragging && iconRect.Contains(Event.current.mousePosition);
 
+            Rect icon2Rect = rect;
+            icon2Rect.xMin += 2 * k_VisibilityIconPadding + k_IconWidth;
+            icon2Rect.width = k_IconWidth;
+            bool isIcon2Hovered = !isDragging && icon2Rect.Contains(Event.current.mousePosition);
+
             if (isHovered)
             {
                 GUIView.current.MarkHotRegion(GUIClip.UnclipToWindow(iconRect));
+                GUIView.current.MarkHotRegion(GUIClip.UnclipToWindow(icon2Rect));
             }
 
             GameObject gameObject = goItem.objectPPTR as GameObject;
@@ -111,7 +127,9 @@ namespace UnityEditor
                     rect.yMin += k_sceneHeaderOverflow;
 
                 DrawItemBackground(rect, false, isSelected, isHovered, isFocused);
-                DrawGameObjectItem(iconRect, gameObject, isHovered, isIconHovered);
+                DrawGameObjectItemVisibility(iconRect, gameObject, isHovered, isIconHovered);
+                DrawGameObjectItemPicking(icon2Rect, gameObject, isHovered, isIcon2Hovered);
+
                 m_PrevItemWasScene = false;
             }
             else
@@ -120,7 +138,8 @@ namespace UnityEditor
                 if (scene.IsValid())
                 {
                     DrawItemBackground(rect, true, isSelected, isHovered, isFocused);
-                    DrawSceneItem(iconRect, scene, isHovered, isIconHovered);
+                    DrawSceneItemVisibility(iconRect, scene, isHovered, isIconHovered);
+                    DrawSceneItemPicking(icon2Rect, scene, isHovered, isIcon2Hovered);
                     m_PrevItemWasScene = true;
                 }
             }
@@ -151,7 +170,7 @@ namespace UnityEditor
             }
         }
 
-        private static void DrawGameObjectItem(Rect rect, GameObject gameObject, bool isItemHovered, bool isIconHovered)
+        private static void DrawGameObjectItemVisibility(Rect rect, GameObject gameObject, bool isItemHovered, bool isIconHovered)
         {
             var isHidden = SceneVisibilityManager.instance.IsHidden(gameObject);
             bool shouldDisplayIcon = isItemHovered || isHidden;
@@ -179,18 +198,46 @@ namespace UnityEditor
             }
         }
 
-        private static void DrawSceneItem(Rect rect, Scene scene, bool isItemHovered, bool isIconHovered)
+        private static void DrawGameObjectItemPicking(Rect rect, GameObject gameObject, bool isItemHovered, bool isIconHovered)
         {
-            var state = SceneVisibilityManager.instance.GetSceneState(scene);
+            var isPickingDisabled = SceneVisibilityManager.instance.IsPickingDisabled(gameObject);
+            bool shouldDisplayIcon = isItemHovered || isPickingDisabled;
+            Styles.IconState iconState = isIconHovered ? Styles.iconHovered : Styles.iconNormal;
+
+            GUIContent icon;
+            if (isPickingDisabled)
+            {
+                icon = gameObject.transform.childCount == 0 || SceneVisibilityManager.instance.IsPickingDisabledOnAllDescendants(gameObject)
+                    ? iconState.pickingDisabledAll : iconState.pickingDisabledMixed;
+            }
+            else if (!SceneVisibilityManager.instance.IsPickingEnabledOnAllDescendants(gameObject))
+            {
+                icon = iconState.pickingEnabledMixed;
+                shouldDisplayIcon = true;
+            }
+            else
+            {
+                icon = iconState.pickingEnabledAll;
+            }
+
+            if (shouldDisplayIcon && GUI.Button(rect, icon, Styles.sceneVisibilityStyle))
+            {
+                SceneVisibilityManager.instance.TogglePicking(gameObject, !Event.current.alt);
+            }
+        }
+
+        private static void DrawSceneItemVisibility(Rect rect, Scene scene, bool isItemHovered, bool isIconHovered)
+        {
+            var state = SceneVisibilityManager.instance.GetSceneVisibilityState(scene);
             bool shouldDisplayIcon = true;
             Styles.IconState iconState = isIconHovered ? Styles.iconHovered : Styles.iconNormal;
 
             GUIContent icon;
-            if (state == SceneVisibilityManager.SceneState.AllHidden)
+            if (state == SceneVisibilityManager.SceneVisState.AllHidden)
             {
                 icon = iconState.hiddenAll;
             }
-            else if (state == SceneVisibilityManager.SceneState.Mixed)
+            else if (state == SceneVisibilityManager.SceneVisState.Mixed)
             {
                 icon = iconState.visibleMixed;
             }
@@ -204,6 +251,42 @@ namespace UnityEditor
             if (shouldDisplayIcon && GUI.Button(rect, icon, Styles.sceneVisibilityStyle))
             {
                 SceneVisibilityManager.instance.ToggleScene(scene, state);
+            }
+        }
+
+        private static void DrawSceneItemPicking(Rect rect, Scene scene, bool isItemHovered, bool isIconHovered)
+        {
+            var state = SceneVisibilityManager.instance.GetScenePickingState(scene);
+            bool shouldDisplayIcon = true;
+            Styles.IconState iconState = isIconHovered ? Styles.iconHovered : Styles.iconNormal;
+
+            GUIContent icon;
+            var enablePicking = false;
+            if (state == SceneVisibilityManager.ScenePickingState.PickingDisabledAll)
+            {
+                icon = iconState.pickingDisabledAll;
+                enablePicking = true;
+            }
+            else if (state == SceneVisibilityManager.ScenePickingState.Mixed)
+            {
+                icon = iconState.pickingEnabledMixed;
+            }
+            else
+            {
+                icon = iconState.pickingEnabledAll;
+                shouldDisplayIcon = isItemHovered;
+            }
+
+            if (shouldDisplayIcon && GUI.Button(rect, icon, Styles.sceneVisibilityStyle))
+            {
+                if (enablePicking)
+                {
+                    SceneVisibilityManager.instance.EnablePicking(scene);
+                }
+                else
+                {
+                    SceneVisibilityManager.instance.DisablePicking(scene);
+                }
             }
         }
     }

@@ -8,8 +8,56 @@ using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using System.Collections.Generic;
 
-namespace UnityEngine.Experimental.XR
+namespace UnityEngine.XR
 {
+    [NativeHeader("Modules/XR/Subsystems/Meshing/XRMeshBindings.h")]
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MeshId : IEquatable<MeshId>
+    {
+        public override string ToString()
+        {
+            return string.Format("{0}-{1}",
+                m_SubId1.ToString("X16"),
+                m_SubId2.ToString("X16"));
+        }
+
+        public override int GetHashCode()
+        {
+            return m_SubId1.GetHashCode() ^ m_SubId2.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is MeshId && Equals((MeshId)obj);
+        }
+
+        public bool Equals(MeshId other)
+        {
+            return (m_SubId1 == other.m_SubId1) && (m_SubId2 == other.m_SubId2);
+        }
+
+        public static bool operator==(MeshId id1, MeshId id2)
+        {
+            return
+                (id1.m_SubId1 == id2.m_SubId1) &&
+                (id1.m_SubId2 == id2.m_SubId2);
+        }
+
+        public static bool operator!=(MeshId id1, MeshId id2)
+        {
+            return
+                (id1.m_SubId1 != id2.m_SubId1) ||
+                (id1.m_SubId2 != id2.m_SubId2);
+        }
+
+        private static MeshId s_InvalidId = new MeshId();
+        public static MeshId InvalidId { get { return s_InvalidId; } }
+
+        private ulong m_SubId1;
+        private ulong m_SubId2;
+    }
+
     [NativeHeader("Modules/XR/Subsystems/Meshing/XRMeshBindings.h")]
     [RequiredByNativeCode]
     public enum MeshGenerationStatus
@@ -36,7 +84,7 @@ namespace UnityEngine.Experimental.XR
     [StructLayout(LayoutKind.Sequential)]
     public struct MeshGenerationResult : IEquatable<MeshGenerationResult>
     {
-        public TrackableId MeshId { get; }
+        public MeshId MeshId { get; }
         public Mesh Mesh { get; }
         public MeshCollider MeshCollider { get; }
         public MeshGenerationStatus Status { get; }
@@ -108,7 +156,7 @@ namespace UnityEngine.Experimental.XR
     [StructLayout(LayoutKind.Sequential)]
     public struct MeshInfo : IEquatable<MeshInfo>
     {
-        public TrackableId MeshId { get; set; }
+        public MeshId MeshId { get; set; }
         public MeshChangeState ChangeState { get; set; }
         public int PriorityHint { get; set; }
 
@@ -165,7 +213,7 @@ namespace UnityEngine.Experimental.XR
         private extern MeshInfo[] GetMeshInfosAsFixedArray();
 
         public extern void GenerateMeshAsync(
-            TrackableId meshId,
+            MeshId meshId,
             Mesh mesh,
             MeshCollider meshCollider,
             MeshVertexAttributes attributes,

@@ -14,16 +14,6 @@ namespace UnityEngine.UIElements.StyleSheets.Syntax
         private Stack<ExpressionCombinator> m_CombinatorStack = new Stack<ExpressionCombinator>();
 
         private Dictionary<string, Expression> m_ParsedExpressionCache = new Dictionary<string, Expression>();
-        private StylePropertyInfoCache m_PropertyCache;
-
-        public StyleSyntaxParser()
-            : this(null) {}
-
-        public StyleSyntaxParser(StylePropertyInfoCache propertyCache)
-        {
-            // Cache is used to expand property like <'width'>
-            m_PropertyCache = propertyCache;
-        }
 
         public Expression Parse(string syntax)
         {
@@ -302,19 +292,19 @@ namespace UnityEngine.UIElements.StyleSheets.Syntax
                 throw new Exception($"Unexpected token '{token.type}' in property expression. Expected 'string' token");
 
             string propertyName = token.text;
-            StylePropertyInfo propertyInfo;
-            if (m_PropertyCache == null || !m_PropertyCache.TryGet(propertyName, out propertyInfo))
+            string syntax;
+            if (!StylePropertyCache.TryGetSyntax(propertyName, out syntax))
                 throw new Exception($"Unknown property '{propertyName}' <''> expression.");
 
             // Check if it's in the cache first
-            if (!m_ParsedExpressionCache.TryGetValue(propertyInfo.syntax, out exp))
+            if (!m_ParsedExpressionCache.TryGetValue(syntax, out exp))
             {
                 // Expanded property are in a group to honor the precedence rule
                 // Pushing the ExpressionCombinator.Group allow the next call to Parse to stop at this location
                 m_CombinatorStack.Push(ExpressionCombinator.Group);
 
                 // Recursively call Parse to expand the property syntax
-                exp = Parse(propertyInfo.syntax);
+                exp = Parse(syntax);
             }
 
             token = tokenizer.MoveNext();

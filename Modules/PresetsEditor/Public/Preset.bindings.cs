@@ -2,6 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -36,7 +39,12 @@ namespace UnityEditor.Presets
 
         public extern bool UpdateProperties([NotNull] Object source);
 
-        public extern string GetTargetFullTypeName();
+        public extern PresetType GetPresetType();
+
+        public string GetTargetFullTypeName()
+        {
+            return GetPresetType().GetManagedTypeName();
+        }
 
         public string GetTargetTypeName()
         {
@@ -57,28 +65,72 @@ namespace UnityEditor.Presets
         // The HideFlags must be set to HideFlags.None before calling Destroy or DestroyImmediate on it.
         internal extern Object GetReferenceObject();
 
-        [FreeFunction("PresetManager::GetDefaultForObject")]
-        public static extern Preset GetDefaultForObject([NotNull] Object target);
+        [FreeFunction("GetDefaultPresetsForObject")]
+        public static extern Preset[] GetDefaultPresetsForObject([NotNull] Object target);
 
-        [FreeFunction("PresetManager::GetDefaultForPreset")]
-        public static extern Preset GetDefaultForPreset([NotNull] Preset preset);
+        [Obsolete("Use GetDefaultPresetsForObject to get the full ordered list of default Presets that would be applied to that Object")]
+        public static Preset GetDefaultForObject(Object target)
+        {
+            var defaults = GetDefaultPresetsForObject(target);
+            return defaults.Length > 0 ? defaults[0] : null;
+        }
 
-        [FreeFunction("PresetManager::SetAsDefault")]
-        public static extern bool SetAsDefault([NotNull] Preset preset);
+        [Obsolete("Use GetDefaultPresetsForType to get the full list of default Presets for a given PresetType.")]
+        public static Preset GetDefaultForPreset(Preset preset)
+        {
+            if (preset == null)
+                throw new ArgumentNullException(nameof(preset));
+            var defaults = GetDefaultPresetsForType(preset.GetPresetType());
+            foreach (var defaultPreset in defaults)
+            {
+                if (defaultPreset.m_Filter == string.Empty)
+                    return defaultPreset.m_Preset;
+            }
 
-        [FreeFunction("PresetManager::RemoveFromDefault")]
-        public static extern void RemoveFromDefault([NotNull] Preset preset);
+            return null;
+        }
 
-        [FreeFunction]
-        public static extern bool IsPresetExcludedFromDefaultPresets(Preset preset);
+        [FreeFunction("GetDefaultPresetsForType")]
+        public static extern DefaultPreset[] GetDefaultPresetsForType(PresetType type);
 
-        [FreeFunction]
-        public static extern bool IsObjectExcludedFromDefaultPresets(Object target);
+        [FreeFunction("SetDefaultPresetsForType")]
+        public static extern bool SetDefaultPresetsForType(PresetType type, DefaultPreset[] presets);
 
-        [FreeFunction]
-        public static extern bool IsObjectExcludedFromPresets(Object reference);
+        [Obsolete("Use SetDefaultPresetsForType instead.")]
+        public static bool SetAsDefault(Preset preset)
+        {
+            if (preset == null)
+                throw new ArgumentNullException(nameof(preset));
+            return SetDefaultPresetsForType(preset.GetPresetType(), new[] {new DefaultPreset {m_Filter = string.Empty, m_Preset = preset}});
+        }
 
-        [FreeFunction]
-        internal static extern bool IsExcludedFromPresetsByTypeID(int nativeTypeID);
+        public static void RemoveFromDefault(Preset preset)
+        {
+            var type = preset.GetPresetType();
+            var list = GetDefaultPresetsForType(type);
+            var newList = list.Where(d => d.m_Preset != preset);
+            if (newList.Count() != list.Length)
+                SetDefaultPresetsForType(type, newList.ToArray());
+        }
+
+        [Obsolete("Use PresetType.IsValidDefault instead.")]
+        public static bool IsPresetExcludedFromDefaultPresets(Preset preset)
+        {
+            if (preset == null)
+                throw new ArgumentNullException(nameof(preset));
+            return !preset.GetPresetType().IsValidDefault();
+        }
+
+        [Obsolete("Use PresetType.IsValidDefault instead.")]
+        public static bool IsObjectExcludedFromDefaultPresets(Object target)
+        {
+            return !new PresetType(target).IsValidDefault();
+        }
+
+        [Obsolete("Use PresetType.IsValid instead.")]
+        public static bool IsObjectExcludedFromPresets(Object target)
+        {
+            return !new PresetType(target).IsValid();
+        }
     }
 }

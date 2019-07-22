@@ -45,6 +45,7 @@ namespace UnityEditor
 
             public static GUIContent graphics = EditorGUIUtility.TrTextContent("Graphics");
             public static GUIContent showLightmapResolutionOverlay = EditorGUIUtility.TrTextContent("Show Lightmap Resolution Overlay");
+            public static GUIContent useLegacyProbeSampleCount = EditorGUIUtility.TrTextContent("Use legacy Light Probe sample counts", "Uses fixed Light Probe sample counts for baking with the Progressive Lightmapper. The sample counts are: 64 direct samples, 2048 indirect samples and 2048 environment samples.");
 
             public static GUIContent spritePacker = EditorGUIUtility.TrTextContent("Sprite Packer");
 
@@ -556,6 +557,15 @@ namespace UnityEditor
             showRes = EditorGUILayout.Toggle(Content.showLightmapResolutionOverlay, showRes);
             if (EditorGUI.EndChangeCheck())
                 LightmapVisualization.showResolution = showRes;
+
+            EditorGUI.BeginChangeCheck();
+            bool useLegacyProbeSampleCountValue = EditorSettings.useLegacyProbeSampleCount;
+            useLegacyProbeSampleCountValue = EditorGUILayout.Toggle(Content.useLegacyProbeSampleCount, useLegacyProbeSampleCountValue);
+            if (EditorGUI.EndChangeCheck())
+            {
+                EditorApplication.RequestRepaintAllViews();
+                EditorSettings.useLegacyProbeSampleCount = useLegacyProbeSampleCountValue;
+            }
 
             GUILayout.Space(10);
 

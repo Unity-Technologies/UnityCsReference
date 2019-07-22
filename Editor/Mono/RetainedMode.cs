@@ -35,7 +35,7 @@ namespace UnityEditor
             UIElementsUtility.s_EndContainerCallback = OnEndContainer;
 
             Panel.loadResourceFunc = StyleSheetResourceUtil.LoadResource;
-            StyleSheetApplicator.getCursorIdFunc = UIElementsEditorUtility.GetCursorId;
+            StylePropertyReader.getCursorIdFunc = UIElementsEditorUtility.GetCursorId;
             Panel.TimeSinceStartup = () => (long)(EditorApplication.timeSinceStartup * 1000.0f);
         }
 

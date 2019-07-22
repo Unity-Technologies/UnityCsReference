@@ -45,7 +45,6 @@ namespace UnityEditorInternal
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabase.h")]
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabaseDeprecated.h")]
     [NativeHeader("Editor/Src/AssetPipeline/TextureImporting/BumpMapSettings.h")]
-    [NativeHeader("Editor/Src/AssetPipeline/MdFourGenerator.h")]
     [NativeHeader("Editor/Src/ScriptCompilation/PrecompiledAssemblies.h")]
     [NativeHeader("Editor/Src/AssetPipeline/ObjectHashGenerator.h")]
     [NativeHeader("Editor/Src/AssetPipeline/UnityExtensions.h")]
@@ -728,9 +727,9 @@ namespace UnityEditorInternal
             {
                 return ((SpriteMask)renderer).GetSpriteBounds();
             }
-            if (renderer is UnityEngine.Experimental.U2D.SpriteShapeRenderer)
+            if (renderer is UnityEngine.U2D.SpriteShapeRenderer)
             {
-                return ((UnityEngine.Experimental.U2D.SpriteShapeRenderer)renderer).GetLocalAABB();
+                return ((UnityEngine.U2D.SpriteShapeRenderer)renderer).GetLocalAABB();
             }
             if (renderer is UnityEngine.Tilemaps.TilemapRenderer)
             {

@@ -102,8 +102,11 @@ namespace UnityEditor.PackageManager.UI
         public IPackageVersion primaryVersion { get { return installedVersion ?? recommendedVersion; } }
 
         // errors on the package level (not just about a particular version)
-        private List<Error> m_Errors;
-        public IEnumerable<Error> errors { get { return m_Errors; } }
+        List<Error> m_UpmErrors;
+
+        // Combined errors for this package or any version.
+        // Stop lookup after first error encountered on a version to save time not looking up redundant errors.
+        public IEnumerable<Error> errors => (versions.Select(v => v.errors).FirstOrDefault(e => e?.Any() ?? false) ?? new List<Error>()).Concat(m_UpmErrors);
 
         public UpmPackage(string name, IEnumerable<UpmPackageVersion> versions, bool isDiscoverable)
         {
@@ -125,7 +128,7 @@ namespace UnityEditor.PackageManager.UI
             m_Versions = versions.ToList();
             m_IsDiscoverable = isDiscoverable;
 
-            m_Errors = new List<Error>();
+            m_UpmErrors = new List<Error>();
 
             SetInstalledVersion(m_Versions.FindIndex(v => v.isInstalled));
         }
@@ -203,12 +206,17 @@ namespace UnityEditor.PackageManager.UI
 
         public void AddError(Error error)
         {
-            m_Errors.Add(error);
+            m_UpmErrors.Add(error);
         }
 
         public void ClearErrors()
         {
-            m_Errors.Clear();
+            m_UpmErrors.Clear();
+        }
+
+        public IPackage Clone()
+        {
+            return (IPackage)MemberwiseClone();
         }
     }
 }

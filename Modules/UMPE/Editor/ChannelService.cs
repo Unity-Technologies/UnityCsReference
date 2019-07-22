@@ -122,7 +122,7 @@ namespace Unity.MPE
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine(e);
+                    UnityEngine.Debug.LogException(e);
                 }
             }
         }

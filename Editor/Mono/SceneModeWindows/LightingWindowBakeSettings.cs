@@ -66,6 +66,7 @@ namespace UnityEditor
         SerializedProperty m_PVRFilteringAtrousPositionSigmaAO;
         SerializedProperty m_PVREnvironmentMIS;
         SerializedProperty m_PVREnvironmentSampleCount;
+        SerializedProperty m_LightProbeSampleCountMultiplier;
 
         SerializedProperty m_BounceScale;
         SerializedProperty m_ExportTrainingData;
@@ -131,6 +132,7 @@ namespace UnityEditor
             m_PVRFilteringAtrousPositionSigmaAO = so.FindProperty("m_LightmapEditorSettings.m_PVRFilteringAtrousPositionSigmaAO");
             m_PVREnvironmentMIS = so.FindProperty("m_LightmapEditorSettings.m_PVREnvironmentMIS");
             m_PVREnvironmentSampleCount = so.FindProperty("m_LightmapEditorSettings.m_PVREnvironmentSampleCount");
+            m_LightProbeSampleCountMultiplier = so.FindProperty("m_LightmapEditorSettings.m_LightProbeSampleCountMultiplier");
 
             //dev debug properties
             m_BounceScale = so.FindProperty("m_GISettings.m_BounceScale");
@@ -414,8 +416,6 @@ namespace UnityEditor
         }
         void DrawDenoiserTypeDropdown(SerializedProperty prop, GUIContent label, DenoiserTarget target)
         {
-            bool optixDenoiserSupported = LightmapEditorSettings.IsOptixDenoiserSupported();
-            bool openImageDenoiserSupported = LightmapEditorSettings.IsOpenImageDenoiserSupported();
             var rect = EditorGUILayout.GetControlRect();
             EditorGUI.BeginProperty(rect, label, prop);
             rect = EditorGUI.PrefixLabel(rect, label);
@@ -424,17 +424,23 @@ namespace UnityEditor
 
             if (EditorGUI.DropdownButton(rect, Styles.DenoiserTypeStrings[index], FocusType.Passive))
             {
+                bool radeonDenoiserSupported = LightmapEditorSettings.IsRadeonDenoiserSupported();
+                bool openImageDenoiserSupported = LightmapEditorSettings.IsOpenImageDenoiserSupported();
+                bool optixDenoiserSupported = LightmapEditorSettings.IsOptixDenoiserSupported();
                 var menu = new GenericMenu();
                 for (int i = 0; i < Styles.DenoiserTypeValues.Length; i++)
                 {
                     int value = Styles.DenoiserTypeValues[i];
                     bool optixDenoiserItem = (value == (int)LightmapEditorSettings.DenoiserType.Optix);
                     bool openImageDenoiserItem = (value == (int)LightmapEditorSettings.DenoiserType.OpenImage);
+                    bool radeonDenoiserItem = (value == (int)LightmapEditorSettings.DenoiserType.RadeonPro);
                     bool selected = (value == prop.intValue);
 
                     if (!optixDenoiserSupported && optixDenoiserItem)
                         menu.AddDisabledItem(Styles.DenoiserTypeStrings[i], selected);
                     else if (!openImageDenoiserSupported && openImageDenoiserItem)
+                        menu.AddDisabledItem(Styles.DenoiserTypeStrings[i], selected);
+                    else if (!radeonDenoiserSupported && radeonDenoiserItem)
                         menu.AddDisabledItem(Styles.DenoiserTypeStrings[i], selected);
                     else
                     {
@@ -457,6 +463,9 @@ namespace UnityEditor
                 return false;
             if (denoiserType == LightmapEditorSettings.DenoiserType.OpenImage && !LightmapEditorSettings.IsOpenImageDenoiserSupported())
                 return false;
+            if (denoiserType == LightmapEditorSettings.DenoiserType.RadeonPro && !LightmapEditorSettings.IsRadeonDenoiserSupported())
+                return false;
+
             return true;
         }
 
@@ -595,6 +604,27 @@ namespace UnityEditor
                                             m_PVREnvironmentSampleCount.intValue = Math.Max(Math.Min(m_PVREnvironmentSampleCount.intValue, kMaxSamples), kMinEnvironmentSamples);
                                         }
 
+                                        using (new EditorGUI.DisabledScope(EditorSettings.useLegacyProbeSampleCount))
+                                        {
+                                            EditorGUILayout.PropertyField(m_LightProbeSampleCountMultiplier, Styles.ProbeSampleCountMultiplier);
+                                            int directSampleCount = m_PVRDirectSampleCount.intValue;
+                                            int indirectSampleCount = m_PVRSampleCount.intValue;
+                                            int environmentSampleCount = m_PVREnvironmentSampleCount.intValue;
+                                            int maxSampleCount = Math.Max(directSampleCount, Math.Max(indirectSampleCount, environmentSampleCount));
+                                            float maxMultiplier = (float)kMaxSamples / (float)maxSampleCount;
+                                            if (m_LightProbeSampleCountMultiplier.floatValue > maxMultiplier)
+                                            {
+                                                m_LightProbeSampleCountMultiplier.floatValue = Math.Min(m_LightProbeSampleCountMultiplier.floatValue, maxMultiplier);
+                                                if (m_LightProbeSampleCountMultiplier.floatValue > 2.0f)
+                                                    m_LightProbeSampleCountMultiplier.floatValue = (float)Math.Floor((double)m_LightProbeSampleCountMultiplier.floatValue);
+                                            }
+                                            float minMultiplier = (float)kMinSamples / (float)maxSampleCount;
+                                            if (m_LightProbeSampleCountMultiplier.floatValue < minMultiplier)
+                                            {
+                                                m_LightProbeSampleCountMultiplier.floatValue = Math.Max(m_LightProbeSampleCountMultiplier.floatValue, minMultiplier);
+                                            }
+                                        }
+
                                         // TODO(PVR): make non-fixed sampling modes work.
                                         //EditorGUI.indentLevel--;
                                     }
@@ -608,7 +638,7 @@ namespace UnityEditor
                                     {
                                         // Check if the platform doesn't support denoising.
                                         bool usingGPULightmapper = m_BakeBackend.intValue == (int)LightmapEditorSettings.Lightmapper.ProgressiveGPU;
-                                        bool anyDenoisingSupported = (LightmapEditorSettings.IsOptixDenoiserSupported() || LightmapEditorSettings.IsOpenImageDenoiserSupported());
+                                        bool anyDenoisingSupported = (LightmapEditorSettings.IsOptixDenoiserSupported() || LightmapEditorSettings.IsOpenImageDenoiserSupported() || LightmapEditorSettings.IsRadeonDenoiserSupported());
                                         bool aoDenoisingSupported = DenoiserSupported((LightmapEditorSettings.DenoiserType)m_PVRDenoiserTypeAO.intValue);
                                         bool directDenoisingSupported = DenoiserSupported((LightmapEditorSettings.DenoiserType)m_PVRDenoiserTypeDirect.intValue);
                                         bool indirectDenoisingSupported = DenoiserSupported((LightmapEditorSettings.DenoiserType)m_PVRDenoiserTypeIndirect.intValue);
@@ -815,11 +845,12 @@ namespace UnityEditor
             };
 
             // must match PVRDenoiserType
-            public static readonly int[] DenoiserTypeValues = { (int)LightmapEditorSettings.DenoiserType.Optix, (int)LightmapEditorSettings.DenoiserType.OpenImage, (int)LightmapEditorSettings.DenoiserType.None };
+            public static readonly int[] DenoiserTypeValues = { (int)LightmapEditorSettings.DenoiserType.Optix, (int)LightmapEditorSettings.DenoiserType.OpenImage, (int)LightmapEditorSettings.DenoiserType.RadeonPro, (int)LightmapEditorSettings.DenoiserType.None };
             public static readonly GUIContent[] DenoiserTypeStrings =
             {
                 EditorGUIUtility.TrTextContent("Optix"),
                 EditorGUIUtility.TrTextContent("OpenImageDenoise"),
+                EditorGUIUtility.TrTextContent("Radeon Pro"),
                 EditorGUIUtility.TrTextContent("None")
             };
 
@@ -903,6 +934,7 @@ namespace UnityEditor
             public static readonly GUIContent PVRCulling = EditorGUIUtility.TrTextContent("Prioritize View", "Specifies whether the lightmapper should prioritize baking texels within the scene view. When disabled, objects outside the scene view will have the same priority as those in the scene view.");
             public static readonly GUIContent PVREnvironmentMIS = EditorGUIUtility.TrTextContent("Multiple Importance Sampling", "Specifies whether to use multiple importance sampling for sampling the environment. This will generally lead to faster convergence when generating lightmaps but can lead to noisier results in certain low frequency environments.");
             public static readonly GUIContent PVREnvironmentSampleCount = EditorGUIUtility.TrTextContent("Environment Samples", "Controls the number of samples the lightmapper will use for environment lighting calculations. Increasing this value may improve the quality of lightmaps but increases the time required for baking to complete.");
+            public static readonly GUIContent ProbeSampleCountMultiplier = EditorGUIUtility.TrTextContent("Light Probe Sample Multiplier", "Controls how many samples are used for Light Probes as a multiplier of the general sample counts above. Higher values improve the quality of Light Probes, but also take longer to bake. Enable the Light Probe sample count multiplier in the Editor tab under Project Settings.");
             // TODO(RadeonRays): Used for hiding A-trous filtering option until it is implemented.
             public static readonly GUIContent[] GPUFilterOptions = new[] { EditorGUIUtility.TrTextContent("Gaussian"), EditorGUIUtility.TrTextContent("None") };
             public static readonly int[] GPUFilterInts = new[] { (int)LightmapEditorSettings.FilterType.Gaussian, (int)LightmapEditorSettings.FilterType.None };

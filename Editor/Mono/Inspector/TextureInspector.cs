@@ -755,7 +755,7 @@ namespace UnityEditor
                 width, height,
                 0,
                 SystemInfo.GetGraphicsFormat(DefaultFormat.LDR));
-            Material mat = EditorGUI.GetMaterialForSpecialTexture(texture);
+            Material mat = EditorGUI.GetMaterialForSpecialTexture(texture, null, QualitySettings.activeColorSpace == ColorSpace.Linear);
             if (mat != null)
                 Graphics.Blit(texture, tmp, mat);
             else Graphics.Blit(texture, tmp);

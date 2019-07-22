@@ -135,7 +135,8 @@ namespace UnityEditor
                 var property = new HierarchyProperty(rootPath);
                 if (!root.skipValidation && !property.Find(rootInstanceID, null))
                 {
-                    Debug.LogError("Root Asset with id " + rootInstanceID + " not valid!!");
+                    if (rootInstanceID == 0)
+                        Debug.LogError("Root Asset with path " + rootPath + " not valid!!");
                     continue;
                 }
 

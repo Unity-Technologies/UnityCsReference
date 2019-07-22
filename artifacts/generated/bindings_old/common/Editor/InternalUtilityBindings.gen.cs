@@ -10,6 +10,7 @@ using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Scripting;
 using Object = UnityEngine.Object;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -318,6 +319,15 @@ public sealed partial class HierarchyProperty : IHierarchyProperty
         get;
     }
 
+    [RequiredByNativeCode]
+    static void SetFilter(HierarchyProperty hierarchy, string filter)
+        {
+            SearchFilter search = new SearchFilter();
+            SearchUtility.ParseSearchString(filter, search);
+            hierarchy.SetSearchFilter(search);
+        }
+    
+    
     public void SetSearchFilter(string searchString, int mode)
         {
             SearchFilter filter = SearchableEditorWindow.CreateFilter(searchString, (SearchableEditorWindow.SearchMode)mode);

@@ -7,6 +7,8 @@ using UnityEngine.Bindings;
 using UnityEngine.Internal;
 using UnityEngine.Scripting.APIUpdating;
 
+using Unity.Jobs;
+
 namespace UnityEngine.Animations
 {
     [MovedFrom("UnityEngine.Experimental.Animations")]
@@ -26,6 +28,11 @@ namespace UnityEngine.Animations
     [StaticAccessor("AnimatorJobExtensionsBindings", StaticAccessorType.DoubleColon)]
     public static class AnimatorJobExtensions
     {
+        public static void AddJobDependency(this Animator animator, JobHandle jobHandle)
+        {
+            InternalAddJobDependency(animator, jobHandle);
+        }
+
         public static TransformStreamHandle BindStreamTransform(this Animator animator, Transform transform)
         {
             TransformStreamHandle transformStreamHandle = new TransformStreamHandle();
@@ -95,6 +102,8 @@ namespace UnityEngine.Animations
         {
             InternalUnbindAllHandles(animator);
         }
+
+        extern private static void InternalAddJobDependency([NotNull] Animator animator, JobHandle jobHandle);
 
         extern private static void InternalBindStreamTransform([NotNull] Animator animator, [NotNull] Transform transform, out TransformStreamHandle transformStreamHandle);
 

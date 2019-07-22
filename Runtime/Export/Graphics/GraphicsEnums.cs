@@ -77,6 +77,13 @@ namespace UnityEngine
         Disc = 4
     }
 
+    public enum LightShape
+    {
+        Cone = 0,
+        Pyramid = 1,
+        Box = 2
+    }
+
     public enum LightRenderMode
     {
         Auto = 0,
@@ -704,6 +711,14 @@ namespace UnityEngine
                 RGBA_ASTC10X10_UNorm = 138,
                 RGBA_ASTC12X12_SRGB = 139,
                 RGBA_ASTC12X12_UNorm = 140
+            }
+            // Match RayTracingMode on C++ side
+            public enum RayTracingMode
+            {
+                Off = 0,
+                Static = 1,
+                DynamicTransform = 2,
+                DynamicGeometry = 3,
             }
         }//namespace Rendering
     }//namespace Experimental

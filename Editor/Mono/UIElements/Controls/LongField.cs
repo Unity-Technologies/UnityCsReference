@@ -15,7 +15,7 @@ namespace UnityEditor.UIElements
         LongInput longInput => (LongInput)textInputBase;
 
         public new class UxmlFactory : UxmlFactory<LongField, UxmlTraits> {}
-        public new class UxmlTraits : BaseFieldTraits<long, UxmlLongAttributeDescription> {}
+        public new class UxmlTraits : TextValueFieldTraits<long, UxmlLongAttributeDescription> {}
 
         protected override string ValueToString(long v)
         {

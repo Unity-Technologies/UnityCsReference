@@ -963,7 +963,7 @@ namespace UnityEngine
                     style.Draw(position, content, id, on, hover);
                     break;
                 case EventType.MouseDown:
-                    if (position.Contains(evt.mousePosition))
+                    if (GUIUtility.HitTest(position, evt))
                     {
                         GrabMouseControl(id);
                         evt.Use();
@@ -983,7 +983,7 @@ namespace UnityEngine
                     {
                         ReleaseMouseControl();
                         evt.Use();
-                        if (position.Contains(evt.mousePosition))
+                        if (GUIUtility.HitTest(position, evt))
                         {
                             changed = true;
                             return !on;
@@ -1069,7 +1069,7 @@ namespace UnityEngine
                 switch (Event.current.GetTypeForControl(id))
                 {
                     case EventType.MouseDown:
-                        if (buttonRect.Contains(Event.current.mousePosition))
+                        if (GUIUtility.HitTest(buttonRect, Event.current))
                         {
                             GUIUtility.hotControl = id;
                             Event.current.Use();

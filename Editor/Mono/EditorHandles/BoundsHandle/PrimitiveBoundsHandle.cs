@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using System;
+using UnityEditor.Snap;
 
 namespace UnityEditor.IMGUI.Controls
 {
@@ -291,9 +292,7 @@ namespace UnityEditor.IMGUI.Controls
 
                 var size = midpointHandleSizeFunction == null ? 0f : midpointHandleSizeFunction(localPos);
 
-                localPos = UnityEditorInternal.Slider1D.Do(
-                    id, localPos, localDir, size, midpointHandleDrawFunction, SnapSettings.scale
-                );
+                localPos = UnityEditorInternal.Slider1D.Do(id, localPos, localDir, size, midpointHandleDrawFunction, EditorSnapSettings.scale);
             }
 
             Handles.color = oldColor;
@@ -304,7 +303,7 @@ namespace UnityEditor.IMGUI.Controls
         {
             float alphaMultiplier = 1f;
 
-            // if inside the box then ignore backfacing alpha multiplier (otherwise all handles will look disabled)
+            // if inside the box then ignore back facing alpha multiplier (otherwise all handles will look disabled)
             if (!isCameraInsideBox && axes == (Axes.X | Axes.Y | Axes.Z))
             {
                 // use tangent and binormal to calculate normal in case handle matrix is skewed
@@ -312,7 +311,7 @@ namespace UnityEditor.IMGUI.Controls
                 Vector3 worldBinormal = Handles.matrix.MultiplyVector(localBinormal);
                 Vector3 worldDir = Vector3.Cross(worldTangent, worldBinormal).normalized;
 
-                // adjust color if handle is backfacing
+                // adjust color if handle is back facing
                 float cosV;
 
                 if (Camera.current.orthographic)

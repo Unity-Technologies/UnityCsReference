@@ -2,8 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.Bindings;
 using System.Reflection;
+using UnityEngine;
 
 namespace Unity.Burst.LowLevel
 {
@@ -15,6 +17,7 @@ namespace Unity.Burst.LowLevel
         [NativeMethod("Initialize")]
         static extern string InitializeInternal(string path, ExtractCompilerFlags extractCompilerFlags);
 
+        [ThreadSafe]
         public static extern string GetDisassembly(MethodInfo m, string compilerOptions);
 
         [FreeFunction]
@@ -23,8 +26,18 @@ namespace Unity.Burst.LowLevel
         [FreeFunction]
         public static extern unsafe void* GetAsyncCompiledAsyncDelegateMethod(int userID);
 
+        [ThreadSafe]
+        public static extern unsafe void* GetOrCreateSharedMemory(ref Hash128 key, uint size_of, uint alignment);
+
+        [ThreadSafe]
         public static extern string GetMethodSignature(MethodInfo method);
 
         public static extern bool IsInitialized { get; }
+
+        [ThreadSafe]
+        public static extern void SetCurrentExecutionMode(uint environment);
+
+        [ThreadSafe]
+        public static extern uint GetCurrentExecutionMode();
     }
 }

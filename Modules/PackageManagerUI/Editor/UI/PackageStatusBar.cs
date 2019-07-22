@@ -24,6 +24,14 @@ namespace UnityEditor.PackageManager.UI
             cache = new VisualElementCache(root);
 
             m_LastErrorMessage = string.Empty;
+
+            var refreshIconButton = new IconButton(Resources.GetIconPath("refresh"));
+            refreshIconButton.clickable.clicked += () =>
+            {
+                if (!EditorApplication.isPlaying)
+                    PageManager.instance.Refresh(RefreshOptions.CurrentFilter);
+            };
+            refreshButtonContainer.Add(refreshIconButton);
         }
 
         public void Setup()
@@ -32,7 +40,11 @@ namespace UnityEditor.PackageManager.UI
 
             PackageDatabase.instance.onUpdateTimeChange += SetUpdateTimestamp;
 
-            PackageDatabase.instance.onRefreshOperationStart += () => SetStatusMessage(StatusType.Loading, "Loading packages...");
+            PackageDatabase.instance.onRefreshOperationStart += () =>
+            {
+                m_LastErrorMessage = string.Empty;
+                SetStatusMessage(StatusType.Loading, "Loading packages...");
+            };
             PackageDatabase.instance.onRefreshOperationFinish += UpdateStatusMessage;
             PackageDatabase.instance.onRefreshOperationError += error =>
             {
@@ -41,15 +53,6 @@ namespace UnityEditor.PackageManager.UI
             };
 
             ApplicationUtil.instance.onInternetReachabilityChange += OnInternetReachabilityChange;
-
-            statusLabel.RegisterCallback<MouseDownEvent>(e =>
-            {
-                // only react to left mouse button click outside of play mode
-                if (e.button != 0 || EditorApplication.isPlaying)
-                    return;
-
-                PackageDatabase.instance.Refresh(RefreshOptions.ListInstalled | RefreshOptions.SearchAll | RefreshOptions.Purchased);
-            });
         }
 
         private void OnInternetReachabilityChange(bool value)
@@ -57,7 +60,7 @@ namespace UnityEditor.PackageManager.UI
             UpdateStatusMessage();
             if (value)
             {
-                PackageDatabase.instance.Refresh(RefreshOptions.ListInstalled | RefreshOptions.SearchAll | RefreshOptions.Purchased);
+                PageManager.instance.Refresh(RefreshOptions.AllOnline);
             }
         }
 
@@ -113,5 +116,6 @@ namespace UnityEditor.PackageManager.UI
         private LoadingSpinner loadingSpinner { get { return cache.Get<LoadingSpinner>("loadingSpinner"); }}
         private Label errorIcon { get { return cache.Get<Label>("errorIcon"); }}
         private Label statusLabel { get { return cache.Get<Label>("statusLabel"); }}
+        private VisualElement refreshButtonContainer { get { return cache.Get<VisualElement>("refreshButtonContainer"); } }
     }
 }

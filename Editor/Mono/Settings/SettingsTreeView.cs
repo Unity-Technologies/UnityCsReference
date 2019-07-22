@@ -159,10 +159,9 @@ namespace UnityEditor
             foreach (var provider in providers)
             {
                 if (rootName == null)
-                {
                     rootName = provider.pathTokens[0];
-                }
-                else if (rootName != provider.pathTokens[0])
+
+                if (rootName != provider.pathTokens[0])
                 {
                     allChildrenUnderSameRoot = false;
                     m_ListViewMode = false;

@@ -1903,7 +1903,7 @@ namespace UnityEditor
             switch (evt.GetTypeForControl(id))
             {
                 case EventType.MouseDown:
-                    if (dragHotZone.Contains(evt.mousePosition) && evt.button == 0)
+                    if (GUIUtility.HitTest(dragHotZone, evt) && evt.button == 0)
                     {
                         // When clicking the dragging rect ensure that the number field is not
                         // editing: otherwise we don't see the actual value but the edited temp value
@@ -2577,7 +2577,8 @@ namespace UnityEditor
 
         public static int IntSlider(Rect position, int value, int leftValue, int rightValue)
         {
-            return IntSlider(position, value, leftValue, rightValue);
+            int id = GUIUtility.GetControlID(s_SliderHash, FocusType.Keyboard, position);
+            return Mathf.RoundToInt(DoSlider(IndentedRect(position), EditorGUIUtility.DragZoneRect(position), id, value, leftValue, rightValue, kIntFieldFormatString));
         }
 
         public static int IntSlider(Rect position, string label, int value, int leftValue, int rightValue)
@@ -5925,7 +5926,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
         }
 
         // This will return appriopriate material to use with the texture according to its usage mode
-        internal static Material GetMaterialForSpecialTexture(Texture t, Material defaultMat = null)
+        internal static Material GetMaterialForSpecialTexture(Texture t, Material defaultMat = null, bool normals2Linear = false)
         {
             // i am not sure WHY do we check that (i would guess this is api user error and exception make sense, not "return something")
             if (t == null) return null;
@@ -5939,7 +5940,10 @@ This warning only shows up in development builds.", helpTopic, pageName);
             else if (usage == TextureUsageMode.BakedLightmapFullHDR)
                 return lightmapFullHDRMaterial;
             else if (usage == TextureUsageMode.NormalmapDXT5nm || (usage == TextureUsageMode.NormalmapPlain && format == TextureFormat.BC5))
+            {
+                normalmapMaterial.SetFloat("_ManualTex2Linear", normals2Linear ? 1.0f : 0.0f);
                 return normalmapMaterial;
+            }
             else if (TextureUtil.IsAlphaOnlyTextureFormat(format))
                 return alphaMaterial;
             return defaultMat;
@@ -6436,7 +6440,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
                         style.Draw(position, content, id, false, hovered);
                     break;
                 case EventType.MouseDown:
-                    if (position.Contains(evt.mousePosition) && evt.button == 0)
+                    if (GUIUtility.HitTest(position, evt) && evt.button == 0)
                     {
                         Event.current.Use();
                         return true;

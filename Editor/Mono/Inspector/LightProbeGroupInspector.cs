@@ -25,7 +25,6 @@ namespace UnityEditor
         private readonly LightProbeGroup m_Group;
         private bool m_ShouldRecalculateTetrahedra;
         private bool m_SourcePositionsDirty;
-        private bool m_SelectedProbesDirty;
         private Vector3 m_LastPosition = Vector3.zero;
         private Quaternion m_LastRotation = Quaternion.identity;
         private Vector3 m_LastScale = Vector3.one;
@@ -38,7 +37,6 @@ namespace UnityEditor
             m_Group = group;
             m_ShouldRecalculateTetrahedra = false;
             m_SourcePositionsDirty = false;
-            m_SelectedProbesDirty = false;
             m_SerializedSelectedProbes = ScriptableObject.CreateInstance<LightProbeGroupSelection>();
             m_SerializedSelectedProbes.hideFlags = HideFlags.HideAndDontSave;
         }
@@ -61,8 +59,6 @@ namespace UnityEditor
         {
             if (!m_Selection.Contains(i))
                 m_Selection.Add(i);
-
-            MarkSelectedProbesDirty();
         }
 
         public void SelectAllProbes()
@@ -72,16 +68,12 @@ namespace UnityEditor
             var count = m_SourcePositions.Count;
             for (var i = 0; i < count; i++)
                 m_Selection.Add(i);
-
-            MarkSelectedProbesDirty();
         }
 
         public void DeselectProbes()
         {
             m_Selection.Clear();
             m_SerializedSelectedProbes.m_Selection = m_Selection;
-
-            MarkSelectedProbesDirty();
         }
 
         private IEnumerable<Vector3> SelectedProbePositions()
@@ -102,7 +94,6 @@ namespace UnityEditor
             }
 
             MarkSourcePositionsDirty();
-            MarkSelectedProbesDirty();
         }
 
         private void CopySelectedProbes()
@@ -187,7 +178,6 @@ namespace UnityEditor
             }
             DeselectProbes();
             MarkSourcePositionsDirty();
-            MarkSelectedProbesDirty();
         }
 
         public void PullProbePositions()
@@ -207,11 +197,7 @@ namespace UnityEditor
                 m_SourcePositionsDirty = false;
             }
 
-            if (m_SelectedProbesDirty)
-            {
-                m_SerializedSelectedProbes.m_Selection = m_Selection;
-                m_SelectedProbesDirty = false;
-            }
+            m_SerializedSelectedProbes.m_Selection = m_Selection;
         }
 
         private void DrawTetrahedra()
@@ -378,11 +364,6 @@ namespace UnityEditor
         {
             m_ShouldRecalculateTetrahedra = true;
             m_SourcePositionsDirty = true;
-        }
-
-        public void MarkSelectedProbesDirty()
-        {
-            m_SelectedProbesDirty = true;
         }
 
         public Bounds selectedProbeBounds

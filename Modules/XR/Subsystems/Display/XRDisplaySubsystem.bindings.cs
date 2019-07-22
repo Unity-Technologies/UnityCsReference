@@ -113,5 +113,57 @@ namespace UnityEngine.Experimental.XR
             [NativeConditional("ENABLE_XR")]
             extern public int GetRenderParameterCount();
         }
+
+        [NativeMethod("TryGetAppGPUTimeLastFrame")]
+        extern public bool TryGetAppGPUTimeLastFrame(out float gpuTimeLastFrame);
+
+        [NativeMethod("TryGetCompositorGPUTimeLastFrame")]
+        extern public bool TryGetCompositorGPUTimeLastFrame(out float gpuTimeLastFrameCompositor);
+
+        [NativeMethod("TryGetDroppedFrameCount")]
+        extern public bool TryGetDroppedFrameCount(out int droppedFrameCount);
+
+        [NativeMethod("TryGetFramePresentCount")]
+        extern public bool TryGetFramePresentCount(out int framePresentCount);
+
+        [NativeMethod("TryGetDisplayRefreshRate")]
+        extern public bool TryGetDisplayRefreshRate(out float displayRefreshRate);
+
+        [NativeMethod("TryGetMotionToPhoton")]
+        extern public bool TryGetMotionToPhoton(out float motionToPhoton);
+
+        [NativeHeader("Modules/XR/Subsystems/Display/XRDisplaySubsystem.bindings.h")]
+        [NativeHeader("Runtime/Graphics/RenderTexture.h")]
+        [StructLayout(LayoutKind.Sequential)]
+        public struct XRBlitParams
+        {
+            public RenderTexture srcTex;
+            public int srcTexArraySlice;
+            public Rect srcRect;
+            public Rect destRect;
+        }
+
+        [NativeHeader("Modules/XR/Subsystems/Display/XRDisplaySubsystem.bindings.h")]
+        [StructLayout(LayoutKind.Sequential)]
+        public struct XRMirrorViewBlitDesc
+        {
+            private IntPtr displaySubsystemInstance;
+            public bool nativeBlitAvailable;
+            public bool nativeBlitInvalidStates;
+            public int  blitParamsCount;
+
+            [NativeMethod(Name = "XRMirrorViewBlitDescScriptApi::GetBlitParameter", IsFreeFunction = true, HasExplicitThis = true)]
+            [NativeConditional("ENABLE_XR")]
+            extern public void GetBlitParameter(int blitParameterIndex, out XRBlitParams blitParameter);
+        }
+
+        [NativeMethod(Name = "QueryMirrorViewBlitDesc", IsThreadSafe = false)]
+        [NativeConditional("ENABLE_XR")]
+        extern public bool GetMirrorViewBlitDesc(RenderTexture mirrorRt, out XRMirrorViewBlitDesc outDesc);
+
+        [NativeMethod(Name = "AddGraphicsThreadMirrorViewBlit", IsThreadSafe = false)]
+        [NativeHeader("Runtime/Graphics/CommandBuffer/RenderingCommandBuffer.h")]
+        [NativeConditional("ENABLE_XR")]
+        extern public bool AddGraphicsThreadMirrorViewBlit(CommandBuffer cmd, bool allowGraphicsStateInvalidate);
     }
 }

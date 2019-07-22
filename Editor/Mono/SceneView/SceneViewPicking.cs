@@ -141,13 +141,18 @@ namespace UnityEditor
         private static IEnumerable<GameObject> GetAllOverlapping(Vector2 position)
         {
             var allOverlapping = new List<GameObject>();
+            var ignoreList = new List<GameObject>();
 
             while (true)
             {
-                var go = HandleUtility.PickGameObject(position, false, allOverlapping.ToArray());
+                var go = HandleUtility.PickGameObject(position, false, ignoreList.ToArray());
                 if (go == null)
                     break;
-
+                if (SceneVisibilityManager.instance.IsPickingDisabled(go))
+                {
+                    ignoreList.Add(go);
+                    continue;
+                }
                 // Prevent infinite loop if game object cannot be ignored when picking (This needs to fixed so print an error)
                 if (allOverlapping.Count > 0 && go == allOverlapping.Last())
                 {
@@ -158,6 +163,7 @@ namespace UnityEditor
                 yield return go;
 
                 allOverlapping.Add(go);
+                ignoreList.Add(go);
             }
         }
 

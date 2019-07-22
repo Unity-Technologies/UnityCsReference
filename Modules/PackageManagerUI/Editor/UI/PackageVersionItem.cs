@@ -16,13 +16,7 @@ namespace UnityEditor.PackageManager.UI
             this.package = package;
             this.version = version;
             RefreshLabel();
-            RefreshSelection();
-            RegisterCallback<MouseDownEvent>(e => SelectionManager.instance.SetSelected(package, version));
-        }
-
-        public void RefreshSelection()
-        {
-            this.EnableClass(UIUtils.k_SelectedClassName, SelectionManager.instance.IsSelected(package, version));
+            this.OnLeftClick(() => PageManager.instance.SetSelected(package, version));
         }
 
         public IPackageVersion targetVersion { get { return version; } }
@@ -30,7 +24,7 @@ namespace UnityEditor.PackageManager.UI
 
         private void RefreshLabel()
         {
-            text = PackageItem.GetStandardizedLabel(version);
+            text = PackageItem.GetVersionText(version);
         }
     }
 }

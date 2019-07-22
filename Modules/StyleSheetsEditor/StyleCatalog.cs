@@ -872,8 +872,6 @@ namespace UnityEditor.StyleSheets
             if (location != -1)
             {
                 var foundStyle = m_Blocks[location];
-                states = states.Length == 0 ? k_RegularBlockStates
-                    : states.Distinct().Where(s => s != StyleState.none).ToArray();
                 return new StyleBlock(foundStyle.name, states.Length == 0 ? k_RegularBlockStates : states, foundStyle.values, foundStyle.catalog);
             }
             return k_ElementNotFound;
@@ -1321,6 +1319,7 @@ namespace UnityEditor.StyleSheets
                 case StyleValueType.AssetReference:
                 case StyleValueType.ResourcePath:
                 case StyleValueType.Enum:
+                case StyleValueType.Variable:
                 {
                     var str = value.AsString();
                     // Try a few conversions
@@ -1357,6 +1356,7 @@ namespace UnityEditor.StyleSheets
                 case StyleValueType.ResourcePath:
                     return SetIndex(strings, value.ToString());
                 case StyleValueType.Enum:
+                case StyleValueType.Variable:
                     var str = value.AsString();
                     // Try a few conversions
                     Color parsedColor;

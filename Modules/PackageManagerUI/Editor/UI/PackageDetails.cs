@@ -98,12 +98,10 @@ namespace UnityEditor.PackageManager.UI
 
             SetContentVisibility(false);
             SetUpdateVisibility(false);
-            developButton.visible = false;
             removeButton.visible = false;
             importButton.visible = false;
             downloadButton.visible = false;
 
-            developButton.clickable.clicked += DevelopClick;
             detailAuthorLink.clickable.clicked += AuthorClick;
             updateButton.clickable.clicked += UpdateClick;
             removeButton.clickable.clicked += RemoveClick;
@@ -152,22 +150,22 @@ namespace UnityEditor.PackageManager.UI
         {
             ApplicationUtil.instance.onFinishCompiling += RefreshPackageActionButtons;
 
-            PackageDatabase.instance.onPackagesChanged += OnPackagesChanged;
-            PackageDatabase.instance.onPackageVersionUpdated += OnPackageVersionUpdated;
+            PackageDatabase.instance.onPackagesChanged += (added, removed, preUpdate, postUpdate) => OnPackagesUpdated(postUpdate);
+            PackageDatabase.instance.onPackagesChanged += (added, removed, preUpdate, postUpdate) => RefreshDependencies();
 
             PackageDatabase.instance.onPackageOperationStart += OnOperationStartOrFinish;
             PackageDatabase.instance.onPackageOperationFinish += OnOperationStartOrFinish;
 
             PackageDatabase.instance.onDownloadProgress += OnDownloadProgress;
 
-            SelectionManager.instance.onSelectionChanged += OnSelectionChanged;
 
-            PackageFiltering.instance.onFilterTabChanged += filterTab => OnSelectionChanged(SelectionManager.instance.GetSelections());
+            PageManager.instance.onPageRebuild += page => OnSelectionChanged(PageManager.instance.GetSelectedVersion());
+            PageManager.instance.onSelectionChanged += OnSelectionChanged;
 
-            PackageManagerPrefs.instance.onShowDependenciesChanged += SetDependenciesVisibility;
+            PackageManagerPrefs.instance.onShowDependenciesChanged += (value) => RefreshDependencies(value);
 
             // manually call the callback function once on initialization to refresh the UI
-            OnSelectionChanged(SelectionManager.instance.GetSelections());
+            OnSelectionChanged(PageManager.instance.GetSelectedVersion());
 
             Selection.selectionChanged += OnEditorSelectionChanged;
         }
@@ -196,20 +194,19 @@ namespace UnityEditor.PackageManager.UI
             UIUtils.SetElementDisplay(packageToolbarLeftArea, visible);
         }
 
-        internal void OnSelectionChanged(IEnumerable<IPackageVersion> selected)
+        internal void OnSelectionChanged(IPackageVersion version)
         {
-            var version = selected.FirstOrDefault();
             if (version != null)
                 SetPackage(PackageDatabase.instance.GetPackage(version), version);
             else
                 SetPackage(null);
         }
 
-        internal void SetDependenciesVisibility(bool value)
+        private void RefreshDependencies(bool? dependenciesVisibility = null)
         {
-            if (value)
-                dependencies.SetDependencies(displayVersion.dependencies);
-            UIUtils.SetElementDisplay(dependencies, value);
+            if (dependenciesVisibility != null)
+                UIUtils.SetElementDisplay(dependencies, (bool)dependenciesVisibility);
+            dependencies.SetDependencies(displayVersion?.dependencies);
         }
 
         private void SetUpdateVisibility(bool value)
@@ -226,7 +223,7 @@ namespace UnityEditor.PackageManager.UI
                     extension.OnPackageSelectionChange(packageInfo);
 
                 foreach (var extension in PackageManagerExtensions.ToolbarExtensions)
-                    extension.OnPackageSelectionChange(packageInfo, packageToolbarContainer);
+                    extension.OnPackageSelectionChange(version, packageToolbarContainer);
             });
         }
 
@@ -281,7 +278,7 @@ namespace UnityEditor.PackageManager.UI
                 UIUtils.SetElementDisplay(customContainer, true);
                 RefreshExtensions(displayVersion);
 
-                SetDependenciesVisibility(PackageManagerPrefs.instance.showPackageDependencies);
+                RefreshDependencies(PackageManagerPrefs.instance.showPackageDependencies);
 
                 RefreshSupportedUnityVersions();
 
@@ -466,7 +463,7 @@ namespace UnityEditor.PackageManager.UI
                     if (packageImage.type == PackageImage.ImageType.Youtube || packageImage.type == PackageImage.ImageType.Sketchfab)
                     {
                         image.AddToClassList("url");
-                        image.RegisterCallback<MouseDownEvent>(evt => { ApplicationUtil.instance.OpenURL(packageImage.url); });
+                        image.OnLeftClick(() => { ApplicationUtil.instance.OpenURL(packageImage.url); });
                     }
 
                     image.style.backgroundImage = s_LoadingTexture;
@@ -491,28 +488,21 @@ namespace UnityEditor.PackageManager.UI
             ShowVersion(version);
         }
 
-        internal void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> updated)
+        internal void OnPackagesUpdated(IEnumerable<IPackage> updatedPackages)
         {
-            if (package == null)
+            var packageUniqudId = package?.uniqueId;
+            if (string.IsNullOrEmpty(packageUniqudId) || !updatedPackages.Any())
                 return;
-            var newPackage = updated.FirstOrDefault(p => p.uniqueId == package.uniqueId);
-            if (newPackage != null)
+
+            var updatedPackage = updatedPackages.FirstOrDefault(p => p.uniqueId == packageUniqudId);
+            if (updatedPackage != null)
             {
-                var newVersion = displayVersion == null ? null : newPackage.versions.FirstOrDefault(v => v.uniqueId == displayVersion.uniqueId);
-                SetPackage(newPackage, newVersion);
+                var updatedVersion = displayVersion == null ? null : updatedPackage.versions.FirstOrDefault(v => v.uniqueId == displayVersion.uniqueId);
+                SetPackage(updatedPackage, updatedVersion);
+
+                if (updatedVersion?.isFullyFetched ?? false)
+                    SetEnabled(true);
             }
-            var deps = displayVersion?.dependencies;
-            if (UIUtils.IsElementVisible(dependencies) && deps != null && deps.Length > 0)
-                dependencies.SetDependencies(deps);
-        }
-
-        internal void OnPackageVersionUpdated(IPackageVersion version)
-        {
-            if (displayVersion?.uniqueId != version.uniqueId)
-                return;
-
-            SetEnabled(true);
-            SetDisplayVersion(version);
         }
 
         private void ShowVersion(IPackageVersion version)
@@ -535,7 +525,6 @@ namespace UnityEditor.PackageManager.UI
                 detailError.ClearError();
             else
             {
-                detailError.AdjustSize(detailScrollView.verticalScroller.visible);
                 detailError.SetError(error);
                 detailError.onCloseError = () => PackageDatabase.instance.ClearPackageErrors(package);
             }
@@ -546,11 +535,10 @@ namespace UnityEditor.PackageManager.UI
             RefreshPackageActionButtons();
         }
 
-        private void RefreshPackageActionButtons()
+        internal void RefreshPackageActionButtons()
         {
             RefreshAddButton();
             RefreshRemoveButton();
-            RefreshDevelopButton();
         }
 
         private void RefreshAddButton()
@@ -600,17 +588,6 @@ namespace UnityEditor.PackageManager.UI
             UIUtils.SetElementDisplay(removeButton, visibleFlag);
         }
 
-        private void RefreshDevelopButton()
-        {
-            var visibleFlag = displayVersion?.canBeEmbedded ?? false;
-            if (visibleFlag)
-            {
-                var enableButton = !ApplicationUtil.instance.isCompiling && !PackageDatabase.instance.isInstallOrUninstallInProgress;
-                developButton.SetEnabled(enableButton);
-            }
-            UIUtils.SetElementDisplay(developButton, visibleFlag);
-        }
-
         private void RefreshImportAndDownloadButtons()
         {
             if (displayVersion == null)
@@ -647,15 +624,6 @@ namespace UnityEditor.PackageManager.UI
         {
             var actionText = inProgress ? k_PackageActionInProgressVerbs[(int)action] : k_PackageActionVerbs[(int)action];
             return version == null ? $"{actionText}" : $"{actionText} {version}";
-        }
-
-        private void DevelopClick()
-        {
-            detailError.ClearError();
-            PackageDatabase.instance.Embed(package);
-            RefreshPackageActionButtons();
-
-            PackageManagerWindowAnalytics.SendEvent("embed", displayVersion?.uniqueId);
         }
 
         private void DescMoreClick()
@@ -901,7 +869,7 @@ namespace UnityEditor.PackageManager.UI
         private Button detailDescLess { get { return cache.Get<Button>("detailDescLess"); } }
         private VisualElement detailLinksContainer { get { return cache.Get<VisualElement>("detailLinksContainer"); } }
         private VisualElement detailLinks { get { return cache.Get<VisualElement>("detailLinks"); } }
-        private Alert detailError { get { return cache.Get<Alert>("detailError"); } }
+        internal Alert detailError { get { return cache.Get<Alert>("detailError"); } }
         private ScrollView detailScrollView { get { return cache.Get<ScrollView>("detailScrollView"); } }
         private VisualElement detailContainer { get { return cache.Get<VisualElement>("detail"); } }
         private Label detailTitle { get { return cache.Get<Label>("detailTitle"); } }
@@ -917,7 +885,6 @@ namespace UnityEditor.PackageManager.UI
         private VisualElement packageToolbarContainer { get {return cache.Get<VisualElement>("toolbarContainer");} }
         private VisualElement packageToolbarLeftArea { get {return cache.Get<VisualElement>("leftItems");} }
         internal Button updateButton { get { return cache.Get<Button>("update"); } }
-        internal Button developButton { get { return cache.Get<Button>("develop"); } }
         internal Button removeButton { get { return cache.Get<Button>("remove"); } }
         private Button importButton { get { return cache.Get<Button>("import"); } }
         private Button downloadButton { get { return cache.Get<Button>("download"); } }

@@ -743,6 +743,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        // Variables that children inherit
+        internal StyleVariableContext variableContext = StyleVariableContext.none;
+
         // Styles that children inherit
         internal InheritedStylesData propagatedStyle = InheritedStylesData.none;
 

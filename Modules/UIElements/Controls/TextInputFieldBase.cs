@@ -2,10 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Configuration;
-using UnityEngine.UIElements.StyleSheets;
-
 namespace UnityEngine.UIElements
 {
     internal interface ITextInputField : IEventHandler, ITextElement
@@ -14,6 +10,8 @@ namespace UnityEngine.UIElements
 
         bool doubleClickSelectsWord { get; }
         bool tripleClickSelectsLine { get; }
+
+        bool isReadOnly { get; }
 
         void SyncTextEngine();
         bool AcceptCharacter(char c);
@@ -56,6 +54,8 @@ namespace UnityEngine.UIElements
 
         internal const int kMaxLengthNone = -1;
         internal const char kMaskCharDefault = '*';
+
+        internal TextHandle textHandle { get; private set; } = TextHandle.New();
 
         public new static readonly string ussClassName = "unity-base-text-field";
         public new static readonly string labelUssClassName = ussClassName + "__label";
@@ -155,6 +155,15 @@ namespace UnityEngine.UIElements
             m_TextInputBase = textInputBase;
             m_TextInputBase.maxLength = maxLength;
             m_TextInputBase.maskChar = maskChar;
+
+            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+        }
+
+        private void OnAttachToPanel(AttachToPanelEvent e)
+        {
+            var h = textHandle;
+            h.useLegacy = e.destinationPanel.contextType == ContextType.Editor;
+            textHandle = h;
         }
 
         protected override void ExecuteDefaultActionAtTarget(EventBase evt)
@@ -229,6 +238,8 @@ namespace UnityEngine.UIElements
                 get { return editorEngine.selectIndex; }
             }
 
+            bool ITextInputField.isReadOnly => isReadOnly;
+
             public bool isReadOnly { get; set; }
             public int maxLength { get; set; }
             public char maskChar { get; set; }
@@ -264,6 +275,7 @@ namespace UnityEngine.UIElements
             /* internal for VisualTree tests */
             internal TextEditorEngine editorEngine { get; private set; }
 
+            private TextHandle m_TextHandle = TextHandle.New();
 
             private string m_Text;
 
@@ -311,6 +323,7 @@ namespace UnityEngine.UIElements
                 editorEngine.style = new GUIStyle(editorEngine.style);
 
                 RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
+                RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
                 this.generateVisualContent += OnGenerateVisualContent;
             }
 
@@ -363,6 +376,11 @@ namespace UnityEngine.UIElements
                 SyncGUIStyle(this, editorEngine.style);
             }
 
+            private void OnAttachToPanel(AttachToPanelEvent e)
+            {
+                m_TextHandle.useLegacy = e.destinationPanel.contextType == ContextType.Editor;
+            }
+
             internal virtual void SyncTextEngine()
             {
                 editorEngine.text = CullString(text);
@@ -410,7 +428,7 @@ namespace UnityEngine.UIElements
                 {
                     if (!hasFocus)
                     {
-                        mgc.Text(MeshGenerationContextUtils.TextParams.MakeStyleBased(this, text));
+                        mgc.Text(MeshGenerationContextUtils.TextParams.MakeStyleBased(this, text), m_TextHandle);
                     }
                     else
                     {
@@ -436,15 +454,14 @@ namespace UnityEngine.UIElements
                 Rect localPosition = editorEngine.localPosition;
                 var scrollOffset = editorEngine.scrollOffset;
 
-                float textScaling = TextNative.ComputeTextScaling(worldTransform, GUIUtility.pixelsPerPoint);
+                float textScaling = TextHandle.ComputeTextScaling(worldTransform, GUIUtility.pixelsPerPoint);
 
                 var textParams = MeshGenerationContextUtils.TextParams.MakeStyleBased(this, text);
                 textParams.text = " ";
                 textParams.wordWrapWidth = 0.0f;
                 textParams.wordWrap = false;
 
-                var textNativeSettings = MeshGenerationContextUtils.TextParams.GetTextNativeSettings(textParams, textScaling);
-                float lineHeight = TextNative.ComputeTextHeight(textNativeSettings);
+                float lineHeight = m_TextHandle.ComputeTextHeight(textParams, textScaling);
 
                 float wordWrapWidth = 0.0f;
 
@@ -479,9 +496,10 @@ namespace UnityEngine.UIElements
                     cursorParams.wordWrapWidth = wordWrapWidth;
                     cursorParams.cursorIndex = min;
 
-                    textNativeSettings = cursorParams.GetTextNativeSettings(textScaling);
-                    Vector2 minPos = TextNative.GetCursorPosition(textNativeSettings, cursorParams.rect, min);
-                    Vector2 maxPos = TextNative.GetCursorPosition(textNativeSettings, cursorParams.rect, max);
+                    Vector2 minPos = m_TextHandle.GetCursorPosition(cursorParams, textScaling);
+
+                    cursorParams.cursorIndex = max;
+                    Vector2 maxPos = m_TextHandle.GetCursorPosition(cursorParams, textScaling);
 
                     minPos -= scrollOffset;
                     maxPos -= scrollOffset;
@@ -537,7 +555,7 @@ namespace UnityEngine.UIElements
                     textParams.rect = new Rect(contentRect.x - scrollOffset.x, contentRect.y - scrollOffset.y, contentRect.width + scrollOffset.x, contentRect.height + scrollOffset.y);
                     textParams.text = editorEngine.text;
 
-                    mgc.Text(textParams);
+                    mgc.Text(textParams, m_TextHandle);
                 }
 
                 // Draw the cursor
@@ -550,8 +568,7 @@ namespace UnityEngine.UIElements
                         cursorParams.wordWrapWidth = wordWrapWidth;
                         cursorParams.cursorIndex = cursorIndex;
 
-                        textNativeSettings = cursorParams.GetTextNativeSettings(textScaling);
-                        Vector2 cursorPosition = TextNative.GetCursorPosition(textNativeSettings, cursorParams.rect, cursorParams.cursorIndex);
+                        Vector2 cursorPosition = m_TextHandle.GetCursorPosition(cursorParams, textScaling);
                         cursorPosition -= scrollOffset;
                         mgc.Rectangle(new MeshGenerationContextUtils.RectangleParams
                         {
@@ -569,8 +586,7 @@ namespace UnityEngine.UIElements
                         cursorParams.wordWrapWidth = wordWrapWidth;
                         cursorParams.cursorIndex = editorEngine.altCursorPosition;
 
-                        textNativeSettings = cursorParams.GetTextNativeSettings(textScaling);
-                        Vector2 altCursorPosition = TextNative.GetCursorPosition(textNativeSettings, cursorParams.rect, cursorParams.cursorIndex);
+                        Vector2 altCursorPosition = m_TextHandle.GetCursorPosition(cursorParams, textScaling);
                         altCursorPosition -= scrollOffset;
                         mgc.Rectangle(new MeshGenerationContextUtils.RectangleParams
                         {
@@ -594,9 +610,15 @@ namespace UnityEngine.UIElements
             {
                 if (evt?.target is TextInputBase)
                 {
-                    evt.menu.AppendAction("Cut", Cut, CutCopyActionStatus);
+                    if (!isReadOnly)
+                    {
+                        evt.menu.AppendAction("Cut", Cut, CutCopyActionStatus);
+                    }
                     evt.menu.AppendAction("Copy", Copy, CutCopyActionStatus);
-                    evt.menu.AppendAction("Paste", Paste, PasteActionStatus);
+                    if (!isReadOnly)
+                    {
+                        evt.menu.AppendAction("Paste", Paste, PasteActionStatus);
+                    }
                 }
             }
 
@@ -625,7 +647,7 @@ namespace UnityEngine.UIElements
                     textToUse = " ";
                 }
 
-                return TextElement.MeasureVisualElementTextSize(this, textToUse, desiredWidth, widthMode, desiredHeight, heightMode);
+                return TextElement.MeasureVisualElementTextSize(this, textToUse, desiredWidth, widthMode, desiredHeight, heightMode, m_TextHandle);
             }
 
             protected override void ExecuteDefaultActionAtTarget(EventBase evt)

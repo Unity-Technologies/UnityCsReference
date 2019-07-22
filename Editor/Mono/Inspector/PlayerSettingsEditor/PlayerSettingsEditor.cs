@@ -1117,6 +1117,11 @@ namespace UnityEditor
                 else if (name == "OpenGLES2")
                     name = "WebGL 1.0";
             }
+            else if (target == BuildTarget.iOS || target == BuildTarget.tvOS)
+            {
+                if (name.Contains("OpenGLES"))
+                    name += " (Deprecated)";
+            }
 
             GUI.Label(rect, name, EditorStyles.label);
         }

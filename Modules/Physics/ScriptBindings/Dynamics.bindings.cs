@@ -1915,6 +1915,10 @@ namespace UnityEngine
 
             Internal_RebuildBroadphaseRegions(worldBounds, subdivisions);
         }
+
+        [StaticAccessor("GetPhysicsManager()")]
+        [ThreadSafe]
+        public static extern void BakeMesh(int meshID, bool convex);
     }
 }
 

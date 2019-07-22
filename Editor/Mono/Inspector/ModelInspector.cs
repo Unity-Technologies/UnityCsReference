@@ -211,7 +211,7 @@ namespace UnityEditor
                 info += ", " + submeshes + " submeshes";
 
             int blendShapeCount = mesh.blendShapeCount;
-            if (blendShapeCount > 1)
+            if (blendShapeCount > 0)
                 info += ", " + blendShapeCount + " blendShapes";
 
             info += "\n" + InternalMeshUtil.GetVertexFormat(mesh);

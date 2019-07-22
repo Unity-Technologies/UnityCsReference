@@ -29,8 +29,6 @@ namespace UnityEditor
 
         private PackageImport m_PackageImport;
 
-        public bool canReInstall { get { return m_PackageImport.canReInstall; } }
-        public bool doReInstall { get { return m_PackageImport.doReInstall; } }
         public ImportPackageItem[] packageItems { get { return m_PackageImport.packageItems; } }
 
 
@@ -110,8 +108,8 @@ namespace UnityEditor
                 return true;
 
             var item = pitem.item;
-            // Its a package asset, its changed or we are doing a re-install
-            if (item.projectAsset || !(item.isFolder || item.assetChanged || doReInstall))
+            // Its a package asset or its changed
+            if (item.projectAsset || !(item.isFolder || item.assetChanged))
                 return false;
 
             return true;
@@ -346,7 +344,6 @@ namespace UnityEditor
                 bool pathConflict = (item != null) ? item.pathConflict : false;
                 bool exists       = (item != null) ? item.exists       : true;
                 bool projectAsset = (item != null) ? item.projectAsset : false;
-                bool doReInstall  = m_PackageImportView.doReInstall;
 
                 // 1. Foldout
                 if (m_TreeView.data.IsExpandable(tvItem))
@@ -355,7 +352,7 @@ namespace UnityEditor
                 // 2. Toggle only for items that are actually in the package.
                 Rect toggleRect = new Rect(k_BaseIndent + tvItem.depth * indentWidth + k_FoldoutWidth, rowRect.y, k_ToggleWidth, rowRect.height);
 
-                if ((isFolder && !projectAsset) || (validItem && !projectAsset && (assetChanged || doReInstall)))
+                if ((isFolder && !projectAsset) || (validItem && !projectAsset && assetChanged))
                     DoToggle(pitem, toggleRect);
 
                 using (new EditorGUI.DisabledScope(!validItem || projectAsset))
@@ -387,7 +384,7 @@ namespace UnityEditor
                     }
 
                     // 5. Optional badge ("Delete")
-                    if (repainting && doReInstall && projectAsset)
+                    if (repainting && projectAsset)
                     {
                         // FIXME: Need to enable tooltips here.
                         Texture badge = Constants.badgeDelete.image;

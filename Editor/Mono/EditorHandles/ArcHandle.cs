@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using UnityEditor.Snap;
 using UnityEngine;
 
 namespace UnityEditor.IMGUI.Controls
@@ -185,7 +186,7 @@ namespace UnityEditor.IMGUI.Controls
                                     Vector3.forward,
                                     size,
                                     radiusHandleDrawFunction,
-                                    SnapSettings.move.z
+                                    EditorSnapSettings.move.z
                                 );
                             }
                             if (EditorGUI.EndChangeCheck())
@@ -222,7 +223,7 @@ namespace UnityEditor.IMGUI.Controls
                         float newAngle = Vector3.Angle(Vector3.forward, angleHandlePosition) *
                             Mathf.Sign(Vector3.Dot(Vector3.right, angleHandlePosition));
                         angle += Mathf.DeltaAngle(angle, newAngle);
-                        angle = Handles.SnapValue(angle, SnapSettings.rotation);
+                        angle = Handles.SnapValue(angle, EditorSnapSettings.rotate);
                     }
                 }
             }

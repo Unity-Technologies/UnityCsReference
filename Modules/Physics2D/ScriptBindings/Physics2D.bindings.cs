@@ -3318,6 +3318,13 @@ namespace UnityEngine
         // Gets the number of shapes this collider has generated.
         extern public int shapeCount { get; }
 
+        // Gets a mesh for the specified collider.
+        [NativeMethod("CreateMesh_Binding")]
+        extern public Mesh CreateMesh(bool useBodyPosition, bool useBodyRotation);
+
+        [NativeMethod("GetShapeHash_Binding")]
+        extern public UInt32 GetShapeHash();
+
         // The world space bounding volume of the collider.
         extern public Bounds bounds { get; }
 

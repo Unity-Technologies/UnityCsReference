@@ -2,17 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine.Bindings;
-using UnityEngine.Scripting;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEngine.Experimental.U2D
+namespace UnityEngine.U2D
 {
     [StructLayoutAttribute(LayoutKind.Sequential)]
+    [MovedFrom("UnityEngine.Experimental.U2D")]
     public struct SpriteShapeMetaData
     {
         public float height;
@@ -23,6 +20,7 @@ namespace UnityEngine.Experimental.U2D
     }
 
     [StructLayoutAttribute(LayoutKind.Sequential)]
+    [MovedFrom("UnityEngine.Experimental.U2D")]
     public struct ShapeControlPoint
     {
         public Vector3 position;
@@ -32,6 +30,7 @@ namespace UnityEngine.Experimental.U2D
     }
 
     [StructLayoutAttribute(LayoutKind.Sequential)]
+    [MovedFrom("UnityEngine.Experimental.U2D")]
     public struct AngleRangeInfo
     {
         public float start;
@@ -41,6 +40,7 @@ namespace UnityEngine.Experimental.U2D
     }
 
     [NativeHeader("Modules/SpriteShape/Public/SpriteShapeUtility.h")]
+    [MovedFrom("UnityEngine.Experimental.U2D")]
     public class SpriteShapeUtility
     {
         [NativeThrows]

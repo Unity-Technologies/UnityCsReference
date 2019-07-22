@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEditor.Rendering;
 using UnityEditorInternal;
 using System.Runtime.InteropServices;
 using UnityEditor.IMGUI.Controls;
@@ -292,7 +293,7 @@ namespace UnityEditor
         const float kArrayValuePopupBtnWidth = 25.0f;
 
         // See the comments for BaseParamInfo in FrameDebuggerInternal.h
-        const int kShaderTypeBits = 6;
+        const int kShaderTypeBits = (int)ShaderType.Count;
         const int kArraySizeBitMask = 0x3FF;
 
         // Sometimes when disabling the frame debugger, the UI does not update automatically -

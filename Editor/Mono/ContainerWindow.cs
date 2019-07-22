@@ -192,7 +192,7 @@ namespace UnityEditor
             return ( // hallelujah
 
                 (m_ShowMode == (int)ShowMode.Utility || m_ShowMode == (int)ShowMode.AuxWindow) ||
-
+                (m_ShowMode == (int)ShowMode.MainWindow && rootView is HostView) ||
                 (rootView is SplitView &&
                     rootView.children.Length == 1 &&
                     rootView.children[0] is DockArea &&
@@ -214,18 +214,25 @@ namespace UnityEditor
                         return rootView.GetType().ToString();
                 }
 
+                if (rootView.children.Length > 0)
+                    return (m_ShowMode == (int)ShowMode.Utility || m_ShowMode == (int)ShowMode.AuxWindow) ? v.actualView.GetType().ToString()
+                        : ((DockArea)rootView.children[0]).m_Panes[0].GetType().ToString();
 
-                return (m_ShowMode == (int)ShowMode.Utility || m_ShowMode == (int)ShowMode.AuxWindow) ? v.actualView.GetType().ToString()
-                    : ((DockArea)rootView.children[0]).m_Panes[0].GetType().ToString();
+                return v.actualView.GetType().ToString();
             }
 
             return null;
         }
 
+        public bool IsMainWindow()
+        {
+            return m_ShowMode == (int)ShowMode.MainWindow && m_DontSaveToLayout == false;
+        }
+
         public void Save()
         {
             // only save it if its not docked and its not the MainWindow
-            if ((m_ShowMode != (int)ShowMode.MainWindow) && IsNotDocked() && !IsZoomed())
+            if (!IsMainWindow() && IsNotDocked() && !IsZoomed())
             {
                 string ID = NotDockedWindowID();
 
@@ -239,7 +246,7 @@ namespace UnityEditor
 
         private void Load(bool loadPosition)
         {
-            if ((m_ShowMode != (int)ShowMode.MainWindow) && IsNotDocked())
+            if (!IsMainWindow() &&  IsNotDocked())
             {
                 string ID = NotDockedWindowID();
 

@@ -32,7 +32,7 @@ namespace UnityEngine.UIElements
 
             long mouseEventType = MouseDownEvent.TypeId();
 
-            if (evt.eventTypeId == mouseEventType)
+            if (!textInputField.isReadOnly && evt.eventTypeId == mouseEventType)
             {
                 textInputField.SyncTextEngine();
                 textInputField.UpdateText(editorEngine.text);

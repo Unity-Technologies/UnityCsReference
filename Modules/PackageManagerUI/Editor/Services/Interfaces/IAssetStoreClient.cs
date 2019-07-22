@@ -10,15 +10,23 @@ namespace UnityEditor.PackageManager.UI
 {
     internal interface IAssetStoreClient
     {
+        event Action<ProductList, bool> onProductListFetched;
+
         event Action<IEnumerable<IPackage>> onPackagesChanged;
 
         event Action<DownloadProgress> onDownloadProgress;
 
-        event Action onOperationStart;
-        event Action onOperationFinish;
+        event Action onListOperationStart;
+        event Action onListOperationFinish;
+
+        event Action onFetchDetailsStart;
+        event Action onFetchDetailsFinish;
+
         event Action<Error> onOperationError;
 
-        void List(int offset, int limit);
+        void List(int offset, int limit, string searchText = "", bool fetchDetails = true);
+
+        void FetchDetails(IEnumerable<long> packageIds);
 
         void Refresh(IPackage package);
 

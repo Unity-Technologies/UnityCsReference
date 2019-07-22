@@ -328,7 +328,6 @@ namespace UnityEditor
                 return;
 
             var borderSize = GetBorderSize();
-            HandleSplitView();
 
             background = "dockarea";
 
@@ -360,6 +359,7 @@ namespace UnityEditor
             DrawView(viewRect, dockAreaRect);
 
             DrawTabScrollers(tabAreaRect);
+            HandleSplitView();
 
             EditorGUI.ShowRepaints();
             Highlighter.ControlHighlightGUI(this);

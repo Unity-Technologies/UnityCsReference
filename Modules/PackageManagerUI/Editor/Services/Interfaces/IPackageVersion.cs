@@ -78,5 +78,7 @@ namespace UnityEditor.PackageManager.UI
         IEnumerable<PackageSizeInfo> sizes { get; }
 
         IEnumerable<PackageLink> links { get; }
+
+        EntitlementsInfo entitlements { get; }
     }
 }

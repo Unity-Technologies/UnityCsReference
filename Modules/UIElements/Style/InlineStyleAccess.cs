@@ -441,7 +441,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetStyleValue(StylePropertyID.BorderLeftWidth, value, ve.sharedStyle.borderLeftWidth))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint);
                     ve.yogaNode.BorderLeftWidth = ve.computedStyle.borderLeftWidth.value;
                 }
             }
@@ -454,7 +454,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetStyleValue(StylePropertyID.BorderTopWidth, value, ve.sharedStyle.borderTopWidth))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint);
                     ve.yogaNode.BorderTopWidth = ve.computedStyle.borderTopWidth.value;
                 }
             }
@@ -467,7 +467,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetStyleValue(StylePropertyID.BorderRightWidth, value, ve.sharedStyle.borderRightWidth))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint);
                     ve.yogaNode.BorderRightWidth = ve.computedStyle.borderRightWidth.value;
                 }
             }
@@ -480,7 +480,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetStyleValue(StylePropertyID.BorderBottomWidth, value, ve.sharedStyle.borderBottomWidth))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint);
                     ve.yogaNode.BorderBottomWidth = ve.computedStyle.borderBottomWidth.value;
                 }
             }

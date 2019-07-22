@@ -85,6 +85,8 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
         public IEnumerable<Sample> samples => Enumerable.Empty<Sample>();
 
+        public EntitlementsInfo entitlements => null;
+
         public SemVersion version
         {
             get { return m_Version; }

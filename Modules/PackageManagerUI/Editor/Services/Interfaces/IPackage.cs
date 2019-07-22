@@ -41,5 +41,7 @@ namespace UnityEditor.PackageManager.UI
         void AddError(Error error);
 
         void ClearErrors();
+
+        IPackage Clone();
     }
 }

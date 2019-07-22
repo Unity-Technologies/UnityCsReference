@@ -41,6 +41,11 @@ namespace UnityEditor
         [UsedImplicitly, RequiredByNativeCode]
         public static void LoadDefaultWindowPreferences()
         {
+            LoadDefaultWindowPreferencesEx(false);
+        }
+
+        public static void LoadDefaultWindowPreferencesEx(bool keepMainWindow)
+        {
             InitializeLayoutPreferencesFolder();
             var projectLayoutExists = File.Exists(ProjectLayoutPath);
             if (!projectLayoutExists)
@@ -52,7 +57,7 @@ namespace UnityEditor
             Debug.Assert(File.Exists(ProjectLayoutPath));
 
             // Load the current project layout
-            LoadWindowLayout(ProjectLayoutPath, !projectLayoutExists);
+            LoadWindowLayout(ProjectLayoutPath, !projectLayoutExists, false, keepMainWindow);
         }
 
         [UsedImplicitly, RequiredByNativeCode]
@@ -982,7 +987,13 @@ namespace UnityEditor
                 all.Add(w);
             }
 
-            InternalEditorUtility.SaveToSerializedFileAndForget(all.ToArray(typeof(UnityObject)) as UnityObject[], path, true);
+            var parentLayoutFolder = Path.GetDirectoryName(path);
+            if (!String.IsNullOrEmpty(parentLayoutFolder))
+            {
+                if (!Directory.Exists(parentLayoutFolder))
+                    Directory.CreateDirectory(parentLayoutFolder);
+                InternalEditorUtility.SaveToSerializedFileAndForget(all.ToArray(typeof(UnityObject)) as UnityObject[], path, true);
+            }
         }
 
         internal static View FindMainView()
@@ -1025,6 +1036,8 @@ namespace UnityEditor
             FileUtil.DeleteFileOrDirectory(ProjectLayoutPath);
 
             LoadDefaultWindowPreferences();
+            ReloadWindowLayoutMenu();
+            EditorUtility.Internal_UpdateAllMenus();
             ShortcutIntegration.instance.RebuildShortcuts();
         }
     }

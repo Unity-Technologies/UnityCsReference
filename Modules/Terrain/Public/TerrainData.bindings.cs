@@ -378,13 +378,11 @@ namespace UnityEngine
             get;
         }
 
-        extern public float thickness
+        [Obsolete("Terrain thickness is no longer required by the physics engine. Set appropriate continuous collision detection modes to fast moving bodies.")]
+        public float thickness
         {
-            [NativeName(k_HeightmapPrefix + "GetThickness")]
-            get;
-
-            [NativeName(k_HeightmapPrefix + "SetThickness")]
-            set;
+            get { return 0; }
+            set {}
         }
 
         [NativeName(k_HeightmapPrefix + "GetHeight")]

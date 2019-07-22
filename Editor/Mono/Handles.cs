@@ -13,12 +13,10 @@ namespace UnityEditor
     [StructLayout(LayoutKind.Sequential)]
     struct DrawGridParameters
     {
-        public Vector3 pivot;
-        public Color color;
-        public float size;
-        public float alphaX;
-        public float alphaY;
-        public float alphaZ;
+        public int          gridID;
+        public Vector3      pivot;
+        public Color        color;
+        public Vector2      size;
     }
 
     public sealed partial class Handles
@@ -837,14 +835,41 @@ namespace UnityEditor
             HandleUtility.ignoreRaySnapObjects = Selection.GetTransforms(SelectionMode.Editable | SelectionMode.Deep);
         }
 
-        //rounds the value ''val'' to the closest multiple of ''snap'' (snap can only be posiive)
-        public static float SnapValue(float val, float snap)
+        // If snapping is active, return a new value rounded to the nearest increment of snap.
+        public static float SnapValue(float value, float snap)
         {
-            if (EditorGUI.actionKey && snap > 0)
+            if (EditorSnapSettings.active)
+                return Snapping.Snap(value, snap);
+            return value;
+        }
+
+        // If snapping is active, return a new value rounded to the nearest increment of snap.
+        public static Vector2 SnapValue(Vector2 value, Vector2 snap)
+        {
+            if (EditorSnapSettings.active)
+                return Snapping.Snap(value, snap);
+            return value;
+        }
+
+        // If snapping is active, return a new value rounded to the nearest increment of snap.
+        public static Vector3 SnapValue(Vector3 value, Vector3 snap)
+        {
+            if (EditorSnapSettings.active)
+                return Snapping.Snap(value, snap);
+            return value;
+        }
+
+        // Snap all transform positions to the grid
+        public static void SnapToGrid(Transform[] transforms, SnapAxis axis = SnapAxis.All)
+        {
+            if (transforms != null && transforms.Length > 0)
             {
-                return Mathf.Round(val / snap) * snap;
+                foreach (var t in transforms)
+                {
+                    if (t != null)
+                        t.position = Snapping.Snap(t.position, Vector3.Scale(EditorSnapSettings.move, new SnapAxisFilter(axis)));
+                }
             }
-            return val;
         }
 
         // The camera used for deciding where 3D handles end up

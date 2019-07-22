@@ -5,8 +5,7 @@
 using Unity.Collections;
 using UnityEditorInternal;
 using UnityEngine;
-using UnityEngine.Experimental.U2D;
-using UnityEditor.Experimental.U2D;
+using UnityEngine.U2D;
 using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
 

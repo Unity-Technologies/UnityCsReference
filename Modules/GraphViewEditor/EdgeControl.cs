@@ -157,6 +157,7 @@ namespace UnityEditor.Experimental.GraphView
                 {
                     m_FromCap.style.backgroundColor = m_FromCapColor;
                 }
+                MarkDirtyRepaint();
             }
         }
 
@@ -174,6 +175,7 @@ namespace UnityEditor.Experimental.GraphView
                 {
                     m_ToCap.style.backgroundColor = m_ToCapColor;
                 }
+                MarkDirtyRepaint();
             }
         }
 
@@ -425,6 +427,7 @@ namespace UnityEditor.Experimental.GraphView
                 m_ControlPointsDirty = false;
             }
             UpdateEdgeCaps();
+            MarkDirtyRepaint();
         }
 
         private List<Vector2> lastLocalControlPoints = new List<Vector2>();

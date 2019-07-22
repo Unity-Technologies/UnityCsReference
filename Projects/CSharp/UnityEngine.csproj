@@ -547,8 +547,8 @@
     <Compile Include="..\..\Modules\Localization\Public\LocalizationAsset.bindings.cs">
       <Link>Modules\Localization\Public\LocalizationAsset.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ParticleSystem\Managed\IParticleSystemJob.cs">
-      <Link>Modules\ParticleSystem\Managed\IParticleSystemJob.cs</Link>
+    <Compile Include="..\..\Modules\ParticleSystem\Managed\IJobParticleSystem.cs">
+      <Link>Modules\ParticleSystem\Managed\IJobParticleSystem.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ParticleSystem\Managed\ParticleSystem.deprecated.cs">
       <Link>Modules\ParticleSystem\Managed\ParticleSystem.deprecated.cs</Link>
@@ -1141,6 +1141,9 @@
     <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleProperty.cs">
       <Link>Modules\UIElements\StyleSheets\StyleProperty.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\StyleSheets\StylePropertyReader.cs">
+      <Link>Modules\UIElements\StyleSheets\StylePropertyReader.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleRule.cs">
       <Link>Modules\UIElements\StyleSheets\StyleRule.cs</Link>
     </Compile>
@@ -1177,6 +1180,9 @@
     <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleValue.cs">
       <Link>Modules\UIElements\StyleSheets\StyleValue.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleValueFunction.cs">
+      <Link>Modules\UIElements\StyleSheets\StyleValueFunction.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleValueHandle.cs">
       <Link>Modules\UIElements\StyleSheets\StyleValueHandle.cs</Link>
     </Compile>
@@ -1185,6 +1191,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleValueType.cs">
       <Link>Modules\UIElements\StyleSheets\StyleValueType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleVariable.cs">
+      <Link>Modules\UIElements\StyleSheets\StyleVariable.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\StyleSheets\Syntax\StyleSyntaxExpression.cs">
       <Link>Modules\UIElements\StyleSheets\Syntax\StyleSyntaxExpression.cs</Link>
@@ -1198,8 +1207,8 @@
     <Compile Include="..\..\Modules\UIElements\StyleSheets\Validation\StyleMatcher.cs">
       <Link>Modules\UIElements\StyleSheets\Validation\StyleMatcher.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\Validation\StylePropertyInfo.cs">
-      <Link>Modules\UIElements\StyleSheets\Validation\StylePropertyInfo.cs</Link>
+    <Compile Include="..\..\Modules\UIElements\StyleSheets\Validation\StylePropertyCache.cs">
+      <Link>Modules\UIElements\StyleSheets\Validation\StylePropertyCache.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\StyleSheets\Validation\StylePropertyValueParser.cs">
       <Link>Modules\UIElements\StyleSheets\Validation\StylePropertyValueParser.cs</Link>
@@ -1260,6 +1269,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\TextElement.cs">
       <Link>Modules\UIElements\TextElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\TextHandle.cs">
+      <Link>Modules\UIElements\TextHandle.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\TextNative.bindings.cs">
       <Link>Modules\UIElements\TextNative.bindings.cs</Link>
@@ -1606,18 +1618,6 @@
     <Compile Include="..\..\Modules\XR\Stats\XRStats.bindings.cs">
       <Link>Modules\XR\Stats\XRStats.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\XR\Subsystems\Camera\XRCameraSubsystem.bindings.cs">
-      <Link>Modules\XR\Subsystems\Camera\XRCameraSubsystem.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\XR\Subsystems\Camera\XRCameraSubsystemDescriptor.bindings.cs">
-      <Link>Modules\XR\Subsystems\Camera\XRCameraSubsystemDescriptor.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\XR\Subsystems\Depth\XRDepthSubsystem.bindings.cs">
-      <Link>Modules\XR\Subsystems\Depth\XRDepthSubsystem.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\XR\Subsystems\Depth\XRDepthSubsystemDescriptor.bindings.cs">
-      <Link>Modules\XR\Subsystems\Depth\XRDepthSubsystemDescriptor.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\XR\Subsystems\Display\XRDisplaySubsystem.bindings.cs">
       <Link>Modules\XR\Subsystems\Display\XRDisplaySubsystem.bindings.cs</Link>
     </Compile>
@@ -1642,33 +1642,6 @@
     <Compile Include="..\..\Modules\XR\Subsystems\Meshing\XRMeshSubsystemDescriptor.bindings.cs">
       <Link>Modules\XR\Subsystems\Meshing\XRMeshSubsystemDescriptor.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\XR\Subsystems\Planes\XRPlaneSubsystem.bindings.cs">
-      <Link>Modules\XR\Subsystems\Planes\XRPlaneSubsystem.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\XR\Subsystems\Planes\XRPlaneSubsystemDescriptor.bindings.cs">
-      <Link>Modules\XR\Subsystems\Planes\XRPlaneSubsystemDescriptor.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\XR\Subsystems\Raycast\XRRaycastSubsystem.bindings.cs">
-      <Link>Modules\XR\Subsystems\Raycast\XRRaycastSubsystem.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\XR\Subsystems\Raycast\XRRaycastSubsystemDescriptor.bindings.cs">
-      <Link>Modules\XR\Subsystems\Raycast\XRRaycastSubsystemDescriptor.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\XR\Subsystems\ReferencePoints\XRReferencePointSubsystem.bindings.cs">
-      <Link>Modules\XR\Subsystems\ReferencePoints\XRReferencePointSubsystem.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\XR\Subsystems\ReferencePoints\XRReferencePointSubsystemDescriptor.bindings.cs">
-      <Link>Modules\XR\Subsystems\ReferencePoints\XRReferencePointSubsystemDescriptor.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\XR\Subsystems\Session\XRSessionSubsystem.bindings.cs">
-      <Link>Modules\XR\Subsystems\Session\XRSessionSubsystem.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\XR\Subsystems\Session\XRSessionSubsystemDescriptor.bindings.cs">
-      <Link>Modules\XR\Subsystems\Session\XRSessionSubsystemDescriptor.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\XR\UnityXRTrackable.bindings.cs">
-      <Link>Modules\XR\UnityXRTrackable.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\XR\XRSubsystemManager.bindings.cs">
       <Link>Modules\XR\XRSubsystemManager.bindings.cs</Link>
     </Compile>
@@ -1683,6 +1656,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\SpriteRenderer.bindings.cs">
       <Link>Runtime\2D\Common\ScriptBindings\SpriteRenderer.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\SpriteRendererGroup.bindings.cs">
+      <Link>Runtime\2D\Common\ScriptBindings\SpriteRendererGroup.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\Sprites.bindings.cs">
       <Link>Runtime\2D\Common\ScriptBindings\Sprites.bindings.cs</Link>
@@ -2058,6 +2034,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\OnDemandRendering.bindings.cs">
       <Link>Runtime\Export\Graphics\OnDemandRendering.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\RayTracingAccelerationStructure.bindings.cs">
+      <Link>Runtime\Export\Graphics\RayTracingAccelerationStructure.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\RenderingCommandBuffer.bindings.cs">
       <Link>Runtime\Export\Graphics\RenderingCommandBuffer.bindings.cs</Link>
@@ -2550,6 +2529,12 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Shaders\ShaderKeywordSet.bindings.cs">
       <Link>Runtime\Export\Shaders\ShaderKeywordSet.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Snapping\SnapAxis.cs">
+      <Link>Runtime\Export\Snapping\SnapAxis.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Snapping\Snapping.cs">
+      <Link>Runtime\Export\Snapping\Snapping.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\StaticBatching\CombineForStaticBatching.cs">
       <Link>Runtime\Export\StaticBatching\CombineForStaticBatching.cs</Link>

@@ -4,6 +4,7 @@
 
 using System;
 using UnityEditor;
+using UnityEditor.Snap;
 using UnityEngine;
 
 namespace UnityEditorInternal
@@ -35,6 +36,7 @@ namespace UnityEditorInternal
                     HandleUtility.AddControl(id, HandleUtility.DistanceToLine(startPosition, cubePosition));
                     HandleUtility.AddControl(id, HandleUtility.DistanceToCircle(cubePosition, size * .3f));
                     break;
+
                 case EventType.MouseDown:
                     // am I closest to the thingy?
                     if (HandleUtility.nearestControl == id && evt.button == 0 && !evt.alt)
@@ -46,6 +48,7 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(1);
                     }
                     break;
+
                 case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
@@ -57,6 +60,7 @@ namespace UnityEditorInternal
                         evt.Use();
                     }
                     break;
+
                 case EventType.MouseUp:
                     if (GUIUtility.hotControl == id && (evt.button == 0 || evt.button == 2))
                     {
@@ -65,10 +69,12 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
                     break;
+
                 case EventType.MouseMove:
                     if (id == HandleUtility.nearestControl)
                         HandleUtility.Repaint();
                     break;
+
                 case EventType.Repaint:
                     Color temp = Color.white;
                     if (id == GUIUtility.hotControl)
@@ -95,9 +101,9 @@ namespace UnityEditorInternal
 
         // DrawCapFunction was marked plannned obsolete by @juha on 2016-03-16, marked obsolete warning by @adamm on 2016-12-21
         [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
-        #pragma warning disable 618
+#pragma warning disable 618
         public static float DoCenter(int id, float value, Vector3 position, Quaternion rotation, float size, Handles.DrawCapFunction capFunc, float snap)
-        #pragma warning restore 618
+#pragma warning restore 618
         {
             Event evt = Event.current;
             switch (evt.GetTypeForControl(id))
@@ -105,6 +111,7 @@ namespace UnityEditorInternal
                 case EventType.Layout:
                     HandleUtility.AddControl(id, HandleUtility.DistanceToCircle(position, size * .15f));
                     break;
+
                 case EventType.MouseDown:
                     // am I closest to the thingy?
                     if (HandleUtility.nearestControl == id && evt.button == 0)
@@ -116,6 +123,7 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(1);
                     }
                     break;
+
                 case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
@@ -126,10 +134,12 @@ namespace UnityEditorInternal
                         evt.Use();
                     }
                     break;
+
                 case EventType.MouseMove:
                     if (id == HandleUtility.nearestControl)
                         HandleUtility.Repaint();
                     break;
+
                 case EventType.KeyDown:
                     if (GUIUtility.hotControl == id)
                     {
@@ -141,6 +151,7 @@ namespace UnityEditorInternal
                         }
                     }
                     break;
+
                 case EventType.MouseUp:
                     if (GUIUtility.hotControl == id && (evt.button == 0 || evt.button == 2))
                     {
@@ -150,6 +161,7 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
                     break;
+
                 case EventType.Repaint:
                     Color temp = Color.white;
                     if (id == GUIUtility.hotControl)
@@ -180,6 +192,7 @@ namespace UnityEditorInternal
                 case EventType.Layout:
                     capFunction(id, position, rotation, size * .15f, EventType.Layout);
                     break;
+
                 case EventType.MouseDown:
                     // am I closest to the thingy?
                     if (HandleUtility.nearestControl == id && evt.button == 0 && !evt.alt)
@@ -192,6 +205,7 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(1);
                     }
                     break;
+
                 case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
@@ -202,6 +216,7 @@ namespace UnityEditorInternal
                         evt.Use();
                     }
                     break;
+
                 case EventType.KeyDown:
                     if (GUIUtility.hotControl == id)
                     {
@@ -213,6 +228,7 @@ namespace UnityEditorInternal
                         }
                     }
                     break;
+
                 case EventType.MouseUp:
                     if (GUIUtility.hotControl == id && (evt.button == 0 || evt.button == 2))
                     {
@@ -223,10 +239,12 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
                     break;
+
                 case EventType.MouseMove:
                     if (id == HandleUtility.nearestControl)
                         HandleUtility.Repaint();
                     break;
+
                 case EventType.Repaint:
                     Color temp = Color.white;
                     if (id == GUIUtility.hotControl)

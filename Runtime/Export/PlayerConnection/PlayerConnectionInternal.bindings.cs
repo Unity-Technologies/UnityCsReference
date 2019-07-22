@@ -12,6 +12,7 @@ namespace UnityEngine
         void Initialize();
         void DisconnectAll();
         void SendMessage(Guid messageId, byte[] data, int playerId);
+        bool TrySendMessage(Guid messageId, byte[] data, int playerId);
         void Poll();
         void RegisterInternal(Guid messageId);
         void UnregisterInternal(Guid messageId);
@@ -29,6 +30,16 @@ namespace UnityEngine
             }
 
             SendMessage(messageId.ToString("N"), data, playerId);
+        }
+
+        bool IPlayerEditorConnectionNative.TrySendMessage(Guid messageId, byte[] data, int playerId)
+        {
+            if (messageId == Guid.Empty)
+            {
+                throw new ArgumentException("messageId must not be empty");
+            }
+
+            return TrySendMessage(messageId.ToString("N"), data, playerId);
         }
 
         void IPlayerEditorConnectionNative.Poll()
@@ -76,6 +87,10 @@ namespace UnityEngine
         //playerId 0 is ANY_PLAYERCONNECTION
         [FreeFunction("PlayerConnection_Bindings::SendMessage")]
         extern static void SendMessage(string messageId, byte[] data, int playerId);
+
+        //playerId 0 is ANY_PLAYERCONNECTION
+        [FreeFunction("PlayerConnection_Bindings::TrySendMessage")]
+        extern static bool TrySendMessage(string messageId, byte[] data, int playerId);
 
         [FreeFunction("PlayerConnection_Bindings::PollInternal")]
         extern static void PollInternal();

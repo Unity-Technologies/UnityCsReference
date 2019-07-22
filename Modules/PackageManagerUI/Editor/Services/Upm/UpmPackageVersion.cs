@@ -22,11 +22,14 @@ namespace UnityEditor.PackageManager.UI
         public string name { get { return m_PackageInfo.name; } }
         public string type { get { return m_PackageInfo.type; } }
         public string category { get { return m_PackageInfo.category; } }
-        public IEnumerable<Error> errors { get { return m_PackageInfo.errors; } }
+        public IEnumerable<Error> errors => m_PackageInfo.errors.Concat(entitlementsError != null ? new List<Error> { entitlementsError } : new List<Error>());
         public bool isDirectDependency { get { return isFullyFetched && m_PackageInfo.isDirectDependency; } }
 
         public DependencyInfo[] dependencies { get { return m_PackageInfo.dependencies; } }
         public DependencyInfo[] resolvedDependencies { get { return m_PackageInfo.resolvedDependencies; } }
+        public EntitlementsInfo entitlements => m_PackageInfo.entitlements;
+        Error entitlementsError => !entitlements.isAllowed && isInstalled ? new Error(NativeErrorCode.Unknown, L10n.Tr("You do not have entitlements for this package.")) : null;
+
 
         private string m_PackageId;
         public string uniqueId { get { return m_PackageId; } }

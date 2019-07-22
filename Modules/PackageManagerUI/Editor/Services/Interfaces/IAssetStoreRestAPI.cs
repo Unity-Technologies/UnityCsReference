@@ -19,17 +19,20 @@ namespace UnityEditor.PackageManager.UI
         public string errorMessage;
     }
 
+    [Serializable]
     internal class ProductList
     {
-        public long count;
+        public long total;
+        public int startIndex;
         public bool isValid;
+        public string searchText;
         public string errorMessage;
-        public List<long> list;
+        public List<long> list = new List<long>();
     }
 
     internal interface IAssetStoreRestAPI
     {
-        void GetProductIDList(int offset, int limit, Action<ProductList> doneCallbackAction);
+        void GetProductIDList(int startIndex, int limit, string searchText, Action<ProductList> doneCallbackAction);
 
         void GetProductDetail(long productID, Action<Dictionary<string, object>> doneCallbackAction);
 

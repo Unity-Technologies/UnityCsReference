@@ -148,9 +148,24 @@ namespace UnityEngine
             return new Vector3Int(a.x * b.x, a.y * b.y, a.z * b.z);
         }
 
+        public static Vector3Int operator-(Vector3Int a)
+        {
+            return new Vector3Int(-a.x, -a.y, -a.z);
+        }
+
         public static Vector3Int operator*(Vector3Int a, int b)
         {
             return new Vector3Int(a.x * b, a.y * b, a.z * b);
+        }
+
+        public static Vector3Int operator*(int a, Vector3Int b)
+        {
+            return new Vector3Int(a * b.x, a * b.y, a * b.z);
+        }
+
+        public static Vector3Int operator/(Vector3Int a, int b)
+        {
+            return new Vector3Int(a.x / b, a.y / b, a.z / b);
         }
 
         public static bool operator==(Vector3Int lhs, Vector3Int rhs)

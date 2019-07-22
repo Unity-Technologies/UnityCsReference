@@ -10,6 +10,7 @@ using System.Linq;
 using UnityEditor.Scripting.Compilers;
 using sc = UnityEditor.Scripting.ScriptCompilation;
 using UnityEditorInternal;
+using UnityEngine;
 
 namespace UnityEditor.Compilation
 {
@@ -102,9 +103,16 @@ namespace UnityEditor.Compilation
     {
         public string[] Defines;
         public string[] FullPathReferences;
+        public ResponseFileReference[] References;
         public string[] Errors;
         public string[] OtherArguments;
         public bool Unsafe;
+    }
+
+    public struct ResponseFileReference
+    {
+        public string FullPathReference;
+        public string Alias;
     }
 
     public struct AssemblyDefinitionPlatform
@@ -276,6 +284,17 @@ namespace UnityEditor.Compilation
             return assemblyDefinitionPlatforms;
         }
 
+        public static string[] GetDefinesFromAssemblyName(string assemblyName)
+        {
+            return GetDefinesFromAssemblyName(EditorCompilationInterface.Instance, assemblyName);
+        }
+
+        internal static string[] GetDefinesFromAssemblyName(EditorCompilation editorCompilation, string assemblyName)
+        {
+            var assembly = GetAssemblies().FirstOrDefault(x => x.name == assemblyName);
+            return assembly?.defines;
+        }
+
         public static string[] GetPrecompiledAssemblyNames()
         {
             return GetPrecompiledAssemblyNames(EditorCompilationInterface.Instance);
@@ -288,6 +307,11 @@ namespace UnityEditor.Compilation
                 .Select(x => AssetPath.GetFileName(x.Path))
                 .Distinct()
                 .ToArray();
+        }
+
+        public static bool IsDefineConstraintsCompatible(string[] defines, string[] defineConstraints)
+        {
+            return DefineConstraintsHelper.IsDefineConstraintsCompatible(defines, defineConstraints);
         }
 
         [Flags]

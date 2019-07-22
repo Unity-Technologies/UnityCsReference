@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine.Bindings;
+
 namespace UnityEngine.TextCore
 {
     struct TextVertex
@@ -16,6 +18,7 @@ namespace UnityEngine.TextCore
     /// <summary>
     /// Structure containing information about individual text elements (character or sprites).
     /// </summary>
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     struct TextElementInfo
     {
         public char character; // Should be changed to an int to handle UTF 32

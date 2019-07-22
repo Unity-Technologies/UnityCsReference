@@ -730,7 +730,7 @@ namespace UnityEditor
                         continue;
 
                     EditorGUI.BeginChangeCheck();
-                    Vector3 newPos = RectHandles.SideSlider(id, curPos, sideDir, slideDir, size, null, 0, -3);
+                    Vector3 newPos = RectHandles.SideSlider(id, curPos, sideDir, slideDir, size, null, Vector2.zero, -3);
                     if (EditorGUI.EndChangeCheck())
                     {
                         Vector2 curPosInSpace = space.InverseTransformPoint(curPos);

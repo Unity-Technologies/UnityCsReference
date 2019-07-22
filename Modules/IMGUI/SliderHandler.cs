@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.Scripting;
 
 namespace UnityEngine
@@ -70,11 +71,12 @@ namespace UnityEngine
         private float OnMouseDown()
         {
             var mousePosition = CurrentEvent().mousePosition;
+
             var thumbZone = ThumbSelectionRect();
-            var mouseOverThumb = thumbZone.Contains(mousePosition);
+            var mouseOverThumb = GUIUtility.HitTest(thumbZone, CurrentEvent());
 
             // if the click is outside this control, just bail out...
-            if (IsEmptySlider() || (!position.Contains(mousePosition) && !mouseOverThumb))
+            if (IsEmptySlider() || (!GUIUtility.HitTest(position, CurrentEvent()) && !mouseOverThumb))
                 return currentValue;
 
             GUI.scrollTroughSide = 0;
@@ -139,7 +141,7 @@ namespace UnityEngine
 
         private float OnRepaint()
         {
-            bool hover = position.Contains(CurrentEvent().mousePosition);
+            bool hover = GUIUtility.HitTest(position, CurrentEvent());
 
             slider.Draw(position, GUIContent.none, id, false, hover);
             if (!IsEmptySlider() && currentValue >= Mathf.Min(start, end) && currentValue <= Mathf.Max(start, end))
@@ -152,7 +154,7 @@ namespace UnityEngine
             if (GUIUtility.hotControl != id || !hover || IsEmptySlider())
                 return currentValue;
 
-            if (ThumbRect().Contains(CurrentEvent().mousePosition))
+            if (GUIUtility.HitTest(ThumbRect(), CurrentEvent()))
             {
                 if (GUI.scrollTroughSide != 0) // if was scrolling with "trough" and the thumb reached mouse - sliding action over
                 {

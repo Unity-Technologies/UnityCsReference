@@ -7,14 +7,16 @@ using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Scripting.APIUpdating;
 
 using Unity.Jobs;
 
-namespace UnityEngine.Experimental.U2D
+namespace UnityEngine.U2D
 {
     /// <summary>
     /// SpriteShapeParameters contains SpriteShape properties that are used for generating it.
     /// </summary>
+    [MovedFrom("UnityEngine.Experimental.U2D")]
     [StructLayoutAttribute(LayoutKind.Sequential)]
     public struct SpriteShapeParameters
     {
@@ -38,6 +40,7 @@ namespace UnityEngine.Experimental.U2D
     /// SpriteShapeSegment contains data for each segment of mesh generated for SpriteShape.
     /// </summary>
     [StructLayoutAttribute(LayoutKind.Sequential)]
+    [MovedFrom("UnityEngine.Experimental.U2D")]
     public struct SpriteShapeSegment
     {
         private int m_GeomIndex;
@@ -78,6 +81,7 @@ namespace UnityEngine.Experimental.U2D
     }
 
     [NativeType(Header = "Modules/SpriteShape/Public/SpriteShapeRenderer.h")]
+    [MovedFrom("UnityEngine.Experimental.U2D")]
     public class SpriteShapeRenderer : Renderer
     {
         public extern Color color

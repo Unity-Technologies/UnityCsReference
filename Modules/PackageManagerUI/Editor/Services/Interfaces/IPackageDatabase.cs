@@ -7,23 +7,12 @@ using System.Collections.Generic;
 
 namespace UnityEditor.PackageManager.UI
 {
-    [Flags]
-    internal enum RefreshOptions : short
-    {
-        None            = 0,
-        OfflineMode     = 1 << 0,
-        ListInstalled   = 1 << 1,
-        SearchAll       = 1 << 2,
-        Purchased       = 1 << 3
-    }
-
     internal interface IPackageDatabase
     {
         event Action<long> onUpdateTimeChange;
 
-        // args 1,2, 3 are added, removed and updated packages respectively
-        event Action<IEnumerable<IPackage>, IEnumerable<IPackage>, IEnumerable<IPackage>> onPackagesChanged;
-        event Action<IPackageVersion> onPackageVersionUpdated;
+        // args 1,2, 3 are added, removed and preUpdated, and postUpdated packages respectively
+        event Action<IEnumerable<IPackage>, IEnumerable<IPackage>, IEnumerable<IPackage>, IEnumerable<IPackage>> onPackagesChanged;
 
         event Action<IPackage, IPackageVersion> onInstallSuccess;
         event Action<IPackage> onUninstallSuccess;
@@ -40,8 +29,6 @@ namespace UnityEditor.PackageManager.UI
         void Setup();
 
         void Clear();
-
-        void Refresh(RefreshOptions options);
 
         bool isEmpty { get; }
         bool isInstallOrUninstallInProgress { get; }
@@ -64,7 +51,7 @@ namespace UnityEditor.PackageManager.UI
 
         void Import(IPackage package);
 
-        void Embed(IPackage package);
+        void Embed(IPackageVersion package);
         void RemoveEmbedded(IPackage package);
 
         long lastUpdateTimestamp { get; }
@@ -85,5 +72,7 @@ namespace UnityEditor.PackageManager.UI
         void GetPackageAndVersion(string packageUniqueId, string versionUniqueId, out IPackage package, out IPackageVersion version);
 
         IEnumerable<IPackageVersion> GetDependentVersions(IPackageVersion version);
+
+        IEnumerable<IPackage> packagesInError { get; }
     }
 }

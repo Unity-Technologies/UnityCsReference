@@ -327,6 +327,22 @@ namespace UnityEngine
             int width, height;
             return AlignRectToDevice(rect, out width, out height);
         }
+
+        internal static bool HitTest(Rect rect, Vector2 point, int offset)
+        {
+            return (point.x >= rect.xMin - offset) && (point.x < rect.xMax + offset) && (point.y >= rect.yMin - offset) && (point.y < rect.yMax + offset);
+        }
+
+        internal static bool HitTest(Rect rect, Vector2 point, bool isDirectManipulationDevice)
+        {
+            int offset = isDirectManipulationDevice ? 3 : 0;
+            return HitTest(rect, point, offset);
+        }
+
+        internal static bool HitTest(Rect rect, Event evt)
+        {
+            return HitTest(rect, evt.mousePosition, evt.isDirectManipulationDevice);
+        }
     }
 
     [VisibleToOtherModules("UnityEngine.UIElementsModule")]

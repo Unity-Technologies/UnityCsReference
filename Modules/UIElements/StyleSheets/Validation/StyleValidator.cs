@@ -25,22 +25,13 @@ namespace UnityEngine.UIElements.StyleSheets
 
     internal class StyleValidator
     {
-        internal const string kDefaultPropertiesPath = "StyleSheets/UIElements-properties.json";
-
-        private StylePropertyInfoCache m_StylePropertyInfoCache;
         private StyleSyntaxParser m_SyntaxParser;
         private StyleMatcher m_StyleMatcher;
 
         public StyleValidator()
         {
-            m_StylePropertyInfoCache = new StylePropertyInfoCache();
-            m_SyntaxParser = new StyleSyntaxParser(m_StylePropertyInfoCache);
+            m_SyntaxParser = new StyleSyntaxParser();
             m_StyleMatcher = new StyleMatcher();
-        }
-
-        public void LoadPropertiesDefinition(string json)
-        {
-            m_StylePropertyInfoCache.LoadJson(json);
         }
 
         public StyleValidationResult ValidateProperty(string name, string value)
@@ -51,10 +42,10 @@ namespace UnityEngine.UIElements.StyleSheets
             if (name.StartsWith("--"))
                 return result;
 
-            StylePropertyInfo propertyInfo;
-            if (!m_StylePropertyInfoCache.TryGet(name, out propertyInfo))
+            string syntax;
+            if (!StylePropertyCache.TryGetSyntax(name, out syntax))
             {
-                string closestName = m_StylePropertyInfoCache.FindClosestPropertyName(name);
+                string closestName = StylePropertyCache.FindClosestPropertyName(name);
                 result.status = StyleValidationStatus.Error;
                 result.message = $"Unknown property '{name}'";
                 if (!string.IsNullOrEmpty(closestName))
@@ -63,11 +54,11 @@ namespace UnityEngine.UIElements.StyleSheets
                 return result;
             }
 
-            var syntaxTree = m_SyntaxParser.Parse(propertyInfo.syntax);
+            var syntaxTree = m_SyntaxParser.Parse(syntax);
             if (syntaxTree == null)
             {
                 result.status = StyleValidationStatus.Error;
-                result.message = $"Invalid '{name}' property syntax '{propertyInfo.syntax}'";
+                result.message = $"Invalid '{name}' property syntax '{syntax}'";
                 return result;
             }
 
@@ -79,15 +70,15 @@ namespace UnityEngine.UIElements.StyleSheets
                 {
                     case MatchResultErrorCode.Syntax:
                         result.status = StyleValidationStatus.Error;
-                        if (IsUnitMissing(propertyInfo.syntax, value))
+                        if (IsUnitMissing(syntax, value))
                             result.hint = "Property expects a unit. Did you forget to add px or %?";
-                        else if (IsUnsupportedColor(propertyInfo.syntax))
+                        else if (IsUnsupportedColor(syntax))
                             result.hint = $"Unsupported color '{value}'.";
-                        result.message = $"Expected ({propertyInfo.syntax}) but found '{matchResult.errorValue}'";
+                        result.message = $"Expected ({syntax}) but found '{matchResult.errorValue}'";
                         break;
                     case MatchResultErrorCode.EmptyValue:
                         result.status = StyleValidationStatus.Error;
-                        result.message = $"Expected ({propertyInfo.syntax}) but found empty value";
+                        result.message = $"Expected ({syntax}) but found empty value";
                         break;
                     case MatchResultErrorCode.ExpectedEndOfValue:
                         result.status = StyleValidationStatus.Warning;

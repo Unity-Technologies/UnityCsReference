@@ -447,6 +447,27 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
+        public EditorBuildRules.TargetAssembly GetCustomTargetAssemblyFromName(string name)
+        {
+            EditorBuildRules.TargetAssembly targetAssembly;
+
+            if (name.EndsWith(".dll"))
+            {
+                customTargetAssemblies.TryGetValue(name, out targetAssembly);
+            }
+            else
+            {
+                customTargetAssemblies.TryGetValue(name + ".dll", out targetAssembly);
+            }
+
+            if (targetAssembly == null)
+            {
+                throw new ArgumentException("Assembly not found", name);
+            }
+
+            return targetAssembly;
+        }
+
         public TargetAssemblyInfo[] GetAllCompiledAndResolvedCustomTargetAssemblies(EditorScriptCompilationOptions options, BuildTarget buildTarget, out CustomScriptAssemblyAndReference[] assembliesWithMissingReference)
         {
             if (customTargetAssemblies == null)

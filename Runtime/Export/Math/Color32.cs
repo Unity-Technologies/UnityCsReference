@@ -42,7 +42,10 @@ namespace UnityEngine
         // Color32 can be implicitly converted to and from [[Color]].
         public static implicit operator Color32(Color c)
         {
-            return new Color32((byte)(Mathf.Clamp01(c.r) * 255), (byte)(Mathf.Clamp01(c.g) * 255), (byte)(Mathf.Clamp01(c.b) * 255), (byte)(Mathf.Clamp01(c.a) * 255));
+            return new Color32((byte)(Mathf.Round((Mathf.Clamp01(c.r) * 255f))),
+                (byte)(Mathf.Round((Mathf.Clamp01(c.g) * 255f))),
+                (byte)(Mathf.Round((Mathf.Clamp01(c.b) * 255f))),
+                (byte)(Mathf.Round((Mathf.Clamp01(c.a) * 255f))));
         }
 
         // Color32 can be implicitly converted to and from [[Color]].

@@ -837,6 +837,9 @@ namespace UnityEditor
                                 s_Styles.resultsLabel.Draw(new Rect(labelRect.x - 10, labelRect.y, labelRect.width + 20, labelRect.height), GUIContent.none, true, true, false, false);
 
                             labeltext = m_Owner.GetCroppedLabelText(instanceID, labeltext, position.width);
+                            var labelNewRect = s_Styles.resultsGridLabel.CalcSizeWithConstraints(GUIContent.Temp(labeltext), position.size);
+                            labelRect.x = position.x + (position.width - labelNewRect.x) / 2.0f;
+                            labelRect.width = labelNewRect.x;
                             s_Styles.resultsGridLabel.Draw(labelRect, labeltext, false, false, selected, m_Owner.HasFocus());
                         }
 

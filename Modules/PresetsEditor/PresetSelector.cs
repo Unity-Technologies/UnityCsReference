@@ -105,7 +105,7 @@ namespace UnityEditor.Presets
         {
             var target = targets[0];
 
-            if (Preset.IsObjectExcludedFromPresets(target)
+            if (!new PresetType(target).IsValid()
                 || (target.hideFlags & HideFlags.NotEditable) != 0)
                 return false;
 
@@ -129,7 +129,12 @@ namespace UnityEditor.Presets
             get.Init(target, currentSelection, createNewAllowed, eventReceiver);
         }
 
-        void Init(Object target, Preset currentSelection, bool createNewAllowed, PresetSelectorReceiver eventReceiver)
+        public static void ShowSelector(PresetType presetType, Preset currentSelection, bool createNewAllowed, PresetSelectorReceiver eventReceiver)
+        {
+            get.Init(presetType, currentSelection, createNewAllowed, eventReceiver);
+        }
+
+        void Init(PresetType presetType, Preset currentSelection, bool createNewAllowed, PresetSelectorReceiver eventReceiver)
         {
             m_ModalUndoGroup = Undo.GetCurrentGroup();
 
@@ -140,9 +145,8 @@ namespace UnityEditor.Presets
 
             // Set member variables
             m_SearchField = string.Empty;
-            m_MainTarget = target;
             InitListArea();
-            m_Presets = FindAllPresetsForObject(target);
+            m_Presets = FindAllPresetsOfType(presetType);
             UpdateSearchResult(currentSelection != null ? currentSelection.GetInstanceID() : 0);
 
             m_EventObject = eventReceiver;
@@ -167,11 +171,17 @@ namespace UnityEditor.Presets
             m_Parent.AddToAuxWindowList();
         }
 
-        static IEnumerable<Preset> FindAllPresetsForObject(Object target)
+        void Init(Object target, Preset currentSelection, bool createNewAllowed, PresetSelectorReceiver eventReceiver)
+        {
+            m_MainTarget = target;
+            Init(new PresetType(target), currentSelection, createNewAllowed, eventReceiver);
+        }
+
+        static IEnumerable<Preset> FindAllPresetsOfType(PresetType presetType)
         {
             return AssetDatabase.FindAssets("t:Preset")
                 .Select(a => AssetDatabase.LoadAssetAtPath<Preset>(AssetDatabase.GUIDToAssetPath(a)))
-                .Where(preset => preset.CanBeAppliedTo(target));
+                .Where(preset => preset.GetPresetType() == presetType);
         }
 
         void InitListArea()
@@ -378,7 +388,19 @@ namespace UnityEditor.Presets
             var path = CreatePresetDialog(ref preset, target);
             if (!string.IsNullOrEmpty(path))
             {
-                AssetDatabase.CreateAsset(preset, path);
+                // If the asset already exist, we need to make sure we keep the same PPtr valid in memory.
+                // To ensure that, we use CopySerialized on the Asset instance instead of erasing the asset with CreateAsset.
+                var oldPreset = AssetDatabase.LoadAssetAtPath<Preset>(path);
+                if (oldPreset != null)
+                {
+                    EditorUtility.CopySerialized(preset, oldPreset);
+                    // replace name because it was erased by the CopySerialized
+                    oldPreset.name = System.IO.Path.GetFileNameWithoutExtension(path);
+                }
+                else
+                {
+                    AssetDatabase.CreateAsset(preset, path);
+                }
             }
             GUIUtility.ExitGUI();
         }

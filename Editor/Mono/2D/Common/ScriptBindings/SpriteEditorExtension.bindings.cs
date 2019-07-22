@@ -3,11 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
 using UnityEngine.Bindings;
 using UnityEngine.U2D;
 
-namespace UnityEditor.Experimental.U2D
+namespace UnityEditor.U2D
 {
     [NativeHeader("Editor/Src/2D/SpriteEditorExtension.h")]
     public static class SpriteEditorExtension

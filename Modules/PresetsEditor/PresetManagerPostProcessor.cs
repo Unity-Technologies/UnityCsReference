@@ -15,8 +15,7 @@ namespace UnityEditor.Presets
         {
             if (assetImporter != null && assetImporter.importSettingsMissing)
             {
-                var preset = Preset.GetDefaultForObject(assetImporter);
-                if (preset != null)
+                foreach (var preset in Preset.GetDefaultPresetsForObject(assetImporter))
                 {
                     preset.ApplyTo(assetImporter);
                 }

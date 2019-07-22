@@ -10,7 +10,7 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Internal;
 
-namespace UnityEditor.Experimental.XR
+namespace UnityEditor.XR
 {
     /// <summary>
     /// Helper class to allow us to provide a *hidden* API for setting boot config options

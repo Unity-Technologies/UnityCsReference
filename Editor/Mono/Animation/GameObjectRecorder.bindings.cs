@@ -11,12 +11,30 @@ using uei = UnityEngine.Internal;
 
 namespace UnityEditor.Animations
 {
+    public struct CurveFilterOptions
+    {
+        public float positionError;
+        public float rotationError;
+        public float scaleError;
+        public float floatError;
+        public bool keyframeReduction;
+    }
+
     [NativeHeader("Editor/Src/Animation/EditorCurveBinding.bindings.h")]
     [NativeHeader("Editor/Src/Animation/GameObjectRecorder.h")]
     [NativeHeader("Modules/Animation/AnimationClip.h")]
     [NativeType]
     public class GameObjectRecorder : Object
     {
+        readonly static CurveFilterOptions k_DefaultCurveFilterOptions = new CurveFilterOptions()
+        {
+            keyframeReduction = true,
+            positionError = 0.5f,
+            rotationError = 0.5f,
+            scaleError = 0.5f,
+            floatError = 0.5f
+        };
+
         public GameObjectRecorder(GameObject root)
         {
             Internal_Create(this, root);
@@ -76,11 +94,36 @@ namespace UnityEditor.Animations
         {
             if (fps <= Mathf.Epsilon)
                 throw new ArgumentException("FPS can't be 0.0 or less");
-            SaveToClipInternal(clip, fps);
+
+            if (!isRecording)
+                throw new InvalidOperationException("Cannot save to clip as there is nothing to save. The method TakeSnapshot() has not been called.");
+
+            SaveToClipInternal(clip, fps, k_DefaultCurveFilterOptions);
+
+            AnimationUtility.onCurveWasModified?.Invoke(clip, new EditorCurveBinding(), AnimationUtility.CurveModifiedType.ClipModified);
+        }
+
+        public void SaveToClip(AnimationClip clip, float fps, CurveFilterOptions filterOptions)
+        {
+            if (fps <= Mathf.Epsilon)
+                throw new ArgumentException("FPS can't be 0.0 or less");
+
+            if (filterOptions.keyframeReduction)
+            {
+                if (filterOptions.positionError < 0 || filterOptions.rotationError < 0 || filterOptions.scaleError < 0 || filterOptions.floatError < 0)
+                    throw new ArgumentException("Allowed errors for keyframe reduction cannot be negative.");
+            }
+
+            if (!isRecording)
+                throw new InvalidOperationException("Cannot save to clip as there is nothing to save. The method TakeSnapshot() has not been called.");
+
+            SaveToClipInternal(clip, fps, filterOptions);
+
+            AnimationUtility.onCurveWasModified?.Invoke(clip, new EditorCurveBinding(), AnimationUtility.CurveModifiedType.ClipModified);
         }
 
         [NativeMethod("SaveToClip")]
-        extern void SaveToClipInternal(AnimationClip clip, float fps);
+        extern void SaveToClipInternal(AnimationClip clip, float fps, CurveFilterOptions filterOptions);
 
         extern public void ResetRecording();
 

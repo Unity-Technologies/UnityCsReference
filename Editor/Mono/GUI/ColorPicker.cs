@@ -411,9 +411,10 @@ namespace UnityEditor
 
         public static Texture2D MakeTexture(int width, int height)
         {
-            Texture2D tex = new Texture2D(width, height, TextureFormat.RGBA32, false, true);
-            tex.hideFlags = HideFlags.HideAndDontSave;
-            tex.wrapMode = TextureWrapMode.Clamp;
+            Texture2D tex = new Texture2D(width, height, TextureFormat.RGBA32, false, true)
+            {
+                hideFlags = HideFlags.HideAndDontSave, wrapMode = TextureWrapMode.Clamp
+            };
             return tex;
         }
 
@@ -454,7 +455,7 @@ namespace UnityEditor
         static class Styles
         {
             public const float fixedWindowWidth = 233;
-            public const float hexFieldWidth = 72f;
+            public const float hexFieldWidth = 85f;
             public const float sliderModeFieldWidth = hexFieldWidth;
             public const float channelSliderLabelWidth = 14f;
             public const float sliderTextFieldWidth = 45f;
@@ -475,7 +476,6 @@ namespace UnityEditor
             public static readonly GUIStyle hueDialBackgroundHDR = "ColorPickerHueRing HDR";
             public static readonly GUIStyle hueDialThumb = "ColorPickerHueRingThumb";
             public static readonly GUIStyle sliderBackground = "ColorPickerSliderBackground";
-            public static readonly GUIStyle sliderThumb = "ColorPickerHorizThumb";
             public static readonly GUIStyle background = "ColorPickerBackground";
             public static readonly GUIStyle exposureSwatch = "ColorPickerExposureSwatch";
             public static readonly GUIStyle selectedExposureSwatchStroke = "ColorPickerCurrentExposureSwatchBorder";
@@ -536,14 +536,16 @@ namespace UnityEditor
             if (m_ColorLibraryEditor == null)
             {
                 var saveLoadHelper = new ScriptableObjectSaveLoadHelper<ColorPresetLibrary>("colors", SaveType.Text);
-                m_ColorLibraryEditor = new PresetLibraryEditor<ColorPresetLibrary>(saveLoadHelper, m_ColorLibraryEditorState, OnClickedPresetSwatch);
-                m_ColorLibraryEditor.previewAspect = 1f;
-                m_ColorLibraryEditor.minMaxPreviewHeight = new Vector2(ColorPresetLibrary.kSwatchSize, ColorPresetLibrary.kSwatchSize);
-                m_ColorLibraryEditor.settingsMenuRightMargin = 2f;
-                m_ColorLibraryEditor.useOnePixelOverlappedGrid = true;
-                m_ColorLibraryEditor.alwaysShowScrollAreaHorizontalLines = false;
-                m_ColorLibraryEditor.marginsForGrid = new RectOffset(0, 0, 2, 2);
-                m_ColorLibraryEditor.marginsForList = new RectOffset(0, 5, 2, 2);
+                m_ColorLibraryEditor = new PresetLibraryEditor<ColorPresetLibrary>(saveLoadHelper, m_ColorLibraryEditorState, OnClickedPresetSwatch)
+                {
+                    previewAspect = 1f,
+                    minMaxPreviewHeight = new Vector2(ColorPresetLibrary.kSwatchSize, ColorPresetLibrary.kSwatchSize),
+                    settingsMenuRightMargin = 2f,
+                    useOnePixelOverlappedGrid = true,
+                    alwaysShowScrollAreaHorizontalLines = false,
+                    marginsForGrid = new RectOffset(0, 0, 2, 2),
+                    marginsForList = new RectOffset(0, 5, 2, 2)
+                };
                 m_ColorLibraryEditor.InitializeGrid(Styles.fixedWindowWidth - (Styles.background.padding.left + Styles.background.padding.right));
             }
         }
@@ -570,7 +572,16 @@ namespace UnityEditor
             var oldGUIColor = GUI.color;
             GUI.color = Color.white;
 
-            if (GUILayout.Button(Styles.eyeDropper, GUIStyle.none, GUILayout.Width(40), GUILayout.ExpandWidth(false)))
+            Event evt = Event.current;
+            Rect position = GUILayoutUtility.GetRect(Styles.eyeDropper, GUIStyle.none, GUILayout.Width(40), GUILayout.ExpandWidth(false));
+            bool startEyeDropper = false;
+            if (evt.type == EventType.Repaint || !evt.isDirectManipulationDevice)
+                startEyeDropper = GUI.Button(position, Styles.eyeDropper, GUIStyle.none);
+            // For a direct manipulation device, the color picking is on a drag&drop, so we just need to start the eyeDropper on mouseDown instead of mouseUp
+            else if (evt.type == EventType.MouseDown && position.Contains(evt.mousePosition))
+                startEyeDropper = true;
+
+            if (startEyeDropper)
             {
                 GUIUtility.keyboardControl = 0;
                 EyeDropper.Start(m_Parent);
@@ -578,7 +589,6 @@ namespace UnityEditor
                 GUIUtility.ExitGUI();
             }
 
-            var swatchColor = m_Color.exposureAdjustedColor;
             // current swatch and original swatch have the same size, so they can lay out in the same row
             var rect = GUILayoutUtility.GetRect(Styles.currentColorSwatchFill, Styles.currentColorSwatch, GUILayout.ExpandWidth(true));
 
@@ -594,7 +604,7 @@ namespace UnityEditor
             var contentColor = GUI.contentColor;
 
             var id = GUIUtility.GetControlID(FocusType.Passive);
-            if (Event.current.type == EventType.Repaint)
+            if (evt.type == EventType.Repaint)
             {
                 GUI.backgroundColor = m_Color.exposureAdjustedColor.a == 1f ? Color.clear : Color.white;
                 GUI.contentColor = GetGUIColor(m_Color.exposureAdjustedColor);
@@ -607,7 +617,7 @@ namespace UnityEditor
             if (GUI.Button(swatchRect, Styles.originalColorSwatchFill, Styles.originalColorSwatch))
             {
                 m_Color.Reset();
-                Event.current.Use();
+                evt.Use();
                 OnColorChanged();
             }
 
@@ -1060,9 +1070,7 @@ namespace UnityEditor
 
         static Texture2D CreateGradientTexture(string name, int width, int height, Color leftColor, Color rightColor)
         {
-            var texture = new Texture2D(width, height, TextureFormat.RGBA32, false, true);
-            texture.name = name;
-            texture.hideFlags = HideFlags.HideAndDontSave;
+            var texture = new Texture2D(width, height, TextureFormat.RGBA32, false, true) {name = name, hideFlags = HideFlags.HideAndDontSave};
             var pixels = new Color[width * height];
 
             for (int i = 0; i < width; i++)
@@ -1275,7 +1283,7 @@ namespace UnityEditor
             instance.AddToAuxWindowList();
             win.SetInvisible();
             instance.SetMinMaxSizes(new Vector2(0, 0), new Vector2(kDummyWindowSize, kDummyWindowSize));
-            win.position = new Rect(-kDummyWindowSize / 2, -kDummyWindowSize / 2, kDummyWindowSize, kDummyWindowSize);
+            win.position = new Rect(-kDummyWindowSize / 2f, -kDummyWindowSize / 2f, kDummyWindowSize, kDummyWindowSize);
             instance.wantsMouseMove = true;
             instance.StealMouseCapture();
         }
@@ -1337,7 +1345,7 @@ namespace UnityEditor
             }
 
             Vector2 p = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
-            Vector2 mPos = p - new Vector2((width / 2), (height / 2));
+            Vector2 mPos = p - new Vector2((width / 2f), (height / 2f));
             preview.SetPixels(InternalEditorUtility.ReadScreenPixelUnderCursor(p, width, height), 0);
             preview.Apply(true);
 
@@ -1370,40 +1378,74 @@ namespace UnityEditor
             // On mouse move/click we remember screen coordinates where we are. Then we'll use that
             // in GetPickedColor to read. The reason is that because GetPickedColor might be called from
             // an event which is different, so the coordinates would be already wrong.
-            switch (Event.current.type)
+            // for direct manipulation devices, it is on mouse drag/up
+            if (Event.current.isDirectManipulationDevice)
             {
-                case EventType.MouseMove:
-                    s_PickCoordinates = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
+                switch (Event.current.type)
+                {
+                    case EventType.MouseDrag:
+                        UpdateEyeDropper();
+                        break;
+                    case EventType.MouseUp:
+                        StopEyeDropper();
+                        break;
+                    case EventType.KeyDown:
+                        CancelEyeDropper();
+                        break;
+                }
+            }
+            else
+            {
+                switch (Event.current.type)
+                {
+                    case EventType.MouseMove:
+                        UpdateEyeDropper();
+                        break;
+                    case EventType.MouseDown:
+                        StopEyeDropper();
+                        break;
+                    case EventType.KeyDown:
+                        CancelEyeDropper();
+                        break;
+                }
+            }
+        }
 
-                    StealMouseCapture();
-                    SendEvent(EventCommandNames.EyeDropperUpdate, true, false);
-                    break;
-                case EventType.MouseDown:
-                    if (Event.current.button == 0)
-                    {
-                        s_PickCoordinates = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
+        private void UpdateEyeDropper()
+        {
+            s_PickCoordinates = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
 
-                        // We have to close helper window before we read color from screen. On Win
-                        // the window covers whole desktop (see Show()) and is black with 0x01 alpha value.
-                        // That might cause invalid picked color.
-                        window.Close();
-                        s_LastPickedColor = GetPickedColor();
-                        Event.current.Use();
-                        SendEvent(EventCommandNames.EyeDropperClicked, true);
-                        if (m_ColorPickedCallback != null)
-                        {
-                            m_ColorPickedCallback(s_LastPickedColor);
-                        }
-                    }
-                    break;
-                case EventType.KeyDown:
-                    if (Event.current.keyCode == KeyCode.Escape)
-                    {
-                        window.Close();
-                        Event.current.Use();
-                        SendEvent(EventCommandNames.EyeDropperCancelled, true);
-                    }
-                    break;
+            StealMouseCapture();
+            SendEvent(EventCommandNames.EyeDropperUpdate, true, false);
+        }
+
+        private void StopEyeDropper()
+        {
+            if (Event.current.button == 0)
+            {
+                s_PickCoordinates = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
+
+                // We have to close helper window before we read color from screen. On Win
+                // the window covers whole desktop (see Show()) and is black with 0x01 alpha value.
+                // That might cause invalid picked color.
+                window.Close();
+                s_LastPickedColor = GetPickedColor();
+                Event.current.Use();
+                SendEvent(EventCommandNames.EyeDropperClicked, true);
+                if (m_ColorPickedCallback != null)
+                {
+                    m_ColorPickedCallback(s_LastPickedColor);
+                }
+            }
+        }
+
+        private void CancelEyeDropper()
+        {
+            if (Event.current.keyCode == KeyCode.Escape)
+            {
+                window.Close();
+                Event.current.Use();
+                SendEvent(EventCommandNames.EyeDropperCancelled, true);
             }
         }
 

@@ -4,7 +4,6 @@
 
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.Profiling;
 
 namespace UnityEditor.Experimental.GraphView
@@ -118,7 +117,6 @@ namespace UnityEditor.Experimental.GraphView
                     {
                         edgeControl.from = m_GlobalCandidatePosition;
                     }
-                    MarkDirtyRepaint();
                     UpdateEdgeControl();
                 }
             }
@@ -168,10 +166,9 @@ namespace UnityEditor.Experimental.GraphView
             this.AddManipulator(new EdgeManipulator());
             this.AddManipulator(new ContextualMenuManipulator(null));
 
+            RegisterCallback<AttachToPanelEvent>(OnEdgeAttach);
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             AddStyleSheetPath("StyleSheets/GraphView/Edge.uss");
-
-            this.generateVisualContent += OnGenerateVisualContent;
         }
 
         public override bool Overlaps(Rect rectangle)
@@ -198,6 +195,7 @@ namespace UnityEditor.Experimental.GraphView
         {
             edgeControl.outputOrientation = m_OutputPort?.orientation ?? (m_InputPort?.orientation ?? Orientation.Horizontal);
             edgeControl.inputOrientation = m_InputPort?.orientation ?? (m_OutputPort?.orientation ?? Orientation.Horizontal);
+            UpdateEdgeControl();
         }
 
         internal bool ForceUpdateEdgeControl()
@@ -217,58 +215,17 @@ namespace UnityEditor.Experimental.GraphView
             if (m_GraphView == null)
                 return false;
 
-            UpdateEndPoints();
+            UpdateEdgeControlEndPoints();
             edgeControl.UpdateLayout();
+            UpdateEdgeControlColorsAndWidth();
 
             return true;
         }
 
-        // This control is actually changing styles during drawing which is a bad habit
-        // The entire control should be reconstructed to assume the control as immutable
-        // during GenerateVisualContent. Would be good if this can be enforced by means of an exception,
-        // much like preventing adding controls during control removal callbacks
-        private void OnGenerateVisualContent(MeshGenerationContext mgc)
+        protected virtual void DrawEdge() {}
+
+        void UpdateEdgeControlColorsAndWidth()
         {
-            DrawEdge();
-        }
-
-        protected override void OnCustomStyleResolved(ICustomStyle styles)
-        {
-            base.OnCustomStyleResolved(styles);
-
-            int edgeWidthValue = 0;
-            Color selectColorValue = Color.clear;
-            Color edgeColorValue = Color.clear;
-            Color ghostColorValue = Color.clear;
-
-            if (styles.TryGetValue(s_EdgeWidthProperty, out edgeWidthValue))
-                m_EdgeWidth = edgeWidthValue;
-
-            if (styles.TryGetValue(s_SelectedEdgeColorProperty, out selectColorValue))
-                m_SelectedColor = selectColorValue;
-
-            if (styles.TryGetValue(s_EdgeColorProperty, out edgeColorValue))
-                m_DefaultColor = edgeColorValue;
-
-            if (styles.TryGetValue(s_GhostEdgeColorProperty, out ghostColorValue))
-                m_GhostColor = ghostColorValue;
-        }
-
-        public override void OnSelected()
-        {
-            MarkDirtyRepaint();
-        }
-
-        public override void OnUnselected()
-        {
-            MarkDirtyRepaint();
-        }
-
-        protected virtual void DrawEdge()
-        {
-            if (!UpdateEdgeControl())
-                return;
-
             if (selected)
             {
                 if (isGhostEdge)
@@ -292,12 +249,20 @@ namespace UnityEditor.Experimental.GraphView
                 if (m_OutputPort != null)
                     m_OutputPort.UpdateCapColor();
 
-                edgeControl.inputColor = m_InputPort == null ? m_OutputPort.portColor : m_InputPort.portColor;
-                edgeControl.outputColor = m_OutputPort == null ? m_InputPort.portColor : m_OutputPort.portColor;
+                if (m_InputPort != null)
+                    edgeControl.inputColor = m_InputPort.portColor;
+                else if (m_OutputPort != null)
+                    edgeControl.inputColor = m_OutputPort.portColor;
+
+                if (m_OutputPort != null)
+                    edgeControl.outputColor = m_OutputPort.portColor;
+                else if (m_InputPort != null)
+                    edgeControl.outputColor = m_InputPort.portColor;
+
                 edgeControl.edgeWidth = edgeWidth;
 
-                edgeControl.toCapColor = m_InputPort == null ? m_OutputPort.portColor : m_InputPort.portColor;
-                edgeControl.fromCapColor = m_OutputPort == null ? m_InputPort.portColor : m_OutputPort.portColor;
+                edgeControl.toCapColor = edgeControl.inputColor;
+                edgeControl.fromCapColor = edgeControl.outputColor;
 
                 if (isGhostEdge)
                 {
@@ -305,6 +270,40 @@ namespace UnityEditor.Experimental.GraphView
                     edgeControl.outputColor = new Color(edgeControl.outputColor.r, edgeControl.outputColor.g, edgeControl.outputColor.b, 0.5f);
                 }
             }
+        }
+
+        protected override void OnCustomStyleResolved(ICustomStyle styles)
+        {
+            base.OnCustomStyleResolved(styles);
+
+            int edgeWidthValue = 0;
+            Color selectColorValue = Color.clear;
+            Color edgeColorValue = Color.clear;
+            Color ghostColorValue = Color.clear;
+
+            if (styles.TryGetValue(s_EdgeWidthProperty, out edgeWidthValue))
+                m_EdgeWidth = edgeWidthValue;
+
+            if (styles.TryGetValue(s_SelectedEdgeColorProperty, out selectColorValue))
+                m_SelectedColor = selectColorValue;
+
+            if (styles.TryGetValue(s_EdgeColorProperty, out edgeColorValue))
+                m_DefaultColor = edgeColorValue;
+
+            if (styles.TryGetValue(s_GhostEdgeColorProperty, out ghostColorValue))
+                m_GhostColor = ghostColorValue;
+
+            UpdateEdgeControlColorsAndWidth();
+        }
+
+        public override void OnSelected()
+        {
+            UpdateEdgeControlColorsAndWidth();
+        }
+
+        public override void OnUnselected()
+        {
+            UpdateEdgeControlColorsAndWidth();
         }
 
         protected virtual EdgeControl CreateEdgeControl()
@@ -344,6 +343,11 @@ namespace UnityEditor.Experimental.GraphView
         {
             Port port = (Port)e.target;
             DoTrackGraphElement(port);
+        }
+
+        void OnEdgeAttach(AttachToPanelEvent e)
+        {
+            UpdateEdgeControl();
         }
 
         void UntrackGraphElement(Port port)
@@ -412,23 +416,22 @@ namespace UnityEditor.Experimental.GraphView
                     edgeControl.from = GetPortPosition(p);
                 }
             }
+
+            UpdateEdgeControl();
         }
 
         private void OnGeometryChanged(GeometryChangedEvent evt)
         {
-            m_EndPointsDirty = true;
-
-            //We make sure UpdateEdgeControl will be called
-            MarkDirtyRepaint();
+            ForceUpdateEdgeControl();
         }
 
-        private void UpdateEndPoints()
+        private void UpdateEdgeControlEndPoints()
         {
             if (!m_EndPointsDirty)
             {
                 return;
             }
-            Profiler.BeginSample("Edge.UpdateEndPoints");
+            Profiler.BeginSample("Edge.UpdateEdgeControlEndPoints");
 
             m_GlobalCandidatePosition = this.WorldToLocal(m_CandidatePosition);
             if (m_OutputPort != null || m_InputPort != null)

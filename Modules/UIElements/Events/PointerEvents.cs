@@ -518,6 +518,25 @@ namespace UnityEngine.UIElements
         }
     }
 
+    public sealed class PointerStationaryEvent : PointerEventBase<PointerStationaryEvent>
+    {
+        protected override void Init()
+        {
+            base.Init();
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
+            ((IPointerEventInternal)this).recomputeTopElementUnderPointer = true;
+        }
+
+        public PointerStationaryEvent()
+        {
+            LocalInit();
+        }
+    }
+
     public sealed class PointerUpEvent : PointerEventBase<PointerUpEvent>
     {
         protected override void Init()

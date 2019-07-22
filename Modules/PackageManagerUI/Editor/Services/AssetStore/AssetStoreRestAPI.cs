@@ -33,12 +33,14 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 m_Host = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudPackagesApi);
             }
 
-            public void GetProductIDList(int offset, int limit, Action<ProductList> doneCallbackAction)
+            public void GetProductIDList(int startIndex, int limit, string searchText, Action<ProductList> doneCallbackAction)
             {
                 var returnList = new ProductList
                 {
-                    count = 0,
+                    total = 0,
+                    startIndex = startIndex,
                     isValid = false,
+                    searchText = searchText,
                     list = new List<long>()
                 };
 
@@ -52,7 +54,8 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                     }
 
                     limit = limit > 0 ? limit : kDefaultLimit;
-                    var httpRequest = m_AsyncHTTPClient.GetASyncHTTPClient($"{m_Host}{kListUri}?offset={offset}&limit={limit}");
+                    searchText = string.IsNullOrEmpty(searchText) ? "" : searchText;
+                    var httpRequest = m_AsyncHTTPClient.GetASyncHTTPClient($"{m_Host}{kListUri}?offset={startIndex}&limit={limit}&query={System.Uri.EscapeDataString(searchText)}");
                     httpRequest.header["Authorization"] = "Bearer " + userInfo.accessToken.access_token;
                     httpRequest.doneCallback = httpClient =>
                     {
@@ -65,7 +68,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                                 if (res != null)
                                 {
                                     var total = (long)res["total"];
-                                    returnList.count = total;
+                                    returnList.total = total;
                                     returnList.isValid = true;
 
                                     if (total == 0)

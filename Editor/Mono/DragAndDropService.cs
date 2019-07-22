@@ -86,6 +86,8 @@ namespace UnityEditor
         public static DragAndDropVisualMode Drop(int dropDstId, params object[] args)
         {
             List<Delegate> handlers;
+            SavedGUIState guiState = SavedGUIState.Create();
+
             if (!m_DropDescriptors.TryGetValue(dropDstId, out handlers))
             {
                 return DragAndDropVisualMode.Rejected;
@@ -102,6 +104,7 @@ namespace UnityEditor
                 }
             }
 
+            guiState.ApplyAndForget();
             return dropResult;
         }
 
