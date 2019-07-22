@@ -197,13 +197,6 @@ namespace UnityEditor
 
         static Styles s_Styles;
 
-        const int kNarrowLabelWidth = 42;
-        const int kToggleButtonWidth = 16;
-        const int kMinCustomWidth = 1;
-        const int kMaxCustomWidth = 16384;
-        const int kMinCustomHeight = 1;
-        const int kMaxCustomHeight = 16384;
-
         // Don't show the imported movie as a separate editor
         public override bool showImportedObject { get { return false; } }
 

@@ -75,6 +75,7 @@ namespace UnityEditor
             SystemManagement = 34,
             UserDataTasks = 35,
             UserNotificationListener = 36,
+            GazeInput = 37
         }
 
         // match these with the capabilities listed in MetroCapabilities.h

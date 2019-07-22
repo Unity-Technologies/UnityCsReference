@@ -34,8 +34,11 @@ namespace UnityEngine.UIElements.StyleSheets
                 case StyleValueType.Enum:
                     value = sheet.ReadEnum(handle);
                     break;
+                case StyleValueType.Variable:
+                    value = sheet.ReadVariable(handle);
+                    break;
                 case StyleValueType.Keyword:
-                    value = sheet.ReadKeyword(handle).ToString();
+                    value = sheet.ReadKeyword(handle).ToUssString();
                     break;
                 case StyleValueType.AssetReference:
                     value = sheet.ReadAssetReference(handle).ToString();
@@ -44,7 +47,7 @@ namespace UnityEngine.UIElements.StyleSheets
                     value = sheet.ReadFunctionName(handle);
                     break;
                 case StyleValueType.FunctionSeparator:
-                    value = "Function Separator";
+                    value = ",";
                     break;
                 default:
                     value = "Error reading value type (" + handle.valueType + ") at index " + handle.valueIndex;
@@ -54,67 +57,9 @@ namespace UnityEngine.UIElements.StyleSheets
             return value;
         }
 
-        public static StyleFloat ReadStyleFloat(this StyleSheet sheet, StyleValueHandle handle, int specificity)
+        public static bool IsVarFunction(this StyleValueHandle handle)
         {
-            return new StyleFloat(sheet.ReadFloat(handle)) {specificity = specificity};
-        }
-
-        public static StyleInt ReadStyleInt(this StyleSheet sheet, StyleValueHandle handle, int specificity)
-        {
-            return new StyleInt((int)sheet.ReadFloat(handle)) {specificity = specificity};
-        }
-
-        public static StyleInt ReadStyleEnum<T>(this StyleSheet sheet, StyleValueHandle handle, int specificity)
-        {
-            return new StyleInt(StyleSheetCache.GetEnumValue<T>(sheet, handle)) {specificity = specificity};
-        }
-
-        public static StyleColor ReadStyleColor(this StyleSheet sheet, StyleValueHandle handle, int specificity)
-        {
-            Color c = Color.clear;
-            if (handle.valueType == StyleValueType.Enum)
-            {
-                var colorName = sheet.ReadAsString(handle);
-                StyleSheetColor.TryGetColor(colorName.ToLower(), out c);
-            }
-            else
-            {
-                c = sheet.ReadColor(handle);
-            }
-            return new StyleColor(c) {specificity = specificity};
-        }
-
-        public static StyleLength ReadStyleLength(this StyleSheet sheet, StyleValueHandle handle, int specificity)
-        {
-            var keyword = TryReadKeyword(handle);
-
-            StyleLength styleLength = new StyleLength(keyword) {specificity = specificity};
-            if (keyword == StyleKeyword.Undefined)
-            {
-                var dimension = sheet.ReadDimension(handle);
-                styleLength.value = dimension.ToLength();
-            }
-
-            return styleLength;
-        }
-
-        private static StyleKeyword TryReadKeyword(StyleValueHandle handle)
-        {
-            if (handle.valueType == StyleValueType.Keyword)
-            {
-                var keyword = (StyleValueKeyword)handle.valueIndex;
-                switch (keyword)
-                {
-                    case StyleValueKeyword.Auto:
-                        return StyleKeyword.Auto;
-                    case StyleValueKeyword.None:
-                        return StyleKeyword.None;
-                    case StyleValueKeyword.Initial:
-                        return StyleKeyword.Initial;
-                }
-            }
-
-            return StyleKeyword.Undefined;
+            return handle.valueType == StyleValueType.Function && (StyleValueFunction)handle.valueIndex == StyleValueFunction.Var;
         }
     }
 }

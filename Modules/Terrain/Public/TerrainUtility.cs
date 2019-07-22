@@ -24,6 +24,63 @@ namespace UnityEngine.Experimental.TerrainAPI
 
             public delegate bool TerrainFilter(Terrain terrain);
 
+            private struct QueueElement
+            {
+                public readonly int tileX;
+                public readonly int tileZ;
+                public readonly Terrain terrain;
+                public QueueElement(int tileX, int tileZ, Terrain terrain)
+                {
+                    this.tileX = tileX;
+                    this.tileZ = tileZ;
+                    this.terrain = terrain;
+                }
+            };
+
+            static public TerrainMap CreateFromConnectedNeighbors(Terrain originTerrain, TerrainFilter filter = null, bool fullValidation = true)
+            {
+                if (originTerrain == null)
+                    return null;
+
+                if (originTerrain.terrainData == null)
+                    return null;
+
+                TerrainMap terrainMap = new TerrainMap();
+
+                Queue<QueueElement> todoQueue = new Queue<QueueElement>();
+                todoQueue.Enqueue(new QueueElement(0, 0, originTerrain));
+
+                int maxTerrains = Terrain.activeTerrains.Length;
+                while (todoQueue.Count > 0)
+                {
+                    QueueElement cur = todoQueue.Dequeue();
+                    if ((filter == null) || filter(cur.terrain))
+                    {
+                        if (terrainMap.TryToAddTerrain(cur.tileX, cur.tileZ, cur.terrain))
+                        {
+                            // sanity check to stop bad neighbors causing infinite iteration
+                            if (terrainMap.m_terrainTiles.Count > maxTerrains)
+                                break;
+
+                            if (cur.terrain.leftNeighbor != null)
+                                todoQueue.Enqueue(new QueueElement(cur.tileX - 1, cur.tileZ, cur.terrain.leftNeighbor));
+                            if (cur.terrain.bottomNeighbor != null)
+                                todoQueue.Enqueue(new QueueElement(cur.tileX, cur.tileZ - 1, cur.terrain.bottomNeighbor));
+                            if (cur.terrain.rightNeighbor != null)
+                                todoQueue.Enqueue(new QueueElement(cur.tileX + 1, cur.tileZ, cur.terrain.rightNeighbor));
+                            if (cur.terrain.topNeighbor != null)
+                                todoQueue.Enqueue(new QueueElement(cur.tileX, cur.tileZ + 1, cur.terrain.topNeighbor));
+                        }
+                    }
+                }
+
+                // run validation to check alignment status
+                if (fullValidation)
+                    terrainMap.Validate();
+
+                return terrainMap;
+            }
+
             // create a terrain map of ALL terrains, by using only their placement to fit them to a grid
             // the position and size of originTerrain defines the grid alignment and origin.  if NULL, we use the first active terrain
             static public TerrainMap CreateFromPlacement(Terrain originTerrain, TerrainFilter filter = null, bool fullValidation = true)

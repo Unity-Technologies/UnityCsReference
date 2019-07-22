@@ -2,12 +2,22 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI
 {
     internal static class VisualElementExtensions
     {
+        public static void OnLeftClick(this VisualElement element, Action action)
+        {
+            element.RegisterCallback<MouseDownEvent>(e =>
+            {
+                if (e.button == 0)
+                    action?.Invoke();
+            });
+        }
+
         public static void EnableClass(this VisualElement element, string classname, bool enable)
         {
             element.RemoveFromClassList(classname);

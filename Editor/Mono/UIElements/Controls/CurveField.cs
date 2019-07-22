@@ -35,6 +35,7 @@ namespace UnityEditor.UIElements
 
         private bool m_ValueNull;
         private bool m_TextureDirty;
+        private Texture2D m_Texture; // The curve rasterized in a texture
 
         public enum RenderMode
         {
@@ -146,17 +147,17 @@ namespace UnityEditor.UIElements
 
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
 
-            generateVisualContent += OnGenerateVisualContent;
+            visualInput.generateVisualContent += OnGenerateVisualContent;
         }
 
         void OnDetach()
         {
             if (m_Mesh != null)
                 Object.DestroyImmediate(m_Mesh);
-            if (visualInput.style.backgroundImage.value.texture != null)
-                Object.DestroyImmediate(visualInput.style.backgroundImage.value.texture);
+            if (m_Texture != null)
+                Object.DestroyImmediate(m_Texture);
             m_Mesh = null;
-            visualInput.style.backgroundImage = new Background(null);
+            m_Texture = null;
             m_TextureDirty = true;
         }
 
@@ -182,8 +183,7 @@ namespace UnityEditor.UIElements
                 CurveEditorWindow.instance.Repaint();
             }
 
-            IncrementVersion(VersionChangeType.Repaint);
-
+            visualInput.IncrementVersion(VersionChangeType.Repaint);
             m_Content?.IncrementVersion(VersionChangeType.Repaint);
         }
 
@@ -425,8 +425,7 @@ namespace UnityEditor.UIElements
             if (m_TextureDirty || m_Mesh == null)
             {
                 m_TextureDirty = false;
-                visualInput.style.backgroundImage = new Background(null);
-
+                m_Texture = null;
                 FillCurveData();
             }
             m_Content.curveColor = curveColor;
@@ -455,17 +454,17 @@ namespace UnityEditor.UIElements
             {
                 if (!m_ValueNull)
                 {
-                    visualInput.style.backgroundImage = AnimationCurvePreviewCache.GenerateCurvePreview(
+                    m_Texture = AnimationCurvePreviewCache.GenerateCurvePreview(
                         previewWidth,
                         previewHeight,
                         rangeRect,
                         rawValue,
                         curveColor,
-                        visualInput.computedStyle.backgroundImage.value.texture);
+                        m_Texture);
                 }
                 else
                 {
-                    visualInput.style.backgroundImage = null;
+                    m_Texture = null;
                 }
             }
         }
@@ -481,6 +480,12 @@ namespace UnityEditor.UIElements
             else
             {
                 SetupStandardRepaint();
+                if (m_Texture != null)
+                {
+                    var rectParams = MeshGenerationContextUtils.RectangleParams.MakeTextured(
+                        new Rect(0, 0, m_Texture.width, m_Texture.height), new Rect(0, 0, 1, 1), m_Texture, ScaleMode.StretchToFill, panel.contextType);
+                    MeshGenerationContextUtils.Rectangle(mgc, rectParams);
+                }
             }
         }
 

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.Tilemaps;
@@ -54,6 +53,7 @@ namespace UnityEditor
             return tile ?? m_Tilemap.GetTile<T>(position);
         }
 
+        // Called from native code - TilemapScripting.cpp
         private TileBase CreateInvalidTile()
         {
             Texture2D tex = Texture2D.whiteTexture;
@@ -69,6 +69,7 @@ namespace UnityEditor
             return tile;
         }
 
+        // Called from native code - TilemapScripting.cpp
         private static ITilemap CreateInstance()
         {
             s_Instance = new EditorPreviewTilemap();

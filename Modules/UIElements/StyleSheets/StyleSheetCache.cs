@@ -55,7 +55,6 @@ namespace UnityEngine.UIElements.StyleSheets
             {"max-height", StylePropertyID.MaxHeight},
             {"min-width", StylePropertyID.MinWidth},
             {"min-height", StylePropertyID.MinHeight},
-            {"flex", StylePropertyID.Flex},
             {"flex-wrap", StylePropertyID.FlexWrap},
             {"flex-basis", StylePropertyID.FlexBasis},
             {"flex-grow", StylePropertyID.FlexGrow},
@@ -75,7 +74,6 @@ namespace UnityEngine.UIElements.StyleSheets
             {"padding-right", StylePropertyID.PaddingRight},
             {"padding-bottom", StylePropertyID.PaddingBottom},
             {"position", StylePropertyID.Position},
-            {"align-self", StylePropertyID.AlignSelf},
             {"-unity-text-align", StylePropertyID.UnityTextAlign},
             {"-unity-font-style", StylePropertyID.FontStyleAndWeight},
             {"-unity-font", StylePropertyID.Font},
@@ -84,13 +82,17 @@ namespace UnityEngine.UIElements.StyleSheets
             {"color", StylePropertyID.Color},
             {"flex-direction", StylePropertyID.FlexDirection},
             {"background-color", StylePropertyID.BackgroundColor},
-            {"border-color", StylePropertyID.BorderColor},
             {"background-image", StylePropertyID.BackgroundImage},
             {"-unity-background-scale-mode", StylePropertyID.BackgroundScaleMode},
             {"-unity-background-image-tint-color", StylePropertyID.BackgroundImageTintColor},
-            {"align-items", StylePropertyID.AlignItems},
             {"align-content", StylePropertyID.AlignContent},
+            {"align-items", StylePropertyID.AlignItems},
+            {"align-self", StylePropertyID.AlignSelf},
             {"justify-content", StylePropertyID.JustifyContent},
+            {"border-left-color", StylePropertyID.BorderLeftColor},
+            {"border-top-color", StylePropertyID.BorderTopColor},
+            {"border-right-color", StylePropertyID.BorderRightColor},
+            {"border-bottom-color", StylePropertyID.BorderBottomColor},
             {"border-left-width", StylePropertyID.BorderLeftWidth},
             {"border-top-width", StylePropertyID.BorderTopWidth},
             {"border-right-width", StylePropertyID.BorderRightWidth},
@@ -108,8 +110,10 @@ namespace UnityEngine.UIElements.StyleSheets
             {"visibility", StylePropertyID.Visibility},
             {"display", StylePropertyID.Display},
             // Shorthands
+            {"border-color", StylePropertyID.BorderColor},
             {"border-radius", StylePropertyID.BorderRadius},
             {"border-width", StylePropertyID.BorderWidth},
+            {"flex", StylePropertyID.Flex},
             {"margin", StylePropertyID.Margin},
             {"padding", StylePropertyID.Padding}
         };
@@ -153,6 +157,10 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyleValues[(int)StylePropertyID.FlexBasis] = StyleValue.Create(StylePropertyID.FlexBasis, StyleKeyword.Auto);
             s_InitialStyleValues[(int)StylePropertyID.FlexGrow] = StyleValue.Create(StylePropertyID.FlexGrow, 0f);
             s_InitialStyleValues[(int)StylePropertyID.FlexShrink] = StyleValue.Create(StylePropertyID.FlexShrink, 1f);
+            s_InitialStyleValues[(int)StylePropertyID.BorderLeftColor] = StyleValue.Create(StylePropertyID.BorderLeftColor, Color.clear);
+            s_InitialStyleValues[(int)StylePropertyID.BorderTopColor] = StyleValue.Create(StylePropertyID.BorderTopColor, Color.clear);
+            s_InitialStyleValues[(int)StylePropertyID.BorderRightColor] = StyleValue.Create(StylePropertyID.BorderRightColor, Color.clear);
+            s_InitialStyleValues[(int)StylePropertyID.BorderBottomColor] = StyleValue.Create(StylePropertyID.BorderBottomColor, Color.clear);
             s_InitialStyleValues[(int)StylePropertyID.BorderLeftWidth] = StyleValue.Create(StylePropertyID.BorderLeftWidth, 0f);
             s_InitialStyleValues[(int)StylePropertyID.BorderTopWidth] = StyleValue.Create(StylePropertyID.BorderTopWidth, 0f);
             s_InitialStyleValues[(int)StylePropertyID.BorderRightWidth] = StyleValue.Create(StylePropertyID.BorderRightWidth, 0f);
@@ -181,13 +189,13 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyleValues[(int)StylePropertyID.BackgroundImage] = StyleValue.Create(StylePropertyID.BackgroundImage); // null resource
             s_InitialStyleValues[(int)StylePropertyID.Color] = StyleValue.Create(StylePropertyID.Color, Color.black);
             s_InitialStyleValues[(int)StylePropertyID.BackgroundColor] = StyleValue.Create(StylePropertyID.BackgroundColor, Color.clear);
-            s_InitialStyleValues[(int)StylePropertyID.BorderColor] = StyleValue.Create(StylePropertyID.BorderColor, Color.clear);
             s_InitialStyleValues[(int)StylePropertyID.SliceLeft] = StyleValue.Create(StylePropertyID.SliceLeft, 0f);
             s_InitialStyleValues[(int)StylePropertyID.SliceTop] = StyleValue.Create(StylePropertyID.SliceTop, 0f);
             s_InitialStyleValues[(int)StylePropertyID.SliceRight] = StyleValue.Create(StylePropertyID.SliceRight, 0f);
             s_InitialStyleValues[(int)StylePropertyID.SliceBottom] = StyleValue.Create(StylePropertyID.SliceBottom, 0f);
             s_InitialStyleValues[(int)StylePropertyID.Opacity] = StyleValue.Create(StylePropertyID.Opacity, 1f);
             // Shorthand value
+            s_InitialStyleValues[(int)StylePropertyID.BorderColor] = StyleValue.Create(StylePropertyID.BorderColor, StyleKeyword.Initial);
             s_InitialStyleValues[(int)StylePropertyID.BorderRadius] = StyleValue.Create(StylePropertyID.BorderRadius, StyleKeyword.Initial);
             s_InitialStyleValues[(int)StylePropertyID.BorderWidth] = StyleValue.Create(StylePropertyID.BorderWidth, StyleKeyword.Initial);
             s_InitialStyleValues[(int)StylePropertyID.Flex] = StyleValue.Create(StylePropertyID.Flex, StyleKeyword.Initial);
@@ -296,8 +304,6 @@ namespace UnityEngine.UIElements.StyleSheets
         {
             string validName;
             s_DeprecatedNames.TryGetValue(name, out validName);
-
-
             return validName ?? name;
         }
 
@@ -313,13 +319,14 @@ namespace UnityEngine.UIElements.StyleSheets
 
         static StylePropertyID GetPropertyID(StyleSheet sheet, StyleRule rule, int index)
         {
-            string name = rule.properties[index].name;
+            var property = rule.properties[index];
+            string name = property.name;
             StylePropertyID id;
 
             name = MapDeprecatedPropertyName(name, sheet.name, rule.line);
             if (!s_NameToIDCache.TryGetValue(name, out id))
             {
-                if (name.StartsWith("--"))
+                if (property.isCustomProperty)
                 {
                     id = StylePropertyID.Custom;
                 }

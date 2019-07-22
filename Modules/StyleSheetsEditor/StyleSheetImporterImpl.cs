@@ -20,6 +20,7 @@ namespace UnityEditor.StyleSheets
     abstract class StyleValueImporter
     {
         const string k_ResourcePathFunctionName = "resource";
+        const string k_VariableFunctionName = "var";
 
         protected readonly AssetImportContext m_Context;
         protected readonly Parser m_Parser;
@@ -39,8 +40,6 @@ namespace UnityEditor.StyleSheets
             m_Builder = new StyleSheetBuilder();
             m_Errors = new StyleSheetImportErrors();
             m_Validator = new StyleValidator();
-
-            LoadPropertiesDefinition();
         }
 
         internal StyleValueImporter()
@@ -51,15 +50,6 @@ namespace UnityEditor.StyleSheets
             m_Builder = new StyleSheetBuilder();
             m_Errors = new StyleSheetImportErrors();
             m_Validator = new StyleValidator();
-
-            LoadPropertiesDefinition();
-        }
-
-        private void LoadPropertiesDefinition()
-        {
-            // Load properties definition to initialize the validation
-            var textAsset = EditorGUIUtility.Load(StyleValidator.kDefaultPropertiesPath) as TextAsset;
-            m_Validator.LoadPropertiesDefinition(textAsset.text);
         }
 
         public bool disableValidation { get; set; }
@@ -120,15 +110,116 @@ namespace UnityEditor.StyleSheets
             {
                 UnityEngine.Object asset = DeclareDependencyAndLoad(projectRelativePath);
 
-                if (asset is Texture2D || asset is Font)
+                if (asset is Texture2D || asset is Font || asset is VectorImage)
                 {
                     m_Builder.AddValue(asset);
                 }
                 else
                 {
-                    m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidURIProjectAssetType, string.Format("Invalid asset type {0}, only Font and Texture2D are supported", asset.GetType().Name));
+                    m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidURIProjectAssetType, string.Format("Invalid asset type {0}, only Font, Texture2D and VectorImage are supported", asset.GetType().Name));
                 }
             }
+        }
+
+        private bool ValidateFunction(GenericFunction term, out StyleValueFunction func)
+        {
+            func = StyleValueFunction.Unknown;
+            if (term.Arguments.Length == 0)
+            {
+                m_Errors.AddSemanticError(StyleSheetImportErrorCode.MissingFunctionArgument, term.Name);
+                return false;
+            }
+
+            if (term.Name == k_VariableFunctionName)
+            {
+                func = StyleValueFunction.Var;
+                return ValidateVarFunction(term);
+            }
+
+            try
+            {
+                func = StyleValueFunctionExtension.FromUssString(term.Name);
+            }
+            catch (Exception)
+            {
+                var prop = m_Builder.currentProperty;
+                m_Errors.AddValidationWarning($"Unknown function {term.Name} in declaration {prop.name}: {term.Name}", prop.line);
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool ValidateVarFunction(GenericFunction term)
+        {
+            var argc = term.Arguments.Length;
+            var arg = term.Arguments[0];
+
+            bool foundVar = false;
+            bool foundComma = false;
+            for (int i = 0; i < argc; i++)
+            {
+                arg = term.Arguments[i];
+                if (arg.GetType() == typeof(Whitespace))
+                    continue;
+
+                // First arg is always a variable
+                if (!foundVar)
+                {
+                    var variableTerm = term.Arguments[i] as PrimitiveTerm;
+                    string varName = variableTerm?.Value as string;
+                    if (string.IsNullOrEmpty(varName))
+                    {
+                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, $"Variable name is missing");
+                        return false;
+                    }
+                    else if (!varName.StartsWith("--"))
+                    {
+                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, $"Variable {varName} is missing '--' prefix");
+                        return false;
+                    }
+                    if (varName.Length < 3)
+                    {
+                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, "Variable name is empty");
+                        return false;
+                    }
+
+                    foundVar = true;
+                }
+                else if (arg.GetType() == typeof(Comma))
+                {
+                    if (foundComma)
+                    {
+                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, "Too many function arguments");
+                        return false;
+                    }
+
+                    foundComma = true;
+
+                    ++i;
+                    if (i >= argc)
+                    {
+                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, "Empty function argument");
+                        return false;
+                    }
+                }
+                else if (!foundComma)
+                {
+                    string msg = "Expected ','";
+                    while (arg.GetType() == typeof(Whitespace) && i + 1 < argc)
+                    {
+                        arg = term.Arguments[++i];
+                    }
+
+                    if (arg.GetType() != typeof(Whitespace))
+                        msg = $"{msg} got {arg.ToString()}";
+
+                    m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, msg);
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         protected void VisitValue(Term term)
@@ -168,6 +259,10 @@ namespace UnityEditor.StyleSheets
                         {
                             m_Builder.AddValue(keyword);
                         }
+                        else if (rawStr.StartsWith("--"))
+                        {
+                            m_Builder.AddValue(rawStr, StyleValueType.Variable);
+                        }
                         else
                         {
                             m_Builder.AddValue(rawStr, StyleValueType.Enum);
@@ -198,13 +293,11 @@ namespace UnityEditor.StyleSheets
                 }
                 else
                 {
-                    if (funcTerm.Arguments.Length == 0)
-                    {
-                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.MissingFunctionArgument, funcTerm.Name);
+                    StyleValueFunction func;
+                    if (!ValidateFunction(funcTerm, out func))
                         return;
-                    }
 
-                    m_Builder.AddValue(funcTerm.Name, StyleValueType.Function);
+                    m_Builder.AddValue(func);
                     m_Builder.AddValue(funcTerm.Arguments.Count(a => !(a is Whitespace)));
                     foreach (var arg in funcTerm.Arguments)
                         VisitValue(arg);
@@ -353,7 +446,7 @@ namespace UnityEditor.StyleSheets
                 {
                     ValidateProperty(property);
 
-                    m_Builder.BeginProperty(property.Name);
+                    m_Builder.BeginProperty(property.Name, property.Line);
 
                     // Note: we must rely on recursion to correctly handle parser types here
                     VisitValue(property.Term);

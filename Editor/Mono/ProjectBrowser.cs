@@ -15,7 +15,6 @@ using UnityEditor.TreeViewExamples;
 using UnityEditorInternal;
 using UnityEngine.Scripting;
 using Object = UnityEngine.Object;
-using UnityEditor.StyleSheets;
 
 namespace UnityEditor
 {
@@ -301,15 +300,6 @@ namespace UnityEditor
             {
                 EnsureValidFolders();
             }
-        }
-
-        string GetAnalyticsSizeLabel(float size)
-        {
-            if (size > 600)
-                return "Larger than 600 pix";
-            if (size < 240)
-                return "Less than 240 pix";
-            return "240 - 600 pix";
         }
 
         static internal ItemType GetItemType(int instanceID)
@@ -933,31 +923,6 @@ namespace UnityEditor
             m_SearchFieldText = m_SearchFilter.FilterToSearchFieldString();
         }
 
-        static int GetParentInstanceID(int objectInstanceID)
-        {
-            string propertyPath = AssetDatabase.GetAssetPath(objectInstanceID);
-            int pos = propertyPath.LastIndexOf("/");
-            if (pos >= 0)
-            {
-                string folderPath = propertyPath.Substring(0, pos);
-                Object obj = AssetDatabase.LoadAssetAtPath(folderPath, typeof(Object));
-                if (obj != null)
-                    return obj.GetInstanceID();
-            }
-            else
-            {
-                Debug.LogError("Invalid path: " + propertyPath);
-            }
-            return -1;
-        }
-
-        bool IsShowingFolder(int folderInstanceID)
-        {
-            string folderPath = AssetDatabase.GetAssetPath(folderInstanceID);
-            bool contains = new List<string>(m_SearchFilter.folders).Contains(folderPath);
-            return contains;
-        }
-
         void ShowFolderContents(int folderInstanceID, bool revealAndFrameInFolderTree)
         {
             if (m_ViewMode != ViewMode.TwoColumns)
@@ -1139,6 +1104,7 @@ namespace UnityEditor
             }
         }
 
+        // Called from EditorHelper
         static void OpenSelectedFoldersInInternalExplorer()
         {
             if (!IsFolderTreeViewContextClick())
@@ -2944,12 +2910,14 @@ namespace UnityEditor
             }
         }
 
+        // Called from AssetsMenu
         static void ShowSelectedObjectsInLastInteractedProjectBrowser()
         {
             // Only one ProjectBrowser can have focus at a time so if we find one just return that one
             if (s_LastInteractedProjectBrowser != null)
             {
                 int[] instanceIDs = Selection.instanceIDs;
+
                 s_LastInteractedProjectBrowser.ShowObjectsInList(instanceIDs);
             }
         }

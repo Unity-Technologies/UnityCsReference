@@ -2,9 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Collections.Generic;
-
 namespace UnityEngine.UIElements
 {
     class MouseEventDispatchingStrategy : IEventDispatchingStrategy
@@ -28,7 +25,7 @@ namespace UnityEngine.UIElements
 
             if (basePanel != null && (evt.eventTypeId == MouseLeaveWindowEvent.TypeId() || evt.eventTypeId == DragExitedEvent.TypeId()))
             {
-                basePanel.SetElementUnderMouse(null, evt);
+                basePanel.SetElementUnderPointer(null, evt);
             }
             else
             {
@@ -42,19 +39,16 @@ namespace UnityEngine.UIElements
                             ((IMouseEventInternal)mouseEvent).recomputeTopElementUnderMouse;
                     }
 
-                    VisualElement elementUnderMouse = shouldRecomputeTopElementUnderMouse ?
-                        basePanel.Pick(mouseEvent.mousePosition) :
-                        basePanel.topElementUnderMouse;
+                    VisualElement elementUnderMouse = shouldRecomputeTopElementUnderMouse
+                        ? basePanel.Pick(mouseEvent.mousePosition)
+                        : basePanel.GetTopElementUnderPointer(PointerId.mousePointerId);
 
                     if (evt.target == null)
                     {
                         evt.target = elementUnderMouse;
                     }
 
-                    // Because events are queued, we can set the element under mouse
-                    // right now, instead of waiting after the PropagateEvent() as we
-                    // did before.
-                    basePanel.SetElementUnderMouse(elementUnderMouse, evt);
+                    basePanel.SetElementUnderPointer(elementUnderMouse, evt);
                 }
 
                 if (evt.target != null)

@@ -4,7 +4,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using UnityEditor.PackageManager.UI.AssetStore;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI
@@ -17,10 +19,7 @@ namespace UnityEditor.PackageManager.UI
         [Serializable]
         private class PackageDatabaseInternal : ScriptableSingleton<PackageDatabaseInternal>, IPackageDatabase, ISerializationCallbackReceiver
         {
-            public event Action<long> onUpdateTimeChange = delegate {};
-
-            public event Action<IEnumerable<IPackage>, IEnumerable<IPackage>, IEnumerable<IPackage>> onPackagesChanged = delegate {};
-            public event Action<IPackageVersion> onPackageVersionUpdated = delegate {};
+            public event Action<long> onUpdateTimeChange;
 
             public event Action<IPackage, IPackageVersion> onInstallSuccess = delegate {};
             public event Action<IPackage> onUninstallSuccess = delegate {};
@@ -30,18 +29,28 @@ namespace UnityEditor.PackageManager.UI
             public event Action onRefreshOperationFinish = delegate {};
             public event Action<Error> onRefreshOperationError = delegate {};
 
+            public event Action<IPackage, DownloadProgress> onDownloadProgress = delegate {};
+
+            // args 1,2, 3 are added, removed and preUpdated, and postUpdated packages respectively
+            public event Action<IEnumerable<IPackage>, IEnumerable<IPackage>, IEnumerable<IPackage>, IEnumerable<IPackage>> onPackagesChanged;
+
             private readonly Dictionary<string, IPackage> m_Packages = new Dictionary<string, IPackage>();
-
             // a list of unique ids (could be specialUniqueId or packageId)
-            private List<string> m_SpecialInstallation = new List<string>();
+            private List<string> m_SpecialInstallations = new List<string>();
 
-            // arrays created to help serialize dictionaries
-            private UpmPackage[] m_SerializedUpmPackages;
+            // array created to help serialize dictionaries
+            [SerializeField]
+            private List<UpmPackage> m_SerializedUpmPackages = new List<UpmPackage>();
+
+            [SerializeField]
+            private List<AssetStorePackage> m_SerializedAssetStorePackages = new List<AssetStorePackage>();
 
             [NonSerialized]
-            private List<IOperation> m_RefreshOperationsInProgress;
+            private List<IOperation> m_RefreshOperationsInProgress = new List<IOperation>();
 
             public bool isEmpty { get { return !m_Packages.Any(); } }
+
+            private static readonly IPackage[] k_EmptyList = new IPackage[0] {};
 
             public bool isInstallOrUninstallInProgress
             {
@@ -135,9 +144,7 @@ namespace UnityEditor.PackageManager.UI
             public IEnumerable<IPackageVersion> GetDependentVersions(IPackageVersion version)
             {
                 var installedRoots = allPackages.Select(p => p.installedVersion).Where(p => p?.isDirectDependency ?? false);
-                var dependsOnPackage = installedRoots.Where(p =>
-                    p.resolvedDependencies.Select(r => r.name).Contains(version.name));
-
+                var dependsOnPackage = installedRoots.Where(p => p.resolvedDependencies?.Any(r => r.name == version.name) ?? false);
                 return dependsOnPackage;
             }
 
@@ -145,30 +152,46 @@ namespace UnityEditor.PackageManager.UI
             {
                 foreach (var p in m_SerializedUpmPackages)
                     m_Packages[p.uniqueId] = p;
+
+                foreach (var p in m_SerializedAssetStorePackages)
+                    m_Packages[p.uniqueId] = p;
             }
 
             public void OnBeforeSerialize()
             {
-                m_SerializedUpmPackages = m_Packages.Values.Cast<UpmPackage>().ToArray();
+                m_SerializedUpmPackages = new List<UpmPackage>();
+                m_SerializedAssetStorePackages = new List<AssetStorePackage>();
+
+                foreach (var package in m_Packages.Values)
+                {
+                    if (package is AssetStorePackage)
+                        m_SerializedAssetStorePackages.Add((AssetStorePackage)package);
+                    else if (package is UpmPackage)
+                        m_SerializedUpmPackages.Add((UpmPackage)package);
+                }
             }
 
             public void AddPackageError(IPackage package, Error error)
             {
+                var packagePreUpdate = package.Clone();
                 package.AddError(error);
-                onPackagesChanged(Enumerable.Empty<IPackage>(), Enumerable.Empty<IPackage>(), new IPackage[] { package });
+                onPackagesChanged?.Invoke(k_EmptyList, k_EmptyList, new[] { packagePreUpdate }, new[] { package });
             }
 
             public void ClearPackageErrors(IPackage package)
             {
+                var packagePreUpdate = package.Clone();
                 package.ClearErrors();
-                onPackagesChanged(Enumerable.Empty<IPackage>(), Enumerable.Empty<IPackage>(), new IPackage[] { package });
+                onPackagesChanged?.Invoke(k_EmptyList, k_EmptyList, new[] { packagePreUpdate }, new[] { package });
             }
+
+            public IEnumerable<IPackage> packagesInError => allPackages.Where(p => p.errors.Any());
 
             public void Setup()
             {
                 UpmClient.instance.Setup();
 
-                UpmClient.instance.onPackagesChanged += OnUpmPackagesChanged;
+                UpmClient.instance.onPackagesChanged += OnPackagesChanged;
                 UpmClient.instance.onPackageVersionUpdated += OnUpmPackageVersionUpdated;
 
                 UpmClient.instance.onListOperation += OnUpmListOrSearchOperation;
@@ -178,64 +201,150 @@ namespace UnityEditor.PackageManager.UI
                 UpmClient.instance.onAddOperation += OnUpmAddOperation;
                 UpmClient.instance.onEmbedOperation += OnUpmEmbedOperation;
                 UpmClient.instance.onRemoveOperation += OnUpmRemoveOperation;
+
+                AssetStore.AssetStoreClient.instance.Setup();
+                AssetStore.AssetStoreClient.instance.onPackagesChanged += OnPackagesChanged;
+                AssetStore.AssetStoreClient.instance.onDownloadProgress += OnDownloadProgress;
+
+                AssetStore.AssetStoreClient.instance.onListOperationStart += OnAssetStoreOperationStart;
+                AssetStore.AssetStoreClient.instance.onListOperationFinish += OnAssetStoreOperationFinish;
+                AssetStore.AssetStoreClient.instance.onOperationError += OnAssetStoreOperationError;
+
+                ApplicationUtil.instance.onUserLoginStateChange += OnUserLoginStateChange;
             }
 
             public void Clear()
             {
+                var allPackages = this.allPackages;
                 m_Packages.Clear();
-                m_SerializedUpmPackages = new UpmPackage[0];
-                m_SpecialInstallation.Clear();
+                onPackagesChanged?.Invoke(k_EmptyList, allPackages, k_EmptyList, k_EmptyList);
+
+                m_SerializedUpmPackages = new List<UpmPackage>();
+                m_SerializedAssetStorePackages = new List<AssetStorePackage>();
+                m_SpecialInstallations.Clear();
+
                 m_RefreshOperationsInProgress.Clear();
                 m_LastUpdateTimestamp = 0;
 
+                UpmClient.instance.onPackagesChanged -= OnPackagesChanged;
+                UpmClient.instance.onPackageVersionUpdated -= OnUpmPackageVersionUpdated;
+                UpmClient.instance.onListOperation -= OnUpmListOrSearchOperation;
+                UpmClient.instance.onSearchAllOperation -= OnUpmListOrSearchOperation;
+                UpmClient.instance.onSearchAllOperation -= OnUpmSearchAllOperation;
+                UpmClient.instance.onAddOperation -= OnUpmAddOperation;
+                UpmClient.instance.onEmbedOperation -= OnUpmEmbedOperation;
+                UpmClient.instance.onRemoveOperation -= OnUpmRemoveOperation;
                 UpmClient.instance.Clear();
+
+                AssetStore.AssetStoreClient.instance.onPackagesChanged -= OnPackagesChanged;
+                AssetStore.AssetStoreClient.instance.onDownloadProgress -= OnDownloadProgress;
+                AssetStore.AssetStoreClient.instance.onListOperationStart -= OnAssetStoreOperationStart;
+                AssetStore.AssetStoreClient.instance.onListOperationFinish -= OnAssetStoreOperationFinish;
+                AssetStore.AssetStoreClient.instance.onOperationError -= OnAssetStoreOperationError;
+                AssetStore.AssetStoreClient.instance.Clear();
+
+                ApplicationUtil.instance.onUserLoginStateChange -= OnUserLoginStateChange;
             }
 
-            private void OnUpmPackagesChanged(IEnumerable<IPackage> packages)
+            private void OnDownloadProgress(DownloadProgress progress)
+            {
+                var package = GetPackage(progress.packageId);
+                if (package != null)
+                {
+                    var hasError = progress.state == DownloadProgress.State.Error || progress.state == DownloadProgress.State.Aborted;
+                    if (hasError)
+                        package.AddError(new Error(NativeErrorCode.Unknown, progress.message));
+
+                    if (progress.state == DownloadProgress.State.Completed)
+                    {
+                        AssetStore.AssetStoreClient.instance.Refresh(package);
+                    }
+
+                    onDownloadProgress?.Invoke(package, progress);
+                }
+            }
+
+            private void OnAssetStoreOperationStart()
+            {
+                onRefreshOperationStart?.Invoke();
+            }
+
+            private void OnAssetStoreOperationFinish()
+            {
+                onRefreshOperationFinish?.Invoke();
+            }
+
+            private void OnAssetStoreOperationError(Error error)
+            {
+                Debug.Log(string.Format(L10n.Tr("Error while fetching your assets: {0}"), error.message));
+                onRefreshOperationError?.Invoke(error);
+            }
+
+            private void OnUserLoginStateChange(bool loggedIn)
+            {
+                if (!loggedIn)
+                {
+                    var assetStorePackages = m_Packages.Where(kp => kp.Value is AssetStorePackage).Select(kp => kp.Value).ToList();
+                    foreach (var p in assetStorePackages)
+                        m_Packages.Remove(p.uniqueId);
+                    m_SerializedAssetStorePackages = new List<AssetStorePackage>();
+
+                    onPackagesChanged?.Invoke(k_EmptyList, assetStorePackages, k_EmptyList, k_EmptyList);
+                }
+            }
+
+            private void OnPackagesChanged(IEnumerable<IPackage> packages)
             {
                 if (!packages.Any())
                     return;
 
-                var addedList = new List<IPackage>();
-                var updatedList = new List<IPackage>();
-                var removedList = new List<IPackage>();
+                var packagesAdded = new List<IPackage>();
+                var packagesRemoved = new List<IPackage>();
+
+                var packagesPreUpdate = new List<IPackage>();
+                var packagesPostUpdate = new List<IPackage>();
+
+                var packagesInstalled = new List<IPackage>();
+
                 foreach (var package in packages)
                 {
-                    var packageName = package.name;
+                    var packageUniqueId = package.uniqueId;
                     var isEmptyPackage = !package.versions.Any();
-                    var oldPackage = GetPackage(packageName);
+                    var oldPackage = GetPackage(packageUniqueId);
 
                     if (oldPackage != null && isEmptyPackage)
                     {
-                        removedList.Add(m_Packages[packageName]);
-                        m_Packages.Remove(packageName);
+                        packagesRemoved.Add(m_Packages[packageUniqueId]);
+                        m_Packages.Remove(packageUniqueId);
                     }
                     else if (!isEmptyPackage)
                     {
-                        m_Packages[packageName] = package;
+                        m_Packages[packageUniqueId] = package;
                         if (oldPackage != null)
-                            updatedList.Add(package);
+                        {
+                            packagesPreUpdate.Add(oldPackage);
+                            packagesPostUpdate.Add(package);
+                        }
                         else
-                            addedList.Add(package);
+                            packagesAdded.Add(package);
                     }
+
+                    if (m_SpecialInstallations.Any() && package.installedVersion != null && oldPackage?.installedVersion == null)
+                        packagesInstalled.Add(package);
                 }
-                if (addedList.Any() || updatedList.Any() || removedList.Any())
-                    onPackagesChanged(addedList, removedList, updatedList);
+
+                if (packagesAdded.Count + packagesRemoved.Count + packagesPostUpdate.Count > 0)
+                    onPackagesChanged?.Invoke(packagesAdded, packagesRemoved, packagesPreUpdate, packagesPostUpdate);
 
                 // special handling to make sure onInstallSuccess events are called correctly when special unique id is used
-                if (m_SpecialInstallation.Any())
+                for (var i = m_SpecialInstallations.Count - 1; i >= 0; i--)
                 {
-                    var potentialInstalls = addedList.Concat(updatedList).Where(p => p.installedVersion != null);
-
-                    for (var i = m_SpecialInstallation.Count - 1; i >= 0; i--)
+                    var match = packagesInstalled.FirstOrDefault(p => p.installedVersion.uniqueId.ToLower().Contains(m_SpecialInstallations[i].ToLower()));
+                    if (match != null)
                     {
-                        var match = potentialInstalls.FirstOrDefault(p => p.installedVersion.uniqueId.ToLower().Contains(m_SpecialInstallation[i].ToLower()));
-                        if (match != null)
-                        {
-                            onInstallSuccess(match, match.installedVersion);
-                            onPackageOperationFinish(match);
-                            m_SpecialInstallation.RemoveAt(i);
-                        }
+                        onInstallSuccess(match, match.installedVersion);
+                        onPackageOperationFinish(match);
+                        m_SpecialInstallations.RemoveAt(i);
                     }
                 }
             }
@@ -246,11 +355,11 @@ namespace UnityEditor.PackageManager.UI
                 // as we don't know what package will be installed until the installation finishes (e.g, git packages)
                 if (string.IsNullOrEmpty(operation.packageUniqueId))
                 {
-                    m_SpecialInstallation.Add(operation.specialUniqueId);
+                    m_SpecialInstallations.Add(operation.specialUniqueId);
                     onPackageOperationStart(null);
                     operation.onOperationError += error =>
                     {
-                        m_SpecialInstallation.Remove(operation.specialUniqueId);
+                        m_SpecialInstallations.Remove(operation.specialUniqueId);
                         onPackageOperationFinish(null);
                     };
                     return;
@@ -309,7 +418,7 @@ namespace UnityEditor.PackageManager.UI
                     operation.onOperationSuccess += () =>
                     {
                         m_LastUpdateTimestamp = operation.timestamp;
-                        onUpdateTimeChange(operation.timestamp);
+                        onUpdateTimeChange?.Invoke(operation.timestamp);
                     };
             }
 
@@ -336,8 +445,9 @@ namespace UnityEditor.PackageManager.UI
                 var upmPackage = GetPackage(version.packageInfo.name) as UpmPackage;
                 if (upmPackage != null)
                 {
+                    var packagePreUpdate = upmPackage.Clone();
                     upmPackage.UpdateVersion(version as UpmPackageVersion);
-                    onPackageVersionUpdated(version);
+                    onPackagesChanged?.Invoke(k_EmptyList, k_EmptyList, new[] { packagePreUpdate }, new[] { upmPackage });
                 }
             }
 
@@ -365,11 +475,11 @@ namespace UnityEditor.PackageManager.UI
                 UpmClient.instance.RemoveByName(package.uniqueId);
             }
 
-            public void Embed(IPackage package)
+            public void Embed(IPackageVersion packageVersion)
             {
-                if (package.installedVersion == null)
+                if (packageVersion == null || !packageVersion.canBeEmbedded)
                     return;
-                UpmClient.instance.EmbedByName(package.uniqueId);
+                UpmClient.instance.EmbedByName(packageVersion.name);
             }
 
             public void RemoveEmbedded(IPackage package)
@@ -386,13 +496,40 @@ namespace UnityEditor.PackageManager.UI
                 UpmClient.instance.ExtraFetch(version.uniqueId);
             }
 
-            public void Refresh(RefreshOptions options)
+            public bool IsDownloadInProgress(IPackageVersion version)
             {
-                var offlineMode = (options & RefreshOptions.OfflineMode) != 0;
-                if ((options & RefreshOptions.ListInstalled) != 0)
-                    UpmClient.instance.List(offlineMode);
-                if ((options & RefreshOptions.SearchAll) != 0)
-                    UpmClient.instance.SearchAll(offlineMode);
+                return AssetStore.AssetStoreClient.instance.IsDownloadInProgress(version.packageUniqueId);
+            }
+
+            public void Download(IPackage package)
+            {
+                if (!(package is AssetStorePackage))
+                    return;
+
+                if (!PlayModeDownload.CanBeginDownload())
+                    return;
+
+                AssetStore.AssetStoreClient.instance.Download(package.uniqueId);
+            }
+
+            public void AbortDownload(IPackage package)
+            {
+                if (!(package is AssetStorePackage))
+                    return;
+
+                AssetStore.AssetStoreClient.instance.AbortDownload(package.uniqueId);
+            }
+
+            public void Import(IPackage package)
+            {
+                if (!(package is AssetStorePackage))
+                    return;
+
+                var path = package.primaryVersion.localPath;
+                if (File.Exists(path))
+                {
+                    AssetDatabase.ImportPackage(path, true);
+                }
             }
         }
     }

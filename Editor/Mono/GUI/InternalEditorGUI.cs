@@ -166,7 +166,7 @@ namespace UnityEditor
             switch (evt.GetTypeForControl(id))
             {
                 case EventType.MouseDown:
-                    if (activated && GUIUtility.hotControl == 0 && position.Contains(evt.mousePosition) && evt.button == 0)
+                    if (activated && GUIUtility.hotControl == 0 && GUIUtility.HitTest(position, evt) && evt.button == 0)
                     {
                         GUIUtility.hotControl = id;
                         GUIUtility.keyboardControl = 0;

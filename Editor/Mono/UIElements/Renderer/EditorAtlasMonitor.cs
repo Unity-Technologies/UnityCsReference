@@ -6,41 +6,30 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.UIR;
 
 namespace UnityEditor.UIElements
 {
     [InitializeOnLoad]
-    internal class EditorAtlasMonitor : IAtlasMonitor
+    internal static class EditorAtlasMonitor
     {
         static EditorAtlasMonitor()
         {
-            s_Monitors = new Dictionary<UIRAtlasManager, EditorAtlasMonitor>();
-            var createdAtlasManagerInstances = UIRAtlasManager.Instances();
-            for (int i = 0; i != createdAtlasManagerInstances.Count; ++i)
+            RenderChain.OnPreRender += OnPreRender;
+        }
+
+        public static void OnPreRender()
+        {
+            bool colorSpaceChanged = CheckForColorSpaceChange();
+            bool importedTextureChanged = CheckForImportedTextures();
+            bool importedVectorImageChanged = CheckForImportedVectorImages();
+            if (colorSpaceChanged || importedTextureChanged)
             {
-                OnAtlasManagerCreated(createdAtlasManagerInstances[i]);
+                UIRAtlasManager.MarkAllForReset();
+                VectorImageManager.MarkAllForReset();
             }
-            UIRAtlasManager.atlasManagerCreated += OnAtlasManagerCreated;
-            UIRAtlasManager.atlasManagerDisposed += OnAtlasManagerDisposed;
-        }
-
-        private static Dictionary<UIRAtlasManager, EditorAtlasMonitor> s_Monitors;
-
-        private static void OnAtlasManagerCreated(UIRAtlasManager atlasManager)
-        {
-            Assert.IsFalse(s_Monitors.ContainsKey(atlasManager));
-            s_Monitors.Add(atlasManager, new EditorAtlasMonitor(atlasManager));
-        }
-
-        private static void OnAtlasManagerDisposed(UIRAtlasManager atlasManager)
-        {
-            bool removedMonitor = s_Monitors.Remove(atlasManager);
-            Assert.IsTrue(removedMonitor);
-        }
-
-        public EditorAtlasMonitor(UIRAtlasManager atlasManager)
-        {
-            atlasManager.AddMonitor(this);
+            else if (colorSpaceChanged || importedVectorImageChanged)
+                VectorImageManager.MarkAllForReset();
         }
 
         private class TexturePostProcessor : UnityEditor.AssetPostprocessor
@@ -50,21 +39,22 @@ namespace UnityEditor.UIElements
                 ++importedTexturesCount;
             }
 
+            static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
+            {
+                foreach (var assetPath in importedAssets)
+                    if (System.IO.Path.GetExtension(assetPath) == ".svg")
+                        ++importedVectorImagesCount;
+            }
+
             public static int importedTexturesCount;
+            public static int importedVectorImagesCount;
         }
 
-        private ColorSpace m_LastColorSpace;
-        private int m_LastImportedTexturesCount;
+        private static ColorSpace m_LastColorSpace;
+        private static int m_LastImportedTexturesCount;
+        private static int m_LastImportedVectorImagesCount;
 
-        public bool RequiresReset()
-        {
-            bool colorSpaceChanged = CheckForColorSpaceChange();
-            bool importedTextures = CheckForImportedTextures();
-
-            return colorSpaceChanged || importedTextures;
-        }
-
-        private bool CheckForColorSpaceChange()
+        private static bool CheckForColorSpaceChange()
         {
             ColorSpace activeColorSpace = QualitySettings.activeColorSpace;
             if (m_LastColorSpace == activeColorSpace)
@@ -74,13 +64,24 @@ namespace UnityEditor.UIElements
             return true;
         }
 
-        private bool CheckForImportedTextures()
+        private static bool CheckForImportedTextures()
         {
             int importedTexturesCount = TexturePostProcessor.importedTexturesCount;
             if (m_LastImportedTexturesCount == importedTexturesCount)
                 return false;
 
             m_LastImportedTexturesCount = importedTexturesCount;
+
+            return true;
+        }
+
+        private static bool CheckForImportedVectorImages()
+        {
+            int importedVectorImagesCount = TexturePostProcessor.importedVectorImagesCount;
+            if (m_LastImportedVectorImagesCount == importedVectorImagesCount)
+                return false;
+
+            m_LastImportedVectorImagesCount = importedVectorImagesCount;
 
             return true;
         }

@@ -96,6 +96,7 @@ namespace UnityEditor.StyleSheets
                     case StyleValueType.Keyword:
                         return v.AsKeyword() == AsKeyword();
                     case StyleValueType.Enum:
+                    case StyleValueType.Variable:
                     case StyleValueType.ResourcePath:
                     case StyleValueType.String:
                         return v.AsString() == AsString();
@@ -480,8 +481,8 @@ namespace UnityEditor.StyleSheets
 
         public static bool IsVariableValue(StyleSheetResolver.Value value)
         {
-            return (value.ValueType == StyleValueType.Enum && value.AsString().StartsWith("--")) ||
-                (value.ValueType == StyleValueType.Function && value.AsString() == "env");
+            return (value.ValueType == StyleValueType.Variable ||
+                (value.ValueType == StyleValueType.Function && value.AsString() == StyleValueFunctionExtension.k_Env));
         }
 
         public static List<Value> ResolveValues(Property property, Dictionary<string, Property> variables, ResolvingOptions options)
@@ -745,6 +746,9 @@ namespace UnityEditor.StyleSheets
                 case StyleValueType.Enum:
                     value = srcSheet.ReadEnum(valueHandle);
                     break;
+                case StyleValueType.Variable:
+                    value = srcSheet.ReadVariable(valueHandle);
+                    break;
                 case StyleValueType.String:
                     value = srcSheet.ReadString(valueHandle);
                     break;
@@ -782,6 +786,7 @@ namespace UnityEditor.StyleSheets
                         helper.builder.AddValue(value.AsDimension());
                         break;
                     case StyleValueType.Enum:
+                    case StyleValueType.Variable:
                     case StyleValueType.String:
                     case StyleValueType.ResourcePath:
                         helper.builder.AddValue(value.AsString(), value.ValueType);
@@ -791,7 +796,7 @@ namespace UnityEditor.StyleSheets
                         // Second param: number of arguments
                         // Rest of args: must be saved as values.
                         var functionValue = value as Function;
-                        helper.builder.AddValue(functionValue.AsString(), StyleValueType.Function);
+                        helper.builder.AddValue(StyleValueFunctionExtension.FromUssString(functionValue.AsString()));
                         var nbArgs = functionValue.args.Count - 1;
                         for (var argIndex = 0; argIndex < functionValue.args.Count; ++argIndex)
                         {

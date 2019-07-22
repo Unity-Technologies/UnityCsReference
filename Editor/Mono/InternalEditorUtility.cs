@@ -424,10 +424,10 @@ namespace UnityEditorInternal
 
         public static void SetShowGizmos(bool value)
         {
-            GameView view = GameView.GetMainGameView();
+            var view = PreviewEditorWindow.GetMainPreviewWindow();
 
             if (view == null)
-                view = GameView.GetRenderingGameView();
+                view = PreviewEditorWindow.GetRenderingPreview();
 
             if (view == null)
                 return;

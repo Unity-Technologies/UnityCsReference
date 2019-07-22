@@ -4,9 +4,12 @@
 
 using System;
 using System.Linq;
+using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.Scripting;
+using UnityEditor.UIElements;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -20,6 +23,7 @@ namespace UnityEditor.PackageManager.UI
 
         public void OnEnable()
         {
+            this.SetAntiAliasing(4);
             if (s_Root == null)
             {
                 var windowResource = Resources.GetVisualTreeAsset("PackageManagerWindow.uxml");
@@ -29,8 +33,7 @@ namespace UnityEditor.PackageManager.UI
                     s_Root.styleSheets.Add(Resources.GetStyleSheet());
                     s_Cache = new VisualElementCache(s_Root);
 
-                    PackageDatabase.instance.Setup();
-                    SelectionManager.instance.Setup();
+                    PageManager.instance.Setup();
 
                     packageDetails.Setup();
                     packageList.Setup();
@@ -38,6 +41,8 @@ namespace UnityEditor.PackageManager.UI
                     packageStatusbar.Setup();
 
                     SetupDelayedPackageSelection();
+
+                    PackageManagerWindowAnalytics.Setup();
                 }
             }
 
@@ -47,17 +52,10 @@ namespace UnityEditor.PackageManager.UI
                 s_Root.StretchToParentSize();
 
                 if (!EditorApplication.isPlayingOrWillChangePlaymode)
-                    RefreshDatabase();
+                    PageManager.instance.Refresh(RefreshOptions.All);
 
                 PackageFiltering.instance.currentFilterTab = PackageManagerPrefs.instance.lastUsedPackageFilter ?? PackageFilterTab.All;
             }
-        }
-
-        private void RefreshDatabase()
-        {
-            // trigger both offline & offline refresh
-            PackageDatabase.instance.Refresh(RefreshOptions.SearchAll | RefreshOptions.ListInstalled | RefreshOptions.OfflineMode);
-            PackageDatabase.instance.Refresh(RefreshOptions.SearchAll | RefreshOptions.ListInstalled);
         }
 
         public void OnDisable()
@@ -77,7 +75,7 @@ namespace UnityEditor.PackageManager.UI
         private void SetupDelayedPackageSelection()
         {
             packageManagerToolbar.SetEnabled(!PackageDatabase.instance.isEmpty);
-            packageList.onPackagesLoaded += SelectPackageAndFilter;
+            packageList.onPackageListLoaded += SelectPackageAndFilter;
         }
 
         private void SelectPackageAndFilter()
@@ -109,7 +107,7 @@ namespace UnityEditor.PackageManager.UI
                         PackageFiltering.instance.currentFilterTab = newFilterTab;
                     }
 
-                    SelectionManager.instance.SetSelected(package);
+                    PageManager.instance.SetSelected(package);
                 }
             }
 
@@ -125,7 +123,6 @@ namespace UnityEditor.PackageManager.UI
         private PackageDetails packageDetails { get { return s_Cache.Get<PackageDetails>("packageDetails"); } }
         private PackageManagerToolbar packageManagerToolbar { get {return s_Cache.Get<PackageManagerToolbar>("topMenuToolbar");} }
         private PackageStatusBar packageStatusbar { get {return s_Cache.Get<PackageStatusBar>("packageStatusBar");} }
-
         [MenuItem("Window/Package Manager", priority = 1500)]
         internal static void ShowPackageManagerWindow(MenuCommand item)
         {
@@ -133,14 +130,30 @@ namespace UnityEditor.PackageManager.UI
         }
 
         [UsedByNativeCode]
-        internal static void OpenPackageManager(string packageIdOrDisplayName)
+        internal static void OpenPackageManager(string packageNameOrDisplayName)
         {
-            SelectPackageAndFilter(packageIdOrDisplayName);
+            var window = GetWindowDontShow<PackageManagerWindow>();
+            var isWindowAlreadyVisible = window != null && window.m_Parent != null;
+
+            SelectPackageAndFilter(packageNameOrDisplayName);
+
+            if (!isWindowAlreadyVisible)
+            {
+                string packageId = null;
+                if (!string.IsNullOrEmpty(packageNameOrDisplayName))
+                {
+                    var package = PackageDatabase.instance.GetPackage(packageNameOrDisplayName)
+                        ?? PackageDatabase.instance.GetPackageByDisplayName(packageNameOrDisplayName);
+                    packageId = package?.primaryVersion.uniqueId ?? $"{packageNameOrDisplayName}@primary";
+                }
+                PackageManagerWindowAnalytics.SendEvent("openWindow", packageId);
+            }
         }
 
         internal static void SelectPackageAndFilter(string packageIdOrDisplayName, PackageFilterTab? filterTab = null, bool refresh = false)
         {
-            var window = GetWindow<PackageManagerWindow>(false, "Packages", true);
+            var window = GetWindow<PackageManagerWindow>();
+            window.titleContent = new GUIContent("Package Manager");
             window.minSize = new Vector2(700, 250);
             if (!string.IsNullOrEmpty(packageIdOrDisplayName))
             {
@@ -152,7 +165,7 @@ namespace UnityEditor.PackageManager.UI
                 }
                 else if (refresh)
                 {
-                    window.RefreshDatabase();
+                    PageManager.instance.Refresh(RefreshOptions.All);
                 }
             }
             window.Show();

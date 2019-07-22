@@ -129,6 +129,11 @@ namespace UnityEngine
             );
         }
 
+        public static Vector2Int operator-(Vector2Int v)
+        {
+            return new Vector2Int(-v.x, -v.y);
+        }
+
         public static Vector2Int operator+(Vector2Int a, Vector2Int b)
         {
             return new Vector2Int(a.x + b.x, a.y + b.y);
@@ -144,9 +149,19 @@ namespace UnityEngine
             return new Vector2Int(a.x * b.x, a.y * b.y);
         }
 
+        public static Vector2Int operator*(int a, Vector2Int b)
+        {
+            return new Vector2Int(a * b.x, a * b.y);
+        }
+
         public static Vector2Int operator*(Vector2Int a, int b)
         {
             return new Vector2Int(a.x * b, a.y * b);
+        }
+
+        public static Vector2Int operator/(Vector2Int a, int b)
+        {
+            return new Vector2Int(a.x / b, a.y / b);
         }
 
         public static bool operator==(Vector2Int lhs, Vector2Int rhs)

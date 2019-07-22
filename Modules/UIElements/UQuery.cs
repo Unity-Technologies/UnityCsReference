@@ -93,7 +93,7 @@ namespace UnityEngine.UIElements
                 {
                     RuleMatcher matcher = m_Matchers[j];
 
-                    if (StyleSelectorHelper.MatchRightToLeft(element, matcher.complexSelector, NoProcessResult))
+                    if (StyleSelectorHelper.MatchRightToLeft(element, matcher.complexSelector, (e, i) => NoProcessResult(e, i)))
                     {
                         // use by uQuery to determine if we need to stop
                         if (OnRuleMatchedElement(matcher, element))

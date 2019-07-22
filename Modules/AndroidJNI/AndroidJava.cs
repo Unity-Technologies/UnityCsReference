@@ -1061,6 +1061,7 @@ namespace UnityEngine
             for (int i = 0; i < arrayLength; ++i)
                 array.SetValue(Unbox(arrayUtil.CallStatic<AndroidJavaObject>("get", obj, i)), i);
 
+            arrayUtil.Dispose();
             return array;
         }
 
@@ -1451,8 +1452,10 @@ namespace UnityEngine
             }
             else if (obj is AndroidJavaProxy)
             {
-                AndroidJavaObject javaClass = new AndroidJavaObject(((AndroidJavaProxy)obj).javaInterface.GetRawClass());
-                return "L" + javaClass.Call<System.String>("getName") + ";";
+                using (var javaClass = new AndroidJavaObject(((AndroidJavaProxy)obj).javaInterface.GetRawClass()))
+                {
+                    return "L" + javaClass.Call<System.String>("getName") + ";";
+                }
             }
             else if (type.Equals(typeof(AndroidJavaRunnable)))
             {
@@ -1464,7 +1467,7 @@ namespace UnityEngine
             }
             else if (type.Equals(typeof(AndroidJavaObject)))
             {
-                if (obj == type)
+                if (obj == (object)type)
                 {
                     return "Ljava/lang/Object;";
                 }
@@ -1487,7 +1490,7 @@ namespace UnityEngine
             }
             else
             {
-                throw new Exception("JNI: Unknown signature for type '" + type + "' (obj = " + obj + ") " + (type == obj ? "equal" : "instance"));
+                throw new Exception("JNI: Unknown signature for type '" + type + "' (obj = " + obj + ") " + ((object)type == obj ? "equal" : "instance"));
             }
             return "";
         }

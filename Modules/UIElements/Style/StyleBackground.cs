@@ -11,7 +11,7 @@ namespace UnityEngine.UIElements
     {
         public Background value
         {
-            get { return m_Keyword == StyleKeyword.Undefined ? m_Value : new Background(null); }
+            get { return m_Keyword == StyleKeyword.Undefined ? m_Value : new Background(); }
             set
             {
                 m_Value = value;
@@ -45,12 +45,20 @@ namespace UnityEngine.UIElements
             : this(v, StyleKeyword.Undefined)
         {}
 
+        public StyleBackground(VectorImage v)
+            : this(v, StyleKeyword.Undefined)
+        {}
+
         public StyleBackground(StyleKeyword keyword)
-            : this(new Background(null), keyword)
+            : this(new Background(), keyword)
         {}
 
         internal StyleBackground(Texture2D v, StyleKeyword keyword)
-            : this(new Background(v), keyword)
+            : this(Background.FromTexture2D(v), keyword)
+        {}
+
+        internal StyleBackground(VectorImage v, StyleKeyword keyword)
+            : this(Background.FromVectorImage(v), keyword)
         {}
 
         internal StyleBackground(Background v, StyleKeyword keyword)

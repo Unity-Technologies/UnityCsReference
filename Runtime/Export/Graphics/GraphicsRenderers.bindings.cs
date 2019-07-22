@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering;
 
 using LT = UnityEngineInternal.LightmapType;
 
@@ -70,6 +71,7 @@ namespace UnityEngine
         extern public ReflectionProbeUsage       reflectionProbeUsage { get; set; }
         extern public UInt32                     renderingLayerMask { get; set; }
         extern public int                        rendererPriority { get; set; }
+        extern public RayTracingMode             rayTracingMode { get; set; }
 
         extern public   string sortingLayerName  { get; set; }
         extern public   int    sortingLayerID    { get; set; }

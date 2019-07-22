@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor.Snap;
 using UnityEngine;
 
 namespace UnityEditor
@@ -205,7 +206,7 @@ namespace UnityEditor
                         rotation * axisDir,
                         rotation,
                         handleSize * param.axisSize[i],
-                        SnapSettings.scale,
+                        EditorSnapSettings.scale,
                         offset,
                         axisLineScale[i]);
                 }
@@ -215,7 +216,7 @@ namespace UnityEditor
             {
                 color = ToActiveColorSpace(centerColor);
                 EditorGUI.BeginChangeCheck();
-                var s = ScaleValueHandle(ids.xyz, scale.x, position, rotation, handleSize * param.xyzSize, CubeHandleCap, SnapSettings.scale);
+                var s = ScaleValueHandle(ids.xyz, scale.x, position, rotation, handleSize * param.xyzSize, CubeHandleCap, EditorSnapSettings.scale);
                 if (EditorGUI.EndChangeCheck() && !Mathf.Approximately(scale.x, 0))
                 {
                     var dif = s / scale.x;

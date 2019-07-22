@@ -13,11 +13,37 @@ using System.Linq;
 
 namespace UnityEditor
 {
+    internal interface IAsyncHTTPClient
+    {
+        string text { get; }
+        byte[] bytes { get; }
+        Texture2D texture { get; }
+        AsyncHTTPClient.State state { get; }
+        int responseCode { get; }
+        string tag { get; set; }
+        Dictionary<string, string> header { get; set; }
+
+        Dictionary<string, string> responseHeader { get; }
+
+        string postData { set; }
+        Dictionary<string, string> postDictionary { set; }
+
+        AsyncHTTPClient.DoneCallback doneCallback { get; set; }
+
+        string url { get; }
+
+        void Abort();
+        bool IsAborted();
+        bool IsDone();
+        bool IsSuccess();
+        void Begin();
+    }
+
     /*
      * A HTTP job for performing HTTP requests in a thread
      * This class is primarily used by the Server class.
      */
-    internal partial class AsyncHTTPClient
+    internal partial class AsyncHTTPClient : IAsyncHTTPClient
     {
         internal enum State
         {
@@ -33,11 +59,11 @@ namespace UnityEditor
             TIMEOUT
         }
         private IntPtr m_Handle;
-        public delegate void DoneCallback(AsyncHTTPClient client);
+        public delegate void DoneCallback(IAsyncHTTPClient client);
         public delegate void StatusCallback(State status, int bytesDone, int bytesTotal);
 
         public StatusCallback statusCallback;
-        public DoneCallback doneCallback;
+        public DoneCallback doneCallback { get; set; }
 
         string m_ToUrl;
         string m_FromData;
@@ -73,11 +99,30 @@ namespace UnityEditor
                 return GetTextureByHandle(m_Handle);
             }
         }
+
         public State state { get; private set; }
         public int responseCode { get; private set; }
         public string tag { get; set; }
 
-        public Dictionary<string, string> header;
+        public Dictionary<string, string> responseHeader
+        {
+            get
+            {
+                string[] headerFlattened = GetHeadersByHandle(m_Handle);
+                Dictionary<string, string> ret = new Dictionary<string, string>();
+                foreach (var curr in headerFlattened)
+                {
+                    string[] line = curr.Split(new string[] { ": " }, StringSplitOptions.None);
+                    if (line.Length > 1)
+                        ret.Add(line[0], string.Concat(line.Skip(1).ToArray()));
+                    else
+                        ret.Add(curr, "");
+                }
+                return ret;
+            }
+        }
+
+        public Dictionary<string, string> header { get; set; }
 
         /* GET request
          *

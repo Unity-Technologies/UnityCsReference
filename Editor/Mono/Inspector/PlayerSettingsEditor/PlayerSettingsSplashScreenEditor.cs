@@ -200,9 +200,11 @@ namespace UnityEditor
                 logo.objectReferenceValue = value;
 
             // Properties
+            var oldLabelWidth = EditorGUIUtility.labelWidth;
             EditorGUIUtility.labelWidth = k_LogoListPropertyLabelWidth;
             var propertyRect = new Rect(rect.x + unityLogoWidth, rect.y + EditorGUIUtility.standardVerticalSpacing, rect.width - unityLogoWidth, EditorGUIUtility.singleLineHeight);
             var duration = element.FindPropertyRelative("duration");
+            EditorGUIUtility.labelWidth = oldLabelWidth;
 
             EditorGUI.BeginChangeCheck();
             var newDurationVal = EditorGUI.Slider(propertyRect, k_Texts.logoDuration, duration.floatValue, k_MinLogoTime, k_MaxLogoTime);
@@ -342,9 +344,12 @@ namespace UnityEditor
                 if (SplashScreen.isFinished)
                 {
                     SplashScreen.Begin();
-                    var gv = GameView.GetMainGameView();
-                    if (gv)
-                        gv.Focus();
+                    PreviewEditorWindow.RepaintAll();
+                    var preview = PreviewEditorWindow.GetMainPreviewWindow();
+                    if (preview)
+                    {
+                        preview.Focus();
+                    }
                     EditorApplication.update += PollSplashState;
                 }
                 else
@@ -392,7 +397,6 @@ namespace UnityEditor
 
             if (EditorGUILayout.BeginFadeGroup(m_ShowLogoControlsAnimator.faded))
             {
-                EditorGUI.indentLevel++;
                 EditorGUI.BeginChangeCheck();
                 var oldDrawmode = m_SplashScreenDrawMode.intValue;
                 EditorGUILayout.PropertyField(m_SplashScreenDrawMode, k_Texts.drawMode);
@@ -403,7 +407,6 @@ namespace UnityEditor
                     else
                         AddUnityLogoToLogosList();
                 }
-                EditorGUI.indentLevel--;
             }
             EditorGUILayout.EndFadeGroup();
 
@@ -432,6 +435,9 @@ namespace UnityEditor
 
         void PollSplashState()
         {
+            // Force the GameViews to repaint whilst showing the splash(1166664)
+            PreviewEditorWindow.RepaintAll();
+
             // When the splash screen is playing we need to keep track so that we can update the preview button when it has finished.
             if (SplashScreen.isFinished)
             {

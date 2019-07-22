@@ -62,6 +62,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string[] defineConstraints;
         public VersionDefine[] versionDefines;
 
+        static Dictionary<string, string> renamedReferences = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        static CustomScriptAssemblyData()
+        {
+            renamedReferences["Unity.RenderPipelines.Lightweight.Editor"] = "Unity.RenderPipelines.Universal.Editor";
+            renamedReferences["Unity.RenderPipelines.Lightweight.Runtime"] = "Unity.RenderPipelines.Universal.Runtime";
+        }
+
         public static CustomScriptAssemblyData FromJson(string json)
         {
             var assemblyData = FromJsonNoFieldValidation(json);
@@ -77,6 +85,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             assemblyData.autoReferenced = true;
             UnityEngine.JsonUtility.FromJsonOverwrite(json, assemblyData);
 
+            UpdateRenamedReferences(assemblyData);
             assemblyData.UpdateLegacyData();
 
             if (assemblyData == null)
@@ -98,6 +107,42 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public static string ToJson(CustomScriptAssemblyData data)
         {
             return UnityEngine.JsonUtility.ToJson(data, true);
+        }
+
+        static void UpdateRenamedReferences(CustomScriptAssemblyData data)
+        {
+            if (data.references == null || data.references.Length == 0)
+                return;
+
+            HashSet<string> additionalReferences = null;
+
+            for (int i = 0; i < data.references.Length; ++i)
+            {
+                var reference = data.references[i];
+                string newReference;
+
+                if (!renamedReferences.TryGetValue(reference, out newReference))
+                    continue;
+
+                if (additionalReferences == null)
+                    additionalReferences = new HashSet<string>();
+
+                additionalReferences.Add(newReference);
+            }
+
+            if (additionalReferences != null && additionalReferences.Count() > 0)
+            {
+                for (int i = 0; i < data.references.Length; ++i)
+                {
+                    var reference = data.references[i];
+
+                    if (additionalReferences.Contains(reference))
+                        additionalReferences.Remove(reference);
+                }
+
+                if (additionalReferences.Count() > 0)
+                    data.references = data.references.Concat(additionalReferences).ToArray();
+            }
         }
 
         [Serializable]

@@ -183,7 +183,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private void DoOnGUI(Event evt, Matrix4x4 parentTransform, Rect clippingRect, bool isComputingLayout, Rect layoutSize)
+        private void DoOnGUI(Event evt, Matrix4x4 parentTransform, Rect clippingRect, bool isComputingLayout, Rect layoutSize, bool eventIsPropagatedFromNonFocusableVisualElement = false)
         {
             // If we are computing the layout, we should not try to get the worldTransform...
             // it is dependant on the layout, which is being calculated (thus, not good)
@@ -303,7 +303,7 @@ namespace UnityEngine.UIElements
             }
             finally
             {
-                if (Event.current.type != EventType.Layout)
+                if (Event.current.type != EventType.Layout && !eventIsPropagatedFromNonFocusableVisualElement)
                 {
                     int currentKeyboardFocus = GUIUtility.keyboardControl;
                     int result = GUIUtility.CheckForTabEvent(Event.current);
@@ -465,11 +465,17 @@ namespace UnityEngine.UIElements
         private void DoIMGUIRepaint()
         {
             var offset = elementPanel.repaintData.currentOffset;
-            HandleIMGUIEvent(elementPanel.repaintData.repaintEvent, offset * worldTransform, ComputeAAAlignedBound(worldClip, offset));
+            HandleIMGUIEvent(elementPanel.repaintData.repaintEvent, offset * worldTransform, ComputeAAAlignedBound(worldClip, offset), false);
         }
 
         internal bool SendEventToIMGUI(EventBase evt)
         {
+            if (evt is IPointerEvent)
+            {
+                // Pointer events are not handled by IMGUI. The compatibility mouse event will eventually come.
+                return false;
+            }
+
             bool result;
             using (new EventDebuggerLogIMGUICall(evt))
             {
@@ -478,15 +484,15 @@ namespace UnityEngine.UIElements
             return result;
         }
 
-        private bool HandleIMGUIEvent(Event e)
+        internal bool HandleIMGUIEvent(Event e, bool eventIsPropagatedFromNonFocusableVisualElement = false)
         {
             Matrix4x4 currentTransform;
             GetCurrentTransformAndClip(this, e, out currentTransform, out m_CachedClippingRect);
 
-            return HandleIMGUIEvent(e, currentTransform, m_CachedClippingRect);
+            return HandleIMGUIEvent(e, currentTransform, m_CachedClippingRect, eventIsPropagatedFromNonFocusableVisualElement);
         }
 
-        private bool HandleIMGUIEvent(Event e, Matrix4x4 worldTransform, Rect clippingRect)
+        private bool HandleIMGUIEvent(Event e, Matrix4x4 worldTransform, Rect clippingRect, bool eventIsPropagatedFromNonFocusableVisualElement)
         {
             if (e == null || onGUIHandler == null || elementPanel == null || elementPanel.IMGUIEventInterests.WantsEvent(e.type) == false)
             {
@@ -497,10 +503,10 @@ namespace UnityEngine.UIElements
             e.type = EventType.Layout;
 
             // layout event
-            DoOnGUI(e, worldTransform, clippingRect, false, layout);
+            DoOnGUI(e, worldTransform, clippingRect, false, layout, eventIsPropagatedFromNonFocusableVisualElement);
             // the actual event
             e.type = originalEventType;
-            DoOnGUI(e, worldTransform, clippingRect, false, layout);
+            DoOnGUI(e, worldTransform, clippingRect, false, layout, eventIsPropagatedFromNonFocusableVisualElement);
 
             if (newKeyboardFocusControlID > 0)
             {

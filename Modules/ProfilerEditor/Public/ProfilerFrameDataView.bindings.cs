@@ -10,6 +10,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Profiling.LowLevel;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 
 namespace UnityEditor.Profiling
 {
@@ -44,6 +45,7 @@ namespace UnityEditor.Profiling
         internal const int columnSelfGpuPercent = 11;
         public const int columnWarningCount = 12;
         public const int columnObjectName = 13;
+        public const int columnStartTime = 14;
 
         internal HierarchyFrameDataView(int frameIndex, int threadIndex, ViewModes viewMode, int sortColumn, bool sortAscending)
         {
@@ -145,6 +147,8 @@ namespace UnityEditor.Profiling
 
         public extern float GetItemColumnDataAsFloat(int id, int column);
 
+        public extern double GetItemColumnDataAsDouble(int id, int column);
+
         public extern int GetItemMetadataCount(int id);
 
         public extern string GetItemMetadata(int id, int index);
@@ -160,16 +164,66 @@ namespace UnityEditor.Profiling
             return ResolveItemMergedSampleCallstack(id, 0);
         }
 
+        public void GetItemCallstack(int id, List<ulong> outCallstack)
+        {
+            GetItemMergedSampleCallstack(id, 0, outCallstack);
+        }
+
         public extern int GetItemMergedSamplesCount(int id);
 
-        [NativeThrows]
-        public extern void GetItemMergedSamplesColumnData(int id, int column, List<string> outStrings);
+        public void GetItemMergedSamplesColumnData(int id, int column, List<string> outStrings)
+        {
+            if (outStrings == null)
+                throw new ArgumentNullException(nameof(outStrings));
 
-        [NativeThrows]
-        public extern void GetItemMergedSamplesColumnDataAsFloats(int id, int column, List<float> outValues);
+            GetItemMergedSamplesColumnDataInternal(id, column, outStrings);
+        }
 
-        [NativeThrows]
-        public extern void GetItemMergedSamplesInstanceID(int id, List<int> outInstanceIds);
+        [NativeMethod("GetItemMergedSamplesColumnData")]
+        extern void GetItemMergedSamplesColumnDataInternal(int id, int column, List<string> outStrings);
+
+        public void GetItemMergedSamplesColumnDataAsFloats(int id, int column, List<float> outValues)
+        {
+            if (outValues == null)
+                throw new ArgumentNullException(nameof(outValues));
+
+            GetItemMergedSamplesColumnDataAsFloatsInternal(id, column, outValues);
+        }
+
+        [NativeMethod("GetItemMergedSamplesColumnDataAsFloats")]
+        extern void GetItemMergedSamplesColumnDataAsFloatsInternal(int id, int column, List<float> outValues);
+
+        public void GetItemMergedSamplesInstanceID(int id, List<int> outInstanceIds)
+        {
+            if (outInstanceIds == null)
+                throw new ArgumentNullException(nameof(outInstanceIds));
+
+            GetItemMergedSamplesInstanceIDInternal(id, outInstanceIds);
+        }
+
+        [NativeMethod("GetItemMergedSamplesInstanceID")]
+        extern void GetItemMergedSamplesInstanceIDInternal(int id, List<int> outInstanceIds);
+
+        public void GetItemMergedSampleCallstack(int id, int sampleIndex, List<ulong> outCallstack)
+        {
+            if (outCallstack == null)
+                throw new ArgumentNullException(nameof(outCallstack));
+
+            GetItemMergedSampleCallstackInternal(id, sampleIndex, outCallstack);
+        }
+
+        [NativeMethod("GetItemMergedSampleCallstack")]
+        extern void GetItemMergedSampleCallstackInternal(int id, int sampleIndex, List<ulong> outCallstack);
+
+        [StructLayout(LayoutKind.Sequential)]
+        [RequiredByNativeCode]
+        public struct MethodInfo
+        {
+            public string methodName;
+            public string sourceFileName;
+            public uint sourceFileLine;
+        };
+        public extern MethodInfo ResolveMethodInfo(ulong addr);
 
         public extern string ResolveItemMergedSampleCallstack(int id, int sampleIndex);
 

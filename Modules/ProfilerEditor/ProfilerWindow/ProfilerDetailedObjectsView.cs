@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.Profiling;
@@ -19,6 +20,8 @@ namespace UnityEditorInternal.Profiling
 
         [NonSerialized]
         bool m_Initialized;
+        [NonSerialized]
+        List<ulong> m_CachedCallstack = new List<ulong>();
 
         [SerializeField]
         TreeViewState m_TreeViewState;
@@ -232,12 +235,11 @@ namespace UnityEditorInternal.Profiling
             InitIfNeeded();
             UpdateIfNeeded(frameDataView, selection[0]);
 
-            string callstack = null;
             var selectedSampleId = m_TreeView.GetSelectedFrameDataViewId();
             if (selectedSampleId != -1)
-                callstack = frameDataView.ResolveItemMergedSampleCallstack(selectedSampleId, m_TreeView.state.selectedIDs[0]);
+                frameDataView.GetItemMergedSampleCallstack(selectedSampleId, m_TreeView.state.selectedIDs[0], m_CachedCallstack);
 
-            var showCallstack = !string.IsNullOrEmpty(callstack);
+            var showCallstack = m_CachedCallstack.Count > 0;
             if (showCallstack)
                 SplitterGUILayout.BeginVerticalSplit(m_VertSplit, Styles.expandedArea);
 
@@ -254,8 +256,20 @@ namespace UnityEditorInternal.Profiling
                 EditorGUILayout.BeginVertical(Styles.expandedArea);
                 m_CallstackScrollViewPos = EditorGUILayout.BeginScrollView(m_CallstackScrollViewPos, Styles.callstackScroll);
 
-                var text = kCallstackText + '\n' + callstack;
-                EditorGUILayout.TextArea(text, Styles.callstackTextArea);
+                var sb = new StringBuilder(kCallstackText + '\n');
+                foreach (var addr in m_CachedCallstack)
+                {
+                    var methodInfo = frameDataView.ResolveMethodInfo(addr);
+                    if (string.IsNullOrEmpty(methodInfo.methodName))
+                        sb.AppendFormat("0x{0:X}\n", addr);
+                    else if (string.IsNullOrEmpty(methodInfo.sourceFileName))
+                        sb.AppendFormat("0x{0:X}\t{1}\n", addr, methodInfo.methodName);
+                    else if (methodInfo.sourceFileLine == 0)
+                        sb.AppendFormat("0x{0:X}\t{1}\t{2}\n", addr, methodInfo.methodName, methodInfo.sourceFileName);
+                    else
+                        sb.AppendFormat("0x{0:X}\t{1}\t{2}:{3}\n", addr, methodInfo.methodName, methodInfo.sourceFileName, methodInfo.sourceFileLine);
+                }
+                EditorGUILayout.TextArea(sb.ToString(), Styles.callstackTextArea);
 
                 EditorGUILayout.EndScrollView();
                 EditorGUILayout.EndVertical();

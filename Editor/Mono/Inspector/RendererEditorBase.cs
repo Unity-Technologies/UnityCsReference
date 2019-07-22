@@ -53,15 +53,6 @@ namespace UnityEditor
                 return isUsingLightProbeVolumes;
             }
 
-            internal bool HasValidLightProbeProxyVolumeOverride(Renderer renderer, int selectionCount)
-            {
-                LightProbeProxyVolume proxyVolumeOverride = (renderer.lightProbeProxyVolumeOverride != null) ?
-                    renderer.lightProbeProxyVolumeOverride.GetComponent<LightProbeProxyVolume>() :
-                    null;
-
-                return IsUsingLightProbeProxyVolume(selectionCount) && ((proxyVolumeOverride == null) || (proxyVolumeOverride.boundingBoxMode != LightProbeProxyVolume.BoundingBoxMode.AutomaticLocal));
-            }
-
             internal void RenderLightProbeProxyVolumeWarningNote(Renderer renderer, int selectionCount)
             {
                 if (IsUsingLightProbeProxyVolume(selectionCount))

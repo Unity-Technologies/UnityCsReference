@@ -71,6 +71,19 @@ namespace UnityEngine.UIElements
 
     public class DragUpdatedEvent : DragAndDropEventBase<DragUpdatedEvent>
     {
+        public new static DragUpdatedEvent GetPooled(Event systemEvent)
+        {
+            // We adopt the same convention as for MouseMoveEvents.
+            // We thus reset e.button.
+            DragUpdatedEvent e = DragAndDropEventBase<DragUpdatedEvent>.GetPooled(systemEvent);
+            e.button = 0;
+            return e;
+        }
+
+        internal static DragUpdatedEvent GetPooled(PointerMoveEvent pointerEvent)
+        {
+            return DragAndDropEventBase<DragUpdatedEvent>.GetPooled(pointerEvent);
+        }
     }
 
     public class DragPerformEvent : DragAndDropEventBase<DragPerformEvent>

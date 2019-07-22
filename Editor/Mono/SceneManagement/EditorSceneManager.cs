@@ -21,6 +21,7 @@ namespace UnityEditor.SceneManagement
         public delegate void SceneClosedCallback(Scene scene);
         public delegate void SceneSavingCallback(Scene scene, string path);
         public delegate void SceneSavedCallback(Scene scene);
+        public delegate void SceneDirtiedCallback(Scene scene);
 
         public static event NewSceneCreatedCallback newSceneCreated;
         public static event SceneOpeningCallback sceneOpening;
@@ -29,6 +30,7 @@ namespace UnityEditor.SceneManagement
         public static event SceneClosedCallback sceneClosed;
         public static event SceneSavingCallback sceneSaving;
         public static event SceneSavedCallback sceneSaved;
+        public static event SceneDirtiedCallback sceneDirtied;
 
         [RequiredByNativeCode]
         private static void Internal_NewSceneCreated(Scene scene, NewSceneSetup setup, NewSceneMode mode)
@@ -77,6 +79,13 @@ namespace UnityEditor.SceneManagement
         {
             if (sceneSaved != null)
                 sceneSaved(scene);
+        }
+
+        [RequiredByNativeCode]
+        private static void Internal_SceneDirtied(Scene scene)
+        {
+            if (sceneDirtied != null)
+                sceneDirtied(scene);
         }
 
         [RequiredByNativeCode]

@@ -367,7 +367,7 @@ namespace UnityEditor
 
             SetShowOnlySelectedMode(false);
 
-            GameView.RepaintAll();
+            PreviewEditorWindow.RepaintAll();
             SceneView.RepaintAll();
         }
 

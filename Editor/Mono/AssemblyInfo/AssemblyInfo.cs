@@ -27,6 +27,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.UnityAnalytics")]
 [assembly: InternalsVisibleTo("Unity.Timeline.Editor")]
 [assembly: InternalsVisibleTo("Unity.PackageManagerUI.Develop.Editor")]
+[assembly: InternalsVisibleTo("Unity.DeviceSimulator.Editor")]
 
 [assembly: InternalsVisibleTo("Unity.Timeline.EditorTests")]
 [assembly: InternalsVisibleTo("UnityEditor.Graphs")]

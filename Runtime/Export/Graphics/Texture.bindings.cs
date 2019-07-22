@@ -227,6 +227,13 @@ namespace UnityEngine
             [FreeFunction(Name = "GetTextureStreamingManager().SetRequestedMipmapLevel", HasExplicitThis = true)]
             set;
         }
+        extern public int minimumMipmapLevel
+        {
+            [FreeFunction(Name = "GetTextureStreamingManager().GetMinimumMipmapLevel", HasExplicitThis = true)]
+            get;
+            [FreeFunction(Name = "GetTextureStreamingManager().SetMinimumMipmapLevel", HasExplicitThis = true)]
+            set;
+        }
 
         extern internal bool loadAllMips
         {
@@ -234,6 +241,12 @@ namespace UnityEngine
             get;
             [FreeFunction(Name = "GetTextureStreamingManager().SetLoadAllMips", HasExplicitThis = true)]
             set;
+        }
+
+        extern public int calculatedMipmapLevel
+        {
+            [FreeFunction(Name = "GetTextureStreamingManager().GetCalculatedMipmapLevel", HasExplicitThis = true)]
+            get;
         }
 
         extern public int desiredMipmapLevel
@@ -260,6 +273,8 @@ namespace UnityEngine
         [FreeFunction(Name = "GetTextureStreamingManager().IsRequestedMipmapLevelLoaded", HasExplicitThis = true)]
         extern public bool IsRequestedMipmapLevelLoaded();
 
+        [FreeFunction(Name = "GetTextureStreamingManager().ClearMinimumMipmapLevel", HasExplicitThis = true)]
+        extern public void ClearMinimumMipmapLevel();
 
         [FreeFunction("Texture2DScripting::UpdateExternalTexture", HasExplicitThis = true)]
         extern public void UpdateExternalTexture(IntPtr nativeTex);

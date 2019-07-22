@@ -77,7 +77,9 @@ namespace UnityEditor.PackageManager.UI
                     docsFolder = Path.Combine(version.packageInfo.resolvedPath, "Documentation");
                 if (Directory.Exists(docsFolder))
                 {
-                    var docsMd = Directory.GetFiles(docsFolder, "*.md", SearchOption.TopDirectoryOnly).FirstOrDefault();
+                    var mdFiles = Directory.GetFiles(docsFolder, "*.md", SearchOption.TopDirectoryOnly);
+                    var docsMd = mdFiles.FirstOrDefault(d => Path.GetFileName(d).ToLower() == "index.md")
+                        ?? mdFiles.FirstOrDefault(d => Path.GetFileName(d).ToLower() == "tableofcontents.md") ?? mdFiles.FirstOrDefault();
                     if (!string.IsNullOrEmpty(docsMd))
                         return new Uri(docsMd).AbsoluteUri;
                 }

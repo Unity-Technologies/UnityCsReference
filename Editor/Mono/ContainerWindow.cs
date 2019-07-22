@@ -192,7 +192,7 @@ namespace UnityEditor
             return ( // hallelujah
 
                 (m_ShowMode == (int)ShowMode.Utility || m_ShowMode == (int)ShowMode.AuxWindow) ||
-
+                (m_ShowMode == (int)ShowMode.MainWindow && rootView is HostView) ||
                 (rootView is SplitView &&
                     rootView.children.Length == 1 &&
                     rootView.children[0] is DockArea &&
@@ -214,18 +214,25 @@ namespace UnityEditor
                         return rootView.GetType().ToString();
                 }
 
+                if (rootView.children.Length > 0)
+                    return (m_ShowMode == (int)ShowMode.Utility || m_ShowMode == (int)ShowMode.AuxWindow) ? v.actualView.GetType().ToString()
+                        : ((DockArea)rootView.children[0]).m_Panes[0].GetType().ToString();
 
-                return (m_ShowMode == (int)ShowMode.Utility || m_ShowMode == (int)ShowMode.AuxWindow) ? v.actualView.GetType().ToString()
-                    : ((DockArea)rootView.children[0]).m_Panes[0].GetType().ToString();
+                return v.actualView.GetType().ToString();
             }
 
             return null;
         }
 
+        public bool IsMainWindow()
+        {
+            return m_ShowMode == (int)ShowMode.MainWindow && m_DontSaveToLayout == false;
+        }
+
         public void Save()
         {
             // only save it if its not docked and its not the MainWindow
-            if ((m_ShowMode != (int)ShowMode.MainWindow) && IsNotDocked() && !IsZoomed())
+            if (!IsMainWindow() && IsNotDocked() && !IsZoomed())
             {
                 string ID = NotDockedWindowID();
 
@@ -239,7 +246,7 @@ namespace UnityEditor
 
         private void Load(bool loadPosition)
         {
-            if ((m_ShowMode != (int)ShowMode.MainWindow) && IsNotDocked())
+            if (!IsMainWindow() &&  IsNotDocked())
             {
                 string ID = NotDockedWindowID();
 
@@ -336,26 +343,6 @@ namespace UnityEditor
         internal Rect GetDropDownRect(Rect buttonRect, Vector2 minSize, Vector2 maxSize)
         {
             return PopupLocationHelper.GetDropDownRect(buttonRect, minSize, maxSize, this);
-        }
-
-        internal Rect FitPopupWindowRectToScreen(Rect rect, float minimumHeight)
-        {
-            const float maxHeight = 900;
-            float spaceFromBottom = 0f;
-            if (Application.platform == RuntimePlatform.OSXEditor)
-                spaceFromBottom = 10f;
-
-            float minHeight = minimumHeight + spaceFromBottom;
-            Rect p = rect;
-            p.height = Mathf.Min(p.height, maxHeight);
-            p.height += spaceFromBottom;
-            p = FitWindowRectToScreen(p, true, true);
-
-            float newHeight = Mathf.Max(p.yMax - rect.y, minHeight);
-            p.y = p.yMax - newHeight;
-            p.height = newHeight - spaceFromBottom;
-
-            return p;
         }
 
         public void HandleWindowDecorationEnd(Rect windowPosition)

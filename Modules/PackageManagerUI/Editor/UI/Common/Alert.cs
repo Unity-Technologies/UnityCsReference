@@ -22,7 +22,6 @@ namespace UnityEditor.PackageManager.UI
 
             var root = Resources.GetTemplate("Alert.uxml");
             Add(root);
-            root.StretchToParentSize();
 
             cache = new VisualElementCache(root);
 
@@ -46,17 +45,8 @@ namespace UnityEditor.PackageManager.UI
         public void ClearError()
         {
             UIUtils.SetElementDisplay(this, false);
-            AdjustSize(false);
             alertMessage.text = "";
             onCloseError = null;
-        }
-
-        public void AdjustSize(bool verticalScrollerVisible)
-        {
-            if (verticalScrollerVisible)
-                style.right = k_PositionRightOriginal + k_PositionRightWithScroll;
-            else
-                style.right = k_PositionRightOriginal;
         }
 
         private VisualElementCache cache { get; set; }

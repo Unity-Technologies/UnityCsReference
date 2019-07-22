@@ -28,6 +28,11 @@ namespace UnityEngine.UIElements
                 style.borderBottomRightRadius < Mathf.Epsilon);
         }
 
+        public static bool IsVectorImageBackground(VisualElement ve)
+        {
+            return ve.computedStyle.backgroundImage.value.vectorImage != null;
+        }
+
         public static void Destroy(Object obj)
         {
             if (obj == null)

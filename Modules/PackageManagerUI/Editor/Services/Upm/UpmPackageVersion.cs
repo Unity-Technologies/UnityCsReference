@@ -22,10 +22,14 @@ namespace UnityEditor.PackageManager.UI
         public string name { get { return m_PackageInfo.name; } }
         public string type { get { return m_PackageInfo.type; } }
         public string category { get { return m_PackageInfo.category; } }
-        public IEnumerable<Error> errors { get { return m_PackageInfo.errors; } }
+        public IEnumerable<Error> errors => m_PackageInfo.errors.Concat(entitlementsError != null ? new List<Error> { entitlementsError } : new List<Error>());
         public bool isDirectDependency { get { return isFullyFetched && m_PackageInfo.isDirectDependency; } }
+
         public DependencyInfo[] dependencies { get { return m_PackageInfo.dependencies; } }
         public DependencyInfo[] resolvedDependencies { get { return m_PackageInfo.resolvedDependencies; } }
+        public EntitlementsInfo entitlements => m_PackageInfo.entitlements;
+        Error entitlementsError => !entitlements.isAllowed && isInstalled ? new Error(NativeErrorCode.Unknown, L10n.Tr("You do not have entitlements for this package.")) : null;
+
 
         private string m_PackageId;
         public string uniqueId { get { return m_PackageId; } }
@@ -116,13 +120,13 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        [SerializeField]
-        public bool isUserVisible { get { return isInstalled || HasTag(PackageTag.Release | PackageTag.Preview | PackageTag.Verified | PackageTag.Core);; } }
+        public bool isUserVisible { get { return isInstalled || HasTag(PackageTag.Release | PackageTag.Preview | PackageTag.Verified | PackageTag.Core); } }
 
         private string m_Description;
         public string description { get { return !string.IsNullOrEmpty(m_Description) ? m_Description :  m_PackageInfo.description; } }
 
         private PackageTag m_Tag;
+
         public bool HasTag(PackageTag tag)
         {
             return (m_Tag & tag) != 0;
@@ -158,7 +162,32 @@ namespace UnityEditor.PackageManager.UI
 
         public string shortVersionId { get { return FormatPackageId(name, version.ShortVersion()); } }
 
-        public DateTime? datePublished { get { return m_PackageInfo.datePublished; } }
+        public DateTime? publishedDate { get { return m_PackageInfo.datePublished; } }
+
+        public string publisherId => m_Author;
+
+        public string localPath
+        {
+            get
+            {
+                var packageInfoResolvedPath = packageInfo?.resolvedPath;
+                return packageInfoResolvedPath;
+            }
+        }
+
+        public string versionString => m_Version?.ToString();
+
+        public string versionId => m_Version?.ToString();
+
+        public SemVersion supportedVersion => null;
+
+        public IEnumerable<SemVersion> supportedVersions => Enumerable.Empty<SemVersion>();
+
+        public IEnumerable<PackageImage> images => Enumerable.Empty<PackageImage>();
+
+        public IEnumerable<PackageSizeInfo> sizes => Enumerable.Empty<PackageSizeInfo>();
+
+        public IEnumerable<PackageLink> links => Enumerable.Empty<PackageLink>();
 
         public UpmPackageVersion(PackageInfo packageInfo, bool isInstalled, SemVersion version, string displayName)
         {

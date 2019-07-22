@@ -5,48 +5,10 @@
 using System;
 using UnityEngine.Rendering;
 
-namespace UnityEngine.Experimental.Rendering
-{
-    // TODO: Obsolete/remove this when TMP updates to use new API.
-    public static class RenderPipeline
-    {
-        static RenderPipeline()
-        {
-            RenderPipelineManager.beginFrameRendering += (context, cameras) =>
-            {
-                if (beginFrameRendering != null)
-                    beginFrameRendering(cameras);
-            };
-
-            RenderPipelineManager.beginCameraRendering += (context, camera) =>
-            {
-                if (beginCameraRendering != null)
-                    beginCameraRendering(camera);
-            };
-        }
-
-        public static event Action<Camera[]> beginFrameRendering;
-        public static event Action<Camera> beginCameraRendering;
-    }
-}
-
 namespace UnityEngine.Rendering
 {
     public abstract class RenderPipeline
     {
-        // Obsolete: Remove this when TMP, HDRP and LWRP will have updated their
-        protected static void BeginFrameRendering(Camera[] cameras)
-        {
-            RenderPipelineManager.BeginFrameRendering(default(ScriptableRenderContext), cameras);
-        }
-
-        protected static void BeginCameraRendering(Camera camera)
-        {
-            RenderPipelineManager.BeginCameraRendering(default(ScriptableRenderContext), camera);
-        }
-
-        // End Obsolete code
-
         protected abstract void Render(ScriptableRenderContext context, Camera[] cameras);
 
         protected static void BeginFrameRendering(ScriptableRenderContext context, Camera[] cameras)

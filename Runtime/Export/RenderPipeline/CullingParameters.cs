@@ -104,6 +104,7 @@ namespace UnityEngine.Rendering
         CoreCameraValues coreCameraValues;
         uint cameraType;
         private int projectionIsOblique;
+        private int isImplicitProjectionMatrix;
 
         public Plane GetShadowCullingPlane(int index)
         {
@@ -187,7 +188,7 @@ namespace UnityEngine.Rendering
             // m_ShadowCullPlanes == other.m_ShadowCullPlanes
             // m_CameraCullPlanes == other.m_CameraCullPlanes
             // layerCullDistances == other.layerCullDistances
-            return screenRect.Equals(other.screenRect) && viewDir.Equals(other.viewDir) && projectionNear.Equals(other.projectionNear) && projectionFar.Equals(other.projectionFar) && cameraNear.Equals(other.cameraNear) && cameraFar.Equals(other.cameraFar) && cameraAspect.Equals(other.cameraAspect) && cameraToWorld.Equals(other.cameraToWorld) && actualWorldToClip.Equals(other.actualWorldToClip) && cameraClipToWorld.Equals(other.cameraClipToWorld) && cameraWorldToClip.Equals(other.cameraWorldToClip) && implicitProjection.Equals(other.implicitProjection) && stereoWorldToClipLeft.Equals(other.stereoWorldToClipLeft) && stereoWorldToClipRight.Equals(other.stereoWorldToClipRight) && worldToCamera.Equals(other.worldToCamera) && up.Equals(other.up) && right.Equals(other.right) && transformDirection.Equals(other.transformDirection) && cameraEuler.Equals(other.cameraEuler) && velocity.Equals(other.velocity) && farPlaneWorldSpaceLength.Equals(other.farPlaneWorldSpaceLength) && rendererCount == other.rendererCount && baseFarDistance.Equals(other.baseFarDistance) && shadowCullCenter.Equals(other.shadowCullCenter) && layerCullSpherical == other.layerCullSpherical && coreCameraValues.Equals(other.coreCameraValues) && cameraType == other.cameraType && projectionIsOblique == other.projectionIsOblique;
+            return screenRect.Equals(other.screenRect) && viewDir.Equals(other.viewDir) && projectionNear.Equals(other.projectionNear) && projectionFar.Equals(other.projectionFar) && cameraNear.Equals(other.cameraNear) && cameraFar.Equals(other.cameraFar) && cameraAspect.Equals(other.cameraAspect) && cameraToWorld.Equals(other.cameraToWorld) && actualWorldToClip.Equals(other.actualWorldToClip) && cameraClipToWorld.Equals(other.cameraClipToWorld) && cameraWorldToClip.Equals(other.cameraWorldToClip) && implicitProjection.Equals(other.implicitProjection) && stereoWorldToClipLeft.Equals(other.stereoWorldToClipLeft) && stereoWorldToClipRight.Equals(other.stereoWorldToClipRight) && worldToCamera.Equals(other.worldToCamera) && up.Equals(other.up) && right.Equals(other.right) && transformDirection.Equals(other.transformDirection) && cameraEuler.Equals(other.cameraEuler) && velocity.Equals(other.velocity) && farPlaneWorldSpaceLength.Equals(other.farPlaneWorldSpaceLength) && rendererCount == other.rendererCount && baseFarDistance.Equals(other.baseFarDistance) && shadowCullCenter.Equals(other.shadowCullCenter) && layerCullSpherical == other.layerCullSpherical && coreCameraValues.Equals(other.coreCameraValues) && cameraType == other.cameraType && projectionIsOblique == other.projectionIsOblique && isImplicitProjectionMatrix == other.isImplicitProjectionMatrix;
         }
 
         public override bool Equals(object obj)
@@ -243,6 +244,7 @@ namespace UnityEngine.Rendering
                 hashCode = (hashCode * 397) ^ coreCameraValues.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)cameraType;
                 hashCode = (hashCode * 397) ^ projectionIsOblique;
+                hashCode = (hashCode * 397) ^ isImplicitProjectionMatrix;
                 return hashCode;
             }
         }

@@ -13,6 +13,80 @@ namespace UnityEditor.PackageManager.UI
         static IPackageFiltering s_Instance = null;
         public static IPackageFiltering instance { get { return s_Instance ?? PackageFilteringInternal.instance; } }
 
+        internal static bool FilterByTab(IPackage package, PackageFilterTab tab)
+        {
+            switch (tab)
+            {
+                case PackageFilterTab.Modules:
+                    return package.versions.Any(v => v.HasTag(PackageTag.BuiltIn) && !v.HasTag(PackageTag.AssetStore));
+                case PackageFilterTab.All:
+                    return package.versions.Any(v => !v.HasTag(PackageTag.BuiltIn) && !v.HasTag(PackageTag.AssetStore))
+                        && (package.isDiscoverable || (package.installedVersion?.isDirectDependency ?? false));
+                case PackageFilterTab.Local:
+                    return package.versions.Any(v => !v.HasTag(PackageTag.BuiltIn) && !v.HasTag(PackageTag.AssetStore))
+                        && (package.installedVersion?.isDirectDependency ?? false);
+                case PackageFilterTab.AssetStore:
+                    return ApplicationUtil.instance.isUserLoggedIn && (package.primaryVersion?.HasTag(PackageTag.AssetStore) ?? false);
+                case PackageFilterTab.InDevelopment:
+                    return package.installedVersion?.HasTag(PackageTag.InDevelopment) ?? false;
+                default:
+                    return false;
+            }
+        }
+
+        internal static bool FilterByText(IPackageVersion version, string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return true;
+
+            if (version == null)
+                return false;
+
+            if (version.name.IndexOf(text, StringComparison.CurrentCultureIgnoreCase) >= 0)
+                return true;
+
+            if (!string.IsNullOrEmpty(version.displayName) && version.displayName.IndexOf(text, StringComparison.CurrentCultureIgnoreCase) >= 0)
+                return true;
+
+            if (!version.HasTag(PackageTag.BuiltIn))
+            {
+                var prerelease = text.StartsWith("-") ? text.Substring(1) : text;
+                if (version.version != null && version.version.Prerelease.IndexOf(prerelease, StringComparison.CurrentCultureIgnoreCase) >= 0)
+                    return true;
+
+                if (version.version.StripTag().StartsWith(text, StringComparison.CurrentCultureIgnoreCase))
+                    return true;
+
+                if (version.HasTag(PackageTag.Preview))
+                {
+                    if (PackageTag.Preview.ToString().IndexOf(text, StringComparison.CurrentCultureIgnoreCase) >= 0)
+                        return true;
+                }
+
+                if (version.HasTag(PackageTag.Verified))
+                {
+                    if (PackageTag.Verified.ToString().IndexOf(text, StringComparison.CurrentCultureIgnoreCase) >= 0)
+                        return true;
+                }
+
+                if (version.HasTag(PackageTag.Core))
+                {
+                    if (PackageTag.BuiltIn.ToString().IndexOf(text, StringComparison.CurrentCultureIgnoreCase) >= 0)
+                        return true;
+                }
+            }
+
+            if (version.HasTag(PackageTag.AssetStore))
+            {
+                var words = text.Split(new[] {' '}, StringSplitOptions.RemoveEmptyEntries);
+                var categories = version.category?.Split('/');
+                if (categories != null && words.All(word => word.Length >= 2 && categories.Any(category => category.StartsWith(word, StringComparison.CurrentCultureIgnoreCase))))
+                    return true;
+            }
+
+            return false;
+        }
+
         [Serializable]
         private class PackageFilteringInternal : ScriptableSingleton<PackageFilteringInternal>, IPackageFiltering
         {
@@ -26,11 +100,11 @@ namespace UnityEditor.PackageManager.UI
                     if (value != m_CurrentFilterTab)
                     {
                         m_CurrentFilterTab = value;
-                        onFilterTabChanged(m_CurrentFilterTab);
+                        onFilterTabChanged?.Invoke(m_CurrentFilterTab);
                     }
                 }
             }
-            public event Action<PackageFilterTab> onFilterTabChanged = delegate {};
+            public event Action<PackageFilterTab> onFilterTabChanged;
 
             private string m_CurrentSearchText;
             public string currentSearchText
@@ -43,55 +117,13 @@ namespace UnityEditor.PackageManager.UI
                     if (value != m_CurrentSearchText)
                     {
                         m_CurrentSearchText = value;
-                        onSearchTextChanged(m_CurrentSearchText);
+                        onSearchTextChanged?.Invoke(m_CurrentSearchText);
                     }
                 }
             }
-            public event Action<string> onSearchTextChanged = delegate {};
+            public event Action<string> onSearchTextChanged;
 
             private PackageFilteringInternal() {}
-
-            private static bool FilterByText(IPackageVersion version, string text)
-            {
-                if (version == null)
-                    return false;
-
-                if (version.name.IndexOf(text, StringComparison.CurrentCultureIgnoreCase) >= 0)
-                    return true;
-
-                if (!string.IsNullOrEmpty(version.displayName) && version.displayName.IndexOf(text, StringComparison.CurrentCultureIgnoreCase) >= 0)
-                    return true;
-
-                if (!version.HasTag(PackageTag.BuiltIn))
-                {
-                    var prerelease = text.StartsWith("-") ? text.Substring(1) : text;
-                    if (version.version != null && version.version.Prerelease.IndexOf(prerelease, StringComparison.CurrentCultureIgnoreCase) >= 0)
-                        return true;
-
-                    if (version.version.StripTag().StartsWith(text, StringComparison.CurrentCultureIgnoreCase))
-                        return true;
-
-                    if (version.HasTag(PackageTag.Preview))
-                    {
-                        if (PackageTag.Preview.ToString().IndexOf(text, StringComparison.CurrentCultureIgnoreCase) >= 0)
-                            return true;
-                    }
-
-                    if (version.HasTag(PackageTag.Verified))
-                    {
-                        if (PackageTag.Verified.ToString().IndexOf(text, StringComparison.CurrentCultureIgnoreCase) >= 0)
-                            return true;
-                    }
-
-                    if (version.HasTag(PackageTag.Core))
-                    {
-                        if (PackageTag.BuiltIn.ToString().IndexOf(text, StringComparison.CurrentCultureIgnoreCase) >= 0)
-                            return true;
-                    }
-                }
-
-                return false;
-            }
 
             public bool FilterByCurrentSearchText(IPackage package)
             {
@@ -105,22 +137,7 @@ namespace UnityEditor.PackageManager.UI
 
             public bool FilterByCurrentTab(IPackage package)
             {
-                switch (currentFilterTab)
-                {
-                    case PackageFilterTab.Modules:
-                        return package.versions.Any(v => v.HasTag(PackageTag.BuiltIn));
-                    case PackageFilterTab.All:
-                        return package.versions.Any(v => !v.HasTag(PackageTag.BuiltIn))
-                            && (package.isDiscoverable || (package.installedVersion?.isDirectDependency ?? false));
-                    case PackageFilterTab.Local:
-                        return package.versions.Any(v => !v.HasTag(PackageTag.BuiltIn))
-                            && (package.installedVersion?.isDirectDependency ?? false);
-                    case PackageFilterTab.InDevelopment:
-                        return package.installedVersion?.HasTag(PackageTag.InDevelopment) ?? false;
-                    default:
-                        break;
-                }
-                return false;
+                return FilterByTab(package, currentFilterTab);
             }
         }
     }

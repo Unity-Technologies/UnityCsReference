@@ -4,6 +4,7 @@
 
 using System;
 using UnityEditor;
+using UnityEditor.Snap;
 using UnityEngine;
 
 namespace UnityEditorInternal
@@ -14,7 +15,7 @@ namespace UnityEditorInternal
         private static Vector3 s_StartPosition;
 
         // DrawCapFunction was marked plannned obsolete by @juha on 2016-03-16, marked obsolete warning by @adamm on 2016-12-21
-        [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
+        [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.", true)]
         #pragma warning disable 618
         public static Vector3 Do(int id, Vector3 position, Quaternion rotation, float size, Vector3 snap, Handles.DrawCapFunction capFunc)
         #pragma warning restore 618
@@ -33,6 +34,7 @@ namespace UnityEditorInternal
                     HandleUtility.AddControl(id, HandleUtility.DistanceToCircle(worldPosition, size * 1.2f));
                     Handles.matrix = origMatrix;
                     break;
+
                 case EventType.MouseDown:
                     // am I closest to the thingy?
                     if (HandleUtility.nearestControl == id && evt.button == 0)
@@ -45,6 +47,7 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(1);
                     }
                     break;
+
                 case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
@@ -98,9 +101,7 @@ namespace UnityEditorInternal
                             if (EditorGUI.actionKey && !evt.shift)
                             {
                                 Vector3 delta = position - s_StartPosition;
-                                delta.x = Handles.SnapValue(delta.x, snap.x);
-                                delta.y = Handles.SnapValue(delta.y, snap.y);
-                                delta.z = Handles.SnapValue(delta.z, snap.z);
+                                delta = Handles.SnapValue(delta, snap);
                                 position = s_StartPosition + delta;
                             }
                         }
@@ -108,6 +109,7 @@ namespace UnityEditorInternal
                         evt.Use();
                     }
                     break;
+
                 case EventType.MouseUp:
                     if (GUIUtility.hotControl == id && (evt.button == 0 || evt.button == 2))
                     {
@@ -117,10 +119,12 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
                     break;
+
                 case EventType.MouseMove:
                     if (id == HandleUtility.nearestControl)
                         HandleUtility.Repaint();
                     break;
+
                 case EventType.Repaint:
                     Color temp = Color.white;
 
@@ -163,6 +167,7 @@ namespace UnityEditorInternal
                     handleFunction(id, worldPosition, Camera.current.transform.rotation, size, EventType.Layout);
                     Handles.matrix = origMatrix;
                     break;
+
                 case EventType.MouseDown:
                     // am I closest to the thingy?
                     if (HandleUtility.nearestControl == id && evt.button == 0)
@@ -175,6 +180,7 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(1);
                     }
                     break;
+
                 case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
@@ -225,12 +231,10 @@ namespace UnityEditorInternal
                                 }
                             }
 
-                            if (EditorGUI.actionKey && !evt.shift)
+                            if (EditorSnapSettings.active && !evt.shift)
                             {
                                 Vector3 delta = position - s_StartPosition;
-                                delta.x = Handles.SnapValue(delta.x, snap.x);
-                                delta.y = Handles.SnapValue(delta.y, snap.y);
-                                delta.z = Handles.SnapValue(delta.z, snap.z);
+                                delta = Handles.SnapValue(delta, snap);
                                 position = s_StartPosition + delta;
                             }
                         }
@@ -238,6 +242,7 @@ namespace UnityEditorInternal
                         evt.Use();
                     }
                     break;
+
                 case EventType.MouseUp:
                     if (GUIUtility.hotControl == id && (evt.button == 0 || evt.button == 2))
                     {
@@ -247,10 +252,12 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
                     break;
+
                 case EventType.MouseMove:
                     if (id == HandleUtility.nearestControl)
                         HandleUtility.Repaint();
                     break;
+
                 case EventType.Repaint:
                     Color temp = Color.white;
 

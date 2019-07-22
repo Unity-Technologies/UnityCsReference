@@ -27,5 +27,8 @@ namespace UnityEngine.UIElements
                 m_Properties = value;
             }
         }
+
+        [NonSerialized]
+        internal int customPropertiesCount;
     }
 }

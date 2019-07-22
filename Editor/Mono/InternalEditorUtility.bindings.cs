@@ -45,7 +45,6 @@ namespace UnityEditorInternal
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabase.h")]
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabaseDeprecated.h")]
     [NativeHeader("Editor/Src/AssetPipeline/TextureImporting/BumpMapSettings.h")]
-    [NativeHeader("Editor/Src/AssetPipeline/MdFourGenerator.h")]
     [NativeHeader("Editor/Src/ScriptCompilation/PrecompiledAssemblies.h")]
     [NativeHeader("Editor/Src/AssetPipeline/ObjectHashGenerator.h")]
     [NativeHeader("Editor/Src/AssetPipeline/UnityExtensions.h")]
@@ -128,6 +127,10 @@ namespace UnityEditorInternal
         [StaticAccessor("BumpMapSettings::Get()", StaticAccessorType.Dot)]
         [NativeMethod("PerformUnmarkedBumpMapTexturesFixingAfterDialog")]
         public extern static void BumpMapSettingsFixingWindowReportResult(int result);
+
+        [StaticAccessor("BumpMapSettings::Get()", StaticAccessorType.Dot)]
+        [NativeMethod("PerformUnmarkedBumpMapTexturesFixing")]
+        public extern static bool PerformUnmarkedBumpMapTexturesFixing();
 
         [FreeFunction("InternalEditorUtilityBindings::BumpMapTextureNeedsFixingInternal")]
         public extern static bool BumpMapTextureNeedsFixingInternal(Material material, string propName, bool flaggedAsNormal);
@@ -397,6 +400,12 @@ namespace UnityEditorInternal
         extern public static string unityPreferencesFolder
         {
             [FreeFunction]
+            get;
+        }
+
+        internal static extern string userAppDataFolder
+        {
+            [FreeFunction("GetUserAppDataFolder")]
             get;
         }
 
@@ -718,9 +727,9 @@ namespace UnityEditorInternal
             {
                 return ((SpriteMask)renderer).GetSpriteBounds();
             }
-            if (renderer is UnityEngine.Experimental.U2D.SpriteShapeRenderer)
+            if (renderer is UnityEngine.U2D.SpriteShapeRenderer)
             {
-                return ((UnityEngine.Experimental.U2D.SpriteShapeRenderer)renderer).GetLocalAABB();
+                return ((UnityEngine.U2D.SpriteShapeRenderer)renderer).GetLocalAABB();
             }
             if (renderer is UnityEngine.Tilemaps.TilemapRenderer)
             {

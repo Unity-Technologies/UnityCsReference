@@ -166,8 +166,8 @@ namespace Unity.Collections
             if (index < m_MinIndex || index > m_MaxIndex)
                 FailOutOfRangeError(index);
 
-            var versionPtr = (AtomicSafetyHandleVersionMask*)m_Safety.versionNode;
-            if ((m_Safety.version & AtomicSafetyHandleVersionMask.Read) == 0 && m_Safety.version != ((*versionPtr) & AtomicSafetyHandleVersionMask.WriteInv))
+            var versionPtr = (int*)m_Safety.versionNode;
+            if (m_Safety.version != ((*versionPtr) & AtomicSafetyHandle.ReadCheck))
                 AtomicSafetyHandle.CheckReadAndThrowNoEarlyOut(m_Safety);
         }
 
@@ -177,8 +177,8 @@ namespace Unity.Collections
             if (index < m_MinIndex || index > m_MaxIndex)
                 FailOutOfRangeError(index);
 
-            var versionPtr = (AtomicSafetyHandleVersionMask*)m_Safety.versionNode;
-            if ((m_Safety.version & AtomicSafetyHandleVersionMask.Write) == 0 && m_Safety.version != ((*versionPtr) & AtomicSafetyHandleVersionMask.ReadInv))
+            var versionPtr = (int*)m_Safety.versionNode;
+            if (m_Safety.version != ((*versionPtr) & AtomicSafetyHandle.WriteCheck))
                 AtomicSafetyHandle.CheckWriteAndThrowNoEarlyOut(m_Safety);
         }
 

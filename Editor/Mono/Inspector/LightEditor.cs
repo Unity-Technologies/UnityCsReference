@@ -20,6 +20,7 @@ namespace UnityEditor
             private SerializedObject m_SerializedObject;
 
             public SerializedProperty lightType { get; private set; }
+            public SerializedProperty lightShape { get; private set; }
             public SerializedProperty range { get; private set; }
             public SerializedProperty spotAngle { get; private set; }
             public SerializedProperty innerSpotAngle { get; private set; }
@@ -169,6 +170,7 @@ namespace UnityEditor
             public void OnEnable()
             {
                 lightType = m_SerializedObject.FindProperty("m_Type");
+                lightShape = m_SerializedObject.FindProperty("m_Shape");
                 range = m_SerializedObject.FindProperty("m_Range");
                 spotAngle = m_SerializedObject.FindProperty("m_SpotAngle");
                 innerSpotAngle = m_SerializedObject.FindProperty("m_InnerSpotAngle");
@@ -680,7 +682,7 @@ namespace UnityEditor
                         {
                             light.RemoveCommandBuffer(le, cb);
                             SceneView.RepaintAll();
-                            GameView.RepaintAll();
+                            PreviewEditorWindow.RepaintAll();
                             GUIUtility.ExitGUI();
                         }
                     }
@@ -694,7 +696,7 @@ namespace UnityEditor
                 {
                     light.RemoveAllCommandBuffers();
                     SceneView.RepaintAll();
-                    GameView.RepaintAll();
+                    PreviewEditorWindow.RepaintAll();
                 }
             }
             EditorGUI.indentLevel--;

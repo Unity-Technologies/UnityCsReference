@@ -626,7 +626,7 @@ namespace UnityEditor
                         {
                             cam.RemoveCommandBuffer(ce, cb);
                             SceneView.RepaintAll();
-                            GameView.RepaintAll();
+                            PreviewEditorWindow.RepaintAll();
                             GUIUtility.ExitGUI();
                         }
                     }
@@ -640,7 +640,7 @@ namespace UnityEditor
                 {
                     cam.RemoveAllCommandBuffers();
                     SceneView.RepaintAll();
-                    GameView.RepaintAll();
+                    PreviewEditorWindow.RepaintAll();
                 }
             }
             EditorGUI.indentLevel--;
@@ -720,7 +720,7 @@ namespace UnityEditor
             if (targetStage != sceneViewStage)
                 return;
 
-            Vector2 previewSize = c.targetTexture ? new Vector2(c.targetTexture.width, c.targetTexture.height) : GameView.GetMainGameViewTargetSize();
+            Vector2 previewSize = c.targetTexture ? new Vector2(c.targetTexture.width, c.targetTexture.height) : PreviewEditorWindow.GetMainPreviewTargetSize();
 
             if (previewSize.x < 0f)
             {
@@ -767,6 +767,7 @@ namespace UnityEditor
             {
                 // setup camera and render
                 previewCamera.CopyFrom(c);
+                previewCamera.cameraType = CameraType.Preview;
 
                 // make sure the preview camera is rendering the same stage as the SceneView is
                 previewCamera.scene = sceneView.customScene;
@@ -822,7 +823,7 @@ namespace UnityEditor
         [RequiredByNativeCode]
         internal static float GetGameViewAspectRatio()
         {
-            Vector2 gameViewSize = GameView.GetMainGameViewTargetSize();
+            Vector2 gameViewSize = PreviewEditorWindow.GetMainPreviewTargetSize();
             if (gameViewSize.x < 0f)
             {
                 // Fallback to Scene View of not a valid game view size
@@ -831,6 +832,12 @@ namespace UnityEditor
             }
 
             return gameViewSize.x / gameViewSize.y;
+        }
+
+        [RequiredByNativeCode]
+        internal static Vector2 GetMainPreviewSize()
+        {
+            return PreviewEditorWindow.GetMainPreviewTargetSize();
         }
 
         // Called from C++ when we need to render a Camera's gizmo
@@ -849,7 +856,7 @@ namespace UnityEditor
             if (!CameraEditorUtils.IsViewportRectValidToRender(c.rect))
                 return;
 
-            Vector2 currentMainGameViewTargetSize = GameView.GetMainGameViewTargetSize();
+            Vector2 currentMainGameViewTargetSize = PreviewEditorWindow.GetMainPreviewTargetSize();
             if (s_PreviousMainGameViewTargetSize != currentMainGameViewTargetSize)
             {
                 // a gameView size change can affect horizontal FOV, refresh the inspector when that happens.

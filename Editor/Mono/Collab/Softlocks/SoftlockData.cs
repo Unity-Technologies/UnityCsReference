@@ -5,11 +5,8 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
-using UnityEditor.Utils;
-using UnityEditor.Web;
 
 namespace UnityEditor.Collaboration
 {
@@ -65,13 +62,6 @@ namespace UnityEditor.Collaboration
                 isPrefab = IsPrefab(unityObject);
             }
             return isPrefab;
-        }
-
-        private static bool TryHasSoftLocks(Scene scene, out bool hasSoftLocks)
-        {
-            string assetGUID = AssetDatabase.AssetPathToGUID(scene.path);
-            bool success = TryHasSoftLocks(assetGUID, out hasSoftLocks);
-            return success;
         }
 
         // Soft locks are present when collab is enabled and other users are
@@ -141,22 +131,6 @@ namespace UnityEditor.Collaboration
             {
                 count = softLocks.Count;
                 success = true;
-            }
-            return success;
-        }
-
-        private static bool TryGetLocksOnObject(UnityEngine.Object objectWithGUID, out List<SoftLock> softLocks)
-        {
-            bool success = false;
-            string assetGUID = null;
-
-            if (AssetAccess.TryGetAssetGUIDFromObject(objectWithGUID, out assetGUID))
-            {
-                success = TryGetLocksOnAssetGUID(assetGUID, out softLocks);
-            }
-            else
-            {
-                softLocks = new List<SoftLock>();
             }
             return success;
         }

@@ -11,7 +11,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 using ShaderPlatform = UnityEngine.Rendering.GraphicsDeviceType;
 using TextureDimension = UnityEngine.Rendering.TextureDimension;
-
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor
 {
@@ -133,6 +133,11 @@ namespace UnityEditor
         extern public static int GetComputeShaderMessageCount([NotNull] ComputeShader s);
         extern public static ShaderMessage[] GetComputeShaderMessages([NotNull] ComputeShader s);
 
+        extern public static int GetRayTracingShaderMessageCount([NotNull] RayTracingShader s);
+        extern public static ShaderMessage[] GetRayTracingShaderMessages([NotNull] RayTracingShader s);
+        extern internal static int GetRayTracingShaderPlatformCount(RayTracingShader s);
+        extern internal static ShaderPlatform GetRayTracingShaderPlatformType(RayTracingShader s, int platformIndex);
+        extern internal static bool IsRayTracingShaderValidForPlatform(RayTracingShader s, ShaderPlatform renderer);
         private static void CheckPropertyIndex(Shader s, int idx)
         {
             if (idx < 0 || idx >= GetPropertyCount(s))

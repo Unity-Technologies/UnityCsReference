@@ -57,6 +57,12 @@ namespace UnityEditorInternal
             ApplyActiveState();
         }
 
+        public override void Close()
+        {
+            base.Close();
+            active = false;
+        }
+
         /// <summary>
         /// Callback parameter will be either true if a state change occured
         /// </summary>

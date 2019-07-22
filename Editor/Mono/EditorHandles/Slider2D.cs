@@ -16,7 +16,7 @@ namespace UnityEditorInternal
 
         // DrawCapFunction was marked plannned obsolete by @juha on 2016-03-16, marked obsolete warning by @adamm on 2016-12-21
         [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
-        #pragma warning disable 618
+#pragma warning disable 618
         public static Vector3 Do(
             int id,
             Vector3 handlePos,
@@ -27,14 +27,14 @@ namespace UnityEditorInternal
             Handles.DrawCapFunction drawFunc,
             float snap,
             bool drawHelper)
-        #pragma warning restore 618
+#pragma warning restore 618
         {
             return Do(id, handlePos, new Vector3(0, 0, 0), handleDir, slideDir1, slideDir2, handleSize, drawFunc, new Vector2(snap, snap), drawHelper);
         }
 
         // DrawCapFunction was marked plannned obsolete by @juha on 2016-03-16, marked obsolete warning by @adamm on 2016-12-21
         [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
-        #pragma warning disable 618
+#pragma warning disable 618
         public static Vector3 Do(
             int id,
             Vector3 handlePos,
@@ -46,14 +46,14 @@ namespace UnityEditorInternal
             Handles.DrawCapFunction drawFunc,
             float snap,
             bool drawHelper)
-        #pragma warning restore 618
+#pragma warning restore 618
         {
             return Do(id, handlePos, offset, handleDir, slideDir1, slideDir2, handleSize, drawFunc, new Vector2(snap, snap), drawHelper);
         }
 
         // DrawCapFunction was marked plannned obsolete by @juha on 2016-03-16, marked obsolete warning by @adamm on 2016-12-21
         [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
-        #pragma warning disable 618
+#pragma warning disable 618
         public static Vector3 Do(
             int id,
             Vector3 handlePos,
@@ -65,14 +65,29 @@ namespace UnityEditorInternal
             Handles.DrawCapFunction drawFunc,
             Vector2 snap,
             bool drawHelper)
-        #pragma warning restore 618
+#pragma warning restore 618
         {
             bool orgGuiChanged = GUI.changed;
             GUI.changed = false;
 
             Vector2 delta = CalcDeltaAlongDirections(id, handlePos, offset, handleDir, slideDir1, slideDir2, handleSize, drawFunc, snap, drawHelper);
+
             if (GUI.changed)
+            {
                 handlePos = s_StartPosition + slideDir1 * delta.x + slideDir2 * delta.y;
+
+                if (EditorSnapSettings.active && EditorSnapSettings.preferGrid)
+                {
+                    var normal = Vector3.Cross(slideDir1, slideDir2);
+
+                    if (Snapping.IsCardinalDirection(normal))
+                    {
+                        var worldSpace = Handles.matrix.MultiplyPoint(handlePos);
+                        worldSpace = Handles.SnapValue(worldSpace, (~new SnapAxisFilter(normal)) * snap);
+                        handlePos = Handles.inverseMatrix.MultiplyPoint(worldSpace);
+                    }
+                }
+            }
 
             GUI.changed |= orgGuiChanged;
             return handlePos;
@@ -127,15 +142,29 @@ namespace UnityEditorInternal
 
             Vector2 delta = CalcDeltaAlongDirections(id, handlePos, offset, handleDir, slideDir1, slideDir2, handleSize, capFunction, snap, drawHelper);
             if (GUI.changed)
+            {
                 handlePos = s_StartPosition + slideDir1 * delta.x + slideDir2 * delta.y;
+
+                if (EditorSnapSettings.active && EditorSnapSettings.preferGrid)
+                {
+                    var normal = Vector3.Cross(slideDir1, slideDir2);
+
+                    if (Snapping.IsCardinalDirection(normal))
+                    {
+                        var worldSpace = Handles.matrix.MultiplyPoint(handlePos);
+                        worldSpace = Handles.SnapValue(worldSpace, (~new SnapAxisFilter(normal)) * snap);
+                        handlePos = Handles.inverseMatrix.MultiplyPoint(worldSpace);
+                    }
+                }
+            }
 
             GUI.changed |= orgGuiChanged;
             return handlePos;
         }
 
-        // DrawCapFunction was marked plannned obsolete by @juha on 2016-03-16, marked obsolete warning by @adamm on 2016-12-21
+        // DrawCapFunction was marked planned obsolete by @juha on 2016-03-16, marked obsolete warning by @adamm on 2016-12-21
         [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
-        #pragma warning disable 618
+#pragma warning disable 618
         private static Vector2 CalcDeltaAlongDirections(
             int id,
             Vector3 handlePos,
@@ -147,7 +176,7 @@ namespace UnityEditorInternal
             Handles.DrawCapFunction drawFunc,
             Vector2 snap,
             bool drawHelper)
-        #pragma warning restore 618
+#pragma warning restore 618
         {
             Vector2 deltaDistanceAlongDirections = new Vector2(0, 0);
 
@@ -225,6 +254,7 @@ namespace UnityEditorInternal
                         evt.Use();
                     }
                     break;
+
                 case EventType.MouseUp:
                     if (GUIUtility.hotControl == id && (evt.button == 0 || evt.button == 2))
                     {
@@ -233,10 +263,12 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
                     break;
+
                 case EventType.MouseMove:
                     if (id == HandleUtility.nearestControl)
                         HandleUtility.Repaint();
                     break;
+
                 case EventType.Repaint:
                 {
                     if (drawFunc == null)
@@ -312,6 +344,7 @@ namespace UnityEditorInternal
                     else
                         HandleUtility.AddControl(id, HandleUtility.DistanceToCircle(handlePos + offset, handleSize * .5f));
                     break;
+
                 case EventType.MouseDown:
                     // am I closest to the thingy?
                     if (HandleUtility.nearestControl == id && evt.button == 0 && GUIUtility.hotControl == 0 && !evt.alt)
@@ -333,6 +366,7 @@ namespace UnityEditorInternal
                         }
                     }
                     break;
+
                 case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
@@ -345,17 +379,15 @@ namespace UnityEditorInternal
                             deltaDistanceAlongDirections.x = HandleUtility.PointOnLineParameter(localMousePoint, s_StartPosition, slideDir1);
                             deltaDistanceAlongDirections.y = HandleUtility.PointOnLineParameter(localMousePoint, s_StartPosition, slideDir2);
                             deltaDistanceAlongDirections -= s_StartPlaneOffset;
-                            if (snap.x > 0 || snap.y > 0)
-                            {
-                                deltaDistanceAlongDirections.x = Handles.SnapValue(deltaDistanceAlongDirections.x, snap.x);
-                                deltaDistanceAlongDirections.y = Handles.SnapValue(deltaDistanceAlongDirections.y, snap.y);
-                            }
+                            deltaDistanceAlongDirections.x = Handles.SnapValue(deltaDistanceAlongDirections.x, snap.x);
+                            deltaDistanceAlongDirections.y = Handles.SnapValue(deltaDistanceAlongDirections.y, snap.y);
 
                             GUI.changed = true;
                         }
                         evt.Use();
                     }
                     break;
+
                 case EventType.MouseUp:
                     if (GUIUtility.hotControl == id && (evt.button == 0 || evt.button == 2))
                     {
@@ -364,10 +396,12 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
                     break;
+
                 case EventType.MouseMove:
                     if (id == HandleUtility.nearestControl)
                         HandleUtility.Repaint();
                     break;
+
                 case EventType.Repaint:
                 {
                     if (capFunction == null)

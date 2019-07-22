@@ -10,15 +10,17 @@ namespace UnityEngine.UIElements
     // This is the required interface to UIElementsUtility for Runtime game components.
     internal static class UIElementsRuntimeUtility
     {
+        static EventDispatcher s_RuntimeDispatcher = new EventDispatcher();
+
         public static EventBase CreateEvent(Event systemEvent)
         {
-            return UIElementsUtility.CreateEvent(systemEvent, systemEvent.type);
+            Debug.Assert(s_RuntimeDispatcher != null, "Call UIElementsRuntimeUtility.InitRuntimeEventSystem before sending any event.");
+            return UIElementsUtility.CreateEvent(systemEvent, systemEvent.rawType);
         }
 
         public static IPanel CreateRuntimePanel(ScriptableObject ownerObject)
         {
-            EventDispatcher dispatcher = EventDispatcher.instance;
-            var panel = new Panel(ownerObject, ContextType.Player, dispatcher)
+            var panel = new Panel(ownerObject, ContextType.Player, s_RuntimeDispatcher)
             {
                 IMGUIEventInterests = new EventInterests { wantsMouseMove = true, wantsMouseEnterLeaveWindow = true }
             };
@@ -84,7 +86,8 @@ namespace UnityEngine.UIElements
             {
                 var topmostContainer = s_ContainerStack.Peek();
 
-                if (MouseCaptureController.IsMouseCaptured() && !topmostContainer.HasMouseCapture())
+                var currentCapturingElement = topmostContainer.panel.GetCapturingElement(PointerId.mousePointerId);
+                if (currentCapturingElement != null && currentCapturingElement != topmostContainer)
                 {
                     Debug.Log("Should not grab hot control with an active capture");
                 }
@@ -94,7 +97,7 @@ namespace UnityEngine.UIElements
 
         private static void ReleaseCapture()
         {
-            MouseCaptureController.ReleaseMouse();
+            PointerCaptureHelper.ReleaseEditorMouseCapture();
         }
 
         private static bool ProcessEvent(int instanceID, IntPtr nativeEventPtr)
@@ -126,11 +129,11 @@ namespace UnityEngine.UIElements
         {
             // see GUI.CleanupRoots
             s_EventInstance = null;
-            EventDispatcher.ClearDispatcher();
             s_UIElementsCache = null;
             s_ContainerStack = null;
             s_BeginContainerCallback = null;
             s_EndContainerCallback = null;
+            EventDispatcher.ClearEditorDispatcher();
         }
 
         private static bool EndContainerGUIFromException(Exception exception)
@@ -206,15 +209,9 @@ namespace UnityEngine.UIElements
             }
         }
 
-        // TODO rename skinMode to context type and make that explicit everywhere
-        internal static ContextType GetGUIContextType()
-        {
-            return GUIUtility.s_SkinMode == 0 ? ContextType.Player : ContextType.Editor;
-        }
-
         internal static EventBase CreateEvent(Event systemEvent)
         {
-            return CreateEvent(systemEvent, systemEvent.type);
+            return CreateEvent(systemEvent, systemEvent.rawType);
         }
 
         // In order for tests to run without an EditorWindow but still be able to send
@@ -227,13 +224,33 @@ namespace UnityEngine.UIElements
             switch (eventType)
             {
                 case EventType.MouseMove:
-                    return MouseMoveEvent.GetPooled(systemEvent);
+                    return PointerMoveEvent.GetPooled(systemEvent);
                 case EventType.MouseDrag:
-                    return MouseMoveEvent.GetPooled(systemEvent);
+                    return PointerMoveEvent.GetPooled(systemEvent);
                 case EventType.MouseDown:
-                    return MouseDownEvent.GetPooled(systemEvent);
+                    // If some buttons are already down, we generate PointerMove/MouseDown events.
+                    // Otherwise we generate PointerDown/MouseDown events.
+                    // See W3C pointer events recommendation: https://www.w3.org/TR/pointerevents2
+                    if (PointerDeviceState.GetPressedButtons(PointerId.mousePointerId) != 0)
+                    {
+                        return PointerMoveEvent.GetPooled(systemEvent);
+                    }
+                    else
+                    {
+                        return PointerDownEvent.GetPooled(systemEvent);
+                    }
                 case EventType.MouseUp:
-                    return MouseUpEvent.GetPooled(systemEvent);
+                    // If more buttons are still down, we generate PointerMove/MouseUp events.
+                    // Otherwise we generate PointerUp/MouseUp events.
+                    // See W3C pointer events recommendation: https://www.w3.org/TR/pointerevents2
+                    if (PointerDeviceState.HasAdditionalPressedButtons(PointerId.mousePointerId, systemEvent.button))
+                    {
+                        return PointerMoveEvent.GetPooled(systemEvent);
+                    }
+                    else
+                    {
+                        return PointerUpEvent.GetPooled(systemEvent);
+                    }
                 case EventType.ContextClick:
                     return ContextClickEvent.GetPooled(systemEvent);
                 case EventType.MouseEnterWindow:
@@ -247,7 +264,7 @@ namespace UnityEngine.UIElements
                 case EventType.KeyUp:
                     return KeyUpEvent.GetPooled(systemEvent);
                 case EventType.DragUpdated:
-                    return DragUpdatedEvent.GetPooled(systemEvent);
+                    return PointerMoveEvent.GetPooled(systemEvent);
                 case EventType.DragPerform:
                     return DragPerformEvent.GetPooled(systemEvent);
                 case EventType.DragExited:
@@ -263,7 +280,7 @@ namespace UnityEngine.UIElements
 
         static bool DoDispatch(BaseVisualElementPanel panel)
         {
-            bool usesEvent;
+            bool usesEvent = false;
 
             if (s_EventInstance.type == EventType.Repaint)
             {
@@ -284,12 +301,17 @@ namespace UnityEngine.UIElements
                     bool immediate = s_EventInstance.type == EventType.Used || s_EventInstance.type == EventType.Layout || s_EventInstance.type == EventType.ExecuteCommand || s_EventInstance.type == EventType.ValidateCommand;
                     panel.SendEvent(evt, immediate ? DispatchMode.Immediate : DispatchMode.Queued);
 
+                    // The dispatcher should have finished processing the event,
+                    // otherwise we cannot return a value for usesEvent.
+                    // FIXME: this makes GUIPointWindowConversionOnMultipleWindow fails because the event sent in the OnGUI is put in the queue.
+                    // Debug.Assert(evt.processed);
+
                     // FIXME: we dont always have to repaint if evt.isPropagationStopped.
                     if (evt.isPropagationStopped)
                     {
                         panel.visualTree.IncrementVersion(VersionChangeType.Repaint);
+                        usesEvent = true;
                     }
-                    usesEvent = evt.isPropagationStopped;
                 }
             }
 
@@ -311,25 +333,20 @@ namespace UnityEngine.UIElements
             return s_UIElementsCache.GetEnumerator();
         }
 
-        internal static Panel FindOrCreatePanel(ScriptableObject ownerObject, ContextType contextType)
+        internal static Panel FindOrCreateEditorPanel(ScriptableObject ownerObject)
         {
             Panel panel;
             if (!s_UIElementsCache.TryGetValue(ownerObject.GetInstanceID(), out panel))
             {
-                panel = new Panel(ownerObject, contextType);
+                panel = Panel.CreateEditorPanel(ownerObject);
                 RegisterCachedPanel(ownerObject.GetInstanceID(), panel);
             }
             else
             {
-                Debug.Assert(contextType == panel.contextType, "Context type mismatch");
+                Debug.Assert(ContextType.Editor == panel.contextType, "Panel is not an editor panel.");
             }
 
             return panel;
-        }
-
-        internal static Panel FindOrCreatePanel(ScriptableObject ownerObject)
-        {
-            return FindOrCreatePanel(ownerObject, GetGUIContextType());
         }
     }
 }

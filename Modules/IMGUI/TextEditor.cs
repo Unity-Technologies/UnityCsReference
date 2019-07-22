@@ -153,13 +153,19 @@ namespace UnityEngine
         // return true if the event was recognized.
         public bool HandleKeyEvent(Event e)
         {
+            return HandleKeyEvent(e, false);
+        }
+
+        [VisibleToOtherModules]
+        internal bool HandleKeyEvent(Event e, bool textIsReadOnly)
+        {
             InitKeyActions();
             EventModifiers m = e.modifiers;
             e.modifiers &= ~EventModifiers.CapsLock;
             if (s_Keyactions.ContainsKey(e))
             {
                 TextEditOp op = (TextEditOp)s_Keyactions[e];
-                PerformOperation(op);
+                PerformOperation(op, textIsReadOnly);
                 e.modifiers = m;
                 return true;
             }
@@ -1126,7 +1132,7 @@ namespace UnityEngine
             m_Content.text = realText;
         }
 
-        bool PerformOperation(TextEditOp operation)
+        bool PerformOperation(TextEditOp operation, bool textIsReadOnly)
         {
             m_RevealCursor = true;
 
@@ -1170,20 +1176,34 @@ namespace UnityEngine
                 case TextEditOp.SelectGraphicalLineEnd: SelectGraphicalLineEnd(); break;
                 //      case TextEditOp.SelectPageUp:                   return SelectPageUp (); break;
                 //      case TextEditOp.SelectPageDown:             return SelectPageDown (); break;
-                case TextEditOp.Delete:                             return Delete();
-                case TextEditOp.Backspace:                      return Backspace();
-                case TextEditOp.Cut:                                    return Cut();
+                case TextEditOp.Delete:
+                    if (textIsReadOnly) return false;
+                    else return Delete();
+                case TextEditOp.Backspace:
+                    if (textIsReadOnly) return false;
+                    else return Backspace();
+                case TextEditOp.Cut:
+                    if (textIsReadOnly) return false;
+                    else return Cut();
                 case TextEditOp.Copy:                               Copy(); break;
-                case TextEditOp.Paste:                              return Paste();
+                case TextEditOp.Paste:
+                    if (textIsReadOnly) return false;
+                    else return Paste();
                 case TextEditOp.SelectAll:                          SelectAll(); break;
                 case TextEditOp.SelectNone:                     SelectNone(); break;
                 //      case TextEditOp.ScrollStart:            return ScrollStart (); break;
                 //      case TextEditOp.ScrollEnd:          return ScrollEnd (); break;
                 //      case TextEditOp.ScrollPageUp:       return ScrollPageUp (); break;
                 //      case TextEditOp.ScrollPageDown:     return ScrollPageDown (); break;
-                case TextEditOp.DeleteWordBack: return DeleteWordBack(); // break; // The uncoditional return makes the "break;" issue a warning about unreachable code
-                case TextEditOp.DeleteLineBack: return DeleteLineBack();
-                case TextEditOp.DeleteWordForward: return DeleteWordForward(); // break; // The uncoditional return makes the "break;" issue a warning about unreachable code
+                case TextEditOp.DeleteWordBack:
+                    if (textIsReadOnly) return false;
+                    else return DeleteWordBack();
+                case TextEditOp.DeleteLineBack:
+                    if (textIsReadOnly) return false;
+                    else return DeleteLineBack();
+                case TextEditOp.DeleteWordForward:
+                    if (textIsReadOnly) return false;
+                    else return DeleteWordForward();
                 default:
                     Debug.Log("Unimplemented: " + operation);
                     break;

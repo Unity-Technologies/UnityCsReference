@@ -7,7 +7,6 @@ using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEditor;
 using UnityEditor.SceneManagement;
-using System.Collections;
 using System.Collections.Generic;
 
 namespace TreeEditor
@@ -245,7 +244,6 @@ namespace TreeEditor
         private bool m_WantedCompleteUpdateInPreviousFrame;
 
         private const float kSectionSpace = 10.0f;
-        private const float kIndentSpace = 16.0f;
         private const float kCurveSpace = 50.0f;
         private bool m_SectionHasCurves = true;
 

@@ -110,6 +110,7 @@ namespace UnityEditor
             public static readonly GUIStyle buttonLeft = "AppToolbarButtonLeft";
             public static readonly GUIStyle buttonRight = "AppToolbarButtonRight";
             public static readonly GUIStyle commandLeft = "AppCommandLeft";
+            public static readonly GUIStyle commandLeftOn = "AppCommandLeftOn";
             public static readonly GUIStyle commandMid = "AppCommandMid";
             public static readonly GUIStyle commandRight = "AppCommandRight";
         }
@@ -256,19 +257,22 @@ namespace UnityEditor
                 DoLayersDropDown(EditorToolGUI.GetThinArea(pos));
             }
 
-            ReserveWidthLeft(space, ref pos);
-
-            ReserveWidthLeft(dropdownWidth, ref pos);
-            if (EditorGUI.DropdownButton(EditorToolGUI.GetThinArea(pos), s_AccountContent, FocusType.Passive, Styles.dropdown))
+            if (Unity.MPE.ProcessService.level == Unity.MPE.ProcessLevel.UMP_MASTER)
             {
-                ShowUserMenu(EditorToolGUI.GetThinArea(pos));
+                ReserveWidthLeft(space, ref pos);
+
+                ReserveWidthLeft(dropdownWidth, ref pos);
+                if (EditorGUI.DropdownButton(EditorToolGUI.GetThinArea(pos), s_AccountContent, FocusType.Passive, Styles.dropdown))
+                {
+                    ShowUserMenu(EditorToolGUI.GetThinArea(pos));
+                }
+
+                ReserveWidthLeft(space, ref pos);
+
+                ReserveWidthLeft(standardButtonWidth, ref pos);
+                if (GUI.Button(EditorToolGUI.GetThinArea(pos), s_CloudIcon, Styles.command))
+                    UnityConnectServiceCollection.instance.ShowService(HubAccess.kServiceName, true, "cloud_icon"); // Should show hub when it's done
             }
-
-            ReserveWidthLeft(space, ref pos);
-
-            ReserveWidthLeft(standardButtonWidth, ref pos);
-            if (GUI.Button(EditorToolGUI.GetThinArea(pos), s_CloudIcon, Styles.command))
-                UnityConnectServiceCollection.instance.ShowService(HubAccess.kServiceName, true, "cloud_icon"); // Should show hub when it's done
 
             foreach (SubToolbar subToolbar in s_SubToolbars)
             {
@@ -409,7 +413,7 @@ namespace UnityEditor
             Color c = GUI.color + new Color(.01f, .01f, .01f, .01f);
             GUI.contentColor = new Color(1.0f / c.r, 1.0f / c.g, 1.0f / c.g, 1.0f / c.a);
             GUI.SetNextControlName("ToolbarPlayModePlayButton");
-            GUILayout.Toggle(isOrWillEnterPlaymode, s_PlayIcons[buttonOffset], Styles.commandLeft);
+            GUILayout.Toggle(isOrWillEnterPlaymode, s_PlayIcons[buttonOffset], isPlaying ? Styles.commandLeftOn : Styles.commandLeft);
             GUI.backgroundColor = Color.white;
             if (GUI.changed)
             {
@@ -429,12 +433,15 @@ namespace UnityEditor
                 GUIUtility.ExitGUI();
             }
 
-            // Step playmode
-            GUI.SetNextControlName("ToolbarPlayModeStepButton");
-            if (GUILayout.Button(s_PlayIcons[buttonOffset + 2], Styles.commandRight))
+            using (new EditorGUI.DisabledScope(!isPlaying))
             {
-                EditorApplication.Step();
-                GUIUtility.ExitGUI();
+                // Step playmode
+                GUI.SetNextControlName("ToolbarPlayModeStepButton");
+                if (GUILayout.Button(s_PlayIcons[2], Styles.commandRight))
+                {
+                    EditorApplication.Step();
+                    GUIUtility.ExitGUI();
+                }
             }
         }
 

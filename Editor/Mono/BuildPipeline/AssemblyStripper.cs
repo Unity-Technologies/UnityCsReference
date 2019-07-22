@@ -15,6 +15,7 @@ using UnityEditor.Scripting;
 using UnityEditor.Scripting.Compilers;
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEditor.Utils;
 using Debug = UnityEngine.Debug;
 
@@ -54,19 +55,29 @@ namespace UnityEditorInternal
             return Paths.Combine(moduleStrippingInformationFolder, module + ".xml");
         }
 
-        private static bool StripAssembliesTo(string[] assemblies, string[] searchDirs, string outputFolder, string workingDirectory, out string output, out string error, string linkerPath, IIl2CppPlatformProvider platformProvider, IEnumerable<string> additionalBlacklist, BuildTargetGroup buildTargetGroup, ManagedStrippingLevel managedStrippingLevel, bool stripEngineCode, string editorToLinkerDataPath)
+        static IEnumerable<string> SanitizeLinkXmlFilePaths(List<string> linkXmlFilePaths, UnityLinkerRunInformation runInformation)
+        {
+            foreach (var linkXmlFilePath in linkXmlFilePaths)
+            {
+                // Generated link xml files that would have been empty will be nulled out.  Need to filter these out before running the linker
+                if (string.IsNullOrEmpty(linkXmlFilePath))
+                    continue;
+
+                var absolutePath = linkXmlFilePath;
+                if (!Path.IsPathRooted(linkXmlFilePath))
+                    absolutePath = Path.Combine(runInformation.managedAssemblyFolderPath, linkXmlFilePath);
+
+                if (File.Exists(absolutePath))
+                    yield return absolutePath;
+            }
+        }
+
+        private static bool StripAssembliesTo(string outputFolder, out string output, out string error, IEnumerable<string> linkXmlFiles, UnityLinkerRunInformation runInformation)
         {
             if (!Directory.Exists(outputFolder))
                 Directory.CreateDirectory(outputFolder);
 
-            additionalBlacklist = additionalBlacklist.Select(s => Path.IsPathRooted(s) ? s : Path.Combine(workingDirectory, s)).Where(File.Exists);
-
-            var userBlackLists = GetUserBlacklistFiles();
-
-            foreach (var ub in userBlackLists)
-                Console.WriteLine("UserBlackList: " + ub);
-
-            additionalBlacklist = additionalBlacklist.Concat(userBlackLists);
+            var assemblies = runInformation.AssembliesToProcess();
 
             var args = new List<string>
             {
@@ -75,17 +86,16 @@ namespace UnityEditorInternal
 
             if (!UseUnityLinkerEngineModuleStripping)
             {
-                args.Add($"-x={CommandLineFormatter.PrepareFileName(GetModuleWhitelist("Core", platformProvider.moduleStrippingInformationFolder))}");
+                args.Add($"-x={CommandLineFormatter.PrepareFileName(GetModuleWhitelist("Core", runInformation.platformProvider.moduleStrippingInformationFolder))}");
             }
 
-            args.AddRange(additionalBlacklist.Select(path => $"-x={CommandLineFormatter.PrepareFileName(path)}"));
-
-            args.AddRange(searchDirs.Select(d => $"-d={CommandLineFormatter.PrepareFileName(d)}"));
+            args.AddRange(linkXmlFiles.Select(path => $"-x={CommandLineFormatter.PrepareFileName(path)}"));
+            args.AddRange(runInformation.SearchDirectories.Select(d => $"-d={CommandLineFormatter.PrepareFileName(d)}"));
             args.AddRange(assemblies.Select(assembly => $"--include-unity-root-assembly={CommandLineFormatter.PrepareFileName(Path.GetFullPath(assembly))}"));
-            args.Add($"--dotnetruntime={GetRuntimeArgumentValueForLinker(buildTargetGroup)}");
-            args.Add($"--dotnetprofile={GetProfileArgumentValueForLinker(buildTargetGroup)}");
+            args.Add($"--dotnetruntime={runInformation.argumentProvider.Runtime}");
+            args.Add($"--dotnetprofile={runInformation.argumentProvider.Profile}");
             args.Add("--use-editor-options");
-            args.Add($"--include-directory={CommandLineFormatter.PrepareFileName(workingDirectory)}");
+            args.Add($"--include-directory={CommandLineFormatter.PrepareFileName(runInformation.managedAssemblyFolderPath)}");
 
             if (EditorUserBuildSettings.allowDebugging)
                 args.Add("--editor-settings-flag=AllowDebugging");
@@ -93,33 +103,32 @@ namespace UnityEditorInternal
             if (EditorUserBuildSettings.development)
                 args.Add("--editor-settings-flag=Development");
 
-            args.Add($"--rule-set={GetRuleSetForStrippingLevel(managedStrippingLevel)}");
-            args.Add($"--editor-data-file={CommandLineFormatter.PrepareFileName(editorToLinkerDataPath)}");
+            args.Add($"--rule-set={runInformation.argumentProvider.RuleSet}");
+            args.Add($"--editor-data-file={CommandLineFormatter.PrepareFileName(runInformation.EditorToLinkerDataPath)}");
 
-            var compilerPlatform = "";
-            var compilerArchitecture = "";
-            Il2CppNativeCodeBuilder il2cppNativeCodeBuilder = platformProvider.CreateIl2CppNativeCodeBuilder();
-            if (il2cppNativeCodeBuilder != null)
+            if (runInformation.platformProvider.AllowOutputToBeMadePlatformDependent)
             {
-                compilerPlatform = il2cppNativeCodeBuilder.CompilerPlatform;
-                compilerArchitecture = il2cppNativeCodeBuilder.CompilerArchitecture;
-            }
-            else
-            {
-                // When the scripting backend is not IL2CPP, we have to map those strings and use a utility function to figure out proper strings.
-                GetUnityLinkerPlatformStringsFromBuildTarget(platformProvider.target, out compilerPlatform, out compilerArchitecture);
+                var platform = runInformation.platformProvider.Platform;
+                if (string.IsNullOrEmpty(platform))
+                    throw new ArgumentException($"Platform is required if AllowOutputToBeMadePlatformDependent is true");
+
+                args.Add($"--platform={platform}");
             }
 
-            args.Add($"--platform={compilerPlatform}");
-            if (!string.IsNullOrEmpty(compilerArchitecture))
-                args.Add($"--architecture={compilerArchitecture}");
+            if (runInformation.platformProvider.AllowOutputToBeMadeArchitectureDependent)
+            {
+                var architecture = runInformation.platformProvider.Architecture;
+                if (string.IsNullOrEmpty(architecture))
+                    throw new ArgumentException($"Architecture is required if AllowOutputToBeMadeArchitectureDependent is true");
+                args.Add($"--architecture={architecture}");
+            }
 
             if (!UseUnityLinkerEngineModuleStripping)
             {
                 args.Add("--disable-engine-module-support");
             }
 
-            if (stripEngineCode)
+            if (runInformation.performEngineStripping)
             {
                 args.Add("--enable-engine-module-stripping");
 
@@ -135,11 +144,11 @@ namespace UnityEditorInternal
                 if (UnityEditor.CrashReporting.CrashReportingSettings.enabled)
                     args.Add("--engine-stripping-flag=EnableCrashReporting");
 
-                if (UnityEditorInternal.VR.VRModule.ShouldInjectVRDependenciesForBuildTarget(platformProvider.target))
+                if (UnityEditorInternal.VR.VRModule.ShouldInjectVRDependenciesForBuildTarget(runInformation.target))
                     args.Add("--engine-stripping-flag=EnableVR");
             }
 
-            var modulesAssetPath = Path.Combine(platformProvider.moduleStrippingInformationFolder, "../modules.asset");
+            var modulesAssetPath = runInformation.ModulesAssetFilePath;
             if (File.Exists(modulesAssetPath))
                 args.Add($"--engine-modules-asset-file={CommandLineFormatter.PrepareFileName(modulesAssetPath)}");
 
@@ -151,68 +160,7 @@ namespace UnityEditorInternal
             if (!string.IsNullOrEmpty(additionalArgs))
                 args.Add(additionalArgs.Trim('\''));
 
-            return RunAssemblyLinker(args, out output, out error, linkerPath, workingDirectory);
-        }
-
-        private static string GetRuleSetForStrippingLevel(ManagedStrippingLevel managedStrippingLevel)
-        {
-            switch (managedStrippingLevel)
-            {
-                case ManagedStrippingLevel.Low:
-                    return "Conservative";
-                case ManagedStrippingLevel.Medium:
-                    return "Aggressive";
-                case ManagedStrippingLevel.High:
-                    return "Experimental";
-            }
-
-            throw new ArgumentException($"Unhandled {nameof(ManagedStrippingLevel)} value of {managedStrippingLevel}");
-        }
-
-        private static void GetUnityLinkerPlatformStringsFromBuildTarget(BuildTarget target, out string platform, out string architecture)
-        {
-            switch (target)
-            {
-                case BuildTarget.StandaloneWindows64:
-                    platform = "WindowsDesktop";
-                    architecture = "x64";
-                    break;
-                case BuildTarget.StandaloneWindows:
-                    platform = "WindowsDesktop";
-                    architecture = "x86";
-                    break;
-                case BuildTarget.Android:
-                    // Do not supply architecture for Android.
-                    // The build pipeline bundles multiple architectures for Android.
-                    // Can't narrow down to a specific architecture at strip time, we work around
-                    // that fact in the UnityLinker.
-                    platform = "Android";
-                    architecture = "";
-                    break;
-                case BuildTarget.StandaloneLinux64:
-                    platform = "Linux";
-                    architecture = "x64";
-                    break;
-                case BuildTarget.StandaloneOSX:
-                    platform = "MacOSX";
-                    architecture = "x64";
-                    break;
-                case BuildTarget.WSAPlayer:
-                    platform = "WinRT";
-                    // Could be multiple values.  We don't have use of this information yet so don't bother with trying to figure out what it should be
-                    architecture = "";
-                    break;
-                case BuildTarget.iOS:
-                    platform = "iOS";
-                    architecture = "ARM64";
-                    break;
-                case BuildTarget.tvOS:
-                    platform = "tvOS";
-                    architecture = "ARM64";
-                    break;
-                default:
-                    throw new ArgumentException($"Mapping to UnityLinker platform not implemented for {nameof(BuildTarget)} `{target}`");
-            }
+            return RunAssemblyLinker(args, out output, out error, UnityLinkerPath, runInformation.managedAssemblyFolderPath);
         }
 
         private static bool RunAssemblyLinker(IEnumerable<string> args, out string @out, out string err, string linkerPath, string workingDirectory)
@@ -227,23 +175,11 @@ namespace UnityEditorInternal
             return true;
         }
 
-        private static List<string> GetUserAssemblies(RuntimeClassRegistry rcr, string managedDir)
+        internal static void StripAssemblies(string managedAssemblyFolderPath, BaseUnityLinkerPlatformProvider unityLinkerPlatformProvider, IIl2CppPlatformProvider il2cppPlatformProvider,
+            RuntimeClassRegistry rcr, ManagedStrippingLevel managedStrippingLevel)
         {
-            return rcr.GetUserAssemblies().Where(s => rcr.IsDLLUsed(s)).Select(s => Path.Combine(managedDir, s)).ToList();
-        }
-
-        internal static void StripAssemblies(string managedAssemblyFolderPath, IIl2CppPlatformProvider platformProvider, RuntimeClassRegistry rcr, ManagedStrippingLevel managedStrippingLevel)
-        {
-            var assemblies = GetUserAssemblies(rcr, managedAssemblyFolderPath);
-            assemblies.AddRange(Directory.GetFiles(managedAssemblyFolderPath, "I18N*.dll", SearchOption.TopDirectoryOnly));
-            var assembliesToStrip = assemblies.ToArray();
-
-            var searchDirs = new[]
-            {
-                managedAssemblyFolderPath
-            };
-
-            RunAssemblyStripper(assemblies, managedAssemblyFolderPath, assembliesToStrip, searchDirs, UnityLinkerPath, platformProvider, rcr, managedStrippingLevel);
+            var runInformation = new UnityLinkerRunInformation(managedAssemblyFolderPath, unityLinkerPlatformProvider, il2cppPlatformProvider.target, rcr, managedStrippingLevel, il2cppPlatformProvider);
+            RunAssemblyStripper(runInformation);
         }
 
         internal static void GenerateInternalCallSummaryFile(string icallSummaryPath, string managedAssemblyFolderPath, string strippedDLLPath)
@@ -258,12 +194,45 @@ namespace UnityEditorInternal
             Runner.RunManagedProgram(exe, args);
         }
 
+        static List<string> ProcessBuildPipelineGenerateAdditionalLinkXmlFiles(UnityLinkerRunInformation runInformation)
+        {
+            var results = new List<string>();
+            var processors = BuildPipelineInterfaces.processors.unityLinkerProcessors;
+            if (processors == null)
+                return results;
+
+            foreach (var processor in processors)
+                results.Add(processor.GenerateAdditionalLinkXmlFile(runInformation.BuildReport, runInformation.pipelineData));
+
+            return results;
+        }
+
+        static void ProcessBuildPipelineOnBeforeRun(UnityLinkerRunInformation runInformation)
+        {
+            var processors = BuildPipelineInterfaces.processors.unityLinkerProcessors;
+            if (processors == null)
+                return;
+
+            foreach (var processor in processors)
+                processor.OnBeforeRun(runInformation.BuildReport, runInformation.pipelineData);
+        }
+
+        static void ProcessBuildPipelineOnAfterRun(UnityLinkerRunInformation runInformation)
+        {
+            var processors = BuildPipelineInterfaces.processors.unityLinkerProcessors;
+            if (processors == null)
+                return;
+
+            foreach (var processor in processors)
+                processor.OnAfterRun(runInformation.BuildReport, runInformation.pipelineData);
+        }
+
         internal static IEnumerable<string> GetUserBlacklistFiles()
         {
             return Directory.GetFiles("Assets", "link.xml", SearchOption.AllDirectories).Select(s => Path.Combine(Directory.GetCurrentDirectory(), s));
         }
 
-        private static bool AddWhiteListsForModules(IEnumerable<string> nativeModules, ref IEnumerable<string> blacklists, string moduleStrippingInformationFolder)
+        private static bool AddWhiteListsForModules(IEnumerable<string> nativeModules, List<string> blacklists, string moduleStrippingInformationFolder)
         {
             bool result = false;
             foreach (var module in nativeModules)
@@ -274,7 +243,7 @@ namespace UnityEditorInternal
                 {
                     if (!blacklists.Contains(moduleWhitelist))
                     {
-                        blacklists = blacklists.Concat(new[] { moduleWhitelist });
+                        blacklists.Add(moduleWhitelist);
                         result = true;
                     }
                 }
@@ -282,70 +251,48 @@ namespace UnityEditorInternal
             return result;
         }
 
-        private static string GetRuntimeArgumentValueForLinker(BuildTargetGroup buildTargetGroup)
-        {
-            var backend = PlayerSettings.GetScriptingBackend(buildTargetGroup);
-            switch (backend)
-            {
-                case ScriptingImplementation.IL2CPP:
-                    return "il2cpp";
-                case ScriptingImplementation.Mono2x:
-                    return "mono";
-                default:
-                    throw new NotImplementedException($"Don't know the backend value to pass to UnityLinker for {backend}");
-            }
-        }
-
-        private static string GetProfileArgumentValueForLinker(BuildTargetGroup buildTargetGroup)
-        {
-            return IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup));
-        }
-
-        private static void RunAssemblyStripper(IEnumerable assemblies, string managedAssemblyFolderPath, string[] assembliesToStrip, string[] searchDirs, string monoLinkerPath, IIl2CppPlatformProvider platformProvider, RuntimeClassRegistry rcr, ManagedStrippingLevel managedStrippingLevel)
+        private static void RunAssemblyStripper(UnityLinkerRunInformation runInformation)
         {
             string output;
             string error;
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(platformProvider.target);
-            bool isMono = PlayerSettings.GetScriptingBackend(buildTargetGroup) == ScriptingImplementation.Mono2x;
-            bool engineStrippingSupported = platformProvider.supportsEngineStripping && !isMono;
-            bool performEngineStripping = rcr != null && PlayerSettings.stripEngineCode && engineStrippingSupported;
-            IEnumerable<string> blacklists = Il2CppBlacklistPaths;
+            var rcr = runInformation.rcr;
+            var managedAssemblyFolderPath = runInformation.managedAssemblyFolderPath;
+            var linkXmlFiles = new List<string>();
+            linkXmlFiles.AddRange(Il2CppBlacklistPaths);
 
             if (rcr != null)
             {
-                blacklists = blacklists.Concat(new[]
-                {
-                    WriteMethodsToPreserveBlackList(rcr, platformProvider.target),
-                    MonoAssemblyStripping.GenerateLinkXmlToPreserveDerivedTypes(managedAssemblyFolderPath, rcr),
-                    WriteTypesInScenesBlacklist(managedAssemblyFolderPath, rcr)
-                });
+                linkXmlFiles.Add(WriteMethodsToPreserveBlackList(rcr, runInformation.target));
+                linkXmlFiles.Add(MonoAssemblyStripping.GenerateLinkXmlToPreserveDerivedTypes(managedAssemblyFolderPath, rcr));
+                linkXmlFiles.Add(WriteTypesInScenesBlacklist(managedAssemblyFolderPath, rcr));
             }
 
-            if (isMono)
+            linkXmlFiles.AddRange(ProcessBuildPipelineGenerateAdditionalLinkXmlFiles(runInformation));
+            linkXmlFiles.AddRange(GetUserBlacklistFiles());
+
+            if (runInformation.isMonoBackend)
             {
                 // The old Mono assembly stripper uses per-platform link.xml files if available. Apply these here.
-                var buildToolsDirectory = BuildPipeline.GetBuildToolsDirectory(platformProvider.target);
+                var buildToolsDirectory = BuildPipeline.GetBuildToolsDirectory(runInformation.target);
                 if (!string.IsNullOrEmpty(buildToolsDirectory))
                 {
                     var platformDescriptor = Path.Combine(buildToolsDirectory, "link.xml");
                     if (File.Exists(platformDescriptor))
-                        blacklists = blacklists.Concat(new[] {platformDescriptor});
+                        linkXmlFiles.Add(platformDescriptor);
                 }
             }
 
-            string editorToLinkerDataPath = WriteEditorData(managedAssemblyFolderPath, rcr);
+            WriteEditorData(runInformation);
 
-            if (!performEngineStripping && !UseUnityLinkerEngineModuleStripping)
+            if (!runInformation.performEngineStripping && !UseUnityLinkerEngineModuleStripping)
             {
                 // if we don't do stripping, add all modules blacklists.
-                foreach (var file in Directory.GetFiles(platformProvider.moduleStrippingInformationFolder, "*.xml"))
-                    blacklists = blacklists.Concat(new[] {file});
+                linkXmlFiles.AddRange(runInformation.GetModuleBlacklistFiles());
             }
 
-            // Generated link xml files that would have been empty will be nulled out.  Need to filter these out before running the linker
-            blacklists = blacklists.Where(b => b != null);
-
             var tempStripPath = Path.GetFullPath(Path.Combine(managedAssemblyFolderPath, "tempStrip"));
+
+            ProcessBuildPipelineOnBeforeRun(runInformation);
 
             bool addedMoreBlacklists;
             do
@@ -356,39 +303,31 @@ namespace UnityEditorInternal
                     throw new OperationCanceledException();
 
                 if (!StripAssembliesTo(
-                    assembliesToStrip,
-                    searchDirs,
                     tempStripPath,
-                    managedAssemblyFolderPath,
                     out output,
                     out error,
-                    monoLinkerPath,
-                    platformProvider,
-                    blacklists,
-                    buildTargetGroup,
-                    managedStrippingLevel,
-                    performEngineStripping,
-                    editorToLinkerDataPath))
-                    throw new Exception("Error in stripping assemblies: " + assemblies + ", " + error);
+                    SanitizeLinkXmlFilePaths(linkXmlFiles, runInformation),
+                    runInformation))
+                    throw new Exception("Error in stripping assemblies: " + runInformation.AssembliesToProcess() + ", " + error);
 
-                if (engineStrippingSupported)
+                if (runInformation.engineStrippingSupported)
                 {
                     var icallSummaryPath = Path.Combine(managedAssemblyFolderPath, "ICallSummary.txt");
                     GenerateInternalCallSummaryFile(icallSummaryPath, managedAssemblyFolderPath, tempStripPath);
 
-                    if (performEngineStripping && !UseUnityLinkerEngineModuleStripping)
+                    if (runInformation.performEngineStripping && !UseUnityLinkerEngineModuleStripping)
                     {
                         // Find which modules we must include in the build based on Assemblies
                         HashSet<UnityType> nativeClasses;
                         HashSet<string> nativeModules;
-                        CodeStrippingUtils.GenerateDependencies(tempStripPath, icallSummaryPath, rcr, performEngineStripping, out nativeClasses, out nativeModules, platformProvider);
+                        CodeStrippingUtils.GenerateDependencies(tempStripPath, icallSummaryPath, rcr, runInformation.performEngineStripping, out nativeClasses, out nativeModules, runInformation.il2CppPlatformProvider);
                         // Add module-specific blacklists.
-                        addedMoreBlacklists = AddWhiteListsForModules(nativeModules, ref blacklists, platformProvider.moduleStrippingInformationFolder);
+                        addedMoreBlacklists = AddWhiteListsForModules(nativeModules, linkXmlFiles, runInformation.platformProvider.moduleStrippingInformationFolder);
                     }
                 }
 
-                if (performEngineStripping && UseUnityLinkerEngineModuleStripping)
-                    UpdateBuildReport(ReadLinkerToEditorData(tempStripPath), platformProvider);
+                if (runInformation.performEngineStripping && UseUnityLinkerEngineModuleStripping)
+                    UpdateBuildReport(ReadLinkerToEditorData(tempStripPath), runInformation);
 
                 // If we had to add more whitelists, we need to run AssemblyStripper again with the added whitelists.
             }
@@ -418,11 +357,13 @@ namespace UnityEditorInternal
             foreach (var dir in Directory.GetDirectories(tempStripPath))
                 Directory.Move(dir, Path.Combine(managedAssemblyFolderPath, Path.GetFileName(dir)));
             Directory.Delete(tempStripPath);
+
+            ProcessBuildPipelineOnAfterRun(runInformation);
         }
 
         public static bool UseUnityLinkerEngineModuleStripping
         {
-            get { return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("UNITYLINKER_DISABLE_EMS")); }
+            get { return string.IsNullOrEmpty(Environment.GetEnvironmentVariable("UNITYLINKER_DISABLE_EMS")); }
         }
 
         private static string WriteTypesInScenesBlacklist(string managedAssemblyDirectory, RuntimeClassRegistry rcr)
@@ -454,9 +395,9 @@ namespace UnityEditorInternal
             return path;
         }
 
-        private static void UpdateBuildReport(LinkerToEditorData dataFromLinker, IIl2CppPlatformProvider platformProvider)
+        private static void UpdateBuildReport(LinkerToEditorData dataFromLinker, UnityLinkerRunInformation runInformation)
         {
-            var strippingInfo = platformProvider == null ? null : StrippingInfo.GetBuildReportData(platformProvider.buildReport);
+            var strippingInfo = runInformation.BuildReportData;
 
             if (strippingInfo == null)
                 return;
@@ -500,9 +441,9 @@ namespace UnityEditorInternal
             return data;
         }
 
-        private static string WriteEditorData(string managedAssemblyDirectory, RuntimeClassRegistry rcr)
+        private static void WriteEditorData(UnityLinkerRunInformation runInformation)
         {
-            var items = GetTypesInScenesInformation(managedAssemblyDirectory, rcr);
+            var items = GetTypesInScenesInformation(runInformation.managedAssemblyFolderPath, runInformation.rcr);
 
             List<string> forceIncludeModules;
             List<string> forceExcludeModules;
@@ -516,9 +457,7 @@ namespace UnityEditorInternal
                 forceExcludeModules = forceExcludeModules.ToArray()
             };
 
-            var dataPath = Path.Combine(managedAssemblyDirectory, "EditorToUnityLinkerData.json");
-            File.WriteAllText(dataPath, JsonUtility.ToJson(editorToLinkerData, true));
-            return dataPath;
+            File.WriteAllText(runInformation.EditorToLinkerDataPath, JsonUtility.ToJson(editorToLinkerData, true));
         }
 
         static List<EditorToLinkerData.TypeInSceneData> GetTypesInScenesInformation(string managedAssemblyDirectory, RuntimeClassRegistry rcr)
@@ -567,7 +506,9 @@ namespace UnityEditorInternal
                 items.Add(new EditorToLinkerData.NativeTypeData
                 {
                     name = unityType.name,
-                    module = unityType.module
+                    module = unityType.module,
+                    baseName = unityType.baseClass != null ? unityType.baseClass.name : null,
+                    baseModule = unityType.baseClass != null ? unityType.baseClass.module : null,
                 });
             }
 
@@ -634,10 +575,89 @@ namespace UnityEditorInternal
 
             var stagingAreaData = Paths.Combine("Temp", "StagingArea", "Data");
 
-            var platformProvider = new BaseIl2CppPlatformProvider(buildTarget, Path.Combine(stagingAreaData, "Libraries"), report);
+            var il2cppPlatformProvider = new MonoBackendIl2CppPlatformProvider(buildTarget, Path.Combine(stagingAreaData, "Libraries"), report);
+            var platformProvider = new MonoBackendUnityLinkerPlatformProvider(buildTarget);
 
             var managedAssemblyFolderPath = Path.GetFullPath(Path.Combine(stagingAreaData, "Managed"));
-            AssemblyStripper.StripAssemblies(managedAssemblyFolderPath, platformProvider, usedClasses, managedStrippingLevel);
+            AssemblyStripper.StripAssemblies(managedAssemblyFolderPath, platformProvider, il2cppPlatformProvider, usedClasses, managedStrippingLevel);
+        }
+
+        class MonoBackendIl2CppPlatformProvider : BaseIl2CppPlatformProvider
+        {
+            public MonoBackendIl2CppPlatformProvider(BuildTarget target, string libraryFolder, BuildReport buildReport)
+                : base(target, libraryFolder, buildReport)
+            {
+            }
+
+            public override BaseUnityLinkerPlatformProvider CreateUnityLinkerPlatformProvider()
+            {
+                throw new NotSupportedException();
+            }
+        }
+
+        class MonoBackendUnityLinkerPlatformProvider : BaseUnityLinkerPlatformProvider
+        {
+            private readonly string m_Platform;
+            private readonly string m_Architecture;
+
+            public MonoBackendUnityLinkerPlatformProvider(BuildTarget target) : base(target)
+            {
+                GetUnityLinkerPlatformStringsFromBuildTarget(target, out m_Platform, out m_Architecture);
+            }
+
+            public override string Platform => m_Platform;
+
+            public override string Architecture => m_Architecture;
+
+            public override bool AllowOutputToBeMadeArchitectureDependent => !string.IsNullOrEmpty(m_Architecture);
+
+            public override bool supportsEngineStripping => false;
+
+            private static void GetUnityLinkerPlatformStringsFromBuildTarget(BuildTarget target, out string platform, out string architecture)
+            {
+                switch (target)
+                {
+                    case BuildTarget.StandaloneWindows64:
+                        platform = "WindowsDesktop";
+                        architecture = "x64";
+                        break;
+                    case BuildTarget.StandaloneWindows:
+                        platform = "WindowsDesktop";
+                        architecture = "x86";
+                        break;
+                    case BuildTarget.Android:
+                        // Do not supply architecture for Android.
+                        // The build pipeline bundles multiple architectures for Android.
+                        // Can't narrow down to a specific architecture at strip time, we work around
+                        // that fact in the UnityLinker.
+                        platform = "Android";
+                        architecture = "";
+                        break;
+                    case BuildTarget.StandaloneLinux64:
+                        platform = "Linux";
+                        architecture = "x64";
+                        break;
+                    case BuildTarget.StandaloneOSX:
+                        platform = "MacOSX";
+                        architecture = "x64";
+                        break;
+                    case BuildTarget.WSAPlayer:
+                        platform = "WinRT";
+                        // Could be multiple values.  We don't have use of this information yet so don't bother with trying to figure out what it should be
+                        architecture = "";
+                        break;
+                    case BuildTarget.iOS:
+                        platform = "iOS";
+                        architecture = "ARM64";
+                        break;
+                    case BuildTarget.tvOS:
+                        platform = "tvOS";
+                        architecture = "ARM64";
+                        break;
+                    default:
+                        throw new ArgumentException($"Mapping to UnityLinker platform not implemented for {nameof(BuildTarget)} `{target}`");
+                }
+            }
         }
     }
 }

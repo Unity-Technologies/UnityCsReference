@@ -32,6 +32,7 @@ namespace UnityEditor.PackageManager.UI
         IPackageVersion primaryVersion { get; }
 
         PackageState state { get; }
+
         bool isDiscoverable { get; }
 
         // package level errors (for upm this refers to operation errors that are separate from the package info)
@@ -40,5 +41,7 @@ namespace UnityEditor.PackageManager.UI
         void AddError(Error error);
 
         void ClearErrors();
+
+        IPackage Clone();
     }
 }

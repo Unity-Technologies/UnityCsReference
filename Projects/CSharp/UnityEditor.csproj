@@ -598,6 +598,9 @@
     <Compile Include="..\..\Editor\Mono\BuildPipeline\Il2Cpp\INativeCompiler.cs">
       <Link>Editor\Mono\BuildPipeline\Il2Cpp\INativeCompiler.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildPipeline\Il2Cpp\Il2CppBuildPipelineData.cs">
+      <Link>Editor\Mono\BuildPipeline\Il2Cpp\Il2CppBuildPipelineData.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\BuildPipeline\Il2Cpp\Il2CppNativeCodeBuilder.cs">
       <Link>Editor\Mono\BuildPipeline\Il2Cpp\Il2CppNativeCodeBuilder.cs</Link>
     </Compile>
@@ -627,6 +630,18 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\BuildPipeline\RuntimeClassMetadataUtils.bindings.cs">
       <Link>Editor\Mono\BuildPipeline\RuntimeClassMetadataUtils.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildPipeline\UnityLinker\BaseUnityLinkerPlatformProvider.cs">
+      <Link>Editor\Mono\BuildPipeline\UnityLinker\BaseUnityLinkerPlatformProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildPipeline\UnityLinker\UnityLinkerArgumentValueProvider.cs">
+      <Link>Editor\Mono\BuildPipeline\UnityLinker\UnityLinkerArgumentValueProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildPipeline\UnityLinker\UnityLinkerBuildPipelineData.cs">
+      <Link>Editor\Mono\BuildPipeline\UnityLinker\UnityLinkerBuildPipelineData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildPipeline\UnityLinker\UnityLinkerRunInformation.cs">
+      <Link>Editor\Mono\BuildPipeline\UnityLinker\UnityLinkerRunInformation.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\BuildPipeline\WinRT\WinRTUtils.cs">
       <Link>Editor\Mono\BuildPipeline\WinRT\WinRTUtils.cs</Link>
@@ -768,6 +783,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Collab\Views\ICollabHistoryWindow.cs">
       <Link>Editor\Mono\Collab\Views\ICollabHistoryWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\CollectImportedDependenciesAttribute.cs">
+      <Link>Editor\Mono\CollectImportedDependenciesAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Commands\CommandService.cs">
       <Link>Editor\Mono\Commands\CommandService.cs</Link>
@@ -1138,6 +1156,9 @@
     <Compile Include="..\..\Editor\Mono\GUI\EditModeTools\PrimitiveCollider2DTool.cs">
       <Link>Editor\Mono\GUI\EditModeTools\PrimitiveCollider2DTool.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\GUI\EditModeTools\PrimitiveColliderTool.cs">
+      <Link>Editor\Mono\GUI\EditModeTools\PrimitiveColliderTool.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\EditorApplicationLayout.cs">
       <Link>Editor\Mono\GUI\EditorApplicationLayout.cs</Link>
     </Compile>
@@ -1327,9 +1348,6 @@
     <Compile Include="..\..\Editor\Mono\GUI\Tools\EditorTools.cs">
       <Link>Editor\Mono\GUI\Tools\EditorTools.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Tools\SnapSettings.cs">
-      <Link>Editor\Mono\GUI\Tools\SnapSettings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\Tools\Tools.cs">
       <Link>Editor\Mono\GUI\Tools\Tools.cs</Link>
     </Compile>
@@ -1506,6 +1524,21 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Grid\GridSnapping.cs">
       <Link>Editor\Mono\Grid\GridSnapping.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Grids\EditorSnap.cs">
+      <Link>Editor\Mono\Grids\EditorSnap.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Grids\GridSettingsWindow.cs">
+      <Link>Editor\Mono\Grids\GridSettingsWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Grids\GridShortcuts.cs">
+      <Link>Editor\Mono\Grids\GridShortcuts.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Grids\SnapSettings.cs">
+      <Link>Editor\Mono\Grids\SnapSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Grids\SnapSettingsWindow.cs">
+      <Link>Editor\Mono\Grids\SnapSettingsWindow.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\HandleUtility.bindings.cs">
       <Link>Editor\Mono\HandleUtility.bindings.cs</Link>
@@ -2053,9 +2086,6 @@
     <Compile Include="..\..\Editor\Mono\Inspector\PreviewWindow.cs">
       <Link>Editor\Mono\Inspector\PreviewWindow.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\PrimitiveCollider3DEditor.cs">
-      <Link>Editor\Mono\Inspector\PrimitiveCollider3DEditor.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\ProjectSettingsBaseEditor.cs">
       <Link>Editor\Mono\Inspector\ProjectSettingsBaseEditor.cs</Link>
     </Compile>
@@ -2064,6 +2094,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\QualitySettingsEditor.cs">
       <Link>Editor\Mono\Inspector\QualitySettingsEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\RayTracingShaderInspector.cs">
+      <Link>Editor\Mono\Inspector\RayTracingShaderInspector.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\RectHandles.cs">
       <Link>Editor\Mono\Inspector\RectHandles.cs</Link>
@@ -2079,6 +2112,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\RelativeJoint2DEditor.cs">
       <Link>Editor\Mono\Inspector\RelativeJoint2DEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\RenderPipelineEditorUtility.cs">
+      <Link>Editor\Mono\Inspector\RenderPipelineEditorUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\RenderSettingsInspector.cs">
       <Link>Editor\Mono\Inspector\RenderSettingsInspector.cs</Link>
@@ -2578,6 +2614,9 @@
     <Compile Include="..\..\Editor\Mono\PresetLibraries\ScriptableObjectSaveLoadHelper.cs">
       <Link>Editor\Mono\PresetLibraries\ScriptableObjectSaveLoadHelper.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Preview\PreviewEditorWindow.cs">
+      <Link>Editor\Mono\Preview\PreviewEditorWindow.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\ProjectBrowser.cs">
       <Link>Editor\Mono\ProjectBrowser.cs</Link>
     </Compile>
@@ -2613,6 +2652,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\RegistryUtil.bindings.cs">
       <Link>Editor\Mono\RegistryUtil.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\RemoteInput\Remoting.bindings.cs">
+      <Link>Editor\Mono\RemoteInput\Remoting.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\RenderDoc\RenderDoc.bindings.cs">
       <Link>Editor\Mono\RenderDoc\RenderDoc.bindings.cs</Link>
@@ -3622,6 +3664,9 @@
     <Compile Include="..\..\Modules\AssetPipelineEditor\Public\ScriptedImporter.cs">
       <Link>Modules\AssetPipelineEditor\Public\ScriptedImporter.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\AssetPipelineEditor\Public\TextScriptImporter.bindings.cs">
+      <Link>Modules\AssetPipelineEditor\Public\TextScriptImporter.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\AssetPipelineEditor\Public\VideoImporter.bindings.cs">
       <Link>Modules\AssetPipelineEditor\Public\VideoImporter.bindings.cs</Link>
     </Compile>
@@ -3705,6 +3750,12 @@
     </Compile>
     <Compile Include="..\..\Modules\BuildReportingEditor\Managed\CommonRoles.bindings.cs">
       <Link>Modules\BuildReportingEditor\Managed\CommonRoles.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildReportingEditor\Managed\PackedAssetInfo.cs">
+      <Link>Modules\BuildReportingEditor\Managed\PackedAssetInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildReportingEditor\Managed\PackedAssets.bindings.cs">
+      <Link>Modules\BuildReportingEditor\Managed\PackedAssets.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildReportingEditor\Managed\ScopedBuildStep.cs">
       <Link>Modules\BuildReportingEditor\Managed\ScopedBuildStep.cs</Link>
@@ -3928,8 +3979,50 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\External\SemVersionExtension.cs">
       <Link>Modules\PackageManagerUI\Editor\External\SemVersionExtension.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerWindowAnalytics.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerWindowAnalytics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\ASyncHTTPClientFactory.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\ASyncHTTPClientFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreCache.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreCache.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreClient.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreClient.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreDownloadOperation.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreDownloadOperation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreOAuth.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreOAuth.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePackage.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePackage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePackageVersion.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePackageVersion.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreRestAPI.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreRestAPI.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreUtils.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreUtils.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\ApplicationUtil.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\ApplicationUtil.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\DownloadProgress.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\DownloadProgress.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\PlaceholderPackage.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\PlaceholderPackage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\PlaceholderPackageVersion.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\PlaceholderPackageVersion.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\PlayModeDownload.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\PlayModeDownload.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\Resources.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\Resources.cs</Link>
@@ -3942,6 +4035,27 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IApplicationUtil.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IApplicationUtil.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IAssetStoreCache.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IAssetStoreCache.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IAssetStoreClient.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IAssetStoreClient.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IAssetStoreOAuth.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IAssetStoreOAuth.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IAssetStoreRestAPI.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IAssetStoreRestAPI.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IAssetStoreUtils.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IAssetStoreUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IAsyncHTTPClientFactory.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IAsyncHTTPClientFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IDownloadOperation.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IDownloadOperation.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IOperation.cs</Link>
@@ -3964,9 +4078,6 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageAssetPostprocessor.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageAssetPostprocessor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageCreator.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageCreator.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageDatabase.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageDatabase.cs</Link>
     </Compile>
@@ -3976,11 +4087,20 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageFiltering.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageFiltering.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageImage.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageImage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageLink.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageLink.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageOrigin.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageOrigin.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageSample.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageSample.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageSizeInfo.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageSizeInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageState.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageState.cs</Link>
@@ -4039,11 +4159,20 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\LoadingSpinner.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\LoadingSpinner.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\SelectionManager.cs">
-      <Link>Modules\PackageManagerUI\Editor\UI\Common\SelectionManager.cs</Link>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\Page.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\Common\Page.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\PageManager.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\Common\PageManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\ProgressBar.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\Common\ProgressBar.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\UIUtils.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\UIUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\VisualState.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\Common\VisualState.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerExtension.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerExtension.cs</Link>
@@ -4057,11 +4186,14 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerToolbarExtension.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerToolbarExtension.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\IPage.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\IPage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\IPageManager.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\IPageManager.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\ISelectableItem.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\ISelectableItem.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\ISelectionManager.cs">
-      <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\ISelectionManager.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDependencies.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageDependencies.cs</Link>
@@ -4173,12 +4305,6 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageStatus.cs">
       <Link>Modules\PackageManager\Editor\Managed\PackageStatus.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageTemplate.cs">
-      <Link>Modules\PackageManager\Editor\Managed\PackageTemplate.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageTemplateOptions.cs">
-      <Link>Modules\PackageManager\Editor\Managed\PackageTemplateOptions.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageValidation.cs">
       <Link>Modules\PackageManager\Editor\Managed\PackageValidation.cs</Link>
@@ -4333,6 +4459,21 @@
     <Compile Include="..\..\Modules\PhysicsEditor\ScriptBindings\PhysicsDebug.bindings.cs">
       <Link>Modules\PhysicsEditor\ScriptBindings\PhysicsDebug.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PresetsEditor\AddPresetTypeWindow\AddPresetTypeDataSource.cs">
+      <Link>Modules\PresetsEditor\AddPresetTypeWindow\AddPresetTypeDataSource.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PresetsEditor\AddPresetTypeWindow\AddPresetTypeGUI.cs">
+      <Link>Modules\PresetsEditor\AddPresetTypeWindow\AddPresetTypeGUI.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PresetsEditor\AddPresetTypeWindow\AddPresetTypeWindow.cs">
+      <Link>Modules\PresetsEditor\AddPresetTypeWindow\AddPresetTypeWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PresetsEditor\AddPresetTypeWindow\PresetTypeDropdownItem.cs">
+      <Link>Modules\PresetsEditor\AddPresetTypeWindow\PresetTypeDropdownItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PresetsEditor\DefaultPresetReorderableList.cs">
+      <Link>Modules\PresetsEditor\DefaultPresetReorderableList.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PresetsEditor\PresetContextMenu.cs">
       <Link>Modules\PresetsEditor\PresetContextMenu.cs</Link>
     </Compile>
@@ -4353,6 +4494,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PresetsEditor\Public\PresetManager.bindings.cs">
       <Link>Modules\PresetsEditor\Public\PresetManager.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PresetsEditor\Public\PresetType.bindings.cs">
+      <Link>Modules\PresetsEditor\Public\PresetType.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\MemoryProfiler\ArrayEntries.cs">
       <Link>Modules\ProfilerEditor\MemoryProfiler\ArrayEntries.cs</Link>
@@ -4375,29 +4519,11 @@
     <Compile Include="..\..\Modules\ProfilerEditor\MemoryProfiler\MemorySnapshotFileWriter.bindings.cs">
       <Link>Modules\ProfilerEditor\MemoryProfiler\MemorySnapshotFileWriter.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\AudioProfilerView.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\AudioProfilerView.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Chart.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Chart.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\IProfilerWindowController.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\IProfilerWindowController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\MemoryElement.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\MemoryElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\MemoryElementDataManager.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\MemoryElementDataManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\MemorySnapshot.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\MemorySnapshot.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\MemoryTreeList.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\MemoryTreeList.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\NetworkDetailStats.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\NetworkDetailStats.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerChart.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerChart.cs</Link>
@@ -4426,23 +4552,86 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerInstrumentationPopup.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerInstrumentationPopup.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerTimelineGUI.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerTimelineGUI.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Audio\AudioProfilerModule.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Audio\AudioProfilerModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Audio\AudioProfilerView.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Audio\AudioProfilerView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Box2D\Physics2DProfilerModule.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Box2D\Physics2DProfilerModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\CPU\CPUProfilerModule.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\CPU\CPUProfilerModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\CPU\ProfilerTimelineGUI.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\CPU\ProfilerTimelineGUI.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\CPUorGPUProfilerModule.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\CPUorGPUProfilerModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\GPU\GPUProfilerModule.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\GPU\GPUProfilerModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\GlobalIllumination\GlobalIlluminationProfilerModule.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\GlobalIllumination\GlobalIlluminationProfilerModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Memory\MemoryElement.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Memory\MemoryElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Memory\MemoryElementDataManager.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Memory\MemoryElementDataManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Memory\MemoryProfilerModule.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Memory\MemoryProfilerModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Memory\MemorySnapshot.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Memory\MemorySnapshot.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Memory\MemoryTreeList.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Memory\MemoryTreeList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\PhysX\PhysicsProfilerModule.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\PhysX\PhysicsProfilerModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\ProfilerModuleBase.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\ProfilerModuleBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Rendering\RenderingProfilerModule.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Rendering\RenderingProfilerModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Video\VideoProfilerModule.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Video\VideoProfilerModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\uGui\UIDetailsProfilerModule.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\uGui\UIDetailsProfilerModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\uGui\UIProfilerModule.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\uGui\UIProfilerModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\uGui\UISystemProfiler.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\uGui\UISystemProfiler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\uGui\UISystemProfilerChart.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\uGui\UISystemProfilerChart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\uGui\UISystemProfilerThumbnailService.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\uGui\UISystemProfilerThumbnailService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\uGui\UISystemProfilerTreeView.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\uGui\UISystemProfilerTreeView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\uNet\NetworkDetailStats.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\uNet\NetworkDetailStats.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\uNet\NetworkingMessagesProfilerModule.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\uNet\NetworkingMessagesProfilerModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\uNet\NetworkingOperationsProfilerModule.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\uNet\NetworkingOperationsProfilerModule.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerWindow.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\UISystem\UISystemProfiler.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\UISystem\UISystemProfiler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\UISystem\UISystemProfilerChart.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\UISystem\UISystemProfilerChart.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\UISystem\UISystemProfilerThumbnailService.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\UISystem\UISystemProfilerThumbnailService.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\UISystem\UISystemProfilerTreeView.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\UISystem\UISystemProfilerTreeView.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\Public\NativeProfilerTimeline.bindings.cs">
       <Link>Modules\ProfilerEditor\Public\NativeProfilerTimeline.bindings.cs</Link>
@@ -4669,8 +4858,8 @@
     <Compile Include="..\..\Modules\TerrainEditor\PaintTools\PaintHeightTool.cs">
       <Link>Modules\TerrainEditor\PaintTools\PaintHeightTool.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\PaintTools\PaintSurfaceMaskTool.cs">
-      <Link>Modules\TerrainEditor\PaintTools\PaintSurfaceMaskTool.cs</Link>
+    <Compile Include="..\..\Modules\TerrainEditor\PaintTools\PaintHolesTool.cs">
+      <Link>Modules\TerrainEditor\PaintTools\PaintHolesTool.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TerrainEditor\PaintTools\PaintTextureTool.cs">
       <Link>Modules\TerrainEditor\PaintTools\PaintTextureTool.cs</Link>
@@ -5010,6 +5199,12 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\UIElementsSnippetAsset.cs">
       <Link>Modules\UIElementsSamplesEditor\UIElementsSnippetAsset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UMPE\Editor\ChannelClient.cs">
+      <Link>Modules\UMPE\Editor\ChannelClient.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UMPE\Editor\ChannelService.cs">
+      <Link>Modules\UMPE\Editor\ChannelService.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UMPE\Editor\DataService.cs">
       <Link>Modules\UMPE\Editor\DataService.cs</Link>

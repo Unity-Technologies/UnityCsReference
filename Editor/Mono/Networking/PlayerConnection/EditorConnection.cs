@@ -150,7 +150,7 @@ namespace UnityEditor.Networking.PlayerConnection
         {
             if (messageId == Guid.Empty)
             {
-                throw new ArgumentException("Cant be Guid.Empty", "messageId");
+                throw new ArgumentException("Can not be Guid.Empty", "messageId");
             }
 
             GetEditorConnectionNativeApi().SendMessage(messageId, data, playerId);
@@ -159,6 +159,21 @@ namespace UnityEditor.Networking.PlayerConnection
         public void Send(Guid messageId, byte[] data)
         {
             Send(messageId, data, 0);
+        }
+
+        public bool TrySend(Guid messageId, byte[] data, int playerId)
+        {
+            if (messageId == Guid.Empty)
+            {
+                throw new ArgumentException("Can not be Guid.Empty", "messageId");
+            }
+
+            return GetEditorConnectionNativeApi().TrySendMessage(messageId, data, playerId);
+        }
+
+        public bool TrySend(Guid messageId, byte[] data)
+        {
+            return TrySend(messageId, data, 0);
         }
 
         public void DisconnectAll()

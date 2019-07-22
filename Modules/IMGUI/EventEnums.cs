@@ -124,4 +124,11 @@ namespace UnityEngine
         // Function key
         FunctionKey = 64
     }
+
+    public enum PointerType
+    {
+        Mouse = 0,
+        Touch = 1,
+        Pen = 2,
+    }
 }

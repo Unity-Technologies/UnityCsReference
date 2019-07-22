@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using UnityEditor.Build;
 using UnityEditor.Experimental.AssetImporters;
-using UnityEditor.Experimental.U2D;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;

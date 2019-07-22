@@ -14,9 +14,9 @@ namespace UnityEditor.PackageManager.UI
         /// <summary>
         /// Called by the Package Manager UI when the package selection changed.
         /// </summary>
-        /// <param name="packageInfo">The newly selected package information (can be null)</param>
+        /// <param name="packageVersion">The newly selected package information (can be null)</param>
         /// <param name="toolbar">The toolbar VisualElement to add new action into.</param>
-        void OnPackageSelectionChange(PackageInfo packageInfo, VisualElement toolbar);
+        void OnPackageSelectionChange(IPackageVersion packageVersion, VisualElement toolbar);
 
         /// <summary>
         /// Called by the Package Manager UI when its window is being closed

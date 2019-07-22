@@ -5,7 +5,7 @@
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
-namespace UnityEngine.Experimental.VFX
+namespace UnityEngine.VFX
 {
     [System.Serializable]
     [RequiredByNativeCode]

@@ -137,11 +137,6 @@ namespace UnityEditor
             TimeRuler(position, frameRate, true, false, 1f, TimeFormat.TimeFrame);
         }
 
-        public void TimeRuler(Rect position, float frameRate, bool labels, bool useEntireHeight, float alpha)
-        {
-            TimeRuler(position, frameRate, labels, useEntireHeight, alpha, TimeFormat.TimeFrame);
-        }
-
         public void TimeRuler(Rect position, float frameRate, bool labels, bool useEntireHeight, float alpha,
             TimeFormat timeFormat)
         {

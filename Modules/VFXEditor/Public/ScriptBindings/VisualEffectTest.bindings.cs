@@ -10,7 +10,7 @@ using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 
-namespace UnityEditor.Experimental.VFX
+namespace UnityEditor.VFX
 {
     [NativeHeader("Modules/VFXEditor/Public/VisualEffectTest.h")]
     internal static class VisualEffectTest

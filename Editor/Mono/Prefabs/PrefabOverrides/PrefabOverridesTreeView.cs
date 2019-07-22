@@ -5,7 +5,6 @@
 using System;
 using UnityEngine;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
 using Object = UnityEngine.Object;
@@ -113,20 +112,6 @@ namespace UnityEditor
             Reload();
             ExpandAll();
             EnableAllItems(true);
-        }
-
-        static string NicifyPropertyName(string propertyPath)
-        {
-            var result = ObjectNames.NicifyVariableName(propertyPath);
-            result = result.Replace("Local ", "");
-            return result;
-        }
-
-        static string GetModificationValueString(PropertyModification mod)
-        {
-            if (mod.objectReference != null)
-                return mod.objectReference.name;
-            return mod.value;
         }
 
         void BuildPrefabOverridesPerObject(out Dictionary<int, PrefabOverrides> instanceIDToPrefabOverridesMap)
@@ -370,39 +355,6 @@ namespace UnityEditor
             }
         }
 
-        static void UpdateParentsIncludedState(PrefabOverridesTreeViewItem item)
-        {
-            if (item.depth > 0)
-            {
-                var parent = item.parent as PrefabOverridesTreeViewItem;
-                bool hasIncludedChildren = false;
-                bool hasExcludedChildren = false;
-                foreach (var child in parent.children)
-                {
-                    var included = (child as PrefabOverridesTreeViewItem).included;
-                    hasIncludedChildren |= included != ToggleValue.FALSE;
-                    hasExcludedChildren |= included != ToggleValue.TRUE;
-                    if (hasIncludedChildren && hasExcludedChildren)
-                    {
-                        break;
-                    }
-                }
-                if (hasIncludedChildren && hasExcludedChildren)
-                {
-                    parent.included = ToggleValue.MIXED;
-                }
-                else if (hasIncludedChildren)
-                {
-                    parent.included = ToggleValue.TRUE;
-                }
-                else
-                {
-                    parent.included = ToggleValue.FALSE;
-                }
-                UpdateParentsIncludedState(parent);
-            }
-        }
-
         protected override void RowGUI(RowGUIArgs args)
         {
             baseIndent = 4f;
@@ -500,29 +452,6 @@ namespace UnityEditor
         {
             public Object target { get; set; }
             public string propertyPath { get; set; }
-        }
-
-        enum Operation { APPLY, REVERT }
-
-        static void GetSelectedModificationsRecursive(TreeViewItem treeViewItem, List<PrefabOverride> selectedModifications)
-        {
-            var objectItem = treeViewItem as PrefabOverridesTreeViewItem;
-            if (objectItem == null)
-                return;
-
-            if (objectItem.included == ToggleValue.FALSE)
-                return;
-
-            if (objectItem.singleModification != null)
-            {
-                selectedModifications.Add(objectItem.singleModification);
-            }
-
-            if (objectItem.hasChildren)
-            {
-                foreach (var child in objectItem.children)
-                    GetSelectedModificationsRecursive(child, selectedModifications);
-            }
         }
 
         class IdSequence

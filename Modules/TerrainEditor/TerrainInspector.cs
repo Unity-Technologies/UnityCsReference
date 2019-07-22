@@ -98,6 +98,7 @@ namespace UnityEditor
             public readonly GUIContent assign = EditorGUIUtility.TrTextContent("Assign");
             public readonly GUIContent duplicateTab = EditorGUIUtility.TrTextContent("This inspector tab is not the active Terrain inspector, paint functionality disabled.");
             public readonly GUIContent makeMeActive = EditorGUIUtility.TrTextContent("Activate this inspector");
+            public readonly GUIContent gles2NotSupported = EditorGUIUtility.TrTextContentWithIcon("Terrain editting is not supported in GLES2.", MessageType.Info);
 
             // Textures
             public readonly GUIContent terrainLayers = EditorGUIUtility.TrTextContent("Terrain Layers");
@@ -162,8 +163,6 @@ namespace UnityEditor
             public readonly GUIContent treeBillboardDistance = EditorGUIUtility.TrTextContent("Billboard Start", "The distance (from camera) at which 3D tree objects will be replaced by billboard images. For SpeedTree trees this parameter is controlled by the LOD group settings.");
             public readonly GUIContent treeCrossFadeLength = EditorGUIUtility.TrTextContent("Fade Length", "Distance over which trees will transition between 3D objects and billboards. For SpeedTree trees this parameter is controlled by the LOD group settings.");
             public readonly GUIContent treeMaximumFullLODCount = EditorGUIUtility.TrTextContent("Max Mesh Trees", "The maximum number of visible trees that will be represented as solid 3D meshes. Beyond this limit, trees will be replaced with billboards. For SpeedTree trees this parameter is controlled by the LOD group settings.");
-            public readonly GUIContent physics = EditorGUIUtility.TrTextContent("Physics (On Terrain Data)");
-            public readonly GUIContent thickness = EditorGUIUtility.TrTextContent("Thickness", "How much the terrain collision volume should extend along the negative Y-axis. Objects are considered colliding with the terrain from the surface to a depth equal to the thickness. This helps prevent high-speed moving objects from penetrating into the terrain without using expensive continuous collision detection.");
             public readonly GUIContent grassWindSettings = EditorGUIUtility.TrTextContent("Wind Settings for Grass (On Terrain Data)");
             public readonly GUIContent wavingGrassStrength = EditorGUIUtility.TrTextContent("Speed", "The speed of the wind as it blows grass.");
             public readonly GUIContent wavingGrassSpeed = EditorGUIUtility.TrTextContent("Size", "The size of the 'ripples' on grassy areas as the wind blows over them.");
@@ -171,8 +170,10 @@ namespace UnityEditor
             public readonly GUIContent wavingGrassTint = EditorGUIUtility.TrTextContent("Grass Tint", "Overall color tint applied to grass objects.");
             public readonly GUIContent meshResolution = EditorGUIUtility.TrTextContent("Mesh Resolution (On Terrain Data)");
             public readonly GUIContent detailResolutionWarning = EditorGUIUtility.TrTextContent("You may reduce CPU draw call overhead by setting the detail resolution per patch as high as possible, relative to detail resolution.");
-            public readonly GUIContent surfaceMaskSettings = EditorGUIUtility.TrTextContent("Surface Mask Settings (On Terrain Data)");
-            public readonly GUIContent surfaceMaskCompressionToggle = EditorGUIUtility.TrTextContent("Compress Surface Mask Texture", "If enabled, surface mask texture will be compressed at runtime if compression supported.");
+            public readonly GUIContent holesSettings = EditorGUIUtility.TrTextContent("Holes Settings (On Terrain Data)");
+            public readonly GUIContent holesCompressionToggle = EditorGUIUtility.TrTextContent("Compress Holes Texture", "If enabled, holes texture will be compressed at runtime if compression supported.");
+
+            public static readonly GUIContent renderingLayerMask = EditorGUIUtility.TrTextContent("Rendering Layer Mask", "Mask that can be used with SRP DrawRenderers command to filter renderers outside of the normal layering system.");
         }
         static Styles styles;
 
@@ -180,14 +181,29 @@ namespace UnityEditor
         {
             EditorGUI.BeginChangeCheck();
 
+            minVal *= scale;
+            maxVal *= scale;
             float v = Mathf.Round(valueInPercent * scale / precision) * precision;
-            v = EditorGUILayout.Slider(content, v, minVal * scale, maxVal * scale);
+            v = Mathf.Clamp(v, minVal, maxVal);   // this keeps the slider knob from disappearing
+            v = EditorGUILayout.Slider(content, v, minVal, maxVal);
 
             if (EditorGUI.EndChangeCheck())
             {
                 return v / scale;
             }
             return valueInPercent;
+        }
+
+        static float PowerSlider(GUIContent content, float value, float minVal, float maxVal, float power, GUILayoutOption[] options = null)
+        {
+            value = Mathf.Clamp(value, minVal, maxVal);
+            EditorGUI.BeginChangeCheck();
+            float newValue = EditorGUILayout.PowerSlider(content, value, minVal, maxVal, power, options);
+            if (EditorGUI.EndChangeCheck())
+            {
+                return newValue;
+            }
+            return value;
         }
 
         // Source terrain
@@ -200,14 +216,45 @@ namespace UnityEditor
         float m_Strength;
         float m_Size;
 
-        float kMinBrushSize { get { return 0.1f; } }
-
-        float kMaxBrushSize
+        private static readonly float kOldMinBrushSize = 0.1f;
+        float kOldMaxBrushSize
         {
             get
             {
                 float safetyFactorHack = 0.9375f;
                 return Mathf.Floor(Mathf.Min(m_Terrain.terrainData.size.x, m_Terrain.terrainData.size.z) * safetyFactorHack);
+            }
+        }
+
+        int lastTextureResolutionPerTile = 0;
+        void GetBrushSizeLimits(
+            out float minBrushSize, out float maxBrushSize,
+            int textureResolutionPerTile = 0)
+        {
+            if (textureResolutionPerTile == 0)
+                textureResolutionPerTile = lastTextureResolutionPerTile;
+            else
+                lastTextureResolutionPerTile = textureResolutionPerTile;
+
+            if (textureResolutionPerTile <= 0)
+            {
+                minBrushSize = kOldMinBrushSize;
+                maxBrushSize = kOldMaxBrushSize;
+            }
+            else
+            {
+                float terrainSize = 1.0f;
+                if (m_Terrain && m_Terrain.terrainData)
+                {
+                    terrainSize = Mathf.Min(
+                        m_Terrain.terrainData.size.x,
+                        m_Terrain.terrainData.size.z);
+                }
+
+                TerrainPaintUtility.GetBrushWorldSizeLimits(
+                    out minBrushSize, out maxBrushSize,
+                    terrainSize,
+                    textureResolutionPerTile);
             }
         }
 
@@ -291,6 +338,7 @@ namespace UnityEditor
         {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
             TerrainInspector editor = context.terrainEditor;
+            editor.lastTextureResolutionPerTile = 0;       // reset texture resolution, new tool may use different resolution
             action(editor);
             EditorApplication.SetSceneRepaintDirty();
             editor.Repaint();
@@ -330,6 +378,7 @@ namespace UnityEditor
         private void SelectPaintTool(int index)
         {
             SetCurrentPaintToolInactive();
+            lastTextureResolutionPerTile = 0;       // reset texture resolution, new tool may use different resolution
             selectedTool = TerrainTool.Paint;
             m_ActivePaintToolIndex = index;
             SetCurrentPaintToolActive();
@@ -337,14 +386,14 @@ namespace UnityEditor
         }
 
         [FormerlyPrefKeyAs("Terrain/Tree Brush", "f5")]
-        [Shortcut("Terrain/Tree Brush", typeof(TerrainToolShortcutContext))]
+        [Shortcut("Terrain/Tree Brush", typeof(TerrainToolShortcutContext), KeyCode.F5)]
         static void SelectPlaceTreeTool(ShortcutArguments args)
         {
             ChangeTool(args, editor => editor.selectedTool = TerrainTool.PlaceTree);
         }
 
         [FormerlyPrefKeyAs("Terrain/Detail Brush", "f6")]
-        [Shortcut("Terrain/Detail Brush", typeof(TerrainToolShortcutContext))]
+        [Shortcut("Terrain/Detail Brush", typeof(TerrainToolShortcutContext), KeyCode.F6)]
         static void SelectPaintDetailTool(ShortcutArguments args)
         {
             ChangeTool(args, editor => editor.selectedTool = TerrainTool.PaintDetail);
@@ -491,7 +540,9 @@ namespace UnityEditor
                 m_Size = shrink ? (m_Size - changeAdditive) / changePercent : m_Size * changePercent + changeAdditive;
 
                 // clamp to range
-                m_Size = Mathf.Clamp(m_Size, kMinBrushSize, kMaxBrushSize);
+                float minBrushSize, maxBrushSize;
+                GetBrushSizeLimits(out minBrushSize, out maxBrushSize);
+                m_Size = Mathf.Clamp(m_Size, minBrushSize, maxBrushSize);
 
                 hotkeyTime += deltaTime;
             }
@@ -1002,7 +1053,7 @@ namespace UnityEditor
 
             GUILayout.Label(styles.settings, EditorStyles.boldLabel);
             // Placement distance
-            PaintTreesTool.instance.brushSize = EditorGUILayout.Slider(styles.brushSize, PaintTreesTool.instance.brushSize, 1, Mathf.Min(m_Terrain.terrainData.size.x, m_Terrain.terrainData.size.z)); // former string formatting: ""
+            PaintTreesTool.instance.brushSize = PowerSlider(styles.brushSize, PaintTreesTool.instance.brushSize, 1, Mathf.Min(m_Terrain.terrainData.size.x, m_Terrain.terrainData.size.z), 4.0f);
             float oldDens = (3.3f - PaintTreesTool.instance.spacing) / 3f;
             float newDens = ScaledSliderWithRounding(styles.treeDensity, oldDens, 0.1f, 1.0f, 100.0f, 1.0f);
             // Only set spacing when value actually changes. Otherwise
@@ -1122,7 +1173,7 @@ namespace UnityEditor
         public void ShowDetails()
         {
             LoadDetailIcons();
-            ShowBrushes(0, true, true, false, false);
+            ShowBrushes(0, true, true, false, false, 0);
 
             // Detail picker
             GUI.changed = false;
@@ -1147,16 +1198,15 @@ namespace UnityEditor
             GUILayout.Label(styles.settings, EditorStyles.boldLabel);
 
             // Brush size
-            m_Size = EditorGUILayout.Slider(styles.brushSize, m_Size, 1.0f, 100.0f); // former string formatting: ""
-            PaintDetailsTool.instance.detailOpacity = EditorGUILayout.Slider(styles.opacity, PaintDetailsTool.instance.detailOpacity, 0, 1); // former string formatting: "%"
+            m_Size = PowerSlider(styles.brushSize, m_Size, 1.0f, 100.0f, 4.0f);
+            PaintDetailsTool.instance.detailOpacity = EditorGUILayout.Slider(styles.opacity, PaintDetailsTool.instance.detailOpacity, 0, 1);
 
             // Strength
-            PaintDetailsTool.instance.detailStrength = EditorGUILayout.Slider(styles.detailTargetStrength, PaintDetailsTool.instance.detailStrength, 0, 1); // former string formatting: "%"
+            PaintDetailsTool.instance.detailStrength = EditorGUILayout.Slider(styles.detailTargetStrength, PaintDetailsTool.instance.detailStrength, 0, 1);
         }
 
         private bool m_ShowBasicTerrainSettings = true;
         private bool m_ShowTreeAndDetailSettings = true;
-        private bool m_ShowPhysicsSettings = true;
         private bool m_ShowGrassWindSettings = true;
 
         private static void MarkDirty(Terrain terrain)
@@ -1358,29 +1408,6 @@ namespace UnityEditor
             EditorGUILayout.EndFoldoutHeaderGroup();
             EditorGUILayout.Space();
 
-            m_ShowPhysicsSettings = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowPhysicsSettings, styles.physics);
-
-            if (m_ShowPhysicsSettings)
-            {
-                ++EditorGUI.indentLevel;
-                EditorGUI.BeginChangeCheck();
-                var thickness = EditorGUILayout.FloatField(styles.thickness, terrainData.thickness);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    Undo.RecordObject(terrainData, "TerrainData property change");
-                    terrainData.thickness = thickness;
-
-                    // In cases where terrain data is embedded in the scene (i.e. it's not an asset),
-                    // we need to dirty the scene if terrainData has changed.
-                    if (!EditorUtility.IsPersistent(terrainData) && !EditorApplication.isPlaying)
-                        SceneManagement.EditorSceneManager.MarkSceneDirty(m_Terrain.gameObject.scene);
-                }
-                --EditorGUI.indentLevel;
-            }
-
-            EditorGUILayout.EndFoldoutHeaderGroup();
-            EditorGUILayout.Space();
-
             m_ShowGrassWindSettings = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowGrassWindSettings, styles.grassWindSettings);
 
             if (m_ShowGrassWindSettings)
@@ -1413,13 +1440,47 @@ namespace UnityEditor
             ShowResolution(terrainData);
             EditorGUILayout.Space();
 
-            ShowSurfaceMaskSettings(terrainData);
+            ShowHolesSettings(terrainData);
             EditorGUILayout.Space();
 
             ShowTextures();
             EditorGUILayout.Space();
 
             RenderLightingFields();
+
+            ShowRenderingLayerMask();
+        }
+
+        // this is a non-serializedProperty version of RendererEditorBase.DrawRenderingLayer()
+        // if we switch to serializedProperty multi-edit, we can just use that function directly instead
+        private void ShowRenderingLayerMask(bool useMiniStyle = false)
+        {
+            RenderPipelineAsset srpAsset = GraphicsSettings.renderPipelineAsset;
+
+            var layerNames = srpAsset.renderingLayerMaskNames;
+            if (layerNames == null)
+                layerNames = RendererEditorBase.defaultRenderingLayerNames;
+
+            int mask = (int)m_Terrain.renderingLayerMask;
+
+            EditorGUI.BeginChangeCheck();
+
+            var rect = EditorGUILayout.GetControlRect();
+
+            if (useMiniStyle)
+            {
+                rect = ModuleUI.PrefixLabel(rect, Styles.renderingLayerMask);
+                mask = EditorGUI.MaskField(rect, GUIContent.none, mask, layerNames, ParticleSystemStyles.Get().popup);
+            }
+            else
+                mask = EditorGUI.MaskField(rect, Styles.renderingLayerMask, mask, layerNames);
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(m_Terrain, "Set Terrain rendering layer mask");
+                m_Terrain.renderingLayerMask = (UInt32)mask;
+                EditorUtility.SetDirty(this);
+            }
         }
 
         public void ShowPaint()
@@ -1451,7 +1512,7 @@ namespace UnityEditor
             }
         }
 
-        public void ShowBrushes(int spacing, bool showBrushes, bool showBrushEditor, bool showBrushSize, bool showBrushStrength)
+        public void ShowBrushes(int spacing, bool showBrushes, bool showBrushEditor, bool showBrushSize, bool showBrushStrength, int textureResolutionPerTile)
         {
             EditorGUI.BeginDisabledGroup(s_activeTerrainInspector != GetInstanceID() || s_activeTerrainInspectorInstance != this);
 
@@ -1462,7 +1523,10 @@ namespace UnityEditor
 
             if (showBrushSize)
             {
-                m_Size = ScaledSliderWithRounding(styles.brushSize, m_Size, kMinBrushSize, kMaxBrushSize, 1.0f, 0.01f);
+                float minBrushSize, maxBrushSize;
+                GetBrushSizeLimits(out minBrushSize, out maxBrushSize, textureResolutionPerTile);
+                m_Size = PowerSlider(
+                    styles.brushSize, m_Size, minBrushSize, maxBrushSize, 4.0f);
             }
 
             if (showBrushStrength)
@@ -1513,8 +1577,8 @@ namespace UnityEditor
             Graphics.Blit(m_Terrain.terrainData.heightmapTexture, oldHeightmap);
 
             // TODO: Can this be optimized if there is no hole?
-            RenderTexture oldSurfaceMask = RenderTexture.GetTemporary(m_Terrain.terrainData.surfaceMaskRenderTexture.descriptor);
-            Graphics.Blit(m_Terrain.terrainData.surfaceMaskRenderTexture, oldSurfaceMask);
+            RenderTexture oldHoles = RenderTexture.GetTemporary(m_Terrain.terrainData.holesRenderTexture.descriptor);
+            Graphics.Blit(m_Terrain.terrainData.holesRenderTexture, oldHoles);
 
             Undo.RegisterCompleteObjectUndo(m_Terrain.terrainData, "Resize Heightmap");
 
@@ -1544,14 +1608,14 @@ namespace UnityEditor
             Graphics.Blit(oldHeightmap, m_Terrain.terrainData.heightmapTexture, scale, offset);
             RenderTexture.ReleaseTemporary(oldHeightmap);
 
-            oldSurfaceMask.filterMode = FilterMode.Point;
-            Graphics.Blit(oldSurfaceMask, (RenderTexture)m_Terrain.terrainData.surfaceMaskRenderTexture);
-            RenderTexture.ReleaseTemporary(oldSurfaceMask);
+            oldHoles.filterMode = FilterMode.Point;
+            Graphics.Blit(oldHoles, (RenderTexture)m_Terrain.terrainData.holesRenderTexture);
+            RenderTexture.ReleaseTemporary(oldHoles);
 
             RenderTexture.active = oldRT;
 
             m_Terrain.terrainData.DirtyHeightmapRegion(new RectInt(0, 0, m_Terrain.terrainData.heightmapTexture.width, m_Terrain.terrainData.heightmapTexture.height), TerrainHeightmapSyncControl.HeightAndLod);
-            m_Terrain.terrainData.DirtyTextureRegion(TerrainData.SurfaceMaskTextureName, new RectInt(0, 0, m_Terrain.terrainData.surfaceMaskRenderTexture.width, m_Terrain.terrainData.surfaceMaskRenderTexture.height), false);
+            m_Terrain.terrainData.DirtyTextureRegion(TerrainData.HolesTextureName, new RectInt(0, 0, m_Terrain.terrainData.holesRenderTexture.width, m_Terrain.terrainData.holesRenderTexture.height), false);
 
             Repaint();
         }
@@ -1720,12 +1784,12 @@ namespace UnityEditor
             EditorGUILayout.EndFoldoutHeaderGroup();
         }
 
-        private bool m_ShowSurfaceMaskSettings = true;
+        private bool m_ShowHolesSettings = true;
 
-        public void ShowSurfaceMaskSettings(TerrainData terrainData)
+        public void ShowHolesSettings(TerrainData terrainData)
         {
-            m_ShowSurfaceMaskSettings = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowSurfaceMaskSettings, styles.surfaceMaskSettings);
-            if (!m_ShowSurfaceMaskSettings)
+            m_ShowHolesSettings = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowHolesSettings, styles.holesSettings);
+            if (!m_ShowHolesSettings)
             {
                 EditorGUILayout.EndFoldoutHeaderGroup();
                 return;
@@ -1735,13 +1799,13 @@ namespace UnityEditor
 
             EditorGUI.BeginChangeCheck();
 
-            bool enableSurfaceMaskTextureCompression = EditorGUILayout.Toggle(styles.surfaceMaskCompressionToggle, terrainData.enableSurfaceMaskTextureCompression);
+            bool enableHolesTextureCompression = EditorGUILayout.Toggle(styles.holesCompressionToggle, terrainData.enableHolesTextureCompression);
 
             if (EditorGUI.EndChangeCheck())
             {
                 Undo.RecordObject(terrainData, "TerrainData property change");
 
-                terrainData.enableSurfaceMaskTextureCompression = enableSurfaceMaskTextureCompression;
+                terrainData.enableHolesTextureCompression = enableHolesTextureCompression;
 
                 MarkTerrainDataDirty();
             }
@@ -1876,28 +1940,36 @@ namespace UnityEditor
 
             EditorGUI.BeginDisabledGroup(s_activeTerrainInspector != GetInstanceID() || s_activeTerrainInspectorInstance != this);
 
-            // Show the master tool selector
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();          // flexible space on either end centers the toolbar
-            GUI.changed = false;
             int tool = (int)selectedTool;
-            int newlySelectedTool = GUILayout.Toolbar(tool, styles.toolIcons, styles.command);
-
-            if (newlySelectedTool != tool)
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLES2)
             {
-                SetCurrentPaintToolInactive();
-                selectedTool = (TerrainTool)newlySelectedTool;
-                SetCurrentPaintToolActive();
-
-                // Need to repaint other terrain inspectors as their previously selected tool is now deselected.
-                InspectorWindow.RepaintAllInspectors();
-
-                if (Toolbar.get != null)
-                    Toolbar.get.Repaint();
+                EditorGUILayout.HelpBox(styles.gles2NotSupported);
+                tool = (int)TerrainTool.TerrainSettings;
             }
+            else
+            {
+                // Show the master tool selector
+                GUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();          // flexible space on either end centers the toolbar
+                GUI.changed = false;
+                int newlySelectedTool = GUILayout.Toolbar(tool, styles.toolIcons, styles.command);
 
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
+                if (newlySelectedTool != tool)
+                {
+                    SetCurrentPaintToolInactive();
+                    selectedTool = (TerrainTool)newlySelectedTool;
+                    SetCurrentPaintToolActive();
+
+                    // Need to repaint other terrain inspectors as their previously selected tool is now deselected.
+                    InspectorWindow.RepaintAllInspectors();
+
+                    if (Toolbar.get != null)
+                        Toolbar.get.Repaint();
+                }
+
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+            }
 
             if (tool != (int)TerrainTool.Paint)
             {
@@ -1905,12 +1977,14 @@ namespace UnityEditor
                 if (tool == (int)TerrainTool.CreateNeighbor)
                 {
                     GUILayout.Label(m_CreateTool.GetName());
-                    GUILayout.Label(m_CreateTool.GetDesc(), EditorStyles.wordWrappedMiniLabel);
+                    if (!string.IsNullOrEmpty(m_CreateTool.GetDesc()))
+                        GUILayout.Label(m_CreateTool.GetDesc(), EditorStyles.wordWrappedMiniLabel);
                 }
                 else if (tool > (int)TerrainTool.Paint && tool < styles.toolIcons.Length)
                 {
                     GUILayout.Label(styles.toolNames[tool].text);
-                    GUILayout.Label(styles.toolNames[tool].tooltip, EditorStyles.wordWrappedMiniLabel);
+                    if (!string.IsNullOrEmpty(styles.toolNames[tool].tooltip))
+                        GUILayout.Label(styles.toolNames[tool].tooltip, EditorStyles.wordWrappedMiniLabel);
                 }
                 else
                 {

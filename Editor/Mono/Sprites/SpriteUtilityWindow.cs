@@ -211,11 +211,6 @@ namespace UnityEditor
             SpriteEditorUtility.EndLines();
         }
 
-        private float Log2(float x)
-        {
-            return (float)(System.Math.Log(x) / System.Math.Log(2));
-        }
-
         protected void DrawTexture()
         {
             float mipLevel = Mathf.Min(m_MipLevel, TextureUtil.GetMipmapCount(m_Texture) - 1);

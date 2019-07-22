@@ -386,20 +386,6 @@ namespace UnityEditor
             return instance;
         }
 
-        private Material GetInvisibleMaterial()
-        {
-            if (m_InvisibleMaterial == null)
-            {
-                // A material intentionally draws nothing. Used to hide submeshes we don't want users to see.
-                m_InvisibleMaterial = new Material(Shader.FindBuiltin("Internal-Colored.shader"));
-                m_InvisibleMaterial.hideFlags = HideFlags.HideAndDontSave;
-                m_InvisibleMaterial.SetColor("_Color", Color.clear);
-                m_InvisibleMaterial.SetInt("_ZWrite", 0);
-            }
-
-            return m_InvisibleMaterial;
-        }
-
         internal void AddManagedGO(GameObject go)
         {
             m_PreviewScene.AddManagedGO(go);

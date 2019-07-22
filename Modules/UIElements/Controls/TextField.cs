@@ -188,7 +188,7 @@ namespace UnityEngine.UIElements
                         {
                             var textParams = MeshGenerationContextUtils.TextParams.MakeStyleBased(this, text);
                             textParams.text = drawText;
-                            mgc.Text(textParams);
+                            mgc.Text(textParams, parentTextField.textHandle);
                         }
                     }
                     else

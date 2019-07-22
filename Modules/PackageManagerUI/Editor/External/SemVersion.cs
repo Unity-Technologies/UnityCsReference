@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 /*
-Copyright (c) 2013 Max Hauser 
+Copyright (c) 2013 Max Hauser
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -66,6 +66,7 @@ namespace UnityEditor.PackageManager.UI
             Build = semVersion.Build;
         }
 
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SemVersion" /> class.
         /// </summary>
@@ -87,7 +88,7 @@ namespace UnityEditor.PackageManager.UI
         /// <summary>
         /// Initializes a new instance of the <see cref="SemVersion"/> class.
         /// </summary>
-        /// <param name="version">The <see cref="System.Version"/> that is used to initialize 
+        /// <param name="version">The <see cref="System.Version"/> that is used to initialize
         /// the Major, Minor, Patch and Build properties.</param>
         public SemVersion(Version version)
         {
@@ -133,7 +134,7 @@ namespace UnityEditor.PackageManager.UI
 
             var minorMatch = match.Groups["minor"];
             int minor = 0;
-            if (minorMatch.Success) 
+            if (minorMatch.Success)
             {
                 minor = int.Parse(minorMatch.Value, CultureInfo.InvariantCulture);
             }
@@ -148,7 +149,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 patch = int.Parse(patchMatch.Value, CultureInfo.InvariantCulture);
             }
-            else if (strict) 
+            else if (strict)
             {
                 throw new InvalidOperationException("Invalid version (no patch version given in strict mode)");
             }
@@ -163,8 +164,8 @@ namespace UnityEditor.PackageManager.UI
         /// Parses the specified string to a semantic version.
         /// </summary>
         /// <param name="version">The version string.</param>
-        /// <param name="semver">When the method returns, contains a SemVersion instance equivalent 
-        /// to the version string passed in, if the version string was valid, or <c>null</c> if the 
+        /// <param name="semver">When the method returns, contains a SemVersion instance equivalent
+        /// to the version string passed in, if the version string was valid, or <c>null</c> if the
         /// version string was not valid.</param>
         /// <param name="strict">If set to <c>true</c> minor and patch version are required, else they default to 0.</param>
         /// <returns><c>False</c> when a invalid version string is passed, otherwise <c>true</c>.</returns>
@@ -210,7 +211,7 @@ namespace UnityEditor.PackageManager.UI
         }
 
         /// <summary>
-        /// Make a copy of the current instance with optional altered fields. 
+        /// Make a copy of the current instance with optional altered fields.
         /// </summary>
         /// <param name="major">The major version.</param>
         /// <param name="minor">The minor version.</param>
@@ -286,15 +287,15 @@ namespace UnityEditor.PackageManager.UI
         }
 
         /// <summary>
-        /// Compares the current instance with another object of the same type and returns an integer that indicates 
-        /// whether the current instance precedes, follows, or occurs in the same position in the sort order as the 
+        /// Compares the current instance with another object of the same type and returns an integer that indicates
+        /// whether the current instance precedes, follows, or occurs in the same position in the sort order as the
         /// other object.
         /// </summary>
         /// <param name="obj">An object to compare with this instance.</param>
         /// <returns>
-        /// A value that indicates the relative order of the objects being compared. 
-        /// The return value has these meanings: Value Meaning Less than zero 
-        ///  This instance precedes <paramref name="obj" /> in the sort order. 
+        /// A value that indicates the relative order of the objects being compared.
+        /// The return value has these meanings: Value Meaning Less than zero
+        ///  This instance precedes <paramref name="obj" /> in the sort order.
         ///  Zero This instance occurs in the same position in the sort order as <paramref name="obj" />. i
         ///  Greater than zero This instance follows <paramref name="obj" /> in the sort order.
         /// </returns>
@@ -304,15 +305,15 @@ namespace UnityEditor.PackageManager.UI
         }
 
         /// <summary>
-        /// Compares the current instance with another object of the same type and returns an integer that indicates 
-        /// whether the current instance precedes, follows, or occurs in the same position in the sort order as the 
+        /// Compares the current instance with another object of the same type and returns an integer that indicates
+        /// whether the current instance precedes, follows, or occurs in the same position in the sort order as the
         /// other object.
         /// </summary>
         /// <param name="other">An object to compare with this instance.</param>
         /// <returns>
-        /// A value that indicates the relative order of the objects being compared. 
-        /// The return value has these meanings: Value Meaning Less than zero 
-        ///  This instance precedes <paramref name="other" /> in the sort order. 
+        /// A value that indicates the relative order of the objects being compared.
+        /// The return value has these meanings: Value Meaning Less than zero
+        ///  This instance precedes <paramref name="other" /> in the sort order.
         ///  Zero This instance occurs in the same position in the sort order as <paramref name="other" />. i
         ///  Greater than zero This instance follows <paramref name="other" /> in the sort order.
         /// </returns>
@@ -344,8 +345,8 @@ namespace UnityEditor.PackageManager.UI
         /// </summary>
         /// <param name="other">The semantic version.</param>
         /// <returns>
-        /// A value that indicates the relative order of the objects being compared. 
-        /// The return value has these meanings: Value Meaning Less than zero 
+        /// A value that indicates the relative order of the objects being compared.
+        /// The return value has these meanings: Value Meaning Less than zero
         ///  This instance precedes <paramref name="other" /> in the version precedence.
         ///  Zero This instance has the same precedence as <paramref name="other" />. i
         ///  Greater than zero This instance has creater precedence as <paramref name="other" />.
@@ -440,7 +441,7 @@ namespace UnityEditor.PackageManager.UI
         /// Returns a hash code for this instance.
         /// </summary>
         /// <returns>
-        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.
         /// </returns>
         public override int GetHashCode()
         {
@@ -462,6 +463,7 @@ namespace UnityEditor.PackageManager.UI
             info.AddValue("SemVersion", ToString());
         }
 
+
         /// <summary>
         /// Implicit conversion from string to SemVersion.
         /// </summary>
@@ -473,67 +475,67 @@ namespace UnityEditor.PackageManager.UI
         }
 
         /// <summary>
-        /// The override of the equals operator. 
+        /// The override of the equals operator.
         /// </summary>
         /// <param name="left">The left value.</param>
         /// <param name="right">The right value.</param>
         /// <returns>If left is equal to right <c>true</c>, else <c>false</c>.</returns>
-        public static bool operator ==(SemVersion left, SemVersion right)
+        public static bool operator==(SemVersion left, SemVersion right)
         {
             return SemVersion.Equals(left, right);
         }
 
         /// <summary>
-        /// The override of the un-equal operator. 
+        /// The override of the un-equal operator.
         /// </summary>
         /// <param name="left">The left value.</param>
         /// <param name="right">The right value.</param>
         /// <returns>If left is not equal to right <c>true</c>, else <c>false</c>.</returns>
-        public static bool operator !=(SemVersion left, SemVersion right)
+        public static bool operator!=(SemVersion left, SemVersion right)
         {
             return !SemVersion.Equals(left, right);
         }
 
         /// <summary>
-        /// The override of the greater operator. 
+        /// The override of the greater operator.
         /// </summary>
         /// <param name="left">The left value.</param>
         /// <param name="right">The right value.</param>
         /// <returns>If left is greater than right <c>true</c>, else <c>false</c>.</returns>
-        public static bool operator >(SemVersion left, SemVersion right)
+        public static bool operator>(SemVersion left, SemVersion right)
         {
             return SemVersion.Compare(left, right) > 0;
         }
 
         /// <summary>
-        /// The override of the greater than or equal operator. 
+        /// The override of the greater than or equal operator.
         /// </summary>
         /// <param name="left">The left value.</param>
         /// <param name="right">The right value.</param>
         /// <returns>If left is greater than or equal to right <c>true</c>, else <c>false</c>.</returns>
-        public static bool operator >=(SemVersion left, SemVersion right)
+        public static bool operator>=(SemVersion left, SemVersion right)
         {
             return left == right || left > right;
         }
 
         /// <summary>
-        /// The override of the less operator. 
+        /// The override of the less operator.
         /// </summary>
         /// <param name="left">The left value.</param>
         /// <param name="right">The right value.</param>
         /// <returns>If left is less than right <c>true</c>, else <c>false</c>.</returns>
-        public static bool operator <(SemVersion left, SemVersion right)
+        public static bool operator<(SemVersion left, SemVersion right)
         {
             return SemVersion.Compare(left, right) < 0;
         }
 
         /// <summary>
-        /// The override of the less than or equal operator. 
+        /// The override of the less than or equal operator.
         /// </summary>
         /// <param name="left">The left value.</param>
         /// <param name="right">The right value.</param>
         /// <returns>If left is less than or equal to right <c>true</c>, else <c>false</c>.</returns>
-        public static bool operator <=(SemVersion left, SemVersion right)
+        public static bool operator<=(SemVersion left, SemVersion right)
         {
             return left == right || left < right;
         }

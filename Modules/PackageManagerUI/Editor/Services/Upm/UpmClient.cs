@@ -138,32 +138,23 @@ namespace UnityEditor.PackageManager.UI
 
             public void AddByPath(string path)
             {
-                var packageId = GetPackageIdFromPath(path);
-                if (string.IsNullOrEmpty(packageId))
-                {
-                    Debug.LogError($"Error loading package id from path: \"{path}\".");
+                if (isAddRemoveOrEmbedInProgress)
                     return;
-                }
-                AddById(packageId);
-            }
 
-            private string GetPackageIdFromPath(string path)
-            {
-                var jsonPath = Directory.Exists(path) ? Path.Combine(path, "package.json") : path;
-                if (!File.Exists(jsonPath))
-                    return null;
+                path = path.Replace('\\', '/');
+                var projectPath = Path.GetDirectoryName(Application.dataPath).Replace('\\', '/') + '/';
+                if (path.StartsWith(projectPath))
+                {
+                    var packageFolderPrefix = "Packages/";
+                    var relativePathToProjectRoot = path.Substring(projectPath.Length);
+                    if (relativePathToProjectRoot.StartsWith(packageFolderPrefix, StringComparison.InvariantCultureIgnoreCase))
+                        path = relativePathToProjectRoot.Substring(packageFolderPrefix.Length);
+                    else
+                        path = $"../{relativePathToProjectRoot}";
+                }
 
-                try
-                {
-                    var packageJson = Json.Deserialize(File.ReadAllText(jsonPath)) as Dictionary<string, object>;
-                    var name = packageJson["name"] as string;
-                    var directoryPath = Path.GetDirectoryName(jsonPath).Replace("\\", "/");
-                    return $"{name}@file:{directoryPath}";
-                }
-                catch (Exception)
-                {
-                    return null;
-                }
+                m_AddOperation.AddByUrlOrPath($"file:{path}");
+                SetupAddOperation();
             }
 
             public void AddByUrl(string url)
@@ -174,6 +165,7 @@ namespace UnityEditor.PackageManager.UI
                 // convert SCP-like syntax to SSH URL as currently UPM doesn't support it
                 if (url.ToLower().StartsWith("git@"))
                     url = "ssh://" + url.Replace(':', '/');
+
                 m_AddOperation.AddByUrlOrPath(url);
                 SetupAddOperation();
             }

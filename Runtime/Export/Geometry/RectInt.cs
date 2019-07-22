@@ -87,6 +87,14 @@ namespace UnityEngine
                 && position.y < yMax;
         }
 
+        public bool Overlaps(RectInt other)
+        {
+            return other.xMin < xMax
+                && other.xMax > xMin
+                && other.yMin < yMax
+                && other.yMax > yMin;
+        }
+
         public override string ToString()
         {
             return UnityString.Format("(x:{0}, y:{1}, width:{2}, height:{3})", x, y, width, height);

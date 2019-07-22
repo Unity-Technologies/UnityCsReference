@@ -80,7 +80,6 @@ namespace UnityEditor
         GUIContent iconSelectContent = EditorGUIUtility.TrTextContent("", "Select Icon");
 
         GUIContent icon3dGizmoContent = EditorGUIUtility.TrTextContent("3D Icons");
-        GUIContent showGridContent = EditorGUIUtility.TrTextContent("Show Grid");
         GUIContent showOutlineContent = EditorGUIUtility.TrTextContent("Selection Outline");
         GUIContent showWireframeContent = EditorGUIUtility.TrTextContent("Selection Wire");
         private bool m_IsGameView;
@@ -144,7 +143,7 @@ namespace UnityEditor
 
         float GetTopSectionHeight()
         {
-            const int numberOfControls = 4;
+            const int numberOfControls = 3;
             return EditorGUI.kSingleLineHeight * numberOfControls + EditorGUI.kControlVerticalSpacing * numberOfControls;
         }
 
@@ -365,9 +364,6 @@ namespace UnityEditor
             using (new EditorGUI.DisabledScope(m_IsGameView))
             {
                 toggleRect = new Rect(margin, curY, labelWidth, rowHeight);
-                AnnotationUtility.showGrid = GUI.Toggle(toggleRect, AnnotationUtility.showGrid, showGridContent);
-
-                toggleRect.y += rowHeight;
                 AnnotationUtility.showSelectionOutline = GUI.Toggle(toggleRect, AnnotationUtility.showSelectionOutline, showOutlineContent);
 
                 toggleRect.y += rowHeight;
@@ -713,11 +709,6 @@ namespace UnityEditor
         public string m_ScriptClass;
         public string m_DisplayText;
         public int m_Flags;
-
-        bool IsBitSet(byte b, int pos)
-        {
-            return (b & (1 << pos)) != 0;
-        }
 
         public bool HasGizmo()
         {

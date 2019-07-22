@@ -5,9 +5,9 @@
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
-using UnityEngine.Experimental.VFX;
+using UnityEngine.VFX;
 
-namespace UnityEditor.Experimental.VFX
+namespace UnityEditor.VFX
 {
     [UsedByNativeCode]
     [NativeHeader("Modules/VFXEditor/Public/VisualEffectSubgraph.h")]

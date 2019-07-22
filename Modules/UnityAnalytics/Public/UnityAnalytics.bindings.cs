@@ -10,6 +10,7 @@ namespace UnityEngine.Analytics
 
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/UnityAnalytics/Public/UnityAnalytics.h")]
+    [NativeHeader("Modules/UnityConnect/UnityConnectSettings.h")]
     [NativeHeader("Modules/UnityAnalytics/Public/Events/UserCustomEvent.h")]
     public static partial class Analytics
     {
@@ -67,6 +68,20 @@ namespace UnityEngine.Analytics
             get;
         }
 
+        [StaticAccessor("GetUnityConnectSettings()", StaticAccessorType.Dot)]
+        private extern static string eventUrlInternal
+        {
+            [NativeMethod("GetEventUrl")]
+            get;
+        }
+
+        [StaticAccessor("GetUnityConnectSettings()", StaticAccessorType.Dot)]
+        private extern static string configUrlInternal
+        {
+            [NativeMethod("GetConfigUrl")]
+            get;
+        }
+
         [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
         private extern static bool limitUserTrackingInternal
         {
@@ -97,6 +112,18 @@ namespace UnityEngine.Analytics
 
         [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
         private static extern AnalyticsResult SendCustomEvent(CustomEventData eventData);
+
+        [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
+        internal static extern AnalyticsResult IsCustomEventWithLimitEnabled(string customEventName);
+
+        [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
+        internal static extern AnalyticsResult EnableCustomEventWithLimit(string customEventName, bool enable);
+
+        [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
+        internal static extern AnalyticsResult IsEventWithLimitEnabled(string eventName, int ver, string prefix);
+
+        [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
+        internal static extern AnalyticsResult EnableEventWithLimit(string eventName, bool enable, int ver, string prefix);
 
         [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
         internal static extern AnalyticsResult RegisterEventWithLimit(string eventName, int maxEventPerHour, int maxItems, string vendorKey, int ver, string prefix, string assemblyInfo, bool notifyServer);

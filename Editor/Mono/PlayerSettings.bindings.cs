@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEditor.Build;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEditor.Modules;
 
 namespace UnityEditor
 {
@@ -514,6 +515,10 @@ namespace UnityEditor
         [NativeProperty(TargetType = TargetType.Field)]
         public static extern bool useHDRDisplay { get; set; }
 
+        [NativeProperty(TargetType = TargetType.Field)]
+        public static extern D3DHDRDisplayBitDepth D3DHDRBitDepth { get; set; }
+
+
         // What happens with the fullscreen Window when it runs in the background
 
         public static extern bool visibleInBackground { get; set; }
@@ -765,8 +770,21 @@ namespace UnityEditor
         [FreeFunction("GetDefaultScriptingBackendForGroup")]
         public static extern ScriptingImplementation GetDefaultScriptingBackend(BuildTargetGroup targetGroup);
 
+        public static void SetIl2CppCompilerConfiguration(BuildTargetGroup targetGroup, Il2CppCompilerConfiguration configuration)
+        {
+            var scriptingImpl = ModuleManager.GetScriptingImplementations(targetGroup);
+            if (scriptingImpl != null && !scriptingImpl.AllowIL2CPPCompilerConfigurationSelection())
+            {
+                Debug.LogWarning($"The C++ compiler configuration option does not apply to the {targetGroup} platform as it is configured. Set the configuration in the generated IDE project instead.");
+                return;
+            }
+
+            SetIl2CppCompilerConfigurationInternal(targetGroup, configuration);
+        }
+
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
-        public static extern void SetIl2CppCompilerConfiguration(BuildTargetGroup targetGroup, Il2CppCompilerConfiguration configuration);
+        [NativeMethod("SetIl2CppCompilerConfiguration")]
+        private static extern void SetIl2CppCompilerConfigurationInternal(BuildTargetGroup targetGroup, Il2CppCompilerConfiguration configuration);
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         public static extern Il2CppCompilerConfiguration GetIl2CppCompilerConfiguration(BuildTargetGroup targetGroup);

@@ -12,7 +12,6 @@ using UnityEditor.Experimental;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Assertions;
-using UnityEngine.Assertions.Must;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.ShortcutManagement
@@ -234,13 +233,6 @@ namespace UnityEditor.ShortcutManagement
 
             if (index == m_ViewController.categorySeparatorIndex)
                 elementTemplate.AddToClassList("first-row-of-section");
-        }
-
-        static VisualElement CreateVisualElement(string name)
-        {
-            var ve = new VisualElement();
-            ve.name = name;
-            return ve;
         }
 
         void CategorySelectionChanged(List<object> selection)

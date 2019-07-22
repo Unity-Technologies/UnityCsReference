@@ -10,6 +10,7 @@ using System.Linq;
 using UnityEditor.Scripting.Compilers;
 using sc = UnityEditor.Scripting.ScriptCompilation;
 using UnityEditorInternal;
+using UnityEngine;
 
 namespace UnityEditor.Compilation
 {
@@ -37,7 +38,8 @@ namespace UnityEditor.Compilation
     public enum AssembliesType
     {
         Editor = 0,
-        Player = 1
+        Player = 1,
+        PlayerWithoutTestAssemblies = 2,
     }
 
     public enum AssemblyDefinitionReferenceType
@@ -101,9 +103,16 @@ namespace UnityEditor.Compilation
     {
         public string[] Defines;
         public string[] FullPathReferences;
+        public ResponseFileReference[] References;
         public string[] Errors;
         public string[] OtherArguments;
         public bool Unsafe;
+    }
+
+    public struct ResponseFileReference
+    {
+        public string FullPathReference;
+        public string Alias;
     }
 
     public struct AssemblyDefinitionPlatform
@@ -206,14 +215,21 @@ namespace UnityEditor.Compilation
 
         public static Assembly[] GetAssemblies(AssembliesType assembliesType)
         {
+            return GetAssemblies(EditorCompilationInterface.Instance, assembliesType);
+        }
+
+        internal static Assembly[] GetAssemblies(EditorCompilation editorCompilation, AssembliesType assembliesType)
+        {
             var options = EditorCompilationInterface.GetAdditionalEditorScriptCompilationOptions();
 
             switch (assembliesType)
             {
                 case AssembliesType.Editor:
-                    return GetEditorAssemblies(EditorCompilationInterface.Instance, options, null);
+                    return GetEditorAssemblies(editorCompilation, options | EditorScriptCompilationOptions.BuildingIncludingTestAssemblies, null);
                 case AssembliesType.Player:
-                    return GetPlayerAssemblies(EditorCompilationInterface.Instance, options, null);
+                    return GetPlayerAssemblies(editorCompilation, options | EditorScriptCompilationOptions.BuildingIncludingTestAssemblies, null);
+                case AssembliesType.PlayerWithoutTestAssemblies:
+                    return GetPlayerAssemblies(editorCompilation, options, null);
                 default:
                     throw new ArgumentOutOfRangeException("assembliesType");
             }
@@ -268,6 +284,17 @@ namespace UnityEditor.Compilation
             return assemblyDefinitionPlatforms;
         }
 
+        public static string[] GetDefinesFromAssemblyName(string assemblyName)
+        {
+            return GetDefinesFromAssemblyName(EditorCompilationInterface.Instance, assemblyName);
+        }
+
+        internal static string[] GetDefinesFromAssemblyName(EditorCompilation editorCompilation, string assemblyName)
+        {
+            var assembly = GetAssemblies().FirstOrDefault(x => x.name == assemblyName);
+            return assembly?.defines;
+        }
+
         public static string[] GetPrecompiledAssemblyNames()
         {
             return GetPrecompiledAssemblyNames(EditorCompilationInterface.Instance);
@@ -280,6 +307,11 @@ namespace UnityEditor.Compilation
                 .Select(x => AssetPath.GetFileName(x.Path))
                 .Distinct()
                 .ToArray();
+        }
+
+        public static bool IsDefineConstraintsCompatible(string[] defines, string[] defineConstraints)
+        {
+            return DefineConstraintsHelper.IsDefineConstraintsCompatible(defines, defineConstraints);
         }
 
         [Flags]
@@ -342,16 +374,14 @@ namespace UnityEditor.Compilation
             return null;
         }
 
-        internal static Assembly[] GetEditorAssemblies(EditorCompilation editorCompilation, EditorScriptCompilationOptions additionalOptions, string[] defines)
+        private static Assembly[] GetEditorAssemblies(EditorCompilation editorCompilation, EditorScriptCompilationOptions additionalOptions, string[] defines)
         {
-            var scriptAssemblies = editorCompilation.GetAllEditorScriptAssemblies(additionalOptions, defines);
+            var scriptAssemblies = editorCompilation.GetAllScriptAssemblies(EditorScriptCompilationOptions.BuildingForEditor | additionalOptions, defines);
             return ToAssemblies(scriptAssemblies);
         }
 
         internal static Assembly[] GetPlayerAssemblies(EditorCompilation editorCompilation, EditorScriptCompilationOptions options, string[] defines)
         {
-            options |= EditorScriptCompilationOptions.BuildingIncludingTestAssemblies;
-
             var group = EditorUserBuildSettings.activeBuildTargetGroup;
             var target = EditorUserBuildSettings.activeBuildTarget;
 

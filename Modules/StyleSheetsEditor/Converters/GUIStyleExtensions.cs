@@ -65,10 +65,7 @@ namespace UnityEditor.StyleSheets
             style.font = styleBlock.GetResource<Font>("font".GetHashCode(), style.font);
 
             if (style.fontSize == 0 || styleBlock.HasValue(StyleCatalogKeyword.fontSize, StyleValue.Type.Number))
-            {
-                var defaultFontSize = rootBlock.GetInt("--unity-font-size", style.fontSize);
-                style.fontSize = styleBlock.GetInt(StyleCatalogKeyword.fontSize, useExtensionDefaultValues ? defaultFontSize : style.fontSize);
-            }
+                style.fontSize = styleBlock.GetInt(StyleCatalogKeyword.fontSize, style.fontSize);
 
             var fontStyleStr = styleBlock.GetText(ConverterUtils.k_FontStyle.GetHashCode());
             var fontWeightStr = styleBlock.GetText(ConverterUtils.k_FontWeight.GetHashCode());

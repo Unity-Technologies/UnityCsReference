@@ -394,11 +394,6 @@ namespace UnityEditorInternal
             m_RectangleTool.OnGUI();
         }
 
-        private void DrawGrid(Rect position)
-        {
-            TimeRuler(position, state.frameRate, false, true, 0.2f);
-        }
-
         public void DrawMasterDopelineBackground(Rect position)
         {
             if (Event.current.type != EventType.Repaint)

@@ -67,6 +67,7 @@ namespace UnityEditorInternal
             }
         }
 
+        [DebuggerDisplay("{module}:{name}")]
         [System.Serializable]
         public class NativeTypeData
         {
@@ -74,6 +75,11 @@ namespace UnityEditorInternal
             public string name;
             [UnityEngine.SerializeField]
             public string module;
+
+            [UnityEngine.SerializeField]
+            public string baseName;
+            [UnityEngine.SerializeField]
+            public string baseModule;
         }
     }
 

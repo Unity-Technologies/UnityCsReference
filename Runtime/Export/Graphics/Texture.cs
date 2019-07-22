@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 using uei = UnityEngine.Internal;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Scripting;
@@ -431,22 +430,6 @@ namespace UnityEngine
             this.graphicsFormat = format;
 
             SetSRGBReadWrite(GraphicsFormatUtility.IsSRGBFormat(format));
-        }
-
-        bool IsCubemapFaceEnabled(CubemapFace face)
-        {
-            return (cubemapFaceMask & (1 << (int)face)) != 0;
-        }
-
-        void EnableCubemapFace(CubemapFace face, bool value)
-        {
-            uint oldValue = cubemapFaceMask;
-            uint bit = 1u << (int)face;
-            if (value)
-                oldValue |= bit;
-            else
-                oldValue &= ~bit;
-            cubemapFaceMask = oldValue;
         }
     }
 

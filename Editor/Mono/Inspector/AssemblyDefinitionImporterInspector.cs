@@ -124,6 +124,7 @@ namespace UnityEditor
         SerializedProperty m_CompatibleWithAnyPlatform;
         SerializedProperty m_PlatformCompatibility;
 
+        string[] m_Defines;
         Exception initializeException;
 
         public override bool showImportedObject { get { return false; } }
@@ -131,9 +132,11 @@ namespace UnityEditor
         public override void OnEnable()
         {
             base.OnEnable();
+            m_AssemblyName = extraDataSerializedObject.FindProperty("assemblyName");
+            m_Defines = CompilationPipeline.GetDefinesFromAssemblyName(m_AssemblyName.stringValue);
+
             InitializeReorderableLists();
             m_SemVersionRanges = new SemVersionRangesFactory();
-            m_AssemblyName = extraDataSerializedObject.FindProperty("assemblyName");
             m_AllowUnsafeCode = extraDataSerializedObject.FindProperty("allowUnsafeCode");
             m_UseGUIDs = extraDataSerializedObject.FindProperty("useGUIDs");
             m_AutoReferenced = extraDataSerializedObject.FindProperty("autoReferenced");
@@ -187,24 +190,24 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_UseGUIDs, Styles.useGUIDs);
                 EditorGUILayout.EndVertical();
 
+                m_ReferencesList.DoLayoutList();
+
                 if (extraDataTargets.Any(data => ((AssemblyDefinitionState)data).references != null && ((AssemblyDefinitionState)data).references.Any(x => x.asset == null)))
                 {
                     EditorGUILayout.HelpBox("The grayed out assembly references are missing and will not be referenced during compilation.", MessageType.Info);
                 }
 
-                m_ReferencesList.DoLayoutList();
-
                 if (m_OverrideReferences.boolValue && !m_OverrideReferences.hasMultipleDifferentValues)
                 {
                     GUILayout.Label(Styles.precompiledReferences, EditorStyles.boldLabel);
+
+                    UpdatePrecompiledReferenceListEntry();
+                    m_PrecompiledReferencesList.DoLayoutList();
 
                     if (extraDataTargets.Any(data => ((AssemblyDefinitionState)data).precompiledReferences.Any(x => string.IsNullOrEmpty(x.path) && !string.IsNullOrEmpty(x.name))))
                     {
                         EditorGUILayout.HelpBox("The grayed out assembly references are missing and will not be referenced during compilation.", MessageType.Info);
                     }
-
-                    UpdatePrecompiledReferenceListEntry();
-                    m_PrecompiledReferencesList.DoLayoutList();
                 }
 
 
@@ -370,14 +373,24 @@ namespace UnityEditor
 
             rect.height -= EditorGUIUtility.standardVerticalSpacing;
 
+            var textFieldRect = new Rect(rect.x, rect.y + 1, rect.width - ReorderableList.Defaults.dragHandleWidth, rect.height);
+
+            var validRect = new Rect(rect.width + ReorderableList.Defaults.dragHandleWidth + 1, rect.y + 1, ReorderableList.Defaults.dragHandleWidth, rect.height);
+
             string noValue = L10n.Tr("(Missing)");
 
             var label = string.IsNullOrEmpty(defineConstraint.stringValue) ? noValue : defineConstraint.stringValue;
-
             bool mixed = defineConstraint.hasMultipleDifferentValues;
             EditorGUI.showMixedValue = mixed;
-            var textFieldValue = EditorGUI.TextField(rect, mixed ? L10n.Tr("(Multiple Values)") : label);
+            var textFieldValue = EditorGUI.TextField(textFieldRect, mixed ? L10n.Tr("(Multiple Values)") : label);
             EditorGUI.showMixedValue = false;
+
+            if (m_Defines != null)
+            {
+                EditorGUI.BeginDisabled(true);
+                EditorGUI.Toggle(validRect, DefineConstraintsHelper.IsDefineConstraintValid(m_Defines, defineConstraint.stringValue));
+                EditorGUI.EndDisabled();
+            }
 
             if (!string.IsNullOrEmpty(textFieldValue) && textFieldValue != noValue)
             {
@@ -418,7 +431,7 @@ namespace UnityEditor
             nameProp.stringValue = assetPathsMetaData[popupIndex];
 
             elementRect.y += EditorGUIUtility.singleLineHeight;
-            defineProp.stringValue = EditorGUI.TextField(elementRect,  GUIContent.Temp("Define", "Specify the name you want this define to have. This define is only set if the expression below returns true."), defineProp.stringValue);
+            defineProp.stringValue = EditorGUI.TextField(elementRect, GUIContent.Temp("Define", "Specify the name you want this define to have. This define is only set if the expression below returns true."), defineProp.stringValue);
 
             elementRect.y += EditorGUIUtility.singleLineHeight;
             expressionProp.stringValue = EditorGUI.TextField(elementRect, GUIContent.Temp("Expression", "Specify the semantic version of your chosen module or package. You must use mathematical interval notation."), expressionProp.stringValue);
@@ -584,9 +597,9 @@ namespace UnityEditor
 
             if (data.defineConstraints != null)
             {
-                foreach (var defineConstaint in data.defineConstraints)
+                foreach (var defineConstraint in data.defineConstraints)
                 {
-                    var symbolName = defineConstaint.StartsWith(DefineConstraintsHelper.Not) ? defineConstaint.Substring(1) : defineConstaint;
+                    var symbolName = defineConstraint.StartsWith(DefineConstraintsHelper.Not) ? defineConstraint.Substring(1) : defineConstraint;
                     if (!SymbolNameRestrictions.IsValid(symbolName))
                     {
                         var exception = new AssemblyDefinitionException($"Invalid define constraint {symbolName}", path);
@@ -596,7 +609,7 @@ namespace UnityEditor
                     {
                         state.defineConstraints.Add(new DefineConstraint
                         {
-                            name = defineConstaint,
+                            name = defineConstraint,
                         });
                     }
                 }

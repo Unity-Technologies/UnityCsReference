@@ -81,6 +81,11 @@ namespace UnityEditorInternal
             graphRange = new Vector2(-Mathf.Infinity, Mathf.Infinity);
         }
 
+        public virtual void Close()
+        {
+            closed(this);
+        }
+
         private int MoveSelectedFrame(int selectedFrame, ChartViewData cdata, int direction)
         {
             Vector2 domain = cdata.GetDataDomain();
@@ -181,9 +186,6 @@ namespace UnityEditorInternal
             closeButtonRect.xMin = closeButtonRect.xMax - kCloseButtonSize - kCloseButtonXOffset;
             closeButtonRect.yMin += Styles.legendHeaderLabel.padding.top;
             closeButtonRect.yMax = closeButtonRect.yMin + kCloseButtonSize;
-
-            if (GUI.Button(closeButtonRect, GUIContent.none, Styles.closeButton) && closed != null)
-                closed(this);
         }
 
         public int DoGUI(ChartType type, int selectedFrame, ChartViewData cdata, bool active)
@@ -207,7 +209,7 @@ namespace UnityEditorInternal
             EventType evtType = evt.GetTypeForControl(m_chartControlID);
 
             if (evtType == EventType.MouseDown && chartRect.Contains(evt.mousePosition) && selected != null)
-                selected(this);
+                ChartSelected();
 
             // if we are not dragging labels, handle graph frame selection
             if (m_DragItemIndex == -1)
@@ -242,6 +244,11 @@ namespace UnityEditorInternal
             }
 
             return selectedFrame;
+        }
+
+        public void ChartSelected()
+        {
+            selected(this);
         }
 
         private void DrawSelectedFrame(int selectedFrame, ChartViewData cdata, Rect r)
@@ -301,8 +308,7 @@ namespace UnityEditorInternal
         {
             if (Event.current.type == EventType.Repaint && cdata.dataAvailable != null)
             {
-                r.height += 2;
-                r.y -= 1;
+                r.height += 1;
 
                 int lastFrameWithData = 0;
                 int frameDataLength = cdata.dataAvailable.Length;
@@ -325,20 +331,18 @@ namespace UnityEditorInternal
             }
         }
 
-        private void DrawOverlayBox(Rect r, int startFrame, int endFrame, int frameDataLength, bool chartActive, GUIStyle style, GUIContent content = null)
+        private void DrawOverlayBox(Rect r, int startFrame, int endFrame, int frameDataLength, bool chartActive, GUIStyle style)
         {
             float gracePixels = -1;
             float domainSize = frameDataLength - 1;
-            float startYOffest = Mathf.RoundToInt(r.width * startFrame / domainSize) + gracePixels;
-            float endYOffest = Mathf.RoundToInt(r.width * endFrame / domainSize) - gracePixels;
+            float startXOffest = Mathf.RoundToInt(r.width * startFrame / domainSize) + gracePixels;
+            float endXOffest = Mathf.RoundToInt(r.width * endFrame / domainSize) - gracePixels;
             Rect noDataRect = r;
 
-            noDataRect.x += Mathf.Max(startYOffest, 0);
-            noDataRect.width = Mathf.Min(endYOffest - startYOffest, r.width - (noDataRect.x - r.x));
+            noDataRect.x += Mathf.Max(startXOffest, 0);
+            noDataRect.width = Mathf.Min(endXOffest - startXOffest, r.width - (noDataRect.x - r.x));
 
             style.Draw(noDataRect, false, false, chartActive, false);
-            if (content != null)
-                GUI.Box(noDataRect, content);
         }
 
         private void DrawChartStacked(int selectedFrame, ChartViewData cdata, Rect r, bool chartActive)

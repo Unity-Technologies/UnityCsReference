@@ -125,6 +125,16 @@ namespace UnityEngine.Networking.PlayerConnection
             GetConnectionNativeApi().SendMessage(messageId, data, 0);
         }
 
+        public bool TrySend(Guid messageId, byte[] data)
+        {
+            if (messageId == Guid.Empty)
+            {
+                throw new ArgumentException("Cant be Guid.Empty", "messageId");
+            }
+
+            return GetConnectionNativeApi().TrySendMessage(messageId, data, 0);
+        }
+
         public bool BlockUntilRecvMsg(Guid messageId, int timeout)
         {
             bool msgReceived = false;

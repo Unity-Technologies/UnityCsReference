@@ -70,7 +70,8 @@ namespace UnityEditor.Experimental.GraphView
                 return;
             }
 
-            if (MouseCaptureController.IsMouseCaptured())
+            IPanel panel = (e.target as VisualElement)?.panel;
+            if (panel.GetCapturingElement(PointerId.mousePointerId) != null)
                 return;
 
             var ce = parent as GraphElement;

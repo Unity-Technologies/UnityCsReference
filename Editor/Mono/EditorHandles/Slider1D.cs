@@ -15,9 +15,9 @@ namespace UnityEditorInternal
 
         // DrawCapFunction was marked plannned obsolete by @juha on 2016-03-16, marked obsolete warning by @adamm on 2016-12-21
         [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
-        #pragma warning disable 618
+#pragma warning disable 618
         internal static Vector3 Do(int id, Vector3 position, Vector3 direction, float size, Handles.DrawCapFunction drawFunc, float snap)
-        #pragma warning restore 618
+#pragma warning restore 618
         {
             return Do(id, position, direction, direction, size, drawFunc, snap);
         }
@@ -29,9 +29,9 @@ namespace UnityEditorInternal
 
         // DrawCapFunction was marked plannned obsolete by @juha on 2016-03-16, marked obsolete warning by @adamm on 2016-12-21
         [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
-        #pragma warning disable 618
+#pragma warning disable 618
         internal static Vector3 Do(int id, Vector3 position, Vector3 handleDirection, Vector3 slideDirection, float size, Handles.DrawCapFunction drawFunc, float snap)
-        #pragma warning disable 618
+#pragma warning disable 618
         {
             Event evt = Event.current;
             switch (evt.GetTypeForControl(id))
@@ -48,6 +48,7 @@ namespace UnityEditorInternal
                         HandleUtility.AddControl(id, HandleUtility.DistanceToCircle(position, size * .2f));
                     }
                     break;
+
                 case EventType.MouseDown:
                     // am I closest to the thingy?
                     if ((HandleUtility.nearestControl == id && evt.button == 0) && GUIUtility.hotControl == 0 && !evt.alt)
@@ -60,6 +61,7 @@ namespace UnityEditorInternal
                     }
 
                     break;
+
                 case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
@@ -75,6 +77,7 @@ namespace UnityEditorInternal
                         evt.Use();
                     }
                     break;
+
                 case EventType.MouseUp:
                     if (GUIUtility.hotControl == id && (evt.button == 0 || evt.button == 2))
                     {
@@ -83,10 +86,12 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
                     break;
+
                 case EventType.MouseMove:
                     if (id == HandleUtility.nearestControl)
                         HandleUtility.Repaint();
                     break;
+
                 case EventType.Repaint:
                     Color temp = Color.white;
 
@@ -120,6 +125,7 @@ namespace UnityEditorInternal
                     else
                         HandleUtility.AddControl(id, HandleUtility.DistanceToCircle(position + offset, size * .2f));
                     break;
+
                 case EventType.MouseDown:
                     // am I closest to the thingy?
                     if (HandleUtility.nearestControl == id && evt.button == 0 && GUIUtility.hotControl == 0 && !evt.alt)
@@ -132,6 +138,7 @@ namespace UnityEditorInternal
                     }
 
                     break;
+
                 case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
@@ -142,11 +149,17 @@ namespace UnityEditorInternal
 
                         Vector3 worldDirection = Handles.matrix.MultiplyVector(slideDirection);
                         Vector3 worldPosition = Handles.matrix.MultiplyPoint(s_StartPosition) + worldDirection * dist;
+
+                        if (EditorSnapSettings.active && EditorSnapSettings.preferGrid && Snapping.IsCardinalDirection(worldDirection))
+                            worldPosition = Handles.SnapValue(worldPosition, new SnapAxisFilter(worldDirection) * snap);
+
                         position = Handles.inverseMatrix.MultiplyPoint(worldPosition);
+
                         GUI.changed = true;
                         evt.Use();
                     }
                     break;
+
                 case EventType.MouseUp:
                     if (GUIUtility.hotControl == id && (evt.button == 0 || evt.button == 2))
                     {
@@ -155,10 +168,12 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
                     break;
+
                 case EventType.MouseMove:
                     if (id == HandleUtility.nearestControl)
                         HandleUtility.Repaint();
                     break;
+
                 case EventType.Repaint:
                     Color temp = Color.white;
 

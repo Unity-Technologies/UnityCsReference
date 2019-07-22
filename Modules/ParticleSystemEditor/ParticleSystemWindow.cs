@@ -171,7 +171,7 @@ namespace UnityEditor
                 Clear();
                 Repaint();
                 SceneView.RepaintAll();
-                GameView.RepaintAll();
+                PreviewEditorWindow.RepaintAll();
             }
         }
 
