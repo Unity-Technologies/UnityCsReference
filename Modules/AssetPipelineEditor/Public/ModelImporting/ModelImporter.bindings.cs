@@ -88,6 +88,8 @@ namespace UnityEditor
 
         bool m_MaskNeedsUpdating;
 
+        long internalID;
+
         public string takeName { get { return m_TakeName; } set { m_TakeName = value; } }
         public string name { get { return m_Name; } set { m_Name = value; } }
         public float firstFrame { get { return m_FirstFrame; } set { m_FirstFrame = value; } }
