@@ -24,6 +24,7 @@ using Object = UnityEngine.Object;
 using Overflow = UnityEngine.UIElements.Overflow;
 
 using AssetImporterEditor = UnityEditor.Experimental.AssetImporters.AssetImporterEditor;
+using UnityEditor.SceneManagement;
 
 namespace UnityEditor
 {
@@ -449,7 +450,7 @@ namespace UnityEditor
                 return;
 
             m_ComponentsInPrefabSource = sourceGo.GetComponents<Component>();
-            var removedComponentsList = PrefabUtility.GetRemovedComponents(PrefabUtility.GetOutermostPrefabInstanceRoot(go));
+            var removedComponentsList = PrefabOverridesUtility.GetRemovedComponentsForSingleGameObject(go);
             for (int i = 0; i < removedComponentsList.Count; i++)
             {
                 m_RemovedComponents.Add(removedComponentsList[i].assetComponent);

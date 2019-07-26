@@ -14,7 +14,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         const string toolName = "Raise or Lower Terrain";
 
         [FormerlyPrefKeyAs("Terrain/Raise Height", "f1")]
-        [Shortcut("Terrain/Raise or Lower Terrain", typeof(TerrainToolShortcutContext))]
+        [Shortcut("Terrain/Raise or Lower Terrain", typeof(TerrainToolShortcutContext), KeyCode.F1)]
         static void SelectShortcut(ShortcutArguments args)
         {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;

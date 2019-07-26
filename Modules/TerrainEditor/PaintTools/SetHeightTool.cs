@@ -22,7 +22,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         bool m_FlattenAll;
 
         [FormerlyPrefKeyAs("Terrain/Set Height", "f2")]
-        [Shortcut("Terrain/Set Height", typeof(TerrainToolShortcutContext))]
+        [Shortcut("Terrain/Set Height", typeof(TerrainToolShortcutContext), KeyCode.F2)]
         static void SelectShortcut(ShortcutArguments args)
         {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
