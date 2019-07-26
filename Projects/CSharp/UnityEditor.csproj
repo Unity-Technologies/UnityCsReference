@@ -4584,6 +4584,12 @@
   <Compile Include="..\..\Modules\TerrainEditor\Utilities\TerrainPaintUtilityEditor.cs">
     <Link>Modules\TerrainEditor\Utilities\TerrainPaintUtilityEditor.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\TextCoreEditor\Managed\AssemblyInfo.cs">
+    <Link>Modules\TextCoreEditor\Managed\AssemblyInfo.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TextCoreEditor\Managed\FontEngineEditor.bindings.cs">
+    <Link>Modules\TextCoreEditor\Managed\FontEngineEditor.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\EditorPreviewTilemap.cs">
     <Link>Modules\TilemapEditor\Editor\Managed\EditorPreviewTilemap.cs</Link>
   </Compile>

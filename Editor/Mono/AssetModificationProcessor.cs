@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEditor.VersionControl;
 using UnityEditorInternal;
 using UnityEditorInternal.VersionControl;
+using System.Linq;
 using System.Reflection;
 
 namespace UnityEditor
@@ -176,13 +177,14 @@ namespace UnityEditor
             var editableAssets = new string[assets.Length];
             if (assets.Length != 0 && !Provider.MakeEditable(assets, editableAssets))
             {
-                // TODO: fix this behaviour to make save asset honour version control result
-                // keep previous behaviour which is save all assets even if checkout fails
-                // TODO: this needs to consider and handle saving assets which have not been
-                // added to version control. They have to be added to version control before
-                // calling MakeEditable.
-                //assetsThatShouldBeSaved = editableAssets;
-                return;
+                // only save assets that can be made editable (not locked by someone else, etc.),
+                // unless we are in the behavior mode that just overwrites everything anyway
+                if (!EditorUserSettings.overwriteFailedCheckoutAssets)
+                {
+                    editableAssets = editableAssets.Where(a => a != null).ToArray();
+                    assetsThatShouldBeReverted = assets.Except(editableAssets).ToArray();
+                    assetsThatShouldBeSaved = assetsThatShouldBeSaved.Except(assetsThatShouldBeReverted).ToArray();
+                }
             }
         }
 
