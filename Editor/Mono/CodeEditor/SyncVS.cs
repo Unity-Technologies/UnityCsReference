@@ -5,16 +5,27 @@
 using System;
 using System.Security.Cryptography;
 using System.Text;
+using Unity.CodeEditor;
+using UnityEditorInternal;
 
 namespace UnityEditor
 {
-    class SyncVS
+    partial class SyncVS
     {
         public static void SyncSolution()
         {
+            // Ensure that the mono islands are up-to-date
+            AssetDatabase.Refresh();
+
             // TODO: Rider and possibly other code editors, use reflection to call this method.
             // To avoid conflicts and null reference exception, this is left as a dummy method.
             Unity.CodeEditor.CodeEditor.Editor.Current.SyncAll();
+
+            #pragma warning disable 618
+            if (ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorInstallation) != ScriptEditorUtility.ScriptEditor.Other)
+            {
+                Synchronizer.Sync();
+            }
         }
     }
 

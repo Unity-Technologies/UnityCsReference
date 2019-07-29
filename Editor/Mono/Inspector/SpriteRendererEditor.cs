@@ -87,42 +87,46 @@ namespace UnityEditor
 
             FlipToggles();
 
-            EditorGUILayout.PropertyField(m_DrawMode, Styles.drawModeLabel);
-
-            m_ShowDrawMode.target = ShouldShowDrawMode();
-            if (EditorGUILayout.BeginFadeGroup(m_ShowDrawMode.faded))
+            using (new EditorGUI.DisabledGroupScope(IsTextureless()))
             {
-                string notFullRectWarning = GetSpriteNotFullRectWarning();
-                if (notFullRectWarning != null)
-                    EditorGUILayout.HelpBox(notFullRectWarning, MessageType.Warning);
-
-                EditorGUI.indentLevel++;
-                EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.PrefixLabel(Styles.sizeLabel);
-                EditorGUI.showMixedValue = m_Size.hasMultipleDifferentValues;
-                FloatFieldLabelAbove(Styles.widthLabel, m_Size.FindPropertyRelative("x"));
-                FloatFieldLabelAbove(Styles.heightLabel, m_Size.FindPropertyRelative("y"));
-                EditorGUI.showMixedValue = false;
-                EditorGUILayout.EndHorizontal();
-
-                m_ShowTileMode.target = ShouldShowTileMode();
-                if (EditorGUILayout.BeginFadeGroup(m_ShowTileMode.faded))
+                EditorGUILayout.PropertyField(m_DrawMode, Styles.drawModeLabel);
+                m_ShowDrawMode.target = ShouldShowDrawMode();
+                if (EditorGUILayout.BeginFadeGroup(m_ShowDrawMode.faded))
                 {
-                    EditorGUILayout.PropertyField(m_SpriteTileMode, Styles.fullTileLabel);
+                    string notFullRectWarning = GetSpriteNotFullRectWarning();
+                    if (notFullRectWarning != null)
+                        EditorGUILayout.HelpBox(notFullRectWarning, MessageType.Warning);
 
-                    m_ShowAdaptiveThreshold.target = ShouldShowAdaptiveThreshold();
-                    if (EditorGUILayout.BeginFadeGroup(m_ShowAdaptiveThreshold.faded))
+                    EditorGUI.indentLevel++;
+                    EditorGUILayout.BeginHorizontal();
+                    EditorGUILayout.PrefixLabel(Styles.sizeLabel);
+                    EditorGUI.showMixedValue = m_Size.hasMultipleDifferentValues;
+                    FloatFieldLabelAbove(Styles.widthLabel, m_Size.FindPropertyRelative("x"));
+                    FloatFieldLabelAbove(Styles.heightLabel, m_Size.FindPropertyRelative("y"));
+                    EditorGUI.showMixedValue = false;
+                    EditorGUILayout.EndHorizontal();
+
+
+                    m_ShowTileMode.target = ShouldShowTileMode();
+                    if (EditorGUILayout.BeginFadeGroup(m_ShowTileMode.faded))
                     {
-                        EditorGUI.indentLevel++;
-                        EditorGUILayout.Slider(m_AdaptiveModeThreshold, 0.0f, 1.0f, Styles.fullTileThresholdLabel);
-                        EditorGUI.indentLevel--;
+                        EditorGUILayout.PropertyField(m_SpriteTileMode, Styles.fullTileLabel);
+
+                        m_ShowAdaptiveThreshold.target = ShouldShowAdaptiveThreshold();
+                        if (EditorGUILayout.BeginFadeGroup(m_ShowAdaptiveThreshold.faded))
+                        {
+                            EditorGUI.indentLevel++;
+                            EditorGUILayout.Slider(m_AdaptiveModeThreshold, 0.0f, 1.0f, Styles.fullTileThresholdLabel);
+                            EditorGUI.indentLevel--;
+                        }
+                        EditorGUILayout.EndFadeGroup();
                     }
                     EditorGUILayout.EndFadeGroup();
+
+                    EditorGUI.indentLevel--;
                 }
                 EditorGUILayout.EndFadeGroup();
-                EditorGUI.indentLevel--;
             }
-            EditorGUILayout.EndFadeGroup();
 
             EditorGUILayout.PropertyField(m_MaskInteraction, Styles.maskInteractionLabel);
             EditorGUILayout.PropertyField(m_SpriteSortPoint, Styles.spriteSortPointLabel);
@@ -159,6 +163,17 @@ namespace UnityEditor
                     return targets.Length == 1 ? Styles.notFullRectWarningLabel.text : Styles.notFullRectMultiEditWarningLabel.text;
             }
             return null;
+        }
+
+        bool IsTextureless()
+        {
+            foreach (var t in targets)
+            {
+                var sr = (t as SpriteRenderer);
+                if (sr.sprite != null && sr.sprite.texture == null)
+                    return true;
+            }
+            return false;
         }
 
         bool ShouldShowDrawMode()

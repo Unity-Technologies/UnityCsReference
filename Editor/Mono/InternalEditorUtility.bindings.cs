@@ -736,10 +736,13 @@ namespace UnityEditorInternal
         [FreeFunction("OpenScriptFile")]
         extern public static bool OpenFileAtLineExternal(string filename, int line, int column);
 
-        [Obsolete("Use CodeEditorUtility.Editor.Current.OpenProject()", false)]
         public static bool OpenFileAtLineExternal(string filename, int line)
         {
-            return CodeEditor.Editor.Current.OpenProject(filename, line);
+            if (!CodeEditor.Editor.Current.OpenProject(filename, line))
+            {
+                return OpenFileAtLineExternal(filename, line, 0);
+            }
+            return true;
         }
 
         [FreeFunction("AssetDatabaseDeprecated::CanConnectToCacheServer")]

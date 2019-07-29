@@ -19,7 +19,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         static HashSet<string> editorAssemblyNames = new HashSet<string>(new[]
         {
-            "UnityEditor.UI.dll"
+            "UnityEditor.UI.dll",
+            "Unity.2D.Tilemap.Editor.dll",
         },
             StringComparer.Ordinal);
 

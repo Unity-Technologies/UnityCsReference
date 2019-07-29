@@ -36,7 +36,6 @@ namespace UnityEditor
 
         class ExternalObjectCache
         {
-            public SerializedProperty materialProp = null;
             public Material material = null;
             public int propertyIdx = 0;
         }
@@ -218,8 +217,8 @@ namespace UnityEditor
                 var pair = m_ExternalObjects.GetArrayElementAtIndex(externalObjectIdx);
 
                 var cachedObject = new ExternalObjectCache();
-                cachedObject.materialProp = pair.FindPropertyRelative("second");
-                cachedObject.material = cachedObject.materialProp != null ? cachedObject.materialProp.objectReferenceValue as Material : null;
+                var materialProp = pair.FindPropertyRelative("second");
+                cachedObject.material = materialProp != null ? materialProp.objectReferenceValue as Material : null;
                 cachedObject.propertyIdx = externalObjectIdx;
                 var externalName = pair.FindPropertyRelative("first.name").stringValue;
                 var externalType = pair.FindPropertyRelative("first.type").stringValue;
@@ -365,7 +364,7 @@ namespace UnityEditor
             return false;
         }
 
-        private bool MaterialRemapOptons()
+        private bool MaterialRemapOptions()
         {
             m_ShowMaterialRemapOptions = EditorGUILayout.Foldout(m_ShowMaterialRemapOptions, Styles.RemapOptions);
             if (m_ShowMaterialRemapOptions)
@@ -501,7 +500,7 @@ namespace UnityEditor
             {
                 GUILayout.Label(Styles.ExternalMaterialMappings, EditorStyles.boldLabel);
 
-                if (MaterialRemapOptons())
+                if (MaterialRemapOptions())
                     return;
 
                 DoMaterialRemapList();
@@ -528,38 +527,40 @@ namespace UnityEditor
                 GUIContent nameLabel = EditorGUIUtility.TextContent(mat.name);
                 nameLabel.tooltip = mat.name;
 
-                if (m_ExternalObjectsCache.TryGetValue(new Tuple<string, string>(mat.name, mat.type), out cachedExternalObject))
+                Material material = m_ExternalObjectsCache.TryGetValue(new Tuple<string, string>(mat.name, mat.type), out cachedExternalObject) ? cachedExternalObject.material : null;
+
+                EditorGUI.BeginChangeCheck();
+                material = EditorGUILayout.ObjectField(nameLabel, material, typeof(Material), false) as Material;
+                if (EditorGUI.EndChangeCheck())
                 {
-                    EditorGUI.BeginChangeCheck();
-                    EditorGUILayout.ObjectField(cachedExternalObject.materialProp, typeof(Material), nameLabel);
-                    if (EditorGUI.EndChangeCheck())
+                    if (cachedExternalObject != null)
                     {
-                        if (cachedExternalObject.materialProp.objectReferenceValue == null)
+                        if (material == null)
                         {
                             m_ExternalObjects.DeleteArrayElementAtIndex(cachedExternalObject.propertyIdx);
-                            BuildExternalObjectsCache();
                         }
-                    }
-                }
-                else
-                {
-                    Material material = null;
-                    EditorGUI.BeginChangeCheck();
-                    material = EditorGUILayout.ObjectField(nameLabel, material, typeof(Material), false) as Material;
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        if (material != null)
+                        else
                         {
-                            var newIndex = m_ExternalObjects.arraySize++;
-                            var pair = m_ExternalObjects.GetArrayElementAtIndex(newIndex);
-                            pair.FindPropertyRelative("first.name").stringValue = mat.name;
-                            pair.FindPropertyRelative("first.type").stringValue = mat.type;
-                            pair.FindPropertyRelative("first.assembly").stringValue = mat.assembly;
+                            var pair = m_ExternalObjects.GetArrayElementAtIndex(cachedExternalObject.propertyIdx);
                             pair.FindPropertyRelative("second").objectReferenceValue = material;
-
-                            BuildExternalObjectsCache();
                         }
                     }
+                    else if (material != null)
+                    {
+                        m_ExternalObjects.arraySize++;
+                        var pair = m_ExternalObjects.GetArrayElementAtIndex(m_ExternalObjects.arraySize - 1);
+                        pair.FindPropertyRelative("first.name").stringValue = mat.name;
+                        pair.FindPropertyRelative("first.type").stringValue = mat.type;
+                        pair.FindPropertyRelative("first.assembly").stringValue = mat.assembly;
+                        pair.FindPropertyRelative("second").objectReferenceValue = material;
+                        // ExternalObjects is serialized as a map, so items are reordered when deserializing.
+                        // We need to update the serializedObject to trigger the reordering before rebuilding the cache.
+                        serializedObject.ApplyModifiedProperties();
+                        serializedObject.Update();
+                    }
+
+                    BuildExternalObjectsCache();
+                    break;
                 }
             }
         }

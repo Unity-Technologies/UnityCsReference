@@ -48,7 +48,7 @@ namespace UnityEditor
                 if (!s_GUITextureBlit2SRGBMaterial)
                 {
                     Shader shader = LoadRequired("SceneView/GUITextureBlit2SRGB.shader") as Shader;
-                    s_GUITextureBlit2SRGBMaterial = new Material(shader) {hideFlags = HideFlags.HideAndDontSave};
+                    s_GUITextureBlit2SRGBMaterial = new Material(shader);
                 }
                 s_GUITextureBlit2SRGBMaterial.SetFloat("_ManualTex2SRGB", QualitySettings.activeColorSpace == ColorSpace.Linear ? 1.0f : 0.0f);
                 return s_GUITextureBlit2SRGBMaterial;
@@ -63,7 +63,7 @@ namespace UnityEditor
                 if (!s_GUITextureBlitSceneGUI)
                 {
                     Shader shader = LoadRequired("SceneView/GUITextureBlitSceneGUI.shader") as Shader;
-                    s_GUITextureBlitSceneGUI = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
+                    s_GUITextureBlitSceneGUI = new Material(shader);
                 }
                 return s_GUITextureBlitSceneGUI;
             }

@@ -4,6 +4,10 @@
 
 using UnityEngine;
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEditor;
+using UnityEditor.VisualStudioIntegration;
 using UnityEditorInternal;
 
 namespace UnityEditor
@@ -146,6 +150,9 @@ namespace UnityEditor
             GUILayout.BeginVertical();
             GUILayout.FlexibleSpace();
 
+            var VSTUlabel = UnityVSSupport.GetAboutWindowLabel();
+            if (VSTUlabel.Length > 0)
+                GUILayout.Label(VSTUlabel, "MiniLabel");
             GUILayout.Label(InternalEditorUtility.GetUnityCopyright(), "MiniLabel");
             GUILayout.EndVertical();
             GUILayout.Space(10);

@@ -9429,25 +9429,20 @@ This warning only shows up in development builds.", helpTopic, pageName);
         {
             GUILayoutFadeGroup g = (GUILayoutFadeGroup)GUILayoutUtility.BeginLayoutGroup(GUIStyle.none, null, typeof(GUILayoutFadeGroup));
             g.isVertical = true;
-            g.resetCoords = false;
+            g.resetCoords = true;
             g.fadeValue = value;
             g.wasGUIEnabled = GUI.enabled;
             g.guiColor = GUI.color;
             g.consideredForMargin = value > 0;
 
-            if (value != 0.0f && value != 1.0f)
+            if (value != 0.0f && value != 1.0f && Event.current.type == EventType.MouseDown)
             {
-                g.resetCoords = true;
-                GUI.BeginGroup(g.rect);
-
-                if (Event.current.type == EventType.MouseDown)
-                {
-                    Event.current.Use();
-                }
+                Event.current.Use();
             }
 
             // We don't want the fade group gui clip to be used for calculating the label width of controls in this fade group, so we lock the context width.
             EditorGUIUtility.LockContextWidth();
+            GUI.BeginGroup(g.rect);
 
             return value != 0;
         }
@@ -9464,10 +9459,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
                 return;
             }
 
-            if (g.fadeValue != 0.0f && g.fadeValue != 1.0f)
-            {
-                GUI.EndGroup();
-            }
+            GUI.EndGroup();
 
             EditorGUIUtility.UnlockContextWidth();
             GUI.enabled = g.wasGUIEnabled;

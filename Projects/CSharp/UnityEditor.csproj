@@ -613,6 +613,9 @@
     <Compile Include="..\..\Editor\Mono\StaticOcclusionCulling.bindings.cs">
       <Link>Editor\Mono\StaticOcclusionCulling.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\SyncProject.cs">
+      <Link>Editor\Mono\SyncProject.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\TagManager.bindings.cs">
       <Link>Editor\Mono\TagManager.bindings.cs</Link>
     </Compile>
@@ -3565,6 +3568,15 @@
     <Compile Include="..\..\Editor\Mono\VersionControl\VCTask.bindings.cs">
       <Link>Editor\Mono\VersionControl\VCTask.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\VisualStudioIntegration\SolutionSynchronizationSettings.cs">
+      <Link>Editor\Mono\VisualStudioIntegration\SolutionSynchronizationSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\VisualStudioIntegration\SolutionSynchronizer.cs">
+      <Link>Editor\Mono\VisualStudioIntegration\SolutionSynchronizer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\VisualStudioIntegration\UnityVSSupport.cs">
+      <Link>Editor\Mono\VisualStudioIntegration\UnityVSSupport.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\WebViewEditorWindow\WebViewEditorStaticWindow.cs">
       <Link>Editor\Mono\WebViewEditorWindow\WebViewEditorStaticWindow.cs</Link>
     </Compile>
@@ -4878,6 +4890,9 @@
     </Compile>
     <Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\EditorPreviewTilemap.cs">
       <Link>Modules\TilemapEditor\Editor\Managed\EditorPreviewTilemap.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridPalette.cs">
+      <Link>Modules\TilemapEditor\Editor\Managed\Grid\GridPalette.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\TileEditor.cs">
       <Link>Modules\TilemapEditor\Editor\Managed\TileEditor.cs</Link>
