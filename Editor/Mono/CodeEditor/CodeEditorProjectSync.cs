@@ -53,7 +53,15 @@ namespace UnityEditor
             if (InternalEditorUtility.inBatchMode)
                 return;
 
-            CodeEditor.Editor.Current.OpenProject();
+            #pragma warning disable 618
+            if (ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorInstallation) == ScriptEditorUtility.ScriptEditor.Other)
+            {
+                CodeEditor.Editor.Current.OpenProject();
+            }
+            else
+            {
+                InternalEditorUtility.OpenFileAtLineExternal("", -1, -1);
+            }
         }
     }
 }

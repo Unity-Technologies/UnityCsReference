@@ -72,6 +72,9 @@ namespace Unity.Audio
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
         public static extern void Internal_Complete(ref Handle graph, ref Handle block);
+
+        [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
+        public static extern void Internal_Cancel(ref Handle graph, ref Handle block);
     }
 }
 

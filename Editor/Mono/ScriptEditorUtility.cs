@@ -18,7 +18,7 @@ namespace UnityEditorInternal
     public class ScriptEditorUtility
     {
         // Keep in sync with enum ScriptEditorType in ExternalEditor.h
-        public enum ScriptEditor { SystemDefault = 0, MonoDevelop = 1, VisualStudio = 2, VisualStudioExpress = 3, VisualStudioCode = 4, Rider = 5, Other = 32 }
+        public enum ScriptEditor { SystemDefault = 0, MonoDevelop = 1, VisualStudio = 2, VisualStudioExpress = 3, Other = 32 }
 
         public struct Installation
         {
@@ -50,14 +50,6 @@ namespace UnityEditorInternal
 
             if (lowerCasePath.EndsWith("vcsexpress.exe"))
                 return ScriptEditor.VisualStudioExpress;
-
-            string filename = Path.GetFileName(Paths.UnifyDirectorySeparator(lowerCasePath)).Replace(" ", "");
-
-            if (filename == "code.exe" || filename == "visualstudiocode.app" || filename == "vscode.app" || filename == "code.app" || filename == "code")
-                return ScriptEditor.VisualStudioCode;
-
-            if (filename.StartsWith("rider"))
-                return ScriptEditor.Rider;
 
             // Visual Studio for Mac is based on MonoDevelop
             if (IsVisualStudioForMac(path))
@@ -98,6 +90,36 @@ namespace UnityEditorInternal
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This functionality has been moved to the IExternalCodeEditor packages", true)]
+        static string GetScriptEditorArgsKey(string path)
+        {
+            // Starting in Unity 5.5, we support setting script editor arguments on OSX and
+            // use then when opening the script editor.
+            // Before Unity 5.5, we would still save the default script editor args in EditorPrefs,
+            // even though we never used them. This means that the user potentially has some
+            // script editor args saved and once he upgrades to 5.5, they will be used when
+            // open the script editor. Which unintended and causes a regression in behaviour.
+            // So on OSX we change the key for per application for script editor args,
+            // to avoid reading the one from previous versions.
+            if (Application.platform == RuntimePlatform.OSXEditor)
+                return "kScriptEditorArgs_" + path;
+
+            return "kScriptEditorArgs" + path;
+        }
+
+        static string GetDefaultStringEditorArgs()
+        {
+            // On OSX there is a built-in mechanism for opening files in apps.
+            // We use this mechanism when the external script editor args are not set.
+            // Which was the only support behaviour before Unity 5.5. We therefor
+            // default to this behavior.
+            // If the script editor args are set, we only launch the script editor with args
+            // specified and do not use the built-in mechanism for opening script files.
+            if (Application.platform == RuntimePlatform.OSXEditor)
+                return "";
+
+            return "\"$(File)\"";
+        }
+
         public static string GetExternalScriptEditorArgs()
         {
             throw new NotSupportedException("This functionality has been moved to the IExternalCodeEditor packages");

@@ -6,10 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-using UnityEngine.Scripting;
 using Attribute = System.Attribute;
 using Event = UnityEngine.Event;
-using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor.ShortcutManagement
 {
@@ -45,18 +43,27 @@ namespace UnityEditor.ShortcutManagement
             }
         }
 
-        public static ShortcutController instance { get; private set; }
+        private static ShortcutController s_Instance;
+        public static ShortcutController instance
+        {
+            get
+            {
+                EnsureShortcutControllerCreated();
+                return s_Instance;
+            }
+        }
 
         static ShortcutIntegration()
         {
-            InitializeController();
-            EditorApplication.globalEventHandler += EventHandler;
-            EditorApplication.doPressedKeysTriggerAnyShortcut += HasAnyEntriesHandler;
+            // There is cases where the ShortcutIntegration was not requested even after the project was initialized, such as running tests.
+            EditorApplication.delayCall += EnsureShortcutControllerCreated;
+        }
 
-            // Need to reinitialize after project load if we want menu items
-            EditorApplication.projectWasLoaded += InitializeController;
-
-            EditorApplication.focusChanged += OnFocusChanged;
+        static void EnsureShortcutControllerCreated()
+        {
+            if (s_Instance == null)
+                InitializeController();
+            Debug.Assert(s_Instance != null);
         }
 
         static bool HasAnyEntriesHandler()
@@ -86,31 +93,19 @@ namespace UnityEditor.ShortcutManagement
             var shortcutProviders = new IDiscoveryShortcutProvider[]
             {
                 new ShortcutAttributeDiscoveryProvider(),
-                new ShortcutMenuItemDiscoveryProvider(),
+                new ShortcutMenuItemDiscoveryProvider()
             };
             var bindingValidator = new BindingValidator();
             var invalidContextReporter = new DiscoveryInvalidShortcutReporter();
             var discovery = new Discovery(shortcutProviders, bindingValidator, invalidContextReporter);
-            IContextManager contextManager = null;
+            IContextManager contextManager = new ContextManager();
 
-            if (instance != null)
-            {
-                contextManager = instance.contextManager;
-            }
+            s_Instance = new ShortcutController(discovery, contextManager, bindingValidator, new ShortcutProfileStore(), new LastUsedProfileIdProvider());
+            s_Instance.trigger.invokingAction += OnInvokingAction;
 
-            if (contextManager == null)
-            {
-                contextManager = new ContextManager();
-            }
-
-            instance = new ShortcutController(discovery, contextManager, bindingValidator, new ShortcutProfileStore(), new LastUsedProfileIdProvider());
-            instance.trigger.invokingAction += OnInvokingAction;
-        }
-
-        [RequiredByNativeCode]
-        static void RebuildShortcuts()
-        {
-            instance.RebuildShortcuts();
+            EditorApplication.globalEventHandler += EventHandler;
+            EditorApplication.doPressedKeysTriggerAnyShortcut += HasAnyEntriesHandler;
+            EditorApplication.focusChanged += OnFocusChanged;
         }
     }
 
@@ -126,10 +121,7 @@ namespace UnityEditor.ShortcutManagement
         public IDirectory directory => m_Directory;
         public IBindingValidator bindingValidator { get; }
         public Trigger trigger { get; }
-
-        IContextManager m_ContextManager;
-
-        public IContextManager contextManager => m_ContextManager;
+        public IContextManager contextManager { get; }
         ILastUsedProfileIdProvider m_LastUsedProfileIdProvider;
 
         public event Action availableShortcutsChanged;
@@ -148,7 +140,7 @@ namespace UnityEditor.ShortcutManagement
             var conflictResolverView = new ConflictResolverView();
             var conflictResolver = new ConflictResolver(profileManager, contextManager, conflictResolverView);
 
-            m_ContextManager = contextManager;
+            this.contextManager = contextManager;
 
             m_Directory = new Directory(profileManager.GetAllShortcuts());
             trigger = new Trigger(m_Directory, conflictResolver);

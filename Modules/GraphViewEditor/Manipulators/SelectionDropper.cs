@@ -180,7 +180,7 @@ namespace UnityEditor.Experimental.GraphView
             {
                 if (selectedElement != null && selectionContainer != null && !m_Dragging)
                 {
-                    if (selectedElement.IsSelected((VisualElement)selectionContainer) && !e.actionKey)
+                    if (selectedElement.IsSelected((VisualElement)selectionContainer) && !e.actionKey && e.button == (int)activateButton)
                     {
                         // Reset to single selection
                         selectionContainer.ClearSelection();
