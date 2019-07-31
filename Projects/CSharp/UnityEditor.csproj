@@ -2977,8 +2977,14 @@
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\ExpressionTypeKey.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\ExpressionTypeKey.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\FindReferences.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\FindReferences.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\GUIDReference.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\GUIDReference.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\ILPostProcessCompiledAssembly.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\ILPostProcessCompiledAssembly.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\MonoLibraryHelpers.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\MonoLibraryHelpers.cs</Link>
@@ -3003,6 +3009,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\TestRunnerHelpers.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\TestRunnerHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\UnityCodeGenHelpers.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\UnityCodeGenHelpers.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\Utility.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\Utility.cs</Link>
@@ -3123,6 +3132,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\StaticOcclusionCulling.bindings.cs">
       <Link>Editor\Mono\StaticOcclusionCulling.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\SyncProject.cs">
+      <Link>Editor\Mono\SyncProject.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\TagManager.bindings.cs">
       <Link>Editor\Mono\TagManager.bindings.cs</Link>
@@ -3568,6 +3580,15 @@
     <Compile Include="..\..\Editor\Mono\View.cs">
       <Link>Editor\Mono\View.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\VisualStudioIntegration\SolutionSynchronizationSettings.cs">
+      <Link>Editor\Mono\VisualStudioIntegration\SolutionSynchronizationSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\VisualStudioIntegration\SolutionSynchronizer.cs">
+      <Link>Editor\Mono\VisualStudioIntegration\SolutionSynchronizer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\VisualStudioIntegration\UnityVSSupport.cs">
+      <Link>Editor\Mono\VisualStudioIntegration\UnityVSSupport.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\VisualStudioUtil.bindings.cs">
       <Link>Editor\Mono\VisualStudioUtil.bindings.cs</Link>
     </Compile>
@@ -3669,6 +3690,21 @@
     </Compile>
     <Compile Include="..\..\Modules\AssetPipelineEditor\Public\VideoImporter.bindings.cs">
       <Link>Modules\AssetPipelineEditor\Public\VideoImporter.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AudioEditor\ScriptBindings\AudioMixerController.bindings.cs">
+      <Link>Modules\AudioEditor\ScriptBindings\AudioMixerController.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AudioEditor\ScriptBindings\AudioMixerDescription.bindings.cs">
+      <Link>Modules\AudioEditor\ScriptBindings\AudioMixerDescription.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AudioEditor\ScriptBindings\AudioMixerEffectController.bindings.cs">
+      <Link>Modules\AudioEditor\ScriptBindings\AudioMixerEffectController.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AudioEditor\ScriptBindings\AudioMixerGroupController.bindings.cs">
+      <Link>Modules\AudioEditor\ScriptBindings\AudioMixerGroupController.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AudioEditor\ScriptBindings\AudioMixerSnapshotController.bindings.cs">
+      <Link>Modules\AudioEditor\ScriptBindings\AudioMixerSnapshotController.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildCompression.deprecated.cs">
       <Link>Modules\BuildPipeline\Editor\Managed\BuildCompression.deprecated.cs</Link>
@@ -4591,6 +4627,12 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Memory\MemoryTreeList.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Memory\MemoryTreeList.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Memory\ObjectMemoryInfo.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Memory\ObjectMemoryInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Memory\ObjectMemoryStackInfo.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Memory\ObjectMemoryStackInfo.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\PhysX\PhysicsProfilerModule.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\PhysX\PhysicsProfilerModule.cs</Link>
     </Compile>
@@ -4947,6 +4989,9 @@
     </Compile>
     <Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\EditorPreviewTilemap.cs">
       <Link>Modules\TilemapEditor\Editor\Managed\EditorPreviewTilemap.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridPalette.cs">
+      <Link>Modules\TilemapEditor\Editor\Managed\Grid\GridPalette.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\TileEditor.cs">
       <Link>Modules\TilemapEditor\Editor\Managed\TileEditor.cs</Link>
@@ -5308,21 +5353,6 @@
     <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\AssetModificationProcessorBindings.gen.cs">
       <Link>artifacts\generated\bindings_old\common\Editor\AssetModificationProcessorBindings.gen.cs</Link>
     </Compile>
-    <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\AudioMixerControllerBindings.gen.cs">
-      <Link>artifacts\generated\bindings_old\common\Editor\AudioMixerControllerBindings.gen.cs</Link>
-    </Compile>
-    <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\AudioMixerDescriptionBindings.gen.cs">
-      <Link>artifacts\generated\bindings_old\common\Editor\AudioMixerDescriptionBindings.gen.cs</Link>
-    </Compile>
-    <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\AudioMixerEffectControllerBindings.gen.cs">
-      <Link>artifacts\generated\bindings_old\common\Editor\AudioMixerEffectControllerBindings.gen.cs</Link>
-    </Compile>
-    <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\AudioMixerGroupControllerBindings.gen.cs">
-      <Link>artifacts\generated\bindings_old\common\Editor\AudioMixerGroupControllerBindings.gen.cs</Link>
-    </Compile>
-    <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\AudioMixerSnapshotControllerBindings.gen.cs">
-      <Link>artifacts\generated\bindings_old\common\Editor\AudioMixerSnapshotControllerBindings.gen.cs</Link>
-    </Compile>
     <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\EditorConnectionInternalBindings.gen.cs">
       <Link>artifacts\generated\bindings_old\common\Editor\EditorConnectionInternalBindings.gen.cs</Link>
     </Compile>
@@ -5362,9 +5392,6 @@
     <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\WebViewBindings.gen.cs">
       <Link>artifacts\generated\bindings_old\common\Editor\WebViewBindings.gen.cs</Link>
     </Compile>
-    <Compile Include="..\..\artifacts\generated\bindings_old\common\ProfilerEditor\ProfilerAPIBindings.gen.cs">
-      <Link>artifacts\generated\bindings_old\common\ProfilerEditor\ProfilerAPIBindings.gen.cs</Link>
-    </Compile>
   </ItemGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -5397,6 +5424,9 @@
     </Reference>
     <Reference Include="UnityScript">
       <HintPath>..\..\External\MonoBleedingEdge\builds\monodistribution\lib\mono\2.0-api\UnityScript.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.CompilationPipeline.Common">
+      <HintPath>..\..\External\Unity.Compiler.Client\Unity.CompilationPipeline.Common.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Cecil">
       <HintPath>..\..\External\Unity.Cecil\builds\lib\net35\Unity.Cecil.dll</HintPath>

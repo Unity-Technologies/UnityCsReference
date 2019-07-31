@@ -121,5 +121,6 @@ namespace UnityEngine.UIElements.UIR
         public extern static void ProfileImmediateRendererBegin();
         public extern static void ProfileImmediateRendererEnd();
         public extern static void NotifyOfUIREvents(bool subscribe);
+        public extern static bool GetInvertProjectionMatrix();
     }
 }

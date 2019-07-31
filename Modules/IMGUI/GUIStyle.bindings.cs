@@ -26,7 +26,7 @@ namespace UnityEngine
     [NativeHeader("IMGUIScriptingClasses.h")]
     partial class GUIStyle
     {
-        [NativeProperty("Name", false, TargetType.Function)] public extern string name { get; set; }
+        [NativeProperty("Name", false, TargetType.Function)] internal extern string rawName { get; set; }
         [NativeProperty("Font", false, TargetType.Function)] public extern Font font { get; set; }
         [NativeProperty("m_ImagePosition", false, TargetType.Field)] public extern ImagePosition imagePosition { get; set; }
         [NativeProperty("m_Alignment", false, TargetType.Field)] public extern TextAnchor alignment { get; set; }
@@ -44,7 +44,6 @@ namespace UnityEngine
         [Obsolete("Don't use clipOffset - put things inside BeginGroup instead. This functionality will be removed in a later version.", false)]
         [NativeProperty("m_ClipOffset", false, TargetType.Field)] public extern Vector2 clipOffset { get; set; }
         [NativeProperty("m_ClipOffset", false, TargetType.Field)] internal extern Vector2 Internal_clipOffset { get; set; }
-
         [FreeFunction(Name = "GUIStyle_Bindings::Internal_Create", IsThreadSafe = true)] private static extern IntPtr Internal_Create(GUIStyle self);
         [FreeFunction(Name = "GUIStyle_Bindings::Internal_Copy", IsThreadSafe = true)] private static extern IntPtr Internal_Copy(GUIStyle self, GUIStyle other);
         [FreeFunction(Name = "GUIStyle_Bindings::Internal_Destroy", IsThreadSafe = true)] private static extern void Internal_Destroy(IntPtr self);

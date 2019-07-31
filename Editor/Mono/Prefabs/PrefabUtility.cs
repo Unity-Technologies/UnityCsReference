@@ -1215,6 +1215,9 @@ namespace UnityEditor
             if (!Paths.IsValidAssetPath(path, ".prefab"))
                 throw new ArgumentException("Given path is not valid: '" + path + "'");
 
+            if (Directory.Exists(path))
+                throw new ArgumentException("Overwriting a folder with an Asset is not allowed: '" + path + "'");
+
             string directory = Path.GetDirectoryName(path);
 
             bool isRootFolder = false;

@@ -16,14 +16,6 @@ namespace UnityEditor.PackageManager.UI
 
         public const int k_DefaultPageSize = 25;
 
-        [MenuItem("internal:Packages/Reset Package Database")]
-        public static void ResetPackageDatabase()
-        {
-            instance.Clear();
-            instance.Setup();
-            instance.Refresh(RefreshOptions.All);
-        }
-
         internal class PageManagerInternal : ScriptableSingleton<PageManagerInternal>, IPageManager, ISerializationCallbackReceiver
         {
             public event Action<IPackageVersion> onSelectionChanged = delegate {};
@@ -37,6 +29,13 @@ namespace UnityEditor.PackageManager.UI
 
             [SerializeField]
             private Page[] m_SerializedPages = new Page[0];
+
+            [MenuItem("internal:Packages/Reset Package Database")]
+            public static void ResetPackageDatabase()
+            {
+                instance.Reset();
+                instance.Refresh(RefreshOptions.All | RefreshOptions.Purchased);
+            }
 
             public void OnBeforeSerialize()
             {
@@ -68,10 +67,13 @@ namespace UnityEditor.PackageManager.UI
                 return page;
             }
 
-            public bool HasPageForFilterTab(PackageFilterTab? tab = null)
+            public bool HasFetchedPageForFilterTab(PackageFilterTab? tab = null)
             {
                 var filterTab = tab ?? PackageFiltering.instance.currentFilterTab;
-                return m_Pages.ContainsKey(filterTab);
+                if (!m_Pages.ContainsKey(filterTab))
+                    return false;
+
+                return m_Pages[filterTab].isAlreadyFetched;
             }
 
             private void RegisterPageEvents(Page page)
@@ -79,6 +81,13 @@ namespace UnityEditor.PackageManager.UI
                 page.onSelectionChanged += (selection) => onSelectionChanged?.Invoke(selection);
                 page.onVisualStateChange += (visualStates) => onVisualStateChange?.Invoke(visualStates);
                 page.onPageUpdate += (addedOrUpdated, removed) => onPageUpdate?.Invoke(page, addedOrUpdated, removed);
+            }
+
+            private void UnegisterPageEvents(Page page)
+            {
+                page.onSelectionChanged -= (selection) => onSelectionChanged?.Invoke(selection);
+                page.onVisualStateChange -= (visualStates) => onVisualStateChange?.Invoke(visualStates);
+                page.onPageUpdate -= (addedOrUpdated, removed) => onPageUpdate?.Invoke(page, addedOrUpdated, removed);
             }
 
             public IPage GetCurrentPage()
@@ -138,10 +147,10 @@ namespace UnityEditor.PackageManager.UI
 
             private void OnFilterChanged(PackageFilterTab filterTab)
             {
-                if (filterTab == PackageFilterTab.AssetStore && !HasPageForFilterTab(filterTab))
-                    AssetStore.AssetStoreClient.instance.List(0, k_DefaultPageSize);
-
                 var page = GetPageFromFilterTab(filterTab);
+                if (!page.isAlreadyFetched)
+                    Refresh(filterTab);
+
                 page.RebuildList();
                 onPageRebuild?.Invoke(page);
             }
@@ -156,36 +165,52 @@ namespace UnityEditor.PackageManager.UI
                 GetPageFromFilterTab(PackageFilterTab.AssetStore).OnProductListFetched(productList, fetchDetailsCalled);
             }
 
+            private void OnProductFetched(long productId)
+            {
+                GetPageFromFilterTab(PackageFilterTab.AssetStore).OnProductFetched(productId);
+            }
+
             public VisualState GetVisualState(IPackage package)
             {
                 return GetPageFromFilterTab().GetVisualState(package?.uniqueId);
             }
 
+            private static RefreshOptions GetRefreshOptionsFromFilterTab(PackageFilterTab tab)
+            {
+                var options = RefreshOptions.None;
+                switch (tab)
+                {
+                    case PackageFilterTab.All:
+                        options |= RefreshOptions.UpmList;
+                        options |= RefreshOptions.UpmSearch;
+                        break;
+                    case PackageFilterTab.Local:
+                        options |= RefreshOptions.UpmList;
+                        break;
+                    case PackageFilterTab.Modules:
+                        options |= RefreshOptions.UpmSearchOffline;
+                        options |= RefreshOptions.UpmListOffline;
+                        break;
+                    case PackageFilterTab.AssetStore:
+                        options |= RefreshOptions.Purchased;
+                        break;
+                    case PackageFilterTab.InDevelopment:
+                        options |= RefreshOptions.UpmList;
+                        break;
+                }
+
+                return options;
+            }
+
+            public void Refresh(PackageFilterTab tab)
+            {
+                Refresh(GetRefreshOptionsFromFilterTab(tab));
+            }
+
             public void Refresh(RefreshOptions options)
             {
                 if ((options & RefreshOptions.CurrentFilter) != 0)
-                {
-                    switch (PackageFiltering.instance.currentFilterTab)
-                    {
-                        case PackageFilterTab.All:
-                            options |= RefreshOptions.UpmList;
-                            options |= RefreshOptions.UpmSearch;
-                            break;
-                        case PackageFilterTab.Local:
-                            options |= RefreshOptions.UpmList;
-                            break;
-                        case PackageFilterTab.Modules:
-                            options |= RefreshOptions.UpmSearchOffline;
-                            options |= RefreshOptions.UpmListOffline;
-                            break;
-                        case PackageFilterTab.AssetStore:
-                            options |= RefreshOptions.Purchased;
-                            break;
-                        case PackageFilterTab.InDevelopment:
-                            options |= RefreshOptions.UpmList;
-                            break;
-                    }
-                }
+                    options |= GetRefreshOptionsFromFilterTab(PackageFiltering.instance.currentFilterTab);
 
                 if ((options & RefreshOptions.UpmSearchOffline) != 0)
                     UpmClient.instance.SearchAll(true);
@@ -195,8 +220,19 @@ namespace UnityEditor.PackageManager.UI
                     UpmClient.instance.List(true);
                 if ((options & RefreshOptions.UpmList) != 0)
                     UpmClient.instance.List();
-                if (ApplicationUtil.instance.isUserLoggedIn && (options & RefreshOptions.Purchased) != 0)
+                if ((options & RefreshOptions.Purchased) != 0)
                     AssetStore.AssetStoreClient.instance.List(0, k_DefaultPageSize, string.Empty);
+                if ((options & RefreshOptions.PurchasedOffline) != 0)
+                    AssetStore.AssetStoreClient.instance.Refresh(PackageDatabase.instance.assetStorePackages);
+            }
+
+            public void Fetch(string uniqueId)
+            {
+                long productId;
+                if (ApplicationUtil.instance.isUserLoggedIn && long.TryParse(uniqueId, out productId))
+                {
+                    AssetStore.AssetStoreClient.instance.Fetch(productId);
+                }
             }
 
             public void LoadMore()
@@ -215,6 +251,7 @@ namespace UnityEditor.PackageManager.UI
                 PackageDatabase.instance.Setup();
 
                 AssetStore.AssetStoreClient.instance.onProductListFetched += OnProductListFetched;
+                AssetStore.AssetStoreClient.instance.onProductFetched += OnProductFetched;
 
                 PackageDatabase.instance.onInstallSuccess += OnInstalledOrUninstalled;
                 PackageDatabase.instance.onUninstallSuccess += OnUninstalled;
@@ -229,6 +266,7 @@ namespace UnityEditor.PackageManager.UI
             public void Clear()
             {
                 AssetStore.AssetStoreClient.instance.onProductListFetched -= OnProductListFetched;
+                AssetStore.AssetStoreClient.instance.onProductFetched -= OnProductFetched;
 
                 PackageDatabase.instance.onInstallSuccess -= OnInstalledOrUninstalled;
                 PackageDatabase.instance.onUninstallSuccess -= OnUninstalled;
@@ -240,13 +278,23 @@ namespace UnityEditor.PackageManager.UI
                 ApplicationUtil.instance.onUserLoginStateChange -= OnUserLoginStateChange;
 
                 PackageDatabase.instance.Clear();
+            }
+
+            internal void Reset()
+            {
+                Clear();
 
                 foreach (var page in m_Pages.Values)
                 {
                     page.RebuildList();
                     onPageRebuild?.Invoke(page);
+                    UnegisterPageEvents(page);
                 }
                 m_Pages.Clear();
+
+                PackageDatabase.instance.Reset();
+
+                Setup();
             }
         }
     }

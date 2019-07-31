@@ -141,7 +141,9 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        internal static void UpdateText(NativeArray<TextVertex> uiVertices, Vector2 offset, Matrix4x4 transform, float transformID, float clipRectID, NativeSlice<Vertex> vertices)
+        internal static void UpdateText(NativeArray<TextVertex> uiVertices,
+            Vector2 offset, Matrix4x4 transform, float transformID, float clipRectID,
+            ushort shaderInfoX, ushort shaderInfoY, NativeSlice<Vertex> vertices)
         {
             Debug.Assert(vertices.Length == uiVertices.Length);
             int vertexCount = uiVertices.Length;
@@ -155,7 +157,9 @@ namespace UnityEngine.UIElements.UIR
                     tint = textVertex.color,
                     transformID = transformID,
                     clipRectID = clipRectID,
-                    flags = (float)VertexFlags.IsText
+                    flags = (float)VertexFlags.IsText,
+                    siX = shaderInfoX,
+                    siY = shaderInfoY
                 };
             }
         }

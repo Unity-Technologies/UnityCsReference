@@ -12,70 +12,49 @@ namespace UnityEditor
 {
     public partial class PlayerSettings : UnityEngine.Object
     {
-        [NativeHeader("Runtime/Misc/PlayerSettings.h")]
+        [Obsolete("Facebook support was removed in 2019.3", true)]
         public partial class Facebook
         {
-            [NativeProperty("facebookSdkVersion")]
-            public extern static string sdkVersion
+            public static string sdkVersion
             {
-                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
-                get;
-                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
-                set;
+                get { throw new NotImplementedException("Facebook support was removed in 2019.3"); }
+                set { throw new NotImplementedException("Facebook support was removed in 2019.3"); }
             }
 
-            [NativeProperty("facebookAppId")]
-            public extern static string appId
+            public static string appId
             {
-                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
-                get;
-                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
-                set;
+                get { throw new NotImplementedException("Facebook support was removed in 2019.3"); }
+                set { throw new NotImplementedException("Facebook support was removed in 2019.3"); }
             }
 
-            [NativeProperty("facebookCookies", TargetType.Field)]
-            public extern static bool useCookies
+            public static bool useCookies
             {
-                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
-                get;
-                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
-                set;
+                get { throw new NotImplementedException("Facebook support was removed in 2019.3"); }
+                set { throw new NotImplementedException("Facebook support was removed in 2019.3"); }
             }
 
-            [NativeProperty("facebookLogging", TargetType.Field)]
-            internal extern static bool useLogging
+            internal static bool useLogging
             {
-                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
-                get;
-                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
-                set;
+                get { throw new NotImplementedException("Facebook support was removed in 2019.3"); }
+                set { throw new NotImplementedException("Facebook support was removed in 2019.3"); }
             }
 
-            [NativeProperty("facebookStatus", TargetType.Field)]
-            public extern static bool useStatus
+            public static bool useStatus
             {
-                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
-                get;
-                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
-                set;
+                get { throw new NotImplementedException("Facebook support was removed in 2019.3"); }
+                set { throw new NotImplementedException("Facebook support was removed in 2019.3"); }
             }
 
-            [NativeProperty("facebookXfbml", TargetType.Field)]
-            internal extern static bool useXfbml
+            internal static bool useXfbml
             {
-                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
-                get;
-                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
-                set;
+                get { throw new NotImplementedException("Facebook support was removed in 2019.3"); }
+                set { throw new NotImplementedException("Facebook support was removed in 2019.3"); }
             }
 
-            [NativeProperty("facebookFrictionlessRequests", TargetType.Field)]
-            public extern static bool useFrictionlessRequests
+            public static bool useFrictionlessRequests
             {
-                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
-                get;
-                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
-                set;
+                get { throw new NotImplementedException("Facebook support was removed in 2019.3"); }
+                set { throw new NotImplementedException("Facebook support was removed in 2019.3"); }
             }
         }
     }

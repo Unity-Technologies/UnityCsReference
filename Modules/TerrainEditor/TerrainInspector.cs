@@ -1455,11 +1455,11 @@ namespace UnityEditor
         // if we switch to serializedProperty multi-edit, we can just use that function directly instead
         private void ShowRenderingLayerMask(bool useMiniStyle = false)
         {
-            RenderPipelineAsset srpAsset = GraphicsSettings.renderPipelineAsset;
+            var layerNames = RendererEditorBase.defaultRenderingLayerNames;
 
-            var layerNames = srpAsset.renderingLayerMaskNames;
-            if (layerNames == null)
-                layerNames = RendererEditorBase.defaultRenderingLayerNames;
+            RenderPipelineAsset srpAsset = GraphicsSettings.renderPipelineAsset;
+            if (srpAsset != null && srpAsset.renderingLayerMaskNames != null)
+                layerNames = srpAsset.renderingLayerMaskNames;
 
             int mask = (int)m_Terrain.renderingLayerMask;
 
@@ -1498,6 +1498,7 @@ namespace UnityEditor
                 GUILayout.BeginVertical(EditorStyles.helpBox);
                 GUILayout.Label(activeTool.GetDesc());
                 GUILayout.EndVertical();
+                EditorGUILayout.Space();
 
                 activeTool.OnInspectorGUI(m_Terrain, onInspectorGUIEditContext);
             }

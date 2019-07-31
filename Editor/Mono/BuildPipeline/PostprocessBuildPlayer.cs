@@ -191,6 +191,14 @@ namespace UnityEditor
             return false;
         }
 
+        static public Compression GetDefaultCompression(BuildTargetGroup targetGroup, BuildTarget target)
+        {
+            IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(targetGroup, target);
+            if (postprocessor != null)
+                return postprocessor.GetDefaultCompression();
+            return Compression.None;
+        }
+
         private class NoTargetsFoundException : Exception
         {
             public NoTargetsFoundException() : base() {}

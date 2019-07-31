@@ -47,109 +47,107 @@ namespace UnityEngine.UIElements.StyleSheets
         internal static GetCursorIdFunction getCursorIdFunc = null;
 
         private List<StylePropertyValue> m_Values = new List<StylePropertyValue>();
+        private List<int> m_ValueCount = new List<int>();
         private StyleVariableResolver m_Resolver = new StyleVariableResolver();
         private StyleSheet m_Sheet;
-        private StyleRule m_Rule;
+        private StyleProperty[] m_Properties;
         private StylePropertyID[] m_PropertyIDs;
+        private int m_CurrentValueIndex;
         private int m_CurrentPropertyIndex;
 
         public StyleProperty property { get; private set; }
         public StylePropertyID propertyID { get; private set; }
-        public int valueCount => m_Values.Count;
+        public int valueCount { get; private set; }
         public int specificity { get; private set; }
 
         public void SetContext(StyleSheet sheet, StyleComplexSelector selector, StyleVariableContext varContext)
         {
             m_Sheet = sheet;
-            m_Rule = selector.rule;
+            m_Properties = selector.rule.properties;
             m_PropertyIDs = StyleSheetCache.GetPropertyIDs(sheet, selector.ruleIndex);
             m_Resolver.variableContext = varContext;
-            m_CurrentPropertyIndex = 0;
 
             specificity = sheet.isUnityStyleSheet ? StyleValueExtensions.UnitySpecificity : selector.specificity;
-            SetCurrentProperty();
+            LoadProperties();
         }
 
         // This is for UXML inline sheet
         public void SetInlineContext(StyleSheet sheet, StyleRule rule, int ruleIndex)
         {
             m_Sheet = sheet;
-            m_Rule = rule;
+            m_Properties = rule.properties;
             m_PropertyIDs = StyleSheetCache.GetPropertyIDs(sheet, ruleIndex);
-            m_CurrentPropertyIndex = 0;
 
             specificity = StyleValueExtensions.InlineSpecificity;
-            SetCurrentProperty();
+            LoadProperties();
         }
 
-        public bool IsValid()
-        {
-            return m_CurrentPropertyIndex < m_PropertyIDs.Length;
-        }
-
-        public void MoveNextProperty()
+        public StylePropertyID MoveNextProperty()
         {
             ++m_CurrentPropertyIndex;
+            m_CurrentValueIndex += valueCount;
             SetCurrentProperty();
+            return propertyID;
         }
 
         public StylePropertyValue GetValue(int index)
         {
-            return m_Values[index];
+            return m_Values[m_CurrentValueIndex + index];
         }
 
         public StyleValueType GetValueType(int index)
         {
-            return m_Values[index].handle.valueType;
+            return m_Values[m_CurrentValueIndex + index].handle.valueType;
         }
 
         public bool IsValueType(int index, StyleValueType type)
         {
-            return m_Values[index].handle.valueType == type;
+            return m_Values[m_CurrentValueIndex + index].handle.valueType == type;
         }
 
         public bool IsKeyword(int index, StyleValueKeyword keyword)
         {
-            var value = m_Values[index];
+            var value = m_Values[m_CurrentValueIndex + index];
             return value.handle.valueType == StyleValueType.Keyword && (StyleValueKeyword)value.handle.valueIndex == keyword;
         }
 
         public string ReadAsString(int index)
         {
-            var value = m_Values[index];
+            var value = m_Values[m_CurrentValueIndex + index];
             return value.sheet.ReadAsString(value.handle);
         }
 
         public StyleLength ReadStyleLength(int index)
         {
-            var value = m_Values[index];
-            var keyword = TryReadKeyword(value.handle);
+            var value = m_Values[m_CurrentValueIndex + index];
 
-            StyleLength styleLength = new StyleLength(keyword) {specificity = specificity};
-            if (keyword == StyleKeyword.Undefined)
+            if (value.handle.valueType == StyleValueType.Keyword)
+            {
+                var keyword = (StyleValueKeyword)value.handle.valueIndex;
+                return new StyleLength(keyword.ToStyleKeyword()) { specificity = specificity };
+            }
+            else
             {
                 var dimension = value.sheet.ReadDimension(value.handle);
-                styleLength.value = dimension.ToLength();
+                return new StyleLength(dimension.ToLength()) { specificity = specificity };
             }
-
-            return styleLength;
         }
 
         public StyleFloat ReadStyleFloat(int index)
         {
-            var value = m_Values[index];
+            var value = m_Values[m_CurrentValueIndex + index];
             return new StyleFloat(value.sheet.ReadFloat(value.handle)) {specificity = specificity};
         }
 
         public StyleInt ReadStyleInt(int index)
         {
-            var value = m_Values[index];
+            var value = m_Values[m_CurrentValueIndex + index];
             return new StyleInt((int)value.sheet.ReadFloat(value.handle)) {specificity = specificity};
         }
 
         public StyleColor ReadStyleColor(int index)
         {
-            var value = m_Values[index];
+            var value = m_Values[m_CurrentValueIndex + index];
             Color c = Color.clear;
             if (value.handle.valueType == StyleValueType.Enum)
             {
@@ -165,14 +163,14 @@ namespace UnityEngine.UIElements.StyleSheets
 
         public StyleInt ReadStyleEnum<T>(int index)
         {
-            var value = m_Values[index];
+            var value = m_Values[m_CurrentValueIndex + index];
             return new StyleInt(StyleSheetCache.GetEnumValue<T>(value.sheet, value.handle)) {specificity = specificity};
         }
 
         public StyleFont ReadStyleFont(int index)
         {
             Font font = null;
-            var value = m_Values[index];
+            var value = m_Values[m_CurrentValueIndex + index];
             switch (value.handle.valueType)
             {
                 case StyleValueType.ResourcePath:
@@ -212,7 +210,7 @@ namespace UnityEngine.UIElements.StyleSheets
         public StyleBackground ReadStyleBackground(int index)
         {
             var source = new ImageSource();
-            var value = m_Values[index];
+            var value = m_Values[m_CurrentValueIndex + index];
             if (value.handle.valueType == StyleValueType.Keyword)
             {
                 if (value.handle.valueIndex != (int)StyleValueKeyword.None)
@@ -252,7 +250,6 @@ namespace UnityEngine.UIElements.StyleSheets
 
             if (isCustom)
             {
-                var valueCount = m_Values.Count - index;
                 if (valueCount < 1)
                 {
                     Debug.LogWarning($"USS 'cursor' has invalid value at {index}.");
@@ -260,20 +257,20 @@ namespace UnityEngine.UIElements.StyleSheets
                 else
                 {
                     var source = new ImageSource();
-                    var value = m_Values[index];
+                    var value = GetValue(index);
                     if (TryGetImageSourceFromValue(value, out source))
                     {
                         texture = source.texture;
                         if (valueCount >= 3)
                         {
-                            if (GetValueType(index + 1) != StyleValueType.Float || GetValueType(index + 2) != StyleValueType.Float)
+                            var valueX = GetValue(index + 1);
+                            var valueY = GetValue(index + 2);
+                            if (valueX.handle.valueType != StyleValueType.Float || valueY.handle.valueType != StyleValueType.Float)
                             {
                                 Debug.LogWarning("USS 'cursor' property requires two integers for the hot spot value.");
                             }
                             else
                             {
-                                var valueX = m_Values[index + 1];
-                                var valueY = m_Values[index + 2];
                                 hotspotX = valueX.sheet.ReadFloat(valueX.handle);
                                 hotspotY = valueY.sheet.ReadFloat(valueY.handle);
                             }
@@ -286,7 +283,7 @@ namespace UnityEngine.UIElements.StyleSheets
                 // Default cursor
                 if (getCursorIdFunc != null)
                 {
-                    var value = m_Values[index];
+                    var value = GetValue(index);
                     cursorId = getCursorIdFunc(value.sheet, value.handle);
                 }
             }
@@ -295,43 +292,83 @@ namespace UnityEngine.UIElements.StyleSheets
             return new StyleCursor(cursor) {specificity = specificity};
         }
 
-        private void SetCurrentProperty()
+        private void LoadProperties()
         {
+            m_CurrentPropertyIndex = 0;
+            m_CurrentValueIndex = 0;
             m_Values.Clear();
-            if (IsValid())
-            {
-                property = m_Rule.properties[m_CurrentPropertyIndex];
-                propertyID = m_PropertyIDs[m_CurrentPropertyIndex];
-                for (int i = 0; i < property.values.Length; ++i)
-                {
-                    var handle = property.values[i];
-                    if (handle.IsVarFunction())
-                    {
-                        var result = m_Resolver.ResolveVarFunction(property, m_Sheet, property.values, ref i, m_Values);
-                        if (result != StyleVariableResolver.Result.Valid)
-                        {
-                            m_Values.Clear();
+            m_ValueCount.Clear();
 
-                            // Resolve failed
-                            // When this happens, the computed value of the property is either the property’s
-                            // inherited value or its initial value depending on whether the property is inherited or not.
-                            // This is the same behavior as the unset keyword so we simply resolve to that value.
-                            var unsetHandle = new StyleValueHandle() { valueType = StyleValueType.Keyword, valueIndex = (int)StyleValueKeyword.Unset};
-                            m_Values.Add(new StylePropertyValue() { sheet = m_Sheet, handle = unsetHandle });
-                            break;
+            foreach (var sp in m_Properties)
+            {
+                int count = 0;
+                bool valid = true;
+
+                if (sp.requireVariableResolve)
+                {
+                    // Slow path - Values contain one or more var
+                    m_Resolver.Init(sp, m_Sheet, sp.values);
+                    for (int i = 0; i < sp.values.Length && valid; ++i)
+                    {
+                        var handle = sp.values[i];
+                        if (handle.IsVarFunction())
+                        {
+                            var result = m_Resolver.ResolveVarFunction(ref i);
+                            if (result != StyleVariableResolver.Result.Valid)
+                            {
+                                // Resolve failed
+                                // When this happens, the computed value of the property is either the property’s
+                                // inherited value or its initial value depending on whether the property is inherited or not.
+                                // This is the same behavior as the unset keyword so we simply resolve to that value.
+                                var unsetHandle = new StyleValueHandle() { valueType = StyleValueType.Keyword, valueIndex = (int)StyleValueKeyword.Unset};
+                                m_Values.Add(new StylePropertyValue() { sheet = m_Sheet, handle = unsetHandle });
+                                ++count;
+
+                                valid = false;
+                            }
+                        }
+                        else
+                        {
+                            m_Resolver.AddValue(handle);
                         }
                     }
-                    else
+
+                    if (valid)
                     {
-                        var entry = new StylePropertyValue() { sheet = m_Sheet, handle = handle };
-                        m_Values.Add(entry);
+                        m_Values.AddRange(m_Resolver.resolvedValues);
+                        count += m_Resolver.resolvedValues.Count;
                     }
                 }
+                else
+                {
+                    // Fast path - no var
+                    count = sp.values.Length;
+                    for (int i = 0; i < count; ++i)
+                    {
+                        var handle = sp.values[i];
+                        m_Values.Add(new StylePropertyValue() { sheet = m_Sheet, handle = sp.values[i] });
+                    }
+                }
+
+                m_ValueCount.Add(count);
+            }
+
+            SetCurrentProperty();
+        }
+
+        private void SetCurrentProperty()
+        {
+            if (m_CurrentPropertyIndex < m_PropertyIDs.Length)
+            {
+                property = m_Properties[m_CurrentPropertyIndex];
+                propertyID = m_PropertyIDs[m_CurrentPropertyIndex];
+                valueCount = m_ValueCount[m_CurrentPropertyIndex];
             }
             else
             {
                 property = null;
                 propertyID = StylePropertyID.Unknown;
+                valueCount = 0;
             }
         }
 
@@ -378,17 +415,6 @@ namespace UnityEngine.UIElements.StyleSheets
             }
 
             return true;
-        }
-
-        private static StyleKeyword TryReadKeyword(StyleValueHandle handle)
-        {
-            if (handle.valueType == StyleValueType.Keyword)
-            {
-                var keyword = (StyleValueKeyword)handle.valueIndex;
-                return keyword.ToStyleKeyword();
-            }
-
-            return StyleKeyword.Undefined;
         }
     }
 

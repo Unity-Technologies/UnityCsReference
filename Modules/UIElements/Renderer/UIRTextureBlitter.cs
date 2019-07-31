@@ -31,6 +31,7 @@ namespace UnityEngine.UIElements.UIR
             public RectInt srcRect;
             public Vector2Int dstPos;
             public int border; // Typically 0 or 1.
+            public Color tint;
         }
 
         #region Dispose Pattern
@@ -74,7 +75,7 @@ namespace UnityEngine.UIElements.UIR
             m_PendingBlits = new List<BlitInfo>(capacity);
         }
 
-        public void QueueBlit(Texture src, RectInt srcRect, Vector2Int dstPos, bool addBorder)
+        public void QueueBlit(Texture src, RectInt srcRect, Vector2Int dstPos, bool addBorder, Color tint)
         {
             if (disposed)
             {
@@ -82,10 +83,10 @@ namespace UnityEngine.UIElements.UIR
                 return;
             }
 
-            m_PendingBlits.Add(new BlitInfo { src = src, srcRect = srcRect, dstPos = dstPos, border = addBorder ? 1 : 0 });
+            m_PendingBlits.Add(new BlitInfo { src = src, srcRect = srcRect, dstPos = dstPos, border = addBorder ? 1 : 0, tint = tint });
         }
 
-        public void BlitOneNow(RenderTexture dst, Texture src, RectInt srcRect, Vector2Int dstPos, bool addBorder)
+        public void BlitOneNow(RenderTexture dst, Texture src, RectInt srcRect, Vector2Int dstPos, bool addBorder, Color tint)
         {
             if (disposed)
             {
@@ -93,7 +94,7 @@ namespace UnityEngine.UIElements.UIR
                 return;
             }
 
-            m_SingleBlit[0] = new BlitInfo { src = src, srcRect = srcRect, dstPos = dstPos, border = addBorder ? 1 : 0 };
+            m_SingleBlit[0] = new BlitInfo { src = src, srcRect = srcRect, dstPos = dstPos, border = addBorder ? 1 : 0, tint = tint };
             BeginBlit(dst);
             DoBlit(m_SingleBlit, 0);
             EndBlit();
@@ -177,18 +178,22 @@ namespace UnityEngine.UIElements.UIR
                 float srcTop = (current.srcRect.yMax + current.border) * srcTexelHeight;
 
                 // Bottom left
+                GL.Color(current.tint);
                 GL.TexCoord3(srcLeft, srcBottom, slotIndex);
                 GL.Vertex3(dstLeft, dstBottom, 0.0f);
 
                 // Top left
+                GL.Color(current.tint);
                 GL.TexCoord3(srcLeft, srcTop, slotIndex);
                 GL.Vertex3(dstLeft, dstTop, 0.0f);
 
                 // Top right
+                GL.Color(current.tint);
                 GL.TexCoord3(srcRight, srcTop, slotIndex);
                 GL.Vertex3(dstRight, dstTop, 0.0f);
 
                 // Bottom right
+                GL.Color(current.tint);
                 GL.TexCoord3(srcRight, srcBottom, slotIndex);
                 GL.Vertex3(dstRight, dstBottom, 0.0f);
             }

@@ -22,7 +22,7 @@ namespace UnityEditor
         private UISystemProfilerTreeView m_TreeViewControl;
         private UISystemProfilerTreeView.State m_UGUIProfilerTreeViewState;
         private ZoomableArea m_ZoomablePreview;
-
+        private static GUIStyle s_PreviewBackground;
         private UISystemPreviewWindow m_DetachedPreview;
 
         private int currentFrame = 0;
@@ -75,7 +75,7 @@ namespace UnityEditor
             {
                 using (new EditorGUILayout.VerticalScope())
                 {
-                    using (new EditorGUILayout.HorizontalScope(EditorStyles.contentToolbar, GUILayout.ExpandWidth(true)))
+                    using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar, GUILayout.ExpandWidth(true)))
                     {
                         detachPreview = GUILayout.Button(Styles.contentDetachRender, EditorStyles.toolbarButton, GUILayout.Width(75));
                         if (detachPreview)
@@ -107,10 +107,10 @@ namespace UnityEditor
         internal static void DrawPreviewToolbarButtons()
         {
             PreviewBackground = (Styles.PreviewBackgroundType)EditorGUILayout.IntPopup(GUIContent.none, (int)PreviewBackground, Styles.backgroundOptions,
-                Styles.backgroundValues, EditorStyles.toolbarDropDown, GUILayout.MaxWidth(100));
+                Styles.backgroundValues, EditorStyles.toolbarDropDown, GUILayout.MaxWidth(110));
 
             PreviewRenderMode = (Styles.RenderMode)EditorGUILayout.IntPopup(GUIContent.none, (int)PreviewRenderMode, Styles.rendermodeOptions,
-                Styles.rendermodeValues, EditorStyles.toolbarDropDown, GUILayout.MaxWidth(100));
+                Styles.rendermodeValues, EditorStyles.toolbarDropDown, GUILayout.MaxWidth(150));
         }
 
         private static Styles.RenderMode PreviewRenderMode
@@ -127,9 +127,15 @@ namespace UnityEditor
 
         internal void DrawRenderUI()
         {
-            var previewRect = EditorGUILayout.GetControlRect(GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+            if (s_PreviewBackground == null)
+            {
+                s_PreviewBackground = "OL box flat";
+                s_PreviewBackground.margin = new RectOffset(0, 0, 0, 2);
+            }
+            var previewRect = GUILayoutUtility.GetRect(GUIContent.none, s_PreviewBackground, GUILayout.ExpandWidth(true),
+                GUILayout.ExpandHeight(true));
 
-            GUI.Box(previewRect, GUIContent.none);
+            GUI.Box(previewRect, GUIContent.none, s_PreviewBackground);
             m_ZoomablePreview.BeginViewGUI();
             bool first = true;
             if (m_UGUIProfilerTreeViewState != null && Event.current.type == EventType.Repaint)
@@ -335,7 +341,7 @@ namespace UnityEditor
                 entryEven = "OL EntryBackEven";
                 rightHeader = "OL title TextRight";
 
-                columnHeader = "OL title";
+                columnHeader = "toolbarbutton";
                 columnHeaderCenterAligned = new GUIStyle(columnHeader)
                 {
                     alignment = TextAnchor.MiddleCenter

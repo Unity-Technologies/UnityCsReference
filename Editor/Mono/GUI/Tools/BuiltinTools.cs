@@ -611,8 +611,7 @@ namespace UnityEditor
                             }
 
                             bool scaleFromPivot = Event.current.alt;
-                            bool squashing = EditorGUI.actionKey;
-                            bool uniformScaling = Event.current.shift && !squashing;
+                            bool uniformScaling = Event.current.shift;
 
                             if (!scaleFromPivot)
                                 scalePivot = GetRectPointInWorld(s_StartRect, pivot, rotation, 2 - xHandle, 2 - yHandle);
@@ -633,33 +632,10 @@ namespace UnityEditor
                                 scale = Vector3.one * refScale;
                             }
 
-                            if (squashing && xHandle == 1)
-                            {
-                                if (Event.current.shift)
-                                    scale.x = scale.z = 1 / Mathf.Sqrt(Mathf.Max(scale.y, 0.0001f));
-                                else
-                                    scale.x = 1 / Mathf.Max(scale.y, 0.0001f);
-                            }
-
                             if (uniformScaling)
                             {
                                 float refScale = (xHandle == 1 ? scale.y : scale.x);
                                 scale = Vector3.one * refScale;
-                            }
-
-                            if (squashing && xHandle == 1)
-                            {
-                                if (Event.current.shift)
-                                    scale.x = scale.z = 1 / Mathf.Sqrt(Mathf.Max(scale.y, 0.0001f));
-                                else
-                                    scale.x = 1 / Mathf.Max(scale.y, 0.0001f);
-                            }
-                            if (squashing && yHandle == 1)
-                            {
-                                if (Event.current.shift)
-                                    scale.y = scale.z = 1 / Mathf.Sqrt(Mathf.Max(scale.x, 0.0001f));
-                                else
-                                    scale.y = 1 / Mathf.Max(scale.x, 0.0001f);
                             }
                         }
 

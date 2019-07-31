@@ -59,7 +59,6 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.VR")]
 [assembly: InternalsVisibleTo("Unity.RuntimeTests")]
 [assembly: InternalsVisibleTo("Unity.RuntimeTests.Framework")]
-[assembly: InternalsVisibleTo("UnityEditor.Facebook.Extensions")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-firstpass-testable")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]

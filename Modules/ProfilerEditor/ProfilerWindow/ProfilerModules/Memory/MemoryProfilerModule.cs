@@ -44,7 +44,7 @@ namespace UnityEditorInternal.Profiling
 
         public override void DrawToolbar(Rect position)
         {
-            EditorGUILayout.BeginHorizontal(EditorStyles.contentToolbar);
+            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 
             m_ShowDetailedMemoryPane = (ProfilerMemoryView)EditorGUILayout.EnumPopup(m_ShowDetailedMemoryPane, EditorStyles.toolbarDropDown, GUILayout.Width(70f));
 

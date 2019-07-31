@@ -209,6 +209,12 @@ namespace UnityEngine
         [FreeFunction(Name = "Texture2DScripting::LoadRawData", HasExplicitThis = true)]
         extern private bool LoadRawTextureDataImplArray(byte[] data);
 
+        [FreeFunction(Name = "Texture2DScripting::SetPixelDataArray", HasExplicitThis = true, ThrowsException = true)]
+        extern private bool SetPixelDataImplArray(System.Array data, int mipLevel, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
+
+        [FreeFunction(Name = "Texture2DScripting::SetPixelData", HasExplicitThis = true, ThrowsException = true)]
+        extern private bool SetPixelDataImpl(IntPtr data, int mipLevel, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
+
         extern private IntPtr GetWritableImageData(int frame);
         extern private long GetRawImageDataSize();
 
@@ -361,6 +367,12 @@ namespace UnityEngine
         [FreeFunction(Name = "CubemapScripting::SetPixels", HasExplicitThis = true, ThrowsException = true)]
         extern public void SetPixels(Color[] colors, CubemapFace face, int miplevel);
 
+        [FreeFunction(Name = "CubemapScripting::SetPixelDataArray", HasExplicitThis = true, ThrowsException = true)]
+        extern private bool SetPixelDataImplArray(System.Array data, int mipLevel, int face, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
+
+        [FreeFunction(Name = "CubemapScripting::SetPixelData", HasExplicitThis = true, ThrowsException = true)]
+        extern private bool SetPixelDataImpl(IntPtr data, int mipLevel, int face, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
+
         public void SetPixels(Color[] colors, CubemapFace face)
         {
             SetPixels(colors, face, 0);
@@ -465,6 +477,12 @@ namespace UnityEngine
         {
             SetPixels32(colors, 0);
         }
+
+        [FreeFunction(Name = "Texture3DScripting::SetPixelDataArray", HasExplicitThis = true, ThrowsException = true)]
+        extern private bool SetPixelDataImplArray(System.Array data, int mipLevel, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
+
+        [FreeFunction(Name = "Texture3DScripting::SetPixelData", HasExplicitThis = true, ThrowsException = true)]
+        extern private bool SetPixelDataImpl(IntPtr data, int mipLevel, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
     }
 
     [NativeHeader("Runtime/Graphics/Texture2DArray.h")]
@@ -494,6 +512,12 @@ namespace UnityEngine
         {
             return GetPixels(arrayElement, 0);
         }
+
+        [FreeFunction(Name = "Texture2DArrayScripting::SetPixelDataArray", HasExplicitThis = true, ThrowsException = true)]
+        extern private bool SetPixelDataImplArray(System.Array data, int mipLevel, int element, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
+
+        [FreeFunction(Name = "Texture2DArrayScripting::SetPixelData", HasExplicitThis = true, ThrowsException = true)]
+        extern private bool SetPixelDataImpl(IntPtr data, int mipLevel, int element, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
 
         [FreeFunction(Name = "Texture2DArrayScripting::GetPixels32", HasExplicitThis = true, ThrowsException = true)]
         extern public Color32[] GetPixels32(int arrayElement, int miplevel);
@@ -570,6 +594,12 @@ namespace UnityEngine
         {
             SetPixels32(colors, face, arrayElement, 0);
         }
+
+        [FreeFunction(Name = "CubemapArrayScripting::SetPixelDataArray", HasExplicitThis = true, ThrowsException = true)]
+        extern private bool SetPixelDataImplArray(System.Array data, int mipLevel, int face, int element, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
+
+        [FreeFunction(Name = "CubemapArrayScripting::SetPixelData", HasExplicitThis = true, ThrowsException = true)]
+        extern private bool SetPixelDataImpl(IntPtr data, int mipLevel, int face, int element, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
     }
 
     [NativeHeader("Runtime/Graphics/SparseTexture.h")]

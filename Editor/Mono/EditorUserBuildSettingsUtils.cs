@@ -15,8 +15,6 @@ namespace UnityEditor
             {
                 case BuildTargetGroup.Standalone:
                     return DesktopStandaloneBuildWindowExtension.GetBestStandaloneTarget(EditorUserBuildSettings.selectedStandaloneTarget);
-                case BuildTargetGroup.Facebook:
-                    return EditorUserBuildSettings.selectedFacebookTarget;
                 default:
                     if (BuildPlatforms.instance == null)
                         throw new System.Exception("Build platforms are not initialized.");

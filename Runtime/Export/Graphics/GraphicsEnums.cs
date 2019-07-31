@@ -842,6 +842,16 @@ namespace UnityEngine.Rendering
         UInt32 = 1,
     }
 
+    [Flags]
+    public enum MeshUpdateFlags
+    {
+        Default = 0,
+        DontValidateIndices = 1 << 0,
+        DontResetBoneBounds = 1 << 1,
+        DontNotifyMeshUsers = 1 << 2,
+        DontRecalculateBounds = 1 << 3,
+    }
+
     // Match VertexFormat on C++ side
     public enum VertexAttributeFormat
     {
@@ -1221,6 +1231,17 @@ namespace UnityEngine.Rendering
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public struct SubMeshDescriptor
     {
+        public SubMeshDescriptor(int indexStart, int indexCount, MeshTopology topology = MeshTopology.Triangles)
+        {
+            this.indexStart = indexStart;
+            this.indexCount = indexCount;
+            this.topology = topology;
+            this.bounds = new Bounds();
+            this.baseVertex = 0;
+            this.firstVertex = 0;
+            this.vertexCount = 0;
+        }
+
         public Bounds bounds { get; set; }
         public MeshTopology topology { get; set; }
         public int indexStart { get; set; }
@@ -1228,6 +1249,11 @@ namespace UnityEngine.Rendering
         public int baseVertex { get; set; }
         public int firstVertex { get; set; }
         public int vertexCount { get; set; }
+
+        override public string ToString()
+        {
+            return $"(topo={topology} indices={indexStart},{indexCount} vertices={firstVertex},{vertexCount} basevtx={baseVertex} bounds={bounds})";
+        }
     }
 
     // C++ MeshScripting::VertexAttributeDesc has to match layout

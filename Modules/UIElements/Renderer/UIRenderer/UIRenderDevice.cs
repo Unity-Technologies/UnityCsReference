@@ -113,7 +113,7 @@ namespace UnityEngine.UIElements.UIR
         private bool m_TransformBufferNeedsUpdate;
         private ComputeBuffer[] m_TransformBuffers;
         private DrawStatistics m_DrawStats;
-        private bool m_UsesStraightYCoordinateSystem;
+        private bool m_APIUsesStraightYCoordinateSystem;
 
         readonly Pool<MeshHandle> m_MeshHandles = new Pool<MeshHandle>();
         readonly DrawParams m_DrawParams = new DrawParams();
@@ -192,7 +192,7 @@ namespace UnityEngine.UIElements.UIR
                 m_Updates.Add(new List<AllocToUpdate>());
             }
 
-            m_UsesStraightYCoordinateSystem =
+            m_APIUsesStraightYCoordinateSystem =
                 SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLCore ||
                 SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLES2 ||
                 SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLES3;
@@ -200,6 +200,23 @@ namespace UnityEngine.UIElements.UIR
 
         // TODO: Remove this once case 1148851 has been fixed.
         static internal Func<Shader> getEditorShader = null;
+
+        static private Texture2D s_WhiteTexel;
+        static internal Texture2D whiteTexel
+        {
+            get
+            {
+                if (s_WhiteTexel == null)
+                {
+                    s_WhiteTexel = new Texture2D(1, 1);
+                    s_WhiteTexel.hideFlags = HideFlags.HideAndDontSave;
+                    s_WhiteTexel.SetPixel(0, 0, Color.white);
+                    s_WhiteTexel.Apply(false, true);
+                }
+                return s_WhiteTexel;
+            }
+        }
+
 
         /// <summary>
         /// Indicates whether the active subshader of the stock shader has compute capability. Derived shaders are
@@ -725,8 +742,12 @@ namespace UnityEngine.UIElements.UIR
             s_BeforeDrawSampler.End();
         }
 
-        void EvaluateChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, Texture atlas, Texture gradientSettings, ref Exception immediateException)
+        void EvaluateChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, Texture atlas, Texture gradientSettings, float pixelsPerPoint, ref Exception immediateException)
         {
+            var usesStraightYCoordinateSystem = m_APIUsesStraightYCoordinateSystem;
+            if (Utility.GetInvertProjectionMatrix())
+                usesStraightYCoordinateSystem = !usesStraightYCoordinateSystem;
+
             var drawParams = m_DrawParams;
             drawParams.Reset(viewport, projection);
             ComputeBuffer transformsAsStructBuffer = m_TransformBuffers != null ? m_TransformBuffers[m_TransformBufferToUse] : null;
@@ -740,6 +761,7 @@ namespace UnityEngine.UIElements.UIR
                 SetTransformsOnMaterial(transformsAsStructBuffer, standardMaterial);
                 Set1PixelSizeOnMaterial(drawParams, standardMaterial);
                 standardMaterial.SetVector(s_PixelClipRectPropID, drawParams.view.Peek().clipRect);
+                GL.modelview = drawParams.view.Peek().transform;
                 GL.LoadProjectionMatrix(drawParams.projection);
             }
 
@@ -835,9 +857,12 @@ namespace UnityEngine.UIElements.UIR
                     if (head.type != CommandType.Draw)
                     {
                         if (!m_MockDevice)
-                            head.ExecuteNonDrawMesh(drawParams, m_UsesStraightYCoordinateSystem, ref immediateException);
+                            head.ExecuteNonDrawMesh(drawParams, usesStraightYCoordinateSystem, pixelsPerPoint, ref immediateException);
                         if (head.type == CommandType.Immediate)
+                        {
                             curState.material = m_DefaultMaterial; // A value that is considered unique and not null to force material reset on next draw command
+                            m_DrawStats.immediateDraws++;
+                        }
                     }
                     else
                     {
@@ -927,7 +952,7 @@ namespace UnityEngine.UIElements.UIR
         }
 
         // Called every frame to draw one entire UI window
-        public void DrawChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, Texture atlas, Texture gradientSettings, ref Exception immediateException)
+        public void DrawChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, Texture atlas, Texture gradientSettings, float pixelsPerPoint, ref Exception immediateException)
         {
             if (head == null)
                 return;
@@ -935,7 +960,7 @@ namespace UnityEngine.UIElements.UIR
             BeforeDraw();
             Utility.ProfileDrawChainBegin();
 
-            EvaluateChain(head, viewport, projection, atlas, gradientSettings, ref immediateException);
+            EvaluateChain(head, viewport, projection, atlas, gradientSettings, pixelsPerPoint, ref immediateException);
 
             Utility.ProfileDrawChainEnd();
 
@@ -1017,6 +1042,11 @@ namespace UnityEngine.UIElements.UIR
         internal static void PrepareForGfxDeviceRecreate()
         {
             m_ActiveDeviceCount += 1; // Don't let the count reach 0 and unsubscribe from GfxDeviceRecreate
+            if (s_WhiteTexel != null)
+            {
+                UIRUtility.Destroy(s_WhiteTexel);
+                s_WhiteTexel = null;
+            }
         }
 
         internal static void WrapUpGfxDeviceRecreate() { m_ActiveDeviceCount -= 1; }
@@ -1080,6 +1110,7 @@ namespace UnityEngine.UIElements.UIR
             public uint materialSetCount;
             public uint drawRangeCount;
             public uint drawRangeCallCount;
+            public uint immediateDraws;
         }
         internal DrawStatistics GatherDrawStatistics() { return m_DrawStats; }
 
@@ -1112,6 +1143,11 @@ namespace UnityEngine.UIElements.UIR
 
             if (m_ActiveDeviceCount == 0 && m_SubscribedToNotifications)
             {
+                if (s_WhiteTexel != null)
+                {
+                    UIRUtility.Destroy(s_WhiteTexel);
+                    s_WhiteTexel = null;
+                }
                 Utility.NotifyOfUIREvents(false);
                 m_SubscribedToNotifications = false;
             }

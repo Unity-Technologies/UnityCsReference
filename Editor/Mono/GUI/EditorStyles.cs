@@ -234,6 +234,9 @@ namespace UnityEditor
         public static GUIStyle toolbarTextField { get { return s_Current.m_ToolbarTextField; } }
         private GUIStyle m_ToolbarTextField;
 
+        internal static GUIStyle toolbarLabel { get { return s_Current.m_ToolbarLabel; } }
+        private GUIStyle m_ToolbarLabel;
+
         public static GUIStyle inspectorDefaultMargins { get { return s_Current.m_InspectorDefaultMargins; } }
         private GUIStyle m_InspectorDefaultMargins;
 
@@ -363,7 +366,7 @@ namespace UnityEditor
 
             if (s_CachedStyles[skinIndex] == null)
             {
-                EditorResources.BuildCatalog();
+                EditorResources.RefreshSkin();
 
                 s_CachedStyles[skinIndex] = new EditorStyles();
                 s_CachedStyles[skinIndex].InitSharedStyles();
@@ -408,6 +411,7 @@ namespace UnityEditor
             m_ToolbarDropDownToggleRight = GetStyle("toolbarDropDownToggleRight");
             m_ToolbarCreateAddNewDropDown = GetStyle("ToolbarCreateAddNewDropDown");
             m_ToolbarTextField = GetStyle("toolbarTextField");
+            m_ToolbarLabel = GetStyle("ToolbarLabel");
             m_ToolbarSearchField = GetStyle("ToolbarSeachTextField");
             m_ToolbarSearchFieldPopup = GetStyle("ToolbarSeachTextFieldPopup");
             m_ToolbarSearchFieldCancelButton = GetStyle("ToolbarSeachCancelButton");

@@ -135,9 +135,15 @@ namespace UnityEditor
 
         extern public static int GetRayTracingShaderMessageCount([NotNull] RayTracingShader s);
         extern public static ShaderMessage[] GetRayTracingShaderMessages([NotNull] RayTracingShader s);
-        extern internal static int GetRayTracingShaderPlatformCount(RayTracingShader s);
-        extern internal static ShaderPlatform GetRayTracingShaderPlatformType(RayTracingShader s, int platformIndex);
-        extern internal static bool IsRayTracingShaderValidForPlatform(RayTracingShader s, ShaderPlatform renderer);
+        extern public static int GetRayGenerationShaderCount([NotNull] RayTracingShader s);
+        extern public static string GetRayGenerationShaderName([NotNull] RayTracingShader s, int shaderIndex);
+        extern public static int GetMissShaderCount([NotNull] RayTracingShader s);
+        extern public static string GetMissShaderName([NotNull] RayTracingShader s, int shaderIndex);
+        extern public static int GetMissShaderRayPayloadSize([NotNull] RayTracingShader s, int shaderIndex);
+        extern public static int GetCallableShaderCount([NotNull] RayTracingShader s);
+        extern public static string GetCallableShaderName([NotNull] RayTracingShader s, int shaderIndex);
+        extern public static int GetCallableShaderParamSize([NotNull] RayTracingShader s, int shaderIndex);
+
         private static void CheckPropertyIndex(Shader s, int idx)
         {
             if (idx < 0 || idx >= GetPropertyCount(s))
@@ -222,6 +228,9 @@ namespace UnityEditor
         extern internal static int              GetComputeShaderPlatformKernelCount(ComputeShader s, int platformIndex);
         extern internal static string           GetComputeShaderPlatformKernelName(ComputeShader s, int platformIndex, int kernelIndex);
 
+        extern internal static int              GetRayTracingShaderPlatformCount(RayTracingShader s);
+        extern internal static ShaderPlatform   GetRayTracingShaderPlatformType(RayTracingShader s, int platformIndex);
+        extern internal static bool             IsRayTracingShaderValidForPlatform(RayTracingShader s, ShaderPlatform renderer);
 
         extern internal static void CalculateLightmapStrippingFromCurrentScene();
         extern internal static void CalculateFogStrippingFromCurrentScene();

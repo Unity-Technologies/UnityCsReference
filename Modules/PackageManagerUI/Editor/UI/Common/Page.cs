@@ -27,6 +27,11 @@ namespace UnityEditor.PackageManager.UI
         public bool isLoading => false;
 
         [SerializeField]
+        internal bool m_IsAlreadyFetched;
+
+        public bool isAlreadyFetched => m_IsAlreadyFetched;
+
+        [SerializeField]
         private bool m_MorePackagesToFetch;
 
         [SerializeField]
@@ -57,6 +62,7 @@ namespace UnityEditor.PackageManager.UI
         public Page(PackageFilterTab tab)
         {
             m_Tab = tab;
+            m_IsAlreadyFetched = false;
         }
 
         public void OnBeforeSerialize() {}
@@ -164,10 +170,12 @@ namespace UnityEditor.PackageManager.UI
                 else
                     removeList.Add(package);
             }
+
+            m_IsAlreadyFetched = true;
             RebuildList(addOrUpdateList, removeList);
         }
 
-        public void RebuildList(List<IPackage> addOrUpdateList = null, List<IPackage> removeList = null)
+        public void RebuildList(IEnumerable<IPackage> addOrUpdateList = null, IEnumerable<IPackage> removeList = null)
         {
             if (!m_FilteredList.enabled)
             {
@@ -230,6 +238,45 @@ namespace UnityEditor.PackageManager.UI
                 AssetStore.AssetStoreClient.instance.List(productList.list.Count, PageManager.k_DefaultPageSize, PackageFiltering.instance.currentSearchText, false);
         }
 
+        public void Load(IPackage package, IPackageVersion version = null)
+        {
+            var selectedState = GetVisualState(package.uniqueId);
+            if (selectedState == null)
+            {
+                long productId;
+                if (package == null || !long.TryParse(package.uniqueId, out productId))
+                    return;
+
+                var targetList = m_FilteredList.baseList;
+                if (!m_FilteredList.enabled || targetList.list.Contains(productId))
+                    return;
+
+                targetList.list.Add(productId);
+                m_MorePackagesToFetch = targetList.total > targetList.list.Count;
+            }
+
+            m_IsAlreadyFetched = true;
+            RebuildList(new[] { package }, Enumerable.Empty<IPackage>());
+            SetSelected(package.uniqueId, version?.uniqueId ?? package.primaryVersion?.uniqueId);
+        }
+
+        public void OnProductFetched(long productId)
+        {
+            var targetList = m_FilteredList.baseList;
+            if (!m_FilteredList.enabled || targetList.list.Contains(productId))
+                return;
+
+            targetList.list.Add(productId);
+            m_MorePackagesToFetch = targetList.total > targetList.list.Count;
+
+            if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore)
+            {
+                var package = PackageDatabase.instance.GetPackage(productId.ToString());
+                RebuildList(new[] { package }, Enumerable.Empty<IPackage>());
+                SetSelected(package?.uniqueId, package?.primaryVersion?.uniqueId);
+            }
+        }
+
         public void OnProductListFetched(ProductList productList, bool fetchDetailsCalled)
         {
             var isSearchResult = !string.IsNullOrEmpty(productList.searchText);
@@ -270,7 +317,10 @@ namespace UnityEditor.PackageManager.UI
                 AssetStore.AssetStoreClient.instance.FetchDetails(productList.list);
 
             if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore)
+            {
+                m_IsAlreadyFetched = true;
                 RebuildList();
+            }
         }
 
         public void SetSelected(string packageUniqueId, string versionUniqueId)
@@ -290,8 +340,11 @@ namespace UnityEditor.PackageManager.UI
             if (!string.IsNullOrEmpty(packageUniqueId) && !string.IsNullOrEmpty(versionUniqueId))
             {
                 var selectedState = GetVisualState(packageUniqueId);
-                selectedState.selectedVersionId = versionUniqueId;
-                m_SelectedStates.Add(selectedState.Clone());
+                if (selectedState != null)
+                {
+                    selectedState.selectedVersionId = versionUniqueId;
+                    m_SelectedStates.Add(selectedState.Clone());
+                }
             }
             onSelectionChanged?.Invoke(GetSelectedVersion());
             onVisualStateChange?.Invoke(new[] { GetVisualState(oldSelection?.packageUniqueId), GetVisualState(packageUniqueId) }.Where(s => s != null));

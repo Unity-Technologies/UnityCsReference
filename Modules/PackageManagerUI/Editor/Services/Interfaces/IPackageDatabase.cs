@@ -21,7 +21,7 @@ namespace UnityEditor.PackageManager.UI
         event Action<IPackage> onPackageOperationFinish;
 
         event Action onRefreshOperationStart;
-        event Action onRefreshOperationFinish;
+        event Action<PackageFilterTab> onRefreshOperationFinish;
         event Action<Error> onRefreshOperationError;
 
         event Action<IPackage, DownloadProgress> onDownloadProgress;
@@ -29,6 +29,7 @@ namespace UnityEditor.PackageManager.UI
         void Setup();
 
         void Clear();
+        void Reset();
 
         bool isEmpty { get; }
         bool isInstallOrUninstallInProgress { get; }
@@ -42,6 +43,8 @@ namespace UnityEditor.PackageManager.UI
         void InstallFromPath(string path);
 
         void Uninstall(IPackage package);
+
+        DownloadProgress GetDownloadProgress(IPackageVersion version);
 
         bool IsDownloadInProgress(IPackageVersion version);
 
@@ -57,6 +60,8 @@ namespace UnityEditor.PackageManager.UI
         long lastUpdateTimestamp { get; }
 
         IEnumerable<IPackage> allPackages { get; }
+        IEnumerable<IPackage> assetStorePackages { get; }
+        IEnumerable<IPackage> upmPackages { get; }
 
         void AddPackageError(IPackage package, Error error);
         void ClearPackageErrors(IPackage package);

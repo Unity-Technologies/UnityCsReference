@@ -83,11 +83,8 @@ namespace UnityEditor.PackageManager.UI
 
         protected void CancelInternal()
         {
+            OnFinalize();
             m_Request = null;
-            onOperationError = delegate {};
-            onOperationFinalized = delegate {};
-            onProcessResult = delegate {};
-            EditorApplication.update -= Progress;
         }
 
         // Common progress code for all classes

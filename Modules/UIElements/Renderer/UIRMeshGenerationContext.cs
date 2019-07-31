@@ -20,6 +20,7 @@ namespace UnityEngine.UIElements
         internal float clipRectID;    // Comes from the same pool as transformIDs
         [SerializeField] internal float flags; // Solid,Font,AtlasTextured,CustomTextured,Edge,SVG with gradients,...
         [SerializeField] internal float settingIndex; // Index in stored SVG gradients atlas
+        internal UInt16 siX, siY;     // Shader info address within the atlas (texels)
         // Winding order of vertices matters. CCW is for clipped meshes.
     }
 
@@ -288,10 +289,10 @@ namespace UnityEngine.UIElements
             mgc.painter.DrawBorder(borderParams);
         }
 
-        public static void Text(this MeshGenerationContext mgc, TextParams textParams, TextHandle handle)
+        public static void Text(this MeshGenerationContext mgc, TextParams textParams, TextHandle handle, float pixelsPerPoint)
         {
             if (textParams.font != null)
-                mgc.painter.DrawText(textParams, handle);
+                mgc.painter.DrawText(textParams, handle, pixelsPerPoint);
         }
 
         public static Vector2 GetVisualElementRadius(Length length, VisualElement parent)

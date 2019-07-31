@@ -54,7 +54,7 @@ namespace UnityEditorInternal.Profiling
 
         public override void DrawView(Rect position)
         {
-            EditorGUILayout.BeginHorizontal(EditorStyles.contentToolbar);
+            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             ProfilerAudioView newShowDetailedAudioPane = m_ShowDetailedAudioPane;
             if (AudioDeepProfileToggle())
             {

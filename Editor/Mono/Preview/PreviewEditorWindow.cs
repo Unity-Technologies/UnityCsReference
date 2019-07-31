@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor.Modules;
 using UnityEditorInternal;
 using UnityEngine;
@@ -28,6 +29,8 @@ namespace UnityEditor
         [SerializeField] HideFlags m_TextureHideFlags = HideFlags.HideAndDontSave;
         [SerializeField] bool m_RenderIMGUI;
         [SerializeField] bool m_MaximizeOnPlay;
+
+        private List<Type> m_AvailableWindowTypes;
 
         protected string previewName
         {
@@ -154,9 +157,9 @@ namespace UnityEditor
             }
         }
 
-        protected TypeCache.TypeCollection GetAvailableWindowTypes()
+        protected List<Type> GetAvailableWindowTypes()
         {
-            return TypeCache.GetTypesDerivedFrom(typeof(PreviewEditorWindow));
+            return m_AvailableWindowTypes ?? (m_AvailableWindowTypes = TypeCache.GetTypesDerivedFrom(typeof(PreviewEditorWindow)).OrderBy(type => type.Name).ToList());
         }
 
         protected void SwapMainWindow(Type type)

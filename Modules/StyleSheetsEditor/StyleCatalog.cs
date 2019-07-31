@@ -7,14 +7,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor.Experimental;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEngine.UIElements.StyleSheets;
 using Debug = UnityEngine.Debug;
 
 namespace UnityEditor.StyleSheets
@@ -894,7 +892,7 @@ namespace UnityEditor.StyleSheets
 
         public void Load(IEnumerable<string> paths)
         {
-            var sheets = paths.Select(p => EditorResources.Load<UnityEngine.Object>(p) as StyleSheet)
+            var sheets = paths.Select(p => EditorResources.Load<UnityEngine.Object>(p, false) as StyleSheet)
                 .Where(s => s != null).Distinct();
 
             Load(sheets);

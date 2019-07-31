@@ -303,7 +303,6 @@ namespace UnityEditor
         SerializedProperty m_MetalForceHardShadows;
         SerializedProperty m_FramebufferDepthMemorylessMode;
 
-        SerializedProperty m_DisplayResolutionDialog;
         SerializedProperty m_DefaultIsNativeResolution;
         SerializedProperty m_MacRetinaSupport;
 
@@ -462,7 +461,6 @@ namespace UnityEditor
             m_DefaultIsNativeResolution     = FindPropertyAssert("defaultIsNativeResolution");
             m_MacRetinaSupport              = FindPropertyAssert("macRetinaSupport");
             m_CaptureSingleScreen           = FindPropertyAssert("captureSingleScreen");
-            m_DisplayResolutionDialog       = FindPropertyAssert("displayResolutionDialog");
             m_SupportedAspectRatios         = FindPropertyAssert("m_SupportedAspectRatios");
             m_UsePlayerLog                  = FindPropertyAssert("usePlayerLog");
 
@@ -568,8 +566,8 @@ namespace UnityEditor
             }
             GUILayout.Label(string.Format(L10n.Tr("Settings for {0}"), validPlatforms[selectedPlatform].title.text));
 
-            // Compensate so settings inside boxes line up with settings at the top, though keep a minimum of 150.
-            EditorGUIUtility.labelWidth = Mathf.Max(150, EditorGUIUtility.labelWidth - 8);
+            // Increase the offset to accomodate large labels, though keep a minimum of 150.
+            EditorGUIUtility.labelWidth = Mathf.Max(150, EditorGUIUtility.labelWidth + 4);
 
             BuildPlatform platform = validPlatforms[selectedPlatform];
             BuildTargetGroup targetGroup = platform.targetGroup;
@@ -935,12 +933,6 @@ namespace UnityEditor
                     {
                         GUILayout.Label(SettingsContent.standalonePlayerOptionsTitle, EditorStyles.boldLabel);
                         EditorGUILayout.PropertyField(m_CaptureSingleScreen);
-                        EditorGUILayout.PropertyField(m_DisplayResolutionDialog);
-
-                        if (m_DisplayResolutionDialog.intValue > 0)
-                        {
-                            EditorGUILayout.HelpBox(SettingsContent.displayResolutionDialogDeprecationWarning.text, MessageType.Warning, true);
-                        }
 
                         EditorGUILayout.PropertyField(m_UsePlayerLog);
                         EditorGUILayout.PropertyField(m_ResizableWindow);
@@ -1154,14 +1146,6 @@ namespace UnityEditor
 
         void GraphicsAPIsGUIOnePlatform(BuildTargetGroup targetGroup, BuildTarget targetPlatform, string platformTitle)
         {
-            // Facebook on windows must be always DX11
-            // TODO: Remove this when Facebook platform support contract is over
-            if (targetGroup == BuildTargetGroup.Facebook &&
-                (targetPlatform == BuildTarget.StandaloneWindows || targetPlatform == BuildTarget.StandaloneWindows64))
-            {
-                return;
-            }
-
             GraphicsDeviceType[] availableDevices = PlayerSettings.GetSupportedGraphicsAPIs(targetPlatform);
             // if no devices (e.g. no platform module), or we only have one possible choice, then no
             // point in having any UI
@@ -1642,7 +1626,7 @@ namespace UnityEditor
             }
 
             // GPU Skinning toggle (only show on relevant platforms)
-            if (targetGroup != BuildTargetGroup.Facebook && !BuildTargetDiscovery.PlatformHasFlag(platform.defaultTarget, TargetAttributes.GPUSkinningNotSupported))
+            if (!BuildTargetDiscovery.PlatformHasFlag(platform.defaultTarget, TargetAttributes.GPUSkinningNotSupported))
             {
                 GraphicsDeviceType[] gfxAPIs = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
                 bool computeSkinningOnly =

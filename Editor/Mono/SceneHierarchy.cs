@@ -929,6 +929,13 @@ namespace UnityEditor
                 evt.Use();
                 GUIUtility.ExitGUI();
             }
+            else if (evt.commandName == EventCommandNames.Rename)
+            {
+                if (execute)
+                    RenameGO();
+                evt.Use();
+                GUIUtility.ExitGUI();
+            }
             else if (evt.commandName == EventCommandNames.Copy)
             {
                 if (execute)

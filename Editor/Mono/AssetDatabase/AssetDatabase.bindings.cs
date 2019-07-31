@@ -160,5 +160,8 @@ namespace UnityEditor.Experimental
 
         [FreeFunction("AssetDatabase::GetImporterOverride")]
         extern public static System.Type GetImporterOverride(string path);
+
+        [FreeFunction("AssetDatabase::GetAvailableImporterTypes")]
+        extern public static Type[] GetAvailableImporterTypes(string path);
     }
 }

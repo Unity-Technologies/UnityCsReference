@@ -10,19 +10,21 @@ namespace UnityEditor.PackageManager.UI
     [Flags]
     internal enum RefreshOptions : uint
     {
-        None                = 0,
+        None             = 0,
 
-        UpmListOffline      = 1 << 0,
-        UpmList             = 1 << 1,
-        UpmSearchOffline    = 1 << 2,
-        UpmSearch           = 1 << 3,
-        Purchased           = 1 << 4,
+        UpmListOffline   = 1 << 0,
+        UpmList          = 1 << 1,
+        UpmSearchOffline = 1 << 2,
+        UpmSearch        = 1 << 3,
+        Purchased        = 1 << 4,
+        PurchasedOffline = 1 << 5,
 
-        CurrentFilter       = 1 << 5,
+        CurrentFilter    = 1 << 6,
 
         // combinations
-        AllOnline           = UpmList | UpmSearch,
-        All                 = AllOnline | UpmListOffline | UpmSearchOffline
+        AllOnline        = UpmList | UpmSearch,
+        AllOffline       = UpmListOffline | UpmSearchOffline,
+        All              = AllOnline | AllOffline
     }
 
     internal interface IPageManager
@@ -51,11 +53,15 @@ namespace UnityEditor.PackageManager.UI
 
         void Clear();
 
+        void Refresh(PackageFilterTab tab);
+
         void Refresh(RefreshOptions options);
+
+        void Fetch(string uniqueId);
 
         IPage GetCurrentPage();
 
-        bool HasPageForFilterTab(PackageFilterTab? tab = null);
+        bool HasFetchedPageForFilterTab(PackageFilterTab? tab = null);
 
         void LoadMore();
     }

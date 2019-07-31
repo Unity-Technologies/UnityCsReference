@@ -1148,6 +1148,11 @@ namespace UnityEditor
                 cp.m_IsOSColorPicker = false;
                 cp.m_SliderMode = (SliderMode)EditorPrefs.GetInt(k_SliderModeHDRPrefKey, (int)SliderMode.RGB);
             }
+            else
+            {
+                // If it is not an HDR value we set the exposure back to 0.
+                cp.m_Color.exposureValue = 0;
+            }
 
             if (cp.m_IsOSColorPicker)
             {

@@ -119,7 +119,7 @@ namespace UnityEngine.UIElements
         {
             Debug.Assert(visualTree.panel != null);
             m_IsApplyingStyles = true;
-            m_StyleContextHierarchyTraversal.PrepareTraversal(panel.currentPixelsPerPoint);
+            m_StyleContextHierarchyTraversal.PrepareTraversal(panel.scaledPixelsPerPoint);
             m_StyleContextHierarchyTraversal.Traverse(visualTree);
             m_IsApplyingStyles = false;
         }

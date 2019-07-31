@@ -249,7 +249,6 @@ namespace UnityEngine.UIElements.StyleSheets
                     return value;
                 }
             }
-            Debug.Assert(Enum.GetName(typeof(T), value) != null);
             return value;
         }
 

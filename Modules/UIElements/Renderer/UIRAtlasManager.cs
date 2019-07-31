@@ -200,16 +200,28 @@ namespace UnityEngine.UIElements
                 return false;
 
             // Attempt to allocate.
-            RectInt alloc;
-            if (!m_Allocator.TryAllocate(image.width + 2, image.height + 2, out alloc))
+            if (!AllocateRect(image.width, image.height, out uvs))
                 return false;
-            uvs = new RectInt(alloc.x + 1, alloc.y + 1, image.width, image.height);
             m_UVs[image] = uvs;
 
             // Add a blit instruction.
-            m_Blitter.QueueBlit(image, new RectInt(0, 0, image.width, image.height), new Vector2Int(uvs.x, uvs.y), true);
+            m_Blitter.QueueBlit(image, new RectInt(0, 0, image.width, image.height), new Vector2Int(uvs.x, uvs.y), true, Color.white);
 
             return true;
+        }
+
+        public bool AllocateRect(int width, int height, out RectInt uvs)
+        {
+            // Attempt to allocate.
+            if (!m_Allocator.TryAllocate(width + 2, height + 2, out uvs))
+                return false;
+            uvs = new RectInt(uvs.x + 1, uvs.y + 1, width, height);
+            return true;
+        }
+
+        public void EnqueueBlit(Texture image, int x, int y, bool addBorder, Color tint)
+        {
+            m_Blitter.QueueBlit(image, new RectInt(0, 0, image.width, image.height), new Vector2Int(x, y), addBorder, tint);
         }
 
         /// <summary>
@@ -351,7 +363,7 @@ namespace UnityEngine.UIElements
                 m_ForceReblitAll = false;
                 m_Blitter.Reset();
                 foreach (KeyValuePair<Texture2D, RectInt> kvp in m_UVs)
-                    m_Blitter.QueueBlit(kvp.Key, new RectInt(0, 0, kvp.Key.width, kvp.Key.height), new Vector2Int(kvp.Value.x, kvp.Value.y), true);
+                    m_Blitter.QueueBlit(kvp.Key, new RectInt(0, 0, kvp.Key.width, kvp.Key.height), new Vector2Int(kvp.Value.x, kvp.Value.y), true, Color.white);
             }
 
             m_Blitter.Commit(atlas);
@@ -374,7 +386,7 @@ namespace UnityEngine.UIElements
             if (atlas.width != m_Allocator.physicalWidth || atlas.height != m_Allocator.physicalHeight)
             {
                 RenderTexture newAtlas = CreateAtlasTexture();
-                m_Blitter.BlitOneNow(newAtlas, atlas, new RectInt(0, 0, atlas.width, atlas.height), new Vector2Int(0, 0), false);
+                m_Blitter.BlitOneNow(newAtlas, atlas, new RectInt(0, 0, atlas.width, atlas.height), new Vector2Int(0, 0), false, Color.white);
                 UIRUtility.Destroy(atlas);
                 atlas = newAtlas;
             }

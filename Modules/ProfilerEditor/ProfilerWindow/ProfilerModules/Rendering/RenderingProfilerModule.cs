@@ -21,7 +21,7 @@ namespace UnityEditorInternal.Profiling
 
         public override void DrawToolbar(Rect position)
         {
-            EditorGUILayout.BeginHorizontal(EditorStyles.contentToolbar);
+            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             if (GUILayout.Button(GUI.enabled
                 ? Styles.frameDebugger
                 : Styles.noFrameDebugger, EditorStyles.toolbarButton))

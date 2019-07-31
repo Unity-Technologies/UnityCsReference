@@ -273,17 +273,6 @@ namespace UnityEditor
             set;
         }
 
-        internal static extern BuildTarget selectedFacebookTarget
-        {
-            [NativeMethod("GetSelectedFacebookTarget")]
-            get;
-            [NativeMethod("SetSelectedFacebookTargetFromBindings")]
-            set;
-        }
-
-        internal static extern string facebookAccessToken { get; set; }
-
-
         ///PS4 Build Subtarget
         public static extern PS4BuildSubtarget ps4BuildSubtarget
         {
@@ -574,6 +563,9 @@ namespace UnityEditor
 
         // Start the player with a connection to the profiler.
         public static extern bool connectProfiler { get; set; }
+
+        // Build the player with deep profiler support.
+        public static extern bool buildWithDeepProfilingSupport { get; set; }
 
         // Enable source-level debuggers to connect.
         public static extern bool allowDebugging { get; set; }

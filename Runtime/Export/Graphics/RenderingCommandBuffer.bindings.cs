@@ -14,6 +14,7 @@ using Unity.Collections.LowLevel.Unsafe;
 namespace UnityEngine.Rendering
 {
     [NativeHeader("Runtime/Shaders/ComputeShader.h")]
+    [NativeHeader("Runtime/Shaders/RayTracingShader.h")]
     [NativeHeader("Runtime/Export/Graphics/RenderingCommandBuffer.bindings.h")]
     [NativeType("Runtime/Graphics/CommandBuffer/RenderingCommandBuffer.h")]
     [UsedByNativeCode]
@@ -263,6 +264,48 @@ namespace UnityEngine.Rendering
 
         [FreeFunction("RenderingCommandBuffer_Bindings::Internal_DispatchComputeIndirect", HasExplicitThis = true, ThrowsException = true)]
         extern private void Internal_DispatchComputeIndirect([NotNull] ComputeShader computeShader, int kernelIndex, ComputeBuffer indirectBuffer, uint argsOffset);
+
+        [FreeFunction("RenderingCommandBuffer_Bindings::Internal_SetRayTracingBufferParam", HasExplicitThis = true)]
+        extern private void Internal_SetRayTracingBufferParam([NotNull] RayTracingShader rayTracingShader, int nameID, ComputeBuffer buffer);
+
+        [FreeFunction("RenderingCommandBuffer_Bindings::Internal_SetRayTracingTextureParam", HasExplicitThis = true)]
+        extern private void Internal_SetRayTracingTextureParam([NotNull] RayTracingShader rayTracingShader, int nameID, ref UnityEngine.Rendering.RenderTargetIdentifier rt);
+
+        [FreeFunction("RenderingCommandBuffer_Bindings::Internal_SetRayTracingFloatParam", HasExplicitThis = true)]
+        extern private void Internal_SetRayTracingFloatParam([NotNull] RayTracingShader rayTracingShader, int nameID, float val);
+
+        [FreeFunction("RenderingCommandBuffer_Bindings::Internal_SetRayTracingIntParam", HasExplicitThis = true)]
+        extern private void Internal_SetRayTracingIntParam([NotNull] RayTracingShader rayTracingShader, int nameID, int val);
+
+        [FreeFunction("RenderingCommandBuffer_Bindings::Internal_SetRayTracingVectorParam", HasExplicitThis = true)]
+        extern private void Internal_SetRayTracingVectorParam([NotNull] RayTracingShader rayTracingShader, int nameID, Vector4 val);
+
+        [FreeFunction("RenderingCommandBuffer_Bindings::Internal_SetRayTracingVectorArrayParam", HasExplicitThis = true)]
+        extern private void Internal_SetRayTracingVectorArrayParam([NotNull] RayTracingShader rayTracingShader, int nameID, Vector4[] values);
+
+        [FreeFunction("RenderingCommandBuffer_Bindings::Internal_SetRayTracingMatrixParam", HasExplicitThis = true)]
+        extern private void Internal_SetRayTracingMatrixParam([NotNull] RayTracingShader rayTracingShader, int nameID, Matrix4x4 val);
+
+        [FreeFunction("RenderingCommandBuffer_Bindings::Internal_SetRayTracingMatrixArrayParam", HasExplicitThis = true)]
+        extern private void Internal_SetRayTracingMatrixArrayParam([NotNull] RayTracingShader rayTracingShader, int nameID, Matrix4x4[] values);
+
+        [FreeFunction("RenderingCommandBuffer_Bindings::Internal_SetRayTracingFloats", HasExplicitThis = true)]
+        extern private void Internal_SetRayTracingFloats([NotNull] RayTracingShader rayTracingShader, int nameID, float[] values);
+
+        [FreeFunction("RenderingCommandBuffer_Bindings::Internal_SetRayTracingInts", HasExplicitThis = true)]
+        extern private void Internal_SetRayTracingInts([NotNull] RayTracingShader rayTracingShader, int nameID, int[] values);
+
+        [FreeFunction("RenderingCommandBuffer_Bindings::Internal_BuildRayTracingAccelerationStructure", HasExplicitThis = true)]
+        extern private void Internal_BuildRayTracingAccelerationStructure([NotNull] RayTracingAccelerationStructure accelerationStructure);
+
+        [FreeFunction("RenderingCommandBuffer_Bindings::Internal_SetRayTracingAccelerationStructure", HasExplicitThis = true)]
+        extern private void Internal_SetRayTracingAccelerationStructure([NotNull] RayTracingShader rayTracingShader, int nameID, RayTracingAccelerationStructure accelerationStructure);
+
+        [NativeMethod("AddSetRayTracingShaderPass")]
+        extern public void SetRayTracingShaderPass([NotNull] RayTracingShader rayTracingShader, string passName);
+
+        [FreeFunction("RenderingCommandBuffer_Bindings::Internal_DispatchRays", HasExplicitThis = true, ThrowsException = true)]
+        extern private void Internal_DispatchRays([NotNull] RayTracingShader rayTracingShader, string rayGenShaderName, UInt32 width, UInt32 height, UInt32 depth, Camera camera = null);
 
         [NativeMethod("AddGenerateMips")]
         extern private void Internal_GenerateMips(RenderTexture rt);

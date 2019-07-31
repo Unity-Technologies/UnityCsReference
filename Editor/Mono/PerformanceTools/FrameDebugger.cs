@@ -657,7 +657,7 @@ namespace UnityEditor
             int newLimit;
             using (new EditorGUI.DisabledScope(FrameDebuggerUtility.count <= 1))
             {
-                newLimit = EditorGUILayout.IntSlider(FrameDebuggerUtility.limit, 1, FrameDebuggerUtility.count, -1,
+                newLimit = EditorGUILayout.IntSlider(FrameDebuggerUtility.limit, 1, FrameDebuggerUtility.count, 1,
                     EditorStyles.toolbarSlider);
             }
             if (EditorGUI.EndChangeCheck())

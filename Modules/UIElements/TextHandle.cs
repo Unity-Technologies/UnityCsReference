@@ -70,7 +70,7 @@ namespace UnityEngine.UIElements
             return m_PreferredSize.y;
         }
 
-        internal TextInfo Update(MeshGenerationContextUtils.TextParams parms)
+        internal TextInfo Update(MeshGenerationContextUtils.TextParams parms, float pixelsPerPoint)
         {
             // The screenRect in TextCore is not properly implemented with regards to the offset part, so zero it out for now and we will add it ourselves later
             parms.rect = new Rect(Vector2.zero, parms.rect.size);
@@ -82,7 +82,7 @@ namespace UnityEngine.UIElements
 
             m_CurrentGenerationSettings.color = parms.fontColor;
             m_CurrentGenerationSettings.inverseYAxis = true;
-            m_CurrentGenerationSettings.scale = GUIUtility.pixelsPerPoint;
+            m_CurrentGenerationSettings.scale = pixelsPerPoint;
 
             m_TextInfo.isDirty = true;
             TextCore.TextGenerator.GenerateText(m_CurrentGenerationSettings, m_TextInfo);

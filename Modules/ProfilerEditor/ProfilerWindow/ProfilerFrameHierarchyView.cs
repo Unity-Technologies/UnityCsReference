@@ -406,6 +406,7 @@ namespace UnityEditorInternal.Profiling
 
             using (new EditorGUI.DisabledScope(!frameDataView.valid))
             {
+                EditorGUILayout.Space(); // workaround: Remove double lines
                 DrawThreadPopup(frameDataView);
             }
 
@@ -421,6 +422,7 @@ namespace UnityEditorInternal.Profiling
             if (!showDetailedView)
             {
                 DrawDetailedViewPopup();
+                EditorGUILayout.Space(); // workaround: Remove double lines
                 DrawOptionsMenuPopup();
             }
 

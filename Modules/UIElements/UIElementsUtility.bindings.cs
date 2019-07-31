@@ -4,10 +4,13 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 
 namespace UnityEngine.UIElements
 {
     // This is the required interface to UIElementsUtility for Runtime game components.
+    [NativeHeader("Modules/UIElements/UIElementsRuntimeUtility.h")]
     internal static class UIElementsRuntimeUtility
     {
         static EventDispatcher s_RuntimeDispatcher = new EventDispatcher();
@@ -20,22 +23,54 @@ namespace UnityEngine.UIElements
 
         public static IPanel CreateRuntimePanel(ScriptableObject ownerObject)
         {
-            var panel = new Panel(ownerObject, ContextType.Player, s_RuntimeDispatcher)
+            var panel = new RuntimePanel(ownerObject, s_RuntimeDispatcher)
             {
                 IMGUIEventInterests = new EventInterests { wantsMouseMove = true, wantsMouseEnterLeaveWindow = true }
             };
             return panel;
         }
 
+        private static bool s_RegisteredPlayerloopCallback = false;
+
         public static void RegisterCachedPanel(int instanceID, IPanel panel)
         {
             UIElementsUtility.RegisterCachedPanel(instanceID, panel as Panel);
+            if (!s_RegisteredPlayerloopCallback)
+            {
+                s_RegisteredPlayerloopCallback = true;
+                RegisterPlayerloopCallback();
+            }
         }
 
         public static void RemoveCachedPanel(int instanceID)
         {
             UIElementsUtility.RemoveCachedPanel(instanceID);
+            // un-register the playerloop callback as the last panel gets un-registered
+            UIElementsUtility.GetAllPanels(panelsIteration);
+            if (panelsIteration.Count == 0)
+            {
+                s_RegisteredPlayerloopCallback = false;
+                UnregisterPlayerloopCallback();
+            }
         }
+
+        static List<Panel> panelsIteration = new List<Panel>();
+
+        [RequiredByNativeCode]
+        public static void RepaintOverlayPanels()
+        {
+            UIElementsUtility.GetAllPanels(panelsIteration);
+            foreach (var panel in panelsIteration)
+            {
+                // at the moment, all runtime panels who do not use a rendertexure are rendered as overlays.
+                // later on, they'll be filtered based on render mode
+                if (panel.contextType == ContextType.Player && (panel as RuntimePanel).targetTexture == null)
+                    panel.Repaint(Event.current);
+            }
+        }
+
+        public extern static void RegisterPlayerloopCallback();
+        public extern static void UnregisterPlayerloopCallback();
     }
 
     internal static class UIElementsUtility

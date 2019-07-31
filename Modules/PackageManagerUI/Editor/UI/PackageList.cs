@@ -51,7 +51,7 @@ namespace UnityEditor.PackageManager.UI
             m_RefreshInProgress = false;
         }
 
-        public void Setup()
+        public void OnEnable()
         {
             PageManager.instance.onSelectionChanged += OnSelectionChanged;
 
@@ -71,6 +71,24 @@ namespace UnityEditor.PackageManager.UI
             // manually build the items on initialization to refresh the UI
             OnPageRebuild(PageManager.instance.GetCurrentPage());
             OnSelectionChanged(PageManager.instance.GetSelectedVersion());
+        }
+
+        public void OnDisable()
+        {
+            PageManager.instance.onSelectionChanged -= OnSelectionChanged;
+
+            PackageDatabase.instance.onPackageOperationStart -= OnPackageOperationStart;
+            PackageDatabase.instance.onPackageOperationFinish -= OnPackageOperationFinish;
+
+            PackageDatabase.instance.onDownloadProgress -= OnDownloadProgress;
+            PackageDatabase.instance.onRefreshOperationStart -= OnRefreshOperationStart;
+            PackageDatabase.instance.onRefreshOperationFinish -= OnRefreshOperationFinish;
+
+            PageManager.instance.onVisualStateChange -= OnVisualStateChange;
+            PageManager.instance.onPageRebuild -= OnPageRebuild;
+            PageManager.instance.onPageUpdate -= OnPageUpdate;
+
+            ApplicationUtil.instance.onUserLoginStateChange -= OnUserLoginStateChange;
         }
 
         private PackageItem GetPackageItem(IPackage package)
@@ -176,7 +194,7 @@ namespace UnityEditor.PackageManager.UI
             UpdateNoPackagesLabel();
         }
 
-        private void OnRefreshOperationFinish()
+        private void OnRefreshOperationFinish(PackageFilterTab tab)
         {
             m_RefreshInProgress = false;
             UpdateNoPackagesLabel();
@@ -251,6 +269,9 @@ namespace UnityEditor.PackageManager.UI
 
         private PackageItem AddOrUpdatePackageItem(IPackage package)
         {
+            if (package == null)
+                return null;
+
             var item = GetPackageItem(package);
             if (item != null)
                 item.SetPackage(package);
@@ -295,7 +316,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 var package = PackageDatabase.instance.GetPackage(state.packageUniqueId);
                 var packageItem = AddOrUpdatePackageItem(package);
-                packageItem.UpdateVisualState(state);
+                packageItem?.UpdateVisualState(state);
             }
 
             if (!m_PackageListLoaded && page.packageVisualStates.Any())

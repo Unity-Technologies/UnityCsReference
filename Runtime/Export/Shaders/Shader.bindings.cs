@@ -432,6 +432,8 @@ namespace UnityEngine.Experimental.Rendering
         extern public void SetTexture(int nameID, [NotNull] Texture texture);
         [NativeMethod(Name = "RayTracingShaderScripting::SetBuffer", HasExplicitThis = true, IsFreeFunction = true, ThrowsException = true)]
         extern public void SetBuffer(int nameID, [NotNull] ComputeBuffer buffer);
+        [NativeMethod(Name = "RayTracingShaderScripting::SetAccelerationStructure", HasExplicitThis = true, IsFreeFunction = true, ThrowsException = true)]
+        extern public void SetAccelerationStructure(int nameID, [NotNull] RayTracingAccelerationStructure accelerationStrucure);
         extern public void SetShaderPass(string passName);
         [NativeMethod(Name = "RayTracingShaderScripting::SetTextureFromGlobal", HasExplicitThis = true, IsFreeFunction = true, ThrowsException = true)]
         extern public void SetTextureFromGlobal(int nameID, int globalTextureNameID);

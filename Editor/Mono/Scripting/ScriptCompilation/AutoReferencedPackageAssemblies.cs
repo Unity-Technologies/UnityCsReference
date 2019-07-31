@@ -38,7 +38,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             ignoreAssemblies.UnionWith(editorAssemblyNames);
         }
 
-        public static void AddReferences(Dictionary<string, TargetAssembly> customTargetAssemblies, EditorScriptCompilationOptions options)
+        public static void AddReferences(Dictionary<string, TargetAssembly> customTargetAssemblies, EditorScriptCompilationOptions options, Func<TargetAssembly, bool> shouldAdd)
         {
             if (customTargetAssemblies == null || customTargetAssemblies.Count() == 0)
                 return;
@@ -74,12 +74,17 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 var assembly = entry.Value;
 
+                if (!shouldAdd?.Invoke(assembly) ?? false)
+                {
+                    continue;
+                }
+
                 // Do not add additional references to any of the
-                // automaticly referenced or ignored assemblies
+                // automatically referenced or ignored assemblies
                 if (ignoreAssemblies.Contains(assembly.Filename))
                     continue;
 
-                // Add the automtic references.
+                // Add the automatic references.
                 var newReferences = assembly.References.Concat(additionalReferences).Distinct().ToList();
                 assembly.References = newReferences;
             }

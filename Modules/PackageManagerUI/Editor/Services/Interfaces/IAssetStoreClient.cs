@@ -12,6 +12,8 @@ namespace UnityEditor.PackageManager.UI
     {
         event Action<ProductList, bool> onProductListFetched;
 
+        event Action<long> onProductFetched;
+
         event Action<IEnumerable<IPackage>> onPackagesChanged;
 
         event Action<DownloadProgress> onDownloadProgress;
@@ -26,15 +28,19 @@ namespace UnityEditor.PackageManager.UI
 
         void List(int offset, int limit, string searchText = "", bool fetchDetails = true);
 
+        void Fetch(long productId);
+
         void FetchDetails(IEnumerable<long> packageIds);
 
         void Refresh(IPackage package);
+
+        void Refresh(IEnumerable<IPackage> packages);
 
         bool IsAnyDownloadInProgress();
 
         bool IsDownloadInProgress(string packageId);
 
-        bool GetDownloadInProgress(string packageId, out DownloadProgress progress);
+        bool GetDownloadProgress(string packageId, out DownloadProgress progress);
 
         void AbortDownload(string packageId);
 
@@ -47,5 +53,7 @@ namespace UnityEditor.PackageManager.UI
         void Setup();
 
         void Clear();
+
+        void Reset();
     }
 }

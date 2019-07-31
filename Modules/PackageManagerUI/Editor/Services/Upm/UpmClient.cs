@@ -69,6 +69,9 @@ namespace UnityEditor.PackageManager.UI
             private PackageInfo[] m_SerializedSearchPackageInfos;
             private PackageInfo[] m_SerializedExtraPackageInfos;
 
+            [SerializeField]
+            private bool m_SetupDone;
+
             public bool isAddRemoveOrEmbedInProgress
             {
                 get { return m_AddOperation.isInProgress || m_RemoveOperation.isInProgress || m_EmbedOperation.isInProgress; }
@@ -500,11 +503,19 @@ namespace UnityEditor.PackageManager.UI
 
             public void Setup()
             {
+                System.Diagnostics.Debug.Assert(!m_SetupDone);
+                m_SetupDone = true;
+
                 PackageManagerPrefs.instance.onShowPreviewPackagesChanged += OnShowPreviewPackagesChanged;
             }
 
             public void Clear()
             {
+                System.Diagnostics.Debug.Assert(m_SetupDone);
+                m_SetupDone = false;
+
+                PackageManagerPrefs.instance.onShowPreviewPackagesChanged -= OnShowPreviewPackagesChanged;
+
                 m_InstalledPackageInfos.Clear();
                 m_SearchPackageInfos.Clear();
                 m_ExtraPackageInfo.Clear();

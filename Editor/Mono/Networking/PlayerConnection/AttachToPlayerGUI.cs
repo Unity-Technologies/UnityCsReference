@@ -18,6 +18,7 @@ namespace UnityEditor.Experimental.Networking.PlayerConnection
     {
         EditorWindow parentWindow { get; }
         GUIContent notificationMessage { get; }
+        bool deepProfilingSupported { get; }
         void AddItemsToMenu(GenericMenu menu, Rect position);
     }
 
@@ -131,7 +132,10 @@ namespace UnityEditor.Experimental.Networking.PlayerConnection
             }
         }
 
+        public bool deepProfilingSupported => ProfilerDriver.IsDeepProfilingSupported(ProfilerDriver.connectedProfiler);
+
         event Action<string> connected;
+
 
         event Action<EditorConnectionTarget> switchedEditorModeTarget;
         Func<EditorConnectionTarget, bool> m_EditorModeTargetConnectionStatus;

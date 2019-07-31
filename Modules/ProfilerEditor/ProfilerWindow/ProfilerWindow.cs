@@ -15,6 +15,7 @@ using UnityEngine.Experimental.Networking.PlayerConnection;
 using ConnectionUtility = UnityEditor.Experimental.Networking.PlayerConnection.EditorGUIUtility;
 using ConnectionGUILayout = UnityEditor.Experimental.Networking.PlayerConnection.EditorGUILayout;
 using UnityEditor.Experimental.Networking.PlayerConnection;
+using UnityEditor.StyleSheets;
 
 namespace UnityEditor
 {
@@ -24,14 +25,27 @@ namespace UnityEditor
         internal static class Styles
         {
             public static readonly GUIContent addArea = EditorGUIUtility.TrTextContent("Profiler Modules", "Add and remove profiler modules");
-            public static readonly GUIContent deepProfile = EditorGUIUtility.TrTextContent("Deep Profile", "Instrument all mono calls to investigate scripts");
+            public static readonly GUIContent deepProfile = EditorGUIUtility.TrTextContent("Deep Profile", "Instrument all scripting method calls to investigate scripts");
+            public static readonly GUIContent deepProfileNotSupported = EditorGUIUtility.TrTextContent("Deep Profile", "Build a Player with Deep Profiling Support to be able to enable instrumentation of all scripting methods in a Player.");
             public static readonly GUIContent noData = EditorGUIUtility.TrTextContent("No frame data available");
 
-            public static readonly GUIContent recordCallstacks = EditorGUIUtility.TrTextContent("Call Stacks", "Record call stacks for special samples such as GC.Alloc");
+            public static readonly string enableDeepProfilingWarningDialogTitle = L10n.Tr("Enable deep script profiling");
+            public static readonly string enableDeepProfilingWarningDialogContent = L10n.Tr("Enabling deep profiling requires reloading scripts.");
+            public static readonly string disableDeepProfilingWarningDialogTitle = L10n.Tr("Disable deep script profiling");
+            public static readonly string disableDeepProfilingWarningDialogContent = L10n.Tr("Disabling deep profiling requires reloading all scripts.");
+            public static readonly string domainReloadWarningDialogButton = L10n.Tr("Reload");
+            public static readonly string cancelDialogButton = L10n.Tr("Cancel");
+
+            public static readonly GUIContent recordCallstacks = EditorGUIUtility.TrTextContent("Call Stacks", "Record call stacks for special samples such as \"GC.Alloc\". " +
+                "To see the call stacks, select a sample in the CPU Usage module, e.g. in Timeline view. " +
+                "To also see call stacks in Hierarchy view, switch from \"No Details\" to \"Show Related Objects\", select a \"GC.Alloc\" sample and select \"N/A\" items from the list.");
             public static readonly GUIContent profilerRecordOff = EditorGUIUtility.TrIconContent("Record Off", "Record profiling information");
             public static readonly GUIContent profilerRecordOn = EditorGUIUtility.TrIconContent("Record On", "Record profiling information");
             public static Color recordOnColor = AnimationMode.recordedPropertyColor;
             public static Color recordOffColor = new Color(1f, 1f , 1f, 0.5f);
+
+            public static SVC<Color> borderColor =
+                new SVC<Color>("--theme-profiler-border-color-darker", Color.black);
             public static readonly GUIContent prevFrame = EditorGUIUtility.TrIconContent("Animation.PrevKey", "Go back one frame");
             public static readonly GUIContent nextFrame = EditorGUIUtility.TrIconContent("Animation.NextKey", "Go one frame forwards");
             public static readonly GUIContent currentFrame = EditorGUIUtility.TrIconContent("Animation.LastKey", "Go to (and stay on) current frame");
@@ -44,19 +58,20 @@ namespace UnityEditor
             public static readonly GUIContent loadProfilingData = EditorGUIUtility.TrIconContent("Import", "Load binary profiling information from a file. Shift click to append to the existing data");
             public static readonly string[] loadProfilingDataFileFilters = new string[] { L10n.Tr("Profiler files"), "data,raw", L10n.Tr("All files"), "*" };
 
-            public static readonly GUIContent optionsButtonContent = EditorGUIUtility.TrIconContent("pane options", "Options");
+            public static readonly GUIContent optionsButtonContent = EditorGUIUtility.TrIconContent("_Menu", "Options");
             public static readonly GUIContent helpButtonContent = EditorGUIUtility.TrIconContent("_Help", "Open Manual");
             public const string linkToManual = "https://docs.unity3d.com/Manual/ProfilerWindow.html";
             public static readonly GUIContent preferencesButtonContent = EditorGUIUtility.TrTextContent("Preferences", "Open User Preferences for the Profiler");
 
             public static readonly GUIContent accessibilityModeLabel = EditorGUIUtility.TrTextContent("Color Blind Mode");
 
-            public static readonly GUIStyle background = "OL Box";
+            public static readonly GUIStyle background = "OL box flat";
             public static readonly GUIStyle header = "OL title";
             public static readonly GUIStyle label = "OL label";
             public static readonly GUIStyle entryEven = "OL EntryBackEven";
             public static readonly GUIStyle entryOdd = "OL EntryBackOdd";
             public static readonly GUIStyle profilerGraphBackground = "ProfilerScrollviewBackground";
+            public static readonly GUIStyle profilerDetailViewBackground = "ProfilerDetailViewBackground";
 
             static Styles()
             {
@@ -82,7 +97,7 @@ namespace UnityEditor
         [SerializeField]
         private bool m_Recording;
 
-        private IConnectionState m_AttachProfilerState;
+        private IConnectionStateInternal m_AttachProfilerState;
 
         private Vector2 m_GraphPos = Vector2.zero;
 
@@ -237,7 +252,7 @@ namespace UnityEditor
         {
             // When reinitializing (e.g. because Colorblind mode or PlatformModule changed) we don't need a new state
             if (m_AttachProfilerState == null)
-                m_AttachProfilerState = ConnectionUtility.GetAttachToPlayerState(this, OnTargetedEditorConnectionChanged, IsEditorConnectionTargeted, (player) => ClearFramesCallback());  //new ProfilerAttachToPlayerState(this, (player) => ClearFramesCallback());
+                m_AttachProfilerState = ConnectionUtility.GetAttachToPlayerState(this, OnTargetedEditorConnectionChanged, IsEditorConnectionTargeted, (player) => ClearFramesCallback()) as IConnectionStateInternal;
 
             int historySize = ProfilerUserSettings.frameCount;
 
@@ -505,25 +520,29 @@ namespace UnityEditor
             if (currentDeep == deep)
                 return;
 
-            bool doApply = true;
-
-            // When enabling / disabling deep script profiling we need to reload scripts. In play mode this might be intrusive. So ask the user first.
-            if (EditorApplication.isPlaying)
+            if (ProfilerDriver.IsConnectionEditor())
             {
-                if (deep)
+                // When enabling / disabling deep script profiling we need to reload scripts.
+                // In play mode this might be intrusive. So ask the user first.
+                bool doApply = true;
+                if (EditorApplication.isPlaying)
                 {
-                    doApply = EditorUtility.DisplayDialog("Enable deep script profiling", "Enabling deep profiling requires reloading scripts.", "Reload", "Cancel");
+                    if (deep)
+                        doApply = EditorUtility.DisplayDialog(Styles.enableDeepProfilingWarningDialogTitle, Styles.enableDeepProfilingWarningDialogContent, Styles.domainReloadWarningDialogButton, Styles.cancelDialogButton);
+                    else
+                        doApply = EditorUtility.DisplayDialog(Styles.disableDeepProfilingWarningDialogTitle, Styles.disableDeepProfilingWarningDialogContent, Styles.domainReloadWarningDialogButton, Styles.cancelDialogButton);
                 }
-                else
+
+                if (doApply)
                 {
-                    doApply = EditorUtility.DisplayDialog("Disable deep script profiling", "Disabling deep profiling requires reloading all scripts", "Reload", "Cancel");
+                    ProfilerDriver.deepProfiling = deep;
+                    InternalEditorUtility.RequestScriptReload();
                 }
             }
-
-            if (doApply)
+            else
             {
+                // When connected to the player, we send deep profiler mode command immediately.
                 ProfilerDriver.deepProfiling = deep;
-                InternalEditorUtility.RequestScriptReload();
             }
         }
 
@@ -769,7 +788,6 @@ namespace UnityEditor
             m_SelectedMemRecordMode = (ProfilerMemoryRecordMode)selected;
             if (m_SelectedMemRecordMode != ProfilerMemoryRecordMode.None)
                 m_LastSelectedMemRecordMode = m_SelectedMemRecordMode;
-            ProfilerDriver.memoryRecordMode = m_SelectedMemRecordMode;
         }
 
         void SaveProfilingData()
@@ -821,7 +839,7 @@ namespace UnityEditor
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
 
             // Graph types
-            Rect popupRect = GUILayoutUtility.GetRect(Styles.addArea, EditorStyles.toolbarDropDown, GUILayout.Width(Chart.kSideWidth));
+            Rect popupRect = GUILayoutUtility.GetRect(Styles.addArea, EditorStyles.toolbarDropDown, GUILayout.Width(Chart.kSideWidth - 1));
             if (EditorGUI.DropdownButton(popupRect, Styles.addArea, FocusType.Passive, EditorStyles.toolbarDropDown))
             {
                 int length = m_Charts.Length;
@@ -862,17 +880,17 @@ namespace UnityEditor
 
             // Separate File/Stream control elements from toggles
             GUILayout.FlexibleSpace();
-
             // Clear on Play
             SetClearOnPlay(GUILayout.Toggle(GetClearOnPlay(), Styles.clearOnPlay, EditorStyles.toolbarButton));
 
-            using (new EditorGUI.DisabledScope(m_AttachProfilerState.connectedToTarget != ConnectionTarget.Editor))
+            // Deep profiling
+            var deepProfilerSupported = m_AttachProfilerState.deepProfilingSupported;
+            using (new EditorGUI.DisabledScope(!deepProfilerSupported))
             {
-                // Deep profiling
-                SetProfileDeepScripts(GUILayout.Toggle(ProfilerDriver.deepProfiling, Styles.deepProfile, EditorStyles.toolbarButton));
+                SetProfileDeepScripts(GUILayout.Toggle(ProfilerDriver.deepProfiling, deepProfilerSupported ? Styles.deepProfile : Styles.deepProfileNotSupported, EditorStyles.toolbarButton));
             }
 
-            // Allocation callstacks
+            // Allocation call stacks
             AllocationCallstacksToolbarItem();
 
             // keep more space between the toggles and the overflow/help icon buttons on the far right, keep deep profiling closer to the other controls
@@ -930,17 +948,10 @@ namespace UnityEditor
                 if (EditorGUILayout.DropDownToggle(ref toggled, Styles.recordCallstacks, EditorStyles.toolbarDropDownToggle))
                 {
                     Rect rect = GUILayoutUtility.topLevel.GetLast();
-                    string[] names = new string[]
+                    var names = new string[]
                     {
-                        L10n.Tr("None"), L10n.Tr("Managed Allocations")
+                        L10n.Tr("None"), L10n.Tr("Managed Allocations"), L10n.Tr("All Allocations (fast)"), L10n.Tr("All Allocations (full)")
                     };
-                    if (Unsupported.IsDeveloperMode())
-                    {
-                        names = new string[]
-                        {
-                            L10n.Tr("None"), L10n.Tr("Managed Allocations"), L10n.Tr("All Allocations (fast)"), L10n.Tr("All Allocations (full)")
-                        };
-                    }
 
                     var enabled = new bool[names.Length];
                     for (int c = 0; c < names.Length; ++c)
@@ -959,6 +970,8 @@ namespace UnityEditor
             {
                 m_SelectedMemRecordMode = GUILayout.Toggle(m_SelectedMemRecordMode == ProfilerMemoryRecordMode.ManagedAllocations, Styles.recordCallstacks, EditorStyles.toolbarButton) ? ProfilerMemoryRecordMode.ManagedAllocations : ProfilerMemoryRecordMode.None;
             }
+
+            ProfilerDriver.memoryRecordMode = m_SelectedMemRecordMode;
         }
 
         void Clear()
@@ -1010,7 +1023,7 @@ namespace UnityEditor
             }
 
             // Frame number
-            GUILayout.Label(Styles.frame.text + PickFrameLabel(), EditorStyles.miniLabel);
+            GUILayout.Label(Styles.frame.text + PickFrameLabel(), EditorStyles.toolbarLabel);
         }
 
         void SetCurrentFrameDontPause(int frame)
@@ -1080,18 +1093,21 @@ namespace UnityEditor
             GUILayout.BeginVertical();
             if (m_CurrentArea.HasValue)
             {
-                var detailViewPosition = new Rect(0, m_VertSplit.realSizes[0] + EditorGUI.kSingleLineHeight, position.width, m_VertSplit.realSizes[1]);
-
+                var detailViewPosition = new Rect(0, m_VertSplit.realSizes[0] + EditorGUI.kWindowToolbarHeight, position.width, m_VertSplit.realSizes[1]);
                 var detailViewToolbar = detailViewPosition;
-                detailViewToolbar.height = EditorStyles.toolbar.CalcHeight(GUIContent.none, 10.0f);
+                detailViewToolbar.height = EditorStyles.contentToolbar.CalcHeight(GUIContent.none, 10.0f);
                 m_ProfilerModules[(int)m_CurrentArea].DrawToolbar(detailViewPosition);
 
                 detailViewPosition.yMin += detailViewToolbar.height;
                 m_ProfilerModules[(int)m_CurrentArea].DrawView(detailViewPosition);
+
+                // Draw separator
+                var lineRect = new Rect(0, m_VertSplit.realSizes[0] + EditorGUI.kWindowToolbarHeight - 1, position.width, 1);
+                EditorGUI.DrawRect(lineRect, Styles.borderColor);
             }
             else
             {
-                EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+                EditorGUILayout.BeginHorizontal(EditorStyles.contentToolbar);
                 GUILayout.FlexibleSpace();
                 EditorGUILayout.EndHorizontal();
             }

@@ -3,9 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using UnityEngine.Rendering;
-using UnityEngine.Experimental.Rendering;
 
 namespace UnityEngine.Experimental.TerrainAPI
 {
@@ -136,8 +134,8 @@ namespace UnityEngine.Experimental.TerrainAPI
             // (note this is the UV space origin and size, not the mesh origin & size)
             float pcOriginX = (paintContext.pixelRect.xMin - 0.5f) * paintContext.pixelSize.x;
             float pcOriginZ = (paintContext.pixelRect.yMin - 0.5f) * paintContext.pixelSize.y;
-            float pcSizeX = (paintContext.pixelRect.width) * paintContext.pixelSize.x;
-            float pcSizeZ = (paintContext.pixelRect.height) * paintContext.pixelSize.y;
+            float pcSizeX = paintContext.pixelRect.width * paintContext.pixelSize.x;
+            float pcSizeZ = paintContext.pixelRect.height * paintContext.pixelSize.y;
 
             Vector2 scaleU = pcSizeX * brushXform.targetX;
             Vector2 scaleV = pcSizeZ * brushXform.targetY;
@@ -229,6 +227,14 @@ namespace UnityEngine.Experimental.TerrainAPI
             return s_BlitMaterial;
         }
 
+        public static Material GetHeightBlitMaterial()
+        {
+            if (!s_HeightBlitMaterial)
+                s_HeightBlitMaterial = new Material(Shader.Find("Hidden/TerrainEngine/HeightBlitCopy"));
+
+            return s_HeightBlitMaterial;
+        }
+
         public static Material GetCopyTerrainLayerMaterial()
         {
             if (!s_CopyTerrainLayerMaterial)
@@ -291,7 +297,7 @@ namespace UnityEngine.Experimental.TerrainAPI
         public static Texture2D GetTerrainAlphaMapChecked(Terrain terrain, int mapIndex)
         {
             if (mapIndex >= terrain.terrainData.alphamapTextureCount)
-                throw new System.ArgumentException("Trying to access out-of-bounds terrain alphamap information.");
+                throw new ArgumentException("Trying to access out-of-bounds terrain alphamap information.");
 
             return terrain.terrainData.GetAlphamapTexture(mapIndex);
         }
@@ -321,6 +327,7 @@ namespace UnityEngine.Experimental.TerrainAPI
         //--
 
         static Material s_BlitMaterial = null;
+        static Material s_HeightBlitMaterial = null;
         static Material s_CopyTerrainLayerMaterial = null;
     }
 }

@@ -16,7 +16,7 @@ namespace UnityEditorInternal
         private static int s_ChartHash = "Charts".GetHashCode();
         public const float kSideWidth = 180.0f;
         private const int kDistFromTopToFirstLabel = 38;
-        private const int kLabelHeight = 11;
+        private const int kLabelHeight = 14;
         private const int kCloseButtonSize = 13;
         private const int kCloseButtonXOffset = 4;
         private const float kLabelOffset = 5f;
@@ -46,7 +46,7 @@ namespace UnityEditorInternal
         static class Styles
         {
             public static readonly GUIStyle background = "OL Box";
-            public static readonly GUIStyle legendHeaderLabel = EditorStyles.label;
+            public static readonly GUIStyle legendHeaderLabel = "ProfilerHeaderLabel";
             public static readonly GUIStyle legendBackground = "ProfilerLeftPane";
             public static readonly GUIStyle rightPane = "ProfilerRightPane";
             public static readonly GUIStyle seriesLabel = "ProfilerPaneSubLabel";
@@ -55,6 +55,7 @@ namespace UnityEditorInternal
             public static readonly GUIStyle whiteLabel = "ProfilerBadge";
             public static readonly GUIStyle selectedLabel = "ProfilerSelectedLabel";
             public static readonly GUIStyle noDataOverlayBox = "ProfilerNoDataAvailable";
+            public static readonly GUIStyle notSupportedWarningLabel = "ProfilerNotSupportedWarningLabel";
 
             public static readonly float labelDropShadowOpacity = 0.3f;
             public static readonly float labelLerpToWhiteAmount = 0.5f;
@@ -176,16 +177,10 @@ namespace UnityEditorInternal
             headerRect.height = Styles.legendHeaderLabel.CalcSize(headerLabel).y;
             GUI.Label(headerRect, headerLabel, Styles.legendHeaderLabel);
 
-            position.yMin += headerRect.height;
+            position.yMin += headerRect.height + Styles.legendHeaderLabel.margin.bottom;
             position.xMin += kLabelOffset;
             position.xMax -= kLabelOffset;
             DoSeriesList(position, m_chartControlID, type, cdata);
-
-            Rect closeButtonRect = headerRect;
-            closeButtonRect.xMax -= Styles.legendHeaderLabel.padding.right;
-            closeButtonRect.xMin = closeButtonRect.xMax - kCloseButtonSize - kCloseButtonXOffset;
-            closeButtonRect.yMin += Styles.legendHeaderLabel.padding.top;
-            closeButtonRect.yMax = closeButtonRect.yMin + kCloseButtonSize;
         }
 
         public int DoGUI(ChartType type, int selectedFrame, ChartViewData cdata, bool active)
@@ -239,7 +234,7 @@ namespace UnityEditorInternal
                     Rect labelRect = r;
                     labelRect.x += kSideWidth * 0.33F;
                     labelRect.y += kWarningLabelHeightOffset;
-                    GUI.Label(labelRect, m_NotSupportedWarning, EditorStyles.boldLabel);
+                    GUI.Label(labelRect, m_NotSupportedWarning, Styles.notSupportedWarningLabel);
                 }
             }
 
@@ -878,7 +873,11 @@ namespace UnityEditorInternal
                     switch (eventType)
                     {
                         case EventType.Repaint:
-                            Styles.seriesDragHandle.Draw(dragHandlePosition, false, false, false, false);
+                            // Properly center the drag handle vertically
+                            Rect dragHandleRenderedPosition = dragHandlePosition;
+                            dragHandleRenderedPosition.height = Styles.seriesDragHandle.fixedHeight;
+                            dragHandleRenderedPosition.y += (dragHandlePosition.height - dragHandleRenderedPosition.height) / 2;
+                            Styles.seriesDragHandle.Draw(dragHandleRenderedPosition, false, false, false, false);
                             break;
                         case EventType.MouseDown:
                             if (dragHandlePosition.Contains(mousePosition))

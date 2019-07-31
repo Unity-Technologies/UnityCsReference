@@ -3,6 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using JetBrains.Annotations;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -10,12 +13,43 @@ namespace UnityEditor
 {
     public sealed partial class ObjectNames
     {
-        // *undocumented*
-        private static string GetObjectTypeName(Object o)
+        static class InspectorTitles
         {
-            if (o == null)
-                return "Nothing Selected";
+            static readonly Dictionary<Type, string> s_InspectorTitles;
 
+            static InspectorTitles()
+            {
+                var addComponentMenuTypes = TypeCache.GetTypesWithAttribute<AddComponentMenu>();
+
+                s_InspectorTitles = new Dictionary<Type, string>(addComponentMenuTypes.Count);
+
+                foreach (var type in addComponentMenuTypes)
+                {
+                    var attr = type.GetCustomAttributes(typeof(AddComponentMenu), false).FirstOrDefault()
+                        as AddComponentMenu;
+                    if (attr == null)
+                        continue;
+                    var title = attr.componentMenu?.Trim();
+                    if (string.IsNullOrEmpty(title))
+                        continue;
+                    var lastPathCharIndex = title.LastIndexOf('/');
+                    if (lastPathCharIndex >= 0 && lastPathCharIndex < title.Length - 1)
+                        title = title.Substring(lastPathCharIndex + 1);
+                    else
+                        continue;
+
+                    s_InspectorTitles[type] = title;
+                }
+            }
+
+            public static bool TryGet(Type objectType, out string title)
+            {
+                return s_InspectorTitles.TryGetValue(objectType, out title);
+            }
+        }
+
+        private static string GetObjectTypeName([NotNull] Object o)
+        {
             if (o is GameObject)
                 return o.name;
 
@@ -38,7 +72,7 @@ namespace UnityEditor
                 if (meshfilter)
                 {
                     var mesh = meshfilter.sharedMesh;
-                    return (mesh ? mesh.name : "[none]") + " (MeshFilter)";
+                    return (mesh ? mesh.name : L10n.Tr("[none]")) + " (MeshFilter)";
                 }
 
                 return o.GetType().Name;
@@ -76,7 +110,9 @@ namespace UnityEditor
             if (obj == null)
                 return L10n.Tr("Nothing Selected");
 
-            var title = ObjectNames.NicifyVariableName(GetObjectTypeName(obj));
+            string title;
+            if (!InspectorTitles.TryGet(obj.GetType(), out title))
+                title = NicifyVariableName(GetObjectTypeName(obj));
 
             if (Attribute.IsDefined(obj.GetType(), typeof(ObsoleteAttribute)))
                 title += L10n.Tr(" (Deprecated)");

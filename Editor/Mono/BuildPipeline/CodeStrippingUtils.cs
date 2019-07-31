@@ -147,7 +147,7 @@ namespace UnityEditor
             }
 
             var strippingInfo = platformProvider == null ? null : StrippingInfo.GetBuildReportData(platformProvider.buildReport);
-            var userAssemblies = GetUserAssemblies(strippedAssemblyDir);
+            var userAssemblies = GetRequiredAssemblies(strippedAssemblyDir);
             // [1] Extract native classes from scene and scripts
             nativeClasses = doStripping ? GenerateNativeClassList(rcr, strippedAssemblyDir, userAssemblies, strippingInfo) : null;
 
@@ -723,7 +723,7 @@ namespace UnityEditor
             }
         }
 
-        private static string[] GetUserAssemblies(string strippedAssemblyDir)
+        private static string[] GetRequiredAssemblies(string strippedAssemblyDir)
         {
             var arguments = new List<string>();
 
@@ -733,11 +733,9 @@ namespace UnityEditor
                 arguments.AddRange(files.Select(f => Path.GetFileName(f)));
             }
 
-            // Workaround: if there are no user assemblies (because the project does not contain scripts), add
-            // UnityEngine, to makes sure we pick up types required by core module. Need to remove this once
-            // we want to be able to strip core module for ECS only players.
-            if (arguments.Count == 0)
-                arguments.Add("UnityEngine.dll");
+            // Workaround: Always add UnityEngine to makes sure we pick up types required by core module. Need
+            // to remove this once we want to be able to strip core module for ECS only players.
+            arguments.Add("UnityEngine.dll");
 
             return arguments.ToArray();
         }

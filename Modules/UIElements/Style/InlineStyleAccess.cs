@@ -913,7 +913,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetStyleValue(StylePropertyID.Opacity, value, ve.sharedStyle.opacity))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Opacity);
                 }
             }
         }

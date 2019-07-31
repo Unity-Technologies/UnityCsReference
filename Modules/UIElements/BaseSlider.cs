@@ -76,25 +76,36 @@ namespace UnityEngine.UIElements
             return result;
         }
 
+        private TValueType GetClampedValue(TValueType newValue)
+        {
+            TValueType lowest = lowValue, highest = highValue;
+            if (lowest.CompareTo(highest) > 0)
+            {
+                var t = lowest;
+                lowest = highest;
+                highest = t;
+            }
+
+            return Clamp(newValue, lowest, highest);
+        }
+
         public override TValueType value
         {
             get { return base.value; }
             set
             {
-                // Clamp the value around the real lowest and highest range values.
-                TValueType lowest = lowValue, highest = highValue;
-                if (lowest.CompareTo(highest) > 0)
-                {
-                    var t = lowest;
-                    lowest = highest;
-                    highest = t;
-                }
-
-                var newValue = Clamp(value, lowest, highest);
+                var newValue = GetClampedValue(value);
                 base.value = newValue;
-
-                UpdateDragElementPosition();
             }
+        }
+
+        public override void SetValueWithoutNotify(TValueType newValue)
+        {
+            // Clamp the value around the real lowest and highest range values.
+            var clampedValue = GetClampedValue(newValue);
+
+            base.SetValueWithoutNotify(clampedValue);
+            UpdateDragElementPosition();
         }
 
         private SliderDirection m_Direction;
@@ -303,20 +314,33 @@ namespace UnityEngine.UIElements
                 return;
 
             float normalizedPosition = SliderNormalizeValue(value, lowValue, highValue);
-            float dragElementWidth = dragElement.resolvedStyle.width;
-            float dragElementHeight = dragElement.resolvedStyle.height;
 
             if (direction == SliderDirection.Horizontal)
             {
+                float dragElementWidth = dragElement.resolvedStyle.width;
+
                 // This is the main calculation for the location of the thumbs / dragging element
                 float offsetForThumbFullWidth = -dragElement.resolvedStyle.marginLeft - dragElement.resolvedStyle.marginRight;
                 float totalWidth = visualInput.layout.width - dragElementWidth + offsetForThumbFullWidth;
-                dragElement.style.left = normalizedPosition * totalWidth;
+                float newLeft = normalizedPosition * totalWidth;
+                float currentLeft = dragElement.style.left.value.value;
+
+                if (Mathf.Round(currentLeft) != Mathf.Round(newLeft))
+                {
+                    dragElement.style.left = newLeft;
+                }
             }
             else
             {
+                float dragElementHeight = dragElement.resolvedStyle.height;
+
                 float totalHeight = visualInput.layout.height - dragElementHeight;
-                dragElement.style.top = normalizedPosition * totalHeight;
+                float newTop = normalizedPosition * totalHeight;
+
+                if (Mathf.Round(dragElement.resolvedStyle.top) != Mathf.Round(newTop))
+                {
+                    dragElement.style.top = newTop;
+                }
             }
         }
 

@@ -337,8 +337,17 @@
     <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioClipPlayable.bindings.cs">
       <Link>Modules\Audio\Public\ScriptBindings\AudioClipPlayable.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioMixer.bindings.cs">
+      <Link>Modules\Audio\Public\ScriptBindings\AudioMixer.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioMixerGroup.bindings.cs">
+      <Link>Modules\Audio\Public\ScriptBindings\AudioMixerGroup.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioMixerPlayable.bindings.cs">
       <Link>Modules\Audio\Public\ScriptBindings\AudioMixerPlayable.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioMixerSnapshot.bindings.cs">
+      <Link>Modules\Audio\Public\ScriptBindings\AudioMixerSnapshot.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioPlayableBinding.cs">
       <Link>Modules\Audio\Public\ScriptBindings\AudioPlayableBinding.cs</Link>
@@ -1084,6 +1093,9 @@
     <Compile Include="..\..\Modules\UIElements\Renderer\UIRUtility.cs">
       <Link>Modules\UIElements\Renderer\UIRUtility.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Renderer\UIRVEShaderInfoAllocator.cs">
+      <Link>Modules\UIElements\Renderer\UIRVEShaderInfoAllocator.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Renderer\UIRVectorImageManager.cs">
       <Link>Modules\UIElements\Renderer\UIRVectorImageManager.cs</Link>
     </Compile>
@@ -1285,8 +1297,8 @@
     <Compile Include="..\..\Modules\UIElements\TreeViewItem.cs">
       <Link>Modules\UIElements\TreeViewItem.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\UIElementsUtility.cs">
-      <Link>Modules\UIElements\UIElementsUtility.cs</Link>
+    <Compile Include="..\..\Modules\UIElements\UIElementsUtility.bindings.cs">
+      <Link>Modules\UIElements\UIElementsUtility.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\UQuery.cs">
       <Link>Modules\UIElements\UQuery.cs</Link>
@@ -1578,6 +1590,9 @@
     </Compile>
     <Compile Include="..\..\Modules\VR\ScriptBindings\XR.bindings.cs">
       <Link>Modules\VR\ScriptBindings\XR.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\VR\Test\VRTestMock.bindings.cs">
+      <Link>Modules\VR\Test\VRTestMock.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Vehicles\Vehicles.bindings.cs">
       <Link>Modules\Vehicles\Vehicles.bindings.cs</Link>
@@ -2746,20 +2761,8 @@
     <Compile Include="..\..\artifacts\generated\bindings_old\common\Animation\AnimationsBindings.gen.cs">
       <Link>artifacts\generated\bindings_old\common\Animation\AnimationsBindings.gen.cs</Link>
     </Compile>
-    <Compile Include="..\..\artifacts\generated\bindings_old\common\Audio\AudioMixerBindings.gen.cs">
-      <Link>artifacts\generated\bindings_old\common\Audio\AudioMixerBindings.gen.cs</Link>
-    </Compile>
-    <Compile Include="..\..\artifacts\generated\bindings_old\common\Audio\AudioMixerGroupBindings.gen.cs">
-      <Link>artifacts\generated\bindings_old\common\Audio\AudioMixerGroupBindings.gen.cs</Link>
-    </Compile>
-    <Compile Include="..\..\artifacts\generated\bindings_old\common\Audio\AudioMixerSnapshotBindings.gen.cs">
-      <Link>artifacts\generated\bindings_old\common\Audio\AudioMixerSnapshotBindings.gen.cs</Link>
-    </Compile>
     <Compile Include="..\..\artifacts\generated\bindings_old\common\Audio\UnityEngineWebCamTextureBindings.gen.cs">
       <Link>artifacts\generated\bindings_old\common\Audio\UnityEngineWebCamTextureBindings.gen.cs</Link>
-    </Compile>
-    <Compile Include="..\..\artifacts\generated\bindings_old\common\VR\VRTestBindings.gen.cs">
-      <Link>artifacts\generated\bindings_old\common\VR\VRTestBindings.gen.cs</Link>
     </Compile>
   </ItemGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

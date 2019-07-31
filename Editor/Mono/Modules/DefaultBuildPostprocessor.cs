@@ -45,6 +45,11 @@ namespace UnityEditor.Modules
             return false;
         }
 
+        public virtual Compression GetDefaultCompression()
+        {
+            return Compression.None;
+        }
+
         public virtual bool SupportsScriptsOnlyBuild()
         {
             return true;
@@ -92,6 +97,14 @@ namespace UnityEditor.Modules
                     config.AddKey("validate-write-barriers");
                 if (PlayerSettings.gcIncremental)
                     config.Set("gc-max-time-slice", "3");
+            }
+
+            if ((options & BuildOptions.Development) != 0)
+            {
+                if ((options & BuildOptions.EnableDeepProfilingSupport) != 0)
+                {
+                    config.Set("profiler-enable-deep-profiling-support", "1");
+                }
             }
         }
 
