@@ -26,8 +26,10 @@ namespace UnityEditor
         private SettingsTreeView m_TreeView;
         private VisualSplitter m_Splitter;
         private VisualElement m_SettingsPanel;
+        private VisualElement m_TreeViewContainer;
         private string m_SearchText;
         private bool m_SearchFieldGiveFocus;
+        const string k_SearchField = "SearchField";
 
         private static class ImguiStyles
         {
@@ -250,9 +252,34 @@ namespace UnityEditor
             }
         }
 
+        private void SetupWindowPosition()
+        {
+            var minWidth = Styles.window.GetFloat("min-width");
+            var minHeight = Styles.window.GetFloat("min-height");
+            minSize = new Vector2(minWidth, minHeight);
+
+            // Center the window if it has never been opened by the user.
+            if (EditorPrefs.HasKey($"{this.GetType().FullName}h"))
+                return; // Do nothing if the window was opened previously.
+
+            var initialWidth = Styles.window.GetFloat("-unity-initial-width");
+            var initialHeight = Styles.window.GetFloat("-unity-initial-height");
+            var containers = Resources.FindObjectsOfTypeAll(typeof(ContainerWindow));
+
+            Vector2 initialSize = new Vector2(Mathf.Min(initialWidth, Screen.width), Mathf.Min(initialHeight, Screen.height));
+            foreach (ContainerWindow window in containers)
+            {
+                if (window.showMode == ShowMode.MainWindow)
+                {
+                    position = new Rect(window.position.center - (initialSize / 2), initialSize);
+                    break;
+                }
+            }
+        }
+
         private void SetupUI()
         {
-            minSize = new Vector2(Styles.window.GetFloat("min-width"), Styles.window.GetFloat("min-height"));
+            SetupWindowPosition();
 
             var root = rootVisualElement;
             root.AddStyleSheetPath("StyleSheets/SettingsWindowCommon.uss");
@@ -266,7 +293,7 @@ namespace UnityEditor
             m_Splitter = new VisualSplitter { splitSize = Styles.window.GetInt("-unity-splitter-size") };
             m_Splitter.AddToClassList("settings-splitter");
             root.Add(m_Splitter);
-            var settingsTree = new IMGUIContainer(DrawTreeView)
+            m_TreeViewContainer = new IMGUIContainer(DrawTreeView)
             {
                 style =
                 {
@@ -275,8 +302,8 @@ namespace UnityEditor
                 },
                 focusOnlyIfHasFocusableControls = false,
             };
-            settingsTree.AddToClassList("settings-tree-imgui-container");
-            m_Splitter.Add(settingsTree);
+            m_TreeViewContainer.AddToClassList("settings-tree-imgui-container");
+            m_Splitter.Add(m_TreeViewContainer);
 
             m_SettingsPanel = new VisualElement()
             {
@@ -294,6 +321,33 @@ namespace UnityEditor
         {
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
             GUILayout.FlexibleSpace();
+
+            var e = Event.current;
+            if (e.commandName == EventCommandNames.Find)
+            {
+                if (e.type == EventType.ExecuteCommand)
+                {
+                    EditorGUI.FocusTextInControl(k_SearchField);
+                }
+
+                if (e.type != EventType.Layout)
+                    e.Use();
+            }
+
+            if (e.type == EventType.KeyDown)
+            {
+                if (e.keyCode == KeyCode.Escape || ((e.keyCode == KeyCode.UpArrow || e.keyCode == KeyCode.DownArrow) &&
+                                                    GUI.GetNameOfFocusedControl() == k_SearchField))
+                {
+                    m_SearchText = string.Empty;
+                    HandleSearchFiltering();
+                    m_TreeViewContainer.Focus();
+                    GUIUtility.keyboardControl = m_TreeView.treeViewControlID;
+                    Repaint();
+                }
+            }
+
+            GUI.SetNextControlName(k_SearchField);
             var searchText = EditorGUILayout.ToolbarSearchField(m_SearchText);
             if (searchText != m_SearchText)
             {
@@ -370,7 +424,7 @@ namespace UnityEditor
             if (m_SearchFieldGiveFocus)
             {
                 m_SearchFieldGiveFocus = false;
-                GUI.FocusControl("SettingsSearchField");
+                GUI.FocusControl(k_SearchField);
             }
         }
 

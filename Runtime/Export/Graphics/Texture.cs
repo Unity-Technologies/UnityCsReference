@@ -4,13 +4,11 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 using uei = UnityEngine.Internal;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Scripting;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-
 
 namespace UnityEngine
 {
@@ -432,22 +430,6 @@ namespace UnityEngine
 
             SetSRGBReadWrite(GraphicsFormatUtility.IsSRGBFormat(format));
         }
-
-        bool IsCubemapFaceEnabled(CubemapFace face)
-        {
-            return (cubemapFaceMask & (1 << (int)face)) != 0;
-        }
-
-        void EnableCubemapFace(CubemapFace face, bool value)
-        {
-            uint oldValue = cubemapFaceMask;
-            uint bit = 1u << (int)face;
-            if (value)
-                oldValue |= bit;
-            else
-                oldValue &= ~bit;
-            cubemapFaceMask = oldValue;
-        }
     }
 
     public partial class Texture : Object
@@ -652,6 +634,24 @@ namespace UnityEngine
                 throw new UnityException("LoadRawTextureData: not enough data provided (will result in overread).");
         }
 
+        public void SetPixelData<T>(T[] data, int mipLevel, int sourceDataStartIndex = 0)
+        {
+            if (sourceDataStartIndex < 0) throw new UnityException("SetPixelData: sourceDataStartIndex cannot be less than 0.");
+
+            if (!isReadable) throw CreateNonReadableException(this);
+            if (data == null || data.Length == 0) throw new UnityException("No texture data provided to SetPixelData.");
+            SetPixelDataImplArray(data, mipLevel, System.Runtime.InteropServices.Marshal.SizeOf(data[0]), data.Length, sourceDataStartIndex);
+        }
+
+        unsafe public void SetPixelData<T>(NativeArray<T> data, int mipLevel, int sourceDataStartIndex = 0) where T : struct
+        {
+            if (sourceDataStartIndex < 0) throw new UnityException("SetPixelData: sourceDataStartIndex cannot be less than 0.");
+
+            if (!isReadable) throw CreateNonReadableException(this);
+            if (!data.IsCreated || data.Length == 0) throw new UnityException("No texture data provided to SetPixelData.");
+            SetPixelDataImpl((IntPtr)data.GetUnsafeReadOnlyPtr(), mipLevel, UnsafeUtility.SizeOf<T>(), data.Length, sourceDataStartIndex);
+        }
+
         public unsafe NativeArray<T> GetRawTextureData<T>() where T : struct
         {
             if (!isReadable) throw CreateNonReadableException(this);
@@ -812,6 +812,25 @@ namespace UnityEngine
             return new Cubemap(width, format, mipmap, nativeTex);
         }
 
+        public void SetPixelData<T>(T[] data, int mipLevel, CubemapFace face, int sourceDataStartIndex = 0)
+        {
+            if (sourceDataStartIndex < 0) throw new UnityException("SetPixelData: sourceDataStartIndex cannot be less than 0.");
+
+            if (!isReadable) throw CreateNonReadableException(this);
+            if (data == null || data.Length == 0) throw new UnityException("No texture data provided to SetPixelData.");
+            SetPixelDataImplArray(data, mipLevel, (int)face, System.Runtime.InteropServices.Marshal.SizeOf(data[0]), data.Length, sourceDataStartIndex);
+        }
+
+        unsafe public void SetPixelData<T>(NativeArray<T> data, int mipLevel, CubemapFace face, int sourceDataStartIndex = 0) where T : struct
+        {
+            if (sourceDataStartIndex < 0) throw new UnityException("SetPixelData: sourceDataStartIndex cannot be less than 0.");
+
+            if (!isReadable) throw CreateNonReadableException(this);
+            if (!data.IsCreated || data.Length == 0) throw new UnityException("No texture data provided to SetPixelData.");
+
+            SetPixelDataImpl((IntPtr)data.GetUnsafeReadOnlyPtr(), mipLevel, (int)face, UnsafeUtility.SizeOf<T>(), data.Length, sourceDataStartIndex);
+        }
+
         public void SetPixel(CubemapFace face, int x, int y, Color color)
         {
             if (!isReadable) throw CreateNonReadableException(this);
@@ -913,6 +932,25 @@ namespace UnityEngine
             if (!isReadable) throw CreateNonReadableException(this);
             return GetPixelBilinearImpl(mipLevel, u, v, w);
         }
+
+        public void SetPixelData<T>(T[] data, int mipLevel, int sourceDataStartIndex = 0)
+        {
+            if (sourceDataStartIndex < 0) throw new UnityException("SetPixelData: sourceDataStartIndex cannot be less than 0.");
+
+            if (!isReadable) throw CreateNonReadableException(this);
+            if (data == null || data.Length == 0) throw new UnityException("No texture data provided to SetPixelData.");
+            SetPixelDataImplArray(data, mipLevel, System.Runtime.InteropServices.Marshal.SizeOf(data[0]), data.Length, sourceDataStartIndex);
+        }
+
+        unsafe public void SetPixelData<T>(NativeArray<T> data, int mipLevel, int sourceDataStartIndex = 0) where T : struct
+        {
+            if (sourceDataStartIndex < 0) throw new UnityException("SetPixelData: sourceDataStartIndex cannot be less than 0.");
+
+            if (!isReadable) throw CreateNonReadableException(this);
+            if (!data.IsCreated || data.Length == 0) throw new UnityException("No texture data provided to SetPixelData.");
+
+            SetPixelDataImpl((IntPtr)data.GetUnsafeReadOnlyPtr(), mipLevel, UnsafeUtility.SizeOf<T>(), data.Length, sourceDataStartIndex);
+        }
     }
 
     public sealed partial class Texture2DArray : Texture
@@ -960,6 +998,25 @@ namespace UnityEngine
         {
             if (!isReadable) throw CreateNonReadableException(this);
             ApplyImpl(updateMipmaps, makeNoLongerReadable);
+        }
+
+        public void SetPixelData<T>(T[] data, int mipLevel, int element, int sourceDataStartIndex = 0)
+        {
+            if (sourceDataStartIndex < 0) throw new UnityException("SetPixelData: sourceDataStartIndex cannot be less than 0.");
+
+            if (!isReadable) throw CreateNonReadableException(this);
+            if (data == null || data.Length == 0) throw new UnityException("No texture data provided to SetPixelData.");
+            SetPixelDataImplArray(data, mipLevel, element, System.Runtime.InteropServices.Marshal.SizeOf(data[0]), data.Length, sourceDataStartIndex);
+        }
+
+        unsafe public void SetPixelData<T>(NativeArray<T> data, int mipLevel, int element, int sourceDataStartIndex = 0) where T : struct
+        {
+            if (sourceDataStartIndex < 0) throw new UnityException("SetPixelData: sourceDataStartIndex cannot be less than 0.");
+
+            if (!isReadable) throw CreateNonReadableException(this);
+            if (!data.IsCreated || data.Length == 0) throw new UnityException("No texture data provided to SetPixelData.");
+
+            SetPixelDataImpl((IntPtr)data.GetUnsafeReadOnlyPtr(), mipLevel, element, UnsafeUtility.SizeOf<T>(), data.Length, sourceDataStartIndex);
         }
 
         public void Apply(bool updateMipmaps) { Apply(updateMipmaps, false); }
@@ -1015,6 +1072,26 @@ namespace UnityEngine
 
         public void Apply(bool updateMipmaps) { Apply(updateMipmaps, false); }
         public void Apply() { Apply(true, false); }
+
+        public void SetPixelData<T>(T[] data, int mipLevel, CubemapFace face, int element, int sourceDataStartIndex = 0)
+        {
+            if (sourceDataStartIndex < 0) throw new UnityException("SetPixelData: sourceDataStartIndex cannot be less than 0.");
+
+            if (!isReadable) throw CreateNonReadableException(this);
+            if (data == null || data.Length == 0) throw new UnityException("No texture data provided to SetPixelData.");
+
+            SetPixelDataImplArray(data, mipLevel, (int)face, element, System.Runtime.InteropServices.Marshal.SizeOf(data[0]), data.Length, sourceDataStartIndex);
+        }
+
+        unsafe public void SetPixelData<T>(NativeArray<T> data, int mipLevel, CubemapFace face, int element, int sourceDataStartIndex = 0) where T : struct
+        {
+            if (sourceDataStartIndex < 0) throw new UnityException("SetPixelData: sourceDataStartIndex cannot be less than 0.");
+
+            if (!isReadable) throw CreateNonReadableException(this);
+            if (!data.IsCreated || data.Length == 0) throw new UnityException("No texture data provided to SetPixelData.");
+
+            SetPixelDataImpl((IntPtr)data.GetUnsafeReadOnlyPtr(), mipLevel, (int)face, element, UnsafeUtility.SizeOf<T>(), data.Length, sourceDataStartIndex);
+        }
     }
 
     public sealed partial class SparseTexture : Texture

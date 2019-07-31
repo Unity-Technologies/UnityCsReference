@@ -16,7 +16,7 @@ namespace UnityEditorInternal
         private static int s_ChartHash = "Charts".GetHashCode();
         public const float kSideWidth = 180.0f;
         private const int kDistFromTopToFirstLabel = 38;
-        private const int kLabelHeight = 11;
+        private const int kLabelHeight = 14;
         private const int kCloseButtonSize = 13;
         private const int kCloseButtonXOffset = 4;
         private const float kLabelOffset = 5f;
@@ -46,7 +46,7 @@ namespace UnityEditorInternal
         static class Styles
         {
             public static readonly GUIStyle background = "OL Box";
-            public static readonly GUIStyle legendHeaderLabel = EditorStyles.label;
+            public static readonly GUIStyle legendHeaderLabel = "ProfilerHeaderLabel";
             public static readonly GUIStyle legendBackground = "ProfilerLeftPane";
             public static readonly GUIStyle rightPane = "ProfilerRightPane";
             public static readonly GUIStyle seriesLabel = "ProfilerPaneSubLabel";
@@ -55,6 +55,7 @@ namespace UnityEditorInternal
             public static readonly GUIStyle whiteLabel = "ProfilerBadge";
             public static readonly GUIStyle selectedLabel = "ProfilerSelectedLabel";
             public static readonly GUIStyle noDataOverlayBox = "ProfilerNoDataAvailable";
+            public static readonly GUIStyle notSupportedWarningLabel = "ProfilerNotSupportedWarningLabel";
 
             public static readonly float labelDropShadowOpacity = 0.3f;
             public static readonly float labelLerpToWhiteAmount = 0.5f;
@@ -79,6 +80,11 @@ namespace UnityEditorInternal
         {
             labelRange = new Vector2(-Mathf.Infinity, Mathf.Infinity);
             graphRange = new Vector2(-Mathf.Infinity, Mathf.Infinity);
+        }
+
+        public virtual void Close()
+        {
+            closed(this);
         }
 
         private int MoveSelectedFrame(int selectedFrame, ChartViewData cdata, int direction)
@@ -171,19 +177,10 @@ namespace UnityEditorInternal
             headerRect.height = Styles.legendHeaderLabel.CalcSize(headerLabel).y;
             GUI.Label(headerRect, headerLabel, Styles.legendHeaderLabel);
 
-            position.yMin += headerRect.height;
+            position.yMin += headerRect.height + Styles.legendHeaderLabel.margin.bottom;
             position.xMin += kLabelOffset;
             position.xMax -= kLabelOffset;
             DoSeriesList(position, m_chartControlID, type, cdata);
-
-            Rect closeButtonRect = headerRect;
-            closeButtonRect.xMax -= Styles.legendHeaderLabel.padding.right;
-            closeButtonRect.xMin = closeButtonRect.xMax - kCloseButtonSize - kCloseButtonXOffset;
-            closeButtonRect.yMin += Styles.legendHeaderLabel.padding.top;
-            closeButtonRect.yMax = closeButtonRect.yMin + kCloseButtonSize;
-
-            if (GUI.Button(closeButtonRect, GUIContent.none, Styles.closeButton) && closed != null)
-                closed(this);
         }
 
         public int DoGUI(ChartType type, int selectedFrame, ChartViewData cdata, bool active)
@@ -207,7 +204,7 @@ namespace UnityEditorInternal
             EventType evtType = evt.GetTypeForControl(m_chartControlID);
 
             if (evtType == EventType.MouseDown && chartRect.Contains(evt.mousePosition) && selected != null)
-                selected(this);
+                ChartSelected();
 
             // if we are not dragging labels, handle graph frame selection
             if (m_DragItemIndex == -1)
@@ -237,11 +234,16 @@ namespace UnityEditorInternal
                     Rect labelRect = r;
                     labelRect.x += kSideWidth * 0.33F;
                     labelRect.y += kWarningLabelHeightOffset;
-                    GUI.Label(labelRect, m_NotSupportedWarning, EditorStyles.boldLabel);
+                    GUI.Label(labelRect, m_NotSupportedWarning, Styles.notSupportedWarningLabel);
                 }
             }
 
             return selectedFrame;
+        }
+
+        public void ChartSelected()
+        {
+            selected(this);
         }
 
         private void DrawSelectedFrame(int selectedFrame, ChartViewData cdata, Rect r)
@@ -301,8 +303,7 @@ namespace UnityEditorInternal
         {
             if (Event.current.type == EventType.Repaint && cdata.dataAvailable != null)
             {
-                r.height += 2;
-                r.y -= 1;
+                r.height += 1;
 
                 int lastFrameWithData = 0;
                 int frameDataLength = cdata.dataAvailable.Length;
@@ -325,20 +326,18 @@ namespace UnityEditorInternal
             }
         }
 
-        private void DrawOverlayBox(Rect r, int startFrame, int endFrame, int frameDataLength, bool chartActive, GUIStyle style, GUIContent content = null)
+        private void DrawOverlayBox(Rect r, int startFrame, int endFrame, int frameDataLength, bool chartActive, GUIStyle style)
         {
             float gracePixels = -1;
             float domainSize = frameDataLength - 1;
-            float startYOffest = Mathf.RoundToInt(r.width * startFrame / domainSize) + gracePixels;
-            float endYOffest = Mathf.RoundToInt(r.width * endFrame / domainSize) - gracePixels;
+            float startXOffest = Mathf.RoundToInt(r.width * startFrame / domainSize) + gracePixels;
+            float endXOffest = Mathf.RoundToInt(r.width * endFrame / domainSize) - gracePixels;
             Rect noDataRect = r;
 
-            noDataRect.x += Mathf.Max(startYOffest, 0);
-            noDataRect.width = Mathf.Min(endYOffest - startYOffest, r.width - (noDataRect.x - r.x));
+            noDataRect.x += Mathf.Max(startXOffest, 0);
+            noDataRect.width = Mathf.Min(endXOffest - startXOffest, r.width - (noDataRect.x - r.x));
 
             style.Draw(noDataRect, false, false, chartActive, false);
-            if (content != null)
-                GUI.Box(noDataRect, content);
         }
 
         private void DrawChartStacked(int selectedFrame, ChartViewData cdata, Rect r, bool chartActive)
@@ -874,7 +873,11 @@ namespace UnityEditorInternal
                     switch (eventType)
                     {
                         case EventType.Repaint:
-                            Styles.seriesDragHandle.Draw(dragHandlePosition, false, false, false, false);
+                            // Properly center the drag handle vertically
+                            Rect dragHandleRenderedPosition = dragHandlePosition;
+                            dragHandleRenderedPosition.height = Styles.seriesDragHandle.fixedHeight;
+                            dragHandleRenderedPosition.y += (dragHandlePosition.height - dragHandleRenderedPosition.height) / 2;
+                            Styles.seriesDragHandle.Draw(dragHandleRenderedPosition, false, false, false, false);
                             break;
                         case EventType.MouseDown:
                             if (dragHandlePosition.Contains(mousePosition))

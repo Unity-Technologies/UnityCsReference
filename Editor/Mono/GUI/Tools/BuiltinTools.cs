@@ -5,6 +5,7 @@
 using UnityEngine;
 using UnityEditor.EditorTools;
 using UnityEditor.SceneManagement;
+using UnityEditor.Snap;
 
 namespace UnityEditor
 {
@@ -560,14 +561,14 @@ namespace UnityEditor
                             // Side resizer (1D)
                             Vector3 sideDir = (xHandle == 1 ? rotation * Vector3.right * rect.width : rotation * Vector3.up * rect.height);
                             Vector3 slideDir = (xHandle == 1 ? rotation * Vector3.up : rotation * Vector3.right);
-                            newPos = RectHandles.SideSlider(id, curPos, sideDir, slideDir, size, null, 0);
+                            newPos = RectHandles.SideSlider(id, curPos, sideDir, slideDir, size, null, EditorSnapSettings.move);
                         }
                         else
                         {
                             // Corner handle (2D)
                             Vector3 outwardsA = rotation * Vector3.right * (xHandle - 1);
                             Vector3 outwardsB = rotation * Vector3.up * (yHandle - 1);
-                            newPos = RectHandles.CornerSlider(id, curPos, rotation * Vector3.forward, outwardsA, outwardsB, size, RectHandles.RectScalingHandleCap, Vector2.zero);
+                            newPos = RectHandles.CornerSlider(id, curPos, rotation * Vector3.forward, outwardsA, outwardsB, size, RectHandles.RectScalingHandleCap, EditorSnapSettings.move);
                         }
 
                         // Calculate snapping values if applicable
@@ -610,8 +611,7 @@ namespace UnityEditor
                             }
 
                             bool scaleFromPivot = Event.current.alt;
-                            bool squashing = EditorGUI.actionKey;
-                            bool uniformScaling = Event.current.shift && !squashing;
+                            bool uniformScaling = Event.current.shift;
 
                             if (!scaleFromPivot)
                                 scalePivot = GetRectPointInWorld(s_StartRect, pivot, rotation, 2 - xHandle, 2 - yHandle);
@@ -632,33 +632,10 @@ namespace UnityEditor
                                 scale = Vector3.one * refScale;
                             }
 
-                            if (squashing && xHandle == 1)
-                            {
-                                if (Event.current.shift)
-                                    scale.x = scale.z = 1 / Mathf.Sqrt(Mathf.Max(scale.y, 0.0001f));
-                                else
-                                    scale.x = 1 / Mathf.Max(scale.y, 0.0001f);
-                            }
-
                             if (uniformScaling)
                             {
                                 float refScale = (xHandle == 1 ? scale.y : scale.x);
                                 scale = Vector3.one * refScale;
-                            }
-
-                            if (squashing && xHandle == 1)
-                            {
-                                if (Event.current.shift)
-                                    scale.x = scale.z = 1 / Mathf.Sqrt(Mathf.Max(scale.y, 0.0001f));
-                                else
-                                    scale.x = 1 / Mathf.Max(scale.y, 0.0001f);
-                            }
-                            if (squashing && yHandle == 1)
-                            {
-                                if (Event.current.shift)
-                                    scale.y = scale.z = 1 / Mathf.Sqrt(Mathf.Max(scale.x, 0.0001f));
-                                else
-                                    scale.y = 1 / Mathf.Max(scale.x, 0.0001f);
                             }
                         }
 

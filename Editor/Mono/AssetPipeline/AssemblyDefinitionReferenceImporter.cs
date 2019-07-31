@@ -7,6 +7,7 @@ using UnityEngine;
 
 namespace UnityEditorInternal
 {
+    [ExcludeFromPreset]
     public sealed partial class AssemblyDefinitionReferenceImporter : AssetImporter
     {
     }

@@ -72,15 +72,11 @@ namespace UnityEngine
         {
             var mousePosition = CurrentEvent().mousePosition;
 
-            Rect thumbZone = ThumbSelectionRect();
-            var mouseOverThumb = thumbZone.Contains(mousePosition);
-
-            Rect clickableZone = thumbZone;
-            clickableZone.x = position.x;
-            clickableZone.width = position.width;
+            var thumbZone = ThumbSelectionRect();
+            var mouseOverThumb = GUIUtility.HitTest(thumbZone, CurrentEvent());
 
             // if the click is outside this control, just bail out...
-            if (IsEmptySlider() || (!mouseOverThumb && !clickableZone.Contains(mousePosition)))
+            if (IsEmptySlider() || (!GUIUtility.HitTest(position, CurrentEvent()) && !mouseOverThumb))
                 return currentValue;
 
             GUI.scrollTroughSide = 0;
@@ -145,7 +141,7 @@ namespace UnityEngine
 
         private float OnRepaint()
         {
-            bool hover = position.Contains(CurrentEvent().mousePosition);
+            bool hover = GUIUtility.HitTest(position, CurrentEvent());
 
             slider.Draw(position, GUIContent.none, id, false, hover);
             if (!IsEmptySlider() && currentValue >= Mathf.Min(start, end) && currentValue <= Mathf.Max(start, end))
@@ -158,7 +154,7 @@ namespace UnityEngine
             if (GUIUtility.hotControl != id || !hover || IsEmptySlider())
                 return currentValue;
 
-            if (ThumbRect().Contains(CurrentEvent().mousePosition))
+            if (GUIUtility.HitTest(ThumbRect(), CurrentEvent()))
             {
                 if (GUI.scrollTroughSide != 0) // if was scrolling with "trough" and the thumb reached mouse - sliding action over
                 {
@@ -266,10 +262,7 @@ namespace UnityEngine
 
         private Rect ThumbExtRect()
         {
-            var rect = new Rect(0, 0, thumbExtent.fixedWidth, thumbExtent.fixedHeight);
-
-            rect.center = ThumbRect().center;
-
+            var rect = new Rect(0, 0, thumbExtent.fixedWidth, thumbExtent.fixedHeight) {center = ThumbRect().center};
             return rect;
         }
 

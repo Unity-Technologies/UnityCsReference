@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 
@@ -53,6 +54,8 @@ namespace UnityEditor
         internal extern static bool use3dGizmos { get; set; }
 
         [StaticAccessor("GetAnnotationManager()", StaticAccessorType.Dot)]
+        // Thomas Tu: 2019-06-20. Will be marked as Obsolete.
+        // We need to deal with code dependency in packages first.
         internal extern static bool showGrid { get; set; }
 
         [StaticAccessor("GetAnnotationManager()", StaticAccessorType.Dot)]

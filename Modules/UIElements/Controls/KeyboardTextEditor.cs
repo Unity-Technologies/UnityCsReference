@@ -206,7 +206,7 @@ namespace UnityEngine.UIElements
             m_Changed = false;
 
             // Check for action keys.
-            if (editorEngine.HandleKeyEvent(evt.imguiEvent))
+            if (editorEngine.HandleKeyEvent(evt.imguiEvent, textInputField.isReadOnly))
             {
                 if (textInputField.text != editorEngine.text)
                 {
@@ -288,16 +288,22 @@ namespace UnityEngine.UIElements
             switch (evt.commandName)
             {
                 case EventCommandNames.Cut:
+                    if (!editorEngine.hasSelection || textInputField.isReadOnly)
+                        return;
+                    break;
                 case EventCommandNames.Copy:
                     if (!editorEngine.hasSelection)
                         return;
                     break;
                 case EventCommandNames.Paste:
-                    if (!editorEngine.CanPaste())
+                    if (!editorEngine.CanPaste() || textInputField.isReadOnly)
                         return;
                     break;
                 case EventCommandNames.SelectAll:
+                    break;
                 case EventCommandNames.Delete:
+                    if (textInputField.isReadOnly)
+                        return;
                     break;
                 case EventCommandNames.UndoRedoPerformed:
                     // TODO: ????? editor.text = text; --> see EditorGUI's DoTextField
@@ -326,29 +332,38 @@ namespace UnityEngine.UIElements
                     evt.StopPropagation();
                     return;
                 case EventCommandNames.Cut:
-                    editorEngine.Cut();
-                    mayHaveChanged = true;
+                    if (!textInputField.isReadOnly)
+                    {
+                        editorEngine.Cut();
+                        mayHaveChanged = true;
+                    }
                     break;
                 case EventCommandNames.Copy:
                     editorEngine.Copy();
                     evt.StopPropagation();
                     return;
                 case EventCommandNames.Paste:
-                    editorEngine.Paste();
-                    mayHaveChanged = true;
+                    if (!textInputField.isReadOnly)
+                    {
+                        editorEngine.Paste();
+                        mayHaveChanged = true;
+                    }
                     break;
                 case EventCommandNames.SelectAll:
                     editorEngine.SelectAll();
                     evt.StopPropagation();
                     return;
                 case EventCommandNames.Delete:
-                    // This "Delete" command stems from a Shift-Delete in the text
-                    // On Windows, Shift-Delete in text does a cut whereas on Mac, it does a delete.
-                    if (SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX)
-                        editorEngine.Delete();
-                    else
-                        editorEngine.Cut();
-                    mayHaveChanged = true;
+                    if (!textInputField.isReadOnly)
+                    {
+                        // This "Delete" command stems from a Shift-Delete in the text
+                        // On Windows, Shift-Delete in text does a cut whereas on Mac, it does a delete.
+                        if (SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX)
+                            editorEngine.Delete();
+                        else
+                            editorEngine.Cut();
+                        mayHaveChanged = true;
+                    }
                     break;
             }
 

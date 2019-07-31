@@ -3,21 +3,21 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine;
 using UnityEngine.Bindings;
 using Unity.Collections;
 using UnityEngine.Rendering;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Scripting.APIUpdating;
 
 using Unity.Jobs;
 
-namespace UnityEngine.Experimental.U2D
+namespace UnityEngine.U2D
 {
     [NativeHeader("Runtime/2D/Common/SpriteDataAccess.h")]
     [NativeHeader("Runtime/2D/Common/SpriteDataMarshalling.h")]
+    [MovedFrom("UnityEngine.Experimental.U2D")]
     [RequiredByNativeCode]
     [NativeType(CodegenOptions.Custom, "ScriptingSpriteBone")]
     [StructLayout(LayoutKind.Sequential)]

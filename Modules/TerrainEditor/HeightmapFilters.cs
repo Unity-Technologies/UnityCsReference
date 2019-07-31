@@ -8,36 +8,6 @@ namespace UnityEditor
 {
     internal class HeightmapFilters
     {
-        static void WobbleStuff(float[,] heights, TerrainData terrain)
-        {
-            for (int y = 0; y < heights.GetLength(0); y++)
-                for (int x = 0; x < heights.GetLength(1); x++)
-                    heights[y, x] = (heights[y, x] + 1) / 2;
-        }
-
-        static void Noise(float[,] heights, TerrainData terrain)
-        {
-            for (int y = 0; y < heights.GetLength(0); y++)
-                for (int x = 0; x < heights.GetLength(1); x++)
-                    heights[y, x] += Random.value * 0.01F;
-        }
-
-        /*
-        public static void WobbleStuff () {
-            int w = GetActiveTerrainData ().heightmapWidth;
-            int h = GetActiveTerrainData ().heightmapHeight;
-
-            // Grab terrain
-            float[,] heights = GetActiveTerrainData ().GetHeights(0, 0, w, h);
-
-            // Apply filter
-            WobbleStuff (heights, GetActiveTerrainData ());
-
-            // Apply back
-            GetActiveTerrainData ().SetHeights(0, 0, heights);
-            FlushHeightmapModification ();
-        }
-    */
         public static void Smooth(float[,] heights, TerrainData terrain)
         {
             float[,] oldHeights = heights.Clone() as float[, ];

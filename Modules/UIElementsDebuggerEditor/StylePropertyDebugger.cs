@@ -118,13 +118,11 @@ namespace UnityEditor.UIElements.Debugger
                 foreach (KeyValuePair<string, CustomPropertyHandle> customProperty in customProperties)
                 {
                     var styleName = customProperty.Key;
-                    foreach (StyleValueHandle handle in customProperty.Value.handles)
-                    {
-                        TextField textField = new TextField(styleName) { isReadOnly = true };
-                        textField.AddToClassList("unity-style-field");
-                        textField.value = customProperty.Value.data.ReadAsString(handle).ToLower();
-                        m_CustomPropertyFieldsContainer.Add(textField);
-                    }
+                    var propValue = customProperty.Value.value;
+                    TextField textField = new TextField(styleName) { isReadOnly = true };
+                    textField.AddToClassList("unity-style-field");
+                    textField.value = propValue.sheet.ReadAsString(propValue.handle).ToLower();
+                    m_CustomPropertyFieldsContainer.Add(textField);
                 }
             }
 
@@ -253,10 +251,14 @@ namespace UnityEditor.UIElements.Debugger
             }
             else if (val is StyleBackground)
             {
-                var style = (StyleBackground)val;
-                ObjectField field = GetOrCreateObjectField<Texture2D>();
+                var background = ((StyleBackground)val).value;
+                ObjectField field;
+                if (background.vectorImage != null)
+                    field = GetOrCreateObjectField<VectorImage>();
+                else
+                    field = GetOrCreateObjectField<Texture2D>();
                 if (!IsFocused(field))
-                    field.SetValueWithoutNotify(style.value.texture);
+                    field.SetValueWithoutNotify(background.vectorImage != null ? (UnityEngine.Object)background.vectorImage : (UnityEngine.Object)background.texture);
             }
             else if (val is StyleCursor)
             {
@@ -391,7 +393,7 @@ namespace UnityEditor.UIElements.Debugger
             else
             {
                 if (type == typeof(StyleBackground))
-                    newValue = new Background(newValue as Texture2D);
+                    newValue = Background.FromTexture2D(newValue as Texture2D);
 
                 var valueInfo = type.GetProperty("value");
                 try

@@ -28,12 +28,6 @@ namespace UnityEditor
 
         public float breadcrumbHeight { get { return BreadcrumbBar.DefaultStyles.background.fixedHeight; }}
 
-        static bool autoSave
-        {
-            get { return StageNavigationManager.instance.autoSave; }
-            set { StageNavigationManager.instance.autoSave = value; }
-        }
-
         static class Styles
         {
             public static GUIContent autoSaveGUIContent = EditorGUIUtility.TrTextContent("Auto Save", "When Auto Save is enabled, every change you make is automatically saved to the Prefab Asset. Disable Auto Save if you experience long import times.");

@@ -7,8 +7,16 @@ using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
-namespace UnityEngine.Experimental.VFX
+namespace UnityEngine.VFX
 {
+    public enum VFXSpawnerLoopState
+    {
+        Finished,
+        DelayingBeforeLoop,
+        Looping,
+        DelayingAfterLoop
+    };
+
     [RequiredByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     [NativeType(Header = "Modules/VFX/Public/VFXSpawnerState.h")]
@@ -70,10 +78,27 @@ namespace UnityEngine.Experimental.VFX
         [NativeMethod(IsThreadSafe = true)]
         extern static private void Internal_Destroy(IntPtr ptr);
 
-        extern public bool playing { get; set; }
+        public bool playing
+        {
+            get
+            {
+                return loopState == VFXSpawnerLoopState.Looping;
+            }
+            set
+            {
+                loopState = VFXSpawnerLoopState.Looping;
+            }
+        }
+        extern public bool newLoop { get; }
+        extern public VFXSpawnerLoopState loopState { get; set; }
         extern public float spawnCount { get; set; }
         extern public float deltaTime { get; set; }
         extern public float totalTime { get; set; }
+        extern public float delayBeforeLoop { get; set; }
+        extern public float loopDuration { get; set; }
+        extern public float delayAfterLoop { get; set; }
+        extern public int loopIndex { get; set; }
+        extern public int loopCount { get; set; }
         extern public VFXEventAttribute vfxEventAttribute { get; }
     }
 }

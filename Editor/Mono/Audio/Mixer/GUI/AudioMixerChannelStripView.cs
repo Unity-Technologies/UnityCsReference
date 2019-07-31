@@ -1133,7 +1133,7 @@ namespace UnityEditor
 
             public void Init(AudioMixerController controller, Rect channelStripRect, int maxNumEffects)
             {
-                numChannels = controller.GetGroupVUInfo(group.groupID, false, ref vuinfo_level, ref vuinfo_peak);
+                numChannels = controller.GetGroupVUInfo(group.groupID, false, vuinfo_level, vuinfo_peak);
                 //numChannels = 8; // debugging
 
                 maxEffects = maxNumEffects;

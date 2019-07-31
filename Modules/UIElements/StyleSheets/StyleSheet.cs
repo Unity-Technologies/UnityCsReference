@@ -66,22 +66,19 @@ namespace UnityEngine.UIElements
         [NonSerialized]
         internal bool isUnityStyleSheet;
 
-        static bool TryCheckAccess<T>(T[] list, StyleValueType type, StyleValueHandle[] handles, int index, out T value)
+        static bool TryCheckAccess<T>(T[] list, StyleValueType type, StyleValueHandle handle, out T value)
         {
             bool result = false;
             value = default(T);
-            if (index < handles.Length)
+
+            if (handle.valueType == type && handle.valueIndex >= 0 && handle.valueIndex < list.Length)
             {
-                var handle = handles[index];
-                if (handle.valueType == type && handle.valueIndex >= 0 && handle.valueIndex < list.Length)
-                {
-                    value = list[handle.valueIndex];
-                    result = true;
-                }
-                else
-                {
-                    Debug.LogErrorFormat("Trying to read value of type {0} while reading a value of type {1}", type, handle.valueType);
-                }
+                value = list[handle.valueIndex];
+                result = true;
+            }
+            else
+            {
+                Debug.LogErrorFormat("Trying to read value of type {0} while reading a value of type {1}", type, handle.valueType);
             }
             return result;
         }
@@ -113,6 +110,28 @@ namespace UnityEngine.UIElements
         {
             if (complexSelectors == null || rules == null)
                 return;
+
+            // Setup rules and properties for var
+            foreach (var rule in rules)
+            {
+                foreach (var property in rule.properties)
+                {
+                    if (property.name.StartsWith("--"))
+                    {
+                        ++rule.customPropertiesCount;
+                        property.isCustomProperty = true;
+                    }
+
+                    foreach (var handle in property.values)
+                    {
+                        if (handle.IsVarFunction())
+                        {
+                            property.requireVariableResolve = true;
+                            break;
+                        }
+                    }
+                }
+            }
 
             for (int i = 0, count = complexSelectors.Length; i < count; i++)
             {
@@ -194,14 +213,14 @@ namespace UnityEngine.UIElements
             return CheckAccess(floats, StyleValueType.Float, handle);
         }
 
-        internal bool TryReadFloat(StyleValueHandle[] handles, int index, out float value)
+        internal bool TryReadFloat(StyleValueHandle handle, out float value)
         {
-            if (TryCheckAccess(floats, StyleValueType.Float, handles, index, out value))
+            if (TryCheckAccess(floats, StyleValueType.Float, handle, out value))
                 return true;
 
             // Handle dimension for properties with optional unit
             Dimension dimensionValue;
-            bool isDimension = TryCheckAccess(dimensions, StyleValueType.Float, handles, index, out dimensionValue);
+            bool isDimension = TryCheckAccess(dimensions, StyleValueType.Float, handle, out dimensionValue);
             value = dimensionValue.value;
             return isDimension;
         }
@@ -217,14 +236,14 @@ namespace UnityEngine.UIElements
             return CheckAccess(dimensions, StyleValueType.Dimension, handle);
         }
 
-        internal bool TryReadDimension(StyleValueHandle[] handles, int index, out Dimension value)
+        internal bool TryReadDimension(StyleValueHandle handle, out Dimension value)
         {
-            if (TryCheckAccess(dimensions, StyleValueType.Dimension, handles, index, out value))
+            if (TryCheckAccess(dimensions, StyleValueType.Dimension, handle, out value))
                 return true;
 
             // If the value is 0 (without unit) it's stored as a float
             float floatValue = 0f;
-            bool isFloat = TryCheckAccess(floats, StyleValueType.Float, handles, index, out floatValue);
+            bool isFloat = TryCheckAccess(floats, StyleValueType.Float, handle, out floatValue);
             value = new Dimension(floatValue, Dimension.Unit.Unitless);
             return isFloat;
         }
@@ -234,9 +253,9 @@ namespace UnityEngine.UIElements
             return CheckAccess(colors, StyleValueType.Color, handle);
         }
 
-        internal bool TryReadColor(StyleValueHandle[] handles, int index, out Color value)
+        internal bool TryReadColor(StyleValueHandle handle, out Color value)
         {
-            return TryCheckAccess(colors, StyleValueType.Color, handles, index, out value);
+            return TryCheckAccess(colors, StyleValueType.Color, handle, out value);
         }
 
         internal string ReadString(StyleValueHandle handle)
@@ -244,9 +263,9 @@ namespace UnityEngine.UIElements
             return CheckAccess(strings, StyleValueType.String, handle);
         }
 
-        internal bool TryReadString(StyleValueHandle[] handles, int index, out string value)
+        internal bool TryReadString(StyleValueHandle handle, out string value)
         {
-            return TryCheckAccess(strings, StyleValueType.String, handles, index, out value);
+            return TryCheckAccess(strings, StyleValueType.String, handle, out value);
         }
 
         internal string ReadEnum(StyleValueHandle handle)
@@ -254,9 +273,19 @@ namespace UnityEngine.UIElements
             return CheckAccess(strings, StyleValueType.Enum, handle);
         }
 
-        internal bool TryReadEnum(StyleValueHandle[] handles, int index, out string value)
+        internal bool TryReadEnum(StyleValueHandle handle, out string value)
         {
-            return TryCheckAccess(strings, StyleValueType.Enum, handles, index, out value);
+            return TryCheckAccess(strings, StyleValueType.Enum, handle, out value);
+        }
+
+        internal string ReadVariable(StyleValueHandle handle)
+        {
+            return CheckAccess(strings, StyleValueType.Variable, handle);
+        }
+
+        internal bool TryReadVariable(StyleValueHandle handle, out string value)
+        {
+            return TryCheckAccess(strings, StyleValueType.Variable, handle, out value);
         }
 
         internal string ReadResourcePath(StyleValueHandle handle)
@@ -264,9 +293,9 @@ namespace UnityEngine.UIElements
             return CheckAccess(strings, StyleValueType.ResourcePath, handle);
         }
 
-        internal bool TryReadResourcePath(StyleValueHandle[] handles, int index, out string value)
+        internal bool TryReadResourcePath(StyleValueHandle handle, out string value)
         {
-            return TryCheckAccess(strings, StyleValueType.ResourcePath, handles, index, out value);
+            return TryCheckAccess(strings, StyleValueType.ResourcePath, handle, out value);
         }
 
         internal Object ReadAssetReference(StyleValueHandle handle)
@@ -274,14 +303,26 @@ namespace UnityEngine.UIElements
             return CheckAccess(assets, StyleValueType.AssetReference, handle);
         }
 
-        internal bool TryReadAssetReference(StyleValueHandle[] handles, int index, out Object value)
+        internal bool TryReadAssetReference(StyleValueHandle handle, out Object value)
         {
-            return TryCheckAccess(assets, StyleValueType.AssetReference, handles, index, out value);
+            return TryCheckAccess(assets, StyleValueType.AssetReference, handle, out value);
+        }
+
+        internal StyleValueFunction ReadFunction(StyleValueHandle handle)
+        {
+            return (StyleValueFunction)handle.valueIndex;
         }
 
         internal string ReadFunctionName(StyleValueHandle handle)
         {
-            return CheckAccess(strings, StyleValueType.Function, handle);
+            if (handle.valueType != StyleValueType.Function)
+            {
+                Debug.LogErrorFormat($"Trying to read value of type {StyleValueType.Function} while reading a value of type {handle.valueType}");
+                return string.Empty;
+            }
+
+            var svf = (StyleValueFunction)handle.valueIndex;
+            return svf.ToUssString();
         }
     }
 }

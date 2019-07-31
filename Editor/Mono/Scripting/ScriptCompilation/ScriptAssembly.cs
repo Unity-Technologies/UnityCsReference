@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using UnityEditor.Scripting.Compilers;
 using UnityEditor.Compilation;
@@ -41,6 +42,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
     }
 
+    [DebuggerDisplay("{Filename}")]
     class ScriptAssembly
     {
         public string OriginPath { get; set; }

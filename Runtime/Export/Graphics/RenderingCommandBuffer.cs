@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEngine.Rendering
 {
@@ -196,6 +197,143 @@ namespace UnityEngine.Rendering
         public void DispatchCompute(ComputeShader computeShader, int kernelIndex, ComputeBuffer indirectBuffer, uint argsOffset)
         {
             Internal_DispatchComputeIndirect(computeShader, kernelIndex, indirectBuffer, argsOffset);
+        }
+
+        public void BuildRayTracingAccelerationStructure(RayTracingAccelerationStructure accelerationStructure)
+        {
+            Internal_BuildRayTracingAccelerationStructure(accelerationStructure);
+        }
+
+        public void SetRayTracingAccelerationStructure(RayTracingShader rayTracingShader, string name, RayTracingAccelerationStructure rayTracingAccelerationStructure)
+        {
+            Internal_SetRayTracingAccelerationStructure(rayTracingShader, Shader.PropertyToID(name), rayTracingAccelerationStructure);
+        }
+
+        public void SetRayTracingAccelerationStructure(RayTracingShader rayTracingShader, int nameID, RayTracingAccelerationStructure rayTracingAccelerationStructure)
+        {
+            Internal_SetRayTracingAccelerationStructure(rayTracingShader, nameID, rayTracingAccelerationStructure);
+        }
+
+        public void SetRayTracingBufferParam(RayTracingShader rayTracingShader, string name, ComputeBuffer buffer)
+        {
+            Internal_SetRayTracingBufferParam(rayTracingShader, Shader.PropertyToID(name), buffer);
+        }
+
+        public void SetRayTracingBufferParam(RayTracingShader rayTracingShader, int nameID, ComputeBuffer buffer)
+        {
+            Internal_SetRayTracingBufferParam(rayTracingShader, nameID, buffer);
+        }
+
+        public void SetRayTracingTextureParam(RayTracingShader rayTracingShader, string name, RenderTargetIdentifier rt)
+        {
+            Internal_SetRayTracingTextureParam(rayTracingShader, Shader.PropertyToID(name), ref rt);
+        }
+
+        public void SetRayTracingTextureParam(RayTracingShader rayTracingShader, int nameID, RenderTargetIdentifier rt)
+        {
+            Internal_SetRayTracingTextureParam(rayTracingShader, nameID, ref rt);
+        }
+
+        // Set a float parameter.
+        public void SetRayTracingFloatParam(RayTracingShader rayTracingShader, string name, float val)
+        {
+            Internal_SetRayTracingFloatParam(rayTracingShader, Shader.PropertyToID(name), val);
+        }
+
+        // Set a float parameter.
+        public void SetRayTracingFloatParam(RayTracingShader rayTracingShader, int nameID, float val)
+        {
+            Internal_SetRayTracingFloatParam(rayTracingShader, nameID, val);
+        }
+
+        // Set multiple consecutive float parameters at once.
+        public void SetRayTracingFloatParams(RayTracingShader rayTracingShader, string name, params float[] values)
+        {
+            Internal_SetRayTracingFloats(rayTracingShader, Shader.PropertyToID(name), values);
+        }
+
+        // Set multiple consecutive float parameters at once.
+        public void SetRayTracingFloatParams(RayTracingShader rayTracingShader, int nameID, params float[] values)
+        {
+            Internal_SetRayTracingFloats(rayTracingShader, nameID, values);
+        }
+
+        // Set a int parameter.
+        public void SetRayTracingIntParam(RayTracingShader rayTracingShader, string name, int val)
+        {
+            Internal_SetRayTracingIntParam(rayTracingShader, Shader.PropertyToID(name), val);
+        }
+
+        // Set a int parameter.
+        public void SetRayTracingIntParam(RayTracingShader rayTracingShader, int nameID, int val)
+        {
+            Internal_SetRayTracingIntParam(rayTracingShader, nameID, val);
+        }
+
+        // Set multiple consecutive int parameters at once.
+        public void SetRayTracingIntParams(RayTracingShader rayTracingShader, string name, params int[] values)
+        {
+            Internal_SetRayTracingInts(rayTracingShader, Shader.PropertyToID(name), values);
+        }
+
+        // Set multiple consecutive int parameters at once.
+        public void SetRayTracingIntParams(RayTracingShader rayTracingShader, int nameID, params int[] values)
+        {
+            Internal_SetRayTracingInts(rayTracingShader, nameID, values);
+        }
+
+        // Set a vector parameter.
+        public void SetRayTracingVectorParam(RayTracingShader rayTracingShader, string name, Vector4 val)
+        {
+            Internal_SetRayTracingVectorParam(rayTracingShader, Shader.PropertyToID(name), val);
+        }
+
+        // Set a vector parameter.
+        public void SetRayTracingVectorParam(RayTracingShader rayTracingShader, int nameID, Vector4 val)
+        {
+            Internal_SetRayTracingVectorParam(rayTracingShader, nameID, val);
+        }
+
+        // Set a vector array parameter.
+        public void SetRayTracingVectorArrayParam(RayTracingShader rayTracingShader, string name, params Vector4[] values)
+        {
+            Internal_SetRayTracingVectorArrayParam(rayTracingShader, Shader.PropertyToID(name), values);
+        }
+
+        // Set a vector array parameter.
+        public void SetRayTracingVectorArrayParam(RayTracingShader rayTracingShader, int nameID, params Vector4[] values)
+        {
+            Internal_SetRayTracingVectorArrayParam(rayTracingShader, nameID, values);
+        }
+
+        // Set a matrix parameter.
+        public void SetRayTracingMatrixParam(RayTracingShader rayTracingShader, string name, Matrix4x4 val)
+        {
+            Internal_SetRayTracingMatrixParam(rayTracingShader, Shader.PropertyToID(name), val);
+        }
+
+        // Set a matrix parameter.
+        public void SetRayTracingMatrixParam(RayTracingShader rayTracingShader, int nameID, Matrix4x4 val)
+        {
+            Internal_SetRayTracingMatrixParam(rayTracingShader, nameID, val);
+        }
+
+        // Set a matrix array parameter.
+        public void SetRayTracingMatrixArrayParam(RayTracingShader rayTracingShader, string name, params Matrix4x4[] values)
+        {
+            Internal_SetRayTracingMatrixArrayParam(rayTracingShader, Shader.PropertyToID(name), values);
+        }
+
+        // Set a matrix array parameter.
+        public void SetRayTracingMatrixArrayParam(RayTracingShader rayTracingShader, int nameID, params Matrix4x4[] values)
+        {
+            Internal_SetRayTracingMatrixArrayParam(rayTracingShader, nameID, values);
+        }
+
+        // Execute a Ray Tracing Shader.
+        public void DispatchRays(RayTracingShader rayTracingShader, string rayGenName, UInt32 width, UInt32 height, UInt32 depth, Camera camera = null)
+        {
+            Internal_DispatchRays(rayTracingShader, rayGenName, width, height, depth, camera);
         }
 
         public void GenerateMips(RenderTexture rt)

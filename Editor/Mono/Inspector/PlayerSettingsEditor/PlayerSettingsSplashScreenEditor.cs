@@ -15,7 +15,6 @@ namespace UnityEditor
     {
         PlayerSettingsEditor m_Owner;
 
-        SerializedProperty m_ResolutionDialogBanner;
         SerializedProperty m_ShowUnitySplashLogo;
         SerializedProperty m_ShowUnitySplashScreen;
         SerializedProperty m_SplashScreenAnimation;
@@ -107,7 +106,6 @@ namespace UnityEditor
 
         public void OnEnable()
         {
-            m_ResolutionDialogBanner = m_Owner.FindPropertyAssert("resolutionDialogBanner");
             m_ShowUnitySplashLogo = m_Owner.FindPropertyAssert("m_ShowUnitySplashLogo");
             m_ShowUnitySplashScreen = m_Owner.FindPropertyAssert("m_ShowUnitySplashScreen");
             m_SplashScreenAnimation = m_Owner.FindPropertyAssert("m_SplashScreenAnimation");
@@ -200,9 +198,11 @@ namespace UnityEditor
                 logo.objectReferenceValue = value;
 
             // Properties
+            var oldLabelWidth = EditorGUIUtility.labelWidth;
             EditorGUIUtility.labelWidth = k_LogoListPropertyLabelWidth;
             var propertyRect = new Rect(rect.x + unityLogoWidth, rect.y + EditorGUIUtility.standardVerticalSpacing, rect.width - unityLogoWidth, EditorGUIUtility.singleLineHeight);
             var duration = element.FindPropertyRelative("duration");
+            EditorGUIUtility.labelWidth = oldLabelWidth;
 
             EditorGUI.BeginChangeCheck();
             var newDurationVal = EditorGUI.Slider(propertyRect, k_Texts.logoDuration, duration.floatValue, k_MinLogoTime, k_MaxLogoTime);
@@ -297,17 +297,6 @@ namespace UnityEditor
         {
             if (m_Owner.BeginSettingsBox(sectionIndex, k_Texts.title))
             {
-                if (targetGroup == BuildTargetGroup.Standalone)
-                {
-                    ObjectReferencePropertyField<Texture2D>(m_ResolutionDialogBanner, k_Texts.configDialogBanner);
-                    if (m_ResolutionDialogBanner.objectReferenceValue != null)
-                    {
-                        EditorGUILayout.HelpBox(k_Texts.configDialogBannerDeprecationWarning.text, MessageType.Warning, true);
-                    }
-
-                    EditorGUILayout.Space();
-                }
-
                 if (m_Owner.m_VRSettings.TargetGroupSupportsVirtualReality(targetGroup))
                     ObjectReferencePropertyField<Texture2D>(m_VirtualRealitySplashScreen, k_Texts.vrSplashScreen);
 
@@ -342,9 +331,12 @@ namespace UnityEditor
                 if (SplashScreen.isFinished)
                 {
                     SplashScreen.Begin();
-                    var gv = GameView.GetMainGameView();
-                    if (gv)
-                        gv.Focus();
+                    PreviewEditorWindow.RepaintAll();
+                    var preview = PreviewEditorWindow.GetMainPreviewWindow();
+                    if (preview)
+                    {
+                        preview.Focus();
+                    }
                     EditorApplication.update += PollSplashState;
                 }
                 else
@@ -392,7 +384,6 @@ namespace UnityEditor
 
             if (EditorGUILayout.BeginFadeGroup(m_ShowLogoControlsAnimator.faded))
             {
-                EditorGUI.indentLevel++;
                 EditorGUI.BeginChangeCheck();
                 var oldDrawmode = m_SplashScreenDrawMode.intValue;
                 EditorGUILayout.PropertyField(m_SplashScreenDrawMode, k_Texts.drawMode);
@@ -403,7 +394,6 @@ namespace UnityEditor
                     else
                         AddUnityLogoToLogosList();
                 }
-                EditorGUI.indentLevel--;
             }
             EditorGUILayout.EndFadeGroup();
 
@@ -432,6 +422,9 @@ namespace UnityEditor
 
         void PollSplashState()
         {
+            // Force the GameViews to repaint whilst showing the splash(1166664)
+            PreviewEditorWindow.RepaintAll();
+
             // When the splash screen is playing we need to keep track so that we can update the preview button when it has finished.
             if (SplashScreen.isFinished)
             {

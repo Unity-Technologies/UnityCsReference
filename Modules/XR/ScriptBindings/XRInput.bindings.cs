@@ -329,19 +329,63 @@ namespace UnityEngine.XR
     [NativeConditional("ENABLE_VR")]
     public struct InputDevice : IEquatable<InputDevice>
     {
-        private UInt64 m_DeviceId;
-        internal InputDevice(UInt64 deviceId) { m_DeviceId = deviceId; }
+        private static List<XRInputSubsystem> s_InputSubsystemCache;
 
-        public bool isValid { get { return InputDevices.IsDeviceValid(m_DeviceId); } }
-        public string name { get { return InputDevices.GetDeviceName(m_DeviceId); } }
+        private UInt64 m_DeviceId;
+        private bool m_Initialized;
+        internal InputDevice(UInt64 deviceId)
+        {
+            m_DeviceId = deviceId;
+            m_Initialized = true;
+        }
+
+        // Use this to compare deviceIds.  It will take care of the default uninitialized case.
+        private UInt64 deviceId
+        {
+            get
+            {
+                return m_Initialized ? m_DeviceId : UInt64.MaxValue;
+            }
+        }
+
+        public XRInputSubsystem subsystem
+        {
+            get
+            {
+                if (s_InputSubsystemCache == null)
+                    s_InputSubsystemCache = new List<XRInputSubsystem>();
+
+                if (m_Initialized)
+                {
+                    /// The DeviceId is cut in two, with the hiword being the subsystem identifier, and the loword being for the specific device.
+                    UInt32 pluginIndex = (UInt32)(m_DeviceId >> 32);
+                    SubsystemManager.GetInstances<XRInputSubsystem>(s_InputSubsystemCache);
+                    for (int i = 0; i < s_InputSubsystemCache.Count; i++)
+                    {
+                        if (pluginIndex == s_InputSubsystemCache[i].GetIndex())
+                            return s_InputSubsystemCache[i];
+                    }
+                }
+
+                return null;
+            }
+        }
+        public bool isValid { get { return IsValidId() && InputDevices.IsDeviceValid(m_DeviceId); } }
+        public string name { get { return IsValidId() ? InputDevices.GetDeviceName(m_DeviceId) : null; } }
         [Obsolete("This API has been marked as deprecated and will be removed in future versions. Please use InputDevice.characteristics instead.")]
-        public InputDeviceRole role { get { return InputDevices.GetDeviceRole(m_DeviceId); } }
-        public string manufacturer { get { return InputDevices.GetDeviceManufacturer(m_DeviceId); } }
-        public string serialNumber { get { return InputDevices.GetDeviceSerialNumber(m_DeviceId); } }
-        public InputDeviceCharacteristics characteristics { get { return InputDevices.GetDeviceCharacteristics(m_DeviceId); } }
+        public InputDeviceRole role { get { return IsValidId() ? InputDevices.GetDeviceRole(m_DeviceId) : InputDeviceRole.Unknown; } }
+        public string manufacturer { get { return IsValidId() ? InputDevices.GetDeviceManufacturer(m_DeviceId) : null; } }
+        public string serialNumber { get { return IsValidId() ? InputDevices.GetDeviceSerialNumber(m_DeviceId) : null; } }
+        public InputDeviceCharacteristics characteristics { get { return IsValidId() ? InputDevices.GetDeviceCharacteristics(m_DeviceId) : InputDeviceCharacteristics.None; } }
+
+        private bool IsValidId() { return deviceId != UInt64.MaxValue; }
+
         // Haptics
         public bool SendHapticImpulse(uint channel, float amplitude, float duration = 1.0f)
         {
+            if (!IsValidId())
+                return false;
+
             if (amplitude < 0.0f)
                 throw new ArgumentException("Amplitude of SendHapticImpulse cannot be negative.");
             if (duration < 0.0f)
@@ -349,58 +393,186 @@ namespace UnityEngine.XR
             return InputDevices.SendHapticImpulse(m_DeviceId, channel, amplitude, duration);
         }
 
-        public bool SendHapticBuffer(uint channel, byte[] buffer)                               { return InputDevices.SendHapticBuffer(m_DeviceId, channel, buffer); }
-        public bool TryGetHapticCapabilities(out HapticCapabilities capabilities)               { return InputDevices.TryGetHapticCapabilities(m_DeviceId, out capabilities); }
-        public void StopHaptics()                                                               { InputDevices.StopHaptics(m_DeviceId); }
+        public bool SendHapticBuffer(uint channel, byte[] buffer)
+        {
+            if (!IsValidId())
+                return false;
+
+            return InputDevices.SendHapticBuffer(m_DeviceId, channel, buffer);
+        }
+
+        public bool TryGetHapticCapabilities(out HapticCapabilities capabilities)
+        {
+            if (CheckValidAndSetDefault(out capabilities))
+                return InputDevices.TryGetHapticCapabilities(m_DeviceId, out capabilities);
+            return false;
+        }
+
+        public void StopHaptics()
+        {
+            if (IsValidId())
+                InputDevices.StopHaptics(m_DeviceId);
+        }
 
         // Feature Usages
         public bool TryGetFeatureUsages(List<InputFeatureUsage> featureUsages)
         {
-            return InputDevices.TryGetFeatureUsages(m_DeviceId, featureUsages);
+            if (IsValidId())
+                return InputDevices.TryGetFeatureUsages(m_DeviceId, featureUsages);
+
+            return false;
         }
 
         // Features by Usage
-        public bool TryGetFeatureValue(InputFeatureUsage<bool> usage, out bool value)              { return InputDevices.TryGetFeatureValue_bool(m_DeviceId, usage.name, out value); }
-        public bool TryGetFeatureValue(InputFeatureUsage<uint> usage, out uint value)              { return InputDevices.TryGetFeatureValue_UInt32(m_DeviceId, usage.name, out value); }
-        public bool TryGetFeatureValue(InputFeatureUsage<float> usage, out float value)            { return InputDevices.TryGetFeatureValue_float(m_DeviceId, usage.name, out value); }
-        public bool TryGetFeatureValue(InputFeatureUsage<Vector2> usage, out Vector2 value)        { return InputDevices.TryGetFeatureValue_Vector2f(m_DeviceId, usage.name, out value); }
-        public bool TryGetFeatureValue(InputFeatureUsage<Vector3> usage, out Vector3 value)        { return InputDevices.TryGetFeatureValue_Vector3f(m_DeviceId, usage.name, out value); }
-        public bool TryGetFeatureValue(InputFeatureUsage<Quaternion> usage, out Quaternion value)  { return InputDevices.TryGetFeatureValue_Quaternionf(m_DeviceId, usage.name, out value); }
-        public bool TryGetFeatureValue(InputFeatureUsage<Hand> usage, out Hand value)              { return InputDevices.TryGetFeatureValue_XRHand(m_DeviceId, usage.name, out value); }
-        public bool TryGetFeatureValue(InputFeatureUsage<Bone> usage, out Bone value)              { return InputDevices.TryGetFeatureValue_XRBone(m_DeviceId, usage.name, out value); }
-        public bool TryGetFeatureValue(InputFeatureUsage<Eyes> usage, out Eyes value)              { return InputDevices.TryGetFeatureValue_XREyes(m_DeviceId, usage.name, out value); }
-        public bool TryGetFeatureValue(InputFeatureUsage<byte[]> usage, byte[] value)              { return InputDevices.TryGetFeatureValue_Custom(m_DeviceId, usage.name, value); }
+        public bool TryGetFeatureValue(InputFeatureUsage<bool> usage, out bool value)
+        {
+            if (CheckValidAndSetDefault(out value))
+                return InputDevices.TryGetFeatureValue_bool(m_DeviceId, usage.name, out value);
+            return false;
+        }
+
+        public bool TryGetFeatureValue(InputFeatureUsage<uint> usage, out uint value)
+        {
+            if (CheckValidAndSetDefault(out value))
+                return InputDevices.TryGetFeatureValue_UInt32(m_DeviceId, usage.name, out value);
+            return false;
+        }
+
+        public bool TryGetFeatureValue(InputFeatureUsage<float> usage, out float value)
+        {
+            if (CheckValidAndSetDefault(out value))
+                return InputDevices.TryGetFeatureValue_float(m_DeviceId, usage.name, out value);
+            return false;
+        }
+
+        public bool TryGetFeatureValue(InputFeatureUsage<Vector2> usage, out Vector2 value)
+        {
+            if (CheckValidAndSetDefault(out value))
+                return InputDevices.TryGetFeatureValue_Vector2f(m_DeviceId, usage.name, out value);
+            return false;
+        }
+
+        public bool TryGetFeatureValue(InputFeatureUsage<Vector3> usage, out Vector3 value)
+        {
+            if (CheckValidAndSetDefault(out value))
+                return InputDevices.TryGetFeatureValue_Vector3f(m_DeviceId, usage.name, out value);
+            return false;
+        }
+
+        public bool TryGetFeatureValue(InputFeatureUsage<Quaternion> usage, out Quaternion value)
+        {
+            if (CheckValidAndSetDefault(out value))
+                return InputDevices.TryGetFeatureValue_Quaternionf(m_DeviceId, usage.name, out value);
+            return false;
+        }
+
+        public bool TryGetFeatureValue(InputFeatureUsage<Hand> usage, out Hand value)
+        {
+            if (CheckValidAndSetDefault(out value))
+                return InputDevices.TryGetFeatureValue_XRHand(m_DeviceId, usage.name, out value);
+            return false;
+        }
+
+        public bool TryGetFeatureValue(InputFeatureUsage<Bone> usage, out Bone value)
+        {
+            if (CheckValidAndSetDefault(out value))
+                return InputDevices.TryGetFeatureValue_XRBone(m_DeviceId, usage.name, out value);
+            return false;
+        }
+
+        public bool TryGetFeatureValue(InputFeatureUsage<Eyes> usage, out Eyes value)
+        {
+            if (CheckValidAndSetDefault(out value))
+                return InputDevices.TryGetFeatureValue_XREyes(m_DeviceId, usage.name, out value);
+            return false;
+        }
+
+        public bool TryGetFeatureValue(InputFeatureUsage<byte[]> usage, byte[] value)
+        {
+            if (IsValidId())
+                return InputDevices.TryGetFeatureValue_Custom(m_DeviceId, usage.name, value);
+
+            return false;
+        }
 
         public bool TryGetFeatureValue(InputFeatureUsage<InputTrackingState> usage, out InputTrackingState value)
         {
-            uint intValue = 0;
-            if (InputDevices.TryGetFeatureValue_UInt32(m_DeviceId, usage.name, out intValue))
+            if (IsValidId())
             {
-                value = (InputTrackingState)intValue;
-                return true;
+                uint intValue = 0;
+                if (InputDevices.TryGetFeatureValue_UInt32(m_DeviceId, usage.name, out intValue))
+                {
+                    value = (InputTrackingState)intValue;
+                    return true;
+                }
             }
             value = InputTrackingState.None;
             return false;
         }
 
         // Features at time
-        public bool TryGetFeatureValue(InputFeatureUsage<bool> usage, DateTime time, out bool value) { return InputDevices.TryGetFeatureValueAtTime_bool(m_DeviceId, usage.name, TimeConverter.LocalDateTimeToUnixTimeMilliseconds(time), out value); }
-        public bool TryGetFeatureValue(InputFeatureUsage<uint> usage, DateTime time, out uint value) { return InputDevices.TryGetFeatureValueAtTime_UInt32(m_DeviceId, usage.name, TimeConverter.LocalDateTimeToUnixTimeMilliseconds(time), out value); }
-        public bool TryGetFeatureValue(InputFeatureUsage<float> usage, DateTime time, out float value) { return InputDevices.TryGetFeatureValueAtTime_float(m_DeviceId, usage.name, TimeConverter.LocalDateTimeToUnixTimeMilliseconds(time), out value); }
-        public bool TryGetFeatureValue(InputFeatureUsage<Vector2> usage, DateTime time, out Vector2 value) { return InputDevices.TryGetFeatureValueAtTime_Vector2f(m_DeviceId, usage.name, TimeConverter.LocalDateTimeToUnixTimeMilliseconds(time), out value); }
-        public bool TryGetFeatureValue(InputFeatureUsage<Vector3> usage, DateTime time, out Vector3 value) { return InputDevices.TryGetFeatureValueAtTime_Vector3f(m_DeviceId, usage.name, TimeConverter.LocalDateTimeToUnixTimeMilliseconds(time), out value); }
-        public bool TryGetFeatureValue(InputFeatureUsage<Quaternion> usage, DateTime time, out Quaternion value) { return InputDevices.TryGetFeatureValueAtTime_Quaternionf(m_DeviceId, usage.name, TimeConverter.LocalDateTimeToUnixTimeMilliseconds(time), out value); }
+        public bool TryGetFeatureValue(InputFeatureUsage<bool> usage, DateTime time, out bool value)
+        {
+            if (CheckValidAndSetDefault(out value))
+                return InputDevices.TryGetFeatureValueAtTime_bool(m_DeviceId, usage.name, TimeConverter.LocalDateTimeToUnixTimeMilliseconds(time), out value);
+            return false;
+        }
+
+        public bool TryGetFeatureValue(InputFeatureUsage<uint> usage, DateTime time, out uint value)
+        {
+            if (CheckValidAndSetDefault(out value))
+                return InputDevices.TryGetFeatureValueAtTime_UInt32(m_DeviceId, usage.name, TimeConverter.LocalDateTimeToUnixTimeMilliseconds(time), out value);
+            return false;
+        }
+
+        public bool TryGetFeatureValue(InputFeatureUsage<float> usage, DateTime time, out float value)
+        {
+            if (CheckValidAndSetDefault(out value))
+                return InputDevices.TryGetFeatureValueAtTime_float(m_DeviceId, usage.name, TimeConverter.LocalDateTimeToUnixTimeMilliseconds(time), out value);
+            return false;
+        }
+
+        public bool TryGetFeatureValue(InputFeatureUsage<Vector2> usage, DateTime time, out Vector2 value)
+        {
+            if (CheckValidAndSetDefault(out value))
+                return InputDevices.TryGetFeatureValueAtTime_Vector2f(m_DeviceId, usage.name, TimeConverter.LocalDateTimeToUnixTimeMilliseconds(time), out value);
+            return false;
+        }
+
+        public bool TryGetFeatureValue(InputFeatureUsage<Vector3> usage, DateTime time, out Vector3 value)
+        {
+            if (CheckValidAndSetDefault(out value))
+                return InputDevices.TryGetFeatureValueAtTime_Vector3f(m_DeviceId, usage.name, TimeConverter.LocalDateTimeToUnixTimeMilliseconds(time), out value);
+            return false;
+        }
+
+        public bool TryGetFeatureValue(InputFeatureUsage<Quaternion> usage, DateTime time, out Quaternion value)
+        {
+            if (CheckValidAndSetDefault(out value))
+                return InputDevices.TryGetFeatureValueAtTime_Quaternionf(m_DeviceId, usage.name, TimeConverter.LocalDateTimeToUnixTimeMilliseconds(time), out value);
+            return false;
+        }
 
         public bool TryGetFeatureValue(InputFeatureUsage<InputTrackingState> usage, DateTime time, out InputTrackingState value)
         {
-            uint intValue = 0;
-            if (InputDevices.TryGetFeatureValueAtTime_UInt32(m_DeviceId, usage.name, TimeConverter.LocalDateTimeToUnixTimeMilliseconds(time), out intValue))
+            if (IsValidId())
             {
-                value = (InputTrackingState)intValue;
-                return true;
+                uint intValue = 0;
+                if (InputDevices.TryGetFeatureValueAtTime_UInt32(m_DeviceId, usage.name, TimeConverter.LocalDateTimeToUnixTimeMilliseconds(time), out intValue))
+                {
+                    value = (InputTrackingState)intValue;
+                    return true;
+                }
             }
+
             value = InputTrackingState.None;
             return false;
+        }
+
+        bool CheckValidAndSetDefault<T>(out T value)
+        {
+            value = default(T);
+            return IsValidId();
         }
 
         public override bool Equals(object obj)
@@ -413,12 +585,12 @@ namespace UnityEngine.XR
 
         public bool Equals(InputDevice other)
         {
-            return m_DeviceId == other.m_DeviceId;
+            return deviceId == other.deviceId;
         }
 
         public override int GetHashCode()
         {
-            return m_DeviceId.GetHashCode();
+            return deviceId.GetHashCode();
         }
 
         public static bool operator==(InputDevice a, InputDevice b)

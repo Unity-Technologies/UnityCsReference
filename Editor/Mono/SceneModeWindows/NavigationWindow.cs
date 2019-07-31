@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEditor.AI;
@@ -455,8 +454,7 @@ namespace UnityEditor
         static void RepaintSceneAndGameViews()
         {
             SceneView.RepaintAll();
-            foreach (GameView gv in Resources.FindObjectsOfTypeAll(typeof(GameView)))
-                gv.Repaint();
+            PreviewEditorWindow.RepaintAll();
         }
 
         public void OnSceneViewGUI(SceneView sceneView)
@@ -682,11 +680,6 @@ namespace UnityEditor
                 return objects;
             }
             return new List<GameObject>(Selection.gameObjects);
-        }
-
-        static bool SelectionHasChildren()
-        {
-            return Selection.gameObjects.Any(obj => obj.transform.childCount > 0);
         }
 
         static void SetNavMeshArea(int area, bool includeChildren)

@@ -10,11 +10,6 @@ using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {
-    internal interface IAtlasMonitor
-    {
-        bool RequiresReset();
-    }
-
     internal class UIRAtlasManager : IDisposable
     {
         public static event Action<UIRAtlasManager> atlasManagerCreated;
@@ -56,31 +51,13 @@ namespace UnityEngine.UIElements
             return s_InstancesreadOnly;
         }
 
-        private struct BlitInfo
-        {
-            public Texture src;
-            // Coordinates of the bottom-left corner of the texture relative to the bottom-left corner of the atlas.
-            public int x;
-            public int y;
-            public bool addBorder;
-        }
-
-        private const int k_TextureSlotCount = 8;
-        private static readonly int[] k_TextureIds;
-
         private UIRAtlasAllocator m_Allocator;
         private Dictionary<Texture2D, RectInt> m_UVs;
-        private Material m_BlitMaterial;
-        private List<BlitInfo> m_PendingBlits;
-        private BlitInfo[] m_SingleBlit = new BlitInfo[1];
         private bool m_ForceReblitAll;
         private ColorSpace m_ColorSpace;
-        private bool m_RequiresReset;
-        private RectInt m_Viewport;
-        private RenderTexture m_PrevRT;
+        private TextureBlitter m_Blitter;
 
         static CustomSampler s_ResetSampler = CustomSampler.Create("UIR.AtlasManager.Reset");
-        static CustomSampler s_CommitSampler = CustomSampler.Create("UIR.AtlasManager.Commit");
 
         public int maxImageSize { get; }
 
@@ -89,18 +66,11 @@ namespace UnityEngine.UIElements
         /// </summary>
         public RenderTexture atlas { get; private set; }
 
-        static UIRAtlasManager()
-        {
-            k_TextureIds = new int[k_TextureSlotCount];
-            for (int i = 0; i < k_TextureSlotCount; ++i)
-                k_TextureIds[i] = Shader.PropertyToID("_MainTex" + i);
-        }
-
         public UIRAtlasManager(int maxImageSize = 64)
         {
             this.maxImageSize = maxImageSize;
             m_UVs = new Dictionary<Texture2D, RectInt>(64);
-            m_PendingBlits = new List<BlitInfo>(64);
+            m_Blitter = new TextureBlitter(64);
             Reset();
 
             s_Instances.Add(this);
@@ -131,13 +101,16 @@ namespace UnityEngine.UIElements
                 UIRUtility.Destroy(atlas);
                 atlas = null;
 
-                UIRUtility.Destroy(m_BlitMaterial);
-                m_BlitMaterial = null;
-
                 if (m_Allocator != null)
                 {
                     m_Allocator.Dispose();
                     m_Allocator = null;
+                }
+
+                if (m_Blitter != null)
+                {
+                    m_Blitter.Dispose();
+                    m_Blitter = null;
                 }
 
                 if (atlasManagerDisposed != null)
@@ -156,37 +129,22 @@ namespace UnityEngine.UIElements
 
         #endregion // Dispose Pattern
 
-        private HashSet<IAtlasMonitor> m_Monitors = new HashSet<IAtlasMonitor>();
+        static int s_GlobalResetVersion;
+        int m_ResetVersion = s_GlobalResetVersion;
 
-        public void AddMonitor(IAtlasMonitor monitor)
+        public static void MarkAllForReset()
         {
-            m_Monitors.Add(monitor);
+            ++s_GlobalResetVersion;
         }
 
-        public void RemoveMonitor(IAtlasMonitor monitor)
+        public void MarkForReset()
         {
-            m_Monitors.Remove(monitor);
+            m_ResetVersion = s_GlobalResetVersion - 1;
         }
 
         public bool RequiresReset()
         {
-            if (disposed)
-            {
-                LogDisposeError();
-                return false;
-            }
-
-            if (!m_RequiresReset)
-            {
-                // Perform ALL the calls to merge all reset requests.
-                foreach (IAtlasMonitor monitor in m_Monitors)
-                {
-                    bool requiresReset = monitor.RequiresReset();
-                    m_RequiresReset = m_RequiresReset || requiresReset;
-                }
-            }
-
-            return m_RequiresReset;
+            return m_ResetVersion != s_GlobalResetVersion;
         }
 
         /// <remarks>
@@ -204,22 +162,17 @@ namespace UnityEngine.UIElements
 
             s_ResetSampler.Begin();
 
-            m_PendingBlits.Clear();
+            m_Blitter.Reset();
             m_UVs.Clear();
             m_Allocator = new UIRAtlasAllocator(64, 4096);
             m_ForceReblitAll = false;
             m_ColorSpace = QualitySettings.activeColorSpace;
             UIRUtility.Destroy(atlas);
 
-            m_RequiresReset = false;
-
-            if (ResetPerformed != null)
-                ResetPerformed(this, EventArgs.Empty);
-
             s_ResetSampler.End();
-        }
 
-        public event EventHandler ResetPerformed;
+            m_ResetVersion = s_GlobalResetVersion;
+        }
 
         /// <summary>
         /// If the provided texture is already in the atlas, the uvs are returned immediately. Otherwise, if the
@@ -247,16 +200,28 @@ namespace UnityEngine.UIElements
                 return false;
 
             // Attempt to allocate.
-            RectInt alloc;
-            if (!m_Allocator.TryAllocate(image.width + 2, image.height + 2, out alloc))
+            if (!AllocateRect(image.width, image.height, out uvs))
                 return false;
-            uvs = new RectInt(alloc.x + 1, alloc.y + 1, image.width, image.height);
             m_UVs[image] = uvs;
 
             // Add a blit instruction.
-            m_PendingBlits.Add(new BlitInfo { src = image, x = uvs.x, y = uvs.y, addBorder = true });
+            m_Blitter.QueueBlit(image, new RectInt(0, 0, image.width, image.height), new Vector2Int(uvs.x, uvs.y), true, Color.white);
 
             return true;
+        }
+
+        public bool AllocateRect(int width, int height, out RectInt uvs)
+        {
+            // Attempt to allocate.
+            if (!m_Allocator.TryAllocate(width + 2, height + 2, out uvs))
+                return false;
+            uvs = new RectInt(uvs.x + 1, uvs.y + 1, width, height);
+            return true;
+        }
+
+        public void EnqueueBlit(Texture image, int x, int y, bool addBorder, Color tint)
+        {
+            m_Blitter.QueueBlit(image, new RectInt(0, 0, image.width, image.height), new Vector2Int(x, y), addBorder, tint);
         }
 
         /// <summary>
@@ -383,7 +348,7 @@ namespace UnityEngine.UIElements
             return true;
         }
 
-        public void Update()
+        public void Commit()
         {
             if (disposed)
             {
@@ -396,32 +361,19 @@ namespace UnityEngine.UIElements
             if (m_ForceReblitAll)
             {
                 m_ForceReblitAll = false;
-                m_PendingBlits.Clear();
+                m_Blitter.Reset();
                 foreach (KeyValuePair<Texture2D, RectInt> kvp in m_UVs)
-                    m_PendingBlits.Add(new BlitInfo { src = kvp.Key, x = kvp.Value.x, y = kvp.Value.y, addBorder = true });
+                    m_Blitter.QueueBlit(kvp.Key, new RectInt(0, 0, kvp.Key.width, kvp.Key.height), new Vector2Int(kvp.Value.x, kvp.Value.y), true, Color.white);
             }
 
-            if (m_PendingBlits.Count > 0)
-                Commit();
-        }
-
-        private void Commit()
-        {
-            s_CommitSampler.Begin();
-            BeginBlit(atlas);
-            for (int i = 0; i < m_PendingBlits.Count; i += k_TextureSlotCount)
-                DoBlit(m_PendingBlits, i);
-            EndBlit();
-            s_CommitSampler.End();
-
-            m_PendingBlits.Clear();
+            m_Blitter.Commit(atlas);
         }
 
         private void UpdateAtlasTexture()
         {
             if (atlas == null)
             {
-                if (m_UVs.Count > m_PendingBlits.Count)
+                if (m_UVs.Count > m_Blitter.queueLength)
                 {
                     // This can happen when the graphic device reloads.
                     m_ForceReblitAll = true;
@@ -434,7 +386,7 @@ namespace UnityEngine.UIElements
             if (atlas.width != m_Allocator.physicalWidth || atlas.height != m_Allocator.physicalHeight)
             {
                 RenderTexture newAtlas = CreateAtlasTexture();
-                BlitSingle(atlas, newAtlas, 0, 0, false);
+                m_Blitter.BlitOneNow(newAtlas, atlas, new RectInt(0, 0, atlas.width, atlas.height), new Vector2Int(0, 0), false, Color.white);
                 UIRUtility.Destroy(atlas);
                 atlas = newAtlas;
             }
@@ -448,97 +400,10 @@ namespace UnityEngine.UIElements
             // The RenderTextureReadWrite setting is purposely omitted in order to get the "Default" behavior.
             return new RenderTexture(m_Allocator.physicalWidth, m_Allocator.physicalHeight, 0, RenderTextureFormat.ARGB32)
             {
+                hideFlags = HideFlags.HideAndDontSave,
                 name = "UIR Atlas " + Random.Range(int.MinValue, int.MaxValue),
                 filterMode = FilterMode.Bilinear
             };
-        }
-
-        /// <param name="x">Distance between the left of the atlas and the left boundary of the texture.</param>
-        /// <param name="y">Distance between the bottom of the atlas and the bottom boundary of the texture.</param>
-        /// <param name="addBorder">Blit a border using the texture wrap mode.</param>
-        private void BlitSingle(Texture src, RenderTexture dst, int x, int y, bool addBorder)
-        {
-            m_SingleBlit[0] = new BlitInfo { src = src, x = x, y = y, addBorder = addBorder };
-            BeginBlit(dst);
-            DoBlit(m_SingleBlit, 0);
-            EndBlit();
-        }
-
-        private void BeginBlit(RenderTexture dst)
-        {
-            if (m_BlitMaterial == null)
-            {
-                var blitShader = Shader.Find("Hidden/Internal-UIRAtlasBlitCopy");
-                m_BlitMaterial = new Material(blitShader);
-            }
-            // store viewport as we'll have to restore it once the AtlasManager is done rendering
-            m_Viewport = Utility.GetActiveViewport();
-            m_PrevRT = RenderTexture.active;
-            GL.LoadPixelMatrix(0, dst.width, 0, dst.height);
-            Graphics.SetRenderTarget(dst);
-        }
-
-        private void DoBlit(IList<BlitInfo> blitInfos, int startIndex)
-        {
-            int stopIndex = Mathf.Min(startIndex + k_TextureSlotCount, blitInfos.Count);
-
-            // Bind and update the material.
-            for (int blitIndex = startIndex, slotIndex = 0; blitIndex < stopIndex; ++blitIndex, ++slotIndex)
-            {
-                var texture = blitInfos[blitIndex].src;
-                if (texture != null)
-                    m_BlitMaterial.SetTexture(k_TextureIds[slotIndex], texture);
-            }
-
-            // Draw.
-            m_BlitMaterial.SetPass(0);
-            GL.Begin(GL.QUADS);
-            for (int blitIndex = startIndex, slotIndex = 0; blitIndex < stopIndex; ++blitIndex, ++slotIndex)
-            {
-                BlitInfo current = blitInfos[blitIndex];
-                // Pixel offset for the border in the destination texture:
-                float borderDstOffset = current.addBorder ? 1 : 0;
-
-                // UV offset used to create the border when reading the texture.
-                float borderSrcWidth = borderDstOffset / current.src.width;
-                float borderSrcHeight = borderDstOffset / current.src.height;
-
-                // Destination coordinates.
-                float dstLeft = current.x - borderDstOffset;
-                float dstBottom = current.y - borderDstOffset;
-                float dstRight = current.x + current.src.width + borderDstOffset;
-                float dstTop = current.y + current.src.height + borderDstOffset;
-
-                // Source coordinates.
-                float srcLeft = 0 - borderSrcWidth;
-                float srcBottom = 0 - borderSrcHeight;
-                float srcRight = 1 + borderSrcWidth;
-                float srcTop = 1 + borderSrcHeight;
-
-                // Bottom left
-                GL.TexCoord3(srcLeft, srcBottom, slotIndex);
-                GL.Vertex3(dstLeft, dstBottom, 0.0f);
-
-                // Top left
-                GL.TexCoord3(srcLeft, srcTop, slotIndex);
-                GL.Vertex3(dstLeft, dstTop, 0.0f);
-
-                // Top right
-                GL.TexCoord3(srcRight, srcTop, slotIndex);
-                GL.Vertex3(dstRight, dstTop, 0.0f);
-
-                // Bottom right
-                GL.TexCoord3(srcRight, srcBottom, slotIndex);
-                GL.Vertex3(dstRight, dstBottom, 0.0f);
-            }
-            GL.End();
-        }
-
-        private void EndBlit()
-        {
-            Graphics.SetRenderTarget(m_PrevRT);
-            // restore viewport (which has been implicitely modified as we used a rendertarget)
-            GL.Viewport(new Rect(m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height));
         }
     }
 }

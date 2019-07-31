@@ -15,7 +15,7 @@ namespace UnityEditor.UIElements
         IntegerInput integerInput => (IntegerInput)textInputBase;
 
         public new class UxmlFactory : UxmlFactory<IntegerField, UxmlTraits> {}
-        public new class UxmlTraits : BaseFieldTraits<int, UxmlIntAttributeDescription> {}
+        public new class UxmlTraits : TextValueFieldTraits<int, UxmlIntAttributeDescription> {}
 
         protected override string ValueToString(int v)
         {

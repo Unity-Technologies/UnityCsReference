@@ -327,16 +327,8 @@ namespace UnityEditor.Modules
             target = BuildTarget.StandaloneWindows;
             try
             {
-                if (targetString == BuildTargetGroup.Facebook.ToString())
-                {
-                    buildTargetGroup = BuildTargetGroup.Facebook;
-                    target = BuildTarget.StandaloneWindows;
-                }
-                else
-                {
-                    target = (BuildTarget)Enum.Parse(typeof(BuildTarget), targetString);
-                    buildTargetGroup = BuildPipeline.GetBuildTargetGroup(target);
-                }
+                target = (BuildTarget)Enum.Parse(typeof(BuildTarget), targetString);
+                buildTargetGroup = BuildPipeline.GetBuildTargetGroup(target);
                 return true;
             }
             catch

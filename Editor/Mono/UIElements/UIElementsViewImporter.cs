@@ -22,6 +22,7 @@ namespace UnityEditor.UIElements
 {
     // Make sure UXML is imported after assets than can be addressed in USS
     [ScriptedImporter(version: 6, ext: "uxml", importQueueOffset: 1100)]
+    [ExcludeFromPreset]
     internal class UIElementsViewImporter : ScriptedImporter
     {
         // Parses the XML file to figure out dependencies to other UXML/USS files

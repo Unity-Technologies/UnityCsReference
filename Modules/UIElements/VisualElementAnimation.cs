@@ -243,7 +243,10 @@ namespace UnityEngine.UIElements
                         s.backgroundColor = styleValue.color;
                         break;
                     case StyleSheets.StylePropertyID.BorderColor:
-                        s.borderColor = styleValue.color;
+                        s.borderLeftColor = styleValue.color;
+                        s.borderTopColor = styleValue.color;
+                        s.borderRightColor = styleValue.color;
+                        s.borderBottomColor = styleValue.color;
                         break;
                     case StyleSheets.StylePropertyID.BackgroundImageTintColor:
                         s.unityBackgroundImageTintColor = styleValue.color;
@@ -347,7 +350,7 @@ namespace UnityEngine.UIElements
                         s.backgroundColor = src.backgroundColor;
                         break;
                     case StyleSheets.StylePropertyID.BorderColor:
-                        s.borderColor = src.borderColor;
+                        s.borderColor = src.borderLeftColor;
                         break;
                     case StyleSheets.StylePropertyID.BackgroundImageTintColor:
                         s.unityBackgroundImageTintColor = src.unityBackgroundImageTintColor;

@@ -36,6 +36,7 @@ namespace UnityEditor
             public static GUIContent allowAsyncUpdate = EditorGUIUtility.TrTextContent("Allow Async Update");
             public static GUIContent showFailedCheckouts = EditorGUIUtility.TrTextContent("Show Failed Checkouts");
             public static GUIContent overwriteFailedCheckoutAssets = EditorGUIUtility.TrTextContent("Overwrite Failed Checkout Assets", "When on, assets that can not be checked out will get saved anyway.");
+            public static GUIContent overlayIcons = EditorGUIUtility.TrTextContent("Overlay Icons", "Should version control status icons be shown in project view.");
 
             public static GUIContent assetPipeline = EditorGUIUtility.TrTextContent("Asset Pipeline (experimental)");
             public static GUIContent cacheServer = EditorGUIUtility.TrTextContent("Cache Server");
@@ -44,6 +45,7 @@ namespace UnityEditor
 
             public static GUIContent graphics = EditorGUIUtility.TrTextContent("Graphics");
             public static GUIContent showLightmapResolutionOverlay = EditorGUIUtility.TrTextContent("Show Lightmap Resolution Overlay");
+            public static GUIContent useLegacyProbeSampleCount = EditorGUIUtility.TrTextContent("Use legacy Light Probe sample counts", "Uses fixed Light Probe sample counts for baking with the Progressive Lightmapper. The sample counts are: 64 direct samples, 2048 indirect samples and 2048 environment samples.");
 
             public static GUIContent spritePacker = EditorGUIUtility.TrTextContent("Sprite Packer");
 
@@ -471,6 +473,13 @@ namespace UnityEditor
                     EditorUserSettings.overwriteFailedCheckoutAssets = EditorGUILayout.Toggle(Content.overwriteFailedCheckoutAssets, EditorUserSettings.overwriteFailedCheckoutAssets);
                 }
 
+                var newOverlayIcons = EditorGUILayout.Toggle(Content.overlayIcons, EditorUserSettings.overlayIcons);
+                if (newOverlayIcons != EditorUserSettings.overlayIcons)
+                {
+                    EditorUserSettings.overlayIcons = newOverlayIcons;
+                    EditorApplication.RequestRepaintAllViews();
+                }
+
                 GUI.enabled = editorEnabled;
 
                 // Semantic merge popup
@@ -548,6 +557,15 @@ namespace UnityEditor
             showRes = EditorGUILayout.Toggle(Content.showLightmapResolutionOverlay, showRes);
             if (EditorGUI.EndChangeCheck())
                 LightmapVisualization.showResolution = showRes;
+
+            EditorGUI.BeginChangeCheck();
+            bool useLegacyProbeSampleCountValue = EditorSettings.useLegacyProbeSampleCount;
+            useLegacyProbeSampleCountValue = EditorGUILayout.Toggle(Content.useLegacyProbeSampleCount, useLegacyProbeSampleCountValue);
+            if (EditorGUI.EndChangeCheck())
+            {
+                EditorApplication.RequestRepaintAllViews();
+                EditorSettings.useLegacyProbeSampleCount = useLegacyProbeSampleCountValue;
+            }
 
             GUILayout.Space(10);
 

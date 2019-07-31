@@ -17,6 +17,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public static bool ShouldAddTestRunnerReferences(EditorBuildRules.TargetAssembly targetAssembly)
         {
+            if (UnityCodeGenHelpers.IsCodeGen(targetAssembly.Filename))
+            {
+                return false;
+            }
+
             return !targetAssembly.References.Any(x => x.Filename.Contains(k_EngineTestRunnerAssemblyName) || x.Filename.Contains(k_EditorTestRunnerAssemblyName))
                 && !targetAssembly.Filename.Contains(k_EngineTestRunnerAssemblyName)
                 && !targetAssembly.Filename.Contains(k_EditorTestRunnerAssemblyName)

@@ -17,21 +17,6 @@ namespace Unity.Collections.LowLevel.Unsafe
         HandleWasAlreadyDeallocated = 2,
     }
 
-    [Flags]
-    internal enum AtomicSafetyHandleVersionMask
-    {
-        Read                    = 1 << 0,
-        Write                   = 1 << 1,
-        Dispose                 = 1 << 2,
-        ReadAndWrite            = Read | Write,
-        ReadWriteAndDispose     = Read | Write | Dispose,
-
-        WriteInv                = ~Write,
-        ReadInv                 = ~Read,
-        ReadAndWriteInv         = ~ReadAndWrite,
-        ReadWriteAndDisposeInv  = ~ReadWriteAndDispose
-    }
-
     // AtomicSafetyHandle is used by the C# job system to provide validation and full safety
     // for read / write permissions to access the buffers represented by each handle.
     // Each AtomicSafetyHandle represents a single container.
@@ -44,11 +29,18 @@ namespace Unity.Collections.LowLevel.Unsafe
     [NativeHeader("Runtime/Jobs/JobsDebugger.h")]
     public struct AtomicSafetyHandle
     {
-        [NativeDisableUnsafePtrRestriction]
-        internal IntPtr                         versionNode;
-        internal AtomicSafetyHandleVersionMask  version;
+        internal const int Read = 1 << 0;
+        internal const int Write = 1 << 1;
+        internal const int Dispose = 1 << 2;
 
-        //@TODO: Ensure AtomicSafetyHandle.Create / release is actually threadsafe
+        internal const int ReadCheck                = ~(Write | Dispose);
+        internal const int WriteCheck               = ~(Read | Dispose);
+        internal const int DisposeCheck             = ~(Read | Write);
+        internal const int ReadWriteDisposeCheck    = ~(Read | Write | Dispose);
+
+        [NativeDisableUnsafePtrRestriction]
+        internal IntPtr versionNode;
+        internal int  version;
 
         // Creates a new AtomicSafetyHandle that is valid until Release is called.
         [ThreadSafe]
@@ -78,6 +70,9 @@ namespace Unity.Collections.LowLevel.Unsafe
         // Switches the AtomicSafetyHandle to the secondary version number.
         [ThreadSafe]
         public static extern void SetAllowSecondaryVersionWriting(AtomicSafetyHandle handle, bool allowWriting);
+
+        [ThreadSafe]
+        public static extern void SetBumpSecondaryVersionOnScheduleWrite(AtomicSafetyHandle handle, bool value);
 
         [NativeMethod(IsThreadSafe = true, IsFreeFunction = true)]
         public static extern void SetAllowReadOrWriteAccess(AtomicSafetyHandle handle, bool allowReadWriteAccess);
@@ -146,8 +141,8 @@ namespace Unity.Collections.LowLevel.Unsafe
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         public static unsafe void CheckReadAndThrow(AtomicSafetyHandle handle)
         {
-            var versionPtr = (AtomicSafetyHandleVersionMask*)handle.versionNode;
-            if ((handle.version & AtomicSafetyHandleVersionMask.Read) == 0 && handle.version != ((*versionPtr) & AtomicSafetyHandleVersionMask.WriteInv))
+            var versionPtr = (int*)handle.versionNode;
+            if (handle.version != ((*versionPtr) & ReadCheck))
                 CheckReadAndThrowNoEarlyOut(handle);
         }
 
@@ -156,8 +151,8 @@ namespace Unity.Collections.LowLevel.Unsafe
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         public static unsafe void CheckWriteAndThrow(AtomicSafetyHandle handle)
         {
-            var versionPtr = (AtomicSafetyHandleVersionMask*)handle.versionNode;
-            if ((handle.version & AtomicSafetyHandleVersionMask.Write) == 0 && handle.version != ((*versionPtr) & AtomicSafetyHandleVersionMask.ReadInv))
+            var versionPtr = (int*)handle.versionNode;
+            if (handle.version != ((*versionPtr) & WriteCheck))
                 CheckWriteAndThrowNoEarlyOut(handle);
         }
 
@@ -166,8 +161,8 @@ namespace Unity.Collections.LowLevel.Unsafe
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         public static unsafe void CheckExistsAndThrow(AtomicSafetyHandle handle)
         {
-            var versionPtr = (AtomicSafetyHandleVersionMask*)handle.versionNode;
-            if ((handle.version & AtomicSafetyHandleVersionMask.ReadWriteAndDisposeInv) != ((*versionPtr) & AtomicSafetyHandleVersionMask.ReadWriteAndDisposeInv))
+            var versionPtr = (int*)handle.versionNode;
+            if (handle.version != ((*versionPtr) & ReadWriteDisposeCheck))
                 throw new InvalidOperationException("The NativeArray has been deallocated, it is not allowed to access it");
         }
 

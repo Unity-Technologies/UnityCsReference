@@ -14,7 +14,7 @@ namespace UnityEditor.UIElements
         FloatInput floatInput => (FloatInput)textInputBase;
 
         public new class UxmlFactory : UxmlFactory<FloatField, UxmlTraits> {}
-        public new class UxmlTraits : BaseFieldTraits<float, UxmlFloatAttributeDescription> {}
+        public new class UxmlTraits : TextValueFieldTraits<float, UxmlFloatAttributeDescription> {}
 
         protected override string ValueToString(float v)
         {

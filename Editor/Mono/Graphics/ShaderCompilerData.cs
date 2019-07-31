@@ -113,6 +113,9 @@ namespace UnityEditor.Rendering
         Fragment    = 2,
         Geometry    = 3,
         Hull        = 4,
-        Domain      = 5
+        Domain      = 5,
+        Surface     = 6,
+        RayTracing  = 7,
+        Count       = 7
     }
 }

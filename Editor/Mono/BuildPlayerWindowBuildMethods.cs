@@ -234,9 +234,12 @@ namespace UnityEditor
                 //Check if Lz4 is supported for the current buildtargetgroup and enable it if need be
                 if (PostprocessBuildPlayer.SupportsLz4Compression(buildTargetGroup, buildTarget))
                 {
-                    if (EditorUserBuildSettings.GetCompressionType(buildTargetGroup) == Compression.Lz4)
+                    var compression = EditorUserBuildSettings.GetCompressionType(buildTargetGroup);
+                    if (compression < 0)
+                        compression = PostprocessBuildPlayer.GetDefaultCompression(buildTargetGroup, buildTarget);
+                    if (compression == Compression.Lz4)
                         options.options |= BuildOptions.CompressWithLz4;
-                    else if (EditorUserBuildSettings.GetCompressionType(buildTargetGroup) == Compression.Lz4HC)
+                    else if (compression == Compression.Lz4HC)
                         options.options |= BuildOptions.CompressWithLz4HC;
                 }
 
@@ -251,6 +254,8 @@ namespace UnityEditor
                     options.options |= BuildOptions.EnableHeadlessMode;
                 if (EditorUserBuildSettings.connectProfiler && (developmentBuild || buildTarget == BuildTarget.WSAPlayer))
                     options.options |= BuildOptions.ConnectWithProfiler;
+                if (EditorUserBuildSettings.buildWithDeepProfilingSupport && developmentBuild)
+                    options.options |= BuildOptions.EnableDeepProfilingSupport;
                 if (EditorUserBuildSettings.buildScriptsOnly)
                     options.options |= BuildOptions.BuildScriptsOnly;
 

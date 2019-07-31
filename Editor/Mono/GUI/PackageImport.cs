@@ -22,11 +22,6 @@ namespace UnityEditor
         [SerializeField]  TreeViewState               m_TreeViewState;
         [NonSerialized]   PackageImportTreeView       m_Tree;
 
-        private bool m_ShowReInstall;
-        private bool m_ReInstallPackage;
-
-        public bool                canReInstall { get { return m_ShowReInstall; } }
-        public bool                doReInstall  { get { return m_ShowReInstall && m_ReInstallPackage; } }
         public ImportPackageItem[] packageItems { get { return m_ImportPackageItems; } }
 
         private static Texture2D s_PackageIcon;
@@ -55,13 +50,13 @@ namespace UnityEditor
 
         // Invoked from menu
         [UsedByNativeCode]
-        public static void ShowImportPackage(string packagePath, ImportPackageItem[] items, string packageIconPath, bool allowReInstall)
+        public static void ShowImportPackage(string packagePath, ImportPackageItem[] items, string packageIconPath)
         {
             if (!ValidateInput(items))
                 return;
 
             var window = GetWindow<PackageImport>(true, "Import Unity Package");
-            window.Init(packagePath, items, packageIconPath, allowReInstall);
+            window.Init(packagePath, items, packageIconPath);
         }
 
         public PackageImport()
@@ -90,12 +85,10 @@ namespace UnityEditor
             }
         }
 
-        void Init(string packagePath, ImportPackageItem[] items, string packageIconPath, bool allowReInstall)
+        void Init(string packagePath, ImportPackageItem[] items, string packageIconPath)
         {
             DestroyCreatedIcons();
 
-            m_ShowReInstall      = allowReInstall;
-            m_ReInstallPackage   = true;
             m_TreeViewState      = null;
             m_Tree               = null;
             m_ImportPackageItems = items;
@@ -106,11 +99,8 @@ namespace UnityEditor
             Repaint();
         }
 
-        private bool ShowTreeGUI(bool reInstalling, ImportPackageItem[] items)
+        private bool ShowTreeGUI(ImportPackageItem[] items)
         {
-            if (reInstalling)
-                return true;
-
             if (items.Length == 0)
                 return false;
 
@@ -134,7 +124,7 @@ namespace UnityEditor
             if (m_Tree == null)
                 m_Tree = new PackageImportTreeView(this, m_TreeViewState, new Rect());
 
-            if (m_ImportPackageItems != null && ShowTreeGUI(doReInstall, m_ImportPackageItems))
+            if (m_ImportPackageItems != null && ShowTreeGUI(m_ImportPackageItems))
             {
                 TopArea();
                 m_Tree.OnGUI(GUILayoutUtility.GetRect(1, 9999, 1, 99999));
@@ -151,7 +141,6 @@ namespace UnityEditor
                 GUILayout.Space(8);
                 GUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
-                ReInstallToggle();
                 if (GUILayout.Button("OK"))
                 {
                     Close();
@@ -161,17 +150,6 @@ namespace UnityEditor
                 GUILayout.EndHorizontal();
                 GUILayout.Space(5);
                 GUILayout.EndVertical();
-            }
-        }
-
-        void ReInstallToggle()
-        {
-            if (m_ShowReInstall)
-            {
-                EditorGUI.BeginChangeCheck();
-                bool reInstall = GUILayout.Toggle(m_ReInstallPackage, "Re-Install Package");
-                if (EditorGUI.EndChangeCheck())
-                    m_ReInstallPackage = reInstall;
             }
         }
 
@@ -224,8 +202,6 @@ namespace UnityEditor
                 m_Tree.SetAllEnabled(PackageImportTreeView.EnabledState.None);
             }
 
-            ReInstallToggle();
-
             GUILayout.FlexibleSpace();
             if (GUILayout.Button(EditorGUIUtility.TrTextContent("Cancel")))
             {
@@ -237,19 +213,12 @@ namespace UnityEditor
             }
             if (GUILayout.Button(EditorGUIUtility.TrTextContent("Import")))
             {
-                bool doImport = true;
-                if (doReInstall)
-                    doImport = EditorUtility.DisplayDialog("Re-Install?", "Highlighted folders will be completely deleted first! Recommend backing up your project first. Are you sure?", "Do It", "Cancel");
+                if (m_ImportPackageItems != null)
+                    PackageUtility.ImportPackageAssets(m_PackageName, m_ImportPackageItems);
 
-                if (doImport)
-                {
-                    if (m_ImportPackageItems != null)
-                        PackageUtility.ImportPackageAssets(m_PackageName, m_ImportPackageItems, doReInstall);
-
-                    PopupWindowWithoutFocus.Hide();
-                    Close();
-                    GUIUtility.ExitGUI();
-                }
+                PopupWindowWithoutFocus.Hide();
+                Close();
+                GUIUtility.ExitGUI();
             }
 
             GUILayout.Space(10);

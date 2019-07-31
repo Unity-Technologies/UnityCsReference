@@ -28,7 +28,7 @@ namespace UnityEditor
      */
     class AssetStoreResponse
     {
-        internal AsyncHTTPClient job;
+        internal IAsyncHTTPClient job;
         public Dictionary<string, JSONValue> dict;
         public bool ok;
         public bool failed { get { return !ok; } }
@@ -568,7 +568,7 @@ namespace UnityEditor
         // Helper function for login callbacks
         static AsyncHTTPClient.DoneCallback WrapLoginCallback(DoneLoginCallback callback)
         {
-            return delegate(AsyncHTTPClient job) {
+            return delegate(IAsyncHTTPClient job) {
                 // We're logging in
                 string msg = job.text;
                 if (!job.IsSuccess())
@@ -629,20 +629,6 @@ namespace UnityEditor
             return client;
         }
 
-        // Create a pending HTTP POST request to the server
-        static AsyncHTTPClient CreateJSONRequestPost(string url, string postData,
-            DoneCallback callback)
-        {
-            AsyncHTTPClient client = new AsyncHTTPClient(url);
-
-            client.header["X-Unity-Session"] = ActiveOrUnauthSessionID + GetToken();
-            client.postData = postData;
-
-            client.doneCallback = WrapJsonCallback(callback);
-            client.Begin();
-            return client;
-        }
-
         /* TODO: Implement PUT from a filepath in back end curl code
         // Create a pending HTTP PUT request to the server
         static void CreateJSONRequestPut(string url, string filepath,
@@ -655,23 +641,13 @@ namespace UnityEditor
         }
         */
 
-        // Create a pending HTTP DELETE request to the server
-        static AsyncHTTPClient CreateJSONRequestDelete(string url, DoneCallback callback)
-        {
-            AsyncHTTPClient client = new AsyncHTTPClient(url, "DELETE");
-            client.header["X-Unity-Session"] = ActiveOrUnauthSessionID + GetToken();
-            client.doneCallback = WrapJsonCallback(callback);
-            client.Begin();
-            return client;
-        }
-
         /* Handle HTTP results and forward them to the original callback.
          *
          * This will callback any handler registered for requests that has finished.
          */
         private static AsyncHTTPClient.DoneCallback WrapJsonCallback(DoneCallback callback)
         {
-            return delegate(AsyncHTTPClient job) {
+            return delegate(IAsyncHTTPClient job) {
                 if (job.IsDone())
                 {
                     try
@@ -691,7 +667,7 @@ namespace UnityEditor
         /*
          * Parse the HTTP response as a JSON string and into a AssetStoreResponse object.
          */
-        static AssetStoreResponse ParseContent(AsyncHTTPClient job)
+        static AssetStoreResponse ParseContent(IAsyncHTTPClient job)
         {
             AssetStoreResponse resp = new AssetStoreResponse();
             resp.job = job;

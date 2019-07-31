@@ -15,7 +15,7 @@ namespace Unity.MPE
     internal delegate object OnHandler(string eventType, object[] data);
     internal delegate void PromiseHandler(Exception err, object[] data);
 
-    internal partial class EventService
+    internal static class EventService
     {
         internal class RequestData
         {
@@ -25,7 +25,7 @@ namespace Unity.MPE
             public long offerStartTime;
             public bool isAcknowledged;
             public string data;
-            public int timeout;
+            public long timeoutInMs;
         }
 
         public const string kRequest = "request";
@@ -34,11 +34,43 @@ namespace Unity.MPE
         public const string kRequestResult = "requestResult";
 
         public const string kEvent = "event";
-        public const int TicksPerMillisecond = 10000;
-        public const int kRequestTimeout = 700 * TicksPerMillisecond;
+        public const string kLog = "log";
+        public const long kRequestDefaultTimeout = 700;
 
         internal static Dictionary<string, List<OnHandler>> s_Events = new Dictionary<string, List<OnHandler>>();
         internal static Dictionary<string, RequestData> s_Requests = new Dictionary<string, RequestData>();
+        internal static ChannelClient m_Client;
+
+        static EventService()
+        {
+            Start();
+        }
+
+        public static void Start()
+        {
+            if (m_Client != null || IsConnected)
+                return;
+
+            m_Client = ChannelClient.GetOrCreateClient("event");
+            m_Client.On(IncomingEvent);
+            m_Client.Start(false);
+            int tickCount = 100;
+            while (!m_Client.IsConnected() && --tickCount > 0)
+            {
+                m_Client.Tick();
+                System.Threading.Thread.Sleep(10);
+            }
+
+            EditorApplication.update += Tick;
+        }
+
+        public static void Close()
+        {
+            Clear();
+            m_Client.Close();
+            m_Client = null;
+            EditorApplication.update -= Tick;
+        }
 
         public static Action On(string eventType, OnHandler handler)
         {
@@ -79,17 +111,20 @@ namespace Unity.MPE
 
         public static void Clear()
         {
-            s_Events = new Dictionary<string, List<OnHandler>>();
             s_Requests = new Dictionary<string, RequestData>();
-            EditorApplication.update -= TickPendingOffers;
         }
 
-        public static bool IsConnected => ConnectionId != -1;
+        public static bool IsConnected => m_Client != null && m_Client.IsConnected();
 
         public static void Emit(string eventType, params object[] args)
         {
+            Emit(-1, eventType, args);
+        }
+
+        public static void Emit(int targetId, string eventType, params object[] args)
+        {
             const bool notifyWildcard = true;
-            var req = CreateRequestMsg(kEvent, eventType, -1, args);
+            var req = CreateRequestMsg(kEvent, eventType, targetId, args);
 
             // TODO: do we want to ensure that all local listeners received json as payload? This means we could recycle handlers... If so we need to serialize/deserialize... ugly. real ugly...
             var reqStr = Json.Serialize(req);
@@ -97,15 +132,15 @@ namespace Unity.MPE
 
             NotifyLocalListeners(eventType, reqJson["data"] as object[], notifyWildcard);
 
-            Send(reqStr);
+            m_Client.Send(reqStr);
         }
 
         public static void Request(string eventType, PromiseHandler promiseHandler, params object[] args)
         {
-            Request(eventType, promiseHandler, args, kRequestTimeout);
+            Request(kRequestDefaultTimeout, eventType, promiseHandler, args);
         }
 
-        public static void Request(string eventType, PromiseHandler promiseHandler, object[] args, int timeout)
+        public static void Request(long timeoutInMs, string eventType, PromiseHandler promiseHandler, params object[] args)
         {
             RequestData request;
             if (s_Requests.TryGetValue(eventType, out request))
@@ -114,11 +149,11 @@ namespace Unity.MPE
                 return;
             }
 
-            request = new RequestData { eventType = eventType, promises = new List<PromiseHandler>(1), timeout = timeout };
+            request = new RequestData { eventType = eventType, promises = new List<PromiseHandler>(1), timeoutInMs = timeoutInMs };
             request.promises.Add(promiseHandler);
 
             var req = CreateRequestMsg(kRequest, eventType, -1, args);
-            var requestId = NewRequestId();
+            var requestId = m_Client.NewRequestId();
             req["requestId"] = requestId;
 
             if (HasHandlers(eventType))
@@ -145,20 +180,24 @@ namespace Unity.MPE
             {
                 request.id = requestId;
                 request.offerStartTime = Stopwatch.GetTimestamp();
-                if (s_Requests.Count == 0)
-                    EditorApplication.update += TickPendingOffers;
-
                 s_Requests.Add(eventType, request);
                 request.data = Json.Serialize(args);
                 var msg = Json.Serialize(req);
-                Send(msg);
+                m_Client.Send(msg);
             }
         }
 
-        [RequiredByNativeCode]
-        public static void IncomingEvent(string eventMsg)
+        public static void Log(string msg)
         {
-            Console.WriteLine("[EventService] " + eventMsg);
+            var req = CreateRequestMsg(kLog, null, -1, msg);
+            var reqStr = Json.Serialize(req);
+            m_Client.Send(reqStr);
+        }
+
+        [RequiredByNativeCode]
+        private static void IncomingEvent(string eventMsg)
+        {
+            //Console.WriteLine("[UMPE] " + eventMsg);
             var msg = Json.Deserialize(eventMsg) as Dictionary<string, object>;
             if (msg == null)
             {
@@ -188,7 +227,7 @@ namespace Unity.MPE
             var eventType = msg["type"].ToString();
             var senderId = Convert.ToInt32(msg["senderId"]);
 
-            if (senderId == ConnectionId)
+            if (senderId == m_Client.GetChannelClientInfo().connectionId)
             {
                 return;
             }
@@ -203,42 +242,45 @@ namespace Unity.MPE
 
             switch (reqType)
             {
-                case kRequest:
+                case kRequest: // Receiver
                     // We are able to answer this request. Acknowledge it to the sender:
                     if (HasHandlers(eventType))
                     {
                         var response = CreateRequestMsg(kRequestAcknowledge, eventType, senderId, null);
                         response["requestId"] = msg["requestId"];
-                        Send(Json.Serialize(response));
+                        m_Client.Send(Json.Serialize(response));
                     }
                     break;
-                case kRequestAcknowledge:
+                case kRequestAcknowledge: // Request emitter
                     var pendingRequest = GetPendingRequest(eventType, msg);
                     if (pendingRequest != null)
                     {
                         // A client is able to fulfill the request: proceed with request execution:
                         pendingRequest.isAcknowledged = true;
+                        pendingRequest.offerStartTime = Stopwatch.GetTimestamp();
                         var response = CreateRequestMsg(kRequestExecute, eventType, senderId, null);
                         response["requestId"] = msg["requestId"];
-                        response["data"] = pendingRequest.data;
-                        Send(Json.Serialize(response));
+                        response["data"] = Json.Deserialize(pendingRequest.data);
+                        m_Client.Send(Json.Serialize(response));
                     }
                     // else Request might potentially have timed out.
                     break;
-                case kRequestExecute:
+                case kRequestExecute: // Request receiver
                 {
                     // We are fulfilling the request: send the execution results
                     const bool notifyWildcard = false;
                     var results = NotifyLocalListeners(eventType, data, notifyWildcard);
                     var response = CreateRequestMsg(kRequestResult, eventType, senderId, results);
                     response["requestId"] = msg["requestId"];
-                    Send(Json.Serialize(response));
+                    m_Client.Send(Json.Serialize(response));
                     break;
                 }
-                case kRequestResult:
+                case kRequestResult: // Request emitter
                     var pendingRequestAwaitingResult = GetPendingRequest(eventType, msg);
                     if (pendingRequestAwaitingResult != null)
                     {
+                        var timeForSuccess = new TimeSpan(Stopwatch.GetTimestamp() - pendingRequestAwaitingResult.offerStartTime).TotalMilliseconds;
+                        Console.WriteLine($"[UMPE] Request {eventType} successful in {timeForSuccess} ms");
                         Resolve(pendingRequestAwaitingResult, data);
                         CleanRequest(eventType);
                     }
@@ -255,13 +297,31 @@ namespace Unity.MPE
         private static void Resolve(RequestData offer, object[] results)
         {
             for (int i = 0, end = offer.promises.Count; i != end; ++i)
-                offer.promises[i](null, results);
+            {
+                try
+                {
+                    offer.promises[i](null, results);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+            }
         }
 
         private static void Reject(RequestData offer, Exception err)
         {
             for (int i = 0, end = offer.promises.Count; i != end; ++i)
-                offer.promises[i](err, null);
+            {
+                try
+                {
+                    offer.promises[i](err, null);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+            }
         }
 
         private static RequestData GetPendingRequest(string eventType, Dictionary<string, object> msg)
@@ -281,8 +341,6 @@ namespace Unity.MPE
         private static void CleanRequest(string eventType)
         {
             s_Requests.Remove(eventType);
-            if (s_Requests.Count == 0)
-                EditorApplication.update -= TickPendingOffers;
         }
 
         private static bool HasHandlers(string eventType)
@@ -291,19 +349,26 @@ namespace Unity.MPE
             return s_Events.TryGetValue(eventType, out handlers) && handlers.Count > 0;
         }
 
-        private static void TickPendingOffers()
+        internal static void Tick()
         {
-            var now = Stopwatch.GetTimestamp();
-            var pendingRequests = s_Requests.Values.ToArray();
-            foreach (var request in pendingRequests)
+            if (!IsConnected)
+                return;
+            m_Client.Tick();
+
+            if (s_Requests.Count > 0)
             {
-                if (request.isAcknowledged)
-                    continue;
-                var elapsedTime = now - request.offerStartTime;
-                if (elapsedTime > request.timeout)
+                var now = Stopwatch.GetTimestamp();
+                var pendingRequests = s_Requests.Values.ToArray();
+                foreach (var request in pendingRequests)
                 {
-                    Reject(request, new Exception("timeout"));
-                    s_Requests.Remove(request.eventType);
+                    var elapsedTime = new TimeSpan(now - request.offerStartTime).TotalMilliseconds;
+                    if (request.isAcknowledged)
+                        continue;
+                    if (elapsedTime > request.timeoutInMs)
+                    {
+                        CleanRequest(request.eventType);
+                        Reject(request, new Exception($"Request timeout: {elapsedTime} > {request.timeoutInMs}"));
+                    }
                 }
             }
         }
@@ -333,8 +398,9 @@ namespace Unity.MPE
                         handler(eventType, data);
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    Debug.LogException(ex);
                 }
             }
 
@@ -348,8 +414,9 @@ namespace Unity.MPE
             {
                 req["targetId"] = targetId;
             }
-            req["type"] = eventType;
-            req["senderId"] = ConnectionId;
+            if (!string.IsNullOrEmpty(eventType))
+                req["type"] = eventType;
+            req["senderId"] = m_Client.GetChannelClientInfo().connectionId;
             req["data"] = args;
             return req;
         }

@@ -27,6 +27,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.UnityAnalytics")]
 [assembly: InternalsVisibleTo("Unity.Timeline.Editor")]
 [assembly: InternalsVisibleTo("Unity.PackageManagerUI.Develop.Editor")]
+[assembly: InternalsVisibleTo("Unity.DeviceSimulator.Editor")]
 
 [assembly: InternalsVisibleTo("Unity.Timeline.EditorTests")]
 [assembly: InternalsVisibleTo("UnityEditor.Graphs")]
@@ -58,7 +59,6 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.VR")]
 [assembly: InternalsVisibleTo("Unity.RuntimeTests")]
 [assembly: InternalsVisibleTo("Unity.RuntimeTests.Framework")]
-[assembly: InternalsVisibleTo("UnityEditor.Facebook.Extensions")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-firstpass-testable")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]

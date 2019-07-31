@@ -244,7 +244,7 @@ namespace UnityEditor
                     float[] vuinfo_level = new float[9];
                     float[] vuinfo_peak = new float[9];
 
-                    numChannels = group.controller.GetGroupVUInfo(group.groupID, true, ref vuinfo_level, ref vuinfo_peak);
+                    numChannels = group.controller.GetGroupVUInfo(group.groupID, true, vuinfo_level, vuinfo_peak);
 
                     if (evt.type == EventType.Layout)
                     {

@@ -2,12 +2,16 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.EditorTools;
 using UnityEngine;
 
 namespace UnityEditor
 {
     [CustomEditor(typeof(ConfigurableJoint)), CanEditMultipleObjects]
-    class ConfigurableJointEditor : JointEditor<ConfigurableJoint>
+    class ConfigurableJointEditor : JointEditor<ConfigurableJoint> {}
+
+    [EditorTool("Edit Configurable Joint", typeof(ConfigurableJoint))]
+    class ConfigurableJointTool : JointTool<ConfigurableJoint>
     {
         protected override void GetActors(
             ConfigurableJoint joint,

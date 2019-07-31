@@ -9,6 +9,7 @@ namespace UnityEditor
 {
     // AssetImporter for importing ReferenceArtifactGenerator
     [NativeHeader("Modules/AssetPipelineEditor/Public/ReferencesArtifactGenerator.h")]
+    [ExcludeFromPreset]
     internal partial class ReferencesArtifactGenerator : AssetImporter
     {
     }

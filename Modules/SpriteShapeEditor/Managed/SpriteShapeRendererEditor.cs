@@ -3,11 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditorInternal;
-using System.Collections.Generic;
-using UnityEngine.Experimental.U2D;
+using UnityEngine.U2D;
 
-namespace UnityEditor.Experimental.U2D
+namespace UnityEditor.U2D
 {
     [CustomEditor(typeof(SpriteShapeRenderer))]
     [CanEditMultipleObjects]

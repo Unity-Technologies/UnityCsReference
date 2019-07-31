@@ -12,9 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using UnityEditor.Modules;
-using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine.Events;
 using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
 using VR = UnityEditorInternal.VR;
@@ -190,6 +188,7 @@ namespace UnityEditor
             public static readonly GUIContent lightmapQualityAndroidWarning = EditorGUIUtility.TrTextContent("The selected Lightmap Encoding requires OpenGL ES 3.0 or Vulkan. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2 API");
             public static readonly GUIContent lightmapQualityIOSWarning = EditorGUIUtility.TrTextContent("The selected Lightmap Encoding requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES APIs.");
             public static readonly GUIContent legacyClampBlendShapeWeights = EditorGUIUtility.TrTextContent("Clamp BlendShapes (Deprecated)*", "If set, the range of BlendShape weights in SkinnedMeshRenderers will be clamped.");
+
             public static string undoChangedBundleIdentifierString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS bundleIdentifier"); } }
             public static string undoChangedBuildNumberString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS build number"); } }
             public static string undoChangedBatchingString { get { return LocalizationDatabase.GetLocalizedString("Changed Batching Settings"); } }
@@ -304,7 +303,6 @@ namespace UnityEditor
         SerializedProperty m_MetalForceHardShadows;
         SerializedProperty m_FramebufferDepthMemorylessMode;
 
-        SerializedProperty m_DisplayResolutionDialog;
         SerializedProperty m_DefaultIsNativeResolution;
         SerializedProperty m_MacRetinaSupport;
 
@@ -335,6 +333,8 @@ namespace UnityEditor
         SerializedProperty m_LightmapEncodingQuality;
         SerializedProperty m_LightmapStreamingEnabled;
         SerializedProperty m_LightmapStreamingPriority;
+
+        SerializedProperty m_HDRBitDepth;
 
         // Legacy
         SerializedProperty m_LegacyClampBlendShapeWeights;
@@ -461,7 +461,6 @@ namespace UnityEditor
             m_DefaultIsNativeResolution     = FindPropertyAssert("defaultIsNativeResolution");
             m_MacRetinaSupport              = FindPropertyAssert("macRetinaSupport");
             m_CaptureSingleScreen           = FindPropertyAssert("captureSingleScreen");
-            m_DisplayResolutionDialog       = FindPropertyAssert("displayResolutionDialog");
             m_SupportedAspectRatios         = FindPropertyAssert("m_SupportedAspectRatios");
             m_UsePlayerLog                  = FindPropertyAssert("usePlayerLog");
 
@@ -567,8 +566,8 @@ namespace UnityEditor
             }
             GUILayout.Label(string.Format(L10n.Tr("Settings for {0}"), validPlatforms[selectedPlatform].title.text));
 
-            // Compensate so settings inside boxes line up with settings at the top, though keep a minimum of 150.
-            EditorGUIUtility.labelWidth = Mathf.Max(150, EditorGUIUtility.labelWidth - 8);
+            // Increase the offset to accomodate large labels, though keep a minimum of 150.
+            EditorGUIUtility.labelWidth = Mathf.Max(150, EditorGUIUtility.labelWidth + 4);
 
             BuildPlatform platform = validPlatforms[selectedPlatform];
             BuildTargetGroup targetGroup = platform.targetGroup;
@@ -934,12 +933,6 @@ namespace UnityEditor
                     {
                         GUILayout.Label(SettingsContent.standalonePlayerOptionsTitle, EditorStyles.boldLabel);
                         EditorGUILayout.PropertyField(m_CaptureSingleScreen);
-                        EditorGUILayout.PropertyField(m_DisplayResolutionDialog);
-
-                        if (m_DisplayResolutionDialog.intValue > 0)
-                        {
-                            EditorGUILayout.HelpBox(SettingsContent.displayResolutionDialogDeprecationWarning.text, MessageType.Warning, true);
-                        }
 
                         EditorGUILayout.PropertyField(m_UsePlayerLog);
                         EditorGUILayout.PropertyField(m_ResizableWindow);
@@ -1116,6 +1109,11 @@ namespace UnityEditor
                 else if (name == "OpenGLES2")
                     name = "WebGL 1.0";
             }
+            else if (target == BuildTarget.iOS || target == BuildTarget.tvOS)
+            {
+                if (name.Contains("OpenGLES"))
+                    name += " (Deprecated)";
+            }
 
             GUI.Label(rect, name, EditorStyles.label);
         }
@@ -1148,14 +1146,6 @@ namespace UnityEditor
 
         void GraphicsAPIsGUIOnePlatform(BuildTargetGroup targetGroup, BuildTarget targetPlatform, string platformTitle)
         {
-            // Facebook on windows must be always DX11
-            // TODO: Remove this when Facebook platform support contract is over
-            if (targetGroup == BuildTargetGroup.Facebook &&
-                (targetPlatform == BuildTarget.StandaloneWindows || targetPlatform == BuildTarget.StandaloneWindows64))
-            {
-                return;
-            }
-
             GraphicsDeviceType[] availableDevices = PlayerSettings.GetSupportedGraphicsAPIs(targetPlatform);
             // if no devices (e.g. no platform module), or we only have one possible choice, then no
             // point in having any UI
@@ -1616,18 +1606,27 @@ namespace UnityEditor
             }
 
 
-            bool hdrSupported = false;
+            bool hdrDisplaySupported = false;
             bool gfxJobModesSupported = false;
             bool customLightmapEncodingSupported = (targetGroup == BuildTargetGroup.Standalone);
             if (settingsExtension != null)
             {
-                hdrSupported = settingsExtension.SupportsHighDynamicRangeDisplays();
+                hdrDisplaySupported = settingsExtension.SupportsHighDynamicRangeDisplays();
                 gfxJobModesSupported = settingsExtension.SupportsGfxJobModes();
                 customLightmapEncodingSupported = customLightmapEncodingSupported || settingsExtension.SupportsCustomLightmapEncoding();
             }
+            else
+            {
+                if (targetGroup == BuildTargetGroup.Standalone)
+                {
+                    GraphicsDeviceType[] gfxAPIs = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
+
+                    hdrDisplaySupported = gfxAPIs[0] == GraphicsDeviceType.Direct3D11 || gfxAPIs[0] == GraphicsDeviceType.Direct3D12;
+                }
+            }
 
             // GPU Skinning toggle (only show on relevant platforms)
-            if (targetGroup != BuildTargetGroup.Facebook && !BuildTargetDiscovery.PlatformHasFlag(platform.defaultTarget, TargetAttributes.GPUSkinningNotSupported))
+            if (!BuildTargetDiscovery.PlatformHasFlag(platform.defaultTarget, TargetAttributes.GPUSkinningNotSupported))
             {
                 GraphicsDeviceType[] gfxAPIs = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
                 bool computeSkinningOnly =
@@ -1759,9 +1758,33 @@ namespace UnityEditor
                 PlayerSettings.enableFrameTimingStats = EditorGUILayout.Toggle(SettingsContent.enableFrameTimingStats, PlayerSettings.enableFrameTimingStats);
             }
 
-            if (hdrSupported)
+            if (hdrDisplaySupported)
             {
-                PlayerSettings.useHDRDisplay = EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Use display in HDR mode", "Automatically switch the display to HDR output (on supported displays) at start of application."), PlayerSettings.useHDRDisplay);
+                string label = "Use display in HDR mode";
+                string tooltip = "Automatically switch the display to HDR output (on supported displays)" + ((targetGroup == BuildTargetGroup.XboxOne) ? " at start of application." : ".");
+                PlayerSettings.useHDRDisplay = EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent(label, tooltip), PlayerSettings.useHDRDisplay);
+
+
+                if (targetGroup == BuildTargetGroup.Standalone || targetGroup == BuildTargetGroup.WSA)
+                {
+                    using (new EditorGUI.DisabledScope(!PlayerSettings.useHDRDisplay))
+                    {
+                        using (new EditorGUI.IndentLevelScope())
+                        {
+                            EditorGUI.BeginChangeCheck();
+                            D3DHDRDisplayBitDepth bitDepth = PlayerSettings.D3DHDRBitDepth;
+                            D3DHDRDisplayBitDepth[] bitDepthValues = { D3DHDRDisplayBitDepth.D3DHDRDisplayBitDepth10, D3DHDRDisplayBitDepth.D3DHDRDisplayBitDepth16 };
+                            GUIContent HDRBitDepthLabel = EditorGUIUtility.TrTextContent("Swap Chain Bit Depth", "Affects the bit depth of the final swap chain format and color space.");
+                            GUIContent[] HDRBitDepthNames = { EditorGUIUtility.TrTextContent("Bit Depth 10"),  EditorGUIUtility.TrTextContent("Bit Depth 16")};
+
+                            bitDepth = BuildEnumPopup(HDRBitDepthLabel, bitDepth, bitDepthValues, HDRBitDepthNames);
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                PlayerSettings.D3DHDRBitDepth = bitDepth;
+                            }
+                        }
+                    }
+                }
             }
 
             EditorGUILayout.Space();
@@ -2299,16 +2322,6 @@ namespace UnityEditor
             return GetGUIContentsForValues(m_NiceManagedStrippingLevelNames, managedStrippingLevels);
         }
 
-        private void AutoAssignProperty(SerializedProperty property, string packageDir, string fileName)
-        {
-            if (property.stringValue.Length == 0 || !File.Exists(Path.Combine(packageDir, property.stringValue)))
-            {
-                string filePath = Path.Combine(packageDir, fileName);
-                if (File.Exists(filePath))
-                    property.stringValue = fileName;
-            }
-        }
-
         public void BrowseablePathProperty(string propertyLabel, SerializedProperty property, string browsePanelTitle, string extension, string dir)
         {
             EditorGUILayout.BeginHorizontal();
@@ -2467,20 +2480,6 @@ namespace UnityEditor
                 }
             }
             EndSettingsBox();
-        }
-
-        private static void ShowWarning(GUIContent warningMessage)
-        {
-            if (s_WarningIcon == null)
-                s_WarningIcon = EditorGUIUtility.LoadIcon("console.warnicon");
-
-            //          var c = new GUIContent(error) { image = s_WarningIcon };
-            warningMessage.image = s_WarningIcon;
-
-            GUILayout.Space(5);
-            GUILayout.BeginVertical(EditorStyles.helpBox);
-            GUILayout.Label(warningMessage, EditorStyles.wordWrappedMiniLabel);
-            GUILayout.EndVertical();
         }
 
         protected override bool ShouldHideOpenButton()

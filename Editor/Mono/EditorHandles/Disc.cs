@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor;
+using UnityEditor.Snap;
 using UnityEngine;
 
 namespace UnityEditorInternal
@@ -74,6 +75,7 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(1);
                     }
                     break;
+
                 case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
@@ -105,6 +107,7 @@ namespace UnityEditorInternal
                         evt.Use();
                     }
                     break;
+
                 case EventType.MouseUp:
                     if (GUIUtility.hotControl == id && (evt.button == 0 || evt.button == 2))
                     {
@@ -114,10 +117,12 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
                     break;
+
                 case EventType.MouseMove:
                     if (id == HandleUtility.nearestControl)
                         HandleUtility.Repaint();
                     break;
+
                 case EventType.KeyDown:
                     if (evt.keyCode == KeyCode.Escape && GUIUtility.hotControl == id)
                     {
@@ -126,6 +131,7 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
                     break;
+
                 case EventType.Repaint:
                     Color temp = Color.white;
 
@@ -157,7 +163,7 @@ namespace UnityEditorInternal
                         Handles.DrawSolidArc(position, axis, from, d, size);
 
                         // Draw snap markers
-                        if (EditorGUI.actionKey && snap > 0)
+                        if (EditorSnapSettings.active && snap > 0)
                         {
                             DrawRotationUnitSnapMarkers(position, axis, size, k_RotationUnitSnapMarkerSize, snap, @from);
                             DrawRotationUnitSnapMarkers(position, axis, size, k_RotationUnitSnapMajorMarkerSize, k_RotationUnitSnapMajorMarkerStep, @from);

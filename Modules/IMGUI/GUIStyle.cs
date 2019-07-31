@@ -125,8 +125,23 @@ namespace UnityEngine
         [NonSerialized]
         RectOffset m_Border, m_Padding, m_Margin, m_Overflow;
 
+        [NonSerialized]
+        string m_Name;
+
         // Internal callback used to override how gui styles are rendered.
         internal static DrawHandler onDraw;
+        // Cache StyleBlock ID
+        internal int blockId;
+
+        public string name
+        {
+            get { return m_Name ?? (m_Name = rawName); }
+            set
+            {
+                m_Name = value;
+                rawName = value;
+            }
+        }
 
         // Rendering settings for when the component is displayed normally.
         public GUIStyleState normal

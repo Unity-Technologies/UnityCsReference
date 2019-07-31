@@ -605,5 +605,16 @@ namespace UnityEditor.EditorTools
 
             return res;
         }
+
+        internal static void InvokeOnSceneGUICustomEditorTools()
+        {
+            foreach (var tool in instance.m_CustomEditorTools)
+            {
+                var handle = tool as IDrawSelectedHandles;
+
+                if (handle != null)
+                    handle.OnDrawHandles();
+            }
+        }
     }
 }

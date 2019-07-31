@@ -9,6 +9,7 @@ namespace UnityEditor.PackageManager.UI
         All = 0,
         Local,
         Modules,
+        AssetStore,
         InDevelopment
     }
 }

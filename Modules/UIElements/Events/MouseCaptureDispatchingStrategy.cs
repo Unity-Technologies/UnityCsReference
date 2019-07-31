@@ -30,16 +30,17 @@ namespace UnityEngine.UIElements
         {
             EventBehavior captureBehavior = EventBehavior.None;
 
-            if (MouseCaptureController.mouseCapture == null)
+            IEventHandler capturingElement = panel?.GetCapturingElement(PointerId.mousePointerId);
+            if (capturingElement == null)
             {
                 return;
             }
 
             // Release mouse capture if capture element is not in a panel.
-            VisualElement captureVE = MouseCaptureController.mouseCapture as VisualElement;
+            VisualElement captureVE = capturingElement as VisualElement;
             if (evt.eventTypeId != MouseCaptureOutEvent.TypeId() && captureVE != null && captureVE.panel == null)
             {
-                MouseCaptureController.ReleaseMouse();
+                captureVE.ReleaseMouse();
                 return;
             }
 
@@ -50,7 +51,7 @@ namespace UnityEngine.UIElements
 
             IMouseEvent mouseEvent = evt as IMouseEvent;
 
-            if (mouseEvent != null && (evt.target == null || evt.target == MouseCaptureController.mouseCapture))
+            if (mouseEvent != null && (evt.target == null || evt.target == capturingElement))
             {
                 // Exclusive processing by capturing element.
                 captureBehavior = EventBehavior.IsCapturable;
@@ -83,20 +84,17 @@ namespace UnityEngine.UIElements
                     }
                     VisualElement elementUnderMouse = shouldRecomputeTopElementUnderMouse ?
                         basePanel.Pick(mouseEvent.mousePosition) :
-                        basePanel.topElementUnderMouse;
+                        basePanel.GetTopElementUnderPointer(PointerId.mousePointerId);
 
-                    basePanel.SetElementUnderMouse(elementUnderMouse, evt);
+                    basePanel.SetElementUnderPointer(elementUnderMouse, evt);
                 }
 
-                IEventHandler originalCaptureElement = MouseCaptureController.mouseCapture;
-
                 evt.dispatch = true;
-                evt.target = MouseCaptureController.mouseCapture;
-                evt.currentTarget = MouseCaptureController.mouseCapture;
-                (MouseCaptureController.mouseCapture as CallbackEventHandler)?.HandleEventAtTargetPhase(evt);
-
+                evt.target = capturingElement;
+                evt.currentTarget = capturingElement;
+                (capturingElement as CallbackEventHandler)?.HandleEventAtTargetPhase(evt);
                 // Do further processing with a target computed the usual way.
-                // However, if mouseEventWasCaptured, the only thing remaining to do is ExecuteDefaultAction,
+                // However, if IsSentExclusivelyToCapturingElement, the only thing remaining to do is ExecuteDefaultAction,
                 // which should be done with mouseCapture as the target.
                 if ((captureBehavior & EventBehavior.IsSentExclusivelyToCapturingElement) != EventBehavior.IsSentExclusivelyToCapturingElement)
                 {
@@ -108,7 +106,7 @@ namespace UnityEngine.UIElements
                 evt.dispatch = false;
 
                 // Do not call HandleEvent again for this element.
-                evt.skipElements.Add(originalCaptureElement);
+                evt.skipElements.Add(capturingElement);
 
                 evt.stopDispatch = (captureBehavior & EventBehavior.IsSentExclusivelyToCapturingElement) == EventBehavior.IsSentExclusivelyToCapturingElement;
                 evt.propagateToIMGUI = false;

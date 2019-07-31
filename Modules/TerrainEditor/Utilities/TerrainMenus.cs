@@ -3,10 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
-using System.Collections;
-using System.IO;
-using UnityEngine.Rendering;
 using UnityEditor.SceneManagement;
 using UnityEditor.Experimental.TerrainAPI;
 
@@ -70,12 +66,6 @@ namespace UnityEditor
             GetActiveTerrainData().RefreshPrototypes();
             GetActiveTerrain().Flush();
             EditorApplication.SetSceneRepaintDirty();
-        }
-
-        static void FlushHeightmapModification()
-        {
-            //@TODO        GetActiveTerrain().treeDatabase.RecalculateTreePosition();
-            GetActiveTerrain().Flush();
         }
 
         static Terrain GetActiveTerrain()

@@ -105,6 +105,12 @@ namespace UnityEditor
         // Enables Code Coverage. Can be used as a complimentary way of enabling code coverage on platforms
         // that do not support command line arguments
         EnableCodeCoverage = 1 << 26,
+
+        // Only needed internally for AssetBundleStripUnityVersion
+        //StripUnityVersion = 1 << 27
+
+        // Enable C# code instrumentation for the player.
+        EnableDeepProfilingSupport = 1 << 28
     }
 
     // Asset Bundle building options.
@@ -153,7 +159,13 @@ namespace UnityEditor
         DisableLoadAssetByFileName = 4096, // 1 << 12,
 
         // Turns off loading an asset using file name + extension. Results in faster AssetBundle.LoadFromFile.
-        DisableLoadAssetByFileNameWithExtension = 8192 // 1 << 13,
+        DisableLoadAssetByFileNameWithExtension = 8192, // 1 << 13,
+
+        //kAssetBundleAllowEditorOnlyScriptableObjects is defined in the native BuildAssetBundleOptions as 1 << 14
+        //AssetBundleAllowEditorOnlyScriptableObjects = 1 << 14,
+
+        //Removes the Unity Version number in the Archive File & Serialized File headers during the build.
+        AssetBundleStripUnityVersion = 32768 // 1 << 15
     }
 
     public struct AssetBundleBuild

@@ -46,14 +46,20 @@ namespace UnityEditor
             {
                 var borderWidth = 1f;
                 m_PaddingHighlighter = new VisualElement();
-                m_PaddingHighlighter.style.borderColor = kSizePaddingSecondaryColor;
+                m_PaddingHighlighter.style.borderLeftColor = kSizePaddingSecondaryColor;
+                m_PaddingHighlighter.style.borderTopColor = kSizePaddingSecondaryColor;
+                m_PaddingHighlighter.style.borderRightColor = kSizePaddingSecondaryColor;
+                m_PaddingHighlighter.style.borderBottomColor = kSizePaddingSecondaryColor;
                 m_PaddingHighlighter.style.borderLeftWidth = borderWidth;
                 m_PaddingHighlighter.style.borderRightWidth = borderWidth;
                 m_PaddingHighlighter.style.borderTopWidth = borderWidth;
                 m_PaddingHighlighter.style.borderBottomWidth = borderWidth;
                 m_PaddingHighlighter.pickingMode = PickingMode.Ignore;
                 m_ContentHighlighter = new VisualElement();
-                m_ContentHighlighter.style.borderColor = kSizeSecondaryColor;
+                m_ContentHighlighter.style.borderLeftColor = kSizeSecondaryColor;
+                m_ContentHighlighter.style.borderTopColor = kSizeSecondaryColor;
+                m_ContentHighlighter.style.borderRightColor = kSizeSecondaryColor;
+                m_ContentHighlighter.style.borderBottomColor = kSizeSecondaryColor;
                 m_ContentHighlighter.style.borderLeftWidth = borderWidth;
                 m_ContentHighlighter.style.borderRightWidth = borderWidth;
                 m_ContentHighlighter.style.borderTopWidth = borderWidth;

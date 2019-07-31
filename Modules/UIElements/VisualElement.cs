@@ -146,6 +146,7 @@ namespace UnityEngine.UIElements
         private static List<string> s_EmptyClassList = new List<string>(0);
 
         internal static readonly PropertyName userDataPropertyKey = new PropertyName("--unity-user-data");
+        public static readonly string disabledUssClassName = "unity-disabled";
 
         string m_Name;
         List<string> m_ClassList;
@@ -323,6 +324,12 @@ namespace UnityEngine.UIElements
         }
 
         internal bool isLayoutManual { get; private set; }
+
+
+        internal float scaledPixelsPerPoint
+        {
+            get { return panel == null ? GUIUtility.pixelsPerPoint : (panel as BaseVisualElementPanel).scaledPixelsPerPoint; }
+        }
 
         Rect m_Layout;
 
@@ -582,6 +589,8 @@ namespace UnityEngine.UIElements
             }
         }
 
+        private static readonly Rect s_InfiniteRect = new Rect(-10000, -10000, 40000, 40000);
+
         private void UpdateWorldClip()
         {
             if (hierarchy.parent != null)
@@ -589,7 +598,7 @@ namespace UnityEngine.UIElements
                 m_WorldClip = hierarchy.parent.worldClip;
                 if (hierarchy.parent != renderChainData.groupTransformAncestor) // Accessing render data here?
                     m_WorldClipMinusGroup = hierarchy.parent.worldClipMinusGroup;
-                else m_WorldClipMinusGroup = GUIClip.topmostRect; // Not clipped
+                else m_WorldClipMinusGroup = panel?.contextType == ContextType.Player ? s_InfiniteRect : GUIClip.topmostRect;
 
                 if (ShouldClip())
                 {
@@ -614,7 +623,9 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                m_WorldClipMinusGroup = m_WorldClip = panel != null ? panel.visualTree.rect : GUIClip.topmostRect;
+                m_WorldClipMinusGroup = m_WorldClip = panel != null ?
+                    panel.visualTree.rect :
+                    panel.contextType == ContextType.Player ? s_InfiniteRect : GUIClip.topmostRect;
             }
 
             if (ShouldClip() && computedStyle.unityOverflowClipBox == OverflowClipBox.ContentBox)
@@ -742,6 +753,9 @@ namespace UnityEngine.UIElements
                 return m_Style;
             }
         }
+
+        // Variables that children inherit
+        internal StyleVariableContext variableContext = StyleVariableContext.none;
 
         // Styles that children inherit
         internal InheritedStylesData propagatedStyle = InheritedStylesData.none;
@@ -961,6 +975,10 @@ namespace UnityEngine.UIElements
             if (enabledSelf != value)
             {
                 enabledSelf = value;
+
+                if (value)
+                    RemoveFromClassList(disabledUssClassName);
+                else AddToClassList(disabledUssClassName);
 
                 PropagateEnabledToChildren(value);
             }
@@ -1243,6 +1261,7 @@ namespace UnityEngine.UIElements
             var previousBorderBottomRightRadius = m_Style.borderBottomRightRadius;
             var previousBorderTopLeftRadius = m_Style.borderTopLeftRadius;
             var previousBorderTopRightRadius = m_Style.borderTopRightRadius;
+            var previousOpacity = m_Style.opacity;
 
             if (hasInlineStyle)
             {
@@ -1269,6 +1288,9 @@ namespace UnityEngine.UIElements
             {
                 changes |= VersionChangeType.BorderRadius;
             }
+
+            if (m_Style.opacity != previousOpacity)
+                changes |= VersionChangeType.Opacity;
 
             // This is a pre-emptive since we do not know if style changes actually cause a repaint or a layout
             // But those should be the only possible type of changes needed
@@ -1461,7 +1483,7 @@ namespace UnityEngine.UIElements
         {
             if (elementPanel != null)
             {
-                if (eventType == MouseOverEvent.TypeId() && elementPanel.topElementUnderMouse == this)
+                if (eventType == MouseOverEvent.TypeId() && elementPanel.GetTopElementUnderPointer(PointerId.mousePointerId) == this)
                 {
                     elementPanel.cursorManager.SetCursor(computedStyle.cursor.value);
                 }

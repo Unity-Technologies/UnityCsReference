@@ -310,7 +310,8 @@ namespace UnityEditor.UIElements.Debugger
         {
             evt.eventLogger = m_Debugger;
             m_EventTimestampDictionary[evt.eventId] = (long)(Time.realtimeSinceStartup * 1000.0f);
-            m_Debugger.BeginProcessEvent(evt, MouseCaptureController.mouseCapture);
+            IEventHandler capture = panel?.GetCapturingElement(PointerId.mousePointerId);
+            m_Debugger.BeginProcessEvent(evt, capture);
             return false;
         }
 
@@ -321,7 +322,8 @@ namespace UnityEditor.UIElements.Debugger
                 var now = (long)(Time.realtimeSinceStartup * 1000.0f);
                 var start = m_EventTimestampDictionary[evt.eventId];
                 m_EventTimestampDictionary.Remove(evt.eventId);
-                m_Debugger.EndProcessEvent(evt, now - start, MouseCaptureController.mouseCapture);
+                IEventHandler capture = panel?.GetCapturingElement(PointerId.mousePointerId);
+                m_Debugger.EndProcessEvent(evt, now - start, capture);
                 evt.eventLogger = null;
             }
         }

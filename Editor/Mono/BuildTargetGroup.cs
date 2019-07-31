@@ -90,6 +90,7 @@ namespace UnityEditor
 
         tvOS = 25,
 
+        [Obsolete("Facebook support was removed in 2019.3")]
         Facebook = 26,
 
         Switch = 27,

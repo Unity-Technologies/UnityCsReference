@@ -18,16 +18,23 @@ namespace UnityEditor.StyleSheets
         private static readonly int k_BorderBottomLeftRadiusKey = "border-bottom-left-radius".GetHashCode();
         private static readonly int k_BorderBottomRightRadiusKey = "border-bottom-right-radius".GetHashCode();
 
+        static Dictionary<StyleState, StyleState[]> s_StatesCache = new Dictionary<StyleState, StyleState[]>();
+
         internal static bool DrawStyle(GUIStyle gs, Rect position, GUIContent content, DrawStates states)
         {
-            if (gs == GUIStyle.none || String.IsNullOrEmpty(gs.name) || gs.normal.background != null)
+            if (gs == GUIStyle.none || gs.normal.background != null)
                 return false;
 
             if (!GUIClip.visibleRect.Overlaps(position))
                 return true;
 
-            var styleName = GUIStyleExtensions.StyleNameToBlockName(gs.name, false);
-            StyleBlock block = FindBlock(styleName.GetHashCode(), states);
+            if (gs.blockId == 0)
+            {
+                var blockName = GUIStyleExtensions.StyleNameToBlockName(gs.name, false);
+                gs.blockId = blockName.GetHashCode();
+            }
+
+            var block = FindBlock(gs.blockId, states);
             if (!block.IsValid())
                 return false;
 
@@ -36,7 +43,7 @@ namespace UnityEditor.StyleSheets
             return true;
         }
 
-        private static StyleBlock FindBlock(int name, DrawStates drawStates)
+        internal static StyleBlock FindBlock(int name, DrawStates drawStates)
         {
             bool isEnabled = GUI.enabled;
             StyleState stateFlags = 0;
@@ -46,13 +53,19 @@ namespace UnityEditor.StyleSheets
             if (drawStates.on) stateFlags |= StyleState.@checked;
             if (!isEnabled) stateFlags |= StyleState.disabled;
 
-            return EditorResources.GetStyle(name, stateFlags,
-                stateFlags & StyleState.disabled,
-                stateFlags & StyleState.active,
-                stateFlags & StyleState.@checked,
-                stateFlags & StyleState.hover,
-                stateFlags & StyleState.focus,
-                StyleState.normal);
+            StyleState[] states;
+            if (!s_StatesCache.TryGetValue(stateFlags, out states))
+            {
+                states = new[] { stateFlags & StyleState.disabled,
+                                                         stateFlags & StyleState.active,
+                                                         stateFlags & StyleState.@checked,
+                                                         stateFlags & StyleState.hover,
+                                                         stateFlags & StyleState.focus,
+                                                         StyleState.normal }.Distinct().Where(s => s != StyleState.none).ToArray();
+                s_StatesCache.Add(stateFlags, states);
+            }
+
+            return EditorResources.GetStyle(name, states);
         }
 
         private static readonly Dictionary<long, Texture2D> s_Gradients = new Dictionary<long, Texture2D>();
@@ -138,7 +151,7 @@ namespace UnityEditor.StyleSheets
             public readonly Color colorTint;
         }
 
-        private static void DrawBlock(GUIStyle basis, StyleBlock block, Rect drawRect, GUIContent content, DrawStates states)
+        internal static void DrawBlock(GUIStyle basis, StyleBlock block, Rect drawRect, GUIContent content, DrawStates states)
         {
             Color colorTint = GUI.color;
             if (!GUI.enabled)
@@ -160,12 +173,13 @@ namespace UnityEditor.StyleSheets
             drawRect.xMax += offset.right;
 
             // Adjust width and height if enforced by style block
-            drawRect.width = basis.fixedWidth == 0 ? drawRect.width : basis.fixedWidth;
-            drawRect.height = basis.fixedHeight == 0 ? drawRect.height : basis.fixedHeight;
+            drawRect.width = basis.fixedWidth == 0f ? drawRect.width : basis.fixedWidth;
+            drawRect.height = basis.fixedHeight == 0f ? drawRect.height : basis.fixedHeight;
 
             var border = new StyleBorder(block);
 
             var guiBgColor = GUI.backgroundColor;
+            var guiContentColor = GUI.contentColor;
             var bgColorTint = guiBgColor * colorTint;
 
             if (!block.Execute(StyleCatalogKeyword.background, DrawGradient, new GradientParams(drawRect, border.radius, bgColorTint)))
@@ -202,7 +216,7 @@ namespace UnityEditor.StyleSheets
                 float contentImageOffsetY = hasImage ? block.GetFloat(StyleCatalogKeyword.contentImageOffsetY) : 0;
                 basis.Internal_DrawContent(contentRect, content, states.isHover, states.isActive, states.on, states.hasKeyboardFocus,
                     states.hasTextInput, states.drawSelectionAsComposition, states.cursorFirst, states.cursorLast,
-                    states.cursorColor, states.selectionColor, Color.white * opacity,
+                    states.cursorColor, states.selectionColor, guiContentColor * opacity,
                     0, 0, contentImageOffsetY, contentImageOffsetX, false, false);
 
                 // Handle tooltip and hovering region
@@ -228,7 +242,8 @@ namespace UnityEditor.StyleSheets
             }
         }
 
-        private static bool DrawGradient(StyleBlock block, string funcName, List<StyleSheetResolver.Value[]> args, GradientParams gp)
+        // Note: Assign lambda to local variable to avoid the allocation caused by method group.
+        private static readonly Func<StyleBlock, string, List<StyleSheetResolver.Value[]>, GradientParams, bool> DrawGradient = (block, funcName, args, gp) =>
         {
             if (funcName != "linear-gradient")
                 return false;
@@ -238,7 +253,7 @@ namespace UnityEditor.StyleSheets
                 return false;
             GUI.DrawTexture(gp.rect, gradientTexture, ScaleMode.ScaleAndCrop, true, 0f, gp.colorTint, Vector4.zero, gp.radius);
             return true;
-        }
+        };
 
         private static void DrawBackgroundImage(StyleBlock block, Rect position, Color colorTint)
         {
@@ -299,10 +314,12 @@ namespace UnityEditor.StyleSheets
 
         private struct StyleBackgroundPosition
         {
+#pragma warning disable 0649
             public int xEdge;
             public float xOffset;
             public int yEdge;
             public float yOffset;
+#pragma warning restore 0649
         }
 
         private struct StyleBorder

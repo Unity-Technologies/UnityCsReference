@@ -390,7 +390,7 @@ namespace UnityEditor
                                 new Rect(state.xOffset + g.rect.x, cursor + state.realSizes[i] - state.splitSize / 2, g.rect.width, state.splitSize) :
                                 new Rect(state.xOffset + cursor + state.realSizes[i] - state.splitSize / 2, g.rect.y, state.splitSize, g.rect.height);
 
-                            if (splitterRect.Contains(Event.current.mousePosition))
+                            if (GUIUtility.HitTest(splitterRect, Event.current))
                             {
                                 state.splitterInitialOffset = pos;
                                 state.currentActiveSplitter = i;

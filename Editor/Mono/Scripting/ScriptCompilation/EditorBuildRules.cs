@@ -134,11 +134,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     return hashCode;
                 }
             }
-
-            public List<string> GetResponseFiles()
-            {
-                return Language?.CreateResponseFileProvider().Get(PathPrefix);
-            }
         }
 
         public class CompilationAssemblies
@@ -376,10 +371,22 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 assemblySourceFiles.Add(AssetPath.Combine(projectDirectory, scriptFile));
             }
 
-            return ToScriptAssemblies(targetAssemblyFiles, settings, assemblies, runUpdaterAssemblies);
+            return ToScriptAssemblies(targetAssemblyFiles, settings, assemblies, runUpdaterAssemblies).ScriptAssemblies;
         }
 
-        public static ScriptAssembly[] GenerateChangedScriptAssemblies(GenerateChangedScriptAssembliesArgs args)
+        public class ScriptAssembliesResult
+        {
+            public ScriptAssembliesResult(ScriptAssembly[] scriptAssemblies, bool pendingCodeGenAssembly)
+            {
+                ScriptAssemblies = scriptAssemblies;
+                PendingCodeGenAssembly = pendingCodeGenAssembly;
+            }
+
+            public bool PendingCodeGenAssembly { get; private set; }
+            public ScriptAssembly[] ScriptAssemblies { get; private set; }
+        }
+
+        public static ScriptAssembliesResult GenerateChangedScriptAssemblies(GenerateChangedScriptAssembliesArgs args)
         {
             var dirtyTargetAssemblies = new Dictionary<TargetAssembly, HashSet<string>>();
 
@@ -495,7 +502,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             // Return empty array in case of no dirty target assemblies
             if (dirtyTargetAssemblies.Count == 0)
-                return new ScriptAssembly[0];
+                return new ScriptAssembliesResult(new ScriptAssembly[0], false);
 
             // Collect any TargetAssemblies that reference the dirty TargetAssemblies, as they will also be dirty.
             int dirtyAssemblyCount;
@@ -575,13 +582,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
             foreach (var removeAssembly in args.NotCompiledTargetAssemblies)
                 dirtyTargetAssemblies.Remove(removeAssembly);
 
-
             // Convert TargetAssemblies to ScriptAssembiles
             var scriptAssemblies = ToScriptAssemblies(dirtyTargetAssemblies, args.Settings, args.Assemblies, args.RunUpdaterAssemblies);
             return scriptAssemblies;
         }
 
-        internal static ScriptAssembly[] ToScriptAssemblies(IDictionary<TargetAssembly, HashSet<string>> targetAssemblies, ScriptAssemblySettings settings,
+        internal static ScriptAssembliesResult ToScriptAssemblies(IDictionary<TargetAssembly, HashSet<string>> targetAssemblies, ScriptAssemblySettings settings,
             CompilationAssemblies assemblies, HashSet<string> runUpdaterAssemblies)
         {
             var scriptAssemblies = new ScriptAssembly[targetAssemblies.Count];
@@ -633,15 +639,25 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 Array.Sort(scriptAssembly.Files, StringComparer.Ordinal);
             }
 
-            AutoReferencedPackageAssemblies.AddReferences(assemblies.CustomTargetAssemblies, settings.CompilationOptions);
+            AutoReferencedPackageAssemblies.AddReferences(assemblies.CustomTargetAssemblies, settings.CompilationOptions, t => !UnityCodeGenHelpers.IsCodeGen(t.Filename));
 
             // Setup ScriptAssembly references
+            bool hasCodeGenScriptAssembly = false;
             index = 0;
             foreach (var entry in targetAssemblies)
-                AddScriptAssemblyReferences(ref scriptAssemblies[index++], entry.Key, settings,
+            {
+                var scriptAssembly = scriptAssemblies[index++];
+                AddScriptAssemblyReferences(ref scriptAssembly, entry.Key, settings,
                     assemblies, targetToScriptAssembly);
 
-            return scriptAssemblies;
+                if (UnityCodeGenHelpers.IsCodeGen(entry.Key.Filename))
+                {
+                    hasCodeGenScriptAssembly = true;
+                    UnityCodeGenHelpers.UpdateCodeGenScriptAssembly(ref scriptAssembly);
+                }
+            }
+
+            return new ScriptAssembliesResult(scriptAssemblies, hasCodeGenScriptAssembly);
         }
 
         static bool IsPrecompiledAssemblyCompatibleWithScriptAssembly(PrecompiledAssembly compiledAssembly, ScriptAssembly scriptAssembly)

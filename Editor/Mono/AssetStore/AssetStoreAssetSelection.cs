@@ -46,7 +46,7 @@ namespace UnityEditor
 
                 // Request the asset bundle data from the url and register a callback
                 AsyncHTTPClient client = new AsyncHTTPClient(searchResult.dynamicPreviewURL);
-                client.doneCallback = delegate(AsyncHTTPClient c) {
+                client.doneCallback = delegate(IAsyncHTTPClient c) {
                     if (!client.IsSuccess())
                     {
                         System.Console.WriteLine("Error downloading dynamic preview: " + client.text);
@@ -161,7 +161,7 @@ namespace UnityEditor
         static void DownloadStaticPreview(AssetStoreAsset searchResult)
         {
             AsyncHTTPClient client = new AsyncHTTPClient(searchResult.staticPreviewURL);
-            client.doneCallback = delegate(AsyncHTTPClient c) {
+            client.doneCallback = delegate(IAsyncHTTPClient c) {
                 if (!client.IsSuccess())
                 {
                     System.Console.WriteLine("Error downloading static preview: " + client.text);

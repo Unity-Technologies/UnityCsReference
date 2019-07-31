@@ -122,6 +122,7 @@ namespace UnityEngine.TextCore
         [SerializeField]
         internal Font m_SourceFontFile;
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal enum AtlasPopulationMode
         {
             Static = 0x0,

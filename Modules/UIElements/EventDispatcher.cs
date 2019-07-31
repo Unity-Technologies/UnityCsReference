@@ -86,6 +86,7 @@ namespace UnityEngine.UIElements
         List<IEventDispatchingStrategy> m_DispatchingStrategies;
         static readonly ObjectPool<Queue<EventRecord>> k_EventQueuePool = new ObjectPool<Queue<EventRecord>>();
         Queue<EventRecord> m_Queue;
+        internal PointerDispatchState pointerState { get; } = new PointerDispatchState();
 
         uint m_GateCount;
 
@@ -97,33 +98,35 @@ namespace UnityEngine.UIElements
 
         Stack<DispatchContext> m_DispatchContexts = new Stack<DispatchContext>();
 
-        static EventDispatcher s_EventDispatcher;
+        static EventDispatcher s_EditorEventDispatcher;
 
-        internal static EventDispatcher instance
+        internal static EventDispatcher editorDispatcher
         {
             get
             {
-                if (s_EventDispatcher == null)
-                    s_EventDispatcher = new EventDispatcher();
+                if (s_EditorEventDispatcher == null)
+                    s_EditorEventDispatcher = new EventDispatcher();
 
-                return s_EventDispatcher;
+                return s_EditorEventDispatcher;
             }
         }
 
-        internal static void ClearDispatcher()
+        internal static void ClearEditorDispatcher()
         {
-            s_EventDispatcher = null;
+            s_EditorEventDispatcher = null;
         }
 
-        internal DebuggerEventDispatchingStrategy m_DebuggerEventDispatchingStrategy;
+        private DebuggerEventDispatchingStrategy m_DebuggerEventDispatchingStrategy;
 
-        EventDispatcher()
+        internal EventDispatcher()
         {
             m_DispatchingStrategies = new List<IEventDispatchingStrategy>();
             m_DebuggerEventDispatchingStrategy = new DebuggerEventDispatchingStrategy();
             m_DispatchingStrategies.Add(m_DebuggerEventDispatchingStrategy);
+            m_DispatchingStrategies.Add(new PointerCaptureDispatchingStrategy());
             m_DispatchingStrategies.Add(new MouseCaptureDispatchingStrategy());
             m_DispatchingStrategies.Add(new KeyboardEventDispatchingStrategy());
+            m_DispatchingStrategies.Add(new PointerEventDispatchingStrategy());
             m_DispatchingStrategies.Add(new MouseEventDispatchingStrategy());
             m_DispatchingStrategies.Add(new CommandEventDispatchingStrategy());
             m_DispatchingStrategies.Add(new IMGUIEventDispatchingStrategy());
@@ -241,6 +244,7 @@ namespace UnityEngine.UIElements
                     }
                     finally
                     {
+                        // Balance the Acquire when the event was put in queue.
                         evt.Dispose();
                     }
                 }
@@ -266,13 +270,6 @@ namespace UnityEngine.UIElements
             {
                 evt.PreDispatch(panel);
 
-                IMouseEvent mouseEvent = evt as IMouseEvent;
-                IMouseEventInternal mouseEventInternal = evt as IMouseEventInternal;
-                if (mouseEvent != null && mouseEventInternal != null && mouseEventInternal.triggeredByOS)
-                {
-                    MousePositionTracker.SaveMousePosition(mouseEvent.mousePosition, panel);
-                }
-
                 foreach (var strategy in m_DispatchingStrategies)
                 {
                     if (strategy.CanDispatchEvent(evt))
@@ -295,6 +292,7 @@ namespace UnityEngine.UIElements
                         EventDispatchUtilities.ExecuteDefaultAction(evt, panel);
                     }
 
+                    // Reset target to leaf target
                     evt.target = evt.leafTarget;
                 }
                 else
@@ -302,9 +300,9 @@ namespace UnityEngine.UIElements
                     EventDispatchUtilities.ExecuteDefaultAction(evt, panel);
                 }
 
-                evt.PostDispatch(panel);
-
                 m_DebuggerEventDispatchingStrategy.PostDispatch(evt, panel);
+
+                evt.PostDispatch(panel);
 
                 Debug.Assert(imguiEventIsInitiallyUsed || evt.isPropagationStopped || e == null || e.type != EventType.Used, "Event is used but not stopped.");
             }

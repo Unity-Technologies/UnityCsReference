@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+
 namespace UnityEngine.UIElements
 {
     public interface IStyle
@@ -40,6 +42,7 @@ namespace UnityEngine.UIElements
         StyleEnum<WhiteSpace> whiteSpace { get; set; }
         StyleColor color { get; set; }
         StyleColor backgroundColor { get; set; }
+        [Obsolete("IStyle.borderColor is deprecated. Use left/right/top/bottom border properties instead.")]
         StyleColor borderColor { get; set; }
         StyleBackground backgroundImage { get; set; }
         StyleEnum<ScaleMode> unityBackgroundScaleMode { get; set; }
@@ -47,6 +50,10 @@ namespace UnityEngine.UIElements
         StyleEnum<Align> alignItems { get; set; }
         StyleEnum<Align> alignContent { get; set; }
         StyleEnum<Justify> justifyContent { get; set; }
+        StyleColor borderLeftColor { get; set; }
+        StyleColor borderTopColor { get; set; }
+        StyleColor borderRightColor { get; set; }
+        StyleColor borderBottomColor { get; set; }
         StyleFloat borderLeftWidth { get; set; }
         StyleFloat borderTopWidth { get; set; }
         StyleFloat borderRightWidth { get; set; }

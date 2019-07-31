@@ -77,6 +77,13 @@ namespace UnityEngine
         Disc = 4
     }
 
+    public enum LightShape
+    {
+        Cone = 0,
+        Pyramid = 1,
+        Box = 2
+    }
+
     public enum LightRenderMode
     {
         Auto = 0,
@@ -705,6 +712,14 @@ namespace UnityEngine
                 RGBA_ASTC12X12_SRGB = 139,
                 RGBA_ASTC12X12_UNorm = 140
             }
+            // Match RayTracingMode on C++ side
+            public enum RayTracingMode
+            {
+                Off = 0,
+                Static = 1,
+                DynamicTransform = 2,
+                DynamicGeometry = 3,
+            }
         }//namespace Rendering
     }//namespace Experimental
 
@@ -825,6 +840,16 @@ namespace UnityEngine.Rendering
     {
         UInt16 = 0,
         UInt32 = 1,
+    }
+
+    [Flags]
+    public enum MeshUpdateFlags
+    {
+        Default = 0,
+        DontValidateIndices = 1 << 0,
+        DontResetBoneBounds = 1 << 1,
+        DontNotifyMeshUsers = 1 << 2,
+        DontRecalculateBounds = 1 << 3,
     }
 
     // Match VertexFormat on C++ side
@@ -1206,6 +1231,17 @@ namespace UnityEngine.Rendering
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public struct SubMeshDescriptor
     {
+        public SubMeshDescriptor(int indexStart, int indexCount, MeshTopology topology = MeshTopology.Triangles)
+        {
+            this.indexStart = indexStart;
+            this.indexCount = indexCount;
+            this.topology = topology;
+            this.bounds = new Bounds();
+            this.baseVertex = 0;
+            this.firstVertex = 0;
+            this.vertexCount = 0;
+        }
+
         public Bounds bounds { get; set; }
         public MeshTopology topology { get; set; }
         public int indexStart { get; set; }
@@ -1213,6 +1249,11 @@ namespace UnityEngine.Rendering
         public int baseVertex { get; set; }
         public int firstVertex { get; set; }
         public int vertexCount { get; set; }
+
+        override public string ToString()
+        {
+            return $"(topo={topology} indices={indexStart},{indexCount} vertices={firstVertex},{vertexCount} basevtx={baseVertex} bounds={bounds})";
+        }
     }
 
     // C++ MeshScripting::VertexAttributeDesc has to match layout

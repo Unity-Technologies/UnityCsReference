@@ -279,13 +279,6 @@ namespace UnityEditor
             return true;
         }
 
-        bool IsShowingPreviewScene()
-        {
-            if (m_CustomScenes != null && m_CustomScenes.Length > 0)
-                return EditorSceneManager.IsPreviewScene(m_CustomScenes[0]);
-            return false;
-        }
-
         void SetUpSortMethodLists()
         {
             m_SortingObjects = new Dictionary<string, HierarchySorting>();
@@ -936,6 +929,13 @@ namespace UnityEditor
                 evt.Use();
                 GUIUtility.ExitGUI();
             }
+            else if (evt.commandName == EventCommandNames.Rename)
+            {
+                if (execute)
+                    RenameGO();
+                evt.Use();
+                GUIUtility.ExitGUI();
+            }
             else if (evt.commandName == EventCommandNames.Copy)
             {
                 if (execute)
@@ -1245,20 +1245,6 @@ namespace UnityEditor
                 }
             }
             return selectedSceneHandles;
-        }
-
-        List<int> GetSelectedGameObjects()
-        {
-            var selectedGameObjects = new List<int>();
-            int[] instanceIDs = m_TreeView.GetSelection();
-            foreach (int id in instanceIDs)
-            {
-                if (!IsSceneHeaderInHierarchyWindow(EditorSceneManager.GetSceneByHandle(id)))
-                {
-                    selectedGameObjects.Add(id);
-                }
-            }
-            return selectedGameObjects;
         }
 
         Scene GetLastSceneInHierarchy()

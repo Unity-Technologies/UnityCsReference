@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 
-using System;
 using UnityEngine.Bindings;
 
 namespace Unity.Audio
@@ -12,22 +11,34 @@ namespace Unity.Audio
     internal partial struct DSPSampleProviderInternal
     {
         [NativeMethod(IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
-        public static extern unsafe int Internal_ReadUInt8FromSampleProvider(
-            void* provider, int format, void* buffer, int length);
+        public static extern unsafe int Internal_ReadUInt8FromSampleProvider(void* provider, int format, void* buffer, int length);
 
         [NativeMethod(IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
-        public static extern unsafe int Internal_ReadSInt16FromSampleProvider(
-            void* provider, int format, void* buffer, int length);
+        public static extern unsafe int Internal_ReadSInt16FromSampleProvider(void* provider, int format, void* buffer, int length);
 
         [NativeMethod(IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
-        public static extern unsafe int Internal_ReadFloatFromSampleProvider(
-            void* provider, void* buffer, int length);
+        public static extern unsafe int Internal_ReadFloatFromSampleProvider(void* provider, void* buffer, int length);
 
         [NativeMethod(IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
         public static extern unsafe ushort Internal_GetChannelCount(void* provider);
 
         [NativeMethod(IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
         public static extern unsafe uint Internal_GetSampleRate(void* provider);
+
+        [NativeMethod(IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
+        public static extern unsafe int Internal_ReadUInt8FromSampleProviderById(uint providerId, int format, void* buffer, int length);
+
+        [NativeMethod(IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
+        public static extern unsafe int Internal_ReadSInt16FromSampleProviderById(uint providerId, int format, void* buffer, int length);
+
+        [NativeMethod(IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
+        public static extern unsafe int Internal_ReadFloatFromSampleProviderById(uint providerId, void* buffer, int length);
+
+        [NativeMethod(IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
+        public static extern unsafe ushort Internal_GetChannelCountById(uint providerId);
+
+        [NativeMethod(IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
+        public static extern unsafe uint Internal_GetSampleRateById(uint providerId);
     }
 }
 

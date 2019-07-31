@@ -854,7 +854,7 @@ namespace UnityEditor.Experimental.GraphView
             if (!isReframable)
                 return;
 
-            if (MouseCaptureController.IsMouseCaptured())
+            if (panel.GetCapturingElement(PointerId.mousePointerId) != null)
                 return;
 
             EventPropagation result = EventPropagation.Continue;
@@ -912,7 +912,7 @@ namespace UnityEditor.Experimental.GraphView
 
         internal void OnValidateCommand(ValidateCommandEvent evt)
         {
-            if (MouseCaptureController.IsMouseCaptured())
+            if (panel.GetCapturingElement(PointerId.mousePointerId) != null)
                 return;
 
             if ((evt.commandName == EventCommandNames.Copy && canCopySelection)
@@ -945,7 +945,7 @@ namespace UnityEditor.Experimental.GraphView
 
         internal void OnExecuteCommand(ExecuteCommandEvent evt)
         {
-            if (MouseCaptureController.IsMouseCaptured())
+            if (panel.GetCapturingElement(PointerId.mousePointerId) != null)
                 return;
 
             if (evt.commandName == EventCommandNames.Copy)

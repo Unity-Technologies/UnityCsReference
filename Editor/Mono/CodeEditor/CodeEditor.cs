@@ -41,6 +41,12 @@ namespace Unity.CodeEditor
             var selected = EditorUtility.InstanceIDToObject(instanceID);
             var assetPath = AssetDatabase.GetAssetPath(selected);
 
+            #pragma warning disable 618
+            if (ScriptEditorUtility.GetScriptEditorFromPath(CurrentEditorInstallation) != ScriptEditorUtility.ScriptEditor.Other)
+            {
+                return false;
+            }
+
             if (string.IsNullOrEmpty(assetPath))
             {
                 return false;
@@ -150,7 +156,7 @@ namespace Unity.CodeEditor
             return result;
         }
 
-        static void AddIfPathExists(string name, string path, Dictionary<string, string> list)
+        internal static void AddIfPathExists(string name, string path, Dictionary<string, string> list)
         {
             if (list.ContainsKey(path))
                 return;
@@ -168,6 +174,11 @@ namespace Unity.CodeEditor
         public static void Register(IExternalCodeEditor externalCodeEditor)
         {
             Editor.m_ExternalCodeEditors.Add(externalCodeEditor);
+        }
+
+        public static void Unregister(IExternalCodeEditor externalCodeEditor)
+        {
+            Editor.m_ExternalCodeEditors.Remove(externalCodeEditor);
         }
 
         public static IExternalCodeEditor CurrentEditor => Editor.Current;

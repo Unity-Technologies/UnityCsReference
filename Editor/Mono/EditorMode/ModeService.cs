@@ -7,10 +7,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnityEditor.ShortcutManagement;
+using Unity.MPE;
 using UnityEngine;
 using UnityEngine.Internal;
 using UnityEngine.UIElements;
+using UnityEditor.ShortcutManagement;
 
 using JSONObject = System.Collections.IDictionary;
 
@@ -46,7 +47,6 @@ namespace UnityEditor
 
         internal const string k_DefaultModeId = "default";
         internal const string k_ModeIndexKeyName = "mode-index";
-        internal const string k_ModeLayoutKeyName = "mode-layout";
         internal const string k_CapabilitiesSectionName = "capabilities";
         internal const string k_ExecuteHandlersSectionName = "execute_handlers";
         internal const string k_LayoutsSectionName = "layouts";
@@ -330,7 +330,12 @@ namespace UnityEditor
 
         private static string GetProjectPrefKeyName(string prefix)
         {
-            return $"{prefix}-{Application.productName}";
+            var key = $"{prefix}-{Application.productName}";
+            if (!string.IsNullOrEmpty(ProcessService.roleName))
+            {
+                key += "-" + ProcessService.roleName;
+            }
+            return key;
         }
 
         private static void UpdateModeMenus(int modeIndex)
@@ -460,7 +465,7 @@ namespace UnityEditor
             try
             {
                 // Load the last valid layout for this mode
-                WindowLayout.LoadDefaultWindowPreferences();
+                WindowLayout.LoadDefaultWindowPreferencesEx(true);
             }
             catch (Exception)
             {

@@ -9,8 +9,9 @@ using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
-using Unity.Collections.LowLevel.Unsafe;
-using UnityEngine.Experimental.ParticleSystemJobs;
+using Unity.Jobs;
+using Unity.Jobs.LowLevel.Unsafe;
+using UnityEngine.ParticleSystemJobs;
 
 namespace UnityEngine
 {
@@ -164,16 +165,13 @@ namespace UnityEngine
         [FreeFunction(Name = "ParticleSystemGeometryJob::ResetPreMappedBufferMemory")]
         extern public static void ResetPreMappedBufferMemory();
 
-        public unsafe void SetJob<T>(T job) where T : struct, IParticleSystemJob
-        {
-            IntPtr jobReflectionData = ProcessParticleSystemJobStruct<T>.GetJobReflectionData();
-            UnsafeUtility.CopyStructureToPtr(ref job, (void*)GetJobSystemPtr(jobReflectionData));
-        }
-
-        [NativeName("ClearJobSystemPtr")]
-        extern public void ClearJob();
-
-        extern private IntPtr GetJobSystemPtr(IntPtr jobReflectionData);
+        unsafe extern internal void* GetManagedJobData();
+        extern internal JobHandle GetManagedJobHandle();
+        extern internal void SetManagedJobHandle(JobHandle handle);
+        [FreeFunction("ScheduleManagedJob")]
+        unsafe internal static extern JobHandle ScheduleManagedJob(ref JobsUtility.JobScheduleParameters parameters, void* additionalData);
+        [ThreadSafe]
+        unsafe internal static extern void CopyManagedJobData(void* systemPtr, out NativeParticleData particleData);
 
 
         [FreeFunction(Name = "ParticleSystemEditor::SetupDefaultParticleSystemType", HasExplicitThis = true)]

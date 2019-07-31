@@ -11,9 +11,9 @@ namespace UnityEditor.PackageManager.UI
     {
         internal new class UxmlFactory : UxmlFactory<PackageStatusBar> {}
 
-        private const string k_OfflineErrorMessage = "You seem to be offline";
+        private static readonly string k_OfflineErrorMessage = "You seem to be offline";
 
-        private string m_LastErrorMessage;
+        private string[] m_LastErrorMessages;
 
         private enum StatusType { Normal, Loading, Error };
 
@@ -23,36 +23,67 @@ namespace UnityEditor.PackageManager.UI
             Add(root);
             cache = new VisualElementCache(root);
 
-            m_LastErrorMessage = string.Empty;
+            m_LastErrorMessages = new string[Enum.GetNames(typeof(PackageFilterTab)).Length];
+
+
+            var refreshIconButton = new IconButton(Resources.GetIconPath("refresh"));
+            refreshIconButton.clickable.clicked += () =>
+            {
+                if (!EditorApplication.isPlaying)
+                    PageManager.instance.Refresh(RefreshOptions.CurrentFilter);
+            };
+            refreshButtonContainer.Add(refreshIconButton);
         }
 
-        public void Setup()
+        public void OnEnable()
         {
-            UpdateStatusMessage();
+            UpdateStatusMessage(PackageFiltering.instance.currentFilterTab);
 
             PackageDatabase.instance.onUpdateTimeChange += SetUpdateTimestamp;
 
-            PackageDatabase.instance.onRefreshOperationStart += () => SetStatusMessage(StatusType.Loading, "Loading packages...");
-            PackageDatabase.instance.onRefreshOperationFinish += UpdateStatusMessage;
-            PackageDatabase.instance.onRefreshOperationError += (error) =>
+            PackageDatabase.instance.onRefreshOperationStart += () =>
             {
-                m_LastErrorMessage = "Error loading packages, see console";
-                UpdateStatusMessage();
+                if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore)
+                    SetStatusMessage(StatusType.Loading, L10n.Tr("Fetching packages..."));
+                else
+                    SetStatusMessage(StatusType.Loading, L10n.Tr("Loading packages..."));
+            };
+            PackageDatabase.instance.onRefreshOperationFinish += UpdateStatusMessage;
+            PackageDatabase.instance.onRefreshOperationError += error =>
+            {
+                var errorMessage = string.Empty;
+                if (error != null)
+                {
+                    errorMessage = PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore ? L10n.Tr("Error fetching packages, see console") : L10n.Tr("Error loading packages, see console");
+                }
+
+                m_LastErrorMessages[(int)PackageFiltering.instance.currentFilterTab] = errorMessage;
+                UpdateStatusMessage(PackageFiltering.instance.currentFilterTab);
             };
 
-            statusLabel.RegisterCallback<MouseDownEvent>(e =>
-            {
-                // only react to left mouse button click outside of play mode
-                if (e.button != 0 || EditorApplication.isPlaying)
-                    return;
+            PackageFiltering.instance.onFilterTabChanged += UpdateStatusMessage;
 
-                PackageDatabase.instance.Refresh(RefreshOptions.SearchAll);
-            });
+            ApplicationUtil.instance.onInternetReachabilityChange += OnInternetReachabilityChange;
+        }
+
+        public void OnDisable()
+        {
+            PackageDatabase.instance.onUpdateTimeChange -= SetUpdateTimestamp;
+            PackageDatabase.instance.onRefreshOperationFinish -= UpdateStatusMessage;
+            PackageFiltering.instance.onFilterTabChanged -= UpdateStatusMessage;
+            ApplicationUtil.instance.onInternetReachabilityChange -= OnInternetReachabilityChange;
+        }
+
+        private void OnInternetReachabilityChange(bool value)
+        {
+            UpdateStatusMessage(PackageFiltering.instance.currentFilterTab);
+            if (value && !EditorApplication.isPlaying)
+                PageManager.instance.Refresh(PackageFiltering.instance.currentFilterTab);
         }
 
         private static string GetUpdateTimeLabel(long timestamp)
         {
-            return new DateTime(timestamp).ToString("MMM d, HH:mm");
+            return $"{new DateTime(timestamp):MMM d, HH:mm}";
         }
 
         private void SetUpdateTimestamp(long lastUpdateTimestamp)
@@ -70,30 +101,16 @@ namespace UnityEditor.PackageManager.UI
                 SetStatusMessage(StatusType.Normal, string.Empty);
         }
 
-        private void UpdateStatusMessage()
+        private void UpdateStatusMessage(PackageFilterTab tab)
         {
-            var errorMessage = m_LastErrorMessage;
+            var errorMessage = m_LastErrorMessages[(int)tab];
             if (!ApplicationUtil.instance.isInternetReachable)
-            {
-                EditorApplication.update -= CheckInternetReachability;
-                EditorApplication.update += CheckInternetReachability;
-                errorMessage = k_OfflineErrorMessage;
-            }
+                errorMessage = L10n.Tr(k_OfflineErrorMessage);
 
             if (!string.IsNullOrEmpty(errorMessage))
                 SetStatusMessage(StatusType.Error, errorMessage);
             else
-                SetUpdateTimeLabel(GetUpdateTimeLabel(PackageDatabase.instance.lastUpdateTimestamp));
-        }
-
-        private void CheckInternetReachability()
-        {
-            if (!ApplicationUtil.instance.isInternetReachable)
-                return;
-
-            PackageDatabase.instance.Refresh(RefreshOptions.ListInstalled | RefreshOptions.SearchAll);
-
-            EditorApplication.update -= CheckInternetReachability;
+                SetUpdateTimeLabel(PackageDatabase.instance.lastUpdateTimestamp != 0 ? GetUpdateTimeLabel(PackageDatabase.instance.lastUpdateTimestamp) : string.Empty);
         }
 
         private void SetStatusMessage(StatusType status, string message)
@@ -112,5 +129,6 @@ namespace UnityEditor.PackageManager.UI
         private LoadingSpinner loadingSpinner { get { return cache.Get<LoadingSpinner>("loadingSpinner"); }}
         private Label errorIcon { get { return cache.Get<Label>("errorIcon"); }}
         private Label statusLabel { get { return cache.Get<Label>("statusLabel"); }}
+        private VisualElement refreshButtonContainer { get { return cache.Get<VisualElement>("refreshButtonContainer"); } }
     }
 }

@@ -23,6 +23,8 @@ namespace UnityEditor
         [SerializeField] public bool PaintCollisionSphereDistanceEnabled = false;
         [SerializeField] public float PaintMaxDistance = 0.2f;
         [SerializeField] public float PaintCollisionSphereDistance = 0.0f;
+        [SerializeField] public bool SetMaxDistance = false;
+        [SerializeField] public bool SetCollisionSphereDistance = false;
         [SerializeField] public ClothInspector.ToolMode ToolMode = ClothInspector.ToolMode.Paint;
         [SerializeField] public ClothInspector.CollToolMode CollToolMode = ClothInspector.CollToolMode.Select;
         [SerializeField] public float BrushRadius = 0.075f;
@@ -33,6 +35,8 @@ namespace UnityEditor
         [SerializeField] public float InterCollisionDistance = 0.1f;
         [SerializeField] public float InterCollisionStiffness = 0.2f;
         [SerializeField] public float ConstraintSize = 0.05f;
+        [SerializeField] public float GradientStartValue = 0.0f;
+        [SerializeField] public float GradientEndValue = 1.0f;
     }
 
     [CustomEditor(typeof(Cloth))]
@@ -40,7 +44,7 @@ namespace UnityEditor
     class ClothInspector : Editor
     {
         public enum DrawMode { MaxDistance = 1, CollisionSphereDistance };
-        public enum ToolMode { Select, Paint };
+        public enum ToolMode { Select, Paint, GradientTool };
         public enum CollToolMode { Select, Paint, Erase };
         enum RectSelectionMode { Replace, Add, Substract };
         public enum CollisionVisualizationMode { SelfCollision, InterCollision };
@@ -56,7 +60,6 @@ namespace UnityEditor
         Vector3 m_BrushNorm;
         int m_BrushFace = -1;
 
-        int m_MouseOver = -1;
         Vector3[] m_LastVertices;
         Vector2 m_SelectStartPoint;
         Vector2 m_SelectMousePoint;
@@ -66,6 +69,9 @@ namespace UnityEditor
         float[] m_MinVisualizedValue = new float[3];
         RectSelectionMode m_RectSelectionMode = RectSelectionMode.Add;
         int m_NumVerts = 0;
+
+        Vector3 m_GradientStartPoint;
+        Vector3 m_GradientEndPoint;
 
         const float kDisabledValue = float.MaxValue;
 
@@ -79,7 +85,8 @@ namespace UnityEditor
         public static ToolMode[] s_ToolMode =
         {
             ToolMode.Paint,
-            ToolMode.Select
+            ToolMode.Select,
+            ToolMode.GradientTool
         };
 
         SerializedProperty m_SelfCollisionDistance;
@@ -99,6 +106,10 @@ namespace UnityEditor
             public static readonly GUIContent paintCollisionParticles = EditorGUIUtility.TrTextContent("Paint Collision Particles");
             public static readonly GUIContent selectCollisionParticles = EditorGUIUtility.TrTextContent("Select Collision Particles");
             public static readonly GUIContent brushRadiusString = EditorGUIUtility.TrTextContent("Brush Radius");
+            public static readonly GUIContent gradientStartString = EditorGUIUtility.TrTextContent("Gradient Start");
+            public static readonly GUIContent gradientEndString = EditorGUIUtility.TrTextContent("Gradient End");
+            public static readonly GUIContent setMaxDistanceString = EditorGUIUtility.TrTextContent("Max Distance");
+            public static readonly GUIContent setCollisionSphereDistanceString = EditorGUIUtility.TrTextContent("Surface Penetration");
             public static readonly GUIContent selfAndInterCollisionMode = EditorGUIUtility.TrTextContent("Paint or Select Particles");
             public static readonly GUIContent backFaceManipulationMode = EditorGUIUtility.TrTextContent("Back Face Manipulation");
             public static readonly GUIContent manipulateBackFaceString = EditorGUIUtility.TrTextContent("Manipulate Backfaces");
@@ -116,7 +127,8 @@ namespace UnityEditor
             public static GUIContent[] toolIcons =
             {
                 EditorGUIUtility.TrTextContent("Select"),
-                EditorGUIUtility.TrTextContent("Paint")
+                EditorGUIUtility.TrTextContent("Paint"),
+                EditorGUIUtility.TrTextContent("Gradient Tool")
             };
 
             public static GUIContent[] drawModeStrings =
@@ -190,9 +202,7 @@ namespace UnityEditor
         }
 
         Cloth cloth => (Cloth)target;
-
         public bool editingConstraints => EditMode.editMode == EditMode.SceneViewEditMode.ClothConstraints && EditMode.IsOwner(this);
-
         public bool editingSelfAndInterCollisionParticles => EditMode.editMode == EditMode.SceneViewEditMode.ClothSelfAndInterCollisionParticles && EditMode.IsOwner(this);
 
         GUIContent GetDrawModeString(DrawMode mode)
@@ -247,6 +257,12 @@ namespace UnityEditor
                 EditMode.DoInspectorToolbar(Styles.sceneViewEditModes, Styles.toolContents, this);
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
+            }
+
+            if (m_SkinnedMeshRenderer.transform.hasChanged)
+            {
+                InitClothParticlesInWorldSpace();
+                m_SkinnedMeshRenderer.transform.hasChanged = false;
             }
 
             if (editingSelfAndInterCollisionParticles)
@@ -758,6 +774,130 @@ namespace UnityEditor
             }
         }
 
+        void GradientToolGUI()
+        {
+            if (m_ParticleSelection == null)
+            {
+                return;
+            }
+
+            ClothSkinningCoefficient[] coefficients = cloth.coefficients;
+
+            int numSelection = 0;
+            int numParticleSelection = m_ParticleSelection.Length;
+            for (int i = 0; i < numParticleSelection; i++)
+            {
+                if (m_ParticleSelection[i])
+                {
+                    numSelection++;
+                }
+            }
+
+            EditGradientStart();
+            EditGradientEnd();
+
+            if (numSelection == 0)
+            {
+                state.SetMaxDistance = false;
+                state.SetCollisionSphereDistance = false;
+            }
+
+            Vector3 gradientDirection = m_GradientEndPoint - m_GradientStartPoint;
+
+            using (new EditorGUI.DisabledScope(numSelection == 0))
+            {
+                EditorGUILayout.BeginHorizontal();
+                EditorGUI.BeginChangeCheck();
+                bool setMaxDistance = EditorGUILayout.Toggle(GUIContent.none, state.SetMaxDistance);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    state.SetMaxDistance = setMaxDistance;
+                    int numCoefficients = coefficients.Length;
+                    for (int i = 0; i < numCoefficients; i++)
+                    {
+                        if (m_ParticleSelection[i])
+                        {
+                            Vector3 pointOnLine = HandleUtility.ProjectPointLine(m_ClothParticlesInWorldSpace[i], m_GradientStartPoint, m_GradientEndPoint);
+                            Vector3 gradientStartToPoint = pointOnLine - m_GradientStartPoint;
+                            float lerpParameter = gradientStartToPoint.magnitude / gradientDirection.magnitude;
+                            float maxDistanceNew = Mathf.Lerp(state.GradientStartValue, state.GradientEndValue, lerpParameter);
+                            coefficients[i].maxDistance = maxDistanceNew;
+                        }
+                    }
+                    cloth.coefficients = coefficients;
+                    Undo.RegisterCompleteObjectUndo(target, "Change Cloth Coefficients");
+                }
+
+                EditorGUILayout.LabelField(Styles.setMaxDistanceString);
+                EditorGUILayout.EndHorizontal();
+            }
+
+            using (new EditorGUI.DisabledScope(numSelection == 0))
+            {
+                EditorGUILayout.BeginHorizontal();
+                EditorGUI.BeginChangeCheck();
+                bool setCollisionSphereDistance = EditorGUILayout.Toggle(GUIContent.none, state.SetCollisionSphereDistance);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    state.SetCollisionSphereDistance = setCollisionSphereDistance;
+                    int numCoefficients = coefficients.Length;
+                    for (int i = 0; i < numCoefficients; i++)
+                    {
+                        if (m_ParticleSelection[i])
+                        {
+                            Vector3 pointOnLine = HandleUtility.ProjectPointLine(m_ClothParticlesInWorldSpace[i], m_GradientStartPoint, m_GradientEndPoint);
+                            Vector3 gradientStartToPoint = pointOnLine - m_GradientStartPoint;
+                            float lerpParameter = gradientStartToPoint.magnitude / gradientDirection.magnitude;
+                            float collisionSphereDistanceNew = Mathf.Lerp(state.GradientStartValue, state.GradientEndValue, lerpParameter);
+                            coefficients[i].collisionSphereDistance = collisionSphereDistanceNew;
+                        }
+                    }
+                    cloth.coefficients = coefficients;
+                    Undo.RegisterCompleteObjectUndo(target, "Change Cloth Coefficients");
+                }
+
+                EditorGUILayout.LabelField(Styles.setCollisionSphereDistanceString);
+                EditorGUILayout.EndHorizontal();
+            }
+
+            using (new EditorGUI.DisabledScope(true))
+            {
+                GUILayout.BeginHorizontal();
+                if (numSelection > 0)
+                {
+                    GUILayout.FlexibleSpace();
+                    GUILayout.Label(numSelection + " selected");
+                }
+                else
+                {
+                    GUILayout.Label("Select cloth vertices to edit their constraints.");
+                    GUILayout.FlexibleSpace();
+                }
+                GUILayout.EndHorizontal();
+            }
+
+            if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Backspace)
+            {
+                int numCoefficients = coefficients.Length;
+                for (int i = 0; i < numCoefficients; i++)
+                {
+                    if (m_ParticleSelection[i])
+                    {
+                        switch (drawMode)
+                        {
+                            case DrawMode.MaxDistance:
+                                coefficients[i].maxDistance = kDisabledValue;
+                                break;
+                            case DrawMode.CollisionSphereDistance:
+                                coefficients[i].collisionSphereDistance = kDisabledValue;
+                                break;
+                        }
+                    }
+                }
+                cloth.coefficients = coefficients;
+            }
+        }
+
         void CollSelectionGUI()
         {
             if (!IsMeshValid())
@@ -832,6 +972,32 @@ namespace UnityEditor
                 state.BrushRadius = fieldValue;
                 if (state.BrushRadius < 0.0f)
                     state.BrushRadius = 0.0f;
+            }
+        }
+
+        void EditGradientStart()
+        {
+            EditorGUI.BeginChangeCheck();
+            float fieldValue = EditorGUILayout.FloatField(Styles.gradientStartString, state.GradientStartValue);
+            bool changed = EditorGUI.EndChangeCheck();
+            if (changed)
+            {
+                state.GradientStartValue = fieldValue;
+                if (state.GradientStartValue < 0.0f)
+                    state.GradientStartValue = 0.0f;
+            }
+        }
+
+        void EditGradientEnd()
+        {
+            EditorGUI.BeginChangeCheck();
+            float fieldValue = EditorGUILayout.FloatField(Styles.gradientEndString, state.GradientEndValue);
+            bool changed = EditorGUI.EndChangeCheck();
+            if (changed)
+            {
+                state.GradientEndValue = fieldValue;
+                if (state.GradientEndValue < 0.0f)
+                    state.GradientEndValue = 0.0f;
             }
         }
 
@@ -971,6 +1137,9 @@ namespace UnityEditor
             Ray topRight = HandleUtility.GUIPointToWorldRay(new Vector2(maxX, minY));
             Ray botLeft = HandleUtility.GUIPointToWorldRay(new Vector2(minX, maxY));
             Ray botRight = HandleUtility.GUIPointToWorldRay(new Vector2(maxX, maxY));
+
+            m_GradientStartPoint = (topLeft.origin + botLeft.origin) * 0.5f;
+            m_GradientEndPoint = (topRight.origin + botRight.origin) * 0.5f;
 
             Plane top = new Plane(topRight.origin + topRight.direction, topLeft.origin + topLeft.direction, topLeft.origin);
             Plane bottom = new Plane(botLeft.origin + botLeft.direction, botRight.origin + botRight.direction, botRight.origin);
@@ -1256,6 +1425,99 @@ namespace UnityEditor
             }
         }
 
+        void GradientToolPreScenGUI(int id)
+        {
+            Event e = Event.current;
+            switch (e.GetTypeForControl(id))
+            {
+                case EventType.MouseDown:
+                    if (e.alt || e.control || e.command || e.button != 0)
+                        break;
+                    GUIUtility.hotControl = id;
+                    int found = GetMouseVertex(e);
+                    if (found != -1)
+                    {
+                        if (e.shift)
+                            m_ParticleSelection[found] = !m_ParticleSelection[found];
+                        else
+                        {
+                            int length = m_ParticleSelection.Length;
+                            for (int i = 0; i < length; i++)
+                                m_ParticleSelection[i] = false;
+                            m_ParticleSelection[found] = true;
+                        }
+                        m_DidSelect = true;
+                        Repaint();
+                    }
+                    else
+                        m_DidSelect = false;
+
+                    m_SelectStartPoint = e.mousePosition;
+                    e.Use();
+                    break;
+
+                case EventType.MouseDrag:
+                    if (GUIUtility.hotControl == id)
+                    {
+                        if (!m_RectSelecting && (e.mousePosition - m_SelectStartPoint).magnitude > 2f)
+                        {
+                            if (!(e.alt || e.control || e.command))
+                            {
+                                EditorApplication.modifierKeysChanged += SendCommandsOnModifierKeys;
+                                m_RectSelecting = true;
+                                RectSelectionModeFromEvent();
+                            }
+                        }
+                        if (m_RectSelecting)
+                        {
+                            m_SelectMousePoint = new Vector2(Mathf.Max(e.mousePosition.x, 0), Mathf.Max(e.mousePosition.y, 0));
+                            RectSelectionModeFromEvent();
+                            UpdateRectParticleSelection();
+                            e.Use();
+                        }
+                    }
+                    break;
+
+                case EventType.ExecuteCommand:
+                    if (m_RectSelecting && e.commandName == EventCommandNames.ModifierKeysChanged)
+                    {
+                        RectSelectionModeFromEvent();
+                        UpdateRectParticleSelection();
+                    }
+                    break;
+
+                case EventType.MouseUp:
+                    if (GUIUtility.hotControl == id && e.button == 0)
+                    {
+                        GUIUtility.hotControl = 0;
+
+                        if (m_RectSelecting)
+                        {
+                            EditorApplication.modifierKeysChanged -= SendCommandsOnModifierKeys;
+                            m_RectSelecting = false;
+                            RectSelectionModeFromEvent();
+                            ApplyRectSelection();
+                        }
+                        else if (!m_DidSelect)
+                        {
+                            if (!(e.alt || e.control || e.command))
+                            {
+                                // If nothing was clicked, deselect all
+                                ClothSkinningCoefficient[] coefficients = cloth.coefficients;
+                                int length = coefficients.Length;
+                                for (int i = 0; i < length; i++)
+                                    m_ParticleSelection[i] = false;
+                            }
+                        }
+                        // Disable text focus when selection changes, otherwise we cannot update inspector fields
+                        // if text is currently selected.
+                        GUIUtility.keyboardControl = 0;
+                        SceneView.RepaintAll();
+                    }
+                    break;
+            }
+        }
+
         private void OnPreSceneGUICallback(SceneView sceneView)
         {
             // Multi-editing in scene not supported
@@ -1301,10 +1563,8 @@ namespace UnityEditor
 
                 case EventType.MouseMove:
                 case EventType.MouseDrag:
-                    int oldMouseOver = m_MouseOver;
-                    m_MouseOver = GetMouseVertex(e);
-                    if (m_MouseOver != oldMouseOver)
-                        SceneView.RepaintAll();
+                    GetMouseVertex(e);
+                    SceneView.RepaintAll();
                     break;
             }
 
@@ -1318,6 +1578,9 @@ namespace UnityEditor
 
                     case ToolMode.Paint:
                         PaintPreSceneGUI(id);
+                        break;
+                    case ToolMode.GradientTool:
+                        GradientToolPreScenGUI(id);
                         break;
                 }
             }
@@ -1387,7 +1650,7 @@ namespace UnityEditor
             }
 
             Handles.BeginGUI();
-            if (m_RectSelecting && state.ToolMode == ToolMode.Select && Event.current.type == EventType.Repaint)
+            if (m_RectSelecting && (state.ToolMode == ToolMode.Select || state.ToolMode == ToolMode.GradientTool) && Event.current.type == EventType.Repaint)
                 EditorStyles.selectionRect.Draw(EditorGUIExt.FromToRect(m_SelectStartPoint, m_SelectMousePoint), GUIContent.none, false, false, false, false);
             Handles.EndGUI();
 
@@ -1543,6 +1806,10 @@ namespace UnityEditor
                 case ToolMode.Paint:
                     Tools.current = Tool.None;
                     PaintGUI();
+                    break;
+                case ToolMode.GradientTool:
+                    Tools.current = Tool.None;
+                    GradientToolGUI();
                     break;
             }
 

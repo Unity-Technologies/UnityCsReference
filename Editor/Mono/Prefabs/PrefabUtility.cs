@@ -8,14 +8,12 @@ using System.IO;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Assertions;
-using UnityEditor;
 using UnityEditor.Utils;
 using UnityEngine.SceneManagement;
 using UnityEditor.SceneManagement;
 using Object = UnityEngine.Object;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UnityEditor.VersionControl;
-using UnityEditorInternal;
 
 namespace UnityEditor
 {
@@ -1217,6 +1215,9 @@ namespace UnityEditor
             if (!Paths.IsValidAssetPath(path, ".prefab"))
                 throw new ArgumentException("Given path is not valid: '" + path + "'");
 
+            if (Directory.Exists(path))
+                throw new ArgumentException("Overwriting a folder with an Asset is not allowed: '" + path + "'");
+
             string directory = Path.GetDirectoryName(path);
 
             bool isRootFolder = false;
@@ -1260,12 +1261,6 @@ namespace UnityEditor
                 throw new ArgumentNullException("Parameter root is null");
 
             ValidatePath(root, path);
-        }
-
-        private static bool IsPrefabInstanceRoot(GameObject gameObject)
-        {
-            var instanceRoot = GetOutermostPrefabInstanceRoot(gameObject);
-            return instanceRoot != null && instanceRoot == gameObject;
         }
 
         public static GameObject SaveAsPrefabAsset(GameObject instanceRoot, string assetPath, out bool success)

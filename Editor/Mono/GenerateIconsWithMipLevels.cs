@@ -117,21 +117,7 @@ namespace UnityEditorInternal
             int instanceID = Selection.activeInstanceID;
             string assetPath = AssetDatabase.GetAssetPath(instanceID);
 
-            if (!VerifyIconPath(assetPath, true))
-                return;
-
-            float startTime = Time.realtimeSinceStartup;
-            var data = GetInputData();
-            string baseName = assetPath.Replace(data.sourceFolder, "");
-            baseName = baseName.Substring(0, baseName.LastIndexOf(data.mipIdentifier, StringComparison.Ordinal));
-
-            string cwd = new DirectoryInfo(data.sourceFolder).FullName;
-            List<string> assetPaths = GetIconAssetPaths(cwd, data.sourceFolder, data.mipIdentifier, data.mipFileExtension);
-
-            EnsureFolderIsCreated(data.targetFolder);
-            GenerateIcon(data, baseName, assetPaths, null, null);
-            Debug.Log(string.Format("Generated {0} icon with mip levels in {1} seconds", baseName, Time.realtimeSinceStartup - startTime));
-            InternalEditorUtility.RepaintAllViews();
+            GenerateIconWithMipLevels(assetPath, null, null);
         }
 
         // Refresh just one icon with provided mip levels

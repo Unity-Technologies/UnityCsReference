@@ -40,7 +40,8 @@ namespace Unity.Jobs
 
                     JobsUtility.PatchBufferMinMaxRanges(bufferRangePatchData, UnsafeUtility.AddressOf(ref jobData), begin, end - begin);
 
-                    for (var i = begin; i < end; ++i)
+                    var endThatCompilerCanSeeWillNeverChange = end;
+                    for (var i = begin; i < endThatCompilerCanSeeWillNeverChange; ++i)
                         jobData.Execute(i);
                 }
             }

@@ -8,8 +8,6 @@ using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using System.Collections.Generic;
-using UnityEditor.Experimental.U2D;
-using UnityEditor.U2D.Interface;
 using UnityEngine.SceneManagement;
 using UnityEngine.U2D.Interface;
 using Object = UnityEngine.Object;

@@ -8,9 +8,26 @@ using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
-using UnityEngine.Experimental.VFX;
+using UnityEngine.VFX;
 
+//Temporary
+//Adds ProcessCamera in UnityEngine.Experimental.VFX namespace for HDRP
+//Remove this code when a new com.unity.render-pipelines.high-definition built-in package has been provided
+using System.Runtime.CompilerServices;
+[assembly: InternalsVisibleTo("Unity.RenderPipelines.HighDefinition.Runtime")]
+[assembly: InternalsVisibleTo("Unity.RenderPipelines.HighDefinition.Runtime-testable")]
 namespace UnityEngine.Experimental.VFX
+{
+    internal static class VFXManager
+    {
+        public static void ProcessCamera(Camera cam)
+        {
+            UnityEngine.VFX.VFXManager.ProcessCamera(cam);
+        }
+    }
+}
+
+namespace UnityEngine.VFX
 {
     [RequiredByNativeCode]
     [NativeHeader("Modules/VFX/Public/VFXManager.h")]
@@ -24,8 +41,14 @@ namespace UnityEngine.Experimental.VFX
 
         extern internal static string renderPipeSettingsPath { get; }
 
-        // Hooks for SRP
-        extern public static void ProcessCamera(Camera cam);
+        public static void ProcessCamera(Camera cam)
+        {
+            PrepareCamera(cam);
+            ProcessCameraCommand(cam, null);
+        }
+
+        extern public static void PrepareCamera(Camera cam);
+        extern public static void ProcessCameraCommand(Camera cam, CommandBuffer cmd);
         extern public static VFXCameraBufferTypes IsCameraBufferNeeded(Camera cam);
         extern public static void SetCameraBuffer(Camera cam, VFXCameraBufferTypes type, Texture buffer, int x, int y, int width, int height);
     }

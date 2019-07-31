@@ -187,6 +187,7 @@ namespace UnityEditor.UIAutomation
                 window.RepaintImmediately();
         }
 
+        // Called from Editor tests
         public void SendKeyStrokesStream(IEnumerable<KeyCode> keys)
         {
             foreach (var key in keys)
@@ -195,17 +196,6 @@ namespace UnityEditor.UIAutomation
             }
         }
 
-        /*
-        public void PressKey(KeyCode key)
-        {
-            EventUtility.KeyDown(window, key);
-        }
-
-        public void ReleaseKey(KeyCode key)
-        {
-            EventUtility.KeyUp(window,key);
-        }
-        */
         public IEnumerable<IAutomatedUIElement> FindElementsByGUIStyle(GUIStyle style)
         {
             return m_Model.FindElementsByGUIStyle(style);

@@ -26,6 +26,21 @@ namespace UnityEngine.UIElements
         }
 
         [SerializeField]
+        int m_Line;
+
+        public int line
+        {
+            get
+            {
+                return m_Line;
+            }
+            internal set
+            {
+                m_Line = value;
+            }
+        }
+
+        [SerializeField]
         StyleValueHandle[] m_Values;
 
         public StyleValueHandle[] values
@@ -39,5 +54,11 @@ namespace UnityEngine.UIElements
                 m_Values = value;
             }
         }
+
+        [NonSerialized]
+        internal bool isCustomProperty;
+
+        [NonSerialized]
+        internal bool requireVariableResolve;
     }
 }

@@ -4,21 +4,20 @@
 
 using UnityEngine;
 using UnityEngine.Rendering;
-using System.Collections.Generic;
+using UnityEditor.Rendering;
 using System.Linq;
 using System;
 
 namespace UnityEditor
 {
-    [System.AttributeUsage(System.AttributeTargets.Class)]
-    public class LightingExplorerExtensionAttribute : System.Attribute
+    //Attribute that should be deprecated in 2020.1
+    //Will be replaced by ScriptableRenderPipelineAttribute
+    //Kept for package compatibility and user SRP compatibility at the moment
+    [AttributeUsage(AttributeTargets.Class)]
+    public class LightingExplorerExtensionAttribute : ScriptableRenderPipelineExtensionAttribute
     {
-        internal System.Type renderPipelineType;
-
-        public LightingExplorerExtensionAttribute(System.Type renderPipeline)
-        {
-            renderPipelineType = renderPipeline;
-        }
+        public LightingExplorerExtensionAttribute(Type renderPipeline)
+            : base(renderPipeline) {}
     }
 
     public interface ILightingExplorerExtension
@@ -35,7 +34,6 @@ namespace UnityEditor
         LightingExplorerTab[] m_TableTabs;
         GUIContent[] m_TabTitles;
 
-        float m_ToolbarPadding = -1;
         int m_SelectedTab = 0;
 
         System.Type m_CurrentSRPType = null;
@@ -48,19 +46,6 @@ namespace UnityEditor
             LightingExplorerWindow window = EditorWindow.GetWindow<LightingExplorerWindow>();
             window.minSize = new Vector2(500, 250);
             window.Show();
-        }
-
-        private float toolbarPadding
-        {
-            get
-            {
-                if (m_ToolbarPadding == -1)
-                {
-                    var iconsSize = EditorStyles.iconButton.CalcSize(EditorGUI.GUIContents.helpIcon);
-                    m_ToolbarPadding = (iconsSize.x * 2) + (EditorGUI.kControlVerticalSpacing * 3);
-                }
-                return m_ToolbarPadding;
-            }
         }
 
         void OnEnable()
@@ -219,16 +204,11 @@ namespace UnityEditor
             if (currentSRPType == null)
                 return GetDefaultLightingExplorerExtension();
 
-            var extensionTypes = TypeCache.GetTypesDerivedFrom<ILightingExplorerExtension>();
-
-            foreach (System.Type extensionType in extensionTypes)
+            Type extensionType = RenderPipelineEditorUtility.FetchFirstCompatibleTypeUsingScriptableRenderPipelineExtension<ILightingExplorerExtension>();
+            if (extensionType != null)
             {
-                LightingExplorerExtensionAttribute attribute = System.Attribute.GetCustomAttribute(extensionType, typeof(LightingExplorerExtensionAttribute)) as LightingExplorerExtensionAttribute;
-                if (attribute != null && attribute.renderPipelineType == currentSRPType)
-                {
-                    ILightingExplorerExtension extension = (ILightingExplorerExtension)System.Activator.CreateInstance(extensionType);
-                    return extension;
-                }
+                ILightingExplorerExtension extension = (ILightingExplorerExtension)System.Activator.CreateInstance(extensionType);
+                return extension;
             }
 
             // no light explorer extension found for current srp, return the default one

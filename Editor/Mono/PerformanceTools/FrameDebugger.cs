@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEditor.Rendering;
 using UnityEditorInternal;
 using System.Runtime.InteropServices;
 using UnityEditor.IMGUI.Controls;
@@ -277,11 +278,9 @@ namespace UnityEditor
             public string[] texturePropertyTooltips;
         }
 
-        const float kScrollbarWidth = 16;
         const float kResizerWidth = 5f;
         const float kMinListWidth = 200f;
         const float kMinDetailsWidth = 200f;
-        const float kMinWindowWidth = 240f;
         const float kDetailsMargin = 0f;
         const float kMinPreviewSize = 64f;
 
@@ -294,7 +293,7 @@ namespace UnityEditor
         const float kArrayValuePopupBtnWidth = 25.0f;
 
         // See the comments for BaseParamInfo in FrameDebuggerInternal.h
-        const int kShaderTypeBits = 6;
+        const int kShaderTypeBits = (int)ShaderType.Count;
         const int kArraySizeBitMask = 0x3FF;
 
         // Sometimes when disabling the frame debugger, the UI does not update automatically -
@@ -486,10 +485,10 @@ namespace UnityEditor
             // Make sure game view is visible when enabling frame debugger locally
             if (FrameDebuggerUtility.IsLocalEnabled())
             {
-                GameView gameView = (GameView)WindowLayout.FindEditorWindowOfType(typeof(GameView));
-                if (gameView)
+                var previewWindow = PreviewEditorWindow.GetMainPreviewWindow();
+                if (previewWindow)
                 {
-                    gameView.ShowTab();
+                    previewWindow.ShowTab();
                 }
             }
 
@@ -658,7 +657,7 @@ namespace UnityEditor
             int newLimit;
             using (new EditorGUI.DisabledScope(FrameDebuggerUtility.count <= 1))
             {
-                newLimit = EditorGUILayout.IntSlider(FrameDebuggerUtility.limit, 1, FrameDebuggerUtility.count, -1,
+                newLimit = EditorGUILayout.IntSlider(FrameDebuggerUtility.limit, 1, FrameDebuggerUtility.count, 1,
                     EditorStyles.toolbarSlider);
             }
             if (EditorGUI.EndChangeCheck())

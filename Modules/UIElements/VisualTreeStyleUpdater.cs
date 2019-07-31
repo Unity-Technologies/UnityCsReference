@@ -16,6 +16,7 @@ namespace UnityEngine.UIElements
         // resolving styles allows to skip the resolve part when an existing style data already exists
         private static Dictionary<Int64, VisualElementStylesData> s_StyleDataCache = new Dictionary<Int64, VisualElementStylesData>();
         private static Dictionary<int, InheritedStylesData> s_InheritedStyleDataCache = new Dictionary<int, InheritedStylesData>();
+        private static Dictionary<int, StyleVariableContext> s_StyleVariableContextCache = new Dictionary<int, StyleVariableContext>();
 
         public static bool TryGetValue(Int64 hash, out VisualElementStylesData data)
         {
@@ -37,10 +38,21 @@ namespace UnityEngine.UIElements
             s_InheritedStyleDataCache[hash] = data;
         }
 
+        public static bool TryGetValue(int hash, out StyleVariableContext data)
+        {
+            return s_StyleVariableContextCache.TryGetValue(hash, out data);
+        }
+
+        public static void SetValue(int hash, StyleVariableContext data)
+        {
+            s_StyleVariableContextCache[hash] = data;
+        }
+
         public static void ClearStyleCache()
         {
             s_StyleDataCache.Clear();
             s_InheritedStyleDataCache.Clear();
+            s_StyleVariableContextCache.Clear();
         }
     }
 
@@ -107,7 +119,7 @@ namespace UnityEngine.UIElements
         {
             Debug.Assert(visualTree.panel != null);
             m_IsApplyingStyles = true;
-            m_StyleContextHierarchyTraversal.PrepareTraversal(panel.currentPixelsPerPoint);
+            m_StyleContextHierarchyTraversal.PrepareTraversal(panel.scaledPixelsPerPoint);
             m_StyleContextHierarchyTraversal.Traverse(visualTree);
             m_IsApplyingStyles = false;
         }
@@ -116,6 +128,7 @@ namespace UnityEngine.UIElements
     class StyleMatchingContext
     {
         public List<StyleSheet> styleSheetStack;
+        public StyleVariableContext variableContext;
         public VisualElement currentElement;
         public Action<VisualElement, MatchResultInfo> processResult;
         public InheritedStylesData inheritedStyle;
@@ -123,16 +136,17 @@ namespace UnityEngine.UIElements
         public StyleMatchingContext(Action<VisualElement, MatchResultInfo> processResult)
         {
             styleSheetStack = new List<StyleSheet>();
+            variableContext = StyleVariableContext.none;
             currentElement = null;
             this.processResult = processResult;
         }
     }
 
-
     internal class VisualTreeStyleUpdaterTraversal : HierarchyTraversal
     {
         private static readonly InheritedStylesData s_DefaultInheritedStyles = new InheritedStylesData();
         private InheritedStylesData m_ResolveInheritData = new InheritedStylesData();
+        private StyleVariableContext m_ProcessVarContext = new StyleVariableContext();
         private HashSet<VisualElement> m_UpdateList = new HashSet<VisualElement>();
         private HashSet<VisualElement> m_ParentList = new HashSet<VisualElement>();
 
@@ -141,6 +155,7 @@ namespace UnityEngine.UIElements
         private float currentPixelsPerPoint { get; set; } = 1.0f;
 
         StyleMatchingContext m_StyleMatchingContext = new StyleMatchingContext(OnProcessMatchResult);
+        StylePropertyReader m_StylePropertyReader = new StylePropertyReader();
 
         public void PrepareTraversal(float pixelsPerPoint)
         {
@@ -212,6 +227,7 @@ namespace UnityEngine.UIElements
             }
 
             int originalStyleSheetCount = m_StyleMatchingContext.styleSheetStack.Count;
+            int originalVariableCount = m_ProcessVarContext.count;
 
             if (element.styleSheetList != null)
             {
@@ -243,6 +259,7 @@ namespace UnityEngine.UIElements
             else
             {
                 m_StyleMatchingContext.inheritedStyle = element.propagatedStyle;
+                m_StyleMatchingContext.variableContext = element.variableContext;
             }
 
             // Need to send the custom styles event after the inheritance is resolved because an element
@@ -264,6 +281,11 @@ namespace UnityEngine.UIElements
             {
                 m_StyleMatchingContext.styleSheetStack.RemoveRange(originalStyleSheetCount, m_StyleMatchingContext.styleSheetStack.Count - originalStyleSheetCount);
             }
+
+            if (m_ProcessVarContext.count > originalVariableCount)
+            {
+                m_ProcessVarContext.RemoveRange(originalVariableCount, m_ProcessVarContext.count - originalVariableCount);
+            }
         }
 
         bool ShouldSkipElement(VisualElement element)
@@ -279,13 +301,38 @@ namespace UnityEngine.UIElements
             // Let current DPI contribute to the hash so cache is invalidated when this changes
             matchingRulesHash = (matchingRulesHash * 397) ^ currentPixelsPerPoint.GetHashCode();
 
+            int oldVariablesHash = m_StyleMatchingContext.variableContext.GetVariableHash();
+            int customPropertiesCount = 0;
+
             foreach (var record in matchingSelectors)
             {
                 StyleRule rule = record.complexSelector.rule;
                 int specificity = record.complexSelector.specificity;
                 matchingRulesHash = (matchingRulesHash * 397) ^ rule.GetHashCode();
                 matchingRulesHash = (matchingRulesHash * 397) ^ specificity;
+
+                if (rule.customPropertiesCount > 0)
+                {
+                    customPropertiesCount += rule.customPropertiesCount;
+                    ProcessMatchedVariables(record.sheet, rule);
+                }
             }
+
+            int variablesHash = customPropertiesCount > 0 ? m_ProcessVarContext.GetVariableHash() : oldVariablesHash;
+            matchingRulesHash = (matchingRulesHash * 397) ^ variablesHash;
+
+            if (oldVariablesHash != variablesHash)
+            {
+                StyleVariableContext ctx;
+                if (!StyleCache.TryGetValue(variablesHash, out ctx))
+                {
+                    ctx = new StyleVariableContext(m_ProcessVarContext);
+                    StyleCache.SetValue(variablesHash, ctx);
+                }
+
+                m_StyleMatchingContext.variableContext = ctx;
+            }
+            element.variableContext = m_StyleMatchingContext.variableContext;
 
             VisualElementStylesData resolvedStyles;
             if (StyleCache.TryGetValue(matchingRulesHash, out resolvedStyles))
@@ -298,8 +345,8 @@ namespace UnityEngine.UIElements
 
                 foreach (var record in matchingSelectors)
                 {
-                    StylePropertyID[] propertyIDs = StyleSheetCache.GetPropertyIDs(record.sheet, record.complexSelector.ruleIndex);
-                    resolvedStyles.ApplyRule(record.sheet, record.complexSelector.specificity, record.complexSelector.rule, propertyIDs);
+                    m_StylePropertyReader.SetContext(record.sheet, record.complexSelector, m_StyleMatchingContext.variableContext);
+                    resolvedStyles.ApplyProperties(m_StylePropertyReader, m_StyleMatchingContext.inheritedStyle);
                 }
 
                 resolvedStyles.ApplyLayoutValues();
@@ -307,6 +354,23 @@ namespace UnityEngine.UIElements
                 StyleCache.SetValue(matchingRulesHash, resolvedStyles);
 
                 element.SetSharedStyles(resolvedStyles);
+            }
+        }
+
+        private void ProcessMatchedVariables(StyleSheet sheet, StyleRule rule)
+        {
+            foreach (var property in rule.properties)
+            {
+                if (property.isCustomProperty)
+                {
+                    var sv = new StyleVariable()
+                    {
+                        name = property.name,
+                        sheet = sheet,
+                        handles = property.values
+                    };
+                    m_ProcessVarContext.Add(sv);
+                }
             }
         }
 

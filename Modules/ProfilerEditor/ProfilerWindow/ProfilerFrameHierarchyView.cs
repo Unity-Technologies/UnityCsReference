@@ -315,6 +315,8 @@ namespace UnityEditorInternal.Profiling
                     return LocalizationDatabase.GetLocalizedString("|Warnings");
                 case HierarchyFrameDataView.columnObjectName:
                     return LocalizationDatabase.GetLocalizedString("Name");
+                case HierarchyFrameDataView.columnStartTime:
+                    return LocalizationDatabase.GetLocalizedString("Start ms");
                 default:
                     return "ProfilerColumn." + column;
             }
@@ -404,6 +406,7 @@ namespace UnityEditorInternal.Profiling
 
             using (new EditorGUI.DisabledScope(!frameDataView.valid))
             {
+                EditorGUILayout.Space(); // workaround: Remove double lines
                 DrawThreadPopup(frameDataView);
             }
 
@@ -419,6 +422,7 @@ namespace UnityEditorInternal.Profiling
             if (!showDetailedView)
             {
                 DrawDetailedViewPopup();
+                EditorGUILayout.Space(); // workaround: Remove double lines
                 DrawOptionsMenuPopup();
             }
 

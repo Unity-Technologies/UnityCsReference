@@ -10,7 +10,7 @@ namespace UnityEditor.Build.Reporting
     [NativeType(Header = "Modules/BuildReportingEditor/Public/BuildReport.h")]
     public struct BuildFile
     {
-        internal uint id { get; }
+        public uint id { get; }
         public string path { get; }
         public string role { get; }
 

@@ -10,15 +10,19 @@ namespace UnityEditor.PackageManager.UI
     internal interface IPackageVersion
     {
         string name { get; }
+
         string displayName { get; }
 
         string type { get; }
+
         string author { get; }
 
         string description { get; }
+
         string category { get; }
 
         string packageUniqueId { get; }
+
         string uniqueId { get; }
 
         // TODO: Might need to create a wrapper `PackageSource` to account for AssetStore package info.
@@ -30,7 +34,9 @@ namespace UnityEditor.PackageManager.UI
 
         SemVersion version { get; }
 
-        DateTime? datePublished { get; }
+        DateTime? publishedDate { get; }
+
+        string publisherId { get; }
 
         DependencyInfo[] dependencies { get; }
 
@@ -56,5 +62,23 @@ namespace UnityEditor.PackageManager.UI
         bool canBeEmbedded { get; }
 
         bool isDirectDependency { get; }
+
+        string localPath { get; }
+
+        string versionString { get; }
+
+        string versionId { get; }
+
+        SemVersion supportedVersion { get; }
+
+        IEnumerable<SemVersion> supportedVersions { get; }
+
+        IEnumerable<PackageImage> images { get; }
+
+        IEnumerable<PackageSizeInfo> sizes { get; }
+
+        IEnumerable<PackageLink> links { get; }
+
+        EntitlementsInfo entitlements { get; }
     }
 }

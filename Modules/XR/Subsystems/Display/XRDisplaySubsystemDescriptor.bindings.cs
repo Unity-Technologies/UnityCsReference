@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 
 namespace UnityEngine.Experimental.XR
 {
+    [NativeHeader("Modules/XR/XRPrefix.h")]
     [NativeType(Header = "Modules/XR/Subsystems/Display/XRDisplaySubsystemDescriptor.h")]
     [UsedByNativeCode]
     public class XRDisplaySubsystemDescriptor : IntegratedSubsystemDescriptor<XRDisplaySubsystem>

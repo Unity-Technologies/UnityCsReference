@@ -44,16 +44,16 @@ namespace UnityEditor
             }
         }
 
-        internal static Vector3 SideSlider(int id, Vector3 position, Vector3 sideVector, Vector3 direction, float size, Handles.CapFunction capFunction, float snap)
+        internal static Vector3 SideSlider(int id, Vector3 position, Vector3 sideVector, Vector3 direction, float size, Handles.CapFunction capFunction, Vector2 snap)
         {
             return SideSlider(id, position, sideVector, direction, size, capFunction, snap, 0);
         }
 
-        internal static Vector3 SideSlider(int id, Vector3 position, Vector3 sideVector, Vector3 direction, float size, Handles.CapFunction capFunction, float snap, float bias)
+        internal static Vector3 SideSlider(int id, Vector3 position, Vector3 sideVector, Vector3 direction, float size, Handles.CapFunction capFunction, Vector2 snap, float bias)
         {
             Event evt = Event.current;
             Vector3 handleDir = Vector3.Cross(sideVector, direction).normalized;
-            Vector3 pos = Handles.Slider2D(id, position, handleDir, direction, sideVector, 0, capFunction, Vector2.one * snap);
+            Vector3 pos = Handles.Slider2D(id, position, handleDir, direction, sideVector, 0, capFunction, snap);
             pos = position + Vector3.Project(pos - position, direction);
 
             switch (evt.type)

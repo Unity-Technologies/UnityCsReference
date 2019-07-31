@@ -57,6 +57,7 @@ namespace UnityEditor.Experimental.TerrainAPI
     {
         void ShowBrushesGUI(int spacing);
         void ShowBrushesGUI(int spacing, BrushGUIEditFlags flags);
+        void ShowBrushesGUI(int spacing, BrushGUIEditFlags flags, int textureResolutionPerTile);
         void Repaint(RepaintFlags flags = RepaintFlags.UI);
     }
 
@@ -194,7 +195,19 @@ namespace UnityEditor.Experimental.TerrainAPI
                 (flags & BrushGUIEditFlags.Select) != 0,
                 (flags & BrushGUIEditFlags.Inspect) != 0,
                 (flags & BrushGUIEditFlags.Size) != 0,
-                (flags & BrushGUIEditFlags.Opacity) != 0);
+                (flags & BrushGUIEditFlags.Opacity) != 0,
+                0);
+        }
+
+        public void ShowBrushesGUI(int spacing, BrushGUIEditFlags flags, int textureResolutionPerTile)
+        {
+            TerrainInspector.s_activeTerrainInspectorInstance.ShowBrushes(
+                spacing,
+                (flags & BrushGUIEditFlags.Select) != 0,
+                (flags & BrushGUIEditFlags.Inspect) != 0,
+                (flags & BrushGUIEditFlags.Size) != 0,
+                (flags & BrushGUIEditFlags.Opacity) != 0,
+                textureResolutionPerTile);
         }
 
         public void Repaint(RepaintFlags flags)

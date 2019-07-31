@@ -22,6 +22,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 new Alert.UxmlFactory(),
                 new ArrowToggle.UxmlFactory(),
+                new DropdownButton.UxmlFactory(),
                 new LoadingSpinner.UxmlFactory(),
                 new PackageDependencies.UxmlFactory(),
                 new PackageDetails.UxmlFactory(),
@@ -31,7 +32,7 @@ namespace UnityEditor.PackageManager.UI
                 new PackageSampleList.UxmlFactory(),
                 new PackageStatusBar.UxmlFactory(),
                 new PackageToolbar.UxmlFactory(),
-                new DropdownButton.UxmlFactory(),
+                new ProgressBar.UxmlFactory(),
             };
 
             foreach (IUxmlFactory factory in factories)

@@ -51,6 +51,8 @@ namespace UnityEditor.StyleSheets
         StyleProperty m_CurrentProperty;
         StyleRule m_CurrentRule;
 
+        public StyleProperty currentProperty => m_CurrentProperty;
+
         public StyleRule BeginRule(int ruleLine)
         {
             Log("Beginning rule");
@@ -103,7 +105,7 @@ namespace UnityEditor.StyleSheets
             m_CurrentComplexSelector = null;
         }
 
-        public StyleProperty BeginProperty(string name)
+        public StyleProperty BeginProperty(string name, int line = -1)
         {
             Log("Begin property named " + name);
 
@@ -111,7 +113,8 @@ namespace UnityEditor.StyleSheets
             m_BuilderState = BuilderState.Property;
             m_CurrentProperty = new StyleProperty
             {
-                name = name
+                name = name,
+                line = line
             };
             m_CurrentProperties.Add(m_CurrentProperty);
             return m_CurrentProperty;
@@ -133,9 +136,18 @@ namespace UnityEditor.StyleSheets
             m_CurrentValues.Add(new StyleValueHandle((int)keyword, StyleValueType.Keyword));
         }
 
+        public void AddValue(StyleValueFunction function)
+        {
+            // for function we use the index to store the enum value
+            m_CurrentValues.Add(new StyleValueHandle((int)function, StyleValueType.Function));
+        }
+
         public void AddValue(string value, StyleValueType type)
         {
-            RegisterValue(m_Strings, type, value);
+            if (type == StyleValueType.Variable)
+                RegisterVariable(value);
+            else
+                RegisterValue(m_Strings, type, value);
         }
 
         public void AddValue(Color value)
@@ -185,6 +197,19 @@ namespace UnityEditor.StyleSheets
             writeTo.rules = m_Rules.ToArray();
             writeTo.assets = m_Assets.ToArray();
             writeTo.complexSelectors = m_ComplexSelectors.ToArray();
+        }
+
+        void RegisterVariable(string value)
+        {
+            Log("Add variable : " + value);
+            Debug.Assert(m_BuilderState == BuilderState.Property);
+            int index = m_Strings.IndexOf(value);
+            if (index < 0)
+            {
+                m_Strings.Add(value);
+                index = m_Strings.Count - 1;
+            }
+            m_CurrentValues.Add(new StyleValueHandle(index, StyleValueType.Variable));
         }
 
         void RegisterValue<T>(List<T> list, StyleValueType type, T value)

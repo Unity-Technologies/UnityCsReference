@@ -11,14 +11,12 @@ namespace UnityEngine.UIElements.StyleSheets
     internal struct CustomPropertyHandle
     {
         public int specificity;
-        public StyleValueHandle[] handles;
-        public StyleSheet data;
+        public StylePropertyValue value;
     }
 
     internal class VisualElementStylesData : ICustomStyle
     {
-        private static StyleSheetApplicator s_StyleSheetApplicator = new StyleSheetApplicator();
-        private static StyleValueApplicator s_StyleValueApplicator = new StyleValueApplicator();
+        private static StyleValuePropertyReader s_StyleValuePropertyReader = new StyleValuePropertyReader();
         public static readonly VisualElementStylesData none = new VisualElementStylesData(true);
 
         internal readonly bool isShared;
@@ -59,7 +57,6 @@ namespace UnityEngine.UIElements.StyleSheets
         internal StyleColor color;
         internal StyleInt flexDirection;
         internal StyleColor backgroundColor;
-        internal StyleColor borderColor;
         internal StyleBackground backgroundImage;
         internal StyleInt unityBackgroundScaleMode;
         internal StyleColor unityBackgroundImageTintColor;
@@ -67,6 +64,10 @@ namespace UnityEngine.UIElements.StyleSheets
         internal StyleInt alignContent;
         internal StyleInt justifyContent;
         internal StyleInt flexWrap;
+        internal StyleColor borderLeftColor;
+        internal StyleColor borderTopColor;
+        internal StyleColor borderRightColor;
+        internal StyleColor borderBottomColor;
         internal StyleFloat borderLeftWidth;
         internal StyleFloat borderTopWidth;
         internal StyleFloat borderRightWidth;
@@ -111,7 +112,10 @@ namespace UnityEngine.UIElements.StyleSheets
             flexShrink = StyleSheetCache.GetInitialValue(StylePropertyID.FlexShrink).ToStyleFloat();
             flexBasis = StyleSheetCache.GetInitialValue(StylePropertyID.FlexBasis).ToStyleLength();
             color = StyleSheetCache.GetInitialValue(StylePropertyID.Color).color;
-            borderColor = StyleSheetCache.GetInitialValue(StylePropertyID.BorderColor).color;
+            borderLeftColor = StyleSheetCache.GetInitialValue(StylePropertyID.BorderLeftColor).color;
+            borderTopColor = StyleSheetCache.GetInitialValue(StylePropertyID.BorderTopColor).color;
+            borderRightColor = StyleSheetCache.GetInitialValue(StylePropertyID.BorderRightColor).color;
+            borderBottomColor = StyleSheetCache.GetInitialValue(StylePropertyID.BorderBottomColor).color;
             opacity = StyleSheetCache.GetInitialValue(StylePropertyID.Opacity).number;
             unityBackgroundImageTintColor = StyleSheetCache.GetInitialValue(StylePropertyID.BackgroundImageTintColor).color;
         }
@@ -154,7 +158,6 @@ namespace UnityEngine.UIElements.StyleSheets
             color.Apply(other.color, mode);
             flexDirection.Apply(other.flexDirection, mode);
             backgroundColor.Apply(other.backgroundColor, mode);
-            borderColor.Apply(other.borderColor, mode);
             backgroundImage.Apply(other.backgroundImage, mode);
             unityBackgroundScaleMode.Apply(other.unityBackgroundScaleMode, mode);
             unityBackgroundImageTintColor.Apply(other.unityBackgroundImageTintColor, mode);
@@ -162,6 +165,10 @@ namespace UnityEngine.UIElements.StyleSheets
             alignContent.Apply(other.alignContent, mode);
             justifyContent.Apply(other.justifyContent, mode);
             flexWrap.Apply(other.flexWrap, mode);
+            borderLeftColor.Apply(other.borderLeftColor, mode);
+            borderTopColor.Apply(other.borderTopColor, mode);
+            borderRightColor.Apply(other.borderRightColor, mode);
+            borderBottomColor.Apply(other.borderBottomColor, mode);
             borderLeftWidth.Apply(other.borderLeftWidth, mode);
             borderTopWidth.Apply(other.borderTopWidth, mode);
             borderRightWidth.Apply(other.borderRightWidth, mode);
@@ -230,51 +237,51 @@ namespace UnityEngine.UIElements.StyleSheets
             targetNode.Display = (YogaDisplay)display.value;
         }
 
-        internal void ApplyRule(StyleSheet sheet, int specificity, StyleRule rule, StylePropertyID[] propertyIDs)
+        internal void ApplyProperties(StylePropertyReader reader, InheritedStylesData inheritedStylesData)
         {
-            // Unity styles are sorted by specificity and they are applied with StyleValueExtensions.UnitySpecificity
-            // to allow user styles to have precedence
-            if (sheet.isUnityStyleSheet)
-                specificity = StyleValueExtensions.UnitySpecificity;
-
-            for (int i = 0; i < rule.properties.Length; i++)
+            for (var propertyID = reader.propertyID; propertyID != StylePropertyID.Unknown; propertyID = reader.MoveNextProperty())
             {
-                var styleProperty = rule.properties[i];
-                var propertyID = propertyIDs[i];
-                var handles = styleProperty.values;
-
-                if (handles[0].valueType == StyleValueType.Keyword && handles[0].valueIndex == (int)StyleValueKeyword.Initial)
+                var handle = reader.GetValue(0).handle;
+                if (handle.valueType == StyleValueType.Keyword)
                 {
-                    ApplyInitialStyleValue(propertyID, specificity);
-                }
-                else
-                {
-                    switch (propertyID)
+                    if ((StyleValueKeyword)handle.valueIndex == StyleValueKeyword.Initial)
                     {
-                        case StylePropertyID.Unknown:
-                            break;
-                        case StylePropertyID.Custom:
-                            ApplyCustomStyleProperty(sheet, styleProperty, specificity);
-                            break;
-                        case StylePropertyID.BorderRadius:
-                        case StylePropertyID.BorderWidth:
-                        case StylePropertyID.Flex:
-                        case StylePropertyID.Margin:
-                        case StylePropertyID.Padding:
-                            ApplyShorthandProperty(sheet, propertyID, styleProperty.values, specificity);
-                            break;
-                        default:
-                            ApplyStyleProperty(s_StyleSheetApplicator, sheet, propertyID, handles, specificity);
-                            break;
+                        ApplyInitialStyleValue(reader);
+                        continue;
                     }
+                    else if ((StyleValueKeyword)handle.valueIndex == StyleValueKeyword.Unset)
+                    {
+                        ApplyUnsetStyleValue(reader, inheritedStylesData);
+                        continue;
+                    }
+                }
+
+                switch (propertyID)
+                {
+                    case StylePropertyID.Unknown:
+                        break;
+                    case StylePropertyID.Custom:
+                        ApplyCustomStyleProperty(reader);
+                        break;
+                    case StylePropertyID.BorderColor:
+                    case StylePropertyID.BorderRadius:
+                    case StylePropertyID.BorderWidth:
+                    case StylePropertyID.Flex:
+                    case StylePropertyID.Margin:
+                    case StylePropertyID.Padding:
+                        ApplyShorthandProperty(reader);
+                        break;
+                    default:
+                        ApplyStyleProperty(reader);
+                        break;
                 }
             }
         }
 
         internal void ApplyStyleCursor(StyleCursor styleCursor, int specificity)
         {
-            s_StyleValueApplicator.currentCursor = styleCursor;
-            s_StyleValueApplicator.ApplyCursor(null, null, specificity, ref cursor);
+            s_StyleValuePropertyReader.Set(styleCursor, specificity);
+            cursor = s_StyleValuePropertyReader.ReadStyleCursor(0);
         }
 
         internal void ApplyStyleValue(StylePropertyID propertyID, StyleValue value, int specificity)
@@ -285,8 +292,20 @@ namespace UnityEngine.UIElements.StyleSheets
             }
             else
             {
-                s_StyleValueApplicator.currentStyleValue = value;
-                ApplyStyleProperty(s_StyleValueApplicator, null, propertyID, null, specificity);
+                s_StyleValuePropertyReader.Set(propertyID, value, specificity);
+                ApplyStyleProperty(s_StyleValuePropertyReader);
+            }
+        }
+
+        private void ApplyInitialStyleValue(StylePropertyReader reader)
+        {
+            if (reader.propertyID == StylePropertyID.Custom)
+            {
+                RemoveCustomStyleProperty(reader.property.name);
+            }
+            else
+            {
+                ApplyInitialStyleValue(reader.propertyID, reader.specificity);
             }
         }
 
@@ -298,6 +317,21 @@ namespace UnityEngine.UIElements.StyleSheets
                 case StylePropertyID.Custom:
                 {
                     Debug.LogAssertion($"Unexpected style property ID {propertyID.ToString()}.");
+                    break;
+                }
+                case StylePropertyID.BorderColor:
+                {
+                    StyleValue sv = StyleSheetCache.GetInitialValue(StylePropertyID.BorderLeftColor);
+                    ApplyStyleValue(sv.id, sv, specificity);
+
+                    sv = StyleSheetCache.GetInitialValue(StylePropertyID.BorderTopColor);
+                    ApplyStyleValue(sv.id, sv, specificity);
+
+                    sv = StyleSheetCache.GetInitialValue(StylePropertyID.BorderRightColor);
+                    ApplyStyleValue(sv.id, sv, specificity);
+
+                    sv = StyleSheetCache.GetInitialValue(StylePropertyID.BorderBottomColor);
+                    ApplyStyleValue(sv.id, sv, specificity);
                     break;
                 }
                 case StylePropertyID.BorderRadius:
@@ -380,290 +414,363 @@ namespace UnityEngine.UIElements.StyleSheets
                 default:
                 {
                     StyleValue sv = StyleSheetCache.GetInitialValue(propertyID);
+                    Debug.Assert(sv.keyword != StyleKeyword.Initial, "Recursive apply initial value");
                     ApplyStyleValue(sv.id, sv, specificity);
                     break;
                 }
             }
         }
 
-        internal void ApplyStyleProperty(IStyleSheetApplicator applicator, StyleSheet sheet, StylePropertyID propertyID, StyleValueHandle[] handles, int specificity)
+        private void ApplyUnsetStyleValue(StylePropertyReader reader, InheritedStylesData inheritedStylesData)
         {
-            switch (propertyID)
+            if (inheritedStylesData == null)
+                ApplyInitialStyleValue(reader);
+
+            var specificity = reader.specificity;
+            switch (reader.propertyID)
+            {
+                case StylePropertyID.Color:
+                    color = inheritedStylesData.color;
+                    color.specificity = specificity;
+                    break;
+                case StylePropertyID.Font:
+                    unityFont = inheritedStylesData.font;
+                    unityFont.specificity = specificity;
+                    break;
+                case StylePropertyID.FontSize:
+                    fontSize = inheritedStylesData.fontSize;
+                    fontSize.specificity = specificity;
+                    break;
+                case StylePropertyID.FontStyleAndWeight:
+                    unityFontStyleAndWeight = inheritedStylesData.unityFontStyle;
+                    unityFontStyleAndWeight.specificity = specificity;
+                    break;
+                case StylePropertyID.UnityTextAlign:
+                    unityTextAlign = inheritedStylesData.unityTextAlign;
+                    unityTextAlign.specificity = specificity;
+                    break;
+                case StylePropertyID.Visibility:
+                    visibility = inheritedStylesData.visibility;
+                    visibility.specificity = specificity;
+                    break;
+                case StylePropertyID.WhiteSpace:
+                    whiteSpace = inheritedStylesData.whiteSpace;
+                    whiteSpace.specificity = specificity;
+                    break;
+                case StylePropertyID.Custom:
+                    RemoveCustomStyleProperty(reader.property.name);
+                    break;
+                default:
+                    ApplyInitialStyleValue(reader.propertyID, specificity);
+                    break;
+            }
+        }
+
+        internal void ApplyStyleProperty(IStylePropertyReader reader)
+        {
+            switch (reader.propertyID)
             {
                 case StylePropertyID.AlignContent:
-                    applicator.ApplyAlign(sheet, handles, specificity, ref alignContent);
+                    StyleSheetApplicator.ApplyAlign(reader, ref alignContent);
                     break;
 
                 case StylePropertyID.AlignItems:
-                    applicator.ApplyAlign(sheet, handles, specificity, ref alignItems);
+                    StyleSheetApplicator.ApplyAlign(reader, ref alignItems);
                     break;
 
                 case StylePropertyID.AlignSelf:
-                    applicator.ApplyAlign(sheet, handles, specificity, ref alignSelf);
+                    StyleSheetApplicator.ApplyAlign(reader, ref alignSelf);
                     break;
 
                 case StylePropertyID.BackgroundImage:
-                    applicator.ApplyImage(sheet, handles, specificity, ref backgroundImage);
+                    backgroundImage = reader.ReadStyleBackground(0);
                     break;
 
                 case StylePropertyID.FlexBasis:
-                    applicator.ApplyFlexBasis(sheet, handles, specificity, ref flexBasis);
+                    flexBasis = reader.ReadStyleLength(0);
                     break;
 
                 case StylePropertyID.FlexGrow:
-                    applicator.ApplyFloat(sheet, handles, specificity, ref flexGrow);
+                    flexGrow = reader.ReadStyleFloat(0);
                     break;
 
                 case StylePropertyID.FlexShrink:
-                    applicator.ApplyFloat(sheet, handles, specificity, ref flexShrink);
+                    flexShrink = reader.ReadStyleFloat(0);
                     break;
 
                 case StylePropertyID.Font:
-                    applicator.ApplyFont(sheet, handles, specificity, ref unityFont);
+                    unityFont = reader.ReadStyleFont(0);
                     break;
 
                 case StylePropertyID.FontSize:
-                    applicator.ApplyLength(sheet, handles, specificity, ref fontSize);
+                    fontSize = reader.ReadStyleLength(0);
                     break;
 
                 case StylePropertyID.FontStyleAndWeight:
-                    applicator.ApplyEnum<FontStyle>(sheet, handles, specificity, ref unityFontStyleAndWeight);
+                    unityFontStyleAndWeight = reader.ReadStyleEnum<FontStyle>(0);
                     break;
 
                 case StylePropertyID.FlexDirection:
-                    applicator.ApplyEnum<FlexDirection>(sheet, handles, specificity, ref flexDirection);
+                    flexDirection = reader.ReadStyleEnum<FlexDirection>(0);
                     break;
 
                 case StylePropertyID.FlexWrap:
-                    applicator.ApplyEnum<Wrap>(sheet, handles, specificity, ref flexWrap);
+                    flexWrap = reader.ReadStyleEnum<Wrap>(0);
                     break;
 
                 case StylePropertyID.Height:
-                    applicator.ApplyLength(sheet, handles, specificity, ref height);
+                    height = reader.ReadStyleLength(0);
                     break;
 
                 case StylePropertyID.JustifyContent:
-                    applicator.ApplyEnum<Justify>(sheet, handles, specificity, ref justifyContent);
+                    justifyContent = reader.ReadStyleEnum<Justify>(0);
                     break;
 
                 case StylePropertyID.MarginLeft:
-                    applicator.ApplyLength(sheet, handles, specificity, ref marginLeft);
+                    marginLeft = reader.ReadStyleLength(0);
                     break;
 
                 case StylePropertyID.MarginTop:
-                    applicator.ApplyLength(sheet, handles, specificity, ref marginTop);
+                    marginTop = reader.ReadStyleLength(0);
                     break;
 
                 case StylePropertyID.MarginRight:
-                    applicator.ApplyLength(sheet, handles, specificity, ref marginRight);
+                    marginRight = reader.ReadStyleLength(0);
                     break;
 
                 case StylePropertyID.MarginBottom:
-                    applicator.ApplyLength(sheet, handles, specificity, ref marginBottom);
+                    marginBottom = reader.ReadStyleLength(0);
                     break;
 
                 case StylePropertyID.MaxHeight:
-                    applicator.ApplyLength(sheet, handles, specificity, ref maxHeight);
+                    maxHeight = reader.ReadStyleLength(0);
                     break;
 
                 case StylePropertyID.MaxWidth:
-                    applicator.ApplyLength(sheet, handles, specificity, ref maxWidth);
+                    maxWidth = reader.ReadStyleLength(0);
                     break;
 
                 case StylePropertyID.MinHeight:
-                    applicator.ApplyLength(sheet, handles, specificity, ref minHeight);
+                    minHeight = reader.ReadStyleLength(0);
                     break;
 
                 case StylePropertyID.MinWidth:
-                    applicator.ApplyLength(sheet, handles, specificity, ref minWidth);
+                    minWidth = reader.ReadStyleLength(0);
                     break;
 
                 case StylePropertyID.Overflow:
-                    applicator.ApplyEnum<OverflowInternal>(sheet, handles, specificity, ref overflow);
+                    overflow = reader.ReadStyleEnum<OverflowInternal>(0);
                     break;
 
                 case StylePropertyID.OverflowClipBox:
-                    applicator.ApplyEnum<OverflowClipBox>(sheet, handles, specificity, ref unityOverflowClipBox);
+                    unityOverflowClipBox = reader.ReadStyleEnum<OverflowClipBox>(0);
                     break;
 
                 case StylePropertyID.PaddingLeft:
-                    applicator.ApplyLength(sheet, handles, specificity, ref paddingLeft);
+                    paddingLeft = reader.ReadStyleLength(0);
                     break;
 
                 case StylePropertyID.PaddingTop:
-                    applicator.ApplyLength(sheet, handles, specificity, ref paddingTop);
+                    paddingTop = reader.ReadStyleLength(0);
                     break;
 
                 case StylePropertyID.PaddingRight:
-                    applicator.ApplyLength(sheet, handles, specificity, ref paddingRight);
+                    paddingRight = reader.ReadStyleLength(0);
                     break;
 
                 case StylePropertyID.PaddingBottom:
-                    applicator.ApplyLength(sheet, handles, specificity, ref paddingBottom);
+                    paddingBottom = reader.ReadStyleLength(0);
                     break;
 
                 case StylePropertyID.Position:
-                    applicator.ApplyEnum<Position>(sheet, handles, specificity, ref position);
+                    position = reader.ReadStyleEnum<Position>(0);
                     break;
 
                 case StylePropertyID.PositionTop:
-                    applicator.ApplyLength(sheet, handles, specificity, ref top);
+                    top = reader.ReadStyleLength(0);
                     break;
 
                 case StylePropertyID.PositionBottom:
-                    applicator.ApplyLength(sheet, handles, specificity, ref bottom);
+                    bottom = reader.ReadStyleLength(0);
                     break;
 
                 case StylePropertyID.PositionLeft:
-                    applicator.ApplyLength(sheet, handles, specificity, ref left);
+                    left = reader.ReadStyleLength(0);
                     break;
 
                 case StylePropertyID.PositionRight:
-                    applicator.ApplyLength(sheet, handles, specificity, ref right);
+                    right = reader.ReadStyleLength(0);
                     break;
 
                 case StylePropertyID.UnityTextAlign:
-                    applicator.ApplyEnum<TextAnchor>(sheet, handles, specificity, ref unityTextAlign);
+                    unityTextAlign = reader.ReadStyleEnum<TextAnchor>(0);
                     break;
 
                 case StylePropertyID.Color:
-                    applicator.ApplyColor(sheet, handles, specificity, ref color);
+                    color = reader.ReadStyleColor(0);
                     break;
 
                 case StylePropertyID.Width:
-                    applicator.ApplyLength(sheet, handles, specificity, ref width);
+                    width = reader.ReadStyleLength(0);
                     break;
 
                 case StylePropertyID.WhiteSpace:
-                    applicator.ApplyEnum<WhiteSpace>(sheet, handles, specificity, ref whiteSpace);
+                    whiteSpace = reader.ReadStyleEnum<WhiteSpace>(0);
                     break;
 
                 case StylePropertyID.BackgroundColor:
-                    applicator.ApplyColor(sheet, handles, specificity, ref backgroundColor);
+                    backgroundColor = reader.ReadStyleColor(0);
                     break;
 
                 case StylePropertyID.BackgroundScaleMode:
-                    applicator.ApplyEnum<ScaleMode>(sheet, handles, specificity, ref unityBackgroundScaleMode);
+                    unityBackgroundScaleMode = reader.ReadStyleEnum<ScaleMode>(0);
                     break;
 
                 case StylePropertyID.BackgroundImageTintColor:
-                    applicator.ApplyColor(sheet, handles, specificity, ref unityBackgroundImageTintColor);
+                    unityBackgroundImageTintColor = reader.ReadStyleColor(0);
                     break;
 
-                case StylePropertyID.BorderColor:
-                    applicator.ApplyColor(sheet, handles, specificity, ref borderColor);
+                case StylePropertyID.BorderLeftColor:
+                    borderLeftColor = reader.ReadStyleColor(0);
+                    break;
+
+                case StylePropertyID.BorderTopColor:
+                    borderTopColor = reader.ReadStyleColor(0);
+                    break;
+
+                case StylePropertyID.BorderRightColor:
+                    borderRightColor = reader.ReadStyleColor(0);
+                    break;
+
+                case StylePropertyID.BorderBottomColor:
+                    borderBottomColor = reader.ReadStyleColor(0);
                     break;
 
                 case StylePropertyID.BorderLeftWidth:
-                    applicator.ApplyFloat(sheet, handles, specificity, ref borderLeftWidth);
+                    borderLeftWidth = reader.ReadStyleFloat(0);
                     break;
 
                 case StylePropertyID.BorderTopWidth:
-                    applicator.ApplyFloat(sheet, handles, specificity, ref borderTopWidth);
+                    borderTopWidth = reader.ReadStyleFloat(0);
                     break;
 
                 case StylePropertyID.BorderRightWidth:
-                    applicator.ApplyFloat(sheet, handles, specificity, ref borderRightWidth);
+                    borderRightWidth = reader.ReadStyleFloat(0);
                     break;
 
                 case StylePropertyID.BorderBottomWidth:
-                    applicator.ApplyFloat(sheet, handles, specificity, ref borderBottomWidth);
+                    borderBottomWidth = reader.ReadStyleFloat(0);
                     break;
 
                 case StylePropertyID.BorderTopLeftRadius:
-                    applicator.ApplyLength(sheet, handles, specificity, ref borderTopLeftRadius);
+                    borderTopLeftRadius = reader.ReadStyleLength(0);
                     break;
 
                 case StylePropertyID.BorderTopRightRadius:
-                    applicator.ApplyLength(sheet, handles, specificity, ref borderTopRightRadius);
+                    borderTopRightRadius = reader.ReadStyleLength(0);
                     break;
 
                 case StylePropertyID.BorderBottomRightRadius:
-                    applicator.ApplyLength(sheet, handles, specificity, ref borderBottomRightRadius);
+                    borderBottomRightRadius = reader.ReadStyleLength(0);
                     break;
 
                 case StylePropertyID.BorderBottomLeftRadius:
-                    applicator.ApplyLength(sheet, handles, specificity, ref borderBottomLeftRadius);
+                    borderBottomLeftRadius = reader.ReadStyleLength(0);
                     break;
 
                 case StylePropertyID.Cursor:
-                    applicator.ApplyCursor(sheet, handles, specificity, ref cursor);
+                    cursor = reader.ReadStyleCursor(0);
                     break;
 
                 case StylePropertyID.SliceLeft:
-                    applicator.ApplyInt(sheet, handles, specificity, ref unitySliceLeft);
+                    unitySliceLeft = reader.ReadStyleInt(0);
                     break;
 
                 case StylePropertyID.SliceTop:
-                    applicator.ApplyInt(sheet, handles, specificity, ref unitySliceTop);
+                    unitySliceTop = reader.ReadStyleInt(0);
                     break;
 
                 case StylePropertyID.SliceRight:
-                    applicator.ApplyInt(sheet, handles, specificity, ref unitySliceRight);
+                    unitySliceRight = reader.ReadStyleInt(0);
                     break;
 
                 case StylePropertyID.SliceBottom:
-                    applicator.ApplyInt(sheet, handles, specificity, ref unitySliceBottom);
+                    unitySliceBottom = reader.ReadStyleInt(0);
                     break;
 
                 case StylePropertyID.Opacity:
-                    applicator.ApplyFloat(sheet, handles, specificity, ref opacity);
+                    opacity = reader.ReadStyleFloat(0);
                     break;
 
                 case StylePropertyID.Visibility:
-                    applicator.ApplyEnum<Visibility>(sheet, handles, specificity, ref visibility);
+                    visibility = reader.ReadStyleEnum<Visibility>(0);
                     break;
 
                 case StylePropertyID.Display:
-                    applicator.ApplyDisplay(sheet, handles, specificity, ref display);
+                    StyleSheetApplicator.ApplyDisplay(reader, ref display);
                     break;
 
                 default:
-                    throw new ArgumentException(string.Format("Non exhaustive switch statement (value={0})", propertyID));
+                    throw new ArgumentException(string.Format("Non exhaustive switch statement (value={0})", reader.propertyID));
             }
         }
 
-        internal void ApplyShorthandProperty(StyleSheet sheet, StylePropertyID propertyID, StyleValueHandle[] handles, int specificity)
+        internal void ApplyShorthandProperty(StylePropertyReader reader)
         {
-            switch (propertyID)
+            switch (reader.propertyID)
             {
+                case StylePropertyID.BorderColor:
+                    ShorthandApplicator.ApplyBorderColor(reader, this);
+                    break;
+
                 case StylePropertyID.BorderRadius:
-                    ShorthandApplicator.ApplyBorderRadius(sheet, handles, specificity, this);
+                    ShorthandApplicator.ApplyBorderRadius(reader, this);
                     break;
 
                 case StylePropertyID.BorderWidth:
-                    ShorthandApplicator.ApplyBorderWidth(sheet, handles, specificity, this);
+                    ShorthandApplicator.ApplyBorderWidth(reader, this);
                     break;
 
                 case StylePropertyID.Flex:
-                    ShorthandApplicator.ApplyFlex(sheet, handles, specificity, this);
+                    ShorthandApplicator.ApplyFlex(reader, this);
                     break;
 
                 case StylePropertyID.Margin:
-                    ShorthandApplicator.ApplyMargin(sheet, handles, specificity, this);
+                    ShorthandApplicator.ApplyMargin(reader, this);
                     break;
 
                 case StylePropertyID.Padding:
-                    ShorthandApplicator.ApplyPadding(sheet, handles, specificity, this);
+                    ShorthandApplicator.ApplyPadding(reader, this);
                     break;
 
                 default:
-                    throw new ArgumentException(string.Format("Non exhaustive switch statement (value={0})", propertyID));
+                    throw new ArgumentException(string.Format("Non exhaustive switch statement (value={0})", reader.propertyID));
             }
         }
 
-        private void ApplyCustomStyleProperty(StyleSheet sheet, StyleProperty styleProperty, int specificity)
+        private void RemoveCustomStyleProperty(string name)
+        {
+            if (m_CustomProperties == null || !m_CustomProperties.ContainsKey(name))
+                return;
+
+            m_CustomProperties.Remove(name);
+        }
+
+        private void ApplyCustomStyleProperty(StylePropertyReader reader)
         {
             if (m_CustomProperties == null)
             {
                 m_CustomProperties = new Dictionary<string, CustomPropertyHandle>();
             }
 
+            var styleProperty = reader.property;
+            var specificity = reader.specificity;
+
             CustomPropertyHandle customProp = default(CustomPropertyHandle);
             if (!m_CustomProperties.TryGetValue(styleProperty.name, out customProp) || specificity >= customProp.specificity)
             {
-                customProp.handles = styleProperty.values;
-                customProp.data = sheet;
+                // Custom property only support one value
+                customProp.value = reader.GetValue(0);
                 customProp.specificity = specificity;
                 m_CustomProperties[styleProperty.name] = customProp;
             }
@@ -672,12 +779,11 @@ namespace UnityEngine.UIElements.StyleSheets
         public bool TryGetValue(CustomStyleProperty<float> property, out float value)
         {
             CustomPropertyHandle propertyHandle;
-            var tmp = new StyleFloat();
             if (TryGetValue(property.name, StyleValueType.Float, out propertyHandle))
             {
-                s_StyleSheetApplicator.ApplyFloat(propertyHandle.data, propertyHandle.handles, propertyHandle.specificity, ref tmp);
-                value = tmp.value;
-                return true;
+                var propValue = propertyHandle.value;
+                if (propValue.sheet.TryReadFloat(propValue.handle, out value))
+                    return true;
             }
 
             value = 0f;
@@ -687,12 +793,15 @@ namespace UnityEngine.UIElements.StyleSheets
         public bool TryGetValue(CustomStyleProperty<int> property, out int value)
         {
             CustomPropertyHandle propertyHandle;
-            var tmp = new StyleInt();
             if (TryGetValue(property.name, StyleValueType.Float, out propertyHandle))
             {
-                s_StyleSheetApplicator.ApplyInt(propertyHandle.data, propertyHandle.handles, propertyHandle.specificity, ref tmp);
-                value = tmp.value;
-                return true;
+                float tmp = 0f;
+                var propValue = propertyHandle.value;
+                if (propValue.sheet.TryReadFloat(propValue.handle, out tmp))
+                {
+                    value = (int)tmp;
+                    return true;
+                }
             }
 
             value = 0;
@@ -704,7 +813,8 @@ namespace UnityEngine.UIElements.StyleSheets
             CustomPropertyHandle propertyHandle;
             if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out propertyHandle))
             {
-                value = propertyHandle.data.ReadKeyword(propertyHandle.handles[0]) == StyleValueKeyword.True;
+                var propValue = propertyHandle.value;
+                value = propValue.sheet.ReadKeyword(propValue.handle) == StyleValueKeyword.True;
                 return true;
             }
 
@@ -715,12 +825,11 @@ namespace UnityEngine.UIElements.StyleSheets
         public bool TryGetValue(CustomStyleProperty<Color> property, out Color value)
         {
             CustomPropertyHandle propertyHandle;
-            var tmp = new StyleColor();
             if (TryGetValue(property.name, StyleValueType.Color, out propertyHandle))
             {
-                s_StyleSheetApplicator.ApplyColor(propertyHandle.data, propertyHandle.handles, propertyHandle.specificity, ref tmp);
-                value = tmp.value;
-                return true;
+                var propValue = propertyHandle.value;
+                if (propValue.sheet.TryReadColor(propValue.handle, out value))
+                    return true;
             }
 
             value = Color.clear;
@@ -730,12 +839,33 @@ namespace UnityEngine.UIElements.StyleSheets
         public bool TryGetValue(CustomStyleProperty<Texture2D> property, out Texture2D value)
         {
             CustomPropertyHandle propertyHandle;
-            var tmp = new StyleBackground();
             if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out propertyHandle))
             {
-                s_StyleSheetApplicator.ApplyImage(propertyHandle.data, propertyHandle.handles, propertyHandle.specificity, ref tmp);
-                value = tmp.value.texture;
-                return true;
+                var source = new ImageSource();
+                var propValue = propertyHandle.value;
+                if (StylePropertyReader.TryGetImageSourceFromValue(propValue, out source) && source.texture != null)
+                {
+                    value = source.texture;
+                    return true;
+                }
+            }
+
+            value = null;
+            return false;
+        }
+
+        public bool TryGetValue(CustomStyleProperty<VectorImage> property, out VectorImage value)
+        {
+            CustomPropertyHandle propertyHandle;
+            if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out propertyHandle))
+            {
+                var source = new ImageSource();
+                var propValue = propertyHandle.value;
+                if (StylePropertyReader.TryGetImageSourceFromValue(propValue, out source) && source.vectorImage != null)
+                {
+                    value = source.vectorImage;
+                    return true;
+                }
             }
 
             value = null;
@@ -747,7 +877,8 @@ namespace UnityEngine.UIElements.StyleSheets
             CustomPropertyHandle propertyHandle;
             if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out propertyHandle))
             {
-                value = propertyHandle.data.ReadAsString(propertyHandle.handles[0]);
+                var propValue = propertyHandle.value;
+                value = propValue.sheet.ReadAsString(propValue.handle);
                 return true;
             }
 
@@ -761,7 +892,7 @@ namespace UnityEngine.UIElements.StyleSheets
             if (m_CustomProperties != null && m_CustomProperties.TryGetValue(propertyName, out customPropertyHandle))
             {
                 // CustomProperty only support one value
-                var handle = customPropertyHandle.handles[0];
+                var handle = customPropertyHandle.value.handle;
                 if (handle.valueType != valueType)
                 {
                     Debug.LogWarning(string.Format("Trying to read value as {0} while parsed type is {1}", valueType, handle.valueType));

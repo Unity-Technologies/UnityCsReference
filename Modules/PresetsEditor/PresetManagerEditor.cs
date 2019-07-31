@@ -2,12 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditorInternal;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace UnityEditor.Presets
 {
@@ -23,18 +20,15 @@ namespace UnityEditor.Presets
         {
             public static GUIContent managerIcon = EditorGUIUtility.IconContent("GameManager Icon");
             public static GUIStyle centerStyle = new GUIStyle() {alignment = TextAnchor.MiddleCenter};
-            public static GUIContent dropIcon = EditorGUIUtility.IconContent("Icon Dropdown");
+
+            public static GUIContent addDefault = EditorGUIUtility.TrTextContent("Add Default Preset");
+            public static GUIStyle addComponentButtonStyle = "AC Button";
         }
 
-        new PresetManager target { get {return base.target as PresetManager; } }
-
-        Dictionary<string, List<Preset>> m_DiscoveredPresets = new Dictionary<string, List<Preset>>();
-
+        string m_Search = string.Empty;
         SerializedProperty m_DefaultPresets;
-        HashSet<string> m_AddedTypes = new HashSet<string>();
-
-        ReorderableList m_List;
-        GenericMenu m_AddingMenu;
+        List<DefaultPresetReorderableList> m_Defaults;
+        Vector2 m_ScrollPosition;
 
         internal override void OnHeaderIconGUI(Rect iconRect)
         {
@@ -49,166 +43,71 @@ namespace UnityEditor.Presets
 
         void OnEnable()
         {
-            m_DefaultPresets = serializedObject.FindProperty("m_DefaultList");
-            m_List = new ReorderableList(serializedObject, m_DefaultPresets);
-            m_List.draggable = false;
-            m_List.drawHeaderCallback = rect => EditorGUI.LabelField(rect, GUIContent.Temp("Default Presets"));
-            m_List.drawElementCallback = DrawElementCallback;
-            m_List.onAddDropdownCallback = OnAddDropdownCallback;
-            m_List.onRemoveCallback = OnRemoveCallback;
+            SetupDefaultList();
         }
 
-        void OnRemoveCallback(ReorderableList list)
+        void SetupDefaultList()
         {
-            ReorderableList.defaultBehaviours.DoRemoveButton(list);
-        }
-
-        void RefreshAddList()
-        {
-            m_AddedTypes.Clear();
-            for (int i = 0; i < m_DefaultPresets.arraySize; i++)
+            m_DefaultPresets = serializedObject.FindProperty("m_DefaultPresets");
+            m_Defaults = new List<DefaultPresetReorderableList>(m_DefaultPresets.arraySize);
+            for (int i = 0; i < m_DefaultPresets.arraySize; ++i)
             {
-                m_AddedTypes.Add(target.GetPresetTypeNameAtIndex(i));
+                SerializedProperty defaultPreset = m_DefaultPresets.GetArrayElementAtIndex(i);
+                var presetType = new PresetType(defaultPreset.FindPropertyRelative("first"));
+                var list = new DefaultPresetReorderableList(serializedObject, defaultPreset.FindPropertyRelative("second"), presetType);
+                m_Defaults.Add(list);
             }
 
-            var assets = AssetDatabase.FindAssets("t:Preset")
-                .Select(a => AssetDatabase.LoadAssetAtPath<Preset>(AssetDatabase.GUIDToAssetPath(a)));
-
-            m_DiscoveredPresets.Clear();
-            foreach (var preset in assets)
-            {
-                string presetclass = preset.GetTargetFullTypeName();
-                if (preset.IsValid() && !Preset.IsPresetExcludedFromDefaultPresets(preset))
-                {
-                    if (!m_DiscoveredPresets.ContainsKey(presetclass))
-                        m_DiscoveredPresets.Add(presetclass, new List<Preset>());
-                    m_DiscoveredPresets[presetclass].Add(preset);
-                }
-            }
-
-            m_AddingMenu = new GenericMenu();
-            foreach (var discoveredPreset in m_DiscoveredPresets)
-            {
-                if (!m_AddedTypes.Contains(discoveredPreset.Key))
-                {
-                    foreach (var preset in discoveredPreset.Value)
-                    {
-                        m_AddingMenu.AddItem(new GUIContent(discoveredPreset.Key.Replace(".", "/") + "/" + preset.name), false, OnAddingPreset, preset);
-                    }
-                }
-            }
-
-            if (m_AddingMenu.GetItemCount() == 0)
-            {
-                m_AddingMenu.AddDisabledItem(EditorGUIUtility.TrTextContent("No Preset to add"));
-            }
-        }
-
-        void OnAddDropdownCallback(Rect buttonRect, ReorderableList list)
-        {
-            RefreshAddList();
-            m_AddingMenu.DropDown(buttonRect);
-        }
-
-        void OnAddingPreset(object userData)
-        {
-            serializedObject.ApplyModifiedProperties();
-            Undo.RecordObject(target, "Inspector");
-            target.SetAsDefaultInternal((Preset)userData);
-            serializedObject.Update();
-        }
-
-        static string FullTypeNameToFriendlyName(string fullTypeName)
-        {
-            if (string.IsNullOrEmpty(fullTypeName))
-                return "Unsupported Type";
-            int lastDot = fullTypeName.LastIndexOf(".");
-            if (lastDot == -1)
-                return fullTypeName;
-            return string.Format("{0} ({1})", fullTypeName.Substring(lastDot + 1), fullTypeName.Substring(0, lastDot));
-        }
-
-        void DrawElementCallback(Rect rect, int index, bool isActive, bool isFocused)
-        {
-            rect.height = EditorGUIUtility.singleLineHeight;
-            rect.y += 2f;
-            var presetProperty = m_DefaultPresets
-                .GetArrayElementAtIndex(index)
-                .FindPropertyRelative("defaultPresets.Array.data[0].m_Preset");
-            var presetObject = (Preset)presetProperty.objectReferenceValue;
-            var keyType = target.GetPresetTypeNameAtIndex(index);
-            var guicontent = GUIContent.Temp(FullTypeNameToFriendlyName(keyType));
-            using (new EditorGUI.DisabledGroupScope(string.IsNullOrEmpty(keyType)))
-            {
-                // lets hack a bit the ObjectField because we don't want user to put any Preset in each field of the manager
-                var buttonRect = new Rect(rect.xMax - rect.height, rect.y, rect.height, rect.height);
-                switch (Event.current.type)
-                {
-                    case EventType.MouseDown:
-                        if (buttonRect.Contains(Event.current.mousePosition))
-                        {
-                            RefreshAddList();
-                            var menu = new GenericMenu();
-                            if (m_DiscoveredPresets.ContainsKey(keyType))
-                            {
-                                foreach (var preset in m_DiscoveredPresets[keyType])
-                                {
-                                    menu.AddItem(new GUIContent(preset.name), preset == presetObject, OnAddingPreset, preset);
-                                }
-                            }
-                            else
-                            {
-                                menu.AddItem(EditorGUIUtility.TrTextContent("None"), false, null);
-                            }
-                            menu.ShowAsContext();
-                            Event.current.Use();
-                        }
-                        break;
-                }
-                var controlID = GUIUtility.GetControlID(guicontent, FocusType.Passive);
-                var controlRect = EditorGUI.PrefixLabel(rect, guicontent);
-                var dropRect = controlRect;
-                dropRect.xMax -= controlRect.height;
-                EditorGUI.DoObjectField(controlRect, dropRect, controlID, presetObject, typeof(Preset), presetProperty, PresetFieldDropValidator, false);
-
-                // todo : having a single icon here could be nice
-                buttonRect.x += 7f;
-                buttonRect.width = 9f;
-                buttonRect.height = 10f;
-                buttonRect.y += 11f;
-                EditorGUI.LabelField(buttonRect, Style.dropIcon);
-            }
-        }
-
-        Object PresetFieldDropValidator(Object[] references, Type objType, SerializedProperty property, EditorGUI.ObjectFieldValidatorOptions options)
-        {
-            if (references.Length == 1)
-            {
-                var preset = references[0] as Preset;
-                string propertyPath = property.propertyPath;
-                var numberStart = propertyPath.IndexOf("[") + 1;
-                var numberLenght = propertyPath.IndexOf("]") - numberStart;
-                var propertyPosition = int.Parse(propertyPath.Substring(numberStart, numberLenght));
-                if (preset != null && target.GetPresetTypeNameAtIndex(propertyPosition) == preset.GetTargetFullTypeName())
-                {
-                    return references[0];
-                }
-            }
-            return null;
+            m_Defaults.Sort((a, b) => a.className.CompareTo(b.className));
         }
 
         public override void OnInspectorGUI()
         {
-            //MinWidth to force the horizontal scroll with a good size. MaxWidth because without it it sets the list at the MinWidth
-            GUILayout.BeginVertical(GUILayout.MinWidth(350), GUILayout.MaxWidth(SettingsWindow.s_DefaultLayoutMaxWidth));
+            if (serializedObject.UpdateIfRequiredOrScript() || m_DefaultPresets.arraySize != m_Defaults.Count)
+                SetupDefaultList();
 
-            serializedObject.Update();
+            m_Search = EditorGUI.SearchField(EditorGUILayout.GetControlRect(), m_Search);
+            EditorGUILayout.Space();
 
-            m_List.DoLayoutList();
+            using (var scope = new EditorGUILayout.VerticalScrollViewScope(m_ScrollPosition))
+            {
+                for (int i = 0; i < m_DefaultPresets.arraySize; ++i)
+                {
+                    if (string.IsNullOrEmpty(m_Search) || m_Defaults[i].fullClassName.ToLower().Contains(m_Search.ToLower()))
+                        m_Defaults[i].DoLayoutList();
+                }
 
+                m_ScrollPosition = scope.scrollPosition;
+            }
+
+            EditorGUILayout.Space();
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.FlexibleSpace();
+                Rect rect = GUILayoutUtility.GetRect(Style.addDefault, Style.addComponentButtonStyle);
+                if (EditorGUI.DropdownButton(rect, Style.addDefault, FocusType.Passive, Style.addComponentButtonStyle))
+                {
+                    if (AddPresetTypeWindow.Show(rect, OnPresetTypeWindowSelection, string.IsNullOrEmpty(m_Search) ? null : m_Search))
+                    {
+                        GUIUtility.ExitGUI();
+                    }
+                }
+
+                GUILayout.FlexibleSpace();
+            }
+            GUILayout.FlexibleSpace();
             serializedObject.ApplyModifiedProperties();
+        }
 
-            GUILayout.EndVertical();
+        void OnPresetTypeWindowSelection(PresetType type)
+        {
+            Undo.RecordObjects(targets, "Preset Manager");
+            foreach (var manager in targets.Cast<PresetManager>())
+            {
+                manager.AddPresetType(type);
+            }
+            Undo.FlushUndoRecordObjects();
         }
 
         [SettingsProvider]

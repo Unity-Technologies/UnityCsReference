@@ -75,7 +75,7 @@ namespace UnityEngine.UIElements
 
             m_LastVersion = m_Version;
 
-            panel.UpdateElementUnderMouse();
+            panel.UpdateElementUnderPointers();
             panel.visualTree.UpdateBoundingBox();
         }
     }

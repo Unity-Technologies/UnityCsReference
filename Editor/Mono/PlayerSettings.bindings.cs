@@ -7,11 +7,12 @@ using System.Collections.Generic;
 using UnityEditor.Build;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEditor.Modules;
 
 namespace UnityEditor
 {
     // Resolution dialog setting
-    [Obsolete("ResolutionDialogSetting is deprecated and will be removed in future versions.", false)]
+    [Obsolete("The Display Resolution Dialog has been removed.", false)]
     public enum ResolutionDialogSetting
     {
         // Never show the resolutions dialog.
@@ -438,7 +439,7 @@ namespace UnityEditor
         public static extern int defaultWebScreenHeight { get; set; }
 
         // Defines the behaviour of the Resolution Dialog on product launch.
-        [Obsolete("displayResolutionDialog is deprecated and will be removed in future versions.", false)]
+        [Obsolete("displayResolutionDialog has been removed.", false)]
         public static extern ResolutionDialogSetting displayResolutionDialog { get; set; }
 
         // Returns whether or not the specified aspect ratio is enabled.
@@ -514,6 +515,10 @@ namespace UnityEditor
         [NativeProperty(TargetType = TargetType.Field)]
         public static extern bool useHDRDisplay { get; set; }
 
+        [NativeProperty(TargetType = TargetType.Field)]
+        public static extern D3DHDRDisplayBitDepth D3DHDRBitDepth { get; set; }
+
+
         // What happens with the fullscreen Window when it runs in the background
 
         public static extern bool visibleInBackground { get; set; }
@@ -558,7 +563,7 @@ namespace UnityEditor
         }
 
         // The image to display in the Resolution Dialog window.
-        [Obsolete("resolutionDialogBanner is deprecated and will be removed in future versions.", false)]
+        [Obsolete("resolutionDialogBanner has been removed.", false)]
         public static extern Texture2D resolutionDialogBanner { get; set; }
 
         // The image to display on the Virtual Reality splash screen.
@@ -765,8 +770,21 @@ namespace UnityEditor
         [FreeFunction("GetDefaultScriptingBackendForGroup")]
         public static extern ScriptingImplementation GetDefaultScriptingBackend(BuildTargetGroup targetGroup);
 
+        public static void SetIl2CppCompilerConfiguration(BuildTargetGroup targetGroup, Il2CppCompilerConfiguration configuration)
+        {
+            var scriptingImpl = ModuleManager.GetScriptingImplementations(targetGroup);
+            if (scriptingImpl != null && !scriptingImpl.AllowIL2CPPCompilerConfigurationSelection())
+            {
+                Debug.LogWarning($"The C++ compiler configuration option does not apply to the {targetGroup} platform as it is configured. Set the configuration in the generated IDE project instead.");
+                return;
+            }
+
+            SetIl2CppCompilerConfigurationInternal(targetGroup, configuration);
+        }
+
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
-        public static extern void SetIl2CppCompilerConfiguration(BuildTargetGroup targetGroup, Il2CppCompilerConfiguration configuration);
+        [NativeMethod("SetIl2CppCompilerConfiguration")]
+        private static extern void SetIl2CppCompilerConfigurationInternal(BuildTargetGroup targetGroup, Il2CppCompilerConfiguration configuration);
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         public static extern Il2CppCompilerConfiguration GetIl2CppCompilerConfiguration(BuildTargetGroup targetGroup);

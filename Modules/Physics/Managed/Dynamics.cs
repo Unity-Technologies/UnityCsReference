@@ -105,7 +105,8 @@ namespace UnityEngine
         [Obsolete("No longer used because the problem this was trying to solve is gone since Unity 2018.3", true)] InflateConvexMesh = 1 << 0,
         CookForFasterSimulation = 1 << 1,
         EnableMeshCleaning = 1 << 2,
-        WeldColocatedVertices = 1 << 3
+        WeldColocatedVertices = 1 << 3,
+        UseFastMidphase = 1 << 4
     }
 
     // WheelFrictionCurve is used by the [[WheelCollider]] to describe friction properties of the wheel tire.

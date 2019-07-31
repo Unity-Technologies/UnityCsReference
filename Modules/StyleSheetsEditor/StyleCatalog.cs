@@ -7,14 +7,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor.Experimental;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEngine.UIElements.StyleSheets;
 using Debug = UnityEngine.Debug;
 
 namespace UnityEditor.StyleSheets
@@ -872,8 +870,6 @@ namespace UnityEditor.StyleSheets
             if (location != -1)
             {
                 var foundStyle = m_Blocks[location];
-                states = states.Length == 0 ? k_RegularBlockStates
-                    : states.Distinct().Where(s => s != StyleState.none).ToArray();
                 return new StyleBlock(foundStyle.name, states.Length == 0 ? k_RegularBlockStates : states, foundStyle.values, foundStyle.catalog);
             }
             return k_ElementNotFound;
@@ -896,7 +892,7 @@ namespace UnityEditor.StyleSheets
 
         public void Load(IEnumerable<string> paths)
         {
-            var sheets = paths.Select(p => EditorResources.Load<UnityEngine.Object>(p) as StyleSheet)
+            var sheets = paths.Select(p => EditorResources.Load<UnityEngine.Object>(p, false) as StyleSheet)
                 .Where(s => s != null).Distinct();
 
             Load(sheets);
@@ -1321,6 +1317,7 @@ namespace UnityEditor.StyleSheets
                 case StyleValueType.AssetReference:
                 case StyleValueType.ResourcePath:
                 case StyleValueType.Enum:
+                case StyleValueType.Variable:
                 {
                     var str = value.AsString();
                     // Try a few conversions
@@ -1357,6 +1354,7 @@ namespace UnityEditor.StyleSheets
                 case StyleValueType.ResourcePath:
                     return SetIndex(strings, value.ToString());
                 case StyleValueType.Enum:
+                case StyleValueType.Variable:
                     var str = value.AsString();
                     // Try a few conversions
                     Color parsedColor;

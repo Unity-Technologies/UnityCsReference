@@ -8,8 +8,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEditor.Build.Player;
 using UnityEditor.Build.Reporting;
+using UnityEditor.Il2Cpp;
 using UnityEditor.Scripting;
 using UnityEditor.Scripting.Compilers;
 using UnityEditor.Utils;
@@ -326,7 +328,7 @@ namespace UnityEditorInternal
             // do try this (which should not be possible from the editor), use Low instead.
             if (managedStrippingLevel == ManagedStrippingLevel.Disabled)
                 managedStrippingLevel = ManagedStrippingLevel.Low;
-            AssemblyStripper.StripAssemblies(managedDir, m_PlatformProvider, m_RuntimeClassRegistry, managedStrippingLevel);
+            AssemblyStripper.StripAssemblies(managedDir, m_PlatformProvider.CreateUnityLinkerPlatformProvider(), m_PlatformProvider, m_RuntimeClassRegistry, managedStrippingLevel);
 
             // The IL2CPP editor integration here is responsible to give il2cpp.exe an empty directory to use.
             FileUtil.CreateOrCleanDirectory(outputDirectory);
@@ -334,7 +336,9 @@ namespace UnityEditorInternal
             if (m_ModifyOutputBeforeCompile != null)
                 m_ModifyOutputBeforeCompile(outputDirectory);
 
-            ConvertPlayerDlltoCpp(managedDir, outputDirectory, managedDir, m_PlatformProvider.supportsManagedDebugging);
+            var pipelineData = new Il2CppBuildPipelineData(m_PlatformProvider.target, managedDir);
+
+            ConvertPlayerDlltoCpp(pipelineData, outputDirectory, managedDir, m_PlatformProvider.supportsManagedDebugging);
 
             var compiler = m_PlatformProvider.CreateNativeCompiler();
             if (compiler != null && m_PlatformProvider.CreateIl2CppNativeCodeBuilder() == null)
@@ -400,8 +404,20 @@ namespace UnityEditorInternal
                     Application.platform == RuntimePlatform.WindowsEditor ? @"Tools\MapFileParser\MapFileParser.exe" : @"Tools/MapFileParser/MapFileParser"));
         }
 
-        private void ConvertPlayerDlltoCpp(string inputDirectory, string outputDirectory, string workingDirectory, bool platformSupportsManagedDebugging)
+        static void ProcessBuildPipelineOnBeforeConvertRun(BuildReport report, Il2CppBuildPipelineData data)
         {
+            var processors = BuildPipelineInterfaces.processors.il2cppProcessors;
+            if (processors == null)
+                return;
+
+            foreach (var processor in processors)
+                processor.OnBeforeConvertRun(report, data);
+        }
+
+        private void ConvertPlayerDlltoCpp(Il2CppBuildPipelineData data, string outputDirectory, string workingDirectory, bool platformSupportsManagedDebugging)
+        {
+            ProcessBuildPipelineOnBeforeConvertRun(m_PlatformProvider.buildReport, data);
+
             var arguments = new List<string>();
 
             arguments.Add("--convert-to-cpp");
@@ -417,6 +433,9 @@ namespace UnityEditorInternal
 
             if (m_PlatformProvider.enableDivideByZeroCheck)
                 arguments.Add("--enable-divide-by-zero-check");
+
+            if (m_PlatformProvider.development && m_PlatformProvider.enableDeepProfilingSupport)
+                arguments.Add("--enable-deep-profiler");
 
             if (m_BuildForMonoRuntime)
                 arguments.Add("--mono-runtime");
@@ -448,7 +467,7 @@ namespace UnityEditorInternal
             if (!string.IsNullOrEmpty(additionalArgs))
                 arguments.Add(additionalArgs);
 
-            arguments.Add($"--directory={CommandLineFormatter.PrepareFileName(Path.GetFullPath(inputDirectory))}");
+            arguments.Add($"--directory={CommandLineFormatter.PrepareFileName(Path.GetFullPath(data.inputDirectory))}");
 
             arguments.Add($"--generatedcppdir={CommandLineFormatter.PrepareFileName(Path.GetFullPath(outputDirectory))}");
 
@@ -557,9 +576,8 @@ namespace UnityEditorInternal
         bool enableStackTraces { get; }
         bool enableArrayBoundsCheck { get; }
         bool enableDivideByZeroCheck { get; }
+        bool enableDeepProfilingSupport { get; }
         string nativeLibraryFileName { get; }
-        string moduleStrippingInformationFolder { get; }
-        bool supportsEngineStripping { get; }
         bool supportsManagedDebugging { get; }
         bool supportsUsingIl2cppCore { get; }
         bool development { get; }
@@ -573,9 +591,11 @@ namespace UnityEditorInternal
         INativeCompiler CreateNativeCompiler();
         Il2CppNativeCodeBuilder CreateIl2CppNativeCodeBuilder();
         CompilerOutputParserBase CreateIl2CppOutputParser();
+
+        BaseUnityLinkerPlatformProvider CreateUnityLinkerPlatformProvider();
     }
 
-    internal class BaseIl2CppPlatformProvider : IIl2CppPlatformProvider
+    internal abstract class BaseIl2CppPlatformProvider : IIl2CppPlatformProvider
     {
         public BaseIl2CppPlatformProvider(BuildTarget target, string libraryFolder, BuildReport buildReport)
         {
@@ -609,9 +629,14 @@ namespace UnityEditorInternal
             get { return false; }
         }
 
-        public virtual bool supportsEngineStripping
+        public virtual bool enableDeepProfilingSupport
         {
-            get { return BuildPipeline.IsFeatureSupported("ENABLE_ENGINE_CODE_STRIPPING", target); }
+            get
+            {
+                if (buildReport != null)
+                    return (buildReport.summary.options & BuildOptions.EnableDeepProfilingSupport) == BuildOptions.EnableDeepProfilingSupport;
+                return false;
+            }
         }
 
         public virtual bool supportsManagedDebugging
@@ -681,11 +706,6 @@ namespace UnityEditorInternal
             get { return null; }
         }
 
-        public virtual string moduleStrippingInformationFolder
-        {
-            get { return Path.Combine(BuildPipeline.GetPlaybackEngineDirectory(EditorUserBuildSettings.activeBuildTarget, 0), "Whitelists"); }
-        }
-
         public virtual INativeCompiler CreateNativeCompiler()
         {
             return null;
@@ -700,5 +720,7 @@ namespace UnityEditorInternal
         {
             return null;
         }
+
+        public abstract BaseUnityLinkerPlatformProvider CreateUnityLinkerPlatformProvider();
     }
 }

@@ -14,21 +14,16 @@ namespace UnityEditor.PackageManager.UI
     {
         internal new class UxmlFactory : UxmlFactory<PackageList> {}
 
-        private bool m_PackagesLoaded;
-        public event Action onPackagesLoaded = delegate {};
+        private bool m_PackageListLoaded;
+        public event Action onPackageListLoaded;
 
-        public PackageItem selectedItem
-        {
-            get
-            {
-                var selectedElement = GetSelectedItem()?.element;
-                return selectedElement == null ? null : UIUtils.GetParentOfType<PackageItem>(selectedElement);
-            }
-        }
+        private bool m_RefreshInProgress;
 
-        public IEnumerable<PackageItem> packageItems
+        private Dictionary<string, PackageItem> m_PackageItemsLookup;
+
+        private IEnumerable<PackageItem> packageItems
         {
-            get { return list.Children().Cast<PackageItem>(); }
+            get { return itemsList.Children().Cast<PackageItem>(); }
         }
 
         public PackageList()
@@ -39,61 +34,138 @@ namespace UnityEditor.PackageManager.UI
             cache = new VisualElementCache(root);
 
             viewDataKey = "package-list-key";
-            list.viewDataKey = "package-list-scrollview-key";
+            scrollView.viewDataKey = "package-list-scrollview-key";
 
             UIUtils.SetElementDisplay(emptyArea, false);
-            UIUtils.SetElementDisplay(noResult, false);
+            UIUtils.SetElementDisplay(loadMoreContainer, false);
+
+            loginButton.clickable.clicked += OnLoginClicked;
+            loadMoreLabel.OnLeftClick(LoadMoreItemsClicked);
 
             RegisterCallback<AttachToPanelEvent>(OnEnterPanel);
             RegisterCallback<DetachFromPanelEvent>(OnLeavePanel);
 
-            m_PackagesLoaded = false;
+            m_PackageListLoaded = false;
+            m_PackageItemsLookup = new Dictionary<string, PackageItem>();
+
+            m_RefreshInProgress = false;
         }
 
-        public void Setup()
+        public void OnEnable()
         {
-            SelectionManager.instance.onSelectionChanged += OnSelectionChanged;
-
-            PackageFiltering.instance.onFilterTabChanged += OnFilterChanged;
-            PackageFiltering.instance.onSearchTextChanged += OnSearchTextChanged;
-
-            PackageDatabase.instance.onPackagesChanged += OnPackagesChanged;
-            PackageDatabase.instance.onPackageVersionUpdated += OnPackageVersionUpdated;
+            PageManager.instance.onSelectionChanged += OnSelectionChanged;
 
             PackageDatabase.instance.onPackageOperationStart += OnPackageOperationStart;
             PackageDatabase.instance.onPackageOperationFinish += OnPackageOperationFinish;
 
+            PackageDatabase.instance.onDownloadProgress += OnDownloadProgress;
+            PackageDatabase.instance.onRefreshOperationStart += OnRefreshOperationStart;
+            PackageDatabase.instance.onRefreshOperationFinish += OnRefreshOperationFinish;
+
+            PageManager.instance.onVisualStateChange += OnVisualStateChange;
+            PageManager.instance.onPageRebuild += OnPageRebuild;
+            PageManager.instance.onPageUpdate += OnPageUpdate;
+
+            ApplicationUtil.instance.onUserLoginStateChange += OnUserLoginStateChange;
+
             // manually build the items on initialization to refresh the UI
-            RebuildItems();
-            OnSelectionChanged(SelectionManager.instance.GetSelections());
+            OnPageRebuild(PageManager.instance.GetCurrentPage());
+            OnSelectionChanged(PageManager.instance.GetSelectedVersion());
         }
 
-        private PackageItem FindPackageItem(IPackage package)
+        public void OnDisable()
         {
-            return package == null ? null : packageItems.FirstOrDefault(p => p.package.uniqueId == package.uniqueId);
+            PageManager.instance.onSelectionChanged -= OnSelectionChanged;
+
+            PackageDatabase.instance.onPackageOperationStart -= OnPackageOperationStart;
+            PackageDatabase.instance.onPackageOperationFinish -= OnPackageOperationFinish;
+
+            PackageDatabase.instance.onDownloadProgress -= OnDownloadProgress;
+            PackageDatabase.instance.onRefreshOperationStart -= OnRefreshOperationStart;
+            PackageDatabase.instance.onRefreshOperationFinish -= OnRefreshOperationFinish;
+
+            PageManager.instance.onVisualStateChange -= OnVisualStateChange;
+            PageManager.instance.onPageRebuild -= OnPageRebuild;
+            PageManager.instance.onPageUpdate -= OnPageUpdate;
+
+            ApplicationUtil.instance.onUserLoginStateChange -= OnUserLoginStateChange;
         }
 
-        public void ShowResults(PackageItem item)
+        private PackageItem GetPackageItem(IPackage package)
         {
-            noResultText.text = string.Empty;
-            UIUtils.SetElementDisplay(noResult, false);
-
-            // Only select main element if none of its versions are already selected
-            var hasSelection = item.GetSelectableItems().Any(i => SelectionManager.instance.IsSelected(i.package, i.targetVersion));
-            if (!hasSelection)
-                item.SelectMainItem();
-
-            ScrollIfNeeded(list, item);
+            return GetPackageItem(package?.uniqueId);
         }
 
-        public void ShowNoResults()
+        private PackageItem GetPackageItem(string packageUniqueId)
         {
-            if (!string.IsNullOrEmpty(PackageFiltering.instance.currentSearchText))
+            PackageItem result = null;
+            return (string.IsNullOrEmpty(packageUniqueId) || !m_PackageItemsLookup.TryGetValue(packageUniqueId, out result)) ? null : result;
+        }
+
+        private ISelectableItem GetSelectedItem()
+        {
+            var selectedVersion = PageManager.instance.GetSelectedVersion();
+            var packageItem = GetPackageItem(selectedVersion?.packageUniqueId);
+            if (packageItem == null)
+                return null;
+            if (packageItem.targetVersion == selectedVersion)
+                return packageItem;
+            else
+                return packageItem.versionItems.FirstOrDefault(v => v.targetVersion == selectedVersion);
+        }
+
+        public void LoadMoreItemsClicked()
+        {
+            UIUtils.SetElementDisplay(loadMoreContainer, false);
+
+            PageManager.instance.LoadMore();
+        }
+
+        private void UpdateNoPackagesLabel()
+        {
+            if (!UIUtils.IsElementVisible(noPackagesLabel))
+                return;
+
+            if (m_RefreshInProgress && PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore)
+                noPackagesLabel.text = L10n.Tr("Fetching packages...");
+            else if (string.IsNullOrEmpty(PackageFiltering.instance.currentSearchText))
+                noPackagesLabel.text = L10n.Tr("There are no packages.");
+            else
+                noPackagesLabel.text = string.Format(L10n.Tr("No results for \"{0}\""), PackageFiltering.instance.currentSearchText);
+        }
+
+        public void ShowEmptyResults(bool value)
+        {
+            if (!value)
             {
-                noResultText.text = $"No results for \"{PackageFiltering.instance.currentSearchText}\"";
-                UIUtils.SetElementDisplay(noResult, true);
+                UIUtils.SetElementDisplay(emptyArea, false);
+                return;
             }
-            SelectionManager.instance.ClearSelection();
+
+            var showLogin = !ApplicationUtil.instance.isUserLoggedIn && PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore;
+
+            UIUtils.SetElementDisplay(emptyArea, true);
+            UIUtils.SetElementDisplay(noPackagesLabel, !showLogin);
+            UIUtils.SetElementDisplay(loginContainer, showLogin);
+
+            UpdateNoPackagesLabel();
+
+            PageManager.instance.ClearSelection();
+        }
+
+        private void OnUserLoginStateChange(bool loggedIn)
+        {
+            if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore)
+            {
+                UIUtils.SetElementDisplay(emptyArea, true);
+                UIUtils.SetElementDisplay(loginContainer, !loggedIn);
+                UIUtils.SetElementDisplay(noPackagesLabel, loggedIn);
+            }
+        }
+
+        private void OnLoginClicked()
+        {
+            ApplicationUtil.instance.ShowLogin();
         }
 
         private void OnEnterPanel(AttachToPanelEvent e)
@@ -108,17 +180,44 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnPackageOperationFinish(IPackage package)
         {
-            FindPackageItem(package)?.StopSpinner();
+            GetPackageItem(package)?.StopSpinner();
         }
 
         private void OnPackageOperationStart(IPackage package)
         {
-            FindPackageItem(package)?.StartSpinner();
+            GetPackageItem(package)?.StartSpinner();
+        }
+
+        private void OnRefreshOperationStart()
+        {
+            m_RefreshInProgress = true;
+            UpdateNoPackagesLabel();
+        }
+
+        private void OnRefreshOperationFinish(PackageFilterTab tab)
+        {
+            m_RefreshInProgress = false;
+            UpdateNoPackagesLabel();
+        }
+
+        private void OnDownloadProgress(IPackage package, DownloadProgress progress)
+        {
+            var item = GetPackageItem(package);
+            if (item != null)
+            {
+                if (progress.state == DownloadProgress.State.Completed || progress.state == DownloadProgress.State.Aborted || progress.state == DownloadProgress.State.Error)
+                {
+                    item.StopSpinner();
+                    item.SetPackage(package);
+                }
+                else
+                    item.StartSpinner();
+            }
         }
 
         private void ScrollIfNeeded(ScrollView container = null, VisualElement target = null)
         {
-            container = container ?? list;
+            container = container ?? scrollView;
             target = target ?? GetSelectedItem()?.element;
             if (container == null || target == null)
                 return;
@@ -132,12 +231,10 @@ namespace UnityEditor.PackageManager.UI
             UIUtils.ScrollIfNeeded(container, target);
         }
 
-        private void SetSelectedExpand(bool value)
+        private void SetSelectedItemExpanded(bool value)
         {
-            var selected = selectedItem;
-            if (selected == null) return;
-
-            selected.SetExpand(value);
+            var selectedVersion = PageManager.instance.GetSelectedVersion();
+            GetPackageItem(selectedVersion?.packageUniqueId)?.SetExpanded(value);
         }
 
         private void OnKeyDownShortcut(KeyDownEvent evt)
@@ -150,146 +247,121 @@ namespace UnityEditor.PackageManager.UI
 
             if (evt.keyCode == KeyCode.RightArrow)
             {
-                SetSelectedExpand(true);
+                SetSelectedItemExpanded(true);
                 evt.StopPropagation();
             }
-
-            if (evt.keyCode == KeyCode.LeftArrow)
+            else if (evt.keyCode == KeyCode.LeftArrow)
             {
-                var selected = selectedItem;
-                SetSelectedExpand(false);
-
-                // Make sure the main element get selected to not lose the selected element
-                if (selected != null)
-                    selected.SelectMainItem();
-
+                SetSelectedItemExpanded(false);
                 evt.StopPropagation();
             }
-
-            if (evt.keyCode == KeyCode.UpArrow)
+            else if (evt.keyCode == KeyCode.UpArrow)
             {
                 if (SelectBy(-1))
                     evt.StopPropagation();
             }
-
-            if (evt.keyCode == KeyCode.DownArrow)
+            else if (evt.keyCode == KeyCode.DownArrow)
             {
                 if (SelectBy(1))
                     evt.StopPropagation();
             }
         }
 
-        internal void OnSearchTextChanged(string searchText)
+        private PackageItem AddOrUpdatePackageItem(IPackage package)
         {
-            foreach (var item in packageItems)
-                UIUtils.SetElementDisplay(item, PackageFiltering.instance.FilterByCurrentSearchText(item.package));
+            if (package == null)
+                return null;
 
-            RefreshSelection();
+            var item = GetPackageItem(package);
+            if (item != null)
+                item.SetPackage(package);
+            else
+            {
+                item = new PackageItem(package);
+                itemsList.Add(item);
+                m_PackageItemsLookup[package.uniqueId] = item;
+            }
+            return item;
         }
 
-        internal void OnFilterChanged(PackageFilterTab filter)
+        private PackageItem RemovePackageItem(IPackage package)
         {
-            RebuildItems();
+            var item = GetPackageItem(package);
+            if (item != null)
+            {
+                itemsList.Remove(item);
+                m_PackageItemsLookup.Remove(package.uniqueId);
+            }
+            return item;
         }
 
-        internal void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> updated)
+        private void OnVisualStateChange(IEnumerable<VisualState> visualStates)
         {
-            var reorderNeeded = false;
-            foreach (var package in added)
-            {
-                if (PackageFiltering.instance.FilterByCurrentTab(package))
-                {
-                    var item = new PackageItem(package);
-                    list.Add(item);
-                    reorderNeeded = true;
-                    UIUtils.SetElementDisplay(item, PackageFiltering.instance.FilterByCurrentSearchText(package));
-                }
-            }
-
-            foreach (var package in removed)
-            {
-                var item = FindPackageItem(package);
-                if (item != null)
-                    list.Remove(item);
-            }
-
-            foreach (var package in updated)
-            {
-                var item = FindPackageItem(package);
-                if (item != null)
-                {
-                    if (PackageFiltering.instance.FilterByCurrentTab(package))
-                    {
-                        if (!reorderNeeded && item.displayName != package.displayName)
-                            reorderNeeded = true;
-                        item.SetPackage(package);
-                    }
-                    else
-                        list.Remove(item);
-                }
-                else if (PackageFiltering.instance.FilterByCurrentTab(package))
-                {
-                    item = new PackageItem(package);
-                    list.Add(item);
-                    reorderNeeded = true;
-                }
-                UIUtils.SetElementDisplay(item, PackageFiltering.instance.FilterByCurrentSearchText(package));
-            }
-
-            if (!m_PackagesLoaded && added.Any())
-            {
-                m_PackagesLoaded = true;
-                onPackagesLoaded();
-            }
-
-            if (reorderNeeded)
-                ReorderPackageItems();
-
-            RefreshSelection();
-        }
-
-        internal void OnPackageVersionUpdated(IPackageVersion version)
-        {
-            var item = packageItems.FirstOrDefault(x => x.targetVersion != null && x.targetVersion.uniqueId == version.uniqueId);
-            if (item == null || item.displayName.Equals(version.displayName))
+            if (!visualStates.Any())
                 return;
-            item.displayName = version.displayName;
-            ReorderPackageItems();
+
+            foreach (var state in visualStates)
+                GetPackageItem(state.packageUniqueId)?.UpdateVisualState(state);
+
+            ShowResults();
         }
 
-        internal void ReorderPackageItems()
+        private void OnPageRebuild(IPage page)
         {
-            list.Sort((left, right) =>
+            ClearAll();
+
+            UIUtils.SetElementDisplay(loadMoreContainer, page.morePackagesToFetch);
+
+            foreach (var state in page.packageVisualStates)
             {
-                var packageLeft = left as PackageItem;
-                var packageRight = right as PackageItem;
-                if (packageLeft == null || packageRight == null)
-                    return 0;
-                return string.Compare(packageLeft.displayName, packageRight.displayName,
-                    StringComparison.InvariantCultureIgnoreCase);
-            });
+                var package = PackageDatabase.instance.GetPackage(state.packageUniqueId);
+                var packageItem = AddOrUpdatePackageItem(package);
+                packageItem?.UpdateVisualState(state);
+            }
+
+            if (!m_PackageListLoaded && page.packageVisualStates.Any())
+            {
+                m_PackageListLoaded = true;
+                onPackageListLoaded?.Invoke();
+            }
+
+            ShowResults();
         }
 
-        internal void OnSelectionChanged(IEnumerable<IPackageVersion> selections)
+        private void OnPageUpdate(IPage page, IEnumerable<IPackage> addedOrUpated, IEnumerable<IPackage> removed)
         {
-            var selected = selections.FirstOrDefault();
-            if (selected != null)
+            foreach (var package in removed)
+                RemovePackageItem(package);
+
+            UIUtils.SetElementDisplay(loadMoreContainer, page.morePackagesToFetch);
+
+            foreach (var package in addedOrUpated)
             {
-                var package = PackageDatabase.instance.GetPackage(selected);
-                if (package == null || !PackageFiltering.instance.FilterByCurrentTab(package) || !PackageFiltering.instance.FilterByCurrentSearchText(package))
+                var packageItem = AddOrUpdatePackageItem(package);
+                var visualState = page.GetVisualState(package.uniqueId);
+                packageItem.UpdateVisualState(visualState);
+            }
+
+            if (addedOrUpated.Any())
+            {
+                if (!m_PackageListLoaded)
                 {
-                    var firstVisibleItem = packageItems.FirstOrDefault(p => UIUtils.IsElementVisible(p));
-                    SelectionManager.instance.SetSelected(firstVisibleItem?.package);
-                    return;
+                    m_PackageListLoaded = true;
+                    onPackageListLoaded?.Invoke();
                 }
+
+                // re-order if there are any added or updated items
+                itemsList.Clear();
+                foreach (var state in page.packageVisualStates)
+                    itemsList.Add(GetPackageItem(state.packageUniqueId));
+                m_PackageItemsLookup = packageItems.ToDictionary(item => item.package.uniqueId, item => item);
             }
 
-            foreach (var packageitem in packageItems)
-            {
-                packageitem.RefreshSelection();
-                foreach (var versionItem in packageitem.versionItems)
-                    versionItem.RefreshSelection();
-            }
+            ShowResults();
+        }
+
+        internal void OnSelectionChanged(IPackageVersion newSelection)
+        {
             ScrollIfNeeded();
         }
 
@@ -301,7 +373,7 @@ namespace UnityEditor.PackageManager.UI
         private bool SelectBy(int delta)
         {
             var list = GetSelectableItems();
-            var selection = GetSelectedItem(list);
+            var selection = GetSelectedItem();
             if (selection != null)
             {
                 var index = list.IndexOf(selection);
@@ -323,7 +395,7 @@ namespace UnityEditor.PackageManager.UI
                         ++numVisibleElement;
                 }
 
-                SelectionManager.instance.SetSelected(nextElement.package, nextElement.targetVersion);
+                PageManager.instance.SetSelected(nextElement.package, nextElement.targetVersion);
 
                 foreach (var scrollView in UIUtils.GetParentsOfType<ScrollView>(nextElement.element))
                     ScrollIfNeeded(scrollView, nextElement.element);
@@ -332,64 +404,35 @@ namespace UnityEditor.PackageManager.UI
             return true;
         }
 
-        private ISelectableItem GetSelectedItem(List<ISelectableItem> items = null)
-        {
-            return (items ?? GetSelectableItems()).Find(s => SelectionManager.instance.IsSelected(s.package, s.targetVersion));
-        }
-
         private void ClearAll()
         {
-            list.Clear();
+            itemsList.Clear();
+            m_PackageItemsLookup.Clear();
 
             UIUtils.SetElementDisplay(emptyArea, false);
-            UIUtils.SetElementDisplay(noResult, false);
         }
 
-        public void RebuildItems()
+        private void ShowResults()
         {
-            // package items that do not match the filter are not in the list in the first place
-            // while items that do not match the search text are in the list but set to be hidden
-            var packages = PackageDatabase.instance.allPackages.Where(p => PackageFiltering.instance.FilterByCurrentTab(p));
-            if (!m_PackagesLoaded && packages.Any())
-            {
-                m_PackagesLoaded = true;
-                onPackagesLoaded();
-            }
+            var visiblePackageItems = packageItems.Where(UIUtils.IsElementVisible);
+            var showEmptyResults = !visiblePackageItems.Any();
+            ShowEmptyResults(showEmptyResults);
 
-            ClearAll();
-
-            var orderedPackages = packages.OrderBy(p => p.primaryVersion?.displayName ?? p.name).ToList();
-            foreach (var package in orderedPackages)
-            {
-                var packageItem = new PackageItem(package);
-                list.Add(packageItem);
-                var itemVisible = PackageFiltering.instance.FilterByCurrentSearchText(package);
-                UIUtils.SetElementDisplay(packageItem, itemVisible);
-                if (itemVisible && SelectionManager.instance.IsExpanded(package))
-                    packageItem.SetExpand(true);
-            }
-
-            RefreshSelection();
-        }
-
-        private void RefreshSelection()
-        {
-            var visiblePackageItems = packageItems.Where(p => UIUtils.IsElementVisible(p));
-            if (!visiblePackageItems.Any())
-                ShowNoResults();
-            else
-            {
-                var currentSelection = SelectionManager.instance.GetSelections().FirstOrDefault();
-                var selectedItem = currentSelection == null ? null : visiblePackageItems.FirstOrDefault(item => item.package.uniqueId == currentSelection.packageUniqueId);
-                ShowResults(selectedItem ?? visiblePackageItems.First());
-            }
+            if (!showEmptyResults)
+                ScrollIfNeeded();
         }
 
         private VisualElementCache cache { get; set; }
 
-        private ScrollView list { get { return cache.Get<ScrollView>("scrollView"); } }
+        private ScrollView scrollView { get { return cache.Get<ScrollView>("scrollView"); } }
+        private VisualElement itemsList { get { return cache.Get<VisualElement>("itemsList"); } }
+
+        private VisualElement loadMoreContainer { get { return cache.Get<VisualElement>("loadMoreContainer"); } }
+        private Label loadMoreLabel { get { return cache.Get<Label>("loadMore"); } }
+
         private VisualElement emptyArea { get { return cache.Get<VisualElement>("emptyArea"); } }
-        private VisualElement noResult { get { return cache.Get<VisualElement>("noResult"); } }
-        private Label noResultText { get { return cache.Get<Label>("noResultText"); } }
+        private Label noPackagesLabel { get { return cache.Get<Label>("noPackagesLabel"); } }
+        private VisualElement loginContainer { get { return cache.Get<VisualElement>("loginContainer"); } }
+        private Button loginButton { get { return cache.Get<Button>("loginButton"); } }
     }
 }

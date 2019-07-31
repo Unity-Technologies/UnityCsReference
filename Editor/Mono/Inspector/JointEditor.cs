@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor.EditorTools;
 using UnityEditor.IMGUI.Controls;
 using UnityEditorInternal;
 using UnityEngine;
@@ -10,7 +11,7 @@ using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor
 {
-    internal class JointCommonEditor : Editor
+    class JointCommonEditor : Editor
     {
         public static void CheckConnectedBody(Editor editor)
         {
@@ -35,42 +36,18 @@ namespace UnityEditor
 
     [CustomEditor(typeof(FixedJoint))]
     [CanEditMultipleObjects]
-    internal class FixedJointEditor : JointCommonEditor
+    class FixedJointEditor : JointCommonEditor
     {
     }
 
     [CustomEditor(typeof(SpringJoint))]
     [CanEditMultipleObjects]
-    internal class SpringJointEditor : JointCommonEditor
+    class SpringJointEditor : JointCommonEditor
     {
     }
 
     abstract class JointEditor<T> : Editor where T : Joint
     {
-        protected static class Styles
-        {
-            public static readonly GUIContent editAngularLimitsButton = new GUIContent(EditorGUIUtility.IconContent("JointAngularLimits"));
-            public static readonly string editAngularLimitsUndoMessage = EditorGUIUtility.TrTextContent("Change Joint Angular Limits").text;
-
-            static Styles()
-            {
-                editAngularLimitsButton.tooltip = EditorGUIUtility.TrTextContent("Edit joint angular limits.").text;
-            }
-        }
-
-        protected static float GetAngularLimitHandleSize(Vector3 position)
-        {
-            return HandleUtility.GetHandleSize(position);
-        }
-
-        protected JointAngularLimitHandle angularLimitHandle { get { return m_AngularLimitHandle; } }
-        private JointAngularLimitHandle m_AngularLimitHandle = new JointAngularLimitHandle();
-
-        protected bool editingAngularLimits
-        {
-            get { return EditMode.editMode == EditMode.SceneViewEditMode.JointAngularLimits && EditMode.IsOwner(this); }
-        }
-
         public override void OnInspectorGUI()
         {
             JointCommonEditor.CheckConnectedBody(this);
@@ -82,30 +59,53 @@ namespace UnityEditor
         {
             T joint = (T)target;
             EditorGUI.BeginDisabledGroup(joint.gameObject.activeSelf == false);
-            EditMode.DoEditModeInspectorModeButton(
-                EditMode.SceneViewEditMode.JointAngularLimits,
-                "Edit Joint Angular Limits",
-                Styles.editAngularLimitsButton,
-                this
-            );
+            EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Angular Limits"), target);
             EditorGUI.EndDisabledGroup();
         }
 
         internal override Bounds GetWorldBoundsOfTarget(UnityObject targetObject)
         {
             var bounds = base.GetWorldBoundsOfTarget(targetObject);
+
             // ensure joint's anchor point is included in bounds
-            bounds.Encapsulate(GetAngularLimitHandleMatrix((T)targetObject).MultiplyPoint3x4(Vector3.zero));
+            var jointTool = EditorToolContext.activeTool as JointTool<T>;
+
+            if (jointTool != null)
+                bounds.Encapsulate(jointTool.GetAngularLimitHandleMatrix((T)targetObject).MultiplyPoint3x4(Vector3.zero));
+
             return bounds;
         }
+    }
 
-        protected virtual void OnSceneGUI()
+    abstract class JointTool<T> : EditorTool where T : Joint
+    {
+        protected static class Styles
         {
-            if (!target)
-                return;
-            if (editingAngularLimits)
+            public static readonly string editAngularLimitsUndoMessage = L10n.Tr("Change Joint Angular Limits");
+        }
+
+        public override GUIContent toolbarIcon
+        {
+            get { return EditorGUIUtility.IconContent("JointAngularLimits"); }
+        }
+
+        protected static float GetAngularLimitHandleSize(Vector3 position)
+        {
+            return HandleUtility.GetHandleSize(position);
+        }
+
+        protected JointAngularLimitHandle angularLimitHandle { get { return m_AngularLimitHandle; } }
+        JointAngularLimitHandle m_AngularLimitHandle = new JointAngularLimitHandle();
+
+        public override void OnToolGUI(EditorWindow window)
+        {
+            foreach (var obj in targets)
             {
-                T joint = (T)target;
+                T joint = obj as T;
+
+                if (joint == null)
+                    continue;
+
                 EditorGUI.BeginChangeCheck();
 
                 using (new Handles.DrawingScope(GetAngularLimitHandleMatrix(joint)))
@@ -145,7 +145,7 @@ namespace UnityEditor
             }
         }
 
-        private Matrix4x4 GetAngularLimitHandleMatrix(T joint)
+        internal Matrix4x4 GetAngularLimitHandleMatrix(T joint)
         {
             Rigidbody dynamicActor, connectedActor;
             int jointFrameActorIndex;

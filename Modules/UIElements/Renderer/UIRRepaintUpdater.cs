@@ -44,6 +44,9 @@ namespace UnityEngine.UIElements
             if (overflowChanged || borderRadiusChanged)
                 renderChain.UIEOnClippingChanged(ve, false);
 
+            if ((versionChangeType & VersionChangeType.Opacity) != 0)
+                renderChain.UIEOnOpacityChanged(ve);
+
             if ((versionChangeType & VersionChangeType.Repaint) != 0)
                 renderChain.UIEOnVisualsChanged(ve, false);
         }
@@ -53,21 +56,19 @@ namespace UnityEngine.UIElements
             if (renderChain?.device == null)
                 return;
 
-            var topRect = visualTree.layout;
-            var projection = Matrix4x4.Ortho(topRect.xMin, topRect.xMax, topRect.yMax, topRect.yMin, -1, 1);
-            DrawChain(topRect, projection);
+            DrawChain(panel.GetViewport(), panel.GetProjection());
         }
 
         internal RenderChain DebugGetRenderChain() { return renderChain; }
 
         // Overriden in tests
         protected virtual RenderChain CreateRenderChain() { return new RenderChain(panel, panel.standardShader); }
-        protected virtual void DrawChain(Rect topRect, Matrix4x4 projection)
+        protected virtual void DrawChain(Rect viewport, Matrix4x4 projection)
         {
             Profiler.BeginSample("DrawChain");
             try
             {
-                renderChain.Render(topRect, projection);
+                renderChain.Render(viewport, projection);
             }
             finally
             {

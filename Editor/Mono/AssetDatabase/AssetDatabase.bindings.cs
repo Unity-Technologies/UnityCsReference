@@ -23,6 +23,7 @@ namespace UnityEditor
     {
         Default = 0,
         NoGUI = 1 << 0,
+        ImportDelayed = 1 << 1
     }
 
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabase.h")]
@@ -131,12 +132,36 @@ namespace UnityEditor
         //TODO: This API should be Obsoleted when there is time available to update all the uses of it in Package Manager packages
         public static void ImportPackage(string packagePath, bool interactive)
         {
-            ImportPackage(packagePath, interactive ? ImportPackageOptions.Default : ImportPackageOptions.NoGUI);
+            ImportPackage(packagePath, ImportPackageOptions.ImportDelayed | (interactive ? ImportPackageOptions.Default : ImportPackageOptions.NoGUI));
         }
 
         internal static bool ImportPackageImmediately(string packagePath)
         {
             return ImportPackage(packagePath, ImportPackageOptions.NoGUI);
         }
+    }
+}
+
+namespace UnityEditor.Experimental
+{
+    public partial class AssetDatabaseExperimental
+    {
+        [FreeFunction("AssetDatabase::ClearImporterOverride")]
+        extern public static void ClearImporterOverride(string path);
+
+        public static void SetImporterOverride<T>(string path)
+            where T : Experimental.AssetImporters.ScriptedImporter
+        {
+            SetImporterOverrideInternal(path, typeof(T));
+        }
+
+        [FreeFunction("AssetDatabase::SetImporterOverride")]
+        extern internal static void SetImporterOverrideInternal(string path, System.Type importer);
+
+        [FreeFunction("AssetDatabase::GetImporterOverride")]
+        extern public static System.Type GetImporterOverride(string path);
+
+        [FreeFunction("AssetDatabase::GetAvailableImporterTypes")]
+        extern public static Type[] GetAvailableImporterTypes(string path);
     }
 }

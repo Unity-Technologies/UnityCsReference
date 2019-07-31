@@ -185,6 +185,12 @@ namespace UnityEngine.Rendering
             DrawSkybox_Internal(camera);
         }
 
+        public void InvokeOnRenderObjectCallback()
+        {
+            Validate();
+            InvokeOnRenderObjectCallback_Internal();
+        }
+
         public void DrawGizmos(Camera camera, GizmoSubset gizmoSubset)
         {
             Validate();

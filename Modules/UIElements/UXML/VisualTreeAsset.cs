@@ -12,6 +12,8 @@ namespace UnityEngine.UIElements
     [Serializable]
     public class VisualTreeAsset : ScriptableObject
     {
+        private static StylePropertyReader s_StylePropertyReader = new StylePropertyReader();
+
         internal int GetNextChildSerialNumber()
         {
             int n = m_VisualElementAssets?.Count ?? 0;
@@ -76,7 +78,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+#pragma warning disable 0649
         [SerializeField] private List<UsingEntry> m_Usings;
+#pragma warning restore 0649
 
         [SerializeField] internal StyleSheet inlineSheet;
 
@@ -228,8 +232,9 @@ namespace UnityEngine.UIElements
                     StyleRule r = inlineSheet.rules[root.ruleIndex];
                     var stylesData = new VisualElementStylesData(false);
                     ve.SetInlineStyles(stylesData);
-                    stylesData.ApplyRule(inlineSheet, Int32.MaxValue, r,
-                        StyleSheetCache.GetPropertyIDs(inlineSheet, root.ruleIndex));
+
+                    s_StylePropertyReader.SetInlineContext(inlineSheet, r, root.ruleIndex);
+                    stylesData.ApplyProperties(s_StylePropertyReader, null);
                 }
             }
 

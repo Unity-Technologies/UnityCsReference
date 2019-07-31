@@ -54,7 +54,7 @@ namespace UnityEditor
             {
                 if (m_Panel == null)
                 {
-                    m_Panel = UIElementsUtility.FindOrCreatePanel(this, ContextType.Editor);
+                    m_Panel = UIElementsUtility.FindOrCreateEditorPanel(this);
                     m_Panel.name = GetType().Name;
                     m_Panel.cursorManager = m_CursorManager;
                     m_Panel.contextualMenuManager = s_ContextualMenuManager;
@@ -203,7 +203,7 @@ namespace UnityEditor
         protected virtual void OnDisable()
         {
             if (imguiContainer.HasMouseCapture())
-                MouseCaptureController.ReleaseMouse();
+                imguiContainer.ReleaseMouse();
             imguiContainer.RemoveFromHierarchy();
             imguiContainer = null;
 

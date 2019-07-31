@@ -2,30 +2,20 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor.IMGUI.Controls;
 using UnityEngine;
+using UnityEditor.EditorTools;
 
 namespace UnityEditor
 {
     [CustomEditor(typeof(HingeJoint)), CanEditMultipleObjects]
     class HingeJointEditor : JointEditor<HingeJoint>
     {
-        private static readonly GUIContent s_WarningMessage =
-            EditorGUIUtility.TrTextContent("Min and max limits must be within the range [-180, 180].");
-
-        private SerializedProperty m_MinLimit;
-        private SerializedProperty m_MaxLimit;
+        static readonly GUIContent s_WarningMessage = EditorGUIUtility.TrTextContent("Min and max limits must be within the range [-180, 180].");
+        SerializedProperty m_MinLimit;
+        SerializedProperty m_MaxLimit;
 
         void OnEnable()
         {
-            angularLimitHandle.yMotion = ConfigurableJointMotion.Locked;
-            angularLimitHandle.zMotion = ConfigurableJointMotion.Locked;
-
-            angularLimitHandle.yHandleColor = Color.clear;
-            angularLimitHandle.zHandleColor = Color.clear;
-
-            angularLimitHandle.xRange = new Vector2(-Physics.k_MaxFloatMinusEpsilon, Physics.k_MaxFloatMinusEpsilon);
-
             m_MinLimit = serializedObject.FindProperty("m_Limits.min");
             m_MaxLimit = serializedObject.FindProperty("m_Limits.max");
         }
@@ -39,6 +29,21 @@ namespace UnityEditor
 
             if (min < -180f || min > 180f || max < -180f || max > 180f)
                 EditorGUILayout.HelpBox(s_WarningMessage.text, MessageType.Warning);
+        }
+    }
+
+    [EditorTool("Edit Hinge Joint", typeof(HingeJoint))]
+    class HingeJointTool : JointTool<HingeJoint>
+    {
+        void OnEnable()
+        {
+            angularLimitHandle.yMotion = ConfigurableJointMotion.Locked;
+            angularLimitHandle.zMotion = ConfigurableJointMotion.Locked;
+
+            angularLimitHandle.yHandleColor = Color.clear;
+            angularLimitHandle.zHandleColor = Color.clear;
+
+            angularLimitHandle.xRange = new Vector2(-Physics.k_MaxFloatMinusEpsilon, Physics.k_MaxFloatMinusEpsilon);
         }
 
         protected override void GetActors(

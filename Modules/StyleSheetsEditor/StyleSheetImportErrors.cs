@@ -35,7 +35,8 @@ namespace UnityEditor.StyleSheets
         InvalidURILocation,
         InvalidURIScheme,
         InvalidURIProjectAssetPath,
-        InvalidURIProjectAssetType
+        InvalidURIProjectAssetType,
+        InvalidVarFunction,
     }
 
     struct StyleSheetImportError

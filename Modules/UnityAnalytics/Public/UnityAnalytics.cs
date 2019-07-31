@@ -58,6 +58,26 @@ namespace UnityEngine.Analytics
             }
         }
 
+        public static string eventUrl
+        {
+            get
+            {
+                if (!IsInitialized())
+                    return String.Empty;
+                return eventUrlInternal;
+            }
+        }
+
+        public static string configUrl
+        {
+            get
+            {
+                if (!IsInitialized())
+                    return String.Empty;
+                return configUrlInternal;
+            }
+        }
+
         public static bool limitUserTracking
         {
             get
@@ -219,6 +239,24 @@ namespace UnityEngine.Analytics
             return result;
         }
 
+        public static AnalyticsResult EnableCustomEvent(string customEventName, bool enabled)
+        {
+            if (string.IsNullOrEmpty(customEventName))
+                throw new ArgumentException("Cannot set event name to an empty or null string");
+            if (!IsInitialized())
+                return AnalyticsResult.NotInitialized;
+            return EnableCustomEventWithLimit(customEventName, enabled);
+        }
+
+        public static AnalyticsResult IsCustomEventEnabled(string customEventName)
+        {
+            if (string.IsNullOrEmpty(customEventName))
+                throw new ArgumentException("Cannot set event name to an empty or null string");
+            if (!IsInitialized())
+                return AnalyticsResult.NotInitialized;
+            return IsCustomEventWithLimitEnabled(customEventName);
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static AnalyticsResult RegisterEvent(string eventName, int maxEventPerHour, int maxItems, string vendorKey = "", string prefix = "")
         {
@@ -273,6 +311,24 @@ namespace UnityEngine.Analytics
             if (!IsInitialized())
                 return AnalyticsResult.NotInitialized;
             return SetEventWithLimitPriority(eventName, eventPriority, ver, prefix);
+        }
+
+        public static AnalyticsResult EnableEvent(string eventName, bool enabled, int ver = 1, string prefix = "")
+        {
+            if (string.IsNullOrEmpty(eventName))
+                throw new ArgumentException("Cannot set event name to an empty or null string");
+            if (!IsInitialized())
+                return AnalyticsResult.NotInitialized;
+            return EnableEventWithLimit(eventName, enabled, ver, prefix);
+        }
+
+        public static AnalyticsResult IsEventEnabled(string eventName, int ver = 1, string prefix = "")
+        {
+            if (string.IsNullOrEmpty(eventName))
+                throw new ArgumentException("Cannot set event name to an empty or null string");
+            if (!IsInitialized())
+                return AnalyticsResult.NotInitialized;
+            return IsEventWithLimitEnabled(eventName, ver, prefix);
         }
     }
 }

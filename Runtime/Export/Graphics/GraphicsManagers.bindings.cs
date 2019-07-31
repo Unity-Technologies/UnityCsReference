@@ -98,6 +98,15 @@ namespace UnityEngine
             set { INTERNAL_renderPipeline = value; }
         }
 
+        [NativeName("GetRenderPipelineAssetAt")]
+        extern internal static ScriptableObject InternalGetRenderPipelineAssetAt(int index);
+        public static RenderPipelineAsset GetRenderPipelineAssetAt(int index)
+        {
+            if (index < 0 || index >= names.Length)
+                throw new IndexOutOfRangeException($"{nameof(index)} is out of range [0..{names.Length}[");
+
+            return InternalGetRenderPipelineAssetAt(index) as RenderPipelineAsset;
+        }
 
         [Obsolete("blendWeights is obsolete. Use skinWeights instead (UnityUpgradable) -> skinWeights", true)]
         extern public static BlendWeights blendWeights   { [NativeName("GetSkinWeights")] get; [NativeName("SetSkinWeights")] set; }

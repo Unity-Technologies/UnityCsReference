@@ -7,12 +7,10 @@ using System.IO;
 using UnityEditor.SceneManagement;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
-using UnityEngine.Assertions;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
 using System.Linq;
-using System.Collections.Generic;
 
 namespace UnityEditor.Experimental.SceneManagement
 {
@@ -441,28 +439,6 @@ namespace UnityEditor.Experimental.SceneManagement
                     return canvas;
             }
             return null;
-        }
-
-        static GameObject CreateLight(Color color, float intensity, Quaternion orientation)
-        {
-            GameObject lightGO = EditorUtility.CreateGameObjectWithHideFlags("Directional Light", HideFlags.HideAndDontSave, typeof(Light));
-            lightGO.transform.rotation = orientation;
-            var light = lightGO.GetComponent<Light>();
-            light.type = LightType.Directional;
-            light.intensity = intensity;
-            light.color = color;
-            light.enabled = true;
-            light.shadows = LightShadows.Soft;
-            return lightGO;
-        }
-
-        static void CreateDefaultLights(Scene scene)
-        {
-            var light = CreateLight(new Color(0.769f, 0.769f, 0.769f, 1), 0.7f, Quaternion.Euler(40f, 40f, 0));
-            var light2 = CreateLight(new Color(.4f, .4f, .45f, 0f) * .7f, 0.7f, Quaternion.Euler(340, 218, 177));
-
-            SceneManager.MoveGameObjectToScene(light, scene);
-            SceneManager.MoveGameObjectToScene(light2, scene);
         }
     }
 }

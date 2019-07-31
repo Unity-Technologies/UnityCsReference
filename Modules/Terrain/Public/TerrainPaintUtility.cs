@@ -3,9 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using UnityEngine.Rendering;
-using UnityEngine.Experimental.Rendering;
 
 namespace UnityEngine.Experimental.TerrainAPI
 {
@@ -18,7 +16,7 @@ namespace UnityEngine.Experimental.TerrainAPI
             SetHeights,
             SmoothHeights,
             PaintTexture,
-            PaintSurfaceMask
+            PaintHoles
         }
 
         private static Material s_BuiltinPaintMaterial = null;
@@ -27,6 +25,34 @@ namespace UnityEngine.Experimental.TerrainAPI
             if (s_BuiltinPaintMaterial == null)
                 s_BuiltinPaintMaterial = new Material(Shader.Find("Hidden/TerrainEngine/PaintHeight"));
             return s_BuiltinPaintMaterial;
+        }
+
+        public static void GetBrushWorldSizeLimits(
+            out float minBrushWorldSize,
+            out float maxBrushWorldSize,
+            float terrainTileWorldSize,
+            int terrainTileTextureResolutionPixels,
+            int minBrushResolutionPixels = 1,
+            int maxBrushResolutionPixels = 8192)
+        {
+            if (terrainTileTextureResolutionPixels <= 0)
+            {
+                minBrushWorldSize = terrainTileWorldSize;
+                maxBrushWorldSize = terrainTileWorldSize;
+            }
+            else
+            {
+                float pixelSize = terrainTileWorldSize / terrainTileTextureResolutionPixels;
+
+                // min brush size is the size of one pixel
+                minBrushWorldSize = minBrushResolutionPixels * pixelSize;
+
+                // max brush size is the size of maxResolution pixels
+                float maxResolution =
+                    Mathf.Min(maxBrushResolutionPixels, SystemInfo.maxTextureSize);
+
+                maxBrushWorldSize = maxResolution * pixelSize;
+            }
         }
 
         // returns a transform from terrain space to brush UV
@@ -108,8 +134,8 @@ namespace UnityEngine.Experimental.TerrainAPI
             // (note this is the UV space origin and size, not the mesh origin & size)
             float pcOriginX = (paintContext.pixelRect.xMin - 0.5f) * paintContext.pixelSize.x;
             float pcOriginZ = (paintContext.pixelRect.yMin - 0.5f) * paintContext.pixelSize.y;
-            float pcSizeX = (paintContext.pixelRect.width) * paintContext.pixelSize.x;
-            float pcSizeZ = (paintContext.pixelRect.height) * paintContext.pixelSize.y;
+            float pcSizeX = paintContext.pixelRect.width * paintContext.pixelSize.x;
+            float pcSizeZ = paintContext.pixelRect.height * paintContext.pixelSize.y;
 
             Vector2 scaleU = pcSizeX * brushXform.targetX;
             Vector2 scaleV = pcSizeZ * brushXform.targetY;
@@ -153,17 +179,17 @@ namespace UnityEngine.Experimental.TerrainAPI
             ctx.Cleanup();
         }
 
-        public static PaintContext BeginPaintSurfaceMask(Terrain terrain, Rect boundsInTerrainSpace, int extraBorderPixels = 0)
+        public static PaintContext BeginPaintHoles(Terrain terrain, Rect boundsInTerrainSpace, int extraBorderPixels = 0)
         {
-            int surfaceMaskResolution = terrain.terrainData.surfaceMaskResolution;
-            PaintContext ctx = InitializePaintContext(terrain, surfaceMaskResolution, surfaceMaskResolution, Terrain.surfaceMaskRenderTextureFormat, boundsInTerrainSpace, extraBorderPixels);
-            ctx.GatherSurfaceMask();
+            int holesResolution = terrain.terrainData.holesResolution;
+            PaintContext ctx = InitializePaintContext(terrain, holesResolution, holesResolution, Terrain.holesRenderTextureFormat, boundsInTerrainSpace, extraBorderPixels);
+            ctx.GatherHoles();
             return ctx;
         }
 
-        public static void EndPaintSurfaceMask(PaintContext ctx, string editorUndoName)
+        public static void EndPaintHoles(PaintContext ctx, string editorUndoName)
         {
-            ctx.ScatterSurfaceMask(editorUndoName);
+            ctx.ScatterHoles(editorUndoName);
             ctx.Cleanup();
         }
 
@@ -199,6 +225,14 @@ namespace UnityEngine.Experimental.TerrainAPI
                 s_BlitMaterial = new Material(Shader.Find("Hidden/BlitCopy"));
 
             return s_BlitMaterial;
+        }
+
+        public static Material GetHeightBlitMaterial()
+        {
+            if (!s_HeightBlitMaterial)
+                s_HeightBlitMaterial = new Material(Shader.Find("Hidden/TerrainEngine/HeightBlitCopy"));
+
+            return s_HeightBlitMaterial;
         }
 
         public static Material GetCopyTerrainLayerMaterial()
@@ -263,7 +297,7 @@ namespace UnityEngine.Experimental.TerrainAPI
         public static Texture2D GetTerrainAlphaMapChecked(Terrain terrain, int mapIndex)
         {
             if (mapIndex >= terrain.terrainData.alphamapTextureCount)
-                throw new System.ArgumentException("Trying to access out-of-bounds terrain alphamap information.");
+                throw new ArgumentException("Trying to access out-of-bounds terrain alphamap information.");
 
             return terrain.terrainData.GetAlphamapTexture(mapIndex);
         }
@@ -293,6 +327,7 @@ namespace UnityEngine.Experimental.TerrainAPI
         //--
 
         static Material s_BlitMaterial = null;
+        static Material s_HeightBlitMaterial = null;
         static Material s_CopyTerrainLayerMaterial = null;
     }
 }

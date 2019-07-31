@@ -61,7 +61,8 @@ namespace UnityEditor.Experimental.AssetImporters
                     // Remove intersection?
                     foreach (var x1 in handledExts2)
                     {
-                        if (handledExts.ContainsKey(x1.Key))
+                        // reject the scripted importers that handle the same extension *AND* are both AutoSelected
+                        if (handledExts.ContainsKey(x1.Key) && attribute.AutoSelect == true && attribute2.AutoSelect == true)
                         {
                             // Log error message and remove from handledExts
                             Debug.LogError(String.Format("Scripted importers {0} and {1} are targeting the {2} extension, rejecting both.", importerType.FullName, (imp as Type).FullName, x1.Key));
@@ -75,7 +76,7 @@ namespace UnityEditor.Experimental.AssetImporters
 
                 // Register the importer
                 foreach (var ext in handledExts)
-                    AssetImporter.RegisterImporter(importerType, attribute.version, attribute.importQueuePriority, ext.Key, supportsImportDependencyHinting);
+                    AssetImporter.RegisterImporter(importerType, attribute.version, attribute.importQueuePriority, ext.Key, supportsImportDependencyHinting, attribute.AutoSelect);
             }
         }
 
@@ -109,6 +110,8 @@ namespace UnityEditor.Experimental.AssetImporters
         public int importQueuePriority { get; private set; }
 
         public string[] fileExtensions { get; private set; }
+
+        public bool AutoSelect = true;
 
         public ScriptedImporterAttribute(int version, string[] exts)
         {

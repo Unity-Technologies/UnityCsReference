@@ -54,13 +54,16 @@ namespace UnityEngine.UIElements
         public StyleEnum<Position> position => stylesData.position.ToStyleEnum((Position)stylesData.position.value);
         public StyleEnum<Align> alignSelf => stylesData.alignSelf.ToStyleEnum((Align)stylesData.alignSelf.value);
         public StyleColor backgroundColor => stylesData.backgroundColor;
-        public StyleColor borderColor => stylesData.borderColor;
         public StyleBackground backgroundImage => stylesData.backgroundImage;
         public StyleEnum<ScaleMode> unityBackgroundScaleMode => stylesData.unityBackgroundScaleMode.ToStyleEnum((ScaleMode)stylesData.unityBackgroundScaleMode.value);
         public StyleColor unityBackgroundImageTintColor => stylesData.unityBackgroundImageTintColor;
         public StyleEnum<Align> alignItems => stylesData.alignItems.ToStyleEnum((Align)stylesData.alignItems.value);
         public StyleEnum<Align> alignContent => stylesData.alignContent.ToStyleEnum((Align)stylesData.alignContent.value);
         public StyleEnum<Justify> justifyContent => stylesData.justifyContent.ToStyleEnum((Justify)stylesData.justifyContent.value);
+        public StyleColor borderLeftColor => stylesData.borderLeftColor;
+        public StyleColor borderTopColor => stylesData.borderTopColor;
+        public StyleColor borderRightColor => stylesData.borderRightColor;
+        public StyleColor borderBottomColor => stylesData.borderBottomColor;
         public StyleFloat borderLeftWidth => stylesData.borderLeftWidth;
         public StyleFloat borderTopWidth => stylesData.borderTopWidth;
         public StyleFloat borderRightWidth => stylesData.borderRightWidth;

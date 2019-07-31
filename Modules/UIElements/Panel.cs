@@ -37,6 +37,8 @@ namespace UnityEngine.UIElements
         Size = 1 << 9,
         // The visuals of the element have changed
         Repaint = 1 << 10,
+        // The opacity of the element have changed
+        Opacity = 1 << 11,
     }
 
     [Flags]
@@ -104,13 +106,6 @@ namespace UnityEngine.UIElements
         void PostProcessEvent(EventBase ev);
     }
 
-    // This is the required interface to IPanel for Runtime game components.
-    internal interface IRuntimePanel
-    {
-        void Update(Vector2 size);
-        void Repaint(Event e);
-    }
-
     // Passed-in to every element of the visual tree
     public interface IPanel : IDisposable
     {
@@ -125,7 +120,7 @@ namespace UnityEngine.UIElements
         ContextualMenuManager contextualMenuManager { get; }
     }
 
-    abstract class BaseVisualElementPanel : IPanel, IRuntimePanel
+    abstract class BaseVisualElementPanel : IPanel
     {
         public abstract EventInterests IMGUIEventInterests { get; set; }
         public abstract ScriptableObject ownerObject { get; protected set; }
@@ -153,8 +148,8 @@ namespace UnityEngine.UIElements
                     panelDebug.DetachAllDebuggers();
                     panelDebug = null;
                 }
-
-                UIElementsUtility.RemoveCachedPanel(ownerObject.GetInstanceID());
+                if (ownerObject != null)
+                    UIElementsUtility.RemoveCachedPanel(ownerObject.GetInstanceID());
             }
             else
                 DisposeHelper.NotifyMissingDispose(this);
@@ -169,8 +164,40 @@ namespace UnityEngine.UIElements
         public abstract void ApplyStyles();
 
         public abstract void DirtyStyleSheets();
+        private float m_Scale = 1;
+        internal float scale
+        {
+            get { return m_Scale; }
+            set
+            {
+                if (!Mathf.Approximately(m_Scale, value))
+                {
+                    m_Scale = value;
+                    // if the surface DPI changes we need to invalidate styles
+                    visualTree.IncrementVersion(VersionChangeType.StyleSheet);
+                }
+            }
+        }
 
-        internal float currentPixelsPerPoint { get; set; } = 1.0f;
+        private float m_PixelsPerPoint = 1;
+        internal float pixelsPerPoint
+        {
+            get { return m_PixelsPerPoint; }
+            set
+            {
+                if (!Mathf.Approximately(m_PixelsPerPoint, value))
+                {
+                    m_PixelsPerPoint = value;
+                    // if the surface DPI changes we need to invalidate styles
+                    visualTree.IncrementVersion(VersionChangeType.StyleSheet);
+                }
+            }
+        }
+
+        public float scaledPixelsPerPoint
+        {
+            get { return m_PixelsPerPoint * m_Scale; }
+        }
 
         internal bool duringLayoutPhase {get; set;}
 
@@ -190,6 +217,14 @@ namespace UnityEngine.UIElements
         // Need virtual for tests
         internal virtual ICursorManager cursorManager { get; set; }
         public ContextualMenuManager contextualMenuManager { get; internal set; }
+
+        internal Matrix4x4 GetProjection()
+        {
+            var rect = visualTree.layout;
+            return Matrix4x4.Ortho(rect.xMin, rect.xMax, rect.yMax, rect.yMin, -1, 1);
+        }
+
+        internal Rect GetViewport() { return visualTree.layout; }
 
         //IPanel
         public abstract VisualElement visualTree { get; }
@@ -212,7 +247,28 @@ namespace UnityEngine.UIElements
 
         internal abstract IVisualTreeUpdater GetUpdater(VisualTreeUpdatePhase phase);
 
-        internal VisualElement topElementUnderMouse { get; private set; }
+        private ElementUnderPointer m_TopElementUnderPointers = new ElementUnderPointer();
+
+        internal VisualElement GetTopElementUnderPointer(int pointerId)
+        {
+            return m_TopElementUnderPointers.GetTopElementUnderPointer(pointerId);
+        }
+
+        void SetElementUnderPointer(VisualElement newElementUnderPointer, int pointerId)
+        {
+            m_TopElementUnderPointers.SetElementUnderPointer(newElementUnderPointer, pointerId);
+        }
+
+        internal void SetElementUnderPointer(VisualElement newElementUnderPointer, EventBase triggerEvent)
+        {
+            m_TopElementUnderPointers.SetElementUnderPointer(newElementUnderPointer, triggerEvent);
+        }
+
+        internal void CommitElementUnderPointers()
+        {
+            m_TopElementUnderPointers.CommitElementUnderPointers(dispatcher);
+        }
+
         internal abstract Shader standardShader { get; set; }
 
         internal event Action standardShaderChanged;
@@ -221,65 +277,29 @@ namespace UnityEngine.UIElements
         internal event HierarchyEvent hierarchyChanged;
         internal void InvokeHierarchyChanged(VisualElement ve, HierarchyChangeType changeType) { if (hierarchyChanged != null) hierarchyChanged(ve, changeType); }
 
-        internal void SetElementUnderMouse(VisualElement newElementUnderMouse, EventBase triggerEvent)
+        internal void UpdateElementUnderPointers()
         {
-            if (newElementUnderMouse == topElementUnderMouse)
-                return;
-
-            VisualElement previousTopElementUnderMouse = topElementUnderMouse;
-            topElementUnderMouse = newElementUnderMouse;
-
-            IMouseEvent mouseEvent = triggerEvent == null ? null : triggerEvent as IMouseEvent;
-            var mousePosition = mouseEvent == null
-                ? MousePositionTracker.mousePosition
-                : mouseEvent?.mousePosition ?? Vector2.zero;
-
-            var sendMouseOverOut = (triggerEvent == null ||
-                triggerEvent.eventTypeId == MouseMoveEvent.TypeId() ||
-                triggerEvent.eventTypeId == MouseDownEvent.TypeId() ||
-                triggerEvent.eventTypeId == MouseUpEvent.TypeId() ||
-                triggerEvent.eventTypeId == MouseEnterWindowEvent.TypeId() ||
-                triggerEvent.eventTypeId == MouseLeaveWindowEvent.TypeId() ||
-                triggerEvent.eventTypeId == WheelEvent.TypeId());
-
-            var sendDragEnterLeave = triggerEvent != null && (triggerEvent.eventTypeId == DragUpdatedEvent.TypeId() || triggerEvent.eventTypeId == DragExitedEvent.TypeId());
-
-            using (new EventDispatcherGate(dispatcher))
+            foreach (var pointerId in PointerId.hoveringPointers)
             {
-                // mouse enter/leave must be dispatched *any* time the element under mouse changes
-                MouseEventsHelper.SendEnterLeave<MouseLeaveEvent, MouseEnterEvent>(previousTopElementUnderMouse, topElementUnderMouse, mouseEvent, mousePosition);
+                if (PointerDeviceState.GetPanel(pointerId) != this)
+                {
+                    SetElementUnderPointer(null, pointerId);
+                }
+                else
+                {
+                    VisualElement elementUnderPointer = Pick(PointerDeviceState.GetPointerPosition(pointerId));
+                    SetElementUnderPointer(elementUnderPointer, pointerId);
+                }
+            }
 
-                if (sendMouseOverOut)
-                    MouseEventsHelper.SendMouseOverMouseOut(previousTopElementUnderMouse, topElementUnderMouse, mouseEvent, mousePosition);
-                if (sendDragEnterLeave)
-                    MouseEventsHelper.SendEnterLeave<DragLeaveEvent, DragEnterEvent>(previousTopElementUnderMouse, topElementUnderMouse, mouseEvent, mousePosition);
-            }
-        }
-
-        internal void UpdateElementUnderMouse()
-        {
-            if (MousePositionTracker.panel != this)
-            {
-                SetElementUnderMouse(null, null);
-            }
-            else
-            {
-                VisualElement elementUnderMouse = Pick(MousePositionTracker.mousePosition);
-                SetElementUnderMouse(elementUnderMouse, null);
-            }
+            CommitElementUnderPointers();
         }
 
         public IPanelDebug panelDebug { get; set; }
 
-        public void Update(Vector2 size)
+        public void Update()
         {
             scheduler.UpdateScheduledEvents();
-
-            if (size != visualTree.layout.size)
-            {
-                visualTree.SetSize(size);
-            }
-
             ValidateLayout();
             UpdateBindings();
         }
@@ -464,6 +484,7 @@ namespace UnityEngine.UIElements
         }
 
         private Shader m_StandardShader;
+
         internal override Shader standardShader
         {
             get { return m_StandardShader; }
@@ -477,13 +498,18 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public Panel(ScriptableObject ownerObject, ContextType contextType, EventDispatcher dispatcher = null)
+        internal static Panel CreateEditorPanel(ScriptableObject ownerObject)
+        {
+            return new Panel(ownerObject, ContextType.Editor, EventDispatcher.editorDispatcher);
+        }
+
+        public Panel(ScriptableObject ownerObject, ContextType contextType, EventDispatcher dispatcher)
         {
             m_VisualTreeUpdater = new VisualTreeUpdater(this);
 
             this.ownerObject = ownerObject;
             this.contextType = contextType;
-            this.dispatcher = dispatcher ?? EventDispatcher.instance;
+            this.dispatcher = dispatcher;
             repaintData = new RepaintData();
             cursorManager = new CursorManager();
             contextualMenuManager = null;
@@ -662,16 +688,14 @@ namespace UnityEngine.UIElements
 
         public override void Repaint(Event e)
         {
-            Debug.Assert(GUIClip.Internal_GetCount() == 0, "UIElement is not compatible with IMGUI GUIClips, only GUIClip.ParentClipScope");
+            if (contextType == ContextType.Editor)
+                Debug.Assert(GUIClip.Internal_GetCount() == 0, "UIElement is not compatible with IMGUI GUIClips, only GUIClip.ParentClipScope");
 
             m_RepaintVersion = version;
 
-            // if the surface DPI changes we need to invalidate styles
-            if (!Mathf.Approximately(currentPixelsPerPoint, GUIUtility.pixelsPerPoint))
-            {
-                currentPixelsPerPoint = GUIUtility.pixelsPerPoint;
-                visualTree.IncrementVersion(VersionChangeType.StyleSheet);
-            }
+            // in an in-game context, pixelsPerPoint is user driven
+            if (contextType == ContextType.Editor)
+                pixelsPerPoint = GUIUtility.pixelsPerPoint;
 
             repaintData.repaintEvent = e;
             Profiler.BeginSample(m_ProfileUpdateName);
@@ -703,6 +727,31 @@ namespace UnityEngine.UIElements
         internal override IVisualTreeUpdater GetUpdater(VisualTreeUpdatePhase phase)
         {
             return m_VisualTreeUpdater.GetUpdater(phase);
+        }
+    }
+
+    internal class RuntimePanel : Panel
+    {
+        public RuntimePanel(ScriptableObject ownerObject, EventDispatcher dispatcher = null)
+            : base(ownerObject, ContextType.Player, dispatcher) {}
+
+        // we may provide a rendertexture to be used for world space rendering
+        internal RenderTexture targetTexture = null;
+
+        public override void Repaint(Event e)
+        {
+            // if the renderTarget is not set, we simply render on whatever target is currently set
+            if (targetTexture == null)
+            {
+                base.Repaint(e);
+                return;
+            }
+
+            var toBeRestoredTarget = RenderTexture.active;
+            RenderTexture.active = targetTexture;
+            GL.Clear(true, true, Color.clear);
+            base.Repaint(e);
+            RenderTexture.active = toBeRestoredTarget;
         }
     }
 }

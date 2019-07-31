@@ -34,9 +34,16 @@ namespace UnityEditor
 
     internal class StructPropertyGUI
     {
+        static class Styles
+        {
+            public static readonly GUIStyle sectionLabel = new GUIStyle(EditorStyles.label)
+            {
+                alignment = TextAnchor.UpperLeft
+            };
+        }
         internal static void GenericStruct(Rect position, SerializedProperty property)
         {
-            GUI.Label(EditorGUI.IndentedRect(position), property.displayName, EditorStyles.label);
+            GUI.Label(EditorGUI.IndentedRect(position), property.displayName, Styles.sectionLabel);
             position.y += EditorGUI.kStructHeaderLineHeight;
 
             DoChildren(position, property);

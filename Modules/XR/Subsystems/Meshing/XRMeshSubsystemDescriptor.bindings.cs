@@ -8,7 +8,7 @@ using UsedByNativeCodeAttribute = UnityEngine.Scripting.UsedByNativeCodeAttribut
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace UnityEngine.Experimental.XR
+namespace UnityEngine.XR
 {
     [NativeHeader("Modules/XR/XRPrefix.h")]
     [NativeType(Header = "Modules/XR/Subsystems/Planes/XRMeshSubsystemDescriptor.h")]

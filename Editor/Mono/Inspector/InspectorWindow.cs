@@ -763,15 +763,17 @@ namespace UnityEditor
             Profiler.EndSample();
         }
 
-        private Rect DropRectangle
+        private Rect bottomAreaDropRectangle
         {
             get
             {
+                var worldEditorRect = editorsElement.LocalToWorld(editorsElement.rect);
+                var worldRootRect = rootVisualElement.LocalToWorld(rootVisualElement.rect);
                 return new Rect(
-                    editorsElement.rect.x,
-                    editorsElement.rect.y + editorsElement.rect.height,
-                    editorsElement.rect.width,
-                    rootVisualElement.rect.height - editorsElement.rect.height);
+                    worldEditorRect.x,
+                    worldEditorRect.y + worldEditorRect.height,
+                    worldEditorRect.width,
+                    worldRootRect.y + worldRootRect.height - worldEditorRect.height - worldEditorRect.y);
             }
         }
 
@@ -779,7 +781,7 @@ namespace UnityEditor
         {
             if (DragAndDrop.objectReferences.Any())
             {
-                if (editorsElement.ContainsPoint(dragUpdatedEvent.mousePosition))
+                if (editorsElement.ContainsPoint(editorsElement.WorldToLocal(dragUpdatedEvent.mousePosition)))
                 {
                     return;
                 }
@@ -790,13 +792,13 @@ namespace UnityEditor
                     return;
                 }
 
-                editorDragging.HandleDraggingInBottomArea(tracker.activeEditors, DropRectangle, lastChild.layout);
+                editorDragging.HandleDraggingInBottomArea(tracker.activeEditors, bottomAreaDropRectangle, lastChild.layout);
             }
         }
 
         void DragPerformInBottomArea(DragPerformEvent dragPerformedEvent)
         {
-            if (editorsElement.ContainsPoint(dragPerformedEvent.mousePosition))
+            if (editorsElement.ContainsPoint(editorsElement.WorldToLocal(dragPerformedEvent.mousePosition)))
             {
                 return;
             }
@@ -807,7 +809,7 @@ namespace UnityEditor
                 return;
             }
 
-            editorDragging.HandleDragPerformInBottomArea(tracker.activeEditors, DropRectangle, lastChild.layout);
+            editorDragging.HandleDragPerformInBottomArea(tracker.activeEditors, bottomAreaDropRectangle, lastChild.layout);
         }
 
         protected bool m_FirstInitialize;
@@ -1221,10 +1223,8 @@ namespace UnityEditor
             Asset asset = Provider.GetAssetByPath(assetPath);
             if (asset == null)
                 return;
-            var vcsAssetPath = asset.path;
-            var underAssets = vcsAssetPath.StartsWith("Assets");
-            var underProjectSettings = vcsAssetPath.StartsWith("ProjectSettings");
-            if (!(underAssets || underProjectSettings))
+
+            if (!Provider.PathIsVersioned(asset.path))
                 return;
 
             var connected = Provider.isActive;
@@ -1235,7 +1235,7 @@ namespace UnityEditor
             // if it exists -- so for files under project settings, it ends up returning
             // a valid entry for the non-existing meta file. So just don't do it.
             Asset metaAsset = null;
-            if (!underProjectSettings)
+            if (Provider.PathHasMetaFile(asset.path))
                 metaAsset = Provider.GetAssetByPath(assetPath.Trim('/') + ".meta");
 
             string currentState = asset.StateToString();
