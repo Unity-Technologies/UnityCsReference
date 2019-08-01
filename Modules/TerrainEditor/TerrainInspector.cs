@@ -334,14 +334,14 @@ namespace UnityEditor
         }
 
         [FormerlyPrefKeyAs("Terrain/Tree Brush", "f5")]
-        [Shortcut("Terrain/Tree Brush", typeof(TerrainToolShortcutContext))]
+        [Shortcut("Terrain/Tree Brush", typeof(TerrainToolShortcutContext), KeyCode.F5)]
         static void SelectPlaceTreeTool(ShortcutArguments args)
         {
             ChangeTool(args, editor => editor.selectedTool = TerrainTool.PlaceTree);
         }
 
         [FormerlyPrefKeyAs("Terrain/Detail Brush", "f6")]
-        [Shortcut("Terrain/Detail Brush", typeof(TerrainToolShortcutContext))]
+        [Shortcut("Terrain/Detail Brush", typeof(TerrainToolShortcutContext), KeyCode.F6)]
         static void SelectPaintDetailTool(ShortcutArguments args)
         {
             ChangeTool(args, editor => editor.selectedTool = TerrainTool.PaintDetail);

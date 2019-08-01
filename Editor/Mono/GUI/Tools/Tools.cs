@@ -134,6 +134,27 @@ namespace UnityEditor
             }
         }
 
+        static Vector3 s_HandlePosition;
+        static bool s_HandlePositionComputed;
+
+        internal static Vector3 cachedHandlePosition
+        {
+            get
+            {
+                if (!s_HandlePositionComputed)
+                {
+                    s_HandlePosition = GetHandlePosition();
+                    s_HandlePositionComputed = true;
+                }
+                return s_HandlePosition;
+            }
+        }
+
+        internal static void InvalidateHandlePosition()
+        {
+            s_HandlePositionComputed = false;
+        }
+
         public static Vector3 handlePosition
         {
             get
@@ -145,7 +166,7 @@ namespace UnityEditor
                 if (s_LockHandlePositionActive)
                     return s_LockHandlePosition;
 
-                return GetHandlePosition();
+                return cachedHandlePosition;
             }
         }
 
@@ -278,6 +299,7 @@ namespace UnityEditor
                 {
                     get.m_PivotMode = value;
                     EditorPrefs.SetInt("PivotMode", (int)pivotMode);
+                    InvalidateHandlePosition();
                 }
             }
         }
@@ -405,6 +427,7 @@ namespace UnityEditor
         internal static void OnSelectionChange()
         {
             ResetGlobalHandleRotation();
+            InvalidateHandlePosition();
             localHandleOffset = Vector3.zero;
         }
 
