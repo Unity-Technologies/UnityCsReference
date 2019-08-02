@@ -230,6 +230,11 @@ namespace UnityEngine
             RenderBuffer depth = depthBuffer;
             Internal_SetMRTSimple(colorBuffers, out depth, mipLevel, face, depthSlice);
         }
+
+        internal static void ForceRenderBufferLoadActionLoadImpl(bool val)
+        {
+            Internal_ForceRenderBufferLoadActionLoad(val);
+        }
     }
 
     public partial class Graphics
@@ -316,6 +321,12 @@ namespace UnityEngine
         public static bool ConvertTexture(Texture src, int srcElement, Texture dst, int dstElement)
         {
             return ConvertTexture_Slice(src, srcElement, dst, dstElement);
+        }
+
+        //undocumented
+        public static void ForceRenderBufferLoadActionLoad(bool val)
+        {
+            ForceRenderBufferLoadActionLoadImpl(val);
         }
     }
 }
