@@ -873,7 +873,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                         if (references.Count() != references.Distinct().Count())
                         {
-                            var duplicateRefs = references.GroupBy(r => r).Where(g => g.Count() > 0).Select(g => g.Key)
+                            var duplicateRefs = references.GroupBy(r => r).Where(g => g.Count() > 1).Select(g => g.Key)
                                 .ToArray();
                             var duplicateRefsString = string.Join(",", duplicateRefs);
 

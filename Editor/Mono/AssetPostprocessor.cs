@@ -254,6 +254,16 @@ namespace UnityEditor
             }
         }
 
+        static bool ImplementsAnyOfTheses(Type type, string[] methods)
+        {
+            foreach (var method in methods)
+            {
+                if (type.GetMethod(method, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null)
+                    return true;
+            }
+            return false;
+        }
+
         [RequiredByNativeCode]
         static string GetMeshProcessorsHashString()
         {
@@ -268,11 +278,20 @@ namespace UnityEditor
                 {
                     var inst = Activator.CreateInstance(assetPostprocessorClass) as AssetPostprocessor;
                     var type = inst.GetType();
-                    bool hasPreProcessMethod = type.GetMethod("OnPreprocessModel", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
-                    bool hasPostprocessMeshHierarchy = type.GetMethod("OnPostprocessMeshHierarchy", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
-                    bool hasPostProcessMethod = type.GetMethod("OnPostprocessModel", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
+                    bool hasAnyPostprocessMethod = ImplementsAnyOfTheses(type, new[]
+                    {
+                        "OnPreprocessModel",
+                        "OnPostprocessMeshHierarchy",
+                        "OnPostprocessModel",
+                        "OnPreprocessAnimation",
+                        "OnPostprocessAnimation",
+                        "OnPostprocessGameObjectWithAnimatedUserProperties",
+                        "OnPostprocessGameObjectWithUserProperties",
+                        "OnPostprocessMaterial",
+                        "OnAssignMaterialModel"
+                    });
                     uint version = inst.GetVersion();
-                    if (version != 0 && (hasPreProcessMethod || hasPostprocessMeshHierarchy || hasPostProcessMethod))
+                    if (version != 0 && hasAnyPostprocessMethod)
                     {
                         versionsByType.Add(type.FullName, version);
                     }

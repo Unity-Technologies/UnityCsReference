@@ -88,19 +88,6 @@ namespace UnityEditor
 
             FlipToggles();
 
-            Rect r = GUILayoutUtility.GetRect(
-                EditorGUILayout.kLabelFloatMinW, EditorGUILayout.kLabelFloatMaxW,
-                EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight);
-
-            EditorGUI.showMixedValue = m_Material.hasMultipleDifferentValues;
-            Object currentMaterialRef = m_Material.GetArrayElementAtIndex(0).objectReferenceValue;
-            Object returnedMaterialRef = EditorGUI.ObjectField(r, Contents.materialLabel, currentMaterialRef, typeof(Material), false);
-            if (returnedMaterialRef != currentMaterialRef)
-            {
-                m_Material.GetArrayElementAtIndex(0).objectReferenceValue = returnedMaterialRef;
-            }
-            EditorGUI.showMixedValue = false;
-
             EditorGUILayout.PropertyField(m_DrawMode, Contents.drawModeLabel);
 
             m_ShowDrawMode.target = ShouldShowDrawMode();
@@ -141,8 +128,8 @@ namespace UnityEditor
             RenderSortingLayerFields();
 
             EditorGUILayout.PropertyField(m_MaskInteraction, Contents.maskInteractionLabel);
-
             EditorGUILayout.PropertyField(m_SpriteSortPoint, Contents.spriteSortPointLabel);
+            EditorGUILayout.PropertyField(m_Material.GetArrayElementAtIndex(0), Contents.materialLabel, true);
 
             RenderRenderingLayer();
 

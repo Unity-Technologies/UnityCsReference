@@ -176,8 +176,12 @@ namespace UnityEditor
         {
             EditorGUI.BeginChangeCheck();
 
+            minVal *= scale;
+            maxVal *= scale;
+
             float v = Mathf.Round(valueInPercent * scale / precision) * precision;
-            v = EditorGUILayout.Slider(content, v, minVal * scale, maxVal * scale);
+            v = Mathf.Clamp(v, minVal, maxVal);   // this keeps the slider knob from disappearing
+            v = EditorGUILayout.Slider(content, v, minVal, maxVal);
 
             if (EditorGUI.EndChangeCheck())
             {
