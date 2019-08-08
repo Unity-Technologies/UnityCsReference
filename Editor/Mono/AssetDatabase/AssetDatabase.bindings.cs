@@ -23,6 +23,7 @@ namespace UnityEditor
     {
         Default = 0,
         NoGUI = 1 << 0,
+        ImportDelayed = 1 << 1
     }
 
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabase.h")]
@@ -123,7 +124,7 @@ namespace UnityEditor
         //TODO: This API should be Obsoleted when there is time available to update all the uses of it in Package Manager packages
         public static void ImportPackage(string packagePath, bool interactive)
         {
-            ImportPackage(packagePath, interactive ? ImportPackageOptions.Default : ImportPackageOptions.NoGUI);
+            ImportPackage(packagePath, ImportPackageOptions.ImportDelayed | (interactive ? ImportPackageOptions.Default : ImportPackageOptions.NoGUI));
         }
 
         internal static bool ImportPackageImmediately(string packagePath)

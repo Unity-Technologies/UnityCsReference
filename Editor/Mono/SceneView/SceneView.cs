@@ -3168,7 +3168,7 @@ namespace UnityEditor
             viewIsLockedToObject = lockView;
             FixNegativeSize();
 
-            Bounds bounds = InternalEditorUtility.CalculateSelectionBounds(false, Tools.pivotMode == PivotMode.Pivot);
+            Bounds bounds = InternalEditorUtility.CalculateSelectionBounds(false, Tools.pivotMode == PivotMode.Pivot, true);
 
             // Check active editor for OnGetFrameBounds
             foreach (Editor editor in activeEditors)

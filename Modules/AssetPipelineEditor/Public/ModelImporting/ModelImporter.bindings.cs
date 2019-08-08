@@ -446,6 +446,11 @@ namespace UnityEditor
             set;
         }
 
+        public extern float fileScale
+        {
+            get;
+        }
+
         public extern bool useFileScale
         {
             get;

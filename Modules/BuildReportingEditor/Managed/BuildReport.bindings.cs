@@ -49,7 +49,7 @@ namespace UnityEditor.Build.Reporting
         [FreeFunction("BuildReporting::SummarizeErrors", HasExplicitThis = true)]
         internal extern string SummarizeErrors();
 
-        internal extern void AddMessage(LogType messageType, string message);
+        internal extern void AddMessage(LogType messageType, string message, string exceptionType);
 
         internal extern int BeginBuildStep(string stepName);
         internal extern void ResumeBuildStep(int depth);
