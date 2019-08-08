@@ -555,27 +555,31 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(streamingMipmapsMaxFileIORequestsProperty, Content.kStreamingMipmapsMaxFileIORequests);
                 EditorGUI.indentLevel--;
             }
+            bool shadowMaskSupported = SupportedRenderingFeatures.IsMixedLightingModeSupported(MixedLightingMode.Shadowmask);
 
-
-            GUILayout.Space(10);
-
-            GUILayout.Label(EditorGUIUtility.TempContent("Shadows"), EditorStyles.boldLabel);
-            if (SupportedRenderingFeatures.IsMixedLightingModeSupported(MixedLightingMode.Shadowmask))
-                EditorGUILayout.PropertyField(shadowMaskUsageProperty);
-
-            if (!usingSRP)
+            if (!usingSRP || shadowMaskSupported)
             {
-                EditorGUILayout.PropertyField(shadowsProperty);
-                EditorGUILayout.PropertyField(shadowResolutionProperty);
-                EditorGUILayout.PropertyField(shadowProjectionProperty);
-                EditorGUILayout.PropertyField(shadowDistanceProperty);
-                EditorGUILayout.PropertyField(shadowNearPlaneOffsetProperty);
-                EditorGUILayout.PropertyField(shadowCascadesProperty);
+                GUILayout.Space(10);
 
-                if (shadowCascadesProperty.intValue == 2)
-                    DrawCascadeSplitGUI<float>(ref shadowCascade2SplitProperty);
-                else if (shadowCascadesProperty.intValue == 4)
-                    DrawCascadeSplitGUI<Vector3>(ref shadowCascade4SplitProperty);
+                GUILayout.Label(EditorGUIUtility.TempContent("Shadows"), EditorStyles.boldLabel);
+
+                if (shadowMaskSupported)
+                    EditorGUILayout.PropertyField(shadowMaskUsageProperty);
+
+                if (!usingSRP)
+                {
+                    EditorGUILayout.PropertyField(shadowsProperty);
+                    EditorGUILayout.PropertyField(shadowResolutionProperty);
+                    EditorGUILayout.PropertyField(shadowProjectionProperty);
+                    EditorGUILayout.PropertyField(shadowDistanceProperty);
+                    EditorGUILayout.PropertyField(shadowNearPlaneOffsetProperty);
+                    EditorGUILayout.PropertyField(shadowCascadesProperty);
+
+                    if (shadowCascadesProperty.intValue == 2)
+                        DrawCascadeSplitGUI<float>(ref shadowCascade2SplitProperty);
+                    else if (shadowCascadesProperty.intValue == 4)
+                        DrawCascadeSplitGUI<Vector3>(ref shadowCascade4SplitProperty);
+                }
             }
 
             GUILayout.Space(10);

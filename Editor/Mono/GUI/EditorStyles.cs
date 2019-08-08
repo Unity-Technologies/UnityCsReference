@@ -289,6 +289,11 @@ namespace UnityEditor
         // the editor styles currently in use
         internal static EditorStyles s_Current;
 
+        static EditorStyles()
+        {
+            s_Current = new EditorStyles();
+        }
+
         // the list of editor styles to use
         private static EditorStyles[] s_CachedStyles = { null, null };
 

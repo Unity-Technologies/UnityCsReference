@@ -401,6 +401,10 @@ namespace UnityEditor
                 return;
 
             var root = EditorModes.GetRootElement(m_ActualView);
+
+            if (root == null)
+                return;
+
             if (root.shadow.parent == visualTree)
             {
                 visualTree.Remove(root);

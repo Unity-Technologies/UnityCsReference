@@ -66,6 +66,7 @@ namespace UnityEngine.Experimental.Rendering
         CoreCameraValues coreCameraValues;
         uint cameraType;
         private int projectionIsOblique;
+        private int isImplicitProjectionMatrix;
 
         public Plane GetShadowCullingPlane(int index)
         {
@@ -124,7 +125,8 @@ namespace UnityEngine.Experimental.Rendering
         NeedsLighting = 1 << 2,
         NeedsReflectionProbes = 1 << 3,
         Stereo = 1 << 4,
-        DisablePerObjectCulling = 1 << 5
+        DisablePerObjectCulling = 1 << 5,
+        ShadowCasters = 1 << 6
     };
 
 
